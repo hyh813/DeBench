@@ -1,0 +1,111 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Overwhelming use of generic names (`v0`, `v1`, `v2`, `temp`) with no semantic meaning. Only rare exceptions like `stat_loc` and `retaddr` provide any context. Original variables like `arr`, `local`, `p` are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`local_vars`, `heap_basic`, `global_var_access`), but runtime helpers use cryptic names (`sub_1030`, `sub_116C`, `_x86_get_pc_thunk_bx`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0xFFFFFFF0`, `0xFFFFFFFE`, `0x14u`, `0x28u`). Original constants like array sizes (10, 2048) appear as bare literals.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant runtime artifacts (`_do_global_dtors_aux`, `register_tm_clones`, `frame_dummy`). 16 external functions marked "FAILED to decompile" clutter the output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple for-loops transformed into complex bit-manipulation patterns with manual unrolling. `vla_stack` and `alloca_usage` show 40+ line loop bodies instead of 5-line source loops.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but semantic content lost. `tree_heap_traversal` reduced to `return 60;` instead of showing tree creation/traversal logic. Test functions inline constants instead of calling actual functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but complex loop transformations create non-linear reading patterns. Deep nesting in `linked_list_heap` (10+ levels) from unrolled allocation.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive loop unrolling creates redundancy (`large_stack_frame` writes 8 bytes per iteration explicitly). No indication this is optimization artifact vs. original code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved but many pointers degraded to generic `void*` or `char*`. Function pointers lose signatures (`(int)f` instead of `int(*)(int)`). Signed/unsigned often incorrect.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Node` and `TreeNode` structs recovered with field names (`data`, `next`, `left`, `right`). However, `Point` struct lost entirely—`local_struct` and `heap_struct` return `3 * x` instead of showing struct access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(int)f`, `(int)p`, `(char *)v2`, `*(_DWORD *)&v2[2 * v5 - 8]`. Pointer arithmetic often untyped, risking undefined behavior.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments beyond function headers. No algorithm explanations, no decompilation confidence indicators, no API documentation. Original source comments completely absent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (linked list traversal, tree creation, memory allocation) not identified or named. `linked_list_heap` shows raw pointer chasing without indicating it's a list traversal pattern.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some issues flagged ("positive sp value has been detected", "FAILED to decompile") but critical anomalies like `dangling_pointer` use-after-free and `double_free` not warned about.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks exist in code but not expressed as contracts. Error return values (-1, -2, -3) unexplained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variable usage not explained. Callback relationship (`set_global_callback` → `double_value`) not indicated.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable sequence (stack→heap→static→memop) but runtime initialization functions interspersed. No file/module boundaries indicated.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 16 external functions failed to decompile with no stubs provided. Code cannot compile standalone. Dependencies (malloc, free, printf, fork) not documented with alternatives.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 (Lexical):     (3+7+4+4)/4 = 4.50
+L2 (Structural):  (4+5+6+5)/4 = 5.00
+L3 (Type):        (5+6+4)/3   = 5.00
+L4 (Semantic):    (2+3+4+2)/4 = 2.75
+L5 (Contextual):  (5+6+3)/3   = 4.67
+
+Overall = (4.50 × 0.30) + (5.00 × 0.25) + (5.00 × 0.20) + (2.75 × 0.15) + (4.67 × 0.10)
+        = 1.35 + 1.25 + 1.00 + 0.41 + 0.47
+        = 4.48/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `v2`) losing all semantic meaning from original (`arr`, `local`, `p`, `sum`)
+- **Constant folding destroyed logic visibility** - `tree_heap_traversal` returns `60` directly instead of showing tree creation and traversal
+- **Loop structures unrecognizable** - simple for-loops transformed into 40+ line bit-manipulation patterns
+- **No comments or documentation** - original source had extensive comments explaining each test case; decompiled has none
+- **16 external functions failed** - malloc, free, printf, etc. not provided with stubs, preventing standalone compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core application function names preserved accurately (`local_vars`, `heap_basic`, `global_var_access`), maintaining semantic connection to original source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation, algorithm explanations, or decompilation confidence indicators makes understanding intent nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (array indexing, pointer dereference, arithmetic) to infer semantic names like `array_ptr`, `counter`, `buffer_size`
+2. **Preserve original control flow structures** - Detect and reconstruct simple for/while loops instead of emitting unrolled bit-manipulation patterns, especially for `-O0` compiled code
+3. **Generate semantic documentation** - Add comments indicating decompilation confidence, recovered patterns (e.g., "linked list traversal"), and flag potential anomalies (use-after-free, double-free)

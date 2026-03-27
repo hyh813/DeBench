@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `iVar1`, `uVar2`, `lVar3`) with zero semantic meaning. No variable indicates purpose (e.g., `sum`, `index`, `length` are all lost).
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), but helper functions are generic (`FUN_00100620`, `__addtf3`). Test functions retained original names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation (`0x20`, `0x41`, `0x19`, `0x2c`, `0x1b8`). Test functions show computed hex values (`0x61`, `0x62`) instead of meaningful constants like `'a'`, `'b'`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Runtime boilerplate present (`_init`, `_start`, `__do_global_dtors_aux`). Long double operations expanded into 400+ line `__addtf3`/`__multf3` functions with excessive temporary variables.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Original `for` loops converted to `do-while` patterns with manual counter management. Simple conditionals preserved, but complex functions use label-based branching (`LAB_00101d90`, `joined_r0x0010172c`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but `__addtf3` and `__multf3` are monolithic (400+ lines each). Test functions constant-folded instead of calling actual functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom within functions. Do-while loop patterns disrupt natural flow. Complex floating-point functions have excessive forward references.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions contain redundant constant-folded results alongside actual computation code. Long double operations have massive code duplication for similar bit manipulations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant degradation: `process_ld` returns `void` instead of `long double`, `ptr_triple` uses `undefined8*` instead of `int***`, function pointers become `code*` or `UNRECOVERED_JUMPTABLE`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All structs lost, accessed via pointer arithmetic (`param_1[0]`, `param_1[1]`, `param_1[2]`). No struct/union definitions recovered. Bitfields manually extracted via shifts (`uVar1 >> 6`, `uVar1 >> 1 & 3`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Extensive unsafe casts (`(int *)(param_1 + lVar3)`, `(undefined4 *)`). Pointer arithmetic without type safety. `void*` used where specific types needed (`ptr_void` uses `uint*`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled output. No explanation of complex operations, no decompilation confidence indicators, no algorithm documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list traversal (`linked_list`, `doubly_linked_list`) not identified as such. Tree recursion not labeled. Graph traversal appears as raw pointer chasing.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Minimal anomaly flagging (`UNRECOVERED_JUMPTABLE` in `ptr_func_simple`). No warnings about type degradation, struct loss, or potential undefined behavior in `array_oob`.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions. No error condition documentation. Bounds checking in `array_complex_index` preserved but not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls preserved but relationships not documented. No call graph. Global variable usage unclear (`completed_0`, `__dso_handle`). Callback relationships opaque.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output file. No logical grouping by category (data types, arrays, pointers, composites). No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions declared but many undefined types (`undefined`, `undefined8`, `undefined4`). Would require significant patching to compile. NEON intrinsics (`NEON_fmadd`, `NEON_cmhi`) need special headers.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+3+1)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (4+3+4)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.67/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **All struct/union types lost** - accessed via raw pointer arithmetic (`param_1[0]`, `param_1[1]`) instead of named fields
+- **Zero comments** - no explanation of any logic, algorithms, or decompilation uncertainty
+- **Variable names completely generic** - `param_1`, `iVar1`, `uVar2` convey no semantic meaning
+- **Long double operations exploded** - `__addtf3`/`__multf3` are 400+ lines of incomprehensible bit manipulation
+- **Test functions constant-folded** - actual function calls replaced with pre-computed results, losing execution flow
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core function names preserved from source (`process_char`, `array_1d_stack`, `struct_simple`), providing some semantic anchors.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding complex operations (especially floating-point and struct access) nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze consistent field access patterns to reconstruct struct layouts with named fields (e.g., `param_1[0]` + `param_1[1]` + `param_1[2]` → `struct Point3D { int x, y, z; }`)
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., `// DECOMPILE_UNCERTAIN: function pointer signature inferred`) and explain complex bit operations
+3. **Infer semantic variable names from usage** - Variables used in loop counters should be `i`, `index`; accumulators should be `sum`; size parameters should be `n`, `count`, `length`

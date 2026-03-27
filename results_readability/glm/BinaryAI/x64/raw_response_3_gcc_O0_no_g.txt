@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `param_1`, `local_18`, and `aiStack_38`, completely losing semantic meaning (e.g., `n`, `i`, `arr`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `double_value`, `heap_basic`, and `linked_list_heap` are perfectly recovered from the symbol table, matching the source exactly.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent (e.g., `0x2a` instead of `42`, `0x14` instead of `20`), and string literals are replaced with pointers to data segments (e.g., `&DAT_00103008`).
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While standard stack canary checks (`__stack_chk_fail`) are expected, the Variable Length Array (VLA) and `alloca` functions contain verbose stack-probing loops that obscure the core logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Most loops and conditionals are naturally recovered as `for` and `if` statements, though the stack-probing logic in `vla_stack` creates confusing nested loops.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without artificial splitting or merging.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal forward jumps or `goto` statements, making execution paths easy to trace.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no dead code or loop unrolling artifacts; the logic is concise and matches the source structure well.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int` are often recovered as `undefined4`, and pointers are frequently generic `void*` or `undefined*`, losing signedness and specific intent.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Structs are poorly recovered; `heap_struct` accesses fields as `__ptr[1]` instead of `p->y`, and `global_struct_access` flattens the struct into separate global variables (`DAT_0010604c`).
+
+**11. Type Safety:** Score: 7/10
+Justification: While pointer arithmetic is explicit (e.g., `(long)__ptr + (long)local_18 * 4`), it is technically correct, though the use of `undefined` types reduces perceived safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining logic, algorithms, or data structures; only standard header comments are present.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common patterns like linked list traversal are not explicitly identified or labeled; the code presents raw pointer manipulation.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The complex stack probing code in `vla_stack` is presented without warning or explanation, making it look like suspicious or erroneous logic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: Preconditions (e.g., `param_1 > 0`) are embedded in control flow but not documented as contracts or assertions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear, and global variables are referenced by name, but the relationship between flattened struct fields is lost.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically (mostly by address), and related test functions are grouped together, matching the source structure.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on `undefined` types and specific data labels (e.g., `DAT_...`) that would require significant manual patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- Composite types (structs) are completely flattened; `heap_struct` uses array indexing (`__ptr[1]`) instead of member access (`p->y`).
+- Variable naming is purely generic (`local_18`, `param_1`), requiring the analyst to manually track semantics.
+- Variable Length Array (VLA) allocation is obscured by verbose stack-probing loops, hiding the simple `alloca` intent.
+- String literals are replaced with data segment pointers (e.g., `&DAT_00103008`), making print statements unreadable.
+- Function `stack_alias` lost its parameters in the decompiled signature, appearing as `stack_alias(void)`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved all original function names from the symbol table, making high-level navigation trivial.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 4/10)
+- The failure to reconstruct `struct` and `union` types forces the reader to interpret raw pointer arithmetic and array offsets, significantly degrading semantic understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic-based struct recovery to group adjacent global variables and heap fields into logical structures.
+2. Improve variable renaming by inferring semantics from usage context (e.g., loop counters, buffer sizes).
+3. Detect and abstract stack-probing loops (common in ARM64 VLA/alloca) to simplify the control flow graph.

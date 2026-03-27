@@ -1,0 +1,119 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4` throughout most functions. Parameters like `arr`, `n`, `p` retain original names, but local variables in implementation lack semantic meaning. For example, in `array_1d_stack`, variables `v2` and `v3` obscure their roles as pointer and accumulator.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match original source exactly: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. Some internal functions like `sub_1030` are unnamed, but test and implementation functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions have hardcoded expected values with clear labels (e.g., "DT-L1-01"). However, magic numbers like `65` and `32` in `process_char` should be `'A'` and `32` (or `'a'-'A'`). The value `0x1A` for range check is unexplained. Some literals like `97` and `98` appear instead of `'a'` and `'b'`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack canary checks (`__readgsdword(0x14u)`) add noise but are expected at -O0. Some redundant constructs in test functions. No __asm blocks for memory barriers. Overall relatively clean with minor compiler artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper while/do-while loops. However, `array_3d` shows fully unrolled loops (125 iterations expanded to 125 separate array accesses), which is excessive for -O0. The `binary_tree_sum` function has deeply nested do-while loops that are hard to follow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. The original test functions are preserved as separate units. Implementation functions like `binary_tree` and `binary_tree_sum` are properly separated. No obvious over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. However, `array_3d` has extremely long linear expressions (125 array accesses in a single return statement), and `binary_tree_sum` has deeply nested loops that disrupt linear reading. Some forward jumps in complex functions.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: The `array_3d` function shows severe redundancy - 125 array elements accessed individually instead of a loop. The `pointer_array` function has unrolled if-else chains for each array index (10 separate checks). This level of unrolling is inappropriate for -O0 compilation.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Most types are precise: `char`, `__int16`, `int`, `__int64`, `float`, `double`, `long double`, `bool`. Some minor issues: `process_long` returns `int` instead of `long` on x86_64. Function pointer types are properly preserved with correct signatures.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery. All types reconstructed: `Point3D`, `Size`, `Rect`, `Color`, `Style`, `Widget`, `Node`, `DNode`, `TreeNode`, `Graph`, `Edge`, `Device`, `Flags`, `UnionData`, `State`. Field names match original: `x`, `y`, `z`, `data`, `next`, `prev`, `left`, `right`, `fill`, `stroke`, etc.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with correct pointer usage. Some unsafe casts present: `*(_DWORD *)p` in `ptr_void`, `*(char *)p`. The `process_ll` function has complex 64-bit multiplication that could overflow. Minor issues don't significantly impact readability.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in decompiled code. The original source had extensive comments explaining each test case (e.g., "// DT-L1-01: 字符类型"). None of this semantic information was recovered. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable: linked list traversal in `linked_list`, tree traversal in `binary_tree`. However, no explicit naming or documentation of these patterns. The deeply nested loops in `binary_tree_sum` could be recognized as tree traversal but isn't labeled.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication. The decompiler silently fails on 5 functions (`__libc_start_main`, `__stack_chk_fail`, `__cxa_finalize`, `puts`, `__printf_chk`) without flagging them. The indirect call resolution in `sub_1080` has no indication of uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had clear expectations (e.g., "// 期望: 15") which are partially present as hardcoded values in test functions but not as explicit contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear within test functions. The relationship between `binary_tree` and `binary_tree_sum` is preserved. However, no documentation of which functions call which, or global variable usage. Callback relationships (e.g., `ptr_func_simple` calling `double_value`) not explicitly documented.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped: data type functions first, then array, pointer, and composite types. Test functions follow implementation functions. Static functions properly scoped. Matches original source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears compilable with standard libc. External functions (`puts`, `__printf_chk`) are referenced but not declared. No dependency documentation. The test functions have hardcoded values making them not true tests of the implementations.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+8+5+7)/4 = 5.75
+L2_avg = (7+8+6+4)/4 = 6.25
+L3_avg = (8+9+7)/3 = 8.0
+L4_avg = (2+5+1+2)/4 = 2.5
+L5_avg = (5+8+7)/3 = 6.67
+
+Overall = (5.75 × 0.30) + (6.25 × 0.25) + (8.0 × 0.20) + (2.5 × 0.15) + (6.67 × 0.10)
+        = 1.725 + 1.5625 + 1.6 + 0.375 + 0.667
+        = 5.93/10
+```
+
+**Overall Readability Score:** 5.93/10
+
+### Critical Defects (Bullet List)
+
+- **Loop unrolling in `array_3d`**: 125 array elements accessed individually instead of a loop construct - completely unreadable at 125-line expression
+- **No comments**: Zero semantic information recovered from the heavily-commented original source
+- **Generic variable names**: Variables like `v0`, `v1`, `v2`, `v3` throughout obscure purpose
+- **No anomaly indication**: Failed decompilations silently marked without flags; indirect calls unresolved without warnings
+- **Unnecessary if-else chains in `pointer_array`**: 10-level nested conditionals for array index checking instead of loop
+
+### Best Quality Aspect (Single Dimension)
+
+- **Composite Type Recovery (Score: 9/10)**: Excellent struct/union reconstruction with accurate field names matching original source almost perfectly
+
+### Most Needs Improvement (Single Dimension)
+
+- **Anomaly Indication (Score: 1/10)**: No flags for failed decompilations, unresolved indirect calls, or potential issues - the decompiler presents everything with equal confidence
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover loop constructs from backward jump patterns**: The `array_3d` function should be a simple 5-level nested for loop, not 125 individual array accesses
+
+2. **Add semantic comments from source**: The original had extensive test case comments (DT-L1-01, ARR-L2-03, etc.) - recover these as they provide crucial context
+
+3. **Flag unresolved indirect calls and failed functions**: The 5 failed functions and `sub_1080` indirect call should have clear warnings like "// DECOMPILATION FAILED" or "// UNRESOLVED: indirect call"
+
+4. **Infer variable names from usage patterns**: `v3` accumulating in a loop should be named `sum` or `total`; `v2` as a pointer increment should be named `ptr` or `p`

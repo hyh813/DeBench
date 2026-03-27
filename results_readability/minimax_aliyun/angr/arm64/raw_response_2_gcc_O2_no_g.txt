@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic single letters (`v0`, `v1`, `ptr`, `a0`, `a1`) or v-prefixed names. The original source uses meaningful names like `sum`, `i`, `len`, `c`, but the decompiled code obscures these with meaningless identifiers like `v3`, `v4`, `v5` throughout all functions.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions like `process_char`, `process_int`, `array_1d_stack`, `ptr_single` correctly match source names, but many functions retain generic names like `sub_4006e4`, `sub_4007a4`, `sub_4008c8`. The test functions are properly named but internal helper functions are not recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions print hardcoded expected values (e.g., `__printf_chk(1, "DT-L1-01 (process_char): %c\n", 97)`), but the actual logic contains unexplained magic numbers like `0x10000`, `4294967295`, `255`, `32`. The bit manipulation expressions like `(a0 & 255) + 32 & 255` for uppercase-to-lowercase conversion are not simplified to readable form.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution. The `binary_tree_sum` function contains hundreds of lines of generated code with register artifacts (`v27`, `v28`, `ptr10`, `v32`, etc.). Many functions show dead code from register spilling and redundant operations. The `__addtf3` and `__multf3` library functions are decompiled as massive unreadable blobs.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: While some loops are properly recovered (e.g., `while (ptr->field_8)`), many functions use goto statements inappropriately (`goto a0;`, `goto g_413f88;`). The `array_complex_index` function has extremely convoluted conditional logic with `arm64g_calculate_condition` calls. The `binary_tree_sum` function has spaghetti code with multiple labels and deeply nested while loops.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but with poor granularity - `binary_tree_sum` is an unreadable monolith (~400 lines), while some simple functions like `sub_4008d4` just call another function and return. Some parameter lists expose implementation details (e.g., `unsigned long a0, unsigned long a1` instead of proper types).
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Poor readability due to frequent forward jumps, computed goto statements, and deep nesting. The `binary_tree_sum` function has multiple `LABEL_*` jumps that make linear reading impossible. Many functions have early returns and breaks that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy present. Functions like `array_1d_stack` and `array_vla` have nearly identical implementations but aren't recognized as the same pattern. The test functions contain duplicated setup code. Loop unrolling is not commented or abstracted.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation. Original `char` becomes `unsigned int` in `process_char`. Original `short` becomes `unsigned int` in `process_short`. Original `float` returns `long long`. Function pointers like `ptr_func_simple` use `unsigned long` instead of proper function pointer types. `const` and `volatile` qualifiers are often lost.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Partial struct recovery with generic names. Some structures are properly recovered (e.g., `struct_0 { unsigned int field_0; char padding_4[4]; struct struct_1 *field_8; }` for Node), but many are just raw pointer arithmetic. The `Point3D` struct is recovered as `unsigned int*` with array indexing. Union types are not clearly distinguished from structs.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations. The `process_long` function uses `__ROL__` for what should be simple left shift. Pointer arithmetic is sometimes incorrect (e.g., `ptr += 11` for 2D array). Many unnecessary casts. The `ptr_func_simple` uses `goto a0` which is type-confused. Buffer overflow patterns in `array_oob` are not flagged.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments present. No explanation of algorithms, no decompilation confidence indicators, no documentation of non-obvious logic. The only comments are auto-generated like `/* do not return */` and `/* x0 */` style register annotations.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The linked list traversal, binary tree traversal, and graph traversal patterns are not recognized or named. The enum switch is decompiled as a table lookup but not documented as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious code. The `array_oob` function with intentional out-of-bounds access is not flagged. The `process_double` returning `"hello"` string is presented without comment. Indirect calls that couldn't be resolved are not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition documentation. No invariant recognition. The `const_param` function's contract (read-only access) is not documented. No documentation of null checks, bounds checking, or error conditions that the original code implied.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some function call relationships visible in test functions (e.g., `test_data_types_l1()` calls `process_char`), but mostly isolated. No documentation of who calls whom, no global variable usage transparency. The callback relationships (e.g., `complex_callback` passed to `ptr_func_complex`) are not clearly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped somewhat logically by type (data types, arrays, pointers, composites), but there's no clear module structure. Static functions are not properly scoped. The file is a single monolithic output.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Many `extern` declarations present for library functions. Some functions would compile with stubs needed (e.g., `__printf_chk`, `__stack_chk_guard`). No dependency documentation. The code would require moderate patching to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- Variable names are exclusively generic (`v0`, `v1`, `a0`, `ptr`) losing all semantic meaning from source
+- The `binary_tree_sum` function is decompiled as ~400 lines of unreadable spaghetti code with register artifacts
+- Type precision severely degraded - `char`→`unsigned int`, `float`→`long long`, function pointers lost
+- No comments explaining algorithms, contracts, or anomalies
+- Control flow uses goto and computed jumps instead of natural loop constructs
+
+**Best Quality Aspect:** Function Naming Quality (5/10)  
+- Some core functions like `process_char`, `array_1d_stack`, `ptr_single` correctly match source names
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Noise Reduction (2/10)  
+- Generic variable names make tracking data flow nearly impossible
+- Massive noise artifacts in complex functions like `binary_tree_sum` make them unusable
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `v0` used as loop counter should be `i` or `index`)
+2. Recognize and abstract loop patterns from backward jumps instead of generating goto code
+3. Recover struct field names from allocation sites and usage patterns rather than generic `field_0`, `field_1`

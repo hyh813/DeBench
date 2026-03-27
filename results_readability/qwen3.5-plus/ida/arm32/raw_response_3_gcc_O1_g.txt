@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Generic names like `v0`, `v1`, `v2`, `v3` dominate most functions, obscuring semantic purpose. Some variables like `arr`, `large_buf`, `head`, `buffer` are preserved well, but the inconsistency makes tracking data flow difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`). Runtime functions have generic names (`sub_10598`, `init_proc`), but user code naming is excellent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14u`, `0x28u` for malloc sizes lack explanation. Constants like `42`, `10`, `20` are clear, but hex literals in test functions (`67305985` for bcopy_src) are unreadable without context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack frame comments (`[sp+0h] [bp-38h] BYREF`), register variable annotations (`// r0`, `// r2`), and excessive type casts (`_DWORD *`, `_BYTE *`). 18 functions marked "FAILED to decompile" add noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions decompile cleanly, but loops use awkward `do-while` patterns instead of `for` loops (e.g., `local_array`, `heap_basic`). Some functions show over-optimization (constant folding) that obscures original structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are properly separated with appropriate granularity. No inappropriate inlining observed. However, some functions like `test_stack_memory` have constant-folded calls that lose the original call structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but forward variable declarations (`int v4; // [sp+0h] [bp-38h]`) disrupt flow. Some functions have complex nested conditionals that could be flattened.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding creates semantic loss (e.g., `local_struct` returns `3 * x` directly instead of showing struct operations). Redundant type casts throughout (`(_DWORD *)`, `(char *)`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `_DWORD`, `_BYTE`, `_WORD` instead of `int`, `char`, `short`. Pointer types often generic (`void *` instead of specific types). Some proper types preserved (`Node*`, `TreeNode*`, `size_t`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Node` and `TreeNode` structs recognized with field names (`data`, `next`, `left`, `right`). `Point` struct not explicitly defined—operations folded to arithmetic. Array types sometimes lost to pointer decay.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `*((_DWORD *)v3 + 1)`, `*(_DWORD *)&v4[4 * (n / 2)]`. Pointer arithmetic with generic types throughout. No const-correctness preserved. Dangerous patterns (dangling pointer) not flagged.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no semantic comments. Only decompiler metadata comments present ("FAILED to decompile", register annotations). No algorithm explanations, no API contracts, no precondition documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library functions recognized (`malloc`, `free`, `memcpy`, `memset`). No design pattern identification. Memory management patterns (allocate-use-free) visible but not named.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: "FAILED to decompile" markers for 18 library functions. No warnings about dangerous patterns (dangling pointer in `dangling_pointer`, double-free in `double_free`, heap overflow in `heap_overflow`). Critical bugs silently decompiled.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: n > 0"). NULL checks present but not documented as contracts. No postcondition inference. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. Global variable usage visible (`global_counter`, `file_scope_static`). No explicit call graph documentation. Callback relationships (`global_func_ptr`) preserved but not highlighted.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping comments separating stack/heap/static/memory-op sections. Original source organization lost. Static functions properly marked but not grouped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 18 external functions failed to decompile (library stubs needed). Architecture mismatch (metadata says arm64, decompiled says arm). Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (5+8+5+4)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):     (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type System):    (4+6+4)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):       (2+4+3+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):     (6+5+3)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                    4.96/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Semantic loss from over-optimization**: Functions like `stack_alias`, `local_struct`, `global_struct_access` return constants instead of showing original logic
+- **Generic variable naming**: `v0`, `v1`, `v2` throughout obscures data flow and purpose
+- **Type degradation**: `_DWORD`, `_BYTE` instead of proper C types reduces type safety and clarity
+- **No semantic comments**: Zero documentation of algorithm intent, preconditions, or dangerous patterns
+- **Dangerous patterns unflagged**: `dangling_pointer`, `double_free`, `heap_overflow` decompiled without warnings about undefined behavior
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- User-defined function names preserved accurately from source, making high-level navigation straightforward
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of semantic documentation makes understanding non-trivial logic require reverse engineering the decompiled code itself
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve original control flow structure**: Avoid aggressive constant folding that eliminates semantic operations (e.g., struct field access should show struct, not arithmetic)
+2. **Infer variable names from usage patterns**: Variables used in size checks should be named `size`, `count`, `length`; pointers should indicate pointee type
+3. **Flag dangerous patterns explicitly**: Add warnings for dangling pointers, double-frees, buffer overflows, and other undefined behavior patterns detected in the binary

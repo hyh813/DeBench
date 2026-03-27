@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment## Target Function: `param_strcpy`
+
+After analyzing the original source and decompiled code, I'll provide a comprehensive evaluation across all 18 dimensions.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are named generically (e.g., `sVar1`, `iVar1`, `local_28`, `local_8`). In `param_strcpy`, the result of `strlen` is stored in `sVar1` instead of a descriptive name like `len` or `dst_len`. The decompiler uses mechanical naming that obscures semantic purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: The target function `param_strcpy` is correctly named, matching the source. Other test functions like `call_strcpy`, `param_strcmp`, `param_strlen` are also properly named. However, internal functions like `FUN_00102020` and some thread functions lack semantic names. The main API functions preserve their identity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like "HelloLib" and "Value: %d, Name: %s\n" are correctly preserved. However, magic numbers like `0x2a` (42) appear without explanation, and `0x1b6` (file permissions) is unexplained. The decompiler doesn't infer that `0x2a` represents a success constant.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise includes "Unresolved local var" comments (e.g., "Unresolved local var: int ret@[???]", "Unresolved local var: size_t len@[???"). Warning comments about "Unknown calling convention" appear frequently. However, there's no spurious register spilling code or debug artifacts - the core logic is relatively clean.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and matches source closely. The `param_strcpy` function has straightforward sequential logic: strcpy followed by strlen. Loops use proper while/do-while constructs. At -O0, there's no aggressive optimization that would distort control flow. The only minor issue is some complex boolean expressions in `param_fread_fwrite`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - `param_strcpy` is 5 lines, matching the source's simplicity. Each function has single responsibility. The decompiler correctly separated the test harness functions from the parameter wrapper functions. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. `param_strcpy` has perfect linear flow. Early returns are used appropriately in error-handling functions. No deep nesting (>4 levels) observed. The code is highly readable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy in `param_strcpy`. Loop unrolling is minimal at -O0. Common subexpression elimination artifacts are not prominent. The decompiled code is clean without duplicate computations.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: The parameter types show degradation - source has `const char *src` but decompiled shows `char *src` (const-correctness lost). Return type `int` is correct. However, `size_t` is properly used for strlen result. Many other functions show type erosion: `void *` instead of specific types, `int` instead of `size_t` for sizes. The const qualifier is frequently lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: For `param_strcpy`, no composite types are needed. However, in functions like `param_pthread_join`, the decompiler uses raw arrays (`int aiStack_60 [10]`) instead of recovering the `ThreadData` struct. The struct is partially visible through field offsets but not named. Some structure recovery is present but incomplete.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Basic operations are type-safe. No obvious unsafe casts in `param_strcpy`. However, in `param_scanf`, there's complex pointer arithmetic with `(long)&local_8 + 4` that's error-prone. Some functions use `void *` where more specific types would be safer. The code is generally safe but could be more precise.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: No useful comments in `param_strcpy` itself. The decompiler adds "Unresolved local var" comments which are noise, not helpful. There's no explanation of what the function does or its contract. No documentation of preconditions (dst buffer size) or postconditions (returns copy length). Auto-generated warnings dominate.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library functions (strcpy, strlen, printf) are correctly identified. The pattern of "wrapper function that calls libc and returns result" is recognizable. However, no explicit naming of patterns like "string wrapper" or "parameter validation" is provided. Some common patterns are detected but not named.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler correctly flags "Unknown calling convention" warnings. However, it doesn't flag the const-correctness loss or the type precision issues. No warnings about potential buffer overflows (strcpy without length check). Some anomalies are indicated but not comprehensively.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No contract information recovered. The implicit contract of `param_strcpy` (src must be null-terminated, dst must have sufficient space) is not documented. No preconditions or postconditions are indicated. The function is presented as-is without any semantic context.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear - `param_strcpy` calls strcpy and strlen. However, there's no documentation of who calls `param_strcpy` (it's called by `call_strcpy`). Global variables like `signal_received`, `shared_counter` are used without explaining their purpose or scope. The call graph is not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically - standard library wrappers, system calls, thread functions are separated. However, all functions are in a single flat listing. No header file structure or API boundaries are indicated. The organization is reasonable but not optimal.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code would compile with minimal changes. Standard library functions are declared. However, some functions like `thread_compute` return `void *` which requires proper includes. The code uses `__isoc99_sscanf` which is platform-specific. Dependencies on pthreads are implicit, not documented.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable naming uses mechanical names (`sVar1`, `iVar1`, `local_28`) that obscure semantic purpose
+- Const-correctness is lost - `const char *src` becomes `char *src`
+- No comments explaining function purpose, preconditions, or postconditions
+- "Unresolved local var" comments create noise without providing useful information
+- Magic numbers like `0x2a` (42/success) appear without explanation
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- At -O0, the decompiled control flow closely matches source with natural loop/conditional structures
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+- Generic mechanical names like `sVar1`, `iVar2`, `local_8` make it difficult to track variable purpose without significant mental effort
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When a variable holds the result of `strlen()`, name it `len` or `str_len` instead of `sVar1`
+2. **Preserve const-correctness**: Track `const` qualifiers through function calls - `const char *src` should remain `const char *src`
+3. **Add semantic comments**: Include basic documentation explaining what each function does, its parameters, and return value contract

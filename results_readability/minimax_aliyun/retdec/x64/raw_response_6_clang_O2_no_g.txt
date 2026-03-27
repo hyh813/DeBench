@@ -1,0 +1,120 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Variables use generic names like `a1`, `a2`, `v1`, `v2`, `v3` throughout. For example, `param_strcpy(int64_t a1)` should be `param_strcpy(char *dst)` based on source usage. The parameter `a1` is used as a char pointer but the name conveys no semantic meaning about its purpose as a destination buffer.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+Justification: Main test functions like `param_strcpy`, `call_strcmp`, `param_memcpy` correctly match source names. However, internal helper functions use cryptic addresses: `function_2030`, `function_2040`, `function_2050` etc. These should be named after their actual libc functions (e.g., `raise`, `free`, `__errno_location`).
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: String literals like `"Value: %d, Name: %s\n"` are correctly preserved. However, error return values like `0xffffffff`, `0xfffffffe` are magic numbers without explanation. The constant `-O0` compilation means these should be more readable. Some constants like `g1 = 7` are named but not explained.
+
+### 4. Noise Reduction
+**Score: 4/10**
+Justification: Significant noise present including: (1) SIMD intrinsics like `__asm_movdqa`, `__asm_pcmpeqb` in `param_fread_fwrite` and `param_malloc_free`, (2) redundant casts throughout, (3) `__asm_hlt()` in `_start`. At -O0, these SIMD optimizations are unexpected artifacts that severely impact readability.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+Justification: Most control flow is natural with proper if/else and while loops. However, some goto patterns exist like `goto lab_0x2921` in `param_malloc_free`. The code uses labels for loop exits which is less readable than structured loops. The overall logic is traceable but requires effort.
+
+### 6. Function Decomposition
+**Score: 6/10**
+Justification: Functions like `param_malloc_free` (lines 0x27d0-0x2947, ~200 lines) are excessively large due to loop unrolling. The decompiler expanded a simple loop into hundreds of lines of SIMD code. Other functions are reasonably sized. The decomposition into test wrapper functions (`call_*`) and implementation functions (`param_*`) matches source structure.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom with appropriate early returns. Some forward jumps exist (e.g., `goto lab_0x28e8`) but are used for loop handling. The nesting depth is reasonable (typically 2-3 levels). Overall good linearization despite some optimization artifacts.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No obvious dead code. Loop unrolling in `param_malloc_free` and `param_memset` is present but represents compiler optimization. The decompiler correctly identified the pattern but expanded it excessively. Common subexpressions are reasonably handled.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Uses `int64_t` and `int32_t` appropriately for ARM64. However, parameters like `param_strcpy(int64_t a1)` should be `char*` based on source. Function signatures have extra parameters: `param_strcmp(int64_t str, int64_t str2, int64_t a3, int64_t a4)` but source only has 2 parameters. The decompiler added phantom parameters.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+Justification: The decompiler defined struct stubs at the top (`struct _IO_FILE`, `struct shmid_ds`, `struct sockaddr`, `struct stat`) with generic field names (`e0`, `e1`, etc.). These match libc structures but lose field semantics. For example, `struct stat` should have named fields like `st_mode`, `st_size` instead of `e0`, `e1`.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Multiple unsafe casts present: `(char *)a1`, `(int64_t *)str`, `(int32_t *)mem`. Pointer arithmetic like `*(int32_t *)(4 * v3 + v1)` is error-prone. Function pointer casts like `(int64_t * (*)(int64_t *))0x33d0` are necessary but verbose. No `restrict` or `_Atomic` annotations despite source using atomics.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Almost no comments in the decompiled code. No explanation of algorithms, no decompilation confidence indicators, no @param/@return documentation. The only annotations are `// UNREACHABLE` for dead code paths. A comment like "// Implements strcpy + strlen pattern" would help significantly.
+
+### 13. Idiom Recognition
+**Score: 6/10**
+Justification: Standard library functions are correctly identified (strcpy, strlen, pthread_create, etc.). Threading patterns like pthread_create/join are recognized. However, no explicit pattern naming (e.g., "// Producer-Consumer pattern"). The atomic operations in source are not clearly identified as atomic patterns.
+
+### 14. Anomaly Indication
+**Score: 4/10**
+Justification: The code marks `// UNREACHABLE` for dead code after `_exit` calls, which is helpful. However, no warnings about uncertain indirect calls, unusual stack layouts, or potential undefined behavior. The phantom parameters in function signatures should be flagged as "possibly unused" or "stack cleanup".
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants documented. The source has implicit contracts (e.g., "ptr != NULL" for malloc result, "file != NULL" for fopen) that are not recovered. Error handling is present but not explained.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function prototypes at the top show the complete call graph. Global variables are listed with addresses. However, no comments indicate "called by" or "calls" relationships. The relationship between `call_strcpy` → `param_strcpy` → `strcpy` is clear from structure but not documented.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are logically grouped: standard library tests (0x24b0-0x2b00), system calls (0x2c90-0x3260), threading (0x33d0-0x3cb0). Static helper functions are placed near their usage. The organization mirrors the source's test categories (6.1, 6.2, 6.3).
+
+### 18. Build System Compatibility
+**Score: 8/10**
+Justification: Proper #includes at the top with standard headers. Function prototypes declared. Should compile with `gcc -c decompiled.c`. No obvious syntax errors. Minor issues: some functions have mismatched parameter counts that would cause linker errors if called directly.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 5 + 4) / 4 = 4.50
+L2_avg = (6 + 6 + 7 + 7) / 4 = 6.50
+L3_avg = (6 + 5 + 5) / 3 = 5.33
+L4_avg = (3 + 6 + 4 + 2) / 3.75
+L5_avg = (5 + 7 + 8) / 3 = 6.67
+
+Overall = (4.50 × 0.30) + (6.50 × 0.25) + (5.33 × 0.20) + (3.75 × 0.15) + (6.67 × 0.10)
+        = 1.35 + 1.625 + 1.066 + 0.5625 + 0.667 = 5.27/10
+```
+
+**Overall Readability Score: 5.27/10**
+
+### Critical Defects
+- **Variable naming**: Parameters like `a1`, `a2` and locals like `v1`, `v2` have no semantic meaning - should infer names from usage (e.g., `dst`, `src` for strcpy)
+- **Phantom parameters**: Functions like `param_strcmp` have 4 parameters but source has 2 - decompiler incorrectly inferred extra stack parameters
+- **Excessive loop unrolling**: `param_malloc_free` and `param_memset` expanded simple loops into 200+ lines of SIMD intrinsics making them nearly incomprehensible
+- **No comments**: Zero algorithm explanations or decompilation confidence indicators
+- **Generic struct fields**: Structs defined with `e0`, `e1`, `e2` field names losing semantic meaning of libc structures
+
+### Best Quality Aspect
+**Function Naming Quality (7/10)** - Main test functions correctly match source names (param_strcpy, call_strcmp, etc.), making the high-level purpose immediately clear.
+
+### Most Needs Improvement
+**Variable Naming Quality (2/10)** - Generic single-letter variable names pervade the entire codebase, making it extremely difficult to track data flow and understand function logic without significant reverse-engineering effort.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns**: If `a1` is used with `strcpy(a1, ...)` and `strlen(a1)`, name it `dst` or `dest`. If `v1` is compared to zero, name it `result` or `success`.
+2. **Detect and collapse loop unrolling**: Recognize when a loop has been unrolled and present it as a compact loop with a comment explaining the SIMD optimization, rather than expanding all iterations.
+3. **Add semantic comments**: Include brief comments explaining what each function does, identifying the source libc function, and noting any decompilation uncertainties.

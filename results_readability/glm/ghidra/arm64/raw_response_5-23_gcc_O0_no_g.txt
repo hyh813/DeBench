@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Despite compilation with `-g`, local variables and parameters are generic (`param_1`, `local_8`, `uVar1`) instead of semantic names like `size`, `x`, or `result`. This forces the reader to reverse-engineer variable purposes from usage.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the source exactly (e.g., `param_macro_constants`, `test_preprocessing_features`), indicating excellent symbol table recovery.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Macro constants are replaced by magic numbers (e.g., `0x401` instead of `1024`, `0x40` instead of `64`). While the logic is correct, the semantic meaning of named constants like `MAX_SIZE` is completely lost.
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The code is generally clean, though stack canary checks (`___stack_chk_guard`) appear in some functions. There is minimal register spilling or redundant casting artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is highly natural and matches the source structure perfectly due to the `-O0` optimization level. Loops and conditionals are preserved as standard C constructs.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source code. There is no inlining or outlining, maintaining the original granularity and cohesion perfectly.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps. The structure is easy to follow, closely resembling the original source layout.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: No redundant code or dead stores are present in the decompiled output. The logic is concise despite the lack of compiler optimization.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Standard types like `int` and `void*` are recovered well, but some integers are abstracted to `undefined4` or `undefined8`, and `size_t` is sometimes represented as `ulong` rather than the specific type.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: N/A (No complex structs were defined in the source). The code relies primarily on primitives and pointers, which are handled correctly.
+
+**11. Type Safety:** Score: 8/10
+Justification: The code is type-safe with no dangerous or confusing casts observed. Pointer arithmetic is handled correctly.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: All explanatory comments regarding preprocessor behavior and macro logic are lost. The output contains only auto-generated warnings (e.g., "WARNING: Globals starting with '_' overlap...").
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Complex preprocessor idioms (token pasting `##`, stringizing `#`, macro recursion) are completely flattened into standard C operations. The decompiler shows the result (e.g., `x + 16`) rather than the pattern (`ADD_16(x)`), which is expected given the binary format but represents a significant loss of source-level semantic intent.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: Ghidra accurately flags potential issues like overlapping symbols and unreachable blocks, providing useful context where the binary behavior is unusual.
+
+**15. Assertion & Contract Recovery:** Score: 5/10
+Justification: No explicit contracts or assertions are recovered. The logic is presented "as-is" without inferred preconditions (e.g., buffer size requirements).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are resolved to their correct targets. Standard library calls like `printf` and `memcpy` are clearly identified.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are presented in a logical order (mostly address order, which correlates with source order here), and related test functions are grouped together.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code uses Ghidra-specific types (`undefined8`, `undefined4`) which would require a header file or manual replacement to compile with a standard compiler, though the logic itself is valid C.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.4/10
+
+**Critical Defects:**
+- Variable names are generic (`param_1`, `local_8`) despite debug symbols being available, obscuring the logic.
+- Macro constants are replaced with magic numbers (e.g., `0x401` instead of `MAX_SIZE`), removing semantic context.
+- Complex preprocessor idioms (token pasting, recursion) are invisible in the decompiled output, appearing only as simple arithmetic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly recovered all function names from the symbol table, making navigation and high-level understanding trivial.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)
+- The failure to recover local variable names from debug info significantly hampers low-level comprehension of the function logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve DWARF debug info parsing to recover local variable names and types for `-O0` builds.
+2. Implement heuristic analysis to identify magic numbers that likely correspond to common constants or bit-shifted values and annotate them.
+3. For flattened macro logic (e.g., `x + 16`), consider adding a comment if the operation looks like a constant offset, though recovering the original macro name is impossible from binary alone.

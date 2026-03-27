@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `param_1`, `param_2`, `iVar1`, `uVar1` throughout. For example, `cdecl_func(int param_1, int param_2)` should be `cdecl_func(int a, int b)` to match source. Local variables like `local_c` in varargs functions are also non-descriptive.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names closely match source - `cdecl_func`, `stdcall_func`, `call_cdecl`, `varargs_func` all correctly recovered. Minor issue: some internal helper functions have generic names but main test functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xf` (15), `0x32` (50), `0x2a` (42) appear without explanation. String literals are unreferenced like `&DAT_0001170a`. No named constants recovered from source like `MAX_SIZE` or meaningful values.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some `undefined4` types present but not excessive. No obvious debug instrumentation or register spilling artifacts cluttering the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops properly recovered as do-while constructs (e.g., `varargs_func`). Conditionals are clear with proper if-else structure. At -O0, control flow closely matches source patterns.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions properly separated with appropriate granularity. Each function handles its specific task - no obvious over-fragmentation or monoliths. Parameter lists are reasonable (though some too long due to struct expansion).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present but used appropriately. Some forward jumps in complex functions but manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. Loop unrolling is minimal (appropriate for -O0). Code is clean without redundant computations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed results - pointers correctly typed (`int*`, `char*`, `byte**`) but integers use generic `int` instead of `int32_t`. Some `undefined4` types for parameters. Function pointers use `code*` which is non-standard.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery. `func_struct_byval` expanded to 22 separate parameters instead of reconstructing `LargeStruct`. `SmallStruct` lost entirely - `func_struct_byptr` uses raw `int*` pointer arithmetic. No field names recovered.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally safe code with correct pointer usage. Some minor issues: `param_double_ptr` has awkward 4-parameter form due to ABI. No major buffer overflow risks or undefined behavior patterns observed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present except auto-generated header. No explanation of algorithm logic, parameter purposes, or return value meanings. Source had extensive comments (CALL-L1-01, PARAM-L2-06, etc.) completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C idioms recognized - varargs uses `va_list` pattern, function pointers properly typed as `code*`. However, no explicit naming or documentation of patterns like "varargs pattern" or "callback pattern".
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: External functions marked with `<EXTERNAL>` prefix (good). However, no flags for suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. Large struct expansion not flagged as anomalous.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Source had clear contracts (e.g., "requires: ptr != NULL") completely lost. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships clear within test functions. External dependencies marked with `<EXTERNAL>`. However, no documentation of which functions call which, or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - calling convention tests, parameter passing tests, return value tests all separated. Matches source file structure reasonably well.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code will not compile as-is due to `undefined4` types, unreferenced data symbols (`&DAT_...`), and missing external function declarations. Requires significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming uses generic `param_1`, `param_2`, `iVar1` instead of semantic names like `a`, `b`, `count`
+- Composite types completely lost - `LargeStruct` expanded to 22 parameters, `SmallStruct` reduced to raw pointer
+- No comments explaining algorithm logic, parameter purposes, or return value contracts
+- Magic numbers like `0xf`, `0x32`, `0x2a` appear without named constant equivalents
+- Type precision issues: `undefined4` types, generic `int` instead of specific types
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- At -O0, loops and conditionals closely match source patterns with proper do-while and if-else constructs
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Zero comments in decompiled output loses all source documentation explaining calling conventions, parameter semantics, and test expectations
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `param_1 + param_2` in `cdecl_func` suggests `a + b`
+2. Reconstruct composite types from parameter expansion patterns - 22 consecutive int parameters likely represents a large struct
+3. Add comments explaining recovered constructs - varargs pattern, callback functions, ABI-specific calling conventions

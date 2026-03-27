@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are generic (`a0`, `a1`, `v0`, `ptr`) and lack semantic context found in the source (e.g., `count`, `sum`, `args`). While `ptr` hints at a pointer, names like `v0` provide no information about their role in the calculation.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are recovered perfectly from the binary symbols (e.g., `cdecl_func`, `test_calling_conventions`, `varargs_func`), matching the original source exactly and providing clear semantic intent.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: String literals are replaced with raw memory addresses (e.g., `puts(0x11594)` instead of `puts("=== 测试基础调用约定 ===")`), and magic numbers like `4294967295` (representing -1) are used without explanation, severely obscuring the logic.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is polluted with compiler and lifter artifacts, specifically `armg_calculate_condition` calls which represent ARM condition codes, and verbose `__stack_chk_guard` checks that distract from the core logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is frequently interrupted by `armg_calculate_condition` calls acting as opaque predicates. Loops involving `va_list` (`varargs_func`) are represented as complex pointer arithmetic (`ptr + 1`) rather than idiomatic `va_arg` usage.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are recovered with correct granularity and boundaries. Helper functions like `callback_func` are correctly separated, and the main test functions (`test_calling_conventions`, etc.) are distinct.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but the insertion of pseudo-calls for condition checks and the manual pointer manipulation in varargs functions disrupt the linear flow, requiring mental jumps to understand the logic.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: There is significant redundancy in the form of `armg_calculate_condition` calls which essentially re-implement CPU flag checks in C code. While `call_cdecl` was optimized to `return 15` (good), the surrounding code is verbose.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are often degraded; `double` arguments in `func_mixed_args` are split into `unsigned int a2, a3` (register pairs) rather than a double type. `int` is frequently replaced with `unsigned int`, losing signedness information.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Large structures passed by value (e.g., `LargeStruct` in `func_struct_byval`) are not reconstructed; instead, the decompiler shows a flat list of integer registers (`a0` through `a3`), completely losing the 128-byte struct context.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies on unsafe casts to implement logic, such as `*((unsigned int **)&v0[0]) = &v2;` to simulate `va_list`. The splitting of `double` types into integer registers for processing is inherently type-unsafe in the representation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex logic, such as the `va_list` implementation or the floating-point emulation, is left unexplained.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms are missed. The `va_list` usage in `varargs_func` is not recognized; instead, it is decompiled to raw pointer arithmetic and casting. `printf` is shown as `__printf_chk` (a security variant), which is accurate but less idiomatic than the standard call.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the `armg_calculate_condition` calls and strange pointer arithmetic as standard C code without flagging them as lifter artifacts or potential issues, leading to confusion about whether this is valid source or generated noise.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement for `va_start` before `va_arg` is not indicated, nor is the non-NULL requirement for pointers checked in the source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Because function names were recovered accurately, cross-references (e.g., `call_cdecl` calling `cdecl_func`) are very clear and easy to trace, despite the poor variable naming within the functions.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are organized by memory address (typical for decompilers) rather than logical grouping, but since the source was a single file, this is acceptable. The inclusion of library functions like `__aeabi_dadd` mixed with user code reduces clarity.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile. It relies on non-existent functions like `armg_calculate_condition` and uses inline assembly/library constructs (`__aeabi_dadd`) that are not valid standalone C without specific headers and linker definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- String literals are replaced with raw memory addresses (e.g., `0x11594`), making output messages unreadable.
+- `va_list` variable argument logic is decompiled into unsafe pointer arithmetic (`ptr + 1`) rather than the standard `va_arg` idiom.
+- Large structures passed by value are flattened into individual integer registers, losing the composite type definition entirely.
+- The code is littered with `armg_calculate_condition` pseudo-calls, which obscure the actual control flow logic.
+- Double-precision floating point parameters are split into unsigned integers, breaking type safety and precision.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully recovered symbol names for all user-defined functions, making the high-level call graph easy to understand.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.25/10)
+- The lack of comments, failure to recognize standard idioms (like `va_list`), and absence of anomaly flags make understanding the *intent* of the code extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Resolve String Literals**: Map global data references back to their string content to replace addresses like `0x11594` with `"string"`.
+2. **Recognize Standard Idioms**: Implement specific pattern matching for `va_list`/`stdargs` to emit `va_arg` macros instead of raw pointer arithmetic.
+3. **Aggregate Register Arguments**: Detect when multiple consecutive registers represent a large struct passed by value and reconstruct a temporary struct type to improve readability.

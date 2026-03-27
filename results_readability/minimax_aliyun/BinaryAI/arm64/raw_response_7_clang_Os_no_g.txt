@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_fake_branch`
+
+The original source contains a function with fake/always-false branches (obfuscation technique OBF-L4-02), but the decompiled version is severely broken - returning `void` with no parameters or logic.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled `param_fake_branch` has no parameters at all (shown as `void`), completely losing the original `int x` parameter. Variables like `result`, `str` from the source are entirely absent. Generic names like `param_1` in other functions lack semantic meaning.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Function name `param_fake_branch` matches source, but the function signature is completely wrong - missing return type `int` and parameter `int x`. Other functions like `call_fake_branch` are correctly named but lack type precision.
+
+**3. Literal Clarity:** Score: 1/10  
+Justification: The magic number `0xDEADBEEF` from the source is completely absent. The string literal "test" and its usage in `strlen(str) < 0` are lost. The decompiled function contains no literals whatsoever.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: The main issue is not noise but critical information loss - the function body is empty. Some functions like `call_vectorized_loop` have complex array initialization that appears as raw data references, creating noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 1/10  
+Justification: `param_fake_branch` has no control flow at all - just `return;`. The original had two fake if-statements with constant conditions that should have been preserved. This is a complete structural failure, not an optimization artifact.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: While functions are separated, `param_fake_branch` is incorrectly decomposed - it's essentially an empty shell. The original logic is completely lost rather than transformed.
+
+**7. Code Linearization:** Score: 2/10  
+Justification: The decompiled function has trivial linear flow (just return), but this is misleading as it doesn't represent the original logic at all. The emptiness obscures what should be there.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious redundancy in the broken `param_fake_branch`. Other functions like `param_opaque_predicate` show some optimization artifacts but are reasonably clean.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 1/10  
+Justification: Critical type loss - `param_fake_branch` returns `void` instead of `int` and takes no parameters instead of `int x`. This is a fundamental type system failure, not just imprecision.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Not applicable to this specific function (no structs/unions). Other functions like `param_vectorized_loop` correctly handle pointer parameters to arrays.
+
+**11. Type Safety:** Score: 3/10  
+Justification: The void return type creates type safety issues - callers expecting `int` would get undefined behavior. The parameter mismatch also creates safety problems.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No comments in `param_fake_branch` itself. The decompiled code lacks any indication that this is an obfuscation function with fake branches. No explanation of what the function should do.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The fake branch idiom (always-false conditions) is completely lost. The original uses `x*x < 0` and `strlen(str) < 0` as opaque predicates - these patterns are not recognized.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that `param_fake_branch` is severely broken - it just shows as an empty function. No warning about the missing logic, parameters, or return type.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contracts or preconditions recovered. The original's expectation that `x` is any integer is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: `call_fake_branch` correctly calls `param_fake_branch(10)`, showing the relationship. However, the broken function signature breaks this contract.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped reasonably in the output, matching the source file structure. Related functions like the call wrappers are near their implementation.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: `param_fake_branch` with `void` return type would cause compilation errors when called expecting `int` return value. The function signature mismatch breaks compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.8/10
+
+**Critical Defects:**
+- `param_fake_branch` returns `void` instead of `int`, completely losing the return type
+- Function takes no parameters instead of `int x` - all argument information lost
+- Function body is empty - the fake branch logic (`if (x*x < 0)` and `if (strlen(str) < 0)`) is completely absent
+- Magic number `0xDEADBEEF` from the source is missing
+- No anomaly indication that the function is severely decompiled incorrectly
+
+**Best Quality Aspect:** Function Naming Quality (scored 5/10)  
+- The function name `param_fake_branch` matches the source exactly, providing some semantic anchor
+
+**Most Needs Improvement:** Type System Fidelity (scored 3/10)  
+- The return type and parameter type are completely wrong, representing a fundamental failure to recover the function signature
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover function signatures accurately** - The parameter list and return type of `param_fake_branch` are completely wrong; implement better signature recovery for arm64 calling conventions
+2. **Detect and flag broken functions** - Add anomaly detection when a function body appears empty or suspiciously simple compared to expected complexity
+3. **Preserve constant conditions** - The fake branch conditions (`x*x < 0`, `strlen(str) < 0`) should be preserved even if the branches are dead code; consider marking them as "unreachable" rather than removing

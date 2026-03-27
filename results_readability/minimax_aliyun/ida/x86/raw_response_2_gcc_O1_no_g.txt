@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use cryptic names (`v2`, `v3`, `v4`). The original source used meaningful names like `x`, `sum`, `c`, `str`, `arr` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core test functions retain their original names: `double_value`, `process_int`, `process_char`, `array_1d_stack`, etc. Only some internal helper functions have generic names like `sub_1030`. The primary API is well-preserved.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `65` and `32` in `process_char` (for ASCII 'A' and case conversion) are unexplained. The value `0x1A` for range checking uppercase letters lacks comment. However, test function print statements show expected values, providing some context.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts - no redundant casts, no debug instrumentation visible. Stack canary checks (`__readgsdword`) are expected at -O1. Clean decompilation output overall.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops are properly recognized as do-while constructs. Control flow in `array_2d_stack` uses pointer arithmetic (`v1 += 11`) which reflects the 10x10 matrix layout with padding. Generally natural, though some optimization artifacts exist.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-50 lines typical). No 500-line monoliths. The decomposition matches the original source's function boundaries well. Parameter counts are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in functions like `array_1d_stack` and `linked_list` are used appropriately. Some complex nested loops in `array_3d` but still traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop unrolling is minimal. Some common subexpression patterns but nothing severe. The code is reasonably clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Extensive use of generic `_DWORD` (32-bit unsigned) instead of specific types like `int`, `short`, `char`. The original had clear type distinctions (short, int, long, float, double, long double) but these are mostly lost. `process_short` correctly uses `__int16`, but most others use generic types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery - all are `_DWORD*` with array indexing (e.g., `a1[0]`, `a1[1]`, `a1[2]` for Point3D). Unions not recovered - `union_type` uses raw `char*` pointer arithmetic. Nested structures like `Rect`, `Widget` are flattened to raw offsets. Bitfields handled with shifts but not named.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (e.g., `(float *)a1` in `union_type`). Pointer arithmetic is explicit but potentially error-prone. Function pointer types are somewhat generic (`int (__cdecl *)(int, _DWORD *)`). No severe violations but room for improvement.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments in the decompiled output whatsoever. The original source had extensive comments explaining each test case (e.g., "DT-L1-01: 字符类型", "测试: 大小写转换"). This critical context is completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like linked list traversal are recognizable (`while (v1)` with `v1 = v1[1]`), but not explicitly named or documented. The original source's data structure patterns (binary tree, graph, doubly-linked list) are not identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The output shows "FAILED to decompile" for 6 functions including `main`, which is good. However, there's no flagging of suspicious patterns like the intentional OOB access in `array_oob` (`i <= n` instead of `i < n`).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original had clear contracts (e.g., "测试: 数组大小在运行时确定" for VLA). This semantic information is completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are clear (e.g., `ptr_func_simple(double_value, 5)`). However, relationships like "complex_callback is used by ptr_func_complex" or "Node is self-referential structure" are not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - data type functions together, array functions together, pointer functions together. Matches the original source's organization reasonably well.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The metadata indicates "Compilation Result: Yes". External dependencies are standard library functions (`puts`, `__printf_chk`). Code appears standalone-compilable with minimal patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 4 + 8) / 4 = 5.5
+L2_avg = (7 + 8 + 7 + 7) / 4 = 7.25
+L3_avg = (4 + 2 + 6) / 3 = 4.0
+L4_avg = (1 + 4 + 3 + 2) / 4 = 2.5
+L5_avg = (4 + 7 + 8) / 3 = 6.33
+
+Overall = (5.5 × 0.30) + (7.25 × 0.25) + (4.0 × 0.20) + 
+          (2.5 × 0.15) + (6.33 × 0.10)
+Overall = 1.65 + 1.8125 + 0.8 + 0.375 + 0.633 = 5.27/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic `a1`, `a2`, `a3` and locals use `v1`, `v2`, `v3` - completely losing semantic meaning from source
+- **No struct recovery**: All composite types flattened to `_DWORD*` with array indexing, losing field names like `x`, `y`, `z`, `next`, `data`
+- **No comments**: Zero documentation explaining test cases, algorithms, or intent
+- **Type precision loss**: Original had 11 distinct data types (char, short, int, long, long long, float, double, long double, bool, const, volatile) - most reduced to generic `_DWORD`
+- **No pattern recognition**: Data structure patterns (linked list, binary tree, graph, bitfields) not identified or named
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (L2)**: Scored 8/10 - Functions are appropriately sized and match original source boundaries. Core API functions retain correct names and parameter counts.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality (L4)**: Scored 1/10 - Zero comments in output. The original had extensive Chinese comments explaining each test scenario, which provided critical context for understanding the code's purpose.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When a parameter is used as array index, name it `index` or `i`; when used in arithmetic, use descriptive names based on the operation (e.g., `offset` for pointer arithmetic)
+2. **Recover struct layouts with field names**: Use offset analysis and access patterns to reconstruct named fields rather than raw array indexing
+3. **Add semantic comments for test functions**: When decompiling test/benchmark code, include the test description or expected behavior as comments

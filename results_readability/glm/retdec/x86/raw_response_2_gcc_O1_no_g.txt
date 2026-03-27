@@ -1,0 +1,105 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `a1`, `v1`, `v2`, and `result`. Semantic names like `arr`, `n`, or `sum` from the source are completely lost, making it difficult to understand variable purposes without tracing usage.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the original source (e.g., `process_char`, `array_1d_stack`, `test_data_types_l1`), likely because debug symbols were present in the binary.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are replaced by pointer arithmetic offsets (e.g., `(char *)(v1 + 0x1ca7)`), making text content unreadable. Character constants like `'A'` are converted to integers (`65`), and magic numbers are not replaced with named constants.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with compiler/runtime artifacts such as `__x86_get_pc_thunk_bx`, `__readgsdword(20)` (stack canary checks), and `__asm_hlt()`, which significantly distract from the core logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally natural with recognizable `while` and `if` structures. However, `switch` statements are sometimes decompiled into chains of `if-else` (e.g., `enum_switch`), and some loop conditions are expressed as complex comparisons (e.g., `array_complex_index`).
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the original source perfectly. There is no inlining or outlining of functions, maintaining the original granularity and cohesion (e.g., `test_...` functions remain separate).
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with minimal forward jumps. Loops are constructed clearly, and the flow is easy to follow despite the variable naming issues.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: There is some redundancy, such as repeated `__x86_get_pc_thunk` calls and variable shuffling (e.g., `v2 = v1; v1 = v2 + ...`), but the core logic is not obscured by dead code or excessive unrolling.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Major type failures occur. Floating-point operations (`process_float`, `process_double`) are decompiled as pointer arithmetic returning offsets. 64-bit integers (`long long`) are split into two 32-bit arguments (`a1`, `a2`), losing the semantic type. `long` is treated as 32-bit.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: No structure definitions are recovered. All struct accesses are flattened to raw pointer arithmetic (e.g., `*(int32_t *)(a1 + 4)`), and bitfields are manually extracted using division/modulo rather than being mapped to struct fields.
+
+**11. Type Safety:** Score: 4/10
+Justification: The lack of struct recovery leads to numerous unsafe casts (e.g., `(int32_t *)`, `(char *)`) and manual pointer arithmetic. The splitting of 64-bit integers into 32-bit parts creates type-unsafe logic.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no semantic comments explaining the logic. Only auto-generated headers (e.g., "Address range", "Detected compiler") are present, providing no insight into the code's function.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Basic loop idioms are recognized, but complex idioms are flattened. For example, the bitfield logic in `struct_bitfields` is expressed as complex math (`v1 / 2 % 4`) rather than bit-field access, and the range check in `process_char` is optimized into a subtraction comparison.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag the clearly incorrect floating-point logic or the split 64-bit integers as anomalies. It presents the code confidently despite the semantic errors.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement for non-NULL pointers in `ptr_single` is not noted.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are direct and clear, though standard library functions like `printf` are mapped to `__printf_chk`. The relationships between functions are preserved, even if the data types connecting them are degraded.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are ordered by address, which roughly preserves the original source order. However, there is no logical grouping or separation beyond this linear ordering.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code includes non-standard intrinsics (`__asm_...`) and relies on specific compiler extensions (`__readgsdword`). The incorrect floating-point logic would also cause compilation or runtime errors if the types were strictly checked.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 4 + 4) / 4 = 5.25
+L2_avg = (7 + 9 + 8 + 6) / 4 = 7.50
+L3_avg = (3 + 2 + 4) / 3 = 3.00
+L4_avg = (1 + 5 + 2 + 1) / 4 = 2.25
+L5_avg = (7 + 6 + 5) / 3 = 6.00
+
+Overall = (5.25 × 0.30) + (7.50 × 0.25) + (3.00 × 0.20) + 
+          (2.25 × 0.15) + (6.00 × 0.10)
+Overall = 1.575 + 1.875 + 0.600 + 0.3375 + 0.600
+Overall = 4.9875 ≈ 5.0/10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.0/10
+
+### Critical Defects (Bullet List)
+- **Floating Point Logic Failure**: Functions `process_float` and `process_double` return pointer arithmetic offsets (e.g., `__x86_get_pc_thunk_ax(...) + 0x4d0e`) instead of the actual floating-point calculation results.
+- **Loss of Composite Types**: All structures (e.g., `Point3D`, `Flags`) are lost; accesses are replaced by raw pointer arithmetic (e.g., `*(int32_t *)(a1 + 4)`), destroying semantic context.
+- **String Literal Obfuscation**: String constants are replaced with pointer arithmetic offsets (e.g., `(char *)(v1 + 0x1ca7)`), making the text content completely unreadable.
+- **64-bit Integer Splitting**: The `long long` type in `process_ll` is incorrectly split into two 32-bit arguments (`a1`, `a2`), and the logic `a1 * a1` fails to represent the 64-bit square operation.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (10/10)**
+- **Why?** The decompiler successfully preserved all original function names from the debug symbols, making the high-level purpose of each code block immediately identifiable.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Composite Type Recovery (2/10)**
+- **Why?** The complete failure to recover structure definitions forces the reader to interpret raw pointer offsets and manual bit manipulations, which is the single biggest barrier to understanding the data manipulation logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Implement Floating-Point Analysis**: Fix the lifting of x87/SSE floating-point operations to recover actual arithmetic expressions instead of falling back to memory/stack pointer offsets.
+2.  **Structure Type Recovery**: Develop or enhance heuristics to aggregate pointer offsets into structure definitions, identifying field boundaries and types to reconstruct `struct` and `union` types.
+3.  **String Literal Recovery**: Map read-only data section references back to their actual string values instead of emitting pointer arithmetic offsets, significantly improving lexical clarity.

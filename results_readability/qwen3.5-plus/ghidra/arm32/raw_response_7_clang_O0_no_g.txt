@@ -1,0 +1,105 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `local_10`, `iVar1`, `local_1c` with no semantic meaning. Original source had meaningful names like `result`, `x`, `str`, `encrypted`, `decrypted` that are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names preserved from debug symbols (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`). Names accurately reflect functionality and match original source exactly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x7fffffff`, `-0x21524111`, `0x5a` appear without explanation. The encryption key `0x5a` and dead code constant `0xDEADBEEF` (shown as `-0x21524111`) lack context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "WARNING: Removing unreachable block" messages clutter output. Runtime functions (`__do_global_dtors_aux`, `register_tm_clones`) and excessive `undefined4` stack variables add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control structures recognizable (if/else, while, for), but `param_fake_branch` has unreachable block warning indicating dead code not eliminated. Loop structures generally preserved well at -O0.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity appropriate; original structure preserved. However, wrapper functions like `call_fake_branch` just call another function and return without value, losing semantic purpose.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with natural flow. Some functions like `__divsi3` have complex branching but this reflects algorithmic complexity, not decompilation failure.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `__divsi3` function extremely verbose with 35+ boolean variables (`bVar5` through `bVar35`). Excessive `undefined4` local declarations for simple return values throughout.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Many types degraded to `undefined4`, `undefined1`, `byte *`. Original `int`, `char *`, `size_t` lost. `param_division_by_zero` takes `undefined4` instead of `int`, losing type semantics.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Bitfield struct in `param_implementation_defined` completely lost in decompilation (returns constant `0x2c`). No struct/union recovery visible; all composite types flattened to primitives.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts visible: `(char *)param_2`, `(int *)__ptr`, `(__sighandler_t)0x0`. Pointer arithmetic explicit but not type-safe. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated warnings present ("WARNING: Subroutine does not return"). Original source had extensive documentation explaining obfuscation techniques, all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String decryption XOR pattern not recognized. No design pattern or algorithm identification present.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present: unreachable blocks, "Subroutine does not return" for longjmp, "Could not recover jumptable" in __divsi3. Better than silent failures but inconsistent coverage.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Signal handler contracts, NULL pointer expectations, and division-by-zero guards not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`div_zero_caught`, `jmp_buffer`, `segv_caught`) referenced without explanation of purpose or relationships.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Original source had clear sections (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions (printf, malloc, signal, strlen) without declarations. Type mismatches (`undefined4` vs `int`) would prevent clean compilation without significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+9+5+5)/4 = 5.50
+L2 Average: (6+7+7+4)/4 = 6.00
+L3 Average: (4+3+5)/3 = 4.00
+L4 Average: (2+3+6+2)/4 = 3.25
+L5 Average: (5+4+4)/3 = 4.33
+
+Overall = (5.50 × 0.30) + (6.00 × 0.25) + (4.00 × 0.20) + 
+          (3.25 × 0.15) + (4.33 × 0.10)
+        = 1.65 + 1.50 + 0.80 + 0.4875 + 0.433
+        = 4.87/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- Variable names completely generic (`param_1`, `local_10`, `iVar1`) losing all semantic meaning from original source
+- Type system severely degraded with `undefined4` replacing specific types like `int`, `size_t`
+- Composite types (structs, bitfields) completely lost in decompilation
+- No semantic comments recovered despite extensive original documentation
+- `__divsi3` function excessively verbose with 35+ boolean variables obscuring logic
+- Function return types lost (many `void` that should return `int`, e.g., `call_fake_branch`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Debug symbols preserved original function names perfectly, making function identification trivial despite other readability issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero semantic documentation recovered; only auto-generated warnings present, making code intent completely opaque compared to well-documented original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Variable name inference from usage patterns** - Analyze how variables are used (e.g., `local_10` stores input then returned) to suggest semantic names like `result` or `input_value`
+2. **Type recovery enhancement** - Leverage debug symbols (-g flag) more aggressively to recover original types instead of defaulting to `undefined4`
+3. **Comment extraction from debug info** - Extract and preserve source code comments from DWARF debug sections when available, especially for obfuscation test cases

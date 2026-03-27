@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `matrix` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names recovered (`sequential_ops`, `single_if`, `nested_if_2`), but many wrapper functions use address-based names (`sub_401443`, `sub_401030`). Test functions properly named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (unsigned -1) appears frequently without explanation. Constants like `100`, `1000` are contextually clear but not named. No enum/constant recovery.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.*`, `__stack_chk_fail_local`, `_ccall` wrappers. Redundant wrapper functions (`sub_401443` just calls `single_if`) pollute output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if-else recovered well (`nested_if_2`, `if_else`), but loops broken (`loop_while` has uninitialized `i != v3` condition). Switch statements degraded to pointer arithmetic. Goto used for function pointers.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but excessive wrapper functions created. Test functions bloated with inline code. No inappropriate inlining detected.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but computed gotos (`goto a0`, `goto v4`) in `call_func_ptr` and `call_func_ptr_array` disrupt flow. Forward jumps into switch tables.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions contain repeated printf patterns. Some loop unrolling artifacts visible. No dead code elimination performed on compiler stubs.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical signed/unsigned errors: `if (a0 < 0)` on `unsigned int a0` is always false. Original `int` parameters degraded to `unsigned int`. Function pointer types lost entirely.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered as generic `struct_0` with `field_0`, `padding_0` names. No semantic field names. GOT and jump table structures present but meaningless.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: `goto a0` (computed jump to variable), pointer arithmetic on `unsigned int`, `_ccall` with unresolved signatures. Stack canary checks add noise without safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only auto-generated function headers. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns (loops, conditionals) recognized. State machine partially recovered in `state_machine`. Duff's device not recovered (became `goto &GOT[...]`). No pattern naming.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly flagged: `[D] Unsupported jumpkind Ijk_SigTRAP`. `_ccall` indicates unresolved calls. No systematic documentation of decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. Error conditions not documented. Original test validation comments lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables referenced (`g_403008`, `g_403110`) without context. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. Test functions mixed with implementation. No logical grouping by control flow level (L1/L2/L3). No header structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`_GLOBAL_OFFSET_TABLE_`, `jump_buffer`) require stubs. `_ccall` is non-standard. Would need significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50
+Level 2 (Structural):  (5+6+6+6)/4 = 5.75
+Level 3 (Type):        (4+3+3)/3   = 3.33
+Level 4 (Semantic):    (2+4+4+2)/4 = 3.00
+Level 5 (Contextual):  (5+4+4)/3   = 4.33
+
+Overall = (4.50×0.30) + (5.75×0.25) + (3.33×0.20) + (3.00×0.15) + (4.33×0.10)
+        = 1.35 + 1.44 + 0.67 + 0.45 + 0.43
+        = 4.34/10
+```
+
+**Overall Readability Score: 4.3/10**
+
+### Critical Defects:
+- **Architecture mismatch**: Original ARM64 compiled to x86 decompilation output
+- **Type safety violations**: `unsigned int` with signed comparisons (`a0 < 0` always false)
+- **Broken loop reconstruction**: `loop_while` has uninitialized variables `i != v3`
+- **No semantic comments**: Zero documentation for any non-trivial logic
+- **Computed goto abuse**: `goto a0`, `goto v4` instead of proper function pointer calls
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names like `sequential_ops`, `nested_if_2`, `test_control_flow_l1` were successfully recovered from debug symbols
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any explanatory comments, algorithm documentation, or decompilation confidence indicators
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover signed/unsigned types from debug symbols** - The `-g` flag should preserve original type information; `int` should not become `unsigned int`
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., `// DECOMPILER_UNCERTAIN: loop condition`)
+3. **Eliminate wrapper function noise** - Functions like `sub_401443` that only call another function should be inlined or removed

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `uVar1`, `iVar1`, `local_10`, `local_c` with no semantic meaning. Original source had meaningful names like `size`, `x`, `y`, `counter`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved from source (`param_macro_constants`, `call_macro_constants`, `param_asm_clobber`, etc.). Names accurately reflect functionality and match original source exactly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers everywhere without explanation: `0x401` (MAX_SIZE+1), `0x200` (MAX_SIZE/2), `0x40` (BUFFER_COUNT*4), `0xdef0` (default platform constant). Original macro names like `MAX_SIZE`, `BUFFER_COUNT` are completely lost.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Some compiler artifacts present (unreachable block warnings, stack canary checks with `__stack_chk_fail`). Generally clean but includes Ghidra-specific warnings that clutter output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is well-recovered with proper if-else and for-loop constructs. Assembly loops in `param_asm_clobber` and `param_asm_simd` correctly decompiled to C for-loops. No excessive gotos.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity matches original source perfectly. Each function maintains single responsibility. No over-fragmentation or monolithic functions observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads naturally top-to-bottom. Early returns used appropriately. No disruptive forward jumps or computed goto patterns interrupting flow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or duplicate expressions observed. Compiler constant folding (e.g., `BUFFER_COUNT * 4` → `0x40`) is clean without redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Significant type degradation: `undefined4` used instead of `int`, `size_t` sometimes preserved but inconsistent. Original `int32_t`, `uint64_t` precision lost. Pointer types generally correct but generic.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in this code sample. Arrays handled correctly (e.g., `local_38[4]` for string). No union/struct recovery needed but stack arrays use generic naming (`local_38`, `acStack_34`).
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe patterns: `undefined4` to `int` implicit conversions, pointer arithmetic visible in array access (`param_1 + local_c * 4`). No major type safety violations but lacks const-correctness.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. Original source had extensive documentation explaining macro behavior, preprocessing effects, and expected values. Only compiler warnings present ("WARNING: Removing unreachable block").
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition. Macro expansion patterns (SQUARE, MAX, ADD_16 recursion) not documented. Assembly-to-C translation patterns not explained. Stringize/token-paste semantics completely lost.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings about unreachable blocks removed, but no explanation of WHY. Stack canary checks noted but not explained. Conditional compilation branches silently collapsed without indication.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_1` range expectations). No postconditions inferred. Error conditions (mmap failure returns) not documented. Original comments about expected values completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships clear through preserved names. Global variable `global_var` visible. String references use opaque labels (`DAT_000124c0`) instead of content.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions appear in logical order matching source. Test functions grouped (`test_preprocessing_features`, `test_asm_features`). `main()` at end as expected. Good structural preservation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears mostly compilable but has issues: string data references (`DAT_000124c0`) need resolution, `__sync_fetch_and_add_4` is decompiler-generated stub. External dependencies (printf, mmap, sysconf) visible but not declared.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+5+7)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (8+9+8+9)/4 = 8.50 × 0.25 = 2.125
+Level 3 (Type):        (6+7+7)/3   = 6.67 × 0.20 = 1.333
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (7+8+6)/3   = 7.00 × 0.10 = 0.700
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.56/10
+```
+
+**Overall Readability Score:** 6.6/10
+
+### Critical Defects:
+- **Zero semantic comments**: Original 200+ lines of documentation explaining macro behavior, preprocessing effects, and expected values completely lost
+- **Generic variable names**: `param_1`, `uVar1`, `local_10` obscure parameter purpose (e.g., `param_1` in `param_macro_constants` should be `size`)
+- **Magic numbers without context**: `0x401`, `0x200`, `0x40`, `0xdef0` replace named constants like `MAX_SIZE`, `BUFFER_COUNT`, `PLATFORM` default
+- **Conditional compilation silently collapsed**: `#ifdef DEBUG_MODE` and `#if PLATFORM` branches removed without indication of what was excluded
+- **Macro semantics unrecoverable**: STRINGIZE, token paste (##), and recursive macro expansion patterns not documented
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from source, maintaining semantic clarity and call graph readability
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation explaining macro expansion, preprocessing behavior, and original developer intent
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics from constant patterns**: Detect folded constants (0x400=1024, 0x40=64) and suggest original macro names based on usage context
+2. **Preserve preprocessing metadata**: When debug symbols available, extract and embed original macro definitions as comments in decompiled output
+3. **Infer variable names from function context**: Use function name + parameter position to suggest names (e.g., `param_1` in `param_macro_constants` → `size`)

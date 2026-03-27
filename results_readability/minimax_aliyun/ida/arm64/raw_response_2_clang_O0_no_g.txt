@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Parameters use generic names like `a1`, `a2`, `a3` instead of meaningful names like `x`, `c`, `p`. Local variables in test functions use `v0`, `v1`, `v2` etc. Only loop variables like `i`, `j`, `k` are preserved. This is a significant degradation from source where variables had clear purposes.
+
+### 2. Function Naming Quality
+**Score: 10/10**
+Justification: Every function name perfectly matches the original source: `process_char`, `process_short`, `array_1d_stack`, `ptr_double`, `struct_nested`, `linked_list`, `binary_tree_sum`, etc. The decompiler preserved all 40+ function names exactly.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Magic numbers like `0x41` (uppercase 'A'), `0x5A` (uppercase 'Z'), `32` (ASCII case offset) appear without explanation. However, loop bounds like `10`, `5` are contextually clear. No named constants recovered from source comments.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: Clean decompilation with minimal compiler artifacts. Some unnecessary casts like `(unsigned __int8)(a1 + 32)` where source used implicit char arithmetic, but no debug instrumentation or frame pointer manipulation clutter.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 9/10**
+Justification: Natural loop constructs (`for`, `while`) match source exactly. The `enum_switch` function properly recovers the switch statement. At -O0, control flow should be nearly identical to source, and it is.
+
+### 6. Function Decomposition
+**Score: 9/10**
+Justification: Each function maintains appropriate granularity matching source. Test functions properly call sub-functions. No inlining artifacts (expected at -O0). Parameter counts preserved correctly.
+
+### 7. Code Linearization
+**Score: 9/10**
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately (e.g., `array_complex_index`). No forward jumps into loops. Deep nesting avoided.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No dead code or obvious redundancy. Loop unrolling not present (expected at -O0). Some repeated expressions in bitfield extraction but acceptable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 8/10**
+Justification: Integer types accurate (`int`, `__int16`, `__int64`). Pointers correctly typed (`_DWORD *`, `_QWORD *`). `bool` return type used for `process_bool`. Float/double types preserved. Minor: some `unsigned int` casts where `int` would suffice.
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+Justification: Struct fields accessed via array indexing (`a1[1]`, `a1[2]`) which is readable. Union type handling shows correct member access patterns. Bitfield extraction partially recovered with manual bit manipulation. Nested structures use offset calculations. No field names recovered.
+
+### 11. Type Safety
+**Score: 8/10**
+Justification: Generally type-safe code. Appropriate casts for void pointer arithmetic. Function pointer types use `__int64` but with correct calling convention. Minor: `ptr_void` uses `unsigned __int8*` for char access which is correct.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: Only the header comment identifying IDA Pro and binary path. No algorithm explanations, no decompilation confidence indicators, no API contracts. Source code had extensive comments (830 LOC) completely lost.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+Justification: No explicit pattern naming. However, the code structure implicitly shows patterns: linked list traversal (`while (a1)`), binary tree recursion, array indexing patterns. But these aren't named or highlighted.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No anomaly flags. The "FAILED to decompile" messages for library functions appear at the end but not inline. No warnings about indirect calls or unusual stack layouts.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants documented. Source had no explicit contracts but the decompiler could infer some (e.g., "requires: n > 0" for array functions).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function call relationships visible through direct calls in test functions. Callback relationships (e.g., `ptr_func_simple` calling `double_value`) preserved. But no explicit documentation of who calls whom.
+
+### 17. Module Organization
+**Score: 8/10**
+Justification: Functions logically grouped by type (data types, arrays, pointers, composites). Static functions properly scoped. Matches source organization closely.
+
+### 18. Build System Compatibility
+**Score: 9/10**
+Justification: Code compiles successfully (per metadata "Compilation Result: Yes"). Standard library dependencies (`printf`) are implicit. No compiler-specific hacks. Minor: needs standard library linkage.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 5 + 8) / 4 = 6.5
+L2_avg = (9 + 9 + 9 + 8) / 4 = 8.75
+L3_avg = (8 + 7 + 8) / 3 = 7.67
+L4_avg = (2 + 3 + 2 + 2) / 4 = 2.25
+L5_avg = (6 + 8 + 9) / 3 = 7.67
+
+Overall = (6.5 × 0.30) + (8.75 × 0.25) + (7.67 × 0.20) + 
+          (2.25 × 0.15) + (7.67 × 0.10)
+        = 1.95 + 2.1875 + 1.534 + 0.3375 + 0.767
+        = 6.776 ≈ 6.8/10
+```
+
+**Overall Readability Score:** 6.8/10
+
+### Critical Defects
+- **Variable naming**: Parameters `a1`, `a2`, `a3` and locals `v0`, `v1`, `v2` are generic; original names like `x`, `c`, `p`, `sum` lost
+- **No comments**: Source had 830 LOC of explanatory comments completely lost; decompiled code has only header
+- **No pattern recognition**: Linked lists, binary trees, state machines not identified or highlighted
+- **No anomaly indication**: Indirect calls, potential issues not flagged
+- **No contract recovery**: Preconditions/postconditions not inferred
+
+### Best Quality Aspect: Function Naming (10/10)
+Every function name matches the original source exactly, from simple functions like `double_value` to complex ones like `graph_traverse`. This is exceptional recovery.
+
+### Most Needs Improvement: Semantic Transparency (2.25/10)
+Comments, pattern recognition, anomaly indication, and contract recovery are nearly absent. The decompiler produces syntactically correct code but provides no semantic context.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns**: `a1` used as array index → `index`; `a1` used in arithmetic → infer from operation (e.g., `x * 2` → `input_value`)
+2. **Recover comments from debug symbols**: Source compiled with `-g`; extract DWARF info to recover variable names and comments
+3. **Add semantic annotations**: Flag common patterns (linked list traversal, binary tree recursion) and add inline comments explaining algorithm structure

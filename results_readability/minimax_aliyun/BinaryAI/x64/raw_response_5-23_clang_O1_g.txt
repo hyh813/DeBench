@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic auto-generated names like `param_1`, `param_2`, `iVar1`, `uVar2`, `puVar4`, `lVar3`. The original source had meaningful names like `size`, `x`, `y`, `arr`, `n`, `counter`, `increment`. This is the worst-scoring dimension.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (e.g., `param_macro_constants`, `call_macro_functions`, `param_asm_basic`). Only internal functions like `FUN_00101020` are generic. The test functions are well-preserved.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x200`, `0x40`, `0x400`, `0xdef0`, `0xdf22` appear without explanation. The original had named constants (MAX_SIZE=1024, BUFFER_COUNT=16) that are lost. Only `0x1e` for _SC_PAGESIZE is somewhat inferable.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No redundant casts, dead code, or debug instrumentation. The decompilation is clean without excessive Ghidra-specific artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow closely matches the original source. Loops use `for` constructs naturally, conditionals are straightforward. At -O0, the structure should be nearly identical to source, and it is.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and match the original decomposition. Each test function (`param_*`, `call_*`) is separate. No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal jumps. Early returns are used appropriately. No forward jumps into loop bodies or excessive nesting.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Loop unrolling in `call_asm_clobber` is a legitimate -O0 artifact but doesn't obscure logic significantly.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results - `int` is used correctly, but `uint` appears for `unsigned int`, `ulong` for `unsigned long`. The original used `size_t` from sysconf but it's represented as `long`. Some type precision is lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery. The original had arrays like `int arr[]` but decompilation uses pointer arithmetic (`param_1 + uVar2 * 4`). The SIMD code uses `undefined (*param_3) [16]` which is awkward.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally safe code with few unsafe casts. Pointer arithmetic is used correctly for array access. Minor issues like `undefined *` types but no severe safety violations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No meaningful comments explaining algorithm intent. The original had extensive comments about preprocessing behavior and inline assembly semantics. Decompiled code has none of this context.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. The inline assembly blocks are replaced with C code but not labeled as such. The macro expansion behavior is not documented. The self-modifying code pattern in `param_dynamic_code` is not flagged.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code. The dynamic code generation in `param_dynamic_code` writes raw bytes to memory and executes them - this should be flagged as anomalous. The indirect function call `(*(code *)__addr)(param_1)` has no warning.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No pre/postcondition recovery. The original had no explicit assertions but the semantics (e.g., "returns x+5", "mmap with PROT_READ|WRITE|EXEC") are not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are somewhat visible but not documented. It's unclear which functions call which, and the relationship between `call_*` and `param_*` functions is not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions first, then asm functions, then test functions. Matches the original source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The metadata states "Compilation Result: Yes" - the code compiles. External functions (puts, printf, mmap, etc.) are properly declared. Good standalone compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming is nearly unusable - `param_1`, `param_2`, `iVar1`, `uVar2` provide no semantic meaning
+- No comments explaining preprocessing behavior, inline assembly, or macro expansion
+- Magic numbers like `0x40`, `0x200`, `0xdef0` lack explanation (original had MAX_SIZE, BUFFER_COUNT)
+- No struct recovery - all arrays accessed via pointer arithmetic
+- No anomaly flagging for self-modifying code and indirect function calls
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Most function names match the original source exactly, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Nearly all variables use generic auto-generated names that completely obscure their semantic purpose. This is the primary readability barrier.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1 > 0x400` suggests `size` or `max_size`; `param_1 * param_1` suggests `square` or `x_squared`)
+2. **Recover macro constants**: Detect magic numbers that appear in multiple locations or match common constant patterns (e.g., 0x400=1024, 0x20=32)
+3. **Add semantic annotations**: Flag inline assembly replacement, self-modifying code, and other low-level patterns with explanatory comments

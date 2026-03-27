@@ -1,0 +1,145 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: All local variables use generic register-derived names (v0, v1, v2, v3, v4, v5, v6, v7, v8, v9) with no semantic meaning. Parameters are named a0, a1, a2 instead of meaningful names like `a`, `b`, `c` from source. For example, in `sequential_ops`, the source uses `temp1`, `temp2`, `temp3` but decompiled version has no local variables at all - the computation is inlined, losing variable semantics entirely.
+
+### 2. Function Naming Quality
+**Score: 6/10**
+
+Justification: Core test functions correctly match source names (test_control_flow_l1, test_control_flow_l2, test_control_flow_l3, main). Most algorithmic functions are properly named (sequential_ops, single_if, if_else, recursion_factorial, double_value). However, many infrastructure functions have cryptic names like sub_400954, sub_400a30, _init, $x, frame_dummy, register_tm_clones. The mixed result reflects good recovery for user-defined functions but poor handling of compiler-generated code.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Multiple unexplained magic numbers throughout. The value 4294967295 (0xFFFFFFFF) appears frequently representing -1 in unsigned arithmetic but has no explanation. The division constant 1717986919 used in loop_while/loop_dowhile is completely opaque. Array initialization values like 85899345930, 171798691870 in loop_break are meaningless. Some constants like 100 (timeout), 10 (array size) are self-evident but most lack clarity.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+Justification: Relatively clean output with minimal compiler artifacts. Stack canary checks (__stack_chk_guard, __stack_chk_fail) are appropriately shown. Some redundant type casts present (e.g., `(unsigned int)v0` repeated). No debug instrumentation or frame pointer manipulation clutter. The code is mostly readable without excessive noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Justification: Basic if/else structures are correctly recovered, but switch statements are poorly handled. In switch_small and switch_large, the decompiler uses arm64g_calculate_condition() to simulate case matching instead of proper switch syntax, making code awkward. Loop constructs use do-while with goto instead of for/while idioms. For example, loop_for_fixed uses a do-while with manual counter management rather than a for loop. At -O0, this level of restructuring is excessive.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Functions maintain appropriate granularity - none are excessively large. Core algorithmic functions (20-50 lines) are well-contained. Test functions call sub-functions appropriately. No obvious inlining of small functions or over-fragmentation observed. Parameter counts match original signatures. Minor issue: some static helper functions could be better organized.
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Justification: Generally reads top-to-bottom with minimal forward jumps. Early returns present in many functions (if_else, nested_if_2). Some goto usage in loop constructs disrupts flow slightly. Deep nesting in nested_if_deep (5 levels) is preserved but could be flattened. The code is mostly followable but has minor interruptions.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: No dead code observed. Loop unrolling in duffs_device is present but the structure is recognizable. Some common subexpression patterns but nothing severe. The code is reasonably clean with acceptable optimization artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Types are present but imprecise. Uses generic unsigned int/unsigned long instead of fixed-width types (int32_t, uint64_t). Function parameters use unsigned int consistently but lose signed semantics from source. For example, sequential_ops should take int but uses unsigned int. Function pointer types are wrong - call_func_ptr takes unsigned long long* instead of proper function pointer signature. Const correctness not preserved.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+
+Justification: No struct/union reconstruction. Arrays like the 3x4 matrix in loop_multi_exit are represented as raw pointer arithmetic with embedded constants (316912650112397582603894390785). The loop_break function uses char* v6 pointing to embedded array data without struct recovery. All composite types lost to raw pointer arithmetic.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Multiple unsafe operations present. Function pointer type confusion in call_func_ptr_array - it takes unsigned long long* but calls it as function. Pointer arithmetic throughout (v6 += 1, iter += 1). Many casts like (unsigned int)v0, (unsigned long long)* appearing repeatedly. The call_func_ptr_array has particularly broken semantics with redundant parameters passed to called functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Almost no useful comments. Only register mapping comments like "// x0", "// x1" which are unhelpful. No algorithm explanations, no decompilation confidence indicators, no API contracts. The code is completely uncommented except for some stack canary mentions and "do not return" notes on abort functions.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: Some patterns are implicitly present but not named or documented. State machine pattern exists in state_machine and fsm_func_table but not labeled as such. Duff's device is recognizable but not identified. Recursion patterns present. No pattern naming or explanation provided to help analyst understand the idiom.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+Justification: No uncertainty markers or anomaly flags. The decompiler confidently presents incorrect logic - single_if has wrong semantics (uses __ROL__ for doubling which is rotate, not multiply by 2). Indirect calls in call_func_ptr_array are not flagged as uncertain. No indication of potential undefined behavior or unusual patterns.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No precondition/postcondition documentation. No error condition explanations. The multi_return function's multiple exit points are not documented. No bounds checking notes. Contracts completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function calls are visible and traceable. External dependencies declared with extern (g_413f78, __stack_chk_guard, etc.). However, no documentation of who calls whom or global variable usage patterns. Relationships are inferable but not explicit.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Justification: Functions are grouped logically - initialization functions first, then test functions, then algorithmic functions. Static functions properly scoped. However, the file is a single monolithic output with no header/API separation. Some organization by function type exists.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+
+Justification: Many extern declarations present for external references. Should compile with libc. Some functions have incomplete prototypes. The code would require moderate patching to compile standalone (missing stdio.h, stdlib.h declarations). Dependencies not documented.
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 4 + 7) / 4 = 4.75
+L2_avg = (5 + 7 + 6 + 7) / 4 = 6.25
+L3_avg = (5 + 3 + 4) / 3 = 4.0
+L4_avg = (2 + 4 + 1 + 2) / 4 = 2.25
+L5_avg = (5 + 6 + 6) / 3 = 5.67
+
+Overall = (4.75 × 0.30) + (6.25 × 0.25) + (4.0 × 0.20) + (2.25 × 0.15) + (5.67 × 0.10)
+        = 1.425 + 1.5625 + 0.8 + 0.3375 + 0.567
+        = 4.69/10
+```
+
+**Overall Readability Score: 4.69/10**
+
+### Critical Defects (Bullet List)
+- Variable naming uses generic register names (v0-v9, a0-a2) losing all semantic meaning from source (temp1, temp2, a, b, c)
+- single_if function has incorrect semantics - uses __ROL__ (rotate) instead of multiply by 2, producing wrong results
+- No comments whatsoever - zero algorithm explanations, no decompilation confidence indicators, no API contracts
+- Type precision severely degraded - uses unsigned int instead of int, loses signed semantics, function pointers have wrong types
+- Switch statements poorly recovered - uses arm64g_calculate_condition() instead of proper switch syntax, making code unreadable
+- Magic numbers unexplained - 4294967295, 1717986919, 85899345930 appear without context
+- No struct/union recovery - all composite types lost to raw pointer arithmetic
+
+### Best Quality Aspect
+**Function Decomposition (scored 7/10)** - Functions maintain appropriate size and granularity. Core algorithmic functions are well-contained (20-50 lines), test functions properly call sub-functions, and parameter counts match original signatures.
+
+### Most Needs Improvement
+**Anomaly Indication (scored 1/10)** - The decompiler presents incorrect code confidently without any uncertainty markers. The single_if function has fundamentally wrong logic (rotate instead of multiply) but no warning is given. Indirect calls are not flagged, and no indication of potential undefined behavior exists.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparison) to suggest semantic names. `a0 + a1` in sequential context suggests `addend1 + addend2`. `v0 < a0` in loop context suggests `index < bound`.
+
+2. **Recover switch constructs from conditional chains**: When multiple if-else branches compare the same variable to different constants, recognize this as a switch statement and generate proper switch-case syntax.
+
+3. **Add decompilation confidence indicators**: Flag functions with suspicious patterns (indirect calls, unusual arithmetic, potential undefined behavior) with comments like "// NOTE: Could not resolve indirect call" or "// WARNING: Unusual operation detected".
+
+4. **Explain magic numbers**: Detect common patterns (0xFFFFFFFF for -1, division constants) and add explanatory comments or replace with named constants where semantic meaning is inferable.
+
+5. **Recover struct types from pointer arithmetic**: When consecutive memory accesses follow a struct layout pattern, attempt struct reconstruction with generic field names (field0, field1) rather than raw pointer arithmetic.

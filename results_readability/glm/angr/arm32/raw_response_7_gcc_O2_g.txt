@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `result`, `flag1`), providing no semantic context. In `param_vectorized_loop`, internal IR artifacts like `vvar_69` and `vvar_52` leak into the output, severely degrading readability.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `param_fake_branch`, `main`, and `decrypt_string` are successfully recovered from symbol tables, accurately reflecting the original source's intent.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers are prevalent (e.g., `90` for XOR key, `0x22058` for string addresses) without named constants. The obfuscation constant `0xDEADBEEF` is missing (optimized away), but remaining literals lack context.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The output is polluted with compiler and decompiler artifacts, including `armg_calculate_condition`, `__aeabi_idivmod`, and VEX IR temporaries (e.g., `vvar_69{r64|4b}`), making the code difficult to read.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While `do-while` loops are used correctly, complex logic in `param_opaque_predicate` is obscured by condition checks and helper calls. The flow is mechanical rather than idiomatic C.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source well; the decompiler correctly identifies separate functions rather than inlining everything into a monolithic block, even for small helpers.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but forward jumps and `goto` statements (e.g., in `param_opaque_predicate`) disrupt the linear flow in several functions.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler accurately represents the compiler's optimizations (e.g., `call_fake_branch` returning `10`), but it fails to abstract away the redundancy introduced by the IR lifting process.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are aggressively simplified to `unsigned int` or `void*`. Specific types like `size_t` or `int32_t` are lost, and pointer types are often generic (e.g., `char [2]` return type for `decrypt_string` is incorrect).
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Struct types are completely unrecovered. For example, `param_implementation_defined` uses a struct in the source, but the decompiled code treats it as raw variables or optimizes it away entirely without reconstructing the layout.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code contains unsafe implicit casts and the usage of opaque helper functions like `armg_calculate_condition` which take raw integers, obscuring type safety boundaries.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of obscure variables like `vvar_69`.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard patterns like the GCD algorithm in `param_opaque_predicate` or string encryption are not recognized; they are presented as raw arithmetic and loop operations.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The presence of `armg_calculate_condition` and VEX temporaries is not flagged as an anomaly or decompiler artifact; it is presented as valid C code, which is misleading.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or error handling contracts are documented (e.g., the `signal` handler setup in `param_division_by_zero` is not explained).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls to other defined functions (e.g., `strlen`, `malloc`) are visible, but calls to compiler runtime helpers (`__aeabi_idivmod`) obscure the actual logic flow.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in a flat order corresponding to addresses, lacking logical grouping or separation between the different test categories (Obfuscation vs. Edge Cases).
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile due to syntax errors from IR artifacts (e.g., `vvar_69{r64|4b}`) and missing declarations for `armg_calculate_condition`.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 9 + 4 + 2) / 4 = 4.5
+L2_avg: (5 + 8 + 6 + 7) / 4 = 6.5
+L3_avg: (4 + 1 + 3) / 3 = 2.67
+L4_avg: (1 + 2 + 1 + 1) / 4 = 1.25
+L5_avg: (6 + 5 + 1) / 3 = 4.0
+
+Overall = (4.5 × 0.30) + (6.5 × 0.25) + (2.67 × 0.20) + 
+          (1.25 × 0.15) + (4.0 × 0.10)
+Overall = 1.35 + 1.625 + 0.534 + 0.1875 + 0.4
+Overall = 4.10 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.1/10
+
+### Critical Defects (Bullet List)
+- **IR Leakage**: Internal VEX IR temporaries like `vvar_69{r64|4b}` appear directly in the C output, creating syntax errors and confusion.
+- **Missing Struct Recovery**: Composite types (structs) are completely lost, replaced by raw variables or optimized away without reconstruction.
+- **Opaque Helper Functions**: Logic is obscured by calls to `armg_calculate_condition` and `__aeabi_idivmod` instead of being expressed as native C operators.
+- **Generic Naming**: Variables are named `v0`, `v1`, etc., offering no insight into their semantic role within the function.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (9/10)**
+- **Why?** The decompiler successfully preserved the original function names from the binary's symbol table, making it easy to locate specific routines.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Semantic Transparency (1.25/10 avg)**
+- **Why?** The code lacks comments, idiom recognition, and anomaly flagging, leaving the user to decipher raw logic and IR artifacts without assistance.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Implement IR Sanitization**: Add a post-processing pass to map internal IR temporaries (e.g., `vvar_...`) back to temporary C variables or eliminate them entirely.
+2.  **Enhance Type Recovery**: Develop heuristics to reconstruct stack structures and composite types based on access patterns (e.g., field offsets) rather than defaulting to raw integers.
+3.  **Inline Compiler Intrinsics**: Replace calls to runtime helpers (like `__aeabi_idivmod`) with the corresponding C operators (e.g., `%` and `/`) to improve semantic clarity.

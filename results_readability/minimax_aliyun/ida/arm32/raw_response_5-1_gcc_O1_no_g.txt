@@ -1,0 +1,134 @@
+# Decompilation Readability Assessment
+
+## Original Source Analysis
+
+The original source is a comprehensive C++ test suite (540 LOC) covering 12 different C++ features:
+- Class member functions
+- Constructors/destructors
+- Virtual functions and polymorphism
+- Multiple inheritance
+- Diamond inheritance (virtual inheritance)
+- Operator overloading
+- Template functions and classes
+- Lambda expressions
+- Exception handling
+- Smart pointers
+- RTTI (typeid, dynamic_cast)
+
+The decompiled output is 751 LOC from IDA Pro/Hex-Rays on an ARM32 binary (note: metadata says arm64 but binary is arm based on the output).
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`) or parameter names (`a1`, `a2`, `a3`, `a4`). Function pointer parameters like `int (__fastcall ***a1)(_DWORD)` are completely opaque. Only `dest` in `test_cpp_member_func` provides any semantic hint.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: C++ names are partially demangled (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func`, `_ZN4Base12virtual_funcEi` → `Base::virtual_func`), but many utility functions remain cryptic (`sub_109BC`, `call_weak_fn`, `deregister_tm_clones`). Member functions are reasonably clear but lack class context in some cases.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers appear: `0x1Fu` (31), `0x14u` (20), `0x10u` (16), `0x18u` (24). String literals are replaced with addresses like `&unk_11608`. Floating-point constants like `1074003968` and `1073217536` are unexplained. No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: virtual thunk functions (`virtual thunk to'MiddleA::func`), assembly blocks (`__asm { POP {R4,PC} }`), 27 failed decompilation entries, and weak function references. These obscure the actual logic significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures (if/else, loops) are preserved and readable. However, virtual function calls use indirect call patterns through vtable pointers that obscure the dispatch mechanism. Exception handling is incomplete (function marked `__noreturn` but should return).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions maintain reasonable boundaries matching original source functions. Template instantiations are properly separated (`template_max<int>`, `template_max<double>`). However, some template code is inlined into caller (`test_cpp_template_func`) rather than separate functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive forward jumps. Early returns are used appropriately. The code generally flows logically, though some computed vtable offsets create minor discontinuities.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Loop unrolling is minimal (appropriate for -O1). Common subexpression elimination artifacts are not prominent. Code is relatively clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type degradation: `_DWORD` used for 32-bit integers instead of `int32_t` or `int`. Function pointer types are particularly broken: `int (__fastcall ***a1)(_DWORD)` should be `Base*` and `int`. `size_t` is not recovered. `va_list` is just `int`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery - all composite types accessed via raw pointer arithmetic: `*(_DWORD *)(result + 40)` instead of `container->size`. No field names recovered (should be `size`, `data`, etc.). The `Container<int>` layout is completely opaque.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: raw pointer arithmetic everywhere (`*(_DWORD *)(a1 + 40)`), incorrect function pointer casts (`int (__fastcall **)(_DWORD)`), no const correctness, and potential buffer access issues in `Container::get` without bounds being properly checked.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments present: "/* Function: xxx @ 0xxxxxx */", "attributes: thunk", "BYREF". No algorithm explanations, no decompilation confidence indicators, no recovery of original comments from debug symbols.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ patterns are labeled: "virtual thunk to" for vtable adjustment functions, "non-virtual thunk to" for multiple inheritance. However, RAII patterns (smart pointers, destructors) are not identified as such. Template instantiation pattern not explicitly named.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Failed functions are listed but not explained. No flags for suspicious code patterns, indirect calls that couldn't be resolved, or potential undefined behavior. The `__noreturn` on `test_cpp_exception` is incorrect (it should return).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of error conditions or expected input ranges. The function contracts are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships are not documented. No indication of who calls whom, no callback relationships shown, no global variable usage documented. Each function is isolated.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are organized by address rather than logically. The original source grouping by feature (CPP-L3-01, CPP-L3-02, etc.) is completely lost. Related classes are scattered throughout the address space.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code cannot compile standalone. Heavy reliance on undefined symbols (27 failed to decompile). No header declarations, no namespace structure, no dependency documentation. Would require extensive patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 3 + 3) / 4 = 3.25
+L2_avg = (6 + 6 + 7 + 8) / 4 = 6.75
+L3_avg = (4 + 3 + 3) / 3 = 3.33
+L4_avg = (3 + 5 + 3 + 2) / 4 = 3.25
+L5_avg = (4 + 3 + 2) / 3 = 3.00
+
+Overall = (3.25 × 0.30) + (6.75 × 0.25) + (3.33 × 0.20) + 
+          (3.25 × 0.15) + (3.00 × 0.10)
+        = 0.975 + 1.6875 + 0.666 + 0.4875 + 0.30
+        = 4.116 ≈ 4.1/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use generic names (`v0`-`v7`, `a1`-`a4`) making semantic purpose completely opaque
+- **Type precision**: Severe degradation - `_DWORD` everywhere, function pointers completely broken (`int (__fastcall ***a1)(_DWORD)`)
+- **Composite type recovery**: Zero struct recovery - all accessed via raw pointer arithmetic like `*(_DWORD *)(result + 40)` instead of named fields
+- **Noise pollution**: 27 failed decompilations, virtual thunk functions, assembly blocks clutter output
+- **No contracts**: Preconditions, postconditions, and invariants completely lost; no documentation of expected behavior
+
+### Best Quality Aspect: Code Linearization (7/10)
+The code generally reads top-to-bottom without excessive jumps. Control flow structures (if/else, basic loops) are preserved and follow natural patterns. This makes the overall execution flow traceable despite other issues.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+Every meaningful variable uses generic names that provide no semantic information. Combined with broken type information, this makes the code nearly impossible to understand without constant reference to the original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `*(_DWORD *)(x + 40)` being compared to 10 suggests it's a `size` field) to generate semantically meaningful names like `container_size` instead of `v2`.
+
+2. **Recover composite types from pointer arithmetic**: Detect patterns like `*(type*)(ptr + offset)` and reconstruct struct layouts with field names. The pattern `result + 40` for `Container<int>::size` should become `container->size`.
+
+3. **Improve function pointer type recovery**: Instead of `int (__fastcall ***a1)(_DWORD)`, recognize the actual type from vtable analysis and generate `Base* obj` with proper virtual function signatures.

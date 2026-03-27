@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are entirely generic (`local_28`, `uStack_24`, `param_1`) with no semantic meaning recovered. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names preserved well (`test_cpp_member_func`, `test_cpp_virtual_func`) matching source intent. However, helper functions like `call_virtual_func` lose parameter type information in the name.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers dominate (`0x125c`, `0x3e9`, `0x28a`) with no explanation. Original constants like `0x1234` for `getClassID()` are folded into computed values, obscuring semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple "WARNING: Removing unreachable block" and "Unknown calling convention" warnings present. Stack variable initialization (`local_a = 0; local_9 = 0;`) appears to be compiler artifacts from debug builds.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most test functions reduced to single return statements due to constant folding optimization. `test_cpp_exception` shows exception throwing but loses the try-catch structure entirely, replacing nested handlers with direct throw.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Template instantiations properly separated (`template_max<int>`, `Container<int>::push`). However, `test_cpp_oo_features` duplicates RTTI logic from `test_cpp_rtti` instead of calling it, creating redundancy.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Functions read top-to-bottom naturally where logic exists. The constant-folded test functions are trivially linear but this masks the original control flow structure.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `test_cpp_oo_features` duplicates the entire RTTI logic from `test_cpp_rtti` (operator_new, __dynamic_cast, operator_delete sequence) instead of making a function call, creating ~30 lines of redundant code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: C++ class types partially recovered (`Container<int>`, `RTTIDerivedA`) but many return types degraded to `undefined4`. Original `size_t`, `int`, `double` distinctions often lost to generic types.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class structures recognized but field access uses pointer arithmetic (`*(int *)(this + 0x28)`) instead of named fields. Original `value`, `name[32]`, `data`, `size` members all lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(undefined4 **)param_1`, `(int)&PTR__RTTIBase_00021ed8`). Virtual function calls treated as raw function pointers with warnings about recovery uncertainty.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("WARNING: Could not recover jumptable"). No explanatory comments about algorithm purpose, C++ semantics, or decompilation confidence levels.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns (vtable calls, RAII, virtual inheritance) not identified or documented. Lambda expressions completely optimized away with no indication they existed in source.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warning coverage for indirect calls ("Treating indirect jump as call") and unreachable blocks. However, silent failures exist (exception handling logic lost without warning).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original bounds checks (`idx < size`) present in code but not highlighted as safety contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch relationships unclear. `call_virtual_func` shows vtable access but doesn't indicate which classes implement the virtual methods.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Related functions grouped (Container methods together, RTTI classes together). However, no namespace or header file structure to indicate original source organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external symbols (`operator_new`, `__cxa_throw`, `std::ios_base::Init`) without declarations. Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+6)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+7+5)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type System): (5+4+6)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (4+3+6+2)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 5.00/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable names completely generic** (`local_28`, `uStack_24`) - no semantic recovery from usage patterns
+- **Exception handling logic lost** - `test_cpp_exception` shows throw but no try-catch structure recovery
+- **Class field names lost** - all member access via pointer arithmetic (`this + 0x28`) instead of named fields
+- **Magic numbers unexplained** - `0x125c`, `0x3e9`, `0x28a` are folded constants with no source mapping
+- **RTTI logic duplicated** - `test_cpp_oo_features` copies 30 lines from `test_cpp_rtti` instead of calling it
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Test function names preserved accurately from source symbols, maintaining semantic intent for top-level functions.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or safety contracts documented despite bounds checks and null checks present in code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in `strlen()` calls should be named `string` or `buffer`)
+2. **Recover C++ exception handling structures** - Detect `__cxa_begin_catch`/`__cxa_end_catch` patterns and reconstruct try-catch blocks with proper nesting
+3. **Map folded constants to source expressions** - Track constant propagation backward to show original expressions (e.g., `0x125c` = `10 + 34 + 4660` from test expectations)

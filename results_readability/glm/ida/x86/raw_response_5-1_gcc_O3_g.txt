@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v2` in `test_cpp_rtti`, `a1`, `v2` in `test_cpp_template_func`). While `obj` is used in `test_cpp_member_func`, most semantic meaning is lost, requiring significant effort to track data flow.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: C++ mangled names are successfully demangled (e.g., `Base::virtual_func`, `Container<int>::push`, `test_cpp_exception`). Thunks are explicitly labeled (e.g., `` `non-virtual thunk to'MultiDerived::funcB ``), providing high semantic clarity for function purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals like `"Test"` are preserved, but magic numbers abound. `4700` in `test_cpp_member_func` and `1001` in `test_cpp_constructor` are opaque constants derived from optimization, and `0x14u` (stack canary offset) appears repeatedly without explanation.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant compiler artifacts pollute the code. Stack integrity checks (`__readgsdword(0x14u)`) appear in almost every function, and numerous generic thunks (`sub_1030` through `sub_1140`) clutter the output without adding value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: The control flow for `test_cpp_exception` is critically broken; the source returns a value (226) via complex try-catch logic, but the decompiled code is marked `__noreturn` and simply throws an exception. This renders the function's logic unreadable.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Class methods, constructors, and destructors are correctly separated into individual functions. Template instantiations are distinct (e.g., `template_max<int>` vs `template_max<double>`), maintaining good granularity.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Most functions read linearly, but `test_cpp_rtti` contains convoluted pointer arithmetic and nested conditionals that disrupt the flow. The failure to recover the exception structure in `test_cpp_exception` also harms linearity.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The compiler (or decompiler) performed constant folding (e.g., `test_cpp_virtual_func` returns `42`), which simplifies reading. However, `test_cpp_constructor` retains a slightly odd expression `1001 * instance_count + 21` which, while correct, is structurally redundant.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: C++ types are recovered with high fidelity. Classes (`SimpleClass`, `Base`, `Derived`), template types (`Container<int>`), and standard library types (`std::ios_base::Init`) are correctly identified, preserving the original type semantics.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Struct layouts are well-recovered. Members like `SimpleClass::name`, `Derived::multiplier`, and vtable pointers (`_vptr_Base`) are accessible by name, allowing for a clear understanding of object memory layouts.
+
+**11. Type Safety:** Score: 5/10
+Justification: While types are precise, the code exposes unsafe C++ implementation details. Functions like `MiddleA::func` use raw pointer arithmetic (`*(int *)((char *)&this->dataA + ...)`) to access virtual base class members, which is technically correct but unsafe-looking in C.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining logic. The only comment is a warning about stack pointer detection in `_start`. Complex logic, such as the RTTI checks or exception handling, lacks explanatory notes.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: C++ idioms are clearly identified. Virtual table thunks are explicitly named, and calls to `__dynamic_cast` and `__cxa_throw` correctly indicate the use of RTTI and exception handling mechanisms.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The critical failure in `test_cpp_exception` (where the function logic is replaced by a throw) is not flagged as an anomaly or uncertainty. The decompiler presents the incorrect control flow confidently, which is misleading.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement for non-null pointers in `dynamic_cast` or the state of `instance_count` is not inferred or stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Calls to standard library functions (`operator new`, `__cxa_allocate_exception`) and internal methods are clear. The relationship between thunks and their target virtual functions is explicit in the naming.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a flat manner. While naming groups them by class, there is no logical structuring (e.g., grouping by the test case they belong to) beyond the alphabetical/order of appearance.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies heavily on compiler-specific intrinsics (`__readgsdword`) and internal C++ runtime structures (`typeinfo`, `vtable` layouts) that would require significant patching and headers to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- **Exception Handling Failure:** `test_cpp_exception` is decompiled as a `__noreturn` function that throws, completely missing the source's try-catch logic and return value.
+- **Variable Naming:** Variables are reduced to generic names (`v0`, `v1`), obscuring the logic in complex functions like `test_cpp_rtti`.
+- **Noise Pollution:** Stack canary checks (`__readgsdword(0x14u)`) are present in almost every function, significantly cluttering the output.
+- **Magic Numbers:** Constants like `4700` and `1001` appear without context, making the mathematical logic hard to follow.
+
+**Best Quality Aspect:** Type System Fidelity (scored 7.7/10)
+- The decompiler excels at recovering C++ class hierarchies, template instantiations, and member variable layouts, which is often the hardest part of reverse-engineering C++.
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.0/10)
+- The lack of comments and the failure to flag the severe anomaly in `test_cpp_exception` make the code's actual behavior difficult to trust and understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve Exception Control Flow Recovery:** The decompiler must reconstruct `try/catch` blocks rather than defaulting to the exceptional path or marking functions as `noreturn` when they return values in the source.
+2.  **Enhanced Variable Naming:** Implement heuristics to infer variable names from type usage (e.g., naming an `RTTIBase*` as `obj` or `base` instead of `v0`).
+3.  **Noise Filtering Options:** Provide an option to suppress or abstract stack security checks (like `__readgsdword`) to improve the readability of the core logic.

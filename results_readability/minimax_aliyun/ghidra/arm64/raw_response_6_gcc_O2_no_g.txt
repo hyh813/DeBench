@@ -1,0 +1,136 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+Let me analyze the specific function `param_strcpy` from both the original source and the decompiled code.
+
+### Original Source:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+### Decompiled Code:
+```c
+int param_strcpy(char *param_1,char *param_2)
+{
+  char *pcVar1;
+  
+  pcVar1 = stpcpy(param_1,param_2);
+  return (int)pcVar1 - (int)param_1;
+}
+```
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters are named `param_1` and `param_2` instead of the original `dst` and `src`. The compiler-generated variable `pcVar1` is cryptic. This generic naming makes it difficult to track variable purpose, especially when analyzing larger functions.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function correctly named `param_strcpy`, exactly matching the source function name. The naming accurately reflects the string copy operation being performed.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: The `stpcpy` usage is actually an interesting case - the compiler optimized `strcpy + strlen` into a single `stpcpy` call. While this is semantically correct, there's no comment explaining this optimization transformation. The arithmetic `(int)pcVar1 - (int)param_1` is clear enough to infer it computes string length.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Relatively clean output with minimal compiler artifacts. No stack canary checks visible in this simple function. The only noise is the generic parameter naming which is standard Ghidra behavior.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: The control flow is perfectly natural - linear execution with a single function call and return. No goto statements, confusing conditionals, or optimization artifacts like loop unrolling in this simple function.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: The function maintains appropriate granularity - single responsibility, ~6 lines of code. Not over-fragmented or monolithic. The original source had this as a simple wrapper function, and the decompilation preserves that structure.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Highly linear code - reads top-to-bottom without any forward jumps, breaks, or complex nesting. The return statement at the end flows naturally from the computation.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No redundant code. The `stpcpy` optimization actually *eliminates* redundancy from the original (no separate strlen call needed). This is a positive transformation.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Parameter types `char *param_1, char *param_2` are accurate but lose the `const` qualifier from the original source (`const char *src`). Return type `int` correctly matches. The type precision is good but not perfect due to const-correctness loss.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: Not applicable to this simple function - no structs, unions, or composite types are used. The function operates on primitive pointers only.
+
+**11. Type Safety:** Score: 8/10  
+Justification: The code is type-safe. The casts `(int)pcVar1` and `(int)param_1` are appropriate for pointer-to-integer conversion on ARM64 where pointers are 64-bit but return type is int. No unsafe operations observed.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in the function body. The decompilation lacks any explanation of the `stpcpy` optimization (combining strcpy+strlen into one call). No indication that this differs from naive `strcpy` + `strlen` pattern in source.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: The `stpcpy` pattern is recognized as a string operation, but not explicitly named or commented as an optimization idiom. The return calculation `end - start` for length is a common pattern but not highlighted.
+
+**14. Anomaly Indication:** Score: 10/10  
+Justification: No anomalies in this function. The `stpcpy` usage is a valid optimization, not an anomaly. The decompiler correctly identifies the standard library function.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition documentation. The original source implied contracts: `dst` should be large enough to hold `src`, return value is string length. These are not recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The call to `stpcpy` is clearly visible as an external library function. The relationship to `call_strcpy` (which calls this function) is preserved in the decompiled output. However, no explicit comments about caller/callee relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the decompiled output. The string-related functions (param_strcpy, call_strcpy, param_strcmp, etc.) appear near each other. However, the overall file organization is essentially flat.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The function uses standard C library functions (`stpcpy`) that are part of POSIX. Should compile with standard libc. The code is self-contained and doesn't require extensive patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 7 + 8) / 4 = 6.75
+L2_avg = (9 + 9 + 9 + 9) / 4 = 9.00
+L3_avg = (7 + 10 + 8) / 3 = 8.33
+L4_avg = (2 + 6 + 10 + 2) / 4 = 5.00
+L5_avg = (8 + 7 + 8) / 3 = 7.67
+
+Overall = (6.75 × 0.30) + (9.00 × 0.25) + (8.33 × 0.20) + 
+          (5.00 × 0.15) + (7.67 × 0.10)
+Overall = 2.025 + 2.25 + 1.666 + 0.75 + 0.767 = 7.458 ≈ 7.5/10
+```
+
+**Overall Readability Score:** 7.5/10
+
+---
+
+### Critical Defects:
+- **Parameter naming**: `param_1` and `param_2` should be `dst` and `src` based on function semantics and usage patterns
+- **Const qualifier lost**: `param_2` should be `const char *` to match source and indicate non-modification
+- **No optimization explanation**: The `stpcpy` transformation from `strcpy + strlen` is not documented, making it unclear why the decompiled code differs from naive source reconstruction
+
+### Best Quality Aspect: Structural Intelligibility (9.0/10)
+The control flow is natural, code is linear, function decomposition is appropriate, and no redundancy exists. This is a textbook example of how decompiled simple functions should look.
+
+### Most Needs Improvement: Semantic Transparency (5.0/10)
+Comments are absent, idiom recognition is not explicitly named, and contract recovery is missing. The decompiler treats this as pure mechanical translation without semantic enrichment.
+
+### Top 3 Recommendations:
+1. **Infer parameter names from usage**: When a parameter is passed to `stpcpy` as destination and source, name them `dst` and `src` respectively
+2. **Add optimization comments**: When the decompiled code differs from naive source reconstruction (like strcpy+strlen → stpcpy), add a comment explaining the optimization
+3. **Recover const-correctness**: Analyze parameter usage - if a pointer is never modified, mark it as `const` in the decompiled output

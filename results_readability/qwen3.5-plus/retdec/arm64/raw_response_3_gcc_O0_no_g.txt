@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All local variables use generic names (v1, v2, v3, v4...) with zero semantic meaning. Global variables are named g1-g31, completely obscuring their purpose (e.g., `g5`, `g6` should be `global_point.x`, `global_point.y`).
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Most original function names preserved (`double_value`, `local_vars`, `heap_basic`), but helper functions degraded to `function_a00`, `function_a10`, etc. Parameter information lost in many signatures.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0xfffffffe`, `0x100000000`, `0xfff0`). String literals stored as hex-encoded globals (g21-g28) instead of readable strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) appear in nearly every function. Unnecessary bit masking (`& 0xfffffffe`) clutters return statements. Redundant type casts throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Original `for` loops converted to manual `while` loops with counters. `linked_list_heap` uses goto labels (`lab_0x1830`, `lab_0x1860_2`) instead of natural loop constructs.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but `double_value` lost its parameter entirely. Some functions like `create_tree_node` maintain reasonable granularity.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Goto statements disrupt reading flow in complex functions. Forward jumps into loop bodies present. `linked_list_heap` has multiple label jumps breaking top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated bit masking operations on return values. Stack canary checks duplicated across functions. Some expressions computed multiple times unnecessarily.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `int64_t` or `int32_t`. Original `int`, `char*`, `size_t` distinctions lost. Function pointers become generic `int64_t`. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - `Point` struct completely lost (fields accessed as `mem`, `mem+4`). `Node` struct not recovered (linked list uses raw pointer arithmetic `v2+8`). `TreeNode` structure absent.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(int64_t)mem`, `(int32_t)v1`). Pointer arithmetic on `int64_t*` instead of proper struct pointers. No type safety annotations recovered.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero meaningful comments**. Only auto-generated section headers ("// ------- Dynamically Linked Functions Without Header --------"). No algorithm explanations or decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Linked list traversal pattern in `linked_list_heap` not recognized. Tree creation/traversal in `tree_heap_traversal` not identified. Memory allocation patterns unnamed.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about lost parameters (e.g., `double_value` missing `x` parameter). Uninitialized variable usage (`v1` in `double_value`) not flagged. No undefined behavior warnings.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `ptr != NULL` checks not explained). Error return values (-1, -2, -3) lack semantic meaning. No postcondition inference.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variable relationships obscured by g1-g31 naming. Callback relationships (`set_global_callback` → `call_global_callback`) not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed alphabetically/by address rather than logical grouping. No header file structure. Static functions not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Necessary headers included (`stdio.h`, `stdlib.h`, `string.h`). External function declarations present. May require stub implementations for some functions to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+4+5)/4 = 4.25  × 0.30 = 1.275
+Level 2 (Structural):  (4+6+4+5)/4 = 4.75  × 0.25 = 1.188
+Level 3 (Type):        (3+2+3)/3   = 2.67  × 0.20 = 0.534
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75  × 0.15 = 0.263
+Level 5 (Contextual):  (5+5+6)/3   = 5.33  × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.79/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Parameter loss**: `double_value(void)` lost its `int x` parameter entirely, using uninitialized `v1`
+- **Struct type loss**: `Point` and `Node` structs completely unrecovered; field access via raw pointer arithmetic (`mem+4`, `v2+8`)
+- **Variable naming**: All 31 global variables named `g1`-`g31` with zero semantic meaning
+- **Control flow degradation**: `for` loops converted to manual `while` loops; `goto` statements in `linked_list_heap`
+- **Zero documentation**: No comments explaining logic, no anomaly warnings, no contract recovery
+
+### Best Quality Aspect: **Build System Compatibility (6/10)**
+- Necessary headers included and function declarations present, making compilation theoretically possible with minimal stubs.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any meaningful comments; even basic section explanations are auto-generated noise rather than helpful documentation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameters from calling conventions** - `double_value`, `local_vars`, and 20+ other functions lost their parameters entirely
+2. **Implement struct type inference from field access patterns** - Detect `mem+0`, `mem+4` patterns as struct fields and recover `Point`, `Node`, `TreeNode` definitions
+3. **Add semantic variable naming from usage analysis** - Replace `v1`, `v2`, `g1`, `g2` with context-aware names based on how variables are used (e.g., loop counters, pointers, sizes)

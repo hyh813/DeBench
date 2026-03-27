@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`, `v13`, `v14`, `v15` throughout. For example, in `array_1d_stack`, variables `v3` and `result` obscure their roles as loop index and accumulator. Compare to source where `i` and `sum` are semantically clear.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved: `double_value`, `process_int`, `process_char`, `array_1d_stack`, `ptr_double`, `struct_simple`, `linked_list`, `binary_tree_sum`, etc. All match original source names exactly. Minor issue: some internal functions like `call_weak_fn` are compiler-generated.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literals use named references like `asc_2C58`, `asc_2DE8`, `asc_2F20`, `asc_30F8`. However, some magic numbers lack explanation: `0x200000001LL` for array initialization, bitmask operations like `& 1`, `>> 1`, `& 3` in bitfield access are not documented.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Generally clean output with minimal compiler artifacts. One significant issue: `opaque_handle_create` has warning "local variable allocation has failed, the output may be wrong!" - this is a decompilation failure indicator. Few redundant casts present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use do-while constructs, conditionals are clear. However, `enum_switch` uses complex if-else chain instead of switch, and `array_complex_index` has convoluted overflow checking with `__OFSUB__`. At -O0, these should be cleaner.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity matches source perfectly. Each function has single responsibility (e.g., `process_char`, `array_string`, `linked_list`). No inlining artifacts or monolithic functions. Parameter lists are appropriate.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately in functions like `array_1d_stack` (n <= 0). Some forward jumps exist but don't severely disrupt flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling is minimal (some in array operations but manageable). Common subexpression elimination artifacts are minimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types accurate: `int`, `float`, `double`, `bool`, `char`, `int*`, `int**`, `int***`. Issues: `__int16` instead of `short`, `unsigned __int8` instead of `char`, enum `State` shown as `int`. `process_ld` references `xmmword_3330` as `long double` constant.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types recovered: `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Edge`, `Graph`, `Flags`, `UnionData`, `Device`. Field names preserved: `x`, `y`, `z`, `data`, `next`, `prev`, `left`, `right`, `dest`, `adjList`, `numVertices`. Bitfield handling adequate.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Mostly type-safe with minimal unsafe casts. `ptr_diff` uses char pointer subtraction then shifts by 2 (correct but unclear). Some pointer arithmetic but generally safe. No severe type safety violations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments present. Only one auto-generated comment: `// attributes: thunk` on `frame_dummy`. No algorithm explanations, no decompilation confidence indicators, no API contracts. This severely impacts understandability.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable: linked list traversal (`while (v1)`), binary tree recursion (`binary_tree_sum`), graph traversal (adjacency list iteration). However, not explicitly named or highlighted for the user.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly flag exists for `opaque_handle_create` ("local variable allocation has failed"), but this is a decompiler issue rather than code anomaly. No indication of indirect calls that couldn't be resolved, unusual stack layouts, or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. No information about error conditions, null pointer requirements, or return value expectations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are clear within functions. However, no documentation of who calls a function or what it calls. Callback relationships (e.g., `ptr_func_simple` using `double_value`, `struct_func_ptr` using `process_int`) not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped: data type functions, array functions, pointer functions, composite functions, test functions. Static functions properly scoped. No visible file organization in output.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code would require significant patching to compile. External functions undefined: `__printf_chk`, `puts`, `__gmon_start__`, `__cxa_finalize`, `__libc_start_main`, `_addtf3`, `_multf3`. String data references like `asc_2C58` undefined.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v1`, `v2`, `v3`) obscuring semantic purpose
+- Almost complete absence of comments (2/10) - no algorithm explanations or API documentation
+- No cross-reference documentation - callback relationships and function call graphs not documented
+- Build system compatibility poor - undefined external references throughout
+- Anomaly indication limited - only one decompiler failure flag, no code anomaly warnings
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names match original source exactly: `double_value`, `process_int`, `array_1d_stack`, `linked_list`, `binary_tree_sum`, etc.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+No meaningful comments explaining algorithms, no decompilation confidence indicators, no API contracts. Combined with poor variable naming, code is semantically opaque.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `v3` in loop contexts should be `index` or `i`)
+2. Add comments explaining recovered algorithms and any decompilation uncertainties
+3. Document function relationships: callers, callees, callback contexts, and external dependencies

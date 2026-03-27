@@ -1,0 +1,105 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+### Analysis Overview
+
+The original function `param_fake_branch(int x)` implements an obfuscation technique with two always-false conditional branches (fake branches that never execute). The decompiled version is severely degraded - it's reduced to just `return v0;` with no parameters, losing all the obfuscation logic and the function's semantic purpose.
+
+---
+
+### LEVEL 1: LEXICAL CLARITY
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The variable `v0` is completely generic with no indication it represents the input parameter `x`. The decompiler failed to recognize this as the function parameter and instead treated it as an uninitialized register value. This makes it impossible to understand the function's data flow.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: The function name `param_fake_branch` correctly matches the original source. However, it's misleading because the decompiled version shows no parameters or fake branch logic, making the name appear inaccurate to someone reading only the decompiled code.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: No literals are present in the trivial decompilation. The original had `0xDEADBEEF` and `1000` as magic numbers in the fake branches, but these are completely lost. Neutral score due to nothing to evaluate.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: The code is extremely clean with no compiler artifacts, register spills, or debug instrumentation. However, this is because the function has been oversimplified to the point of being meaningless.
+
+---
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: The decompiled function has no control flow at all - just a return statement. The original had two `if` statements with always-false conditions that should have been recovered. The decompiler completely eliminated the fake branch logic instead of recognizing it as intentional obfuscation.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: The function is trivially small (1 line), but this is a severe degradation. The original 15-line function with meaningful logic has been collapsed to nothing. This is not appropriate decomposition - it's elimination of meaningful code.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The trivial return statement reads linearly top-to-bottom. However, this score is high only because there's no code to make non-linear.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No redundant code exists, but this is because all the meaningful code was removed. The decompiler appears to have incorrectly "optimized away" the fake branches thinking they were dead code.
+
+---
+
+### LEVEL 3: TYPE SYSTEM FIDELITY
+
+**9. Type Precision:** Score: 1/10  
+Justification: Critical failure - the function has **no parameters** in the decompiled version. The original `int x` parameter is completely missing. The return type is shown as `int` which is correct, but the lost parameter is a severe type degradation. The variable `v0` is typed as `unsigned int` when the original was `int` (signed).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Not applicable to this function (no structs/unions used). Neutral score.
+
+**11. Type Safety:** Score: 4/10  
+Justification: The unsigned int type for what should be a signed parameter could cause issues. The missing parameter means the function signature is fundamentally incorrect and unsafe to call.
+
+---
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments explaining the function's purpose. The original had comments explaining "永假条件" (always-false conditions) as an obfuscation technique. This semantic information is completely lost.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The decompiler failed to recognize the "fake branch" (永假分支) obfuscation pattern. This is a specific anti-analysis technique that should have been identified and documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication that the function was simplified or that logic may be missing. The decompiler should have flagged that the fake branch conditions were not recovered.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented. The original function implicitly required `x` to be a valid integer, but this is lost. No postcondition indicating the function returns its input.
+
+---
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: The function is called by `call_fake_branch()` which passes the value 10. This caller relationship is not documented in the decompiled output. The relationship to other obfuscation functions is also not clear.
+
+**17. Module Organization:** Score: 7/10  
+Justification: The function appears in a reasonable location among other obfuscation-related functions in the output. The grouping is adequate.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The function would compile as a stub, but it would produce incorrect runtime behavior since it ignores the input parameter. The signature mismatch with the caller would cause issues.
+
+---
+
+### FINAL SUMMARY
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- **Parameter loss**: The function parameter `int x` is completely missing from the decompiled signature, making it impossible to understand the function's interface
+- **Logic elimination**: The two fake branch conditions (`x*x < 0` and `strlen(str) < 0`) were incorrectly eliminated as "dead code" instead of recognized as intentional obfuscation
+- **Variable mislabeling**: `v0` should be named `x` or `input` to indicate it's the function parameter
+- **Type mismatch**: The variable is typed as `unsigned int` when the original was signed `int`
+- **Semantic loss**: All comments explaining the obfuscation technique are gone
+
+**Best Quality Aspect:** Noise Reduction (9/10)  
+The code has no compiler artifacts, but this is because meaningful code was removed rather than proper noise elimination.
+
+**Most Needs Improvement:** Type Precision (1/10)  
+The complete loss of the function parameter is a catastrophic failure. The decompiler must recover function parameters from ARM64 calling convention (e.g., x0 register) to produce usable code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover function parameters**: Use ARM64 calling convention analysis (x0-x7 for integer args) to properly reconstruct function signatures
+2. **Detect obfuscation patterns**: Recognize always-false conditions (like `x*x < 0`) as intentional fake branches rather than dead code
+3. **Preserve semantic comments**: Add comments explaining detected obfuscation techniques so analysts understand the code's purpose

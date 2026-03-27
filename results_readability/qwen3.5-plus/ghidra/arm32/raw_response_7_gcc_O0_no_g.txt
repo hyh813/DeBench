@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`param_1`, `local_c`, `iVar1`, `uVar1`) with no semantic meaning. For example, `param_opaque_predicate` uses `local_20` and `local_1c` instead of meaningful names like `gcd_a` and `gcd_b`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved from debug symbols (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`). This is excellent recovery matching original source intent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a` (XOR key), `0x2c` (computed constant), `0x41`/`0x42` ('A'/'B') appear without explanation. The decompiler didn't recover these as named constants despite debug info.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail`) appear throughout, and multiple "WARNING: Removing unreachable block" comments clutter the output. Library functions like `__aeabi_idiv` add 100+ lines of verbose division logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Critical failure in `param_fake_branch` - the dead code branches (`if (x * x < 0)`) were completely eliminated, returning just `param_1`. This defeats the obfuscation test purpose. Other functions preserve loops correctly.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are properly separated with appropriate granularity. Helper functions like `decrypt_string` are preserved. Some wrapper functions (`call_*`) are trivially small but serve clear purposes.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Early returns are used appropriately. No excessive goto usage. The verbose `__aeabi_idiv` function disrupts flow with 35+ boolean variables.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks are duplicated across many functions. The `__aeabi_idiv` and `_divsi3_skip_div0_test` functions are nearly identical (100+ lines each), suggesting poor redundancy elimination.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Extensive use of `undefined4` instead of `int`. Pointer types often generic (`undefined4 *param_1`). Mixed `uint`/`int` usage without clear rationale. Original `size_t` parameters sometimes lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - the bitfield struct in `param_implementation_defined` is completely lost, returning constant `0x2c` instead of showing the struct operations. No struct definitions visible anywhere in output.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple implicit casts (`(char *)`, `(byte *)`, `(int *)`) throughout. Pointer arithmetic on generic types. The `param_null_pointer_deref` function uses `undefined4 *` which obscures the null pointer semantics.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only compiler-generated warnings present ("WARNING: Subroutine does not return"). No algorithm explanations, no parameter documentation, no recovery of original source comments explaining obfuscation techniques.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The GCD algorithm in `param_opaque_predicate` is not identified. String XOR decryption pattern not named. No design patterns or algorithm patterns recognized despite clear patterns in source.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present ("Could not recover jumptable", "Removing unreachable block"). Stack canary failures noted. However, the elimination of dead code branches in `param_fake_branch` is NOT flagged as anomalous.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). No postconditions. Error conditions not explained. The original source's extensive documentation about expected values is completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear through preserved names. Global variables referenced (`encrypted_0`, `jmp_buffer`) but not defined in output. No call graph documentation provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 46 functions in single output file. No header file separation. Static functions not properly scoped. Original source's section organization (7.1, 7.2, 7.3) completely lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Would require significant stubs for library functions (`__aeabi_idiv`, `__stack_chk_fail`). External dependencies not documented. Architecture mismatch (source: arm64, decompiled: ARM 32-bit).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+5+6)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):  (5+7+7+6)/4 = 6.25  × 0.25 = 1.56
+Level 3 (Type):        (4+2+5)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (3+2+6+2)/4 = 3.25  × 0.15 = 0.49
+Level 5 (Contextual):  (6+5+5)/3   = 5.33  × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  5.11/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **`param_fake_branch` completely lost obfuscation semantics** - dead code branches eliminated, function just returns input directly
+- **`param_implementation_defined` reduced to constant `0x2c`** - bitfield struct operations completely lost
+- **Variable naming entirely generic** - `param_1`, `local_c`, `iVar1` convey no semantic meaning
+- **No composite type recovery** - structs, unions, bitfields all lost despite debug symbols
+- **Zero semantic documentation** - original source comments explaining obfuscation techniques not recovered
+
+### Best Quality Aspect: **Function Naming Quality (9/10)**
+- Debug symbols preserved all original function names perfectly, making navigation and identification straightforward.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover struct/union/bitfield definitions, reducing complex type operations to opaque constants.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve dead code branches at -O0** - When debug symbols indicate original source structure, do not optimize away intentional obfuscation patterns like永假 conditions.
+2. **Recover composite types from debug info** - DWARF debug information contains struct layouts; use this to reconstruct bitfields and nested structures instead of collapsing to constants.
+3. **Infer semantic variable names from usage patterns** - Variables used in GCD loops should be named `gcd_a`/`gcd_b`, XOR key variables should be `xor_key`, etc.

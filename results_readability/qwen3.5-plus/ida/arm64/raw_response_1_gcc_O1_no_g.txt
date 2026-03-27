@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `a3`, `v1`, `v2`, `result`) with no semantic meaning. Original source had meaningful names like `temp1`, `temp2`, `sum`, `count`, `total` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - function names like `sequential_ops`, `nested_if_deep`, `switch_fallthrough`, `recursion_factorial` are preserved from source, clearly indicating purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Negative numbers appear as unsigned literals (`0xFFFFFFFFLL` for `-1`, `4294967294LL` for `-2`), obscuring intent. Some magic numbers like `10`, `100` are clear in context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive type casts (`(unsigned int)`, `(__int64)`), register annotations (`// x0`, `// w1`), and `LODWORD` macros clutter the code throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most if/else and loop structures recovered well, but some switch statements converted to if-else chains (`switch_small`, `switch_large`). `switch_fallthrough` uses goto labels (`LABEL_7`) instead of fall-through semantics.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Helper functions (`op_add`, `double_value`) properly separated. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but goto labels (`LABEL_7`, `LABEL_12`, `LABEL_15`, etc.) in `switch_fallthrough` and `duffs_device` disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Unnecessary intermediate variables (`v1`, `v2` just for type conversion) and redundant casts throughout. No dead code, but type promotion artifacts remain.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses non-standard types (`__int64`, `_DWORD`, `_QWORD`) instead of standard C types. Signed/unsigned confusion evident (e.g., `op_div` has `unsigned int a2` vs source `int b`). Function pointers generic (`__int64 (__fastcall *)(_QWORD)`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays shown as pointer arithmetic (`v4[2]` in `loop_break`). No struct definitions visible. Matrix access in `loop_multi_exit` uses raw pointer math instead of `matrix[i][j]`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(unsigned int)`, `(_DWORD)`, `(__int64)`). Function pointer casts are generic and potentially unsafe. No const correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments except register annotations (`// x0`, `// w1`). No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. State machine functions (`state_machine`, `fsm_func_table`) not labeled as such. Recursion patterns not commented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (9 functions), but no inline anomaly warnings. `computed_goto` shows `__asm { BR X0 }` without explanation of why assembly was needed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `n > 0` for factorial). No postcondition inference. Error conditions not documented despite being present in source comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear, but global variable references use opaque names (`off_14010`, `xmmword_24A0`). No call graph documentation or callback relationship explanations.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. Static functions marked appropriately. No header file generation or logical grouping beyond source order.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 9 external functions failed to decompile requiring stubs. Uses compiler-specific types (`__int64`, `_DWORD`). Inline assembly in `computed_goto` reduces portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Calculation:**
+```
+L1_avg = (3+9+5+4)/4 = 5.25
+L2_avg = (7+8+6+6)/4 = 6.75
+L3_avg = (4+5+4)/3 = 4.33
+L4_avg = (2+3+4+2)/4 = 2.75
+L5_avg = (5+5+4)/3 = 4.67
+
+Overall = (5.25×0.30) + (6.75×0.25) + (4.33×0.20) + (2.75×0.15) + (4.67×0.10)
+        = 1.575 + 1.688 + 0.866 + 0.413 + 0.467 = 5.01
+```
+
+**Critical Defects:**
+- Variable names are entirely generic (`a1`, `a2`, `v1`, `result`) losing all semantic meaning from source (`temp1`, `sum`, `count`)
+- Negative numbers displayed as unsigned literals (`0xFFFFFFFFLL` instead of `-1`)
+- Switch statements with fall-through converted to goto labels, obscuring intentional fall-through semantics
+- No comments explaining algorithm purpose despite source having extensive documentation
+- Non-standard types (`__int64`, `_DWORD`) reduce portability and readability
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+- Function names like `sequential_ops`, `nested_if_deep`, `switch_fallthrough` perfectly preserved from source, immediately conveying purpose.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Source had extensive documentation explaining each function's purpose, test cases, and difficulty level; decompiled output has virtually no comments beyond register annotations.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Variable name inference**: Analyze usage patterns to suggest semantic names (e.g., loop counters → `i`, `j`; accumulators → `sum`, `count`)
+2. **Literal normalization**: Convert unsigned representations of negative numbers back to signed literals for clarity (`0xFFFFFFFFLL` → `-1`)
+3. **Comment recovery**: Extract and preserve source comments from debug symbols when `-g` flag is present, or generate confidence indicators for uncertain decompilations

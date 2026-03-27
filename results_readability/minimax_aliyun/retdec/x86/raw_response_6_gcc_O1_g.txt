@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3` throughout. For example, in `param_strcpy`: `int32_t v1; // 0x1b8b` provides no semantic meaning. The original source uses meaningful names like `dst`, `src` which are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Main test functions like `param_strcpy`, `call_strcpy`, `param_strcmp` are correctly named. However, standard library wrappers use cryptic names like `function_15b0` (should be strcpy), `function_1440` (should be strcmp), `function_1630` (should be strlen). The naming is inconsistent between user functions and library wrappers.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some constants like `SIGBUS`, `SIGALARM`, `AF_INET`, `SOCK_STREAM` are properly recognized. However, many global variables use unexplained hex values: `int32_t g3 = 0x25203a31; // 0x40a5`. Magic numbers like `66` in `open(path, 66)` are not explained as `O_CREAT|O_RDWR`.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe compiler artifact pollution. The ARM64 binary contains x86-specific code: `__x86_get_pc_thunk_bx(v1)`, `__readgsdword(20)` (x86 GS segment read), stack canary checks with `__stack_chk_fail_local()`. These artifacts make the code nearly unusable for analysis.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow in simple functions like `param_strcpy` is natural (straight-line code). However, complex functions like `param_pthread_join` use goto-based jumps with labels (`lab_0x2bfc`, `lab_0x2c1e`) making control flow difficult to follow. At -O0, such goto usage is unnecessary.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately separated (e.g., `param_strcpy` and `call_strcpy` are separate). However, some functions are excessively large (e.g., `param_pthread_join` is ~200 lines, `param_thread_local_storage` is ~280 lines) and could benefit from decomposition. Some functions appear to be just basic block collections.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Simple functions like `param_strcpy` read top-to-bottom cleanly. However, complex functions have multiple forward jumps and goto statements that disrupt linear reading. The `param_mutex_lock` function has numerous jumps making it hard to trace execution.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling is present in `param_malloc_free` (manual unrolling of the for loop). Some common subexpression patterns exist but are not excessive. The code is generally manageable despite some optimization artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently which is reasonable. However, loses precision - original `size_t` becomes `int32_t`, `uint32_t` becomes `int32_t`. Function parameters like `param_strlen(int32_t str)` should be `const char*`. Const correctness is partially preserved in some signatures but not consistently.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structures were reconstructed: `struct _IO_FILE`, `struct ipc_perm`, `struct shmid_ds`, `struct sockaddr`, `struct stat`. However, all field names are generic (`e0`, `e1`, `e2`...) losing all semantic meaning. Original field names like `st_size`, `st_mode` are completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues exist. In `param_strchr_strstr`: `char * substr_pos = strstr(str, (char *)(0x1000000 * (int32_t)substr >> 24));` - this is incorrect type manipulation. Function pointer types are imprecise: `(int32_t * (*)(int32_t *))` instead of proper function signatures. Some pointer arithmetic could lead to undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments only provide metadata like address ranges (`// Address range: 0x1b8b - 0x1bbb`) and line numbers (`// Line range: 45 - 49`). No comments explain the algorithm, purpose, or logic. The comment `// From module: /work/6.c` is auto-generated and not useful for understanding.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms are explicitly identified or named. Standard library function patterns are recognized (strcpy, strlen, etc.) but not highlighted as idioms. The producer-consumer pattern in `param_condition_variable` is not identified as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code or uncertainties. The incorrect type manipulation in `param_strchr_strstr` is presented confidently as correct. No warnings about potential undefined behavior or indirect calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. Error conditions are handled but not explained. For example, the return value semantics of `param_strcpy` (returning strlen) are not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible in the code (e.g., `call_strcpy()` calls `param_strcpy()`) but not explicitly documented. Global variable usage is apparent but not clearly annotated. No call graph or relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Code is organized into sections: structures, function prototypes, global variables, and function definitions. However, it's a single monolithic file with ~2400 lines. Related functions are grouped but without clear logical separation or headers.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code includes many standard library headers and appears designed to compile. However, there are issues: x86-specific code (`__x86_get_pc_thunk_*`) in what should be ARM64 output, some function declarations may be incorrect, and the code would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v1`, `v2`, `v3`) losing all semantic meaning
+- Severe compiler artifact pollution (x86 code in ARM64 binary: `__x86_get_pc_thunk_bx`, `__readgsdword`)
+- Struct field names are generic (`e0`, `e1`, `e2`...) losing original field semantics like `st_size`, `st_mode`
+- No comments explaining algorithm logic or purpose
+- Type precision lost - `size_t` becomes `int32_t`, pointers mishandled
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 6/10)  
+Simple functions like `param_strcpy` have natural, readable control flow matching the original source. The basic structure is preserved even if variable names are poor.
+
+**Most Needs Improvement:** Noise Reduction (scored 2/10)  
+The decompiler produces severe pollution with x86-specific compiler artifacts in an ARM64 binary. This makes the code practically unusable for analysis and suggests a fundamental issue with architecture detection or cross-compilation handling.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Eliminate compiler artifacts**: Remove or clearly annotate `__x86_get_pc_thunk_*`, `__readgsdword`, stack canary checks. These obscure the actual logic.
+2. **Recover struct field names**: Use type information and usage patterns to infer meaningful field names instead of generic `e0`, `e1`.
+3. **Add explanatory comments**: Include comments that explain the algorithm purpose, not just address/line metadata. Document what each function does and any uncertainties.

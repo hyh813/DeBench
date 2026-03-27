@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 8/10
+Justification: Most local variables (`obj`, `r1`, `r2`, `capture_by_value`) are recovered accurately from the debug symbols. However, complex STL interactions in `test_cpp_smart_ptr` introduce generic names (`v0`, `v1`, `v2`), and virtual base access uses pointer arithmetic (`*(&obj.dataB + 1)`), slightly obscuring the intent.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: The decompiler successfully demangles all C++ symbols, restoring original names like `test_cpp_member_func`, `SimpleClass::getValue`, and `test_cpp_lambda(void)::{lambda(int)#1}::operator()`. This provides excellent semantic context.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals ("Test") and constants (4660 for 0x1234) are preserved. However, magic numbers related to compiler internals appear frequently, such as `__readgsdword(0x14u)` for stack canaries and offsets like `0x1Fu` in `strncpy`, which lack explanatory comments.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is cluttered with stack canary checks (`v4 = __readgsdword(0x14u); ... HIDWORD(result) = v4 - __readgsdword(0x14u);`) at the end of almost every function. Additionally, 64-bit return values on this 32-bit architecture are split into `LODWORD` and `HIDWORD` assignments, which significantly hinders readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Standard loops and conditionals are preserved well. However, high-level exception handling (`try/catch`) is completely flattened into low-level library calls (`__cxa_allocate_exception`, `__cxa_throw`), making the control flow of `test_cpp_exception` difficult to follow compared to the source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Class methods and constructors are correctly separated into their own functions. Compiler-generated thunks (e.g., `non-virtual thunk to'MultiDerived::funcB`) are correctly identified. The verbosity of `test_cpp_smart_ptr` is due to STL inlining at `-O0`, not poor decomposition.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads largely top-to-bottom with minimal forward jumps. The logic within functions like `test_cpp_member_func` follows the source sequence closely, making it easy to trace execution.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: Since the code was compiled with `-O0`, there is no loop unrolling or dead code elimination to obscure the logic. The redundancy present is inherent to the unoptimized source code (e.g., explicit stack handling) rather than decompiler artifacts.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: The decompiler accurately recovers complex C++ types, including templates (`Container<int>`, `std::unique_ptr<int, ...>`), classes (`SimpleClass`, `Derived`), and standard library types. The distinction between `int` and `size_t` is mostly preserved, though 64-bit integers are split on this 32-bit platform.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Struct members are accessed by name rather than offset (e.g., `obj.dataA = 100`, `this->value = v`). The layout of classes like `Point` and `MultiDerived` is correctly reconstructed, preserving the semantic structure of the data.
+
+**11. Type Safety:** Score: 8/10
+Justification: The code generally respects type safety, using correct member access operators. Virtual base class access is implemented via pointer arithmetic (`(char *)this - 8`), which is technically unsafe-looking but accurate to the Itanium C++ ABI used by GCC.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are almost no comments explaining the logic. The only comments present are decompiler warnings like `// positive sp value has been detected` or `// local variable allocation has failed`, which do not aid in understanding the program's purpose.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: While C++ idioms like RAII and templates are visible through the types, specific patterns like virtual dispatch are shown as raw vtable calls (`(*obj->_vptr_Base)(obj, x)`) rather than the idiomatic `obj->virtual_func(x)`. Lambda types are named descriptively, which is a plus.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: The decompiler flags stack pointer issues but fails to annotate complex low-level operations like `__cxa_throw` or vtable thunks with high-level explanations (e.g., "Throwing exception" or "Virtual call via thunk").
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the bounds check in `Container::get` is visible as code, but not documented as a contract ensuring safe access.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the recovered names. Virtual calls, while low-level, clearly show the vtable mechanism. The relationship between classes and their methods is clear through the naming convention (`ClassName::methodName`).
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped by address, but the naming allows for easy mental grouping. The decompiler output separates the test functions from the class implementations and STL internals reasonably well.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on standard C++ headers (implied by the types) and uses GCC-specific intrinsics (`__readgsdword`). While the syntax is correct, compiling it would require the specific standard library implementation and handling of the split 64-bit return values.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.1/10
+
+**Critical Defects:**
+- **Stack Canary Noise:** Every function is cluttered with `__readgsdword(0x14u)` checks, obscuring the return logic.
+- **Virtual Call Abstraction:** Virtual function calls are presented as raw vtable dereferences (`(*obj->_vptr_Base)(obj, x)`) rather than high-level method invocations.
+- **Exception Handling Loss:** `try/catch` blocks are reduced to low-level `__cxa_*` function calls, destroying the control flow structure of exception handling.
+- **64-bit Splitting:** On this 32-bit architecture, 64-bit return values are awkwardly split into `LODWORD` and `HIDWORD` assignments.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The C++ symbol demangling is perfect, fully restoring the original semantic names for classes, methods, and even lambda closures.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)
+- The lack of comments explaining complex C++ runtime mechanisms (RTTI, exceptions, vtables) makes the low-level implementation details unnecessarily hard to decipher.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Abstract Stack Canaries:** Automatically detect and hide or collapse stack canary verification sequences into a macro or comment to reduce visual noise.
+2.  **Reconstruct Exception Handling:** Analyze `.gcc_except_table` or LSDA to reconstruct `try/catch` blocks instead of printing raw `__cxa_throw` calls.
+3.  **Resolve Virtual Targets:** Use RTTI or type information to annotate virtual call sites with the possible target method names (e.g., `/* virtual call: Base::virtual_func or Derived::virtual_func */`).

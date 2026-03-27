@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `result`, `flag1`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `shared_counter` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`param_strcpy`, `call_strcpy`, `thread_sum`) but many are address-based (`sub_401030`, `sub_401790`). Compiler optimization suffixes (`.part.0`, `.constprop.0`) add confusion.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `4294967295` (unsigned -1), `42`, `1000`, `21951`. String literals preserved ("Value: %d, Name: %s\n") but numeric constants lack named equivalents.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__stack_chk_fail_local()`, `__x86.get_pc_thunk.*` helpers, repeated struct definitions, and many single-line wrapper functions that add no value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` usage (e.g., `goto LABEL_401d63`, `goto v1->field_f8`). At O0 optimization, should have clean loop constructs but decompiler produces jump-heavy code.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Mixed quality - some functions properly separated but many tiny wrappers (`sub_401030` through `sub_401780` chain). Compiler optimization artifacts create fragmented structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps and LABEL patterns disrupt top-to-bottom reading. Some functions read reasonably but many have non-linear flow requiring mental tracking.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Repeated struct definitions with different offsets, similar wrapper functions throughout, stack canary checks duplicated in nearly every function.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - everything is `unsigned int` instead of `size_t`, `char*`, `FILE*`, `pthread_t`. Lost const-correctness and signed/unsigned distinctions.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`field_0`, `padding_0[224]`). ThreadData struct not properly identified. TLS variables not recognized as thread-local.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many implicit casts between pointer and integer types. Pointer arithmetic on generic `unsigned int` types. No const correctness but not critically dangerous.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Completely absent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls identified (`strcpy`, `strcmp`, `pthread_create`) but no higher-level pattern recognition. Thread synchronization patterns not named or explained.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted: `[D] Unsupported jumpkind Ijk_SigTRAP`. Stack canary checks present but unexplained. No uncertainty markers for indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not explained. Return value semantics completely undocumented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (`shared_counter`, `atomic_counter`) referenced without context. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with no logical grouping. Original test structure partially preserved through function names but no header files or namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains external declarations but would require extensive stubs. Platform-specific code (`__x86.get_pc_thunk`) not portable. Many undefined external references.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+5+5+4)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (3+4+5)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (1+4+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.37
+─────────────────────────────────────────────────────
+Overall Score:                              3.88/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Zero comments** - No documentation whatsoever for any non-trivial logic
+- **Generic variable names** - `v0`, `v1`, `flag1` obscure semantic meaning (should be `buffer`, `src`, `is_ready`)
+- **Excessive goto statements** - Simple loops converted to `goto LABEL_XXXX` patterns
+- **Type erosion** - All pointers and integers collapsed to `unsigned int`, losing `char*`, `FILE*`, `pthread_t` distinctions
+- **Compiler artifact pollution** - Stack canary checks, `__x86.get_pc_thunk.*` helpers, and optimization suffixes (`.constprop.0`) clutter output
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- Some original function names preserved (`param_strcpy`, `thread_sum`, `consumer_thread`) providing semantic anchors in otherwise opaque code
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any comments makes understanding algorithm intent impossible without cross-referencing original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in size comparisons should be named `size`, `length`, `count`)
+2. **Add decompilation confidence annotations** - Mark uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: indirect call target`
+3. **Recover high-level control structures** - Convert `goto` chains back to `for`/`while` loops and `if`/`else` blocks, especially at O0 where original structure should be recoverable

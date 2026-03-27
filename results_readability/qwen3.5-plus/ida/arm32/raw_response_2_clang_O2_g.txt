@@ -1,0 +1,127 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names (`v1`, `v2`, `v4`, `result`) instead of semantic names. For example, `array_1d_stack` uses `v4` for array element values when `element` or `current_value` would be clearer.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). A few unnamed functions remain (`sub_3D8`, `sub_15C4`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `65`, `32`, `0x1Au` in `process_char` lack explanation. Test functions show pre-computed constants (e.g., `printf("DT-L1-01...): %c\n", 97)`) instead of actual computations.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: register comments (`// r0`, `// r1`), calling convention markers (`__fastcall`), and assembly remnants (`JUMPOUT`, `__asm { POP {R4-R6,PC} }`).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural loops, but `binary_tree_sum` converts recursion to do-while loop (optimization artifact). `array_2d_stack` and `array_3d` show unrolled loops obscuring original iteration pattern.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity matching source. Test functions are heavily optimized but still logically separated. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some do-while patterns are less natural than original for-loops but remain traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling in `array_3d` creates 25 explicit additions instead of nested loops. Test functions show constant folding eliminating actual computation logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types well-recovered (int, char, float, double). Some degradation: `long long` becomes `__int64`, `bool` becomes `_Bool`/`bool` inconsistently. Pointer types preserved accurately.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Excellent struct recovery with field names (`Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Graph`). Union types preserved. Bitfields shown as manual bit operations rather than named fields.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Unsafe casts present (`(void*)size`, `*(_DWORD *)p`) but match original source intent. No new type safety issues introduced by decompilation process.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments explaining logic. Only metadata comments present (processor info, decompiler warnings). No algorithm explanations or API contracts recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns (linked list traversal, tree recursion, array summation) present but not identified or named. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged ("positive sp value has been detected, the output may be wrong!"). Failed decompilations clearly marked. No uncertainty indicators for ambiguous code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks present in code but not explained as contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and traceable. No call graph documentation. Global variable references shown but relationships not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Original logical grouping partially preserved through function ordering. No header file separation or namespace structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Six library functions failed to decompile (`__imp___libc_start_main`, `__imp_printf`, etc.). Would require stubs and external dependencies to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (5+8+6+6)/4 = 6.25
+Level 2 Average: (6+7+7+6)/4 = 6.50
+Level 3 Average: (7+8+7)/3 = 7.33
+Level 4 Average: (3+4+6+3)/4 = 4.00
+Level 5 Average: (6+5+4)/3 = 5.00
+
+Overall = (6.25 × 0.30) + (6.50 × 0.25) + (7.33 × 0.20) + (4.00 × 0.15) + (5.00 × 0.10)
+        = 1.875 + 1.625 + 1.466 + 0.600 + 0.500
+        = 6.066/10
+```
+
+**Overall Readability Score: 6.1/10**
+
+---
+
+### Critical Defects
+
+- **Variable names generic**: `v1`, `v2`, `v4`, `result` obscure semantic meaning (e.g., `array_1d_stack` should use `element`, `sum`, `count`)
+- **Test functions over-optimized**: Print constant values instead of showing actual computation logic, losing educational value
+- **No semantic comments**: Zero explanation of algorithm intent, preconditions, or non-obvious logic
+- **Loop unrolling obscures structure**: `array_3d` shows 25 explicit additions instead of recognizable nested loop pattern
+- **Library function failures**: 6 external functions failed to decompile, requiring manual stubs
+
+---
+
+### Best Quality Aspect
+
+- **Composite Type Recovery (8/10)**
+- Struct and union types recovered with accurate field names (`Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`, `Graph`), preserving semantic structure excellently.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (3/10)**
+- Virtually no comments explaining logic, algorithms, or API contracts; decompiler should infer and document non-trivial operations automatically.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `v4` accumulates values in loops → name it `sum` or `accumulator`)
+
+2. **Recognize and preserve loop constructs**: Detect unrolled loops and reconstruct original iteration patterns with comments indicating optimization level
+
+3. **Generate semantic documentation**: Auto-generate comments for non-trivial logic, including preconditions (null checks), algorithm descriptions, and type relationships

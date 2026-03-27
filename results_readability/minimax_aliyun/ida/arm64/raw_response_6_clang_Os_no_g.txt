@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names `a1` (dst) and `a2` (src) instead of descriptive names. The temporary variable `v2` is also generic. These should be `dst`, `src`, and `result` respectively based on usage patterns.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names `param_strcpy` and `call_strcpy` perfectly match the original source. Action-oriented and semantically accurate.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: String literal "HelloLib" is correctly preserved. Array size 32 is maintained. No magic numbers present.
+
+**4. Noise Reduction:** Score: 10/10  
+Justification: Clean decompilation with no compiler artifacts, redundant casts, or debug instrumentation. The code is minimal and focused.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10  
+Justification: Natural sequential flow - strcpy followed by strlen. At -O0, this is exactly as expected with no goto or confusing conditionals.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Both functions are appropriately sized (param_strcpy: 4 lines, call_strcpy: 4 lines). Clear single responsibility.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Perfect top-to-bottom reading. No forward jumps, breaks, or continue statements. Highly linear.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No dead code, no duplicate expressions. The strcpy result is used directly in strlen without redundant storage.
+
+### LEVEL 3: TYPE SYSTEM FIDELITY
+
+**9. Type Precision:** Score: 8/10  
+Justification: Parameters correctly typed as `char *` and `const char *`. However, return type is `size_t` instead of `int` from original source - this is technically more accurate for strlen but differs from the original function signature.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types (structs/unions) in this function - not applicable.
+
+**11. Type Safety:** Score: 10/10  
+Justification: No unsafe casts, correct pointer types, no type-confused operations. Type-safe code throughout.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The function lacks any explanation of its purpose (copies string and returns length).
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: The strcpy+strlen pattern is not explicitly identified as a common idiom. Could benefit from a comment explaining this is a "copy and measure" pattern.
+
+**14. Anomaly Indication:** Score: 10/10  
+Justification: No anomalies in this simple function - not applicable.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., "requires: dst buffer large enough"). No postconditions indicated (e.g., "ensures: returns length of copied string").
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls to strcpy and strlen are clear, but there's no documentation of who calls param_strcpy or what it calls. The relationship to call_strcpy is implicit.
+
+**17. Module Organization:** Score: 10/10  
+Justification: Functions properly grouped together in the decompiled output. Related functions (param_strcpy and call_strcpy) are adjacent.
+
+**18. Build System Compatibility:** Score: 10/10  
+Justification: The code should compile cleanly as standard C. No external dependencies beyond standard library functions which are properly declared.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 8.1/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`a1`, `a2`, `v2`) instead of semantic names (`dst`, `src`, `result`)
+- No comments explaining function purpose or the strcpy+strlen idiom
+- No preconditions/postconditions documented (e.g., buffer size requirements)
+
+**Best Quality Aspect:** Structural Intelligibility (scored 10/10)  
+- Control flow is perfectly natural, code is highly linear with no redundancy, and function decomposition is appropriate.
+
+**Most Needs Improvement:** Semantic Transparency (scored 4.3/10)  
+- Lacks comments, idiom recognition, and contract documentation. The decompiled code provides no guidance on what the function does or its requirements.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a1` is used as destination in strcpy, so name it `dst`; `a2` is the source, name it `src`
+2. Add basic comments explaining function purpose - "Copies src to dst using strcpy, returns length"
+3. Document preconditions when obvious - "Requires: dst buffer must be large enough to hold src"

@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Function parameters (`size`, `x`, `arr`) are recovered correctly, but local variables are generic (`iVar1`, `uVar2`, `local_18`), obscuring the logic of intermediate calculations (e.g., `iVar1` in `param_macro_constants` represents the return value).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `param_macro_constants`, `param_asm_basic`), likely due to debug symbols (`-g`) being preserved, providing perfect semantic mapping.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Macro constants are fully expanded into magic numbers (e.g., `0x400` instead of `MAX_SIZE`, `0x40` instead of `BUFFER_COUNT * 4`), making the logic difficult to understand without the original source definitions.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains Ghidra-specific artifacts like `CONCAT44` and `CONCAT62` in `test_asm_features`, and uses `undefined1`/`undefined8` types instead of standard C types, adding significant noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent; complex inline assembly blocks (e.g., `param_asm_clobber`, `param_asm_multi_insn`) have been lifted into natural C `for` loops and `if` statements, making the logic highly readable.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: The decompiled code maintains a 1-to-1 mapping with the source functions; no inlining or outlining occurred (consistent with `-O0`), preserving the original modular structure perfectly.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code reads linearly from top to bottom with no spurious `goto` statements or confusing jump constructs; early returns and loops are represented idiomatically.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no dead code or redundant variables; the decompiler successfully removed temporary variables used only for register spilling, presenting clean expressions like `return x * 3 + 1`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: While basic types like `int` and `void*` are correct, the decompiler frequently defaults to `undefined` types (e.g., `undefined1 *`, `undefined8`) for data buffers and stack variables, losing type specificity.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Arrays are handled correctly (e.g., `int local_18 [6]`), and pointer arithmetic on arrays is preserved accurately, though no complex structs were present in the source to test this deeply.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is generally safe, but the use of `undefined*` casts (e.g., `*(undefined1 *)dst = *(undefined1 *)src`) and pseudo-macros like `LOCK()`/`UNLOCK()` introduces ambiguity compared to standard C types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10
+Justification: Comments are limited to automated warnings like `/* WARNING: Unknown calling convention */` and `/* Unresolved local var */`, which are useful for debugging but do not explain the algorithm's purpose.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: The decompiler successfully recognized and lifted standard assembly idioms into C equivalents, such as converting a `rep movsb` loop into a `for` loop for memory copying.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: Ghidra clearly flags issues like "Unknown calling convention" and "Unresolved local var," alerting the user to areas where the analysis might be imperfect or where stack variables were optimized away.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: There is no recovery of preconditions or invariants; for example, the check `if (exec_mem == MAP_FAILED)` is present but not explicitly documented as a contract for memory allocation functions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are explicit and use the correct recovered names, making the call graph easy to follow (e.g., `test_preprocessing_features` calling `call_macro_constants`).
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, matching the source file's structure, with related test functions grouped together in `test_preprocessing_features` and `test_asm_features`.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code would not compile as-is due to Ghidra-specific macros (`CONCAT44`, `LOCK`), `undefined` types, and missing header includes, requiring significant cleanup to be buildable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.1/10
+
+**Critical Defects:**
+- Macro constants expanded to magic numbers (e.g., `0x400` instead of `MAX_SIZE`), obscuring intent.
+- Local variables use generic names (`iVar1`, `uVar2`) instead of semantic names.
+- Use of `undefined` types (`undefined1`, `undefined8`) degrades type precision and safety.
+- Presence of Ghidra artifacts (`CONCAT44`, `LOCK()`) prevents compilation.
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 9/10)
+- The decompiler excelled at lifting inline assembly blocks into idiomatic C control structures (loops, conditionals), making the low-level logic very easy to follow.
+
+**Most Needs Improvement:** Literal Clarity (scored 3/10)
+- The expansion of macros into magic numbers is the biggest barrier to understanding, as the semantic meaning of constants like `0xdef0` is completely lost without the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic analysis to suggest named constants for magic numbers based on frequency or context (e.g., detecting `0x400` as a size limit).
+2. Improve type propagation to replace `undefined` types with likely candidates (e.g., `char` for `undefined1` in string contexts).
+3. Filter out or better represent internal decompiler artifacts (like `CONCAT` macros) to produce cleaner, more standard C code.

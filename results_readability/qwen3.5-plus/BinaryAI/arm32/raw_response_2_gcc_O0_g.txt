@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `local_c`, `local_10` with no semantic meaning. Original source had meaningful names like `x`, `arr`, `n`, `sum` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved (`double_value`, `process_char`, `array_1d_stack`, `struct_simple`) matching original source exactly with clear action-oriented naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Character constants shown as hex (`0x41` instead of `'A'`, `0x62` instead of `'b'`). Magic numbers like `0x20`, `0x5b` in `process_char` obscure the uppercase-to-lowercase conversion logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail`) add noise to every test function. Redundant local variable initialization (`local_c = 0`) appears throughout. Floating-point helper calls (`__mulsf3`, `__aeabi_ddiv`) obscure simple operations.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as natural `for` constructs. However, `process_bool` uses verbose if/else instead of direct boolean return. Switch statement in `enum_switch` correctly recovered.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Each test case is separate. Helper functions (`complex_callback`, `double_value`) preserved as distinct units.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Test functions have some forward variable references but remain traceable. No problematic goto usage in main logic.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary code adds redundant checks to every function. Local variable declarations (`local_10`, `local_c`) create verbosity. No dead code elimination visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `process_ll` returns `undefined8` instead of `long long`, `process_float` returns `undefined4` instead of `float`. Pointer types often lost (`int*` becomes `int`). `volatile` qualifier completely lost in `volatile_access`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - all structs lost. `struct_simple` accesses fields via `param_1[0]`, `param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`, `p->z`. Bitfields accessed via bit operations (`(*(byte *)param_1 & 1)`) instead of named fields. Unions not recovered at all.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present. Function pointers typed as `code*` instead of proper signatures. `ptr_triple` has incorrect type (`undefined4 *` instead of `int ***`). Pointer arithmetic on `int` instead of proper typed pointers.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original had extensive Chinese documentation explaining each test case's purpose, expected values, and scenarios. Complete loss of semantic documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Linked list traversal in `linked_list` not identified as such. Tree recursion in `binary_tree_sum` not labeled. Graph traversal pattern unrecognized.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for type mismatches. `volatile_access` shows `*param_1 + *param_1` without noting volatile semantics were lost. No warnings about potential undefined behavior in `array_oob`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`). No postconditions. Error conditions like `array_complex_index` returning `-1` not explained. No parameter validation notes.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships not documented. Global data references (`DAT_000133b0`, `DAT_00013530`) unexplained. Callback relationships (`ptr_func_simple` calling `double_value`) visible but not annotated.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure. Test functions grouped logically. No header file structure or API declarations. External functions marked `<EXTERNAL>` but not organized.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires significant patching to compile. Floating-point helper functions (`__mulsf3`, `__aeabi_ddiv`) need linking. Type mismatches would cause compilation errors. Stack canary dependencies unclear.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+5+6)/4 = 5.75 × 0.30 = 1.73
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.75
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (1+3+3+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.99/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **All struct/union types lost** - accessed via raw pointer arithmetic (`param_1[0]`, `param_1[1]`) instead of field names
+- **Zero documentation** - original had extensive comments explaining each test; decompiled has none
+- **Type precision severely degraded** - `undefined4`, `undefined8` instead of `float`, `double`, `long long`
+- **Volatile semantics lost** - `volatile_access` shows simple addition without indicating volatile behavior
+- **Magic hex literals** - character constants shown as `0x41` instead of `'A'`, obscuring intent
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from source, making high-level purpose immediately clear
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding test purposes and expected behaviors extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type structures** - Analyze access patterns to reconstruct struct field names and layouts from pointer arithmetic patterns
+2. **Preserve source comments** - Extract and retain debug symbol comments when `-g` flag was used during compilation
+3. **Improve type inference for floating-point** - Recognize `__mulsf3`, `__aeabi_ddiv` patterns and recover original `float`/`double`/`long double` types instead of `undefined4`/`undefined8`

@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `v15[2]`) with no semantic meaning. Original source had meaningful names like `local`, `arr`, `head`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`local_vars`, `heap_basic`, `create_tree_node`). Some runtime functions use generic names (`sub_8E0`) but core test functions match source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: SIMD constants like `0x1010101010101010LL` and `0x800000008LL` are unexplained magic numbers. Simple constants (42, 10, 20) are clear but vector initialization values obscure intent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant SIMD intrinsics visible (`vaddq_s8`, `vshlq_n_s32`, `vmulq_s32`), stack frame annotations (`[xsp+0h] [xbp-810h]`), and 18 "FAILED to decompile" entries pollute the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions are natural, but optimized loops use `do-while` with `LABEL` patterns instead of clean `for` loops. SIMD vectorization completely obscures original loop structure in functions like `vla_stack`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved well with appropriate granularity. However, some functions过度 simplified (e.g., `tree_heap_traversal` returns constant `60` instead of showing tree creation logic).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Simple functions read top-to-bottom cleanly. Complex functions use `LABEL_8`, `LABEL_10` jump targets that disrupt linear reading flow in optimized code paths.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling and SIMD vectorization create apparent redundancy (e.g., `v8[-1] = v10; *v9 = vaddq_s32(v10, v6); v9 += 2;`). Original simple loops transformed into complex vector operations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `void*`) but SIMD types (`int32x4_t`, `int8x16_t`) add noise. Some type erosion visible (`global_heap_ptr = (__int64)p` loses pointer semantics).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `Node` struct recovered with field names (`data`, `next`). `TreeNode` struct recovered. However, `Point` struct not explicitly defined, and array types often degraded to pointers.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(__int64)p`, `(__int64 (__fastcall *)(_QWORD))double_value`). Pointer arithmetic visible but generally safe. Function pointer types sometimes degraded to `__int64`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments explaining logic. Only "FAILED to decompile" notes for library functions. Original source had extensive test case documentation (MEM-L1-01, HEAP-L2-01, etc.) completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Linked list and tree patterns visible in code but not identified or named. Memory allocation patterns present but unlabeled. No recognition of test harness structure.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `dangling_pointer` and `double_free` functions present dangerous code without any warnings. No uncertainty indicators for indirect calls or optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: n > 0"). NULL checks present in code but not documented as contracts. Original test expectations completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible and global variable usage clear (`global_counter`, `global_func_ptr`). Callback relationships visible but no explicit call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. Static functions marked appropriately. Test functions grouped but no logical section separation matching original source organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 18 library functions failed to decompile requiring stubs. Platform-specific code (`fork`, `waitpid`) present. Would require significant work to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+8+5+4)/4 = 5.00
+L2 Average: (5+7+6+5)/4 = 5.75
+L3 Average: (6+7+6)/3 = 6.33
+L4 Average: (3+4+3+3)/4 = 3.25
+L5 Average: (6+5+4)/3 = 5.00
+
+Overall = (5.00 × 0.30) + (5.75 × 0.25) + (6.33 × 0.20) + (3.25 × 0.15) + (5.00 × 0.10)
+        = 1.50 + 1.44 + 1.27 + 0.49 + 0.50
+        = 5.20/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `v15[2]`) losing all semantic meaning from original source
+- **SIMD vectorization obscures simple loops** - original `for` loops transformed into complex `vaddq_s32` operations
+- **No comments or documentation** - original test case labels (MEM-L1-01, HEAP-L2-01) completely lost
+- **Dangerous code patterns unflagged** - `dangling_pointer` and `double_free` present without warnings
+- **18 library functions failed to decompile** - requires external stubs for compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately matching original source (`local_vars`, `heap_basic`, `create_tree_node`)
+
+### Most Needs Improvement:
+- **Semantic Transparency (3.25/10 average)** - Almost no comments, no pattern recognition, no anomaly warnings, no contract documentation despite original source having extensive test documentation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (e.g., `v15[2]` used as stack frame, should be `saved_registers`)
+2. **Add confidence indicators for optimization artifacts** - Flag SIMD vectorization with comments like "OPTIMIZED: Original for-loop vectorized"
+3. **Detect and warn about dangerous patterns** - Flag use-after-free, double-free, and buffer overflow patterns with explicit warnings

@@ -1,0 +1,128 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy`
+
+The original source shows a simple string copy function:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+The decompiled version:
+```c
+size_t __cdecl param_strcpy(char *s, char *src)
+{
+  strcpy(s, src);
+  return strlen(s);
+}
+```
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Parameter `dst` was renamed to generic `s`, losing semantic meaning. The `src` parameter kept its name but lost the `const` qualifier. Many other functions in the decompiled output use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5` making tracking difficult.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names like `param_strcpy`, `param_strcmp`, `param_strlen` perfectly match the original source. The naming is action-oriented and semantically accurate throughout the decompiled output.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: String literals like `"HelloLib"`, `"Value: %d, Name: %s\n"`, `"/etc/passwd"` are correctly preserved. Magic numbers like `0x12` (18) for data length are present but can be inferred from context. Some numeric constants like `66` (O_CREAT|O_RDWR) lack symbolic names.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The code is relatively clean without obvious compiler artifacts. However, there are some artifacts like `__usercall` and `__cdecl` calling conventions that add noise. The "FAILED to decompile" section shows 59 functions that couldn't be resolved, indicating significant noise in the overall output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and readable. Loops use `while` constructs, conditionals are clear. At `-O0` (debug) optimization, we expect near-original structure, and the decompiler largely delivers this. Minor issues like computed goto in `param_malloc_free` loop unrolling are acceptable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. Each test function (`call_strcpy`, `call_strcmp`, etc.) is separate. The `param_*` wrapper functions correctly isolate the functionality being tested. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns in error handling (e.g., `if (!v1) return -1;`) are used appropriately. No excessive forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some loop unrolling present in `param_malloc_free` and `param_memset` but not excessively commented. No obvious dead code. The redundancy is manageable for understanding.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Return type changed from `int` to `size_t` in `param_strcpy`. The `const` qualifier is missing from the `src` parameter (`char *src` instead of `const char *src`). Many functions use generic `int` where `size_t` would be more appropriate. Function pointers are cast to `void *(*)(void *)` losing signature precision.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Basic types are handled well. For `param_fork_exec`, the `stat_loc` is correctly shown as `int` (though it should be `int*`). The `ThreadData` struct in pthread functions is flattened into separate arrays (`arg[2]`, `v9[2]`, `v11[2]`) rather than reconstructed as a struct.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe operations present. In `call_strcmp`: `v3 = -(v1 != 0)` uses signed negation on boolean. In `param_pthread_join`: mixing `int` and `pthread_t` types. The `signal_handler` function has wrong return type (`Elf32_Dyn **` instead of `void`).
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled output. The only comments are auto-generated headers like "Decompiled by IDA Pro 9.1" and occasional "// positive sp value has been detected". No explanation of algorithm logic, no recovery confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard library functions (`strcpy`, `strlen`, `strcmp`, `memcpy`) are correctly identified. pthread patterns (create/join) recognized. System call patterns identified. However, no explicit naming of patterns like "producer-consumer" for condition variables.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The "FAILED to decompile" section lists 59 unresolved functions, but these are just listed without explanation. No inline comments flagging uncertain decompilation, indirect calls, or potential issues. The `signal_handler` return type anomaly is not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions or postconditions documented. Error return values (-1, -2, -3) are not explained. The contract of functions (e.g., "returns length of copied string") is not explicitly stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls to standard library functions are clear (`strcpy`, `strlen`). Global variables like `signal_received`, `signal_number`, `shared_counter`, `atomic_counter` are used consistently. However, no explicit documentation of call relationships or caller/callee graphs.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically: standard library functions (0x1570-0x1C40), system calls (0x1E40-0x2270), thread functions (0x26F0-0x3160). This matches the source organization. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code appears to compile (metadata says "Compilation Result: Yes"). External dependencies (libc, pthread) are implicit. No header declarations provided. Some type mismatches might cause warnings but not failures.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Calculation:**
+- L1 (30%): (5+9+8+7)/4 = 7.25 × 0.30 = 2.175
+- L2 (25%): (8+8+8+7)/4 = 7.75 × 0.25 = 1.9375
+- L3 (20%): (6+7+6)/3 = 6.33 × 0.20 = 1.266
+- L4 (15%): (2+7+3+3)/4 = 3.75 × 0.15 = 0.5625
+- L5 (10%): (6+7+7)/3 = 6.67 × 0.10 = 0.667
+- **Total: 6.61** → rounded to **6.1/10**
+
+---
+
+### Critical Defects:
+- **Variable naming degraded**: `dst` → `s`, losing semantic meaning; generic names (`v0`, `v1`, `v2`) throughout
+- **Missing const qualifier**: `param_strcpy(char *src)` should be `param_strcpy(char *dst, const char *src)`
+- **No comments**: Zero explanatory comments for algorithms, contracts, or confidence levels
+- **Type precision loss**: Return type `int` → `size_t`, function pointer signatures lost
+- **Anomalies unflagged**: 59 failed functions listed silently; `signal_handler` return type wrong but not flagged
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+Function names like `param_strcpy`, `param_strcmp`, `param_strlen` perfectly match the original source and clearly indicate purpose.
+
+### Most Needs Improvement: Comment Quality (2/10)
+The decompiled output has almost no comments. At -O0 (debug) level, users expect near-perfect readability, but this output provides no guidance on algorithm logic, decompilation confidence, or API contracts.
+
+### Top 3 Recommendations:
+1. **Add variable name inference**: Use usage patterns to infer names (e.g., `s` used in `strcpy(s, src)` and `strlen(s)` should suggest `dst` or `dest`)
+2. **Recover const qualifiers**: Track const-correctness through standard library calls
+3. **Add explanatory comments**: At minimum, document function purpose, parameters, return values, and any decompilation confidence issues

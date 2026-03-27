@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `a0`, `ptr`, `p`). While `global_counter` and `const_string` are recovered, local variables like `ptr10`, `ptr5` in `linked_list_heap` lack semantic meaning (e.g., `head`, `current`).
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names match the original source exactly (e.g., `local_vars`, `heap_basic`, `linked_list_heap`), providing perfect semantic mapping for high-level navigation.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (representing `-1`) and `0x800` are used directly without named constants or comments, obscuring the intent of error codes or buffer sizes.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: The code is polluted with IR-level artifacts such as `armg_calculate_condition`, `Not Conv(32I->1I, ...)`, and `vvar_4`, which significantly impede readability by exposing low-level lifting details.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Control flow frequently relies on `goto` statements (e.g., in `call_weak_fn`, `memop_memset`) and `do-while` loops for simple iterations, making the logic harder to follow than the original `for`/`while` structures.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are generally respected and match the source, though compiler optimizations (inlining) have merged some logic (e.g., `large_stack_frame` logic inside `test_stack_memory`), which is acceptable given the optimization level.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps using `goto` (e.g., `goto LABEL_400e4c` in `dangling_pointer`) disrupt the top-to-bottom reading flow, requiring the reader to jump around the function body.
+
+**8. Redundancy Elimination:** Score: 1/10  
+Justification: Severe redundancy is present, including critical semantic errors like calling `extern_function(5)` twice in `call_extern_func` (once to `v0`, once for return) and `printf` twice in `test_static_global`, which misrepresents the program's logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Signedness is universally lost; `int` types are recovered as `unsigned int` (e.g., `local_vars(unsigned int a0)`). Additionally, `global_var_access` returns `global_counter + 1` instead of the incremented value, indicating a type/optimization recovery error.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct recovery is inconsistent. `Node` in `linked_list_heap` is recovered as `struct struct_0` with fields, but `TreeNode` in `create_tree_node` is recovered as an array `unsigned int [3]`, losing the structure semantics entirely.
+
+**11. Type Safety:** Score: 5/10  
+Justification: The code relies on unsafe type punning, such as in `memop_unaligned_access` where an integer is reconstructed via bitwise operations on a char array (`v1[1] | v2[1] * 0x100`), which violates strict aliasing rules.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are virtually absent, with the exception of `/* do not return */` annotations for `exit`/`abort`. There is no explanation of complex logic or the `armg_calculate_condition` macros.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard patterns like `malloc`/`free` and `fork`/`waitpid` are visible, but they are not explicitly identified or highlighted (e.g., no "Linked List Traversal" comments).
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies are flagged. The double function calls and the `armg_calculate_condition` artifacts are presented as standard code without warnings about potential decompilation errors or IR lifting issues.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Preconditions (e.g., `if (!ptr) return ...`) are visible in the code, but they are not documented as explicit contracts or assertions (e.g., "requires: ptr != NULL").
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: External functions and global variables are declared with `extern` (e.g., `extern unsigned int global_counter`), making cross-references clear and navigable.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are organized in a standard order (roughly by address), and related test functions are grouped together, maintaining a logical structure similar to the source.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: The code will not compile due to pseudo-functions like `armg_calculate_condition`, undefined variables like `vvar_4`, and invalid syntax like `goto g_413008;`.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 10 + 5 + 2) / 4 = 5.0
+L2_avg: (4 + 7 + 4 + 1) / 4 = 4.0
+L3_avg: (3 + 5 + 5) / 3 = 4.33
+L4_avg: (2 + 5 + 1 + 3) / 4 = 2.75
+L5_avg: (8 + 7 + 1) / 3 = 5.33
+
+Overall = (5.0 × 0.30) + (4.0 × 0.25) + (4.33 × 0.20) + 
+          (2.75 × 0.15) + (5.33 × 0.10)
+Overall = 1.5 + 1.0 + 0.866 + 0.4125 + 0.533
+Overall = 4.31
+```
+
+### Overall Readability Score: 4.3/10
+
+### Critical Defects
+- **Redundant Function Calls**: Functions like `extern_function` and `printf` are called twice in sequence (e.g., `v0 = func(); return func();`), altering the perceived semantics and logic.
+- **IR Artifacts**: Pseudo-code artifacts like `armg_calculate_condition` and `Not Conv` are pervasive, making the code look like lifted IR rather than C.
+- **Signedness Loss**: All integer types are recovered as `unsigned int`, losing the distinction between signed and unsigned operations present in the source.
+- **Struct Recovery Failure**: The `TreeNode` structure is recovered as a raw array `unsigned int [3]`, destroying the semantic type information.
+- **Goto Usage**: Control flow frequently uses `goto` for simple conditional branches and loops, reducing readability.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**: The decompiler perfectly recovered all function names from the symbol table, making high-level navigation and mapping to the source trivial.
+
+### Most Needs Improvement
+- **Redundancy Elimination (1/10)**: The presence of duplicated function calls is a severe defect that misleads the analyst about the program's behavior and side effects.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Eliminate IR Artifacts**: Filter out or translate internal lifting macros (e.g., `armg_calculate_condition`) into standard C boolean expressions.
+2.  **Fix Redundant Expression Recovery**: Implement a pass to detect and remove duplicate function calls or assignments where the result is discarded or reused incorrectly.
+3.  **Improve Struct Recovery**: Enhance type recovery to identify heap-allocated structures (like `TreeNode`) based on access patterns (field offsets) rather than defaulting to byte arrays.

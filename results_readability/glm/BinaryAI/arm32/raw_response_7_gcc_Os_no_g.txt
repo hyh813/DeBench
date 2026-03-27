@@ -1,0 +1,109 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10
+Justification: The decompiled function contains no variables at all, whereas the source uses `result` and `str`. The complete absence of variable definitions makes it impossible to track data flow.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: The function name `param_fake_branch` is correctly preserved and matches the source exactly, providing the only semantic link to the original code.
+
+**3. Literal Clarity:** Score: 1/10
+Justification: Critical literals like `0xDEADBEEF`, the string `"test"`, and the constant `1000` are completely absent from the decompiled output, obscuring the function's specific logic.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: While the code is "clean," the decompiler incorrectly treated the entire function body as noise and removed it, including the intentional fake branches which are the core of the source code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 1/10
+Justification: The decompiled output lacks any control flow structures (no `if` statements), completely failing to represent the two fake conditional branches present in the source.
+
+**6. Function Decomposition:** Score: 1/10
+Justification: The function is reduced to an empty stub with a single `return` statement, failing to decompose or represent any of the logic contained in the original 10-line function.
+
+**7. Code Linearization:** Score: 1/10
+Justification: The code is non-linear in the sense that it is non-existent; there is no execution path to trace from top to bottom.
+
+**8. Redundancy Elimination:** Score: 1/10
+Justification: The decompiler aggressively eliminated the "fake" branches (likely via constant propagation), but since this was an `-O0` build intended to preserve these branches, this constitutes a loss of information rather than helpful cleanup.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 1/10
+Justification: The function signature is completely incorrect: decompiled as `void param_fake_branch(void)` instead of `int param_fake_branch(int x)`, losing both the parameter and return type.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: Not applicable (N/A) as no composite types are used in this specific function, so no errors were made.
+
+**11. Type Safety:** Score: 10/10
+Justification: Not applicable (N/A) as there are no operations or casts in the empty decompiled function.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining why the function is empty or warning that the body was optimized away, leaving the user confused about the discrepancy with the source.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: The "Fake Branch" obfuscation pattern (intentional dead code) is not recognized or preserved; it is simply deleted.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the empty function as a valid translation without flagging it as an anomaly or a potential analysis failure, which is misleading given the source complexity.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No contracts (preconditions/postconditions) are recovered; the implicit contract that the function returns the input integer is lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10
+Justification: The caller `call_fake_branch` is decompiled as simply `return 10;`, completely inlining the result and hiding the call to `param_fake_branch`, obscuring the relationship between the functions.
+
+**17. Module Organization:** Score: 5/10
+Justification: The function is listed in the correct module/file context, but its emptiness makes it an outlier that disrupts the logical flow of the surrounding code.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The decompiled code would not compile if integrated back into a project expecting the original `int param_fake_branch(int)` signature due to the type mismatch.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 2.75
+L2_avg: 1.00
+L3_avg: 7.00
+L4_avg: 1.00
+L5_avg: 2.67
+
+Overall = (2.75 × 0.30) + (1.00 × 0.25) + (7.00 × 0.20) + 
+          (1.00 × 0.15) + (2.67 × 0.10)
+        = 0.825 + 0.25 + 1.4 + 0.15 + 0.267
+        = 2.89
+```
+
+### Overall Readability Score: **2.9/10**
+
+### Critical Defects
+- **Function body completely missing**: The decompiler output is an empty stub `void param_fake_branch(void) { return; }`, whereas the source contains logic.
+- **Incorrect Function Signature**: The decompiled signature `void(void)` does not match the source `int(int)`.
+- **Logic Erasure**: The "fake branches" (`x*x < 0` and `strlen(str) < 0`) are entirely eliminated, likely due to aggressive constant propagation during decompilation that ignored the `-O0` context.
+- **Caller Inlining**: The caller `call_fake_branch` is reduced to `return 10`, hiding the function call relationship.
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)**: The decompiler successfully preserved the exact function name `param_fake_branch` from the source symbol table.
+
+### Most Needs Improvement
+- **Control Flow Naturalness (1/10)**: The complete absence of the `if` statements and logic makes the function unreadable and semantically useless.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Disable Aggressive IPA for -O0**: When metadata or analysis suggests debug/unoptimized builds, disable inter-procedural analysis (IPA) and constant propagation that erases function bodies.
+2. **Preserve Dead Code**: Implement a "strict" mode that preserves code paths determined to be unreachable (like fake branches) to allow analysts to see obfuscation attempts.
+3. **Signature Validation**: Cross-reference function signatures with usage sites; if a caller passes arguments but the definition takes none, flag a recovery error instead of silently producing a void signature.

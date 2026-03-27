@@ -1,0 +1,101 @@
+## EVALUATION: C++ Object-Oriented Features Decompilation
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `ptr`, `result`) with no semantic meaning. Original variables like `capture_by_value`, `instance_count`, `multiplier` are completely lost. Even when purpose is clear (e.g., loop counter `i` in constructor), naming is inconsistent.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions retain mangled names (`_Z20test_cpp_member_funcv`) that are demangled in display, but helper functions use generic names (`sub_400b90`, `sub_400d30`). Class methods partially recovered (`Base::virtual_func`) but many are empty stubs.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `4294967291` (loop bound), `0x401b0d` (string references), `20` (allocation size). String literals referenced via globals (`g_401c71`) instead of inline. Constants like `42`, `100`, `200` visible but unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `armg_calculate_condition` calls, redundant register saves (`v7 = v8; v6 = v9;`), frame pointer manipulation. Multiple `__cxa_*` calls for exception handling obscure actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` usage instead of structured loops (e.g., `LABEL_400d54`, `LABEL_401192`). Exception handling in `test_cpp_exception` is completely mangled with nested conditionals that don't match source try-catch structure.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical failure: 7 test functions are completely empty (`return;`): `test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_smart_ptr`. Original logic entirely lost.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps disrupt reading flow throughout. Exception handling code has multiple label targets (`LABEL_401191`, `LABEL_401192`) creating spaghetti structure. Loop in `test_cpp_constructor` uses backward comparison (`i != 4294967291`).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate calls present (`register_tm_clones()` called twice in `frame_dummy`). Unnecessary variable assignments (`v0 = v1;` then immediately used). Some redundancy from ARM calling convention preservation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: everything becomes `unsigned int`, `void*`, or `char*`. Template function `template_max<double>()` has wrong signature (no parameters). Class member functions receive `void* this` instead of proper `this` pointer type.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs defined as `struct_0 { unsigned int field_0; }` with no semantic field names. Class layouts completely lost (SimpleClass `value`, `name[32]` not recovered). Inheritance relationships invisible in decompiled structures.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts: `(*(v0))(&v0, 5, *(v0))` calls function pointers with wrong signatures. Pointer arithmetic on `void*` throughout. Virtual table calls use raw integer dereferencing (`*((int *)*((int *)arg_0))`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments present. Only auto-generated function headers. No algorithm explanations, no decompilation confidence indicators. Critical logic (exception handling, virtual dispatch) completely undocumented.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns completely unrecognized: RAII (smart pointers), virtual dispatch, exception handling, template instantiation all obscured. Lambda expressions not recovered at all. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about unresolved calls or decompilation uncertainty. Empty functions presented confidently despite missing logic. `armg_calculate_condition` calls indicate unresolved semantics but not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., null checks). No postconditions inferred. Exception contracts completely lost. Return value semantics unclear (many functions return `void` when source returns `int`).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch not clearly indicated (raw vtable access). Global variable usage not documented (`g_412cf0`, `g_412d10` purpose unknown).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Related class methods scattered. Static functions not properly scoped. No namespace structure recovered.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Does not compile: missing dependencies (`operatornew`, `__cxa_*` functions), wrong function signatures, undefined struct types. External declarations incomplete. Requires extensive modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+4)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (4+4+4+5)/4 = 4.25  × 0.25 = 1.06
+Level 3 (Type):        (4+3+3)/3   = 3.33  × 0.20 = 0.67
+Level 4 (Semantic):    (2+2+2+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):  (4+4+2)/3   = 3.33  × 0.10 = 0.33
+─────────────────────────────────────────────────────
+Overall Score:                                  3.56/10
+```
+
+### Overall Readability Score: **3.6/10**
+
+### Critical Defects:
+- **7 test functions completely empty** (`return;`) - original logic entirely lost including templates, lambdas, smart pointers, operator overloading
+- **Variable names all generic** (`v0`, `v1`, `ptr`) - no semantic recovery from usage patterns
+- **Class structures not recovered** - fields like `value`, `name[32]`, `data`, `size` completely lost
+- **Exception handling mangled** - try-catch blocks converted to incomprehensible conditional chains with `armg_calculate_condition`
+- **Template functions broken** - `template_max<double>()` has wrong signature (missing parameters)
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- Test function names are at least demangled from C++ mangling, preserving some semantic information about which test each function represents.
+
+### Most Needs Improvement: **Semantic Transparency (2.0/10 average)**
+- No comments, no pattern recognition, no anomaly indication, no contract recovery - the decompiler presents incorrect/empty code with full confidence.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ semantic analysis** - Recover class layouts, inheritance relationships, and member field names from vtable structures and RTTI data
+2. **Add usage-based variable naming** - Infer names from context (e.g., variables used in allocation should be `size`, `count`; loop variables should be `i`, `index`)
+3. **Flag decompilation uncertainty** - Add comments when logic cannot be recovered (empty functions, unresolved calls) instead of presenting confident but incorrect code

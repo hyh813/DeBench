@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, or `v2`. No semantic meaning is preserved (e.g., `capture_by_value` becomes `v1`).
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: C++ mangled names are successfully demangled (e.g., `_Z20test_cpp_member_funcv` -> `test_cpp_member_func`), which is helpful. However, a significant number of functions remain generic addresses like `sub_401030`.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are accessed via obscure offsets (e.g., `v6 - -15255`) rather than being displayed as strings. Magic numbers like `20`, `4`, `8` appear without context.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is severely polluted with `__x86.get_pc_thunk.ax()` and similar calls in almost every function. This Position Independent Code (PIC) artifact completely obscures the actual logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Virtual function calls are represented as indirect jumps via `goto v1->field_68`, which is accurate but low-level. The flow is constantly interrupted by thunk calls.
+
+**6. Function Decomposition:** Score: 3/10
+Justification: The decompiler exposes every internal STL function (e.g., `std::_Tuple_impl...`, `std::__uniq_ptr_impl...`), fragmenting the high-level logic into hundreds of tiny implementation details.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The frequent insertion of `__x86.get_pc_thunk` calls breaks the linear reading flow, making it difficult to follow the algorithm step-by-step.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: The `get_pc_thunk` pattern is repeated redundantly. There is no abstraction of these repetitive setup sequences.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are generally generic (`unsigned int`, `char*`). Pointers are often treated as integers (`ptr[1]`), and class instances are often treated as raw byte arrays (`char v3`).
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Structs are defined generically as `struct_0` with fields like `padding_0` and `field_68`. No class layout (e.g., `SimpleClass` members `value`, `name`) is recovered in the variable declarations.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on casts and raw pointer arithmetic (e.g., `*(int *)ptr`), which is technically what the compiled code does, but it presents a type-unsafe view compared to the original C++.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic. The only comments are decompiler errors like "Failed to decompile function" or "[D] Unsupported...".
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms like RAII, smart pointers, and exceptions are not recognized. Instead, they are presented as a complex web of internal STL function calls.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler explicitly marks where it failed (e.g., "Failed to decompile function _Z12template_maxIdET_S0_S0_"), which is good. However, the rest of the noisy code is presented confidently.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: While function calls are visible, the call graph is cluttered with low-level runtime support functions, making it hard to see the high-level relationships between the test functions.
+
+**17. Module Organization:** Score: 2/10
+Justification: The output is a flat list of functions sorted by address. There is no logical grouping separating user code (`test_cpp_...`) from library internals (`std::...`).
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile. It relies on compiler intrinsics (`__x86.get_pc_thunk`) and non-standard syntax that cannot be compiled by a standard C++ compiler.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.7/10
+
+**Critical Defects:**
+- **Architecture Mismatch:** Source metadata claims ARM64, but decompiled code is X86 (32-bit), making direct comparison impossible.
+- **Severe Noise Pollution:** `__x86.get_pc_thunk` calls appear in almost every function, rendering the logic unreadable.
+- **Loss of Type Information:** Class members are lost; variables are generic `v0`, `v1` or `struct_0`.
+- **STL Internal Exposure:** High-level logic is buried in hundreds of internal STL template implementation functions.
+- **Failed Decompilation:** Key functions like `template_max<double>` failed to decompile entirely.
+
+**Best Quality Aspect:** Function Naming (Score: 6/10)
+- **Why?** The decompiler successfully demangled C++ symbols, recovering names like `test_cpp_member_func` and `SimpleClass::SimpleClass`, which provides the only anchor to the original source.
+
+**Most Needs Improvement:** Noise Reduction (Score: 1/10)
+- **Why?** The failure to abstract away Position Independent Code (PIC) artifacts (`get_pc_thunk`) makes the code practically unusable for human analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Abstract PIC Artifacts:** Implement a pattern match to hide or fold `__x86.get_pc_thunk` calls and Global Offset Table (GOT) accesses, as they are standard compiler noise.
+2.  **Leverage Debug Information:** Since the source was compiled with `-g`, use the DWARF debug information to recover original variable names, types, and struct layouts instead of defaulting to `v0` and `struct_0`.
+3.  **Aggregate STL Calls:** Recognize standard template library (STL) implementation patterns and collapse them into high-level representations (e.g., represent `std::unique_ptr` construction as a single line rather than 10 internal function calls).

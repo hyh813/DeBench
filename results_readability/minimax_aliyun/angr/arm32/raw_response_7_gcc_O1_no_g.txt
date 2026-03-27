@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: The decompiled function completely omits the parameter `x` and uses generic `v0` for an uninitialized return value. The original had clear `x` and `result` variables - both are lost. This makes the code misleading as it returns garbage data.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function correctly named `param_fake_branch` matching the source. Minor deduction for lack of parameter indication in signature.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No literals present in this function; not applicable.
+
+**4. Noise Reduction:** Score: 10/10  
+Justification: No compiler artifacts, redundant casts, or debug instrumentation in this function.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 1/10  
+Justification: The decompiler has completely eliminated both fake branches (`if (x * x < 0)` and `if (strlen(str) < 0)`). This is a critical semantic loss - the core obfuscation technique is completely gone. The function now just returns garbage instead of demonstrating the fake branch pattern.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Function is appropriately small (2 lines). No decomposition issues.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Simple return statement, reads top-to-bottom cleanly.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code present.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: The parameter `int x` is completely missing from the function signature. The return type is shown as `int` which is correct, but the function returns an uninitialized local variable `v0` instead of the parameter. This is a severe type degradation.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types in this function.
+
+**11. Type Safety:** Score: 1/10  
+Justification: Returning uninitialized local variable `v0` is a severe type safety violation - undefined behavior. The original returned `result` which was initialized to `x`.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality:** Score: 5/10  
+Justification: No comments explaining the fake branch logic. The original source had comments explaining "永假条件" (always-false conditions). The decompiled version provides no indication that branches were removed.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The fake branch idiom (OBF-L4-02) is completely lost. The decompiler has optimized away the dead code without preserving the semantic meaning that these were intentional fake branches.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flagging of the suspicious removal of both conditional branches. The code confidently presents incorrect information (returning uninitialized variable).
+
+**15. Assertion & Contract Recovery:** Score: 10/10  
+Justification: No assertions in original source.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The function is called by `call_fake_branch()` which passes 10 as argument - this relationship is preserved in the decompiled call site.
+
+**17. Module Organization:** Score: 10/10  
+Justification: Functions are appropriately grouped with related obfuscation functions.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The function will compile but produces undefined behavior (returning uninitialized variable). The signature mismatch with caller may cause issues.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.1/10
+
+**Critical Defects:**
+- Parameter `x` completely missing from function signature - should be `int param_fake_branch(int x)`
+- Both fake branches eliminated - the core obfuscation technique is lost
+- Returns uninitialized local variable `v0` instead of the parameter - undefined behavior
+- No indication that branches were removed or why
+- The decompiled function produces different runtime behavior than original
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Function name correctly matches source
+
+**Most Needs Improvement:** Control Flow Naturalness (1/10)  
+- The decompiler has completely eliminated the fake branch logic, which was the entire point of the function. At -O0, these branches should be preserved.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Preserve always-false conditional branches at -O0 optimization level - these are semantically meaningful for obfuscation analysis
+2. Recover function parameters from call sites - `call_fake_branch()` passes 10, so `param_fake_branch` must take a parameter
+3. Add anomaly indicators when branches are eliminated or when returning uninitialized variables
+4. Infer variable names from caller context - the parameter should be named `x` based on call site analysis

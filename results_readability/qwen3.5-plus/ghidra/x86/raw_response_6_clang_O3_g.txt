@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `iVar1`, `local_24`, `uVar3` instead of semantic names. The decompiler recognizes original names in comments ("Unresolved local var: char[32] buffer@[???]") but doesn't apply them to the actual code.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names are preserved from source (`param_strcpy`, `call_strcmp`, `param_fork_exec`), but some remain generic (`FUN_00011030`). Architecture mismatch (x86 decompilation vs arm64 source) is concerning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0x5a` (90), `0xc` (12), `0xf` (15) appear without explanation. These are expected return values from source but not documented as constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple decompiler warnings clutter output: "WARNING: Unknown calling convention", "WARNING: Function: __x86.get_pc_thunk.bx replaced", `LOCK()`/`UNLOCK()` macros for atomics obscure logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_malloc_free` shows aggressive loop unrolling with complex index arithmetic. `param_memset` verification loop unrolled into 8-byte chunks with bit manipulation obscuring the simple original intent.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with reasonable sizes. However, `test_standard_library_functions` inlines what should be separate `call_*` function calls, losing modularity.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally, but `param_malloc_free` has nested conditionals with loop unrolling that disrupts linear reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling in `param_memset` and `param_malloc_free` creates significant code duplication. Atomic operations in `thread_atomic_increment` show repeated LOCK/UNLOCK patterns that could be abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types mostly correct (`int`, `char*`, `size_t`), but `param_strcpy` declares `src` as `char *` instead of `const char *`. Some functions use `uint` where `int` would be appropriate, losing const-correctness.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `ThreadData` struct not recovered—fields accessed via offset arithmetic: `*(undefined4 *)((int)arg + 8)`. `sockaddr_in` treated as generic `sockaddr` with manual byte-level field setting instead of structured access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout: `(int *)0x0`, `(char *)0xffffffff`, `(pthread_mutex_t *)&counter_mutex`. Pointer arithmetic through `int` casts common. Atomic operations use `LOCK()`/`UNLOCK()` macros instead of proper `_Atomic` types.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are auto-generated decompiler warnings ("WARNING: Unknown calling convention", "Unresolved local var") not semantic documentation. Original source comments completely lost. No algorithm explanations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions recognized (`strcpy`, `strcmp`, `strlen`, `memcpy`). However, threading patterns (mutex, condition variables) not identified as synchronization primitives. Atomic operations show `LOCK()`/`UNLOCK()` without semantic context.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Decompiler flags issues with "WARNING:" comments and marks unresolved variables. However, warnings are generic ("Type propagation algorithm not settling") rather than specific about what's problematic or how to fix.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No function preconditions/postconditions documented. Error return values (-1, -2, -3, 0x2a) lack explanation. No contract information recovered from original source assertions or documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and global variables referenced by name (`shared_counter`, `atomic_counter`, `signal_received`). However, callback relationships and thread function connections not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file without logical grouping. Static functions not properly scoped. No header file structure or namespace organization. Original section comments (6.1, 6.2, 6.3) lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone—missing includes, undefined global variables (`signal_received`, `atomic_counter`, `counter_mutex`), and architecture mismatch (x86 decompilation vs arm64 original source).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):     (5+7+6+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type System):    (6+4+4)/3 = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):       (3+5+6+3)/4 = 4.25 × 0.15 = 0.638
+Level 5 (Contextual):     (6+5+4)/3 = 5.00 × 0.10 = 0.500
+---------------------------------------------------------
+Overall Score:                                    5.08/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable names lost**: Original names like `buffer`, `len`, `ret` appear only in "Unresolved local var" comments, not in actual code (`local_24`, `iVar1` used instead)
+- **Struct types not recovered**: `ThreadData` accessed via pointer arithmetic `*(undefined4 *)((int)arg + 8)` instead of `data->result`
+- **Magic numbers unexplained**: `0x2a`, `0x5a`, `0xc` throughout without constant definitions
+- **Const-correctness lost**: `param_strcpy(char *dst, char *src)` should be `(char *dst, const char *src)`
+- **Architecture mismatch**: Binary decompiled as x86 but original source compiled for arm64
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most function names preserved from source (`param_strcpy`, `param_fork_exec`, `param_signal_handling`) making navigation possible despite other issues.
+
+### Most Needs Improvement: **Comment Quality & Presence (3/10)**
+- Zero semantic comments recovered; only auto-generated decompiler warnings present, losing all original documentation and algorithm explanations.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Apply recognized variable names from debug info**: The decompiler clearly identifies original names in "Unresolved local var" comments—apply these to actual variable declarations instead of `local_XX`/`iVarX` patterns.
+
+2. **Recover struct types from debug symbols**: With `-g` flag present, `ThreadData`, `sockaddr_in`, and `stat` structures should be reconstructed with named fields instead of pointer arithmetic.
+
+3. **Preserve source comments and add semantic annotations**: Recover original comments from debug info and add decompiler confidence indicators for uncertain reconstructions (e.g., "RECOVERED: loop unrolling detected").

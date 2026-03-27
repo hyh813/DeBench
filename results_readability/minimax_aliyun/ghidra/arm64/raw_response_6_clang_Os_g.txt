@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `iVar1`, `sVar1`, `local_30`, `local_28` throughout. The source uses meaningful names like `buffer`, `len`, `ret`, `input`, `thread_count` but these are lost in decompilation. Tracking variable purpose requires significant effort.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names like `param_strcpy`, `call_strcmp`, `param_pthread_create` exactly match the original source function names. The decompiler preserved the semantic naming from binary symbols effectively.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x38` (SYS_open), `0x39` (SYS_close), `10` (SIGUSR1), `0xe` (SIGALRM) appear without constant names. The decompiler doesn't recover the symbolic constants from libc. Some string literals are preserved but referenced via `&DAT_00102eb6` style addresses.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. The atomic helper functions (`__aarch64_ldadd4_acq_rel`) are actually part of the source code for atomic operations. Ghidra's "WARNING" comments about unreachable blocks are auto-generated but don't significantly impede reading.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with proper while/do-while loops and if-else conditionals. At -O0 optimization, the decompiler correctly recovers the original control structures without spurious goto statements. The logic flows logically.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The decompiler maintains the fine-grained function decomposition from the source. Each small function (param_*, call_*) remains separate with appropriate parameter lists. Function granularity matches source well.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns for error conditions are used appropriately. No excessive forward jumps or computed goto that disrupts flow. The code is easy to follow sequentially.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: In `param_malloc_free`, there's loop unrolling present (the do-while with paired assignments) that isn't commented as such. This is a compiler optimization artifact that could confuse readers. Otherwise, no significant dead code or redundant expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are reasonably precise - `size_t` for sizes, `pthread_t` for thread handles, `ssize_t` for return values. However, `int` is overused where more specific types exist. The `const` qualifier is sometimes lost (e.g., `char *src` should be `const char *src`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The decompiler doesn't recover the `ThreadData` struct - it uses raw memory access like `*(int *)((long)arg + 4)`. The `sockaddr` is partially recovered with generic `sa_data` array. No struct field names are recovered, losing significant semantic meaning.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with appropriate pointer types. Minor issues include some unnecessary casts and the atomic operations use raw pointer arithmetic. No severe type safety violations that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are mostly auto-generated noise: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "Unresolved local var". No explanation of algorithms, no documentation of what functions do, no recovery of original comments from source.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No design patterns or algorithms are explicitly identified or named. However, the code is readable enough that patterns like "producer-consumer" with condition variables can be inferred from the pthread API usage.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Ghidra provides generic warnings about "Unknown calling convention" and "Unresolved local var" but doesn't specifically flag suspicious code patterns or indirect calls that couldn't be resolved. The warnings are not very actionable.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler doesn't infer contracts like "requires: ptr != NULL" or "ensures: return >= 0" from the code logic.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: No explicit documentation of function call relationships or global variable usage. The code doesn't indicate which functions call `param_strcpy` or which globals are accessed. Reader must infer relationships from context.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - standard library functions together, system calls together, thread functions together. This matches the source organization in the single file. Static functions are properly scoped.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code should compile with standard libc and pthread libraries. No compiler-specific hacks or unusual dependencies. The decompiled code is standalone and portable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`iVar1`, `local_30`) losing semantic meaning from source (`buffer`, `len`, `ret`)
+- Composite types (structs) not recovered - `ThreadData` accessed via raw pointer arithmetic losing field semantics
+- No comments explaining algorithms or recovered from source
+- Magic numbers (syscall numbers, signal numbers) not mapped to symbolic constants
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names like `param_strcpy`, `param_pthread_create` exactly match the original source, providing excellent semantic anchoring.
+
+**Most Needs Improvement:** Comment Quality & Presence (3/10) and Assertion & Contract Recovery (2/10)  
+The decompiler provides no useful documentation - no algorithm explanations, no pre/postconditions, no recovered source comments. This significantly impacts understandability of complex functions.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `local_30` used with `strlen()` should be named `buffer` or `str`)
+2. Recover struct definitions from allocation patterns and field access sequences rather than using raw pointer arithmetic
+3. Map magic numbers to symbolic constants using debug info and common library definitions (SYS_*, SIG_*, etc.)

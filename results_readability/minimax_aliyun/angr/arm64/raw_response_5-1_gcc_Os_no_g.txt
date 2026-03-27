@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `ptr`, `result`, `a0`. Only occasionally are slightly better names like `result` or `cur` used. The original source had meaningful names like `capture_by_value`, `capture_by_ref`, but these are completely lost.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some C++ mangled names are partially decoded (`_Z20test_cpp_exceptionv` → `test_cpp_exception`), and class methods like `Base::virtual_func` are recovered. However, many functions use address-based names like `sub_401664`, `sub_401928`, and some have meaningless names like `$x`.
+
+**3. Literal Clarity:** Score: 5/10Justification: Some literals are clear (like `42` for thrown exception value), but many magic numbers remain unexplained. The value `8589934593` (0x200000001) used for unique_ptr array initialization is completely opaque. String literals are referenced via external symbols without content visibility.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Stack check guards are properly identified. Some redundant operations exist (like duplicate `register_tm_clones()` calls), but overall noise level is manageable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Several critical functions are completely empty stubs (e.g., `test_cpp_constructor`, `test_cpp_lambda`, `test_cpp_multiple_inheritance` all just `return;`). The virtual function call uses goto with computed jump: `goto *((long long *)*((long long *)&arg_0));` which is highly unnatural.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable - separate functions for each test case. However, many functions are incomplete stubs, and some template instantiations are properly separated. The decomposition is adequate but the empty functions undermine this dimension.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive forward jumps. The main `test_cpp_oo_features` function has straightforward sequential calls. Some thunks have computed jumps but these are expected for virtual dispatch.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy observed - `register_tm_clones()` called twice in `frame_dummy`, `__cxa_atexit` called twice in initialization. Template instantiations are properly deduplicated. However, minor redundancy exists that could be cleaned up.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types - `int`, `unsigned int`, `unsigned long long`, `void*`. Original source used `size_t`, `int`, `bool` but these are often lost. Some improvement with `unsigned long` for pointers on ARM64, but overall significant type erosion.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Partial struct recovery with generic field names (`struct_0`, `field_0`, `field_8`). Some class names recovered (Base, Derived, Container<int>, Container<double>). However, SimpleClass, LifecycleClass, and many others are completely missing. Field names are all generic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Extensive unsafe operations - heavy use of void* casting, pointer arithmetic without bounds checking (e.g., `ptr + 4 * v0` in Container::push). The virtual function call uses raw pointer manipulation. Many opportunities for undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output whatsoever. The original source had extensive comments explaining each test case, but none were recovered. This is a critical gap for understanding the code's purpose.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ patterns are implicitly present - virtual function thunks (`_ZTv0_n24_`), non-virtual thunks (`_ZThn16_`), vtable indirect calls. However, these are not explicitly named or documented as patterns. The decompiler doesn't explain what these thunks do.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some "do not return" annotations present (`/* do not return */`), but no flags for suspicious code. Many functions are incomplete stubs but this isn't flagged. The virtual function goto pattern should have an anomaly warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information recovered. Preconditions, postconditions, and invariants are completely absent. The original source had clear expectations (e.g., "期望: 4704") but these are not reflected.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: External dependencies are declared with `extern` keywords. However, function call relationships within the code are not documented. It's unclear which functions call which, and the virtual dispatch relationships are not explained.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are grouped by address rather than by functionality. The original source organized code by feature (member functions, constructors, virtual functions, templates, etc.), but the decompiled output just lists functions in address order.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Uses `extern` declarations for external symbols. Should compile with some stubs for missing runtime functions. However, the empty function bodies would cause linker issues if these functions are actually called.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.0/10
+
+**Critical Defects:**
+- Variable names are universally generic (`v0`, `v1`, `ptr`, `result`) - no semantic meaning recovered
+- Multiple functions completely empty (`test_cpp_constructor`, `test_cpp_lambda`, `test_cpp_multiple_inheritance`, `test_cpp_operator_overload`) - critical logic loss
+- No comments whatsoever - original source had extensive documentation explaining each test case
+- Virtual function calls use goto with computed jumps: `goto *((long long *)*((long long *)&arg_0));` - completely obscures polymorphism
+- Class names missing for many objects (SimpleClass, LifecycleClass, Point, etc.)
+- No anomaly indication for incomplete functions or suspicious patterns
+
+**Best Quality Aspect:** Noise Reduction (scored 7/10)  
+The decompiled output is relatively clean without excessive compiler artifacts like register spilling or debug instrumentation. Stack protection checks are properly identified.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+The complete absence of comments severely impacts understandability. The original source had detailed comments for each test case explaining the C++ feature being demonstrated, expected values, and the feature's purpose. None of this was recovered.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover comments from debug symbols**: The source was compiled with `-g` (debug info), so line number information and potentially DWARF debug sections could contain source comments that should be extracted and displayed.
+2. **Detect and flag incomplete functions**: Functions that just `return;` without performing expected operations should be flagged as "INCOMPLETE DECOMPILE" or similar, rather than presented as complete.
+3. **Improve virtual function call presentation**: Instead of `goto *((long long *)*((long long *)&arg_0));`, generate idiomatic virtual dispatch like `return arg_0->virtual_func(arg_1);` with a comment explaining the vtable lookup.

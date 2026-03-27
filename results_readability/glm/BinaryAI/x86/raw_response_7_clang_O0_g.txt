@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Despite compilation with `-g` (debug symbols), variables are generic (`param_1`, `local_c`, `iVar1`) rather than original names (`x`, `result`, `str`), significantly obscuring intent.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`param_fake_branch`, `call_fake_branch`, etc.) are perfectly recovered from the symbol table, matching the source exactly.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are present but often transformed; `0xDEADBEEF` becomes `-0x21524111` (signed representation), and `20` becomes `0x14`, reducing readability compared to the source's hex/decimal choices.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: Code is mostly clean, but generic types like `undefined4` and `undefined` appear frequently, and attributes like `__regparm3` add minor noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is highly natural and idiomatic, accurately reflecting the source's `if/else` and `while` structures without confusing jumps.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries are preserved 1:1 with the source; no inlining or outlining artifacts are present, maintaining perfect granularity.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with no disruptive forward jumps or spaghetti logic.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler presents the compiler's optimizations cleanly; for example, bit-shift obfuscation in `param_instruction_substitution` is simplified to multiplication, which actually improves readability.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often generic (`undefined4`, `int`) rather than specific (`size_t`, `uint32_t`), and signedness information is sometimes lost or obscured.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: The bitfield struct in `param_implementation_defined` is completely lost, optimized away to a constant return `0x2b`, offering no insight into the original structure.
+
+**11. Type Safety:** Score: 7/10
+Justification: Operations are generally safe, though casts like `(undefined4)(10 / (longlong)param_1)` are verbose and imprecise.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of the obfuscation techniques used.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The decompiler fails to identify or label specific patterns; the opaque predicate and fake branch logic is presented as raw code without semantic context.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged; the fake branch (`x*x < 0`) is presented as standard logic without warning that it is unreachable or obfuscated.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are explicit and use the recovered names, making the call graph easy to understand (e.g., `param_fake_branch(10)`).
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically (likely by address), and related test functions are grouped together, matching the source structure well.
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code includes external function stubs and headers, making it structurally compilable, though `undefined` types would require manual fixing.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Variable names are generic (`param_1`, `local_c`) despite the presence of debug symbols in the build.
+- Composite types (structs) are completely lost when optimized by the compiler (e.g., `param_implementation_defined`).
+- No semantic comments or anomaly detection; obfuscation techniques like opaque predicates are not flagged.
+- Literal clarity is degraded (e.g., `0xDEADBEEF` represented as `-0x21524111`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly recovered all function names from the binary's symbol table.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.25/10)
+- The lack of comments, idiom recognition, and anomaly indication makes it difficult to understand the *intent* behind the code, especially regarding the obfuscation methods used.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Utilize Debug Symbols**: Prioritize loading variable names and types from DWARF debug information (present in `-g` builds) to replace generic names like `local_c`.
+2. **Pattern Recognition**: Implement detection for common obfuscation idioms (e.g., opaque predicates, fake branches) and annotate them in the output.
+3. **Literal Formatting**: Improve constant representation to preserve the original source format (hex vs. signed decimal) or add comments showing the original value when transformations occur.

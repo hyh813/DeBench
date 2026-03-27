@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10
+Justification: Parameter names (`size`, `x`, `y`) are preserved accurately from debug symbols, but local variables often revert to generic names like `iVar1`, `sVar1`, or `lVar1`, obscuring their specific roles (e.g., `result` vs `iVar1`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `param_macro_constants`, `param_asm_basic`), likely due to the presence of debug symbols (`-g`), providing perfect semantic mapping.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Macro constants are replaced by magic hex numbers (e.g., `0x401` instead of `MAX_SIZE + 1`, `0x40` instead of `BUFFER_COUNT * 4`), and hardcoded strings like `"src/5-23.c"` are inlined, losing the semantic context of `__FILE__`.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Compiler-inserted stack canary checks (`___stack_chk_guard`) clutter simple functions like `param_variadic_macro`, and array initializations (e.g., `dst` in `call_asm_multi_insn`) are expanded into 32 separate assignment lines.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10
+Justification: Control flow is extremely clean and idiomatic, matching the source structure perfectly; loops are recovered as `for` statements, and conditionals are clear, largely due to the `-O0` optimization level and the use of C fallbacks for assembly.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source; there is no inlining or outlining, maintaining the original granularity and cohesion perfectly.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code reads linearly from top to bottom with no confusing jumps or computed branches, making execution paths trivial to follow.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: While logic is generally clean, the expansion of `char dst[32] = {0}` into 32 individual assignment statements in `call_asm_multi_insn` introduces significant visual redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are mostly accurate (e.g., `int`, `int *`), but `size_t` is occasionally represented as `undefined8` or `ulong`, and standard types like `undefined8` appear in signatures, slightly reducing precision.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: No complex structs were present in the source to challenge the decompiler, and the array types used were recovered correctly.
+
+**11. Type Safety:** Score: 9/10
+Justification: Pointer arithmetic and casts are handled correctly; the only minor issue is verbose casting in `printf` calls (e.g., `(ulong)(uint)x`), which is safe but noisy.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: The output lacks semantic comments explaining the logic (e.g., why `x * 3 + 2` is used) and only contains Ghidra's auto-generated warnings like "Unknown calling convention," offering little insight into the original macro-based logic.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: Standard library idioms like `memcpy`, `strlen`, and `printf` are recognized and named correctly; loops are correctly identified as `for` loops rather than `while` or `goto` chains.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Ghidra flags "Unknown calling convention" on standard void functions and warns about overlapping stack guard symbols, but these are often false positives or noise rather than true semantic anomalies in the user code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or postconditions; for example, the contract implied by `MAX_SIZE` is lost, leaving only a raw hex comparison.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are resolved to their correct targets, and the relationship between caller and callee functions is clear and preserved.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are presented in a logical order that closely follows the source file structure, grouping related tests together.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses Ghidra-specific types like `undefined8` and relies on runtime symbols like `___stack_chk_guard`, preventing standalone compilation without significant modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (7 + 10 + 4 + 6) / 4 = 6.75
+L2_avg: (10 + 10 + 10 + 7) / 4 = 9.25
+L3_avg: (8 + 10 + 9) / 3 = 9.00
+L4_avg: (3 + 8 + 5 + 2) / 4 = 4.50
+L5_avg: (9 + 9 + 4) / 3 = 7.33
+
+Overall = (6.75 × 0.30) + (9.25 × 0.25) + (9.00 × 0.20) + 
+          (4.50 × 0.15) + (7.33 × 0.10)
+Overall = 2.025 + 2.3125 + 1.8 + 0.675 + 0.733
+Overall = 7.5455
+```
+
+**Overall Readability Score:** 7.5/10
+
+### Critical Defects (Bullet List)
+- Macro constants replaced with magic hex numbers (e.g., `0x401` instead of `MAX_SIZE`), obscuring the original configuration logic.
+- Array initialization expanded into verbose line-by-line assignments (e.g., `dst[0] = '\0'` ... `dst[31] = '\0'`).
+- Stack canary checks (`___stack_chk_guard`) clutter simple functions, adding noise to the logic.
+- Lack of comments explaining the "why" behind hardcoded values (e.g., `x * 3 + 2` resulting from `#ifdef` selection).
+
+### Best Quality Aspect (Single Dimension)
+- **Control Flow Naturalness (Score: 10/10)**
+- **Why?** The combination of `-O0` compilation and the decompiler's accurate recovery of the C fallback code (instead of assembly) resulted in perfectly natural, idiomatic control structures.
+
+### Most Needs Improvement (Single Dimension)
+- **Literal Clarity (Score: 4/10)**
+- **Why?** The fundamental loss of macro definitions means the code is filled with magic numbers and hardcoded strings, making it difficult to understand the original intent or configuration.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Aggregate Array Initializations**: Detect patterns of sequential assignments to zero or constants and collapse them into `= {0}` syntax.
+2. **Magic Number Heuristics**: Flag or annotate magic numbers used in comparisons (e.g., `0x401`) that likely correspond to common constants or macro boundaries.
+3. **Stack Canary Abstraction**: Abstract standard stack canary prologue/epilogue sequences into a macro or comment block to reduce visual noise in function bodies.

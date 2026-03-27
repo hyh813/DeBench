@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `local_30` instead of semantic names (`x`, `result`, `decrypted`). For example, `param_opaque_predicate` uses `iVar1-4` instead of `p1`, `p2`, `p3`, `a`, `b` from source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main functions retain original names (`param_fake_branch`, `param_opaque_predicate`), but helper functions use cryptic names like `FUN_00011030`, `FUN_00011180` for library calls.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0xe1`, `0x7a314`, `0x2b` appear without explanation. Original constants like `0xDEADBEEF` were optimized away entirely.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`), thunk functions (`__i686.get_pc_thunk.bx`), and unresolved `FUN_00011xxx` calls clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as for-loops (e.g., `param_tail_call_optimized`), but conditionals are awkward—`param_opaque_predicate` inverts logic with `if ((iVar2 != 1) || ...)` instead of clear `if (p1 && p2 && p3)`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; original function boundaries preserved. However, library calls remain as separate unresolved `FUN_00011xxx` functions instead of being identified as `printf`, `strlen`, etc.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with proper loop constructs, but stack canary checks at function ends (`if (local_10 != *(int *)(in_GS_OFFSET + 0x14))`) disrupt flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack protection code duplicated across multiple functions. The `param_fake_branch` function was over-optimized (dead code eliminated), losing the original obfuscation intent.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined4` used instead of `int`, `param_1` lacks type specificity, `param_instruction_substitution` incorrectly uses `uint` instead of `int`. Pointer types often `undefined4 *` or `byte *`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The bitfield struct in `param_implementation_defined` was completely lost—function just returns `0x2b` instead of showing struct operations. No struct definitions recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Implicit casts present (`(longlong)param_1` in division), pointer arithmetic without proper typing. However, no obviously dangerous patterns introduced by decompiler.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no documentation of non-obvious logic.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Tail recursion optimization not identified (converted to loop without comment). String decryption pattern, signal handler pattern, and opaque predicate patterns not recognized or documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Unresolved `FUN_00011xxx` calls not flagged as anomalies. Stack canary checks present but not explained. No warnings about potential decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or error conditions documented. For example, `param_division_by_zero` doesn't indicate it handles SIGFPE or returns -1 on error.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible through code, but global variable usage unclear (`encrypted_0`, `DAT_00012020`, `jmp_buffer`). Callback relationships (signal handlers) not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Related functions (e.g., `param_*` and `call_*` pairs) not organized together. No header file structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone—undefined `FUN_00011xxx` functions, missing headers, unresolved globals. Requires significant manual patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+7+4+4)/4 = 4.50
+Level 2 Average: (6+7+6+5)/4 = 6.00
+Level 3 Average: (4+3+5)/3 = 4.00
+Level 4 Average: (1+2+2+1)/4 = 1.50
+Level 5 Average: (5+4+3)/3 = 4.00
+
+Overall = (4.50 × 0.30) + (6.00 × 0.25) + (4.00 × 0.20) + 
+          (1.50 × 0.15) + (4.00 × 0.10)
+        = 1.35 + 1.50 + 0.80 + 0.225 + 0.40
+        = 4.275 ≈ 4.3/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1-4`** should be named semantically (e.g., `x`, `p1`, `p2`, `gcd_result`) based on usage patterns
+- **Zero comments** throughout decompiled code—no explanation of obfuscation patterns, signal handling, or optimization transformations
+- **Unresolved `FUN_00011xxx` calls** not identified as standard library functions (printf, strlen, malloc, signal, setjmp, longjmp)
+- **Type degradation to `undefined4`** loses signed/unsigned distinction and semantic type information
+- **Bitfield struct completely lost** in `param_implementation_defined`—returns constant instead of showing structure operations
+
+### Best Quality Aspect:
+- **Function Decomposition (7/10)** - Original function boundaries preserved with appropriate granularity; recursive functions correctly converted to iterative form
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding obfuscation intent, signal handling, and optimization transformations extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in GCD loops should be named `a`, `b`, `temp`; predicate variables should be `p1`, `p2`, `p3`)
+2. **Add decompilation confidence annotations** - Flag unresolved calls, uncertain type recoveries, and optimization transformations with comments explaining what was recovered vs. inferred
+3. **Recover standard library function signatures** - Identify common patterns (printf format strings, signal handlers, setjmp/longjmp) and replace `FUN_00011xxx` with proper function names and type signatures

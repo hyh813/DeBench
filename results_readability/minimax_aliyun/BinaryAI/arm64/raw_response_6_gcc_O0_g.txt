@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## Function Under Evaluation: `param_strcpy` and related test functions
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_8`, `uVar1`, `iVar1`. The parameter `param_1` should be `dst` and `param_2` should be `src` based on usage in `strcpy(param_1, param_2)`. Only `auStack_28` provides minimal size hint.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions like `param_strcpy`, `call_strcpy`, `param_strcmp` correctly match source names. However, internal functions like `FUN_001013d0` and some PLT stubs use generic naming. The core function names are accurate.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like "HelloLib", "Value: %d, Name: %s\n" are correctly preserved. However, magic numbers like `0x2a` (42 decimal), syscall numbers `0x38` (SYS_openat), and `0x39` (SYS_close) lack explanations. The value 42 appears frequently as return code but is unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present including `___stack_chk_guard` checks, `__stack_chk_fail` calls, and `__isoc99_sscanf` wrapper. Redundant `strlen` calls in `param_fread_fwrite` where length is computed twice. External function stubs add 1800+ lines of noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Control flow is generally readable with proper if-else structures. However, `param_strcpy` has incorrect return type causing semantic loss. Some loops use goto-style jumps. At `-O0`, control flow should more closely match source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (30-80 lines typical). Good separation between `param_*` wrapper functions and `call_*` test functions. No obvious over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. Early returns in error handling paths are present. Some forward jumps in complex functions like `param_pthread_join` with computed goto patterns. Generally manageable.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy observed: `strlen("BinBench Test Data")` called twice in succession in `param_fread_fwrite`. Stack guard checks repeated at function end. Some common subexpression elimination missing.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: **Critical defect**: `param_strcpy` returns `void` instead of `int` - the return value `strlen(dst)` is computed but discarded. `param_strcmp` returns `undefined8` instead of `int`. `param_printf` second parameter is `undefined8` instead of `char*`. Many `size_t` vs `int` mismatches. Type precision is severely degraded.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct-like patterns visible (e.g., `sockaddr` partially reconstructed with `sa_family`, `sa_data` fields). However, `ThreadData` struct in pthread tests is not recovered - accessed via pointer arithmetic with offsets like `param_1[2]`. No union recovery observed.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations: cast from `void*` to `int*` without validation, pointer arithmetic like `*(undefined8 *)((long)__s + 5)` for writing "SharedMemory", thread data accessed via raw offsets. Some function pointer type confusion present.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments present** in entire decompiled output. Zero explanation of algorithm intent, parameter purposes, return value semantics, or any non-trivial logic. This is a severe deficiency for a 1800+ line decompilation.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library functions (strcpy, strlen, pthread_create) correctly identified. Some patterns like producer-consumer with condition variables visible but not named. No explicit pattern documentation.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The incorrect return type for `param_strcpy` is presented confidently without warning. Indirect calls and unresolved references not flagged. Code presents incorrect information as fact.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Error return values (-1, -2, etc.) not explained. The contract of `param_strcpy` (returns string length) is completely lost due to void return type.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships visible through code (e.g., `param_strcpy` calls `strcpy`). However, no documentation of call graph, global variable usage (`signal_received`, `shared_counter`), or callback relationships. External dependencies not listed.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped: standard library tests (LIB-L1-*), system calls (SYS-L3-*), threading tests (THR-L3-*). Static functions properly scoped. External PLT stubs separated. Good overall organization matching source structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: **Will not compile** as-is due to: wrong return types (void vs int), undefined8 types not valid C, missing struct definitions (sockaddr, shmid_ds), undeclared functions (pthread types). Requires significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- `param_strcpy` returns `void` instead of `int` - return value `strlen(dst)` is computed but discarded, completely losing semantic meaning
+- No comments whatsoever across 1800+ lines - zero documentation of intent, parameters, or contracts
+- Type precision severely degraded: `undefined8` types, wrong return types, no struct recovery
+- Magic numbers like `0x2a` (42), syscall numbers `0x38/0x39` unexplained
+- No anomaly indication for the incorrect return type - presented confidently as fact
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Functions are appropriately sized with good separation between wrapper and test functions. No obvious over-fragmentation or 500-line monoliths.
+
+**Most Needs Improvement:** Type System Fidelity (scored 4.3/10)  
+The return type error for `param_strcpy` is a critical semantic loss. Composite types like ThreadData are not recovered. Type safety issues throughout.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Fix return value recovery**: The `strlen` call result in `param_strcpy` is clearly a return value (used in caller), but was incorrectly typed as void. Analyze call sites to infer return types.
+2. **Add comments automatically**: Generate basic comments for function purpose, parameters, and return values. Even template comments would help significantly.
+3. **Recover struct types**: The ThreadData struct accessed via `param_1[0]`, `param_1[1]`, `param_1[2]` should be reconstructed as a proper struct with named fields.

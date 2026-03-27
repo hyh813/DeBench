@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Variables are predominantly generic names like `param_1`, `local_10`, and `__ptr`, which obscure semantic meaning (e.g., `heap_struct` uses `__ptr` instead of `p`). While some global names like `global_counter` are recovered, local variable naming is purely mechanical.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the debug symbols (e.g., `double_value`, `local_array`, `heap_basic`), matching the original source exactly and providing clear semantic intent.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are frequently used instead of named constants; for example, `read_const_data` returns `0x2a` (42) instead of referencing `const_global`, and `heap_realloc` uses `0x14` (20) and `0x28` (40) without context.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Variable Length Array (VLA) and `alloca` functions (`vla_stack`, `alloca_usage`) contain significant stack probing noise (e.g., loops checking `0x10000` byte chunks) that obscures the high-level intent of dynamic stack allocation.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While standard loops are recovered well, the control flow for `vla_stack` and `alloca_usage` is convoluted due to stack probing logic. Additionally, `stack_alias` is incorrectly decompiled with a `void` signature and nonsensical pointer checks (`&stack0x00000000 == (undefined *)0xc`).
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source code, maintaining appropriate granularity and cohesion. There is no artificial outlining or monolithic merging of functions.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code generally reads top-to-bottom with appropriate early returns. Aside from the complex stack probing in VLA functions, the flow is natural and easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully removes dead stores and intermediate variables (e.g., `local_vars` is reduced to a single expression `param_1 * 2 + 10`), which actually improves readability over the verbose `-O0` source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: User-defined composite types are completely lost; `Point`, `Node`, and `TreeNode` are replaced by generic `int*` or `undefined*`. Pointer arithmetic is used to access struct fields (e.g., `*(int **)(local_30 + 2)` for `next`), losing type safety and semantic context.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: No structs or unions are recovered. Heap-allocated structures like `Point` in `heap_struct` are treated as raw integer arrays (`__ptr[0]`, `__ptr[1]`), and global structs like `global_point` are split into separate variables/data references.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on `undefined*` and `undefined4` types, requiring manual casting. The loss of struct types leads to unsafe pointer arithmetic (e.g., offsetting `int*` by 2 to access a pointer field) which is error-prone.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex logic like the VLA stack probing or the TLS register access lacks any explanation.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common idioms like linked list traversal (`linked_list_heap`) and tree traversal are present but obscured by pointer arithmetic. The decompiler fails to recognize the `alloca`/VLA idiom, presenting it as raw stack manipulation rather than array allocation.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the broken `stack_alias` function (wrong signature, wrong logic) confidently without any warning flags or "UNCERTAIN" markers, potentially misleading the user.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the null checks in `heap_basic` are present as code but not highlighted as contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. Global variable accesses (e.g., `global_counter`) are explicit. The relationship between `create_tree_node` and `tree_heap_traversal` is easy to see.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, matching the source file structure. Helper functions and test functions are grouped distinctly.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: While external functions are stubbed (e.g., `<EXTERNAL>::malloc`), the code would not compile standalone due to the missing `struct` definitions (`Point`, `Node`, `TreeNode`) which are reduced to primitive types.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Composite types (`Point`, `Node`, `TreeNode`) are completely lost, replaced by raw pointer arithmetic (e.g., `__ptr[1]` instead of `p->y`).
+- Variable Length Arrays (VLA) and `alloca` usage are decompiled into complex stack probing loops rather than array declarations.
+- Function `stack_alias` is incorrectly recovered with a `void` signature and nonsensical logic (`&stack0x00000000`).
+- Thread-Local Storage (`tls_access`) is shown as raw hardware register access (`tpidr_el0`) instead of a variable access.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The presence of debug symbols allowed perfect recovery of function names, making the high-level flow easy to trace despite low-level issues.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The total failure to recover `struct` definitions turns high-level data manipulation into obscure pointer math, severely impacting understanding of data structures.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement aggressive type propagation for heap-allocated memory to recover `struct` layouts based on access patterns (e.g., treating `malloc(8)` followed by `*p` and `p[1]` as a struct with two fields).
+2. Detect and abstract ARM64 stack probing patterns (used for VLAs/alloca) into cleaner pseudo-code or intrinsic calls to improve readability.
+3. Improve parameter recovery for functions taking pointers to stack variables, as seen in the failure of `stack_alias`.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `ptr`, `temp` with no semantic meaning (e.g., `v4 = 50` should be `shared_data = 50`). Only loop counter `i` is occasionally meaningful.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original function names recovered (`test_cpp_member_func`, `test_cpp_constructor`), but many are mangled (`_Z20test_cpp_member_funcv`) or generic (`sub_402269`). Class methods partially recovered (`Base::virtual_func`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (`42`, `50`, `100`, `200`, `250`). String literal "Test" recovered, but numeric constants like `0x1234` (class ID) lost entirely.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive wrapper functions (`sub_402269`, `sub_4022ac`, etc.) that just call the real function. Compiler startup code (`_init`, `_start`, `__do_global_dtors_aux`) pollutes output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Exception handling uses raw `__cxa_*` calls instead of try/catch. Lambda functions completely lost (`test_cpp_lambda` returns void). Some functions use `goto` instead of loops.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Many empty or trivial wrapper functions fragment the code. `test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_lambda` all return void with no body.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but exception handling code (`test_cpp_exception`) has confusing control flow with multiple catch blocks not properly structured.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate wrapper functions for each test function. Constructor/destructor thunks repeated for each class without consolidation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Most types degraded to `unsigned long`, `unsigned int`, `void*`. C++ class types not recovered (`class Base {}` empty). Template functions have generic signatures.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs defined as `struct_0 { field_0 }`, `struct_1 { field_0 }` with no semantic field names. Class member layouts completely lost (no `value`, `name`, `data` fields recovered).
+
+**11. Type Safety:** Score: 2/10  
+Justification: Extensive unsafe casts (`(long long *)`, `(void*)`). Pointer arithmetic on class objects without proper typing. Virtual calls through void* casts (`(*(v0))(&v0, 5)`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Virtually no comments explaining C++ mechanisms (vtable, RTTI, virtual inheritance). Only one anomaly note: "[D] Unsupported jumpkind Ijk_SigTRAP".
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: C++ patterns completely unrecognized - RAII, virtual dispatch, exception handling all shown as raw runtime calls. Smart pointer patterns entirely lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Only one anomaly flagged. Many critical issues unmarked (void returns where values expected, missing lambda bodies, incomplete template recovery).
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or exception specifications documented. Error handling contracts completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but virtual dispatch relationships unclear. Global variables referenced (`g_4059c8`, `g_405a08`) without explanation of what they represent.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All code in single output with no logical grouping. Startup code mixed with application logic. No separation between test functions and class implementations.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Would not compile standalone - missing type definitions, external dependencies (`operatornew[]`, `__cxa_*`), and incomplete function bodies.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (3+4+5+4)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type):        (3+2+2)/3   = 2.33 × 0.20 = 0.47
+Level 4 (Semantic):    (1+1+2+1)/4 = 1.25 × 0.15 = 0.19
+Level 5 (Contextual):  (4+3+2)/3   = 3.00 × 0.10 = 0.30
+─────────────────────────────────────────────────────────
+Overall Score:                              = 2.99 ≈ 3.0/10
+```
+
+**Overall Readability Score:** 3.0/10
+
+### Critical Defects:
+- **Lambda functions completely lost** - `test_cpp_lambda()` returns void with empty body despite complex capture logic in source
+- **Exception handling not recovered** - Raw `__cxa_*` calls instead of try/catch blocks in `test_cpp_exception()`
+- **Smart pointer patterns entirely missing** - `test_cpp_smart_ptr()` returns void with no implementation
+- **Class structures not recovered** - All structs are `struct_0 { field_0 }` with no semantic field names
+- **Many functions return void incorrectly** - `test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_template_class` should return int values
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Some original function names were preserved (`test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`), providing minimal semantic anchors.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Virtually no documentation of C++ mechanisms, making the decompiled code nearly impossible to understand without the original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ feature recognition** - Add specific handlers for lambdas, exceptions, smart pointers, and templates rather than treating them as generic code
+2. **Recover class structure layouts** - Analyze vtable patterns and object memory layouts to reconstruct meaningful struct/class definitions with field names
+3. **Add semantic annotation for runtime calls** - When `__cxa_*` or `operator new/delete` calls are detected, annotate them with their C++ semantic meaning (exception handling, memory management)

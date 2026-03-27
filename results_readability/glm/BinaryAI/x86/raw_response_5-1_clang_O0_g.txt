@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Local variables are almost exclusively generic names like `local_2c`, `iVar1`, and `puVar3`, providing no semantic hint about their purpose (e.g., `result`, `obj`, `ptr`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are excellent, accurately reflecting the original C++ symbols (e.g., `SimpleClass::getValue`, `test_cpp_virtual_func`, `template_max_int_`), including proper demangling of templates and lambdas.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent without explanation; for example, `0x1f` (31) and `0x23` (35) are used in `SimpleClass::SimpleClass` for string operations instead of `sizeof(name)-1`.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While the code is clean of debug instrumentation, it suffers from typical `-O0` verbosity, such as redundant stack variable handling and the use of generic types like `undefined4`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The control flow for `test_cpp_exception` is critically broken; the decompiled code only shows the `throw` logic, completely omitting the `try/catch` blocks and the return calculation present in the source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are decomposed well into class methods and template instantiations (e.g., `Container<int>::push`), maintaining appropriate granularity and cohesion.
+
+**7. Code Linearization:** Score: 9/10
+Justification: As expected with `-O0`, the code reads linearly from top to bottom with minimal jumps or complex branching, making execution paths easy to trace.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is no dead code or loop unrolling, but the expected redundancy of unoptimized code (e.g., immediate load/store of stack variables) is present.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Types are generally correct but imprecise; `int` is often represented as `undefined4`, and `Container<double>::get` returns a `longdouble` instead of `double`.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Struct/class members are accessed via pointer arithmetic offsets (e.g., `*(int *)(this + 4)`) rather than semantic member names (e.g., `this->name`), significantly hindering readability.
+
+**11. Type Safety:** Score: 4/10
+Justification: Virtual function calls are represented as unsafe raw pointer dereferences (e.g., `(***(code ***)param_1)(param_1,param_2)`), stripping away the type safety of the original C++ dispatch mechanism.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code to explain logic, algorithms, or complex C++ constructs like virtual inheritance or smart pointer internals.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: While lambda types are named well (`test_cpp_lambda()::$_1`), high-level patterns like RAII (smart pointers) and virtual dispatch are exposed as low-level implementation details (tuples, vtable lookups) rather than idiomatic C++.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler provides no warning or indication that the control flow for `test_cpp_exception` is incomplete or that the exception handling logic was lost.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the null checks in `test_cpp_rtti` are explicit code rather than documented contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear, but relationships like virtual dispatch or inheritance hierarchies are obscured by raw pointer arithmetic, requiring manual effort to map.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically by class and template instantiation, making it relatively easy to locate related code, though the file is monolithic.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on external standard library symbols (e.g., `operator_new`, `__cxa_throw`) and would require significant stubbing or environment setup to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Avg: (3 + 9 + 5 + 6) / 4 = 5.75
+L2 Avg: (4 + 8 + 9 + 7) / 4 = 7.00
+L3 Avg: (6 + 4 + 4) / 3 = 4.67
+L4 Avg: (1 + 3 + 1 + 1) / 4 = 1.50
+L5 Avg: (6 + 7 + 5) / 3 = 6.00
+
+Overall = (5.75 × 0.30) + (7.00 × 0.25) + (4.67 × 0.20) + 
+          (1.50 × 0.15) + (6.00 × 0.10)
+Overall = 1.725 + 1.75 + 0.934 + 0.225 + 0.6
+Overall = 5.234
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.2/10
+
+### Critical Defects (Bullet Points)
+- **Control Flow Loss in `test_cpp_exception`**: The decompiled output only shows the `throw` statement, completely omitting the `try/catch` blocks and the logic that calculates the return value.
+- **Loss of Member Access Semantics**: Class methods use raw pointer arithmetic (e.g., `*(int *)(this + 4)`) instead of member names (e.g., `this->value`), making data layout opaque.
+- **Generic Variable Naming**: Local variables are named `local_XX`, `iVarX`, or `puVarX`, providing no context about their role in the algorithm.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (9/10)
+- **Why?** Ghidra successfully demangled complex C++ symbols, including template instantiations (`template_max_int_`) and lambda closure types (`test_cpp_lambda()::$_1`), preserving the original semantic identifiers.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Semantic Transparency (1.5/10)
+- **Why?** The code lacks comments, fails to recognize high-level C++ idioms (exposing smart pointer internals and vtables), and does not flag the critical anomaly in the exception handling flow.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover Struct Member Access**: Utilize RTTI or debug information to map pointer arithmetic offsets back to struct member names (e.g., convert `*(int *)(this + 4)` to `this->value`).
+2.  **Reconstruct Exception Handling**: Improve control flow analysis to rebuild `try/catch` blocks from personality routines and landing pads, rather than just emitting the `throw` site.
+3.  **Infer Local Variable Names**: Analyze usage patterns (e.g., variables used in return statements or accumulation) to assign semantic names like `result` or `temp` instead of `local_XX`.

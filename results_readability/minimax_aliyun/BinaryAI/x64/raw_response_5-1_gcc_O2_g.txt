@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use cryptic names like `local_34`, `local_2c`, `puVar1`, `sVar1`, `iVar1`, `plVar3`. The original source uses meaningful names like `value`, `name`, `data`, `size`, `instance_count`, but these are completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions correctly preserve original names (test_cpp_member_func, test_cpp_constructor, etc.). However, internal functions like `FUN_00101020` remain unnamed, and template instantiations use generated names like `template_max_int_` instead of semantic names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout: `0x2a` (42), `0x47` (71), `0x28a` (650), `0x16` (22), `0x55` (85), `0x2bf` (703), `0x125c` (4704), `0x3e9` (1000). No named constants or explanations for what these values represent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise from external symbols (`__cxa_finalize`, `__printf_chk`, `strlen`, etc.) and placeholder functions (`_init`, `FUN_00101020`). Many `<EXTERNAL>` functions are just recursive calls to themselves, adding clutter.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with standard if/else structures. At -O0, loops and conditionals are straightforward. Some complexity in virtual function dispatch (`***(code ***)param_1`)() but this is expected for polymorphic calls.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are well-separated with appropriate granularity. Test functions are separate from implementation. Template instantiations correctly appear as separate functions. Member functions properly extracted.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns present but used appropriately. No goto statements or spaghetti code patterns observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Loop unrolling not present (expected at -O0). Code is relatively clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses generic types like `undefined4`, `undefined8`, `undefined2`, `undefined` instead of specific types (int, char, size_t). Function signatures incomplete (e.g., `void test_cpp_exception(void)` returns int in source). Parameter types often missing or wrong.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. SimpleClass object in test_cpp_member_func is represented as raw stack variables (`local_34`, `local_2c`, etc.) with pointer arithmetic. Original had clear struct with `value` and `name[32]` fields - completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: casting to `undefined4*`, dereferencing generic `long*` pointers, pointer arithmetic without bounds. Example: `*(long *)(in_FS_OFFSET + 0x28)` - unclear what this accesses.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in decompiled output. Original source had extensive comments explaining each test case and C++ feature. Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ patterns recognizable (virtual function calls via vtable, template instantiation, exception throw/catch) but not explicitly named or documented. Patterns like "virtual dispatch" or "RAII" not indicated.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly warnings. Indirect virtual calls like `(***(code ***)param_1)()` are presented without flagging uncertainty. No indication of potential issues or unresolvable calls.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear expectations (e.g., "requires: ptr != NULL") - completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present in code but relationships not documented. No indication of who calls whom or global variable usage. Virtual dispatch relationships unclear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions somewhat grouped by type (test functions, member functions, template functions) but not cleanly organized. All in single file with arbitrary ordering.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would not compile standalone. Missing function signatures for `<EXTERNAL>` functions. Incomplete type definitions. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Variable naming**: All stack variables use cryptic names (`local_34`, `puVar1`) instead of semantic names (`value`, `name`, `size`)
+- **Type precision**: Uses `undefined4`/`undefined8` instead of `int`/`char*`; struct recovery completely failed
+- **No comments**: Zero documentation recovered from original source
+- **Composite type loss**: SimpleClass represented as raw stack variables instead of struct with fields
+- **Magic numbers**: Values like `0x125c`, `0x3e9`, `0x2a` unexplained throughout
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions are well-separated with appropriate granularity. Test functions correctly isolated from implementations. Template instantiations properly extracted as separate functions.
+
+### Most Needs Improvement: Lexical Clarity (4.5/10)
+Variable naming is nearly unusable with cryptic auto-generated names. Literal values lack explanations. This makes tracking data flow extremely difficult.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `local_34` initialized with `0x74736554` ("Test" in little-endian) should be named `name`; variables used in size checks should be named `size`
+2. **Recover struct types**: Stack layout analysis should reconstruct SimpleClass with `value` and `name` fields rather than individual variables
+3. **Add semantic comments**: Document what magic numbers represent (e.g., `// Expected: 4704 = 10 + 34 + 4660`) and flag uncertain constructs like indirect virtual calls

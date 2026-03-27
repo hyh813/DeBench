@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names (v0, v1, v2, ptr, i, a0) with no semantic meaning. Source variable `x` becomes `a0`, `arr` becomes `ptr`, `local` becomes `v0`. The decompiler made no attempt to infer meaningful names from usage patterns.
+
+**2. Function Naming Quality:** Score: 1/10  
+Justification: Uses address-based mechanical names (sub_400b94, sub_400bc8, sub_400c20) instead of source names like `local_vars`, `heap_basic`, `vla_stack`. Only `main` and `double_value` retained correct names - all 30+ test functions lost their semantic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals in printf calls are preserved correctly. However, magic number 4294967295 (representing -1 as unsigned) appears frequently without explanation. Some constants like array sizes (10, 5) are used directly without named constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Contains severe artifacts including incorrect `__ROL__` (rotate left) used for multiplication instead of proper shift operations. Many unnecessary casts and type conversions present. The expression `(a0 * 2 | a0 >> 31) & 4294967294` is convoluted and obscures the simple `x * 2` operation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Basic control structures (if/else, for loops, while loops) are correctly recovered. At -O0, loops should be nearly perfect. Minor awkwardness in some conditionals but overall flow is traceable. No spurious goto statements.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each source function is correctly separated in decompiled output. Function sizes are appropriate (20-80 lines). Parameter counts match original. Static helper functions like `static_helper` properly extracted. Good granularity overall.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Some early returns present. Deep nesting in linked list functions (3-4 levels) but manageable. No computed jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: No dead code elimination issues. Loop unrolling not present at -O0. Some redundant expressions in conditionals but minimal. The main issue is the convoluted arithmetic expressions creating visual noise rather than logical redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - all integers become `unsigned int` regardless of original signedness. Pointers often `void*` or `char*` instead of proper types. Size_t lost everywhere. Function parameters like `int x` become `unsigned int a0`. The original `int` types are mostly lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs reconstructed with generic names (struct_0, struct_1, struct_2) and generic field names (field_0, field_8, field_10). Original names like `Point`, `Node`, `TreeNode` completely lost. Field semantics (x, y, data, next) replaced with offsets. The Node struct shows correct layout but wrong naming.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe pointer casts present (e.g., `(char *)ptr + 4 * i`). Pointer arithmetic visible but potentially error-prone. No bounds checking in array operations. Some type-confused operations like treating pointers as integers in calculations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Nearly zero useful comments. No function documentation explaining purpose. No indication of decompilation confidence. No algorithm explanations. Only auto-generated variable declarations with no semantic context.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Basic patterns like malloc/free pairs visible but not named or highlighted. Linked list traversal patterns present but not identified as such. Memory management patterns recognizable but not documented. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The incorrect `__ROL__` usage for multiplication is not flagged as anomalous. No warnings about potential undefined behavior. No indication of decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: n > 0"). No postconditions (e.g., "ensures: return is heap-allocated"). Error return values (-1, -2) not explained. No invariant recognition.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: External functions marked as `extern` but relationships not documented. No call graph information. Global variable usage visible but not explained. Callback relationships (like set_global_callback) not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in address order rather than logical grouping. Related functions (test_stack_memory and its test subjects) not grouped. No clear separation between test categories. File is single monolithic output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile standalone. Missing struct type definitions. The `__ROL__` macro is undefined. External dependencies (printf, malloc, etc.) not declared. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- Function names lost entirely (sub_400b94 instead of local_vars, heap_basic, etc.)
+- Variable names all generic (v0, v1, ptr, a0) with no semantic inference
+- Struct/union names lost (Point→struct_0, Node→struct_0, field names→field_0/field_8)
+- Type precision severely degraded (all int→unsigned int, pointers→void*)
+- No comments explaining any functionality
+- Incorrect `__ROL__` used for multiplication, creating confusing code
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+- Basic loops and conditionals correctly recovered at -O0
+- Execution flow is traceable despite other issues
+
+**Most Needs Improvement:** Function Naming Quality (1/10)  
+- Address-based names (sub_400xxx) completely obscure the 30+ test functions
+- Should recover names like local_vars, heap_basic, vla_stack from debug symbols
+
+**Top 3 Recommendations:**
+1. **Recover function names from debug symbols** - The original function names are available in DWARF debug info and should be extracted (local_vars, heap_basic, vla_stack, etc.)
+2. **Infer variable names from usage patterns** - Variables like `ptr` used consistently for malloc results should be named appropriately; loop counters should be `i`, `j`
+3. **Fix arithmetic expression decompilation** - The `(a0 * 2 | a0 >> 31) & 4294967294` should simply be `a0 * 2`; `__ROL__` is completely wrong for multiplication
+4. **Recover struct type names and field names** - Use debug info to reconstruct Point, Node, TreeNode with field names x, y, data, next
+5. **Add basic documentation** - At minimum, comment each function with its purpose and parameters using information from debug symbols

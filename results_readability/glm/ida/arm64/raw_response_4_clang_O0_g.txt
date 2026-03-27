@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: While parameters in simple functions retain generic names (`a`, `b`), the `test_calling_conventions` function is severely degraded, using `v0` through `v10` and reusing struct fields like `HIDWORD(large.data[15])` as temporary variables, completely obscuring the original `sum` or `no_args` intent.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`cdecl_func`, `test_calling_conventions`, `param_by_value_int`) are perfectly recovered from the debug symbols, matching the source exactly and providing clear semantic meaning.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals are preserved and readable. However, magic numbers appear in places like `call_ret_pointer` where `*(_QWORD *)p = 0x140000000A` is used to initialize an array, and `param_array_decay` returns a folded constant `8` instead of `sizeof(arr)`, which hides the test's intent.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean but contains Hex-Rays specific macros like `__PAIR64__`, `HIDWORD`, and `LODWORD` which act as noise for standard C readability. The `__fastcall` attribute on ARM64 functions is also technically noise since it's the default ABI.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent; `for` loops, `switch` statements, and `if/else` blocks are perfectly reconstructed from the `-O0` binary, matching the source structure almost exactly.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries and granularity match the source perfectly. There is no inlining or outlining that deviates from the original structure, maintaining the logical separation of concerns.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps. The flow is natural, with early returns and loop constructs placed exactly where one would expect in the source.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is little dead code. However, in `test_calling_conventions`, the compiler's stack slot reuse causes the decompiler to alias variables (e.g., reusing `large` struct space for `sum`), creating artificial redundancy in variable access patterns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Basic types (`int`, `char*`) and composite types (`LargeStruct`, `SmallStruct`) are recovered accurately. However, the `varargs_func` exposes the internal `gcc_va_list` structure implementation (`__gr_offs`, `__gr_top`) rather than the abstract `va_list` type, reducing precision regarding the standard library interface.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs like `SmallPoint`, `LargeData`, and `LargeStruct` are defined and used correctly with their field names (`x`, `y`, `data`) intact. The only deviation is that large structs passed by value are represented as pointers (e.g., `func_struct_byval(LargeStruct *s)`), which is ABI-accurate but syntactically different from the source.
+
+**11. Type Safety:** Score: 8/10
+Justification: The code is generally type-safe. The use of `__PAIR64__` and `HIDWORD` involves unsafe casting/macros under the hood, but this is a decompiler artifact. The pointer arithmetic for `ret_pointer` (`p + 1`) is correctly typed as an `int*` increment.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: There is a distinct lack of comments explaining logic. The only comment present is a warning in `ret_large_struct` ("local variable allocation has failed"), which is useful but minimal. No comments explain the "calling convention" tests or the logic in `varargs_func`.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: The decompiler fails to recognize the `stdarg` idiom, instead exposing the raw ARM64 register saving logic inside `varargs_func`. It also uses `__PAIR64__` for returning small structs, which is a compiler-specific idiom rather than the high-level "return struct" idiom.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags a potential failure in `ret_large_struct` with a comment. However, it silently presents the confusing variable aliasing in `test_calling_conventions` and the folded constant in `param_array_decay` without warning the user that these differ from the source logic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the null check in `param_double_ptr` is visible as code, but not documented as a contract requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are resolved to their correct targets (e.g., `cdecl_func` calls are clear). The relationships between the test functions and the implementation functions are preserved perfectly.
+
+**17. Module Organization:** Score: 9/10
+Justification: The functions are ordered logically, matching the source file's structure. Helper functions and test functions are grouped together as they were originally.
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code relies on Hex-Rays specific types/macros (`__int64`, `__PAIR64__`) which would require standard headers or definitions to compile in a standard environment, but the structure is otherwise compatible.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.6/10
+
+**Critical Defects:**
+- Variable aliasing in `test_calling_conventions` (e.g., `HIDWORD(large.data[15])`) makes the main test function logic extremely difficult to follow.
+- `varargs_func` exposes low-level ARM64 `va_list` implementation details (`__gr_offs`, `__gr_top`) instead of the standard `va_arg` macro, obscuring the semantic intent.
+- `call_ret_pointer` uses a magic hex constant (`0x140000000A`) to initialize an array, losing the clarity of the source `{10, 20, 30}`.
+- Large struct parameters are decompiled as pointers (e.g., `LargeStruct *s`), deviating from the source's pass-by-value syntax.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Debug symbols were perfectly preserved, allowing every function to retain its original, descriptive name.
+
+**Most Needs Improvement:** Idiom Recognition (scored 5/10)
+- The failure to abstract the `stdarg` implementation into standard `va_arg` usage significantly damages the semantic readability of variable argument functions.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve stack variable analysis to separate lifetimes of variables that reuse stack slots (like in `test_calling_conventions`) to avoid confusing struct field aliasing.
+2. Implement pattern matching for `va_list` usage on ARM64 to reconstruct `va_start`/`va_arg` loops instead of exposing register offset arithmetic.
+3. Detect and expand wide hexadecimal stores used for array initialization (e.g., `0x140000000A`) back into readable array initializers.

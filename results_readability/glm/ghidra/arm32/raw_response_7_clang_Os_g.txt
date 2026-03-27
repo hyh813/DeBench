@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `iVar1`, `iVar2`, `pbVar1`, and `uVar4`, completely obscuring the original semantic intent (e.g., `result`, `str`, `encrypted`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names match the original source exactly (e.g., `param_fake_branch`, `param_opaque_predicate`), likely due to the presence of debug symbols (`-g`), providing perfect context.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `0x15` (21), `0x2c` (44), and `0x5a` are used without explanation, whereas the source used clearer expressions or constants; the encryption key `0x5a` is preserved but not labeled as such.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output is cluttered with compiler artifacts and warnings such as `/* WARNING: Removing unreachable block */`, `/* WARNING: Unknown calling convention */`, and `/* Unresolved local var: ... */`, which significantly distract from the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: The tail-recursive function `param_tail_call_optimized` is decompiled into a complex, unreadable mathematical formula involving 64-bit shifts and casts instead of a loop or recursion, completely destroying the natural flow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are recovered with correct boundaries and granularity, matching the source structure perfectly (e.g., `main`, `test_obf_opt_edge`, and specific param functions).
+
+**7. Code Linearization:** Score: 6/10
+Justification: Code generally reads top-to-bottom, but `do-while` loops are used where `for` loops existed in the source, and the complex arithmetic in `param_tail_call_optimized` disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: Dead code (fake branches) was correctly identified and removed, which improves readability of the active path, though it removes the obfuscation logic present in the source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `int` and `char*` are recovered, but generic types like `undefined4` and `undefined1` appear, and `size_t` is sometimes represented loosely, reducing precision.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: The struct and bitfield logic in `param_implementation_defined` is completely lost; the function is decompiled to simply `return 0x2c`, failing to reconstruct the `bitfield` struct or its member accesses.
+
+**11. Type Safety:** Score: 6/10
+Justification: Necessary casts like `(uint)x` are present, and pointer arithmetic seems generally correct, though the heavy use of `undefined` types lowers the confidence in safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are primarily auto-generated warnings (e.g., "Removing unreachable block") and provide no semantic explanation of algorithms or the purpose of complex math operations.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard algorithms like the GCD in `param_opaque_predicate` are obscured into a `do-while` loop with `__aeabi_idivmod` calls rather than a clear modulo operation, and the tail recursion is unrecognizable.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler clearly flags issues like "Unresolved local var" and "Unknown calling convention," which accurately indicates where the decompilation might be unreliable.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or invariants; for example, the buffer overflow logic in `param_buffer_overflow_stack` is reduced to `return x` with no indication of the removed safety checks.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the correct recovered names, making the call graph easy to follow (e.g., `call_fake_branch` calls `param_fake_branch`).
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically in the output file, maintaining the original source's separation of concerns (obfuscation, optimization, edge cases).
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code would not compile without significant modification due to `undefined` types, magic numbers for signals (e.g., `8` instead of `SIGFPE`), and references to runtime intrinsics like `__aeabi_idivmod`.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`iVar1`, `iVar2`), obscuring all semantic meaning.
+- The tail-recursive function `param_tail_call_optimized` is decompiled into an unreadable mathematical mess instead of a loop.
+- Composite types (structs/bitfields) in `param_implementation_defined` are completely lost, replaced by a magic constant return.
+- Excessive noise from warnings ("Unresolved local var", "Removing unreachable block") clutters the output.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved the original function names, likely due to debug symbols, making high-level navigation trivial.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)
+- The reliance on generic names like `iVar1` makes understanding the data flow and logic nearly impossible without cross-referencing the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic-based variable renaming to infer names like `result`, `index`, or `buffer` based on usage patterns.
+2. Improve pattern matching for tail recursion and simple loops to prevent generating complex arithmetic formulas for iterative logic.
+3. Enhance composite type recovery to reconstruct structs and bitfields from stack offsets and memory accesses rather than collapsing them to constants or raw memory accesses.

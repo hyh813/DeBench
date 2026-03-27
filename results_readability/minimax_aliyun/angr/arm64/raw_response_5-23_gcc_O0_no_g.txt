@@ -1,0 +1,123 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` instead of original names like `size`, `x`, `y`. Local variables are `v0`, `v1`, `v2` etc. with no semantic meaning - completely obscures purpose (e.g., `v1 = a0 + 5` should be `result = x + 5`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions correctly preserved (`param_macro_constants`, `call_macro_functions`, `param_conditional_compile`, etc.), but helper/initialization functions use generic names like `sub_400894`, `sub_400a08`. Good verb usage for preserved names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `57072` (0xDEF0), `4278190081`, `18446744073709551612` appear without explanation. Some constants like `0x200` (512) and `64` are meaningful, but bit manipulation masks like `& 4294967294` are opaque. The `__LINE__` became hardcoded "155" losing dynamic nature.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant artifacts present: redundant `memcpy` calls (`dst = memcpy(...); return memcpy(...);`), unnecessary stack frame setup (`v0 = &v1`), spurious `__ROL__` rotations for index calculation, and type casts like `& 4294967295` for unsigned handling. These obscure the actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - uses `if-else`, `for` loops correctly. However, some expressions are convoluted: `((v0 * 2 | v0 >> 31) & 4294967294) + v0 + 2` instead of `v0 * 3 + 2`. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good separation between `call_*` wrapper functions and `param_*` implementations. Function sizes are reasonable (15-30 lines). Minor issue: some small wrapper functions could be inlined.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present. Some forward jumps in conditional logic but manageable. No excessive nesting (>4 levels).
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy - duplicate function calls like `v2 = param_macro_constants(0x800); return param_macro_constants(0x800);` appear multiple times. This is a major readability issue.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `unsigned int`, `unsigned long long` which are correct but generic. Original used `int` and `size_t`. No `int32_t`/`uint64_t` specificity. Const correctness lost. Function signatures mostly correct but parameter types could be more precise.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Not heavily struct-dependent code. Where structures exist (like arrays), they're accessed via pointers correctly. No major struct reconstruction issues since source uses minimal structs.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns: pointer arithmetic with `__ROL__` masking (`a0 + (__ROL__(i, 2) & 18446744073709551612))` instead of `a0 + i*4`). The `& 4294967295` casts are unnecessary. Overall manageable but not ideal.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in decompiled output. Original had extensive documentation explaining macro behavior, test scenarios, and expected results. Zero recovery of this semantic information.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No recognition of macro expansions (e.g., `SQUARE(x)` → `x*x`), no identification of inline assembly patterns, no flagging of conditional compilation branches. The decompiler treats everything as if it were hand-written C.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `arm64g_calculate_condition` calls for mmap/mprotect success checks are not explained. No indication of potential issues with the dynamic code generation or memory protection changes.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No recovery of preconditions (e.g., "requires: size > 0"), postconditions, or invariants. The original had explicit error handling for mmap failures that isn't documented in the decompiled version.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships not documented. No indication which functions call which, no global variable usage documentation. The `extern` declarations exist but lack context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped reasonably (preprocessing functions together, asm functions together). However, it's a flat structure - no indication of original file organization or logical grouping beyond alphabetical.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code has `extern` declarations for external functions. According to metadata, it compiles successfully ("Compilation Result: Yes"). Some stubs needed for missing symbols but overall compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 4 + 3) / 4 = 4.0
+L2_avg = (7 + 7 + 7 + 4) / 4 = 6.25
+L3_avg = (6 + 8 + 6) / 3 = 6.67
+L4_avg = (1 + 2 + 2 + 1) / 4 = 1.5
+L5_avg = (4 + 6 + 7) / 3 = 5.67
+
+Overall = (4.0 × 0.30) + (6.25 × 0.25) + (6.67 × 0.20) + 
+          (1.5 × 0.15) + (5.67 × 0.10)
+        = 1.20 + 1.5625 + 1.334 + 0.225 + 0.567
+        = 4.91/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters `a0`/`a1`/`a2` and locals `v0`/`v1`/`v2` are generic - should infer semantic names from usage (e.g., `a0` is `size`, `v1 = a0 + 5` should show `temp_var = x + 5`)
+- **Redundant function calls**: Multiple instances of `v2 = func(x); return func(x);` - the return value is computed twice unnecessarily
+- **No comments**: Zero semantic information recovered - original had extensive macro documentation, test scenarios, expected values
+- **Magic numbers**: Constants like `57072`, `4278190081`, `18446744073709551612` appear without explanation or named constant equivalents
+- **Opaque bit manipulation**: Expressions like `((v0 * 2 | v0 >> 31) & 4294967294)` instead of `v0 * 2` are confusing at -O0
+
+### Best Quality Aspect: Type System Fidelity (6.67/10)
+- Types are mostly correct (unsigned int, unsigned long long)
+- Function signatures match original reasonably well
+- No severe type safety violations that would cause undefined behavior
+
+### Most Needs Improvement: Semantic Transparency (1.5/10)
+- Zero comments recovered from original extensive documentation
+- No pattern recognition for macros, inline assembly, or conditional compilation
+- No anomaly indication for suspicious code patterns
+- No contract/precondition recovery
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, comparisons, function calls) to suggest semantic names. `a0` compared to `0x400` (1024) suggests it's a `size` parameter.
+
+2. **Eliminate redundant function calls**: Detect when a function is called immediately before a return with same arguments and simplify to single call with return value.
+
+3. **Recover comments from debug info**: Use `-g` debug symbols to recover string constants that were originally comments, variable names, and function descriptions. The original had rich documentation that could be partially recovered.
+
+4. **Recognize and explain macro expansions**: When detecting patterns like `x*x + (x>y?x:y)`, suggest it may be expanded from `SQUARE(x) + MAX(x,y)` macro.
+
+5. **Replace magic numbers with symbolic constants**: When a constant appears multiple times or matches known values (like page sizes, protection flags), suggest appropriate named constants.

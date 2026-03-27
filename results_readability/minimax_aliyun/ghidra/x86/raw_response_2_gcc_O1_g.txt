@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Function parameters mostly preserved (`x`, `p`, `arr`, `n`), but loop indices and temporaries use generic names like `iVar1`, `iVar2`, `piVar1`. Many unresolved locals marked as `int i@[???]`, `int j@[???]`, `int k@[???]` in array/pointer functions.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All 50+ function names perfectly recovered: `double_value`, `process_char`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`, `binary_tree_sum`, etc. Matches original source exactly.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xbfU`, `0x1a` in `process_char` not explained (represents 'A'-'Z' check). `process_bool` has obscure bit manipulation: `~(byte)x & 1`. `process_ll` uses complex `CONCAT44` operations. No constants or enum values named.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifact pollution: "WARNING: Unknown calling convention" (50+ occurrences), "WARNING: Removing unreachable block", "WARNING: Unresolved local var", "WARNING: Function: __x86.get_pc_thunk.bx replaced". Runtime functions (`_init`, `_start`, `deregister_tm_clones`) included unnecessarily.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops properly converted to do-while constructs. However, `array_2d_stack` uses complex pointer arithmetic: `(int (*) [10])(*(int (*) [10])((int)arr + 0x28) + 1)` which obscures the simple `arr[i][i]` logic. `process_char` condition `(byte)(c + 0xbfU) < 0x1a` is correct but unclear.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent preservation of original function granularity. Each function remains focused (e.g., `double_value` is 3 lines, `ptr_single` is 2 lines). Test functions properly call multiple small functions. No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom with early returns in `array_string`, `linked_list`. However, `array_3d` has deeply nested pointer arithmetic disrupting flow: `(*(int (*) [5] [5])paiVar3)[0][0]` through `[0][4]` on each iteration.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `process_double` has unnecessary cast: `(double)((float)d * 0.5 + 0.1)` - the float cast wasn't in source. `process_ld` is completely broken - returns `longdouble *` (pointer) instead of `longdouble` value. Some loop patterns repeated but acceptable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `char`, `short`, `long`, `float`, `double`). However: `const_param` loses `const` qualifier (parameter is `int *p` not `const int *p`). `volatile_access` loses `volatile`. `process_ld` returns `longdouble *` instead of `longdouble`. Function pointer types use generated names like `_func_int_int`.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct/union recovery. All typedefs preserved: `Point3D`, `Rect`, `Widget`, `Node`, `Flags`, `UnionData`, `State`, `Device`, `DNode`, `TreeNode`, `Edge`, `Graph`. Field names accurate: `p->x + p->y + p->z`, `node->next->data`. Nested access correct: `(r->size).width`. Bitfields use Ghidra notation (`f->_0_2_`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Critical error in `ptr_diff`: `return (int)p1 - (int)p2 >> 2;` is wrong - source has `return p1 - p2;` (pointer subtraction). The shift by 2 is incorrect. Complex unsafe casts in `array_2d_stack` and `array_3d` with `(int (*) [10])` conversions. `process_ll` uses risky `CONCAT44` operations for 64-bit multiplication.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated WARNING comments present (e.g., "WARNING: Unknown calling convention"). No explanatory comments about algorithm logic, no decompilation confidence indicators, no @param/@return documentation. The WARNING noise is counterproductive.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Common patterns recognizable: linked list traversal (`while (head != NULL) { sum += head->data; head = head->next; }`), binary tree recursion, graph adjacency list traversal. However, no explicit pattern naming or documentation (e.g., "Implements: singly linked list traversal").
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Many WARNING comments for calling conventions and unresolved locals. However, critical anomalies missed: `process_ld` returns wrong type (pointer vs value) with no warning. `ptr_diff` has severe logic error with no indication. Unresolved locals marked but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of expected NULL checks (though present in code like `if (head == NULL)`). No invariant detection. Missing "requires: ptr != NULL" or "ensures: return >= 0" style contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear in context (e.g., `iVar2 = array_1d_stack(arr1,5)`). However, no documentation of call relationships: "Calls: parse_header" or "Called by: main". Callback relationships (e.g., `ptr_func_simple` takes function pointer) not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Single flat file output. Functions listed in address order (0x00011241, 0x0001124c, etc.) rather than logical grouping. Original source organized by category (data types, arrays, pointers, composite types) - this organization not reflected. Static functions not explicitly marked.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses standard library functions (`puts`, `__printf_chk`, `__libc_start_main`) that require `<stdio.h>`, `<stdlib.h>`. Should compile with `-lc`. Missing function prototypes could cause warnings. No header file reconstruction.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- `process_ld` returns `longdouble *` (pointer) instead of `longdouble` value - completely broken
+- `ptr_diff` uses `(int)p1 - (int)p2 >> 2` instead of `p1 - p2` - wrong pointer arithmetic
+- Const qualifier lost in `const_param` (parameter should be `const int *p`)
+- Volatile qualifier lost in `volatile_access` (parameter should be `volatile int *p`)
+- Excessive WARNING noise (50+) obscuring actual code
+
+**Best Quality Aspect:** Composite Type Recovery (9/10)  
+All struct/union types recovered with accurate field names. Nested structures, bitfields, and unions handled correctly.
+
+**Most Needs Improvement:** Literal Clarity & Comment Quality (both 3-4/10)  
+Magic numbers not explained (0xbfU, 0x1a in char processing). Only auto-generated WARNING comments present, no explanatory documentation.
+
+**Top 3 Recommendations:**
+1. Fix `process_ld` return type - should return `longdouble` value, not pointer
+2. Fix `ptr_diff` to use proper pointer subtraction: `return p1 - p2;` not integer arithmetic with shift
+3. Add meaningful comments explaining magic numbers and algorithm logic instead of WARNING noise
+4. Recover const/volatile qualifiers in parameter types
+5. Remove compiler runtime functions (_init, _start, register_tm_clones) from decompiled output

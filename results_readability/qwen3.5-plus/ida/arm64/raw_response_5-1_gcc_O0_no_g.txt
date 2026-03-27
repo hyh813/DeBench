@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Overwhelmingly generic names like `v0`, `v1`, `v2`, `v3` through `v13` dominate the code. Only occasional meaningful names appear (`Value`, `Data`, `Size`, `exception`, `lpsrc`), making it difficult to track variable purposes across functions like `test_cpp_smart_ptr`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions are well-preserved (`test_cpp_member_func`, `test_cpp_virtual_func`), and class methods retain readable mangled names (`SimpleClass::getValue`, `Derived::virtual_func`). However, helper functions like `sub_1840` and `init_proc` lack semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `0x1234` (recovered as 4660), `0x1Fu`, `0x10u`, `0x14u`, `0x20u`, `0x30u` for object sizes. String literals are referenced indirectly (`asc_45E8`, `aCppL301D`) rather than shown inline.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive type casting noise: `(__int64 (__fastcall ***)(_QWORD, _QWORD))`, `(_DWORD *)`, `(_QWORD *)`. Stack annotations like `[xsp+14h] [xbp+14h] BYREF` clutter every function. Compiler helper functions inflate output significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control structures are mostly natural with proper if-else and for loops. Exception handling in `test_cpp_exception` is incomplete (only throw visible, no catch recovery). Virtual dispatch through vtables is correctly represented.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable granularity with class methods properly separated. However, template instantiation creates many helper functions (`std::__uniq_ptr_impl`, `std::_Tuple_impl`) that fragment the code unnecessarily.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Stack variable declarations at function start follow standard conventions. No problematic goto usage observed in main logic.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Template instantiation creates redundant helper functions. Multiple destructor calls appear in `test_cpp_smart_ptr` (4 unique_ptr destructors). No dead code detected but expansion is verbose.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `double`, `char*`), and class types identified (`SimpleClass*`, `Base*`). However, excessive generic types (`__int64`, `_QWORD`, `_DWORD`) and function pointer degradation to `__int64 (__fastcall ***)` reduce precision.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class structures partially recovered with method names intact, but member fields accessed through pointer arithmetic (`*(_DWORD *)this`, `*((_DWORD *)this + 2)`) instead of named fields. Inheritance visible through vtable patterns but field names lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(_DWORD *)`, `(_QWORD *)`, `(__int64)`. Pointer arithmetic for member access (`(char *)this + 16`, `*(_QWORD *)this - 24LL`) creates potential undefined behavior. Function pointer casts lack type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only auto-generated metadata (function addresses, register annotations). No algorithm explanations, API contracts, or decompilation confidence indicators beyond "FAILED to decompile" markers.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns partially recognized (constructors, destructors, virtual dispatch visible). Smart pointer patterns recovered but not explicitly identified. Lambda closures decompiled but not labeled as such. No design pattern documentation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 27 external functions explicitly marked "FAILED to decompile" which is helpful. However, indirect calls through vtables aren't flagged as uncertain. No warnings about potentially incorrect type recovery or stack layout anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts not recovered. No error condition documentation. Function contracts entirely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible and traceable through naming. Class inheritance relationships visible through vtable patterns. Virtual dispatch relationships identifiable. Global variable usage somewhat opaque (`_bss_start`, `LifecycleClass::instance_count`).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order with related class methods grouped. No explicit file/module boundaries in output. Static initialization functions grouped at end. Organization follows compilation unit structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 27 external functions failed to decompile requiring stubs (`printf`, `strlen`, `operator new`, `__cxa_throw`, etc.). Compiler-specific constructs (`__fastcall`, `_QWORD`) present. Would require significant work to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):    (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural): (7+7+7+6)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):       (6+5+4)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):   (2+5+5+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Context):    (6+6+4)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────
+Overall Score:                                  5.32/10
+```
+
+### Overall Readability Score: **5.3/10**
+
+### Critical Defects:
+- **Variable names are overwhelmingly generic** (`v0` through `v13`) obscuring semantic purpose even at `-O0` debug compilation
+- **Zero meaningful comments** - no algorithm explanations, no contract documentation, no decompilation confidence indicators
+- **Excessive unsafe casts** throughout code (`(_DWORD *)`, `(_QWORD *)`, pointer arithmetic for field access)
+- **27 external functions failed to decompile** requiring manual stub creation for compilation
+- **Class member fields accessed via pointer arithmetic** instead of named struct fields, losing semantic clarity
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Test function names preserved accurately from source (`test_cpp_member_func`, `test_cpp_virtual_func`) and C++ mangled names remain decipherable for class methods.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no comments exist to explain non-trivial logic, making complex C++ features (virtual inheritance, smart pointers, RTTI) difficult to understand without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables used in size checks should be named `size`/`count`, pointers to objects should reference class names
+2. **Recover struct/class field names** - Use debug symbols (`-g` flag present) to restore member field names instead of pointer arithmetic
+3. **Add decompilation confidence annotations** - Flag indirect calls, type-uncertain operations, and recovered patterns with confidence indicators for analyst review

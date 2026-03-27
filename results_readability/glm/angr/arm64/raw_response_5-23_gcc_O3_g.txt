@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `a0`, `a1`, `v0`, `v1`), providing no semantic context about parameters like `size`, `x`, or `y`. While `ptr` appears in some functions, most identifiers are meaningless auto-generated names.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: User-defined function names like `param_macro_constants` and `test_preprocessing_features` are preserved perfectly, matching the source exactly. However, runtime/boilerplate functions are reduced to generic names like `sub_400824`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Named constants from the source (e.g., `MAX_SIZE`, `0xDEF0`) are replaced by magic numbers (e.g., `0x400`, `57072`). While string literals like `"src/5-23.c"` are preserved, the loss of named constants obscures the logic's intent.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The decompilation contains severe noise from intermediate representation (IR) leakage, such as `arm64g_calculate_condition` and `unsupported_Iop_ZeroHI96ofV128`. These artifacts make functions like `param_asm_clobber` and `param_asm_simd` extremely difficult to read.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Simple functions like `param_macro_functions` have natural control flow (ternary logic expanded to if/else). However, functions involving loops or SIMD (`param_asm_clobber`, `param_asm_simd`) are obfuscated by nested `if` statements and IR helper calls, breaking natural flow.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: The decompiler maintains a 1-to-1 mapping with source functions, preserving the original granularity. No functions are inappropriately merged or split, though the internal logic of some is complex.
+
+**7. Code Linearization:** Score: 5/10
+Justification: Basic functions read linearly, but `param_asm_simd` and `param_asm_clobber` suffer from non-linear jumps and complex conditional blocks derived from low-level instruction semantics, disrupting top-to-bottom readability.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There are instances of redundancy, such as in `sub_400824` where `memcpy` is called twice (once assigned, once returned). However, the code is generally free of dead store artifacts.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Pointer types are often degraded to `void*` or integer types like `unsigned long long` (e.g., `ptr` in `param_asm_clobber`). While sizes are correct (64-bit), the distinction between `int*` and `void*` is lost, reducing semantic precision.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: The decompiler correctly identifies `int128_t` usage in `param_asm_simd` (`*((int128_t *)ptr) = AddV(...)`), which is a positive recovery of vector types. However, simpler struct/array types are often treated as raw pointers.
+
+**11. Type Safety:** Score: 3/10
+Justification: Unsafe type casts and arithmetic are common. For example, in `param_asm_clobber`, a pointer is assigned to an integer `i`, which is then used for pointer arithmetic (`i += 16`), violating type safety principles present in the source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are almost entirely absent. There is one useful comment noting a failed decompilation (`// Failed to decompile function __aarch64_ldadd4_acq_rel`), but generally, there is no explanation of logic or algorithms.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Simple arithmetic idioms (like `MAX` or `SQUARE`) are recognizable despite generic variable names. However, the loop idiom in `param_asm_clobber` (array summation) is completely lost amidst IR artifacts and pointer math.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The presence of `unsupported_Iop_ZeroHI96ofV128` and `arm64g_calculate_condition` indicates significant decompilation failures, but these are presented as normal code rather than being flagged as anomalies or uncertainties.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are documented. Error checks (like `ptr == MAP_FAILED`) are transformed into obscure condition checks without explaining the contract (e.g., "requires valid memory pointer").
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to follow. Global variable accesses (e.g., `g_412f60`) are explicit, though the variable names are generic.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are grouped logically by address, which roughly correlates with the source file's structure. The separation between test functions and implementation functions is maintained.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not compilable due to the inclusion of internal decompiler artifacts (`arm64g_calculate_condition`, `unsupported_Iop_ZeroHI96ofV128`) and non-standard function signatures.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Decompiler IR leakage (`arm64g_calculate_condition`, `unsupported_Iop_ZeroHI96ofV128`) renders low-level functions unreadable.
+- Variable names are entirely generic (`a0`, `v0`), stripping semantic meaning from parameters and locals.
+- Magic numbers (`0x400`, `57072`) replace source constants (`MAX_SIZE`, `0xDEF0`), obscuring configuration values.
+
+**Best Quality Aspect:** Function Naming (Score: 8/10)
+- The decompiler successfully recovered the original names for almost all user-defined functions, providing a reliable skeleton for navigation.
+
+**Most Needs Improvement:** Noise Reduction (Score: 2/10)
+- The intrusion of IR-level helper functions and unsupported operation placeholders into the output code completely destroys readability in complex functions.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a post-processing filter to suppress or simplify IR artifacts like `arm64g_calculate_condition` into standard C control flow.
+2. Enhance the type inference engine to recover specific pointer types (e.g., `int*`) instead of defaulting to `void*` or integer types.
+3. Develop a constant recovery system that identifies magic numbers used in comparisons or arithmetic and attempts to map them to potential constant definitions or adds comments explaining their values.

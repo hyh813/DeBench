@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: While parameters like `x`, `n`, and `arr` are preserved, local variables in test functions are reduced to generic names (`v0`, `v1`, `v2`). Worse, struct fields in global contexts are split into raw addresses like `dword_7080`, obscuring the original `global_point.y` intent.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the source symbols (e.g., `local_vars`, `heap_basic`, `memop_memset`), providing immediate semantic context for every operation.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers abound without explanation: `0xFFFFFFF0` (alignment), `0xFFFFFFFC` (TLS offset), and sizes like `0x14` (20) and `0x28` (40) are used directly instead of `sizeof(Point)` or named constants. String literals are replaced with pointers like `asc_4008`.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is generally clean, but low-level artifacts like `__asm { jmp ... }`, `__usercall`, and hardware intrinsics like `__writegsdword` remain, exposing implementation details that clutter the high-level logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Loops and conditionals are naturally reconstructed as `for` and `if/else` statements. The flow is easy to follow, though `stack_alias` contains a simplified condition (`if ( !&local )`) that deviates from the source logic due to dead code elimination.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity. The decompiler did not artificially merge or split functions, preserving the original modular structure (e.g., `create_tree_node` is separate).
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom. Test functions like `test_stack_memory` are sequences of calls and prints, matching the source flow without confusing jumps.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no obvious dead code or loop unrolling artifacts. The decompiler successfully simplified `local_struct` to `3 * x` (constant propagation), which improves readability despite being a structural change.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types (`int`, `void*`) and struct types (`Point`, `Node`) are mostly correct. However, `set_file_static` casts an `int` to `int*`, and `global_struct_access` fails to use the struct type, instead adding a raw `dword_7080` to a symbol.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Structs `Point` and `Node` are defined and used correctly in heap functions. However, global struct access failed; `global_point.x + global_point.y` became `dword_7080 + global_point`, treating the struct as scattered variables.
+
+**11. Type Safety:** Score: 6/10
+Justification: VLA allocation is exposed via unsafe pointer arithmetic `(int (*)[])((char *)&v2 - ...)`. The `call_global_callback` function uses a raw offset into the `GLOBAL_OFFSET_TABLE_` cast to a function pointer, which is unsafe and obscure.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining logic, algorithms, or the purpose of magic numbers. The output is purely code, lacking the semantic annotations found in the source.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: High-level idioms are missed. Variable Length Arrays (VLA) and `alloca` are shown as stack pointer arithmetic manipulations rather than array declarations. Thread-Local Storage is shown as `__writegsdword` rather than a variable assignment.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the confusing `GLOBAL_OFFSET_TABLE_` offset logic and the split global struct access confidently, without flagging them as potential recovery failures or low-level artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the check `if (n <= 0 || n > 1000)` in `vla_stack` is present but not annotated as a safety contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: String references are opaque pointers (`asc_4008`). The callback mechanism in `call_global_callback` is obscured by the direct GOT access, making the relationship to `global_func_ptr` unclear.
+
+**17. Module Organization:** Score: 9/10
+Justification: The file organization mirrors the source perfectly, with helper functions, test functions, and main function grouped logically.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on undefined symbols like `asc_4008`, `GLOBAL_OFFSET_TABLE_`, and `dword_7080`. It would not compile without significant manual intervention to define these addresses and strings.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 6.5
+L2_avg: 8.5
+L3_avg: 6.3
+L4_avg: 2.5
+L5_avg: 5.7
+
+Overall = (6.5 × 0.30) + (8.5 × 0.25) + (6.3 × 0.20) + 
+          (2.5 × 0.15) + (5.7 × 0.10)
+Overall = 1.95 + 2.125 + 1.26 + 0.375 + 0.57
+Overall = 6.28
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 6.3/10
+
+### Critical Defects (Bullet List)
+- **Global Struct Access Failure**: `global_struct_access` returns `dword_7080 + global_point` instead of `global_point.x + global_point.y`, breaking the struct abstraction.
+- **Low-Level TLS Exposure**: `tls_access` uses `__writegsdword(0xFFFFFFFC, val)` instead of `tls_var = val`, hiding the variable semantics.
+- **VLA/Alloca Arithmetic**: Variable Length Arrays are represented as complex stack pointer arithmetic (e.g., `(char *)&v2 - ((4 * n + 15) & 0xFFFFFFF0)`), making them hard to read.
+- **Opaque Callbacks**: `call_global_callback` accesses the Global Offset Table directly via `*(&GLOBAL_OFFSET_TABLE_ + 70)`, obscuring the simple function pointer call.
+- **String Literal Obfuscation**: Format strings are replaced with pointers like `asc_4008`, removing context from `printf` calls.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (10/10)**
+- **Why?** The decompiler perfectly preserved all original function names, making it trivial to locate specific logic blocks and understand the high-level flow of the program.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Comment Quality & Presence (2/10)**
+- **Why?** The complete absence of comments, especially for complex low-level operations like stack arithmetic or GOT access, significantly hampers the ability to understand the "why" behind the code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover Global Struct Fields**: Improve analysis to identify when adjacent global variables belong to the same struct instance, rather than treating them as separate symbols (e.g., `dword_7080` should be `global_point.y`).
+2.  **Abstract Stack Allocation Logic**: Detect patterns of stack pointer manipulation used for VLAs and `alloca` and represent them as array declarations or at least add comments explaining the allocation size and alignment.
+3.  **Annotate Low-Level Intrinsics**: When hardware intrinsics like `__writegsdword` or segment accesses are used, map them back to source-level variable names (like `tls_var`) or add comments indicating the likely source variable.

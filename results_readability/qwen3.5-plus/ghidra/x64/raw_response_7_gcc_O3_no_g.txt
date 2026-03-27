@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar2`, `pbVar3` that obscure semantic meaning. For example, `param_1` in `param_fake_branch` should be `x`, and `local_38` in `param_string_encryption` should be `decrypted`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_fake_branch`, `param_opaque_predicate`), but compiler optimization suffixes appear (`.constprop.0`, `.constprop.1`) and some helpers are generic (`FUN_00101020`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0xe1`, `0x7a314`, `0x13ba` appear without explanation. The decompiler didn't recover that `0x7a314` = 500500 (sum 1-1000) or `0x13ba` = 5050.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`local_10 = *(long *)(in_FS_OFFSET + 0x28)`) and `__stack_chk_fail()` calls add noise. Type casts like `(undefined4 *)` and `(ulong)` clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Tail recursion converted to complex loop unrolling with nested conditionals (see `param_tail_call_optimized` with 9 levels of nested if). Original simple recursion is completely obscured.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved, but compiler created split versions (`param_division_by_zero.constprop.0/1`). Caller functions inlined to constants (`call_fake_branch` returns literal `10`).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Deep nesting in optimized functions disrupts linear reading. `param_vectorized_loop` has multiple exit paths and complex loop structures that don't read top-to-bottom naturally.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling created repetitive code blocks (see 9-level nested if chain in `param_tail_call_optimized`). No abstraction of the unrolling pattern.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types like `undefined4`, `undefined8` appear. Mixed `int`/`uint`/`ulong` without clear rationale. `param_instruction_substitution` takes `uint` but source used `int`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The bitfield struct in `param_implementation_defined` was completely optimized away (returns constant `0x2f`). No struct recovery visible in decompiled output.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(code *)`, `(undefined *)`, `(long)`). Pointer arithmetic in `param_vectorized_loop` uses raw offsets without type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only compiler WARNING comments present ("Subroutine does not return", "Removing unreachable block"). No semantic comments explaining algorithm purpose or logic.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Tail call optimization pattern not identified or documented. Loop unrolling not recognized as optimization artifact. No pattern naming.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: WARNING comments flag unreachable blocks and non-returning subroutines. However, dead code elimination (fake branches removed) not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1` constraints). No postconditions. Signal handler contracts not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`jmp_buffer`, `encrypted_0`) referenced without context about their purpose.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat list. No grouping by category (obfuscation vs. optimization vs. edge cases). Related functions not colocated.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External dependencies visible (`signal`, `malloc`, `strncpy`) but no header includes. Would need manual stub creation to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (4+6+5+5)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (3+3+6+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+
+Overall Score: 4.82/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable `param_1`** should be named `x` based on source and usage pattern across multiple functions
+- **Tail recursion completely lost** - `param_tail_call_optimized` shows 9-level nested if instead of recognizable recursive pattern
+- **Magic numbers unexplained** - `0x7a314`, `0x13ba`, `0xe1` should be documented as computed constants (500500, 5050, 225)
+- **Dead code elimination not indicated** - `param_fake_branch` simplified to `return param_1` without noting the always-false branches were removed
+- **Bitfield struct lost** - `param_implementation_defined` bitfield structure completely optimized away with no recovery attempt
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately, making it possible to correlate decompiled code with source documentation
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or parameter constraints documented, making it difficult to understand function requirements and guarantees
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and annotate optimization patterns** - When tail recursion is converted to loops, add comments like "// Original: tail-recursive function, optimized to iterative"
+2. **Recover constant expressions** - Replace magic numbers with computed values in comments (e.g., `0x7a314 /* 500500 = sum(1..1000) */`)
+3. **Infer variable names from cross-function analysis** - When `param_1` is used consistently as input `x` across related functions, propagate semantic names

@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `dest`, `exception`) with no semantic meaning. For example, `v0` in `test_cpp_rtti` should be `result` based on accumulation pattern, and `v4`/`v5` in `test_cpp_template_func` should be `a`/`b` for the swap operation.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: C++ mangled names are recovered (e.g., `_Z20test_cpp_member_funcv`), and some demangled names appear in comments (`Base::virtual_func`). However, helper functions like `sub_EB0` remain cryptic, and the metadata claims Ghidra but header says IDA Pro.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0x1Fu` (31) for strncpy length, `4700` in return calculation, `0x12C28` for vtable offsets. The expected result `4704` is split into `4700 + strlen` obscuring the original computation `10 + 34 + 4660`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present including redundant casts (`(unsigned int)`, `(__int64 *)`), frame pointer references (`[xsp+14h] [xbp+14h]`), and 23 failed external function declarations cluttering the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Most test functions are optimized to single return statements (e.g., `test_cpp_virtual_func` returns `42` directly), eliminating all original control flow. Exception handling in `test_cpp_exception` is completely missing, replaced with direct `__cxa_throw` call.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable, but many functions are over-simplified due to constant folding. `test_cpp_member_func` should show object construction and method calls but instead shows inline strncpy with constant return.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom without excessive jumps. However, complex functions like `test_cpp_rtti` have confusing conditional chains that could be simplified (nested if statements checking `v4 != "12RTTIDerivedA"` then `v5 != 42`).
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy from optimization artifacts (multiple type casts on same values), but no obvious dead code. The virtual thunk functions (`_ZTv0_n24_...`) show duplicated pointer arithmetic logic across inheritance hierarchy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: everything is `__int64`, `_DWORD`, or `void*`. Class types lost entirely - `Base *this` becomes `__int64 (__fastcall ***a1)(_QWORD)`. No const-correctness preserved despite source having `const` methods.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover C++ class structures. `SimpleClass` with `int value` and `char name[32]` becomes raw `char dest[36]`. `Container<int>` array access becomes `*(unsigned int *)(a1 + 4LL * a2)` with no struct definition.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout: `(__int64 *)operator new(8u)`, `(char *)this - 16` for thunk adjustments. Pointer arithmetic on `this` without type safety (`*(_DWORD *)((char *)this + *(_QWORD *)(*(_QWORD *)this - 24LL) + 8)`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated function headers present. No comments explaining vtable mechanics, thunk purposes, or why test functions return constants. The `// attributes: thunk` comment is helpful but rare.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No recognition of C++ patterns: virtual dispatch appears as raw function pointer calls, RAII patterns (unique_ptr) completely optimized away, template instantiations show no pattern identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (`FAILED to decompile: puts`), but no inline warnings about uncertain reconstructions. The `test_cpp_exception` function marked `__noreturn` is incorrect (should return int).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `idx < size` checks in Container not explained). Exception safety contracts completely missing. No indication of object lifetime requirements for virtual calls.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph partially visible through mangled names, but virtual dispatch relationships obscured. Inheritance hierarchy not documented (no indication that `Derived` extends `Base`).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped somewhat logically (class methods near each other), but no namespace organization. Static initialization functions (`_GLOBAL__sub_I_...`) mixed with test functions.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 23 external functions failed to decompile, making standalone compilation impossible. C++ runtime dependencies (`__cxa_*`, `operator new`) not properly declared. Metadata contradiction (Ghidra vs IDA) suggests tooling issues.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+6+7+6)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (3+2+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 4.34/10
+```
+
+### Overall Readability Score: **4.3/10**
+
+### Critical Defects:
+- **Class structures completely lost**: `SimpleClass`, `Container`, `Base/Derived` hierarchy not recovered as structs, only raw pointer arithmetic
+- **Constant folding eliminated logic**: Test functions return pre-computed constants (42, 71, 650) instead of showing actual computation
+- **Exception handling broken**: `test_cpp_exception` marked `__noreturn` and doesn't show try/catch blocks
+- **23 external functions failed**: Critical C++ runtime functions (`__cxa_*`, `operator new`) not decompiled
+- **Type system degraded**: All types reduced to `__int64`/`_DWORD`, losing const-correctness and class semantics
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- C++ name mangling successfully recovered and some demangled names appear, preserving function identity across the codebase.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to reconstruct C++ class layouts, turning object-oriented code into raw pointer arithmetic that obscures all semantic meaning.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts**: Analyze vtable pointers to reconstruct class definitions with proper field names and inheritance relationships
+2. **Preserve control flow despite optimization**: Detect constant-folded functions and annotate them with original computation logic rather than just returning constants
+3. **Add semantic annotations for C++ runtime calls**: Document `__cxa_*` functions as exception handling, `operator new/delete` as memory management, and virtual thunks as inheritance adjustments

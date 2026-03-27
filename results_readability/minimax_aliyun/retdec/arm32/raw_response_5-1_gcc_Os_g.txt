@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `a1`, `a2`, `result` throughout. For example, in `_Z20test_cpp_member_funcv`, the variable `str` is actually a SimpleClass object on the stack, but the name doesn't convey this. The name `base` and `derived` in virtual function tests are somewhat descriptive but inconsistent with the overall pattern.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions retain mangled C++ names (e.g., `_Z20test_cpp_member_funcv`) rather than demangled versions. While comments occasionally show demangled names (e.g., "Demangled: test_cpp_member_func()"), the actual function identifiers are unreadable. The original source had clear names like `test_cpp_member_func`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (e.g., `42` in exception handling, `5` for array size). However, constants like `0x1234` (class ID), `71`, `22`, `85` (expected return values) appear without explanation. The magic number `0x125c` in member function test (representing 4704 - expected result) is unexplained.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean with minimal compiler artifacts. Some unnecessary casts exist (e.g., `(int32_t)a1` in template functions), but no debug instrumentation or significant noise. The virtual table structures are cleanly defined.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Many functions have been reduced to trivial return statements (e.g., `test_cpp_multiple_inheritance` returns constant 71). The exception handling in `_Z18test_cpp_exceptionv` uses goto labels (`lab_0x10b60`, `lab_0x10b5c`) which obscures try-catch logic. At -O0, this level of simplification is unexpected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with reasonable granularity. Template functions are properly separated. Some functions are oversimplified (returning constants instead of implementing logic), but overall decomposition is acceptable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive jumps. The exception handling function has goto statements that disrupt linear flow, but other functions like `test_cpp_template_func` and `test_cpp_smart_ptr` are reasonably linear.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. The virtual table definitions are clean. Some repeated patterns in destructor chains are necessary for C++ semantics.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently, but this loses precision - the original used `int` (which is 64-bit on arm64). Pointers are frequently cast to `int32_t` (e.g., `(int32_t)&g17`), losing the pointer type. Function pointers are not properly typed.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Virtual tables are reconstructed as structs with generic field names (`e0`, `e1`, `e2`, `e3`). Class member data is not recovered - the SimpleClass object in `test_cpp_member_func` is just `int32_t str` on the stack. No struct field names like `value` or `name` are recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int32_t)a1` in template_swap, treating pointers as integers throughout. The template_swap function has a critical bug: it assigns pointers to values (`*a1 = (int32_t)a2`) instead of swapping values, which is a type-safety issue that changes semantics.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10  
+Justification: Comments provide demangled function names, line ranges, and module information. However, they lack explanation of algorithm intent or recovery confidence. The comment "From class: Derived Type: constructor Demangled: test_cpp_virtual_func()" is confusing - it's not a constructor.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ idioms like virtual tables and exception handling are present but not explicitly named or documented. The virtual table structures exist but aren't identified as "vtable for Base class". No recognition of patterns like RAII, rule of three/five.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No explicit flags for suspicious code. The broken template_swap implementation (`*a1 = (int32_t)a2; *a2 = (int32_t)a1;` - this doesn't actually swap!) is presented without warning. Many functions returning constants without implementation aren't flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The function `_Z17call_virtual_funcP4Basei` returns `(int32_t)a1` which is clearly wrong (should call virtual function via vtable), but no contract information helps understand expected behavior.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear (e.g., `_Z20test_cpp_member_funcv()` called from `_Z20test_cpp_oo_featuresv()`). Global variables like `g28`, `g29` for exception handling are documented. However, the purpose of many vtable globals isn't clearly linked to their classes.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - test functions together, template functions together, class member functions by class. The comment "From class: Base" helps organization. However, all in one file with no namespace structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes standard headers (`stdint.h`, `stdio.h`, `stdlib.h`, `string.h`). Function prototypes are declared. Should compile with minimal stubs for runtime functions (`__cxa_throw`, etc.). The code explicitly states "Compilation Result: Yes".
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+4+5+8)/4 = 5.0
+L2_avg = (5+7+7+8)/4 = 6.75
+L3_avg = (5+4+5)/3 = 4.67
+L4_avg = (6+5+4+2)/4 = 4.25
+L5_avg = (6+7+7)/3 = 6.67
+
+Overall = (5.0 × 0.30) + (6.75 × 0.25) + (4.67 × 0.20) + 
+          (4.25 × 0.15) + (6.67 × 0.10)
+        = 1.5 + 1.6875 + 0.934 + 0.6375 + 0.667
+        = 5.43/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: Generic names like `v1`, `v2`, `a1`, `a2` throughout; `str` used for SimpleClass object without indicating it's a class instance
+- **Function naming**: Mangled C++ names retained instead of demangled versions in actual code
+- **Type recovery failure**: Class member data not recovered - SimpleClass has just `int32_t str` on stack instead of `int value; char name[32];`
+- **Broken semantics**: `template_swap` function has incorrect implementation (`*a1 = (int32_t)a2; *a2 = (int32_t)a1;` assigns pointers not values)
+- **Oversimplification**: Many test functions return constants (71, 22, 85) instead of implementing actual logic
+
+### Best Quality Aspect: Noise Reduction (8/10)
+The decompiled code has minimal compiler artifacts and debug instrumentation. Virtual table structures are cleanly defined, and there's no significant noise from register spilling or frame manipulation.
+
+### Most Needs Improvement: Composite Type Recovery (4/10)
+Class member data is completely lost - structures like SimpleClass with `int value; char name[32];` are reduced to a single `int32_t` stack variable. Virtual table field names are generic (`e0`, `e1`, `e2`) rather than meaningful like `virtual_func`, `getName`, `destructor`.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover class member names**: Use type analysis and vtable patterns to infer class member names from constructor/store patterns. The `strncpy` to `&str` with length 31 clearly indicates a 32-byte char array.
+2. **Demangle function names in code**: Instead of `_Z20test_cpp_member_funcv`, emit `test_cpp_member_func()` as the actual function name.
+3. **Flag semantic anomalies**: The broken `template_swap` and functions returning constants without implementation should be flagged with comments like "ANOMALY: appears to return constant value" or "ERROR: pointer assignment instead of value swap".

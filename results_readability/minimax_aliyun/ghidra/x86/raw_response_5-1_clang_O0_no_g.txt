@@ -1,0 +1,166 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names throughout. Stack variables are named `local_2c`, `local_14`, `local_c`, `local_24`, etc., with hexadecimal offsets that provide no semantic meaning. Temporary variables use patterns like `iVar1`, `iVar2`, `iVar3` for integers, `bVar1` for bytes, `puVar1` for pointers, and `ptVar4` for types. These names provide zero insight into variable purpose (e.g., `local_2c` should be `obj` or `simpleClassInstance` based on usage in `test_cpp_member_func`).
+
+### 2. Function Naming Quality
+**Score: 7/10**
+
+Test functions are correctly named: `test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`, etc. Member functions like `SimpleClass::getValue`, `SimpleClass::setValue` match source exactly. However, lambda functors are named with placeholder tokens: `test_cpp_lambda()::$_1::operator()` and `test_cpp_lambda()::$_0::operator()`, which are compiler-generated names rather than meaningful identifiers.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Magic numbers like `0x1234` (4660 decimal) for `getClassID()` and `0x2a` (42) for exception throwing are unexplained. The value `0x1234` should be documented as the class ID constant. Array sizes like `10` are used directly without `MAX_SIZE` or similar constant names. However, some values like `100`, `200` in inheritance tests are inferable from context.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+The output is heavily polluted with decompiler warnings: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection". Try-catch blocks are marked with verbose comments like `/* try { // try from 00011c25 to 00011c3d has its CatchHandler @ 00011c43 */`. These artifacts significantly impede readability.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Basic control flow is natural with proper if-else structures. However, the diamond inheritance code (`test_cpp_diamond_inheritance`) uses confusing pointer arithmetic: `*(undefined4 *)((int)local_24 + *(int *)(local_24[0] + -0xc) + 4) = 0x32;` which obscures the simple assignment `obj.shared_data = 50`. The multiple inheritance test has convoluted pointer comparison logic that doesn't read naturally.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Each test function is properly separated. Member functions are extracted correctly: `SimpleClass::getValue`, `SimpleClass::setValue`, `SimpleClass::compute`. Template instantiations are separate functions: `template_max<int>`, `template_max<double>`, `template_swap<int>`. Lambda operator() functions are properly extracted. The decomposition is excellent and matches the source structure.
+
+### 7. Code Linearization
+**Score: 5/10**
+
+Most functions read top-to-bottom, but the diamond inheritance function has complex pointer offset calculations that disrupt linear reading. The multiple inheritance test uses conditional pointer assignments that are hard to follow: `local_3c = (undefined4 **)0x0; if (&stack0x00000000 != (undefined1 *)0x1c) { local_3c = &local_14; }`.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+No significant redundancy observed. Dead code from register spilling is minimal. The decompiled code is clean in terms of duplicate expressions or dead code.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+
+The code uses `int` for most integers, `uint` for unsigned, `bool` for booleans, `char*` for strings. However, there's heavy use of `undefined4`, `undefined4*`, `undefined***` for vtable pointers. The return type `undefined4` is used where `int` would be more precise (e.g., `SimpleClass::getValue` returns `undefined4` instead of `int`).
+
+### 10. Composite Type Recovery
+**Score: 8/10**
+
+Class structures are well-recovered with vtable pointers: `*(undefined ***)this = &PTR_virtual_func_00018c3c;`. Template class instantiations are properly separated: `Container<int>` and `Container<double>` have distinct functions. The `SimpleClass` layout with `value` (int) and `name` (char[32]) is correctly inferred.
+
+### 11. Type Safety
+**Score: 6/10**
+
+Some unsafe operations present: extensive use of void pointer arithmetic in inheritance code, raw pointer arithmetic like `*(int *)(*(int *)this + param_1 * 4)` in `LifecycleClass::getData`. The diamond inheritance code uses complex pointer casting that could easily cause undefined behavior. However, basic operations maintain type consistency.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Comments are almost entirely auto-generated decompiler warnings: "WARNING: Unknown calling convention -- yet parameter storage is locked", "WARNING: Subroutine does not return". There are no explanatory comments about algorithm intent, no documentation of preconditions/postconditions, and no indication of what the complex pointer manipulations accomplish.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+The decompiler recognizes virtual function calls through vtables (shown as `*(code *)**local_1c` pattern), template instantiations, and exception handling mechanisms. However, these are not explicitly named or documented as patterns. The virtual inheritance this-pointer adjustment is not identified as such.
+
+### 14. Anomaly Indication
+**Score: 4/10**
+
+The "WARNING" comments flag some issues generically: unknown calling conventions, unreachable blocks, inlined functions. However, these are not specific to the actual anomalies. The complex pointer arithmetic in diamond inheritance (which represents this-pointer adjustment) is not flagged as potentially confusing or requiring manual verification.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No recovery of preconditions, postconditions, or invariants. For example, `LifecycleClass::getData` has an implicit precondition that `idx < size`, but this is not documented. The decompiled code shows the bounds check but doesn't explain the contract.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+
+Function calls are explicit and traceable. Virtual dispatch is shown through vtable dereference. Static function calls like `SimpleClass::getClassID()` are clear. However, there's no documentation of call graphs or relationships between functions beyond what's directly visible in the code.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Functions are reasonably organized: test functions first, then class member functions, then standard library support functions. Related functions (like all `SimpleClass` methods) are grouped together. However, the organization is flat with no namespace or module structure recovery.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+The code should compile with minimal patching. Function signatures are valid C++. Standard library functions are called with proper names (e.g., `operator_new`, `operator_delete`). However, some functions like `ROUND` may need standard library includes, and the `undefined*` types would need to be defined or replaced with concrete types.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 5 + 3) / 4 = 4.25
+L2_avg = (6 + 8 + 5 + 8) / 4 = 6.75
+L3_avg = (6 + 8 + 6) / 3 = 6.67
+L4_avg = (3 + 5 + 4 + 2) / 4 = 3.50
+L5_avg = (6 + 7 + 7) / 3 = 6.67
+
+Overall = (4.25 × 0.30) + (6.75 × 0.25) + (6.67 × 0.20) + 
+          (3.50 × 0.15) + (6.67 × 0.10)
+        = 1.275 + 1.6875 + 1.334 + 0.525 + 0.667
+        = 5.49/10
+```
+
+### Overall Readability Score: 5.5/10
+
+---
+
+### Critical Defects
+
+1. **Variable naming is unusable**: `local_2c`, `iVar1`, `puVar1` provide zero semantic information about variable purpose
+2. **No explanatory comments**: Only auto-generated warnings present; no documentation of algorithm intent or complex operations
+3. **Magic numbers unexplained**: `0x1234` for class ID, `0x2a` for exception value lack constant names or explanations
+4. **Complex pointer arithmetic obscures simple logic**: Diamond inheritance code uses `*(undefined4 *)((int)local_24 + *(int *)(local_24[0] + -0xc) + 4)` instead of clear field access
+5. **Lambda names are compiler artifacts**: `test_cpp_lambda()::$_1::operator()` should be named based on captured variables or purpose
+
+---
+
+### Best Quality Aspect: Function Decomposition (8/10)
+
+The decompiler excellently separates each function from the source. Test functions, member functions, template instantiations, and lambda operators are all properly extracted as separate functions with correct signatures.
+
+---
+
+### Most Needs Improvement: Comment Quality (3/10)
+
+The decompiled output contains only auto-generated warnings and no meaningful documentation. At -O0 with debug symbols, the decompiler should be able to recover significantly more context about function purpose, variable semantics, and algorithm intent.
+
+---
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: If `local_2c` is passed to `SimpleClass::setValue(local_2c, 10)` and then to `SimpleClass::getValue(local_2c)`, name it `obj` or `simpleClassInstance`
+
+2. **Document magic numbers**: Recognize constants like `0x1234` and either recover the original constant name from debug symbols or add explanatory comments like `// Class ID: 0x1234 (4660)`
+
+3. **Add semantic comments for complex patterns**: When encountering virtual inheritance pointer adjustments, add a comment like `// Virtual base this-pointer adjustment` to explain the complex arithmetic
+
+4. **Replace placeholder lambda names**: Instead of `test_cpp_lambda()::$_1::operator()`, use names like `captureLambda` or `addLambda` based on captured variables or functionality
+
+5. **Reduce warning noise**: Move "WARNING" comments to a separate log or decompiler metadata rather than embedding them in the code output

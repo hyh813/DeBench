@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Mixed quality—semantic names like `sum`, `count`, `i`, `j` recovered well in loop functions, but test functions use generic `v0` through `v26`, and `duffs_device` has `v4` through `v20` obscuring pointer operations.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery—nearly all function names match original source exactly (`sequential_ops`, `single_if`, `nested_if_deep`, `duffs_device`, `state_machine`), preserving semantic intent perfectly.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Matrix initialization uses opaque hex values (`0x200000001LL`, `0x400000003LL`) instead of clear array values; switch case values are clear but magic numbers lack explanation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack annotations (`[sp+Ch] [bp-8h]`) appear on every local variable; unnecessary type casts (`(int (*)(int))`) clutter function pointer calls; register hints (`// r0`, `// r3`) add visual noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most structures recovered well (if-else, for, while, do-while); `goto_forward` and `goto_backward` correctly converted to structured code; Duff's device retains goto labels (`LABEL_7`, `LABEL_8`) disrupting readability.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Appropriate granularity maintained; helper functions properly separated (`op_add`, `op_sub`, `state_idle`); no excessive inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Test functions have sequential variable assignments (`v0` through `v26`) disrupting flow; Duff's device has multiple forward goto labels; most other functions read top-to-bottom naturally.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant patterns like `v1 = count; return v1` in `loop_while`; Duff's device has significant code duplication from switch case fall-through; no dead code observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types recovered correctly (int for integers); function pointer types preserved (`int (*)(int)`); some generic types like `void *obj` in `call_virtual_func` lose C++ class semantics.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays recovered (`arr[5]`, `matrix[3][4]`, `funcs[3]`); matrix initialization uses QWORD writes obscuring 2D structure; no complex structs in this codebase to evaluate.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Function pointer casts present but necessary for decompilation; unsigned comparisons (`(unsigned int)idx <= 2`) add safety checks; no obvious buffer overflow patterns introduced.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no meaningful comments—only auto-generated function headers; no algorithm explanations, no logic documentation, no decompilation confidence indicators despite complex patterns like Duff's device.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic control flow patterns recognized but not named; Duff's device not identified by name; state machine pattern in `state_machine` not explicitly documented; recursion patterns preserved without annotation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 10 functions marked "FAILED to decompile" at end; computed goto shows inline assembly (`__asm { MOV PC, R3 }`) indicating limitation; no warnings about potential issues in successfully recovered code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`); no postconditions inferred; no error condition documentation despite multiple return paths.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clearly shown; global variables referenced (`jump_buffer`, `completed_0`); callback relationships visible through function pointer usage; no call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file; test functions grouped together; helper functions scattered; no logical grouping by control flow level (L1/L2/L3) despite source organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata claims "Compilation Result: Yes" but 10 external functions marked FAILED (`printf`, `puts`, `memset`, `setjmp`, `longjmp`); would require stubs for library functions to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+9+6+6)/4 = 6.50 × 0.30 = 1.95
+Level 2 (Structural):  (7+8+6+7)/4 = 7.00 × 0.25 = 1.75
+Level 3 (Type):        (7+6+7)/3 = 6.67 × 0.20 = 1.33
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (6+5+6)/3 = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────
+Overall Score:                                  6.09/10
+```
+
+**Overall Readability Score:** 6.1/10
+
+### Critical Defects:
+- **Zero semantic comments** despite complex patterns like Duff's device and state machines requiring explanation
+- **Generic variable names** (`v0`-`v26`) in test functions obscure data flow and purpose
+- **Matrix initialization** uses opaque QWORD hex values (`0x200000001LL`) instead of clear array literals
+- **Duff's device** recovered with goto labels instead of recognizing the optimization pattern
+- **10 external functions** marked as "FAILED to decompile" without recovery attempts or stubs
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** — Nearly perfect recovery of original function names preserves semantic intent and makes navigation intuitive.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** — Complete absence of explanatory comments makes complex patterns (Duff's device, state machines, recursion) difficult to understand without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add pattern recognition comments** — Detect and label known patterns (Duff's device, state machine, tail recursion) with explanatory comments at function entry.
+2. **Infer variable names from usage** — Use data flow analysis to name variables based on role (e.g., `sum` for accumulators, `count` for counters, `index` for loop variables).
+3. **Recover array initialization semantics** — Translate QWORD/DWORD memory writes back to clear array literal syntax instead of hex constants.

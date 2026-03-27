@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `a2`) with no semantic meaning. Original `temp1`, `sum`, `count` are lost. Only occasional names like `i`, `j`, `result` appear in loop functions.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user function names preserved correctly (`sequential_ops`, `single_if`, `nested_if_deep`). However, helper functions use mechanical names (`sub_400894`, `sub_400970`) and some runtime functions lack clarity.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Pervasive magic numbers (`4294967295`, `4294967294`, `1717986919`, `0xc0000000`) with no explanation. Original clear arithmetic like `(a+b)*2-c` becomes `(((a1+a0)*2|a1+a0>>31)&4294967294)-a2`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Unsupported operations marked (`[D] unsupported_Iop_ZeroHI96ofV128()`), excessive casts (`(unsigned int)`, `(unsigned long long)`), and frame pointer manipulation visible throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (`if_else`, `nested_if_deep`) preserved well, but loops transformed into complex bit operations (`loop_while` uses multiplication by 1717986919 for division). `goto_forward`/`goto_backward` lost their goto structure entirely.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized but some are compiler artifacts (`frame_dummy`, `sub_400a48` just call other functions). Parameter lists reasonable but expose implementation details.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `duffs_device` has goto labels disrupting flow. Loop structures sometimes obscure linear reading with complex conditions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling visible in several functions, bit manipulation patterns repeat across functions. Some dead code paths present in switch statements.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` types become mixed `unsigned int`, `unsigned long long`, `long long`. Function pointer types severely degraded (`call_func_ptr` has `goto a0` instead of proper call).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays partially recovered (`g_401a00[4]` for switch_small), but matrix in `loop_multi_exit` converted to pointer arithmetic. No struct recovery needed for this code sample.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts visible, function pointer calls degraded to `goto`, `call_func_ptr_array` mostly broken (only case 0 works, returns -1 for other valid indices).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments in decompiled code. Original had extensive documentation explaining each function's purpose, test cases, and expected behavior—all lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Switch statements and loops recognized, Duff's device partially recognized with goto labels. State machine patterns not explicitly identified, no algorithm naming.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some unsupported operations marked (`[D] unsupported_Iop_...`), but no warnings about indirect calls, function pointer degradation, or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error condition documentation. Original test cases not recovered as assertions or validation comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced without explanation. Callback relationships lost (function pointers degraded).
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in somewhat logical order, test functions grouped together. No header file structure, static functions not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__libc_start_main`, `printf`, `longjmp`) require stubbing. Unsupported operations need implementation. Would not compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.0/10
+
+**Calculation:**
+```
+L1 (Lexical):     (3+7+2+4)/4 = 4.00 × 0.30 = 1.20
+L2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.38
+L3 (Type):        (4+5+3)/3   = 4.00 × 0.20 = 0.80
+L4 (Semantic):    (1+4+4+2)/4 = 2.75 × 0.15 = 0.41
+L5 (Contextual):  (4+5+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────
+Total:                                    4.22 → 4.0/10
+```
+
+**Critical Defects:**
+- Variable names completely generic (`v0`, `v1`, `a0`) losing all semantic meaning from original (`temp1`, `sum`, `count`)
+- Magic numbers everywhere (`4294967295`, `1717986919`) with no explanation of their purpose
+- Zero comments despite original having extensive documentation for each function
+- Function pointer calls degraded to `goto` statements (`call_func_ptr: goto a0`)
+- Loop logic obscured by compiler strength reduction (division by 10 becomes multiply by 1717986919 with shifts)
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)  
+- Most user-defined function names preserved correctly from source, making function identification straightforward.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+- Complete absence of any documentation, algorithm explanations, or decompilation confidence indicators.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover semantic variable names** from usage patterns and data flow analysis (e.g., variables used in loop counters should be named `i`, `count`, `index`)
+2. **Detect and annotate magic numbers** with their likely semantic meaning or mark them as compiler artifacts requiring manual review
+3. **Recover high-level control structures** from jump patterns—convert backward jumps to while/for loops and identify goto patterns that represent structured constructs

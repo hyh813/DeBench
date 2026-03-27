@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `a2` with register annotations (e.g., `// r0`, `// lr`, `// [bp-0x4]`). The original source uses meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`, `counter`, but these are completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered (e.g., `param_macro_constants`, `call_macro_constants`, `my_func`, `param_asm_basic`), but many remain as generic addresses (e.g., `sub_10438`, `sub_10510`, `_init`, `_start`). The naming is inconsistent - some test functions properly named while infrastructure functions are not.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers throughout without explanation: `0x400` (should be MAX_SIZE=1024), `0x200` (should be 512), `57072` (should be 0xDEF0), `30` (should be _SC_PAGESIZE). The original source defines meaningful constants like `MAX_SIZE`, `BUFFER_COUNT`, `ENABLE_FEATURE` that are completely lost.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifacts present: register annotations (`// r0`, `// r1`, `// r3`, `// lr`), stack frame comments (`// [bp-0x4]`, `// [bp-0x8]`), and redundant code like duplicate `memcpy` calls in `param_asm_multi_insn`. The code is cluttered with low-level details that obscure logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow mostly natural with if-else and loops preserved. Some goto usage (e.g., `goto LABEL_10534`) but at -O0 this is minimal. The decompiled code correctly shows conditional branches and loop structures matching the original logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized - each test function (e.g., `param_macro_constants`, `param_asm_basic`) is separate and focused. The original source's function boundaries are preserved. Minor issue: some infrastructure functions (`_init`, `_start`) are included that weren't in the main source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with some forward jumps (e.g., `goto LABEL_10548`). Early returns present but not excessive. The code is mostly linear but has some disruption from goto patterns used for error handling.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy found. In `param_asm_multi_insn`: `dst = memcpy(v0, v1, v2); return memcpy(v0, v1, v2);` - the same memcpy is called twice unnecessarily. Also `test_preprocessing_features` calls `__printf_chk` multiple times with same arguments.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: All integers are `unsigned int` - no distinction between `size_t` (from sysconf), `int` (for calculations), or `uint32_t`. Original uses specific types like `size_t`, `int*`, `unsigned int*` but all become `unsigned int`. Parameter types are generic `unsigned int a0` instead of specific types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. The original uses `int *arr` and `int arr[]` but decompilation shows raw pointer arithmetic without struct reconstruction. The `param_asm_clobber` function uses pointer arithmetic like `i + 1`, `ptr[1]` without recovering the array structure.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally type-safe with consistent `unsigned int` usage. Minor issues: pointer arithmetic in `param_asm_clobber` uses `i[1]` which could be confusing. No unsafe casts observed, but the generic typing reduces safety guarantees.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only register/stack annotations like `// r0`, `// lr`, `// [bp-0x4]`. No explanation of algorithm, no recovery of macro semantics, no documentation of what functions do. Original source has extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. The original uses macros (SQUARE, MAX, SAFE_ADD), inline assembly (`__asm__ volatile`), conditional compilation (`#ifdef`), but these are not identified or labeled. The decompiler treats everything as generic C code without recognizing these idioms.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The inline assembly in `param_asm_basic`, `param_asm_clobber`, `param_asm_atomic` is not flagged as unusual. The dynamic code generation in `param_dynamic_code` (mmap with PROT_EXEC) is not highlighted. The self-modifying code pattern is not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. The original has no explicit assertions but the semantics (e.g., "requires: ptr != NULL" for mmap results) are not documented. No contract information recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships not documented. The original shows clear call chains (e.g., `main` → `test_preprocessing_features` → `call_macro_constants` → `param_macro_constants`), but decompiled code shows no comments about who calls what or global variable usage.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions appear in address order (0x1042c, 0x10438, etc.) rather than logically grouped. The original groups by feature (preprocessing tests, asm tests), but decompiled output mixes initialization code, test functions, and sync builtins arbitrarily.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Some extern declarations present (e.g., `extern unsigned int g_23008;`, `extern char g_11ec0;`) but no clear dependency documentation. The code would require significant patching to compile (missing includes, undefined symbols like `__printf_chk`, `armg_calculate_condition`).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.8/10
+
+**Critical Defects:**
+- Variable names are completely generic (`v0`, `v1`, `a0`, `a1`) - original names like `size`, `counter`, `arr` are lost
+- Magic numbers everywhere (`0x400`, `57072`, `30`) without constants like MAX_SIZE, _SC_PAGESIZE
+- No comment explaining macro expansions, inline assembly, or conditional compilation
+- Redundant code (duplicate memcpy calls in param_asm_multi_insn)
+- No struct recovery - raw pointer arithmetic instead of array/struct semantics
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+The decompiler correctly preserves the logical structure of if-else branches and loops. At -O0, the control flow graph closely matches the original source code's intent.
+
+**Most Needs Improvement:** Lexical Clarity (scored 3.3/10)  
+Variable naming, function naming, literal clarity, and noise reduction all scored poorly. The decompiled code is nearly unusable for analysis because every identifier is generic and every constant is unexplained.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `if (a0 > 0x400)` suggests `a0` is a size/limit parameter) to generate semantically meaningful names like `size` or `max_size`
+2. **Detect and label magic numbers**: When constants appear repeatedly or in meaningful contexts (0x400 = 1024, 30 = _SC_PAGESIZE), suggest or create named constants
+3. **Recognize and document compiler idioms**: Flag inline assembly blocks, identify conditional compilation outcomes, and add comments explaining what macros expanded to

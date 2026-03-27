@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `uVar1`, `lVar2`, `local_8`, `local_20` that obscure semantic meaning. The original source had meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`, `counter`, `increment` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names perfectly match the original source: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, `param_memory_protection`, etc. The decompiler correctly recovered all function names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are correct (e.g., `0x40` = 64, `0xdf22` = 57122) but magic numbers like `0x200` (512), `0x400` (1024), `0x1e` (_SC_PAGESIZE), `0x22` (MAP flags), `7` (PROT flags) lack named constant explanations. The original had MAX_SIZE, BUFFER_COUNT clearly defined.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No redundant casts, no debug instrumentation visible. The code is relatively clean except for some stack guard checks (`___stack_chk_guard`). At -O0, this is expected.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural with proper if-else statements and do-while loops. For example, `param_asm_clobber` correctly shows a loop: `do { iVar1 = iVar1 + *(int *)(param_1 + lVar2 * 4); lVar2 = lVar2 + 1; } while ((int)lVar2 < param_2);` No spurious goto statements.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions are properly decomposed. The original's monolithic `test_preprocessing_features` and `test_asm_features` are correctly split into individual test functions. Function granularity is appropriate with clear single responsibilities.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in error handling (e.g., `param_dynamic_code` returns -1 on mmap failure). One minor forward jump in `param_memory_protection` but manageable.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code observed. Loop constructs are properly formed. The decompiler correctly recognized loop patterns without introducing obvious redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types like `undefined4`, `undefined8`, `undefined` instead of precise C types (int, long, size_t). Parameters declared as `int` but return types use `undefined4`/`undefined8`. The original had precise types like `int`, `size_t`, `void*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. The code uses raw pointer arithmetic like `*(int *)(param_1 + lVar2 * 4)` for array access. Original source had no complex structs but the decompiler could have inferred `int* arr` more clearly.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: pointer arithmetic without bounds checking (`param_1 + lVar2 * 4`), frequent void* casts, no `restrict` or `_Atomic` annotations. The atomic function uses `undefined8` for pointer type. At -O0, more type safety could be expected.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in decompiled output. Original source had extensive comments explaining macro behavior, inline assembly constraints, and test expectations. All lost in decompilation.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No pattern recognition. The inline assembly in original source (`__asm__ volatile`) is replaced with C code, losing the idiom. Atomic operations, SIMD patterns, memory protection patterns not identified or labeled.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flagging. The decompiler silently converts inline assembly to C without indicating this transformation. No warnings about indirect calls or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had implicit contracts (e.g., "requires: ptr != NULL" for mmap results) completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: Function call relationships not documented. No indication of which functions call which, or global variable usage. `global_var` is used in `param_memory_clobber_demo` but no context provided.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (preprocessing functions together, asm functions together) but no explicit grouping markers. Static functions not distinguished from externals.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: Code compiles successfully ("Compilation Result: Yes"). External functions properly declared. Minor type issues but functional.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`param_1`, `uVar1`, `lVar2`) losing all semantic meaning from original source
+- No comments explaining macro behavior, inline assembly, or algorithm intent
+- Type precision severely degraded: `undefined4`/`undefined8` instead of `int`/`size_t`
+- No struct recovery - raw pointer arithmetic obscures data structures
+- No idiom recognition - inline assembly, atomic operations, SIMD patterns not identified
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- All function names perfectly recovered from original source, enabling easy navigation
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.0/10)  
+- Complete absence of comments, pattern recognition, anomaly indication, and contract recovery makes the code opaque despite correct semantics
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `param_1` used in comparison with 0x400 should be named `size` based on original MAX_SIZE constant)
+2. Add comments explaining transformations - especially inline assembly replacement and macro expansion results
+3. Recover type information more precisely: use `int` instead of `undefined4`, `size_t` instead of `undefined8`, and add `const`/`restrict` qualifiers where applicable

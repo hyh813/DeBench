@@ -1,0 +1,108 @@
+# Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar2`, `bVar3` throughout; original source had semantic names like `temp1`, `sum`, `count`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved accurately (`sequential_ops`, `nested_if_2`, `loop_for_fixed`), but some are generic (`FUN_00011030`, `FUN_000112bc`) and test functions lost their descriptive prefix.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3e9` (1001), `0x65` (101), `0x12` (18) appear without explanation; original used clear decimal constants or named values.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains decompiler artifacts like `undefined4`, `undefined` types, and redundant type casts; some functions have unnecessary variable declarations (`int iVar1; iVar1 = ...`).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Significant transformations observed—`single_if` uses bit shift `param_1 << (0 < param_1)` instead of conditional multiplication; `loop_for_fixed` has complex bit manipulation instead of simple sum; `switch_fallthrough` uses nested ifs instead of switch fall-through semantics.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is reasonable; helper functions like `double_value`, `triple_value` preserved as separate functions; no monolithic functions observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `duffs_device` uses multiple goto labels (`switchD_00011761_caseD_1` through `caseD_7`); test functions have goto for early exit (`LAB_000119a2`).
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `duffs_device` has repeated copy patterns across 7 case labels; some functions have redundant variable assignments (`iVar1 = 0; iVar1 = ...`); loop unrolling not recognized as such.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined` types; function pointers degraded to `code*`; original `int` types sometimes become `uint` incorrectly (e.g., `if_elseif_chain(uint param_1)`); signed/unsigned confusion throughout.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited structs in this code; arrays handled as pointers (`int *piVar2`); no struct field name recovery possible as original had minimal struct usage.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts (`(int)param_1`, `(uint)lVar1`); pointer arithmetic without bounds checking; function pointer calls use generic `code*` type without signature safety.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code despite original having extensive documentation explaining each function's purpose, test cases, and difficulty levels; complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic loop/conditional patterns recognized but not named; no identification of patterns like "Duff's device", "state machine", or "tail recursion optimization"; `duffs_device` structure preserved but not labeled.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings for suspicious transformations (e.g., `single_if` logic change, `nested_if_deep` return type changed to `byte`); incorrect logic in `nested_if_deep` not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n > 0`); no postconditions; error conditions not explained; original test expectations completely absent.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented; global variables referenced as `DAT_00012038`, `DAT_000125d1` without meaning; callback relationships not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file; no logical grouping by control flow level (L1/L2/L3); original's clear section organization (`// CF-L1-01`, `// CF-L2-01`) completely lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds; external dependencies (`printf`, `longjmp`, `setjmp`) properly declared; some `undefined` types may require stubs for standalone compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score Calculation:**
+```
+L1 Average: (3+7+5+6)/4 = 5.25 × 0.30 = 1.575
+L2 Average: (5+7+6+6)/4 = 6.00 × 0.25 = 1.500
+L3 Average: (4+6+5)/3 = 5.00 × 0.20 = 1.000
+L4 Average: (1+4+3+2)/4 = 2.50 × 0.15 = 0.375
+L5 Average: (5+5+7)/3 = 5.67 × 0.10 = 0.567
+────────────────────────────────────────────────
+Overall Score: 5.02/10
+```
+
+**Overall Readability Score: 5.0/10**
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1`, `uVar2`** should recover semantic names like `a`, `sum`, `count` based on usage patterns
+- **`single_if` logic transformed incorrectly** - uses bit shift instead of conditional multiplication, changing semantics
+- **`nested_if_deep` return type changed to `byte`** and logic flattened incorrectly (returns 0-4 instead of 0-5)
+- **Zero comments** despite original having extensive documentation explaining purpose, test cases, and difficulty
+- **Magic numbers `0x3e9`, `0x65`, 0x12`** without explanation of their meaning (1001, 101, 18)
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved accurately, allowing immediate identification of purpose
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation despite original being heavily commented; this is the most severe readability loss
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and debug symbols when available (e.g., `param_1` in `loop_for_fixed` should be `n`, `iVar1` should be `sum`)
+2. **Preserve or regenerate semantic comments** from debug information or pattern recognition (identify "Duff's device", "tail recursion", "state machine" patterns)
+3. **Flag semantic transformations** with confidence indicators when decompiled logic differs from expected patterns (e.g., `single_if` bit-shift vs. conditional multiply)

@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `ptr`, `iter`, `cur`. Parameters are named `a0`, `a1`, `a2` with no semantic meaning. At -O0, the original variable names like `x`, `arr`, `n`, `head`, `p` should have been recovered. Only loop counters `i`, `j` are somewhat meaningful.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names match the original source exactly (e.g., `local_vars`, `heap_basic`, `linked_list_heap`, `double_value`). However, some helper functions like `sub_4008f4` (which is memcpy wrapper) have generic names. The preserved names are accurate but lack verb-based action orientation.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals like `42` and `10` are clear, but magic numbers like `4294967295` (representing -1 as unsigned) appear without explanation. The expression `a0 * 2 | a0 >> 31) & 4294967294` is an obfuscated way to express signed multiplication by 2. String literals in printf are correctly preserved.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: frame pointer setup (`char *v0; char v1; v0 = &v1;`), redundant register saves (`unsigned long v3; // x30`), and unnecessary stack frame variables. These obscure the actual logic, especially in functions like `test_stack_memory` and `test_heap_memory`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is preserved - loops, conditionals, and returns are recognizable. However, aggressive loop unrolling in `large_stack_frame` and `heap_basic` uses SIMD intrinsics (`AddV`, `MulV`) that obscure the original for-loop. The `goto global_func_ptr` in `call_global_callback` is unusual.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized and maintain single responsibility. However, test functions like `test_stack_memory` (1619 LOC total) are monolithic. Parameter lists expose too many implementation details (e.g., `struct_0 *iter` instead of abstract types).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in memory operation functions (`memop_memset`, `memop_memcpy`) are used appropriately. Some forward jumps exist but don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling is present but uncommented - functions like `large_stack_frame` and `heap_basic` have unrolled loops that could be recognized as such. Some duplicate expressions exist. Dead code is minimal but register spill code remains.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types are somewhat preserved (`unsigned int`, `unsigned long long`), but original `int` parameters become `unsigned int`, losing sign information. Function pointers are represented as `unsigned long long` instead of proper function pointer types. `size_t` is not consistently used.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are reconstructed but with meaningless names: `struct_0`, `struct_1`, `struct_2` with generic fields `field_0`, `field_8`, `padding_4`. Original types like `Point`, `Node`, `TreeNode` are lost. The nested struct in `heap_nested` has multiple conflicting `struct_0` definitions.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Several unsafe patterns present: pointer arithmetic like `iter += 4`, `ptr + v5 * 4`, casting through void pointers. The expression `*((int *)((char *)ptr + 4 * ...))` is error-prone. No `restrict` or alignment annotations. The dangling pointer access in `dangling_pointer` is presented without warning.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments present in the decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contracts. The code is bare except for function signatures.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns like linked lists and binary trees are structurally present but not explicitly identified. No naming of design patterns (e.g., "Implements linked list with sentinel node"). The memory leak pattern in `memory_leak` is not flagged.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `dangling_pointer` function accesses memory after `free()` - undefined behavior presented as normal code. No warnings about indirect calls or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions (e.g., "requires: n > 0"), postconditions, or invariants. Error conditions like NULL checks are present but not documented. The implicit contracts of functions are not explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are somewhat clear through code structure (e.g., `test_stack_memory` calls `local_vars`, `local_array`). However, there's no explicit documentation of call graphs or global variable usage across functions. External dependencies are marked with `extern` but not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are in a single file with arbitrary ordering. Related functions (stack, heap, static, memory ops) are grouped but not clearly separated. No namespace or module structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has `extern` declarations for external symbols but it's unclear if it compiles standalone. Some issues: undefined references to `g_412ff8`, `g_412fc8`, string data. The code would require significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v0`, `v1`, `a0`, `ptr`) instead of semantic names from source (`x`, `arr`, `n`, `head`)
+- Struct types are reconstructed with meaningless names (`struct_0`, `field_0`) losing original `Point`, `Node`, `TreeNode` names
+- No comments explaining algorithms, contracts, or decompilation confidence
+- Loop unrolling in `large_stack_frame` and `heap_basic` uses SIMD intrinsics (`AddV`, `MulV`) obscuring original for-loops
+- Type safety issues: dangling pointer access presented without warning, unsafe pointer arithmetic
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+Most function names match the original source exactly, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Semantic Transparency (2.25/10)  
+The decompiled code has almost no comments, doesn't flag anomalies like dangling pointers, doesn't recognize idioms, and doesn't recover function contracts. This makes it very difficult to understand the intent and safety of the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: At -O0, original variable names should be recoverable. Use data flow analysis to rename `a0` → `x` when used in `x * 2`, or `ptr` → `arr` when indexed with `ptr[i]`.
+2. **Recover struct type names and field names**: Match struct layouts against common patterns (e.g., `Node { int data; Node* next }`) and use meaningful names instead of `struct_0`, `field_0`.
+3. **Add semantic annotations**: Include comments for algorithm intent, flag potential undefined behavior (dangling pointers, memory leaks), and document decompilation confidence for indirect calls.

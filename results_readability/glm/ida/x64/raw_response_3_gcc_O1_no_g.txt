@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `v3`, `v4` in `heap_basic`), providing no semantic hint about their purpose (e.g., `arr`, `i`, `result`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: User-defined function names are recovered perfectly (e.g., `double_value`, `local_vars`, `heap_basic`), matching the source exactly and clearly reflecting their purpose.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals are preserved intact, but numeric constants are raw (e.g., `0xFFFFFFFFLL` for `-1`, `0x28u` for stack canary offset) without named constants or comments explaining their meaning.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Stack canary checks (`v19 = __readfsqword(0x28u); ... return v19 - __readfsqword(0x28u);`) are injected into almost every function, significantly cluttering the logic and obscuring the actual return statements.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally readable with standard loops, but some compiler-generated stack alignment code appears as confusing `while` loops (e.g., in `vla_stack` before the `alloca` call).
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are decomposed exactly as in the source, with helper functions like `create_tree_node` correctly separated and maintaining appropriate granularity.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with clear conditional branches; however, the stack canary checks at the end of functions interrupt the natural return flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler presents the optimized code cleanly without dead code, though the constant propagation (e.g., `20` instead of `local_vars(5)`) reflects compiler optimization rather than decompiler artifact.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types are often widened (e.g., `int` becomes `__int64` in `double_value`), and `size_t` is inconsistently represented as `unsigned __int64` or `__int64`, reducing precision.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are completely lost; `Point` and `Node` are accessed via raw pointer arithmetic or array indexing (e.g., `v2[1]` instead of `v2->next` in `heap_nested`), making data structures opaque.
+
+**11. Type Safety:** Score: 6/10
+Justification: Code contains standard C casts (e.g., `(_DWORD *)v1`), which are necessary given the lack of struct recovery, but the absence of struct types makes pointer arithmetic look unsafe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of the recovered variables/structures.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: Common patterns like linked list traversal (`v6 = (_QWORD *)v6[1]`) are recognizable to an expert, but they are not explicitly labeled or abstracted.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler does not flag the confusing stack alignment loops or the loss of struct types; it presents the code confidently despite these readability issues.
+
+**15. Assertion & Contract Recovery:** Score: 5/10
+Justification: Preconditions like null checks (`if ( !v1 )`) are visible in the code, but they are not documented as explicit contracts or assertions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls and global variable accesses are direct and clear, making it easy to trace the call graph (e.g., `test_stack_memory` calling `local_array`).
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are ordered by memory address rather than logical grouping, scattering related test functions (e.g., `heap_basic` is far from `test_heap_memory`).
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on compiler intrinsics (`__readfsqword`, `_InterlockedOr64`) and specific library calls (`__printf_chk`) that would require significant patching to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Composite types (structs) like `Node` and `Point` are completely lost, replaced by raw pointer arithmetic (e.g., `v2[1]`).
+- Variable naming is entirely generic (`v1`, `v2`), obscuring the semantic meaning of data.
+- Stack canary checks (`__readfsqword`) are injected into every function, adding significant noise and cluttering the control flow.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully recovered the original function names from the symbol table, making the high-level flow easy to follow.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover `struct` definitions turns complex data structure manipulations (linked lists, trees) into indecipherable array indexing.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement aggressive struct type recovery to convert pointer arithmetic patterns (e.g., `ptr + offset`) back into struct member access (e.g., `ptr->member`).
+2. Rename local variables based on context and usage patterns (e.g., detecting loop counters or accumulation variables) instead of using generic `v` names.
+3. Abstract or hide stack canary checks (`__readfsqword`) behind a macro or comment to reduce visual noise in the decompiled output.

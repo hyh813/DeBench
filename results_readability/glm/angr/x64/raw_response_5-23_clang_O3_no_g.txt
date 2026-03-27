@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v2`, `a0`, `a1`), obscuring semantic meaning like `size`, `result`, or `counter`. While `ptr` and `idx` appear occasionally, the lack of descriptive names makes tracking data flow difficult.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are recovered perfectly from the symbol table (e.g., `param_macro_constants`, `call_asm_simd`), matching the source exactly. This is the strongest aspect of the decompilation, providing immediate context for the code blocks.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The source code's heavy reliance on macros (e.g., `MAX_SIZE`, `BUFFER_COUNT`) is completely lost, replaced by magic numbers (e.g., `1025`, `0x200`, `57072`). While semantically correct, the intent behind these values is invisible without cross-referencing the source.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains redundant assignments like `v0 = v2;` and `v1 = v2;` which are likely compiler artifacts or register spilling. Additionally, the `CONCAT` keyword appearing in `call_asm_simd` is a syntax error/noise introduced by the decompiler's vector handling.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally excellent; loops are correctly reconstructed as `for` loops (e.g., in `param_asm_clobber`), and conditionals use standard `if/else` blocks. The inverted condition `if (1025 > a0)` in `param_macro_constants` is a minor compiler optimization artifact but remains readable.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source code, maintaining appropriate granularity. There is no inlining or outlining that obscures the original structure, which is consistent with the `-O0` optimization level.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal jumps. The exception is `sub_401020`, which contains an indirect jump `goto g_404010;`, but this is an isolated case of dynamic dispatch rather than poor linearization of standard logic.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: Most redundancy is handled well, but some unnecessary masking persists, such as `a0 & 4294967295` in `param_macro_functions`. While this preserves the 32-bit logic of the original macro, it clutters the expression in a 64-bit context.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: There is significant type degradation, with `unsigned long long` used excessively even for standard `int` returns (e.g., `call_macro_constants`). Pointer types are often generic (`void*`, `char*`) rather than specific struct types, though the source primarily used primitives.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: The source code relies mostly on primitives, so there is little to recover in terms of structs. The decompiler did not hallucinate complex types, but it also failed to group related data (e.g., the SIMD vector operands) into meaningful composite types, leaving them as raw `uint128_t` or scattered integers.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code contains unsafe casts and pointer arithmetic, such as `*((unsigned short *)&ptr[4]) = 49925;` in `param_dynamic_code`. While this accurately reflects the low-level memory manipulation in the source, it results in type-unsafe C code that is hard to maintain.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic. The only comment is a diagnostic `[D] Unsupported jumpkind Ijk_SigTRAP`, which is a decompiler error message rather than a code explanation. The rich comments from the source are entirely absent.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Some idioms are recognized, such as `atomic_exchange_add` for atomic operations and `AddV` for SIMD vector addition. However, the macro-based idioms (stringizing, token pasting) are naturally lost, and the `CONCAT` syntax error in `call_asm_simd` indicates a failure to fully handle vector idioms.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The indirect jump `goto g_404010;` is presented without warning, which is a significant anomaly. The `Unsupported jumpkind` is flagged, but the invalid `CONCAT` syntax is presented as valid code, misleading the user.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the contract that `param_dynamic_code` requires executable memory is not stated, nor are the constraints on the array pointers in `param_asm_clobber`.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are clear, but global data references are opaque (e.g., `g_40207f` used for string literals). The relationship between these globals and the original string constants is not made explicit, requiring manual lookup.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source flow. Helper functions and test functions are grouped together, maintaining the original module structure effectively.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile due to the invalid `CONCAT` syntax in `call_asm_simd` and the indirect jump to a variable `goto g_404010;`. It requires significant patching to become valid C.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- **Syntax Error**: Invalid `CONCAT` keyword usage in `call_asm_simd` breaks compilation.
+- **Macro Loss**: All macro semantics (constants, stringizing) are replaced by magic numbers, destroying the source's primary abstraction.
+- **Type Erosion**: Excessive use of `unsigned long long` and generic pointers obscures the original data types.
+- **Indirect Jump**: Unresolved indirect jump `goto g_404010;` in `sub_401020` halts static analysis.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved all original function names from the symbol table, providing a high-level map that matches the source perfectly.
+
+**Most Needs Improvement:** Literal Clarity (scored 2/10)
+- The source code's intent was defined by its macros; the decompiled code replaces these with opaque magic numbers (e.g., `57072` instead of `0xDEF0`), making the logic hard to understand without the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Fix Vector Operation Output**: Replace the invalid `CONCAT` syntax with valid C vector intrinsics or explicit struct element access for SIMD operations.
+2. **Magic Number Annotation**: When constant propagation results in magic numbers, add comments suggesting potential macro definitions or symbolic names if they match common patterns (e.g., `0xDEF0`).
+3. **Improve Variable Naming**: Implement heuristic naming for variables based on usage context (e.g., variables used in loop conditions should be named `i` or `counter`, not `v1`).

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, and `result`, providing no semantic context (e.g., `v2` in `test_cpp_virtual_func` represents a `Derived` object but is named generically).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: While the code uses mangled C++ symbols (e.g., `_Z20test_cpp_member_funcv`), the decompiler provides accurate demangled names in comments (e.g., `// Demangled: test_cpp_member_func()`), which is crucial for mapping back to the source.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are often represented as hex-encoded UTF-8 sequences in global variables (e.g., `\xe6\xb5\x8b\xe8\xaf\x95`), and magic numbers like `0x200000001` appear without explanation, obscuring the original logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with compiler artifacts such as stack canary checks (`__readfsqword(40)`), redundant casts, and inline assembly blocks (`__asm_movsd`) that obscure the high-level logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: High-level C++ constructs like `try-catch` blocks are flattened into low-level runtime calls (`__cxa_throw`, `__cxa_begin_catch`), and virtual function calls are represented as indirect accesses via vtables, making the flow harder to follow than the original source.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: C++ methods are correctly decomposed into separate functions, and thunks (e.g., `_ZThn16_N12MultiDerived5funcBEv`) are identified, but the lack of class grouping makes the relationship between these functions less obvious than in the source.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but exception handling logic involves jumps and runtime calls that disrupt the linear flow compared to the structured `try-catch` blocks in the original.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: There is no obvious dead code, but the representation of C++ abstractions (like vtable lookups) introduces verbosity that wasn't present in the original source, such as manual pointer arithmetic for `this` adjustment.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: C++ class types are completely lost and replaced by generic `int64_t` or `int64_t*`; for example, `Base*` and `Derived` objects are treated as raw pointers to integers, erasing type safety and semantic meaning.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Vtables are recovered as structs (e.g., `struct vtable_58a8_type`), which is good, but the actual class definitions (like `SimpleClass` or `Container`) are not reconstructed as structures with named fields, leaving data access as raw pointer offsets.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe pointer arithmetic for C++ features, such as `*(int64_t *)(v1 - 24)` for `this` pointer adjustment in multiple inheritance, which is error-prone and lacks the safety of the original source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 7/10
+Justification: The inclusion of demangled function names and class context in comments (e.g., `// From class: Derived`, `// Type: constructor`) is the strongest feature, significantly aiding in understanding the otherwise flattened C code.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Virtual function calls and RTTI are recognizable via vtable structures and `__dynamic_cast` calls, but higher-level patterns like RAII (smart pointers) are obscured by explicit destructor calls.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: There are no explicit warnings about potential decompilation errors or uncertain logic; the code presents the low-level implementation confidently even when it might be confusing (e.g., passing addresses of globals as integers).
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for instance, the requirements for `dynamic_cast` or exception handling are not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Vtables provide clear cross-references to virtual functions, but the lack of class structure makes it difficult to see which non-virtual functions belong to which class compared to the original source.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in a flat manner without logical grouping by class or namespace, requiring the user to rely on the mangled names or comments to infer organization.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The output is C code representing a C++ binary; it relies on specific compiler intrinsics and runtime functions (`__cxa_*`) and would not compile standalone without significant porting effort.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- C++ class structures are completely flattened into raw pointers and integers, losing all OOP context.
+- Variable names are generic (`v1`, `a1`), making it difficult to track object state or data flow.
+- High-level control flow (exceptions, virtual dispatch) is obscured by low-level runtime calls (`__cxa_throw`, vtable loads).
+- String literals are hex-encoded in the global data section, making them unreadable without decoding.
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)
+- The decompiler successfully demangles C++ symbols in comments, allowing the user to map the low-level functions back to the original source names.
+
+**Most Needs Improvement:** Type Precision (scored 3/10)
+- The failure to recover C++ class types and fields, instead representing everything as `int64_t*`, is the single biggest barrier to understanding the code's logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Reconstruct C++ class definitions with proper field names and inheritance hierarchies instead of flattening to C structs.
+2. Infer semantic variable names from context (e.g., `this`, `obj`, `result`) rather than using generic `v1`, `a1`.
+3. Map low-level exception handling calls (`__cxa_begin_catch`, `__cxa_throw`) back into high-level `try-catch` blocks.
+4. Decode hex-encoded string literals in the global data section into readable ASCII/UTF-8 strings.

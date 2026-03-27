@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `a1`, `a2`) with no semantic meaning. For example, `param_opaque_predicate` uses `v1-v6` instead of meaningful names like `predicate_result` or `gcd_temp`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`). Action verbs and purpose are clear, matching original intent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2ad8`, `0x54504f00`, `0x100000000` appear without explanation. Some literals are clear from context (32 for buffer size, 10 for test value) but many global constants (`g1-g8`) are opaque.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifact pollution: `__x86_get_pc_thunk_*` functions (despite ARM64 source), `frame_dummy`, `register_tm_clones`, `deregister_tm_clones`. Architecture mismatch creates confusion.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_opaque_predicate` has awkward conditional chains (`a1 >= 0 == (a1 != 0)`). `param_vectorized_loop` uses manual loop unrolling instead of clean for-loops. At -O0, this restructuring is unexpected.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved, but many helper functions are compiler runtime artifacts (`__do_global_ctors_aux`, `__stack_chk_fail_local`). Core logic functions are appropriately sized.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `param_opaque_predicate` has complex branching that disrupts flow. While loops are recovered but with awkward variable tracking (`v3`, `v4`, `v5`, `v6`).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant thunk functions for every function (`__x86_get_pc_thunk_ax`, `__x86_get_pc_thunk_bx`, etc.). Stack canary checks repeated in multiple functions without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `uint32_t` appropriately in most cases. However, `param_division_by_zero` takes `uint32_t` when source uses `int`. Pointer types often degrade to `int32_t *` without const correctness.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `jmp_buf_tag` struct recovered but with generic field names (`e0[8]`, `e1`, `e2`). No semantic field names like `jb_regs`, `jb_mask`. Bit-field structures from `param_implementation_defined` completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(char *)str`, `(int32_t)mem`, `(char *)v3`. Pointer arithmetic on `int32_t` instead of proper typed pointers. No const-correctness on string parameters.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments in decompiled code. No algorithm explanations, no uncertainty indicators, no API contracts. Only auto-generated header comments about file origin.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. GCD algorithm in `param_opaque_predicate` not identified. String decryption pattern not labeled. XOR encryption idiom completely opaque.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about architecture mismatch (ARM64 source, x86 thunks). No flags for uncertain decompilation. Signal handler recovery appears confident but may be incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 != 0` for division). No postconditions. Error conditions like `malloc` failure handled but not documented in function contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph is clear through direct calls. Global variable usage (`g1-g8`) is opaque with no documentation of purpose. No callback relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Runtime helpers mixed with application logic. No header file separation between API and implementation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes necessary headers and compiles. However, many external dependencies (`__libc_start_main`, `__cxa_finalize`) require runtime environment. Architecture-specific code limits portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+3)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (6+5+5)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                              4.86/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Architecture mismatch**: ARM64 source compiled but decompilation shows x86 thunk functions (`__x86_get_pc_thunk_*`), indicating toolchain confusion
+- **Variable naming**: All local variables are generic (`v1`, `v2`, `v3`) with no semantic inference from usage patterns
+- **Zero documentation**: No comments explaining algorithm intent, uncertainty, or function contracts
+- **Struct field names**: `jmp_buf_tag` fields named `e0`, `e1`, `e2` instead of semantic names
+- **Magic globals**: Global variables `g1-g8` with hex values but no purpose documentation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making it easy to identify which decompiled function corresponds to which source function
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding algorithm intent nearly impossible without source comparison
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze variable usage patterns to infer names (e.g., variables used in loop bounds should be named `count`, `limit`, `index`)
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions with comments like `// DECOMPILER UNCERTAINTY: indirect call target not resolved`
+3. **Eliminate architecture-specific artifacts** - Filter out compiler runtime helpers (`__x86_get_pc_thunk_*`, `frame_dummy`) or clearly mark them as non-source code

@@ -1,0 +1,103 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are generic (`a0`, `v0`, `ptr`) and lack semantic context found in the source (e.g., `size`, `arr`, `n`). While `ptr` hints at a pointer, names like `v22` in `param_memory_protection` obscure the value's purpose (e.g., `new_value`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the source (e.g., `param_macro_constants`, `param_asm_basic`), likely due to the presence of debug symbols (`-g`), making the API immediately understandable.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Macro constants are folded into magic numbers (e.g., `0x400` for `MAX_SIZE`, `57072` for `0xDEF0`) without comments explaining their origin. The mix of hex (`0x400`) and decimal (`57072`) for similar constants adds slight inconsistency.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Significant noise is present, specifically the artifact `armg_calculate_condition` which represents symbolic execution of condition codes instead of native C comparisons. Additionally, `param_asm_multi_insn` contains a redundant `memcpy` call.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Most control flow is natural, but `param_memory_protection` is obfuscated by `armg_calculate_condition` calls replacing standard `if` conditions. The loop in `param_asm_clobber` is a `do-while` structure which is slightly less idiomatic than the source's `for` loop.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity. No monolithic functions or artificial outlining occurred, which is excellent for an `-O0` build.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom. While there are some goto labels (e.g., `LABEL_400daa`), they are localized to error handling paths in complex functions like `param_memory_protection`.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler successfully unrolled the loop in `param_asm_simd` (4 iterations), which improves readability of the vector operation. However, `param_asm_multi_insn` redundantly assigns and returns the result of `memcpy`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Types are generally correct but lack precision. `size_t` (from `sysconf` and `mmap`) is demoted to `unsigned int` (32-bit) on this ARM64 platform, losing the 64-bit width information. `int` and `unsigned int` are sometimes interchanged (e.g., `param_macro_constants` returns `unsigned int` vs source `int`).
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: No complex structs or unions were used in the provided source snippet, so there was no opportunity for failure here. Pointer types for arrays (`int*`, `void*`) are correctly identified.
+
+**11. Type Safety:** Score: 8/10
+Justification: The code is generally type-safe. The use of `__atomic_fetch_add_4` correctly identifies the atomic operation width. The main deduction is for the implicit cast of 64-bit pointers to 32-bit integers in `sysconf` return values.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. The source code had extensive comments explaining macros, assembly, and logic, all of which are lost.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: Standard library idioms like `memcpy`, `printf`, `mmap`, and `munmap` are correctly identified and named. The atomic operation intrinsic is also recognized.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The `armg_calculate_condition` artifact is a significant anomaly (failure to recover condition codes) but is presented as a standard function call without any warning or comment indicating it is a decompiler artifact.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the contract that `mmap` returns `MAP_FAILED` on error is not explicitly stated, though the check `ptr == 0xffffffff` is visible.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear. Global variables are declared as `extern` (e.g., `g_412008`), showing their usage, though the names are generic addresses.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, matching the source flow. Helper functions and test functions are grouped correctly.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on standard library functions (`printf`, `mmap`) but lacks the necessary `#include` directives. It would require significant patching (adding headers) to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 10 + 6 + 5) / 4 = 6.25
+L2_avg = (6 + 9 + 8 + 7) / 4 = 7.50
+L3_avg = (6 + 10 + 8) / 3 = 8.00
+L4_avg = (1 + 8 + 3 + 1) / 4 = 3.25
+L5_avg = (8 + 9 + 5) / 3 = 7.33
+
+Overall = (6.25 × 0.30) + (7.50 × 0.25) + (8.00 × 0.20) + 
+          (3.25 × 0.15) + (7.33 × 0.10)
+Overall = 1.875 + 1.875 + 1.600 + 0.4875 + 0.733
+Overall = 6.57
+```
+
+### Overall Readability Score: **6.6/10**
+
+### Critical Defects
+- **Anomaly Obfuscation**: The function `armg_calculate_condition` is used to represent flag checks (e.g., after `mprotect`), completely breaking the readability of conditional logic in `param_memory_protection`.
+- **Loss of Macro Semantics**: Named constants like `MAX_SIZE` and `PLATFORM` are replaced by magic numbers (`0x400`, `57072`), removing the high-level intent.
+- **Generic Variable Naming**: Parameters and locals are named `a0`, `v0`, etc., making it difficult to track data flow compared to the source's `size`, `arr`, `result`.
+- **Type Width Mismatch**: `size_t` and `long` values on ARM64 are represented as `unsigned int`, losing precision information.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**
+- **Why?**: The decompiler perfectly preserved the original function names (e.g., `param_macro_constants`), likely due to the presence of debug symbols, making the high-level structure immediately navigable.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)**
+- **Why?**: The complete absence of comments, combined with the loss of macro definitions and the introduction of artifacts like `armg_calculate_condition`, makes understanding the *why* behind the code extremely difficult compared to the well-documented source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Condition Code Recovery**: Replace symbolic execution artifacts like `armg_calculate_condition` with native C comparison operators (e.g., `if (mprotect(...) == 0)`).
+2.  **Macro/Constant Propagation**: Attempt to map folded constant values back to potential named constants or at least add comments indicating they are likely compile-time constants.
+3.  **Variable Name Inference**: Use type and usage context to infer better names than `v0` (e.g., if a variable is used as a size limit, suggest `size` or `limit`).

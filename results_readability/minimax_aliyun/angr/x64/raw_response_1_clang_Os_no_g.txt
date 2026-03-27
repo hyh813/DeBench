@@ -1,0 +1,88 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`a0`, `a1`, `a2`) and local variables are numbered (`v1`, `v2`, `v3`). The original source used meaningful names like `temp1`, `temp2`, `x`, `y`, `count` which are completely lost. Only `i` in `loop_break` maintains clarity.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names exactly match the original source (`sequential_ops`, `single_if`, `if_else`, `nested_if_2`, etc.). The decompiler preserved all user-defined function names accurately. Minor deduction for some internal symbols like `sub_401020`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears extensively without explanation as error return value. Other unexplained constants like `1717986919` (used in division) and `316912650112397582603894390785` (SIMD constants) are present. The original source had no magic numbers.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Some unnecessary casts like `(unsigned int)` appear frequently, but no debug instrumentation or frame pointer manipulation clutter the code. The code is relatively clean for a decompilation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control structures (if-else, switch, loops) are recognizable. However, `loop_continue` and `goto_backward` produce extremely convoluted SIMD-heavy code that obscures the original loop semantics. The `loop_while` and `loop_dowhile` functions are nearly identical, losing the distinction between pre and post-condition loops.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches the original source well. Each test function remains separate, and helper functions like `double_value`, `triple_value` are properly extracted. The parameter count matches the original (e.g., `sequential_ops(int a, int b, int c)` becomes `sequential_ops(unsigned int a0, unsigned int a1, unsigned int a2)`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom without excessive jumps. However, `loop_while` has an unusual condition `(unsigned int)v3 + 9 > 18` that doesn't map to the original `while (x != 0)` and disrupts linear reading. Some forward jumps exist but are manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling in `loop_continue` and `goto_backward` produces massive redundant code (100+ lines each) with SIMD operations that could be abstracted. The original 10-line functions become 100+ line monsters. Some dead code patterns visible in complex expressions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Parameters changed from `int` to `unsigned int` throughout, losing sign information. Original `single_if(int x)` becomes `single_if(unsigned long a0)`. The original had signed integers but decompiler inferred unsigned. Function pointers are represented as `unsigned long` rather than proper function pointer types.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: The original source uses only primitive types and fixed arrays (e.g., `int arr[] = {10, 20, 30, 40, 50}`). The decompiler correctly handles these as simple types. No struct recovery was needed since none existed in source. Arrays like `g_402090[4]` are properly sized.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns exist: `(unsigned int)a0 > 0` in `single_if` is always true for unsigned types, losing original semantics. Function pointer calls use `goto` instead of proper invocation (`call_func_ptr` uses `goto a0`). Some pointer arithmetic in `loop_break` treats string literal `"\n"` as pointer.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments present. Only auto-generated annotations like "do not return" for functions using `longjmp`. The original source had extensive comments explaining each test case's purpose and expected values. Zero effort to preserve documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are technically present (state machine in `state_machine`, recursion in `recursion_factorial`) but not identified or named. The decompiler doesn't recognize these as common patterns. Duff's device completely failed to decompile.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: One function marked "Failed to decompile function duffs_device at 0x4016f1" - this is helpful. However, indirect calls like `call_func_ptr` using `goto a0` are not flagged as potentially unsafe. No warnings about semantic differences from source.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had clear semantics (e.g., "returns 0-9 for valid input, -1 for invalid") completely lost. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in the code (e.g., `test_control_flow_l1()` calls `sequential_ops()`). However, no documentation of call relationships, global variable usage, or callback patterns. The `process_with_callback` function doesn't indicate it uses function pointers.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in binary order, roughly matching source file structure (test functions grouped together, helper functions separate). Static functions like `double_value`, `triple_value` are properly scoped. Minor issues with ordering.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has `extern` declarations for external functions but missing definitions for `puts`, `printf`, etc. One function completely failed to decompile (`duffs_device`). Would require significant patching to compile. The test functions print hardcoded expected values rather than calling the functions.
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Variable naming uses generic `a0`, `a1`, `v1`, `v2` instead of source names like `temp1`, `x`, `count`
+- `loop_continue` and `goto_backward` produce 100+ lines of unreadable SIMD code from 10-line source functions
+- Type changes from `int` to `unsigned int` lose sign semantics (e.g., `single_if` behavior inverted)
+- No comments preserved from original source despite -g debug flag
+- `duffs_device` completely failed to decompile
+- `loop_while` and `loop_dowhile` are nearly identical, losing the pre/post condition distinction
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+- All user-defined function names exactly match the original source code
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Zero meaningful comments; original source had extensive documentation explaining each test case
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a0 + a1` in `sequential_ops` suggests `operand1 + operand2`
+2. Abstract SIMD loop optimizations into cleaner loop constructs with comments explaining the transformation
+3. Preserve debug symbols (-g flag was used) to recover variable names and comments from DWARF information

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Mixed quality - functions like `linked_list_heap` use descriptive names (`head`, `current`, `new_node`), but `test_stack_memory` uses generic `v0`-`v8`. Critical bug: `tls_access` assigns to variable named `free` instead of calling the function.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`). Some runtime functions use generic names (`sub_105B4`), but user code names are accurate.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x14u` (20), `0x28u` (40), `67305985` appear without explanation. Size calculations like `4 * n` for int arrays are clear, but hex literals in test functions obscure intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: register comments (`// r0`, `// r4`), stack frame annotations (`[sp+0h] [bp-128h]`), BYREF markers. 18 failed decompilations of standard library functions add clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops use natural `for`/`while` constructs. `linked_list_heap` uses awkward `for ( i = 0; ; ++i )` with break condition. Fork/wait logic in `test_heap_memory` is complex but readable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Helper functions like `create_tree_node` properly separated. No monolithic functions; each has single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Some functions have early returns that improve clarity. `test_heap_memory` fork handling creates nested conditionals that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Atomic operation stubs (`__sync_fetch_and_*`) are highly repetitive. Error handling paths show some duplication. No dead code detected in main functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, void*). Struct types recognized (`Point`, `Node`, `TreeNode`). Critical error: `tls_access` uses `free` as variable name. Many explicit casts like `(unsigned __int8 *)buf`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct definitions recovered with field names (`p->x`, `p->y`, `node->left`, `node->right`). Nested structures handled correctly. Field access uses proper `->` notation.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Critical bug in `tls_access`: `free = (void (*)(void *))val;` shadows the free function. Multiple unsafe casts throughout. `dangling_pointer` returns dereferenced freed memory without warning.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only decompiler-generated header comments. No algorithm explanations, API contracts, or semantic documentation. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns (malloc/free, linked list traversal, tree operations) present but not explicitly identified. No pattern naming or explanation provided.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations marked with "FAILED to decompile". `_start` has warning about positive sp value. Critical `tls_access` bug NOT flagged as anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: NULL checks preserved (`if ( !arr ) return -1;`). No precondition/postcondition documentation. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls clear. Global variables referenced by name (`global_counter`, `global_array`). Callback relationships not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source (stack→heap→static→memop). Everything in single file; no header separation or module boundaries.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 18 standard library functions failed decompilation requiring stubs. External dependencies (`fork`, `waitpid`, `malloc`) not fully resolved. Won't compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+8+6+5)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):   (7+8+7+6)/4 = 7.00 × 0.25 = 1.75
+Level 3 (Type System):  (6+8+4)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):     (3+5+5+4)/4 = 4.25 × 0.15 = 0.64
+Level 5 (Contextual):   (7+6+4)/3   = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.96/10
+```
+
+**Overall Readability Score:** 6.0/10
+
+### Critical Defects:
+- **`tls_access` function has critical bug**: assigns to variable `free` instead of calling the function, completely breaking semantics
+- **`stack_alias` function loses pointer aliasing logic**: simplified to constant return, losing the aliasing test purpose
+- **18 standard library functions failed decompilation**: requires manual stubs for compilation
+- **Variable naming inconsistent**: mix of descriptive (`head`, `current`) and generic (`v0`, `v1`, `temp_0`) names
+- **No semantic comments preserved**: original source documentation completely lost
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most user-defined function names preserved accurately from source, maintaining semantic clarity for function purposes.
+
+### Most Needs Improvement: **Comment Quality & Presence (3/10)**
+- Zero semantic documentation recovered; all original comments explaining test purposes and expected behaviors are lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag semantic-breaking bugs**: The `tls_access` `free` variable shadowing should be flagged as a critical anomaly requiring manual review.
+2. **Preserve or infer variable names from usage patterns**: Variables like `v0`-`v8` in test functions should be named based on their role (e.g., `result_local_vars`, `result_heap_basic`).
+3. **Recover and preserve source comments**: Integrate debug symbols (`-g` flag was used) to recover original comments and documentation where available.

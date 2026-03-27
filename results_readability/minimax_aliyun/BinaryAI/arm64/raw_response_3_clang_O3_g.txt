@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most parameters use generic names like `param_1`, `param_2`, `param_3`. While some globals like `global_counter`, `global_array`, `file_scope_static` are well-recovered, the majority of local variables lack semantic meaning. For example, in `heap_basic`, variables like `uVar7`, `puVar3`, `iVar12` obscure their roles as size, pointer, and index respectively.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (local_vars, heap_basic, heap_calloc, global_var_access, static_local). Internal functions like `FUN_001008e0` are appropriately auto-generated. External library functions are correctly marked with `<EXTERNAL>` prefix.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are meaningful (0x2a = 42 for address_of_local, 0xf = 15 for heap_struct result), but many magic numbers lack explanation. For example, `0x14` appears in stack_alias without comment that it equals 20. The decompilation uses hex consistently but doesn't explain the semantics.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise in complex functions. The `large_stack_frame` and `vla_stack` functions contain extensive CONCAT operations that make them nearly unreadable. Many `undefined4`/`undefined8` types create visual clutter. However, there's minimal dead code and no spurious register spills.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally preserved with recognizable loops and conditionals. However, some functions like `large_stack_frame` have convoluted control flow due to loop unrolling at -O0 (unexpected for debug build). Most functions like `local_vars` correctly collapse to simple expressions.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. Test functions (test_stack_memory, test_heap_memory) are properly separated from helper functions. The original source's function boundaries are well-respected. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom with minimal forward jumps. Early returns in error checking (e.g., `if (__ptr == 0x0) return 0xffffffff;`) are appropriately used. Some complex functions have non-linear flow due to optimization artifacts.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling in `large_stack_frame`, `vla_stack`, and `heap_basic` creates significant redundancy without comments explaining the pattern. The decompilation doesn't recognize these as unrolled loops. However, no obvious dead code is present.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision. Basic types like `int`, `uint`, `char` are correctly identified. However, extensive use of `undefined4`, `undefined8`, `void*` degrades precision. Function pointers like `global_func_ptr` are typed as `code*` rather than proper function signatures. Size_t is used in some memory functions.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Partial struct recovery. The Node structure in `heap_nested` is partially reconstructed with fields at offsets (+2 for next pointer). However, TreeNode in `tree_heap_traversal` is not recovered - the function just returns constant 0x3c. Many struct fields remain as raw pointer arithmetic.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with minimal unsafe casts. Pointer arithmetic is mostly correct. Some potential issues: `memop_unaligned_access` returns `undefined4` which is appropriate for unaligned access. No severe type safety violations that would cause undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments present in the decompiled output. No explanation of algorithm intent, no decompilation confidence indicators, no @param/@return documentation. The code is bare without any semantic guidance.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are inferable but not explicitly named. The linked list creation in `linked_list_heap` could be recognized as "linked list construction pattern" but isn't annotated. Memory allocation/free pairs are visible but not identified as idiom.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `dangling_pointer` function accesses memory after free (undefined behavior) but no warning is present. The `double_free` function is completely wrong (simplified to return -2) - this severe semantic error isn't indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Error handling is present (null checks) but not explained as contracts. For example, `heap_basic` returns -1 on malloc failure but this isn't documented as a postcondition.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear from the code itself. Global variable usage is partially visible (global_counter, global_array). However, no explicit documentation of who calls whom or the purpose of callback relationships (global_func_ptr).
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - stack functions together, heap functions together, static/global functions together. External library functions are separated. Minor issue: some internal functions like `_init`, `__do_global_dtors_aux` are included that may not be relevant.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code would require significant patching to compile. External declarations are present but incomplete (e.g., `extern_global_var`, `extern_function` are used but not defined). The code references undefined symbols that would need stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Variable naming is predominantly generic (`param_1`, `uVar7`, `puVar3`) obscuring semantic purpose
+- Complex functions like `large_stack_frame` and `vla_stack` are nearly unreadable with CONCAT operations
+- No comments or documentation explaining algorithm intent or decompilation confidence
+- `stack_alias` function is completely wrong - returns constant 0x14 instead of implementing the alias logic
+- `tree_heap_traversal` simplified to return constant 0x3c, losing all tree logic
+- `double_free` function is incorrectly simplified to return -2 without actual double-free logic
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Most function names match original source exactly, making it easy to locate specific functions
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+- Complete lack of comments makes it impossible to understand algorithm intent, decompilation confidence, or contract expectations
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, arithmetic, function parameters) to suggest semantic names like `array_size`, `node_count`, `checksum`
+2. **Recognize and annotate loop unrolling**: When detecting unrolled loops, either reconstruct the loop or add clear comments explaining the pattern rather than showing 64 iterations of CONCAT operations
+3. **Add semantic annotations**: Include comments for algorithm intent, decompilation confidence levels, and flag suspicious code patterns (dangling pointers, double-free potential)

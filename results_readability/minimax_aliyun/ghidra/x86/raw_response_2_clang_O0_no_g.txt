@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and local variables use cryptic names (`local_c`, `local_8`, `local_10`). No semantic meaning is conveyed - completely unusable for understanding the code's purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (process_char, process_short, process_int, array_1d_stack, etc.). The decompiler correctly preserved the meaningful function names from the source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some magic numbers remain unexplained (e.g., `0x2c`, `0x14`, `0x28` in array indexing calculations). String literals in printf are preserved, but array dimension calculations use unexplained hex values.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some Ghidra warnings about unreachable blocks are present but mostly filtered. No significant noise pollution from register spilling or debug instrumentation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops are properly recognized as for loops, conditionals are clear. At -O0, control flow should closely mirror source, and it does. Minor awkwardness in some array index calculations but logic is traceable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with appropriate granularity. No inlining issues at -O0. Each function maintains its own scope and cohesive responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps in complex index calculations but manageable. No severe non-linearity that disrupts comprehension.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious redundant code or dead code observed. Loop constructs are clean. Overall minimal redundancy in the output.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - `undefined4` instead of `int`, `undefined1` instead of `char`, `undefined8` instead of `long long`. Float/double handled as imprecise `longdouble`. Boolean handled inconsistently (`bool` vs `byte`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **CRITICAL FAILURE** - All structs (Point3D, Rect, Widget, Node, TreeNode, etc.) are completely lost. They're treated as raw pointer arithmetic with indices (e.g., `param_1[1]`, `param_1[2]`). Unions similarly lost. This represents severe semantic information loss.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe casts present. Pointer arithmetic in array functions uses raw calculations (e.g., `param_1 + local_c * 4`). Function pointer types are imprecise - using generic `code *` instead of proper function signatures. `ptr_func_simple` incorrectly returns `void` instead of `int`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated Ghidra comments present (function addresses, warnings about unreachable blocks). No semantic comments explaining what functions do. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like linked list traversal are somewhat recognizable through the `while (local_c != (int *)0x0)` pattern. But no explicit naming of patterns (e.g., "linked list traversal" or "binary tree"). Could be significantly improved.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present about unreachable blocks and inlined functions. However, not comprehensive - doesn't flag potential issues like the incorrect return type of `ptr_func_simple` or the struct recovery failures.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. No contract information. Silent on requirements. The decompiler provides no insight into what functions expect or guarantee.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. But relationships between functions (who calls whom, callbacks) are not documented. No call graph or usage information provided.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically by type (data types, arrays, pointers, composites). But no header file structure or API separation. Single flat output file.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Some functions have incorrect return types (ptr_func_simple returns void instead of int). Missing function prototypes would cause compilation warnings. Would require patching to compile cleanly.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- **Struct/Union Recovery Failure**: All composite types (Point3D, Rect, Node, TreeNode, etc.) are lost - treated as raw pointer arithmetic with indices (`param_1[1]`, `param_1[2]`), completely losing semantic field names
+- **Variable Naming**: All parameters use generic names (`param_1`, `param_2`) and locals use cryptic names (`local_c`, `local_8`) - completely unusable for understanding
+- **Type Precision**: Severe degradation - `undefined4` for int, `undefined1` for char, `undefined8` for long long, losing all type meaning
+- **Function Signature Errors**: `ptr_func_simple` returns `void` instead of `int`, breaking semantic correctness
+- **No Comment Recovery**: Original source comments completely lost; only auto-generated Ghidra comments present
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names like `process_char`, `process_short`, `array_1d_stack`, `ptr_double` match the original source exactly and clearly indicate purpose.
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+The decompiler completely failed to recover any struct or union types. All composite data structures are represented as raw pointer arithmetic, losing all semantic information about fields, nesting, and relationships.
+
+**Top 3 Recommendations:**
+1. **Recover struct/union layouts**: Analyze memory access patterns to reconstruct struct field offsets and names (e.g., `param_1[1]` → `node->next`)
+2. **Infer variable names from usage**: Use data flow analysis to name variables based on how they're used (e.g., loop counter `local_c` used in bounds check → `index` or `i`)
+3. **Preserve type information**: Map `undefined4` → `int`, `undefined1` → `char` based on usage context and architecture defaults

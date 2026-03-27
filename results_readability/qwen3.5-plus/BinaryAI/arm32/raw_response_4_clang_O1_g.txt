@@ -1,0 +1,121 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `local_10` with no semantic meaning. For example, `func_mixed_args` parameters should be `x`, `str`, `d`, `ll` but are `param_1` through `param_6`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`), accurately reflecting their purpose. This is the decompiler's strongest lexical feature.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic hex numbers dominate (`0xf`, `0x32`, `0x2a`, `0x12345678`) instead of decimal values. Constant folding replaced `cdecl_func(5, 10)` with `0xf` losing the computation context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Floating-point helper functions (`__adddf3`, `__floatsidf`, `__fixdfsi`) are fully decompiled with 200+ lines each instead of recognized as library calls. These should be external references.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but `varargs_func` uses `do-while` with manual pointer arithmetic instead of recognizing `va_arg` pattern. Loop structures are recoverable but awkward.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are correctly identified and granular. However, constant folding eliminated actual function calls (e.g., `call_cdecl` returns `0xf` instead of calling `cdecl_func`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but floating-point functions have excessive branching. Test functions like `test_calling_conventions` have reasonable linear flow despite constant folding.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Floating-point operations show massive redundancy (bit manipulation repeated hundreds of times). `func_struct_byval` iterates with `iVar2 = iVar2 + 8` instead of proper array indexing.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Widespread use of `undefined4`, `undefined8` instead of specific types. `func_mixed_args` has 6 parameters instead of 4, with `double` split into two `undefined4` values. Return types often `undefined4` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `LargeStruct` (128 bytes) passed as 4 `int` parameters. `SmallStruct` passed as `int*` with field access `param_1[1] * *param_1` instead of `p->x * p->y`. No struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `func_struct_byptr` uses `int*` instead of `SmallStruct*`. `param_double_ptr` has incorrect signature with 4 parameters instead of 2. Pointer arithmetic obscures type intent.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of complex floating-point operations, varargs handling, or constant folding decisions. Completely bare code.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not recognized (manual pointer iteration instead of `va_list`). Function pointer calls partially recognized (`code *` type) but no pattern naming.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication that constant folding occurred. `call_cdecl` returning `0xf` gives no hint it was `cdecl_func(5, 10)`. No uncertainty markers for ambiguous decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Null checks present (`if (param_1 == (int *)0x0)`) but no documentation of preconditions. No contract information for varargs count validation or struct pointer requirements.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph visible but degraded by constant folding. `test_calling_conventions` calls are replaced with literal values, losing relationship to tested functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output, no logical grouping. Helper functions (`__adddf3`, etc.) mixed with application code. No separation of library vs. application code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would not compile standalone - missing struct definitions, incorrect function signatures, undefined external symbols (`__gmon_start__`, `completed_0`). Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Contribution |
+|-------|--------------|--------|--------------|
+| L1: Lexical Clarity | 5.0/10 | 30% | 1.50 |
+| L2: Structural Intelligibility | 5.75/10 | 25% | 1.44 |
+| L3: Type System Fidelity | 3.0/10 | 20% | 0.60 |
+| L4: Semantic Transparency | 2.0/10 | 15% | 0.30 |
+| L5: Contextual Coherence | 4.67/10 | 10% | 0.47 |
+
+**Overall Readability Score: 4.31/10**
+
+---
+
+### Critical Defects
+
+- **Struct types completely lost**: `LargeStruct` and `SmallStruct` passed as raw `int` parameters or `int*`, losing all field semantics
+- **Constant folding obscures logic**: Test functions return pre-computed values (`0xf`, `0x32`) instead of showing actual function calls
+- **Floating-point helpers inlined**: 200+ line `__adddf3`, `__floatsidf` functions should be external library references
+- **Type signature corruption**: `func_mixed_args` has 6 parameters instead of 4, `param_double_ptr` has 4 instead of 2
+- **Zero documentation**: No comments explaining varargs handling, struct layouts, or decompilation uncertainty
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (8/10)** - Function names preserved accurately from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`), providing immediate semantic context despite other degradation.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (1/10)** - Complete absence of any documentation, explanations, or uncertainty markers makes understanding complex operations (floating-point, varargs) extremely difficult.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recognize and preserve composite types**: Detect struct patterns from memory access patterns and recover field names from usage context (e.g., `param_1[0]`, `param_1[1]` → `p->x`, `p->y`)
+
+2. **Mark constant-folded code explicitly**: When returning pre-computed values, add comments showing original computation (e.g., `return 0xf; // cdecl_func(5, 10) = 15`)
+
+3. **Externalize standard library helpers**: Recognize `__adddf3`, `__floatsidf`, `__fixdfsi` as compiler runtime functions and declare them as external rather than decompiling 200+ lines of bit manipulation

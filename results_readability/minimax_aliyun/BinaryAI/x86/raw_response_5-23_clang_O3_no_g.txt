@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `iVar2`, `uVar1`, `uVar3`. The source had meaningful names like `size`, `x`, `y`, `arr`, `n`, `result` but these are completely lost. Loop counters are just `iVar1`/`iVar2` with no indication they're iterators.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most functions retain their original names: `param_macro_constants`, `param_asm_basic`, `call_asm_clobber`. However, some internal functions have generic names like `FUN_00011030`, `FUN_00011a85`. External library functions are correctly identified.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x40`, `0x200`, `0xdef0`, `0xdf22` appear without explanation. The original macros MAX_SIZE (1024), BUFFER_COUNT (16) are lost - only their computed values remain. Some constants like `0x400` for comparison are preserved but not named.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: At -O0, there's minimal compiler noise. No redundant casts or debug artifacts. Some Ghidra-specific constructs like `ZEXT816` and `undefined4` are present but don't significantly impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops are properly recovered as `for` loops. Conditionals use idiomatic `if` statements. At -O0, control flow closely matches source. No goto abuse or confusing jumps observed.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with appropriate granularity. Each function handles a single logical task. No over-fragmentation or monolithic functions. Parameter counts are reasonable.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without excessive jumps. Early returns used appropriately. No forward jumps into loop bodies. Flow is easy to trace.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy at -O0 optimization level. Common subexpression elimination artifacts are minimal. Code is clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` for most variables. Some `undefined4` for return types. `size_t` used for memory sizes. The original used specific types like `int*` for arrays but decompiler uses `int` with pointer arithmetic. Const correctness is lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in this source code. Simple types dominate. Where arrays are used (like `int arr[]`), they're represented as pointer arithmetic which is acceptable for -O0.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No obvious unsafe casts. Pointer arithmetic is straightforward. Some `undefined*` types create uncertainty but don't cause safety issues. Minor issues with type mixing in variadic functions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in decompiled code whatsoever. The original had extensive comments explaining macro behavior, assembly constraints, and test expectations. All semantic context about preprocessing and assembly is lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like loops and conditionals are recognized. However, the preprocessor macro expansions (SQUARE, MAX, SAFE_ADD) are not identified as macro idioms. Assembly patterns (LOCK/UNLOCK) are recognized but not explained.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No explicit anomaly flags. The `undefined` types indicate uncertainty but without explanation. The `__regparm1` attribute on `param_variadic_macro` suggests calling convention anomaly but isn't documented.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original had implicit contracts (e.g., `mmap` returns valid memory or -1, array bounds) that are not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. External dependencies (printf, mmap, mprotect) are properly identified. However, the relationship between test functions and their callers isn't explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions together, asm functions together. Static functions are properly scoped. Some organization by functionality is preserved.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with minimal stubs for external functions. Dependencies on libc are implicit but standard. No compiler-specific hacks that would prevent compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `iVar1`, `uVar3`) - original names like `size`, `arr`, `n`, `result` are lost
+- No comments explaining preprocessor macro behavior, assembly constraints, or semantic purpose
+- Magic numbers like `0x40`, `0x200`, `0xdef0` appear without named constant equivalents
+- No recovery of preprocessor macro semantics (SQUARE, MAX, ADD_16 are just computed values)
+- Type precision lost - original specific types become generic `int` or `undefined4`
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- At -O0, loops and conditionals are properly recovered in idiomatic form
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic names like `param_1`, `iVar1`, `uVar3` completely obscure variable purpose; original names like `size`, `x`, `y`, `arr`, `n`, `result` should be inferred from usage patterns
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `param_1` used in size comparison should be `size`; loop variables `iVar1`/`iVar2` should be `i` or `index`
+2. Add comments explaining preprocessor macro expansions - show that `0x40` is `BUFFER_COUNT * 4` and `0x200` is `MAX_SIZE / 2`
+3. Recover macro semantic intent - identify patterns like SQUARE(x) as `x * x`, MAX(a,b) as conditional expression, and ADD_16(x) as `x + 16`

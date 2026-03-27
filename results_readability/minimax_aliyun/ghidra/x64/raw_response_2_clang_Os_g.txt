@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiled code contains extensive "Unresolved local var" annotations (e.g., `int sum@[???]`, `int i@[???]`, `int a@[???]`). While some parameters like `c`, `x`, `p`, `arr`, `n` are preserved from source, most local variables remain unnamed, making it difficult to track their purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly (e.g., `process_char`, `array_1d_stack`, `ptr_double`, `struct_simple`, `linked_list`). Only internal startup functions like `FUN_00101020` are auto-generated. The decompiler achieved excellent function name recovery.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with magic numbers without explanation (e.g., `0x28`, `0x2c`, `0x1b8`, `0x14` in test functions). Test functions pre-compute results (e.g., `printf("...: %d\n",0xf)`) instead of showing the computation. Constants like `' '` and `0xbfU` in `process_char` are unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant decompiler artifacts include: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "Unresolved local var" annotations throughout, cryptic function pointer types like `_func_int_int *`, and placeholder comments like "WARNING: Could not recover jumptable".
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some loops use awkward do-while constructs with manual index management (e.g., `array_1d_stack` uses `uVar2` counter instead of for-loop). The `array_2d_stack` uses pointer arithmetic with magic offsets (`lVar2 + 0x2c`) obscuring the nested loop structure. However, basic control flow is preserved.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The decompiler correctly separated all small functions from the source (each process_/array_/ptr_/struct_ function). Test functions are also properly extracted. Function granularity matches source well with appropriate parameter lists.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but complex functions like `array_3d` have deeply nested do-while loops with pointer arithmetic that disrupts linear reading. Some forward jumps exist in test initialization code.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Test functions contain pre-computed hardcoded results (e.g., `printf("DT-L1-01: %d\n",300)` instead of calling `process_short(100,200)`). This eliminates the original computation logic, replacing it with constants. Loop unrolling in `array_3d` is present but not commented.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most primitive types are correctly recovered: `char`, `short`, `int`, `long`, `long long`, `float`, `double`, `_Bool`. Function pointer types are present but cryptic (`_func_int_int *`). Some parameter types could be more specific (e.g., `const int*` lost const in some places).
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct/union recovery. All types correctly named: `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`, `Edge`, `Graph`, `DNode`, `Flags`, `UnionData`, `Device`. Field names match source (`x`, `y`, `z`, `data`, `next`, `left`, `right`). Union/struct distinction preserved.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: `ptr_diff` uses manual pointer-to-integer conversion with bit-shifting (`(int)((ulong)((long)p1 - (long)p2) >> 2)`). `struct_bitfields` uses raw `ushort` casting. Most other operations are type-safe, but these low-level patterns could lead to undefined behavior.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are primarily decompiler diagnostics ("WARNING: Removing unreachable block", "WARNING: Unknown calling convention") rather than explanatory. No algorithm explanations, API contracts, or semantic documentation. "Unresolved local var" annotations are noise, not helpful comments.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some data structure patterns are recognizable: linked list traversal (`while (head != NULL)`), binary tree recursion, graph adjacency list traversal. However, these patterns aren't explicitly named or documented as design patterns.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The decompiler flags some anomalies: "WARNING: Could not recover jumptable" for switch statements, "WARNING: Treating indirect jump as call" for function pointers, and "Unresolved local var" annotations. However, some issues like the architecture mismatch (arm64 source vs x86 binary) aren't noted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler provides no information about expected input constraints (e.g., "requires: n > 0") or return value guarantees.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in the code, but relationships aren't documented. No indication of which functions call which, callback relationships, or global variable usage. The `complex_callback` function used by `ptr_func_complex` isn't clearly linked.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in binary order, roughly matching source file grouping (data types → arrays → pointers → composites → tests). However, static functions aren't explicitly marked, and the organization is implicit rather than intentional.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would not compile as-is. Issues include: undefined types like `_func_int_int *`, unresolved local variable annotations, missing function prototypes, and placeholder comments. Significant patching would be required.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming: Extensive "Unresolved local var" annotations leave most local variables unnamed
+- Literal clarity: Magic numbers throughout (0x28, 0x2c, 0x1b8) without explanation; test functions pre-compute results
+- Noise: Massive decompiler artifacts including warnings, unresolved variables, and cryptic types
+- Build compatibility: Code contains numerous elements that would prevent compilation
+- Contract recovery: Zero pre/postcondition documentation
+
+**Best Quality Aspect:** Composite Type Recovery (9/10)  
+The decompiler excellently recovered struct and union types with correct names and field names matching the source almost perfectly.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Most local variables remain unresolved with generic placeholder annotations, making it extremely difficult to understand function logic without cross-referencing the source.
+
+**Top 3 Recommendations:**
+1. Implement variable name inference from usage patterns - track how variables are used (array indexing, arithmetic, pointer dereferencing) to suggest meaningful names
+2. Add constant detection and naming - identify magic numbers that appear repeatedly and suggest or generate named constants
+3. Improve comment generation - add algorithm explanations, parameter documentation, and semantic comments rather than just decompiler diagnostics

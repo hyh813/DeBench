@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic stack-offset names (`local_10`, `local_1c`, `local_30`) and parameter names (`param_1`, `param_2`) that obscure semantic meaning. Original source had meaningful names like `result`, `heap_buffer`, `canary`, `decrypted` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core test functions preserved original names (`param_fake_branch`, `param_opaque_predicate`, `param_vectorized_loop`). However, runtime functions use generic names (`FUN_00011030`, `FUN_000110f0`) and some return types changed to `void` incorrectly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a` (encryption key) and `0x41` ('A') appear without explanation. Critical literals from original (`0xDEADBEEF`, `0x12345678` canary) are missing due to optimization elimination.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`), thunk functions (`__x86_get_pc_thunk_*`), and runtime initialization code (`_init`, `__do_global_dtors_aux`) mixed with user code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as natural `for`/`while` constructs (GCD loop in `param_opaque_predicate`, vectorized loop). However, `param_fake_branch` lost all conditional branches due to compiler optimization at -O0.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with reasonable granularity. `decrypt_string` properly separated. Some functions oversimplified (`param_fake_branch` reduced to single return statement).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with appropriate early returns. No excessive goto usage. Stack canary checks at function ends create minor disruption but follow consistent pattern.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary check pattern repeated identically across 10+ functions without abstraction. No dead code observed, but no consolidation of common patterns either.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of `undefined4` instead of specific types. `param_instruction_substitution` takes `uint` in decompiled but `int` in source. Pointer types often generic (`undefined4 *` vs `int *`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The `bitfield` struct from `param_implementation_defined` completely lost—function just returns constant `0x2b`. Stack arrays shown as individual locals (`local_70`, `local_6c`...) instead of `int a[8]`. No struct definitions visible.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`(longlong)param_1`, `(undefined4)`). Pointer arithmetic without type safety. `param_null_pointer_deref` takes `undefined4 *` instead of `int *`, losing null-dereference semantics.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API documentation. Original source had extensive section headers and inline comments.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption pattern not recognized. Tail call optimization in `param_tail_call_optimized` not noted despite being recoverable.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about optimized-away code (`param_fake_branch` branches eliminated silently). No indication that `param_implementation_defined` was reduced to constant return. Silent about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). No postconditions. Error conditions not documented. Function contracts completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but not documented. Global variables (`jmp_buffer`, `div_zero_caught`, `encrypted_0`) used without declaration context. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime initialization code mixed with user test functions. No separation between library stubs and application code.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Metadata indicates compilation succeeds, but external dependencies not documented. Library function calls (`FUN_00011170` for malloc, `FUN_00011140` for free) not properly declared. Would need significant work to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.80/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable `local_10`, `local_1c`, `local_30`** should be named based on usage (e.g., `canary`, `buffer`, `decrypted`)
+- **`param_fake_branch`** lost all fake branch logic—decompiler should indicate optimization elimination
+- **Zero comments** despite complex obfuscation patterns that need explanation
+- **Struct `bitfield`** completely lost in `param_implementation_defined`—reduced to constant return
+- **Stack canary checks** repeated 10+ times without abstraction or explanation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core test function names preserved accurately from source, maintaining semantic identity across decompilation.
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.25/10 average)** - Complete absence of comments, no idiom recognition, no anomaly warnings about optimized code, and no contract documentation makes understanding intent extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add decompilation confidence annotations** - Flag functions where optimization eliminated code (e.g., `// WARNING: Conditional branches optimized away by compiler`)
+2. **Infer variable names from usage patterns** - Analyze how variables are used to suggest semantic names (e.g., `local_10` used in canary check → `stack_canary`)
+3. **Recover and document algorithm patterns** - Identify common patterns (GCD, XOR decryption, tail recursion) and add explanatory comments

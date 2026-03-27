@@ -1,0 +1,125 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Function parameters preserved well (`a`, `b`, `x`, `count`), but local variables frequently marked as "Unresolved local var" or use generic names like `iVar1`, `uVar1`, `piVar3` obscuring their purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most source function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but some runtime functions use generic names (`FUN_00100640`, `FUN_001007bc`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Heavy use of hex literals (`0xf`, `0x32`, `0x2a`, `0x12345678`) instead of decimal values; constant folding replaced function calls with magic numbers without explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Repeated "WARNING: Unknown calling convention -- yet parameter storage is locked" messages clutter output; "Unresolved local var" annotations appear in most functions.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but `varargs_func` and `param_ptr_array` show awkward loop reconstruction with complex pointer arithmetic from optimization.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions properly separated, but caller functions like `call_cdecl` constant-folded to return literals (`return 0xf`) losing actual call structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally; some complex functions have awkward patterns but generally maintain linear flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `func_struct_byval` unrolled loop shows all 16 additions explicitly instead of a loop; optimization artifacts not recognized or abstracted.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved well (`int`, `char*`, `double`, `longlong`), but some degradation to generic types and `void*` where specific types expected.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types recovered (`LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData`) with field names preserved, though some field access shows array indexing.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(double *)piVar1` in `ret_opaque_handle`); pointer arithmetic generally correct but type conversions not always explicit.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated decompiler warnings present; no algorithm explanations or semantic documentation; "Unresolved local var" indicates uncertainty but doesn't explain why.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition evident; standard C idioms (varargs, struct passing) not identified; loop unrolling not recognized as optimization.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "WARNING: Unknown calling convention" and "Unresolved local var" flag issues, but anomalies not comprehensively explained or prioritized.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation; null checks present in code (`if (p != (SmallStruct *)0x0)`) but not documented as contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but many constant-folded away; global variable references use opaque names (`DAT_001014d2`, `DAT_00101228`) losing string content context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping; runtime initialization functions mixed with test functions without organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions (`printf`, `puts`, `strlen`, `__libc_start_main`) without declarations; struct type definitions missing from output; would require significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+7+4+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):   (6+6+7+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type System):  (7+7+6)/3 = 6.67 × 0.20 = 1.334
+Level 4 (Semantic):     (4+3+6+3)/4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):   (5+5+4)/3 = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.48/10
+```
+
+**Overall Readability Score: 5.5/10**
+
+---
+
+### Critical Defects
+
+- **Constant folding destroyed call relationships**: Functions like `call_cdecl`, `call_stdcall` return literal values (`0xf`, `0x32`) instead of showing actual function calls, losing semantic meaning
+- **Hex literals without context**: Magic numbers like `0x12345678`, `0xd7` used instead of decimal values or named constants
+- **Unresolved local variables**: Most functions contain "Unresolved local var" annotations indicating incomplete type recovery
+- **Loop unrolling not recognized**: `func_struct_byval` shows 16 explicit additions instead of a recoverable loop construct
+- **String literals replaced with data references**: `printf` format strings shown as `&DAT_001014d2` instead of actual string content
+
+---
+
+### Best Quality Aspect
+
+- **Type System Fidelity (Level 3): 6.67/10**
+- Struct types (`LargeStruct`, `SmallStruct`, `SmallPoint`) were successfully recovered with field names preserved, enabling reasonable type understanding despite optimization.
+
+---
+
+### Most Needs Improvement
+
+- **Semantic Transparency (Level 4): 4.0/10**
+- No algorithm explanations, idiom recognition, or contract documentation; decompiler warnings present but don't provide actionable semantic guidance.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover constant-folded call sites**: Instead of replacing `call_cdecl()` with `return 0xf`, show the original call structure with a comment indicating constant propagation occurred during compilation.
+
+2. **Recognize and reconstruct loop patterns**: Detect unrolled loops (like the 16 additions in `func_struct_byval`) and present them as iterative constructs with a note about optimization level.
+
+3. **Resolve string literal references**: Replace `&DAT_001014d2` with actual string content (`"=== 测试基础调用约定 ===\n"`) to restore semantic context for printf/puts calls.

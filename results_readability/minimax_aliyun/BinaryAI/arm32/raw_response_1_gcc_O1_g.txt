@@ -1,0 +1,147 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+All meaningful variable names from the source (e.g., `temp1`, `temp2`, `temp3`, `sum`, `count`, `result`) are replaced with generic decompiler-generated names like `param_1`, `param_2`, `iVar1`, `iVar2`, `puVar1`, `uVar1`, `local_c`, `local_10`. The source variable `a`, `b`, `c` in `sequential_ops` became `param_1`, `param_2`, `param_3`. This complete loss of semantic naming makes tracking variable purpose extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+
+Function names are excellently preserved: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `nested_if_deep`, `loop_for_fixed`, `loop_while`, `loop_dowhile`, `recursion_factorial`, `tail_recursion`, `duffs_device`, `state_machine`, etc. All match the original source function names exactly. Minor deduction for some internal functions like `call_weak_fn` which are compiler-generated.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Mixed results. Some literals are computed at compile time (e.g., `0x15` for 21 in test output), but many magic numbers remain unexplained: `0x14` (20), `0x1e` (30), `0x32` (50), `0x3e9` (1001), `0x65` (101), `0x2694` (9876), `0x3039` (12345). The source had clear constants like `10, 20, 30` but these became hex values in the decompiled test functions.
+
+### 4. Noise Reduction
+**Score: 8/10**
+
+The decompiled code is relatively clean with minimal compiler artifacts. No redundant casts, no debug instrumentation, no frame pointer manipulation visible. Some internal functions like `__aeabi_idiv` are included but these are legitimate library functions. The main noise is the large `__aeabi_idiv` function which is a library routine, not decompilation noise.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+
+Control flow is mostly natural and readable. Loops are correctly reconstructed as do-while constructs (e.g., `loop_for_fixed`, `loop_while`). Switch statements are properly identified. The `goto_forward` and `goto_backward` are correctly linearized. At `-O0`, the control flow should closely match source, and it does. Minor deduction for some complex conditions in `loop_complex_cond` using `SBORROW4` which is a compiler intrinsic.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Functions are appropriately sized and well-separated. Each function from the source has its own decompiled counterpart. No over-fragmentation or monoliths. The parameter lists are reasonable, though they expose implementation details (e.g., `__jmp_buf_tag` instead of `jmp_buf`). Good separation between test functions and logic functions.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Code generally reads top-to-bottom. Early returns are used appropriately. Some forward jumps exist in switch statements but are handled via switch-case structure. The `duffs_device` has complex control flow with goto labels but this is expected for that pattern. Overall good linearization with only minor disruptions.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+No significant redundancy observed. Loop unrolling is not present (as expected at -O0). No dead code elimination issues. Common subexpressions are not overly duplicated. The code is clean in this regard.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+Significant type degradation. The original `int` types become `undefined4` in many places. Parameters use `undefined4`, `undefined8`, `uint` mixed with `int`. Function pointers use `code *` which is non-standard. The source had clear `int` types throughout, but the decompiler uses: `undefined4`, `undefined`, `uint`, `int`, `bool`. Signed/unsigned distinctions are sometimes lost.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+
+No struct or union types are recovered. The source had no explicit structs, but the decompiler creates artificial stack layouts like `local_20 [4]`, `local_3c`, `auStack_34 [32]` which are just memory allocations without semantic meaning. Arrays like `int arr[] = {10, 20, 30, 40, 50}` become inline initializations of stack variables without proper array typing.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Several type safety issues exist. Function pointers are cast to `code *` which is non-standard and potentially unsafe. The `call_func_ptr_array` function has a problematic pattern with `(*apcStack_18[param_1])(param_2)`. Pointer arithmetic is used but not always type-safe. The large `__aeabi_idiv` function shows complex type manipulation. Overall moderate type safety concerns.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Almost no useful comments. The only comment is the standard BinaryAI header. No explanation of algorithms, no documentation of non-obvious logic, no decompilation confidence indicators. The source had extensive comments explaining each function's purpose and test cases, but these are completely lost. The decompiled code provides zero semantic context.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+Some patterns are implicitly present but not named or flagged. Duff's device (`duffs_device`) is correctly reconstructed but not identified as such. State machine patterns in `state_machine` and `fsm_func_table` are present but not annotated. The `goto_forward` and `goto_backward` use goto but are correctly linearized. No explicit pattern naming or documentation.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+No anomaly indication whatsoever. The decompiled code presents everything as confident output. Indirect calls in function pointer arrays are not flagged. The complex `__aeabi_idiv` implementation is shown without any warnings about its complexity or potential issues. No indication of uncertain decompilation.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No contract information recovered. Preconditions (e.g., "n > 0" for `duffs_device`), postconditions, and invariants are not documented. The source had explicit parameter validation (e.g., `if (n <= 0) return -1;`) but these are just rendered as code without explanation of their purpose as contracts.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Some relationships are implicit in the code structure (e.g., `call_func_ptr_array` calls `double_value`, `triple_value`, `recursion_factorial`). However, there's no explicit documentation of call graphs, global usage, or callback relationships. The test functions call the logic functions but this isn't documented.
+
+### 17. Module Organization
+**Score: 3/10**
+
+All functions are in a single monolithic output. No logical grouping or separation. The source had clear sections (Control Flow Level 1, Level 2, Level 3, test functions) but these organizational comments are lost. Functions are listed alphabetically by address, not logically grouped.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+The code will not compile as-is. Issues include: `undefined4`, `undefined8`, `undefined` types are not valid C; `code *` is not a standard type; `bool` type may need stdbool.h; `__jmp_buf_tag` needs proper definition; the large `__aeabi_idiv` function has complex issues. Requires significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 5 + 8) / 4 = 6.0
+L2_avg = (8 + 8 + 7 + 8) / 4 = 7.75
+L3_avg = (5 + 3 + 5) / 3 = 4.33
+L4_avg = (2 + 3 + 2 + 2) / 4 = 2.25
+L5_avg = (4 + 3 + 3) / 3 = 3.33
+
+Overall = (6.0 × 0.30) + (7.75 × 0.25) + (4.33 × 0.20) + (2.25 × 0.15) + (3.33 × 0.10)
+        = 1.80 + 1.94 + 0.87 + 0.34 + 0.33
+        = 5.28/10
+```
+
+### Overall Readability Score: 5.28/10
+
+### Critical Defects
+- **Variable naming**: All semantic variable names lost (`temp1`, `sum`, `count` → `iVar1`, `iVar2`, `local_c`)
+- **Type precision**: `undefined4`, `undefined`, `code *` types instead of proper `int`, function pointer types
+- **No comments**: Zero semantic documentation; source comments completely lost
+- **No pattern recognition**: Duff's device, state machines not identified or annotated
+- **No anomaly indication**: Complex or uncertain code presented without warnings
+
+### Best Quality Aspect
+**Function Naming Quality (9/10)** - Function names are almost perfectly preserved from the source, making it easy to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement
+**Semantic Transparency (2.25/10)** - The decompiled code lacks any semantic context: no comments, no pattern identification, no anomaly warnings, no contract documentation. This makes understanding the code's purpose and reliability extremely difficult.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns**: Use data flow analysis to rename `param_1` to `a`, `iVar1` to `sum` based on how they're used (e.g., accumulation patterns suggest `sum`, loop counters suggest `i` or `count`)
+2. **Add semantic comments**: Include algorithm explanations, pattern identification (e.g., "// Duff's device - optimized loop unrolling"), and decompilation confidence levels
+3. **Improve type precision**: Replace `undefined4` with `int`, `code *` with proper function pointer typedefs, and add type annotations for clarity

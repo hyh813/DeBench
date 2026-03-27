@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `idx`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mix of preserved names (`cdecl_func`, `func_a`, `main`) from debug symbols and generic `sub_401XXX` names. About half the functions lost their original semantic names entirely.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (unsigned -1), `10475`, `11927` appear without explanation. Some return values (`15`, `50`, `6`) are clear from context but struct padding values are unexplained.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with `[D]` error markers, `__x86.get_pc_thunk.*` compiler artifacts, `__stack_chk_fail_local()` calls, and PyVEX expression errors in `func_mixed_args`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` usage for what should be loops (`goto ptr[2]` in `sub_401030`). Many functions constant-folded to return literals instead of computing, losing original logic structure.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Over-fragmented with tiny wrapper functions (`sub_40103c`, `sub_40104e`) that just call other functions. Caller functions like `call_cdecl()` return constants instead of actually calling anything.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read top-to-bottom reasonably, but `func_mixed_args` and `test_calling_conventions` have significant non-linearity with forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding creates redundancy (callers return pre-computed values). Duplicate struct definitions throughout file. No obvious dead code but optimization artifacts present.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned int` instead of specific `int`, `char*`, `double`, `long long`. `func_mixed_args` shows type confusion with floating point handling. Function pointers became `unsigned int *`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs exist but with generic field names (`field_0`, `padding_0`). Original `LargeStruct`, `SmallStruct` not recovered. Many struct definitions appear to be decompilation artifacts with strange padding values like `padding_0[11927]`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe implicit casts through pointer arithmetic. `func_mixed_args` has floating point type confusion. Function pointer calls use integer types instead of proper function pointer signatures.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments. `[D]` markers indicate errors but don't explain what went wrong. Original source's extensive comments (CALL-L1-01, parameter descriptions) completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Calling convention patterns, varargs handling, and struct passing conventions not documented. Original source's clear pattern labels entirely lost.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `[D]` markers and "Unsupported jumpkind" errors flag problems, but without explanation of impact or guidance on manual analysis. Inconsistent anomaly reporting.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source's clear expectations ("期望：15") completely lost. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables have generic names (`g_402008`, `g_4020c9`). Callback relationships not clearly documented. Original test structure partially recoverable.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Original source's clear sections (4.1, 4.2, 4.3) lost. Helper functions scattered throughout arbitrarily.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Does not compile due to `[D]` error markers and unsupported PyVEX expressions. Missing external function declarations. Would require extensive manual patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+2)/4 = 3.50
+Level 2 (Structural):  (4+4+5+6)/4 = 4.75
+Level 3 (Type):        (4+3+3)/3   = 3.33
+Level 4 (Semantic):    (2+2+5+2)/4 = 2.75
+Level 5 (Contextual):  (5+4+2)/3   = 3.67
+
+Overall = (3.50 × 0.30) + (4.75 × 0.25) + (3.33 × 0.20) + (2.75 × 0.15) + (3.67 × 0.10)
+        = 1.05 + 1.1875 + 0.666 + 0.4125 + 0.367
+        = 3.68/10
+```
+
+**Overall Readability Score: 3.7/10**
+
+### Critical Defects:
+- **Architecture mismatch**: Original was ARM64 but decompiled as X86, causing fundamental calling convention errors
+- **`[D]` error markers**: Multiple functions contain uncompileable decompilation errors (e.g., `func_mixed_args` has PyVEX expression failures)
+- **Constant folding**: Caller functions like `call_cdecl()` return literal `15` instead of actually calling `cdecl_func(5, 10)`, losing semantic meaning
+- **Generic variable names**: All variables are `v0`, `v1`, `v2`, `ptr` with no semantic inference from usage patterns
+- **Struct field names lost**: All struct fields are `field_0`, `padding_0` instead of meaningful names like `data`, `x`, `y`
+
+### Best Quality Aspect:
+- **Redundancy Elimination (6/10)** - While constant folding creates issues, there's no obvious dead code and loop structures are generally recognizable without excessive unrolling artifacts.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic documentation; original source's extensive comments explaining calling conventions, test purposes, and expected values are entirely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable name inference** - Analyze usage patterns to infer names (e.g., loop counter used with array indexing should be `idx` or `i`, accumulator should be `sum`)
+2. **Add decompilation confidence annotations** - Replace `[D]` error markers with explanatory comments like `// DECOMPILATION UNCERTAIN: indirect call target not resolved`
+3. **Preserve debug symbol function names** - When `-g` flag is present, prioritize recovering original function names over generic `sub_XXXXX` naming, especially for test functions

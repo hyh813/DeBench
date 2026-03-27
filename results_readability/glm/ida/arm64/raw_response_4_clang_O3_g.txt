@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `v2`, `v3`, `v4`, `v7`, and `kr00_32` (for `va_list`), completely obscuring the original semantic intent (e.g., `sum`, `i`, `args`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered (e.g., `cdecl_func`, `test_calling_conventions`), matching the source exactly and clearly indicating purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are replaced with global references (e.g., `asc_1752`, `aCallL206`) rather than inline strings, and `va_list` implementation exposes confusing magic numbers like `0xFFFFFF80FFFFFFC8LL`.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains significant ABI noise such as `LODWORD`, `HIDWORD` casts, `__usercall` annotations, and `kr00_32` types, which clutter the logic despite the `-O0` optimization level.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While most functions are linear, `varargs_func` is decompiled into an obscure loop with bit manipulation, and `param_ptr_array` shows unexpected loop unrolling (processing 2 items per iteration) that complicates the simple source logic.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries match the source perfectly; there is no inlining or outlining, maintaining the original modular structure exactly.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal forward jumps or spaghetti logic, making it easy to follow the execution path in most functions.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler successfully removed typical `-O0` stack variable redundancy, resulting in clean expressions without excessive temporary variable assignments.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types are accurate, but large struct passing is represented as a pointer (`LargeStruct *s`) instead of pass-by-value (`LargeStruct s`), accurately reflecting the ABI but deviating from source syntax.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs like `SmallStruct` and `LargeStruct` are recovered with correct field names (`x`, `y`, `data`) and layouts, preserving the original data structure definitions.
+
+**11. Type Safety:** Score: 8/10
+Justification: Code is type-safe, though it relies on verbose casts like `LODWORD` and `HIDWORD` to handle register-level operations, which are safe but noisy.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining logic; only minimal register/type hints (e.g., `// x0`, `// kr00_32`) are present, offering no semantic insight.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard idioms like `va_list` iteration are not abstracted into a readable loop; instead, the decompiler exposes the low-level register save area manipulation, obscuring the "sum arguments" intent.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: No specific anomalies are flagged; the decompiler presents the complex `varargs_func` logic confidently without indicating that it might be hard to read or non-idiomatic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants (e.g., the null check in `func_struct_byptr` is present but not documented as a contract).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are direct and clear, and the relationship between callers (e.g., `call_cdecl`) and callees is obvious due to the preserved naming.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are grouped logically, matching the source file's organization (calling conventions, parameters, return values), making navigation intuitive.
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code relies on standard types and headers, but the use of compiler-specific attributes (`__fastcall`, `__usercall`) and global string references would require patching to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.8/10
+
+**Critical Defects:**
+- Variable names are generic (`v2`, `v3`) instead of semantic names (`sum`, `i`), significantly hindering comprehension.
+- `varargs_func` is decompiled into low-level bit manipulation rather than a high-level `va_arg` loop, making it unreadable.
+- String literals are replaced with global pointers (e.g., `asc_1752`), forcing the reader to look up definitions elsewhere.
+- Large struct parameters are displayed as pointers (`LargeStruct *s`), hiding the source's pass-by-value semantics.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved all original function names, making the high-level flow trivial to follow.
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.0/10)
+- The lack of comments and failure to abstract low-level idioms (like `va_list`) into readable patterns makes understanding the "why" and "how" of the code difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve variable name recovery using debug information (since `-g` was present) or heuristic analysis to replace `v#` names.
+2. Implement pattern matching to re-abstract `va_list` register manipulation back into standard `va_start`/`va_arg` loops.
+3. Provide an option to inline string literals or display their content in a tooltip to avoid context switching to global definitions.

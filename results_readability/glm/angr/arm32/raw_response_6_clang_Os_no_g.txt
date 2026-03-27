@@ -1,0 +1,109 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `result`), obscuring semantic meaning. For example, in `param_fork_exec`, `v0[1]` holds the process status, and in `thread_sum`, `ptr[2]` holds the result, but these relationships are lost.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully preserves the original function names (e.g., `param_strcpy`, `call_strcmp`, `param_fork_exec`), which accurately reflect the source. The only exception is the signal handler, which is named `$a.34`.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: Magic numbers are prevalent and unexplained; for instance, `4294967295` is used to represent `-1` (unsigned wrap), and syscall numbers like `5` (open) or `6` (close) are used directly instead of symbolic constants like `SYS_open`.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is heavily polluted with Angr-specific lifting artifacts, specifically `armg_calculate_condition`, `armg_calculate_flag_c`, and `Not Conv(32I->1I, ...)`, which obscure the actual program logic and make the code nearly unreadable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Simple ternary operators are expanded into verbose `if-else` chains with magic numbers (e.g., in `param_strcmp`). The use of `armg_calculate_condition` to represent flag checks breaks the natural flow of conditional logic.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: The function granularity matches the source well, with distinct functions for each test case. However, the signal handler `$a.34` is anonymous, and the logic within functions is often harder to follow than necessary due to lifting artifacts.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While the code generally reads top-to-bottom, the frequent insertion of `armg_calculate_condition` calls acts as non-linear interruptions, forcing the reader to mentally evaluate these pseudo-functions to understand the control flow.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: There is significant redundancy, such as `param_strcpy` calling `strlen` twice on the same variable, and `param_printf` calling `printf` twice. While some of this may stem from the `-O0` compilation, the decompiler fails to simplify these patterns.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `char*` and `int` are recovered, but signedness is often lost or incorrect (e.g., `param_strcmp` returns `unsigned int` but implements signed logic). Function signatures often use generic `unsigned int` for parameters that were specific types in the source.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery is poor; the `ThreadData` struct in `param_pthread_join` is completely lost, replaced by raw pointer arithmetic (`ptr[2]`, `ptr[1]`). The `sockaddr` struct is only partially recovered with generic `sa_data`.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code contains unsafe-looking casts and operations, such as `Not Conv(32I->1I, ...)` and the use of `armg_calculate_condition` which accepts raw integers representing condition codes, erasing type safety.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic, algorithms, or the purpose of the Angr-specific artifacts. The code is presented as-is without semantic context.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common C idioms are not recognized; the ternary operator pattern `ret > 0 ? 1 : (ret < 0 ? -1 : 0)` is decompiled into a messy series of assignments and condition checks rather than a concise expression.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the `armg_calculate_condition` calls as standard function calls without any indication that they are lifting artifacts or potential points of confusion for the reader.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or error handling contracts. For example, the check for `fp == NULL` in `param_fopen_fclose` is not explicitly documented as a null check.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls to other defined functions are clear, but global variable references (e.g., `g_413008`, `signal_received`) are opaque, and it is difficult to trace their usage or purpose without external analysis.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are organized in a logical order that roughly follows the source file structure (Standard Library -> System Calls -> Threads), making it easy to locate specific test cases.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile because `armg_calculate_condition` and related helper functions are undefined symbols specific to the Angr lifting process, not standard C library functions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 9 + 2 + 1) / 4 = 3.5
+L2_avg: (3 + 7 + 5 + 4) / 4 = 4.75
+L3_avg: (5 + 2 + 3) / 3 = 3.33
+L4_avg: (1 + 2 + 1 + 1) / 4 = 1.25
+L5_avg: (5 + 8 + 1) / 3 = 4.67
+
+Overall = (3.5 × 0.30) + (4.75 × 0.25) + (3.33 × 0.20) + 
+          (1.25 × 0.15) + (4.67 × 0.10)
+Overall = 1.05 + 1.1875 + 0.666 + 0.1875 + 0.467
+Overall = 3.558
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects
+- **Lifting Artifacts**: The pervasive use of `armg_calculate_condition` and `armg_calculate_flag_c` renders the code pseudo-C that is unreadable to humans and uncompileable.
+- **Magic Numbers**: Signed values like `-1` are represented as unsigned `4294967295`, and syscall numbers are hardcoded, obscuring intent.
+- **Struct Loss**: Composite types like `ThreadData` are completely lost, replaced by confusing pointer arithmetic (e.g., `ptr[2] = v0 + ...`).
+- **Ternary Expansion**: Simple ternary operators are expanded into verbose `if-else` blocks with redundant assignments, degrading readability.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: The decompiler successfully preserved the original function names from the source, which is the only strong link back to the original semantics and allows for easy navigation of the file structure.
+
+### Most Needs Improvement
+- **Noise Reduction (1/10)**: The presence of Angr-specific lifting artifacts (`armg_calculate_condition`) is the single biggest barrier to readability. These artifacts must be folded back into standard C operators (e.g., `==`, `<`, `>`) for the output to be usable.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Pattern Match Ternary Operators**: Implement logic to detect the `cmp; setcc; movzx` or similar patterns used for ternary operators and collapse them back into `condition ? true_val : false_val` syntax.
+2.  **Fold Lifting Artifacts**: Replace intermediate representation (IR) specific calls like `armg_calculate_condition` with native C comparison operators to produce valid, compilable C code.
+3.  **Recover Stack Structs**: Analyze stack access patterns (e.g., `ptr[0]`, `ptr[1]`, `ptr[2]` used together) to reconstruct composite types (structs) rather than leaving them as raw pointer offsets.

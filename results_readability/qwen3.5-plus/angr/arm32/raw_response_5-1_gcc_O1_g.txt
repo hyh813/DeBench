@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ OOP Code Readability
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic (`v0`, `v1`, `v2`, `ptr`) with no semantic meaning. For example, `test_cpp_member_func` uses `v0[31]` instead of `name` and `result` instead of capturing the actual return value.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions use C++ mangled names (`_Z20test_cpp_member_funcv`) which preserve original names but are unreadable. Some helper functions are cryptic (`sub_109bc`, `thunk to DiamondDerived::func()`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `71804`, `71828`, `72060` (vtable addresses) appear without explanation. String literals like `"Test"` are preserved but numeric constants lack context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`__stack_chk_guard`) appear in nearly every function. Register spilling artifacts (`v5 = v6; v4 = v7;`) clutter template functions. Compiler runtime calls (`__aeabi_d2iz`, `armg_calculate_condition`) obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` usage instead of structured control flow. Exception handling in `test_cpp_exception` uses nested gotos instead of try/catch blocks. Loop constructs are completely lost.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Many test functions are empty stubs (`test_cpp_operator_overload`, `test_cpp_lambda`, `test_cpp_smart_ptr` all just `return;`). Virtual function implementations are fragmented into thunk functions.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps to labels (`LABEL_10b64`, `LABEL_10fc9`) disrupt reading flow. Exception handling code has deeply nested conditional branches that should be try/catch.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks are duplicated in every function. Some thunk functions repeat identical pointer arithmetic patterns that could be abstracted.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type erosion - `int` return types become `void` (e.g., `test_cpp_member_func`). Class types reduced to `void* this`. Template instantiations lose type parameters (`template_max<double>()` has no parameters).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/class recovery - `SimpleClass`, `LifecycleClass`, `Point` all lost. Objects accessed via raw pointer arithmetic (`*((unsigned int *)&v0) = 71804`). Vtable layouts not reconstructed.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts everywhere (`(int)(*(p))[4]`, `(char *)a0 + (*(a0))[12]`). Pointer arithmetic on `void*` without proper typing. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. No algorithm explanations, no decompiler confidence indicators. Only auto-generated register hints (`// r0`, `// [bp-0x4]`).
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely lost - RAII, virtual dispatch, exception handling, smart pointers all reduced to raw operations. No pattern recognition for vtable calls or inheritance.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Thunk functions and vtable calls presented confidently despite being complex pointer arithmetic that may be incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Function contracts (e.g., `getValue() const` returns member value) completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Virtual function relationships unclear - `call_virtual_func` shows `(*((int *)*((int *)arg_0)))()` but vtable structure not explained. Inheritance hierarchy not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justuration: Functions grouped by address rather than logical purpose. Related class methods scattered (`Base::virtual_func`, `Derived::virtual_func` separated by many unrelated functions).
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Will not compile - missing type definitions, undefined externals (`g_22008`, `g_1187c`), incomplete function signatures. Requires extensive manual reconstruction.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (2+4+3+4)/4 = 3.25  → 3.25 × 0.30 = 0.975
+Level 2 Average: (3+3+4+5)/4 = 3.75  → 3.75 × 0.25 = 0.9375
+Level 3 Average: (2+2+3)/3 = 2.33    → 2.33 × 0.20 = 0.466
+Level 4 Average: (1+2+2+1)/4 = 1.50  → 1.50 × 0.15 = 0.225
+Level 5 Average: (3+4+2)/3 = 3.00    → 3.00 × 0.10 = 0.300
+
+Overall Score: 0.975 + 0.9375 + 0.466 + 0.225 + 0.300 = 2.90/10
+```
+
+**Overall Readability Score:** 2.9/10
+
+### Critical Defects:
+- **Complete type system collapse**: C++ classes, templates, and inheritance reduced to raw pointer arithmetic with no type safety
+- **Empty function stubs**: 6 test functions (`test_cpp_operator_overload`, `test_cpp_lambda`, `test_cpp_smart_ptr`, etc.) return immediately with no logic
+- **Lost return values**: Functions that should return `int` are declared `void`, losing all computed results
+- **No C++ idiom recovery**: Virtual dispatch, exceptions, RAII, smart pointers all decompiled to unrecognizable C code
+- **Magic vtable addresses**: Numbers like `71804`, `71828`, `72060` appear without any explanation of their purpose
+
+### Best Quality Aspect: **Noise Reduction (4/10)**
+- While significant artifacts exist, the decompiler did eliminate some register allocation noise and produced mostly linear code without excessive basic block fragmentation.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero semantic comments exist; a human analyst would need to manually document every function's purpose, making this decompilation practically unusable for understanding.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ type information from RTTI/vtable structures** - Analyze vtable layouts to reconstruct class hierarchies and member function relationships
+2. **Recognize and preserve function return types** - Detect return value usage patterns to correctly infer `int` vs `void` return types
+3. **Add decompiler confidence annotations** - Flag uncertain reconstructions (thunk functions, indirect calls) with warnings to guide manual analysis

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `iVar1`, `uVar1`, `local_51c`) with zero semantic meaning. For example, `process_char` uses `param_1` instead of `character` or `input_char`, making it impossible to understand variable purpose without tracing usage.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`double_value`, `process_char`, `array_1d_stack`, `test_data_types_l1`). However, some runtime helpers have generic names (`FUN_000115a8`) and `ptr_func_simple` shows `UNRECOVERED_JUMPTABLE` indicating partial recovery.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x41`, `0x1a`, `0x20` in `process_char`; `0x10000`, `0x10` in `process_short`). Test functions show pre-computed constants (`0x61`, `0x62`, `300`) instead of original expressions, obscuring test intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler runtime functions included (`__muldf3`, `__aeabi_dadd`, `__mulsf3`). Multiple warnings present ("WARNING: Removing unreachable block", "WARNING: Subroutine does not return"). Stack canary checks (`__stack_chk_fail`) appear in test functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple loops recover well (`array_1d_stack` uses clean for-loop). However, `array_2d_stack` uses do-while instead of original for-loop, and floating point functions expand to hundreds of lines of bit manipulation with excessive branching.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. Test functions expanded significantly due to constant folding (e.g., `test_data_types_l1` shows computed results instead of function calls). Runtime helpers properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom sequentially. Floating point runtime functions (`__muldf3`, `__subdf3`) contain extensive forward jumps and complex branching. Test functions have non-linear constant initialization patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Floating point library functions show significant redundancy with repeated bit manipulation patterns. Test functions contain redundant constant initializations. No dead code removal in runtime helpers.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `char`→`uint`, `short` operations use `int` with manual masking, `long long` splits into two parameters (`uint param_1, int param_2`), `float`/`double`/`long double` become `void` functions with `undefined4` parameters. Struct types collapse to `int*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—`Point3D`, `Rect`, `Widget`, `Node`, `Graph` all become `int*` with array indexing. Unions not recovered (`UnionData` becomes `uint*`). Enums lost (`State` becomes `int`). Bitfields reduced to bit manipulation on `ushort*`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout (`undefined4*`, `int*`, `void*` interchanged). Pointer arithmetic lacks type safety (`param_1 + iVar2 * 4`). Function pointer calls show "UNRECOVERED_JUMPTABLE" warnings indicating type confusion.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only compiler-generated comments exist (function addresses, warnings). No semantic comments explaining function purpose. Some warnings helpful ("WARNING: Could not recover jumptable at 0x00010ca4. Too many branches") but no algorithm explanations.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithm patterns identified. Common patterns like linked list traversal (`linked_list`, `doubly_linked_list`) not recognized as such. Tree recursion (`binary_tree_sum`) appears as generic loop.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Ghidra flags issues appropriately ("WARNING: Removing unreachable block", "WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call"). This is a relative strength compared to other dimensions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Stack canary checks appear (`if (local_c != 0) __stack_chk_fail()`) but aren't explained as security measures.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Global variable references show as `DAT_` addresses (`&DAT_00011ed4`). Callback relationships unclear (`ptr_func_simple` shows `UNRECOVERED_JUMPTABLE`).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime functions (`__muldf3`, `__aeabi_dadd`) mixed with application code. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile standalone. Missing type definitions, external function declarations (`__printf_chk`, `__stack_chk_fail`, `memcpy`), and runtime library dependencies. Architecture mismatch (original arm64, decompiled ARM 32-bit).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type):        (3+2+3)/3   = 2.67  × 0.20 = 0.53
+Level 4 (Semantic):    (3+2+7+2)/4 = 3.50  × 0.15 = 0.53
+Level 5 (Contextual):  (5+4+3)/3   = 4.00  × 0.10 = 0.40
+─────────────────────────────────────────────────────
+Overall Score:                                  4.46/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Type system collapse**: All struct/union/enum types lost—`Point3D`, `Widget`, `Node` become `int*` with manual offset calculations
+- **Floating point functions broken**: `process_float`, `process_double`, `process_ld` return `void` instead of their respective types, with parameters expanded to multiple `undefined4`
+- **Variable names completely generic**: `param_1`, `iVar1`, `uVar1` provide zero semantic information about purpose
+- **Test functions optimized away**: Actual function calls replaced with pre-computed constants, losing test verification logic
+- **Architecture mismatch**: Original compiled for arm64 but decompiled as ARM 32-bit, causing type size issues
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately (`double_value`, `process_char`, `array_1d_stack`), providing immediate semantic context despite other deficiencies
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct, union, or enum definitions; all composite types reduced to pointer arithmetic on `int*`, making complex data structure code nearly unreadable
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct/union type inference** from access patterns—detect consistent offset usage (e.g., `param_1[0]`, `param_1[1]`, `param_1[2]` for Point3D) and propose named struct types
+2. **Preserve floating point return types**—detect FPU return register usage (V0/V1 on ARM) to correctly identify float/double returns instead of defaulting to void
+3. **Add semantic variable naming from usage context**—analyze how variables are used (e.g., compared to character ranges, used in array indexing) to suggest meaningful names like `input_char`, `array_index`, `element_count`

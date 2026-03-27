@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10Justification: Variables use generic names like `v1`, `v2`, `v3` for local variables and `a1`, `a2`, `a3`, `a4` for parameters. The decompiler made no attempt to infer semantic meaning from usage patterns (e.g., `v1 = sysconf(_SC_PAGESIZE)` should be `page_size`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most functions correctly recovered: `main`, `test_preprocessing_features`, `test_asm_features`, `param_memory_protection`, `call_asm_simd`. However, `unknown_ffff0fc0` is a placeholder for an unresolved function, and the decompiler failed to recover the many individual test functions from the original source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `3`, `34`, `7` in mmap/mprotect calls are unexplained. The hex-encoded Chinese strings (e.g., `"\xe6\xb5\x8b\xe8\xaf\x95"`) could be decoded but aren't. Constants like `_SC_PAGESIZE` are correctly used, but the numeric values in system calls lack symbolic names.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. The main noise is the unresolved function `unknown_ffff0fc0` and the hex-encoded strings. No obvious register spilling or debug instrumentation remains.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural with clear if-else structures, sequential calls, and proper return statements. The code at -O0 compiles straightforwardly and the decompiler correctly recovered the flow without spurious goto statements.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: The original 709-line source with 20+ functions was reduced to only 6 functions. Most test helper functions (e.g., `call_macro_constants`, `call_conditional_compile`, `call_asm_basic`) were inlined into `test_preprocessing_features` and `test_asm_features`, losing the original function granularity. At -O0, this inlining is unexpected.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with no forward jumps or complex control flow disruption. The structure is highly linear and easy to follow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No redundant code or dead paths observed. The decompiled output is clean without duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Uses `int32_t` appropriately for ARM64 (where int is 32-bit). Pointers are correctly typed. Minor issue: return types could be more specific (some functions return values but declared as `void`). The `int32_t *` cast for mmap return is reasonable.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No complex struct types were needed to be recovered in this particular output (the original source also didn't define custom structs). The decompiler correctly handled the simple types. This is neutral - not a failure but no achievement.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts observed. Pointer arithmetic is correct. The mmap/mprotect usage is type-safe. Function signatures are reasonable.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments indicate source file path and address range (e.g., "From module: /work/src/5-23.c"), but provide no algorithm explanation, no recovery notes for uncertain decompilations, and no documentation of what the functions actually do. The hex-encoded strings are not decoded.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns, algorithms, or idioms are identified or named. The inline assembly in the original is completely lost (converted to library calls). The macro expansions are not recognized as such.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The function `unknown_ffff0fc0` is flagged as unknown, which is appropriate. However, there's no indication of the many other things that couldn't be recovered (all the inlined functions, the macro semantics, the assembly code).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler provides no insight into expected input/output contracts for the functions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Comments indicate source file origin, but there's no documentation of which functions call which, no call graph information, and no indication of global variable usage. The relationship between functions is not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: The output is a single file, which is reasonable for decompilation. Functions are grouped logically (test functions together). However, the original file had clear section comments (5.2, 5.3) that are lost.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code includes necessary headers (`stdint.h`, `stdlib.h`, `sys/mman.h`, `unistd.h`). It should compile with minimal issues. The use of `__printf_chk` and `__stack_chk_fail` suggests GCC-specific features but these are standard.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Calculation:**
+- L1 avg: (2+7+4+7)/4 = 5.0
+- L2 avg: (9+4+9+9)/4 = 7.75
+- L3 avg: (8+5+8)/3 = 7.0
+- L4 avg: (4+3+6+3)/4 = 4.0
+- L5 avg: (5+7+8)/3 = 6.67
+
+Overall = (5.0 × 0.30) + (7.75 × 0.25) + (7.0 × 0.20) + (4.0 × 0.15) + (6.67 × 0.10) = 1.5 + 1.94 + 1.4 + 0.6 + 0.67 = 6.11 → adjusted to 5.7 considering severity of issues
+
+**Critical Defects:**
+- Variable naming uses only generic names (`v1`, `v2`, `a1`, `a2`) with no semantic inference from usage
+- Function decomposition severely degraded: 20+ functions reduced to 6, losing all test helper functions
+- No macro semantics recovered - the original preprocessor tests (SQUARE, MAX, LOG, etc.) are completely lost
+- Inline assembly code converted to library calls without explanation
+- Comments provide only address ranges, not algorithm explanations or decompilation confidence
+
+**Best Quality Aspect:** Control Flow Naturalness (9/10)  
+The decompiled code has natural, readable control flow without spurious goto statements or confusing jumps.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The decompiler made no attempt to infer meaningful variable names from usage patterns. Even simple cases like `v1 = sysconf(_SC_PAGESIZE)` could be named `page_size`.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `sysconf(_SC_PAGESIZE)` → `page_size`, `mmap(..., PROT_READ|PROT_WRITE, ...)` → `read_write_mem`)
+2. **Preserve function boundaries at -O0**: At debug optimization level, functions should not be inlined. Recover all individual functions like `call_macro_constants()`, `call_asm_basic()`, etc.
+3. **Decode string literals**: Convert hex-encoded UTF-8 strings back to readable form (e.g., `"\xe6\xb5\x8b\xe8\xaf\x95"` → `"测试"`)
+4. **Recover macro semantics**: Identify constant expressions that came from macro expansion and add comments indicating the original macro (e.g., `// MAX_SIZE = 1024`)
+5. **Add algorithm comments**: Instead of just source file/address, explain what each function does (e.g., `// Tests preprocessing features: macros, conditional compilation, stringization`)

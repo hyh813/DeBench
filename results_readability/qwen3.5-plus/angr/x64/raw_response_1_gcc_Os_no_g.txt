@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, v2, a0, a1) with no semantic meaning. For example, `sequential_ops` uses `a0, a1, a2` instead of `a, b, c`, and `loop_for_fixed` uses `i, v2` instead of `i, sum`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (sequential_ops, single_if, recursion_factorial) but many critical functions named `sub_401xxx`. Test functions like `test_control_flow_l1` don't actually call the functions they claim to test.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `4294967295` (should be -1), `85899345930` (array encoding), `0x12345678` in opaque_predicate lost. No constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive CONCAT operations throughout (e.g., `(i >> 31 CONCAT i) % 10`), redundant casts, and compiler artifacts like `&CSWTCH.55` obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Function pointers called via `goto` instead of proper calls (`goto v1` in conditional_func_ptr). Some loops recovered but `loop_dowhile` has broken logic with uninitialized variable `v2`.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Test functions are severely broken - they print hardcoded expected values instead of calling actual functions. `duffs_device` is incomplete with no return statement or loop body.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Some functions read linearly (sequential_ops, single_if) but many use confusing goto patterns. `switch_fallthrough` uses LABEL jumps instead of natural fall-through structure.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: CONCAT operations repeated throughout for sign extension. `if_elseif_long` correctly optimized to `(a0 + 1) * 100` but `switch_small` incorrectly uses pointer arithmetic `(&CSWTCH.55)[a0]`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type confusion - `sequential_ops` returns `int` but decompiled as `unsigned int`. `loop_while` uses complex CONCAT for division instead of simple `/10`. Signed/unsigned mismatches throughout.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays represented as pointer arithmetic (`*((int *)((char *)&v0 + 4 * v4))` in loop_break). Only one struct defined (`struct_0`) with no semantic meaning.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Invalid C code: `goto a0` where a0 is a function pointer (call_func_ptr). `goto (&v0)[a0]` in call_func_ptr_array is non-standard. Multiple unsafe casts without justification.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, algorithms, or decompilation confidence. Only one anomaly marker: `[D] Unsupported jumpkind Ijk_SigTRAP`.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: State machine functions (state_machine, fsm_func_table) not identified as such. Duff's device completely failed to recover. No pattern recognition evident.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Only one anomaly flagged. Critical bugs like `loop_dowhile` returning uninitialized `v2`, `goto_backward` with unset `v4` go unflagged despite being clearly broken.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires n>0). No error handling contracts. Return value semantics completely undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Test functions claim to test functions but print hardcoded values. Function pointer relationships unclear. `indirect_recursion_b` missing entirely breaking the recursion chain.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions scattered by address rather than logical grouping. No header file structure. Related functions (state_* handlers) not grouped together.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile - invalid `goto` to function pointer, incomplete `duffs_device` function, missing `indirect_recursion_b`. Requires extensive manual fixes.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+3)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (4+3+5+4)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type):        (3+4+2)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (3+4+2)/3   = 3.00 × 0.10 = 0.300
+
+Overall Score: 3.10/10
+```
+
+### Overall Readability Score: **3.1/10**
+
+### Critical Defects:
+- **Test functions don't actually test** - `test_control_flow_l1/2/3` print hardcoded expected values instead of calling the actual functions
+- **Invalid C syntax** - `goto a0` and `goto (&v0)[a0]` used for function pointer calls instead of proper function call syntax
+- **Uninitialized variable returns** - `loop_dowhile` returns `v2 + 1` but `v2` is never assigned; `goto_backward` uses unset `v4`
+- **Incomplete function recovery** - `duffs_device` has no loop body or return statement; `indirect_recursion_b` missing entirely
+- **Severe type confusion** - CONCAT operations throughout indicating 32/64-bit confusion; signed/unsigned mismatches in basic operations
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- Some original function names were preserved (sequential_ops, recursion_factorial, state_idle) providing minimal semantic anchors
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero explanatory comments despite complex transformations; no decompilation confidence indicators for obviously broken code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover actual function calls in test functions** - Currently printing hardcoded values defeats the purpose of decompilation; must trace actual call relationships
+2. **Fix function pointer call syntax** - Replace `goto` with proper function call syntax `((func_ptr_type)addr)(args)` for valid C output
+3. **Add anomaly detection for uninitialized variables** - Flag cases like `loop_dowhile` where return values reference unassigned variables before code is presented as valid

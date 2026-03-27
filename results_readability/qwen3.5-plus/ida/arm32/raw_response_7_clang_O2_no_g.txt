@@ -1,0 +1,109 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v0`, `v1`, `a1`, `result`, `temp`) with zero semantic meaning recovered. For example, `param_opaque_predicate` uses `v1`, `v2`, `v3`, `v4`, `v5` instead of meaningful names like `predicate_result`, `gcd_temp`, or `loop_counter`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Original function names preserved for most functions (`param_fake_branch`, `call_opaque_predicate`), but some are generic (`sub_498`, `term_proc`). The naming accurately reflects source but provides no additional semantic insight.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5A`, `0x20u`, `0x1251` appear without explanation. The encryption key `0x5A` should be named `DECRYPT_KEY`. String references use opaque labels (`asc_1251`, `aObfL402D`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present throughout: `LOBYTE()`, `HIDWORD()`, `__fastcall` annotations, register comments (`// r0`, `[sp-4h] [bp-4h]`). These obscure the actual logic without adding value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is recoverable but awkward. `param_opaque_predicate` uses a `do-while` loop for GCD calculation that's harder to read than the original `while`. Some functions like `param_fake_branch` are completely empty (optimized away).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical failure: `param_fake_branch`, `param_buffer_overflow_stack`, `param_buffer_overflow_heap` are empty stubs (`{ ; }`). This represents complete loss of function body, not just decomposition issues.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `test_obf_opt_edge` has 50+ local variables declared at function start, making it difficult to track variable lifetimes and purposes.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `call_string_encryption` duplicates the entire body of `param_string_encryption` instead of calling it. `call_opaque_predicate` inlines the GCD calculation that should be a function call.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed type recovery - `size_t` used for `strlen` returns, `unsigned int` for bit operations, but most variables are generic `int`. `param_instruction_substitution` takes `unsigned int a1` but source used `int x`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Stack arrays recovered (`char v5[40]`, `char v14[31]`) but no struct recovery visible. The `jmp_buf` is cast as `(struct __jmp_buf_tag *)` showing partial type awareness.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present: `*(_DWORD *)a1` in `param_null_pointer_deref`, `*(_DWORD *)v14 = 42` in `call_null_pointer_deref`. These obscure pointer semantics and potential null dereference risks.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only auto-generated annotations like `// attributes: thunk`, `// positive sp value has been detected`. No explanation of obfuscation techniques or algorithm purpose.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. The GCD algorithm in `param_opaque_predicate` is not identified as such. String decryption loop not recognized as XOR decryption pattern.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged: "FAILED to decompile" for 12 external functions, "positive sp value has been detected" warning. However, empty function bodies (`param_fake_branch`) are not flagged as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero contract recovery. No preconditions documented (e.g., `param_division_by_zero` should note `a1 != 0` for normal path). No postconditions or error condition documentation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. `test_obf_opt_edge` calls many functions but no call graph summary. Global variables (`jmp_buffer`, `div_zero_caught`) referenced without context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat list. No grouping by category (obfuscation vs. optimization vs. edge cases). Related functions like `param_*` and `call_*` pairs not visually grouped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 12 functions marked "FAILED to decompile" including critical libc functions (`printf`, `strlen`, `signal`). Cannot compile standalone without extensive stubbing. External dependencies undocumented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+5+6+6)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (5+5+4)/3   = 4.67 × 0.20 = 0.933
+Level 4 (Semantic):    (3+3+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.72/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Empty function bodies**: `param_fake_branch`, `param_buffer_overflow_stack`, `param_buffer_overflow_heap` decompile to `{ ; }` losing all logic
+- **Generic variable naming**: All 100+ variables use `v0`, `v1`, `a1`, `result` with zero semantic meaning
+- **12 failed decompilations**: Critical libc functions (`printf`, `strlen`, `signal`, `longjmp`) not recovered
+- **No comment documentation**: Zero explanation of obfuscation techniques, algorithm purposes, or decompiler confidence
+- **Unsafe casts everywhere**: `*(_DWORD *)` patterns obscure pointer semantics and null-check requirements
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Original function names were preserved (`param_fake_branch`, `call_opaque_predicate`), providing at least basic semantic anchors for navigation.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - Complete absence of precondition/postcondition documentation makes it impossible to understand function contracts, especially critical for functions handling edge cases like division by zero.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming**: Analyze variable usage patterns to infer names (e.g., variables used in loop bounds → `counter`, variables XOR'd with constants → `key` or `mask`)
+2. **Flag optimized-away functions**: When a function body is empty but the function is called, add explicit warnings like `// WARNING: Function body optimized away by compiler`
+3. **Recover and document function contracts**: Analyze early returns, null checks, and signal handlers to generate precondition documentation (e.g., `// Requires: a1 != 0 for normal execution path`)

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar1`, `piVar2` with no semantic meaning. Original source had meaningful names like `arr`, `n`, `sum`, `p`, `x` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`process_char`, `array_1d_stack`, `struct_simple`), but helper functions have poor names (`FUN_00011a18`, `__muldf3`). Action verbs are implicit rather than explicit.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x41`, `0x1a`, `0x20`, `0xff`, `0x10000` without explanation. Original source had clear character literals ('A', 'Z') and constants (32 for case conversion) that are now opaque hex values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler runtime functions included (`__muldf3`, `__aeabi_dadd`, `__stack_chk_fail`). Redundant type casts throughout. Stack checking code adds noise without semantic value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Original for/while loops converted to do-while with manual pointer arithmetic. `array_3d` unrolled to 125 individual additions instead of nested loops. At -O0, this transformation is excessive and unnatural.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but `binary_tree_sum` is extremely verbose (200+ lines) due to failed recursion recovery. Helper functions for floating point are separate but numerous and unclear.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but complex functions like `binary_tree_sum` have deep nesting (8+ levels). Forward jumps in test functions disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: `array_3d` shows extreme redundancy with 125 explicit array accesses instead of a loop. `pointer_array` has 10 nearly identical if-blocks for each array index instead of a loop.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `process_char` returns `uint` instead of `char`, `process_short` returns `int` instead of `short`, floating point functions return `void` instead of proper types. Pointer types often generic (`int*` instead of specific struct pointers).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - all structs (Point3D, Rect, Widget, Node, Graph) accessed as `int*` with raw offsets. No struct definitions recovered. Unions and enums completely lost. `struct_simple` accesses fields as `param_1[0]`, `param_1[1]`, `param_1[2]`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts present (`(undefined4 *)`, `(int *)`). Function pointers typed as `code *` or `undefined4 *`. Pointer arithmetic on generic `int*` loses type safety. `ptr_func_simple` shows `UNRECOVERED_JUMPTABLE`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only decompiler header comment present. No algorithm explanations, no parameter documentation, no recovery of original source comments that explained test purposes (e.g., "大写转小写", "对角线元素").
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Linked list traversal, tree recursion, and graph traversal patterns completely obscured. Loop idioms not recognized (converted to manual pointer arithmetic).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `UNRECOVERED_JUMPTABLE` markers present (e.g., `ptr_func_simple`), but no clear indication of decompilation uncertainty for most problematic areas. No warnings about type degradation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions. No error condition documentation. Original source's intentional behaviors (like `array_oob` being undefined behavior) not noted.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships not documented. Callback relationships unclear (`ptr_func_simple` shows unresolved jumptable). No call graph information provided.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with arbitrary ordering. No logical grouping by test category (data types, arrays, pointers, composites). No header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many external functions referenced (`__printf_chk`, `__stack_chk_fail`, `__aeabi_dadd`) requiring significant stubs. Runtime library functions included but may not link properly without ARM toolchain.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+3)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (2+2)/2     = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (4+2+5+4+4)/5 = 3.80 × 0.10 = 0.380
+
+Overall Score: 3.96/10 ≈ 4.0/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Complete struct/union type loss**: All composite types (Point3D, Rect, Widget, Node, Graph, UnionData) reduced to `int*` with raw offsets, losing all field semantics
+- **Generic variable naming**: Every variable uses `param_N`, `iVarN`, `uVarN` pattern with zero semantic meaning
+- **Loop unrolling failure**: `array_3d` expanded to 125 explicit additions; `pointer_array` has 10 redundant if-blocks instead of loops
+- **Magic number proliferation**: Character operations use `0x41`, `0x1a`, `0x20` instead of 'A', 26, 32
+- **Floating point type loss**: `process_float`, `process_double`, `process_ld` all return `void` instead of proper float/double types
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), maintaining basic semantic identity despite other degradations
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct, union, or enum definitions; all composite types reduced to pointer arithmetic with no field names or type information
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct pattern recognition**: Detect repeated offset patterns (e.g., `param[0]`, `param[1]`, `param[2]`) and propose struct definitions with inferred field names based on usage context
+2. **Recover loop constructs from unrolled code**: Detect repetitive patterns (like 125 array accesses) and reconstruct original loop structures with appropriate bounds
+3. **Preserve type information from debug symbols**: Since compiled with `-O0 -g`, leverage DWARF debug info to recover original types (char, short, struct definitions) instead of defaulting to generic int/void*

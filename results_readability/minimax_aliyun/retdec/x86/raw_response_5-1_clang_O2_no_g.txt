@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `v1`, `v2`, `v3`, `a1`, `a2`, `a3`, `result`, `str`. For example, `int32_t v1 = __cxa_allocate_exception(4);` should be `exception_ptr`, and `int32_t str = 0x74736554;` is actually the string "Test" (reversed bytes) that should be named `test_string`. These names provide no semantic meaning.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: While some C++ mangled names are demangled (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func`), many utility functions use generic names like `function_1040`, `function_1050`, `function_1060`. The demangled names lack proper namespace separation and use cryptic patterns (e.g., `_ZN9ContainerIiE4pushEi` instead of `Container<int>::push`).
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: The code is littered with unexplained magic numbers: `0x74736554` (string "Test"), `0x125c` (value 4704), `1001 * *(int32_t *)((int32_t)result + 0x2ce7) + 21`. No named constants or enums are recovered. The string literal handling is particularly opaque - raw hex values represent string data.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_bx`, `__x86_get_pc_thunk_di`, `__x86_get_pc_thunk_dx` are x86-specific PIC helpers that add noise. The code includes many auto-generated wrapper functions (`function_1040` through `function_1130`) that obscure the actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is preserved - if/else structures are recognizable. However, the exception handling code (`test_cpp_exception`) uses convoluted branching with `if (v2 == 3)` and `if (v2 != 2)` that doesn't match the original try-catch semantics. The `template_max` function uses complex boolean logic instead of simple ternary.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably decomposed - each test function is separate. However, some functions like `test_cpp_oo_features` (lines 0x1600-0x180f) are 528 bytes long and could be better organized. The template class instantiations are properly separated.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read reasonably top-to-bottom, but `test_cpp_exception` has confusing forward jumps and the `template_max<int>` uses nested ternary expressions that are hard to parse: `v1 < 0 == ((v1 ^ a1) & (a2 ^ a1)) < 0 == (v1 != 0)`.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: At -O0, there's minimal redundancy. No obvious dead code or duplicate expressions. The decompiler correctly avoided introducing spurious redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type degradation - everything is `int32_t` regardless of original type. The original had `size_t`, `bool`, `double`, `char[32]`, `int*`, but all are `int32_t`. The `template_max<double>` returns `float64_t` but the implementation is mangled. No `const` correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery. The original classes (SimpleClass, LifecycleClass, Base, Derived, Container<T>, etc.) are completely lost. The code uses raw pointer arithmetic: `*(int32_t *)(result2 + 40)` instead of `result->size`. The `Container<int>` uses offset 40, `Container<double>` uses offset 80, but these magic offsets aren't explained.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `(int32_t)a2` casts, `(int32_t *)result` pointer type confusion, `(int32_t)v1` for pointer-to-int conversions. The `template_swap` function has a critical bug: `*a1 = *a2; *a2 = *a1;` loses the original value (should use temp). Many pointer arithmetic operations without bounds checking.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated comments like "// Address range: 0x1000 - 0x102e" and "// Demangled: test_cpp_member_func()". No explanation of what the functions do, no algorithm documentation, no recovery of original comments from debug info. The "// UNREACHABLE" comment is useful but minimal.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some C++ idioms are partially recognized (virtual function calls via vtable, exception throw/catch patterns), but not explicitly named or documented. The template instantiation pattern is not recognized as such. No mention of RAII, smart pointers, or polymorphism.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of decompilation uncertainties. The `call_virtual_func` function simply returns `(int32_t)a2` which is clearly wrong - it should dispatch through vtable. No warning about this broken logic. The `test_cpp_diamond_inheritance` returns `&g2` instead of the computed value.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original assertions and bounds checks in Container::get() are lost. No documentation of what the functions require or guarantee.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function prototypes at the top show some relationships, but no documentation of call graphs. The virtual function relationships are not explained. Global variables `g1`, `g2`, `g3`, `g4` have no clear purpose or usage documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped somewhat logically (test functions together, template functions together), but the file is a single monolithic block. No namespace structure recovered. The CRT startup functions are interleaved with application code.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code includes necessary headers and declares external functions. It compiles successfully (as noted in metadata). However, it requires stdint.h types and has x86-specific assembly that wouldn't work on arm64.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.5/10
+
+**Critical Defects:**
+- Variable names are all generic (`v1`, `v2`, `a1`, `result`) providing zero semantic meaning
+- All types degraded to `int32_t`, losing `size_t`, `bool`, `double`, pointers, and arrays
+- No struct/class recovery - all composite types lost, replaced with raw pointer arithmetic
+- Magic numbers everywhere (0x74736554, 0x2ce7, 40, 80) without explanation
+- `call_virtual_func` returns the pointer itself instead of calling virtual function - semantically broken
+- `template_swap` implementation is buggy (loses original value)
+- No comments explaining any algorithm or intent
+
+**Best Quality Aspect:** Build System Compatibility (8/10)  
+The code compiles successfully with minimal dependencies, includes proper headers, and declares external functions correctly.
+
+**Most Needs Improvement:** Type System Fidelity (2.7/10)  
+All type information is lost - every variable is `int32_t`, no structs recovered, no const correctness, severe type safety issues with unsafe casts throughout.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover variable names from debug symbols** - The original was compiled with `-g`, so DWARF debug info should provide variable names like `capture_by_value`, `capture_by_ref`, `obj`, `ptr1`
+2. **Reconstruct class/struct layouts** - Use vtable analysis and constructor patterns to recover SimpleClass, Container<T>, and other class structures with proper field names
+3. **Resolve virtual function calls** - The `call_virtual_func` should show `return a2->virtual_func(a3);` not just returning the pointer; recover vtable offsets and show actual polymorphic dispatch

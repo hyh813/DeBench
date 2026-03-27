@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `flag1`, `flag2` with no semantic meaning. For example, `result`, `flag1` in `test_cpp_oo_features` should be `member_func_result`, `constructor_result` based on the printf statements they feed.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Function names are C++ mangled (`_Z20test_cpp_member_funcv`) rather than human-readable. Some like `test_cpp_member_func` are recoverable, but helper functions use `sub_400854`, `$a.27` which provide zero semantic information.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `4700`, `1001`, `42` appear without explanation. The printf statements show `strlen(&v1) + 4700` which obscures the expected value `4704` from the original source comments.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts including `armg_calculate_condition` calls, register save/restore patterns (`v4 = v5; v3 = v6;`), and redundant `goto` labels that obscure actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` usage instead of structured control flow. Exception handling in `test_cpp_exception` uses nested `goto LABEL_400c76` patterns instead of clean try/catch blocks, making execution paths nearly impossible to follow.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: Critical functions like `test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance` are completely empty (`return;`), losing all original functionality. Template class methods are fragmented across multiple functions without clear relationships.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into middle of functions disrupt reading flow. The `test_cpp_exception` function has 6+ label targets that require constant backtracking to understand execution order.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Register save/restore sequences appear in every function (`v12 = v13; v11 = v14;`). The `call_virtual_func` shows redundant vtable dereferencing that could be simplified to a single virtual call.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Widespread type erosion - `void*` used for `this` pointers, `unsigned int` for everything including booleans. `Container<int>::get` returns `void` instead of `int`, losing return type information completely.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Classes reduced to generic `struct_0`, `struct_1` with `field_0`, `field_4` names. The `Base`, `Derived` class hierarchy is lost - only `class Base {}` placeholder exists with no members or virtual table structure.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Multiple unsafe casts like `*(ptr)->field_4(ptr, *(ptr)->field_4)` in `test_cpp_rtti`. Pointer arithmetic on `void*` throughout (`ptr[40]`, `ptr[80]`) without proper type casting.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining functionality. No indication of what each test function validates, no documentation of expected values, no decompilation confidence markers for uncertain reconstructions.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely lost - no recognition of RAII patterns in smart pointer code, no virtual dispatch pattern identification, template instantiation not clearly marked as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about incomplete recovery. Functions that return immediately (`test_cpp_virtual_func`) should be flagged as "FUNCTION BODY NOT RECOVERED" but appear normal.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The exception handling code has no indication of what exceptions are caught or what cleanup occurs.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Virtual function calls reduced to `goto *((int *)*((int *)arg_0)` with no indication this is polymorphic dispatch. RTTI relationships between `RTTIBase`, `RTTIDerivedA`, `RTTIDerivedB` not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order without grouping by test category. Runtime initialization functions (`_init`, `_start`, `frame_dummy`) mixed with test functions.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References external symbols like `g_412008`, `_ZTIi` without definitions. `armg_calculate_condition` is decompiler-specific and won't compile without emulation layer.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+3+3)/4 = 3.00 × 0.30 = 0.90
+Level 2 (Structural):  (3+2+4+4)/4 = 3.25 × 0.25 = 0.81
+Level 3 (Type):        (3+3+2)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):  (3+4+3)/3   = 3.33 × 0.10 = 0.33
+
+Overall Score: 2.80/10
+```
+
+### Overall Readability Score: **2.8/10**
+
+### Critical Defects:
+- **12 test functions return immediately** - `test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, etc. have no implementation
+- **Variable names are entirely generic** - `v0`, `v1`, `flag1` provide zero semantic information about purpose
+- **C++ class structures lost** - Classes reduced to empty structs with `field_0`, `field_4` naming
+- **Exception handling completely garbled** - `armg_calculate_condition` calls obscure try/catch semantics
+- **Zero documentation** - No comments explaining what each function tests or expected values
+
+### Best Quality Aspect: **Module Organization (4/10)**
+- Functions are at least separated individually rather than monolithic, though ordering is arbitrary
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding intent impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures** - Reconstruct vtable layouts, member variables, and inheritance relationships instead of reducing to generic structs
+2. **Infer semantic variable names** - Use data flow analysis to name variables based on usage (e.g., variables passed to printf with "4704" should be `member_func_result`)
+3. **Flag incomplete recovery explicitly** - Add comments like `// DECOMPILATION INCOMPLETE: Exception handling not fully recovered` for functions that lost significant logic

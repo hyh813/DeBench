@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `v0`, `v1`, `v2`) with no semantic meaning recovered. Original source had meaningful names like `count`, `sum`, `args`, `str`, `large`, but decompiler uses mechanical register-based naming throughout.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), which is excellent. However, some helpers like `sub_103E8` remain generic, and metadata inconsistency (Ghidra vs IDA Pro header) is concerning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Aggressive constant folding replaced computations with magic numbers (`call_cdecl()` returns 15 directly instead of `cdecl_func(5, 10)`). String literals referenced as `aCallL206`, `s` instead of inline content, obscuring meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Moderate noise from register annotations (`// r0`, `// r3`), stack frame details (`[sp+14h] [bp-Ch]`), and type casting artifacts (`__PAIR64__`, `HIDWORD`, `LODWORD`). Warning "positive sp value has been detected" adds confusion.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if-else and loops recovered naturally in most functions. However, `func_struct_byval` uses awkward do-while with pointer arithmetic instead of clean array iteration, and `ret_multi_branch` converts switch to if-else chains.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Severe issues: `func_struct_byval` exploded to 32 parameters exposing struct internals. Many caller functions constant-folded to single returns (`call_cdecl()` returns 15), losing call relationship semantics entirely.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Some do-while loops disrupt flow slightly, but no excessive goto usage. `test_calling_conventions` has many sequential printf calls that maintain linearity.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `ret_large_struct` manually copies each array element individually (16 separate assignments) instead of using a loop. This unrolled pattern obscures the original simple iteration logic significantly.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used instead of specific widths. Pointer types degraded to `_DWORD *`. Some recovery exists (`const char *`, `double`, `__int64`), but function pointer types partially lost. Original `long long` becomes `__int64`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**: `LargeStruct` (128 bytes) becomes 32 individual `int` parameters. `SmallStruct` becomes `_DWORD *`. `TestIntPair` struct information completely lost. No struct definitions recovered anywhere.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `func_struct_byptr(_DWORD *a1)` loses struct semantics, `ret_opaque_handle` returns `int *` instead of `void *`. Pointer arithmetic in `param_ptr_array` without proper type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated register/stack comments present. No algorithm explanations, no function purpose documentation. Warning comments exist ("positive sp value") but no semantic guidance for understanding logic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern partially recognized (`va_start`, `va_copy`) but not labeled. Standard library patterns (strlen, printf) not identified. Struct passing idioms completely obscured by parameter explosion.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 8 functions marked "FAILED to decompile" which is helpful. `start` function has warning about sp detection. However, type mismatches and constant folding issues not flagged as potential problems.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks exist in code (`if (a1)`) but not documented as contracts. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`handle1_1`, `handle2_0`) appear without context. Callback relationships (`param_func_ptr`) not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat file. No logical grouping by test category (calling conventions vs parameter passing vs return values). No header file structure or static function scoping preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 8 external functions failed requiring stubs. Compiler-specific annotations (`__fastcall`, `__PAIR64__`) reduce portability. Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3 + 7 + 4 + 5) / 4 = 4.75
+Level 2 (Structural):   (6 + 4 + 7 + 4) / 4 = 5.25
+Level 3 (Type):         (5 + 2 + 4) / 3     = 3.67
+Level 4 (Semantic):     (3 + 4 + 5 + 2) / 4 = 3.50
+Level 5 (Contextual):   (5 + 4 + 4) / 3     = 4.33
+
+Overall = (4.75 × 0.30) + (5.25 × 0.25) + (3.67 × 0.20) + (3.50 × 0.15) + (4.33 × 0.10)
+        = 1.425 + 1.3125 + 0.734 + 0.525 + 0.433
+        = 4.43/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Composite type recovery completely failed**: `LargeStruct` (128 bytes) exploded into 32 individual `int` parameters, making `func_struct_byval` practically unreadable
+- **Aggressive constant folding destroyed semantics**: `call_cdecl()` returns literal `15` instead of showing `cdecl_func(5, 10)` call, hiding actual computation flow
+- **Variable names entirely generic**: All parameters named `a1`, `a2`, `a3`... with zero semantic inference from usage patterns
+- **Struct pointer types degraded**: `SmallStruct *` became `_DWORD *`, losing all type safety and field access clarity
+- **8 external functions failed to decompile**: Critical dependencies (`printf`, `strlen`, `memcpy`) missing, requiring manual stub creation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), providing crucial semantic anchors for understanding code purpose
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions; large structures exploded into individual parameters, fundamentally breaking code understandability
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference from parameter patterns**: Detect when multiple consecutive parameters of same type represent struct fields and reconstruct composite type definitions with field names
+2. **Preserve call semantics over constant folding**: When original function calls exist in binary, show the call relationship even if result is computable, maintaining semantic transparency
+3. **Add semantic variable naming from usage analysis**: Infer variable purposes from context (e.g., loop counters, accumulators, pointers) and generate descriptive names instead of `v0`, `v1`, `a1`, `a2`

@@ -1,0 +1,152 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names. Parameters are named `a0`, `a1`, `a2` throughout, while local variables use `v0`, `v1`, `v2`, etc. For example, in `array_1d_stack`, the parameters should be named `arr` and `n` based on the source, but are `a0` and `a1`. Some exceptions like `ptr`, `cur`, `i`, `j`, `result`, `idx` are decent but inconsistent. The naming provides almost no semantic information about variable purpose.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Most function names are correctly recovered from the original source: `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`, etc. However, some functions like `process_float`, `process_double`, `process_ld` have broken implementations returning uninitialized values. Compiler-generated functions have generic names like `sub_400634`, `_start`, `__do_global_dtors_aux`. Overall, the main test functions are well-named.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Test functions have hardcoded literal results (15, 5, 300, 11) which are correct but provide no insight into computation. The main issue is the use of cryptic operations like `__ROL__` (rotate left), bitmasks like `& 4294967295`, and expressions like `(a0 - 65 & 255) >= 26` instead of `c >= 'A' && c <= 'Z'`. Magic numbers like 65, 32, 255 are not explained. The literal clarity is severely compromised by decompiler artifacts.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+The code is polluted with numerous decompiler artifacts: `uint128_t` type definitions, synthetic struct declarations (`struct_0`, `struct_1`), `unsupported_Iop_ZeroHI96ofV128` operations, and repeated `typedef struct` declarations. The `__addtf3` and `__multf3` functions are compiler runtime code that shouldn't be in the main output. Significant cleanup is needed.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 3/10**
+
+Control flow is significantly degraded. The simple `if (c >= 'A' && c <= 'Z')` becomes `(a0 - 65 & 255) >= 26`. The expression `x * 2 + 1` becomes `1 | __ROL__(a0, 1) & 4294967294`. Loops are often unrolled - `array_2d_stack` directly accesses `a0[99]`, `a0[88]`, etc. instead of using a for loop. The `array_string` function uses goto instead of while. At -O0, this level of transformation is excessive.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Function boundaries are mostly correct - each test function and helper is separate. However, `process_float`, `process_double`, and `process_ld` have completely broken implementations returning uninitialized values. The `__addtf3` and `__multf3` functions (floating point runtime) are incorrectly included. Overall decomposition is reasonable but these broken functions are significant issues.
+
+### 7. Code Linearization
+**Score: 6/10**
+
+The code generally reads top-to-bottom without excessive forward jumps. However, some functions like `ptr_increment` and `array_1d_stack` have complex goto-based loops that disrupt linear reading. The `register_tm_clones` function has a particularly convoluted structure. Most simpler functions like `struct_simple` read linearly.
+
+### 8. Redundancy Elimination
+**Score: 3/10**
+
+Significant redundancy exists. The loop patterns in `array_1d_stack` and `array_vla` are nearly identical but not abstracted. `array_2d_stack` and `array_3d` are completely unrolled with direct array indexing instead of loops. The `test_array_types` function has massive amounts of dead code (setting v67 repeatedly) that serves no purpose. Loop unrolling is not commented or abstracted.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+
+Type precision is inconsistent. Parameters like `process_char(unsigned int a0)` lose the char type. `process_float` and `process_double` return `long long` instead of float/double. Pointers are often `unsigned long` instead of proper pointer types. Some are correct: `const_param(unsigned int *a0)` and `ptr_single(unsigned int *a0)`. The sign is often wrong - `process_int` returns `unsigned int` instead of `int`. Many pointers use `unsigned long` instead of typed pointers.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+
+Struct recovery is poor. The original `Point3D` with fields `x, y, z` becomes `unsigned int *a0` accessed as `a0[0], a0[1], a0[2]`. The `Node` struct with `data` and `next` becomes generic `struct_0` with `field_0` and `field_8`. Union types are sometimes misidentified. Bitfields are particularly bad - `struct_bitfields` uses rotate operations instead of proper bitfield access. The composite type structure is largely lost.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Multiple unsafe patterns exist. The bit manipulation in `process_int`: `1 | __ROL__(a0, 1) & 4294967294` is nonsensical. The `ptr_diff` function uses `__ROL__` for pointer subtraction: `__ROL__(a0 - a1, 62) & 4611686018427387903` which is completely wrong. The `opaque_handle_create` has bizarre bit manipulation: `a0 * 0x100000000 >> 63 & 0xffffffff00000000 | a0 & 4294967295`. Many unsafe casts between integers and pointers.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Almost no useful comments exist. The only comments are the header "Angr Decompilation of 2_clang_O2_g" and "Platform: AARCH64". No explanation of algorithms, no indication of decompilation confidence, no documentation of non-obvious logic. The test functions have no comments explaining what they test. The code is completely devoid of semantic documentation.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Some patterns are visible (loops, conditionals, function calls) but not explicitly named or documented. The decompiler doesn't identify common patterns like "this function implements a state machine" or "this is a linked list traversal". The data structure patterns (linked list, binary tree, graph) are visible in the code structure but not recognized as named patterns.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+No anomalies are flagged. The broken `process_float` and `process_double` functions that return uninitialized values are presented without any warning. The `array_oob` function that intentionally accesses out of bounds is not flagged as potential undefined behavior. The `__ROL__` operations that don't match the source logic are not flagged as suspicious. The decompiler presents everything with false confidence.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No preconditions, postconditions, or invariants are documented. There's no indication that `array_oob` requires `n` to be valid, or that `ptr_diff` requires both pointers to point into the same array. No contracts are recovered.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Some cross-references are present - extern variables are marked, function pointer types show their signatures. However, the relationships between functions are not documented. There's no indication of which functions call which, or the data flow between test functions and the functions they test. The callback relationships in `ptr_func_simple` and `ptr_func_complex` are somewhat visible but not clearly documented.
+
+### 17. Module Organization
+**Score: 4/10**
+
+All functions are in a single file with no logical grouping. The test functions and their associated helper functions are interleaved. There's no separation between the test code and the implementation code. The compiler runtime functions (`__addtf3`, `__multf3`, `__sfp_handle_exceptions`) are incorrectly mixed in. No header files or API declarations.
+
+### 18. Build System Compatibility
+**Score: 1/10**
+
+The code does not compile. It relies on undefined functions like `__ROL__`, `unsupported_Iop_ZeroHI96ofV128`, `arm64g_calculate_condition`, `arm64g_calculate_flag_c`. The `uint128_t` type may not be available. The code is not standalone and cannot be compiled without significant patching and defining missing functions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 3 + 2) / 4 = 3.75
+L2_avg = (3 + 7 + 6 + 3) / 4 = 4.75
+L3_avg = (4 + 3 + 4) / 3 = 3.67
+L4_avg = (2 + 4 + 1 + 1) / 4 = 2.00
+L5_avg = (5 + 4 + 1) / 3 = 3.33
+
+Overall = (3.75 × 0.30) + (4.75 × 0.25) + (3.67 × 0.20) + 
+          (2.00 × 0.15) + (3.33 × 0.10)
+        = 1.125 + 1.1875 + 0.734 + 0.3 + 0.333
+        = 3.68/10
+```
+
+### Overall Readability Score: 3.68/10
+
+### Critical Defects
+
+1. **Variable naming is unusable**: Parameters are `a0, a1, a2`, locals are `v0, v1, v2` - provides zero semantic information about purpose
+2. **Broken floating-point functions**: `process_float`, `process_double`, `process_ld` return uninitialized values with no warning
+3. **Type recovery is severely degraded**: Structs are flattened to raw pointer arithmetic with generic field names (`field_0`, `field_8`)
+4. **Cryptic bit manipulation**: Operations like `__ROL__`, magic bitmasks replace simple arithmetic, making logic unreadable
+5. **No compilation capability**: Code relies on undefined functions (`__ROL__`, `unsupported_Iop_ZeroHI96ofV128`) making it uncompilable
+
+### Best Quality Aspect: Function Naming (8/10)
+Most function names are correctly recovered from the original source, making it clear which function is being analyzed.
+
+### Most Needs Improvement: Semantic Transparency (2.00/10)
+The code has virtually no comments, doesn't flag anomalies, doesn't recognize patterns, and doesn't recover contracts. It's presented with false confidence.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage**: When a parameter `a0` is used as `a0[i]` in a loop with bound `a1`, infer names like `array` and `length`. When `a0` is dereferenced as `*a0`, infer the pointed-to type name.
+
+2. **Recover struct types from access patterns**: When consecutive memory accesses like `ptr[0]`, `ptr[1]`, `ptr[2]` are seen, attempt to recover a struct definition. Field names should be inferred from usage context.
+
+3. **Flag broken/unrecoverable functions**: Functions that return uninitialized values or use unsupported operations should be clearly marked with warnings like `// WARNING: Function may not be correctly decompiled` rather than presenting broken code as correct.

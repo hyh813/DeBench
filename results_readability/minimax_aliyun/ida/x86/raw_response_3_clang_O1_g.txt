@@ -1,0 +1,131 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables are almost exclusively named with generic patterns like `v0`, `v1`, `v2`, `i`, `j`, `k`. In `heap_basic`, variables `v1`, `v2`, `v3`, `v4` obscure their roles as allocation pointer, index, multiplier, and result. The original had meaningful names like `arr`, `n`, `leak`, `head` which are completely lost.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Nearly all function names match the original source exactly: `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `linked_list_heap`, `tree_heap_traversal`, `memory_leak`, `dangling_pointer`. The decompiler correctly preserved the semantic naming from the source.
+
+### 3. Literal Clarity
+**Score: 7/10**
+Justification: Most computed values are correctly inlined (e.g., `20` for `local_vars(5)`, `42` for `address_of_local`). However, these appear as magic numbers without explanation of their origin. The source used meaningful computations like `a * 2 + 10` which are evaluated at compile time but lose the algorithmic clarity.
+
+### 4. Noise Reduction
+**Score: 4/10**
+Justification: Significant noise includes: 16 failed decompilations for standard library functions (malloc, printf, etc.), compiler runtime functions (`__x86.get_pc_thunk.bx`, `init_proc`, `frame_dummy`), CRT initialization code, and incorrect metadata (claims Ghidra but is IDA Pro). These artifacts severely clutter the output.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Most control flow uses natural constructs like `for` loops and `if-else`. However, `vla_stack` uses an unusual `do-while` with manual decrement (`--v4`) instead of a cleaner `for` loop. At `-O0`, this awkwardness is unexpected. The `test_stack_memory` function has hardcoded results instead of actual function calls.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Function granularity closely matches the original - each test function remains separate. The decompiler correctly kept `local_vars`, `local_array`, `heap_basic`, etc. as distinct functions. Minor issue: some test wrapper functions contain hardcoded results rather than calling the functions they test.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in functions like `heap_basic` (NULL check). Some functions like `linked_list_heap` have complex nested conditionals that require tracing, but the flow is mostly followable.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: Loop unrolling is present in `heap_basic` and `heap_array` using `do-while` with `v2 += 2` pattern, but it's manageable. No significant dead code observed. The hardcoded test results in `test_stack_memory` create semantic redundancy but not code redundancy.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Uses generic types like `_DWORD`, `_BYTE`, `char*` instead of specific types. In `set_file_static`, parameter is `int val` when it should be `int *val` - type confusion between pointer and integer. Function pointers are cast to `int` losing type safety (`global_func_ptr = (int)f`). Size calculations use magic numbers like `4 * n` without `sizeof(int)` clarity.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+Justification: Some structures recovered: `Node` and `TreeNode` are partially reconstructed with `data` and `next`/`left`/`right` fields. However, `Point` struct is completely lost - `heap_struct` returns `3 * x` instead of using `p->x + p->y`. In `heap_nested`, the code uses raw pointer arithmetic rather than proper struct member access.
+
+### 11. Type Safety
+**Score: 4/10**
+Justification: Multiple type safety issues: (1) `set_file_static` assigns integer to pointer: `file_scope_static = (int *)val`; (2) `global_func_ptr` cast to/from int losing function signature; (3) Array indexing in `heap_basic` uses `&v1[2 * v2]` with complex arithmetic instead of proper array access; (4) `dangling_pointer` returns `*(_DWORD *)v1` after free - undefined behavior not flagged.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Almost no useful comments. Only auto-generated function headers like `/* Function: local_vars @ 0x12C0 */`. No explanation of algorithms, no documentation of preconditions/postconditions, no indication of uncertainty. The source had extensive comments explaining test scenarios (e.g., "MEM-L1-01: 局部变量（基础类型）") which are completely lost.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+Justification: No explicit pattern recognition. Linked list operations, tree traversals, and memory management patterns are not identified or named. The decompiler doesn't recognize this as a test suite for memory operations.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No flagging of suspicious code. The `dangling_pointer()` function accesses memory after `free()` - a critical undefined behavior - but there's no warning. The `double_free` test case is completely wrong (returns `-2` instead of performing the operation). No indication of the intentional bugs in test functions.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: No contract information recovered. Preconditions like "n > 0" in `alloca_usage`, "ptr != NULL" checks, and boundary validations are not documented. Postconditions like "returns heap-allocated value" are not indicated.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function calls are visible but relationships are not documented. The callback pattern in `set_global_callback` / `call_global_callback` is present but not explained. No indication which functions call which, or the relationship between test functions and tested functions.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Functions appear in a single file in somewhat arbitrary order (by address). The original had clear sections: stack memory, heap memory, static/global, memory operations - these groupings are lost. Static functions like `static_helper` are not marked as file-scoped.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+Justification: Code will not compile standalone. Many undefined symbols: `global_counter`, `global_array`, `extern_global_var`, `extern_function`, `const_string`, `file_scope_static`, `global_func_ptr`, `global_heap_ptr`, `static_local_counter`, `double_value`. No header declarations or dependency documentation provided.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 7 + 4) / 4 = 5.75
+L2_avg = (7 + 8 + 7 + 7) / 4 = 7.25
+L3_avg = (5 + 5 + 4) / 3 = 4.67
+L4_avg = (3 + 4 + 2 + 3) / 4 = 3.00
+L5_avg = (5 + 6 + 4) / 3 = 5.00
+
+Overall = (5.75 × 0.30) + (7.25 × 0.25) + (4.67 × 0.20) + (3.00 × 0.15) + (5.00 × 0.10)
+        = 1.725 + 1.8125 + 0.934 + 0.45 + 0.5
+        = 5.42/10
+```
+
+### Overall Readability Score: 5.4/10
+
+### Critical Defects
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `i`, `j`) losing semantic meaning from source (`arr`, `n`, `leak`, `head`)
+- **Type safety violations**: `set_file_static` has parameter type mismatch (`int` vs `int*`), function pointers cast to `int` losing type safety
+- **Anomaly omission**: `dangling_pointer()` accesses freed memory - critical undefined behavior not flagged
+- **Test function corruption**: `test_stack_memory` uses hardcoded results instead of calling actual functions, `double_free` completely wrong implementation
+- **Struct recovery failure**: `Point` struct lost in `heap_struct`, fields accessed via raw pointer arithmetic
+
+### Best Quality Aspect: Function Naming (9/10)
+Function names almost perfectly match the original source - `local_vars`, `heap_basic`, `linked_list_heap`, `memory_leak`, etc. are all correctly recovered, making it easy to identify which function is being analyzed.
+
+### Most Needs Improvement: Semantic Transparency (3.0/10)
+The decompiled code lacks any meaningful comments, pattern recognition, anomaly warnings, or contract documentation. Critical issues like dangling pointers, type mismatches, and intentional test bugs are not flagged, making the code dangerous to use without deep expertise.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns**: `v1` used as `malloc(4*n)` should be named `arr` or `buffer`. Index variables `i`, `j` in loops are acceptable but computed values like `v2` in `heap_basic` should be `multiplier` or similar.
+
+2. **Flag undefined behavior**: The `dangling_pointer()` function clearly accesses memory after `free()`. Add warning comments: `// WARNING: use-after-free - undefined behavior`.
+
+3. **Recover struct types**: The `Point` struct in `heap_struct` is completely lost. Analyze allocation size (`malloc(sizeof(Point))`) and field access patterns to reconstruct struct layouts with meaningful field names.

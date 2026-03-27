@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `param_2`, `iVar1`, `uVar2`, `local_28`) with no semantic meaning. Even simple cases like `param_strcpy` use `param_1`/`param_2` instead of `dst`/`src`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names preserved (`param_strcpy`, `call_strcmp`, `param_mutex_lock`), accurately reflecting purpose. This is the decompiler's strongest lexical feature.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive throughout: `0x2a` (42), `0xffffffff` (-1), `0x5a` (90), `0xfffffffd` (-3). No constants recovered despite `-O0 -g` debug compilation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; some "WARNING: Removing unreachable block" comments present but don't significantly impede reading.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: If-else structures mostly recovered correctly, but `param_signal_handling` has awkward jumptable warnings. Do-while loops recovered from backward jumps reasonably well.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes appropriate, but `call_strcpy` inlines operations instead of calling `param_strcpy`. Thread functions properly separated but test functions collapse logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `param_thread_local_storage` has complex nesting with goto-style `LAB_0001285c` labels disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions like `call_memcpy` return constant `0x5a` instead of calling actual functions. `test_standard_library_functions` duplicates logic from individual test functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe degradation: `param_strcpy` returns `void` instead of `int`, `undefined4` used extensively, `const char*` becomes `char*`. Some types preserved (`FILE*`, `pthread_t`, `size_t`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `stat` struct recognized with `st_size` field access. `sockaddr` partially recovered with `sa_family`/`sa_data` fields. `ThreadData` struct lost—accessed via array indexing (`param_1[2]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(pthread_mutex_t *)counter_mutex`, `(volatile int*)&atomic_counter`. Function pointers degraded to `code*` or `undefined4`. Pointer arithmetic on void* in TLS code.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated warnings present ("WARNING: Subroutine does not return", "Could not recover jumptable"). Zero semantic comments explaining algorithm intent or logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`, `pthread_create`). Threading patterns (mutex, condition variable) not explicitly identified or named.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Too many branches", "Treating indirect jump as call") but inconsistent. `param_signal_handling` has unrecovered jumptable warnings that aid debugging.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). No postconditions inferred. Error return values (`0xffffffff`, `0xfffffffd`) unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no call graph documentation. Global variables (`signal_received`, `atomic_counter`, `shared_counter`) referenced without usage context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 65 functions in single output with no logical grouping. No separation between standard library tests, system calls, and threading code despite source organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies (pthread, libc) not documented. Platform-specific code (ARM syscalls) present without explanation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+3+7)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+6+6+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (2+5+5+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.90/10
+```
+
+**Overall Readability Score: 4.9/10**
+
+### Critical Defects:
+- **Return type corruption**: `param_strcpy` returns `void` instead of `int`, losing the `strlen()` return value semantics
+- **Magic number proliferation**: `0x2a`, `0xffffffff`, `0x5a`, `0xfffffffd` used throughout without constant recovery despite debug symbols
+- **Variable naming collapse**: All parameters named `param_1`, `param_2`; locals named `iVar1`, `uVar2`, `local_28` with no semantic meaning
+- **Test function inlining**: `call_strcpy`, `call_memcpy` don't call their corresponding `param_*` functions, breaking the call hierarchy
+- **No contract documentation**: Zero preconditions, postconditions, or error semantics documented for any function
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately (`param_strcpy`, `param_mutex_lock`, `param_signal_handling`), maintaining semantic connection to source code purpose.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Only auto-generated warnings exist; no semantic comments explaining logic, algorithms, or intent despite `-g` debug symbols being available.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for variable naming**: With `-g` flags, recover original variable names (`dst`, `src`, `buffer`) instead of generic `param_1`, `local_28`
+2. **Recover constant definitions from debug info**: Magic numbers like `0x2a` (42), `0x5a` (90) should be replaced with named constants or at least commented
+3. **Preserve return type semantics**: Functions returning values (`param_strcpy` returns `strlen` result) must maintain correct return types, not collapse to `void`

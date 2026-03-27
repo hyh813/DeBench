@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `v28`, `v29`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `len` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user-defined function names preserved accurately (`cdecl_func`, `varargs_func`, `func_struct_byval`). Only compiler runtime helpers have generic names (`sub_4006e4`, `sub_4007b0`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Pervasive magic numbers like `4294967295` (0xFFFFFFFF), `4294967294`, `4294967168` appear throughout without explanation. These are type masks from signed/unsigned conversions but obscure the logic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts including frame pointer setup (`v0 = &v1`), redundant stack variable declarations, and varargs functions bloated with 30+ local variables for simple summation logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but varargs functions use complex conditional logic instead of clean `va_arg` loops. Switch statements degraded to if-else chains (`ret_multi_branch`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate and original structure mostly preserved. Runtime helper functions (`deregister_tm_clones`, `__do_global_dtors_aux`) are appropriately separated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Varargs handling introduces some non-linear stack pointer manipulation but remains traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant assignments common (`v0 = a0; v0 = ...`), and varargs functions duplicate stack handling logic. Some functions call themselves twice unnecessarily (`sub_4006e4`, `frame_dummy`).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `int` becomes `unsigned int`, `va_list` completely lost (expanded to individual parameters `a1-a7`), pointer types lose specificity. Return types often wrong (`unsigned long long` vs `int`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `LargeStruct` passed as `unsigned long ptr` instead of struct. `SmallStruct` becomes `unsigned int *ptr`. Generic `struct_0 { field_0 }` definition loses all semantic field names. Array access via pointer arithmetic (`ptr[1] * *(ptr)`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: pointer arithmetic on generic types, varargs completely type-unsafe, implicit casts throughout. `func_mixed_args` loses `double d` and `long long ll` parameters entirely.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments recovered from original source. No decompiler-generated annotations explaining uncertain regions or algorithm intent. Only minimal "Other Possible Types" hints.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern completely unrecognized (should use `va_list` macro pattern). Struct passing conventions not identified. No design pattern or algorithm identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some "Other Possible Types" annotations on variables, but no warnings about varargs handling uncertainty or type conversion issues. Silent failures on critical semantic losses.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (NULL checks not documented as contracts). No postcondition inference. Error conditions like `return -1` lack explanation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear, but global variables have opaque names (`g_401e82`, `g_402068`). String literals externalized without content visibility. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (calling conventions together, parameter passing together), matching source organization. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple undefined external references (`g_412ff8`, `$d.2`, `__gmon_start__`). Would require significant stubbing and global variable resolution to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+7+7+5)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.733
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.63/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Varargs functions completely broken**: `varargs_func` expanded to 8 explicit parameters instead of `va_list`, with 30+ local variables for simple summation
+- **Struct types lost**: `LargeStruct` and `SmallStruct` degraded to raw pointers (`unsigned long ptr`, `unsigned int *ptr`)
+- **Magic numbers pervasive**: `4294967295`, `4294967294` appear throughout without explanation (type masks from signed/unsigned conversions)
+- **Variable names meaningless**: `v0`, `v1`, `a0`, `a1` provide no semantic information about purpose
+- **Type precision lost**: `int` → `unsigned int`, `double` and `long long` parameters dropped entirely in `func_mixed_args`
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it possible to identify test cases and their purposes despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero comments recovered; original source had extensive documentation explaining each test case's purpose, expected values, and calling convention details.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover varargs patterns**: Detect `va_start`/`va_arg`/`va_end` sequences and reconstruct proper `va_list` handling instead of expanding to individual parameters
+2. **Infer semantic variable names**: Use usage patterns to name variables (e.g., loop counters as `i`, accumulators as `sum`, pointers as `ptr`)
+3. **Add decompiler confidence annotations**: Flag uncertain regions (type conversions, struct layouts, calling conventions) with comments explaining potential issues

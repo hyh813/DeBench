@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+The original source is an obfuscation/optimization test suite with 464 LOC containing functions like `param_fake_branch`, `param_opaque_predicate`, etc. The decompiled output is 1093 LOC for x86 (note: metadata says arm64 but decompiled code is x86). The source was compiled with `-O0 -g`, so high readability is expected.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `ptr`, `a0`, `a1`, `a2`, `a3`, `idx`, `index`). The original source used meaningful names like `x`, `result`, `str`, `a`, `b`, `temp` - all completely lost. This is severe degradation.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - target functions like `param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `call_fake_branch` are correctly named. However, helper functions and infrastructure code use generic names like `sub_401030`, `sub_4010c0`, `sub_4010c6`. About 40% of functions have poor naming.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Some numeric constants preserved: `10`, `1000`, `100`, `5`, `8`, `20`, `225`. However, critical magic numbers lost: `0xDEADBEEF` from fake branch, `0x5A` encryption key, `0xFFFFFFFF` for -1. String literals replaced with `&g_402219` etc. Many semantic constants are opaque.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: goto statements from control flow (`goto ptr[2]`), register spill variables (`v0`, `v1` on stack), frame pointer manipulations, and many unused local variables. The code includes spurious constructs like `CONCAT` operations and complex pointer arithmetic that obscure logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural - loops use `while` constructs, conditionals use `if`. However, some artifacts: goto-based jumps in `sub_401030`, computed goto patterns, and some awkward expressions like `!((char)_ccall(4, 18, v7 + 1, 0, _ccall(...)))`. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-80 lines each) with clear single responsibilities. The decompiler correctly separated `param_fake_branch` from `call_fake_branch`. Minor issue: some wrapper functions like `sub_401255` just call `call_fake_branch()` with no added value.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. However, some computed jumps like `goto (int)v1[16]` in `sub_4010c0` disrupt linear flow. The `register_tm_clones` function has complex nested conditionals that are hard to follow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant code patterns visible. The `param_opaque_predicate` function has duplicated gcd computation logic between caller and callee. Some dead code from register spills present, but not severe.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type degradation - most integers are `unsigned int` or `int` regardless of actual type. Original used `size_t`, `unsigned int`, `char*`, `int*` - all reduced to generic types. The `param_instruction_substitution` uses `unsigned int` for all parameters when original mixed signed/unsigned.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Some struct definitions exist but are poorly named and lack semantic field names. The `struct_0` with `padding_0` arrays is clearly a decompiler artifact. Original had `jmp_buffer`, `setjmp.h` types - these are lost. The `struct_1` definitions are meaningless.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate type safety issues. Many unsafe pointer casts: `*((int *)(ptr + idx * 4))`, `*((char *)&ptr[1])`. The `_ccall` pattern suggests improper function pointer handling. Some buffer operations could overflow: `strncpy(&v0, &param_string_encryption.encrypted, 32)` without bounds checking.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The only semi-useful content is `/* do not return */` on `__libc_start_main` calls. No explanation of algorithms, no documentation of the obfuscation patterns (fake branch, opaque predicate), no recovery of original Chinese comments explaining the techniques.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. The original contains specific obfuscation idioms (fake branch with `x*x<0`, opaque predicates with gcd, instruction substitution with bit shifts) - none are identified or named. The string decryption loop is not labeled as XOR decryption.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some indirect calls flagged with comments like `/* do not return */` on longjmp. However, no warnings about suspicious patterns like the fake branch conditions that will never execute, or potential undefined behavior. The `_ccall` pattern is not flagged as unusual.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original had explicit checks like `if (x <= 0)` in tail recursion, signal handlers with contracts - all lost. No documentation of error handling expectations.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible in the code (e.g., `call_fake_branch()` calls `param_fake_branch()`), but no documentation of call graphs, no indication of which functions are internal vs external, no callback relationships documented. Global variables like `g_402008` are referenced but not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped somewhat logically (obfuscation functions together, optimization functions together), but the file is a single monolithic output. No separation into logical sections matching the original's chapter organization (7.1, 7.2, 7.3).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code has many `extern` declarations and would require significant stubs to compile. Missing standard library functions (`puts`, `printf`, `signal`, `strncpy`, `strlen`, `memset`, `malloc`, `free`, `longjmp`, `setjmp`). The `CONCAT` macro usage and unusual constructs would prevent compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable naming is catastrophic: all semantic names replaced with `v0`-`v15`, `a0`-`a3`, `ptr`, `idx`
+- Function naming inconsistent: ~40% use generic `sub_XXXXX` pattern
+- Type precision severely degraded: all specific types reduced to `int`/`unsigned int`
+- No comments explaining obfuscation techniques (fake branch, opaque predicates)
+- Composite types lost: structs have meaningless `padding_0` fields
+- No idiom recognition for the specific obfuscation patterns used
+
+**Best Quality Aspect:** Function Decomposition (7/10)  
+Functions are appropriately sized with reasonable separation of concerns. The target functions (`param_*` and `call_*`) are correctly split.
+
+**Most Needs Improvement:** Lexical Clarity (3.5/10)  
+Variable and function naming is the most critical failure - without meaningful names, the code is nearly incomprehensible regardless of other qualities.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a0` passed to multiplication → likely `x` or `input`; `ptr` used in string functions → likely `string` or `buffer`)
+2. **Recover type information from debug symbols**: The source was compiled with `-g`, so DWARF info should enable precise type recovery (size_t, char*, etc.)
+3. **Detect and label obfuscation patterns**: Recognize fake branch conditions (x*x<0), opaque predicates (gcd computations), and instruction substitutions; add comments explaining these patterns

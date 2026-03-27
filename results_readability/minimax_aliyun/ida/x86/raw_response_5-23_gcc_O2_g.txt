@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Functions like `param_dynamic_code` use generic names `v1`, `v2`, `v3` while simpler functions like `param_macro_constants` correctly use `size` and `result`. The decompiler inconsistently applies naming - some variables are well-named but many are cryptic single-letter variants.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly (e.g., `param_macro_constants`, `call_conditional_compile`, `param_asm_atomic`). The decompiler successfully recovered the original function naming scheme with high fidelity.
+
+**3. Literal Clarity:** Score: 9/10  
+Justification: Excellent recovery of literal values - `param_builtin_macros` shows actual `__FILE__` ("src/5-23.c"), `__LINE__` (279), `__DATE__` ("Jan 15 2026"). Computed constants like 57072 (0xDEF0) for the default platform branch are correctly shown. Magic numbers are minimal and computable.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. Only minor stack canary references like `__readgsdword(0x14u)` appear in a few functions. No redundant casts, frame pointer manipulation, or debug instrumentation clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and idiomatic. Loops use `for` constructs (`param_asm_clobber`), conditionals are clear (`param_memory_protection` uses if-else chains). At -O0, no loop unrolling or goto conversion was needed, preserving the original structure.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent decomposition - test wrapper functions (`call_*`) are properly separated from implementation functions (`param_*`). Function granularity is appropriate (no 500-line monoliths). Each function has single responsibility matching the source organization.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads mostly top-to-bottom. `param_memory_protection` has nested if-else but it's manageable. No excessive forward jumps or goto conversion disrupts the flow. Good linearization overall.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code, redundant expressions, or unnecessary duplication. At -O0, loop unrolling wasn't applied, so the code remains clean. The decompilation shows the original logic without artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed type precision. Good use of `size_t` for memory sizes, `void*`/`const void*` for generic pointers, and proper signatures for intrinsics. However, most integers are generic `int` rather than `int32_t`/`uint32_t`. No signed/unsigned distinction in many places.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct or union types were recovered. Arrays are passed as pointers (e.g., `int *arr` instead of `int arr[]` with known size). All composite type information is lost, reducing semantic clarity for complex data structures.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Type-safe code overall. Proper use of `_InterlockedExchangeAdd` for atomics, `_mm_add_epi32` intrinsics for SIMD. No obvious unsafe casts or pointer arithmetic errors. Memory operations (mmap/mprotect/munmap) are correctly used.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No comments in any decompiled functions. Only the header "Decompiled by IDA Pro 9.1 with Hex-Rays" exists. No explanation of algorithm logic, no uncertainty indicators, no recovery notes. The code is裸 (bare) without any documentation.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Good pattern recognition - inline assembly converted to intrinsics (`_mm_add_epi32`, `_InterlockedExchangeAdd`), `qmemcpy` recognized as memcpy, mmap/mprotect/munmap pattern identified. However, these patterns aren't explicitly named or documented as idioms.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External "FAILED to decompile" messages shown for library functions (sysconf, mprotect, etc.), but no internal anomaly flags. No indication of indirect calls that couldn't be resolved, no warnings about uncertain logic, no suspicious code highlighting within functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. No error handling expectations indicated. The decompiled code provides no insight into what the function assumes or guarantees.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are syntactically clear (e.g., `test_preprocessing_features()` calls other functions). However, no documentation of call relationships, global variable usage, or callback patterns. Reader must infer relationships from code.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in some arbitrary order (starting with init_proc, main, then test functions). No clear grouping by feature (preprocessing vs. asm), no static function scoping visible, no header structure. Organization is functional but not logical.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code uses standard library functions (mmap, mprotect, printf_chk) and intrinsics that are widely available. Would require `<stdio.h>`, `<sys/mman.h>`, `<intrin.h>` headers to compile. Minimal patching needed for standalone compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.5/10
+
+**Critical Defects:**
+- Variable naming uses cryptic single letters (`v0`, `v1`, `v2`, `v3`) in complex functions like `param_dynamic_code`, `param_memory_protection`, `call_asm_privileged`
+- No comments explaining algorithm logic, macro expansions, or inline assembly behavior
+- No struct/union type recovery - all composite types lost, reducing semantic meaning
+- No preconditions/postconditions or contract documentation
+- No anomaly indication for uncertain decompilation decisions
+
+**Best Quality Aspect:** Function Naming (scored 9/10)  
+The decompiler almost perfectly recovered the original function names from the source, making it easy to identify which function corresponds to which test case.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 3/10)  
+The decompiled code has zero comments explaining what functions do, how macros were expanded, what inline assembly does, or where decompilation confidence is low. This severely impacts understandability for reverse engineers.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Add comments explaining macro expansion results (e.g., "// Returns MAX_SIZE/2 = 512 when size <= 1024")
+2. Infer variable names from usage patterns - `v1` used as page_size in `param_dynamic_code` should be named `page_size`
+3. Recover struct types from pointer arithmetic patterns - the array parameters should show expected sizes when known

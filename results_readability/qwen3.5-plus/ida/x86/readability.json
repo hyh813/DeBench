@@ -1,0 +1,5935 @@
+{
+  "version": "1.0",
+  "llm_profile": "qwen3.5-plus",
+  "decompiler": "ida",
+  "arch": "x86",
+  "start_time": "2026-02-27T18:09:20.031877",
+  "end_time": "2026-03-02T19:38:13.891051",
+  "statistics": {
+    "total": 169,
+    "completed": 169,
+    "failed": 0
+  },
+  "tasks": {
+    "1_clang_O0_g": {
+      "eval_id": "1_clang_O0_g",
+      "overall_score": 6.8,
+      "levels": {
+        "L1_lexical_clarity": 7.0,
+        "L2_structural_intelligibility": 7.75,
+        "L3_type_system_fidelity": 8.0,
+        "L4_semantic_transparency": 4.0,
+        "L5_contextual_coherence": 6.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 6.0,
+        "2_function_naming_quality": 9.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 9.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 8.0,
+        "9_type_precision": 8.0,
+        "10_composite_type_recovery": 8.0,
+        "11_type_safety": 8.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 6.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 7.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 26594,
+        "completion": 4772,
+        "total": 31366
+      },
+      "time_cost_seconds": 104.56
+    },
+    "1_clang_O0_no_g": {
+      "eval_id": "1_clang_O0_no_g",
+      "overall_score": 5.3,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 6.75,
+        "L3_type_system_fidelity": 4.67,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 27028,
+        "completion": 4376,
+        "total": 31404
+      },
+      "time_cost_seconds": 82.21
+    },
+    "1_clang_O1_g": {
+      "eval_id": "1_clang_O1_g",
+      "overall_score": 4.9,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 4.5,
+        "L3_type_system_fidelity": 6.67,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 4.0,
+        "7_code_linearization": 5.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 3.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 6.0
+      },
+      "tokens": {
+        "prompt": 25456,
+        "completion": 4031,
+        "total": 29487
+      },
+      "time_cost_seconds": 64.93
+    },
+    "1_clang_O1_no_g": {
+      "eval_id": "1_clang_O1_no_g",
+      "overall_score": 4.7,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 5.75,
+        "L3_type_system_fidelity": 4.33,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 5.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 25700,
+        "completion": 3228,
+        "total": 28928
+      },
+      "time_cost_seconds": 43.45
+    },
+    "1_clang_O2_g": {
+      "eval_id": "1_clang_O2_g",
+      "overall_score": 5.3,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 6.33,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 5.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 6.0
+      },
+      "tokens": {
+        "prompt": 25218,
+        "completion": 4426,
+        "total": 29644
+      },
+      "time_cost_seconds": 59.09
+    },
+    "1_clang_O2_no_g": {
+      "eval_id": "1_clang_O2_no_g",
+      "overall_score": 5.7,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 6.33,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 5.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 25488,
+        "completion": 3835,
+        "total": 29323
+      },
+      "time_cost_seconds": 63.31
+    },
+    "1_clang_O3_g": {
+      "eval_id": "1_clang_O3_g",
+      "overall_score": 5.5,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 6.67,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 6.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 7.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 25218,
+        "completion": 3369,
+        "total": 28587
+      },
+      "time_cost_seconds": 59.9
+    },
+    "1_clang_O3_no_g": {
+      "eval_id": "1_clang_O3_no_g",
+      "overall_score": 4.7,
+      "levels": {
+        "L1_lexical_clarity": 4.75,
+        "L2_structural_intelligibility": 5.0,
+        "L3_type_system_fidelity": 5.67,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 4.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 25488,
+        "completion": 5285,
+        "total": 30773
+      },
+      "time_cost_seconds": 76.27
+    },
+    "1_clang_Os_g": {
+      "eval_id": "1_clang_Os_g",
+      "overall_score": 5.2,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 5.75,
+        "L3_type_system_fidelity": 6.0,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 3.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 25109,
+        "completion": 3452,
+        "total": 28561
+      },
+      "time_cost_seconds": 36.89
+    },
+    "1_clang_Os_no_g": {
+      "eval_id": "1_clang_Os_no_g",
+      "overall_score": 4.7,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 5.0,
+        "L4_semantic_transparency": 2.5,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 2.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 3.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 25367,
+        "completion": 5567,
+        "total": 30934
+      },
+      "time_cost_seconds": 85.33
+    },
+    "1_gcc_O0_g": {
+      "eval_id": "1_gcc_O0_g",
+      "overall_score": 7.25,
+      "levels": {
+        "L1_lexical_clarity": 7.75,
+        "L2_structural_intelligibility": 8.5,
+        "L3_type_system_fidelity": 8.0,
+        "L4_semantic_transparency": 3.75,
+        "L5_contextual_coherence": 6.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 7.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 8.0,
+        "4_noise_reduction": 8.0,
+        "5_control_flow_naturalness": 9.0,
+        "6_function_decomposition": 9.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 8.0,
+        "9_type_precision": 8.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 9.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 6.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 7.0
+      },
+      "tokens": {
+        "prompt": 27400,
+        "completion": 4210,
+        "total": 31610
+      },
+      "time_cost_seconds": 55.42
+    },
+    "1_gcc_O0_no_g": {
+      "eval_id": "1_gcc_O0_no_g",
+      "overall_score": 5.3,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 4.33,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 27760,
+        "completion": 4544,
+        "total": 32304
+      },
+      "time_cost_seconds": 67.14
+    },
+    "1_gcc_O1_g": {
+      "eval_id": "1_gcc_O1_g",
+      "overall_score": 5.4,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 6.0,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 27551,
+        "completion": 3575,
+        "total": 31126
+      },
+      "time_cost_seconds": 48.29
+    },
+    "1_gcc_O1_no_g": {
+      "eval_id": "1_gcc_O1_no_g",
+      "overall_score": 5.4,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 5.33,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 27848,
+        "completion": 4149,
+        "total": 31997
+      },
+      "time_cost_seconds": 61.16
+    },
+    "1_gcc_O2_g": {
+      "eval_id": "1_gcc_O2_g",
+      "overall_score": 4.8,
+      "levels": {
+        "L1_lexical_clarity": 4.75,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 5.0,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 3.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 5.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 3.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 27365,
+        "completion": 83543,
+        "total": 110908
+      },
+      "time_cost_seconds": 1032.52
+    },
+    "1_gcc_O2_no_g": {
+      "eval_id": "1_gcc_O2_no_g",
+      "overall_score": 5.2,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 5.0,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 27865,
+        "completion": 3803,
+        "total": 31668
+      },
+      "time_cost_seconds": 72.5
+    },
+    "1_gcc_O3_g": {
+      "eval_id": "1_gcc_O3_g",
+      "overall_score": 5.1,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 6.0,
+        "L3_type_system_fidelity": 5.33,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 27380,
+        "completion": 3931,
+        "total": 31311
+      },
+      "time_cost_seconds": 46.29
+    },
+    "1_gcc_O3_no_g": {
+      "eval_id": "1_gcc_O3_no_g",
+      "overall_score": 4.6,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 5.0,
+        "L3_type_system_fidelity": 4.33,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 4.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 27641,
+        "completion": 2629,
+        "total": 30270
+      },
+      "time_cost_seconds": 44.29
+    },
+    "1_gcc_Os_g": {
+      "eval_id": "1_gcc_Os_g",
+      "overall_score": 6.1,
+      "levels": {
+        "L1_lexical_clarity": 6.0,
+        "L2_structural_intelligibility": 6.75,
+        "L3_type_system_fidelity": 7.33,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 6.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 9.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 8.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 7.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 26208,
+        "completion": 3203,
+        "total": 29411
+      },
+      "time_cost_seconds": 36.42
+    },
+    "1_gcc_Os_no_g": {
+      "eval_id": "1_gcc_Os_no_g",
+      "overall_score": 4.7,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 4.0,
+        "L4_semantic_transparency": 2.5,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 2.0,
+        "2_function_naming_quality": 9.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 1.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 26543,
+        "completion": 3312,
+        "total": 29855
+      },
+      "time_cost_seconds": 52.57
+    },
+    "2_clang_O0_g": {
+      "eval_id": "2_clang_O0_g",
+      "overall_score": 5.9,
+      "levels": {
+        "L1_lexical_clarity": 6.25,
+        "L2_structural_intelligibility": 7.5,
+        "L3_type_system_fidelity": 6.0,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 6.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 9.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 23500,
+        "completion": 5565,
+        "total": 29065
+      },
+      "time_cost_seconds": 68.3
+    },
+    "2_clang_O0_no_g": {
+      "eval_id": "2_clang_O0_no_g",
+      "overall_score": 4.9,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 6.75,
+        "L3_type_system_fidelity": 3.33,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 5.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 24228,
+        "completion": 3968,
+        "total": 28196
+      },
+      "time_cost_seconds": 49.88
+    },
+    "2_clang_O1_g": {
+      "eval_id": "2_clang_O1_g",
+      "overall_score": 6.3,
+      "levels": {
+        "L1_lexical_clarity": 6.25,
+        "L2_structural_intelligibility": 6.75,
+        "L3_type_system_fidelity": 8.0,
+        "L4_semantic_transparency": 3.75,
+        "L5_contextual_coherence": 6.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 9.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 8.0,
+        "10_composite_type_recovery": 9.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 6.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 7.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 21999,
+        "completion": 3983,
+        "total": 25982
+      },
+      "time_cost_seconds": 57.07
+    },
+    "2_clang_O1_no_g": {
+      "eval_id": "2_clang_O1_no_g",
+      "overall_score": 4.8,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 3.33,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 22332,
+        "completion": 3385,
+        "total": 25717
+      },
+      "time_cost_seconds": 50.49
+    },
+    "2_clang_O2_g": {
+      "eval_id": "2_clang_O2_g",
+      "overall_score": 6.3,
+      "levels": {
+        "L1_lexical_clarity": 6.25,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 7.67,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 6.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 9.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 8.0,
+        "10_composite_type_recovery": 8.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 7.0,
+        "17_module_organization": 7.0,
+        "18_build_system_compatibility": 6.0
+      },
+      "tokens": {
+        "prompt": 23308,
+        "completion": 4700,
+        "total": 28008
+      },
+      "time_cost_seconds": 77.69
+    },
+    "2_clang_O2_no_g": {
+      "eval_id": "2_clang_O2_no_g",
+      "overall_score": 4.5,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 5.25,
+        "L3_type_system_fidelity": 3.67,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 24122,
+        "completion": 3841,
+        "total": 27963
+      },
+      "time_cost_seconds": 55.33
+    },
+    "2_clang_O3_g": {
+      "eval_id": "2_clang_O3_g",
+      "overall_score": 5.9,
+      "levels": {
+        "L1_lexical_clarity": 6.0,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 7.0,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 5.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 8.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 7.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 22983,
+        "completion": 5335,
+        "total": 28318
+      },
+      "time_cost_seconds": 89.03
+    },
+    "2_clang_O3_no_g": {
+      "eval_id": "2_clang_O3_no_g",
+      "overall_score": 4.5,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 3.67,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 4.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 23796,
+        "completion": 2693,
+        "total": 26489
+      },
+      "time_cost_seconds": 45.03
+    },
+    "2_clang_Os_g": {
+      "eval_id": "2_clang_Os_g",
+      "overall_score": 5.25,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 6.33,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 22030,
+        "completion": 4455,
+        "total": 26485
+      },
+      "time_cost_seconds": 75.94
+    },
+    "2_clang_Os_no_g": {
+      "eval_id": "2_clang_Os_no_g",
+      "overall_score": 4.65,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 3.33,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 22371,
+        "completion": 4091,
+        "total": 26462
+      },
+      "time_cost_seconds": 57.02
+    },
+    "2_gcc_O0_g": {
+      "eval_id": "2_gcc_O0_g",
+      "overall_score": 6.2,
+      "levels": {
+        "L1_lexical_clarity": 6.0,
+        "L2_structural_intelligibility": 8.0,
+        "L3_type_system_fidelity": 6.33,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 5.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 6.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 9.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 24207,
+        "completion": 3977,
+        "total": 28184
+      },
+      "time_cost_seconds": 64.69
+    },
+    "2_gcc_O0_no_g": {
+      "eval_id": "2_gcc_O0_no_g",
+      "overall_score": 4.8,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 3.0,
+        "L4_semantic_transparency": 2.5,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 25028,
+        "completion": 3965,
+        "total": 28993
+      },
+      "time_cost_seconds": 83.17
+    },
+    "2_gcc_O1_g": {
+      "eval_id": "2_gcc_O1_g",
+      "overall_score": 5.9,
+      "levels": {
+        "L1_lexical_clarity": 6.0,
+        "L2_structural_intelligibility": 6.75,
+        "L3_type_system_fidelity": 6.67,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 5.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 8.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 23329,
+        "completion": 4685,
+        "total": 28014
+      },
+      "time_cost_seconds": 98.18
+    },
+    "2_gcc_O1_no_g": {
+      "eval_id": "2_gcc_O1_no_g",
+      "overall_score": 4.5,
+      "levels": {
+        "L1_lexical_clarity": 4.75,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 3.0,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 3.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 23860,
+        "completion": 4102,
+        "total": 27962
+      },
+      "time_cost_seconds": 50.97
+    },
+    "2_gcc_O2_g": {
+      "eval_id": "2_gcc_O2_g",
+      "overall_score": 5.6,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 7.0,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 5.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 8.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 4.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 23797,
+        "completion": 4439,
+        "total": 28236
+      },
+      "time_cost_seconds": 78.37
+    },
+    "2_gcc_O2_no_g": {
+      "eval_id": "2_gcc_O2_no_g",
+      "overall_score": 3.9,
+      "levels": {
+        "L1_lexical_clarity": 4.0,
+        "L2_structural_intelligibility": 5.0,
+        "L3_type_system_fidelity": 3.0,
+        "L4_semantic_transparency": 2.5,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 2.0,
+        "2_function_naming_quality": 5.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 24192,
+        "completion": 3378,
+        "total": 27570
+      },
+      "time_cost_seconds": 62.85
+    },
+    "2_gcc_O3_g": {
+      "eval_id": "2_gcc_O3_g",
+      "overall_score": 5.0,
+      "levels": {
+        "L1_lexical_clarity": 6.0,
+        "L2_structural_intelligibility": 4.5,
+        "L3_type_system_fidelity": 6.0,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 5.0,
+        "8_redundancy_elimination": 3.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 24371,
+        "completion": 4471,
+        "total": 28842
+      },
+      "time_cost_seconds": 57.23
+    },
+    "2_gcc_O3_no_g": {
+      "eval_id": "2_gcc_O3_no_g",
+      "overall_score": 4.0,
+      "levels": {
+        "L1_lexical_clarity": 4.5,
+        "L2_structural_intelligibility": 4.5,
+        "L3_type_system_fidelity": 3.33,
+        "L4_semantic_transparency": 2.5,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 2.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 5.0,
+        "8_redundancy_elimination": 4.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 24525,
+        "completion": 3703,
+        "total": 28228
+      },
+      "time_cost_seconds": 58.88
+    },
+    "2_gcc_Os_g": {
+      "eval_id": "2_gcc_Os_g",
+      "overall_score": 5.3,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 5.67,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 22399,
+        "completion": 4257,
+        "total": 26656
+      },
+      "time_cost_seconds": 75.53
+    },
+    "2_gcc_Os_no_g": {
+      "eval_id": "2_gcc_Os_no_g",
+      "overall_score": 3.8,
+      "levels": {
+        "L1_lexical_clarity": 3.5,
+        "L2_structural_intelligibility": 5.75,
+        "L3_type_system_fidelity": 2.67,
+        "L4_semantic_transparency": 2.5,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 2.0,
+        "2_function_naming_quality": 5.0,
+        "3_literal_clarity": 3.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 3.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 22790,
+        "completion": 4062,
+        "total": 26852
+      },
+      "time_cost_seconds": 49.05
+    },
+    "3_clang_O0_g": {
+      "eval_id": "3_clang_O0_g",
+      "overall_score": 5.5,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 7.25,
+        "L3_type_system_fidelity": 4.67,
+        "L4_semantic_transparency": 3.75,
+        "L5_contextual_coherence": 5.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 4.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 23275,
+        "completion": 4336,
+        "total": 27611
+      },
+      "time_cost_seconds": 102.0
+    },
+    "3_clang_O0_no_g": {
+      "eval_id": "3_clang_O0_no_g",
+      "overall_score": 5.1,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 3.67,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 5.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 23516,
+        "completion": 3209,
+        "total": 26725
+      },
+      "time_cost_seconds": 64.08
+    },
+    "3_clang_O1_g": {
+      "eval_id": "3_clang_O1_g",
+      "overall_score": 4.2,
+      "levels": {
+        "L1_lexical_clarity": 4.5,
+        "L2_structural_intelligibility": 5.25,
+        "L3_type_system_fidelity": 3.67,
+        "L4_semantic_transparency": 2.5,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 5.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 23695,
+        "completion": 3595,
+        "total": 27290
+      },
+      "time_cost_seconds": 65.09
+    },
+    "3_clang_O1_no_g": {
+      "eval_id": "3_clang_O1_no_g",
+      "overall_score": 4.7,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 3.0,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 23852,
+        "completion": 4172,
+        "total": 28024
+      },
+      "time_cost_seconds": 60.74
+    },
+    "3_clang_O2_g": {
+      "eval_id": "3_clang_O2_g",
+      "overall_score": 4.5,
+      "levels": {
+        "L1_lexical_clarity": 4.5,
+        "L2_structural_intelligibility": 5.0,
+        "L3_type_system_fidelity": 5.0,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 24235,
+        "completion": 3932,
+        "total": 28167
+      },
+      "time_cost_seconds": 82.41
+    },
+    "3_clang_O2_no_g": {
+      "eval_id": "3_clang_O2_no_g",
+      "overall_score": 4.2,
+      "levels": {
+        "L1_lexical_clarity": 4.75,
+        "L2_structural_intelligibility": 4.75,
+        "L3_type_system_fidelity": 3.67,
+        "L4_semantic_transparency": 2.5,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 5.0,
+        "8_redundancy_elimination": 4.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 24377,
+        "completion": 2545,
+        "total": 26922
+      },
+      "time_cost_seconds": 45.08
+    },
+    "3_clang_O3_g": {
+      "eval_id": "3_clang_O3_g",
+      "overall_score": 4.5,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 4.0,
+        "L4_semantic_transparency": 2.25,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 2.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 24233,
+        "completion": 2353,
+        "total": 26586
+      },
+      "time_cost_seconds": 37.96
+    },
+    "3_clang_O3_no_g": {
+      "eval_id": "3_clang_O3_no_g",
+      "overall_score": 4.17,
+      "levels": {
+        "L1_lexical_clarity": 4.5,
+        "L2_structural_intelligibility": 5.75,
+        "L3_type_system_fidelity": 2.67,
+        "L4_semantic_transparency": 2.5,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 2.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 3.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 1.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 4.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 24375,
+        "completion": 7353,
+        "total": 31728
+      },
+      "time_cost_seconds": 111.7
+    },
+    "3_clang_Os_g": {
+      "eval_id": "3_clang_Os_g",
+      "overall_score": 4.0,
+      "levels": {
+        "L1_lexical_clarity": 4.0,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 4.0,
+        "L4_semantic_transparency": 2.0,
+        "L5_contextual_coherence": 3.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 2.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 3.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 1.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 4.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 22374,
+        "completion": 4113,
+        "total": 26487
+      },
+      "time_cost_seconds": 80.31
+    },
+    "3_clang_Os_no_g": {
+      "eval_id": "3_clang_Os_no_g",
+      "overall_score": 4.5,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 2.67,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 3.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 22506,
+        "completion": 3772,
+        "total": 26278
+      },
+      "time_cost_seconds": 70.09
+    },
+    "3_gcc_O0_g": {
+      "eval_id": "3_gcc_O0_g",
+      "overall_score": 5.9,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 7.25,
+        "L3_type_system_fidelity": 7.0,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 8.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 24681,
+        "completion": 4332,
+        "total": 29013
+      },
+      "time_cost_seconds": 73.23
+    },
+    "3_gcc_O0_no_g": {
+      "eval_id": "3_gcc_O0_no_g",
+      "overall_score": 5.0,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 3.0,
+        "L4_semantic_transparency": 2.5,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 2.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 25049,
+        "completion": 3852,
+        "total": 28901
+      },
+      "time_cost_seconds": 93.17
+    },
+    "3_gcc_O1_g": {
+      "eval_id": "3_gcc_O1_g",
+      "overall_score": 5.4,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 5.67,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 24020,
+        "completion": 3491,
+        "total": 27511
+      },
+      "time_cost_seconds": 90.44
+    },
+    "3_gcc_O1_no_g": {
+      "eval_id": "3_gcc_O1_no_g",
+      "overall_score": 5.1,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 6.75,
+        "L3_type_system_fidelity": 4.0,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 24246,
+        "completion": 5328,
+        "total": 29574
+      },
+      "time_cost_seconds": 121.11
+    },
+    "3_gcc_O2_g": {
+      "eval_id": "3_gcc_O2_g",
+      "overall_score": 5.1,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 5.33,
+        "L4_semantic_transparency": 2.5,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 24321,
+        "completion": 2727,
+        "total": 27048
+      },
+      "time_cost_seconds": 67.11
+    },
+    "3_gcc_O2_no_g": {
+      "eval_id": "3_gcc_O2_no_g",
+      "overall_score": 4.26,
+      "levels": {
+        "L1_lexical_clarity": 4.5,
+        "L2_structural_intelligibility": 6.0,
+        "L3_type_system_fidelity": 3.0,
+        "L4_semantic_transparency": 2.5,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 1.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 4.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 24580,
+        "completion": 4982,
+        "total": 29562
+      },
+      "time_cost_seconds": 110.07
+    },
+    "3_gcc_O3_g": {
+      "eval_id": "3_gcc_O3_g",
+      "overall_score": 4.8,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 6.0,
+        "L3_type_system_fidelity": 4.33,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 24740,
+        "completion": 3999,
+        "total": 28739
+      },
+      "time_cost_seconds": 119.39
+    },
+    "3_gcc_O3_no_g": {
+      "eval_id": "3_gcc_O3_no_g",
+      "overall_score": 4.2,
+      "levels": {
+        "L1_lexical_clarity": 3.75,
+        "L2_structural_intelligibility": 5.75,
+        "L3_type_system_fidelity": 3.33,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 2.0,
+        "2_function_naming_quality": 5.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 24937,
+        "completion": 3880,
+        "total": 28817
+      },
+      "time_cost_seconds": 72.35
+    },
+    "3_gcc_Os_g": {
+      "eval_id": "3_gcc_Os_g",
+      "overall_score": 5.1,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 5.75,
+        "L3_type_system_fidelity": 5.67,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 4.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 24148,
+        "completion": 3286,
+        "total": 27434
+      },
+      "time_cost_seconds": 65.76
+    },
+    "3_gcc_Os_no_g": {
+      "eval_id": "3_gcc_Os_no_g",
+      "overall_score": 4.5,
+      "levels": {
+        "L1_lexical_clarity": 4.75,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 3.33,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 24464,
+        "completion": 4693,
+        "total": 29157
+      },
+      "time_cost_seconds": 101.51
+    },
+    "4_clang_O0_g": {
+      "eval_id": "4_clang_O0_g",
+      "overall_score": 6.7,
+      "levels": {
+        "L1_lexical_clarity": 6.75,
+        "L2_structural_intelligibility": 7.5,
+        "L3_type_system_fidelity": 7.0,
+        "L4_semantic_transparency": 4.75,
+        "L5_contextual_coherence": 6.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 6.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 7.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 8.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 6.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 5.0,
+        "16_cross_reference_clarity": 7.0,
+        "17_module_organization": 8.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 20049,
+        "completion": 4051,
+        "total": 24100
+      },
+      "time_cost_seconds": 72.08
+    },
+    "4_clang_O0_no_g": {
+      "eval_id": "4_clang_O0_no_g",
+      "overall_score": 5.0,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 3.0,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 5.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 3.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 20444,
+        "completion": 7428,
+        "total": 27872
+      },
+      "time_cost_seconds": 87.87
+    },
+    "4_clang_O1_g": {
+      "eval_id": "4_clang_O1_g",
+      "overall_score": 5.55,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 6.0,
+        "L4_semantic_transparency": 3.75,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 18571,
+        "completion": 3856,
+        "total": 22427
+      },
+      "time_cost_seconds": 61.96
+    },
+    "4_clang_O1_no_g": {
+      "eval_id": "4_clang_O1_no_g",
+      "overall_score": 4.7,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 6.0,
+        "L3_type_system_fidelity": 3.67,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 18790,
+        "completion": 5825,
+        "total": 24615
+      },
+      "time_cost_seconds": 102.5
+    },
+    "4_clang_O2_g": {
+      "eval_id": "4_clang_O2_g",
+      "overall_score": 5.9,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 7.33,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 5.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 8.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 7.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 18937,
+        "completion": 2266,
+        "total": 21203
+      },
+      "time_cost_seconds": 47.52
+    },
+    "4_clang_O2_no_g": {
+      "eval_id": "4_clang_O2_no_g",
+      "overall_score": 4.2,
+      "levels": {
+        "L1_lexical_clarity": 4.25,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 3.0,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 2.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 3.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 4.0,
+        "9_type_precision": 3.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 19261,
+        "completion": 2941,
+        "total": 22202
+      },
+      "time_cost_seconds": 53.22
+    },
+    "4_clang_O3_g": {
+      "eval_id": "4_clang_O3_g",
+      "overall_score": 5.3,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 5.75,
+        "L3_type_system_fidelity": 6.33,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 8.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 19081,
+        "completion": 4256,
+        "total": 23337
+      },
+      "time_cost_seconds": 76.79
+    },
+    "4_clang_O3_no_g": {
+      "eval_id": "4_clang_O3_no_g",
+      "overall_score": 4.6,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 6.0,
+        "L3_type_system_fidelity": 3.67,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 4.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 19405,
+        "completion": 4078,
+        "total": 23483
+      },
+      "time_cost_seconds": 69.11
+    },
+    "4_clang_Os_g": {
+      "eval_id": "4_clang_Os_g",
+      "overall_score": 5.5,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 6.33,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 18594,
+        "completion": 2614,
+        "total": 21208
+      },
+      "time_cost_seconds": 47.33
+    },
+    "4_clang_Os_no_g": {
+      "eval_id": "4_clang_Os_no_g",
+      "overall_score": 4.53,
+      "levels": {
+        "L1_lexical_clarity": 4.75,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 3.0,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 2.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 18738,
+        "completion": 4178,
+        "total": 22916
+      },
+      "time_cost_seconds": 110.57
+    },
+    "4_gcc_O0_g": {
+      "eval_id": "4_gcc_O0_g",
+      "overall_score": 5.9,
+      "levels": {
+        "L1_lexical_clarity": 6.0,
+        "L2_structural_intelligibility": 6.75,
+        "L3_type_system_fidelity": 6.33,
+        "L4_semantic_transparency": 4.0,
+        "L5_contextual_coherence": 5.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 7.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 8.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 20915,
+        "completion": 4405,
+        "total": 25320
+      },
+      "time_cost_seconds": 95.03
+    },
+    "4_gcc_O0_no_g": {
+      "eval_id": "4_gcc_O0_no_g",
+      "overall_score": 5.1,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 4.0,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 21675,
+        "completion": 4781,
+        "total": 26456
+      },
+      "time_cost_seconds": 86.15
+    },
+    "4_gcc_O1_g": {
+      "eval_id": "4_gcc_O1_g",
+      "overall_score": 5.6,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 6.0,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 19603,
+        "completion": 4249,
+        "total": 23852
+      },
+      "time_cost_seconds": 80.77
+    },
+    "4_gcc_O1_no_g": {
+      "eval_id": "4_gcc_O1_no_g",
+      "overall_score": 5.0,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 3.67,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 5.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 20235,
+        "completion": 4319,
+        "total": 24554
+      },
+      "time_cost_seconds": 68.25
+    },
+    "4_gcc_O2_g": {
+      "eval_id": "4_gcc_O2_g",
+      "overall_score": 5.5,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 5.67,
+        "L4_semantic_transparency": 3.75,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 19230,
+        "completion": 4596,
+        "total": 23826
+      },
+      "time_cost_seconds": 65.59
+    },
+    "4_gcc_O2_no_g": {
+      "eval_id": "4_gcc_O2_no_g",
+      "overall_score": 4.7,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 3.67,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 19859,
+        "completion": 2759,
+        "total": 22618
+      },
+      "time_cost_seconds": 64.64
+    },
+    "4_gcc_O3_g": {
+      "eval_id": "4_gcc_O3_g",
+      "overall_score": 5.8,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 6.75,
+        "L3_type_system_fidelity": 7.0,
+        "L4_semantic_transparency": 4.25,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 8.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 4.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 19119,
+        "completion": 4195,
+        "total": 23314
+      },
+      "time_cost_seconds": 63.81
+    },
+    "4_gcc_O3_no_g": {
+      "eval_id": "4_gcc_O3_no_g",
+      "overall_score": 4.6,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 3.67,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 19118,
+        "completion": 9864,
+        "total": 28982
+      },
+      "time_cost_seconds": 119.95
+    },
+    "4_gcc_Os_g": {
+      "eval_id": "4_gcc_Os_g",
+      "overall_score": 5.8,
+      "levels": {
+        "L1_lexical_clarity": 6.0,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 6.33,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 19234,
+        "completion": 4928,
+        "total": 24162
+      },
+      "time_cost_seconds": 70.47
+    },
+    "4_gcc_Os_no_g": {
+      "eval_id": "4_gcc_Os_no_g",
+      "overall_score": 4.4,
+      "levels": {
+        "L1_lexical_clarity": 4.5,
+        "L2_structural_intelligibility": 6.0,
+        "L3_type_system_fidelity": 3.33,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 19499,
+        "completion": 2873,
+        "total": 22372
+      },
+      "time_cost_seconds": 108.53
+    },
+    "5-1_clang_O0_g": {
+      "eval_id": "5-1_clang_O0_g",
+      "overall_score": 5.3,
+      "levels": {
+        "L1_lexical_clarity": 6.0,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 5.0,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 35345,
+        "completion": 3867,
+        "total": 39212
+      },
+      "time_cost_seconds": 153.02
+    },
+    "5-1_clang_O0_no_g": {
+      "eval_id": "5-1_clang_O0_no_g",
+      "overall_score": 5.1,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 6.0,
+        "L3_type_system_fidelity": 4.67,
+        "L4_semantic_transparency": 3.75,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 32874,
+        "completion": 4589,
+        "total": 37463
+      },
+      "time_cost_seconds": 99.29
+    },
+    "5-1_clang_O1_g": {
+      "eval_id": "5-1_clang_O1_g",
+      "overall_score": 4.9,
+      "levels": {
+        "L1_lexical_clarity": 4.75,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 4.67,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 18237,
+        "completion": 4535,
+        "total": 22772
+      },
+      "time_cost_seconds": 60.76
+    },
+    "5-1_clang_O1_no_g": {
+      "eval_id": "5-1_clang_O1_no_g",
+      "overall_score": 4.1,
+      "levels": {
+        "L1_lexical_clarity": 4.25,
+        "L2_structural_intelligibility": 6.0,
+        "L3_type_system_fidelity": 3.0,
+        "L4_semantic_transparency": 2.25,
+        "L5_contextual_coherence": 3.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 5.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 1.0,
+        "16_cross_reference_clarity": 4.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 2.0
+      },
+      "tokens": {
+        "prompt": 18640,
+        "completion": 2626,
+        "total": 21266
+      },
+      "time_cost_seconds": 46.26
+    },
+    "5-1_clang_O2_g": {
+      "eval_id": "5-1_clang_O2_g",
+      "overall_score": 4.0,
+      "levels": {
+        "L1_lexical_clarity": 4.25,
+        "L2_structural_intelligibility": 5.0,
+        "L3_type_system_fidelity": 3.67,
+        "L4_semantic_transparency": 2.5,
+        "L5_contextual_coherence": 3.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 5.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 4.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 14410,
+        "completion": 4013,
+        "total": 18423
+      },
+      "time_cost_seconds": 70.24
+    },
+    "5-1_clang_O2_no_g": {
+      "eval_id": "5-1_clang_O2_no_g",
+      "overall_score": 4.3,
+      "levels": {
+        "L1_lexical_clarity": 4.5,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 4.0,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 5.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 4.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 14611,
+        "completion": 2236,
+        "total": 16847
+      },
+      "time_cost_seconds": 30.71
+    },
+    "5-1_clang_O3_g": {
+      "eval_id": "5-1_clang_O3_g",
+      "overall_score": 4.3,
+      "levels": {
+        "L1_lexical_clarity": 4.5,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 3.67,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 5.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 4.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 14410,
+        "completion": 2432,
+        "total": 16842
+      },
+      "time_cost_seconds": 28.22
+    },
+    "5-1_clang_O3_no_g": {
+      "eval_id": "5-1_clang_O3_no_g",
+      "overall_score": 3.7,
+      "levels": {
+        "L1_lexical_clarity": 3.75,
+        "L2_structural_intelligibility": 5.25,
+        "L3_type_system_fidelity": 3.0,
+        "L4_semantic_transparency": 2.25,
+        "L5_contextual_coherence": 3.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 2.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 3.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 4.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 1.0,
+        "16_cross_reference_clarity": 4.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 2.0
+      },
+      "tokens": {
+        "prompt": 14611,
+        "completion": 3369,
+        "total": 17980
+      },
+      "time_cost_seconds": 39.99
+    },
+    "5-1_clang_Os_g": {
+      "eval_id": "5-1_clang_Os_g",
+      "overall_score": 4.2,
+      "levels": {
+        "L1_lexical_clarity": 3.75,
+        "L2_structural_intelligibility": 4.75,
+        "L3_type_system_fidelity": 3.33,
+        "L4_semantic_transparency": 2.5,
+        "L5_contextual_coherence": 3.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 2.0,
+        "2_function_naming_quality": 5.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 3.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 4.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 2.0
+      },
+      "tokens": {
+        "prompt": 14263,
+        "completion": 83509,
+        "total": 97772
+      },
+      "time_cost_seconds": 842.9
+    },
+    "5-1_clang_Os_no_g": {
+      "eval_id": "5-1_clang_Os_no_g",
+      "overall_score": 4.1,
+      "levels": {
+        "L1_lexical_clarity": 4.5,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 3.0,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 4.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 14464,
+        "completion": 2508,
+        "total": 16972
+      },
+      "time_cost_seconds": 56.13
+    },
+    "5-1_gcc_O0_g": {
+      "eval_id": "5-1_gcc_O0_g",
+      "overall_score": 5.0,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 5.33,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 2.0
+      },
+      "tokens": {
+        "prompt": 36566,
+        "completion": 3866,
+        "total": 40432
+      },
+      "time_cost_seconds": 58.96
+    },
+    "5-1_gcc_O0_no_g": {
+      "eval_id": "5-1_gcc_O0_no_g",
+      "overall_score": 4.7,
+      "levels": {
+        "L1_lexical_clarity": 4.5,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 4.67,
+        "L4_semantic_transparency": 3.75,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 34277,
+        "completion": 4661,
+        "total": 38938
+      },
+      "time_cost_seconds": 81.93
+    },
+    "5-1_gcc_O1_g": {
+      "eval_id": "5-1_gcc_O1_g",
+      "overall_score": 4.9,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 5.75,
+        "L3_type_system_fidelity": 5.33,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 18009,
+        "completion": 4699,
+        "total": 22708
+      },
+      "time_cost_seconds": 58.4
+    },
+    "5-1_gcc_O1_no_g": {
+      "eval_id": "5-1_gcc_O1_no_g",
+      "overall_score": 4.3,
+      "levels": {
+        "L1_lexical_clarity": 4.75,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 3.0,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 3.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 4.0,
+        "17_module_organization": 3.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 18399,
+        "completion": 4823,
+        "total": 23222
+      },
+      "time_cost_seconds": 75.71
+    },
+    "5-1_gcc_O2_g": {
+      "eval_id": "5-1_gcc_O2_g",
+      "overall_score": 4.6,
+      "levels": {
+        "L1_lexical_clarity": 4.5,
+        "L2_structural_intelligibility": 5.25,
+        "L3_type_system_fidelity": 4.33,
+        "L4_semantic_transparency": 3.75,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 5.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 4.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 17670,
+        "completion": 4650,
+        "total": 22320
+      },
+      "time_cost_seconds": 50.37
+    },
+    "5-1_gcc_O2_no_g": {
+      "eval_id": "5-1_gcc_O2_no_g",
+      "overall_score": 4.3,
+      "levels": {
+        "L1_lexical_clarity": 4.5,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 3.0,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 18038,
+        "completion": 2565,
+        "total": 20603
+      },
+      "time_cost_seconds": 31.1
+    },
+    "5-1_gcc_O3_g": {
+      "eval_id": "5-1_gcc_O3_g",
+      "overall_score": 4.2,
+      "levels": {
+        "L1_lexical_clarity": 4.0,
+        "L2_structural_intelligibility": 5.0,
+        "L3_type_system_fidelity": 4.0,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 5.0,
+        "3_literal_clarity": 3.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 4.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 17786,
+        "completion": 4444,
+        "total": 22230
+      },
+      "time_cost_seconds": 49.32
+    },
+    "5-1_gcc_O3_no_g": {
+      "eval_id": "5-1_gcc_O3_no_g",
+      "overall_score": 3.6,
+      "levels": {
+        "L1_lexical_clarity": 3.75,
+        "L2_structural_intelligibility": 4.5,
+        "L3_type_system_fidelity": 3.0,
+        "L4_semantic_transparency": 2.5,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 2.0,
+        "2_function_naming_quality": 5.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 3.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 5.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 3.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 18134,
+        "completion": 4334,
+        "total": 22468
+      },
+      "time_cost_seconds": 68.77
+    },
+    "5-1_gcc_Os_g": {
+      "eval_id": "5-1_gcc_Os_g",
+      "overall_score": 4.6,
+      "levels": {
+        "L1_lexical_clarity": 4.75,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 4.67,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 21005,
+        "completion": 3310,
+        "total": 24315
+      },
+      "time_cost_seconds": 65.31
+    },
+    "5-1_gcc_Os_no_g": {
+      "eval_id": "5-1_gcc_Os_no_g",
+      "overall_score": 5.1,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 6.75,
+        "L3_type_system_fidelity": 4.33,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 20797,
+        "completion": 3896,
+        "total": 24693
+      },
+      "time_cost_seconds": 50.6
+    },
+    "5-23_clang_O0_g": {
+      "eval_id": "5-23_clang_O0_g",
+      "overall_score": 6.9,
+      "levels": {
+        "L1_lexical_clarity": 6.75,
+        "L2_structural_intelligibility": 8.75,
+        "L3_type_system_fidelity": 7.0,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 7.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 6.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 8.0,
+        "5_control_flow_naturalness": 9.0,
+        "6_function_decomposition": 9.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 9.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 8.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 7.0,
+        "17_module_organization": 8.0,
+        "18_build_system_compatibility": 7.0
+      },
+      "tokens": {
+        "prompt": 18157,
+        "completion": 2436,
+        "total": 20593
+      },
+      "time_cost_seconds": 46.17
+    },
+    "5-23_clang_O0_no_g": {
+      "eval_id": "5-23_clang_O0_no_g",
+      "overall_score": 6.2,
+      "levels": {
+        "L1_lexical_clarity": 6.0,
+        "L2_structural_intelligibility": 8.0,
+        "L3_type_system_fidelity": 6.33,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 6.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 9.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 9.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 7.0,
+        "17_module_organization": 7.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 18392,
+        "completion": 2741,
+        "total": 21133
+      },
+      "time_cost_seconds": 33.18
+    },
+    "5-23_clang_O1_g": {
+      "eval_id": "5-23_clang_O1_g",
+      "overall_score": 6.2,
+      "levels": {
+        "L1_lexical_clarity": 6.0,
+        "L2_structural_intelligibility": 7.75,
+        "L3_type_system_fidelity": 7.33,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 8.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 18253,
+        "completion": 4123,
+        "total": 22376
+      },
+      "time_cost_seconds": 43.02
+    },
+    "5-23_clang_O1_no_g": {
+      "eval_id": "5-23_clang_O1_no_g",
+      "overall_score": 5.1,
+      "levels": {
+        "L1_lexical_clarity": 4.75,
+        "L2_structural_intelligibility": 6.75,
+        "L3_type_system_fidelity": 5.0,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 18387,
+        "completion": 4544,
+        "total": 22931
+      },
+      "time_cost_seconds": 56.41
+    },
+    "5-23_clang_O2_g": {
+      "eval_id": "5-23_clang_O2_g",
+      "overall_score": 5.8,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 6.75,
+        "L3_type_system_fidelity": 6.67,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 5.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 18442,
+        "completion": 3367,
+        "total": 21809
+      },
+      "time_cost_seconds": 43.91
+    },
+    "5-23_clang_O2_no_g": {
+      "eval_id": "5-23_clang_O2_no_g",
+      "overall_score": 6.1,
+      "levels": {
+        "L1_lexical_clarity": 6.0,
+        "L2_structural_intelligibility": 7.25,
+        "L3_type_system_fidelity": 6.67,
+        "L4_semantic_transparency": 3.75,
+        "L5_contextual_coherence": 6.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 6.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 7.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 18573,
+        "completion": 4453,
+        "total": 23026
+      },
+      "time_cost_seconds": 58.46
+    },
+    "5-23_clang_O3_g": {
+      "eval_id": "5-23_clang_O3_g",
+      "overall_score": 5.7,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 7.0,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 5.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 8.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 18491,
+        "completion": 4890,
+        "total": 23381
+      },
+      "time_cost_seconds": 61.85
+    },
+    "5-23_clang_O3_no_g": {
+      "eval_id": "5-23_clang_O3_no_g",
+      "overall_score": 5.8,
+      "levels": {
+        "L1_lexical_clarity": 6.0,
+        "L2_structural_intelligibility": 7.75,
+        "L3_type_system_fidelity": 6.0,
+        "L4_semantic_transparency": 2.0,
+        "L5_contextual_coherence": 5.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 1.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 7.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 18625,
+        "completion": 4894,
+        "total": 23519
+      },
+      "time_cost_seconds": 75.28
+    },
+    "5-23_clang_Os_g": {
+      "eval_id": "5-23_clang_Os_g",
+      "overall_score": 6.4,
+      "levels": {
+        "L1_lexical_clarity": 6.25,
+        "L2_structural_intelligibility": 7.5,
+        "L3_type_system_fidelity": 7.33,
+        "L4_semantic_transparency": 4.0,
+        "L5_contextual_coherence": 5.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 9.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 8.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 8.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 6.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 7.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 18044,
+        "completion": 5016,
+        "total": 23060
+      },
+      "time_cost_seconds": 69.42
+    },
+    "5-23_clang_Os_no_g": {
+      "eval_id": "5-23_clang_Os_no_g",
+      "overall_score": 6.2,
+      "levels": {
+        "L1_lexical_clarity": 6.25,
+        "L2_structural_intelligibility": 8.25,
+        "L3_type_system_fidelity": 6.33,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 5.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 9.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 9.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 8.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 7.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 18186,
+        "completion": 2446,
+        "total": 20632
+      },
+      "time_cost_seconds": 38.33
+    },
+    "5-23_gcc_O0_g": {
+      "eval_id": "5-23_gcc_O0_g",
+      "overall_score": 6.46,
+      "levels": {
+        "L1_lexical_clarity": 6.5,
+        "L2_structural_intelligibility": 7.75,
+        "L3_type_system_fidelity": 7.0,
+        "L4_semantic_transparency": 4.0,
+        "L5_contextual_coherence": 5.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 6.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 9.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 18688,
+        "completion": 3670,
+        "total": 22358
+      },
+      "time_cost_seconds": 70.76
+    },
+    "5-23_gcc_O0_no_g": {
+      "eval_id": "5-23_gcc_O0_no_g",
+      "overall_score": 6.3,
+      "levels": {
+        "L1_lexical_clarity": 6.0,
+        "L2_structural_intelligibility": 8.25,
+        "L3_type_system_fidelity": 6.67,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 6.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 9.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 8.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 7.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 19212,
+        "completion": 2303,
+        "total": 21515
+      },
+      "time_cost_seconds": 37.41
+    },
+    "5-23_gcc_O1_g": {
+      "eval_id": "5-23_gcc_O1_g",
+      "overall_score": 6.3,
+      "levels": {
+        "L1_lexical_clarity": 6.25,
+        "L2_structural_intelligibility": 8.25,
+        "L3_type_system_fidelity": 6.33,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 6.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 9.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 9.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 8.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 7.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 18038,
+        "completion": 3340,
+        "total": 21378
+      },
+      "time_cost_seconds": 47.8
+    },
+    "5-23_gcc_O1_no_g": {
+      "eval_id": "5-23_gcc_O1_no_g",
+      "overall_score": 5.9,
+      "levels": {
+        "L1_lexical_clarity": 6.25,
+        "L2_structural_intelligibility": 7.5,
+        "L3_type_system_fidelity": 6.33,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 9.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 9.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 18469,
+        "completion": 4770,
+        "total": 23239
+      },
+      "time_cost_seconds": 106.86
+    },
+    "5-23_gcc_O2_g": {
+      "eval_id": "5-23_gcc_O2_g",
+      "overall_score": 6.62,
+      "levels": {
+        "L1_lexical_clarity": 6.5,
+        "L2_structural_intelligibility": 7.75,
+        "L3_type_system_fidelity": 7.67,
+        "L4_semantic_transparency": 4.0,
+        "L5_contextual_coherence": 6.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 6.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 9.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 8.0,
+        "11_type_safety": 8.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 6.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 7.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 18443,
+        "completion": 4094,
+        "total": 22537
+      },
+      "time_cost_seconds": 62.37
+    },
+    "5-23_gcc_O2_no_g": {
+      "eval_id": "5-23_gcc_O2_no_g",
+      "overall_score": 5.8,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 7.25,
+        "L3_type_system_fidelity": 6.33,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 8.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 6.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 18757,
+        "completion": 3422,
+        "total": 22179
+      },
+      "time_cost_seconds": 53.82
+    },
+    "5-23_gcc_O3_g": {
+      "eval_id": "5-23_gcc_O3_g",
+      "overall_score": 5.9,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 7.5,
+        "L3_type_system_fidelity": 6.67,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 6.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 7.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 18895,
+        "completion": 3969,
+        "total": 22864
+      },
+      "time_cost_seconds": 75.73
+    },
+    "5-23_gcc_O3_no_g": {
+      "eval_id": "5-23_gcc_O3_no_g",
+      "overall_score": 6.1,
+      "levels": {
+        "L1_lexical_clarity": 6.0,
+        "L2_structural_intelligibility": 7.25,
+        "L3_type_system_fidelity": 7.33,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 6.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 9.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 8.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 7.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 19187,
+        "completion": 3769,
+        "total": 22956
+      },
+      "time_cost_seconds": 48.57
+    },
+    "5-23_gcc_Os_g": {
+      "eval_id": "5-23_gcc_Os_g",
+      "overall_score": 6.4,
+      "levels": {
+        "L1_lexical_clarity": 6.25,
+        "L2_structural_intelligibility": 8.0,
+        "L3_type_system_fidelity": 6.67,
+        "L4_semantic_transparency": 4.0,
+        "L5_contextual_coherence": 5.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 9.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 9.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 6.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 18078,
+        "completion": 2783,
+        "total": 20861
+      },
+      "time_cost_seconds": 41.26
+    },
+    "5-23_gcc_Os_no_g": {
+      "eval_id": "5-23_gcc_Os_no_g",
+      "overall_score": 6.0,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 7.75,
+        "L3_type_system_fidelity": 6.67,
+        "L4_semantic_transparency": 3.75,
+        "L5_contextual_coherence": 5.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 6.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 18293,
+        "completion": 2966,
+        "total": 21259
+      },
+      "time_cost_seconds": 61.73
+    },
+    "6_clang_O0_g": {
+      "eval_id": "6_clang_O0_g",
+      "overall_score": 5.4,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 5.0,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 6.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 27019,
+        "completion": 3654,
+        "total": 30673
+      },
+      "time_cost_seconds": 77.65
+    },
+    "6_clang_O0_no_g": {
+      "eval_id": "6_clang_O0_no_g",
+      "overall_score": 5.3,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 7.25,
+        "L3_type_system_fidelity": 4.33,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 27162,
+        "completion": 5196,
+        "total": 32358
+      },
+      "time_cost_seconds": 91.86
+    },
+    "6_clang_O1_g": {
+      "eval_id": "6_clang_O1_g",
+      "overall_score": 4.9,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 4.0,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 29108,
+        "completion": 3911,
+        "total": 33019
+      },
+      "time_cost_seconds": 87.11
+    },
+    "6_clang_O1_no_g": {
+      "eval_id": "6_clang_O1_no_g",
+      "overall_score": 5.1,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 6.0,
+        "L3_type_system_fidelity": 4.67,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 29167,
+        "completion": 3952,
+        "total": 33119
+      },
+      "time_cost_seconds": 79.43
+    },
+    "6_clang_O2_g": {
+      "eval_id": "6_clang_O2_g",
+      "overall_score": 5.2,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 5.0,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 28708,
+        "completion": 3689,
+        "total": 32397
+      },
+      "time_cost_seconds": 51.94
+    },
+    "6_clang_O2_no_g": {
+      "eval_id": "6_clang_O2_no_g",
+      "overall_score": 4.6,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 5.75,
+        "L3_type_system_fidelity": 4.0,
+        "L4_semantic_transparency": 2.5,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 1.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 28763,
+        "completion": 5409,
+        "total": 34172
+      },
+      "time_cost_seconds": 124.37
+    },
+    "6_clang_O3_g": {
+      "eval_id": "6_clang_O3_g",
+      "overall_score": 4.6,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 4.33,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 28709,
+        "completion": 4258,
+        "total": 32967
+      },
+      "time_cost_seconds": 78.19
+    },
+    "6_clang_O3_no_g": {
+      "eval_id": "6_clang_O3_no_g",
+      "overall_score": 5.13,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 6.75,
+        "L3_type_system_fidelity": 4.33,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 28764,
+        "completion": 4445,
+        "total": 33209
+      },
+      "time_cost_seconds": 72.5
+    },
+    "6_clang_Os_g": {
+      "eval_id": "6_clang_Os_g",
+      "overall_score": 5.8,
+      "levels": {
+        "L1_lexical_clarity": 6.5,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 5.33,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 5.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 7.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 26946,
+        "completion": 2305,
+        "total": 29251
+      },
+      "time_cost_seconds": 48.36
+    },
+    "6_clang_Os_no_g": {
+      "eval_id": "6_clang_Os_no_g",
+      "overall_score": 5.3,
+      "levels": {
+        "L1_lexical_clarity": 4.75,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 5.67,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 27009,
+        "completion": 4147,
+        "total": 31156
+      },
+      "time_cost_seconds": 72.12
+    },
+    "6_gcc_O0_g": {
+      "eval_id": "6_gcc_O0_g",
+      "overall_score": 5.8,
+      "levels": {
+        "L1_lexical_clarity": 6.0,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 5.67,
+        "L4_semantic_transparency": 4.0,
+        "L5_contextual_coherence": 5.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 6.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 29738,
+        "completion": 5115,
+        "total": 34853
+      },
+      "time_cost_seconds": 92.81
+    },
+    "6_gcc_O0_no_g": {
+      "eval_id": "6_gcc_O0_no_g",
+      "overall_score": 5.5,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 5.0,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 5.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 6.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 30088,
+        "completion": 4491,
+        "total": 34579
+      },
+      "time_cost_seconds": 80.87
+    },
+    "6_gcc_O1_g": {
+      "eval_id": "6_gcc_O1_g",
+      "overall_score": 5.9,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 6.33,
+        "L4_semantic_transparency": 4.0,
+        "L5_contextual_coherence": 5.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 6.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 30355,
+        "completion": 3710,
+        "total": 34065
+      },
+      "time_cost_seconds": 57.79
+    },
+    "6_gcc_O1_no_g": {
+      "eval_id": "6_gcc_O1_no_g",
+      "overall_score": 5.4,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 4.67,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 5.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 7.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 30520,
+        "completion": 2415,
+        "total": 32935
+      },
+      "time_cost_seconds": 30.84
+    },
+    "6_gcc_O2_g": {
+      "eval_id": "6_gcc_O2_g",
+      "overall_score": 4.67,
+      "levels": {
+        "L1_lexical_clarity": 4.75,
+        "L2_structural_intelligibility": 6.0,
+        "L3_type_system_fidelity": 4.67,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 31427,
+        "completion": 3481,
+        "total": 34908
+      },
+      "time_cost_seconds": 107.72
+    },
+    "6_gcc_O2_no_g": {
+      "eval_id": "6_gcc_O2_no_g",
+      "overall_score": 4.4,
+      "levels": {
+        "L1_lexical_clarity": 4.25,
+        "L2_structural_intelligibility": 6.0,
+        "L3_type_system_fidelity": 4.33,
+        "L4_semantic_transparency": 2.25,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 1.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 31593,
+        "completion": 3431,
+        "total": 35024
+      },
+      "time_cost_seconds": 49.33
+    },
+    "6_gcc_O3_g": {
+      "eval_id": "6_gcc_O3_g",
+      "overall_score": 4.6,
+      "levels": {
+        "L1_lexical_clarity": 4.0,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 5.0,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 5.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 33405,
+        "completion": 4748,
+        "total": 38153
+      },
+      "time_cost_seconds": 75.44
+    },
+    "6_gcc_O3_no_g": {
+      "eval_id": "6_gcc_O3_no_g",
+      "overall_score": 4.55,
+      "levels": {
+        "L1_lexical_clarity": 4.5,
+        "L2_structural_intelligibility": 5.75,
+        "L3_type_system_fidelity": 4.33,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 5.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 4.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 33650,
+        "completion": 4407,
+        "total": 38057
+      },
+      "time_cost_seconds": 70.66
+    },
+    "6_gcc_Os_g": {
+      "eval_id": "6_gcc_Os_g",
+      "overall_score": 5.1,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 6.0,
+        "L3_type_system_fidelity": 5.33,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 31144,
+        "completion": 3747,
+        "total": 34891
+      },
+      "time_cost_seconds": 71.06
+    },
+    "6_gcc_Os_no_g": {
+      "eval_id": "6_gcc_Os_no_g",
+      "overall_score": 4.9,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 4.67,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 31352,
+        "completion": 2843,
+        "total": 34195
+      },
+      "time_cost_seconds": 48.91
+    },
+    "7_clang_O0_g": {
+      "eval_id": "7_clang_O0_g",
+      "overall_score": 6.1,
+      "levels": {
+        "L1_lexical_clarity": 6.5,
+        "L2_structural_intelligibility": 7.75,
+        "L3_type_system_fidelity": 6.33,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 6.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 14044,
+        "completion": 4143,
+        "total": 18187
+      },
+      "time_cost_seconds": 79.59
+    },
+    "7_clang_O0_no_g": {
+      "eval_id": "7_clang_O0_no_g",
+      "overall_score": 4.8,
+      "levels": {
+        "L1_lexical_clarity": 4.5,
+        "L2_structural_intelligibility": 6.75,
+        "L3_type_system_fidelity": 4.0,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 14173,
+        "completion": 2700,
+        "total": 16873
+      },
+      "time_cost_seconds": 33.63
+    },
+    "7_clang_O1_g": {
+      "eval_id": "7_clang_O1_g",
+      "overall_score": 5.0,
+      "levels": {
+        "L1_lexical_clarity": 4.75,
+        "L2_structural_intelligibility": 6.0,
+        "L3_type_system_fidelity": 6.0,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 14852,
+        "completion": 4402,
+        "total": 19254
+      },
+      "time_cost_seconds": 69.36
+    },
+    "7_clang_O1_no_g": {
+      "eval_id": "7_clang_O1_no_g",
+      "overall_score": 4.7,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 4.0,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 4.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 4.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 14953,
+        "completion": 4259,
+        "total": 19212
+      },
+      "time_cost_seconds": 68.78
+    },
+    "7_clang_O2_g": {
+      "eval_id": "7_clang_O2_g",
+      "overall_score": 4.3,
+      "levels": {
+        "L1_lexical_clarity": 4.75,
+        "L2_structural_intelligibility": 5.25,
+        "L3_type_system_fidelity": 4.33,
+        "L4_semantic_transparency": 2.0,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 4.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 1.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 14825,
+        "completion": 4550,
+        "total": 19375
+      },
+      "time_cost_seconds": 86.71
+    },
+    "7_clang_O2_no_g": {
+      "eval_id": "7_clang_O2_no_g",
+      "overall_score": 4.9,
+      "levels": {
+        "L1_lexical_clarity": 4.75,
+        "L2_structural_intelligibility": 5.5,
+        "L3_type_system_fidelity": 6.0,
+        "L4_semantic_transparency": 2.0,
+        "L5_contextual_coherence": 5.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 2.0,
+        "14_anomaly_indication": 2.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 15150,
+        "completion": 3779,
+        "total": 18929
+      },
+      "time_cost_seconds": 87.23
+    },
+    "7_clang_O3_g": {
+      "eval_id": "7_clang_O3_g",
+      "overall_score": 4.8,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 5.25,
+        "L3_type_system_fidelity": 5.0,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 4.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 5.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 14767,
+        "completion": 11567,
+        "total": 26334
+      },
+      "time_cost_seconds": 93.62
+    },
+    "7_clang_O3_no_g": {
+      "eval_id": "7_clang_O3_no_g",
+      "overall_score": 4.5,
+      "levels": {
+        "L1_lexical_clarity": 4.75,
+        "L2_structural_intelligibility": 6.0,
+        "L3_type_system_fidelity": 4.0,
+        "L4_semantic_transparency": 2.25,
+        "L5_contextual_coherence": 4.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 2.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 2.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 15092,
+        "completion": 3256,
+        "total": 18348
+      },
+      "time_cost_seconds": 44.48
+    },
+    "7_clang_Os_g": {
+      "eval_id": "7_clang_Os_g",
+      "overall_score": 5.4,
+      "levels": {
+        "L1_lexical_clarity": 5.0,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 6.0,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 5.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 6.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 7.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 14177,
+        "completion": 4620,
+        "total": 18797
+      },
+      "time_cost_seconds": 60.35
+    },
+    "7_clang_Os_no_g": {
+      "eval_id": "7_clang_Os_no_g",
+      "overall_score": 5.7,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 6.75,
+        "L3_type_system_fidelity": 6.0,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 5.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 8.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 14285,
+        "completion": 2896,
+        "total": 17181
+      },
+      "time_cost_seconds": 39.57
+    },
+    "7_gcc_O0_g": {
+      "eval_id": "7_gcc_O0_g",
+      "overall_score": 5.7,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 6.33,
+        "L4_semantic_transparency": 3.25,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 6.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 14896,
+        "completion": 4305,
+        "total": 19201
+      },
+      "time_cost_seconds": 78.38
+    },
+    "7_gcc_O0_no_g": {
+      "eval_id": "7_gcc_O0_no_g",
+      "overall_score": 5.6,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 7.75,
+        "L3_type_system_fidelity": 5.0,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 6.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 7.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 15007,
+        "completion": 3902,
+        "total": 18909
+      },
+      "time_cost_seconds": 92.91
+    },
+    "7_gcc_O1_g": {
+      "eval_id": "7_gcc_O1_g",
+      "overall_score": 5.6,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 6.0,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 5.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 7.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 14570,
+        "completion": 4956,
+        "total": 19526
+      },
+      "time_cost_seconds": 68.81
+    },
+    "7_gcc_O1_no_g": {
+      "eval_id": "7_gcc_O1_no_g",
+      "overall_score": 5.1,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 4.0,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 8.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 2.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 14660,
+        "completion": 3496,
+        "total": 18156
+      },
+      "time_cost_seconds": 70.68
+    },
+    "7_gcc_O2_g": {
+      "eval_id": "7_gcc_O2_g",
+      "overall_score": 4.6,
+      "levels": {
+        "L1_lexical_clarity": 5.25,
+        "L2_structural_intelligibility": 5.25,
+        "L3_type_system_fidelity": 4.67,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 5.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 6.0,
+        "8_redundancy_elimination": 4.0,
+        "9_type_precision": 5.0,
+        "10_composite_type_recovery": 3.0,
+        "11_type_safety": 6.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 15212,
+        "completion": 3590,
+        "total": 18802
+      },
+      "time_cost_seconds": 54.02
+    },
+    "7_gcc_O2_no_g": {
+      "eval_id": "7_gcc_O2_no_g",
+      "overall_score": 4.9,
+      "levels": {
+        "L1_lexical_clarity": 4.5,
+        "L2_structural_intelligibility": 6.5,
+        "L3_type_system_fidelity": 5.33,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 4.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 6.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 4.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 3.0
+      },
+      "tokens": {
+        "prompt": 15352,
+        "completion": 3867,
+        "total": 19219
+      },
+      "time_cost_seconds": 93.38
+    },
+    "7_gcc_O3_g": {
+      "eval_id": "7_gcc_O3_g",
+      "overall_score": 5.5,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 6.25,
+        "L3_type_system_fidelity": 6.67,
+        "L4_semantic_transparency": 2.75,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 5.0,
+        "2_function_naming_quality": 8.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 4.0,
+        "5_control_flow_naturalness": 7.0,
+        "6_function_decomposition": 5.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 7.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 3.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 15330,
+        "completion": 2248,
+        "total": 17578
+      },
+      "time_cost_seconds": 41.08
+    },
+    "7_gcc_O3_no_g": {
+      "eval_id": "7_gcc_O3_no_g",
+      "overall_score": 5.65,
+      "levels": {
+        "L1_lexical_clarity": 6.0,
+        "L2_structural_intelligibility": 7.0,
+        "L3_type_system_fidelity": 5.33,
+        "L4_semantic_transparency": 3.5,
+        "L5_contextual_coherence": 5.0
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 3.0,
+        "2_function_naming_quality": 9.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 6.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 7.0,
+        "8_redundancy_elimination": 6.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 4.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 5.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 15445,
+        "completion": 4140,
+        "total": 19585
+      },
+      "time_cost_seconds": 80.23
+    },
+    "7_gcc_Os_g": {
+      "eval_id": "7_gcc_Os_g",
+      "overall_score": 5.8,
+      "levels": {
+        "L1_lexical_clarity": 5.5,
+        "L2_structural_intelligibility": 7.5,
+        "L3_type_system_fidelity": 6.0,
+        "L4_semantic_transparency": 4.0,
+        "L5_contextual_coherence": 4.33
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 6.0,
+        "4_noise_reduction": 5.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 7.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 7.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 5.0,
+        "11_type_safety": 7.0,
+        "12_comment_quality": 3.0,
+        "13_idiom_recognition": 5.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 3.0,
+        "16_cross_reference_clarity": 5.0,
+        "17_module_organization": 4.0,
+        "18_build_system_compatibility": 4.0
+      },
+      "tokens": {
+        "prompt": 14386,
+        "completion": 4396,
+        "total": 18782
+      },
+      "time_cost_seconds": 56.92
+    },
+    "7_gcc_Os_no_g": {
+      "eval_id": "7_gcc_Os_no_g",
+      "overall_score": 5.6,
+      "levels": {
+        "L1_lexical_clarity": 5.75,
+        "L2_structural_intelligibility": 7.5,
+        "L3_type_system_fidelity": 5.0,
+        "L4_semantic_transparency": 3.0,
+        "L5_contextual_coherence": 5.67
+      },
+      "dimensions": {
+        "1_variable_naming_quality": 4.0,
+        "2_function_naming_quality": 7.0,
+        "3_literal_clarity": 5.0,
+        "4_noise_reduction": 7.0,
+        "5_control_flow_naturalness": 8.0,
+        "6_function_decomposition": 6.0,
+        "7_code_linearization": 8.0,
+        "8_redundancy_elimination": 8.0,
+        "9_type_precision": 6.0,
+        "10_composite_type_recovery": 4.0,
+        "11_type_safety": 5.0,
+        "12_comment_quality": 2.0,
+        "13_idiom_recognition": 3.0,
+        "14_anomaly_indication": 5.0,
+        "15_assertion_contract_recovery": 2.0,
+        "16_cross_reference_clarity": 6.0,
+        "17_module_organization": 6.0,
+        "18_build_system_compatibility": 5.0
+      },
+      "tokens": {
+        "prompt": 14493,
+        "completion": 5193,
+        "total": 19686
+      },
+      "time_cost_seconds": 72.35
+    }
+  }
+}

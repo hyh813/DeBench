@@ -1,0 +1,104 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `a0`, `v2`), providing no semantic hint about their purpose (e.g., `v2` is used for size/count `n` in `heap_basic`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly recovered from symbols (e.g., `local_vars`, `heap_basic`, `test_stack_memory`), matching the source exactly and clearly indicating purpose.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers like `4294967294` (masking for `*2`), `0x800` (2048), and `0x100000000` without named constants or comments explaining their meaning.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: Significant noise is present, including repetitive stack frame setup (`v0 = &v1;`) in every function and non-standard pseudo-ops like `AddV`, `ShlNV`, and `MulV` which obscure the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The code reflects aggressive optimization (likely -O3) rather than source structure; simple loops are replaced by complex pointer arithmetic or vectorized operations (`uint128_t`), making the original `for` loops unrecognizable.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries are well-preserved; functions like `double_value` are not inlined, maintaining the original modularity and granularity of the source.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While some functions read linearly, others like `vla_stack` contain dense, nested pointer arithmetic and conditionals that require significant effort to trace through.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: The compiler successfully eliminated source redundancy (e.g., collapsing `local_vars`), but the decompiler introduced redundancy via repetitive stack variable declarations and IR artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types are present, but the decompiler uses `uint128_t` for SIMD/NEON registers (a lifting artifact) and `unsigned int` where the source used `int`, losing signedness information.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Structs are recovered with generic names (`struct_0`, `struct_1`) and generic fields (`field_0`, `field_8`), completely losing the semantic names like `Point` or `Node`.
+
+**11. Type Safety:** Score: 5/10
+Justification: Code contains verbose casts (e.g., `(char *)v5 + 4 * ...`) which are technically correct for the binary but make the code hard to read and prone to misinterpretation of the original types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no semantic comments explaining the logic; only stack offset comments (`// [bp-0x10]`) are present, which offer no value for understanding the algorithm.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard library calls (`malloc`, `memcpy`) are recognized, but higher-level idioms like Variable Length Arrays (VLA) or stack frame probing are obscured by low-level pointer arithmetic.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Decompiler failures are explicitly marked with `[D]` tags (e.g., `[D] unsupported_Iop_ZeroHI96ofV128()`), which is helpful, but the code is otherwise presented confidently despite being heavily optimized.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the check `n > 0` in `vla_stack` is buried in complex arithmetic).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: External functions and global variables are correctly declared with `extern`, and the relationships (like `global_func_ptr` usage) are visible, though not explicitly documented.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions ordered by address; the logical grouping of tests (Stack, Heap, Static) present in the source is lost.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code uses pseudo-operations (`AddV`, `ShlNV`) and helper calls (`arm64g_calculate_condition`) that are not valid C, making it impossible to compile with a standard compiler.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 3 + 2) / 4 = 4.25
+L2_avg = (4 + 8 + 5 + 6) / 4 = 5.75
+L3_avg = (5 + 4 + 5) / 3 = 4.67
+L4_avg = (1 + 4 + 6 + 1) / 4 = 3.00
+L5_avg = (7 + 5 + 1) / 3 = 4.33
+
+Overall = (4.25 * 0.30) + (5.75 * 0.25) + (4.67 * 0.20) + 
+          (3.00 * 0.15) + (4.33 * 0.10)
+Overall = 1.275 + 1.4375 + 0.934 + 0.45 + 0.433
+Overall = 4.53
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects (Bullet List)
+- **Pseudo-operation pollution**: The use of `AddV`, `ShlNV`, and `MulV` makes the code look like IR rather than C, rendering it unreadable to anyone not familiar with the specific lifting engine.
+- **Loss of Variable Semantics**: Variables are named `v0`, `v1`, etc., completely obscuring the logic (e.g., `v2` representing the size `n` in allocation functions).
+- **Optimized Control Flow**: The aggressive optimization (likely -O3) has collapsed simple loops into complex pointer arithmetic and vectorized blocks, making it impossible to see the original source structure (e.g., `vla_stack`).
+- **Generic Struct Recovery**: Structs are recovered as `struct_0` with fields `field_0`, losing the semantic context of types like `Point` or `Node`.
+- **Magic Numbers**: Constants like `4294967294` and `0x800` are used without explanation, hiding the intent of masking or size checks.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (9/10)**
+- **Why?** The decompiler successfully preserved the symbol table names, allowing the user to immediately identify the correspondence between the binary functions and the source test functions.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Comment Quality & Presence (1/10)**
+- **Why?** The complete absence of semantic comments, combined with the high level of optimization and IR artifacts, leaves the user with no guidance on what the complex arithmetic is actually achieving.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Lift IR Pseudo-ops to Standard C**: Replace internal representation pseudo-ops (like `AddV`, `ShlNV`) with standard C operators (e.g., `+`, `<<`) to ensure the output is valid and readable C code.
+2. **Recover Variable Names from Usage**: Implement heuristic analysis to infer variable names based on usage context (e.g., variables used in `malloc` size arguments should be named `size` or `count`).
+3. **Annotate Optimized Patterns**: When loop structures are optimized away or vectorized, insert comments explaining the transformation (e.g., "Loop unrolled: original loop filled array with index * n").

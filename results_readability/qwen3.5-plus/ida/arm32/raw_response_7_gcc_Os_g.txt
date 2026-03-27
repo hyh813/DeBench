@@ -1,0 +1,111 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3` throughout (e.g., `param_opaque_predicate` uses `v1` through `v6`), obscuring semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`), but some are generic (`sub_10514`, `init_proc`) and 15 library functions failed to decompile (`__imp_*`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Signal numbers used directly (8 for SIGFPE, 11 for SIGSEGV) instead of named constants. Magic numbers like `0x20u`, `90` (encryption key) lack explanation. Some constants folded (returns `10`, `225`, `500500` directly).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present (register variables `r0`, `r1`, frame pointers `[sp-4h] [bp-4h]`). 15 functions marked "FAILED to decompile". Empty stub functions (`param_buffer_overflow_stack` returns nothing).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops generally recovered as `while`/`for` constructs. `param_tail_call_optimized` correctly shows TCO as while loop. However, `param_opaque_predicate` has awkward branching with `if (!v5) return v3 + 20; return x;` pattern.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but some collapsed due to optimization (`call_fake_branch` returns constant `10` directly). `param_buffer_overflow_stack` reduced to empty function losing original logic.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. `param_vectorized_loop` has clear loop structure. Some functions have complex branching but generally maintain linear flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding occurred (`call_instruction_substitution` returns `225` directly). `param_link_time_optimization` simplified to `2 * (x + 5)` instead of `x * 2 + 10`. Some optimization redundancy remains.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`). `param_string_encryption` return type changed from `int` to `size_t`. Unsigned/signed distinctions sometimes lost (`unsigned __int8` casts visible).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays recovered (`a[8]`, `b[8]`, `c[8]` in `call_vectorized_loop`). Struct in `param_implementation_defined` completely lost (returns constant `44`). No bit-field recovery visible.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts visible (`(unsigned int)x`, `(unsigned __int8)`). Pointer dereference in `param_null_pointer_deref` preserved but no null-check warnings. No obvious type confusion.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments - only register annotations (`// r0`, `// [sp+4h]`). No algorithm explanations. Original source had extensive comments explaining obfuscation techniques that are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: TCO recognized in `param_tail_call_optimized` (recursive → while loop). No design pattern identification. Original obfuscation patterns (opaque predicates, fake branches) not identified as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilation marked for 15 functions. Warning present ("positive sp value has been detected"). No detailed explanations of why decompilation failed or what the anomalies mean.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions inferred. Error conditions not documented. Original source's expected values completely absent.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`encrypted_0`, `jmp_buffer`, `segv_buffer`) used without declaration context. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order by address. No logical grouping (obfuscation vs. optimization vs. edge cases). No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 15 functions failed to decompile (`__imp_*` library functions). External dependencies not documented. Would require significant stubbing and linking to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (4 + 7 + 5 + 5) / 4 = 5.25
+Level 2 Average: (6 + 6 + 7 + 6) / 4 = 6.25
+Level 3 Average: (6 + 4 + 6) / 3 = 5.33
+Level 4 Average: (3 + 4 + 5 + 2) / 4 = 3.50
+Level 5 Average: (5 + 4 + 3) / 3 = 4.00
+
+Overall = (5.25 × 0.30) + (6.25 × 0.25) + (5.33 × 0.20) + (3.50 × 0.15) + (4.00 × 0.10)
+        = 1.575 + 1.5625 + 1.066 + 0.525 + 0.400
+        = 5.13/10
+```
+
+**Overall Readability Score: 5.1/10**
+
+### Critical Defects:
+- **Variable names generic**: `v0`, `v1`, `v2` throughout obscure semantic meaning (should be `result`, `encrypted`, `decrypted`)
+- **15 functions failed to decompile**: All `__imp_*` library functions unresolved, breaking build compatibility
+- **No semantic comments**: Original obfuscation explanations completely lost; no algorithm documentation
+- **Struct types lost**: `param_implementation_defined` bitfield struct collapsed to constant return value
+- **Magic numbers unexplained**: Signal numbers (8, 11), encryption key (90), buffer sizes lack named constants
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately, making it possible to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or expected values documented; original source's test expectations completely absent from decompiled output.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer semantic variable names from usage patterns** - Analyze how variables are used (e.g., `v1` used in string operations should be `buffer` or `decrypted`)
+2. **Recover and document function contracts** - Detect assertion patterns and document expected input ranges and return value semantics
+3. **Preserve original source comments when debug symbols available** - Since `-g` flag was used, extract and embed original comments in decompiled output

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a0`, `a1`, `a2`) and local variables use cryptic names (`v0`, `v1`, `v2`, `v3`, `v4`). Loop iterators are generic (`i`, `j`). Compare to source where parameters like `x`, `n`, `ptr` are semantic. The decompiler made no effort to infer meaningful names from usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - test functions like `local_vars`, `heap_basic`, `global_var_access` are correctly recovered, but many helper functions remain as `sub_401020`, `sub_40102c`. The wrapper functions that just call other functions (e.g., `sub_401209` calling `local_vars()`) should be eliminated or inlined.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently for error returns without explanation. Loop bounds like `0x800` (2048) are unclear. However, string literals in printf are preserved, and some numeric constants like `10`, `5` are meaningful. The `& 4294967295` mask appears everywhere obscuring the actual return values.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. The `& 4294967295` masks are present but manageable. Some type casts present but not excessive. No obvious debug instrumentation. At -O0, this is acceptable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow is well recovered. Loops use proper `for` constructs (`for (i = 0; i < 10; i += 1)`). Conditionals are clear. One issue: the VLA and alloca code has complex pointer arithmetic that obscures the simple loop logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with good granularity. The main issue is the presence of wrapper functions (e.g., `sub_401209` just calls `local_vars()`) that should be eliminated. Overall, function sizes are reasonable and cohesive.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error handling. Some complex pointer arithmetic in VLA/alloca functions disrupts flow slightly. No goto abuse. Good linearization for decompiled code.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code. Some loop unrolling present in `large_stack_frame` but it's the compiler's natural output at -O0. The `& 4294967295` masks are redundant but necessary for unsigned semantics.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `unsigned int` where source has `int`. Parameters like `unsigned long a0` should be `int` or `unsigned int`. Function signatures mix `unsigned int` and `int` inconsistently. The `size_t` is lost, replaced with `unsigned long`. Const correctness is not preserved.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered with generic names (`struct_0`, `struct_1`, `struct_2`). Field names are generic (`field_0`, `field_8`). The `Node` struct is partially recovered but with wrong field names. The `Point` struct is completely lost - fields accessed as `ptr[0]`, `ptr[1]` instead of `p->x`, `p->y`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe pointer casts present. Example: `*((unsigned int *)((char *)ptr + 4 * i))` is verbose and obscures the simple `arr[i] = value` intent. Pointer arithmetic is explicit where array indexing would be clearer. Some type-confused operations in memory functions.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated comments like `/* do not return */` present. No explanation of algorithm intent, no pre/post conditions, no uncertainty indicators. The source had detailed comments (MEM-L1-01, etc.) that are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns like loops and conditionals recognized. Memory allocation patterns (malloc/free) identified but not named. The linked list and tree structures are recognized but not explicitly identified as data structures. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies marked like `[D] Unsupported jumpkind Ijk_SigTRAP` and `[D] MBusEvent-Imbe_Fence()`. However, many potential issues are silent - the dangling pointer access, double free, and heap overflow in source code are not flagged as suspicious in the decompiled output.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values (like -1 becoming 4294967295) are not explained. The source had explicit checks (e.g., `if (n <= 0 || n > 1000) return -1`) that are present but not documented as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Some `extern` declarations present for external functions and global variables. Function call relationships partially clear (e.g., `test_stack_memory` calls `local_vars`). However, no documentation of who calls whom, no call graph information. The callback pattern in `set_global_callback`/`call_global_callback` is present but relationship to `double_value` not explained.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped - stack memory functions together, heap functions together, static/global functions together, memory operation functions together. Matches source organization well. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code appears to compile. Function signatures are reasonable. External dependencies (printf, malloc, free, memset, memcmp, etc.) are properly declared or extern. Some type mismatches might cause warnings but should compile with minor fixes.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic `a0`, `a1`, `a2` and locals use `v0`, `v1`, `v2` - completely obscures semantic purpose
+- **Struct recovery failure**: `Point` struct fields accessed as `ptr[0]`, `ptr[1]` losing semantic meaning; Node struct fields named `field_0`, `field_8` instead of `data`, `next`
+- **No comments**: Zero useful comments explaining algorithm intent, contracts, or anomalies
+- **Magic numbers**: `4294967295` used everywhere for error returns without explanation; `& 4294967295` mask obscures actual values
+- **Type precision loss**: Uses `unsigned int` throughout where source uses `int`; loses `size_t`, `ssize_t` distinctions
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+At -O0, the decompiler properly recovered loop constructs (`for` loops), conditionals, and function call structure. The code execution flow is easy to follow.
+
+### Most Needs Improvement: Variable Naming (2/10)
+The decompiler made no effort to infer meaningful variable names from usage patterns. Parameters like `x`, `n`, `ptr` in source became meaningless `a0`, `v0`, `v1` in decompiled output.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: Analyze parameter/return value relationships. `a0 * 2` in `double_value` suggests `a0` should be named `x`. `malloc(a0 * 4)` with loop `i < a0` suggests `a0` is `n` (count).
+2. **Recover struct field names**: Use type analysis and field access patterns. `ptr[0] = a0; ptr[1] = a0 * 2` in heap_struct clearly indicates `x, y` fields for a Point struct.
+3. **Add semantic comments**: Document the function's purpose, key invariants, and any uncertain elements. At minimum, explain error return value conventions and highlight potentially dangerous patterns (dangling pointers, buffer overflows).

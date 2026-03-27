@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic (`v0`, `v1`, `v2`, `ptr`, `result`, `flag1`). The original source uses meaningful names like `value`, `name`, `size`, `data`, `multiplier` which are completely lost. For example, in `test_cpp_member_func()`, the decompilation shows `v0`, `v1`, `v2`, `v3`, `result`, `flag1` - none of which indicate they represent the object being constructed or its internal state.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some functions have proper C++ mangled names like `_Z20test_cpp_member_funcv` and `_Z17call_virtual_funcP4Basei`, but many use generic `sub_XXXXX` format (e.g., `sub_401030`, `sub_401130`). The mangled names are good, but the generic sub_ functions obscure the actual purpose of infrastructure code.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals are partially preserved through external references like `g_402081`, `g_40209f` (which correspond to format strings), but magic numbers like `4`, `20`, `9`, `10` used in array bounds and sizes lack explanation. The value `42` thrown in exceptions is preserved, but context is missing.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with extensive `[D] PutI(...)`, `[D] unsupported_<class 'pyvex.expr.GetI'>()` annotations throughout. Multiple "Failed to decompile" messages. The code contains raw VEX IR instructions mixed with C-like syntax, making it nearly unreadable. For example, in `Container<double>::push`, there's incomprehensible `[D] PutI(72:F64x8)[t3,0] = t6()` interspersed with actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control structures (if/else, loops) are somewhat recognizable, but some unusual patterns exist like computed goto in `sub_401030` using `goto ptr[2]`. Many functions simply `return;` without showing actual logic, making flow assessment difficult. The exception handling shows mixed control flow with `__cxa_throw`, `__cxa_begin_catch`.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are generally preserved - each test function (`test_cpp_member_func`, `test_cpp_constructor`, etc.) exists as separate function. However, many functions are empty stubs that just call other functions and return, losing the actual implementation. Template functions are properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. However, the computed goto in `sub_401030` and unusual pointer arithmetic in functions like `register_tm_clones` with complex pointer offsets disrupt linear reading. The `__do_global_dtors_aux` function has nested loops that are somewhat difficult to follow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or duplicate expressions observed. At -O0, we wouldn't expect much optimization-related redundancy. The code is relatively clean in this regard, though the noise annotations make it appear cluttered.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Significant type degradation. Original `int`, `size_t`, `int*`, `char[32]` become generic `unsigned int`, `void*`, `char`. The decompilation shows `int arg_0, int arg_1` for template functions but `void*` for `this` pointers. Const correctness is lost - no `const` qualifiers visible. Function pointers show as raw integer calls.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct reconstruction attempted - e.g., `struct_0 { char padding_0[4]; struct struct_1 *field_4; }` for RTTI types. However, field names are generic (`padding_0`, `field_4`, `field_0`). The original `SimpleClass` with `int value; char name[32];` is not reconstructed - just shows local variables `v1[4]`, `v2` on stack.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple type safety concerns. Extensive use of raw pointer arithmetic (e.g., `*((int *)&ptr[40])` for accessing struct members). The virtual function call in `call_virtual_func` uses `(*((int *)*((int *)arg_0)))(arg_0, arg_1);` which is dangerous raw pointer manipulation. No bounds checking visible in array operations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The only comments are decompilation artifacts like "// Function: sub_401030 at 0x401030" and "// Failed to decompile function". No explanation of what the code does, no recovery of original comments from source. The source had extensive Chinese comments explaining each test case - completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some C++ patterns partially recognized - virtual function calls show vtable dispatch, exception handling shows `__cxa_throw`/`__cxa_begin_catch`. However, no explicit naming of patterns (e.g., "vtable dispatch" or "RAII pattern"). The smart pointer operations are not recognized as `unique_ptr` semantics.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The decompilation shows "Failed to decompile" messages and "[D] unsupported_" markers, which is good for indicating problems. However, these are generic and don't explain what specifically went wrong or what the original code might have been. The "Failed to decompile function _Z12template_maxIdET_S0_S0_" at 0x401840 is noted but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source had clear semantics (e.g., "returns value * x + strlen(name)", "requires: idx < size") completely lost. The decompilation shows raw operations without any contract documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are partially visible - `test_cpp_oo_features()` calls all test functions. However, the virtual dispatch in `call_virtual_func(Base *obj, int x)` doesn't clearly show it's calling through vtable. Global variable references show as extern chars but relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by type (test functions, template functions, class methods) but the organization is arbitrary based on address rather than logical grouping. The original source had clear sections with comments - completely lost in decompilation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would not compile as-is. Many undefined extern symbols (`g_403ff4`, `_ZNSt8ios_base4InitD1Ev`, etc.). Template instantiations are present but incomplete. The "[D] PutI(...)" annotations would cause compilation errors. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v0`, `v1`, `v2`, `ptr`, `result`) - original semantic names like `value`, `name`, `size`, `data` completely lost
+- Severe noise pollution with `[D] PutI(...)` and `[D] unsupported_<...>()` annotations making code nearly unreadable
+- Type information severely degraded - original `int`, `size_t`, `char[32]` become generic `unsigned int`, `void*`, `char`
+- No comments recovered from source - original Chinese documentation explaining each test case completely lost
+- Multiple "Failed to decompile" messages and empty function bodies (just `return;`) for what should be substantial implementations
+- Struct field names are generic (`padding_0`, `field_4`) instead of meaningful names like `data`, `size`, `instance_count`
+
+**Best Quality Aspect:** Function Naming Quality (scored 4/10)  
+While still low, the C++ mangled names like `_Z20test_cpp_member_funcv` and `_Z17call_virtual_funcP4Basei` provide some semantic value and can be demangled to recover original function names.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The complete loss of meaningful variable names is the most severe issue. At -O0 debug level, we should expect near-perfect name recovery. Variables should be named based on usage patterns (e.g., `v0` used as array index → `index`; `v1` used for string operations → `name`).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: At -O0, track how variables are used (array indexing, string operations, arithmetic) to generate semantic names like `index`, `name`, `size` instead of `v0`, `v1`
+2. **Eliminate VEX IR artifacts**: The `[D] PutI(...)` and `[D] unsupported_<...>()` annotations should be filtered out or placed in separate debug views, not interleaved with decompiled code
+3. **Recover struct field names from vtable and usage**: Use vtable layout, constructor patterns, and member access patterns to reconstruct meaningful struct field names instead of generic `field_N` or `padding_N`

@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use `v1`, `v2`, `result`. No semantic meaning recovered - e.g., `sequential_ops(int32_t a1, int32_t a2, int32_t a3)` should have meaningful parameter names like `a`, `b`, `c`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names are correctly preserved (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`). Some helper/runtime functions have generic names (`function_4fc`, `function_508`), but the core functions match source well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x66666667` (division constant) and `0x8000000000000000` are unexplained. String literals are hex-encoded (`"\xe3\a"`). However, some computed expressions like `10 * a1 + 10` for switch cases are reasonably clear.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Minimal compiler artifacts in user code. Runtime helper functions (`__aeabi_idiv`) are appropriately separated. Some struct definitions for jmp_buf are present but necessary. Overall clean for -O0.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Switch statements use awkward conditions like `a1 == 3 || a1 < 3` instead of cleaner forms. Some goto statements (`goto lab_0xbcc`) create non-linear flow. Loop conditions are complex (e.g., `while (v2 >= 18 == (v2 != 18))`). At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately separated with clear single responsibilities. The main issue is `__aeabi_idiv` (hundreds of lines for division algorithm), which is a runtime function, not user code. User functions have reasonable granularity.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple goto statements create non-linear flow (e.g., `lab_0xbcc`, `lab_0xc44`, `lab_0xc58`). Forward jumps interrupt reading. The `loop_multi_exit` function has particularly convoluted flow with nested goto patterns.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. The division algorithm has repetitive patterns which is expected from the algorithm itself. Loop unrolling is minimal. Overall reasonable for -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Good use of `int32_t`, `uint32_t`, `uint64_t` matching arm64 ABI. Function pointer types are somewhat generic (`int32_t (*f)(int32_t)`) but acceptable. Minor generic `int` usage in some places.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Only compiler/runtime structs recovered (`struct __jmp_buf_tag`, `struct _TYPEDEF___sigset_t`). No user-defined struct recovery. The original source has no custom structs, but the approach would fail on real-world code with structs.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some pointer arithmetic present (e.g., `*(int32_t *)(4 * v1 + (int32_t)&g10)`). Function pointer casts are implicit. No explicit type safety annotations. Generally safe but could be better.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining algorithm intent, parameter purposes, or return value semantics. Address ranges are provided as metadata but offer no semantic value. Zero useful comments for understanding logic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like ternary operators and switch statements are recovered but not named or documented. No recognition of design patterns (state machine, callback pattern, etc.). The original source's test scenarios aren't referenced.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: One "UNREACHABLE" comment appears after longjmp calls. No flags for indirect calls that couldn't be resolved, unusual stack patterns, or potential undefined behavior. Silent on most anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition explanations. The original source's validation logic (e.g., `if (x < 0) return -1`) isn't annotated with semantic meaning.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes are listed at the top, showing relationships. Global variables declared. But no explicit comments about who calls whom or callback relationships. The `call_func_ptr` pattern isn't documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - runtime helpers first, then user functions by category (control flow L1, L2, L3). Test functions separated. Static functions properly scoped. Reasonable organization.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Includes necessary headers (`<stdint.h>`, `<stdio.h>`, `<setjmp.h>`). Function prototypes provided. Should compile with `gcc -c`. No obvious compiler-specific hacks that would break portability.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `v1`, `v2` with no semantic recovery
+- No comments explaining algorithm intent, parameters, or return values
+- Control flow uses goto statements instead of natural loop constructs in several places
+- Type safety issues with implicit pointer arithmetic and casts
+- No anomaly indication for indirect calls or unusual patterns
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+The decompiler correctly preserved most original function names from the source, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+The decompiled code has zero useful comments explaining what functions do, what parameters mean, or what invariants hold. Combined with poor variable naming, the code requires significant reverse-engineering effort to understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., `a1` used in `a1 + a2` should suggest `addend` or similar semantic name
+2. Add semantic comments explaining function purpose, parameter meanings, and return value contracts
+3. Recover natural control flow constructs (for/while) from jump patterns instead of emitting goto statements
+4. Flag anomalies and indirect calls that couldn't be fully resolved
+5. Detect and document idiom patterns (state machines, callbacks, recursion)

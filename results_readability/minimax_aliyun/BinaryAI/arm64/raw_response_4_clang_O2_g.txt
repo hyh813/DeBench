@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named with generic patterns like `param_1`, `param_2`, `iVar1`, `uVar2`, `local_8` - completely lacking semantic meaning. Compare to source where variables like `count`, `sum`, `args` clearly indicate purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions like `cdecl_func`, `stdcall_func`, `varargs_func` correctly match source names. However, internal functions like `FUN_00100640` and `call_weak_fn` remain generic, and parameter names don't reflect their roles.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xf` (15), `0x32` (50), `0x2a` (42) appear without explanation. String literals are referenced as `&DAT_001014d2` - completely opaque. No named constants recovered from source.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No obvious register spilling code or debug instrumentation. The decompilation is relatively clean without excessive redundant casts or __asm__ blocks.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops properly recovered as while/do-while constructs. Conditionals are clear. The varargs functions show some complexity from stack handling but remain readable. At -O0, control flow closely matches source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-50 lines). Good separation between test wrapper functions and implementation functions. No 500-line monoliths. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The varargs functions have some forward jumps for stack access but these are manageable. Early returns used appropriately in functions like `func_struct_byptr`.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some loop unrolling visible in varargs functions but it's a legitimate compiler artifact at this level. No significant dead code. Common subexpressions handled reasonably.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Integer types are generic `int` throughout. Function pointers typed as `code *` which is imprecise. Some type confusion - e.g., `param_string` takes `byte *param_1` instead of `const char *`. Mixed signed/unsigned in varargs handling.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct recovery is severely degraded. `func_struct_byval` treats the 128-byte `LargeStruct` as `int *param_1` with raw array indexing (`param_1[0x1e]`). No struct field names recovered. Compare to source where `s.data[i]` is clear.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations: raw pointer arithmetic in struct functions, function pointer type imprecision (`code *` instead of proper function signature), and array indexing without bounds. The varargs handling shows unsafe stack access patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining algorithm logic. Only auto-generated function signatures. Source had extensive comments (e.g., "// CALL-L1-01: cdecl调用约定") completely lost. No documentation of calling convention behavior.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern is recognizable through `va_list` style handling but not explicitly named. Function pointer callbacks detected but not documented as "callback pattern". No explicit pattern naming like "state machine" or "strategy pattern".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The indirect function call in `param_func_ptr` (`(*param_1)(param_2)`) is not marked as potentially unsafe. No indication of undefined behavior areas or confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition documentation. Source had implicit contracts (e.g., "requires: ptr != NULL" for `func_struct_byptr`) completely lost. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (e.g., `test_calling_conventions()` calls `printf`, `varargs_func`). But no documentation of call graph relationships or callback connections. External dependencies not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - calling convention tests together, parameter tests together, return tests together. Matches source organization reasonably well. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: External functions declared (`printf`, `puts`, `strlen`). Should compile with standard library linkage. Minor stubs needed for `__gmon_start__` and similar runtime functions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `iVar1`, `local_8`) - no semantic meaning recovered
+- Struct types completely lost - `LargeStruct` treated as raw `int *` with array indexing
+- No comments explaining calling conventions, parameter purposes, or algorithm logic
+- Magic numbers like `0xf`, `0x32` appear without explanation; string literals as `&DAT_xxx` are opaque
+- Type precision severely degraded - function pointers as `code *`, structs as raw pointers
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- Loops and conditionals properly recovered; at -O0, execution flow closely matches source
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic parameter names like `param_1`/`param_2` completely obscure their semantic roles (e.g., `a`, `b` in `cdecl_func`)
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `param_1` used in addition in `cdecl_func` should suggest `a` or `addend`
+2. Recover struct types from stack layout and field access patterns - `param_1[0x1e]` accessing 16 elements suggests array of 16 longs
+3. Add comments explaining calling convention behavior and flag indirect calls as potentially unresolved

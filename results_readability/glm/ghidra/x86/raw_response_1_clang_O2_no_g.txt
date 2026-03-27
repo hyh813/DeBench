@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are exclusively generic names like `param_1`, `iVar1`, and `uVar1`, providing no semantic hint about their purpose (e.g., `sum`, `count`, `target` are lost).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most function names like `sequential_ops`, `duffs_device`, and `loop_for_fixed` were successfully recovered from symbols, closely matching the original source.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Obscure magic numbers appear frequently, such as `0x12` (18) in `loop_while` replacing `x != 0`, and `0x240b` in `FUN_000112f5` for jump table offsets, without explanation.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Contains compiler artifacts like `unaff_retaddr` (used for PIC addressing) and `undefined4` types, though standard boilerplate like `__x86.get_pc_thunk.bx` is mostly isolated.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Aggressive compiler optimizations (-O2) have transformed simple loops into complex arithmetic formulas (e.g., `loop_for_fixed`) and obscured conditions (e.g., `x+9 > 18`), making the flow unnatural compared to the source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries are well-preserved; the decompiler did not erroneously inline or fragment functions, maintaining the original granularity.
+
+**7. Code Linearization:** Score: 5/10
+Justification: Code is heavily non-linear due to optimizations; `loop_continue` and `goto_backward` are obfuscated by loop unrolling, and `duffs_device` relies on explicit `goto` labels.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler presents the optimized code cleanly without redundant intermediate variables, though the resulting mathematical complexity (e.g., bit-shifts for division) hinders readability.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int` and `uint` are mostly correct, but specific types are lost (e.g., `bool` is used for `if_else` return, `undefined4` appears frequently), and `call_func_ptr` returns `void` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: No complex structs were defined in the source, but the decompiler correctly handled the `EVP_PKEY_CTX` parameter in `_init` (likely from type libraries) and array accesses.
+
+**11. Type Safety:** Score: 5/10
+Justification: Uses `undefined4` casts and arithmetic on `unaff_retaddr` (stack pointer relative), which are unsafe and implementation-specific patterns that reduce confidence in the types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10
+Justification: Includes useful warnings like "Could not recover jumptable" and "Removing unreachable block," but lacks semantic comments explaining the optimized logic or mathematical transformations.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Successfully recognized `duffs_device` structure, but failed to identify standard patterns in `switch_small` (jump table) and transformed `recursion_factorial` into a loop without noting the idiom change.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Clearly flags issues like "WARNING: Treating indirect jump as call" for unresolved jump tables, which accurately communicates the decompiler's uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: No preconditions or postconditions (e.g., array bounds, valid input ranges) are documented or inferred in the decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are explicit, and data references like `PTR_double_value_00015ec8` clearly show the linkage to global data, aiding in understanding the call graph.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in memory address order rather than logical groupings (e.g., all L1 tests together), losing the original source structure.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: Code relies on Ghidra-specific types (`undefined4`, `code *`) and would require significant patching (e.g., defining `unaff_retaddr`) to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- `loop_for_fixed` reduced to complex bit-shift arithmetic formula `(n*(n-1)/2)`, completely obscuring the loop intent.
+- `switch_small` (FUN_000112f5) failed to recover switch structure, showing raw jump table access via `unaff_retaddr`.
+- `loop_while` uses obscure condition `0x12 < uVar2` (derived from `x+9 > 18`) instead of the original `x != 0`.
+- `loop_continue` and `goto_backward` are heavily obfuscated by loop unrolling, making the iteration logic hard to follow.
+- Variable names are generic (`param_1`, `iVar1`) despite clear semantic intent in the source code.
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)
+- Ghidra successfully recovered the majority of function names from the binary symbols, which significantly anchors the analysis and makes identifying the purpose of most blocks straightforward.
+
+**Most Needs Improvement:** Control Flow Naturalness (scored 4/10)
+- The combination of aggressive compiler optimizations (math reduction, unrolling) and the decompiler's inability to map them back to high-level constructs (like loops or switches) results in code that is structurally very distant from the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching for arithmetic series (e.g., `n*(n-1)/2`) to annotate or reconstruct the original loop structure.
+2. Improve jump table recovery for Position Independent Code (PIC) on x86 to resolve `unaff_retaddr` relative accesses back into switch statements.
+3. Add heuristics to infer variable names from context (e.g., variables accumulating in a loop could be named `sum` or `accumulator`).

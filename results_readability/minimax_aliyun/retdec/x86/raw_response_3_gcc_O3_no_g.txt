@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v1, v2, v3, v4, mem, mem2, mem3, result). The original source had meaningful names like `arr`, `local`, `p1`, `p2`, `counter`, `head`, `temp`. Only loop variable `i` and some return variables are acceptable.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: About 40% of functions are correctly named (double_value, local_vars, heap_basic, linked_list_heap, etc.), but the rest use mechanical patterns like `function_1140`, `function_1150`, `function_1160`. The test functions are properly named but internal helper functions are not recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Some literals are meaningful (42, 10, 20, 50, 60, 100, 2048), but global variables have bizarre initialized values (g1=0x7a0ffff, g3=0xe450000) that don't match the source. Many magic numbers in address calculations like `v1 + (int32_t)&g13 - 0x2eb6` are unexplained.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: __x86_get_pc_thunk_bx/dx/di/ax functions (x86-specific despite arm64 source), __readgsdword(20) stack canary checks, complex __printf_chk calls with offset calculations, and unreachable code blocks. The decompiler output appears to be x86-64 despite arm64 source.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper loops and conditionals. However, `linked_list_heap` uses goto labels (lab_0x1a73, lab_0x1f75) for error handling paths. At -O0, the control flow should be cleaner. The VLA and alloca functions have complex stack frame manipulation.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are mostly well-separated, but `test_heap_memory` is extremely large (400+ lines) with deeply nested logic. The `alloca_usage` and `vla_stack` functions have unnecessarily complex stack frame handling that could be abstracted. Some granularity issues exist.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom, but the linked_list_heap and test_heap_memory functions have multiple goto labels that disrupt flow. Early returns are used appropriately in some functions but goto is overused in others.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some loop unrolling is present but manageable. Constant propagation is applied (alloca_usage_constprop_0 returns 15 directly). No major dead code issues. The stack canary checks are compiler-generated but expected at -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses int32_t consistently, but function pointers are not properly typed (e.g., `int32_t a1` for callback parameters instead of `int (*)(int)`). The `global_func_ptr` is stored as int32_t rather than function pointer type. Some pointer types are imprecise.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery whatsoever. The Point, Node, and TreeNode structures from the source are completely lost. All accesses use raw pointer arithmetic: `*(int32_t *)(v2 + 4)`, `*(int32_t *)(v4 + 4)`, etc. The decompiler treats all structures as anonymous memory.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts throughout (e.g., `(int32_t *)a1` in memop functions). Pointer arithmetic without bounds checking is prevalent. No const correctness. Function pointers are cast to int32_t and back, which is dangerous. The dangling_pointer function explicitly demonstrates undefined behavior without warning.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address range comments present (e.g., "// Address range: 0x1400 - 0x140b"). No algorithm explanation, no decompilation confidence indicators, no @param/@return documentation. The comments are purely mechanical metadata.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are recognizable (linked list traversal, tree traversal) but not explicitly identified or named. The decompiler doesn't label "linked list" or "binary tree" patterns. Memory allocation patterns (malloc/free) are recognized but not named as patterns.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flagging of suspicious code whatsoever. The dangling_pointer function contains explicit undefined behavior (use after free) with no warning. The double_free and heap_overflow functions are similarly silent about their dangerous patterns. No indication of potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition documentation. No invariant recognition. The NULL checks are present in code but not documented as preconditions. Error return values (-1, -2, -3) are not explained as contract elements.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are clear, but global variable usage is obscure with complex address calculations like `*(int32_t *)(v1 + (int32_t)&g12 + 132)`. No callback relationship documentation between set_global_callback and call_global_callback. The extern relationships are not clearly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped somewhat logically (stack functions, heap functions, static functions, memory ops). However, the ordering is arbitrary and doesn't match the source file structure. Many stub functions from libc are interleaved with user code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Has many stub function declarations but missing definitions. Won't compile as-is due to missing __x86_get_pc_thunk implementations, undefined g15, and other globals. External dependencies (libc functions) are declared but not clearly documented as system dependencies.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.8/10
+
+**Critical Defects:**
+- Variable naming is nearly all generic (v1, v2, mem, result) - original meaningful names like `arr`, `head`, `counter` are lost
+- No struct/type recovery - Point, Node, TreeNode all accessed as raw pointer arithmetic
+- No anomaly indication - dangling_pointer, double_free, heap_overflow contain undefined behavior with no warnings
+- Severe noise from __x86_get_pc_thunk functions and stack canary checks (x86-specific despite arm64 source)
+- Global variable access uses cryptic address calculations like `v1 + (int32_t)&g12 + 132` instead of named access
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+Most control flow structures (loops, conditionals) are natural and readable. At -O0, the decompiler correctly recovered loop constructs rather than using goto.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The decompiler should infer variable names from usage patterns - `mem` used in malloc/free should be `buffer` or `ptr`, loop indices should be `i`, `j`, etc. The current approach makes tracking data flow extremely difficult.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Detect malloc/free pairs and name variables `buffer` or `ptr`, detect loop indices from iteration patterns, identify pointers from -> operations
+2. **Recover composite types**: Detect struct allocation patterns (malloc of fixed sizes, field access patterns) and reconstruct struct definitions with field names
+3. **Flag dangerous patterns**: Add warnings for dangling pointers, double-free, buffer overflows, and other undefined behavior detected in the code

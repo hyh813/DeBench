@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6` and parameters are `a1`, `a2`, `a3`. For example, in `local_array`, the loop variable `i` is completely lost, replaced with counter variables that make tracking the array indexing logic extremely difficult. This is the worst-scoring aspect.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Application-level functions like `local_vars`, `heap_basic`, `malloc`, `free`, `memset`, `memcpy` are correctly named. However, standard library wrapper functions have auto-generated names like `function_5a0` (should be `printf`), `function_5ac` (should be `memmove`), `function_5c4` (should be `memcpy`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `2048` in `large_stack_frame`, `10` in array sizes, and `100` in loops appear without explanation. However, some constants like buffer sizes are understandable from context. The string literals for test output are present but encoded in hex.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Massive noise from 60+ `__sync_*` atomic operation functions that are compiler intrinsics, not user code. These clutter the output significantly. The decompiler also includes many startup/initialization functions (`_init`, `_start`, `frame_dummy`, etc.) that are boilerplate.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops are generally recognizable but use awkward patterns - for example, `for (int32_t i = 0; i > -10; i--)` instead of `for (int i = 0; i < 10; i++)`. The decompiler inverts loop logic (counting down to zero). At `-O0`, this should be more natural.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and cohesive. The test functions call sub-functions appropriately. Some functions like `linked_list_heap` are complex but that's inherent to the algorithm. No severe fragmentation issues.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. However, some functions like `vla_stack` have complex pointer arithmetic that disrupts linear reading. The `goto lab_0xd20` pattern in `linked_list_heap` is non-ideal.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant expressions visible, particularly in memory access patterns like `*(int32_t *)((2 * ((int32_t)(a1 < 0) + a1) & -4) + v1)` which appears multiple times. Loop unrolling is minimal at -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Uses `int32_t` consistently for integers, which is appropriate for ARM64. Pointers are properly typed as `int32_t *`. Some `uint32_t` usage for unsigned values. Minor generic `int` usage in some places but overall good precision.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery at all. The `Point` struct from source is completely lost - `local_struct` just returns `3 * a1` without any struct variable. The `Node` and `TreeNode` structures are also not recovered - all accessed via raw pointer arithmetic with offsets like `*(int32_t *)(v4 + 4)`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many unsafe pointer casts like `*(int32_t *)a1`, `(int32_t *)&v2`. Pointer arithmetic is explicit and error-prone. Some type confusion between pointers and integers (e.g., `g9 = &g11` assigns pointer to int variable). No `restrict` or `_Atomic` annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only address range comments like `// Address range: 0x7bc - 0x7c8` which are decompiler artifacts, not helpful for understanding. No explanation of algorithm logic, no recovery of original comments from debug symbols.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard patterns like malloc/free, linked list traversal are recognizable but not explicitly named or documented. The decompiler doesn't identify "this is a linked list" or "this is a binary tree" - just raw memory operations.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The dangling pointer access in `dangling_pointer` (accessing memory after free) is presented as normal code without any warning. No indication of undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. The null checks in functions like `heap_basic` (`if (mem == NULL)`) are present but not documented as preconditions. No recovery of original assertions or validation logic.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function prototypes are declared at the top, showing call relationships. Global variables are listed with addresses. However, the relationship between `set_global_callback` and `call_global_callback` isn't explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - stack functions together, heap functions together, memory operations together. Static functions aren't explicitly marked as static in the decompiled output. The file structure is reasonable.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes necessary headers (`<stdint.h>`, `<stdio.h>`, etc.). Should compile with minimal changes. However, some functions like `unknown_ffff0fc0` are undefined, and the code references external symbols that may not exist.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming is uniformly generic (`v1`, `v2`, `a1`, `a2`) making code comprehension extremely difficult
+- No struct/union recovery - all composite types lost, replaced with raw pointer arithmetic
+- No comments explaining algorithm logic or recovery confidence
+- No anomaly indication for undefined behavior (dangling pointer, double-free patterns)
+- Massive noise from 60+ atomic operation intrinsics obscuring user code
+
+**Best Quality Aspect:** Type Precision (scored 8/10)  
+The decompiler consistently uses `int32_t` which is appropriate for ARM64 and maintains good integer type fidelity.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Every meaningful variable has been replaced with generic names like `v1`, `v2`, `v3`, making it nearly impossible to track data flow and understand function logic without significant reverse-engineering effort.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - e.g., variables used as loop counters should be named `i`, `j`, `k`; variables passed to `malloc` should suggest `size` or `count`
+2. **Recover struct types from allocation patterns** - detecting `malloc(sizeof(Node))` should reconstruct the `Node` struct with fields `data` and `next`
+3. **Add semantic comments for suspicious patterns** - flag potential undefined behavior like post-free access, double-free, and buffer overflows with warnings

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1`, `piVar1` with no semantic meaning. Original source had descriptive names like `sum`, `len`, `current`, `edge` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved correctly (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). However, some helper functions degraded to `FUN_00011030`, `FUN_00011275` with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x2c`, `0x1b8`, `0x61`, `0x62` appear without explanation. Test functions show pre-computed constants (e.g., `printf("DT-L1-01...): %c\n",0x61)`) instead of actual function calls, obscuring the original logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (`__x86_get_pc_thunk_*`, `deregister_tm_clones`, `register_tm_clones`). External function stubs (`printf`, `puts`) add noise but core logic is relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Original `for` loops converted to `do-while` patterns with manual index management. At `-O0` optimization, we should expect near-perfect loop recovery, but decompiler uses backward-jump reconstruction instead.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but test functions are problematic—they show constant-folded results instead of actual function calls. Spurious functions like `FUN_00011275` appear that don't exist in source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with reasonable flow. Nested loops create some complexity but execution paths are traceable with moderate effort.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions show constant-folded results (computation removed but clarity lost). Some duplicate loop patterns across similar functions that could be abstracted.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical type degradation: `long long` becomes two parameters (`uint param_1, int param_2`), `long` becomes `int` (`process_long` takes `int` not `long`), `void*` becomes `int*`. Float/double functions have incorrect signatures.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—ALL structs become `int*` with offset arithmetic. `struct_simple` takes `int*` instead of `Point3D*`, `struct_nested` loses `Rect` type entirely. No field names recovered, unions not identified (`union_type` takes `float*`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many implicit unsafe casts in pointer arithmetic. `ptr_triple` has confusing type `undefined4*` but performs triple dereference. Function pointers degraded to `code*` losing signature information.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each test case, expected values, and scenarios. Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition—linked list traversal, tree recursion, and graph traversal not identified as such. Algorithms appear as raw pointer arithmetic without semantic labeling.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Type mismatches (struct→int*) not flagged. No confidence indicators for indirect calls or complex patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not explained). No postconditions or error handling documentation. Original boundary checks lose semantic meaning.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved in core logic but test functions show constants instead of actual calls. No call graph documentation or callback relationship identification.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure. However, everything is in single output file with no header separation or logical grouping indicators.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External function declarations present but custom types (`longdouble`, `undefined4`, `undefined8`, `unkuint10`) would need definition. Significant patching required to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+6)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+5+6+6)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+3+3+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.38/10
+```
+
+**Overall Readability Score: 4.4/10**
+
+### Critical Defects:
+- **Complete struct type loss**: All composite types (`Point3D`, `Rect`, `Widget`, `Node`, `Graph`) degraded to `int*` with offset arithmetic, losing all field semantics
+- **Test functions constant-folded**: Instead of showing actual function calls, test functions display pre-computed results, making verification impossible
+- **No comments or documentation**: Zero semantic context preserved despite extensive original comments explaining each test case
+- **Type precision failures**: `long long` split into two parameters, `long`→`int` demotion, `void*`→`int*` conversion
+- **Generic variable naming**: All variables use `param_N`, `iVarN`, `uVarN` patterns with no semantic meaning
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved correctly (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`), maintaining basic semantic identification
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, comments, or semantic context that was extensively present in original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type structures** - Analyze memory access patterns to reconstruct struct layouts with field names based on usage context (e.g., `param_1[0]`, `param_1[1]`, `param_1[2]` → `x`, `y`, `z` for Point3D)
+2. **Preserve test function call semantics** - Avoid constant-folding test functions; show actual function invocations to maintain verifiability and debugging capability
+3. **Add decompilation confidence annotations** - Flag uncertain type recoveries, indirect calls, and potential anomalies with comments like `// DECOMPILER: struct type inferred from access pattern`

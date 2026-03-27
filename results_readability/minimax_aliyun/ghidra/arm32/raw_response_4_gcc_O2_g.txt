@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables like `iVar1`, `piVar2`, `uVar3`, `param_1`, `in_r1` are cryptic and generic. Many unresolved locals marked with `?` like `int sum@[???]` and `int val@[???]` completely obscure purpose. Only basic parameters like `count`, `callback`, `arr` have meaningful names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions match source exactly (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`). Helper functions like `cdecl_func`, `varargs_func`, `func_many_args` preserve source names. Minor issue: internal helpers like `func_a`, `func_b` are generic but acceptable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation: `0xf` (15), `0x32` (50), `0x2a` (42), `0x12345678`. While some values are inferable from context, most are unexplained hex literals that obscure the original constant values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy noise pollution: 20+ "WARNING" comments about unreachable blocks and unknown calling conventions. Unresolved local variables marked with `?` throughout. Internal compiler functions like `__aeabi_dadd`, `__aeabi_d2iz` exposed. Significant artifacts impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow is relatively natural. Loops use do-while constructs appropriately. Switch statements correctly converted to if-else chains. Minor awkwardness in `func_struct_byval` with complex pointer manipulation, but overall traceable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good granularity - test functions separated by category (calling conventions, parameter passing, return values). Each test function calls individual test cases. No monolithic functions; all under 50 lines. Matches source decomposition well.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Early returns used appropriately in functions like `func_no_args`, `param_by_value_ptr`. Some forward jumps in complex functions but manageable. At -O0, linearization is good.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some loop unrolling in `ret_large_struct` (16 separate assignments). Dead code elimination appears incomplete with some unreachable blocks flagged. Moderate redundancy from optimization artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, void*, int*). Function pointers use `_func_int_int *` notation. Some type erosion: `longlong` instead of `long long`, `undefined4` for return types. Mixed precision - most accurate for core functions.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs recovered: `LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData`. Field names mostly preserved (`data`, `x`, `y`). Some field access patterns are awkward (`s.data[0xf]`). Good reconstruction overall.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations: pointer arithmetic in `func_struct_byval` using complex indexing. Multiple void* casts in `param_complex_cast`. Generally safe but some patterns could lead to issues. No severe violations that make code dangerous.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly auto-generated warnings ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block"). No useful algorithm documentation. No explanation of non-obvious logic. Comments are noise rather than helpful.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard patterns recognized: varargs functions use `va_list`, function pointers properly typed. Some patterns like struct return via hidden pointer are identified. Not explicitly named but recognizable.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system for analysis limitations: "Unknown calling convention", "Unresolved local var", "Removing unreachable block". Most anomalies flagged. Some silent failures but generally transparent about decompilation limitations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of expected input constraints. No error condition contracts. Completely absent despite -O0 debug compilation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. No explicit call graph documentation. Relationships between test functions and tested functions implicit but inferable. Could be improved with cross-reference comments.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped: initialization functions first, then test functions, then helper functions, then runtime library functions. Static functions properly scoped. Reasonable organization matching source intent.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses standard C library functions (puts, printf, memcpy, strlen). Should compile with minimal stubs for internal functions. External dependencies documented through function names. Generally portable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming is severely degraded with cryptic names like `iVar1`, `param_1`, `in_r1` and unresolved locals marked `?`
+- Literal values are unexplained hex magic numbers (`0x12345678`, `0x2a`, `0xf`) without constant names
+- Comments are almost entirely auto-generated warnings with no useful algorithm documentation
+- No contract or assertion recovery despite -O0 debug compilation
+- Excessive noise from "WARNING" comments and unresolved variable markers
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+- Test functions properly separated by category matching source organization exactly
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Cryptic generic names and unresolved variables completely obscure variable purpose
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `param_1` used as array index → `array_index`)
+2. Detect magic numbers and suggest named constants based on context (0x2a = 42 likely "ANSWER")
+3. Recover preconditions/postconditions from debug symbols at -O0 (e.g., "requires: ptr != NULL")
+4. Replace auto-generated warnings with useful algorithm documentation
+5. Eliminate unresolved variable markers or provide better placeholder names

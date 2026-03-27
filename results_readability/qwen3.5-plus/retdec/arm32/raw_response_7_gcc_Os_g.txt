@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `temp`) with no semantic meaning. For example, `param_opaque_predicate` uses `v1`, `v2`, `v3` instead of meaningful names like `predicate_result` or `gcd_value`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Function names are preserved from source (`param_opaque_predicate`, `call_vectorized_loop`), which is good. However, critical function `param_fake_branch` is completely missing from decompiled output.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x106e4` (signal handler address), `90` (XOR key), and `0x7a314` (hardcoded return value) lack explanation. String literals stored as hex-encoded globals (`g2`-`g16`) are unreadable.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Some noise from verbose `jmp_buffer` struct initialization and type casts, but generally manageable. No excessive register spilling artifacts visible.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `param_opaque_predicate` always returns `3*x+20` instead of the original's conditional logic. `param_non_tail_call` uses a formula instead of recursion, completely changing semantics.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but 6+ functions from source are missing entirely (`param_fake_branch`, `param_instruction_substitution`, `param_integer_overflow`, etc.).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `param_vectorized_loop` has confusing nested loops with unclear termination conditions disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `param_vectorized_loop` has duplicate calculation patterns (`v5 = 4 * v2` appears multiple times). Some dead code from optimization not eliminated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently, but has bizarre `int33_t` typedef. Parameter type mismatches exist (`param_non_tail_call` takes `uint32_t` instead of `int`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `jmp_buffer` struct recovered but with generic field names (`e0`, `e1`, `e2`). No recovery of the `bitfield` struct from `param_implementation_defined`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(void (*)(int32_t))&g1`, `(int33_t)` casts. Signal handler function pointer casts are particularly problematic.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. No explanation of obfuscation techniques, expected behavior, or decompilation confidence levels.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No recognition of GCD algorithm in `param_opaque_predicate`, no identification of XOR decryption pattern, no tail-call optimization detection.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about semantic mismatches, missing functions, or uncertain decompilation. Code presents incorrect logic with false confidence.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions or error condition documentation anywhere.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables `g1`-`g17` have no explanation of their purpose or usage.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Missing functions break the expected module structure from source.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has necessary includes and should compile, but missing functions mean the program won't produce correct output. Some external dependencies unclear.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+7)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (4+6+6+6)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (6+5+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.04/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Function `param_fake_branch` completely missing** - the target function from metadata is not in decompiled output
+- **Semantic corruption in `param_opaque_predicate`** - always returns wrong branch (`3*x+20` instead of `x*2+10`)
+- **`param_non_tail_call` uses formula instead of recursion** - completely different algorithm than source
+- **`param_null_pointer_deref` doesn't actually dereference pointer** - loses the core test behavior
+- **Zero comments explaining obfuscation techniques** - critical for understanding intentional complexity
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Function names preserved from source code, making it possible to identify intended purpose despite semantic errors
+
+### Most Needs Improvement: **Semantic Transparency (2.25/10 average)**
+- Complete absence of comments, anomaly detection, and contract documentation makes understanding decompiler confidence impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add decompilation confidence annotations** - Flag functions where control flow recovery is uncertain (e.g., `param_opaque_predicate` predicate logic)
+2. **Preserve all source functions** - Ensure complete function coverage; missing `param_fake_branch` is a critical failure for this assessment
+3. **Recover algorithm patterns with comments** - Identify and document GCD computation, XOR decryption, and tail-call patterns to aid human understanding

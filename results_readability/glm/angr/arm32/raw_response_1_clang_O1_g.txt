@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are reduced to generic register names like `a0`, `v0`, and `v1`, losing semantic meaning found in the original source (e.g., `temp1`, `sum`, `count`). While `result` is used occasionally, the majority of names are non-descriptive placeholders.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: The primary test functions (e.g., `sequential_ops`, `single_if`) retain their original names, which is excellent. However, helper functions and some complex logic blocks are reduced to generic names like `sub_4004dc` or `$a.16`, obscuring their specific roles.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers and hex addresses (e.g., `4294967295` for `-1`, `0x4004dc`, `1717986919` for division constants) without named constants or comments to explain them, significantly hindering understanding of the logic.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The decompiled code contains severe noise in the form of `armg_calculate_condition(178, ...)` calls, which appear to be internal decompiler artifacts or unlowered IR operations rather than valid C code. This makes the code practically unreadable and syntactically invalid.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Simple control flows like `if (x > 0)` are transformed into obscure bit-twiddling operations (e.g., `a0 << ((char)(0 < a0 ? 1 : 0) & 31)...`). Loops are often replaced by complex mathematical formulas (e.g., `loop_for_fixed`) or flattened into `goto`-heavy structures, destroying the original logic's readability.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: The decompiler generally maintains the original function boundaries, mapping 1:1 with the source for the main test functions. However, some complex functions like `duffs_device` are mangled, and the decomposition does not aid in understanding the internal logic.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code frequently uses `goto` statements and labels (e.g., `LABEL_400720`, `LABEL_40072c`) to manage flow, resulting in a non-linear structure that requires constant jumping around the function to understand the execution path.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While the compiler optimizations (likely `-O1` or higher based on the output) eliminated redundancy by turning loops into math formulas, the decompiler introduced redundancy through verbose `armg_calculate_condition` checks and repeated variable assignments.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: There is significant type degradation; most variables are typed as `unsigned int` even when the source uses `int` (e.g., returning `4294967295` instead of `-1`). Signed/unsigned distinctions are lost, and pointer types are often treated as raw integers.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Structs are recovered but with generic field names like `field_0`, `field_4`, etc. (e.g., `struct struct_0`). While the layout is present, the semantic meaning of the fields is completely lost.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code contains numerous unsafe casts and pointer arithmetic operations. For example, `goto *targets[idx]` in the source is either mishandled or removed, and pointers are frequently cast to integers for arithmetic, violating type safety principles.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic, algorithms, or complex bit-manipulations. The only comments are function headers, providing no insight into the "why" behind the code.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common patterns like `switch` statements are turned into jump table arithmetic or pointer dereferences, and Duff's Device is unrecognizable in the decompiled output. The decompiler fails to map these back to high-level idioms.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag anomalies; instead, it presents invalid code (e.g., `armg_calculate_condition`) as standard C. The `computed_goto` function is decompiled as an empty function `return;` without any warning of failure.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants. For example, the requirement for `n > 0` in `duffs_device` is not documented or asserted in the decompiled view.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls to other defined functions are clear, but calls to global offsets (e.g., `g_401f7c`) are opaque. The relationship between the function pointer arrays and their targets is not visually clear.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions. While it roughly follows the source order, there is no logical grouping or module separation (e.g., separating L1, L2, L3 tests) beyond the function names themselves.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile as-is. It relies on undefined functions like `armg_calculate_condition` and uses syntax that is not valid standard C (e.g., `vvar_112{r64|4b}`).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- The pervasive use of `armg_calculate_condition` renders the code syntactically invalid and logically opaque.
+- Control flow structures (loops, conditionals) are aggressively optimized into bit-hacks or mathematical formulas, destroying the original logic's structure.
+- Type information is severely degraded, with signed integers treated as unsigned (e.g., `-1` becoming `4294967295`).
+- Complete failure to decompile `computed_goto` (empty function body) and severe corruption of `duffs_device`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)
+- The decompiler successfully preserved the names of the main test functions, allowing the reader to map the decompiled output back to the source intent at a high level.
+
+**Most Needs Improvement:** Noise Reduction (scored 1/10)
+- The presence of internal decompiler artifacts (`armg_calculate_condition`) is the single biggest barrier to readability, making the code look like pseudo-assembly rather than C.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a lowering pass to convert internal IR condition checks (`armg_calculate_condition`) into standard C comparison operators (`<`, `>`, `==`).
+2. Add a "de-optimization" or pattern-matching pass to recognize compiler-optimized idioms (like bit-hacks for conditional moves) and reconstruct the original `if/else` structures.
+3. Improve type inference to correctly distinguish between signed and unsigned integers, especially for constants and return values.

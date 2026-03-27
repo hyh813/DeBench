@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic IDA-style names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `result`, `exception`). No semantic names like `packet_size` or `user_count` were recovered. Even stack variables like `dest[32]` are generic. The original source had meaningful names like `value`, `name`, `data`, `size` but these are lost.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some functions have proper C++ names like `Base::virtual_func`, `Derived::virtual_func`, `test_cpp_member_func`, but many retain mangled names like `_Z20test_cpp_member_funcv` or generic IDA names like `sub_1092C`. The original function names like `getValue`, `compute`, `setValue` are not recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers: `0x1Fu` (31), `4700` (should be explained as part of calculation), `1074003968` (0x40000000, double 2.0), `1073217536` (0x3FF00000, double 0.5). The string "Test" is preserved but the constant `0x1234` (4660) from `getClassID()` is inlined without explanation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate noise present - `__fastcall` calling convention annotations, some redundant type casts like `COERCE_DOUBLE`, and "thunk" functions for virtual dispatch. However, no excessive debug instrumentation or register spilling artifacts. The "FAILED to decompile" messages for 25 functions add noise but are informative.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural - if-else structures, loops, and function calls are recognizable. The exception handling in `test_cpp_exception` shows a throw without proper try-catch recovery, which is a known decompilation challenge. At -O0, the flow should be closer to source but some restructuring is evident.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - most are single-purpose and cohesive. The template functions `template_max<int>` and `template_max<double>` are properly separated. Member functions are correctly extracted from classes. No 500-line monoliths observed. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. The `test_cpp_oo_features` function is linear, calling other functions sequentially. Some computed jumps in virtual function dispatch but these are expected. No excessive goto usage or deep nesting (>4 levels).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Loop unrolling is minimal (the original loops were simple). Common subexpression elimination is present but not excessive. The code is reasonably clean without obvious redundant computations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate - `_DWORD` for 32-bit integers, `char` for strings, proper pointer types. However, many uses of generic `int` instead of `size_t` for size variables. The decompiler uses IDA types (`_DWORD`, `_QWORD`) rather than standard C types (`int32_t`, `uint64_t`). Const correctness is partially preserved in some function signatures like `Base::getName`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Class structures are well recovered - `Base`, `Derived`, `MultiDerived`, `DiamondDerived`, `RTTIBase`, `RTTIDerivedA`, `RTTIDerivedB` are all properly identified. Virtual function tables (vtables) are recognized. Template class `Container<int>` and `Container<double>` are instantiated correctly. Field names within structs are generic but structure layouts are accurate.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with appropriate casts. Some unsafe operations: the virtual function call in `call_virtual_func` uses `int (__fastcall ***a1)(_DWORD)` which is a complex function pointer type. Pointer arithmetic in template classes is present but correct. No obvious buffer overflow patterns. Minor type safety issues don't make the code dangerous.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Very sparse comments. The only comments are "attributes: thunk" for thunks and "positive sp value has been detected" warnings. No explanation of algorithms, no @param/@return documentation, no decompilation confidence indicators. The code relies entirely on self-documentation which is poor due to generic naming.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: C++ idioms are partially recognized - virtual function calls through vtables are identified, constructors and destructors are properly named, template instantiation is recognized. However, the exception handling pattern (try-catch) is not recovered - only the throw is visible. RAII patterns (smart pointers) are not explicitly identified.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The decompiler correctly flags 25 functions as "FAILED to decompile" with specific import names. However, it doesn't flag suspicious patterns in successfully decompiled code. The indirect virtual function calls could have warnings. No indication of uncertainty in complex virtual inheritance calculations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had no explicit assertions, so this is partially expected. However, implicit contracts like "ptr != NULL" for `getData()` could be inferred but aren't documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are partially clear - `test_cpp_oo_features` calls all test functions. Virtual dispatch through vtables is visible. However, static member function calls like `LifecycleClass::getInstanceCount()` are inlined without showing the static relationship. Global variable `instance_count` usage is visible but not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are loosely grouped by class (Base functions together, Derived functions together) but the original file organization (12 test functions + main) isn't preserved. All functions are in a single flat listing. No namespace recovery (`std::` is not shown).
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code will NOT compile. It has 25 "FAILED to decompile" functions that are just import stubs. Many undefined references: `_cxa_throw`, `_cxa_allocate_exception`, `operator new`, `operator delete`, `std::type_info::operator==`, `_dynamic_cast`, etc. Requires extensive patching with C++ runtime library headers.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`v0`-`v7`, `result`, `exception`) - original semantic names like `value`, `data`, `size` are lost
+- 25 functions completely failed to decompile (shown as import stubs)
+- No comments explaining algorithms, magic numbers, or decompilation confidence
+- Exception handling (try-catch) not recovered - only throw visible
+- Build system compatibility is poor - won't compile without extensive modifications
+
+**Best Quality Aspect:** Composite Type Recovery (8/10)  
+Class hierarchies, virtual function tables, and template instantiations are well reconstructed. The decompiler correctly identified Base, Derived, MultiDerived, DiamondDerived classes and their relationships.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The decompiler should infer variable names from usage patterns - for example, `v2` used as array index should be named `idx` or `index`, variables used in size calculations should be `size` or `count`.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, size calculations, string operations) to assign semantic names like `idx`, `size`, `name`, `data`
+2. **Recover try-catch blocks**: Implement pattern recognition for C++ exception handling - the throw, catch, and rethrow patterns should be reconstructed
+3. **Add meaningful comments**: Include algorithm explanations, flag uncertain decompilations, explain virtual dispatch mechanisms, and document magic numbers with possible constant names

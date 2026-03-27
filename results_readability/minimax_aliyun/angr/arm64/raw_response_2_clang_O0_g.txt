@@ -1,0 +1,110 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10Justification: All parameters use generic names like `a0`, `a1`, `a2` with no semantic meaning. Local variables are `v0`, `v1`, `v2`, `v3`, etc. The original source used meaningful names like `x`, `c`, `arr`, `n`, `ptr`, `p`, `str`, `i`, `sum`. This is a severe degradation - it's impossible to determine variable purpose without analyzing usage.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions and main processing functions are properly named (`test_data_types_l1`, `process_char`, `process_short`, `double_value`, `complex_callback`). However, many utility functions use mechanical addresses (`sub_400694`, `sub_400770`, `sub_400788`). The core functions match source, but infrastructure functions are poorly named.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: The decompiled code is riddled with unexplained magic numbers and bizarre bit manipulations. For example, `process_int` shows `((a0 * 2 | a0 >> 31) & 4294967294) + 1` instead of the simple `x * 2 + 1`. `process_long` shows `__ROL__(a0, 1) & 18446744073709551614` instead of `x << 1`. These are compiler artifacts that completely obscure the original arithmetic operations.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Massive noise pollution throughout. Every arithmetic operation is wrapped in bit manipulation macros (`__ROL__`, bit masking with `4294967295`, `4294967294`, etc.). The code is 3x longer than necessary due to these artifacts. Test functions have massive local variable declarations that are never meaningfully used.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops are properly rendered as `for` loops, conditionals are clear. At `-O0`, the control flow should be nearly identical to source, and mostly it is. Minor issues: some `goto` patterns in complex functions like `enum_switch` and `__addtf3`. The noise from bit manipulation makes logic harder to follow, but the structure itself is acceptable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly decomposed - each test function and processing function is separate. The original source had ~30 functions, and the decompilation preserves this granularity. Function sizes are reasonable. The only issue is some helper functions like `double_value` could be inlined but aren't.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but some functions have forward jumps. The `enum_switch` function uses a computed goto pattern that's hard to follow. Deep nesting in some test functions (3-4 levels). Overall acceptable but not ideal.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in test functions - values are computed and then masked with `& 4294967295` repeatedly. The `process_short` result is unnecessarily transformed: `process_short(100, 200) * 0x10000 >> 31 & 0xffff0000 | process_short(100, 200) & 65535`. This is clearly a compiler artifact that should be simplified.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Mixed results. Some types are correct: `process_short(unsigned short, unsigned short)`, `ptr_single(unsigned int *)`. But many are wrong: `process_float()` and `process_double()` return `long long` instead of `float`/`double`. `process_long` returns `unsigned long long` instead of `long`. Parameters often use `unsigned int` where `int` would be more appropriate for the semantics.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct recovery is present: `struct_0`, `struct_1` in pointer functions with `field_0`, `field_8` names. But bitfields are completely broken - `struct_bitfields` shows a mess of bit operations instead of proper bitfield access. Unions are treated as `void*`. Nested structs like `Rect`, `Widget` are flattened to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate type safety issues. The floating-point functions returning wrong types (`long long` instead of `float`/`double`) is a major issue. Many unsafe casts in pointer arithmetic: `*((int *)(ptr + i * 4))`. However, basic pointer types are mostly correct and function signatures are reasonable.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The original source had extensive comments explaining each test case (e.g., "DT-L1-01: 字符类型（char）", "场景: [SCENE-ALL]", "测试: 大小写转换"). Zero recovery of this documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are identified or named. The original source tests specific patterns (linked lists, binary trees, graphs, state machines via enum switch) but these are not recognized or annotated. Basic C idioms (loops, conditionals) are preserved but not named.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of suspicious code or potential issues. The `array_oob` function has an intentional off-by-one bug (`i <= n` instead of `i < n`) but there's no warning. The `process_ld` function is completely broken but no anomaly is flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original had clear semantics (e.g., "返回x * 2", "返回arr[y * w + x]") but none of this is recovered. The `volatile_access` function has the semantic that two reads must both happen, but this isn't documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are somewhat inferable - `main` calls `test_data_types_l1`, etc. But there's no explicit documentation of who calls whom or the callback relationships. The function pointer usage in `ptr_func_simple` and `ptr_func_complex` shows the pattern but doesn't document it.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by type (data types, arrays, pointers, composites) which roughly matches the original source organization. However, it's a single monolithic output with no clear separation. The infrastructure functions (`_init`, `_start`, `frame_dummy`) are interleaved with the test code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code has many `extern` declarations and would require significant patching to compile. Floating-point functions return wrong types, so it wouldn't compile as-is. The massive local variable declarations in test functions would also cause issues. Dependencies on `__addtf3`, `__multf3` etc. are not properly declared.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 2 + 2) / 4 = 3.0
+L2_avg = (7 + 8 + 6 + 4) / 4 = 6.25
+L3_avg = (4 + 5 + 5) / 3 = 4.67
+L4_avg = (1 + 3 + 1 + 2) / 4 = 1.75
+L5_avg = (4 + 5 + 3) / 3 = 4.0
+
+Overall = (3.0 × 0.30) + (6.25 × 0.25) + (4.67 × 0.20) + (1.75 × 0.15) + (4.0 × 0.10)
+        = 0.90 + 1.56 + 0.93 + 0.26 + 0.40
+        = 4.05/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters are `a0`, `a1`, `a2` and locals are `v0`, `v1`, `v2` - completely generic with no semantic meaning
+- **Literal clarity**: Every arithmetic operation is wrapped in bizarre bit manipulation (`__ROL__`, magic number masks like `4294967294`) that completely obscures simple operations like `x * 2` or `x << 1`
+- **Type precision**: `process_float()` and `process_double()` return `long long` instead of `float`/`double` - completely wrong types
+- **No comments**: Zero recovery of the extensive documentation in the original source
+- **Struct recovery**: Bitfields are completely broken, unions treated as `void*`, nested structs flattened to raw pointer arithmetic
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (8/10)**: The decompiler preserved the function granularity from the original source - each test function and processing function is separate and reasonably sized
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (1/10)**: The decompiler recovered zero comments from the original source, which had extensive documentation explaining each test case, data types, and expected behavior
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When a parameter `a0` is used as `a0 * 2`, infer it as `x` or `value`. When `a1` is used as array index, infer as `index` or `n`. Use data flow analysis to recover semantic names.
+2. **Eliminate compiler artifacts**: Recognize patterns like `(x * 2 | x >> 31) & mask + 1` as simple `x * 2 + 1`. The bit manipulation macros are noise that should be simplified.
+3. **Recover comments from debug symbols**: Since this was compiled with `-g`, the debug information should contain the original comments. Extract and associate them with the decompiled functions.

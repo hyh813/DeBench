@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v3`, `v4`, `v6`, `ptr`, `a1` throughout (e.g., `local_array` uses `v3[16]` instead of `arr[10]`). Some names like `ptr` for malloc results and `i` for loop counters are acceptable, but most lack semantic meaning.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`). However, some functions like `sub_105B4` use generic address-based names, and `extern_function` appears in decompiled output despite being external.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation: `0x14u` (20 bytes), `0x28u` (40 bytes), `0xCu` (12 bytes for TreeNode), `0xA` for array bounds. Original source used meaningful constants like `sizeof(int)` and named sizes.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise from atomic operations (`MEMORY[0xFFFF0FC0]`), 18 "FAILED to decompile" entries for library functions, and architecture-specific artifacts. Stack frame comments like `[sp+0h] [bp-128h]` clutter output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as natural `for` constructs. However, `stack_alias` has broken logic (`if (!&v2)` is always false), and `tls_access` completely misrepresents the original control flow by treating a function parameter as data.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with reasonable granularity. No excessive inlining or fragmentation. Helper functions like `create_tree_node` remain separate as in source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. Some atomic operation loops use `do-while` patterns that are slightly awkward but understandable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code from register spilling. Some redundancy in test functions where intermediate variables (`v0`, `v1`, `v2`) could be eliminated, but this is minor.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `_DWORD*` instead of `int*`, `void**` instead of `Node**`, generic `int` for function pointers. `tls_access` signature completely wrong (`void (*a1)(void *ptr)` instead of `int val`). Signed/unsigned often incorrect.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**: All struct types (`Point`, `Node`, `TreeNode`) lost. `global_struct_access` uses `global_point + dword_24094` instead of `global_point.x + global_point.y`. `heap_struct` accesses `*ptr` and `ptr[1]` instead of `p->x` and `p->y`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(_DWORD *)`, `(int *)`, `(__int16)`. Pointer arithmetic replaces field access throughout. `stack_alias` loses pointer aliasing semantics entirely. Function pointer `global_func_ptr` typed as `void*` instead of `int (*)(int)`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments beyond auto-generated function headers. No algorithm explanations, no decompilation confidence indicators. Critical errors in `stack_alias` and `tls_access` go unflagged.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Memory allocation patterns (`malloc`/`free` pairs) visible but not identified. Linked list creation in `linked_list_heap` not recognized as such. No pattern naming or documentation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: "FAILED to decompile" entries for 18 library functions but no explanation. Critical semantic errors (`stack_alias` returns constant 20, `tls_access` completely broken) not flagged as anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `a1 > 0` checks not explained). No postcondition inference. Error return values (-1, -2, -3) not documented with meaning.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph visible through direct calls. Global variable relationships unclear (`global_counter`, `global_point` appear without context). Callback relationship (`set_global_callback` → `call_global_callback`) not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in roughly source order. No logical grouping comments separating stack/heap/static sections. Static functions (`static_helper`, `deregister_tm_clones`) properly identified but not grouped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 18 library functions failed to decompile (`malloc`, `free`, `printf`, etc.). External dependencies not declared. Cannot compile standalone without significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+7+7)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.74/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Struct types completely lost**: `Point`, `Node`, `TreeNode` accessed via pointer arithmetic (`ptr[1]`, `v3[2]`) instead of named fields (`p->x`, `node->left`)
+- **`stack_alias` function semantically broken**: Returns constant 20 instead of implementing pointer aliasing logic; original pointer parameters lost
+- **`tls_access` function completely incorrect**: Signature and implementation bear no resemblance to thread-local storage access
+- **Variable names generic throughout**: `v1`, `v2`, `v3`, `ptr`, `a1` obscure semantic purpose (e.g., `large_buf[2048]` becomes `v2[2048]`)
+- **18 library functions failed to decompile**: No stubs or declarations provided for `malloc`, `free`, `printf`, `memcpy`, etc.
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately, allowing quick identification of purpose despite other degradation
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union types forces readers to reverse-engineer field layouts from pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** from consistent field access patterns (e.g., `ptr[0]` and `ptr[1]` accessed together suggests a 2-field struct)
+2. **Add semantic validation passes** to detect and flag functions where decompiled logic cannot match expected behavior (like `stack_alias` returning constants)
+3. **Generate stub declarations for external functions** instead of "FAILED to decompile" messages, with proper signatures inferred from call sites

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `local_c`, `local_14`, `local_20`) with no semantic meaning. Original variables like `capture_by_value`, `result`, `multiplier` are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions preserved well (`test_cpp_member_func`, `test_cpp_constructor`), class methods have class prefixes (`SimpleClass::getValue`), but template instantiations are mangled (`template_max_int_`, `Container_int_`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1234`, `0x1f`, `0x28`, `0x50` appear without explanation. String literals referenced as `&DAT_0001426c` instead of showing actual content.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from external function stubs (functions that call themselves), stack canary checks (`__stack_chk_fail`) in every function, and massive STL internal expansion.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if-else and loops recovered, but exception handling uses goto patterns (`LAB_00011954`). At -O0, control flow should be nearly identical to source.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: User test functions preserved, but STL internals excessively expanded (unique_ptr implementation spans 100+ lines of helper functions that should be inlined).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but forward jumps with `LAB_` labels disrupt flow. Exception handling creates non-linear execution paths.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Massive redundancy from template instantiation (separate functions for `Container<int>` and `Container<double>`), multiple destructor variants per class.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char), class types recovered, but const-correctness lost. Many `undefined4`, `undefined8` types indicate type inference failures.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class structures use offset arithmetic (`this + 4`, `this + 0x28`) instead of named fields. No struct definitions with field names recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(undefined4*)`, `(int*)`, `(void**)`), pointer arithmetic on class objects, type erasure in template instantiations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining complex patterns (vtable, virtual inheritance, lambda capture). No decompilation confidence indicators anywhere.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns visible (constructors, virtual calls) but not named or explained. RAII patterns in smart pointers expanded but not identified as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of uncertain decompilation. Virtual calls shown but not flagged as potentially unreliable. Exception handling gaps not noted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Null checks present but not explained as contracts. No invariant documentation for classes.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear within decompiled code, class relationships visible through method calls, but virtual dispatch not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single output with no separation between user code and library code. External functions listed at top but mixed with actual implementation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many stub functions that just call themselves (infinite recursion). Would not compile without significant modification and external dependency resolution.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+5+6+4)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (6+4+4)/3   = 4.67 × 0.20 = 0.933
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (6+5+3)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.55/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Variable names completely generic** (`iVar1`, `local_c`) losing all semantic meaning from original (`capture_by_value`, `multiplier`, `result`)
+- **STL template expansion creates massive bloat** - unique_ptr implementation spans 100+ lines of helper functions that should be abstracted
+- **No struct field recovery** - class members accessed via offset arithmetic (`this + 4`, `this + 0x28`) instead of named fields
+- **Zero comments** explaining complex C++ patterns (vtable, virtual inheritance, lambda capture mechanisms)
+- **External function stubs are broken** - functions like `operator_new` call themselves creating infinite recursion
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Test function names preserved accurately from source (`test_cpp_member_func`, `test_cpp_virtual_func`), making test identification straightforward.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments for complex C++ mechanisms makes understanding virtual dispatch, inheritance, and template instantiation extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Infer variable names from usage patterns (e.g., variables used in size comparisons should be named `size`, `count`, `length`)
+2. **Abstract STL template expansions** - Recognize common STL patterns (unique_ptr, vector, etc.) and collapse implementation details into readable high-level constructs
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (virtual calls, exception handling) with comments indicating manual review may be needed

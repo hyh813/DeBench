@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named with generic patterns like `v0`, `v1`, `v2`, `ptr`, `p`, `v3-v9`. These provide no semantic meaning. The original source uses meaningful names like `value`, `name`, `data`, `size`, `capture_by_value`, `capture_by_ref`. The decompiled code loses all this semantic information.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some C++ mangled names are correctly recovered (e.g., `_Z18test_cpp_exceptionv`, `_Z12template_maxIiET_S0_S0_`), but many functions use mechanical address-based names like `sub_401020`, `sub_40102d`. The original has clear names like `test_cpp_member_func`, `call_virtual_func`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear without explanation. For example, `42` thrown as exception, `4` for exception size, `8` for object sizes, `10` for array bounds. The constant `0x1234` from `getClassID()` is not recovered. Some string literals like "Test" are present but not connected to their semantic purpose.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution. There are numerous empty stub functions (sub_40102d through sub_40112f are all trivial wrappers), redundant `return;` statements, and dead code. The code has many unreachable paths and compiler-generated initialization functions that clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is readable - goto is used appropriately for exception handling. However, the exception handling code is convoluted with multiple conditional checks on `v3` that are difficult to follow. At -O0, the control flow should be more straightforward.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Severe over-fragmentation. Functions like `sub_40102d` through `sub_40112f` are trivial single-instruction wrappers. The original source has well-structured test functions (40-60 lines each), but the decompiled version fragments these into many small pieces.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom with some forward jumps in exception handling. However, the numerous empty functions and unreachable code create discontinuities that disrupt the flow. The exception handling code has complex nested conditions that are hard to trace.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from decompilation artifacts. Many duplicate empty function definitions, repeated `return;` statements, and dead code paths. The template instantiation code shows some redundant operations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision. Some template functions have correct types recovered (`template_max<int>(int, int)` returns `int`), but many uses generic types like `unsigned long`, `unsigned long long`, `unsigned int`. The `template_swap<int>` function has incorrect signature - it takes only one pointer but should take two.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct definitions are partially recovered (struct_0, struct_2, struct_3) but with generic field names like `field_0`, `field_8`. Class member information is largely lost - the original has `int value; char name[32];` but decompiled shows only local variables.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Several type safety issues. In `template_swap<int>`: `unsigned int *p;` is used uninitialized (`p = v2` is actually reading from register, not a valid pointer). The `call_virtual_func` uses `goto *((long long *)*((long long *)&arg_0))` which is dangerous void pointer manipulation. Multiple unsafe casts present.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The decompiled code contains only auto-generated function headers without explanatory content. No comments explain what functions do, what parameters mean, or document non-obvious logic. The original source has extensive Chinese comments explaining each feature.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some C++ features are identified (virtual function thunks like `_ZThn16_N12MultiDerived5funcBEv`, vtable handling) but not explained or named as patterns. No recognition of design patterns (RAII, virtual dispatch, diamond inheritance) or algorithms.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flagging. The decompiler presents incorrect code confidently. For example, `template_swap<int>` has a critical bug (uninitialized pointer `p`) but no warning. Indirect calls and unresolved vtable calls are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source has clear semantics (e.g., "returns 10*3+4=34", "期望: 4704") that are completely lost. No documentation of what functions require or guarantee.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some relationships visible through function calls (e.g., `test_cpp_oo_features()` calls other test functions), but no explicit documentation. Virtual dispatch relationships and inheritance hierarchies are not clearly documented.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions organized by address (sub_401020, sub_40102d, etc.) rather than by logical grouping. The original groups by feature (CPP-L3-01, CPP-L3-02, etc.) but this organization is completely lost. Related functions are scattered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has many `extern` declarations and won't compile. Missing implementations for standard library functions (`operator new`, `operator delete`, `__cxa_*` exception functions). Requires significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.5/10
+
+**Critical Defects:**
+- Variable names are all generic (`v0`, `v1`, `ptr`, `p`) losing all semantic meaning from original source
+- `template_swap<int>` has incorrect signature - takes single pointer but should take two reference parameters
+- Severe function over-fragmentation with dozens of trivial wrapper functions (sub_40102d through sub_40112f)
+- No comments explaining any functionality - completely lacks documentation
+- Uninitialized pointer usage in `template_swap<int>` (`p = v2` reads from register, not valid memory)
+- No anomaly indication for incorrect or suspicious code patterns
+
+**Best Quality Aspect:** Type System Fidelity (scored 4.3/10)  
+- Some C++ template types are correctly recovered (e.g., `template_max<int>(int, int)`), and struct layouts are partially reconstructed
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.0/10)  
+- Zero useful comments, no pattern recognition, no anomaly flagging, and no contract recovery - the decompiled code provides no guidance to help analysts understand the logic
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Track how variables are used (e.g., `ptr` used in array indexing suggests `array` or `buffer`; `v` used in arithmetic suggests `value` or `index`)
+2. **Fix function signature recovery**: The `template_swap` function clearly takes two parameters but is decompiled with one - the decompiler needs better register tracking
+3. **Add explanatory comments**: At minimum, document what each test function is expected to return (the original has "期望: 4704" comments), flag uncertain decompilations, and explain C++ patterns like virtual dispatch

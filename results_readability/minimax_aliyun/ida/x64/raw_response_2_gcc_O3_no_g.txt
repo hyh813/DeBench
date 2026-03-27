@@ -1,0 +1,110 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and internal variables use cryptic names (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`). No semantic meaning recovered - e.g., `a1` should be `x` or `input_value` based on usage in `process_int`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test function names are correctly preserved (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`, `enum_switch`). However, some initialization functions use generic names (`sub_1020`, `sub_1030`). The core function names match source exactly.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation - `65` in `process_char` (should be 'A'), `97`/`98` inlined as print arguments, array indices like `99`, `88`, `77` in `array_2d_stack` (diagonal elements). The switch table `CSWTCH_61` is referenced but not shown. Many values are opaque.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__fastcall` calling convention, SSE intrinsics (`_mm_loadu_si128`, `_mm_add_epi32`) in array functions, `LODWORD` casts, "FAILED to decompile" messages for 6 functions, undefined string references (`asc_33E1`, `asc_3454`, `asc_354A`). These impede readability significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: At -O0, control flow should closely match source, but `array_2d_stack` is completely unrolled to manual index calculations (`a1[99] + a1[88] + ...`), `array_3d` uses massive nested SIMD operations, and `binary_tree_sum` has spaghetti-like control flow with 30+ local variables. Loop constructs are often replaced with goto or unrolled.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions generally match source granularity, but some are bloated by unrolling (e.g., `array_3d` is 50+ lines due to manual SIMD expansion). Test functions are preserved but contain hardcoded values rather than actual test logic. Parameter lists are reasonable but lack semantic names.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Many functions have extremely poor linearization. `binary_tree_sum` has deep nesting (8+ levels) with forward jumps. `array_3d` and `array_2d_stack` are completely non-linear due to unrolling. Reads top-to-bottom only for simplest functions like `process_char`.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Severe redundancy from aggressive loop unrolling. `array_2d_stack` manually computes 10 array accesses instead of loop. `array_3d` has 25+ `_mm_loadu_si128` calls unrolled. `pointer_array` has 10 separate if-blocks instead of loop. This makes code nearly unusable for analysis.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - `int` vs `unsigned int` often unclear (many `(unsigned int)` casts), `char*` vs `void*` confusion in `ptr_void`, function pointer types use `__int64` instead of proper signatures. `_DWORD`, `_QWORD` used rather than `int32_t`, `int64_t`. Const correctness lost in most functions.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs partially recovered - `Point3D` becomes `_DWORD *a1` with manual offset calculations (`a1[2] + *a1 + a1[1]`). Nested structs use offset math (`a1[3] + *a1` for `Rect`). Unions are handled reasonably (`union_type`). Bitfields manually computed. Field names completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns: pointer arithmetic without bounds (`array_complex_index` uses `a1 + 4LL * (a4 + a5 * a2)`), void pointer casts in `ptr_void`, function pointer type confusion (`ptr_func_simple` uses `__int64 (__fastcall *)(_QWORD)`). No `restrict` or alignment annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in decompiled output whatsoever. No algorithm explanations, no "@param" or "@return" documentation, no decompilation confidence indicators. The only "comments" are the file header and "FAILED to decompile" messages which are not helpful for understanding logic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns hinted at but not named - e.g., linked list traversal in `linked_list` (while loop following `next` pointer), binary tree recursion in `binary_tree_sum`. No explicit pattern naming like "State machine" or "LRU cache". Complex patterns like graph traversal in `graph_traverse` are recognizable but not documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "FAILED to decompile" messages present for 6 functions (`__libc_start_main`, `puts`, `__stack_chk_fail`, etc.), but no warnings about suspicious code patterns. No flags for potential undefined behavior (e.g., `array_oob` has intentional out-of-bounds access). No uncertainty indicators for indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of error conditions or requirements. The function signatures lack any contract information (e.g., "requires: n > 0" or "ensures: return >= 0").
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are syntactically clear (e.g., `main` calls `test_data_types_l1()`, `test_array_types()`), but no documentation of who calls whom. Callback relationships (e.g., `ptr_func_simple` calling function pointer `f`) not documented. No global variable usage transparency.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are loosely grouped by type (data types, arrays, pointers, composites) but appear in arbitrary address order. No static function scoping indicated. No header/API separation. All in single output file with no logical structure.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would NOT compile - undefined string references (`asc_33E1`, `asc_3454`, `asc_354A`), "FAILED to decompile" for 6 functions, missing switch table definition (`CSWTCH_61`). Requires significant patching to even attempt compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 4 + 4) / 4 = 4.5
+L2_avg = (3 + 6 + 3 + 2) / 4 = 3.5
+L3_avg = (5 + 5 + 5) / 3 = 5.0
+L4_avg = (2 + 4 + 5 + 2) / 4 = 3.25
+L5_avg = (5 + 5 + 2) / 3 = 4.0
+
+Overall = (4.5 × 0.30) + (3.5 × 0.25) + (5.0 × 0.20) + (3.25 × 0.15) + (4.0 × 0.10)
+        = 1.35 + 0.875 + 1.0 + 0.4875 + 0.4 = 4.1125 ≈ 4.1/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects (Bullet List)
+- Variable naming is completely generic (`a1`, `a2`, `v1`, `v2`) - no semantic meaning recovered
+- Severe loop unrolling in `array_2d_stack`, `array_3d`, `pointer_array` creates massive redundancy
+- No comments or documentation whatsoever - zero semantic transparency
+- Control flow in complex functions (`binary_tree_sum`) is spaghetti-like with 30+ local variables
+- Build system compatibility broken - undefined references and failed decompilations
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (8/10)** - Core test function names match source exactly (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`)
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)** - All parameters and internal variables use generic names with no semantic meaning, making code analysis extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparisons) to suggest semantic names like `packet_size`, `array_index`, or `checksum`
+2. **Detect and collapse loop unrolling**: Recognize when loops have been unrolled and reconstruct the original loop structure with a comment indicating unrolling occurred
+3. **Add semantic comments**: Include basic documentation explaining algorithm intent, parameter purposes, and any decompilation uncertainties (e.g., "likely struct field access at offset X")

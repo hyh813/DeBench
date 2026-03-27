@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use completely generic names like `a1`, `a2`, `a3` for parameters and `v1`, `v2`, `v3`, `v4` for locals. The original source had meaningful names like `count`, `args`, `sum`, `ptr` that clearly indicated purpose. These cryptic names make tracking variable roles extremely difficult.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions are preserved (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`, `main`, `varargs_func`). However, many helper functions are missing or renamed (`cdecl_func`, `stdcall_func`, `call_cdecl` not visible; `param_ptr_array` preserved but `call_ptr_array` has wrong signature). At -O0, more functions should be recoverable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test expected values like `15`, `50`, `6` are hardcoded in printf statements, but the symbolic constants (e.g., `CALL-L1-01`) are lost. Magic number `4` used for pointer size calculation without explanation. String literals have encoding issues (Chinese characters as hex escape sequences).
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: No obvious compiler artifacts, debug instrumentation, or redundant casts visible. The code is relatively clean without __asm__ blocks or frame pointer manipulation artifacts. Minimal noise present.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: The `varargs_func` uses a reasonable `while(true)` with break pattern. Control flow in `test_calling_conventions` has some awkward manual loop construction for LargeStruct initialization, but overall logic is followable. At -O0, loops should be more recognizable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: High-level test functions are properly separated. However, many small helper functions are missing (e.g., `call_cdecl`, `call_stdcall` not visible, likely inlined). At -O0, these should be preserved as separate functions. The `call_ptr_array` has an incorrect signature taking 4 parameters instead of 0.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The `while(true)` with break pattern in `varargs_func` is acceptable. Some manual loop construction in `test_calling_conventions` for LargeStruct initialization creates minor non-linearity but doesn't severely disrupt reading.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or common subexpression duplication. The loop unrolling in `test_calling_conventions` for LargeStruct initialization appears to be compiler-generated but is handled reasonably. Overall clean without significant redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Uses `int32_t` appropriately for arm64 (32-bit int). Uses `uint32_t` for unsigned values. Pointer types are reasonably clear (`int32_t *`). Some minor issues: `char **` for string arrays could be clearer, but overall good type precision for decompiled code.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery visible. The `LargeStruct` (128 bytes) is not reconstructed - instead the decompiler shows manual memory manipulation with raw pointer arithmetic (`v3 += 8`, `*(int32_t *)v3 = v4`). The `SmallStruct` is also not recovered. Original had clear `typedef struct { long long data[16]; } LargeStruct;` which is completely lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: `(char *)v2` cast in `param_ptr_array` where v2 is int32_t, pointer arithmetic `4 * v7 + v3`. However, these are manageable and the code can be reasoned about. No severe type safety violations that would cause undefined behavior.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled code. The original source had extensive comments explaining each test case (e.g., "CALL-L1-01: cdecl调用约定"). The decompiled output has zero useful comments - only auto-generated meta-information at the bottom about compiler detection.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The varargs handling, though correctly decompiled, is not recognized as a stdarg pattern. No indication that this implements printf-style variable arguments.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code or uncertain decompilation. The `call_ptr_array` function has a clearly wrong signature (takes 4 int parameters but should take none based on usage), but no warning is present. No indication of potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions documented. The original had clear expectations (e.g., "期望: 15" for test outputs). No contract information recovered - no indication that `param_ptr_array` requires non-null pointer, or that `varargs_func` expects first parameter as count.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible in the code (e.g., `test_calling_conventions()` calls `varargs_func()`). However, relationships between functions are not documented. No indication that `call_func_ptr_param` uses a function pointer to `callback_func`. The call graph is implicit but not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in a single file with no header separation. Functions are roughly grouped by test category but not clearly delineated. No static function scoping visible. The original had clear section comments (e.g., "4.1 调用约定").
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Has appropriate includes (`stdbool.h`, `stdint.h`, `stdio.h`, `string.h`). Uses `__printf_chk` which is a standard libc function. Should compile with standard GCC and libc. Minor issue: Chinese string literals are encoded as hex which may need handling.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming uses completely generic names (`a1`, `v1`, `v2`) making code comprehension extremely difficult
+- No struct recovery - `LargeStruct` and `SmallStruct` completely lost, replaced with raw pointer arithmetic
+- Zero comments - original source had extensive documentation explaining each test case
+- `call_ptr_array` has incorrect signature (takes 4 parameters but should take 0)
+- No anomaly indication for suspicious code patterns
+
+**Best Quality Aspect:** Type Precision (scored 8/10)  
+Uses appropriate `int32_t` for arm64 architecture, with reasonable pointer type handling. Types are mostly precise and match the target platform well.
+
+**Most Needs Improvement:** Comment Quality (scored 1/10)  
+The decompiled code has zero useful comments. Original source had extensive documentation (665 LOC with many explanatory comments) that is completely lost. Adding test case explanations, expected values, and semantic context would dramatically improve readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a1` used as count in loop should be named `count`; `v2` accumulating values should be named `sum`
+2. Recover struct types from memory access patterns - the 128-byte LargeStruct initialization loop should reconstruct `struct LargeStruct { int data[16]; }`
+3. Add semantic comments for test functions - include expected output values and test purpose (e.g., "// Test: varargs sum, expects 15")

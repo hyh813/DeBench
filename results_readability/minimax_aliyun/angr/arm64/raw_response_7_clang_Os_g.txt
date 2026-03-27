@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `a0`, `a1`, `flag1`, `result`. The original source uses semantic names like `x`, `result`, `str`. The decompiler failed to infer meaningful names from usage patterns - e.g., `a0` should be `x` based on being the input parameter.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions correctly recovered: `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution` all match source. However, utility functions use address-based naming (e.g., `sub_400744`) and the critical fake branch constant `0xDEADBEEF` is completely absent from the output.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: The magic number `0xDEADBEEF` from the fake branch is entirely missing. The decompiler uses `& 4294967295` (0xFFFFFFFF) extensively for 32-bit masking, creating noise. The string decryption key `90` (0x5A) appears but without explanation. Many constants are unexplained magic numbers.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution from bit manipulation artifacts. The pattern `& 4294967295` appears dozens of times for 32-bit masking. Complex condition calculation using `arm64g_calculate_condition` adds unreadable complexity. These are compiler artifacts that obscure the actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: The fake branch function is correctly simplified (dead code elimination worked), but `param_opaque_predicate` uses goto-based flow and complex computed conditions. The while loop for GCD is decompiled as a do-while with goto, making it harder to recognize the algorithm.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Main functions preserved: `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`, etc. However, `param_buffer_overflow_stack` and `param_buffer_overflow_heap` are reduced to trivial stubs returning just `v0`, losing the actual overflow logic.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom without excessive forward jumps. The fake branch function is linear. Some complexity in opaque predicate but manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: The decompiler introduces redundant calculations, particularly in condition flag computation. The pattern `((char)arm64g_calculate_condition(...) ? v6 & 4294967295 : 0)` appears multiple times with slight variations, creating redundant expressions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` types are degraded to `unsigned long` with extensive 32-bit masking (`& 4294967295`). The parameter `x` in `param_fake_branch` should be `int` but is `unsigned long`. Signed/unsigned correctness is compromised.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union recovery. The original code has no complex structures, but the decompiler doesn't recognize patterns like the `jmp_buffer` usage for exception handling.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations present. The extensive bit masking (`& 4294967295`) creates type confusion. Function pointer types are not properly typed (e.g., `signal` called with numeric constants instead of signal handlers).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The original source has extensive comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.) and the fake branch logic. None of this semantic information is recovered.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The "fake branch" (dead code) pattern is not identified - the decompiler simply eliminated it. The opaque predicate pattern is not recognized as such. The GCD algorithm in the while loop is decompiled but not identified as GCD computation.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The decompiler silently eliminates the fake branch (which is actually significant for obfuscation analysis). No indication that `0xDEADBEEF` constant was present in the binary but removed.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No pre/postconditions or invariants documented. The original source has clear expectations (e.g., "期望: 10" for call_fake_branch), but this contract information is lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are present (e.g., `call_fake_branch` calls `param_fake_branch`), but not explicitly documented. The caller-callee relationships are inferable from the code structure but not highlighted.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped together in the output. Related functions (param_* and call_*) are near each other. However, the organization is essentially flat with no logical grouping or section headers.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has `extern` declarations for external symbols. However, many symbols like `g_411ff8`, `$d.1`, `$d.2` are unresolved. The code would require significant patching to compile (missing standard library declarations, unresolved externals).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable naming**: Generic names (`v0`, `v1`, `a0`, `a1`, `flag1`) completely obscure semantic purpose
+- **Missing constant**: The magic number `0xDEADBEEF` from the fake branch is completely eliminated without trace
+- **No comments**: Zero semantic information recovered from source comments explaining obfuscation techniques
+- **Type degradation**: Original `int` types become `unsigned long` with pervasive 32-bit masking
+- **Anomaly silence**: The decompiler silently removes the fake branch without flagging it as significant
+
+### Best Quality Aspect: Function Naming (7/10)
+The main test functions (`param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`) are correctly named, matching the original source function names exactly.
+
+### Most Needs Improvement: Semantic Transparency (1.25/10)
+The decompiled code has zero comments, no pattern recognition, no anomaly indication, and no contract recovery. All the semantic richness from the original source (explaining obfuscation techniques, expected values, algorithm purpose) is completely lost.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: Analyze how variables are used (e.g., `a0` used in multiplication → should be `x` or `input_value`)
+2. **Preserve significant constants**: Flag constants like `0xDEADBEEF` that are removed as "dead code" - they may be intentional obfuscation
+3. **Add semantic comments**: Recover information from debug symbols and patterns to explain what the code does (e.g., "implements opaque predicate pattern", "fake branch for obfuscation")

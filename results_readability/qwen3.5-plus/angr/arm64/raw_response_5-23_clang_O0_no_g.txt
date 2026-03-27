@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`) with no semantic meaning. Only occasional names like `len`, `result`, `ptr`, `i` provide hints. Original source had meaningful names like `size`, `counter`, `exec_mem` that were lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_macro_constants`, `call_macro_functions`, `param_asm_simd`). However, runtime functions use cryptic names (`sub_4007b4`, `$x`) and one function is literally named `$x` which is unusable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation (`0x400`, `0x200`, `57072`, `4294967295`). Original `MAX_SIZE` (1024) became `0x400`, `BUFFER_COUNT * 4` (64) became literal `64`. String literals preserved well ("Hello World", "1.2.3").
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: redundant stack frame setup (`v0 = &v1` in nearly every function), duplicate function calls (`return memcpy(v0, v1, v2);` after already calling it), and runtime initialization code (_init, _start, _fini) mixed with application logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions use natural if-else and for-loop constructs. `param_macro_constants` correctly recovered as if-else. However, `register_tm_clones` uses unnecessary goto, and some functions have awkward condition checks (`arm64g_calculate_condition`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with single responsibilities. However, wrapper functions like `call_macro_constants` are redundant (just call the param function with constant). Some functions duplicated (`sub_4007b4` calls memcpy twice).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with clear execution flow. Early returns used appropriately. Some forward jumps in complex functions (`param_memory_protection`) but overall linear structure maintained.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy: `call_weak_fn` calls `__gmon_start__` twice and returns second call; `frame_dummy` calls `register_tm_clones` twice; `sub_4007b4` calls `memcpy` twice. This is decompiler artifact, not source behavior.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types degraded to generic forms (`unsigned int`, `unsigned long long`, `void*`). Original `int`, `size_t`, `char*` distinctions lost. Pointer arithmetic uses `unsigned long` instead of proper pointer types. Some signedness errors (unsigned where int expected).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited opportunity in this code (mostly primitives). Arrays handled as pointer arithmetic (`*((int *)(ptr + i * 4))`). No struct recovery needed but pointer-to-array semantics lost. Stack variables shown as `char v1; // [bp+0x0]` which is unhelpful.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts (`(unsigned int)v1 + (unsigned int)strlen(v2)`). Pointer arithmetic without bounds checking. `param_asm_clobber` takes `unsigned long ptr` instead of `int*`. Some operations like `__ROL__` suggest type confusion.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining macro behavior, expected values, and test purposes. No decompiler confidence indicators or uncertainty markers present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition. Macro expansion patterns (SQUARE, MAX, ADD_16) not identified. Atomic operations shown as `__aarch64_ldadd4_acq_rel` without explaining it's an atomic fetch-add. Loop patterns recognized but not named.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: One function marked "Failed to decompile function __aarch64_ldadd4_acq_rel". However, suspicious patterns like `arm64g_calculate_condition` calls not explained. No warnings about potential issues with type casts or pointer operations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for array functions). No postconditions or return value semantics. Error conditions not documented (e.g., what -1, -2, -3 mean in `param_memory_protection`).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear through direct invocation. Global variables poorly named (`g_401719`, `g_401741` for printf format strings). External dependencies (printf, memcpy, mmap) visible but not documented. Call graph inferable but not explicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source-order grouping (preprocessing tests, then asm tests). Runtime functions (_init, _start) mixed with application code. No header file structure or API declarations. Related functions generally adjacent.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: References many external functions without declarations (printf, memcpy, mmap, sysconf, __getauxval). Some architecture-specific intrinsics (`__aarch64_ldadd4_acq_rel`) won't compile on other platforms. Would require significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+7+7+4)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.066
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+6+5)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.296 ≈ 5.3/10
+```
+
+**Overall Readability Score: 5.3/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original (`size`, `counter`, `exec_mem`)
+- **Duplicate function calls** in `call_weak_fn`, `frame_dummy`, `sub_4007b4` returning second call result (decompiler artifact)
+- **Zero comments** despite original having extensive documentation explaining macro behavior and test expectations
+- **Magic numbers without recovery** (`0x400` instead of `MAX_SIZE`, `57072` instead of `0xDF20`)
+- **Global format strings as hex addresses** (`g_401719`, `g_401741`) instead of recovering printf format strings
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most application function names preserved from source (`param_macro_constants`, `param_asm_simd`), making it possible to identify test purposes despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments loses all the original documentation about macro semantics, expected values, and test purposes that made the source code self-explanatory.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro constant semantics** - Detect patterns like `if (a0 <= 0x400) return 0x200` and suggest named constants (`MAX_SIZE`, `MAX_SIZE/2`) based on usage patterns across the codebase.
+
+2. **Eliminate duplicate call artifacts** - When a function calls another function twice with identical arguments and returns the second result, recognize this as decompiler uncertainty and emit only one call with a confidence marker.
+
+3. **Generate semantic comments from patterns** - Detect atomic operations (`__aarch64_ldadd4_acq_rel`), memory operations (mmap/mprotect patterns), and macro expansions, then add explanatory comments like `// Atomic fetch-add operation` or `// Expanded from ADD_16 macro: x + 16`.

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `iVar1`, `iVar2`, `iVar3`, `pcVar2`, `pcVar3`. The original source had meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` which are completely lost. Only occasionally does the decompiler preserve `arr` or `result`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved - `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `test_preprocessing_features`, `test_asm_features` all match the original source exactly. The decompiler correctly recovered all function names from the binary.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout obscure original macro values. For example, `0x200` (512) should indicate `MAX_SIZE/2`, `0x40` (64) should indicate `BUFFER_COUNT*4`, and `0x10` should indicate `ADD_16(x)`. The decompiler shows computed results like `0xdf22` instead of the original `x * 5 + 0xDEF0` expression.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy noise pollution from repeated warnings: "WARNING: Unknown calling convention" (appears 20+ times), "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection", "Unresolved local var" comments, and stack canary checks like `if (*(int *)(in_GS_OFFSET + 0x14) == *(int *)(in_GS_OFFSET + 0x14))`. These clutter the output significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with if-else and for loops. However, stack canary checks create confusing patterns like `if (iVar1 == *(int *)(in_GS_OFFSET + 0x14))` that obscure the actual logic. At -O0, these artifacts are unnecessary.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent decomposition matching the original source. All small functions (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`, etc.) are preserved as separate functions with appropriate parameter lists. No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately. No excessive forward jumps or goto patterns. The flow is easy to follow in most functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy present - in `call_asm_multi_insn`, the destination array is manually zeroed with 32 individual assignments (`dst[0] = '\0'`, `dst[1] = '\0'`, etc.) followed by a copy loop. This could be a memset call. Stack canary checks are duplicated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are reasonably precise - `int` for integers, `size_t` for sizes, `void*` for generic pointers, `char*` for strings. Some degradation with `undefined1`, `undefined4` for unresolved types. Signed/unsigned is mostly correct. At -O0, more precision could be expected.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct or union recovery visible. Arrays are accessed via pointer arithmetic (e.g., `arr[iVar2]`). The original source had no complex structs either, but the decompiler doesn't attempt to group related variables into structures where they exist (e.g., the `arr` and `n` in `param_asm_clobber`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. Direct pointer arithmetic like `dst = (void *)((int)dst + 1)` and `src = (void *)((int)src + 1)` in `param_asm_multi_insn` are potentially unsafe. No bounds checking visible. However, no obviously dangerous type-confused function pointers observed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present - no explanatory comments about algorithm intent, macro semantics, or assembly behavior. Comments like "Unresolved local var: int sum@[???]" are not helpful. The original source had rich comments explaining preprocessing behavior that are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms identified. Stack canary checks (`in_GS_OFFSET`) are not recognized as security features. The inline assembly replacement with C code is not annotated. The conditional compilation branches (#ifdef) are not indicated in comments.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The decompiler does flag anomalies with WARNING comments - unknown calling conventions, unresolved local variables, inlined functions, and unreachable blocks are all indicated. However, these are generic warnings without specific explanations of what the anomaly means or its impact.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant recovery. The original source had no explicit assertions, but the decompiler could note things like "requires: counter != NULL" for atomic operations or "ensures: return value is computed result" but doesn't.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: No explicit cross-references between functions. The call graph is implicit in the code structure but not documented. Global variable `global_var` is used in `param_memory_clobber_demo` but its relationship to other code is not explained.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped - preprocessing test functions together, asm test functions together. This matches the original source organization in a single file. Static functions like `my_func` are properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: According to metadata, compilation succeeded ("Compilation Result: Yes"). The code uses standard library functions (`printf_chk`, `mmap`, `mprotect`, `munmap`, `sysconf`) that are properly declared. However, the "WARNING: Unknown calling convention" comments suggest potential issues.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable naming is nearly unusable - `iVar1`, `iVar2`, `pcVar2`, etc. completely obscure variable purpose
+- Magic numbers everywhere - `0x200`, `0x40`, `0xdf22` without explanation of original macros
+- Heavy warning noise - "WARNING: Unknown calling convention" repeated 20+ times clutters output
+- No comments explaining preprocessing semantics, inline assembly replacement, or algorithm intent
+- No struct/union recovery - all composite types flattened to pointer arithmetic
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The decompiler excellently preserved function names from the binary, matching the original source almost exactly for all 20+ functions.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The generic `iVar*` naming makes it extremely difficult to track what each variable does. At -O0, the compiler preserves local variables with debug info, so the decompiler should be able to recover meaningful names from the DWARF symbols.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from debug symbols**: At -O0, DWARF debug info contains variable names like `size`, `x`, `y`, `result`. The decompiler should use these instead of generating `iVar1`, `iVar2`.
+2. **Detect and annotate macro expansions**: Recognize patterns like `0x200` (512) and suggest it may be `MAX_SIZE/2` based on the value. Add comments explaining which preprocessor branch was taken.
+3. **Reduce warning noise**: Consolidate repeated warnings like "Unknown calling convention" into a single summary at the top, rather than polluting every function with the same warning.

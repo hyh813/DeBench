@@ -1,0 +1,161 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: All parameters use generic names (`param_1`, `param_2`, `param_3`) and local variables use compiler-generated names like `iVar1`, `iVar2`, `uVar1`, `local_10`, `local_24`. For example, in `sequential_ops`, the parameters should be named `a`, `b`, `c` based on the source, but are `param_1`, `param_2`, `param_3`. This makes tracking variable purpose extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: Most function names match the original source exactly (`sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `recursion_factorial`, `double_value`, `triple_value`). The decompiler correctly recovered meaningful function names for the test functions. Some internal functions like `FUN_00011030` are generic, but these are likely init/cleanup functions not in the original source.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Justification: Magic numbers appear without explanation - e.g., `0x14` (20), `0x1e` (30), `0x3e9` (1001) in test functions. However, some constants like `0x65` (101) are used consistently. The switch jump table uses `CSWTCH_56` which is a decompiler convention. Many literal values in test assertions are unexplained.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+Justification: Minimal compiler artifacts present. Stack canary checks (`__stack_chk_fail_local`) appear but are expected with `-fstack-protector`. The `in_GS_OFFSET` references for stack protection are present but don't significantly impede readability. No excessive dead code or redundant casts observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Justification: Most control flow is natural and readable. `loop_for_fixed` uses a do-while instead of for-loop (expected at -O0). `goto_backward` is correctly recovered as a loop. `switch_small` uses indexed jump table access. Some conditions like `param_1 - 1U < 3` are slightly awkward but semantically correct. Overall, the control flow matches the original source patterns well.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Functions are appropriately sized with clear single responsibilities. Each test function (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) is separate. No monolithic functions observed. The decomposition matches the original source organization closely.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns in functions like `multi_return` are used appropriately. The `goto_forward` function correctly linearizes the forward jump. No deep nesting (>4 levels) observed. Good linearization overall.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+Justification: No significant redundancy detected. The decompiled code is clean without duplicate expressions or dead code. Loop unrolling is minimal and doesn't obscure the original logic. The code is maintainable without excessive duplication.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 6/10**
+
+Justification: Most parameters use `int` or `uint`, which is reasonable. However, some use `undefined4` which is less precise. Function pointers use generic `code *` type instead of proper function signatures. Boolean returns use `bool` in some places (`if_else` returns `bool`). The type precision is adequate but could be improved with more specific types.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: No struct recovery is evident. Arrays in test functions like `local_24[5]` are represented as consecutive local variables rather than reconstructed arrays. The original source's `int arr[] = {10, 20, 30, 40, 50}` in `loop_break` is decompiled as `aiStack_24` with hardcoded values, losing the array structure.
+
+### 11. Type Safety
+**Score: 6/10**
+
+Justification: Some type safety concerns exist. Function pointers are called through generic `code *` type without proper signature checking. Pointer arithmetic in `process_with_callback` uses `param_1 + iVar1` which is acceptable but could be safer. No critical type safety violations that would cause undefined behavior, but the code lacks type safety guarantees.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: No comments are present in the decompiled code to explain logic, algorithm intent, or recovered structures. The decompiler provides no documentation of its confidence level or any uncertain reconstructions. This makes understanding non-trivial logic significantly harder.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some patterns are recognizable (loops, conditionals, switch statements) but not explicitly named or documented. The original source's Duff's device is partially recognized but not identified as such. State machine patterns in `state_machine` and `fsm_func_table` are present but not annotated. No bonus for naming recognized patterns.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+
+Justification: No indication of anomalies or uncertainties in the decompilation. The `call_func_ptr` function shows an unrecovered jump table with `UNRECOVERED_JUMPTABLE` but this is not flagged prominently. Indirect calls that couldn't be resolved are not documented. The code presents everything with equal confidence.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No pre/postcondition documentation recovered. The original source has no explicit assertions, but the decompiler could document implicit contracts like "requires: n >= 0" for factorial functions. No invariant recognition observed.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function call relationships are visible in the code (e.g., `call_func_ptr_array` calls `double_value`, `triple_value`, `recursion_factorial`). However, there's no documentation of who calls whom or the purpose of callback relationships. The test functions show what they call but not why.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Justification: Functions are grouped in the output but not in logical sections matching the original source's comments (Control Flow Level 1, Level 2, Level 3). Static functions like `op_add`, `op_sub` are properly scoped. The organization is functional but could better reflect the original source structure.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+
+Justification: The code requires libc functions (`__stack_chk_fail_local`, `printf` via `FUN_000110f0`). Some functions have undefined references that would need linking. The code would require moderate patching to compile standalone. Dependencies on system functions are not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 average: (2+8+5+7)/4 = 5.50
+Level 2 average: (7+8+8+8)/4 = 7.75
+Level 3 average: (6+4+6)/3 = 5.33
+Level 4 average: (2+5+3+2)/4 = 3.00
+Level 5 average: (5+6+5)/3 = 5.33
+
+Overall = (5.50 × 0.30) + (7.75 × 0.25) + (5.33 × 0.20) + (3.00 × 0.15) + (5.33 × 0.10)
+        = 1.65 + 1.9375 + 1.066 + 0.45 + 0.533
+        = 5.64/10
+```
+
+**Overall Readability Score: 5.64/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming is unusable**: All parameters are `param_N` and locals are `iVar1`, `local_10` - makes tracking variable purpose extremely difficult
+2. **No comments or documentation**: Zero explanation of algorithm intent, recovered structures, or decompiler confidence
+3. **No struct/array recovery**: Original source arrays like `{10, 20, 30, 40, 50}` become scattered `aiStack_24` values losing semantic meaning
+4. **Type precision loss**: Function pointers use generic `code *` instead of proper signatures; some types are `undefined4`
+5. **No anomaly indication**: Unrecovered jump tables and indirect calls are not flagged to alert analysts
+
+---
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (8/10)**
+- **Why?** The decompiler correctly recovered meaningful function names that match the original source exactly for almost all test functions (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`, etc.)
+
+---
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)** and **Comment Quality (2/10)** (tied)
+- **Why?** Variable naming is completely generic making code practically unusable for analysis. Combined with zero comments, the decompiled code provides no semantic context to help analysts understand the logic.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1` used in division → could be `divisor` or `count`; `local_24` indexed from 0-4 → could be `array` or `values`)
+
+2. **Add semantic comments**: Include basic comments explaining what functions do, especially for non-trivial logic like state machines, recursion, and complex conditionals
+
+3. **Recover composite types**: Detect consecutive local variables with related values and reconstruct them as arrays/structs with meaningful field names rather than `local_24`, `local_40`, etc.

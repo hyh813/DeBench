@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`, `a4`, `a5`, `a6`) and local variables use (`v1`, `v2`, `v3`). Compare to source where meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` exist. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Main test functions correctly named (`param_macro_constants`, `call_asm_basic`, `my_func`), but many helper functions use mechanical addresses (`function_1090`, `function_10b0`, `function_10c0`). Mixed result - some semantic recovery but significant loss.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Some constants recovered correctly (`64`, `30`, `0xdf22`, `500`), but many magic numbers unexplained: `40` (stack canary offset), `-0x3f7c0777` (machine code bytes), `7` (mmap PROT flags), `34` (mmap flags). String literals contain garbled hex escapes.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: `__readfsqword(40)` stack canary checks, `__stack_chk_fail` calls, raw memory addresses like `0x4014`, `0x3ff8`. These obscure the actual logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops correctly recovered as while loops (e.g., `param_asm_clobber`), but stack canary checks add spurious control flow. Some goto-like patterns remain. Generally readable but with artifacts from -O0 debug build expectations.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and separated. Test functions (`test_preprocessing_features`, `test_asm_features`) correctly extracted. Parameter lists are appropriate, though some expose implementation details unnecessarily.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with early returns for error conditions. However, stack canary checks create forward jumps that disrupt flow. Some nested conditionals present but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop unrolling is minimal at -O0. Some repeated stack canary check patterns but they don't severely impact readability.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int64_t` for most values, `int32_t` for some, `uint64_t` for array sizes. Type precision is mixed - some signed/unsigned confusion (e.g., `a2 <= 0` when `a2` is `uint64_t`). SIMD types correctly use `int128_t`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery visible. All access uses raw pointer arithmetic like `*(int32_t *)(4 * v1 + a1)` instead of struct field access. Composite types completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int64_t)v3`, `(int32_t)v1`. Pointer arithmetic without bounds checking. Some type confusion between pointers and integers. Not dangerous but concerning.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in decompiled functions. Only auto-generated header mentions compiler detection. Original source had extensive comments explaining macro semantics, assembly purpose, and test scenarios - all lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns like loops and conditionals recognized, but no explicit naming of patterns (e.g., "this implements a state machine"). The macro expansion patterns are not identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The indirect function calls, unusual stack layouts, and potential undefined behavior are not indicated. Code presents everything confidently without warnings.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. Original source had clear expectations (e.g., "requires: ptr != NULL") that are not documented. Error conditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible in the code. Global variables (`g1`-`g24`) referenced. But relationships to external code not documented - no indication of what calls what or global usage patterns.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions logically grouped (preprocessing tests, asm tests, utilities). Static functions properly scoped. But single monolithic output - no header/API separation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Function prototypes declared. Uses standard library (`mmap`, `mprotect`, `sysconf`, `printf`). Should compile with minor patching. Dependencies on libc are clear.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1-a6` and `v1-v9` instead of semantic names like `size`, `x`, `result`, `arr`
+- No struct recovery - all composite types use raw pointer arithmetic losing field semantics
+- No comments explaining macro semantics, assembly purpose, or algorithm intent
+- Stack canary checks (`__readfsqword(40)`) create spurious control flow obscuring logic
+- Magic numbers like `40`, `7`, `34` unexplained - should be named constants
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Functions are reasonably sized and separated, with test functions correctly extracted from main logic.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Generic single-letter variable names make tracking purpose nearly impossible - the decompiler should infer names from usage patterns (e.g., `a1` used in size comparison should be `size` or `max_size`).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a1` compared against constant 1024 should be named `size` or `max_size`
+2. Recover struct types from pointer arithmetic patterns - `*(int32_t*)(4*v1 + a1)` accessing array elements should show as `arr[i]`
+3. Add semantic comments explaining what macros expanded to and what assembly blocks accomplish (e.g., "lock xadd atomic operation")

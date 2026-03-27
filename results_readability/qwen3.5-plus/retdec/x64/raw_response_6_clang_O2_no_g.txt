@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Overwhelming use of generic names (`v1`, `v2`, `v3`, `a1`, `a2`) obscures semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `file_path` but decompiled code uses `str`, `str2`, `v1` instead.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`param_strcpy`, `call_strcpy`, `thread_compute`) but many wrapper functions have generic names (`function_2030`, `function_2040`). Thread functions (`consumer_thread`, `producer_thread`) are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (`0xffffffff`, `0xfffffffe`, `0xfffffffd`) without explanation. String literals preserved but numeric error codes not mapped to named constants. Some literals like `42` (test success code) remain unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from SIMD intrusions (`__asm_movdqa`, `__asm_pcmpeqb`, `__asm_paddd`). Redundant type casts throughout (`(int64_t)`, `(int32_t)`). Compiler artifacts from loop unrolling visible in `param_malloc_free` and `param_memset`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Extensive goto usage (`lab_0x2921`, `lab_0x2904`, `lab_0x28ff`) replaces natural loop constructs. Original `for` loops degraded to while-with-goto patterns. At `-O0` optimization, this level of control flow degradation is unacceptable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved but `param_malloc_free` exploded to 150+ lines with SIMD unrolling. Helper functions created for library calls (`function_2090` for `strcpy`) add unnecessary indirection.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. Multiple exit points with goto labels create non-linear execution paths. `param_signal_handling` has particularly fragmented flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling artifacts visible without abstraction. Duplicate comparison patterns in `param_strcmp` and `param_memcmp`. SIMD vector operations repeated without consolidation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion - everything becomes `int64_t`. Original `char*`, `size_t`, `FILE*`, `pthread_t` all degraded. Function signatures show `int64_t a1, int64_t a2` instead of typed parameters. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs defined (`_IO_FILE`, `ipc_perm`, `shmid_ds`) but fields are generic (`e0`, `e1`, `e2`). Original struct field names completely lost. `ThreadData` struct not recovered - fields accessed via offset arithmetic.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(char *)a1`, `(int64_t *)str`). Pointer arithmetic on generic `int64_t*` types. No distinction between signed/unsigned in many contexts. Potential buffer overflow patterns not flagged.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comments present. No algorithm explanations, no API contracts, no decompilation confidence indicators. Original source had extensive Chinese comments explaining purpose - all lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`). Thread patterns (producer-consumer, mutex protection) not explicitly identified. No design pattern naming.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `UNREACHABLE` markers present after `_exit()` calls. Assembly intrusions not flagged as decompilation uncertainty. No warnings about indirect call resolution issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"). Error return values (`0xffffffff`, `0xfffffffe`) not mapped to semantic meanings. No postcondition inference.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g40`, `g41`, `g44`, `g50`) used without purpose explanation. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file. Functions roughly grouped by test category but no semantic section comments. Original source had clear section headers (`// 6.1 标准库函数调用`) - all lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes present but assembly intrusions (`__asm_movdqa`, `__asm_hlt`) may not compile on all platforms. Some function signatures mismatch expected library prototypes. Requires modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+5+4+4)/4 = 4.25 × 0.25 = 1.06
+Level 3 (Type):        (3+4+3)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (2+5+4+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (4+5+5)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 3.89/10
+```
+
+**Overall Readability Score: 3.9/10**
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on usage (e.g., `file_descriptor`, `bytes_read`, `thread_id`)
+- **Control flow uses goto labels** (`lab_0x2921`, `lab_0x28ff`) instead of natural loop constructs despite `-O0` compilation
+- **Type erosion to `int64_t`** loses all semantic type information (char*, size_t, FILE*, pthread_t all become int64_t)
+- **SIMD assembly intrusions** (`__asm_movdqa`, `__asm_pcmpeqb`) pollute high-level code without explanation
+- **Zero meaningful comments** - original source had extensive documentation explaining each test's purpose
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions preserved original names (`param_strcpy`, `call_strcpy`, `thread_compute`, `consumer_thread`) providing anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic documentation; original source's extensive Chinese comments explaining test purposes entirely lost
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable naming** - Analyze how variables are used (e.g., passed to `strlen` → `string_ptr`, used in loop counter → `iteration_count`)
+2. **Recover high-level control structures** - Detect goto patterns that represent for/while loops and reconstruct them, especially at `-O0` where such transformations shouldn't occur
+3. **Preserve and translate source comments** - When debug symbols (`-g`) are available, extract and include original source comments in decompiled output

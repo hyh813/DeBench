@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source had meaningful names like `sum`, `current`, `head`, `edge` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names recovered (`double_value`, `process_int`, `array_1d_stack`), but many runtime functions remain as `sub_401xxx`. Critical floating-point functions (`process_float`, `process_double`) are present but broken.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `65`, `32`, `26` in `process_char` lack explanation. Test functions contain hardcoded expected values (e.g., `97`, `98`, `300`) without context about what they represent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Contains `[D]` decompilation failure markers throughout, `__x86.get_pc_thunk.*` compiler artifacts, stack canary checks (`__stack_chk_fail_local`), and unsupported pyvex expressions polluting the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions use natural do-while loops (`array_1d_stack`), but `process_char` uses bitwise operations (`a0 - 65 & 255`) instead of clear character range checks. Several functions use `goto` for control transfer.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Individual functions have reasonable granularity. Helper functions like `complex_callback` were recovered. However, test functions became monolithic with lost internal structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: do-while loops create backward jumps that disrupt top-to-bottom reading. Some functions have forward jumps into loop bodies. Generally traceable but not idiomatic.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No severe dead code observed. Some redundant patterns exist in test functions where original loop initialization was unrolled into individual assignments.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `char`→`unsigned int`, `short`→`unsigned short`, `long long`→two `unsigned int` params, `float`/`double`/`long double` completely broken. Original type information largely lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered as generic `struct_0`, `struct_1` with `field_0`, `field_4` naming. Lost semantic field names (`x`, `y`, `z`, `data`, `next`, `left`, `right`). Bitfields converted to manual bit operations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int*)`, `(char*)`), void* usage without type information, pointer arithmetic on generic integer types. `ptr_func_simple` shows function pointer called as `a0(a1)` without proper signature.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Original source had extensive documentation explaining each test case. Only `[D]` markers indicate decompilation issues without explanation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Linked list traversal (`linked_list`), tree recursion (`binary_tree_sum`), and graph traversal (`graph_traverse`) patterns not identified or documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `[D]` markers show some anomaly detection for floating-point operations, but many issues not flagged. Architecture mismatch (arm64→X86) not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not explained). No postconditions. Error conditions like `__stack_chk_fail_local` not contextualized.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but callback relationships unclear. Global variables (`g_403008`, `g_4033bd`) referenced without explanation. `ptr_func_simple` calls function pointer without signature context.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output with no logical grouping. Original had clear sections (data types, arrays, pointers, composite types) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Contains external references needing stubs (`_ccall`, `__x86.get_pc_thunk.*`). Missing includes. Several functions won't compile as-is due to `[D]` markers and unsupported expressions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+5+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+6+5+6)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (3+4+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (4+3+4)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.16/10
+```
+
+**Overall Readability Score: 4.2/10**
+
+### Critical Defects:
+- **Floating-point functions completely broken**: `process_float`, `process_double`, `process_ld` contain `[D] unsupported` markers and return garbage values
+- **Type system collapse**: All types degraded to `unsigned int`/`int`, losing `char`, `short`, `long long`, `float`, `double` distinctions
+- **Struct field names lost**: All composite types use generic `field_0`, `field_4` instead of semantic names like `data`, `next`, `left`, `right`
+- **Zero documentation**: Original extensive comments completely absent; no explanation of decompilation uncertainties
+- **Architecture mismatch**: Original was arm64 with `-O0`, decompilation shows X86 with apparent `-O1` optimization artifacts
+
+### Best Quality Aspect:
+- **Function Decomposition (6/10)** - Individual functions maintain reasonable granularity and some original function names were successfully recovered
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding decompilation intent and uncertainty impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover type information from debug symbols**: When `-g` flag is present, preserve original type names (`char`, `short`, `float`) instead of collapsing to generic integers
+2. **Add decompilation confidence annotations**: Replace `[D]` markers with explanatory comments like `// DECOMPILATION UNCERTAIN: SIMD instruction not supported`
+3. **Infer semantic field names from usage patterns**: Analyze struct access patterns to suggest names like `data`/`next` for linked list nodes instead of `field_0`/`field_4`

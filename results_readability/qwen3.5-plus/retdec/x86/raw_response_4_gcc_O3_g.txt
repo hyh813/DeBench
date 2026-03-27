@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `a1`, `a2`, `result`) instead of semantic names like `count`, `sum`, `large`, `s` from the original source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but helper functions use mechanical names (`function_1080`, `function_1090`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound (`0x12345678`, `0x23f7`, `0x2427`) without explanation; string literals accessed through complex pointer arithmetic (`v1 + (int32_t)&g5 - 0x1fc8`).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (`__x86_get_pc_thunk_*` functions, frame dummy, `__do_global_ctors_aux`) that clutter the output but don't completely obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural control flow; `varargs_func` uses while loop that could be for loop, but logic remains traceable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical failure: `func_struct_byval` takes 16 individual `int32_t` parameters instead of a `LargeStruct`; constant folding makes `call_cdecl()` return 15 directly instead of calling the function.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns; global variable references with complex arithmetic disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code; constant propagation creates some redundancy but doesn't obscure logic significantly.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently but loses original semantics; `func_mixed_args` has `str` as `int32_t` instead of `char*`; function pointer types degraded to `int32_t`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**: No struct types recovered at all. `LargeStruct` (16 `long long` fields) becomes 16 separate `int32_t` parameters; `SmallStruct*` becomes `int32_t a1`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(char *)str`, `(int32_t *)a1`); pointer arithmetic on generic int types; function pointers called through integer types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled code despite original having extensive documentation explaining each test case and calling convention.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not clearly indicated; no design patterns identified; calling convention differences completely lost.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Type mismatches not flagged; struct-to-scalar degradation not indicated; no warnings about decompilation confidence.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `p != NULL` checks not explained); no postconditions inferred from return patterns.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variable usage opaque (`g1`, `g2`, `g5` with magic addresses); callback relationships not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file with some logical grouping preserved; runtime support functions mixed with application code.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has necessary includes but requires stubs for `__libc_start_main`, `__printf_chk`; some external declarations incomplete.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+5+7+7)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+3+3+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+6+6)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                              4.91/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects
+- **Struct types completely lost**: `LargeStruct` and `SmallStruct` degraded to scalar parameters, destroying semantic meaning
+- **Zero comments**: Original had extensive documentation; decompiled code has none
+- **Variable names generic**: `v1`, `v2`, `a1`, `a2` instead of `count`, `sum`, `packet_size`, etc.
+- **Type precision degraded**: `char*` becomes `int32_t`, function pointers become integers
+- **Constant folding obscures logic**: `call_cdecl()` returns 15 directly instead of showing the function call
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most original function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), making basic navigation possible.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of comments destroys semantic transparency; original had extensive documentation explaining each test case's purpose.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover composite types from stack layouts** - Analyze parameter access patterns to reconstruct struct definitions instead of flattening to scalars
+2. **Infer variable names from usage context** - Variables used in loop counters should be named `i`, `count`; accumulators should be `sum`, `total`
+3. **Generate semantic comments from pattern recognition** - Detect varargs patterns, calling conventions, and add explanatory comments matching original documentation intent

@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Parameters like `x`, `y`, `arr` are preserved well, but local variables are overwhelmingly generic (e.g., `iVar1`, `iVar2`, `uVar2`, `local_c`), obscuring their role in calculations or temporary storage.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names, including `param_macro_constants`, `param_asm_basic`, and `call_*` wrappers, are perfectly recovered from the binary symbols, matching the source exactly.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The source relies heavily on macros (`MAX_SIZE`, `BUFFER_COUNT`, `PLATFORM`), which are compiled away into magic numbers (e.g., `0x400`, `0x40`, `0xdef0`, `0x1e`), making the logic significantly harder to understand than the original.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output is cluttered with Ghidra-specific warnings like `/* WARNING: Unknown calling convention -- yet parameter storage is locked */` and `/* WARNING: Removing unreachable block */`, which appear frequently and distract from the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally readable, though some loops like in `param_asm_clobber` are reconstructed as `do-while` inside an `if`, which is slightly awkward but accurate for the optimized assembly.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Most functions match the source structure, but `param_dynamic_code` appears to have been inlined into `call_asm_privileged`, slightly bloating the caller and reducing modularity.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with clear early returns; however, `param_memory_protection` has nested conditionals that require careful tracing to match the source's linear error-checking style.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: Optimizations like loop unrolling in `param_asm_simd` (explicitly assigning `result[0]` through `result[3]`) and constant folding in `param_stringize` (returning `0x13`) are exposed, which is accurate but verbose compared to the source's concise loops and macros.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Standard types like `int`, `void*`, and `size_t` are mostly correct, though `undefined4` appears in some places (e.g., `_start` parameters), and `size_t` is sometimes interchanged with `int` or `undefined4` in 32-bit ARM context.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: Not applicable (N/A) as the source code primarily uses primitive types and arrays; no complex structs were present to recover, so the decompiler defaults to correct primitive types.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic and atomic operations (`__atomic_fetch_add_4`) are handled correctly with appropriate types; there are no dangerous or confusing casts that deviate from the source's intent.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: Comments are limited to decompiler warnings (e.g., "Unresolved local var") and do not explain the *intent* of the code, such as why `0x1e` is passed to `sysconf` or the purpose of the magic numbers.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: Standard library idioms like `memcpy`, `mmap`, `mprotect`, and `printf` are recognized and named correctly; atomic operations are also identified as `__atomic_fetch_add_4`.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler correctly flags "Unknown calling convention" and "Unresolved local var" for variables optimized away, alerting the user to potential reconstruction issues.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: No preconditions or postconditions are documented; for example, the requirement that `size` be positive in `param_asm_clobber` is implicit in the `if (0 < n)` check rather than stated as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to follow (e.g., `test_preprocessing_features` calling the various `call_*` functions).
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, roughly following the source order, with preprocessing tests and assembly tests kept distinct in the listing.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on implicit knowledge of headers (e.g., `<sys/mman.h>`, `<stdio.h>`) and uses compiler intrinsics (`__atomic_fetch_add_4`) that would require specific includes to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.6/10
+
+**Critical Defects:**
+- Macro constants replaced with magic numbers (e.g., `0x400` instead of `MAX_SIZE`), destroying the semantic context of the preprocessing tests.
+- System call constants not resolved (e.g., `0x1e` for `_SC_PAGESIZE`), requiring manual lookup.
+- Generic local variable names (`iVar1`, `iVar2`) obscure the logic of intermediate calculations.
+- Function `param_dynamic_code` inlined into `call_asm_privileged`, reducing modularity.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly recovered all function symbols from the binary, making the high-level structure immediately recognizable.
+
+**Most Needs Improvement:** Literal Clarity (scored 2/10)
+- The source code's heavy reliance on macros for readability is completely lost in the decompiled output, leaving behind cryptic magic numbers that define the program's logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a constant database to resolve common system call parameters (e.g., map `0x1e` to `_SC_PAGESIZE`).
+2. Heuristically infer local variable names from usage (e.g., variables used immediately before a `return` should be named `result`).
+3. Detect and annotate magic numbers that likely originated from preprocessor macros, perhaps by suggesting constant definitions based on context.

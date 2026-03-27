@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named `v1`, `v2`, `v3`, `a1`, `a2`, `result`, `result2` - completely generic names that provide no semantic meaning. Original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier` which are completely lost.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Functions use mangled C++ names like `_Z20test_cpp_member_funcv`, `_ZN11SimpleClass8getValueEv`. While comments show demangled names, the actual code uses the mangled versions, making it nearly impossible to understand function purpose without cross-referencing comments.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x1234` (getClassID), `5`, `10`, `31` (name buffer size), `100` appear without explanation. Some values like `0x20000000` (array size check) are completely opaque. The original source had clear constants like `sizeof(name)-1`.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive noise from compiler artifacts including: `__x86_get_pc_thunk_ax/bx/dx/si` calls on every function entry, redundant stack frame setup, unnecessary type casts between int32_t and float64_t, and `__readgsdword(20)` for stack canary checks. The code is bloated with ~3000 lines vs 540 original.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow (if/else, loops) is preserved and readable. However, the LifecycleClass constructor uses a strange goto-based loop structure (`lab_0x2886`, `lab_0x2863`) that obscures the simple for-loop from the original. At -O0 this should be more natural.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are properly separated matching original source. However, some functions like `_Z13test_cpp_rttiv` are 80+ lines with complex nesting. Parameter lists expose implementation details (e.g., `int32_t *result` instead of proper return values).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. The main disruption is the goto-based loop in constructor and some early returns. Otherwise, flow is reasonably linear.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant calculations present, particularly in template functions where values are computed multiple times. The template_swap function has a clear bug: `*a1 = *a2; *a2 = *a1;` - this doesn't actually swap (should use temp variable). Dead code is minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently which is appropriate for x86. However, loses distinction between `int` and `unsigned int` (e.g., `size_t` becomes `uint32_t` or `int32_t`). Function parameters often use `int32_t *` where original had references. Const correctness is partially preserved in some `_ZNK...` (const) functions.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/class recovery - all fields accessed via raw pointer arithmetic like `*(int32_t *)((int32_t)result + 4)`. Original had clear struct fields (`value`, `name`, `data`, `size`) but decompilation reduces everything to offset-based access. This is a severe degradation.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations: extensive void* to int32_t casts, pointer arithmetic without bounds checking, mixing int and pointer types freely. The template_swap bug demonstrates type safety issues. No alignment annotations or restrict keywords.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Comments provide demangled function names and line ranges (e.g., "// Demangled: test_cpp_member_func()", "// Line range: 41 - 50"). However, they don't explain algorithm logic, don't indicate uncertainty, and are mostly auto-generated metadata rather than semantic documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are explicitly identified. The virtual function mechanism, RTTI usage, and smart pointer patterns are not labeled or explained. A reader wouldn't know this implements RAII, vtable dispatch, or exception handling.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. The template_swap bug is presented confidently as correct code. No warnings about the unusual constructor loop structure.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original had clear semantics (e.g., "requires: idx < size" for getData) but these are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No documentation of which functions call which, global variable usage, or callback relationships. The virtual function calls and inheritance relationships are not explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single monolithic file with 234 functions. While functions are grouped somewhat logically (test functions, class methods, STL internals), there's no clear organization matching the original source's logical grouping.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has proper includes (`stdint.h`, `stdio.h`, `stdlib.h`, `string.h`) and function prototypes. However, uses x86-specific intrinsics like `__readgsdword` in what should be arm64 code - this is a major architectural mismatch. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable names are completely generic (`v1`, `a1`, `result`) - original semantic names completely lost
+- No struct/class recovery - all composite types reduced to raw pointer arithmetic with offsets
+- Function names use mangled C++ symbols instead of demangled names in actual code
+- Excessive compiler noise (`__x86_get_pc_thunk_*`, stack canary checks) obscuring logic
+- template_swap has a bug: `*a1 = *a2; *a2 = *a1;` doesn't actually swap (should use temp)
+- Type confusion: using int32_t for pointers, mixing signed/unsigned
+
+**Best Quality Aspect:** Control Flow Naturalness (6/10)  
+Basic control structures (if/else, loops) are preserved and readable. The decompiler correctly recovered the general program flow even if some details are obscured.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Composite Type Recovery (2/10)  
+These two dimensions work together - the decompiler should infer field names from usage patterns (like `result + 4` accessing `name` field after `value`) and assign meaningful names. Currently, the code is nearly unusable for analysis due to generic names.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage**: Track how variables are used (e.g., `result + 4` with strncpy → `name`, `result` with strlen → `value`)
+2. **Recover struct layouts**: Instead of `*(int32_t*)((int32_t)result + 4)`, reconstruct `struct SimpleClass { int value; char name[32]; }`
+3. **Use demangled names in code**: Replace `_Z20test_cpp_member_funcv` with `test_cpp_member_func` directly in the function definitions

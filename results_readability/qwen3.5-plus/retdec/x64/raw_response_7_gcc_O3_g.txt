@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `v3`) with no semantic meaning. Original parameter `x` becomes `a1`, and temporaries like `result` become `v1`/`v2` obscuring their purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved from source (`param_fake_branch`, `call_opaque_predicate`), but library wrappers use mechanical names (`function_10d0`, `function_10e0`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (`0xffffffff`, `0x100000000`, `90` for XOR key). String literals stored as `g1`, `g2` with UTF-8 bytes instead of readable text.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`), excessive type casts (`& 0xffffffff`), and SIMD intrinsics (`__asm_movd`, `__asm_paddd`) clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses goto labels (`lab_0x182f`, `lab_0x1804`) instead of structured loops. Original simple conditionals in `param_fake_branch` eliminated by optimization, losing semantic intent.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but some functions over-fragmented (library wrappers). `param_tail_call_optimized` expanded to 130+ lines with unrolled logic.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple forward jumps disrupt reading flow. `param_vectorized_loop` has 6+ label targets making top-to-bottom reading impossible.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Dead code from always-false conditions correctly eliminated, but redundant type masking (`& 0xffffffff`) appears throughout without consolidation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int64_t`, `int32_t` appropriately for ARM64, but original `int` parameters become `int64_t` causing unnecessary widening. Pointer types sometimes degraded to `int64_t`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `struct __jmp_buf_tag` recovered but with generic fields (`e0[8]`, `e1`, `e2`). No semantic field names like `jb_rip`, `jb_rsp` that would aid understanding.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Numerous unsafe casts (`(int32_t)a1`, `(char *)str`). Pointer arithmetic visible without bounds checking. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments except line ranges (`// Line range: 459 - 462`). No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String decryption pattern not recognized. Tail-call transformation not explained.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No warnings about optimization artifacts or potentially incorrect decompilation. SIMD intrinsics presented without context about original scalar code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `p != NULL` for pointer deref). Signal handler relationships not explained. Error conditions undocumented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables (`g1`-`g20`) used without explanation. Signal handler callback relationships not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file with prototypes at top. Global variables grouped but no namespace structure or logical section comments.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Standard headers included, external functions declared. Should compile with proper linking, though SIMD intrinsics may need platform-specific handling.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+5+6)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (6+5+5)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (3+4+4+3)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.93/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- Variable `a1` should be named `x` based on original source parameter
+- Goto labels (`lab_0x182f`, `lab_0x1804`) used instead of structured while/for loops
+- Magic number `90` (XOR key 0x5A) used without explanation or named constant
+- Stack canary checks (`__readfsqword(40)`) add noise without semantic value
+- SIMD intrinsics (`__asm_movd`, `__asm_paddd`) obscure original scalar operations
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved from source, maintaining semantic connection to original intent
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Virtually no documentation explaining algorithm intent, optimization artifacts, or decompilation confidence
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how `a1` is used (passed to arithmetic, returned) to suggest `input_value` or `x`
+2. **Recover structured control flow from jump patterns** - Convert `lab_XXXX` goto chains back to while/for loops with proper conditions
+3. **Add decompilation confidence annotations** - Flag regions where optimization transformed code significantly (e.g., "OPTIMIZED: dead code eliminated by compiler")

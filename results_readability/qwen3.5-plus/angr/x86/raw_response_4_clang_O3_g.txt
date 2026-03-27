@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Overwhelming use of generic names (`v0`, `v1`, `a0`, `a1`, `ptr`) obscures semantic meaning; only occasional meaningful names like `len`, `result`, `cur` appear in `varargs_func`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed recovery—core functions like `cdecl_func`, `call_cdecl`, `varargs_func` retained names, but many wrappers use address-based names (`sub_401030`, `sub_401080`) and test functions lost printf string references.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (4294967295 for UINT_MAX, hardcoded returns like `return 15` instead of showing computation); no named constants recovered from original source.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant artifacts including `[D] unsupported_<class 'pyvex.expr.GetI'>()` errors in `func_mixed_args`, redundant wrapper functions (`sub_401201` just calls `cdecl_func`), and generic struct padding fields.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most simple functions have clean flow, but `varargs_func` and `func_mixed_args` contain broken goto patterns and unsupported expressions that disrupt readability.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Poor decomposition with unnecessary wrapper functions created for every call site; original `call_cdecl()` logic collapsed to `return 15` losing the actual function call structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but interrupted by `[D]` error markers and complex varargs loops that could be simplified; test functions have awkward variable assignment patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding eliminated actual computation (e.g., `call_cdecl()` returns 15 directly); wrapper function pairs create redundancy without semantic value.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion—`double`, `long long`, `char *` all collapsed to `unsigned int`; `func_mixed_args` loses `double d` and `long long ll` type distinctions entirely.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs recovered as generic `struct_0` with `field_0`, `field_4`, `padding_0[12007]`—`LargeStruct`, `SmallStruct`, `TestIntPair` all lost semantic meaning.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Function pointers cast to `unsigned int *` then called as `a0(a1)` in `param_func_ptr`; pointer arithmetic on generic types without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output; no explanation of algorithm intent, no decompilation confidence indicators, no API documentation recovered.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern completely unrecognizable in `varargs_func`; struct-by-value passing not identified; calling convention differences not documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `[D]` markers indicate unsupported expressions but provide no guidance on severity or manual resolution; `func_mixed_args` has multiple unexplained failures.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions recovered (e.g., `func_struct_byptr` null check not documented); no postconditions or error condition documentation present.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear; global variables named `g_4020a8`, `g_402352` instead of string content; printf format strings lost.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions ordered by address rather than logical grouping; test functions mixed with implementation; no header file or API boundary recovery.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Will not compile due to `[D] unsupported_` expressions; missing external declarations; incorrect function signatures for varargs and mixed-type functions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (5+4+5+5)/4 = 4.75 × 0.25 = 1.1875
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (1+2+4+1)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (4+3+2)/3   = 3.00 × 0.10 = 0.300
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.45/10
+```
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects
+- **`func_mixed_args` contains multiple `[D] unsupported_<class 'pyvex.expr.GetI'>()` errors** making the function unusable
+- **Varargs handling completely broken** in `varargs_func`—logic doesn't match `va_start/va_arg/va_end` pattern
+- **All struct types lost semantic meaning**—`LargeStruct`, `SmallStruct` recovered as `struct_0` with `field_0`, `padding_0`
+- **Test functions lost printf format strings**—replaced with opaque `g_4020a8` global references
+- **Constant folding eliminated actual computation**—`call_cdecl()` returns `15` instead of showing `cdecl_func(5, 10)` call
+
+### Best Quality Aspect
+- **Function Naming Quality (5/10)**—Core function names like `cdecl_func`, `varargs_func`, `test_calling_conventions` were successfully recovered from debug symbols
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)**—Zero documentation recovered; no explanation of decompilation uncertainty or algorithm intent
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement varargs pattern recognition**—Detect `va_list` stack traversal patterns and recover `va_start/va_arg/va_end` semantics with appropriate comments
+2. **Add anomaly severity indicators**—Replace `[D] unsupported_` with actionable guidance (e.g., "SIMD operation—manual review required")
+3. **Recover string literals from rodata**—Map global references like `g_4020a8` back to their string content for printf format recovery

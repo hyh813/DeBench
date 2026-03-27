@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters are generic (`param_1`, `param_2`) and the local variable is generic (`iVar1`), providing no semantic hint about their roles as destination, source, or length.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: The function name `param_strcpy` is recovered exactly from the source, perfectly reflecting its purpose.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: There are no magic numbers or literals in the function body to evaluate; the logic relies entirely on variables and function calls.
+
+**4. Noise Reduction:** Score: 10/10  
+Justification: The decompiled code is clean with no compiler artifacts, redundant casts, or stack canary checks visible in this specific function.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10  
+Justification: The control flow is perfectly linear and natural, matching the simplicity of the source code exactly.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The function is appropriately sized and self-contained, maintaining the original boundaries without fragmentation or inlining artifacts.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: The code reads strictly top-to-bottom with no jumps or forward references, offering excellent linear readability.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: There is no dead code or redundancy; the logic is concise and matches the source operations.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: The architecture is ARM64 (64-bit pointers), but the decompiler recovered parameters as `int` and `undefined4` (32-bit), completely failing to recover the correct pointer types (`char *`, `const char *`).
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types (structs/unions) are used in this function, so there is nothing to recover or fail.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Pointer arithmetic (`iVar1 - param_1`) is performed on integer types (`int`), which is semantically unsafe and loses the distinction between pointer arithmetic and integer subtraction.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments explaining the logic, the purpose of the pointer arithmetic, or the side effects.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: The decompiler failed to recognize the standard library calls `strcpy` and `strlen`, replacing them with an opaque `FUN_00011510` and manual pointer subtraction, obscuring the high-level intent.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: No anomalies are flagged, which is neutral, though the type mismatch (32-bit types on 64-bit arch) arguably warrants a warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions (e.g., non-null pointers) or postconditions are documented or inferred.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: The call to `strcpy` is represented as `FUN_00011510`, providing no semantic link to the standard library or the actual function being called.
+
+**17. Module Organization:** Score: 8/10  
+Justification: The function is correctly isolated and placed within the file structure; there are no organizational issues specific to this function.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code uses Ghidra-specific types like `undefined4` and incorrect types for the architecture, making it non-compilable without significant modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 10 + 10) / 4 = 8.25
+L2_avg = (10 + 10 + 10 + 10) / 4 = 10.0
+L3_avg = (2 + 10 + 4) / 3 = 5.33
+L4_avg = (1 + 3 + 5 + 1) / 4 = 2.5
+L5_avg = (3 + 8 + 2) / 3 = 4.33
+
+Overall = (8.25 × 0.30) + (10.0 × 0.25) + (5.33 × 0.20) + 
+          (2.5 × 0.15) + (4.33 × 0.10)
+Overall = 2.475 + 2.5 + 1.066 + 0.375 + 0.433
+Overall = 6.85
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 6.8/10
+
+### Critical Defects (Bullet List)
+- **Type Mismatch**: Parameters recovered as `int`/`undefined4` (32-bit) instead of 64-bit pointers for ARM64 architecture.
+- **Lost Semantics**: Standard library functions `strcpy` and `strlen` are not identified; logic is reduced to opaque `FUN_00011510` and pointer subtraction.
+- **Generic Naming**: Variables `param_1`, `param_2`, and `iVar1` provide no semantic context about destination, source, or length.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (10/10)**
+- **Why?** The decompiler successfully recovered the exact function name `param_strcpy` from the source symbols.
+
+### Most Needs Improvement (Single Dimension)
+- **Semantic Transparency (2.5/10)**
+- **Why?** The lack of comments, failure to recognize standard library idioms, and missing contract information make the code's intent obscure despite its simple structure.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Type Recovery for ARM64**: Ensure pointer types are distinguished from 32-bit integers based on register usage and calling conventions.
+2.  **Standard Library Recognition**: Enhance signature matching to identify common functions like `strcpy` and `strlen` instead of emitting generic `FUN_` addresses.
+3.  **Variable Name Inference**: Utilize data flow analysis to infer parameter names (e.g., `dst`, `src`) based on usage patterns in string operations.

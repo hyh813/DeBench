@@ -1,0 +1,157 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `ptr`, `i` throughout. For example, in `process_char`, the parameter `a0` should be `c`, and local variables like `v0` and `v1` obscure their roles as character comparison values. The original source had meaningful names like `x`, `sum`, `len`, `ptr`, `i`, `j`, `k`.
+
+### 2. Function Naming Quality
+**Score: 2/10**
+
+Justification: Functions are named with mechanical addresses like `sub_103a0`, `sub_10450`, `sub_10510`, `sub_10524`. The original source had descriptive names: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`. The decompiler failed to recover any meaningful function names.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: Magic numbers appear throughout without explanation. For example, in `process_char`: `65` (ASCII 'A'), `25` (range check), `32` (case conversion offset). In `process_bool`: `194`, `210` are condition codes. The original source had clear semantics like `'A'`, `'Z'`, `32`. Some printf format strings are preserved but not the literal values used in logic.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Justification: Significant compiler artifacts present: excessive goto statements (e.g., `goto LABEL_10474`), register-related variable declarations (e.g., `unsigned int v1; // r0`, `unsigned int v0; // [bp-0x4]`), redundant condition checks like `armg_calculate_condition(146, v0, 25, 0)`. The code includes library stubs and CRT functions that clutter the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 3/10**
+
+Justification: Excessive goto usage throughout - for example, `process_bool` has multiple labels (`LABEL_105cd`, `LABEL_105ce`) creating spaghetti flow. Loops are implemented with do-while and goto patterns instead of idiomatic for/while. At -O0, this is unacceptable; the original had clean `for` and `while` loops.
+
+### 6. Function Decomposition
+**Score: 5/10**
+
+Justification: Functions are correctly separated, but parameter lists expose implementation details. For example, `ptr_func_complex` takes `unsigned int *a0, unsigned int a1` instead of the original `int *p, char **args`. Some functions are appropriately sized, but the granularity is obscured by poor naming.
+
+### 7. Code Linearization
+**Score: 3/10**
+
+Justification: Code has many forward jumps disrupting flow. Example from `array_1d_stack`: `goto LABEL_10768` with complex loop structure. Deep nesting in functions like `binary_tree_sum` with multiple nested do-while loops. The original source had clean, linear top-to-bottom reading.
+
+### 8. Redundancy Elimination
+**Score: 4/10**
+
+Justification: Some dead code present. In `array_1d_stack`, variable `ptr` is used in the return statement but appears to be a leftover. The `test_array_types` function has redundant code sections. Loop unrolling is not well-handled - the original had simple loops but decompiled code has manual pointer arithmetic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 3/10**
+
+Justification: Severe type degradation. Original `char` becomes `unsigned int` in `process_char`. Original `short` becomes `unsigned short` in `process_short`. Original `float` and `double` return types become `void` in `process_float` and `process_double`. The decompiler failed to handle floating-point return values properly.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+
+Justification: Struct fields are generic: `field_0`, `field_1`, `field_2`, `field_4`, `field_8`. Original had `Point3D {x, y, z}`, `Node {data, next}`, `Rect {position, size}`. Union types are not clearly distinguished. Nested structures lose their semantic names - `struct_deep` accesses `a0[2]` and `a0[5]` instead of `w->bounds.position.z + w->style.fill.r`.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Multiple unsafe casts present. In `ptr_void`: `*((int *)a0)` and `*((char *)a0)` without clear type safety. In `ptr_cast`: `*((int *)(a0 + a1 * 4))` - pointer arithmetic with generic types. Function pointers treated as `unsigned int` in `ptr_func_simple`: `goto a0;` is dangerous. Many implicit conversions between `unsigned int` and pointers.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: No useful comments. Only auto-generated register location comments like `// r0`, `// [bp-0x4]`. No explanation of algorithm intent, no recovery of original variable names, no indication of uncertainty. The original source had clear comments like `// 大写转小写` (uppercase to lowercase).
+
+### 13. Idiom Recognition
+**Score: 2/10**
+
+Justification: No design patterns or algorithms recognized. Original had clear patterns: linked list traversal, binary tree recursion, switch on enum. The decompiled code shows none of this - just generic pointer chasing. No recognition of common C idioms like `while (ptr != NULL)`.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+Justification: No anomaly flagging. The floating-point functions (`process_float`, `process_double`, `process_ld`) return `void` but should return float/double - this is a critical error not flagged. Indirect function calls not resolved are presented as normal code. No warnings about potential undefined behavior.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No contract information recovered. Original had clear preconditions (e.g., `const_param` requires `*p + 10` with `p` pointing to const data). No null-check documentation, no bounds information, no error condition documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 2/10**
+
+Justification: Function call relationships unclear. `main` calls `test_data_types_l1`, `test_array_types`, `test_pointer_types`, `test_composite_types` but these are buried in the decompiled main. No documentation of which functions call which, no global variable usage clarity. Original had clear test driver structure.
+
+### 17. Module Organization
+**Score: 3/10**
+
+Justification: Functions are in one large file with no logical grouping. Original had clear sections: data types, array types, pointer types, composite types. The decompiled output mixes all functions together with CRT startup code, library stubs, and test functions in no particular order.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+Justification: Code would not compile as-is. Many undefined identifiers: `armg_calculate_condition`, `__printf_chk`, `__stack_chk_guard`. Function signatures are wrong (e.g., `void` return for functions returning float/double). External declarations missing. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 2 + 3 + 3) / 4 = 2.5
+L2_avg = (3 + 5 + 3 + 4) / 4 = 3.75
+L3_avg = (3 + 3 + 4) / 3 = 3.33
+L4_avg = (2 + 2 + 1 + 1) / 4 = 1.5
+L5_avg = (2 + 3 + 2) / 3 = 2.33
+
+Overall = (2.5 × 0.30) + (3.75 × 0.25) + (3.33 × 0.20) + (1.5 × 0.15) + (2.33 × 0.10)
+        = 0.75 + 0.9375 + 0.666 + 0.225 + 0.233
+        = 2.84/10
+```
+
+**Overall Readability Score: 2.84/10**
+
+### Critical Defects
+
+1. **Function names are all mechanical addresses** (`sub_103a0`, `sub_10510`) - original had meaningful names like `process_char`, `array_1d_stack`
+
+2. **Floating-point functions return void** - `process_float`, `process_double`, `process_ld` should return float/double/long double but are declared as `void`
+
+3. **Variable names are generic** (`v0`, `v1`, `a0`, `a1`, `ptr`, `i`) - original had descriptive names like `c`, `sum`, `len`, `x`, `y`, `z`
+
+4. **Struct field names lost** - original had `x`, `y`, `z`, `data`, `next`, `width`, `height` but decompiled uses `field_0`, `field_1`, `field_4`, `field_8`
+
+5. **Excessive goto and unnatural control flow** - at -O0, the original had clean for/while loops but decompiled code uses goto-based loops
+
+### Best Quality Aspect
+
+**Function Decomposition (5/10)** - Functions are correctly separated into individual units, and the overall program structure (test functions calling sub-functions) is preserved, even though naming is poor.
+
+### Most Needs Improvement
+
+**Semantic Transparency (1.5/10)** - The decompiled code lacks any meaningful comments, pattern recognition, anomaly indication, or contract recovery. This dimension scored lowest because the code provides no guidance to analysts about what's happening, what's uncertain, or what the original intent was.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover function names from debug symbols**: At -O0 with debug info (-g), function names should be extracted from symbol tables rather than generating generic addresses
+
+2. **Fix floating-point type handling**: Functions returning float/double should not be decompiled as returning void - this is a critical type recovery failure
+
+3. **Add semantic comments and pattern recognition**: Include comments explaining recovered logic (e.g., "// Linked list traversal"), flag uncertain decompilations, and identify common patterns like state machines, callbacks, and data structures

@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `a2`, `a3`, `v4`, `v5`, `v6` with no semantic meaning. Even loop counters and accumulators are generic, making it nearly impossible to track variable purpose without extensive cross-referencing.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: About half the functions have proper names matching source (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`), but many use cryptic addresses like `sub_10454`, `sub_10530`, `.divsi3_skip_div0_test`, `__aeabi_idiv`. The test functions are well-named but internal helpers are not.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like "CF-L1-01 (sequential_ops): %d\n" provide context, but magic numbers like `4294967295` (unsigned -1) appear without explanation. The `armg_calculate_condition` function with numeric condition codes (194, 210, 18, etc.) is completely opaque.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy noise from stack canary checks (`GLIBC_2.4::__stack_chk_guard`, `__stack_chk_fail`), repeated `armg_calculate_condition` calls, and spurious variable declarations like `char v0; // [bp-0x8]` clutter the code significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Several functions have severely broken control flow: `loop_while` and `loop_dowhile` reference undefined variables (`v2 >> 2 != i`), `if_else` uses redundant `armg_calculate_condition` calls, and `nested_if_deep` has a dangling reference to local variable `v0`. At -O0, these should be nearly perfect.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are properly separated and maintain reasonable granularity. Test functions are correctly separated from logic functions. Minor issue: some helper functions like `__aeabi_idiv` could be marked as library stubs.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Many functions read reasonably top-to-bottom, but excessive use of goto labels (LABEL_10600, LABEL_107b1, etc.) and forward jumps in switch statements disrupt natural flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant expressions present (e.g., repeated `armg_calculate_condition` calls in `if_else`), but dead code is minimal. Loop unrolling is not excessive.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Nearly all parameters and return types are `unsigned int` regardless of original signedness. Parameters that should be `int` (like `single_if(x)`) become `unsigned int`. Pointers are often represented as integers. This loses critical type information.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays like `int arr[] = {10,20,30,40,50}` are decomposed into separate variables `v0=10, v1=20, v2=30, v3=40, v4=50` losing array structure. The 2D matrix in `loop_multi_exit` is similarly decomposed into individual variables.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations present: implicit conversions between signed/unsigned, pointer arithmetic in `loop_break` using `vvar_2{r64|4b} + 4`, and function pointer calls without proper type signatures. The `goto a0;` in `call_func_ptr` is invalid C.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Only auto-generated notes like "/* do not return */" appear. No explanation of algorithm intent, preconditions, or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are recognizable (state machine in `state_machine`, function pointer array in `call_func_ptr_array`), but they're not explicitly named or documented as patterns. The Duff's device is completely broken.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: Critical anomalies are NOT flagged. The `loop_while` and `loop_dowhile` functions have completely broken logic (undefined variable references), but there's no warning. The dangling pointer to local variable `v0` in `nested_if_deep` is not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. No indication of expected parameter ranges or error conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: External functions are declared (`extern unsigned int GLIBC_2.4::__stack_chk_guard`), but there's no documentation of what functions call what, or the relationships between functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in address order rather than logical grouping. Related functions (like all the state machine helpers) are not grouped together. Single monolithic output with no file organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will NOT compile. Issues include: undefined `__stack_chk_fail`, `__printf_chk`, `puts`, `__libc_start_main`, `memset`. Invalid `goto a0;` syntax in `call_func_ptr`. Missing function definitions for many runtime helpers.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.5/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`v0`, `v1`, `a0`, `a1`) providing zero semantic meaning
+- `loop_while` and `loop_dowhile` have completely broken logic with undefined variable references (`v2 >> 2 != i`) - this is a severe decompilation failure
+- All integer types are `unsigned int`, losing critical signedness information from source
+- No comments explaining any logic, algorithms, or intent
+- `nested_if_deep` has dangling reference to local variable `v0` that goes unflagged
+- `call_func_ptr` uses invalid C syntax (`goto a0;`)
+- Arrays are decomposed into individual variables, losing structural information
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+- Functions are properly separated and maintain reasonable granularity; test functions correctly separated from logic
+
+**Most Needs Improvement:** Anomaly Indication (scored 1/10)  
+- Critical decompilation failures (broken logic, undefined variables, invalid syntax) are silently presented as correct code with no warnings
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Detect and flag broken control flow**: The `loop_while` and `loop_dowhile` functions reference undefined variables - the decompiler should detect this and warn users rather than producing invalid code
+2. **Recover variable names from usage patterns**: Variables used as loop counters, accumulators, array indices should be named `i`, `sum`, `index` based on their semantic roles
+3. **Preserve type information**: Don't default all integers to `unsigned int` - analyze signedness from operations and propagate correctly

@@ -1,0 +1,90 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameter named `a0` is completely generic. The original uses `x` which is simple but meaningful. The decompiler made no attempt to infer the variable's semantic purpose.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function correctly named `param_fake_branch` matching the original source exactly. This is excellent recovery.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No literals present in this simplified function. The decompiler correctly avoided introducing magic numbers.
+
+**4. Noise Reduction:** Score: 10/10  
+Justification: Clean code with no compiler artifacts, register spills, or redundant casts. The decompilation is minimal and direct.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10  
+Justification: The control flow is trivially natural - just `return a0`. However, this represents a critical semantic loss (see Anomaly Indication).
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Function is appropriately sized at 2 lines. No decomposition issues.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Perfectly linear - reads top-to-bottom with no jumps or branches.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code present. The function is a single return statement.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Parameter is `unsigned int a0` but original source uses `int x`. This type change (signed→unsigned) could affect behavior for negative inputs. The original function was designed to work with signed integers.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: N/A - no composite types used in this function.
+
+**11. Type Safety:** Score: 8/10  
+Justification: The unsigned int type is used consistently. Minor concern about the signed/unsigned mismatch with original source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present. The function had intentional fake branches (obfuscation technique OBF-L4-02) that are completely missing. No explanation of what was lost.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The "fake branch" (永假分支) obfuscation pattern is completely eliminated. The original source explicitly tests always-false conditions like `x*x < 0` and `strlen(str) < 0` which are now completely absent. This was the core purpose of the function.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that the fake branches were optimized away. The decompiler silently removed the obfuscation code, which is a critical semantic loss. Should have flagged: "WARNING: Dead code elimination removed fake branch obfuscation."
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information. The function should document that it returns the input value, but the original intent of testing compiler behavior with fake branches is lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 10/10  
+Justification: Function is correctly identified as being called by `call_fake_branch()` which returns constant 10.
+
+**17. Module Organization:** Score: 10/10  
+Justification: Part of the larger test binary with proper function ordering.
+
+**18. Build System Compatibility:** Score: 10/10  
+Justification: The decompiled function compiles cleanly as standalone code.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Critical Defects:**
+- **Semantic Loss**: The fake branch obfuscation (OBF-L4-02) is completely eliminated - the core purpose of the function is lost
+- **Type Mismatch**: Parameter changed from `int` to `unsigned int`, potentially affecting behavior for negative inputs
+- **No Anomaly Flag**: The decompiler should have flagged that dead code elimination removed intentional obfuscation code
+- **Missing Comments**: No explanation of the obfuscation pattern or what was optimized away
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- The function name was perfectly recovered to match the original source
+
+**Most Needs Improvement:** Anomaly Indication (scored 1/10)  
+- The decompiler silently eliminated the fake branches without any warning, losing the core semantic purpose of the obfuscation function
+
+**Top 3 Recommendations:**
+1. **Flag Dead Code Elimination**: When the decompiler removes code paths (like the fake branches), add a comment noting what was eliminated and why
+2. **Preserve Obfuscation Patterns**: For functions specifically designed to test obfuscation techniques, the decompiler should preserve the structure even if the branches are unreachable
+3. **Type Consistency Check**: Verify that type changes (signed→unsigned) don't alter the semantic behavior intended by the original source

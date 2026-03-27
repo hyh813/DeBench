@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar2`, `local_8` instead of semantic names like `dst`, `src`, `thread_count`. Original `char *dst, const char *src` became `char *param_1, char *param_2` in `param_strcpy`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names preserved (`param_strcpy`, `call_strcpy`, `param_mutex_lock`) but many use address-based names (`FUN_001013a0`, `FUN_0010218c`) and compiler suffixes (`.part.0`, `.constprop.0`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x2a` (42), `0x5a` (90), `0xc` (12), `0xf` (15), `0x10` (16). String literals preserved ("/etc/passwd", "Thread-%d") but numeric constants not recovered to named constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive stack canary checks (`___stack_chk_guard`) in every function, redundant type casts (`(undefined8 *)`, `(pthread_t *)`), and external function stubs clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control structures preserved but some use `do-while` instead of `for` loops. Thread functions have reasonable structure, but `thread_sum` has complex unrolled loop logic that obscures the simple summation intent.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Compiler optimization created fragmented functions (`param_fork_exec.part.0`, `param_thread_local_storage.constprop.0`). Some functions like `thread_sum` are overly complex due to loop unrolling.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with clear execution flow. Stack check epilogues create minor disruption but don't significantly impact readability.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary code duplicated in every function. `thread_sum` shows loop unrolling artifacts with multiple accumulator variables (`iVar5`, `iVar7`, `iVar8`, `iVar9`) instead of a simple loop.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate: `undefined8`, `undefined4`, `ulong` instead of `size_t`, `int32_t`, `pthread_t`. Original `size_t len` became implicit return type. Pointer types partially preserved but often cast to generic types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `ThreadData` struct not recovered—uses raw memory access (`param_1[0]`, `param_1[1]`, `param_1[2]`). `sockaddr` referenced but fields accessed via `sa_data[0]` array instead of named fields like `sin_family`, `sin_port`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(undefined8 *)malloc()`, `(pthread_t *)`, `(int *)`. Pointer arithmetic on generic types throughout. `thread_tls_test` accesses TLS via raw offset (`lVar3 + 0x10`) instead of proper TLS variable.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no API contracts, no decompiler confidence indicators. Original source had extensive documentation that is completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Producer-consumer pattern in `consumer_thread`/`producer_thread` not identified. Mutex protection pattern not named. Atomic operations reduced to `__aarch64_ldadd4_acq_rel` without semantic explanation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about unresolved indirect calls, stack layout anomalies, or potential issues. Stack check failures just call `__stack_chk_fail` without explanation of what triggered it.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). No postconditions (e.g., "ensures: returns heap-allocated memory"). Error conditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`shared_counter`, `atomic_counter`, `signal_received`) used without context about their purpose or synchronization requirements.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No logical grouping by section (library functions, syscalls, threads). Original source's clear section headers and organization completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions declared as stubs that just call themselves (e.g., `memcpy` calls `memcpy`). Would require significant work to create working build. Many platform-specific intrinsics (`__aarch64_cas4_acq_rel`) need special handling.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (6+5+7+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.14/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable `param_1`, `param_2`** should be named `dst`, `src` based on `strcpy` semantics
+- **Magic numbers** like `0x2a`, `0x5a`, `0xc` should be recovered to meaningful constants (42, 90, 12)
+- **ThreadData struct** not recovered—uses raw array indexing `param_1[0]`, `param_1[1]`, `param_1[2]`
+- **Zero comments** despite original source having extensive documentation
+- **Stack canary noise** in every function obscures actual logic
+
+### Best Quality Aspect:
+- **Code Linearization (7/10)** - Code generally reads top-to-bottom with clear execution flow; stack check epilogues are the main disruption but don't significantly impact understanding.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, algorithm explanations, or decompiler confidence indicators makes understanding intent extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Infer names from function context (e.g., `param_1`/`param_2` in `param_strcpy` should become `dst`/`src` based on `strcpy` signature)
+2. **Recover magic numbers to constants** - Detect repeated values (0x2a=42, 0x5a=90) and suggest named constants with comments explaining their purpose
+3. **Add decompiler confidence annotations** - Flag uncertain reconstructions, unresolved calls, and type ambiguities with comments like `// DECOMPILER: type inferred from usage`

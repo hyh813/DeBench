@@ -1,0 +1,96 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `lVar1`, `iVar2`, `sVar2`, `pvVar2`, `param_1`, `local_10` that convey no semantic meaning. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier` which are completely lost. This is a severe degradation for an -O0 debug build where names should be recoverable from debug symbols.
+
+**2. Function Naming Quality:** Score: 8/10Justification: Test functions are correctly named (`test_cpp_member_func`, `test_cpp_constructor`, `call_virtual_func`, etc.). Member functions like `virtual_func` and `getName` are recovered but lack class qualification. Minor issue: some internal functions have generic names like `FUN_00102020`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers throughout: `0x125c` (4704), `0x15` (21), `0x16` (22), `0x55` (85), `0x2bf` (703), `0x2a` (42) used without explanation. The decompiler correctly computed some return values but didn't explain what they represent. String literals like `"Test"` are preserved but not linked to their semantic purpose.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy noise pollution from warnings: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Struct 'DiamondDerived': ignoring overlapping field", "WARNING: Subroutine does not return". These 40+ warning lines obscure the actual code and make reading difficult.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with standard if/else structures. The `__stack_chk_fail()` calls are compiler inserted but properly placed. Some unusual patterns like `(**obj->_vptr_Base)()` for virtual calls are technically correct but could be clearer.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated matching the original source. Each test function is distinct, and member functions are extracted separately. Template instantiations are properly distinguished (`template_max<int>`, `template_max<double>`). Minor: some thunk functions add noise.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately. Some forward jumps exist but are minimal. The main disruption is the stack canary check pattern which adds a conditional branch.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or redundant expressions. The `strlen` call in `test_cpp_member_func` is necessary. Loop unrolling in string initialization (`obj.name[0]` through `obj.name[31]`) is a compiler artifact but expected at any optimization level.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - uses `int`, `long`, `size_t` but also `undefined4`, `undefined8` for unresolved types. The decompiler correctly identified `int` for most cases but couldn't recover `size_t` from `size_t` variables. Function pointers use generic `_func_int_varargs **` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Partial struct recovery - `SimpleClass` has `name` field but `value` is missing. `Base` and `Derived` have vtable pointers correctly identified. `LifecycleClass` uses raw pointer arithmetic (`*(undefined4 *)((long)pvVar2 + 4)`) instead of struct fields. `DiamondDerived` has overlapping field warnings showing confusion.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: raw pointer arithmetic in `test_cpp_constructor` (`(long)pvVar2 + 4`), virtual function calls through void function pointers. The vtable access pattern `(**obj->_vptr_Base)()` is technically unsafe but necessary for virtual dispatch. No `restrict` or alignment annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10  
+Justification: DWARF original prototypes are present and helpful (e.g., "DWARF original prototype: int virtual_func(Base * this, int x)"). However, most comments are auto-generated warnings rather than explanatory text. No algorithm documentation or intent explanations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are recognizable: virtual function calls through vtable, exception throwing with `__cxa_throw`, template instantiation. However, no explicit pattern naming (e.g., "vtable dispatch pattern"). The exception handling code is essentially a straight-line to `__cxa_throw` without try/catch structure recovery.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings present for anomalies: "WARNING: Unknown calling convention", "WARNING: Struct 'DiamondDerived': ignoring overlapping field". However, these are generic and don't explain the root cause or suggest remediation. The unresolved local variables are noted but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants recovered. The decompiler doesn't document expected states (e.g., "requires: obj != nullptr" or "ensures: return value is valid"). Error paths are not distinguished from normal paths.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Some relationships clear - virtual method tables (`_vptr_Base`), static member access (`LifecycleClass::instance_count`), template instantiations are properly named. However, no explicit call graph documentation or callback relationships. The `test_cpp_oo_features` function shows the call relationships but isn't documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - test functions together, member functions by class, template instantiations grouped. The decompiled output is a single flat listing rather than organized by class, but the naming provides logical separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Does not compile - uses unresolved functions like `operator_new__`, `operator_delete__`, `__cxa_throw`, `__cxa_allocate_exception`, `__dynamic_cast`. Missing standard library declarations (`<iostream>`, `<memory>`, `<typeinfo>`). Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable naming**: Generic names like `lVar1`, `iVar2`, `pvVar2` completely lose semantic meaning from debug symbols
+- **Magic numbers**: Return values like `0x125c` (4704), `0x2bf` (703) are unexplained
+- **Struct recovery**: `LifecycleClass` uses raw pointer arithmetic instead of recovered struct fields
+- **Noise pollution**: 40+ warning lines obscure actual code
+- **Build compatibility**: Unresolved functions (`operator_new__`, `__cxa_throw`) prevent compilation
+
+### Best Quality Aspect: Function Decomposition (8/10)
+- Test functions correctly separated, member functions extracted per class, template instantiations properly distinguished
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- At -O0 with debug symbols, variable names should be nearly perfectly recovered; the generic `Var` naming is unacceptable
+
+### Top 3 Recommendations:
+1. **Infer variable names from debug symbols**: Use DWARF debug info to recover `value`, `size`, `multiplier` instead of `lVar1`, `iVar2`
+2. **Explain magic numbers**: When computing constant return values, add comments explaining what they represent (e.g., `// return 4704 = 10 + 34 + 4660`)
+3. **Recover struct types**: Instead of `(long)pvVar2 + 4`, emit `obj->size = 5` using recovered struct layout from debug info

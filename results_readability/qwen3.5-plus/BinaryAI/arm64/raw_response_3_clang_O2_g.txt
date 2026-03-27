@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `uVar2`, `lVar3`, `puVar5`) with no semantic meaning. Original source had meaningful names like `arr`, `local`, `head`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`local_vars`, `heap_basic`, `double_value`), but some are generic (`FUN_001008e0`, `FUN_00100afc`) and external functions marked as `<EXTERNAL>::`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout (`0x2a`, `0x14`, `0xf`, `0x3c`, `0x1e`) with no named constants. Test functions show constant-folded values instead of actual computation logic.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts visible: `CONCAT44` operations from ARM64 register handling, excessive temporary variables (`iVar8-iVar15` in loops), stack manipulation visible in VLA functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions read naturally but complex functions use `do-while` with manual indexing instead of `for` loops. Goto labels present (`LAB_00100c80`, `LAB_00100d44`). Some functions constant-folded entirely (`stack_alias` returns `0x14` directly).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity mostly preserved but `create_tree_node` has wrong return type (void instead of `TreeNode*`). Test functions heavily optimized losing original structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom but complex loops have forward jumps disrupting flow. Multiple exit points in error handling paths create non-linear reading experience.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling visible in many functions (8-element batch processing with `iVar8-iVar15`). Test functions over-optimized showing constants instead of actual computation calls.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined`, `undefined4`, `undefined8` throughout. Pointer types often `void*` instead of specific types. Return types wrong in several functions (`address_of_local` returns `undefined8` instead of `int`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct types completely lost (`Point`, `Node`, `TreeNode` not recovered). All struct access through pointer arithmetic (`*(undefined4 **)(__ptr + 2)`). No field names recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts visible (`(undefined8 *)`, `(undefined4 *)`). Function pointer types degraded to `code*` or `undefined8`. Pointer arithmetic without type safety throughout heap functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API contracts. Original source had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Loop unrolling not recognized as optimization. Memory allocation patterns (`malloc`/`free` pairs) not identified as resource management idioms.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about potential issues. Undefined behavior not flagged (`dangling_pointer`, `double_free`, `heap_overflow`). No indication of optimization artifacts or constant folding.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (null checks not explained). No postconditions inferred. Error conditions not documented (return values like `-1`, `-2`, `-3` unexplained).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variable usage not clearly indicated (`global_counter`, `static_local_counter` appear without declaration context). Callback relationships not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no header structure. Static functions not properly scoped in output. No logical grouping of related functions (stack/heap/static tests mixed).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions declared but some signatures wrong. Would require significant patching to compile (missing struct definitions, wrong return types). Dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.733
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.38/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`, `uVar2`) losing all semantic meaning from original source
+- **Struct types not recovered** - `Point`, `Node`, `TreeNode` accessed via raw pointer arithmetic
+- **Zero comments** despite original source having extensive documentation for each test case
+- **Constant folding in test functions** - actual function calls replaced with hardcoded values obscuring program flow
+- **Type degradation** - `undefined`, `undefined4`, `undefined8` throughout instead of precise types
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`local_vars`, `heap_basic`, `double_value`), making basic navigation possible
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation, confidence indicators, or explanations for non-trivial logic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop bounds should be named `count`, `size`, `length`)
+2. **Recover struct/union types** from consistent memory access patterns and field offset analysis
+3. **Add decompilation confidence annotations** indicating which code regions are certain vs. uncertain, and flag potential undefined behavior patterns

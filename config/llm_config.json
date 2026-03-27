@@ -1,0 +1,127 @@
+{
+    "_comment": "LLM Configuration - profiles describe model/provider behavior; real keys live in llm_key_inventory.json",
+    "active_profile": "glm",
+    "profiles": {
+        "glm": {
+            "key_provider": "theta",
+            "preferred_key_aliases": [
+                "theta-glm-1"
+            ],
+            "base_url": "https://antchat.alipay.com/v1",
+            "model": "GLM-4.7",
+            "enable_thinking": true,
+            "temperature": 0
+        },
+        "glm_aliyun": {
+            "key_provider": "dashscope",
+            "preferred_key_aliases": [
+                "dashscope-a",
+                "dashscope-b",
+                "dashscope-c",
+                "dashscope-d"
+            ],
+            "base_url": "https://coding.dashscope.aliyuncs.com/v1",
+            "model": "glm-4.7",
+            "enable_thinking": true,
+            "temperature": 0
+        },
+        "glm_official": {
+            "key_provider": "bigmodel_coding",
+            "preferred_key_aliases": [
+                "glm-official-1",
+                "glm-official-2",
+                "glm-official-3"
+            ],
+            "base_url": "https://open.bigmodel.cn/api/coding/paas/v4",
+            "model": "glm-4.7",
+            "enable_thinking": true,
+            "temperature": 0
+        },
+        "glm_ark": {
+            "key_provider": "ark_coding",
+            "preferred_key_aliases": [
+                "ark-coding-1",
+                "ark-coding-2",
+                "ark-coding-3",
+                "ark-coding-4"
+            ],
+            "provider_type": "ark_coding",
+            "base_url": "https://ark.cn-beijing.volces.com/api/coding/v3",
+            "model": "glm-4.7",
+            "enable_thinking": true,
+            "temperature": 0
+        },
+        "qwen3.5-plus": {
+            "key_provider": "dashscope",
+            "preferred_key_aliases": [
+                "dashscope-d",
+                "dashscope-b",
+                "dashscope-c",
+                "dashscope-a"
+            ],
+            "base_url": "https://coding.dashscope.aliyuncs.com/v1",
+            "model": "qwen3.5-plus",
+            "enable_thinking": true,
+            "stream_for_thinking": true,
+            "temperature": 0
+        },
+        "deepseek": {
+            "key_provider": "siliconflow",
+            "preferred_key_aliases": [
+                "deepseek-1"
+            ],
+            "base_url": "https://api.siliconflow.cn/v1",
+            "model": "deepseek-ai/DeepSeek-V3.2",
+            "enable_thinking": true,
+            "temperature": 0
+        },
+        "kimi": {
+            "key_provider": "dashscope",
+            "preferred_key_aliases": [
+                "dashscope-c",
+                "dashscope-a",
+                "dashscope-b",
+                "dashscope-d"
+            ],
+            "base_url": "https://coding.dashscope.aliyuncs.com/v1",
+            "model": "kimi-k2.5",
+            "enable_thinking": true,
+            "temperature": 0
+        },
+        "minimax": {
+            "key_provider": "minimax_official",
+            "preferred_key_aliases": [
+                "minimax-official-1"
+            ],
+            "base_url": "https://api.minimaxi.com/v1",
+            "model": "MiniMax-M2.5",
+            "temperature": 0.01
+        },
+        "minimax_ark": {
+            "key_provider": "ark_coding",
+            "preferred_key_aliases": [
+                "ark-coding-1",
+                "ark-coding-2",
+                "ark-coding-3",
+                "ark-coding-4"
+            ],
+            "provider_type": "ark_coding",
+            "base_url": "https://ark.cn-beijing.volces.com/api/coding/v3",
+            "model": "minimax-m2.5",
+            "enable_thinking": true,
+            "temperature": 0.01
+        },
+        "minimax_aliyun": {
+            "key_provider": "dashscope",
+            "preferred_key_aliases": [
+                "dashscope-c",
+                "dashscope-a",
+                "dashscope-b",
+                "dashscope-d"
+            ],
+            "base_url": "https://coding.dashscope.aliyuncs.com/v1",
+            "model": "MiniMax-M2.5",
+            "temperature": 0.01
+        }
+    }
+}

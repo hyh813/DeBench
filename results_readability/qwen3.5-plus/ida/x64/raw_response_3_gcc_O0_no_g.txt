@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `v7`, `v8`) obscuring semantic purpose. For example, `vla_stack` uses `v2`, `v3`, `v4`, `v5`, `v7`, `v8` instead of meaningful names like `stack_size`, `aligned_size`, or `array_ptr`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`). However, helper functions like `sub_1020` through `sub_1110` have meaningless auto-generated names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation: `0x28u` (stack canary offset), `0xFFFFFFFFLL` (error return), `0x10u` (struct size). Array bounds like `2047` and `1000` are recoverable from context but not documented.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readfsqword(0x28u)`) appear in nearly every function. Unnecessary casts (`(unsigned int)`, `(__int64)`, `(_DWORD *)`) clutter the code. Frame pointer setup variables (`v4`, `v5` in `_start`) add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures generally recovered well (for loops in `local_array`, `heap_basic`). However, `vla_stack` and `alloca_usage` have awkward alloca alignment loops that obscure the original VLA semantics.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. No excessive inlining or fragmentation. Each function has clear single responsibility (e.g., `heap_struct` handles only struct allocation).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately for error handling (`if (!ptr) return 0xFFFFFFFFLL`). No spurious goto usage in main logic.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Stack canary setup/teardown repeated in every function (`v13 = __readfsqword(0x28u)` ... `return v13 - __readfsqword(0x28u)`). Otherwise minimal redundancy from optimizations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved but with issues. `global_array_access` takes `unsigned int` but checks `a1 < 0xA` (signed comparison bug). Excessive `(unsigned int)` casts on return values. Pointer types often degraded to `_DWORD *` or `_QWORD *`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure.** `Point` struct completely lost—`global_struct_access` shows `global_point + dword_604C` (raw pointer arithmetic). `Node` linked list becomes `_QWORD *` with index access (`j[1]` for next pointer). `TreeNode` similarly lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout (`(_QWORD *)*a1`, `*(_DWORD *)v7`). `stack_alias` lost its parameters entirely, becoming parameterless. `dangling_pointer` returns use-after-free value without warning.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Only metadata header mentions decompiler version.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Memory allocation patterns visible but not named. Linked list creation/traversal in `linked_list_heap` not identified as such. Tree traversal pattern in `tree_heap_traversal` unrecognized.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Library functions marked "FAILED to decompile" (18 functions). Stack warning in `_start` ("positive sp value has been detected"). But no warnings for lost struct types, parameter loss in `stack_alias`, or dangerous patterns like double-free.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 > 0` for `vla_stack`). Error returns (`0xFFFFFFFFLL`) visible but unexplained. No postcondition inference for allocation functions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call graph clear through direct calls. Global variables referenced but some have generic names (`dword_604C`, `complex_init`, `dword_6068`). Callback relationship (`set_global_callback` → `call_global_callback`) recoverable.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source-order grouping (stack tests, heap tests, static tests, memory ops). No explicit module boundaries. Static functions (`static_helper`, `double_value`) properly marked but not grouped with callers.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 18 library functions failed decompilation requiring stubs. Type mismatches would prevent clean compilation (e.g., `global_struct_access` pointer arithmetic). External dependencies (`extern_global_var`, `extern_function`) declared but undefined.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (25%): (7+8+8+7)/4 = 7.50 × 0.25 = 1.875
+Level 3 (20%): (6+2+5)/3   = 4.33 × 0.20 = 0.867
+Level 4 (15%): (1+3+4+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (10%): (6+6+5)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 5.33/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects
+- **Struct types completely lost**: `Point`, `Node`, `TreeNode` structs recovered as raw pointer arithmetic (`global_point + dword_604C`, `_QWORD *` with index access)
+- **Function `stack_alias` lost parameters**: Original had `(int *p1, int *p2)` but decompiled version is parameterless, destroying alias semantics
+- **Zero comments**: No documentation for any non-trivial logic, magic numbers, or decompilation uncertainties
+- **Excessive generic variable names**: `v0` through `v20`, `ptr`, `v7`, `v8` obscure variable purposes throughout complex functions
+- **Stack canary noise in every function**: `__readfsqword(0x28u)` checks add 3-4 lines of noise to each function without semantic value
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most source function names preserved accurately (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`), making navigation straightforward.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of comments makes understanding complex functions like `vla_stack` and `alloca_usage` extremely difficult without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover composite type structures** - Analyze consistent field access patterns to reconstruct `struct Point { int x, y; }` instead of raw pointer arithmetic
+2. **Add semantic comments for complex patterns** - Auto-generate comments for VLA/alloca patterns, explaining alignment calculations and stack dynamic allocation
+3. **Infer variable names from usage context** - Variables used in size checks should be named `size`/`count`, pointers to arrays should be named `arr`/`buffer`, loop indices should be `i`/`j`/`idx`

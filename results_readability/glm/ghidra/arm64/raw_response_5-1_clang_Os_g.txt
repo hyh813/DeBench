@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Local variables in optimized functions are generic (`local_38`, `puVar1`, `uStack_2c`), obscuring the original object-oriented logic. However, parameters in recovered methods like `Container<int>::push` use meaningful names (`value`, `idx`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Ghidra successfully demangled complex C++ symbols, accurately recovering names like `Container<int>::push`, `test_cpp_virtual_func`, and `__dynamic_cast`, which perfectly reflect the source intent.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers resulting from constant folding (e.g., `0x2a`, `0x125c`, `0x3e9`) without comments explaining their derivation or meaning (e.g., `0x3e9` is 1000).
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, but contains Ghidra-specific artifacts like "WARNING: Unknown calling convention" and "WARNING: Removing unreachable block" which interrupt reading.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: The control flow is natural for the *optimized* binary (e.g., simple returns of constants). Recovered methods like `template_max` use standard `if/else` logic, but `test_cpp_exception` abruptly ends with `__cxa_throw` without showing the catch structure.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler excellently separated template instantiations (e.g., distinct functions for `Container<int>` and `Container<double>`) and recovered individual class methods, maintaining good granularity.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps or spaghetti logic, making it easy to follow the execution path of the recovered functions.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no dead code or redundant variables introduced by the decompiler; the code reflects the compiler's optimizations (like inlining) accurately.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Function signatures and class types (`Base*`, `int`, `double`) are precise, but local stack variables are often typed as `undefined`, `undefined4`, or `undefined8`, losing semantic detail.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Complex C++ constructs are recovered well, including `Container<int>`, `Base`, and `RTTIBase` class definitions, with correct usage of the `this` pointer and member access syntax.
+
+**11. Type Safety:** Score: 6/10
+Justification: While high-level types are correct, the presence of `undefined` types and casts like `(ulong)(uint)x` in `call_virtual_func` reduces the perceived safety and strictness of the code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to decompiler warnings (e.g., "Unknown calling convention") and lack explanatory notes about the logic, such as why functions return specific constants.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: The decompiler successfully identifies C++ idioms, explicitly naming RTTI functions (`__dynamic_cast`, `typeid`), exception handling (`__cxa_throw`), and template instantiations.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: Ghidra clearly flags potential issues like "Could not recover jumptable" in `call_virtual_func` and "Removing unreachable block," alerting the user to decompilation limitations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants (e.g., the bounds check in `Container::get` is present code but not documented as a contract).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Calls to standard library functions (`printf`, `strlen`) and C++ runtime functions (`operator_new`, `__cxa_atexit`) are clear and correctly identified.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are organized logically, with template instantiations grouped together. The inclusion of runtime startup code (`_init`, `_start`) is standard but separates the user logic slightly.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on standard headers and runtime types (e.g., `undefined8`), requiring manual cleanup or specific Ghidra headers to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.9/10
+
+**Critical Defects:**
+- Variable naming in optimized functions is generic (`local_38`, `puVar1`), losing the semantic context of the original C++ objects.
+- Magic numbers from constant folding (e.g., `0x2a`, `0x125c`) are presented without context, making the logic opaque.
+- Type information for local variables is often `undefined` or `undefined4`, losing semantic type details.
+
+**Best Quality Aspect:** Function Naming (scored 9/10)
+- Ghidra successfully demangled complex C++ symbols, accurately recovering names like `Container<int>::push` and `test_cpp_virtual_func`.
+
+**Most Needs Improvement:** Literal Clarity (scored 4/10)
+- The heavy optimization results in hardcoded return values that lack the semantic meaning of the original calculations.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Enhance constant propagation analysis to annotate magic numbers with their decimal values or original expressions where traceable.
+2. Leverage DWARF debug information more aggressively to recover original local variable names and types, especially for stack-allocated objects.
+3. Improve type inference for `undefined` stack variables based on usage patterns (e.g., treating `undefined4` passed to `strlen` as `char*`).

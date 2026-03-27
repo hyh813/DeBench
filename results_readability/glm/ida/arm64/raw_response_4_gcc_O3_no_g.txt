@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Parameters are generic (`a1`, `a2`), and local variables in complex functions like `varargs_func` are meaningless (`v10`, `v11`, `v19`), obscuring the stack-walking logic.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most function names (`cdecl_func`, `test_calling_conventions`) are preserved accurately from symbols. The `.constprop.0` suffixes correctly indicate compiler constant propagation specializations.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Aggressive optimization (O3) replaced logic with magic numbers (e.g., `return 15` instead of `cdecl_func(5, 10)`), and `return 8` in `param_array_decay` obscures the `sizeof` operation.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Code contains Hex-Rays artifacts like `LODWORD(result)`, `JUMPOUT(0)`, and redundant `__int64` casts, which add syntactic noise without semantic value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: The `varargs_func` implementation is reduced to raw pointer arithmetic and manual stack offsetting (`v10 = -56`), failing to reconstruct the natural `va_list` loop structure.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are appropriately sized. The compiler's inlining (e.g., `call_cdecl` returning a constant) is represented cleanly without unnecessary fragmentation.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Most functions read linearly, but `varargs_func` and `param_varargs` contain complex pointer chasing and conditional jumps that disrupt top-to-bottom readability.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully presents the optimized code without adding redundancy; the lack of redundancy is due to the compiler's work, which the decompiler preserves accurately.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: High-level types are lost; `SmallStruct` is returned as `unsigned __int64`, and `LargeStruct` parameters are typed as SIMD vectors (`int32x4_t*`) rather than the original struct definitions.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct definitions are almost entirely lost. `func_struct_byval` takes a SIMD vector pointer instead of a `LargeStruct`, and `ret_small_struct` returns a packed integer, completely hiding the struct semantics.
+
+**11. Type Safety:** Score: 6/10
+Justification: While the code is technically correct for the binary, the heavy use of macros like `LODWORD` and manual pointer arithmetic in varargs functions creates an impression of unsafe type manipulation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining logic, except for `// attributes: thunk`. The complex varargs stack manipulation lacks any explanatory notes.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard idioms are missed. The `va_list` pattern is not recognized (shown as raw stack access), and loop vectorization is shown as SIMD intrinsics (`vaddvq_s64`) rather than the original summation loop.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler explicitly lists "FAILED to decompile" for external functions and uses `__usercall` to indicate non-standard calling conventions (sret), which is helpful.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred in the output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: The `.constprop.0` suffixes clearly link functions to their optimization contexts, and the list of failed decompilations clarifies external dependencies.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a flat structure roughly corresponding to memory layout, but logical grouping (e.g., separating tests from implementations) is lost compared to the source.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on Hex-Rays specific macros (`LODWORD`, `JUMPOUT`) and non-standard types (`__int64` on non-Windows), making it non-compilable without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable `v10` and pointer arithmetic in `varargs_func` obscure the standard `va_list` iteration logic.
+- Composite types are lost; `SmallStruct` is represented as a packed `unsigned __int64` and `LargeStruct` as SIMD vectors.
+- Magic numbers (e.g., `15`, `8`) from constant propagation replace the original logic, making the intent opaque.
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)
+- Original function names were successfully recovered from symbols, making it easy to map decompiled functions to the source.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The complete loss of struct definitions (replaced by integers or SIMD types) significantly hinders understanding of the data structures used.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching to reconstruct `SmallStruct` returns from register packing operations (e.g., `x0 | (x1 << 32)`).
+2. Improve ARM64 varargs analysis to recognize `va_list` stack save areas and reconstruct the standard `va_start`/`va_arg` loop structure.
+3. Add optional annotations or comments indicating where constant propagation has replaced logic (e.g., "Inlined result: 15").

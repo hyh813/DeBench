@@ -1,0 +1,128 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `lVar1`, `local_48`, `uVar2` that obscure their semantic purpose. The original source used meaningful names like `count`, `args`, `sum`, `x`, `y` which are completely lost in decompilation.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Most function names accurately match the original source: `cdecl_func`, `stdcall_func`, `fastcall_func`, `call_cdecl`, `test_calling_conventions`. However, some functions have cryptic auto-generated names like `FUN_00100750`, `FUN_001008fc` which provide no semantic value.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Magic numbers appear throughout without explanation (e.g., `0xf`, `0x32`, `0x15`, `0x2a`, `0x21`). The original source had comments indicating expected values like "期望: 15", "期望: 50" which are completely absent. String literals are referenced as `&DAT_0010145c` without revealing content.
+
+### 4. Noise Reduction
+**Score: 7/10**
+Justification: Minimal compiler artifacts present. Stack check guards (`___stack_chk_guard`) are appropriately shown. External function stubs are necessary. No redundant casts or debug instrumentation clutter the code significantly.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural with proper loop constructs (do-while) and conditional expressions. At -O0, the decompiler correctly recovers the original control flow structure. Example: `func_struct_byval` uses proper do-while loop matching the original for-loop.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are properly decomposed matching the original source. Each test function (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) is correctly separated. Function granularity is appropriate - no monolithic functions created.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code reads top-to-bottom with minimal forward jumps. The `test_calling_conventions` function has sequential printf calls that flow naturally. No excessive goto usage or computed jumps disrupting readability.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No dead code observed. At -O0, there should be minimal redundancy and the decompiled code reflects this. Loop unrolling is not present (as expected at -O0).
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Type precision is mixed. `int` is used correctly for most integers, but several issues exist: `param_string` uses `byte *` instead of `const char *`; `param_varargs` returns `void` instead of `int`; `ret_small_struct` returns `ulong` instead of the proper struct type; function pointers use imprecise `code *` type.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+Justification: No struct types are recovered. `func_struct_byval` takes `long param_1` instead of `LargeStruct s`; `func_struct_byptr` takes `int *param_1` instead of `SmallStruct *p`. All composite types are reduced to raw pointer arithmetic, losing field names and structure semantics.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Several type safety issues exist: unsafe pointer arithmetic in `func_struct_byval` using `*(long *)(param_1 + lVar1)`; function pointer type `code *` is imprecise; `param_ptr_array` uses `long` for pointer arithmetic. The original used proper typed pointers and struct access.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining test scenarios (e.g., "CALL-L1-01: cdecl调用约定", "场景: [SCENE-ALL]") and expected values. This semantic information is completely lost.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+Justification: No design patterns or algorithm idioms are identified or named. The varargs handling, callback patterns, and calling convention tests are not recognized as specific idioms. The decompiler treats them as generic code without semantic labeling.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No anomalies are flagged. Several issues exist that should be indicated: `varargs_func` returns void instead of int (semantic mismatch); `call_ptr_array` has complex stack setup that could be flagged; indirect function calls in `param_func_ptr` could have resolution notes.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants are documented. The original had implicit contracts (e.g., "requires: ptr != NULL" for `func_struct_byptr`, "ensures: return is sum of variadic args" for `varargs_func`) that are not recovered.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function call relationships are clear within each test function (e.g., `test_calling_conventions` calls `call_cdecl`, `call_stdcall`). However, no documentation of which functions call which, or the callback relationships (e.g., `callback_func` is passed to `param_func_ptr`).
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Functions are grouped logically by purpose (calling conventions, parameter passing, return values). However, all functions are in a single flat namespace without any file or module organization. Static function scoping is not indicated.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+Justification: The code has several compilation issues: `undefined8` type is non-standard; external functions (`puts`, `__printf_chk`, `strlen`) need proper declarations; some type mismatches (e.g., `ret_small_struct` return type). The code would require significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 8 + 4 + 7) / 4 = 5.5
+L2_avg = (8 + 8 + 8 + 8) / 4 = 8.0
+L3_avg = (5 + 3 + 5) / 3 = 4.33
+L4_avg = (2 + 3 + 2 + 2) / 4 = 2.25
+L5_avg = (5 + 6 + 4) / 3 = 5.0
+
+Overall = (5.5 × 0.30) + (8.0 × 0.25) + (4.33 × 0.20) + (2.25 × 0.15) + (5.0 × 0.10)
+        = 1.65 + 2.0 + 0.866 + 0.3375 + 0.5 = 5.35/10
+```
+
+### Overall Readability Score: 5.4/10
+
+### Critical Defects
+- **Variable naming**: All parameters use generic `param_N` and locals use `iVar1`, `lVar2`, `local_48` - completely losing semantic meaning from original `a`, `b`, `count`, `args`, `sum`
+- **No struct recovery**: `func_struct_byval` takes `long param_1` instead of `LargeStruct s`, losing all field information
+- **Missing comments**: Original had extensive test scenario comments (e.g., "CALL-L1-01: cdecl调用约定") completely absent
+- **Type errors**: `varargs_func` returns `void` instead of `int`, `param_string` uses `byte *` instead of `const char *`
+- **No anomaly flagging**: Semantic mismatches in return types and parameter handling are not flagged
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+The decompiler correctly recovers natural loop and conditional structures at -O0, making the execution flow easy to follow.
+
+### Most Needs Improvement: Semantic Transparency (2.25/10)
+Comments, idiom recognition, anomaly indication, and contract recovery are almost entirely absent, losing critical semantic information from the original source.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns**: `param_1` used in `*param_1 << 1` should be named `x` or `value` based on arithmetic context
+2. **Recover struct types**: Detect stack frame layout patterns to reconstruct `LargeStruct`, `SmallStruct` with field names
+3. **Add semantic comments**: Include test scenario identifiers (e.g., "CALL-L1-01") and expected value annotations from original source comments

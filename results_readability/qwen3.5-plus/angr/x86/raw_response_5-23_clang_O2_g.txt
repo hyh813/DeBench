@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Almost all variables use generic names (v0, v1, a0, a1, ptr) with no semantic meaning. Only occasional names like `iter`, `cur`, `idx` provide minimal context. No recovery of meaningful names like `size`, `buffer_count`, or `result`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved well (param_macro_constants, call_asm_basic), but surrounded by many generic wrapper functions (sub_401xxx). Runtime functions like __x86.get_pc_thunk.* are compiler artifacts that clutter the output.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (1025, 0x200, 57072, 57122) with no recovery of original constants (MAX_SIZE, BUFFER_COUNT). The value 57122 equals 0xDF22 from source but is unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from wrapper functions (sub_401231, sub_401256, etc.) that don't exist in source. Compiler artifacts (__x86.get_pc_thunk.*, struct_0/struct_1 definitions) pollute the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions use natural if-else and for-loop structures. Some runtime functions use goto (sub_401030), but core test functions have clean, readable control flow matching expected patterns.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Over-fragmented with unnecessary wrapper functions (sub_401231 just calls param_macro_constants). Original function boundaries preserved but surrounded by decompiler-generated stubs.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Loop structures are properly recovered as for-loops rather than goto-based constructs.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant variable shuffling patterns (v0 = v4, v1 = v5, v2 = v6) throughout functions. Constant folding removes computation but loses semantic meaning of original operations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of unsigned int where source used int. Some uint128_t recovery for SIMD operations is good. Loss of const-correctness and signed/unsigned distinctions throughout.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Strange struct_0, struct_1 definitions appear to be decompiler artifacts, not source structures. No meaningful struct recovery from the original C code's simple types.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple implicit casts (char* to int, void* arithmetic). Pointer operations lack clear typing. Some unsafe patterns but nothing critically dangerous for this test code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: COMPLETELY ABSENT. No comments explaining magic numbers, algorithm intent, or decompilation uncertainty. Critical for understanding macro-expanded code.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition for macro expansions, stringization, or token pasting. Assembly patterns recovered as C but not identified as such.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly noted: "[D] Unsupported jumpkind Ijk_SigTRAP". No indication of uncertain decompilation, constant folding, or logic transformations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling documentation. Functions that return constants don't indicate they were originally computed.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear within decompiled code. Global variables (g_402xxx, global_var) referenced but not documented. No call graph or relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with arbitrary ordering. No logical grouping by feature (preprocessing vs. assembly tests). Wrapper functions interspersed with core functions.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires significant stubbing for external functions (printf, mmap, sysconf). Type mismatches would cause compilation errors. External dependencies not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25  × 0.30 = 1.275
+Level 2 (Structural):  (7+5+7+6)/4 = 6.25  × 0.25 = 1.563
+Level 3 (Type):        (5+3+5)/3   = 4.33  × 0.20 = 0.866
+Level 4 (Semantic):    (1+3+4+2)/4 = 2.50  × 0.15 = 0.375
+Level 5 (Contextual):  (5+4+4)/3   = 4.33  × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.51/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **SEMANTIC ERROR**: `param_macro_constants` logic is INVERTED - source returns 64 when `size > 1024`, decompiled returns 64 when `a0 >= 1025`
+- **Zero comments** throughout 1255 lines of decompiled code
+- **Magic numbers** (57072, 57122, 0x200) with no connection to original constants (MAX_SIZE, BUFFER_COUNT)
+- **Platform mismatch**: Source compiled for arm64, decompiled shows X86 platform
+- **Excessive wrapper functions** (sub_401xxx) that don't exist in source, bloating output by ~77%
+
+### Best Quality Aspect:
+- **Control Flow Naturalness (7/10)** - Loop and conditional structures are properly recovered as idiomatic C constructs rather than goto-based jumps
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding macro-expanded code nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover constant definitions** from usage patterns (detect 1024 → MAX_SIZE, 16 → BUFFER_COUNT) and add explanatory comments
+2. **Flag semantic transformations** when constant folding occurs (e.g., "OPTIMIZED: Original computed at runtime, now constant-folded to 64")
+3. **Eliminate wrapper functions** that merely call single target functions, or mark them as decompiler artifacts with comments

@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar1` with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test function names preserved accurately (`sequential_ops`, `nested_if_2`, `loop_for_fixed`). Helper functions like `double_value`, `op_add` also retained. This is the strongest lexical aspect.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test function calls use hex literals (`0x14`, `0x1e`, `0x28`) instead of original decimal values. Magic numbers like `0x3e9` (1001) and `0x65` (101) appear without explanation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`__stack_chk_fail_local()`, `in_GS_OFFSET`, `local_10`) pollute nearly every function. Architecture-specific thunks (`__x86_get_pc_thunk_*`) add unnecessary clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `switch_fallthrough` converted to nested if-statements losing fall-through semantics. `duffs_device` uses excessive goto labels (_L179, _L181, _L182). Simple loops recovered reasonably well.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but `call_func_ptr` lost a parameter (should be 2 params, has 1). Test functions bloated with inline printf calls instead of being separate.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `loop_multi_exit` uses goto labels (`LAB_00011b91`, `LAB_00011ba5`) instead of structured returns. `duffs_device` has 8+ goto labels disrupting top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary pattern repeated identically across 20+ functions. Some loop patterns show redundant variable assignments (`iVar1 = iVar1 + 1` followed by comparison).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical type errors: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `char` instead of `int`, `state_done` takes no parameters but should take `int`. Function pointers degraded to `code *`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Stack arrays declared as `int local_24 [5]` without semantic meaning. No struct recovery for any composite types. Matrix handling in `loop_multi_exit` uses raw pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple implicit casts (`(int)param_1`, `(uint)(param_1 == 1)`). Signed/unsigned mixing in comparisons (`param_1 < 1` vs `param_1 != 0`). Function pointer calls lack type signatures.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Duff's device not recognized as such (became goto mess). State machine patterns not identified. Loop patterns recovered but not labeled as specific idioms.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about type mismatches, parameter loss, or structural transformations. Stack canary checks appear without explanation of their purpose.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postcondition inference. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Callback relationships (`process_with_callback`) not explained. External functions (`FUN_000110f0` for printf) not identified.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order unrelated to source organization. No header file structure. Related functions (state machine handlers) not grouped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies unresolved (`FUN_000110*` functions). Stack canary requires specific runtime. Some function signatures incorrect preventing clean compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00
+Level 2 (Structural):  (5+6+5+6)/4 = 5.50
+Level 3 (Type):        (4+3+5)/3   = 4.00
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75
+Level 5 (Contextual):  (5+4+4)/3   = 4.33
+
+Overall = (5.00 × 0.30) + (5.50 × 0.25) + (4.00 × 0.20) + 
+          (1.75 × 0.15) + (4.33 × 0.10)
+        = 1.50 + 1.375 + 0.80 + 0.2625 + 0.433
+        = 4.37/10
+```
+
+**Overall Readability Score: 4.4/10**
+
+### Critical Defects:
+- **Type corruption**: `if_else` returns `bool` instead of `int` (semantic change), `nested_if_deep` returns `char` instead of `int`
+- **Parameter loss**: `call_func_ptr` missing second parameter `x`, breaking callback functionality
+- **No comments**: Zero documentation despite complex control flow patterns requiring explanation
+- **Goto pollution**: `duffs_device` and `loop_multi_exit` use excessive goto labels instead of structured control flow
+- **Stack canary noise**: Every function has 5-10 lines of stack protection code obscuring actual logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Test function names preserved accurately from source, making identification straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding complex patterns like Duff's device nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., loop counters should be `i`, `j`; accumulators should be `sum`, `count`)
+2. **Preserve original type signatures** - avoid converting `int` returns to `bool`/`char` when original semantics require specific integer ranges
+3. **Add decompiler confidence annotations** marking uncertain transformations, type guesses, and unrecovered patterns (especially for Duff's device, fall-through switches)

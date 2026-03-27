@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_28`, `iVar1` instead of semantic names like `dst`, `src`, `buffer`, `thread_count`. Only type-inferred names like `__stream` and `__s` provide minimal context.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Original function names preserved (`param_strcpy`, `call_strcmp`, `test_standard_library_functions`), but external stubs marked `<EXTERNAL>` and some helper functions lack descriptive names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x62694c6f` ("HelloLib" encoded), `0x2a` (42), `0x5a` (90), syscall numbers `5` and `6` without explanation. Error codes `0xffffffff`, `0xfffffffe` undocumented.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: External function stubs recursively call themselves (misleading). `SCARRY4` macro for signed carry checking is decompiler artifact. Excessive casts like `(pthread_mutex_t *)counter_mutex` add noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Do-while loops recovered in `param_malloc_free` and `param_memset`. If-else chains intact but `param_strcmp` normalization could be ternary. Fork/exec logic in `param_fork_exec` reasonably structured.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Thread functions (`thread_compute`, `thread_sum`) properly separated. However, `test_standard_library_functions` inlines what should be `call_*` function calls. Some functions like `call_strcpy` return constants instead of executing logic.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. `param_thread_local_storage` has `goto LAB_00012884` disrupting flow. Early returns used appropriately throughout.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Error code patterns repeated (`0xffffffff`, `0xfffffffe`, `0xfffffffd`). `param_memcmp`/`param_strcmp` share identical normalization logic. `test_standard_library_functions` duplicates `call_*` function logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` instead of `int32_t`. `undefined4` appears frequently. `param_strcpy` returns `void` instead of `char*`. Pointer types sometimes recovered (`FILE*`, `pthread_t*`) but `void*` overused.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `stat` struct partially recovered (`sStack_60.st_size`). `sockaddr` accessed via `sa_data[0-13]` array indexing. `ThreadData` struct lost—uses `param_1[2]` array indexing in `thread_sum`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts throughout: `(pthread_mutex_t *)counter_mutex`, `(int *)0x0`. `undefined4` types create ambiguity. Function pointer types sometimes correct (`__start_routine` in `pthread_create`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining logic, algorithms, or decompiler confidence. Only BinaryAI SHA256 hash at top. No documentation of non-obvious patterns or API contracts.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Fork/exec pattern in `param_fork_exec` not identified. Producer/consumer in `param_condition_variable` unnamed. Atomic operations in `param_atomic_ops` not labeled as lock-free patterns.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for indirect calls, unusual stack layouts, or potential issues. External functions marked `<EXTERNAL>` but without confidence levels. Recursive external stubs not flagged as problematic.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Return values use magic numbers (`0x2a`=success, `0xffffffff`=error) without documentation. Null pointer checks exist but no precondition comments. No postcondition documentation.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code. Global variables (`signal_received`, `shared_counter`, `atomic_counter`) referenced but not documented. No call graph or callback relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without logical grouping (standard library vs. system calls vs. threads). External functions listed separately at top. No header file or namespace structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions without proper declarations. `undefined4` not standard C. Architecture-specific code (`__aeabi_read_tp` for ARM). Won't compile standalone without significant modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+6+7+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (2+4+3+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.78/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable `param_1`, `param_2` should be named `dst`, `src`** based on `strcpy` usage pattern in `param_strcpy`
+- **Magic numbers `0x2a`, `0x5a`, `0xc`** represent return values (42, 90, 12) but are hex-encoded without explanation
+- **External function stubs recursively call themselves** (e.g., `pthread_mutex_unlock` calls `pthread_mutex_unlock`) which is misleading
+- **No comments documenting decompiler confidence** or indicating uncertain recoveries
+- **`undefined4` type used throughout** instead of proper C types, preventing compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (scored 7/10)** - Original function names like `param_strcpy`, `test_standard_library_functions`, and `param_signal_handling` were preserved, maintaining semantic connection to source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (scored 2/10)** - Complete absence of comments explaining logic, algorithms, or decompiler uncertainty makes understanding non-trivial code extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - When `param_1` is passed to `strcpy` as first argument, name it `dst`; when used in size calculations, suggest `buffer_size`
+2. **Replace magic numbers with named constants** - Detect repeated values like `0x2a` (42) and `0xffffffff` (-1) and suggest `SUCCESS` and `ERROR` constants
+3. **Add decompiler confidence annotations** - Mark uncertain recoveries with comments like `// DECOMPILER UNCERTAIN: indirect call target not resolved` to guide manual review

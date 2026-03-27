@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`) with no semantic meaning. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: C++ mangled names preserved (`_Z20test_cpp_member_funcv`) but not human-readable. Helper functions use cryptic names (`sub_10a68`, `sub_10c04`). Test function names are recoverable from mangling but require demangling knowledge.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (vtable pointers like `83440`, `83416`, `83396`) with no explanation. Original's `0x1234` for `getClassID()` is lost. No constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`__stack_chk_guard`) in every function. Compiler runtime functions (`_init`, `_start`, `deregister_tm_clones`) included. Redundant type casts throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` statements with labels (`LABEL_10c28`, `LABEL_11035`) instead of structured control flow. Original's clean if/else and loops converted to jump patterns.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Test functions preserved but STL template instantiations over-fragmented (20+ tiny functions for `unique_ptr` implementation). Original's cohesive class methods split into disconnected pieces.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into middle of functions disrupt top-to-bottom reading. Stack canary checks at function ends create non-linear return patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary code duplicated in every function. Template instantiations create massive redundancy (similar `tuple`, `_Head_base` functions repeated).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned int`, `void*`, `char*`. Original's `int`, `size_t`, specific class types lost. Template types (`Container<int>`) become generic structs.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic names (`struct_0`, `struct_1`) and fields (`field_0`, `field_4`). Class layouts partially preserved but all field names lost (e.g., `value`, `name[32]` in SimpleClass).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts (`(unsigned int)call_virtual_func`, void* conversions). Pointer arithmetic on generic types. No const-correctness preserved from original `const` methods.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. No algorithm explanations, no decompilation confidence indicators. Original's extensive documentation completely absent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns partially visible (virtual functions through vtable, lambdas as `operator()`). Smart pointer patterns visible but not identified as RAII. No pattern naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for indirect calls or uncertain decompilation. Stack canary checks present but unexplained. Virtual dispatch not flagged as requiring manual analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Exception handling visible but contracts not recovered. Original's expected return values (e.g., "期望: 4704") completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch visible through vtable patterns but no call graph. Inheritance relationships obscured.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output with no logical grouping. STL helpers mixed with test functions. No class-based organization despite original's clear class structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References external symbols (`GLIBC_2.4::__stack_chk_guard`, `operatornew`, `__cxa_throw`). Would require extensive stubs to compile. Many undefined external references.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+3+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+5+4+5)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (4+4+3)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (4+3+3)/3   = 3.33 × 0.10 = 0.333
+---------------------------------------------------------
+Overall Score:                                  3.73/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `ptr`) losing all semantic meaning from original (`capture_by_value`, `instance_count`, `multiplier`)
+- **C++ mangled names not demangled** - function names like `_Z20test_cpp_member_funcv` require external demangling to understand
+- **Class field names lost** - `SimpleClass::value` and `SimpleClass::name[32]` become `field_0`, `padding_0`
+- **Magic numbers unexplained** - vtable pointers (83440, 83416, 83396) appear throughout with no context
+- **STL template explosion** - 2000+ lines of decompiled STL implementation obscures the 540-line original test code
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- C++ name mangling preserved allows recovery of original function names with demangling tools, providing some semantic anchor points.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero comments explaining decompilation uncertainty, algorithm purpose, or recovered semantics makes the code nearly unusable for analysis without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Integrate C++ name demangling** - Automatically convert `_Z20test_cpp_member_funcv` to `test_cpp_member_func()` in output
+2. **Recover class field names from debug symbols** - When `-g` flag is present, use DWARF info to restore `value`, `name`, `data` field names
+3. **Add decompilation confidence annotations** - Flag uncertain indirect calls, vtable dispatches, and type reconstructions with comments like `// DECOMPILER UNCERTAIN: vtable call`

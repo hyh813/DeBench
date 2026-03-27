@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Parameters are generic (`param_1`, `param_2`) and the local variable is generic (`iVar1`), completely losing the semantic meaning of `dst`, `src`, and `len`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: The function name `param_strcpy` is perfectly recovered from the source symbol table, accurately reflecting the original intent.
+
+**3. Literal Clarity:** Score: 10/10
+Justification: No magic numbers or string literals are present in the function body, so there are no clarity issues regarding literals.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, but the use of `undefined4` (a Ghidra-specific type) adds minor noise that obscures the actual data type.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10
+Justification: The control flow is perfectly linear and natural, consisting of a function call followed by a return statement, matching the source structure.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: The function is correctly isolated with appropriate granularity, matching the source's single-responsibility design.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code reads strictly top-to-bottom with no jumps or non-linear flow disruptions.
+
+**8. Redundancy Elimination:** Score: 10/10
+Justification: There is no dead code or redundancy; the decompiled logic is concise.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Critical type information is lost; `char *` and `const char *` are degraded to `int` and `undefined4` (32-bit), which is incorrect for ARM64 pointers (64-bit).
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: Not applicable (no composite types used in this function).
+
+**11. Type Safety:** Score: 3/10
+Justification: Performing pointer arithmetic (`iVar1 - param_1`) on variables typed as `int` is unsafe and misleading, violating the type safety of the original source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, the parameters, or the return value.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The decompiler failed to recognize the standard library call `strcpy` (rendered as `FUN_00011510`) and failed to recover the `strlen` call, replacing it with confusing pointer arithmetic.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: There is no indication that the return logic (`iVar1 - param_1`) differs significantly from the source logic (`strlen(dst)`), nor is the external function flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions (e.g., non-null pointers) or postconditions are documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: The call to `strcpy` is opaque (`FUN_00011510`), providing no context about what library function is being invoked or its side effects.
+
+**17. Module Organization:** Score: 10/10
+Justification: Not applicable (single function context).
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses Ghidra-specific types (`undefined4`) and relies on an undefined external function, making it non-compilable without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Critical Defects:**
+- Parameters `param_1` and `param_2` should be named `dst` and `src` with correct pointer types (`char*`).
+- The standard library call `strcpy` is not identified, appearing as `FUN_00011510`.
+- The return logic uses pointer arithmetic (`iVar1 - param_1`) instead of the explicit `strlen(dst)` call found in the source, obscuring the original intent.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The function name `param_strcpy` was recovered perfectly from the debug symbols.
+
+**Most Needs Improvement:** Type Precision (scored 2/10)
+- Pointers were demoted to 32-bit integers (`int`/`undefined4`), which is factually incorrect for the ARM64 architecture and destroys semantic meaning.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Library Function Signature Recovery:** Improve identification of common standard library functions (like `strcpy`) to replace generic `FUN_XXXX` placeholders with actual names and signatures.
+2.  **Pointer Type Inference:** Enhance type analysis to distinguish between integer values and memory addresses, especially on 64-bit architectures where pointers are 64-bit, not 32-bit.
+3.  **Semantic Idiom Mapping:** Detect patterns where pointer arithmetic is used to calculate string lengths and map them back to `strlen` or equivalent high-level semantics to match source code structure.

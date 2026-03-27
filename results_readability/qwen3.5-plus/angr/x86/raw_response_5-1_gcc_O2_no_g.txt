@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `ptr`, `v5`, `v6`) with zero semantic meaning. No variable indicates purpose like `result`, `instance_count`, or `capture_by_value` from the original source.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some original names recovered (`test_cpp_exception`, `template_max<int>`, `Container<int>::push`), but most functions are generic `sub_401XXX` addresses. Thunk functions have descriptive names but are mechanically generated.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (`11622`, `11542`, `300`, `42`). The literal `42` matches the exception test but isn't documented. Padding sizes in structs are unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from decompilation artifacts: `[D] unsupported_<class 'pyvex.expr.GetI'>()`, `[D] PutI(136:I8x8)[t6,0]`, and excessive thunk/wrapper functions (`sub_401030` through `sub_401260`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Pervasive `goto` statements replace natural loops and conditionals (e.g., `goto v1->field_54;`, `goto *((int *)*((int *)arg_0));`). At `-O0` this is unacceptable—should match source structure.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: Extreme fragmentation with 100+ tiny wrapper functions. Many test functions are empty stubs (`test_cpp_constructor`, `test_cpp_virtual_func` return immediately). Original cohesive functions destroyed.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Highly non-linear with forward jumps into computed addresses. Functions like `sub_401030` use `goto ptr[2]` making execution flow impossible to trace linearly.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy in thunk patterns (dozens of nearly identical `sub_401XXX` functions). Repeated struct definitions with different padding values but same pattern.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type erosion—everything is `unsigned int`, `void*`, or `char*`. Lost all C++ types: `std::unique_ptr`, class types, template parameters, const-correctness completely absent.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs use generic `field_X`, `padding_X` naming with no semantic recovery. Original classes (`SimpleClass`, `LifecycleClass`, `Point`) not reconstructed. Vtable structures not identified.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe pointer arithmetic throughout (`(char *)a0 + (*(a0))[12]`). No const-correctness. C++ object semantics (constructors, destructors) reduced to raw memory operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining functionality. No documentation of C++ semantics, vtable mechanisms, or inheritance relationships. Only auto-generated function headers present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely lost—virtual dispatch, RAII, smart pointers, lambda captures, template instantiation not recognized. Thunk functions hint at vtables but aren't explained.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `[D] unsupported_` markers indicate decompilation failures, but lack actionable guidance. Architecture mismatch (ARM64 source → x86 decompilation) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling semantics lost. Stack canary checks (`__stack_chk_fail_local`) present but unexplained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some function call relationships visible but virtual dispatch obscured. Global variables named `g_403ff4`, `g_402018` with no semantic meaning. RTTI type info (`_ZTI8RTTIBase`) present but unexplained.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions scattered without logical grouping. Related class methods not co-located. Initialization code (`_GLOBAL__sub_I_*`) mixed with test functions.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Does not compile—contains `[D] unsupported_` artifacts, undefined symbols, and architecture-specific intrinsics (`__x86.get_pc_thunk.*`). Requires extensive manual repair.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+4+3)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (2+2+3+3)/4 = 2.50 × 0.25 = 0.625
+Level 3 (Type System): (2+2+3)/3   = 2.33 × 0.20 = 0.467
+Level 4 (Semantic):    (1+2+4+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (4+3+2)/3   = 3.00 × 0.10 = 0.300
+
+Overall Score: 2.70/10
+```
+
+### Overall Readability Score: **2.7/10**
+
+### Critical Defects:
+- **Architecture mismatch**: Original ARM64 compiled code decompiled as x86, causing fundamental structural errors
+- **Variable names completely generic**: `v0`, `v1`, `ptr` throughout—zero semantic recovery from 540 LOC source
+- **Control flow destroyed**: `goto` statements replace all loops and conditionals despite `-O0` debug compilation
+- **C++ semantics lost**: Classes, inheritance, virtual tables, templates reduced to raw pointer arithmetic
+- **Decompilation artifacts**: `[D] unsupported_` markers and PyVEX expressions embedded in output, preventing compilation
+
+### Best Quality Aspect: **Function Naming Quality (4/10)**
+- Some original function names recovered (`test_cpp_exception`, `template_max<int>`, mangled C++ names like `_Z20test_cpp_member_funcv`)
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero documentation explaining any functionality, C++ semantics, or decompilation confidence
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class semantics**: Identify vtables, reconstruct class hierarchies, and restore method associations rather than emitting raw thunk functions
+2. **Eliminate decompilation artifacts**: Remove `[D] unsupported_` markers or replace with meaningful comments explaining what couldn't be recovered
+3. **Infer semantic variable names**: Use data flow analysis to name variables based on usage patterns (e.g., variables used in exception handling should be named `exception_value`, `catch_block`)

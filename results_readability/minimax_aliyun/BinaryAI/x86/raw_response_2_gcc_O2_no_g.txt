@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `param_1`, `param_2`, `param_3`. Local variables use cryptic patterns like `iVar1`, `piVar2`, `iVar3`. No semantic meaning recovered - e.g., `param_1` in `process_char` should be named `c`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions correctly named (`test_data_types_l1`, `test_array_types`, `test_pointer_types`, `test_composite_types`). Processing functions like `process_char`, `process_short` match source. However, some helper functions remain as `FUN_00011030` style.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere - `0x20` for case conversion, `0x61`/'a' hardcoded in printf, `0xb` for 11 (process_int result). Enum values not recovered - shows `0x69` (105) instead of symbolic `STATE_IDLE`. No constant naming.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts in logic functions. Some stack protection code (`__stack_chk_fail_local`) and frame dummy functions present but don't impede readability of core logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops properly recovered as do-while constructs (e.g., `array_1d_stack`). Conditionals are clear. At -O0, control flow closely matches source. Minor awkwardness in `process_bool` where logic is inverted.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions properly separated - each test category in its own function. Processing functions are appropriately sized (10-30 lines). Good single responsibility. No over-fragmentation.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `array_1d_stack`. No excessive forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some loop unrolling in `array_3d` and `binary_tree_sum` but manageable. No dead code. Minor redundancy from optimization but doesn't obscure logic significantly.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used throughout instead of `int32_t`/`int64_t`. `long long` shows as `undefined8`. `float`/`double` recovered as `longdouble`. Const/volatile not preserved in types. Pointer levels mostly correct.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs completely lost - accessed as raw pointer arithmetic. `struct_simple` uses `param_1[0]`, `param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`, `p->z`. Nested structs like `Rect` and `Widget` show as flat offsets. Union partially recovered but with type confusion (`union_type` returns float but accesses as int).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present. `ptr_triple` uses `undefined4 *` parameter. Function pointers use generic `code *` type. Pointer arithmetic mostly correct but not type-safe. Some buffer-risk patterns in array functions.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments whatsoever in decompiled output. Test output strings provide some context but no explanatory comments for algorithms, non-obvious logic, or decompilation confidence.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable - linked list traversal (`while (param_1 != NULL)`), binary tree recursion. But no explicit pattern naming or documentation of design patterns like "State machine" or "Visitor pattern."
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertain or anomalous code. Indirect calls presented confidently. No flags for potential undefined behavior (e.g., `array_oob` has intentional out-of-bounds). No warnings about unrecovered elements.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that `ptr != NULL` is required. No error condition documentation. Contracts completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls within test functions are clear. Callback relationships not documented - e.g., `ptr_func_simple` calls function pointer but doesn't indicate it's `double_value`. No call graph or usage documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - data type tests together, array tests together, etc. Static functions properly scoped. Overall organization matches source structure reasonably well.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code references external functions like `FUN_000110b0` (printf wrapper), `__stack_chk_fail_local`. Would require stubs to compile. No dependency documentation. Some architecture-specific code (x86 get_pc_thunk) present despite source being ARM64.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic `param_N` and locals use `iVarN`/`piVarN` patterns - completely non-descriptive
+- **Struct recovery failure**: All composite types accessed as raw pointer arithmetic (`param_1[0]`, `param_1[1]`) instead of named fields (`p->x`, `p->y`)
+- **No comments**: Zero explanatory comments for algorithms, magic numbers, or decompilation confidence
+- **Type precision loss**: All types generic (`int`, `void*`, `code*`) instead of specific types from source
+- **No anomaly indication**: Uncertain code presented confidently, no flags for undefined behavior
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+- At -O0, loops and conditionals closely match source structure
+- Do-while loops properly recovered from backward jumps
+- Execution flow is easy to follow
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Every parameter and local variable uses cryptic auto-generated names
+- No semantic inference from usage patterns (e.g., `param_1` in `process_char` should be `c`)
+- This single issue severely impacts overall readability
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: Analyze parameter usage patterns to suggest semantic names (e.g., `param_1` used in `c >= 'A' && c <= 'Z'` → `c` or `ch`)
+2. **Recover struct layouts**: Detect repeated offset patterns and reconstruct struct definitions with field names
+3. **Add explanatory comments**: Insert comments for magic numbers, algorithm purposes, and decompilation confidence levels

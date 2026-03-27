@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiled code uses predominantly generic variable names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v19`, `v20`, `v21`, `v22`, `v23`, `v24`) that completely obscure their semantic purpose. In contrast, the original source uses meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value`, `capture_by_ref`. Only a few variables like `exception`, `obj`, `ptr2`, `arr` retain meaningful names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names are well-recovered, including `call_virtual_func`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `template_max<int>`, `Container<int>::push`, and class methods like `Base::virtual_func`. However, some functions retain mangled C++ names (e.g., `_Z20test_cpp_member_funcv`) or generic names like `sub_1650`. The verb-based naming is appropriate for most functions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple magic numbers appear without explanation: `42` (thrown exception value), `0x1F` (should be `sizeof(name)-1`), `0x1234` (class ID), `5` (parameter used repeatedly), `10`, `20`, `30` (values in tests). The decompiler does not replace these with meaningful constants like the original source does with comments explaining expected values.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The decompiled code is relatively clean with minimal compiler artifacts. No debug instrumentation, redundant casts are minimal, and no __asm__ blocks or frame pointer manipulation clutter the output. The main noise is the "FAILED to decompile" entries for external functions, which is appropriate acknowledgment of limitations.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural and readable. Most functions use straightforward if-else structures and simple loops. Virtual function calls correctly show indirect dispatch through vtables (`(*obj->_vptr.Base)(obj, x)`). At -O0 optimization, the control flow closely matches the source, with only minor awkwardness in complex destructors with virtual inheritance.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately decomposed. Template instantiations are correctly separated (`template_max<int>`, `template_max<double>`, `template_swap<int>`). Class member functions are extracted as separate functions with proper `this` pointer handling. Virtual thunk functions are correctly identified. Function granularity is reasonable - no excessive monoliths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom with minimal forward jumps. The main disruption is in complex destructors with virtual inheritance (e.g., `DiamondDerived::~DiamondDerived`) where multiple conditional paths exist. Early returns are used appropriately. Overall, the code is fairly linear despite some complexity in vtable handling.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Loop unrolling is minimal at -O0. Common subexpression elimination artifacts are not prominent. The code is fairly clean with no major duplicate logic blocks that would impede understanding.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate. The decompiler correctly recovers `std::unique_ptr<int>` and `std::unique_ptr<int []>` for smart pointers, template types like `Container<int>` and `Container<double>`, and proper function signatures. However, many integers are generic `int` rather than more specific types like `size_t` or `uint32_t`. Const correctness is partially preserved (`const Base *const this`).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Class structures are well-reconstructed. `SimpleClass` shows `value` and `name[32]` fields. `Base` and `Derived` correctly show vtable pointers and data members (`multiplier`). `Container<int>` shows `data[10]` and `size` fields. Virtual inheritance structures are complex but partially recovered with vtable pointers. Field names are mostly preserved where they exist in mangled symbols.
+
+**11. Type Safety:** Score: 7/10  
+Justification: The code is generally type-safe with proper pointer usage. Virtual calls use correct vtable dispatch. Smart pointers are properly handled with destructor calls. Some unsafe patterns exist in the RTTI code with raw `operator new` and void pointer arithmetic, but these are manageable. No major buffer overflow risks are evident.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: The decompiled output contains absolutely no comments. There are no explanations of algorithm logic, no documentation of non-obvious operations, no indication of decompilation confidence, and no API contracts. The original source has extensive comments explaining each test case's purpose and expected values, but none of this is recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are visible but not explicitly named or documented. Virtual function dispatch through vtables is correctly shown. Smart pointer RAII patterns are present. Template instantiation is recognized. However, there's no explicit labeling of patterns like "virtual dispatch via vtable" or "RAII resource management" that would aid understanding.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The decompiler appropriately marks functions that failed to decompile with "FAILED to decompile" entries (25 functions). However, there's no indication of uncertainty within successfully decompiled functions about indirect calls that couldn't be fully resolved, or unusual stack layouts. The anomaly communication is partial.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source has clear expectations (e.g., "期望: 10 + 34 + 4660 = 4704") that are completely lost. No error condition documentation exists. The decompiler provides no guidance on what the functions expect or guarantee.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are implicit in the code (e.g., `test_cpp_oo_features` calls all test functions). Virtual dispatch relationships are shown through vtable pointers. However, there's no explicit documentation of call graphs, global variable usage, or callback relationships. A reader must manually trace the code to understand dependencies.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped by class - all `Container<int>` methods together, all `Base`/`Derived` methods together, etc. Static functions are appropriately scoped. The organization roughly matches the source's class-based structure, though all functions are in a single output rather than separated by headers or namespaces.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The metadata states "Compilation Result: Yes", indicating the code was tested for compilation. However, 25 functions "FAILED to decompile", leaving gaps in the output. External dependencies (libstdc++, libc) are not clearly documented. Some mangled names would need demangling for compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable names are almost entirely generic (`v0`-`v24`), completely losing semantic meaning from the original source
+- No comments whatsoever - all original documentation explaining test purposes and expected values is lost
+- Magic numbers like `42`, `0x1F`, `0x1234` appear without explanation or connection to source comments
+- 25 external functions failed to decompile, creating gaps in the analysis
+- No cross-reference documentation - relationships between functions must be manually traced
+
+**Best Quality Aspect:** Type System Fidelity (scored 7.3/10)  
+The decompiler excellently recovers C++ type information including template instantiations (`Container<int>`, `template_max<double>`), smart pointer types (`std::unique_ptr`), and class hierarchies with vtable pointers. This is crucial for understanding object-oriented code.
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.8/10)  
+The complete absence of comments is devastating for readability. Combined with no pattern recognition labels, no anomaly confidence indicators within functions, and no contract recovery, the decompiled code provides no guidance for understanding the original programmer's intent.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Variables like `v0` used as array index should be named `idx` or `index`; variables storing `strlen()` results should be named `len` or `length`
+2. **Recover comments from debug symbols**: The source was compiled with `-g`, so DWARF debug info likely contains variable names and possibly even comments that could be extracted
+3. **Add semantic annotations**: Label patterns like "virtual dispatch via vtable", "RAII destructor", "template instantiation" to help readers understand C++ idioms automatically

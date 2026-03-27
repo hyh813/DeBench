@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Function parameters preserve semantic names (`size`, `x`, `y`, `arr`), but local variables are generic (`iVar1`, `iVar2`, `iVar3`). Many locals marked "Unresolved local var: result@[???]" losing original names like `exec_mem`, `page_size`, `sum`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). Helper functions use generic names (`FUN_00011030`), but core logic functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x200` (should be `MAX_SIZE`), `0x400` (threshold), `0x40` (should be `64` or `BUFFER_COUNT*4`), `0xdef0`. Original constants completely lost during preprocessing/compilation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86.get_pc_thunk.bx` warnings, "Unresolved local var" comments cluttering code, `LOCK()`/`UNLOCK()` pseudo-functions for atomics, multiple "WARNING: Unknown calling convention" annotations.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures recovered well (`for` loops in `param_asm_clobber`, `param_asm_multi_insn`). However, aggressive constant folding makes `call_macro_constants` return `0x40` directly, losing the conditional logic from source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries correctly preserved; each original function appears separately. No inappropriate inlining or fragmentation. Some functions overly simplified due to constant propagation.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Loop constructs use standard `for`/`while` patterns. No excessive `goto` usage. Early returns are clear and idiomatic.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `test_asm_features` has significant redundancy with repeated stack variable declarations (`local_3c`, `uStack_48`, etc.). Constant folding removed some redundancy but also semantic information.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `void*`, `size_t`, `char*`). Missing const-correctness throughout. `MAP_FAILED` returned as `(void *)0xffffffff` instead of proper constant. Pointer arithmetic casts through `int` lose precision.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Array types preserved correctly (`local_1c[6]`, `local_38[12]`, `local_2c[40]`). No complex structs in this code to recover. Stack arrays properly sized but unnamed (`char[10] src@[???]`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present: `(int)dst + 1`, `(int)src + 1` for pointer arithmetic. `LOCK()`/`UNLOCK()` are pseudo-functions without type safety. Void pointer operations lack proper casting in several places.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated Ghidra warnings ("WARNING:", "Unresolved local var"). Zero semantic comments explaining what code does. Original had extensive documentation (section headers, test expectations) completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Assembly patterns converted to C loops (good recovery). Atomic operations abstracted as `LOCK()`/`UNLOCK()`. No pattern naming or algorithm identification. Memory copy loop recognized but not labeled as such.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "WARNING" comments flag issues (unreachable blocks, inlined functions). "Unresolved local var" indicates uncertainty. However, anomalies not explained—reader must investigate why variables are unresolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Return values unexplained (what does `0x40` mean?). Error conditions not documented. Original comments like "期望：64" completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variable `global_var` referenced without context. No call graph or relationship documentation. String references shown as `&DAT_000122c9` instead of content.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output (expected). Original section organization (5.2 Preprocessing, 5.3 Assembly) completely lost. No logical grouping comments. Related test functions not grouped.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies (`printf`, `mmap`, `sysconf`) not declared. `LOCK()`/`UNLOCK()` pseudo-functions need implementation. Some `builtin_strncpy` calls may need headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+8+4+5)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):   (7+8+8+6)/4 = 7.25  × 0.25 = 1.81
+Level 3 (Type System):  (6+7+5)/3   = 6.00  × 0.20 = 1.20
+Level 4 (Semantic):     (3+5+6+2)/4 = 4.00  × 0.15 = 0.60
+Level 5 (Contextual):   (5+4+6)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.76/10
+```
+
+**Overall Readability Score: 5.8/10**
+
+### Critical Defects:
+- **Magic numbers replace all named constants**: `0x200`, `0x400`, `0x40`, `0xdef0` should be `MAX_SIZE`, threshold, `64`, platform constant
+- **Local variable names lost**: `iVar1`, `iVar2` instead of `result`, `sum`, `exec_mem`, `page_size`
+- **Zero semantic comments**: Original had extensive documentation; decompiled has only Ghidra warnings
+- **Preprocessing information unrecoverable**: Macro definitions, conditional compilation branches, `#ifdef` logic completely lost
+- **String literals as data references**: `&DAT_000122c9` instead of actual string content in many places
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names like `param_macro_constants`, `call_asm_basic`, `test_preprocessing_features` were preserved, maintaining semantic connection to source code purpose.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No documentation of expected values, preconditions, or return value semantics. Original comments like "期望：64" completely absent, making verification impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Constant recovery from debug symbols**: When `-g` flag is present, recover named constants (`MAX_SIZE`, `BUFFER_COUNT`) from DWARF debug info instead of showing raw hex values.
+2. **Variable name preservation from debug info**: Use DWARF variable names to replace `iVar1`, `iVar2` with original names (`result`, `sum`, `exec_mem`).
+3. **Comment generation from source metadata**: Generate semantic comments indicating original test expectations and macro expansion results when debug information is available.

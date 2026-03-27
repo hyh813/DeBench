@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `a0`, `a1`) with no semantic meaning. Original source used descriptive names like `temp1`, `sum`, `count`, `result` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Source function names preserved well (`sequential_ops`, `single_if`, `loop_for_fixed`), but runtime functions use mechanical names (`sub_400944`, `sub_400a30`). Good recovery of user-defined function names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers like `4294967295` (UINT_MAX), `4294967294`, `1717986919` without explanation. Simple operations like `x * 2` become `(v0 * 2 | v0 >> 31) & 4294967294`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present throughout: `__stack_chk_guard` checks, frame pointer setup (`v0 = &v1`), and redundant stack operations in nearly every function.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions recovered well (`if_else`, `nested_if_2`), but complex patterns degraded severely. `switch_large` became deeply nested if-else chains, and `loop_while`/`loop_dowhile` have bizarre bit manipulation instead of simple division by 10.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions properly separated with reasonable granularity. However, some functions have unnecessary complexity from decompilation (e.g., `indirect_recursion_a` has 3 parameters when original had 2).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom appropriately. Some awkward nesting in `switch_large` and `state_machine` disrupts flow, but no spurious gotos in user code.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack check code duplicated in many functions. Bit manipulation patterns repeated across functions (`(v0 * 2 | v0 >> 31) & 4294967294` appears dozens of times for simple multiplication).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Inconsistent type recovery - original `int` becomes `unsigned int`, `unsigned long long`, or `long long` inconsistently. `sequential_ops` returns `unsigned int` when original returned `int`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays in `loop_break` and `loop_multi_exit` became complex pointer arithmetic with `__ROL__` operations. No struct recovery needed for this codebase.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Function pointer types severely degraded (`unsigned long long *a0` instead of `int (*f)(int)` in `call_func_ptr`). Many implicit casts visible in bit operations that could cause undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments recovered. Original source had extensive documentation explaining each function's purpose, test cases, and expected behavior - all completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns recognized (if-else, for loops), but complex idioms not identified. Duff's device, state machines, and fall-through switch cases not explicitly recognized or documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Complex bit operations in `loop_while` and `opaque_predicate` not flagged as potentially incorrect despite obvious degradation from source.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Original had test validation comments with expected inputs/outputs - none recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved correctly, but global variables have cryptic names (`g_413f78`, `g_414018`, `$d`). No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file with no logical grouping. Runtime functions mixed with user code. No header file or API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires significant stubs to compile (`__stack_chk_guard`, `__gmon_start__`, `__libc_start_main`). External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+3+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.68/10
+```
+
+**Overall Readability Score: 4.7/10**
+
+### Critical Defects
+- **Bit manipulation obscures simple arithmetic**: `(v0 * 2 | v0 >> 31) & 4294967294` instead of `v0 * 2` appears throughout
+- **Zero comments recovered**: All original documentation, test cases, and expected behavior lost
+- **Magic numbers everywhere**: `4294967295`, `1717986919`, `4294967294` without explanation
+- **Function pointer types degraded**: `unsigned long long *` instead of proper function pointer signatures
+- **Division operations unrecognizable**: `loop_while` and `loop_dowhile` use complex `__ROL__` operations instead of `x / 10`
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - User-defined function names preserved accurately from source, making it possible to identify which decompiled function corresponds to which original function.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation, making it impossible to understand function purpose, expected inputs, or test validation without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover arithmetic simplifications**: Detect and simplify common bit manipulation patterns (e.g., `(x * 2 | x >> 31) & 0xFFFFFFFE` → `x * 2` for signed arithmetic)
+2. **Preserve source comments**: When debug symbols (`-g`) are available, extract and preserve original source comments in decompiled output
+3. **Improve division recognition**: Better pattern matching for compiler-generated division sequences, especially for constant divisors like 10

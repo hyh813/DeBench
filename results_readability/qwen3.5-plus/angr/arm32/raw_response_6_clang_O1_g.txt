@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. For example, `param_strcpy` uses `dst` and `len` correctly, but `call_strcpy` uses `v0[8]` and `v1[24]` instead of `buffer`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions retain original names (`param_strcpy`, `call_strcmp`), but helper functions use mechanical names (`sub_400c48`, `$a.34` for signal handler). Some names are preserved but many are auto-generated.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `4294967295` (UINT_MAX/-1) appears dozens of times without explanation, `42` used as success code without context. String literals like `"HelloLib"` preserved but numeric constants not.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe ARM-specific artifacts (`armg_calculate_condition`, `vvar_XX{r8|4b}`), redundant variable assignments (`v0 = v1; v1 = v2`), and compiler runtime functions exposed (`__do_global_dtors_aux`, `frame_dummy`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` usage instead of structured loops (e.g., `LABEL_401088` patterns). At `-O0` optimization, this is unacceptable—loops should be recovered as `for`/`while` constructs.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Critical semantic breaks: `call_strcpy` doesn't call `param_strcpy` (calls `strlen(&v0)` directly). `param_signal_handling` has 16 parameters exposing implementation details. Function boundaries often incorrect.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps disrupt reading flow. Some functions read top-to-bottom but many have confusing label jumps (`LABEL_401378`, `LABEL_4014c8`) that break natural execution tracing.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate function calls throughout (`call_printf` calls `printf` twice, `call_fread_fwrite` calls `param_fread_fwrite` twice). Redundant variable assignments and dead code patterns visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Most types degraded to `unsigned int` or `void*`. Lost `const` correctness, `size_t`, and specific pointer types. `param_strlen` has no parameters in decompiled version (should have `const char*`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `struct sockaddr` partially recovered but `FILE` struct is empty. `ThreadData` struct not recovered (uses raw arrays). `pthread_t` treated as `char` in some places.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(Not Conv(32I->1I, ...))`), pointer arithmetic without type safety, function signatures with wrong parameter counts creating potential undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments. Only decompiler annotations like `/* do not return */`. No algorithm explanations, no API contracts, no uncertainty indicators for ambiguous code.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `memcpy`) but threading patterns (mutex, condition variables) not identified. Signal handling pattern not named or explained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Broken code presented confidently with no warnings. `call_strcpy` semantic break not flagged. ARM-specific artifacts (`armg_calculate_condition`) not explained as decompiler limitations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`), no postconditions, error conditions not explained. Return values like `4294967295` not documented as error codes.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Global variables named generically (`g_414008`, `g_402de0`). Callback relationships (signal handlers, thread functions) not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Static functions not properly scoped. No header file structure or API declarations visible.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code contains undefined variables (`vvar_4`, `vvar_27`), ARM-specific intrinsics, and broken function signatures. Will not compile without extensive manual patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+3+5+4)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type):        (3+4+3)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (2+4+2+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (4+4+2)/3   = 3.33 × 0.10 = 0.333
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.50/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects:
+- **Function signature corruption**: `param_signal_handling` has 16 parameters instead of 0; `param_strlen` has 0 parameters instead of 1
+- **Semantic breaks**: `call_strcpy` doesn't call `param_strcpy`—completely different logic
+- **ARM-specific artifacts**: `armg_calculate_condition`, `vvar_XX` variables make code non-portable and unreadable
+- **Excessive goto usage**: At `-O0` optimization level, loops should be recovered as structured constructs
+- **No error documentation**: Magic numbers like `4294967295` (error codes) appear throughout without explanation
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Core test functions retained original names (`param_strcpy`, `call_strcmp`, `param_memcpy`), providing some semantic anchors in otherwise degraded code
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments; decompiler provides no guidance on ambiguous code, algorithm intent, or uncertainty about recovered structures
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover structured control flow at -O0**: Implement loop pattern recognition to convert backward jumps into `for`/`while` constructs when optimization level is debug
+2. **Infer variable names from usage context**: Analyze how variables are used (e.g., passed to `strlen` → `string_length`, compared to 0 → `is_valid`) to generate semantic names
+3. **Flag semantic inconsistencies**: When caller/callee relationships don't match (like `call_strcpy` not calling `param_strcpy`), add uncertainty annotations to alert analysts

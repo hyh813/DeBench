@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `ptr`, `result`) with occasional meaningful names like `fp`, `count`, `idx`. Original source had semantic names like `buffer`, `write_data`, `shared_counter` that were lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`param_strcpy`, `call_strcpy`, `thread_compute`, `signal_handler`), but 50+ initialization functions use generic `sub_402xxx` naming pattern.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `4294967295` (error return), `42` (success), `18446744073709551580` (TLS offset). System calls use raw numbers (`syscall(2)`, `socket(2,1,0)`) instead of constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__printf_chk` instead of `printf`, `__isoc99_sscanf`, repeated `& 4294967295` masks. One unsupported jumpkind warning in `sub_402785`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops converted to do-while patterns reasonably well. Signal handling uses deeply nested if-else chains. Initialization code uses goto patterns that could be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries largely preserved. Thread functions well-separated. However, 50+ `sub_402xxx` functions appear to be fragmented initialization stubs.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. `param_thread_local_storage` has complex nesting (8+ levels). Some forward references disrupt flow in larger functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Repeated type masks (`& 4294967295`) throughout. No obvious dead code. Error handling patterns duplicated across similar functions without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `size_t`→`unsigned long`, `FILE*` preserved but `pthread_t`→`char*`. Original `pid_t`, `ssize_t` lost to generic integers.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs defined with generic field names (`field_0`, `field_8`, `field_c`). `ThreadData` struct not recovered (uses array indexing). TLS access uses raw offset `p[18446744073709551580]`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout. Pointer arithmetic without bounds checking visible. TLS magic offset access not flagged. `param_malloc_free` has use-after-free pattern in decompilation.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test scenarios, and expected values.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `malloc`). Thread patterns visible but not named. No higher-level pattern identification (producer-consumer, mutex protection).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged: `[D] Unsupported jumpkind Ijk_SigTRAP`. TLS magic offset, questionable type conversions, and potential use-after-free not highlighted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"). Error return values unexplained (`4294967295` = -1). No postcondition or invariant documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables referenced without usage context. Thread callback relationships visible but not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in somewhat logical order (library→syscall→thread tests). No file organization (single output). Static functions not properly scoped with visibility indicators.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies not documented (pthread, libc). Platform-specific code present without portability notes.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):    (4+6+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural): (6+7+6+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):       (5+4+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):   (2+5+4+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Context):    (5+5+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────
+Overall Score:                                  4.87/10
+```
+
+**Overall Readability Score: 4.9/10**
+
+### Critical Defects
+- **Variable `v0`, `v1`, `ptr`** should be named semantically (e.g., `buffer`, `file_descriptor`, `thread_id`) based on usage context
+- **Magic number `4294967295`** appears 30+ times without explanation (represents -1/error)
+- **TLS access** uses raw offset `p[18446744073709551580]` instead of recovered thread-local variable
+- **Zero comments** despite original source having extensive documentation for each test case
+- **Struct fields** all generic (`field_0`, `field_8`) losing semantic meaning of shared memory layout
+
+### Best Quality Aspect
+- **Function Decomposition (7/10)** - Core function boundaries preserved well; `param_strcpy`, `thread_compute`, `signal_handler` maintain original structure and responsibility separation
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding test purposes and expected values extremely difficult without referencing original source
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (variables used in size checks → `size`, variables passed to `fopen` → `filename`)
+2. **Recover and document magic constants** - Detect repeated literal values and suggest named constants with inferred meanings (e.g., `ERROR_RETURN = 0xFFFFFFFF`)
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (TLS access, indirect calls) with comments indicating manual review needed

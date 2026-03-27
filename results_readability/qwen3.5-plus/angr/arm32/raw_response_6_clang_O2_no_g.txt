@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `ptr`, `result`, `len`) with no semantic meaning. For example, `param_strcpy` uses `len` but `call_strcpy` uses `v0[8]` and `v1[24]` instead of `buffer`. Signal handling uses `v3`, `v4`, `v5` instead of `attempts` or `timeout`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retain source names (`param_strcpy`, `call_strcmp`, `param_mutex_lock`) which is good. However, helper functions are cryptic (`sub_400c48`, `$a.34` for signal handler, `sub_402708`). Thread functions like `thread_compute` and `consumer_thread` are well-named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers dominate: `4294967295` (appears 50+ times for -1), `4294967294` (-2), `4294967293` (-3). Signal numbers are raw integers (10 for SIGUSR1, 14 for SIGALRM). Socket constants are numeric (2 for AF_INET, 1 for SOCK_STREAM). No named constants recovered.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with `armg_calculate_condition()` calls throughout (appears 100+ times), redundant variable assignments (`v0 = v1; v1 = v0` patterns), and `Goto None` artifacts. Functions like `param_fopen_fclose` have 8 parameters when source has 1.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` usage instead of structured control flow. `param_strcpy` has clean flow but `param_signal_handling` uses `goto LABEL_401c88` patterns. `armg_calculate_condition` replaces normal boolean expressions, making logic opaque.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved but parameter lists are corrupted. `param_fopen_fclose` has 8 parameters instead of 1. `param_signal_handling` has 16 parameters instead of 0. Some functions like `call_strcpy` are constant-folded to single return statements.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps disrupt reading flow. `param_malloc_free` has complex label-based branching. Signal handling code has nested goto patterns that make execution path difficult to trace top-to-bottom.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy: `call_printf` calls `printf()` twice with same arguments. `call_fread_fwrite` calls `param_fread_fwrite()` twice. `param_strcpy` calls `strlen(strcpy())` twice instead of using the `len` variable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `unsigned int` or `void*`. `param_strlen` takes no parameters (should take `const char*`). `param_scanf` has no parameters (should take `const char*`). `size_t` becomes `unsigned int`. `pid_t` becomes `unsigned int`. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `struct FILE` is defined but empty (`typedef struct FILE {} FILE;`). `struct sockaddr` is partially recovered but `sa_data` is generic `char[14]`. ThreadData struct completely lost - fields accessed via array indexing (`ptr[0]`, `ptr[1]`, `ptr[2]`).
+
+**11. Type Safety:** Score: 2/10  
+Justification: Numerous unsafe patterns: pointer arithmetic without bounds (`ptr[1 + a0]` in `param_malloc_free`), function pointers as integers (`$a.34`), implicit casts everywhere. `param_win32_api` calls `stat()` with wrong signature.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic. No decompilation confidence indicators. No algorithm explanations. The only "comments" are `/* do not return */` annotations which are auto-generated. Original source had extensive documentation - all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library calls (`strcpy`, `strlen`, `printf`) are recognized but not identified as such. Producer-consumer pattern in `param_condition_variable` not documented. Signal handler registration pattern not explained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: `armg_calculate_condition` calls are unexplained anomalies that appear throughout. No indication that decompilation is uncertain. `param_linux_syscall` uses `syscall(5)` instead of `SYS_open` - no explanation of this transformation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for malloc). No postconditions (e.g., "returns heap-allocated memory"). Error codes (42, -1, -2, -3) not explained. Return value semantics completely undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships visible through code but globals are opaque (`g_402ad0`, `g_402adc`, `g_414008`). String literals referenced via globals instead of inline. Signal handler `$a.34` relationship to `param_signal_handling` not clear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Test functions (`test_standard_library_functions`, `test_system_calls`, `test_thread_concurrency`) are present but mixed with implementation. No header file structure.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Will not compile standalone. `armg_calculate_condition` is undefined. `__aeabi_read_tp` is stubbed. Many external symbols (`g_402ad0`, `__TMC_END__`, `completed.0`) undefined. Requires significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+3+2)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (3+5+4+3)/4 = 3.75 × 0.25 = 0.94
+Level 3 (Type):        (3+4+2)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (4+4+2)/3   = 3.33 × 0.10 = 0.33
+
+Overall Score: 3.22/10
+```
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects
+- **`armg_calculate_condition()` calls** appear 100+ times without explanation, replacing all boolean logic with opaque function calls
+- **Parameter list corruption**: `param_fopen_fclose` has 8 parameters instead of 1, `param_signal_handling` has 16 parameters instead of 0
+- **Magic number proliferation**: `4294967295` (-1), `4294967294` (-2), `4294967293` (-3) used throughout without named constants
+- **Type erasure**: All types degraded to `unsigned int` or `void*`, losing `size_t`, `pid_t`, `FILE*`, `pthread_t` distinctions
+- **Zero documentation**: No comments explaining logic, algorithms, or decompilation uncertainty despite complex signal/threading code
+
+### Best Quality Aspect
+- **Function Naming Quality (6/10)** - Core function names like `param_strcpy`, `param_mutex_lock`, `thread_compute` were preserved from source, providing some semantic anchors in otherwise opaque code.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of any explanatory comments, confidence indicators, or documentation makes understanding complex logic (signal handling, threading, IPC) nearly impossible without original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Replace `armg_calculate_condition()` with native boolean expressions** - This single change would improve readability of every conditional in the codebase
+2. **Recover parameter lists from calling conventions** - Analyze call sites to determine actual parameter count instead of assuming register-based parameters
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions (like signal handler `$a.34`) and explain architecture-specific transformations (like `syscall(5)` → `SYS_open`)

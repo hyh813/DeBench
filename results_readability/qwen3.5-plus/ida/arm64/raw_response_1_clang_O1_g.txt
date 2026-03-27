@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `result`) instead of semantic names like `sum`, `count`, `temp1` from source. For example, `loop_while` uses `v1` for digit count instead of `count`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`sequential_ops`, `nested_if_deep`, `recursion_factorial`). However, helper functions like `sub_880`, `sub_174C` remain unnamed, and metadata inconsistency (claims Ghidra but header says IDA Pro).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout (`0x12`, `0x18D8`, `0x18F0`) without explanation. Optimized expressions like `10 * x + 10` replace clear switch logic, obscuring original intent.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Register annotations (`// w8`, `// x0`), type casts (`(__int64 (__fastcall *)(_QWORD))`), and `LODWORD` macros add visual clutter. However, no dead code from register spilling observed.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Critical issue: `loop_for_fixed` converted to closed-form formula instead of loop. `switch_fallthrough` uses goto labels instead of natural fall-through. `duffs_device` becomes extremely convoluted with multiple goto patterns.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved well with appropriate granularity. However, test functions (`test_control_flow_l1`) are over-optimized with hardcoded values instead of actual function calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. However, `duffs_device` and `loop_multi_exit` use disruptive goto patterns. `switch_fallthrough` has LABEL_5 jumps breaking flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions replaced actual computations with hardcoded expected values (e.g., `printf("CF-L1-01...%d\n", 21)`). This eliminates redundancy but destroys semantic transparency about what's being tested.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic `int` types preserved correctly. However, function pointers degraded to generic `(__int64 (__fastcall *)(_QWORD))` instead of proper signatures like `int (*)(int)`. Some `__int64` used where `int` suffices.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays become opaque references (`unk_18F0`, `dword_1EE0[op]`). The 2D matrix in `loop_multi_exit` loses structure, accessed via pointer arithmetic. Function pointer arrays become `off_12D30[idx]` without type info.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts for function pointers (`(__int64 (__fastcall *)(_QWORD))`). `LODWORD` macros indicate potential type confusion. No buffer overflow protections or const-correctness visible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only register hints (`// w8`, `// x0`) present. Zero algorithm explanations or decompilation confidence indicators. Original source had extensive comments explaining each function's purpose and test cases.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Loop patterns not consistently recognized (`loop_for_fixed` becomes formula). Switch fall-through partially recognized but uses goto. State machines not identified as such despite clear patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "FAILED to decompile" noted for 8 functions at end (good). However, no uncertainty markers within successfully decompiled functions. `computed_goto` decompiled but GCC extension semantics lost.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had test validation comments showing expected inputs/outputs (e.g., "输入5,7,3应返回21").
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but test functions print hardcoded values instead of calling actual functions. Global references (`unk_18F0`, `off_12D30`) unexplained. Call graph relationships not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. Original source had clear sections (L1, L2, L3 control flow features) with section headers. No namespace or module structure visible.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 8 external functions failed to decompile (`_setjmp`, `printf`, `longjmp`, etc.). Would require significant stubbing to compile standalone despite metadata claiming "Compilation Result: Yes".
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (5+7+6+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (6+5+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (3+4+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.26/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3` should be named semantically** (e.g., `count`, `sum`, `result`) based on usage patterns
+- **`loop_for_fixed` converted to closed-form formula** instead of preserving original loop structure
+- **Test functions print hardcoded values** instead of calling actual functions, destroying test semantics
+- **Zero meaningful comments** - only register hints present, no algorithm explanations
+- **Function pointer types degraded** to generic `(__int64 (__fastcall *)(_QWORD))` losing signature information
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it easy to identify which decompiled function corresponds to which source function
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Complete absence of semantic comments; original source had extensive documentation explaining each function's purpose, test cases, and expected behavior
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how variables are used (accumulators, counters, indices) to suggest semantic names like `sum`, `count`, `index`
+2. **Preserve loop constructs from backward jump patterns** - Recognize cmp+jcc back-jump patterns as for/while loops instead of converting to closed-form formulas
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: optimized expression may differ from source`

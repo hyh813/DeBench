@@ -1,0 +1,123 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `local_8`, `iVar1`, `puVar1`, `sVar1` with zero semantic meaning. Original source had meaningful names like `value`, `name`, `capture_by_value`, `instance_count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions retain original names (`test_cpp_member_func`, `test_cpp_constructor`), and some class methods recovered (`Base::virtual_func`, `Derived::getName`). However, many functions are generic (`FUN_00101650`, `FUN_001019fc`) and external stubs clutter the output.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x125c`, `0x3e9`, `0x15`, `0x47`, `0x2bf`. Original constants like `0x1234` for class ID and expected return values (4704, 42, 650) are obscured as hex literals.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`) appear in nearly every function, creating artificial branches. External function stubs (25+ functions) pollute the output without adding value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Many test functions reduced to constant returns (`return 0x47`, `return 0x55`) losing original computation logic. Stack check branches create unnatural if-statements that don't reflect source intent.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Multiple destructor variants for same class (`MiddleA::_MiddleA` appears 6+ times with slight variations). Template functions properly separated (`template_max_int_`, `template_max_double_`) but class methods fragmented.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. Stack check epilogues create forward jumps but don't severely disrupt flow. Virtual call sites use indirect patterns that are traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Destructor code duplicated across multiple variants (deleting vs. non-deleting, with/without vtable setup). Virtual table initialization repeated in multiple destructor overloads without consolidation.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined8`, `void*` instead of precise types. Original `int`, `size_t`, `double` partially recovered but `undefined*` types dominate pointer handling.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/class definitions recovered. Object access through raw pointer arithmetic: `*(int *)(this + 8)`, `*(long *)(*(long *)this + -0x18)`. Vtable pointers visible but not structured as proper C++ objects.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(undefined4 *)`, `(long *)`, `(char **)`. Pointer arithmetic without bounds: `this + *(long *)(*(long *)this + -0x18)`. Type-confused function pointers throughout virtual dispatch code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated function headers present. Zero comments explaining C++ semantics (vtable layout, virtual inheritance, lambda captures). No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns partially visible (vtable calls via `(***(code ***)param_1)`) but not identified. RTTI, exception handling, smart pointer patterns present but unnamed. Lambda closure structure completely lost.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about indirect calls, unresolved symbols, or uncertain recovery. Complex virtual inheritance pointer adjustments (`this + -0x10`, `this + *(long *)(*(long *)this + -0x20)`) presented confidently without flagging uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., null checks before dereference). No postconditions inferred. Exception handling contracts (`__cxa_throw`, `__cxa_begin_catch`) present but undocumented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch partially recovered through vtable pointers. No call graph or inheritance hierarchy documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions listed sequentially without logical grouping. External stubs mixed with application code. No namespace structure or header separation recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Requires extensive stubbing for 25+ external functions. C++ runtime dependencies (`__cxa_*`, `operator_new`) not resolved. Would not compile without significant manual intervention.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+5)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (4+5+6+5)/4 = 5.00  × 0.25 = 1.25
+Level 3 (Type):        (4+3+3)/3   = 3.33  × 0.20 = 0.67
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75  × 0.15 = 0.41
+Level 5 (Contextual):  (5+4+3)/3   = 4.00  × 0.10 = 0.40
+─────────────────────────────────────────────────────
+Overall Score:                                  3.93/10
+```
+
+**Overall Readability Score: 3.9/10**
+
+---
+
+### Critical Defects
+
+- **Variable names completely generic**: `local_8`, `iVar1`, `puVar1` provide zero semantic information; original `value`, `name`, `instance_count` lost
+- **Class structures not recovered**: All C++ objects accessed via pointer arithmetic (`*(int *)(this + 8)`) instead of proper struct definitions
+- **Magic numbers unexplained**: `0x125c`, `0x3e9`, `0x2bf` appear without connection to original expected values (4704, 21, 703)
+- **Multiple destructor variants**: Same class has 6+ destructor functions with subtle differences, creating confusion
+- **No C++ idiom documentation**: Virtual inheritance, lambda captures, template instantiation patterns present but completely undocumented
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (6/10)** - Test function names preserved from source (`test_cpp_member_func`, `test_cpp_virtual_func`), providing anchor points for understanding program structure despite other deficiencies.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments explaining C++ semantics, vtable mechanisms, or decompilation uncertainty; even basic function purpose documentation absent.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover C++ class structures from vtable layouts** - Analyze vtable pointers to reconstruct struct definitions with field names based on access patterns (`this + 8` → `multiplier` in Derived class)
+
+2. **Add semantic comments for C++ idioms** - Flag virtual calls, RTTI checks, exception handling, and smart pointer patterns with explanatory comments indicating the high-level C++ construct being represented
+
+3. **Infer variable names from usage context** - Variables used in size comparisons should be named `size`/`length`, pointer arithmetic offsets should suggest field names, and constant return values should reference original expected outputs

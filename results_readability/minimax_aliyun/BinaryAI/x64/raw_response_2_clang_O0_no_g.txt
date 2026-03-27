@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `local_14`, `local_18`, `local_1c`. The original source uses meaningful names like `x`, `c`, `sum`, `i`, `n`, `arr`, `str`, `p`, but the decompiler provides no semantic naming whatsoever.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are correctly recovered from debug symbols: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `double_value`, `complex_callback`. Only internal functions like `FUN_00101020` are generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Character literals like `' '` (space = 32) are clear, but array offset calculations use unexplained magic numbers: `0x28` (40 bytes for 10 ints), `0xc` (12 bytes for 3 ints), `0x14` (20 bytes). The formula `param_1 + (long)local_1c * 0xc` obscures that it's accessing struct fields.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation output with minimal compiler artifacts. No register spilling code, redundant casts are minimal, and no debug instrumentation remains. The code is readable without obvious noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops are properly recovered as `for` loops with clear iteration. Conditionals use idiomatic expressions like `('@' < param_1) && (param_1 < '[')` for range checks. At -O0, control flow closely matches source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function is properly separated with appropriate granularity. The original 830 LOC is split into ~50 functions, each handling single responsibility. Parameter counts match original (e.g., `ptr_increment(int *param_1, int param_2)`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Minor complexity in `array_2d_stack` with nested index calculation `(long)local_18 * 0x28 + (long)local_18 * 4`, but still traceable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Loop unrolling is not present (expected at -O0). Code is clean without duplicate expressions.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: The original uses `short`, `long`, `float`, `double`, `long double`, `_Bool`, but decompiler uses generic `int`, `long`, `float`. The `process_ld` function is completely wrong - returns void instead of `long double`. Const/volatile qualifiers are lost in some places.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure. The original defines structs like `Point3D {x, y, z}`, `Node {data, next}`, `Rect {position, size}`, but decompiler uses raw pointer arithmetic: `*(int *)(param_1 + (long)local_1c * 0xc) + *(int *)(param_1 + (long)local_1c * 0xc + 4)`. No struct field names recovered at all.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: `ptr_void` uses untyped `void*` then casts to `int*` or `char*` without safety checks. `ptr_diff` does `param_1 - param_2 >> 2` which loses type information. Function pointers use generic `code *` type.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The only comment is the auto-generated "Decompiled by BinaryAI" header. No explanation of algorithms, magic numbers, or recovered intent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns like linked list traversal (`local_20 = *(int **)(local_20 + 2)`) and array iteration are visible but not named or highlighted. No recognition of specific algorithms or design patterns from the original.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertain or anomalous code. The `process_ld` function returning void instead of `long double` is presented with equal confidence as correct functions. No markers for indirect calls or potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original has no explicit contracts either, but decompiler could infer things like "requires: n > 0" for array functions.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are clear (`printf`, `array_1d_stack`, etc.) but no documentation of caller/callee relationships. The `complex_callback` is used correctly but relationship to `ptr_func_complex` isn't documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are in a single file but grouped logically (test functions together, type-specific functions grouped). Static functions like `double_value` and `complex_callback` are properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: External functions (`printf`, `memset`, `memcpy`) are declared. The metadata indicates "Compilation Result: Yes". Minor issues like `process_ld` returning void would cause warnings but code is mostly compilable.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- **Variable naming**: All variables use generic names (`param_1`, `local_14`) providing zero semantic meaning
+- **Struct recovery failure**: All composite types lost - uses raw pointer arithmetic like `*(int *)(param_1 + 8)` instead of `p->y`
+- **No comments**: Zero explanatory comments for algorithms, magic numbers, or recovered intent
+- **Type precision loss**: `process_ld` returns void instead of `long double`; generic `int` used where original has `short`, `long`
+- **Anomaly silence**: Incorrect `process_ld` signature presented without any warning
+
+**Best Quality Aspect:** Function Decomposition (scored 9/10)  
+Functions are properly separated with correct parameter counts and single responsibilities matching the original source structure closely.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+Struct and union types are completely lost. The original has well-defined structures (`Point3D`, `Node`, `Rect`, `Widget`) but decompiler uses only raw pointer arithmetic, making it impossible to understand data layouts without external knowledge.
+
+**Top 3 Recommendations:**
+1. **Recover struct field names** from layout analysis - the offset patterns (0xc for 3 ints, 0x28 for 10 ints) clearly indicate struct field access
+2. **Add semantic variable naming** - infer names from usage patterns (e.g., `local_14` used as loop counter → `i` or `index`)
+3. **Add explanatory comments** for magic numbers like `0x28` (array element size × count) and document function contracts

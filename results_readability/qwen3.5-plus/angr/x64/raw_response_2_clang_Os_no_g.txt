@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`, `cur`) with no semantic meaning. For example, `array_1d_stack` uses `v2` for sum and `i` for index instead of `sum` and `index`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core processing functions retained original names (`process_char`, `process_int`, `struct_simple`), but many helper functions have generic names (`sub_401020`, `sub_401085`). Test functions kept names but lost semantic content.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `4294967295` (UINT_MAX), `44`, `40`, `100` for array strides. Float constants shown as hex (`0x3fc00000`) instead of decimal values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe decompilation artifacts: `[D] Unsupported jumpkind`, `[D] unsupported_<class 'pyvex.expr.GetI'>`, vector operations (`AddV`, `MulV`, `CmpGTV`) that obscure simple scalar operations.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses `do-while` loops where `for` loops would be natural. `ptr_func_simple` uses `goto a0` instead of function call. Test functions have constant-folded printf calls losing actual computation flow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: `test_array_types` has 100+ local variables (`v0` through `v49`, `flag1`-`flag4`) making it a monolithic 200+ line function. Core functions are appropriately sized.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but nested loops in `array_3d` and `test_array_types` create deep nesting. Some forward jumps disrupt flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Test functions show aggressive constant folding - `printf("DT-L1-01...: %c\n", 97)` instead of calling `process_char('A')`. This loses semantic meaning of what's being tested.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `char` becomes `unsigned int`, `short` becomes `unsigned int`, `float`/`double` show vector operations. `process_float` returns `double` but takes no parameters (should take `float`). `long double` completely fails.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_8`). Bitfields completely lost - `struct_bitfields` uses manual bit operations (`v1 >> 6`, `v1 & 1`) instead of named fields. Nested structs partially recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: `ptr_void` uses `void*` with runtime type checking, `ptr_cast` loses the cast chain entirely, pointer arithmetic uses raw offsets (`ptr + i * 4`) instead of typed access.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only decompilation error markers (`[D]`). No algorithm explanations, no parameter documentation, no recovery confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not identified: linked list traversal (`linked_list`), array summation, tree recursion (`binary_tree_sum`) all appear as generic loops without pattern recognition.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some `[D]` markers for unsupported operations (long double, vector ops) but inconsistently applied. `process_ld` shows raw VEX IR instead of indicating decompilation failure clearly.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `array_complex_index` should note bounds checking). No postconditions. Null pointer checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships not documented. `main` calls test functions clearly, but callback relationships (`ptr_func_simple`, `struct_func_ptr`) lack documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Related functions (data types, arrays, pointers, composites) not separated. No header file structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears syntactically valid C but has external dependencies (`g_404fe0`, `__libc_start_main`) not clearly documented. Some `[D]` markers would prevent compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (5+5+6+4)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (4+4+5)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                              4.27/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named semantically (e.g., `sum`, `index`, `result`) based on usage patterns
+- **Test functions constant-folded** - `printf` calls show pre-computed values (97, 300, 11) instead of actual function calls, losing test semantics
+- **`process_ld` (long double) completely failed** - shows raw VEX IR instead of C code
+- **Struct bitfields lost** - `struct_bitfields` uses manual bit operations instead of named bitfield access
+- **Function pointer calls use `goto`** - `ptr_func_simple` and `struct_func_ptr` use `goto` instead of proper function call syntax
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core processing functions retained original semantic names (`process_char`, `process_int`, `struct_simple`), providing anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments; no recovery confidence indicators, no algorithm explanations, no parameter documentation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns** - Analyze how variables are used (accumulators, indices, pointers) to suggest names like `sum`, `index`, `buffer_ptr`
+2. **Preserve function call semantics in test code** - Avoid aggressive constant folding that replaces actual function calls with pre-computed values, as this destroys test intent
+3. **Add recovery confidence annotations** - Mark uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: long double operations` instead of raw IR output

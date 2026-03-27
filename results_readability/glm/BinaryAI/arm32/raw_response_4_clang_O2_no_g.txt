@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are consistently generic (`param_1`, `param_2`, `local_c`, `uVar1`), providing no semantic hint about their purpose (e.g., `count`, `sum`, `args`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the source symbols (e.g., `cdecl_func`, `varargs_func`, `test_calling_conventions`), accurately reflecting the original intent.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Results are often represented as hex literals (e.g., `0xf` instead of `15`, `0x2a` instead of `42`), and array indices like `0xc` in `ret_large_struct` are magic numbers lacking context.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The output is heavily polluted with massive soft-float library implementations (`__adddf3`, `__subdf3`, etc.) and runtime stubs (`__aeabi_...`), burying the user code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally natural and linear (e.g., `do-while` loops in `varargs_func`), though some compiler optimizations like jump-table resolution in `ret_multi_branch` obscure the original `switch` statement.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions correspond well to the source structure with appropriate granularity; no artificial splitting or monolithic merging occurred.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads top-to-bottom with minimal forward jumps or confusing `goto` usage, making execution paths easy to trace.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Significant redundancy exists, such as the unrolled loop in `ret_large_struct` which results in 16 separate assignment statements instead of a concise loop.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Types are severely degraded; `double` and `long long` in `func_mixed_args` are split into `undefined4` pairs, and return types for structs are incorrectly set to `void`.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Complete failure to recover structures; `LargeStruct` in `func_struct_byval` is exploded into 32 scalar parameters, and `SmallStruct` return values are flattened into pointer parameters.
+
+**11. Type Safety:** Score: 3/10
+Justification: Extensive use of `undefined4` and `undefined8` types implies unsafe casting, and pointer arithmetic on flattened structures (e.g., `param_1[0xc]`) is prone to errors.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output, leaving complex logic (like the soft-float math or varargs handling) unexplained.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard idioms are missed; `varargs_func` uses `va_list` in source but is decompiled as stack array iteration, and struct returns are not recognized.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No warnings or flags are present to indicate the suspicious type splitting of doubles or the non-standard varargs implementation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the null check in `func_struct_byptr` is present but not explicitly stated as a contract).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are generally clear (where not inlined to constants), and the relationship between callers and callees is preserved.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically, and the separation between user code and library code (though noisy) is distinguishable by naming conventions.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile standalone due to Ghidra-specific types (`undefined4`) and missing headers for the soft-float intrinsics.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 5.5
+L2_avg: 7.5
+L3_avg: 2.0
+L4_avg: 1.25
+L5_avg: 5.33
+
+Overall = (5.5 × 0.30) + (7.5 × 0.25) + (2.0 × 0.20) + (1.25 × 0.15) + (5.33 × 0.10)
+Overall = 1.65 + 1.875 + 0.4 + 0.1875 + 0.533
+Overall = 4.6455
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects (Bullet List)
+- **Struct Explosion**: `func_struct_byval` completely loses the `LargeStruct` type, expanding it into 32 generic parameters (`param_1` through `param_21`).
+- **Varargs Obfuscation**: The `va_list` logic in `varargs_func` is decompiled as raw stack array iteration (`int local_c [3]`), losing the semantic meaning of variable arguments.
+- **Floating Point Type Loss**: In `func_mixed_args`, the `double` parameter is split into two `undefined4` types, and arithmetic is exposed as low-level soft-float library calls (`__adddf3`, `__floatsidf`).
+- **Return Value Corruption**: Functions returning structs (`ret_small_struct`, `ret_large_struct`) are decompiled as `void` functions taking a hidden pointer parameter, obscuring the return-by-value semantics.
+- **Excessive Noise**: The output includes hundreds of lines of soft-float library implementation code (`__adddf3`, `__subdf3`), drastically reducing the signal-to-noise ratio.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (10/10)
+- **Why?** The decompiler successfully recovered all original function symbols from the binary, making the high-level purpose of each code block immediately identifiable.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Composite Type Recovery (1/10)
+- **Why?** The decompiler failed completely to identify structures passed or returned by value, reducing complex data types to a flat list of scalar parameters.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Aggregate Type Reconstruction**: Implement analysis to group consecutive scalar parameters/registers into composite structures based on size and alignment rules of the target ABI (AAPCS64).
+2.  **Varargs Signature Recovery**: Detect standard varargs patterns (e.g., access to stack offsets beyond the named parameters) and re-map them to `va_list` semantics instead of raw stack arrays.
+3.  **Floating Point Type Unification**: Improve type propagation to recognize 64-bit register pairs (or stack slots) as `double` types rather than pairs of `undefined4`, and map soft-float library calls back to standard arithmetic operators.

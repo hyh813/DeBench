@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## Function Under Evaluation: `param_fake_branch` and related functions
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4` throughout (e.g., in `param_opaque_predicate`: `v1 = x + 1`, `v2 = x`, `v3 = 2 * x + x * x + 1 == v1 * v1`). These obscure semantic meaning - `v3` should be named `p1` (opaque predicate result), `v4` should be `temp` for GCD calculation.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Target functions like `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate` are correctly named, matching source. However, many helper functions use generic names like `sub_1020`, `sub_1030` through `sub_10C0` with no semantic meaning. The CRT functions (`deregister_tm_clones`, `register_tm_clones`) are correctly identified.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are unexplained magic numbers: `0x28` (stack canary offset), `90` (decryption key 0x5A), `0xFF` (byte value). The encrypted string is referenced as `encrypted_0` without explaining it's the XOR-encrypted "Hello". However, some constants like signal numbers (8, 11) are inferable.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from 13 failed-to-decompile functions listed at the end. Many placeholder functions (`sub_1020` through `sub_10C0`) that just call each other add clutter. The warning "positive sp value has been detected" indicates decompilation uncertainty but doesn't污染 the actual code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - `param_tail_call_optimized` correctly uses `while (n > 0)` loop. The GCD calculation in `param_opaque_predicate` uses `while (v1)` which is readable. Minor awkwardness in `decrypt_string` loop with pointer arithmetic, but overall understandable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized - each test function (`param_fake_branch`, `param_opaque_predicate`, etc.) is separate and cohesive. The `call_*` wrapper functions correctly isolate the test callers. No excessive fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in `param_division_by_zero` and `param_null_pointer_deref` are appropriate. The `decrypt_string` function has a slightly unusual loop structure but traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some optimization artifacts remain - `param_instruction_substitution` computes `15 * x + (x & 0xF) + ((unsigned int)x >> 1) + 6 * x` which could be simplified to show the original substitution pattern. The `call_instruction_substitution` returns constant `225` instead of showing the computation.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct - `int` for parameters, `char*` for strings, `size_t` for lengths. However, `param_integer_overflow` uses `int` when the source uses explicit `unsigned int` for the unsigned sum calculation. The decompilation loses the `unsigned int ua, ub` distinction.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: No complex struct recovery needed for these simple functions. The `jmp_buffer` type is correctly identified. The bitfield in `param_implementation_defined` is not recovered - the function just returns constant `47`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Minor issues: `(unsigned int)x >> 1` in `param_instruction_substitution` loses the original `unsigned int ux` variable. The `signal` calls use `(__sighandler_t)` casts which are appropriate. No severe type safety violations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments present** in the decompiled output. The original source has extensive comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.), optimization purposes (OPT-L4-01, OPT-L4-02), and edge case testing. None of this semantic information is recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some idioms recognized - the GCD Euclidean algorithm in `param_opaque_predicate` is correctly decompiled as a while loop. The `setjmp`/`longjmp` pattern in signal handlers is identified. However, the fake branch obfuscation (always-false conditions) is completely eliminated - the decompilation shows just `return x;` instead of the original conditional logic.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One positive example: "positive sp value has been detected, the output may be wrong!" warning in `_start` function. However, 13 functions failed to decompile with no explanation of why (just "FAILED to decompile: free @ 0x4210"). No indication of the fake branch elimination or optimization effects.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source has clear expectations (e.g., "期望: 10" for `call_fake_branch`) that are not recovered. The decompiled `call_*` functions just return constants without showing the computation path.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (`main` calls `test_obf_opt_edge`, which calls all test functions). However, no documentation of who calls whom beyond the immediate call graph. The relationship between `param_*` and `call_*` pairs is not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are somewhat grouped (CRT initialization, test functions, signal handlers) but not clearly organized by purpose. The original source has clear sections: "7.1 混淆与保护", "7.2 编译器特有优化", "7.3 异常与边界情况" - this organization is lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The metadata shows "Compilation Result: Yes", meaning the code compiles. External dependencies (libc functions) are implicitly available. However, no documentation of what headers or libraries are needed.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Variable naming uses generic `v0`-`v9` pattern throughout, obscuring semantic roles (e.g., `v3` should indicate opaque predicate result)
+- **Fake branch obfuscation completely eliminated** - `param_fake_branch` shows just `return x;` instead of the original always-false conditional branches
+- No comments recovered - the extensive documentation explaining obfuscation techniques (OBF-L4-02, OBF-L4-03) is completely lost
+- 13 functions failed to decompile with no explanation (just "FAILED to decompile: free @ 0x4210")
+- Type precision lost - `param_integer_overflow` loses the `unsigned int` distinction from original source
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+The decompiled code uses readable while loops and appropriate early returns. The GCD algorithm and signal handling patterns are correctly recovered and understandable.
+
+**Most Needs Improvement:** Comment Quality (scored 1/10)  
+The decompilation has zero comments. The original source contains extensive semantic information about obfuscation techniques, optimization purposes, and expected test results - all completely lost in the output.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover fake branch patterns**: Detect always-false conditions (like `x*x < 0`) and preserve them as obfuscation indicators rather than eliminating them, perhaps with a comment like "// OBFUSCATION: dead branch eliminated"
+2. **Add semantic comments**: When decompiling test functions, recover the expected results from debug symbols (e.g., "// Expected: 10") and document the obfuscation technique being tested
+3. **Improve variable naming inference**: Use data flow analysis to infer semantic names - if `v3` is used in `if (v3)` and assigned from a complex equality, name it `predicate_result` or similar

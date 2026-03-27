@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and local variables use cryptic patterns (`iVar1`, `lVar1`, `uVar1`, `puVar3`). While this is common in decompilation, the decompiler made no attempt to infer semantic meaning from usage patterns - e.g., `param_1` used as array index should be named `index` or `i`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (`double_value`, `process_int`, `array_1d_stack`, `ptr_single`). Minor issues include `FUN_00101020` (unused function) and `<EXTERNAL>::` prefixes, but the core test functions are correctly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x61` for 'a', `0xb` for 11, `0x14` for 20). The decompiler could have recognized common patterns like ASCII conversions (`+ 0x20` for lowercase) and arithmetic results, but instead presents raw hex/decimal values.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some stack frame manipulation (`in_FS_OFFSET`) and type casting is present but manageable. No debug instrumentation or obvious register spilling clutter.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops are properly recognized as `for`/`while` constructs. Some complex array functions use do-while patterns with pointer arithmetic (e.g., `array_2d_stack`), but overall control flow is readable. At -O0, this is expected quality.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with appropriate granularity. Test functions (`test_data_types_l1`, `test_array_types`, etc.) are correctly extracted. No inlining artifacts since compiled at -O0. Parameter counts match original.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps in complex functions like `array_3d` with nested loops, but early returns are used appropriately in functions like `array_complex_index`. Depth is manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Some loop unrolling in array initialization within test functions, but it's contained and doesn't obscure logic. Common subexpression elimination is minimal at -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Integer types are generic `int`/`long` instead of specific widths. Pointers are correctly typed. Float/double distinction is preserved. However, `const` correctness is lost (e.g., `const_param` receives `int*` not `const int*`), and `volatile` is not indicated.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs are partially recovered but with array-index notation (`param_1[0]`, `param_1[1]`, `param_1[2]`) instead of named fields. Union types are somewhat recovered in `union_type` but lose the union semantics. Nested structures use pointer arithmetic (e.g., `struct_deep` uses `param_1 + 8`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns exist: extensive pointer arithmetic (`param_1 + lVar1 * 4`), function pointer type loss (`code *UNRECOVERED_JUMPTABLE`), and void pointer handling in `ptr_void`. No `restrict` or alignment annotations. The code is usable but not type-safe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in the decompiled output whatsoever. No algorithm explanations, no decompilation confidence indicators, no API contracts. The code is completely devoid of explanatory text.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like loops, conditionals, and function calls are recognized. However, no design patterns (linked list traversal, tree recursion) are explicitly identified or named. The decompiler doesn't annotate "this is a linked list traversal" or "this implements X algorithm."
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only external functions are marked with `<EXTERNAL>::` prefix. No warnings about indirect calls that couldn't be resolved, no flags for potential undefined behavior (like the intentional out-of-bounds in `array_oob`), and no confidence indicators for uncertain decompilations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler makes no attempt to infer contracts like "requires: ptr != NULL" or "ensures: return value is positive" from the code patterns.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. Callback relationships (e.g., `ptr_func_simple` calling `double_value`) are visible but not explicitly documented. No indication of which functions call which or global variable usage.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - test functions together, helper functions near their usage. Static functions are properly scoped. However, all functions are in a single flat listing without any file/namespace structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The decompiled code is marked as "Compilation Result: Yes", indicating it compiles. External functions are marked with `<EXTERNAL>::` prefix. Minor stubs would be needed for standard library functions (`puts`, `__printf_chk`).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic `param_N` and locals use cryptic `iVar1`/`lVar1` patterns, making code flow difficult to trace
+- **No comments**: Complete absence of explanatory text forces reverse-engineering from scratch
+- **Struct field loss**: Composite types recovered as array indices (`param_1[0]`) rather than named fields (`point->x`)
+- **No anomaly indication**: Intentional undefined behavior (array_oob with `i <= n`) not flagged
+- **Type safety issues**: Function pointer calls use `code *` type with `UNRECOVERED_JUMPTABLE` placeholder
+
+### Best Quality Aspect: Function Naming (scored 8/10)
+Function names match the original source almost perfectly, including test function names like `test_data_types_l1`, `test_array_types`, etc. This makes it easy to locate specific functions.
+
+### Most Needs Improvement: Comment Quality & Presence (scored 2/10)
+The decompiled output contains zero comments. At -O0, the code structure closely matches source, so the decompiler should add explanatory comments about algorithm intent, recovered types, and any uncertain areas.
+
+### Top 3 Recommendations:
+1. **Add semantic variable naming**: Infer names from usage patterns (e.g., `param_1` used in loop bounds → `count` or `length`; `param_1 + offset * 4` → array access with `element_size`)
+2. **Recover struct field names**: Use type analysis to identify struct layouts and replace `param_1[0]`/`param_1[1]` with meaningful field names like `point->x`, `point->y`
+3. **Add explanatory comments**: Include algorithm descriptions, recovered contracts, and confidence levels for indirect calls or uncertain decompilations

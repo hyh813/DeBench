@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+**Focus Function:** `param_fake_branch`
+
+The original source implements an obfuscation technique with two always-false branches:
+1. `if (x * x < 0)` - mathematically impossible for real numbers
+2. `if (strlen(str) < 0)` - string length cannot be negative
+
+The decompiled version reduces this to:
+```c
+int64_t param_fake_branch(int64_t a1) {
+    return a1 & 0xffffffff;
+}
+```This is a critical failure - the decompiler has eliminated the fake branches entirely, losing the core obfuscation logic that was specifically designed to test whether such patterns survive decompilation at -O0.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameter `a1` is generic single-letter naming. The original parameter `x` is completely lost. No intermediate variables exist to name. This generic naming makes it impossible to understand the parameter's semantic purpose without cross-referencing.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function name `param_fake_branch` is correctly preserved from the original source. The naming accurately reflects the function's obfuscation purpose in the test suite.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: The mask literal `0xffffffff` appears without explanation. This operation was not in the original source - it's a decompilation artifact likely from sign-extension handling on arm64. The magic number obscures the actual intent.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: The function is extremely clean with no compiler artifacts, redundant casts, or debug instrumentation. Only the address comment `// 0x1370` remains, which is minimal and non-intrusive.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 1/10  
+Justification: **CRITICAL FAILURE** - The decompiled code has completely eliminated both fake branch `if` statements from the original. At -O0, these branches should be preserved. The loss of control flow destroys the entire purpose of this obfuscation test function.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The function is appropriately small (single return statement). No decomposition issues - this is the expected granularity for such a simple function.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: The code is perfectly linear with no jumps, branches, or control flow disruption. Reads straightforwardly top-to-bottom.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code exists. The simplified form has no duplication or dead code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Parameter uses `int64_t` which is appropriate for arm64. However, the original was `int` (32-bit). The unnecessary mask operation `& 0xffffffff` suggests type confusion - the decompiler is treating it as 64-bit but forcing it back to 32-bit, which wasn't in the source.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types (structs/unions) are used in this function, so none need recovery. Not applicable but scores full marks.
+
+**11. Type Safety:** Score: 9/10  
+Justification: The bitwise mask operation is type-safe. No unsafe casts or pointer arithmetic. Minor concern that the mask itself is unnecessary and suggests type handling issues.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only contains the address comment `// 0x1370`. No explanation of what the function does, no mention of the fake branch obfuscation technique, no indication that control flow was lost. The semantic purpose is completely undocumented.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: **CRITICAL FAILURE** - The fake branch idiom (OBF-L4-02) is completely unrecognized. The decompiler has eliminated the always-false condition pattern that was the entire point of this test function. No mention of opaque predicates or obfuscation techniques.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warning about the missing control flow branches. The decompiler silently eliminates the fake branches without flagging this as suspicious or unusual. A reader would have no indication that logic was lost.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No preconditions, postconditions, or invariants are documented. Not particularly expected for this simple function, but some mention of the "always returns input" contract could be helpful.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The function `call_fake_branch` is present and shows it calls `param_fake_branch(10)`. The relationship is clear from the surrounding code structure.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped in the decompiled output. The obfuscation-related functions are near each other. Good organizational structure.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The code should compile cleanly as standalone C code. No obvious compilation barriers. The function signature is valid.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- **Control flow elimination**: Both fake branch `if` statements are completely missing from decompiled output - this is the core functionality being tested
+- **Idiom loss**: The OBF-L4-02 obfuscation pattern (always-false conditions) is entirely eliminated, making the function semantically different from source
+- **No anomaly warning**: Decompiler silently drops the branches without indicating this significant semantic change
+- **Unnecessary mask**: The `& 0xffffffff` operation appears nowhere in source and suggests incorrect type handling
+- **Poor comments**: No explanation of the function's purpose or the lost control flow
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+The function name `param_fake_branch` is perfectly preserved, matching the original source exactly.
+
+**Most Needs Improvement:** Control Flow Naturalness & Idiom Recognition (both 1/10)  
+The decompiler has completely failed to preserve the fake branch obfuscation pattern. At -O0, these always-false conditions should be retained. The loss of this control flow fundamentally changes the function's semantics and defeats the purpose of this obfuscation test.
+
+**Top 3 Recommendations:**
+1. **Preserve dead code branches**: At -O0, implement logic to detect always-false conditions (like `x*x < 0`) and preserve them as comments or explicit dead code rather than eliminating
+2. **Add anomaly indicators**: When control flow is eliminated or significantly modified, add explicit warnings like "// NOTE: 2 branches removed during decompilation"
+3. **Improve literal explanation**: The `0xffffffff` mask should be either removed (if unnecessary) or documented as "// Sign-extension fixup" if required by the decompiler's type system

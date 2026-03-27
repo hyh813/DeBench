@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v2`, `a1`), providing no semantic context about their role (e.g., `arr`, `i`, `result`), despite the presence of debug symbols (`-g`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the symbol table (e.g., `double_value`, `heap_basic`, `linked_list_heap`), accurately reflecting the original source intent.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals are preserved, but numeric magic numbers like `0x28` (40 bytes), `0xC` (12 bytes), and `4` (sizeof int)) are used without explanation or named constants.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Code contains compiler artifacts like `__fastcall` annotations, redundant casts (`(_DWORD *)v2`), and verbose stack variable comments (`[sp+0h] [bp-38h]`), which add clutter.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Loops are often reconstructed as awkward `do-while` iterations using pointer arithmetic (e.g., `v4 = (char *)(v2 - 1); ... *((_DWORD *)v4 + 1) = v3;`), obscuring the simple array indexing logic of the source.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: While core functions are preserved, test functions like `test_stack_memory` have been aggressively flattened; function calls (e.g., `local_vars(5)`) are replaced by their constant return values (`20`), destroying the original call structure.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code generally reads top-to-bottom with minimal forward jumps or spaghetti logic, making the execution path easy to trace despite the awkward pointer math.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little dead code, but the decompiler introduces redundancy through verbose pointer casting and offset calculations that were implicit in the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types like `int` and pointers are mostly correct, but specific types like `size_t` are downgraded to `int` or `unsigned int`, losing semantic precision regarding size.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types (`Point`, `Node`, `TreeNode`) are completely lost; they are replaced by raw pointer arithmetic and array indexing (e.g., `v4[1]`, `*v2`), making it impossible to see the original data structure layout.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer casts are generally correct and safe, with no obviously dangerous or incorrect type conversions that would lead to immediate undefined behavior in the decompiled view.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to auto-generated stack variable locations and memory offsets; there are no comments explaining the logic, algorithms, or data structures used.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Common patterns like linked list traversal are visible in the logic (e.g., `v2 = (int *)v2[1]`), but they are not explicitly identified or named as such.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler confidently presents incorrect information in `static_local`, mapping a static local variable to a global variable address (`&global_counter`) without any warning or anomaly flag.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the check `if (arr == NULL)` is present but not treated as a contract requiring `malloc` to succeed.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls to standard library (`malloc`, `free`) and other defined functions are clear, though the flattening of test functions obscures the intended call graph of the test suite.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically in the output, and the separation between different test categories (stack, heap, static) is maintained from the source structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses non-standard macros like `MEMORY[0xFFFF0FC0]` and compiler-specific attributes (`__fastcall`) that would prevent standalone compilation without significant modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 10 + 6 + 6) / 4 = 6.25
+L2_avg: (5 + 6 + 8 + 7) / 4 = 6.50
+L3_avg: (7 + 2 + 8) / 3 = 5.67
+L4_avg: (3 + 4 + 1 + 1) / 4 = 2.25
+L5_avg: (7 + 8 + 3) / 3 = 6.00
+
+Overall = (6.25 × 0.30) + (6.50 × 0.25) + (5.67 × 0.20) + 
+          (2.25 × 0.15) + (6.00 × 0.10)
+Overall = 1.875 + 1.625 + 1.134 + 0.3375 + 0.6
+Overall = 5.57 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.6/10
+
+### Critical Defects (Bullet Points)
+- **Composite Type Loss**: Struct definitions (`Point`, `Node`, `TreeNode`) are completely missing; fields are accessed via raw pointer arithmetic (e.g., `v4[1]`), destroying data structure context.
+- **Variable Naming Failure**: Local variables are generic (`v0`, `v1`) despite the source being compiled with debug symbols (`-g`), forcing manual analysis to determine purpose.
+- **Incorrect Static Variable Recovery**: In `static_local`, the decompiler incorrectly maps a static local variable to the address of a global variable (`global_counter`), resulting in semantically wrong code.
+- **Aggressive Constant Propagation**: Test functions (e.g., `test_stack_memory`) have function calls replaced by constant return values, flattening the code and hiding the intended control flow.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (10/10)
+- **Why?** The decompiler successfully leveraged the symbol table to recover exact function names, making the high-level purpose of each code block immediately obvious.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Composite Type Recovery (2/10)
+- **Why?** The failure to reconstruct `struct` types reduces complex heap operations (like linked lists and trees) to obscure pointer math, which is the single biggest barrier to understanding the code's logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhance Type Recovery**: Utilize debug information (DWARF) to reconstruct `struct` definitions and apply them to pointer accesses, replacing raw offsets like `v4[1]` with field names like `node->next`.
+2.  **Improve Local Variable Naming**: Prioritize mapping local variable symbols from debug info to decompiled variables, avoiding generic `v#` names when source names are available.
+3.  **Adjust Constant Propagation**: Disable aggressive constant propagation/inlining for functions that are not explicitly marked `inline` or `static`, to preserve the structural integrity of the caller's logic (especially in test/driver code).

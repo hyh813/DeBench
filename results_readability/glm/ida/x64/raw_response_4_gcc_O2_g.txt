@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `a1`, `a2`), particularly in complex functions like `varargs_func` where `v13` through `v19` obscure the register save area and stack arguments.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly recovered from symbols (e.g., `cdecl_func`, `test_calling_conventions`), accurately reflecting the original source's intent and structure.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers like `0x28u` (stack canary offset) and `0x2F` (varargs stack offset) are used without explanation, though string literals are preserved intact.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant compiler artifacts remain, such as `__readfsqword(0x28u)` stack canary checks and SIMD intrinsics (`_mm_load_si128`) in `test_calling_conventions` which obscure the simple struct copy logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While most functions are linear, `varargs_func` uses nested `do-while` and `while` loops with pointer arithmetic to manually iterate over registers and stack, making the logic hard to follow compared to the original `for` loop with `va_arg`.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source well; the compiler's inlining (e.g., `call_cdecl` returning `15`) is correctly represented as simplified functions, which is appropriate for the detected `-O2` optimization level.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Code generally reads top-to-bottom with minimal forward jumps, though the complex pointer arithmetic in `varargs_func` and `func_struct_byval` requires careful tracing.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully presents the optimized logic (e.g., constant propagation removing function calls), which is clean, though it differs structurally from the unoptimized source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types are accurate, but the decompiler relies heavily on `__int64` and `unsigned int` casts. The return of `SmallPoint` is reconstructed via bit-shifting a `__int64`, which is technically correct for the ABI but loses type semantics.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs are recovered with high fidelity; `LargeStruct`, `SmallStruct`, and `SmallPoint` are defined with correct field names (`data`, `x`, `y`) and sizes, matching the original source exactly.
+
+**11. Type Safety:** Score: 5/10
+Justification: The decompiled code contains many unsafe casts, such as `*(_DWORD *)p` in `param_complex_cast` and raw pointer arithmetic on `v13` in `varargs_func`, which erases the safety of the original `va_list` usage.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost entirely absent, consisting only of auto-generated warnings like "local variable allocation has failed" or "positive sp value has been detected," providing no semantic insight.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard idioms are missed; `varargs_func` is not recognized as a variadic function loop, and struct copies are represented as SIMD intrinsics rather than assignments or `memcpy`.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler correctly flags potential issues with stack pointer detection and variable allocation, but fails to annotate the complex varargs implementation as a standard pattern.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the non-null check in `param_double_ptr` is present but not explicitly stated as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to understand despite the optimization level.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order that roughly follows the source file structure, with related test functions grouped together.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on compiler intrinsics (`__readfsqword`, `_mm_load_si128`) and glibc-specific functions (`__printf_chk`) without including necessary headers, preventing standalone compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable naming in `varargs_func` (`v1`-`v19`) obscures the register save area and stack argument iteration.
+- Struct copies in `test_calling_conventions` are decompiled to SIMD intrinsics (`_mm_load_si128`), hiding the simple data movement logic.
+- The variadic argument pattern is not abstracted, resulting in complex manual pointer arithmetic instead of `va_list` idioms.
+
+**Best Quality Aspect:** Composite Type Recovery (scored 9/10)
+- Struct definitions are recovered accurately with correct field names and types, preserving the original data layout perfectly.
+
+**Most Needs Improvement:** Idiom Recognition (scored 3/10)
+- The failure to recognize standard patterns like variadic functions or optimized struct copies results in low-level, implementation-specific code that is hard to map back to high-level intent.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching for variadic functions to abstract register/stack walking into `va_start`/`va_arg` pseudo-operations.
+2. Detect SIMD-based memory copies and replace them with `memcpy` or direct struct assignment to improve readability.
+3. Enhance variable naming heuristics for varargs functions to distinguish between register arguments (e.g., `reg_arg1`) and stack arguments (e.g., `stack_arg1`).

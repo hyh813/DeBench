@@ -1,0 +1,108 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `param_1`, `iVar1`, `uVar1`, and `local_404`, providing no semantic context about their purpose (e.g., `sum`, `index`, `len`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names match the original source exactly (e.g., `process_char`, `array_1d_stack`, `test_data_types_l1`), perfectly reflecting their purpose and action.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Character comparisons use hex literals like `0x41` instead of `'A'`, and magic numbers like `0x1a` (26) and `0x20` (32) are used without named constants, obscuring the original logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code contains significant noise, including `CONCAT44` macros for register joining, `undefined4` types, and compiler intrinsics like `__mulsf3` which obscure the high-level logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Natural `for` loops are frequently converted into `do-while` loops with pointer arithmetic, and the recursive function `binary_tree_sum` is catastrophically flattened into a massive iterative structure.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While most functions are separated correctly, `binary_tree_sum` is a monolithic, unreadable block of nested loops that fails to represent the original recursive structure.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The preference for `do-while` loops over `for` loops and the use of pointer arithmetic (`piVar3 = piVar3 + 1`) make the code flow harder to follow linearly compared to the source.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: There is little dead code, but the logic is often expressed in a more verbose, low-level manner than necessary (e.g., manual pointer increments instead of array indexing).
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded; `float` and `double` operations are replaced by calls to `__mulsf3`/`__muldf3`, and structs are flattened into `int*` or `undefined4*`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct fields are accessed via array offsets (e.g., `param_1[1]`, `param_1[3]`) rather than field names (e.g., `p->y`), completely losing the semantic structure of `Point3D` or `Rect`.
+
+**11. Type Safety:** Score: 5/10
+Justification: The use of `undefined4` and `undefined8` types removes type safety guarantees, and pointer arithmetic is used extensively where array access would be safer and clearer.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code to explain the logic, algorithms, or the purpose of the complex transformations applied.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms like recursion, `for` loops, and struct member access are not recognized; instead, they are represented as low-level control flow and memory offsets.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the mangled `binary_tree_sum` and the floating-point intrinsics as standard code without any warning or indication that the recovery might be flawed or incomplete.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., array bounds), postconditions, or invariants, such as the check in `array_complex_index`.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear due to the excellent naming, but parameter relationships are lost because all arguments are generic `param_1`, `param_2`, etc.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically, matching the source file's structure (e.g., all `test_` functions are present), which aids navigation.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to `undefined` types, `CONCAT44` macros, and calls to low-level compiler intrinsics that are not part of standard C headers.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 10 + 4 + 4) / 4 = 5.0
+L2_avg: (3 + 5 + 5 + 6) / 4 = 4.75
+L3_avg: (3 + 2 + 5) / 3 = 3.33
+L4_avg: (1 + 2 + 1 + 1) / 4 = 1.25
+L5_avg: (6 + 7 + 2) / 3 = 5.0
+
+Overall = (5.0 * 0.30) + (4.75 * 0.25) + (3.33 * 0.20) + 
+          (1.25 * 0.15) + (5.0 * 0.10)
+Overall = 1.5 + 1.1875 + 0.666 + 0.1875 + 0.5 = 4.04
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects
+- **Recursive Structure Lost**: The function `binary_tree_sum` is completely decompiled as a massive iterative loop with deep nesting, destroying the original recursive logic.
+- **Floating-Point Obfuscation**: Simple float/double operations (e.g., `f * 1.5f`) are replaced by calls to compiler intrinsics like `__mulsf3`, making arithmetic unreadable.
+- **Struct Field Erasure**: Struct members are accessed via raw array offsets (e.g., `param_1[1]`) instead of field names (e.g., `p->y`), losing all semantic meaning of the data structure.
+- **Generic Variable Naming**: Variables are named `param_1`, `iVar1`, `local_404`, etc., providing no hint of their actual role in the algorithm.
+
+### Best Quality Aspect
+- **Function Naming (10/10)**: The decompiler successfully recovered or preserved the original function names, which is the only saving grace that allows the user to map the decompiled code back to the source logic.
+
+### Most Needs Improvement
+- **Semantic Transparency (1.25/10)**: The lack of comments, failure to recognize standard idioms (recursion, loops), and absence of anomaly warnings make the code very difficult to trust or understand.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recursion Analysis**: Implement a dedicated pass to detect and preserve recursive function patterns instead of flattening them into iterative control flow graphs.
+2.  **Intrinsic Mapping**: Map compiler floating-point intrinsics (like `__mulsf3`, `__aeabi_dadd`) back to standard C arithmetic operators (`*`, `+`) to improve readability.
+3.  **Struct Recovery**: Aggressively recover struct definitions from stack layouts and usage patterns, replacing array offsets (`param_1[1]`) with field member access (`p->y`).

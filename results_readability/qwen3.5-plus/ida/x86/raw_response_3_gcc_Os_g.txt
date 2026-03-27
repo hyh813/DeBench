@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names (`v0`, `v1`, `v2`, `temp`) instead of semantic names like `large_buf`, `global_counter`. Some preservation exists (`head`, `current`, `status`) but inconsistent throughout.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`). However, runtime stubs use generic names (`sub_1030`, `sub_1040`) and some helper functions lost clarity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers prevalent (`0x14u`, `0x28u`, `0x1234`) without explanation. Some constants preserved (42, 100) but array sizes like `2048` become opaque in context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readgsdword(0x14u)`) appear throughout. Assembly blocks for memory barriers (`_InterlockedOr`). Compiler artifacts visible despite -O0 compilation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops generally recovered as for/while constructs. However, `vla_stack` and `alloca_usage` show complex stack manipulation that obscures original simple loop logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity reasonable. Helper functions preserved (`create_tree_node`). Problem: test functions show constant folding (printing expected values instead of calling functions).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Some forward references in complex functions (`linked_list_heap` has nested cleanup loops). Stack warnings disrupt flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Critical issue - test functions print constant values (e.g., `__printf_chk(1, "MEM-L1-01 (local_vars): %d\n", 20)`) instead of actual function calls, losing semantic meaning entirely.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Type degradation visible: `_DWORD`, `_BYTE`, `__int64` instead of proper C types. Pointer types generally correct but `void*` overused where specific types existed.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `Node` struct recovered with field names (`data`, `next`). `TreeNode` struct recovered. However, `Point` struct not explicitly shown, accessed via arithmetic in some places.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present: `*(_DWORD *)v0`, `*(_DWORD *)(buf + 1)`. Pointer arithmetic visible but generally correct. No const-correctness preservation.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only decompiler warnings present ("positive sp value has been detected", "FAILED to decompile"). No algorithm explanations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Memory allocation patterns recognizable (malloc/free pairs). Linked list traversal visible. No explicit pattern naming or documentation of common idioms.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Library function failures noted ("FAILED to decompile: malloc"). However, critical undefined behavior (dangling pointer, double free) not flagged as dangerous.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present but not documented as preconditions. No postcondition inference. Error conditions not explained (e.g., why `stack_alias` returns 20).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible. Global variable references present (`global_counter`, `file_scope_static`). No explicit call graph or relationship documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped. No explicit module boundaries or namespace structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 15 library functions failed to decompile (malloc, free, printf, fork, etc.). Architecture-specific code (`__readgsdword`, `_InterlockedOr`). Requires significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+6+4)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (5+7+5)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (2+4+4+3)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 5.10/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Test functions print constants instead of calling functions** - `test_stack_memory` prints "20" directly instead of calling `local_vars(5)`, completely losing semantic meaning
+- **Variable naming is predominantly generic** - `v0`, `v1`, `v2` throughout instead of `large_buf`, `global_counter`, `tls_var`
+- **VLA/alloca functions obscured by stack manipulation** - Original simple loops become complex pointer arithmetic with `alloca` calls
+- **15 library functions failed to decompile** - malloc, free, printf, fork, etc. all marked as "FAILED"
+- **No comments explaining non-trivial logic** - Zero documentation for algorithms, patterns, or safety concerns
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved (`double_value`, `heap_basic`, `test_stack_memory`), making navigation possible despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no explanatory comments; decompiler provides no insight into algorithm purpose, safety concerns, or recovery confidence
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve function call semantics in test code** - Avoid constant folding that replaces actual function calls with expected values, as this destroys test verification capability
+2. **Infer variable names from usage patterns** - Variables used in size checks should be named `size`/`length`, pointers to structs should reference the struct type
+3. **Flag undefined behavior patterns** - Dangling pointer access, double-free, and buffer overflow patterns should be explicitly warned with severity indicators

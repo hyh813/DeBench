@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Function parameters like `a`, `b`, `count`, `x` are well-named matching source. However, internal variables use generic names like `v1`, `v2`, `v3`, `result`, `va` throughout (e.g., in `varargs_func`: `v1`, `result`, `v3`, `v4`, `va`). These obscure the semantic roles (loop counter, accumulator, va_arg result).
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly every function name perfectly matches the original source: `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `func_many_args`, `param_by_value_int`, `param_string`, `ret_pointer`, `ret_small_struct`, `test_calling_conventions`, etc. The decompiler achieved perfect function name recovery.
+
+**3. Literal Clarity:** Score: 9/10  
+Justification: All literals are computed results (15, 50, 6, 21, 33, 42, 36, 117, 173, 300, 100, 20, 10, 305419896) matching expected test outputs. No unexplained magic numbers - the values are the actual computed results from the test functions. Minor deduction for not explaining these are test expectations.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains register annotations (`@<eax>`, `@<ebx>`, `@<edx>`), calling convention keywords (`__usercall`, `__cdecl`, `__stdcall`, `__fastcall`), `__noreturn` attribute, and "FAILED to decompile" notices for 5 functions. These artifacts add noise but don't completely obscure the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - loops use `do-while` constructs (e.g., `varargs_func`, `func_struct_byval`), conditionals are clear `if-else` statements, and switch statements are properly recognized (e.g., `ret_multi_branch` uses arithmetic `10 * op + 10`). At -O0, the flow closely matches source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-80 lines), each with single responsibility. The decompiler correctly separated inlined wrapper functions (e.g., `call_cdecl` separate from `cdecl_func`). No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately (e.g., `func_struct_byptr` returns -1 for null). No excessive forward jumps or goto abuse. Loop bodies are properly structured.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious common subexpression duplication. Computed values like `15`, `50` are used directly rather than recalculated. Loop unrolling is minimal and appropriate for -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `int*`). However, `int` appears as `_DWORD` in some contexts, `size_t` from `strlen` not recovered, and `long long` shows as `__int64` inconsistently. Function pointer types are properly typed (`int (*callback)(int)`) but some generic types remain.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct names recovered: `LargeStruct`, `SmallStruct`, `SmallPoint`, `LargeData`, `BigStruct`. Field names preserved (`s.data`, `p->x`, `p->y`, `retstr->x`, `retstr->y`). However, `TestIntPair` typedef was not recovered - appears as raw cast in `param_complex_cast`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Contains unsafe casts in `param_complex_cast`: `*(_DWORD *)p + *((_DWORD *)p + 1)` - raw pointer casting without type safety. Some pointer arithmetic is explicit (`p + 1` in `ret_pointer`). No `restrict` or alignment annotations. Minor buffer overflow risk in array access patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments explaining logic. Only function signatures and decompiler metadata present. No algorithm explanations, no @param/@return documentation, no recovery of original comments from source (which had extensive test case descriptions). Auto-generated header is the only content.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard C idioms like varargs (`va_list`, `va_start`, `va_arg`, `va_end`) are recognized and named correctly. However, no explicit pattern naming (e.g., "Implements: varargs pattern"). The calling convention tests aren't identified as a test suite.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Successfully marks 5 functions as "FAILED to decompile" (`__libc_start_main`, `printf`, `__cxa_finalize`, `puts`, `strlen`). However, no uncertainty indicators within successfully decompiled functions. No flags for potential undefined behavior (e.g., `call_order_dep` with unsequenced modifications).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks are implicit in code (`if (p)` in `func_struct_byptr`) but not documented as contracts. No recovery of original assertions or validation logic.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code structure (e.g., `call_cdecl` calls `cdecl_func`). However, no explicit call graph documentation. Callback relationships (e.g., `param_func_ptr` with `callback_func`) not explicitly documented. Static function scope not indicated.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically following the source file structure: calling convention functions first, then parameter passing, then return values, then test functions. Static functions (`callback_func`, `func_a`, `func_b`) not explicitly marked as static but the pattern is clear.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code would require significant patching to compile - needs declarations for `puts`, `printf`, `strlen`, `va_start`, `va_copy`, `va_arg`, `va_end`. Contains IDA-specific syntax (`@<eax>`, `@<ebx>`). External variables like `ret_opaque_handle_handle1` need definitions. Not standalone compilable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Critical Defects:**
+- Internal variables use generic names (`v1`, `v2`, `v3`, `result`, `va`) obscuring semantic roles
+- No comments explaining algorithm logic or test case purposes
+- Unsafe raw pointer casts in `param_complex_cast`: `*(_DWORD *)p` loses type safety
+- Missing typedef recovery (`TestIntPair` not recovered, appears as raw cast)
+- No contract or precondition documentation (e.g., null checks not explained)
+- Build system compatibility issues: needs external declarations, IDA-specific syntax
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+The decompiler achieved perfect function name recovery - every single function name matches the original source exactly, from `cdecl_func` to `test_calling_conventions`.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 3/10)  
+The decompiled output has almost no explanatory comments. The original source had extensive test case descriptions (e.g., "CALL-L1-01: cdecl调用约定", "场景: [SCENE-ALL]"), but none of this semantic information was recovered.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `v1` in `varargs_func` is clearly a loop counter (used with `--v1`), `result` is the accumulator
+2. Recover original comments from debug symbols - the source had rich documentation that could be extracted from DWARF info
+3. Add type safety annotations - flag unsafe casts like `*(_DWORD *)p` with comments explaining the type inference uncertainty

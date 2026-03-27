@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `a0`, `a1`, `ptr` with no semantic meaning. For example, in `array_1d_stack`, `v0` tracks the loop index but should be named `i`, and `v1` accumulates the sum but should be `sum`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`process_char`, `process_int`, `struct_simple`), but many functions have mechanical names (`sub_4006e4`, `sub_4007a4`). Critical functions like `process_float` and `process_double` are named correctly but completely broken in implementation.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Pervasive magic numbers with no explanation: `4294967294`, `4294967295`, `18446744073709551614`, `0x100000000`. These are clearly bit-masks and type limits but presented without context or named constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: frame pointer setup (`v0 = &v1`), `__stack_chk_guard` checks in every test function, register spilling variables (`v2`, `v3` as x0, x1), and redundant stack manipulation that obscures actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Simple loops converted to `while(true)` with `break` instead of `for` loops. The `__addtf3` function has hundreds of lines of goto-based branching that should be a simple floating-point operation. `ptr_func_simple` uses `goto a0` instead of proper function pointer call syntax.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but `__addtf3` and `__multf3` are monolithic (500+ lines each) when they should be compiler library calls. Test functions are reasonable size but contain hardcoded values instead of actual computation.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Excessive forward jumps and labels (`LABEL_400c64`, `LABEL_401768`, `LABEL_401bb4`) disrupt reading flow. The `__addtf3` function has dozens of jump targets making linear reading impossible.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Test functions contain redundant hardcoded printf values that duplicate what the actual functions compute. `__addtf3` has massive code duplication across similar conditional branches that should be factored.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `process_float` returns `long long` instead of `float`, `process_double` returns `long long` instead of `double`. Parameters often use `unsigned long` instead of proper pointer types. `volatile_access` loses the volatile qualifier entirely.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_8`, `padding_4`). Nested structs like `Widget` collapsed to flat `unsigned int*` arrays. Bitfield struct `Flags` lost all bitfield information, treated as raw integer operations.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: `ptr_func_simple` uses `goto a0` for function pointer call (type-unsafe), `ptr_double` uses `struct_0**` instead of `int**`, void pointer casts throughout without proper type annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. No algorithm explanations, no parameter documentation, no decompiler confidence indicators. Only auto-generated type annotations like `// [bp-0x10]`.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns completely unrecognized: linked list traversal (`linked_list`), array summation (`array_1d_stack`), and tree recursion (`binary_tree_sum`) all presented as raw loops without pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Broken functions presented confidently as correct. `process_float` returns uninitialized variable `v0` with no warning. `process_double` returns a string literal with no anomaly flag.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`), no postconditions, no error condition documentation. Functions like `array_complex_index` have bounds checking but no contract explanation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. No call graph, no indication of which test functions call which processing functions. Global variables (`g_402b24`, `g_413f88`) have opaque names.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime support functions (`_init`, `_start`, `__do_global_dtors_aux`) mixed with application logic. No header file or API separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Multiple unresolved external dependencies (`__printf_chk`, `__stack_chk_guard`, `__addtf3`, `__multf3`, `arm64g_calculate_condition`). Cannot compile standalone without significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+2+4)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (3+5+4+4)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type):        (3+4+3)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.23/10
+```
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects:
+- **`process_float` and `process_double` completely broken** - return wrong types (long long) and one returns a string literal instead of performing computation
+- **All variable names are generic** (`v0`, `v1`, `a0`, `a1`) with zero semantic meaning, making data flow tracking extremely difficult
+- **Test functions contain hardcoded values** instead of actual function calls, destroying the relationship between tests and implementations
+- **`__addtf3` and `__multf3` are 500+ line monstrosities** that should be simple compiler library calls or at minimum properly abstracted
+- **Struct field names all generic** (`field_0`, `field_8`, `padding_4`) losing all semantic meaning of composite types
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Some original function names were preserved (`process_char`, `process_int`, `struct_simple`, `linked_list`), providing at least basic semantic anchors for navigation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero meaningful comments throughout 2400+ lines of code. No algorithm explanations, no parameter documentation, no decompiler confidence indicators for uncertain recoveries.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (loop counters → `i/j/k`, accumulators → `sum`, pointers → `ptr_buffer`)
+2. **Detect and flag broken recoveries** - Functions returning wrong types or string literals should be marked with `// DECOMPILER_ERROR: Type mismatch` warnings
+3. **Abstract compiler runtime calls** - Recognize `__addtf3`, `__multf3`, `__printf_chk` as compiler/library functions and present them as simple calls with proper type signatures rather than inlining their implementations

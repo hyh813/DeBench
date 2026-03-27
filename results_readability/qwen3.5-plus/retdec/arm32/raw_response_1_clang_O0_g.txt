@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `result`) obscuring semantic purpose. Original source used meaningful names like `temp1`, `sum`, `count` which are lost. For example, `loop_while` uses `v1`, `v2`, `v3` instead of `count`, `quotient`, `remainder`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`sequential_ops`, `single_if`, `nested_if_2`). However, helper functions have generic names (`function_4dc`, `function_4e8`, `function_4f4`) that provide no semantic information.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Critical magic numbers unexplained (e.g., `0x66666667` for division optimization). Worse, switch functions return pointer addresses (`&g20`, `&g21`) instead of actual values, completely breaking semantics. String literals stored as opaque globals (`g14`, `g15`, `g16`).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate compiler artifacts present including unnecessary type casts and global variable indirection. However, no severe debug instrumentation or register spilling noise observed.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if-else structures preserved, but switch statements are broken (return pointers instead of values). Loop optimizations create complex expressions (`0x66666667 * (int64_t)x`) instead of simple division. Some functions have orphaned labels (`lab_0x1424`, `lab_0x14e0`).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable, but library calls extracted to generic wrappers (`function_4f4` for `printf`). Some functions too fragmented while others lack proper helper extraction.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but several functions have forward jump labels disrupting flow. `loop_multi_exit` and `infinite_loop` have unreachable label blocks at function end.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling creates complex expressions instead of recognizable patterns. Type casts repeated throughout. No dead code removal for unreachable branches after `longjmp` calls.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `uint32_t` consistently but with mismatches. `goto_backward` takes `uint32_t x` but original used `int`. `nested_if_deep` has `uint32_t d` when all parameters should be `int32_t`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct definitions present but with generic field names (`e0`, `e1`, `e2`). `__jmp_buf_tag` recovered but fields meaningless. Array declarations broken (`int32_t arr[1]` initialized as `arr = {10}`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: pointer-to-int (`(int32_t)&g20`), int-to-pointer (`(char *)&g14`). Switch functions return addresses as integers. `call_func_ptr` ignores the function pointer entirely, just returns `x`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only auto-generated metadata (address ranges, line ranges). No algorithm explanations or decompilation confidence indicators. Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Switch fallthrough not recognized (`switch_fallthrough` logic broken). State machine patterns not labeled. Division optimization not explained as such.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `UNREACHABLE` markers after `longjmp` calls. However, broken functions (switch returning pointers) not flagged. No warnings about potentially incorrect decompilation in critical functions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `loop_for_fixed`). No postconditions inferred. Error conditions not documented. Original test validation comments completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage opaque (`g14`, `g15`, `g16` for strings). No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Helper functions mixed with main test functions. No header file separation or namespace organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Standard headers included. However, `computed_goto` uses GCC extension (`&&label`) that won't compile portably. Some function signatures mismatch original. Requires patching to compile cleanly.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (4 + 7 + 3 + 6) / 4 = 5.00
+Level 2 Average: (5 + 6 + 6 + 5) / 4 = 5.50
+Level 3 Average: (6 + 4 + 4) / 3 = 4.67
+Level 4 Average: (2 + 3 + 4 + 2) / 4 = 2.75
+Level 5 Average: (5 + 5 + 6) / 3 = 5.33
+
+Overall = (5.00 × 0.30) + (5.50 × 0.25) + (4.67 × 0.20) + (2.75 × 0.15) + (5.33 × 0.10)
+        = 1.50 + 1.375 + 0.934 + 0.4125 + 0.533
+        = 4.75/10
+```
+
+**Overall Readability Score:** 4.75/10
+
+### Critical Defects:
+- **Switch statements return pointer addresses** (`&g20`, `&g21`) instead of actual values, completely breaking `switch_small`, `switch_large`, `state_machine` semantics
+- **Variable names are generic** (`v1`, `v2`, `v3`) losing all semantic meaning from original source
+- **No comments or documentation** despite original having extensive test validation comments
+- **Type safety violations** throughout (pointer-to-int casts, ignored function pointers in `call_func_ptr`)
+- **Array initialization broken** (`arr = {10}` syntax invalid in C, should be memcpy or loop)
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately, making it possible to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation recovered despite original source having extensive comments explaining purpose, test cases, and expected behavior.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., variables used in loop counters should be named `i`, `count`, `index` not `v1`, `v2`)
+2. **Fix switch statement recovery** - detect when return values are pointer addresses and recover actual constant values from the binary data section
+3. **Add decompilation confidence annotations** - flag functions with uncertain recovery (like `call_func_ptr` which ignores the function pointer parameter) with warnings for manual review

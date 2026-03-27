@@ -1,0 +1,125 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 7/10  
+Justification: Parameter names preserved well (`size`, `x`, `y`, `arr`, `n`), but temporary variables use generic names (`v1`, `v2`, `v0-v10`) obscuring their purpose in functions like `param_stringize` and `test_preprocessing_features`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation of original function names (`param_macro_constants`, `call_asm_basic`, `param_memory_protection`); only runtime helpers use generic names (`sub_880`, `init_proc`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound: `57072` instead of `0xDF22`, `30` instead of `_SC_PAGESIZE`, `7/34/3/1` instead of `PROT_*`/`MAP_*` constants; macro-computed values (64, 512) lack semantic context.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean code at -O0 with minimal artifacts; stack annotations (`// [xsp+14h] [xbp-8h]`) add minor noise but don't impede understanding.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Excellent recovery of C constructs; if-else, for-loops, and ternary operators all rendered naturally without goto statements in user code.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Perfect one-to-one mapping with source; each function maintains single responsibility with appropriate granularity (no monoliths or over-fragmentation).
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom naturally; no forward jumps disrupting flow; early returns and nested conditionals are clear.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code observed; macro computations simplified appropriately (e.g., `BUFFER_COUNT * 4` → `64`); no duplicate expressions.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Parameter/return types accurate (`int`, `int*`, `void*`, `size_t`); decompiler-specific annotations (`__int64`, `__cdecl`, `__fastcall`) add minor noise but don't affect correctness.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Arrays properly typed (`int arr[5]`, `char src[16]`); limited struct/union usage in source means limited recovery opportunity, but what exists is accurate.
+
+**11. Type Safety:** Score: 9/10  
+Justification: No unsafe casts visible; pointer arithmetic minimal; function signatures match usage; implicit conversions are benign.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Virtually no semantic comments; stack variable annotations present but no recovery of original macro semantics or algorithm explanations; critical loss of preprocessing intent.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Atomic operations recognized as `_aarch64_ldadd4_acq_rel`; standard library calls identified; no higher-level pattern naming (e.g., "macro expansion", "conditional compilation").
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (14 functions); no confidence indicators on recovered code; no warnings about potentially incorrect macro value recovery.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation; return values unexplained; no error condition documentation despite functions returning error codes (-1, -2, -3).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls clear; global variables referenced (`global_var`, `_aarch64_have_lse_atomics`); string references opaque (`asc_1840`, `aPpL201D`); no call graph documentation.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions appear in logical order matching source; test functions grouped; static functions properly scoped (`header_func`); single output file limits organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 14 external functions failed to decompile requiring stubs; platform-specific intrinsics need resolution; string references need linking; would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (7+9+5+8)/4 = 7.25  × 0.30 = 2.175
+Level 2 (Structural):  (9+10+9+9)/4 = 9.25 × 0.25 = 2.313
+Level 3 (Type):        (8+8+9)/3 = 8.33    × 0.20 = 1.666
+Level 4 (Semantic):    (4+6+5+3)/4 = 4.50  × 0.15 = 0.675
+Level 5 (Contextual):  (7+8+5)/3 = 6.67    × 0.10 = 0.667
+─────────────────────────────────────────────────────
+Overall Score:                                  7.496 ≈ 7.5/10
+```
+
+**Overall Readability Score: 7.5/10**
+
+---
+
+### Critical Defects
+
+- **Magic numbers replace constants**: `57072`, `30`, `7`, `34`, `1` should be `0xDF22`, `_SC_PAGESIZE`, `PROT_*`, `MAP_*`
+- **No semantic comments**: Original macro documentation completely lost (no indication these were `#define` expansions)
+- **Generic temporary variables**: `v0-v10` in test functions obscure their relationship to specific test cases
+- **String references opaque**: `asc_1840`, `aPpL201D` instead of actual format strings in decompiled output
+- **No contract documentation**: Error return values (-1, -2, -3) lack explanation of failure conditions
+
+---
+
+### Best Quality Aspect
+
+- **Function Decomposition (10/10)**
+- Perfect one-to-one mapping with source functions; each maintains appropriate granularity and single responsibility without inappropriate inlining or outlining.
+
+---
+
+### Most Needs Improvement
+
+- **Assertion & Contract Recovery (3/10)**
+- Zero documentation of preconditions, postconditions, or error semantics despite multiple functions returning error codes that require interpretation.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover constant semantics**: Detect computed macro values and suggest named constant definitions (e.g., annotate `64` as `/* BUFFER_COUNT * 4 */`)
+
+2. **Add confidence annotations**: Mark recovered code with confidence levels and flag potentially incorrect transformations (especially for architecture-specific code paths)
+
+3. **Preserve string literals inline**: Instead of `aPpL201D` references, embed actual format strings to improve immediate readability without cross-referencing

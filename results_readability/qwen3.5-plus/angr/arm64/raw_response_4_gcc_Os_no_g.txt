@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `a0`, `a1` with no semantic meaning. For example, in `varargs_func`, variables `v8` through `v14` store variadic arguments but provide no indication of their purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Original function names preserved for test functions (`cdecl_func`, `func_no_args`), but many helper functions use mechanical names (`sub_400764`, `sub_400820`). Function `$x` is particularly cryptic.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers like `4294967295` (UINT_MAX), `18446744073709551608`, and `4294967294` appear without explanation. These are optimization artifacts from signed/unsigned handling that obscure intent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts visible: stack canary checks (`__stack_chk_guard`), redundant variable assignments (`v0 = &v15`), and frame pointer manipulation throughout. Functions like `_init` and `register_tm_clones` add noise unrelated to source logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as do-while constructs (e.g., `func_struct_byval`), but some functions use awkward patterns. The `varargs_func` loop has complex conditional logic that obscures the simple original for-loop.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions properly separated with reasonable granularity. However, aggressive constant folding occurred—`call_cdecl()` returns `15` directly instead of calling `cdecl_func(5, 10)`, losing call relationship visibility.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but some functions have forward jumps disrupting flow. The `test_calling_conventions` function has excessive stack variable declarations before actual logic begins.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from optimization artifacts. `func_b` and `callback_func` have identical bodies with bit manipulation `(a0 * 2 | a0 >> 31) & 4294967294` instead of simple `a0 * 2`. Multiple memcpy calls in `test_calling_conventions` for struct copying.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation throughout. `varargs_func` signature shows 8 explicit `unsigned long long` parameters instead of variadic `...`. Return types often `unsigned long long` instead of `int`. Pointer types frequently degraded to `unsigned long`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor. `LargeStruct` and `SmallStruct` definitions lost—shown as pointer arithmetic (`ptr + idx * 8`). Only `struct_0` with single `field_0` recovered in `param_double_ptr`. Original struct field names completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: pointer arithmetic without bounds checking, implicit casts between `unsigned long` and `char*`, and `void*` usage in `ret_opaque_handle`. The `func_mixed_args` function loses the `double` and `long long` parameter types entirely.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining code purpose, algorithm, or decompilation confidence. No documentation of what each function tests or expects. Original source had extensive comments; decompiled version has none.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. Variadic function pattern not identified (shown as fixed parameters). Struct passing conventions not explained. Function pointer callback pattern in `param_func_ptr` not documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. The `varargs_func` implementation is clearly incorrect (fixed parameters vs. variadic) but no anomaly flagged. Stack canary checks present but not explained as compiler artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` requires non-NULL pointer). No postconditions or error condition documentation. Null checks exist but aren't explained as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced as `g_40145c`, `g_40151d` without indicating they're format strings. Call graph inferable but not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order (not matching source organization). Related test functions scattered. No header file or API declarations. Initialization functions (`_init`, `_fini`) mixed with test code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile standalone. Missing includes (`<stdio.h>`, `<string.h>`), external dependencies undeclared (`__printf_chk`, `__libc_start_main`), and platform-specific intrinsics (`__ROL__`) not defined.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+4)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (6+7+6+4)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+3+2+1)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.43
+
+Overall Score: 3.91/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a0`) with no semantic meaning across all functions
+- **Variadic function signature destroyed** - `varargs_func` shows 8 explicit parameters instead of `int count, ...`
+- **Zero documentation** - no comments explaining purpose, contracts, or decompilation confidence
+- **Struct type information lost** - `LargeStruct`, `SmallStruct` reduced to pointer arithmetic
+- **Aggressive constant folding** - caller functions return constants instead of showing actual function calls
+
+### Best Quality Aspect:
+- **Function Decomposition (7/10)** - Functions are properly separated with reasonable granularity; individual function boundaries preserved correctly despite optimization.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding function purpose require reverse-engineering from the decompiled code itself.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variadic function signatures** - Detect `va_list` patterns and restore `...` parameter syntax instead of expanding to fixed parameters
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., "UNCERTAIN: variadic argument handling") and explain compiler artifacts (stack canaries, optimization patterns)
+3. **Infer semantic variable names from usage** - Analyze how variables are used (e.g., loop counters, accumulators, pointers) to generate meaningful names like `sum`, `index`, `buffer_ptr`

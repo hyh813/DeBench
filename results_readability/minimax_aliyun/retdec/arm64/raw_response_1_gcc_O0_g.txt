@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler uses exclusively generic names like `v1`, `v2`, `v3`, `v4`, `v5` throughout. Original source variables like `temp1`, `temp2`, `arr`, `sum`, `count` are completely lost. Even loop indices like `i` and `j` become `v1`/`v2`. This makes tracking variable purpose nearly impossible.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most target functions are correctly named: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `loop_while`, `loop_break`, `recursion_factorial`. However, some helper functions have generic names like `function_950`, `function_960`. Overall, the main functions match source well.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers appear: `0x13fe8`, `0x2994`, `0x66626f28` for global variables. The code uses `1000` in `infinite_loop` without explanation. Some constants like `10` in `loop_while` are inferable but not named. The decompiler fails to recover meaningful constant names.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler/runtime artifacts pollute the code: `__asm_ld1(0, 0, g4)` and `__asm_st1(0, 0, v1)` appear in `fsm_func_table` and `computed_goto`. Complex compound literals in `non_local_jump` for setjmp/longjmp. Redundant casts throughout. These artifacts severely impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some control flows are natural (simple if/else, while loops), but `switch_fallthrough` uses goto labels (`lab_0xfec`) instead of recognizing fall-through semantics. `loop_for_fixed` is reduced to a mathematical formula rather than a recognizable loop. At -O0, these transformations are excessive.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and cohesive. Each function handles a single responsibility. Parameter lists are reasonable. Minor issue: some functions like `test_control_flow_l1` are large but this matches the original source structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but `switch_fallthrough` uses goto labels creating forward jumps. The `loop_break` function has complex nested goto patterns. Generally readable but some disruption from goto usage.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `loop_for_fixed` shows formulaic redundancy: `v1 + (int32_t)((int33_t)v1 * (int33_t)(n - 2) / 2)` - this is an unrolled/computed sum that obscures the simple loop logic. Some duplicate expressions in complex conditionals.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Most integers correctly use `int32_t`/`uint32_t`. However, some parameters incorrectly use `uint32_t` where source had `int` (e.g., `goto_backward(uint32_t x)` should be `int32_t`). Function pointer types are partially correct but with some mismatches.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The `__jmp_buf_tag` struct is recovered but with generic field names (`e0`, `e1`, `e2`). The `matrix[3][4]` in `loop_multi_exit` is partially reconstructed but accessed via pointer arithmetic. Arrays like `arr[5]` are mostly lost, becoming generic buffer accesses.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: `*(int32_t *)(4 * (int64_t)v5 + (int64_t)&v3)` for array access in `loop_break`. Function pointer type confusion in `call_func_ptr_array`: `v1[0] = (int32_t (*)(int32_t))(int64_t)x`. Unsafe pointer arithmetic throughout. These create undefined behavior risks.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Some source file references and line numbers present (e.g., "From module: /work/1.c, Line range: 13-19"). However, no meaningful logic explanations. No algorithm documentation. Comments are auto-generated metadata rather than semantic guidance.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms are identified. State machines appear as plain switch statements without "state machine" annotation. Factorial recursion not identified as such. Duff's device completely unrecognized. The decompiler provides no pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some awareness shown with "UNREACHABLE" comments after longjmp calls. However, many suspicious patterns are silently presented as correct: the broken `call_func_ptr` returning just `x`, the malformed `call_func_ptr_array`, the asm blocks. Inconsistent anomaly reporting.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. Functions like `duffs_device` with complex pointer semantics have no contract. No documentation of expected input ranges or error conditions. Complete absence of contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No function call relationship documentation. Global variable usage is unclear (g1-g12 appear without context). Callback relationships not documented. The code presents functions in isolation without explaining how they relate to each other.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (test functions together, helper functions together). Static functions properly scoped. However, everything in one massive file with no header separation. Related state machine functions (`state_idle`, `state_processing`, etc.) are grouped but could be better organized.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes standard headers (stdio.h, stdlib.h, setjmp.h). Has function prototypes. However, the complex compound literal in `non_local_jump` may not compile on all platforms. Some type mismatches might cause warnings. Not fully standalone-ready.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming: All meaningful names replaced with `v1`, `v2`, `v3` making code comprehension extremely difficult
+- Type safety: Unsafe casts like `*(int32_t *)(4 * (int64_t)v5 + (int64_t)&v3)` create undefined behavior
+- Idiom recognition: No patterns identified (state machines, factorial, Duff's device all unrecognized)
+- Noise: Assembly blocks (`__asm_ld1`) and complex compound literals pollute the code
+- Anomalies: Broken functions (`call_func_ptr` returning just `x`) presented without warning
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+The decompiler correctly recovered most target function names from the source, maintaining semantic continuity for the main logic functions.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The complete loss of meaningful variable names is the most severe readability issue. At -O0 optimization, there is no excuse for not inferring names from usage patterns (e.g., `temp1` used as sum accumulator should become `sum` or similar).
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: At -O0, variables like loop counters, accumulators, and temporaries should be named based on how they're used (e.g., `i` for loop index, `sum` for accumulator, `result` for return value)
+2. **Recognize and annotate idioms**: Identify state machines, factorial patterns, Duff's device, and other known patterns with comments
+3. **Flag anomalies and broken functions**: Mark functions where decompilation produced incorrect or suspicious output (e.g., `call_func_ptr` returning just `x` is clearly wrong)

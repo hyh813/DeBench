@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `ptr`, `temp` with no semantic meaning (e.g., `capture_by_value` becomes unnamed local variable in lambda test). Original variable names like `value`, `name`, `data`, `size` are completely lost.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Test functions retain mangled names (`_Z20test_cpp_member_funcv`) which are barely readable, while helper functions use meaningless `sub_XXXXXX` pattern. Some class methods recovered (`Base::virtual_func`) but most lack context.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (42, 100, 200 in exception test), string literals referenced via opaque globals (`g_403018`) instead of inline. Some constants preserved but most semantic meaning lost.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present including 20+ thunk functions for virtual dispatch, initialization stubs (`_init`, `sub_402020` chain), and unsupported jumpkind warnings that clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Exception handling converted to nested if-statements instead of try/catch blocks, `sub_402020` uses explicit `goto`, virtual calls obscured through indirect pointer manipulation losing original control structure.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Critical functions return void immediately (`test_cpp_operator_overload`, `test_cpp_lambda`, `test_cpp_smart_ptr`), original test logic fragmented across thunk functions, many 1-2 line stub functions adding no value.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but exception handling code (`test_cpp_exception`) has confusing nested conditionals, forward references to globals disrupt flow, virtual thunks scattered throughout.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated thunk patterns for each virtual function (`_ZThn16_`, `_ZTv0_n24_`), destructor variants duplicated (`D1Ev`, `D0Ev`), initialization chain functions (`sub_402020` through `sub_402140`) could be consolidated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Functions returning int in source return void in decompilation (`test_cpp_member_func`, `test_cpp_virtual_func`), class types reduced to empty structs (`class Base {}`), pointer types often `void*` instead of specific types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Class structures completely lost (`SimpleClass`, `LifecycleClass`, `Container` not recovered), only generic structs defined (`struct_0`, `struct_2`, `struct_3`) with `field_0`, `field_8` naming, inheritance relationships not represented.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(long long *)*((long long *)&arg_0)`), pointer arithmetic without bounds checking, virtual calls through raw memory access (`(*(p))[8]`), no const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments explaining C++ mechanisms (vtable, RTTI, exceptions), no algorithm documentation, only one auto-generated anomaly note (`[D] Unsupported jumpkind`), original source comments completely absent.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns not recognized (RAII, virtual dispatch, templates, lambdas), exception handling pattern converted to manual `__cxa_*` calls without explanation, operator overloading completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged (`Unsupported jumpkind Ijk_SigTRAP`), most semantic losses silent (empty function bodies, type degradations), no confidence indicators for uncertain decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (null checks, bounds), exception contracts lost (which exceptions thrown/caught), postconditions absent, original assertions not recovered.
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear (virtual dispatch through thunks), global variables referenced without context (`g_405fe8`, `g_4059a0`), inheritance hierarchy not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output file, class methods scattered (Base methods at 0x4029b4, Derived at 0x4029ce), no logical grouping by feature/test, initialization code mixed with application logic.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Syntax errors present (`ptr = operatornew[](20)` invalid C++), external dependencies undeclared (`__cxa_throw`, `operatordelete`), would require extensive modification to compile, many functions have mismatched signatures.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+5+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (3+3+5+5)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.33/10
+```
+
+### Overall Readability Score: **3.3/10**
+
+### Critical Defects:
+- **Class structures completely lost** - `SimpleClass`, `LifecycleClass`, `Container` templates not recovered, only empty struct stubs remain
+- **Return type corruption** - Functions returning `int` in source return `void` in decompilation (`test_cpp_member_func`, `test_cpp_virtual_func`)
+- **C++ features not recognized** - Templates, lambdas, smart pointers, operator overloading all reduced to empty stub functions
+- **Exception handling broken** - try/catch converted to manual `__cxa_*` calls with confusing if-statement logic
+- **Variable names meaningless** - All variables are `v0`, `v1`, `ptr` with no semantic connection to original (`capture_by_value`, `instance_count`, `multiplier` lost)
+
+### Best Quality Aspect: **Literal Clarity (5/10)**
+- Some numeric constants and string references preserved, though most are accessed through opaque global variables rather than inline literals.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero explanatory comments for any C++ mechanisms; a decompiler handling C++ should at minimum note where vtables, RTTI, or exception tables are involved.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts** - Analyze vtable pointers to reconstruct class hierarchies, member variables, and inheritance relationships instead of empty structs.
+
+2. **Preserve function return types from calling conventions** - Track return value usage (eax/rax) to correctly identify functions that return values vs. void, especially for test functions that compute results.
+
+3. **Add semantic annotations for C++ ABI patterns** - Flag `__cxa_*` calls as exception handling, `operator new/delete` as memory management, and thunk functions as virtual dispatch adjustments with explanatory comments.

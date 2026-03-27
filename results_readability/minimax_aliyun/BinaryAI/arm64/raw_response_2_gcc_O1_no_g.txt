@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic decompiler-generated names like `param_1`, `iVar1`, `lVar2`, `uVar3`, `piVar2`. The parameter `param_1` should be named `x` (for `double_value`), `arr` (for array functions), etc. Only `local_8` is somewhat meaningful as stack guard.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions like `double_value`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple` are correctly named matching source. However, internal functions like `FUN_001006d0`, `FUN_0010181c` remain unidentified. The test functions are properly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout: `0x61` (should be `'a'`), `0x62` (should be `'b'`), `0xb` (11), `0x14` (20), `0x69` (105), `0x102` (258). Float constants like `0x400c000000000000` and `0x4000cccccccccccd` are unexplained. String data references like `&DAT_00102c58` lack clarity.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack protection artifacts present: `local_8 = ___stack_chk_guard`, `__stack_chk_fail` calls. Some redundant patterns in complex functions like `FUN_0010181c` (libm math functions). Moderate noise level, manageable but distracting.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops use do-while constructs with pointer arithmetic (e.g., `array_1d_stack`). Some goto patterns in complex functions. At -O0, control flow should be more direct. The `process_bool` function has convoluted bit manipulation that obscures the original `x > 0 && x % 2 == 0` logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-80 lines each) with clear single responsibilities. Each test function calls multiple helper functions. Good separation between `binary_tree` and `binary_tree_sum`. No excessive inlining or fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom with early returns for edge cases. The `array_2d_stack` uses pointer arithmetic that requires mental tracing but is manageable. Some forward jumps in complex functions but not severe.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some loop unrolling visible in `array_3d` with manual 5-element batches. No significant dead code. Minor optimization artifacts from compilation but acceptable for -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types: `int`, `long`, `undefined4`, `undefined8`, `ulong`. Original types like `short`, `char`, `float`, `double` partially recovered. Const/volatile lost. Function pointers use generic `code*` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct fields lost - accessed as `param_1[0]`, `param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`, `p->z`. Original `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode` structures not recovered. Union handling partially works (`union_type` returns float).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many unsafe pointer operations: `*(int *)(param_1 + lVar2 * 4)`. Type punning in `ptr_cast` not flagged. Function pointer calls use `code*` without proper type checking. Some buffer access patterns could be unsafe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the entire decompiled output. Original source had extensive comments explaining each test case. Zero documentation for algorithm intent, parameter meanings, or return value expectations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable: linked list traversal (`while (param_1 != NULL)`), array iteration. But no explicit naming of patterns like "VLA", "bitfield access", "opaque pointer". The original's test case categories (DT-L1, ARR-L1, etc.) not reflected.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No uncertainty indicators. Complex functions like `FUN_0010181c` (long double math) presented as confident when they likely involved indirect calls. No flags for potential undefined behavior like the intentional `array_oob` out-of-bounds access.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No pre/postcondition documentation. Original had clear expectations (e.g., "期望: 15", "期望: 'a'"). No null-check documentation, no boundary condition hints.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (`ptr_func_simple(double_value,5)`). But no documentation of who calls whom, no callback relationships documented. Static function visibility not indicated.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by type (data types, arrays, pointers, composite). But test functions mixed with implementation. No logical section headers. External library functions (`__printf_chk`, `__libc_start_main`) not separated.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies not declared: `__printf_chk`, `__stack_chk_fail`, `__libc_start_main`, `puts`, `abort`. Would need significant stubs. Type `code*` undefined. Would not compile without extensive patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `iVar1`, `lVar2`) - should infer names from usage like `x`, `arr`, `sum`
+- No struct/union recovery - original `Point3D`, `Node`, `Rect` become raw pointer arithmetic
+- Zero comments - original had 830 lines of explanatory comments, decompiled has none
+- Type precision severely degraded - `short`, `char`, `_Bool` lost, replaced with `int`, `undefined4`
+- Magic numbers everywhere - `0x61`, `0xb`, `0x14` should be `'a'`, `11`, `20` with explanations
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions are appropriately sized with clear single responsibilities. Each test function properly calls its helper functions. Good separation between `binary_tree` and `binary_tree_sum`.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+The decompiled output has zero comments while the original source has extensive documentation. This is critical for understanding test case intent and expected values.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `param_1` used in `*param_1 + 10` should suggest `value` or `ptr`. Array index variables like `lVar2` in `lVar2 * 4` should be `i` or `index`.
+2. **Recover struct layouts**: Detect sequential field access patterns (param_1[0], param_1[1], param_1[2]) and reconstruct struct definitions with field names from context.
+3. **Add explanatory comments for magic numbers**: Recognize character literals (`0x61` = 'a'), common constants, and test case expected values. Add inline comments like `// expected: 15`.

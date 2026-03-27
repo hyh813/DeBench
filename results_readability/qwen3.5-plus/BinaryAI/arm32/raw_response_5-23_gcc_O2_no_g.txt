@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generic (`param_1`, `iVar1`, `uVar1`, `piVar2`) with no semantic meaning. Original source used meaningful names like `size`, `result`, `x`, `y` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`). This is rare and valuable decompiler behavior.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers dominate (`0x401`, `0x200`, `0x40`, `0xdef0`) replacing original named constants (`MAX_SIZE`, `BUFFER_COUNT`). Values are deducible but require manual calculation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler-generated atomic helper functions (`__sync_fetch_and_add_4`, etc.) bloat output. External function wrappers (`mprotect`, `memcpy`) add unnecessary indirection layers.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with proper if-else and do-while loops. Some functions are over-simplified due to constant folding (e.g., `call_macro_constants` returns literal `0x40`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function structure preserved with appropriate granularity. However, constant folding collapsed some functions into trivial return statements losing original logic visibility.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom cleanly with no excessive gotos. Loop structures are properly recovered (e.g., `param_asm_clobber` has clear do-while pattern).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. However, 20+ atomic helper functions with nearly identical logic create significant redundancy that obscures the actual atomic operations used.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic types dominate (`undefined4`, `int`) instead of precise types (`int32_t`, `size_t`). Pointer types preserved but array vs pointer distinction often lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Local arrays handled reasonably (`local_20[5]`, `local_44[4]`). No complex structs in this code, but stack variable grouping is clear.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (e.g., `(int *)(param_1 + -4)` in `param_asm_simd`). Pointer arithmetic visible but not always semantically clear.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each test section, macro behavior, and expected results.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition. Atomic operations, memory mapping patterns, and self-modifying code patterns not identified or annotated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No anomalies flagged despite questionable patterns (e.g., atomic operations decompiled to helper calls, architecture-specific code paths merged).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear expected return values in comments.
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear but no call graph documentation. Relationships between test functions and their callers not explicitly noted.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single flat namespace. Original source had clear section organization (5.2 Preprocessing, 5.3 Assembly) completely lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code compiles successfully per metadata. External dependencies present but not documented (requires libc, sysconf, mmap support).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+5+6)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (7+7+8+7)/4 = 7.25 × 0.25 = 1.81
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.27
+Level 4 (Semantic):    (2+4+4+3)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Context):     (6+6+7)/3   = 6.33 × 0.10 = 0.63
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.00/10
+```
+
+### Overall Readability Score: **6.0/10**
+
+### Critical Defects:
+- **Zero comments** despite original source having extensive documentation explaining macro behavior and test expectations
+- **Magic numbers everywhere** (`0x401`, `0x200`, `0x40`) replacing named constants (`MAX_SIZE`, `BUFFER_COUNT`)
+- **Generic variable names** (`param_1`, `iVar1`) obscure parameter purpose and intermediate values
+- **20+ redundant atomic helper functions** bloat output without adding clarity
+- **No anomaly flagging** for architecture-specific code paths that were merged during compilation
+
+### Best Quality Aspect: **Function Naming Quality (9/10)**
+- Original function names perfectly preserved, enabling immediate semantic understanding of each function's purpose
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of documentation loses all context about macro expansion, test expectations, and architecture-specific behavior
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover named constants from magic numbers** by detecting repeated values and suggesting constant definitions (e.g., `0x400` → `MAX_SIZE`)
+2. **Add decompilation confidence annotations** for code paths affected by preprocessing, conditional compilation, and architecture-specific branches
+3. **Generate semantic comments** for common patterns (atomic operations, memory mapping, loop unrolling) explaining the high-level intent

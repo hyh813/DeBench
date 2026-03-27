@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Original variable names partially preserved (`temp1`, `temp2`, `temp3`, `sum`, `count`) but unnecessary `_local` suffixes added to all parameters (e.g., `a_local`, `x_local`). Generic `iVar1` used for return values obscures semantic meaning.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: All function names perfectly preserved from source (`sequential_ops`, `duffs_device`, `recursion_factorial`). Names accurately reflect functionality with appropriate action verbs.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Hex literals used without decimal equivalents (`0x14` for 20, `0x3e9` for 1001, `0x65` for 101). Magic numbers like `0x12345678` in `opaque_predicate` lack explanation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple "WARNING: Removing unreachable block" annotations clutter output. Compiler runtime functions (`__aeabi_idiv`, `deregister_tm_clones`) included. Unnecessary `_local` variable copies add verbosity.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops and conditionals correctly reconstructed as `for`/`while`/`if-else`. However, `switch_fallthrough` degrades to goto labels (`LAB_00010a64`), and `duffs_device` uses goto chains instead of structured fallthrough.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries correctly preserved with appropriate granularity. However, `__aeabi_idiv` expands to 200+ lines of bit-level division logic that obscures the simple division intent.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. `switch_fallthrough`, `duffs_device`, and `computed_goto` use goto statements that disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Every parameter copied to `_local` variant unnecessarily (e.g., `x_local = x`). `__aeabi_idiv` and `_divsi3_skip_div0_test` contain nearly identical 200-line implementations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic `int` types preserved but no sized types (`int32_t`). Function pointer typedefs created (`_func_int_int`) but generic. `void *obj` in `call_virtual_func` loses C++ class type information.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays correctly recovered (`int arr[5]`, `int matrix[3][4]`, `int (*funcs[])(int)`). No structs/unions in source to evaluate, but function pointer arrays properly typed.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Function pointer calls properly typed. `computed_goto` warning "Treating indirect jump as call" indicates type uncertainty. No unsafe casts observed but type erasure in virtual function stub.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated header comments ("Decompiled by Ghidra 12.0"). No semantic comments explaining algorithm purpose, non-obvious logic, or decompilation confidence. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic loops/conditionals recognized. Duff's device partially recovered but not identified as such. State machines, recursion patterns, and function pointer dispatch tables not explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings present for unreachable blocks and indirect jumps ("WARNING: Could not recover jumptable"). However, warnings are generic without specific guidance on manual analysis needed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions (e.g., division by zero in `op_div`) not flagged. Original test validation comments completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code. Test functions show call relationships. No call graph documentation or explicit callback relationship mapping.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 77 functions in single output file. Test functions mixed with implementation. No header file separation or logical grouping by control flow level (L1/L2/L3).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: ARM-specific runtime functions (`__aeabi_idiv`, `__aeabi_idivmod`) require external linkage. `computed_goto` uses GCC extension that may not compile elsewhere. No build configuration provided.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+9+5+6)/4 = 6.50 × 0.30 = 1.95
+Level 2 (Structural):  (7+7+6+5)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.27
+Level 4 (Semantic):    (3+4+6+2)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (6+5+5)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.87/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects
+- **Variable `_local` suffix pollution**: Every parameter copied unnecessarily (e.g., `x_local = x`), adding 50+ lines of noise
+- **Hex literals without decimal equivalents**: `0x14`, `0x3e9`, `0x65` obscure simple values (20, 1001, 101)
+- **Complete comment loss**: Original 200+ lines of documentation comments entirely absent from decompiled output
+- **Duff's device structural degradation**: Fallthrough switch converted to goto labels losing semantic intent
+- **No contract documentation**: Preconditions (e.g., `n > 0` for `duffs_device`) not indicated anywhere
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - All 40+ function names perfectly preserved from source, enabling immediate semantic understanding of program structure
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (2/10)** - Zero preconditions, postconditions, or error handling contracts documented despite clear validation patterns in source
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Eliminate `_local` variable copies** - Detect when parameters are never reassigned before use and omit redundant local variable declarations
+2. **Add semantic comment recovery** - Preserve or infer algorithm descriptions, especially for recognized patterns (Duff's device, state machines, recursion)
+3. **Convert hex literals to decimal for small values** - Automatically display `0x14` as `20` when value < 256 to improve immediate readability

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `local_18`, `local_20`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `filename` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_strcpy`, `call_strcpy`, `param_fork_exec`, `test_standard_library_functions`). However, some thread functions are generic (`thread_compute`, `thread_sum`) and external stubs use placeholder names (`FUN_00102020`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xffffffff` (-1), `0x12` (18 bytes), socket constants as `2,1,0` instead of `AF_INET,SOCK_STREAM,0`, signal numbers as `10,0xe` instead of `SIGUSR1,SIGALRM`. String literals partially recovered as `DAT_` references.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) appear in nearly every function. Frame pointer manipulation visible (`in_FS_OFFSET`). External function stubs add ~70 functions of noise. Redundant type casts throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs reasonably well. However, ternary operators converted to awkward if-else chains (`iVar2 = -(uint)(iVar1 != 0); if (0 < iVar1) { iVar2 = 1; }`). Fork/exec branching preserved but verbose.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Thread functions properly separated (`thread_increment`, `consumer_thread`, `producer_thread`). Test functions preserved. However, `test_standard_library_functions` is monolithic at 100+ lines with inline logic that should be extracted.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps for error handling disrupt flow (`LAB_0010324b`, `LAB_0010403a`, `LAB_00104237`). Stack canary checks at function end create artificial non-linearity. Generally readable top-to-bottom but interrupted frequently.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding occurred (`call_strcpy` returns 8 directly, losing the actual strcpy call). Stack canary pattern duplicated in ~40 functions. Error handling code repeated verbatim across similar functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined8` for return types, `undefined4` for integers, `void*` where specific types existed. Original `char*`, `const char*`, `size_t`, `FILE*`, `pthread_t` often lost. Some types preserved (`__pid_t`, `ssize_t`, `key_t`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `struct stat` partially recovered (`sStack_a8.st_size` visible). `sockaddr` structure flattened to `local_28.sa_family`, `local_28.sa_data`. `ThreadData` struct completely lost (accessed as `param_1[0]`, `param_1[1]`, `param_1[2]` array offsets).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts pervasive: `(int *)malloc(4)`, `(undefined8 *)shmat`, `(pthread_mutex_t *)counter_mutex`. Pointer arithmetic on void pointers. Function pointer types degraded to generic signatures. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only decompiler header comment present ("Decompiled by BinaryAI"). Zero algorithm explanations, zero API contracts, zero parameter documentation. Original source had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls identified (`strcpy`, `strcmp`, `pthread_create`). However, producer-consumer pattern in `param_condition_variable` not recognized. Signal handling pattern not identified. Atomic operations shown as `LOCK()/UNLOCK()` macros without explanation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for unresolved indirect calls. Stack canary checks present but unexplained. No warnings about potential type mismatches or platform-specific behavior (ARM64 syscall differences not noted).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero precondition documentation (e.g., "requires: param_1 != NULL"). Zero postcondition inference. Error return values not documented (-1, -2, -3 meanings lost). Original had clear "期望" (expected) values for each test.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`signal_received`, `atomic_counter`, `shared_counter`) used without declaration context. Callback relationships (thread entry functions) not explicitly marked.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. External functions listed separately but mixed with application code. No logical grouping by test category (library vs. syscall vs. thread). Original had clear section headers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External function declarations present but many use incorrect signatures (`__isoc99_sscanf(void)`). Type mismatches would prevent compilation. Would need significant stubbing and type corrections. No dependency documentation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+7+5+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+4+4)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.54/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`, `local_18`) despite -O0 -g debug symbols being available
+- **Magic numbers everywhere** - socket constants (2,1,0), signal numbers (10, 0xe), return codes (0x2a, 0xffffffff) not recovered as named constants
+- **Zero comments** - original source had extensive documentation; decompiled code has none
+- **Type degradation** - `undefined8`, `undefined4` instead of proper C types; struct layouts lost
+- **Stack canary pollution** - `__stack_chk_fail()` checks in every function obscure actual logic
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core function names preserved accurately (`param_strcpy`, `param_fork_exec`, `test_standard_library_functions`) matching original source intent
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of documentation despite debug symbols; no algorithm explanations, no API contracts, no error condition documentation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for variable naming** - With -g flag, DWARF debug info contains original variable names that should be recovered instead of `param_1`, `iVar1`
+2. **Recover named constants from system headers** - Map magic numbers (2,1,0 for socket) to `AF_INET,SOCK_STREAM,0` using platform header knowledge
+3. **Generate semantic comments from function patterns** - Detect standard library calls, pthread patterns, and signal handling to auto-generate explanatory comments like original source had

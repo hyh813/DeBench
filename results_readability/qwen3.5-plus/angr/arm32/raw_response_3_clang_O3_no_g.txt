@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `ptr`) with no semantic meaning. Original source had meaningful names like `local`, `arr`, `head`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retained original names (`local_vars`, `heap_basic`, `test_stack_memory`), but helper functions use mechanical names (`sub_400568`, `$a.30`). Some functions like `stack_alias` are constant-folded losing purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `4294967295` (unsigned -1), `4294967293`, `0xfffffff8`, `0x800` appear without explanation. Original constants like `2048`, `10` are obscured by optimization artifacts.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `armg_calculate_condition()` calls, redundant variable assignments (`v0 = v1; v1 = v2`), goto labels (`LABEL_4006b0`), and runtime artifacts (`__TMC_END__`, `g_413008`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` usage instead of structured loops/conditionals. Complex functions like `vla_stack` use backward jumps with `do-while` that obscure the original `for` loop structure from source.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Parameter lists are corrupted (e.g., `heap_nested` has 8 parameters when source had 1). Return types are wrong (`create_tree_node` returns `unsigned int [3]` instead of `TreeNode*`). Some functions constant-folded entirely.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt reading flow. Goto labels scattered throughout complex functions. Simple functions like `local_vars` read linearly but complex ones don't.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate `armg_calculate_condition` checks in branches. Some dead code from register spilling. At -O0 compilation, this level of redundancy indicates decompiler artifacts rather than compiler optimization.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `unsigned int` - pointers, sizes, indices all same type. Original `int`, `size_t`, `char*`, `Node*` distinctions lost. Function pointers become `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered as `struct_0`, `struct_1` with generic fields (`field_0`, `field_4`, `padding_0`). Original `Point {x, y}`, `Node {data, next}` semantic names completely lost. Some struct layouts incorrect.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer arithmetic on generic types throughout. Function pointers treated as integers for indirect calls. No const-correctness preserved. Buffer access patterns not validated.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments except platform header. No algorithm explanations, no decompilation confidence indicators, no API documentation. Original source had extensive comments that are lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Linked list creation (`linked_list_heap`), tree traversal, memory allocation patterns not recognized or documented. Data structure idioms completely obscured.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `armg_calculate_condition` calls suggest unresolved analysis but aren't explained. No warnings about indirect calls, undefined behavior (dangling pointer), or potential crashes.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not explained). No postconditions inferred. Error return values (`4294967295` = -1) not documented as error codes.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships not documented. Global variable usage unclear (`global_counter`, `global_func_ptr`). Callback relationships lost in `call_global_callback`.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No logical grouping by memory type (stack/heap/static). Static functions not properly scoped. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Contains `extern` declarations but dependencies unclear. Platform-specific ARMEL artifacts present. Runtime functions (`malloc`, `printf`) assumed but not documented. Would require significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00
+Level 2 (Structural):  (4+4+4+5)/4 = 4.25
+Level 3 (Type):        (4+4+4)/3   = 4.00
+Level 4 (Semantic):    (2+2+3+2)/4 = 2.25
+Level 5 (Contextual):  (4+4+5)/3   = 4.33
+
+Overall = (4.00 × 0.30) + (4.25 × 0.25) + (4.00 × 0.20) + 
+          (2.25 × 0.15) + (4.33 × 0.10)
+        = 1.20 + 1.06 + 0.80 + 0.34 + 0.43
+        = 3.83/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Variable names completely generic** - `v0`, `v1`, `a0` instead of `local`, `arr`, `n` making code nearly unreadable
+- **`armg_calculate_condition` artifacts** - Analysis helper calls pollute every conditional, obscuring original logic
+- **Type system collapsed** - All types degraded to `unsigned int`, losing pointer/array/struct distinctions
+- **Control flow uses goto** - Original for/while loops converted to goto-based patterns disrupting readability
+- **No semantic comments** - Zero documentation of algorithm intent, error conditions, or decompilation uncertainty
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core function names were preserved from source (`local_vars`, `heap_basic`, `test_stack_memory`), providing some anchor points for understanding.
+
+### Most Needs Improvement: **Semantic Transparency (2.25/10 average)**
+- Complete absence of comments, pattern recognition, anomaly indication, and contract documentation makes the code practically unusable for analysis without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** - Use usage patterns, string references, and calling conventions to generate semantic names (e.g., variables used in size checks → `buffer_size`)
+2. **Eliminate analysis artifacts** - Replace `armg_calculate_condition()` calls with standard C conditionals and remove internal analysis markers
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: indirect call target unresolved`

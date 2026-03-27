@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Variables are renamed generically (e.g., `param_1`, `local_10`, `local_c`), losing semantic meaning like `sum`, `count`, or `temp`. While the original source used simple names like `a` and `b`, the loss of meaningful names like `result` or `flag` hinders quick comprehension.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`sequential_ops`, `nested_if_deep`, `duffs_device`) are perfectly recovered from the debug symbols, matching the original source exactly and providing clear semantic context.
+
+**3. Literal Clarity:** Score: 8/10
+Justification: Most integer literals are preserved, though some decimal values (e.g., `20`, `30`) are converted to hex (`0x14`, `0x1e`) in the decompiled output, which adds a minor translation burden for the reader.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but some compiler artifacts remain, such as the packed stack initialization in `loop_break` (`local_28 = 0x140000000a`) which obscures the array initialization logic present in the source.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow structures are excellently recovered; `for`, `while`, and `switch` statements are correctly identified. The `switch_fallthrough` logic is converted to nested `if` statements, which is a structurally different but semantically accurate representation of the compiled fallthrough.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: The decompilation maintains a 1:1 mapping with the source functions. There is no outlining or inlining artifacts, and the granularity perfectly matches the original source's modular design.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps. Even complex patterns like `goto_forward` and `goto_backward` are restructured into standard `if` and `for` loops, significantly improving readability over the raw assembly.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no loop unrolling or dead code. The logic is concise, with the exception of `duffs_device`, where the redundancy is inherent to the source algorithm and accurately represented.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Basic types (`int`) are mostly correct, and `bool` is correctly inferred for `if_else`. However, the `volatile` qualifier is lost in `infinite_loop` and `loop_external_state`, and `switch_small` has an incorrect signature (returning `undefined [16]` instead of `int`).
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Stack-allocated arrays like `int arr[]` in `loop_break` are not recovered as arrays. Instead, they are decomposed into packed 64-bit stack variables (`local_28`, `local_20`), requiring manual effort to reconstruct the original data structure.
+
+**11. Type Safety:** Score: 10/10
+Justification: The decompiled code does not introduce unsafe casts or pointer arithmetic errors. The types used, while sometimes generic (`undefined8`), are consistent with the memory layout observed.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: No comments from the original source are preserved in the decompiled output. There are no auto-generated comments explaining the logic of complex functions like `duffs_device` or the state machines.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: Standard idioms like recursion and loops are clear. `duffs_device` is correctly identified as a `switch` inside a `do-while` loop with `goto` labels, accurately reflecting the "computed goto" nature of the source idiom.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler presents the code confidently without flagging potential issues, such as the signature mismatch in `switch_small` or the loss of `volatile` semantics, which could mislead a user about the function's interface.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the requirement that `n > 0` in `duffs_device` is not explicitly stated in the decompiled view.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are resolved to their correct targets (e.g., `double_value`, `recursion_factorial`), and the relationship between `indirect_recursion_a` and `indirect_recursion_b` is clear.
+
+**17. Module Organization:** Score: 10/10
+Justification: Functions are ordered logically, matching the source file's structure (L1, L2, L3 groups), making it easy to navigate the decompiled output.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses Ghidra-specific types like `undefined4` and `undefined8` which will not compile with a standard C compiler without significant modification or header inclusion.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.5/10
+
+**Critical Defects:**
+- **Loss of `volatile` qualifier**: Functions like `infinite_loop` lose the `volatile` keyword on the pointer parameter, which is critical for understanding the concurrency/signal behavior.
+- **Stack Array Fragmentation**: The array `arr[]` in `loop_break` is decompiled into packed integers (`local_28`, `local_20`), completely obscuring the array data structure.
+- **Signature Corruption**: `switch_small` is decompiled with an incorrect return type (`undefined [16]`) and extra parameters (`param_2`, `param_3`), likely due to misinterpretation of register/stack usage for local variables.
+- **Missing Comments**: None of the explanatory comments from the source (e.g., "Duff's device", "fall-through logic") are preserved.
+- **Hex Literal Conversion**: Readable decimal constants (e.g., `20`, `100`) are often converted to hex (`0x14`, `0x64`), adding unnecessary cognitive load.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** The debug symbols allowed the decompiler to recover the exact original function names, providing immediate semantic context for every block of code.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)
+- **Why?** The complete absence of comments removes the "why" behind the code, particularly for complex algorithms like Duff's device or the state machines, making the code significantly harder to understand than the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover `volatile` and `const` qualifiers** from DWARF debug information to preserve critical semantic constraints on memory access.
+2. **Improve stack array detection** to group adjacent initialized stack variables into array types rather than leaving them as fragmented packed integers.
+3. **Preserve source comments** if available in the debug information (DWARF `.debug_line` or `.debug_info`), as they are essential for understanding complex control flow patterns.

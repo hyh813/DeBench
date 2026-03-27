@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`), obscuring their roles as loop counters, pointers, or struct members. While `large` is somewhat descriptive, the lack of semantic names for the `va_list` equivalent or array indices significantly hinders understanding.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: The decompiler successfully recovered original function names like `test_calling_conventions`, `varargs_func`, and `call_ret_large_struct` from the symbol table, which accurately reflects the source functionality.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: String literals are stored as global variables containing hex-encoded UTF-8 sequences (e.g., `\xe6\xb5\x8b\xe8\xaf\x95`), making the text content ("测试") unreadable without decoding. Magic numbers like `116` (representing `100 + 16`) appear without explanation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: The code contains standard compiler artifacts like `__stack_chk_fail` and `__printf_chk` which are accurate but add clutter. The manual pointer arithmetic used to simulate array access is verbose but technically represents the low-level logic accurately.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loop structures are converted from `for` loops to `while` loops with manual pointer increments (e.g., `v2 += 4`). While the flow is traceable, it lacks the idiomatic clarity of array indexing found in the source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: The decompiler maintains the original function boundaries and granularity. Functions like `test_calling_conventions` are kept distinct and cohesive, matching the source structure perfectly.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code reads mostly top-to-bottom with clear entry and exit points. There are no confusing forward jumps or spaghetti logic; the control flow is relatively flat and easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: There is no obvious dead code or redundant expressions. The logic is compact, though the verbosity of pointer arithmetic makes it *feel* redundant compared to the high-level source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Critical type information is lost; pointers are stored in `int32_t` variables on an ARM64 (64-bit) architecture (e.g., `int32_t v2 = &v1`), which is factually incorrect and dangerous. Struct types are completely erased.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Struct types (`LargeStruct`, `BigStruct`) are entirely missing. They are replaced by raw stack allocations (e.g., `int32_t large; // bp-272`) and accessed via pointer offsets, completely losing the semantic field structure.
+
+**11. Type Safety:** Score: 2/10  
+Justification: The code exhibits severe type safety violations, such as storing addresses in integer types and casting integers back to pointers (`*(int32_t *)v2`). This obscures memory safety boundaries present in the original code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are no meaningful comments explaining the logic, algorithms, or data structures. Only address ranges and module names are provided, offering no semantic insight.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Standard C idioms are missed. The `va_list` variable argument logic is decompiled into manual stack walking (`v2 += 4`), and array initialization is decompiled into pointer arithmetic rather than array indexing.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler does not flag the loss of struct types or the unusual pointer-in-integer usage as anomalies; it presents the low-level implementation confidently as if it were the source logic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement for `count` in `varargs_func` is implicit in the `if (count < 1)` check but not stated as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Global variables (`g1`, `g2`) are referenced, and function calls are visible. However, the semantic link between the hex-encoded strings and their usage is weak due to the encoding issue.
+
+**17. Module Organization:** Score: 8/10  
+Justification: The functions are organized logically, matching the source file's structure. Helper functions and test drivers are grouped appropriately.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code would likely fail to compile or produce warnings due to type mismatches (assigning pointers to `int32_t`) and missing struct definitions. It requires significant patching to be buildable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score: 4.7/10
+
+### Critical Defects
+- **Struct Type Loss**: `LargeStruct` and `BigStruct` are completely unrecovered, replaced by raw stack offsets and pointer arithmetic.
+- **Pointer Type Truncation**: 64-bit addresses are incorrectly stored in `int32_t` variables, breaking architectural accuracy.
+- **Array Idiom Failure**: Array access patterns (`data[i]`) are decompiled to manual pointer increments (`ptr += 4`), losing semantic clarity.
+- **String Obfuscation**: Readable string literals are converted to hex-encoded UTF-8 sequences, rendering them unreadable.
+- **Varargs Obscurity**: The standard `va_list` pattern is not recognized, replaced by low-level stack pointer manipulation.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: The decompiler successfully preserved the original function names from the binary symbols, which is the strongest link back to the source code's intent.
+
+### Most Needs Improvement
+- **Composite Type Recovery (1/10)**: The complete failure to recover C structs from an unoptimized binary is the most critical issue, turning structured data into opaque memory blobs.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Enhanced Struct Recovery**: Implement heuristics to detect stack-allocated buffers accessed with constant offsets and reconstruct them as `struct` types with fields.
+2. **Pointer Arithmetic to Array Access**: Transform patterns like `*(base + i * stride)` back into array indexing syntax `base[i]` to improve readability.
+3. **String Decoding**: Automatically detect and decode hex-encoded UTF-8 sequences in global variables to display human-readable strings in the decompiled output.

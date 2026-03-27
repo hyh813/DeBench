@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. For example, `param_macro_constants` uses `a0` instead of `size`, and `param_asm_clobber` uses `ptr` and `a1` instead of `arr` and `n`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`param_macro_constants`, `test_preprocessing_features`), but ~40% are generic (`sub_401030`, `sub_4012c1`). Runtime functions appropriately named (`_init`, `_start`, `__do_global_dtors_aux`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation (`0x400`, `0x200`, `57072`, `282`). Some constants correctly folded (64, 30, 32) but lose semantic connection to `MAX_SIZE`, `BUFFER_COUNT`. String literals preserved well.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution: stack canary checks (`__stack_chk_fail_local`), `get_pc_thunk.*` functions, runtime initialization (`deregister_tm_clones`, `register_tm_clones`), and nonsensical struct padding definitions (`char padding_0[11863]`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural if/else flow, but several use `goto` unnecessarily (e.g., `sub_4010b0`: `goto v1->field_2c`). Loop recovery is good for `param_asm_clobber` and `param_asm_multi_insn`.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Excessive fragmentation with wrapper functions (`sub_4012c1` just calls `param_macro_constants`). Many 2-3 line functions that serve no purpose. Runtime boilerplate inflates function count significantly.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally readable top-to-bottom, but forward jumps and goto statements disrupt flow. Stack canary checks at function ends create artificial branching (`if (v1 != *((int *)_ccall...))`).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding eliminated original logic (e.g., `call_macro_constants` returns 64 directly instead of calling `param_macro_constants(2048)`). Duplicate printf format strings across multiple functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `unsigned int`, `int`, or `char*`. No `int32_t`, `size_t`, or `uint128_t` precision. `param_asm_simd` uses `uint128_t*` but this is decompiler inference, not source recovery. Pointer/array distinction lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct definitions are nonsensical artifacts (`char padding_0[11863]`, `field_2e57`). No actual source structs recovered. These appear to be decompiler attempts to model GOT/PLT structures, not user code.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: raw pointer arithmetic (`ptr + idx * 4`), implicit casts throughout. Stack canary checks suggest safety awareness but add noise. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompiler confidence indicators, no API documentation. Original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop patterns recognized (`for (idx = 0; idx < a1; idx += 1)`), but no higher-level pattern identification. Macro expansion semantics lost (no indication that `ADD_16(x)` was `x + 16`). Assembly intrinsics partially recognized (`AddV`, `atomic_exchange_add`).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP at address 4198779()`). Stack canary checks indicate uncertainty but aren't explained. No indication of architecture mismatch (ARM64 source → X86 decompilation).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Function contracts completely absent. Error conditions not explained (e.g., what `4294967295` return values mean in `param_memory_protection`).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables referenced as `g_402041`, `g_40205c` without semantic names. No call graph documentation. Test functions call expected functions but without context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime functions mixed with user code. No header file separation. Original source's section organization (5.2, 5.3) completely lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears compilable with stubs for external functions (`sub_401110` for printf, `_ccall` for stack operations). External dependencies not documented. Architecture-specific code present without portability notes.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+5+3)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+4+5+5)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (4+2+5)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+3+4+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.50
+
+Overall = 1.35 + 1.25 + 0.73 + 0.38 + 0.50 = 4.21/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Zero comments** - Original source had extensive documentation; decompiled code has none
+- **Architecture mismatch** - ARM64 source decompiled as X86 without indication
+- **Nonsensical struct definitions** - `padding_0[11863]` artifacts pollute output
+- **Generic variable names** - `a0`, `v0`, `v1` instead of `size`, `result`, `counter`
+- **Magic numbers unexplained** - `57072`, `282`, `0x400` without constant names
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core test functions preserved original names (`param_macro_constants`, `test_preprocessing_features`), enabling basic semantic understanding despite other issues.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding intent impossible; even basic decompiler confidence indicators would help.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Extract debug info (`-g` flag) to restore original documentation
+2. **Infer semantic variable names from usage patterns** - `a0` in size comparison should become `size`, loop counters should be `i`, `idx`, `count`
+3. **Filter runtime boilerplate** - Separate user code from compiler runtime (`get_pc_thunk`, `register_tm_clones`, stack canary checks) into distinct sections or hide by default

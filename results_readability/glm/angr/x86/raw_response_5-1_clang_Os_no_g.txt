@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `arg_0`, providing no semantic insight into their usage (e.g., `v0` used for return values or counters).
+
+**2. Function Naming Quality:** Score: 5/10
+Justification: While C++ mangled names are successfully demangled (e.g., `_Z20test_cpp_member_funcv` to `test_cpp_member_func`), many functions remain generic (`sub_401030`, `sub_401160`), and the recovered names do not reflect the complexity of the missing logic.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are replaced with global pointers (e.g., `&g_402081`) rather than the actual string content, and magic numbers like `20` or `4` appear without context or named constants.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is heavily polluted with compiler artifacts like `__x86.get_pc_thunk` calls and, critically, raw VEX IR statements such as `[D] PutI(72:F64x8)[t3,0] = t6()` which render the code unreadable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is unnatural, relying on `goto` statements (e.g., `goto ptr[2]`), and many functions are completely empty (`return;`) despite having complex logic in the source.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: While the function boundaries are detected, the content is missing; functions like `test_cpp_virtual_func` are stubs, and the logic is either inlined into callers or lost entirely.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code does not read linearly; it contains computed jumps (`goto (int)v1[24]`) and is interrupted by low-level IR instructions that break the flow of high-level logic.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: There is significant redundancy in the form of `__x86.get_pc_thunk` calls and pointer arithmetic adjustments that obscure the actual program logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: C++ class types are lost; `this` pointers are treated as `void*`, and complex types like `std::unique_ptr` are not recovered, resulting in generic `unsigned int` or `void*` usage.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: No C++ classes (e.g., `SimpleClass`, `Base`, `Container`) are reconstructed; instead, generic structs like `struct_0` with `padding_0` and `field_X` are used, losing all object-oriented structure.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies on unsafe casts, such as casting `void*` to `int*` or accessing class members via raw offsets (e.g., `*((int *)&ptr[40])`), which is dangerous and loses type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic; the only comments are auto-generated headers or failure indicators like `[D] Unsupported...`.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms like RAII, smart pointers, and virtual dispatch are not recognized; virtual function calls are reduced to obscure indirect calls via `(*((int *)*((int *)arg_0)))`.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: While the decompiler flags unsupported instructions (e.g., `[D] unsupported_<class 'pyvex.expr.GetI'>`), these represent total failures to decompile rather than helpful anomaly warnings.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; the logic is too low-level to infer any contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: Although function names are demangled, the relationships are unclear because the function bodies are empty or incorrect, making the call graph misleading.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in address order, but there is no logical grouping or namespace recovery that reflects the source file's structure.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not compilable due to the inclusion of raw IR statements (`PutI`, `GetI`) and missing type definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.6/10
+
+**Critical Defects:**
+- Decompilation failure resulting in raw VEX IR statements (`[D] PutI...`) embedded in the C output.
+- Complete loss of C++ class structures; all objects reduced to `void*` or generic structs with padding.
+- Architecture mismatch: Source metadata indicates ARM64, but decompiled code is X86 (contains `__x86.get_pc_thunk`).
+- Most function bodies are empty or missing core logic (e.g., `test_cpp_virtual_func` is just `return;`).
+- String literals are replaced with global address references, obscuring text content.
+
+**Best Quality Aspect:** Function Naming Quality (scored 5/10)
+- The decompiler successfully demangled C++ symbols (e.g., `_ZN9ContainerIiEC2Ev` to `Container<int>::Container`), which is the only readable remnant of the original structure.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The failure to reconstruct `class`, `struct`, or `union` types (replacing them with `struct_0` and padding) destroys the semantic meaning of the entire program.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Fix the IR-to-C translation layer to fully handle SIMD/Vector instructions (GetI/PutI) rather than emitting raw IR.
+2. Implement robust C++ Class Recovery to identify `this` pointers, vtables, and member offsets instead of treating objects as raw byte arrays.
+3. Ensure architecture consistency or handle cross-architecture decompilation gracefully, as the output is X86 while the source targets ARM64.

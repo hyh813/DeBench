@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `v0`, `v1`, `v2`, `result` instead of semantic names (e.g., `sum`, `count`, `index`). In `varargs_func`, variables `v2`, `v3`, `v4` obscure their roles as va_list, accumulator, and current value respectively.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source (e.g., `cdecl_func`, `varargs_func`, `test_calling_conventions`). Names clearly indicate purpose and match original intent.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers appear without explanation (e.g., `4` for pointer size in `param_array_decay`, `305419896` for hex value). However, return values in test functions are constant-folded which obscures original computation logic.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts like `__fastcall` annotations on ARM, `LODWORD`/`HIDWORD` macros for 64-bit operations, and `__PAIR64__` constructs. The `func_mixed_args` function shows excessive type coercion noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural control flow, but `varargs_func` uses a do-while loop with manual va_list manipulation instead of clean for-loop. The `param_double_ptr` function has awkward boolean flag pattern (`v5`) instead of direct null checks.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is appropriate; each function maintains single responsibility. However, caller functions like `call_cdecl` are constant-folded to single return statements, losing the call relationship visibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom, but `ret_multi_branch` uses arithmetic (`10 * op + 10`) instead of clear switch statement, obscuring the original branch structure.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `func_struct_byval` unrolls the loop into 16 explicit additions instead of a loop construct. `ret_large_struct` writes array elements in non-sequential order (12, 15, 8, 9...) which appears redundant and confusing.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` instead of `int32_t`, `__int64` instead of `int64_t`. The `func_mixed_args` function shows `double` split into `HIDWORD`/`LODWORD` losing type clarity. Pointer types are generally preserved correctly.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types (`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`) are recovered with field names preserved. However, `ret_small_struct` shows hidden return pointer parameter (`__return_ptr retstr`) exposing ABI implementation details.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (e.g., `(_DWORD *)v2.__ap` in varargs). The `param_complex_cast` function uses void* casting which is intentional from source but lacks safety annotations. No buffer overflow patterns detected.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments present. Only a few warnings like "local variable allocation has failed" and "positive sp value has been detected". No algorithm explanations or API contract documentation recovered from original source comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern is recognizable but not explicitly identified. Function pointer callback pattern in `param_func_ptr` is clear but not labeled as such. No design pattern recognition evident.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("FAILED to decompile" for 7 external functions, "local variable allocation has failed"). However, constant-folding of caller functions is not indicated as optimization artifact, potentially misleading analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should note `p != NULL` requirement). Null checks exist in code but aren't documented as contracts. No postcondition inference present.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible in code but not documented. The constant-folded caller functions (`call_cdecl`, `call_stdcall`) lose visibility into which functions they originally called. External function references shown as failed decompilation.
+
+**17. Module Organization:** Score: 7/10  
+Justuration: Functions appear in logical order matching source structure. Related functions grouped together (calling conventions, parameter passing, return values). However, no file/module boundaries indicated in decompiled output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 7 external functions failed to decompile (`printf`, `puts`, `strlen`, etc.). Requires stubs for `__libc_start_main`, `_cxa_finalize`. Architecture mismatch (arm64 source vs arm32 decompiled) creates portability issues.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+6+5)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.75
+Level 3 (Type):        (6+8+7)/3   = 7.00 × 0.20 = 1.40
+Level 4 (Semantic):    (3+4+5+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (6+7+4)/3   = 5.67 × 0.10 = 0.57
+
+Overall Score: 6.05/10
+```
+
+### Overall Readability Score: **6.05/10**
+
+### Critical Defects:
+- **Constant folding obscures call relationships**: Functions like `call_cdecl()` return literal `15` instead of showing `cdecl_func(5, 10)` call
+- **Generic variable naming**: Variables `v0`, `v1`, `v2`, `result` provide no semantic information about their purpose
+- **Loop unrolling without indication**: `func_struct_byval` shows 16 explicit additions instead of recoverable loop construct
+- **Missing source comments**: All original documentation comments (test descriptions, expected values) are lost
+- **Architecture mismatch**: Source compiled for arm64 but decompiled as arm32, affecting type sizes and calling conventions
+
+### Best Quality Aspect: **Function Naming Quality (9/10)**
+- Function names are perfectly preserved from source, maintaining semantic clarity about each function's purpose
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- No preconditions, postconditions, or parameter constraints are documented, making it difficult to understand function requirements and guarantees
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve call site information**: Even when constant-folding, annotate original call relationships (e.g., `// Originally: return cdecl_func(5, 10)`)
+2. **Infer semantic variable names**: Use usage patterns to name variables (e.g., accumulator variables → `sum`, loop counters → `i`)
+3. **Recover loop constructs from unrolled code**: Detect repeated operation patterns and suggest loop reconstruction with confidence indicators

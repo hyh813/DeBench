@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use cryptic generic names like `iVar1`, `piVar2`, `local_14`, `param_1`. The original source had meaningful names like `sum`, `i`, `c`, `arr` - all completely lost. These names provide zero semantic value.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation of original function names: `process_char`, `array_1d_stack`, `ptr_double`, `struct_simple`, `linked_list`, `binary_tree`. The decompiler correctly kept all function names from the source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals preserved well (e.g., `"DT-L1-01 (process_char): %c\n"`), but magic numbers lack explanation: `0x41` ('A'), `0x20` (32 for case conversion), `0x1a` (26 alphabet size), `0x3fc00000` (float 1.5). No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant artifacts: `undefined4`, `undefined`, `undefined2` types clutter code; `EVP_PKEY_CTX *ctx` misattributed in `_init`; `UNRECOVERED_JUMPTABLE` for function pointers; `code *` type instead of proper function pointer signatures. Heavy pollution.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops use do-while with pointer arithmetic (`do { piVar3 = piVar3 + 1; ... } while (piVar3 != piVar2)`) instead of idiomatic for/while. At -O0, this is unnecessarily low-level. Switch statements converted to lookup tables (`CSWTCH_73`) - functional but not natural.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each original function remains separate and focused. No inlining or outlining artifacts. Functions like `binary_tree_sum` and `binary_tree` correctly separated. Good granularity matching source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Early returns present in some functions. Pointer arithmetic in loops creates some non-linearity but traceable. No severe forward jump issues.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Test functions compute results at compile time (e.g., `0xb` for 11), which is appropriate for decompilation. No obvious dead code. Loop unrolling not excessive. Acceptable for this context.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `short` becomes `int`; `char` becomes `uint`; `float`/`double`/`long double` all become `undefined4` or `undefined8`; `const int *` loses const. Original had precise types like `short`, `_Bool`, `volatile int *` - all generic now.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Zero struct recovery. Original had `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`, `DNode`, `Graph` - all lost. Code accesses fields via raw offsets: `param_1[1]`, `param_1[2]`, `*(int *)(param_1 + 8)`. No union recovery either.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns: `(int *)param_1[1]` casts without verification; pointer arithmetic like `param_1 + param_2 * 4` assumes int size. Not catastrophic but requires careful analysis. No alignment annotations or restrict keywords.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. Zero explanation of algorithms, magic numbers, or non-obvious logic. Original source had extensive comments explaining each test case - completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Original contains clear data structures (linked list, binary tree, graph with adjacency list) - decompiled code shows raw pointer manipulation without identifying these patterns. No "linked list traversal" or "binary tree recursion" labels.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `UNRECOVERED_JUMPTABLE` marks some unresolved function pointers, but no flags for: the intentional OOB access in `array_oob` (`i <= n`), unusual stack layouts, or indirect call targets. Silent on potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear contracts (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated") - completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Implicit relationships visible (e.g., `main` calls `test_data_types_l1`, `test_array_types`), but no explicit documentation of call graphs, global usage, or callback relationships. Reader must infer manually.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically in single file matching source structure. Static functions properly scoped. No artificial fragmentation. Simple organization works for this test file.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile - uses `undefined4`, `undefined`, `code` types which aren't valid C. External functions (`puts`, `__printf_chk`) correctly marked. Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable names are completely unusable (`iVar1`, `param_1`, `local_14`) - zero semantic meaning
+- No struct/union type recovery - all composite types lost, accessed via raw pointer arithmetic
+- No comments explaining any logic, magic numbers, or algorithms
+- Type precision severely degraded - `short`, `char`, `float`, `double` all become generic types
+- Build system incompatible - uses `undefined4`, `undefined`, `code` types that won't compile
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names from the original source are almost perfectly preserved (`process_char`, `array_1d_stack`, `ptr_double`, `linked_list`, `binary_tree`). This is the decompiler's strongest feature.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+The decompiled code has zero comments. Combined with cryptic variable names and lost type information, this makes the code extremely difficult to understand without reference to the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover variable names from usage patterns**: Analyze how variables are used (e.g., `param_1 + param_2 * 4` for array indexing suggests `array` and `index`; `*param_1` for dereferencing suggests `ptr`)
+2. **Reconstruct struct/union types**: Detect regular memory access patterns (e.g., `param_1[0]`, `param_1[1]`, `param_1[2]`) and infer struct layouts with field names
+3. **Add explanatory comments**: Include comments for magic numbers (e.g., `// 0x20 = 32 for ASCII case conversion`), algorithm descriptions, and uncertainty markers for indirect calls

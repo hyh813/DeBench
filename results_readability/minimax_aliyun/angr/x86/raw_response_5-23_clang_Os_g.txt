@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+The original source code tests C preprocessor features (macros, conditional compilation, stringification, token pasting, variadic macros) and inline assembly (basic asm, clobbers, SIMD, atomic operations, memory protection). The decompiled code shows x86 binaries (not arm64 as stated in metadata), compiled with optimization that removed most inline assembly, replacing it with equivalent C operations.
+
+---
+
+### LEVEL 1: LEXICAL CLARITY
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v0`, `v1`, `v2`, `ptr`, `idx`, `a0`, `a1`, `a2`. No semantic meaning recovered - parameter `a0` should be `size`, `idx` should be `index`, `ptr` should be `array` based on usage patterns.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Functions named with address-based patterns (`sub_401030`, `sub_401234`) instead of semantic names. Only test wrapper functions like `call_macro_constants` recovered correctly. The core functions like `param_macro_constants` lost their descriptive prefixes.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most magic numbers are meaningful - `0x200` (512), `64`, `57072` (0xDEF0), `279` (line number). Some constants like `30` in `sysconf(30)` are unclear (_SC_PAGESIZE). The builtin macros (__DATE__, __TIME__) recovered as string literals correctly.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts. The decompiled code is clean without redundant casts, frame pointer manipulation, or debug instrumentation. Inline assembly replaced with equivalent C operations cleanly.
+
+---
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - loops use `for` constructs, conditionals use `if-else`. The `param_asm_multi_insn` shows a clear `for` loop: `for (result = a2; result; result -= 1)`. No goto abuse or spaghetti code.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions properly decomposed - each test case is separate. Function sizes are reasonable (15-50 lines). Parameter lists are appropriate, though generic names. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal jumps. Early returns used appropriately (e.g., `param_dynamic_code` returns early on mmap failure). No forward jumps into loop bodies. Excellent linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Loop unrolling from assembly is not present (assembly was replaced with loops). Common subexpressions not duplicated unnecessarily.
+
+---
+
+### LEVEL 3: TYPE SYSTEM FIDELITY
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed results - `unsigned int` used consistently, but `int` vs `unsigned int` distinction sometimes lost. Parameters `a0`, `a1` are `unsigned int` but original used `int`. `size_t` not recovered for memory functions. `uint128_t` used for SIMD which is appropriate.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct recovery for the mock header. The `param_asm_clobber` uses raw pointer arithmetic (`ptr + idx * 4`) instead of array subscript. Some typedefs like `struct_0` with `padding_0` appear in startup code but not in test functions.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Pointer arithmetic is explicit (`ptr + idx * 4`). No obvious unsafe casts. The atomic operations use proper function calls. Minor issue: `param_variadic_macro` has unused local variables `v0, v1, v2, v3` that appear to be stack artifacts.
+
+---
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in decompiled output. Original source had extensive comments explaining macro semantics, assembly purpose, and expected values. All lost in decompilation. No indication of what each function tests.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized - the atomic operations use `atomic_exchange_add`, SIMD uses `AddV` pseudo-op. However, no explicit naming of patterns (e.g., "This implements atomic fetch-and-add"). The conditional compilation logic is recovered but not identified as preprocessor branch.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags. The decompiled code presents everything confidently, but several things are uncertain: the `param_variadic_macro` has mismatched printf format string, the SIMD operations use pseudo-ops that may not be accurate, and the `call_asm_clobber` shows suspicious initialization of `v0` with large integer.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had clear expectations (e.g., "期望: 64", "期望: 30") that are completely lost. No error condition documentation (e.g., mmap failure handling).
+
+---
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are present but relationships not documented. No indication that `call_macro_constants` calls `param_macro_constants`. No global variable usage documentation (e.g., `global_var` in `param_memory_clobber_demo`).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically - preprocessing functions first, then asm functions, then test wrappers. However, startup/CRT functions interspersed. Static functions not distinguished from extern.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code would compile with minimal stubs. External functions (printf, mmap, munmap, mprotect, sysconf, atomic_exchange_add) are declared or used correctly. Would need linking with libc.
+
+---
+
+### FINAL SUMMARY
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- All function names use address-based patterns (`sub_401234`) instead of semantic names (`param_macro_constants`)
+- All variables use generic names (`v0`, `v1`, `a0`, `ptr`, `idx`) losing semantic meaning
+- No comments explaining macro semantics, assembly purpose, or expected values
+- No struct recovery - raw pointer arithmetic instead of array access
+- No cross-reference documentation showing caller/callee relationships
+
+**Best Quality Aspect:** Code Linearization (scored 9/10)  
+The decompiled code reads naturally top-to-bottom with proper loop constructs and no goto abuse or spaghetti control flow.
+
+**Most Needs Improvement:** Variable and Function Naming (scored 2/10 combined)  
+The decompiler recovered the correct logic but completely lost semantic naming. Every meaningful identifier became generic noise, making the code nearly impossible to understand without cross-referencing the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a0` compared to 1024 should be `size`; `idx` used as loop counter should be `index`; `ptr` dereferenced with `*4` offset should be `array`
+2. **Recover function names from debug symbols or string references**: The original function names are present in debug info and should be recovered instead of address-based names
+3. **Add semantic comments for preprocessor/assembly recovery**: Document what macros expanded to, what assembly instructions did, and what the expected output values are

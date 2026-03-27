@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar2`, `puVar2`. For example, `sequential_ops(int param_1, int param_2, int param_3)` should have `a, b, c`. The decompiler makes no attempt to infer semantic names from usage patterns.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are nearly perfectly preserved: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, etc. match the original source exactly. Minor issue: some external functions marked as `<EXTERNAL>::raise`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Test functions print hardcoded values (e.g., `printf("CF-L1-01 (sequential_ops): %d\n",0x15);`) instead of calling the actual functions. Magic numbers like `0x3e9` (1001), `0x12` (18) appear without explanation. The decompilation shows the computed results, not the logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some artifacts present: `code *UNRECOVERED_JUMPTABLE` appears in function pointer contexts, `undefined4` types are verbose. However, no obvious debug instrumentation or register spilling artifacts. Moderate noise level.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most control flow is natural, but `loop_for_fixed` is transformed into an arithmetic formula instead of a recognizable loop. The condition `while (0x12 < uVar2)` in `loop_while`/`loop_dowhile` is obfuscated. At -O0, loops should be clearly recognizable.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function remains separate with appropriate granularity. No inlining or outlining artifacts. Functions like `duffs_device` are properly preserved as single units. Good decomposition matching source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist but are manageable. The `goto_forward` function is correctly linearized. Minor disruption from computed jumps in `computed_goto`.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code observed. Loop unrolling is minimal. Common subexpression elimination is not excessive. Clean code without obvious redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed types: `int`, `uint`, `undefined4`, `bool` are used. Some signed/unsigned mismatches (e.g., `uint param_1` when original is `int x`). Function pointers use `code *` instead of proper function signatures. Generic but usable.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery. Arrays like `int arr[] = {10, 20, 30, 40, 50}` become `(&DAT_00011848)` with raw address references. The 3x4 matrix in `loop_multi_exit` becomes pointer arithmetic on `undefined4 *`. Composite types are lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: `(*UNRECOVERED_JUMPTABLE)(param_2)` uses unresolved function pointer. Pointer arithmetic is sometimes unchecked. No severe violations but not fully type-safe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in the decompiled code. No explanation of algorithms, no documentation of non-obvious logic. The test functions have string data references but no explanatory comments.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: switch statements are properly structured, Duff's device is partially recognized with `switch`/`case` labels. However, design patterns (state machine, callback) are not explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `UNRECOVERED_JUMPTABLE` appears for unresolved function pointers, but no clear explanation of what this means or what the possible targets are. No flags for suspicious code or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had no explicit contracts either, but the decompiler could infer some (e.g., "param_1 > 0" for factorial). Nothing recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible in the code (e.g., `call_func_ptr(double_value, 5)`). However, no documentation of who calls whom, no call graph information. Relationships must be inferred by reading the code.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically: test functions together, control flow L1, L2, L3 functions in order. Static helper functions (`double_value`, `triple_value`) are placed near their usage. Matches source organization well.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has `<EXTERNAL>` markers for library functions (`printf`, `longjmp`, `raise`). Type `code` is non-standard. Some functions have wrong signatures (e.g., `void call_func_ptr` returns void). Would require moderate patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming is uniformly generic (`param_1`, `iVar1`) with no semantic inference
+- Test functions print hardcoded values instead of calling actual functions, making verification impossible
+- No struct/array recovery - all composite types reduced to raw pointers and addresses
+- No comments explaining any algorithm or non-obvious logic
+- Type precision is poor: `undefined4`, `code *`, unsigned params for signed originals
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are almost perfectly preserved from the original source, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The decompiler makes no attempt to infer meaningful variable names from usage patterns. At -O0, variables should have clear roles that can be recovered through data flow analysis.
+
+**Top 3 Recommendations:**
+1. Implement usage-based variable name inference: analyze how variables are used (array index, accumulator, counter) to suggest names like `index`, `sum`, `count`
+2. Recover composite types: detect array accesses and struct field offsets to reconstruct `int arr[5]` and struct layouts
+3. Add semantic comments: document what each function does, flag unresolved indirect calls, explain computed jumps

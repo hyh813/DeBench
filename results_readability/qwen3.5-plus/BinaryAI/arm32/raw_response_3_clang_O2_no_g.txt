@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `uVar2`, `local_808`) with no semantic meaning. For example, `heap_basic` uses `__ptr`, `iVar1`, `iVar2` instead of `array`, `index`, `size`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Original function names preserved (e.g., `local_vars`, `heap_basic`, `test_stack_memory`), but external wrappers like `<EXTERNAL>::calloc` add noise. Core logic functions retain meaningful names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation (`0x2a`, `0x14`, `0xffffffff`, `0x800`). Test functions print pre-computed constants instead of showing calculation logic.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Redundant external function wrappers (e.g., `<EXTERNAL>::printf` just calls `printf`), and many `__sync_*` atomic functions bloating output. Frame manipulation artifacts present.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: For-loops converted to do-while patterns (e.g., `heap_basic`), and some functions like `vla_stack` have convoluted loop logic with bit manipulation that obscures original intent.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but test functions have constant-folded logic (e.g., `test_stack_memory` prints constants instead of calling functions). `linked_list_heap` is overly complex due to lost struct info.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but some functions have awkward early returns and nested conditionals that could be flattened (e.g., `heap_nested`).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: External function stubs are redundant (16+ wrapper functions). Test functions duplicate heap allocation logic instead of calling original functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy use of `undefined4`, `undefined`, `byte*` instead of proper types. `global_var_access` returns `void` instead of `int`. Function pointers typed as `code*` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - `Point` struct completely lost (`heap_struct` just returns `param_1 * 3`). `Node` struct lost (`heap_nested` uses raw pointer arithmetic with `__ptr[1]` for `next` field).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(undefined4 *)`, `(int *)`), pointer arithmetic on void pointers, and return type mismatches (e.g., `address_of_local` returns `undefined4` instead of `int`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled output. No explanation of algorithms, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Linked list creation in `linked_list_heap` not identified as such. Memory allocation patterns not annotated.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags for suspicious code. `dangling_pointer` use-after-free not flagged. `double_free` logic simplified without warning about the missing double-free behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL` checks exist but aren't annotated as contracts). Error return values (`0xffffffff`) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. `double_value` referenced by `set_global_callback` but no call graph. Global variables (`global_counter`, `file_scope_static`) used without context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. External functions mixed with application code. No header file or API separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would require significant modification to compile - undefined types (`undefined4`), missing struct definitions, external function declarations incomplete.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (3+2+4)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+
+Overall Score: 4.13/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Struct types completely lost** - `Point` and `Node` structs reduced to pointer arithmetic (`__ptr[1]` for `next` field)
+- **Test functions constant-folded** - `test_stack_memory` prints hardcoded values instead of calling actual functions, losing test semantics
+- **Zero documentation** - No comments explaining any logic, algorithms, or decompilation uncertainty
+- **Type degradation** - `undefined4`, `undefined` used extensively instead of proper C types
+- **Variable naming** - All variables generic (`param_1`, `iVar1`, `uVar2`) with no semantic meaning
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Original function names largely preserved, making it possible to correlate decompiled code with source
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding non-trivial logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from usage patterns** - Analyze pointer arithmetic to reconstruct struct layouts (e.g., `__ptr[1]` access pattern indicates linked list `next` field)
+2. **Preserve test function semantics** - Avoid constant-folding test harnesses; maintain actual function calls to show runtime behavior
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (type guesses, control flow) and document magic numbers with inferred meanings

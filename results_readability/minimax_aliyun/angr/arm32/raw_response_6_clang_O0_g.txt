@@ -1,0 +1,90 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variable `a1` for the source parameter is generic and loses the semantic meaning of `src`. The name `ptr` for destination is marginally better but still generic. The variable `len` is well-named. Overall, the naming obscures the string copy semantics.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: The function is correctly named `param_strcpy`, matching the original source function name exactly. This is a perfect recovery.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No literals or magic numbers present in this function. The decompiled code correctly preserves string literals like "HelloLib" in the caller function.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The function is relatively clean with minimal compiler artifacts. The only minor issue is the register annotation comment `// r0` which is low-level noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10  
+Justification: The control flow is perfectly natural - simple sequential statements (strcpy then strlen) with no goto, no confusing conditionals, and no loop constructs. This matches the original source exactly.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The function is appropriately sized (3 lines of core logic) with clear single responsibility. No inlining or outlining issues at -O0 optimization level.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: The code reads perfectly top-to-bottom with no forward jumps, breaks, continues, or deep nesting. Linear execution flow matches source.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: **CRITICAL DEFECT**: The decompiled code calls `strlen(ptr)` twice - once to store in `len`, then again in the return statement. The original source stores the result in a variable and returns that variable. This is a significant semantic error that affects both correctness and performance.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Return type is `int` (correct). However, the source parameter is `const char *` but decompiled shows `char *` - losing the const qualifier. The `len` variable is `unsigned int` which is more precise than the original `size_t`, but the return type mismatch between `unsigned int len` and `int` return could cause issues.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types (structs/unions) used in this function, so nothing to evaluate.
+
+**11. Type Safety:** Score: 9/10  
+Justification: No unsafe casts or pointer arithmetic issues. The only minor concern is the const-correctness issue mentioned above, but no buffer overflow patterns or dangerous operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled function. The original source has clear intent (copy string, return length), but the decompiled version provides no documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: The standard library calls `strcpy` and `strlen` are correctly identified, but the pattern of "copy string and return its length" is not recognized or named as an idiom. No explanation of the semantic purpose.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: The double `strlen` call (redundancy in dimension 8) is not flagged as an anomaly. The decompiler should have indicated this as suspicious or uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions (e.g., "requires: dst and src not null"), postconditions (e.g., "ensures: return equals strlen(dst)"), or invariants documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The function calls to `strcpy` and `strlen` are clear. The caller `call_strcpy` properly shows the string literal "HelloLib" being passed. Good visibility into library function usage.
+
+**17. Module Organization:** Score: 8/10  
+Justification: The function is grouped with related string operation functions (param_strcmp, param_strlen, etc.) in the decompiled output. Logical grouping is preserved.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The function should compile as-is with standard C libraries. Minimal dependencies beyond libc. The function signature is valid C code.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- **Redundant strlen call**: The decompiled code calls `strlen(ptr)` twice (once stored in `len`, once in return), while original stores result in variable and returns it
+- **Lost const qualifier**: Source parameter `const char *src` became `char *a1`, losing important type information
+- **No comments**: Zero documentation of function purpose, parameters, or return value
+- **Generic parameter naming**: `a1` provides no semantic hint about its role as source string
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 10/10)  
+The sequential execution pattern perfectly matches the original source with no goto statements, confusing conditionals, or optimization artifacts.
+
+**Most Needs Improvement:** Redundancy Elimination (scored 2/10)  
+The double strlen call is a fundamental semantic error that makes the code inefficient and could mask other issues. This should be the highest priority fix.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Fix redundant call elimination**: The decompiler should recognize when a function result is stored in a variable and then that variable is returned, rather than calling the function twice
+2. **Preserve const qualifiers**: Track const-correctness through the analysis and preserve `const char *` in parameter types
+3. **Add semantic comments**: When standard patterns like "copy string and return length" are detected, add a comment explaining the idiom rather than leaving it as opaque function calls

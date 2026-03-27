@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `ptr`, `idx`, `result` throughout. For example, in `cdecl_func`, parameters are named `a0` and `a1` instead of descriptive names like `a` and `b`. The original parameters are completely lost.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Most functions use address-based naming (e.g., `sub_401030`, `sub_401040`, `sub_401090`) which is completely non-semantic. While some functions like `cdecl_func`, `stdcall_func`, `func_no_args` were recovered, the majority are cryptic addresses with no meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF for -1) appear without explanation. Some computed results like `15`, `50`, `6` are hardcoded but the logic producing them isn't clear. The `varargs_func` uses `4 * idx` for offset calculation without explaining the 4-byte int assumption.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers indicating decompilation failures. Some struct definitions with `padding_0` fields add noise. Register hints like `// ebx`, `// edx` are present but not consistently helpful.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions use `goto` statements (e.g., `sub_401030` uses `goto ptr[2]`). Loops are generally recognizable as while/do-while constructs. The control flow is somewhat natural but has unusual patterns like computed gotos that obscure intent.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and decomposed. The test functions call helper functions appropriately. However, some wrapper functions like `sub_4012bd` that just call `call_cdecl()` seem unnecessary - could be inlined.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. The `varargs_func` loop is linear. Some functions like `test_calling_conventions` have complex nested loops that reduce linearity.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in struct definitions (multiple `struct_0` definitions with different padding). The `call_*` functions return hardcoded constants which is acceptable for trivial wrappers. No severe redundancy issues.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most integers are `unsigned int` when original uses `int`. Function pointers like in `param_func_ptr` are `unsigned int *a0` instead of proper function pointer types. Pointers like `unsigned int *a0` lose the original type information (e.g., `int*`, `char*`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery attempted (e.g., `struct_0` with `field_0`, `padding_0`) but field names are generic. The original `SmallStruct` with `x`, `y` fields is lost - appears as `unsigned int *a0` in `func_struct_byptr`. Large struct handling shows raw pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns present. In `param_func_ptr`: `return a0(a1) + 10;` treats `a0` as function pointer without proper type. In `func_struct_byptr`: `a0[1] * *(a0)` uses raw pointer arithmetic. The `varargs_func` uses `*((int *)&(&v0)[4 * idx])` which is unsafe cast manipulation.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only `[D]` markers for unsupported operations and occasional register location comments. No explanation of algorithm intent, no recovery of original comments from debug symbols.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some idioms recognizable - varargs pattern is visible in `varargs_func` and `param_varargs`. The `va_list` pattern is partially recovered as `char v0` at `[bp+0x8]`. But design patterns (calling conventions) are not explicitly documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers do indicate some decompilation failures. However, many anomalies are silent - e.g., the architecture mismatch (ARM64 source compiled to x86 binary) isn't flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The `func_struct_byptr` null check is present (`if (!a0)`) but not documented as a precondition. No contract information.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (e.g., `test_calling_conventions` calls various functions). However, relationships to external code (like what calls these test functions) not documented. The `extern unsigned int g_402008` declarations show globals but not their purpose.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped somewhat logically (test functions together, helper functions together). Static functions like `func_a`, `func_b` are properly scoped. But the overall organization is flat without clear sectioning.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has `extern` declarations for some globals. Some stub functions present. However, the code won't compile as-is due to undefined references (e.g., `frame_dummy`, `deregister_tm_clones`, `printf`). The `[D]` markers are not valid C.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `ptr`, `idx`) losing all semantic meaning from original source
+- **Function naming**: Most functions use address-based names (`sub_401030`) instead of meaningful names
+- **Type precision**: Original `int` types become `unsigned int`, pointers lose type info (e.g., `char*` becomes `unsigned int`)
+- **Struct recovery**: Original struct field names (`x`, `y`, `value`) are lost, replaced with generic `field_0`, `field_1`
+- **Comment absence**: No useful comments explaining algorithms, calling conventions, or intent
+
+### Best Quality Aspect: Function Decomposition (7/10)
+Functions are reasonably sized and the call hierarchy is clear. The test functions properly invoke their helper functions with appropriate separation.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+Every variable uses generic names that provide no semantic information. Comparing `param_by_value_int(x)` returning `x * 2` to the decompiled version using `a0` and `v0` shows complete loss of meaningful naming.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: If `a0` is multiplied by 2 and returned, name it `result` or `doubled_value`. If `ptr` is dereferenced and compared to null, name it `pointer` or `ptr`.
+2. **Recover struct field names from debug symbols**: The original structs had meaningful field names (`x`, `y`, `value`, `data`) that should be recovered rather than generic `field_0`.
+3. **Add calling convention documentation**: Since this is a calling convention test suite, document which ABI each function uses (cdecl, stdcall, fastcall, etc.) based on parameter passing patterns.

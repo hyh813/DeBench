@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar1`, `local_14` with no semantic meaning. Original source had meaningful names like `size`, `result`, `counter`, `exec_mem` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names are preserved (`param_macro_constants`, `call_macro_constants`, `param_asm_clobber`). This is excellent recovery, though some helper functions use generic names (`FUN_001007a0`, `FUN_0010097c`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x40`, `0x200`, `0xdef0`, `0x117`, `0x11a` replace original constants like `MAX_SIZE`, `BUFFER_COUNT`. No indication that `0x40` = 64 = `BUFFER_COUNT * 4`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: External function stubs (`<EXTERNAL>::memcpy`, `<EXTERNAL>::printf`) add noise. Atomic operation implementations (`__aarch64_ldadd4_acq_rel`) are verbose but necessary for semantics.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Simple functions have natural if-else structures. However, `param_asm_clobber` shows aggressive loop unrolling (8 parallel accumulators) that obscures the original simple loop semantics.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Critical issue: caller functions are constant-folded (`call_macro_constants` returns `0x40` directly instead of calling `param_macro_constants(2048)`). This breaks the call graph structure from source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. The `param_asm_clobber` function has complex branching for loop remainder handling that disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `param_asm_clobber` shows extreme redundancy with 8 parallel accumulator variables (`iVar10` through `iVar17`). This is compiler optimization artifact, not original code structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate: `undefined4`, `undefined8`, `ulong` instead of `int32_t`, `int64_t`, `size_t`. Pointer types sometimes use `long` instead of proper pointer types. Some functions return `undefined8` for `void` functions.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in this code to recover. Basic pointer arithmetic is preserved correctly. Array access patterns (`param_3[1]`, `param_3[2]`) are clear.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(ulong)param_1`, `(int *)(param_1 + uVar7 * 4)`, `(undefined4 *)0xffffffffffffffff`. No const-correctness preserved from original.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. All original documentation explaining macro behavior, expected values, and test purposes is completely lost. Critical for understanding preprocessing tests.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No recognition that `param_1 * 3 + 2` represents the `#else` branch of `#ifdef DEBUG_MODE`. Macro expansions (`SQUARE(x)`, `ADD_16(x)`) are not identified as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of architecture mismatch (source has x86 assembly, binary is ARM64). No warning that inline assembly was optimized away. Constant-folded functions not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1` range in `param_macro_constants`). No postconditions. Original comments like "期望：64" (expected: 64) are lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships broken by constant folding. `test_preprocessing_features` shows `printf(&DAT_001012d3,0x40)` instead of showing it calls `call_macro_constants()`. String references are opaque (`&DAT_001014c7`).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. However, no indication of which functions are test helpers vs. core logic. Static functions not distinguished.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies declared but would need significant stubbing. Architecture-specific atomics (`__aarch64_ldadd4_acq_rel`) require ARM64 environment. String data references (`&DAT_*`) need resolution.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+6+7+5)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (5+7+6)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+6+5)/3   = 5.33 × 0.10 = 0.533
+
+Overall Score: 5.17/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1`, `uVar1`** should be named based on usage (e.g., `size`, `result`, `return_value`)
+- **Constant-folded caller functions** break call graph - `call_macro_constants()` returns `0x40` directly instead of showing the call to `param_macro_constants(2048)`
+- **Zero comments** - all original documentation about macro behavior, expected values, and test purposes lost
+- **Magic numbers** (`0x40`, `0x200`, `0xdef0`) replace named constants (`MAX_SIZE`, `BUFFER_COUNT`)
+- **Architecture mismatch unflagged** - source has x86 assembly but binary is ARM64 with no warning
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names like `param_macro_constants`, `param_asm_clobber` are preserved, maintaining semantic connection to source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete loss of all documentation makes understanding preprocessing behavior and test expectations nearly impossible without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover constant semantics** - Detect when values like `0x40` correspond to macro expansions (`BUFFER_COUNT * 4`) and add comments indicating original macro names
+2. **Preserve call relationships** - Avoid aggressive constant folding that eliminates function calls; show `call_macro_constants()` actually calling `param_macro_constants(2048)` even if optimizable
+3. **Add decompilation confidence annotations** - Flag architecture mismatches, optimized-away assembly, and constant-folded code with warnings like `// OPTIMIZED: Original called param_macro_constants(2048)`

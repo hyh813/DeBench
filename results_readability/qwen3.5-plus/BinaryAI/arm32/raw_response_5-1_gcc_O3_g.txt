@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `iVar1`, `puVar1`, `local_c`, `acStack_2c` with zero semantic meaning. Original source had meaningful names (`value`, `name`, `capture_by_value`, `data`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test function names preserved (`test_cpp_member_func`, `test_cpp_constructor`), but class methods use generic patterns (`FUN_0001092c`) and template instantiations are mangled (`template_max_int_`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic hex constants everywhere (`0x125c`, `0x3e9`, `0x2a`, `0x28a`) without explanation. String literals referenced as `&DAT_000114d8` instead of actual text, obscuring printf content.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: External stub functions that call themselves infinitely (`operator_new`, `puts`, `__cxa_throw`). Stack artifacts like `in_stack_ffffffe0`, `stack0xffffffe4` pollute the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Many test functions constant-folded to single returns (`return 0x2a;`) losing original logic. `test_cpp_member_func` has confusing conditional that doesn't match source structure.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are appropriately sized but semantic structure lost. `test_cpp_exception` doesn't show try/catch blocks, just exception allocation calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom without excessive jumps. However, stack variable usage (`in_stack_ffffffc0`) disrupts linear reading flow.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Multiple destructor variants for same class (`DiamondDerived::~DiamondDerived` appears 5 times) without explanation as vtable thunks. Confusing duplication.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Generic types dominate: `undefined4`, `undefined8`, `undefined`. Original `int`, `size_t`, `double` types degraded. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Zero struct recovery. All object access through pointer arithmetic: `*(int *)(this + 0x28)`, `*(int *)(this + 4)`. No field names recovered for any class.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(undefined4 *)`, `(type_info **)`, `(char **)`. Function pointers called through void pointers without type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Virtually no comments explaining code purpose. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns completely unrecognized. Vtable calls appear as `(***(code ***)param_1)()` without identification. RTTI, exceptions, templates not identified as patterns.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warnings about uncertain decompilation. Self-recursive stub functions presented confidently. No flags for unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero preconditions, postconditions, or invariants documented. No error condition documentation for exception handling or null checks.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Virtual dispatch not clearly marked. No call graph or callback relationship documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output with no logical grouping. External stubs mixed with application code. No namespace or header separation.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Won't compile standalone. External dependencies unresolved. Self-recursive stubs would cause infinite loops. Requires extensive patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (2×10 + 6×10 + 3×5 + 3×5) / 30 = 3.67
+Level 2 (25%): (4×8 + 5×7 + 6×5 + 3×5) / 25 = 4.48
+Level 3 (20%): (3×8 + 2×7 + 3×5) / 20 = 2.65
+Level 4 (15%): (1×5 + 2×3 + 1×3 + 1×4) / 15 = 1.20
+Level 5 (10%): (4×4 + 3×3 + 2×3) / 10 = 3.10
+
+Overall = 3.67×0.30 + 4.48×0.25 + 2.65×0.20 + 1.20×0.15 + 3.10×0.10
+        = 1.10 + 1.12 + 0.53 + 0.18 + 0.31
+        = 3.24/10
+```
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects:
+- **Variable `iVar1`, `puVar1`, `local_c`** should be named based on semantic usage (e.g., `result`, `exception_ptr`, `instance_count`)
+- **Composite types completely lost** - all class members accessed via pointer arithmetic (`this + 0x28`) instead of named fields
+- **Constant folding destroyed logic** - test functions return pre-computed values (`0x2a`, `0x47`) instead of showing actual computation
+- **No comments or anomaly warnings** - decompiler presents uncertain code confidently without flags
+- **Self-recursive external stubs** - functions like `operator_new` call themselves, creating infinite loops
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Test function names were preserved from source (`test_cpp_member_func`, `test_cpp_virtual_func`), providing some semantic anchors.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of explanatory comments makes understanding the decompiled code's purpose nearly impossible without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type structures** - Analyze consistent offset patterns (`this + 0x28`, `this + 4`) to reconstruct class/struct definitions with field names
+2. **Add decompilation confidence annotations** - Flag uncertain recoveries (indirect calls, stack variables) with comments like `// DECOMPILER_UNCERTAIN`
+3. **Preserve original control flow at -O0** - Since compiled with debug flags, avoid constant-folding test functions and recover actual try/catch blocks, loops, and conditionals

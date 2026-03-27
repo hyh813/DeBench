@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Almost all local variables use generic names (`v1`, `v2`, `v3`, `result`) instead of semantic names. For example, in `array_1d_stack`, `v1` and `v2` should be `arr_base` and `current_ptr` based on their usage patterns.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), but helper functions use generic names (`function_1080`, `function_1090`) and runtime artifacts have mechanical names (`__x86_get_pc_thunk_bx`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation: `32` and `65` in `process_char` (ASCII conversion), `4` for int size throughout, `40` for array stride. No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_*` calls, `__readgsdword(20)` stack canary checks, `__stack_chk_fail_local()`, and `__asm_hlt()` instructions clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: For-loops converted to while-loops with manual index management. `array_2d_stack` has bizarre loop condition `v2 != v1 + (int32_t)"/ld-linux.so.2"` indicating failed string recovery.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved from source, but test functions are monolithic (e.g., `test_array_types` is 150+ lines). Some compiler runtime functions incorrectly extracted as separate functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but nested loops create complexity. `array_3d` has deeply nested while-loops that obscure the original triple for-loop structure.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant variable assignments common (`v7 = result` patterns). At `-O0` this is unexpected - appears to be decompiler artifact rather than compiler optimization.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `process_short` parameters should be `(short, short)` but decompiled as `(int16_t, int32_t)`. `process_ll` shows 2 parameters but source has 1 `long long`. All pointers become `int32_t`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - NO struct/union/enum types recovered. `struct_simple` uses raw pointer arithmetic `*(int32_t *)a1 + *(int32_t *)(a1 + 4)` instead of `p->x + p->y + p->z`. `Point3D`, `Rect`, `Widget` all lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout: `(int32_t *)a1`, `(char *)f`, `(float32_t *)a1`. `ptr_func_complex` returns `&v3` (stack address) instead of function call result - dangerous type confusion.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. Only metadata comments present ("From module: /work/2.c", "Line range: 99-139"). No algorithm explanations or logic documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not recognized: linked list traversal (`linked_list`), array summation, tree recursion (`binary_tree_sum`) all appear as raw loops without pattern identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly warnings despite clear problems. `process_float` and `process_double` return pointer arithmetic instead of float calculations - presented confidently without uncertainty flags.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`, `n > 0`). No postconditions. Error conditions like array bounds checks not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but undocumented. Global variables `g1`, `g2`, `g3`, `g4` have no explanation. No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without logical grouping comments. Source organization (Data Types, Arrays, Pointers, Composite sections) not preserved in output structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Contains undefined symbols (`__readgsdword`, `__asm_rep_stosd_memset`, `__asm_hlt`). Would require significant stubbing and platform-specific modifications to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+7+5+4)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):   (5+6+6+6)/4 = 5.75  × 0.25 = 1.44
+Level 3 (Type System):  (4+2+3)/3   = 3.00  × 0.20 = 0.60
+Level 4 (Semantic):     (2+3+3+2)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):   (4+5+4)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.35/10
+```
+
+### Overall Readability Score: **4.35/10**
+
+### Critical Defects:
+- **Composite types completely lost** - All struct/union/enum definitions reduced to pointer arithmetic (`*(int32_t *)(a1 + 4)` instead of `p->y`)
+- **Type precision severely degraded** - `process_ll` shows 2 parameters instead of 1 `long long`; float functions return pointer arithmetic
+- **Variable names all generic** - `v1`, `v2`, `v3` throughout instead of semantic names like `sum`, `index`, `current`
+- **Compiler artifacts pollute code** - `__x86_get_pc_thunk_*`, `__readgsdword`, `__stack_chk_fail_local` obscure logic
+- **Dangerous type confusion** - `ptr_func_complex` returns stack address `&v3` instead of actual function result
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved accurately (`process_char`, `array_1d_stack`, `struct_simple`), making function identification straightforward despite other issues.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover any struct/union/enum definitions - this is the most critical readability loss as it converts high-level data structures into opaque pointer arithmetic.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct/union type inference** - Analyze consistent offset patterns across functions to reconstruct composite type definitions with field names
+2. **Add uncertainty annotations** - Flag decompilation confidence levels (e.g., `// UNCERTAIN: float operation may be incorrect`) especially for `process_float`/`process_double`
+3. **Filter compiler runtime artifacts** - Recognize and hide/elide standard compiler helper functions (`__x86_get_pc_thunk_*`, stack canary checks) from main code output

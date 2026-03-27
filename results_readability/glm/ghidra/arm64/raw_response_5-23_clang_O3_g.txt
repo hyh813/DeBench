@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are predominantly generic types like `iVar1`, `uVar5`, and `piVar1`. While `__addr` and `__len` in `param_dynamic_code` are acceptable, the majority lack semantic meaning (e.g., `iVar9` through `iVar16` in `param_asm_clobber`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `param_macro_constants`, `test_preprocessing_features`, and `param_asm_clobber` are perfectly recovered from the symbol table, matching the source exactly.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Macro constants are lost, replaced by magic numbers (e.g., `0x40` instead of `BUFFER_COUNT * 4`, `0x200` instead of `MAX_SIZE / 2`). String literals from `__DATE__` are preserved, but numeric logic is obscured.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Frequent "WARNING: Unknown calling convention" and "Unresolved local var" comments clutter the output. While the logic is clean, these warnings add unnecessary noise to the reading experience.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Simple functions like `param_macro_constants` are clear, but `param_asm_clobber` presents a heavily unrolled loop with manual pointer arithmetic (`piVar4 + -4`), making it difficult to recognize the original "sum array" intent.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source. The compiler-generated helper `__aarch64_ldadd4_acq_rel` is correctly isolated, maintaining good granularity.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Code generally reads top-to-bottom. The unrolled loop in `param_asm_clobber` disrupts linearity slightly, but the control flow is otherwise straightforward.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The decompiler accurately reflects the compiler's loop unrolling (e.g., in `param_asm_clobber`), but this results in significant redundancy that obscures the high-level logic of the original simple loop.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types like `int`, `void *`, and `size_t` are mostly correct. However, `undefined8` is used in `param_asm_clobber` for memory accesses, losing the specific integer type precision of the array elements.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: No complex structs or unions were defined in the source code, so there is nothing to recover or fail on.
+
+**11. Type Safety:** Score: 6/10
+Justification: The use of `*(undefined8 *)piVar4` in the unrolled loop represents a type-punning cast that is accurate to the assembly but unsafe and confusing in C. Standard pointer types are otherwise handled well.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to automated warnings ("Unknown calling convention") and variable resolution errors. There are no comments explaining the *intent* of the code (e.g., "Calculates sum of array").
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library calls like `memcpy`, `mmap`, and `printf` are recognized. However, the "array summation" idiom in `param_asm_clobber` is lost amidst the unrolling optimization.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler flags calling convention issues but does not explicitly flag the `undefined8` casts or the aggressive unrolling as potential readability issues or anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred (e.g., the requirement for `exec_mem` to be valid in `param_dynamic_code`).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls and global variable references (e.g., `global_var`) are clear. The relationship between `test_preprocessing_features` and its sub-functions is obvious.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, roughly following the source order. Helper functions like `__aarch64_ldadd4_acq_rel` are placed appropriately.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses Ghidra-specific types like `undefined8` and relies on a non-standard intrinsic `__aarch64_ldadd4_acq_rel`, preventing standalone compilation without modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Macro constants replaced by magic numbers (e.g., `0x40`, `0x200`), losing semantic context.
+- Loop unrolling in `param_asm_clobber` obscures the simple "sum array" logic with complex pointer arithmetic.
+- Excessive noise from "Unknown calling convention" warnings on standard functions.
+- Use of `undefined8` types in optimized loops reduces type safety and clarity.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Symbols were preserved in the binary, allowing the decompiler to recover exact function names from the source.
+
+**Most Needs Improvement:** Literal Clarity (scored 3/10)
+- The loss of all macro definitions makes the logic hard to follow; `0x401` is not as readable as `MAX_SIZE + 1`.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement constant propagation to suggest original macro values for magic numbers (e.g., annotate `0x40` as `64`).
+2. Detect and simplify loop unrolling patterns to reconstruct the original high-level loop structure where possible.
+3. Suppress "Unknown calling convention" warnings for standard library functions or simple static functions to reduce noise.

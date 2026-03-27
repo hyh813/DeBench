@@ -1,0 +1,152 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: The decompiled code uses extremely generic variable names like `a0` (parameter), `v0`, `v1`, `v2` (intermediate values), `ptr`, `idx`, `i`, `j`. These names convey no semantic meaning. For example, in `local_vars(unsigned int a0)`, the parameter should be named `x` based on source. The pattern `v0 = *((int *)&v7)` in `local_array` obscures that `v7` is actually the array `arr[5]` being returned.
+
+### 2. Function Naming Quality
+**Score: 3/10**
+
+Justification: While some functions like `local_vars`, `heap_basic`, `double_value` have proper names, many functions retain the mechanical `sub_401xxx` naming convention (e.g., `sub_401030`, `sub_40116b`). The function `call_static_func` should be `static_helper` per source. This mix of address-based and semantic names creates inconsistency and confusion.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Magic number `4294967295` appears frequently (representing -1 as unsigned) without explanation. Constants like `0x800` (2048 for large_stack_frame), `4` (sizeof(int)), and array sizes are unexplained. The value `20` in `stack_alias` is hardcoded without indicating it's the result of `*p1 = 20; return *p2;`.
+
+### 4. Noise Reduction
+**Score: 6/10**
+
+Justification: Some compiler artifacts present but manageable. The code contains unusual constructs like `*((int *)&v0)` casts and complex pointer arithmetic (e.g., `*((unsigned int *)((char *)&v3 + 2 * idx))`). However, no debug instrumentation or frame pointer manipulation clutter is evident.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Justification: Most loops are converted to do-while patterns with backward jumps (e.g., `do { ... } while (idx != 10)` in `local_array`). At `-O0`, this is unnecessary transformation. The `vla_stack` function has extremely convoluted control flow with multiple conditional branches that obscure the simple `if (n <= 0 || n > 1000) return -1` logic.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Functions are properly separated with reasonable granularity. The test functions (`test_stack_memory`, `test_heap_memory`) are large (200+ lines) but this matches the source. Parameter lists are generally appropriate, though some expose implementation details (e.g., `unsigned int *ptr` instead of `int *out`).
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Justification: Generally reads top-to-bottom with minimal forward jumps. However, `vla_stack` has complex nested conditionals that disrupt linear flow. Early returns are used appropriately in null-check patterns (e.g., `if (!ptr) return 4294967295;`).
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+Justification: Loop unrolling is present in many functions (e.g., `local_array` uses `idx += 2` with `*((unsigned int *)((char *)&v3 + 2 * idx))` instead of simple array indexing). This is not commented or abstracted, making the code harder to read. Some dead code from register spills exists.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+
+Justification: Most types are generic `unsigned int` or `void*` instead of specific types. The source uses `int` but decompiled uses `unsigned int` throughout. Pointers are often `void*` rather than typed pointers. Function signatures lose parameter names (e.g., `memop_memset(char *a0, unsigned int n, unsigned int a2)` should have `size`, `fill_value`).
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+Justification: Some structs are recovered with generic names like `struct_0`, `struct_1`. The `Node` struct in `linked_list_heap` is partially recovered with `field_0` (data) and `field_4` (next), but the meaningful names are lost. The `Point` struct is not recovered at all in `local_struct`.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Several unsafe operations present. In `heap_overflow`: `ptr += 1` after `free(ptr)` is a use-after-free bug in the decompilation. The `dangling_pointer` function correctly shows the dangerous `return *(ptr)` after `free(ptr)`. Excessive pointer arithmetic with casts (e.g., `*((int *)(ptr + ((i >> 31) + i & 4294967294) * 2))`) creates unsafe code.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Almost no comments present. The only comments are auto-generated function headers like `// Function: sub_401030 at 0x401030`. No explanation of algorithm logic, no indication of decompilation confidence, no documentation of pre/postconditions.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: Some data structure patterns are hinted at (linked list traversal in `linked_list_heap`, tree structure in `tree_heap_traversal`) but not explicitly named or documented. The "memory leak" pattern in `memory_leak` (allocating without freeing) is not flagged.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+Justification: No anomaly indication whatsoever. The dangerous `dangling_pointer` function is presented as normal code without any warning about the undefined behavior. The `heap_overflow` with its off-by-one loop is not flagged. No indication of indirect calls that couldn't be resolved.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No contracts recovered. Preconditions like "ptr != NULL" are implicit in null-checks but not documented. Postconditions are not indicated. Error return values (-1, -2, etc.) are not explained as error codes.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Some relationships are clear through `extern` declarations (e.g., `extern unsigned int global_counter`). Function call relationships are visible in the code. However, callback relationships (like `set_global_callback(double_value)`) are not documented, and the relationship between `test_*` functions and the functions they test is implicit.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Justification: Functions are grouped somewhat logically (stack functions together, heap functions together, static functions together) but the file is a single monolithic output. Static functions are not properly scoped with `static` keyword in decompiled output.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+
+Justification: The code has `extern` declarations for external functions but lacks proper includes. Many functions would require stubs to compile (e.g., `puts`, `printf`, `malloc`, `free`). The code uses `unsigned int` for what should be `int`, causing potential signed/unsigned comparison issues.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 3 + 4 + 6) / 4 = 3.75
+L2_avg = (5 + 7 + 6 + 5) / 4 = 5.75
+L3_avg = (4 + 5 + 5) / 3 = 4.67
+L4_avg = (2 + 4 + 1 + 2) / 4 = 2.25
+L5_avg = (5 + 6 + 5) / 3 = 5.33
+
+Overall = (3.75 × 0.30) + (5.75 × 0.25) + (4.67 × 0.20) + 
+          (2.25 × 0.15) + (5.33 × 0.10)
+        = 1.125 + 1.4375 + 0.934 + 0.3375 + 0.533
+        = 4.37/10
+```
+
+### Overall Readability Score: 4.4/10
+
+### Critical Defects
+
+- **Variable naming**: All parameters use generic `a0`, `a1`, `a2` instead of semantic names; all intermediate values use `v0`, `v1`, `v2` making it impossible to track purpose
+- **No comments**: Zero meaningful comments explaining algorithms, contracts, or anomalies
+- **Type degradation**: All `int` types converted to `unsigned int`, losing sign information; structs recovered with generic `struct_0`, `struct_1` names
+- **Dangerous code unflagged**: `dangling_pointer` and `heap_overflow` presented without any warning about undefined behavior
+- **Loop unrolling not abstracted**: Manual index manipulation (`idx += 2`) instead of clean array access, making the code 3x longer than necessary
+
+### Best Quality Aspect: Function Decomposition (7/10)
+Functions are properly separated with reasonable granularity matching the source structure. The test functions correctly call individual test cases.
+
+### Most Needs Improvement: Anomaly Indication (1/10)
+The decompiled code presents dangerous undefined behavior (dangling pointers, double-free, heap overflow) as normal code without any warnings. This is a critical safety issue for analysts.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: `a0` used as `x * 2 + 10` in `local_vars` should be named `x`; `v0` used as array index should be named `idx` or `i`
+
+2. **Add anomaly warnings**: Flag `dangling_pointer` with `// WARNING: use-after-free - ptr accessed after free()`, flag `heap_overflow` with `// WARNING: off-by-one loop writes beyond allocation`
+
+3. **Recover struct field names**: Use type analysis to recover `Node.data`, `Node.next` instead of `struct_0.field_0`, `struct_0.field_4`; recover `Point.x`, `Point.y` for struct functions

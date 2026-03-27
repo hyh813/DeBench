@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`) with no semantic meaning. Only `exception`, `obj`, `dest`, `a`, `b` provide minimal context. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: C++ mangled names partially recovered (`Base::virtual_func`, `Container<int>::push`) but test functions remain opaque (`_Z20test_cpp_member_funcv`). Some demangling occurred but not human-readable like original `test_cpp_member_func`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation (`0x1Fu`, `4700`, `0x10u`, `0x18u`). String literals present but format strings replaced with `&unk_114FC`. Original had clear expected values documented in comments.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__fastcall`, `__noreturn`, `BYREF` annotations, stack warnings ("positive sp value has been detected, the output may be wrong!"). 25 functions failed to decompile, cluttering output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow recovered (if-else chains in `test_cpp_rtti`), but many test functions constant-folded to single returns (`return 42;`). Virtual thunk functions show complex pointer arithmetic obscuring logic.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Individual functions reasonably sized, but test functions lost all computational logic (e.g., `test_cpp_virtual_func()` returns constant 42 instead of showing object creation and virtual calls). Thunk functions properly separated but numerous.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Exception handling in `test_cpp_exception()` collapsed to single throw call. Most functions have straightforward linear flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code, but constant folding eliminated educational value. Virtual thunk functions show duplicated pointer arithmetic patterns across inheritance hierarchy that could be abstracted.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types recovered (`int`, `double`, `void*`), but extensive type erasure present. Pointer arithmetic replaces proper field access (`*((_DWORD *)this->_vptr.MiddleA - 3)`). `size_t` used inconsistently.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class structures partially recovered (Base, Derived, Container) but fields accessed via pointer arithmetic. Complex inheritance (diamond, multiple) shows raw vtable offset calculations instead of named fields. `SimpleClass` fields (`value`, `name`) not properly structured.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(void *)`, `(_DWORD *)`, `(char *)`). Vtable access through raw pointer arithmetic (`*(_DWORD *)(*(_DWORD *)v0 - 4)`). No const-correctness preserved on recovered methods.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal auto-generated comments only (function metadata, register hints). No algorithm explanations, no decompilation confidence indicators. Original had extensive Chinese comments explaining each test scenario.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns visible (vtable calls, RTTI, templates) but not explicitly identified. No recognition of RAII pattern in smart pointer code, no identification of virtual inheritance thunks as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies noted ("FAILED to decompile" list, stack warning), but no explanation of why or how to resolve. Constant-folded functions not flagged as optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear expected return values in comments (e.g., "期望: 10 + 34 + 4660 = 4704"). No null checks or bounds validation comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch relationships unclear. 25 external functions failed to decompile (`__imp___cxa_throw`, `__imp___dynamic_cast`). No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but not logically organized by feature. No header file structure. Original had clear section markers (`// CPP-L3-01`, `// CPP-L3-02`). Inheritance hierarchy not visually organized.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 25 functions failed to decompile making standalone compilation impossible. External dependencies (`operator new`, `_cxa_allocate_exception`, `std::type_info`) not properly declared. Architecture mismatch (arm64 source vs arm32 decompiled).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+5+5+4)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (6+5+7+6)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type):        (5+4+4)/3   = 4.33  × 0.20 = 0.87
+Level 4 (Semantic):    (3+4+5+2)/4 = 3.50  × 0.15 = 0.53
+Level 5 (Contextual):  (5+5+3)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.68/10
+```
+
+### Overall Readability Score: **4.7/10**
+
+### Critical Defects:
+- **Constant folding eliminated computational logic**: Test functions like `test_cpp_virtual_func()` return `42` directly instead of showing object creation, virtual calls, and computation
+- **Architecture/optimization mismatch**: Source claims arm64/-O0 but decompiled binary is arm32/-O3, fundamentally changing expected readability
+- **25 functions failed to decompile**: Critical runtime functions (`__cxa_throw`, `__dynamic_cast`, `operator new`) missing, preventing full understanding
+- **Vtable access via raw pointer arithmetic**: Complex inheritance shown as `*((_DWORD *)this->_vptr.MiddleA - 3)` instead of named field access
+- **No semantic comments preserved**: Original had extensive Chinese documentation explaining each test; decompiled has only auto-generated metadata
+
+### Best Quality Aspect: **Code Linearization (7/10)**
+- Code generally reads top-to-bottom with minimal forward jumps and straightforward control flow in most functions
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- No preconditions, postconditions, or expected values documented; original had clear expected return values for every test function
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag constant-folded functions**: When a function returns a compile-time constant, add a comment indicating the original computation was optimized away and show the expected calculation
+2. **Recover C++ class field names from debug symbols**: Use `-g` debug information to restore original field names (`value`, `name`, `multiplier`) instead of pointer arithmetic
+3. **Generate cross-reference documentation**: Add header comments showing function call relationships, virtual dispatch targets, and inheritance hierarchy for C++ code

@@ -1,0 +1,123 @@
+## EVALUATION REPORT: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `result`) instead of semantic names from source (`temp1`, `temp2`, `sum`, `count`, `i`, `j`). For example, `loop_while` uses `v1`, `v2`, `v3` instead of `x`, `count`, and loop condition variable.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core test functions retained original names (`sequential_ops`, `single_if`, `nested_if_2`, `loop_for_fixed`), which is excellent. However, helper functions use generic names (`sub_1030`, `sub_1090`, `sub_2132`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (`0x12`, `0x65`, `100`, `1000`, `0xFFFFFFF8`). Original source had comments explaining test values; decompiled code has none.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present including register annotations (`@<eax>`, `@<ebx>`), type comments (`// eax`, `// ecx`), and `BYREF` markers. These add visual clutter without semantic value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Severe structural transformations despite `-O0` claim: `loop_for_fixed` converted to closed-form formula, `recursion_factorial` and `tail_recursion` converted to iteration, `switch_fallthrough` becomes nested if-statements, `loop_break` incorrectly becomes a switch statement.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized and cohesive. However, test functions (`test_control_flow_l1/2/3`) print hardcoded expected values instead of actually calling the functions, breaking the test semantics.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. `duffs_device` uses goto labels (`LABEL_3`, `LABEL_5`, etc.) which is appropriate for this pattern but disrupts flow slightly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `loop_continue` shows extreme obfuscation with bit manipulation (`v1 = n & 3`, `v3 & -(v3 & 1)`) instead of simple odd-number summation. `loop_modify_var` has complex variable tracking obscuring simple logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic `int` types preserved correctly. Some unnecessary unsigned conversions added (`(unsigned int)x < 3`). Function pointer types reasonably recovered with signatures (`int (__cdecl *)(int)`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays converted to lookup tables losing structure: `loop_multi_exit` uses `dword_30D8[target] + dword_3108[target]` instead of `matrix[i][j]`. No struct recovery needed for this code but array semantics lost.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Function pointer casts present but not dangerously unsafe (`((int (__cdecl *)(int))funcs_1B57[idx])(x)`). No obvious buffer overflow patterns introduced by decompilation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments except decompiler-generated function headers. No explanation of semantic transformations, algorithm intent, or why loops became formulas. Original source had extensive documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition evident. Duff's device structure preserved but not identified. State machines (`state_machine`, `fsm_func_table`) not labeled as such. Recursion-to-iteration conversions unexplained.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some failures flagged ("FAILED to decompile: __libc_start_main", "positive sp value has been detected"). However, major semantic changes (loop→formula, recursion→iteration) go unnotified.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original source had test validation comments (e.g., "输入5,7,3应返回21"); decompiled code has none.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but test functions don't actually call the tested functions—they print hardcoded values. Call graph relationships obscured (e.g., `test_control_flow_l1` doesn't invoke `sequential_ops`).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 83 functions in single output file without logical grouping. Related functions (state machine handlers, operation functions) not grouped together.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: 6 functions failed to decompile (external libc functions). Requires stubs for `printf`, `puts`, `longjmp`, `_setjmp`, `__libc_start_main`, `__cxa_finalize`. Architecture mismatch (original ARM64, decompiled x86).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (4+6+7+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (7+5+7)/3   = 6.33 × 0.20 = 1.267
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.31/10
+```
+
+### Overall Readability Score: **5.3/10**
+
+---
+
+### Critical Defects
+
+- **Variable names completely generic**: `v1`, `v2`, `result` instead of `temp1`, `sum`, `count`—requires manual inference for every variable
+- **Control flow aggressively transformed**: Loops converted to closed-form formulas (`loop_for_fixed`), recursion to iteration (`recursion_factorial`), despite `-O0` compilation claim
+- **Test functions broken**: `test_control_flow_l1/2/3` print hardcoded expected values instead of actually calling functions, defeating test purpose
+- **Zero semantic documentation**: No comments explaining transformations, algorithm intent, or recovered patterns
+- **Architecture mismatch**: Original compiled for ARM64, decompiled output shows x86 registers (eax, ebx, esp, ebp)
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (8/10)** - Core test functions retained their original semantic names (`sequential_ops`, `nested_if_deep`, `switch_fallthrough`), making function identification straightforward despite other issues.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (2/10)** - Virtually no explanatory comments; semantic transformations (loop→formula, recursion→iteration) occur without any notification or explanation, leaving analysts to reverse-engineer the decompiler's decisions.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Preserve original control structures at -O0**: When debug symbols indicate `-O0` compilation, avoid aggressive optimizations like loop-to-formula conversion and recursion-to-iteration transformation that obscure original intent.
+
+2. **Infer variable names from usage patterns**: Analyze variable roles (loop counters, accumulators, temporaries) and assign semantic names (`i`, `sum`, `temp`) instead of generic `v1`, `v2`, `v3`.
+
+3. **Add transformation annotations**: When semantic changes occur (especially irreversible ones like loop elimination), insert comments like `// DECOMPILER: Loop converted to closed-form formula` to alert analysts to potential accuracy concerns.

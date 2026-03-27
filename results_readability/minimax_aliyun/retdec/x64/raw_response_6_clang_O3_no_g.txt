@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy` (and related functions)
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `a1`, `str2`, `v1`, `v2` throughout. The parameter `a1` should be `dst` and the missing parameter for `src` is completely absent. Local variable `str2` in `param_strcpy` is uninitialized, causing undefined behavior.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match original source (e.g., `param_strcpy`, `call_strcpy`, `param_strlen`). The naming is consistent and action-oriented. Minor deduction for some internal functions with hex addresses.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: String "HelloLib" is encoded as raw hex `0x62694c6f6c6c6548` which is unreadable. Magic numbers like `0x100000000` used for arithmetic without explanation. Format strings contain raw UTF-8 bytes (`\xe6\x9c\x9f\xe6\x9c\x9b`).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive inline assembly (`__asm_movdqa`, `__asm_pcmpeqb`) in functions like `param_fread_fwrite` and `param_malloc_free`. Redundant casts throughout. Many `__asm_` blocks for SIMD operations that could be abstracted.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow (if/else, while) is generally readable. However, `param_malloc_free` uses complex goto-based state machines that obscure loop logic. At -O0, such complexity is unexpected.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized (20-100 lines typically). However, `param_malloc_free` at ~280 lines is too large. Some parameter lists expose implementation details (e.g., 4 parameters when only 1 is needed).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but `param_malloc_free` has multiple labeled sections (`lab_0x2921`, `lab_0x2904`) that disrupt flow. Forward jumps present but manageable.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling in `param_malloc_free` and `param_memset` is extensive and not commented. Same SIMD patterns repeated multiple times. Dead code from register spilling visible in some functions.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Most functions use `int64_t` for everything regardless of actual type. `param_strcpy` only has one parameter when it should have two (`dst` and `src`). `size_t` parameters often become `uint64_t`. Const correctness is lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structures like `struct stat` are reconstructed but with generic field names (`e0`, `e1`, etc.). The `struct shmid_ds` has proper fields but unnamed. No bit-field recovery. Nested structures partially handled.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts: `(char *)a1`, `(int64_t *)str2`. In `param_strcpy`, `str2` is uninitialized before use in `strcpy()`. Pointer arithmetic often unchecked. Function pointers cast to `int64_t *` frequently.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining algorithm or intent. Only address annotations (e.g., `// 0x24b4`). No decompilation confidence indicators. Auto-generated noise dominates.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library functions (strcpy, strlen, pthread_create) are correctly identified. However, no pattern names for algorithms. Threading patterns (producer-consumer) not explicitly labeled.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of the critical bug in `param_strcpy` (missing parameter). Uninitialized variable `str2` not flagged. Indirect calls not resolved are not documented. Code presents incorrect information confidently.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values not explained. The contract of `param_strcpy` (takes two parameters, returns length) is completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are visible but relationships not documented. No comments showing call graph. Global variables (g41, g42 for signal handling) have unclear purposes. Callback relationships not explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically (string functions together, thread functions together). Static functions properly scoped. Related test functions grouped with their param counterparts.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has proper includes and structure. However, `param_strcpy` has wrong signature (1 param vs 2), causing compilation failure. Many undefined references to standard functions without declarations.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- `param_strcpy` has wrong signature - missing `src` parameter entirely, causing undefined behavior with uninitialized `str2`
+- `call_strcpy` doesn't call `param_strcpy` at all - directly computes wrong result
+- String literal "HelloLib" encoded as unreadable hex `0x62694c6f6c6c6548`
+- All variables use generic names (`a1`, `v1`, `str2`) obscuring semantic purpose
+- No comments explaining any algorithm or intent
+
+**Best Quality Aspect:** Module Organization (7/10)  
+Functions are logically grouped by category (string functions, thread functions, system calls), making it easy to locate related code.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Type Precision (3/10)  
+The combination of missing parameters, uninitialized variables, and generic names makes the code nearly unusable for analysis. `param_strcpy` is fundamentally broken.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Fix parameter detection**: `param_strcpy` clearly takes two pointer parameters but decompiles with only one - improve parameter analysis
+2. **Recover string literals**: Decode hex-encoded strings back to readable form ("HelloLib" not `0x62694c6f6c6c6548`)
+3. **Add semantic comments**: Document function contracts, preconditions, and any uncertain decisions (e.g., "UNCERTAIN: indirect call")

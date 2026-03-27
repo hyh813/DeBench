@@ -1,0 +1,186 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names throughout. Parameters are named `param_1`, `param_2`, etc., while local variables use cryptic identifiers like `iVar1`, `piVar2`, `uVar1`, `local_20`, `local_44`. The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`. For example, in `param_macro_constants`, the parameter should be named `size` based on the original source, not `param_1`.
+
+### 2. Function Naming Quality
+**Score: 10/10**
+
+All function names perfectly match the original source: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, `param_memory_protection`, etc. The decompiler accurately recovered every function name from the binary.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Some literals are meaningful (e.g., `0x40` = 64, `0x200` = 512, `0x2a` = 42), but most are unexplained magic numbers. The decompiler shows `0x1e` for `_SC_PAGESIZE`, `7` for `PROT_READ|PROT_WRITE|PROT_EXEC`, and `0x22` for `MAP_PRIVATE|MAP_ANONYMOUS` without any explanation. No named constants like `MAX_SIZE` or `BUFFER_COUNT` were recovered.
+
+### 4. Noise Reduction
+**Score: 8/10**
+
+The code is relatively clean with minimal compiler artifacts. No redundant casts, debug instrumentation, or register spilling visible. The auto-generated atomic helper functions (`__sync_fetch_and_add_4`, etc.) are necessary library code, not noise. Overall, the output is readable without significant clutter.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 9/10**
+
+Control flow is natural and idiomatic. The decompiler correctly recovered if-else statements (e.g., `param_macro_constants`), while loops (e.g., `param_asm_clobber`), and do-while loops (e.g., `call_asm_clobber`). At `-O0`, the control flow closely matches the source. Example: `if (param_1 < 0x401) { uVar1 = 0x200; }` correctly represents `if (size > MAX_SIZE)`.
+
+### 6. Function Decomposition
+**Score: 9/10**
+
+Functions are appropriately sized with clear single responsibilities. Each test function (`param_macro_constants`, `param_asm_basic`, etc.) is separate and focused. The parameter lists are reasonable and don't expose excessive implementation details. No 500-line monoliths; each function is 10-50 lines.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+The code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately. Some pointer arithmetic like `(int *)(param_1 + -4)` creates slight complexity, but the overall flow is traceable. No goto statements or spaghetti code.
+
+### 8. Redundancy Elimination
+**Score: 9/10**
+
+No significant redundancy observed. No dead code, duplicate expressions, or obvious tail duplication. Loop unrolling is minimal (appropriate for `-O0`). The code is clean and non-repetitive.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+
+The decompiler uses `int` consistently and `undefined4` for 32-bit values (appropriate for ARM). However, it loses the distinction between signed and unsigned types. `size_t` is correctly preserved as `size_t`. Integer types like `int` vs `long` are not differentiated. Example: `param_1` should be `int` but could be `unsigned int` based on usage.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+No struct or union recovery is visible. The decompiler uses raw pointer arithmetic like `(int *)(param_1 + -4)` instead of struct field access. This is typical for decompilers when debug information is limited, but it loses semantic meaning. The original source had no complex structs anyway, so this is partially expected.
+
+### 11. Type Safety
+**Score: 7/10**
+
+Generally type-safe code with few unsafe casts. Some pointer arithmetic could be unsafe: `(int *)(param_1 + -4)` in `param_asm_clobber` is borderline. No obvious buffer overflows or type-confused function pointers. The atomic operations use proper function signatures.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+
+Only generic function headers like `/* Function: param_macro_constants @ 000105d0 */` are present. No explanation of what the function does, why it exists, or how it relates to the original source. No indication that this is preprocessor-expanded code vs. original source. The comments are purely structural, not informative.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+No design patterns or algorithms are identified. The decompiler doesn't recognize:
+- Atomic operations (lock-free patterns)
+- SIMD vector operations
+- Memory protection patterns (mprotect)
+- Self-modifying code patterns
+
+The code is presented as-is without any pattern naming or explanation.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+
+No anomalies are flagged. The decompiler doesn't indicate:
+- Indirect calls that couldn't be resolved
+- Potential undefined behavior
+- Hand-written assembly patterns that were inlined
+- Preprocessor-related semantic changes
+
+The output presents everything as confident, even where decompilation may be uncertain.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No preconditions, postconditions, or invariants are documented. The decompiler doesn't indicate:
+- That `param_asm_clobber` requires `n > 0`
+- That `param_memory_protection` returns specific error codes (-1, -2, -3)
+- That `param_dynamic_code` requires executable memory
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 7/10**
+
+Function calls are clear and traceable. The call graph is visible: `main` calls `test_preprocessing_features` and `test_asm_features`, which call individual test functions. Global variable `global_var` is referenced in `param_memory_clobber_demo`. However, no explicit documentation of relationships.
+
+### 17. Module Organization
+**Score: 8/10**
+
+Functions are grouped logically:
+- Preprocessing tests (PP-L2-01 through PP-L3-07)
+- Assembly tests (ASM-L4-01 through ASM-L4-06)
+- Atomic operation helpers at the end
+
+The organization matches the source file structure reasonably well.
+
+### 18. Build System Compatibility
+**Score: 9/10**
+
+The code compiles cleanly (as indicated by "Compilation Result: Yes"). All external functions (`printf`, `mmap`, `munmap`, `mprotect`, `sysconf`) are properly declared or linked from libc. No missing dependencies or compilation errors.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 10 + 5 + 8) / 4 = 6.25
+L2_avg = (9 + 9 + 8 + 9) / 4 = 8.75
+L3_avg = (7 + 5 + 7) / 3 = 6.33
+L4_avg = (4 + 3 + 3 + 2) / 4 = 3.00
+L5_avg = (7 + 8 + 9) / 3 = 8.00
+
+Overall = (6.25 × 0.30) + (8.75 × 0.25) + (6.33 × 0.20) + 
+          (3.00 × 0.15) + (8.00 × 0.10)
+        = 1.875 + 2.1875 + 1.266 + 0.45 + 0.8
+        = 6.58/10
+```
+
+### Overall Readability Score: 6.58/10
+
+---
+
+### Critical Defects
+
+1. **Variable naming is unusable**: Parameters like `param_1`, `param_2` and locals like `iVar1`, `piVar2`, `local_20` completely obscure semantic meaning. Should infer names from usage patterns.
+
+2. **No macro semantic recovery**: The decompiled code shows the result of macro expansion (e.g., `0x401` instead of `MAX_SIZE + 1`) but doesn't indicate these were originally preprocessor macros.
+
+3. **No pattern recognition**: Atomic operations, SIMD, memory protection, and self-modifying code are not identified as idioms - they're presented as generic C code.
+
+4. **No contract/precondition documentation**: Functions like `param_asm_clobber` (requires n > 0) and `param_memory_protection` (returns specific error codes) lack any indication of their contracts.
+
+5. **Sparse comments**: Only structural headers exist; no explanation of what functions do, why they exist, or how they relate to the original source.
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (10/10)** - Every function name perfectly matches the original source, from `param_macro_constants` to `param_dynamic_code`. This is excellent recovery.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - The generic `param_1`, `iVar1`, `local_20` style naming makes the code extremely difficult to analyze. At `-O0`, the decompiler should be able to infer meaningful names from usage patterns (e.g., `param_1` used in `if (param_1 < 0x401)` should be `size`).
+
+---
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage**: Analyze how variables are used (comparisons, arithmetic, function calls) to suggest semantically meaningful names. `param_1` compared to `0x401` (1025 = MAX_SIZE+1) should suggest `size` or `max_size`.
+
+2. **Recover preprocessor semantics**: Detect when constants are macro expansions and add comments indicating the original macro name. Show both the literal value and the macro name (e.g., `// MAX_SIZE (1024)`).
+
+3. **Add idiom recognition**: Identify common patterns (atomic operations, SIMD, memory protection) and add explanatory comments naming the pattern and its purpose.

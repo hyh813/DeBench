@@ -1,0 +1,165 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names throughout. Local variables are named `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9` - completely obscuring their semantic purpose. Parameters are named `a1`, `a2`, etc. Global variables use `g1`, `g2`, `g3`, etc. Compare to original source where variables like `dst`, `src`, `buffer`, `len`, `iterations_per_thread` clearly convey purpose. This is a severe degradation that makes tracking variable roles nearly impossible.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+
+Mixed results: some functions correctly named like `call_strcpy`, `call_pthread_create`, `param_mutex_lock`, but internal helper functions use generic names like `function_13c0`, `function_13d0`. Standard library functions are generally correctly identified (`memcpy`, `strlen`, `pthread_create`). However, the param_ functions don't indicate their parameter types, and many functions lack the action-verb clarity of the original (e.g., original `param_strcpy` vs. decompiled).
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Chinese strings are encoded as raw bytes: `g7 = "=== \xe6\xb5\x8b\xe8\xaf\x95..."` instead of readable text. Magic numbers like `0x100000000`, `0xffffffff`, `128`, `256` appear without explanation. Constants like `g35 = 0`, `g36 = 0`, `g37 = 185` have no semantic meaning. The original source had clear constants like `O_RDONLY`, `SOCK_STREAM` which are lost.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+Severe noise pollution: numerous `__asm_hint`, `__asm_ubfx`, `__asm_stlr`, `__asm_casal`, `__asm_ldaddal` calls; redundant stack checks `if (*(int64_t *)g2 == *(int64_t *)g2)` appear repeatedly; unreachable code blocks; excessive type casts; embedded assembly for atomic operations. The code is cluttered with compiler artifacts that obscure the actual logic.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Basic control flow structures (if/else, while loops) are preserved, but there are problematic patterns. The code uses goto statements (`goto lab_0x2440`) which disrupt readability. Some conditions are convoluted, like in `param_fread_fwrite` where a complex ternary expression checks multiple conditions. At -O0, this level of control flow degradation is excessive.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Function granularity is reasonably preserved from the original. The decompiler maintained separate functions for each test case (call_strcpy, call_strcmp, etc.). Some functions like `test_standard_library_functions` are large but this mirrors the original structure. The decomposition is adequate, though some internal functions could be better separated.
+
+### 7. Code Linearization
+**Score: 5/10**
+
+The code generally reads top-to-bottom but has multiple forward jumps and goto statements that disrupt flow. The `goto lab_0x2440` pattern appears multiple times. Early returns are used appropriately in some places but the overall reading experience is interrupted by jumps to error handling blocks and unreachable code sections.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+
+Some redundancy from the original source is preserved (which is expected), but there's additional redundancy from the decompilation process. The repeated stack check pattern `if (*(int64_t *)g2 == *(int64_t *)g2)` appears in many functions unnecessarily. Loop unrolling is minimal at -O0, which is appropriate.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+Mixed precision: uses `int32_t`, `int64_t`, `uint32_t` in many places, but also uses generic `int` and `void*`. Function parameters often incorrectly use `int64_t` for pointer types (e.g., `param_strcmp(int64_t a1)` should be `param_strcmp(const char *s1, const char *s2)`). The original had precise types like `char *dst, const char *src` which are lost.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Structures are defined but with meaningless field names: `struct _IO_FILE { int32_t e0; }`, `struct ipc_perm { int32_t e0; int32_t e1; ... }`. The original source uses standard types like `FILE*`, `struct stat`, `struct sockaddr_in` which are either missing or have generic fields. Nested structures are flattened or lost.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Multiple type safety issues: excessive casting between `int64_t*` and `int32_t*`; pointer arithmetic without proper type context; function pointer type mismatches (e.g., `(int64_t * (*)(int64_t *))((int64_t)&g1 + 2484)`); unsafe conversions in atomic operations. The code has numerous opportunities for undefined behavior.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Minimal useful comments. The decompiler adds address ranges (`// Address range: 0x17c0 - 0x17e0`) and line numbers which are auto-generated artifacts, not semantic documentation. No explanation of algorithms, no recovery of original comments from source. The original had detailed comments explaining each function's purpose which are completely lost.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+No design patterns or algorithms are identified or named. The threading patterns (producer-consumer, mutex-protected critical sections, condition variables) are present in the code but not recognized as such. The original source explicitly tests patterns like pthread_create/join, mutex lock/unlock, but these aren't highlighted in the decompiled output.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+No flagging of suspicious code. The decompiled code presents everything with equal confidence, including potentially incorrect interpretations. There's no indication of indirect calls that couldn't be resolved or unusual patterns that warrant manual inspection. The `// UNREACHABLE` comments are present but not explained.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No recovery of preconditions, postconditions, or invariants. The original source has clear semantics (e.g., "returns length of copied string", "requires: ptr != NULL") which are completely lost. No documentation of what functions expect or guarantee.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 2/10**
+
+No function call graph or relationship documentation. The code provides no indication of which functions call which, or how data flows between them. Global variables like `signal_received`, `shared_counter`, `ready`, `data` are used across multiple functions but their relationships aren't explained.
+
+### 17. Module Organization
+**Score: 4/10**
+
+All code in single file with functions grouped somewhat logically (standard library tests, system call tests, thread tests). However, no header files, no API declarations separated from implementations, no namespace or package structure. The original had clear section comments which are lost.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+The code would not compile without significant modifications: missing standard library function declarations (uses `function_14d0` for `fopen` instead of actual `fopen`); incorrect function signatures throughout; embedded assembly blocks; undefined references to many symbols. The decompiled code is not standalone compilable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 3 + 2) / 4 = 3.0
+L2_avg = (5 + 7 + 5 + 6) / 4 = 5.75
+L3_avg = (5 + 4 + 4) / 3 = 4.33
+L4_avg = (3 + 3 + 2 + 2) / 4 = 2.5
+L5_avg = (2 + 4 + 2) / 3 = 2.67
+
+Overall = (3.0 × 0.30) + (5.75 × 0.25) + (4.33 × 0.20) + (2.5 × 0.15) + (2.67 × 0.10)
+        = 0.90 + 1.44 + 0.87 + 0.38 + 0.27
+        = 3.86/10
+```
+
+### Overall Readability Score: 3.9/10
+
+---
+
+### Critical Defects
+
+1. **Variable naming**: All local variables use generic names (`v1`-`v9`, `a1`) making it impossible to track semantic purpose without extensive manual analysis
+
+2. **Type precision loss**: Function parameters like `param_strcmp(int64_t a1)` lose the original `const char *s1, const char *s2` signature, eliminating type safety
+
+3. **String encoding**: Chinese characters in format strings rendered as raw bytes (`\xe6\xb5\x8b`) instead of readable text
+
+4. **Noise artifacts**: Excessive compiler artifacts (`__asm_*` calls, redundant stack checks, unreachable code) clutter the output
+
+5. **No semantic recovery**: Complete loss of original comments, function documentation, and algorithm explanations
+
+---
+
+### Best Quality Aspect
+
+**Function Decomposition (7/10)** - The decompiler preserved the function granularity from the original source, maintaining separate functions for each test case. This is the highest-scoring area.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - This is the most severe issue. The decompiler should infer variable names from usage patterns (e.g., `v1` used as size_t → `size`, `v2` used as string → `buffer`). At -O0, there's no optimization excuse for this degradation.
+
+---
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage**: Analyze how variables are used (array indexing, string operations, arithmetic) to assign semantic names. A variable used in `strlen()` should be named `str` or `string`.
+
+2. **Recover string encodings**: Decode UTF-8 strings in the binary to their original form instead of showing raw byte sequences.
+
+3. **Eliminate compiler noise**: Filter out `__stack_chk_fail` patterns, redundant stack checks, and unreachable code blocks. These add no value to human readers.

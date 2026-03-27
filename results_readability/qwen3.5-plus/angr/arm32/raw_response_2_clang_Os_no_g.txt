@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `a0`, `a1`, `ptr`, `result`) with zero semantic meaning. For example, in `process_char`, parameter `a0` should be `c` or `character`; in `array_1d_stack`, `i` is used but `ptr` is undefined.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some original names preserved (`process_char`, `array_1d_stack`, `ptr_single`), but many are generic (`sub_4003f8`, `sub_400498`). Critically, test functions don't actually call the real functions—they print hardcoded constants instead.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `65` (should be `'A'`), `255`, `4294967295` (should be `-1` or `UINT_MAX`), `0x80000000`. Floating-point constants like `0x3f000000` are completely opaque.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Compiler runtime functions (`__muldf3`, `__adddf3`, `__addsf3`) appear as massive unreadable blobs. Register spilling artifacts (`vvar_36{r64|4b}`) pollute the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Excessive `goto` usage instead of natural loops. Floating-point functions use nested `if/goto` patterns that should be simple arithmetic. Example: `process_float` uses `goto` and stack manipulation instead of `return f * 1.5f + 0.5f`.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Floating-point runtime functions are 300+ lines of incomprehensible code. Test functions are reduced to constant-printing stubs rather than actual test logic.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Many forward jumps disrupt reading flow. Floating-point functions have deeply nested conditional branches with labels like `LABEL_4013ca`, `LABEL_401498`.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive conditional duplication in floating-point functions. The same `armg_calculate_condition` patterns repeat dozens of times with minor variations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Catastrophic type loss. `char` becomes `unsigned int`, `short` becomes `unsigned short`, `float`/`double`/`long double` all become `unsigned int` or `void`. `process_ll` takes two `unsigned int` instead of one `long long`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered as `struct_0`, `struct_1` with `field_0`, `field_4` naming. No field names like `x`, `y`, `z` for `Point3D`. Bitfield structure completely lost in `struct_bitfields`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(int*)p`, `(char*)a0`). Pointer arithmetic on generic `unsigned int*`. Function pointers called via `goto a0` instead of proper call syntax.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered. Original source had extensive documentation explaining each function's purpose, test scenarios, and expected behavior—all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Character conversion (`c >= 'A' && c <= 'Z'` → `c + 32`) not identified. Loop patterns not recognized as `for`/`while`.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No uncertainty markers. Floating-point functions are presented confidently despite being essentially unreadable bit manipulation code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear test expectations (e.g., "期望: 'a'") that are completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships not documented. Test functions don't actually call the functions they're testing—they print pre-computed constants.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output with no logical grouping. Original source had clear sections (Data Types, Arrays, Pointers, Composite Types) that are lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Metadata indicates compilation succeeds, but would require significant stubbing for external functions (`__libc_start_main`, `__muldf3`, etc.).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+3+3)/4 = 3.00  × 0.30 = 0.90
+Level 2 (Structural):  (2+4+3+3)/4 = 3.00  × 0.25 = 0.75
+Level 3 (Type):        (2+3+3)/3 = 2.67    × 0.20 = 0.53
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50  × 0.15 = 0.23
+Level 5 (Contextual):  (3+3+5)/3 = 3.67    × 0.10 = 0.37
+─────────────────────────────────────────────────────
+Overall Score:                                  2.78/10
+```
+
+**Overall Readability Score:** 2.8/10
+
+### Critical Defects:
+- **Floating-point functions completely unreadable** - `process_float`, `process_double`, `process_ld` devolved into 300+ line bit manipulation code instead of simple arithmetic
+- **Test functions optimized away** - They print hardcoded constants instead of actually calling and testing the functions
+- **Total type information loss** - `char`, `float`, `double`, `long long` all collapsed to `unsigned int`
+- **Zero comments recovered** - All original documentation, test expectations, and function purposes lost
+- **Struct field names lost** - `Point3D.x`, `Point3D.y`, `Point3D.z` became `field_0`, `field_4`, `field_8`
+
+### Best Quality Aspect: **Build System Compatibility (5/10)**
+- The code does compile according to metadata, which is more than can be said for many decompilation outputs.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding the code's purpose nearly impossible without the original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level arithmetic operations** - Detect floating-point library calls (`__muldf3`, `__addsf3`) and reconstruct as `d * 2.0 + 0.1` instead of bit manipulation
+2. **Preserve test function semantics** - Don't optimize away actual function calls in test code; maintain the call structure for verification purposes
+3. **Infer variable names from usage context** - Parameters used in character comparisons should be named `c` or `character`; loop counters should be `i`, `j`, `k`

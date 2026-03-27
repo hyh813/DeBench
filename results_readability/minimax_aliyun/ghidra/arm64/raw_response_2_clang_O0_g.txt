@@ -1,0 +1,161 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+The decompiler uses generic stack variable names (local_14, local_10, local_c) instead of semantic names. Comments like "/* Unresolved local var: int sum@[???] */" and "/* Unresolved local var: int i@[???] */" indicate the decompiler failed to recover meaningful names. While parameter names like `char c`, `int x` are preserved, local variables lack semantic meaning.
+
+### 2. Function Naming Quality
+**Score: 10/10**
+
+Nearly all function names perfectly match the original source: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `ptr_double`, `struct_simple`, `linked_list`, `binary_tree`, `graph_traverse`, etc. The decompiler correctly recovered all 70+ function names with full semantic accuracy.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Mixed results. Some literals are clear: `'\0'` for null terminator, enum values like `STATE_IDLE`, `STATE_RUNNING` are preserved. However, magic numbers appear: `0x40` and `0x5b` in `process_char` (should be 'A' and 'Z' bounds), `0x32` in `enum_switch` (should be 50). The literal `' '` (space for case conversion) is converted to numeric `0x20` without explanation.
+
+### 4. Noise Reduction
+**Score: 8/10**
+
+Minimal compiler artifacts. Some warnings about "unreachable block" and "unknown calling convention" are present. The "Unresolved local var" comments are informative rather than obstructive. No significant noise from register spilling or debug instrumentation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+
+Control flow is natural and idiomatic. Loops use `for` constructs correctly, switch statements are properly formed. The `volatile_access` function correctly shows two separate memory reads. Minor issue: `int (*arr) [10]` parameter type is technically correct but less readable than `int arr[10][10]`.
+
+### 6. Function Decomposition
+**Score: 9/10**
+
+Excellent decomposition. All original functions are preserved as separate entities with appropriate granularity. No inlining artifacts or function fragmentation observed. Functions like `binary_tree` correctly call `binary_tree_sum`, maintaining proper call structure.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Code generally reads top-to-bottom. Early returns used appropriately. Minor forward jumps exist in complex functions but don't significantly disrupt readability. The test functions (`test_data_types_l1`, etc.) have straightforward linear flow.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+No significant redundancy. Dead code is minimal. Loop constructs are properly formed without obvious unrolling artifacts (appropriate for -O0 compilation). Common subexpressions are not unnecessarily duplicated.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 8/10**
+
+Most types are precise: `char`, `short`, `int`, `long`, `long long`, `float`, `double` all correctly identified. Function pointer types like `_func_int_int*` and `_func_int_int_ptr_char_ptr_ptr*` are properly typed. Minor issues: `long double` becomes `long_double` (Ghidra type), some `undefined1` usage.
+
+### 10. Composite Type Recovery
+**Score: 10/10**
+
+Excellent struct/union recovery. All type names preserved: `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Edge`, `Graph`, `Device`, `Flags`, `UnionData`, `State`. All field names recovered: `x`, `y`, `z`, `position`, `size`, `width`, `height`, `data`, `next`, `prev`, `left`, `right`, `dest`, `process`, `numVertices`. Bitfields handled correctly. Union vs. struct distinction maintained.
+
+### 11. Type Safety
+**Score: 8/10**
+
+Generally type-safe code. Appropriate casts used for void pointer operations in `ptr_void`. Minor issues: The bitfield handling in `struct_bitfields` uses raw pointer casting (`*(ushort *)f`) which is technically unsafe but necessary. No major type safety violations that would cause undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+
+Minimal useful comments. Most are auto-generated: "/* WARNING: Removing unreachable block */", "/* WARNING: Unknown calling convention */". No algorithm explanations or logic documentation. The "Unresolved local var" comments are informative but don't explain purpose. No recovery of original source code comments that explained test scenarios.
+
+### 13. Idiom Recognition
+**Score: 7/10**
+
+Common patterns are recognizable: linked list traversal (`while (current != NULL)`), binary tree recursion, graph adjacency list traversal. However, no explicit naming or documentation of these patterns. The data structure shapes (Node with next pointer, TreeNode with left/right) are clear from types.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+
+Some warnings present: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "WARNING: Type propagation algorithm not settling". However, the `volatile_access` function doesn't have a comment explaining why two separate reads occur. No flags for the intentional buffer overflow in `array_oob`.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+
+No pre/postcondition recovery. No documentation of function contracts (e.g., "requires: ptr != NULL"). No indication of error handling expectations. The original source had no explicit assertions, so none could be recovered, but the decompiler doesn't infer implicit contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 8/10**
+
+Function call relationships are clear through direct calls: `test_data_types_l1()` calls `process_char`, `process_short`, etc. Global variable usage is minimal. Callback relationships are clear: `ptr_func_simple` calls function pointer `f`, `struct_func_ptr` calls `dev->process`. The `complex_callback` is properly referenced.
+
+### 17. Module Organization
+**Score: 7/10**
+
+All functions in single file but logically grouped: data type functions, array functions, pointer functions, struct functions, test functions. Static functions like `double_value` and `complex_callback` are properly scoped. However, compiler runtime functions (`__addtf3`, `__multf3`, `__sfp_handle_exceptions`) are included, cluttering the output.
+
+### 18. Build System Compatibility
+**Score: 9/10**
+
+The code compiles successfully (as indicated by "Compilation Result: Yes" in metadata). Minimal external dependencies - only standard C library functions (`printf`). All function declarations are present. The only issue is the large amount of compiler runtime code included.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 5 + 8) / 4 = 6.5
+L2_avg = (8 + 9 + 8 + 8) / 4 = 8.25
+L3_avg = (8 + 10 + 8) / 3 = 8.67
+L4_avg = (4 + 7 + 6 + 3) / 4 = 5.0
+L5_avg = (8 + 7 + 9) / 3 = 8.0
+
+Overall = (6.5 × 0.30) + (8.25 × 0.25) + (8.67 × 0.20) + (5.0 × 0.15) + (8.0 × 0.10)
+        = 1.95 + 2.0625 + 1.734 + 0.75 + 0.8
+        = 7.30/10
+```
+
+**Overall Readability Score: 7.3/10**
+
+---
+
+### Critical Defects
+
+1. **Variable naming**: Generic names like `local_14`, `local_c` instead of semantic names (`sum`, `i`, `len`) - requires significant effort to track variable purposes
+2. **Magic numbers**: `0x40`, `0x5b`, `0x32` in `process_char` and `enum_switch` obscure the original logic
+3. **Comment absence**: No algorithm explanations or logic documentation; only auto-generated warnings
+4. **Contract recovery**: No pre/postcondition or invariant documentation
+5. **Anomaly handling**: No flag for intentional buffer overflow in `array_oob` function
+
+---
+
+### Best Quality Aspect
+
+**Composite Type Recovery (10/10)** - All struct, union, and enum types are perfectly reconstructed with accurate field names. Types like `Point3D`, `Node`, `TreeNode`, `Graph` with their fields are identical to source.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (3/10)** - The generic `local_X` naming scheme forces analysts to manually track variable purposes through code inspection. This is the primary readability barrier.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `sum += arr[i]` → `sum`; `for (local_14 = 0; ...` → `i`) to assign semantic names instead of `local_X`
+
+2. **Detect and explain magic numbers**: Recognize common patterns (ASCII bounds, enum values, bit masks) and either use named constants or add explanatory comments
+
+3. **Add semantic comments**: Include basic documentation explaining what non-trivial functions do, especially for test functions and complex data structure operations

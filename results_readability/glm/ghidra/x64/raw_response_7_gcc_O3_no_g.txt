@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `iVar1`, `uVar2`, `bVar1`, and `param_1`, providing no semantic hint about their role (e.g., `result`, `key`, `len`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `param_fake_branch`, `param_opaque_predicate`, and `main` are accurately recovered from symbol tables, perfectly matching the original source intent.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers like `0x5a` (XOR key) and `0x7a314` (500500) appear without explanation, while constants like `0x14` (20) are used directly instead of being mapped to meaningful values.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail`) and redundant casts (`undefined8`) clutter the code, though this is partly due to the compiler's security features.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Aggressive `-O3` optimization has transformed simple loops and recursion into complex arithmetic progressions (e.g., `param_tail_call_optimized`), making the flow extremely difficult to follow compared to the source.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Functions are generally well-separated, though some logic like `decrypt_string` is inlined into `param_string_encryption`, which is acceptable given the optimization level.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code contains forward jumps (e.g., `goto LAB_0010182f`) and deeply nested conditionals resulting from compiler optimizations, disrupting top-to-bottom readability.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler cleanly presents the compiler's optimized code without adding artificial redundancy; the complexity present is inherent to the binary.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are heavily degraded to generic `undefined4`, `undefined8`, and `ulong`, losing the distinction between `int`, `size_t`, and specific pointer types found in the source.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: No complex structs were present in the snippets to recover, but the `setjmp` buffer is handled as a generic raw array rather than a typed `jmp_buf`.
+
+**11. Type Safety:** Score: 4/10
+Justification: Unsafe casts like `(code *)invalidInstructionException()` and treating integers as `undefined8` obscure the actual data types and operations being performed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to compiler warnings (e.g., "WARNING: Subroutine does not return") and offer no insight into the algorithm's purpose or logic.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level patterns like recursion (`param_tail_call_optimized`) and simple loops (`param_vectorized_loop`) are obscured by unrolling and vectorization, appearing instead as complex arithmetic.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler correctly flags potential issues like `invalidInstructionException` and stack checks, providing useful warnings about unusual control flow.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no indication of preconditions (e.g., buffer sizes) or postconditions; the logic of `param_division_by_zero` is presented without explaining the signal handling contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are resolved to their correct targets, and the relationship between `call_*` wrapper functions and their implementations is clear.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are listed in a logical order matching the source flow, with clear separation between different test cases (obfuscation, optimization, edge cases).
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on Ghidra-specific types (`undefined8`, `undefined4`) and lacks necessary headers, making it non-compilable without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable names (`iVar1`, `uVar2`) are completely generic and obscure semantic meaning.
+- Types are reduced to `undefined8`/`undefined4`, losing type safety and precision.
+- Aggressive loop unrolling and vectorization (from `-O3`) make `param_tail_call_optimized` and `param_vectorized_loop` look like complex math rather than simple iterations.
+- Magic numbers (e.g., `0x7a314`) are not explained or replaced with constants.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names from the binary symbols, making it easy to locate specific logic blocks.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)
+- The reliance on generic names like `iVar1` and `param_1` makes understanding the data flow extremely difficult compared to the descriptive names in the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic-based variable renaming to infer names like `index`, `result`, or `length` based on usage patterns (e.g., induction variables).
+2. Improve type inference to replace `undefined` types with concrete standard types (int, char*) based on register usage and function signatures.
+3. Add pattern recognition to annotate heavily unrolled loops or vectorized code with comments indicating the likely source structure (e.g., "Loop unrolled 4 times").

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `iVar1`, `iVar2`, `param_1`, `local_10`, `local_20` with zero semantic meaning. Original source had descriptive names like `dst`, `src`, `buffer`, `thread_count`, `shared_counter`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some original names preserved (`param_strcpy`, `signal_handler`, `main`) but library calls degraded to `FUN_00011xxx` (e.g., `FUN_00011510` should be `strcpy`). Many helper functions use address-based names like `FUN_00011030`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `0x2a` (42), `0x5a` (90), `0xc` (12), `0xf` (15). String literals referenced as `&DAT_00014xxx` instead of actual content. No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Compiler artifacts pervasive: `in_GS_OFFSET`, `__stack_chk_fail_local`, `LOCK()/UNLOCK()` macros, stack canary checks in every function. These obscure actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Mix of natural if-else and goto patterns (`LAB_00011d63`, `LAB_00012bb4`). Do-while loops partially recovered but many backward jumps remain as explicit gotos.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function structure mostly preserved but compiler created `.part.0` and `.constprop.0` variants (e.g., `param_fork_exec.part.0`, `param_thread_local_storage.constprop.0`) fragmenting logic.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Stack check code at function ends creates non-linear reading. Forward jumps to error handling labels disrupt top-to-bottom flow in many functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks (`local_10 == *(int *)(in_GS_OFFSET + 0x14)`) repeated identically in nearly every function. No dead code elimination visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy use of `undefined4`, generic `int`, and `void*`. Original `size_t`, `const char*`, `pthread_t` all degraded. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: `ThreadData` struct completely lost—accessed as array indices (`param_1[0]`, `param_1[1]`, `param_1[2]`). No struct definitions visible in output.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts everywhere: `(int *)`, `(undefined4 *)`, `(char *)`. Pointer arithmetic on generic types. No type safety annotations or bounds checking.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Thread patterns (pthread_create, mutex, condition variables) visible but not identified. No design pattern recognition. Atomic operations reduced to `LOCK()/UNLOCK()`.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags for unresolved indirect calls. `FUN_00011xxx` calls not marked as uncertain. No warnings about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). No postconditions inferred. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but library functions unnamed. Global variables (`shared_counter`, `atomic_counter`, `signal_received`) referenced but not clearly identified as globals.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. No header file structure. Related functions not clustered (test functions scattered).
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: References ~50 undefined `FUN_00011xxx` functions requiring extensive stubbing. Dependencies not documented. Would not compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+4+3+4)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):   (5+5+5+5)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type System):  (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):     (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):   (4+4+2)/3   = 3.33 × 0.10 = 0.333
+---------------------------------------------------------
+Overall Score:                                  3.32/10
+```
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects:
+- **Variable `iVar1`, `iVar2`, `param_1`** should be named based on usage (e.g., `strcpy_result`, `comparison_value`, `destination_ptr`)
+- **Library functions** all degraded to `FUN_00011xxx` instead of recognizable names like `strcpy`, `printf`, `pthread_create`
+- **Zero comments** explaining any non-trivial logic or decompilation uncertainty
+- **ThreadData struct** completely lost—accessed as raw array indices losing all field semantics
+- **Magic numbers** like `0x2a` (42), `0x5a` (90) not converted to named constants
+
+### Best Quality Aspect:
+- **Structural Intelligibility (5.0/10)** - Control flow structures (if-else, loops) are partially recovered and follow recognizable patterns despite optimization artifacts
+
+### Most Needs Improvement:
+- **Semantic Transparency (1.5/10)** - Complete absence of comments, no idiom recognition, no anomaly indication, and no contract recovery makes understanding intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement library function signature matching** - Map `FUN_00011xxx` calls to known libc/pthread functions based on parameter patterns and calling conventions
+2. **Add semantic variable naming inference** - Analyze variable usage patterns to suggest names (e.g., variables used in loop bounds → `count`, `iterations`; pointer dereferences → `buffer`, `data`)
+3. **Generate decompilation confidence annotations** - Add comments indicating uncertainty levels for indirect calls, type guesses, and recovered structures (e.g., `// CONFIDENCE: LOW - indirect call target unknown`)

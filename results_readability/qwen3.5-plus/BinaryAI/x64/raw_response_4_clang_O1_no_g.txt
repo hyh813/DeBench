@@ -1,0 +1,102 @@
+## EVALUATION REPORT: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar4`, `local_d0` with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `s` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`). This is the decompiler's strongest aspect—original semantic intent maintained through naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex (`0xf`, `0x32`, `0x2a`, `0x12345678`) instead of decimal values from source. String literals replaced with `DAT_` references (e.g., `&DAT_0010234e`) obscuring printf format strings.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Runtime initialization code (`_init`, `_start`, `deregister_tm_clones`) adds noise but doesn't impede core logic. No excessive register spilling artifacts in main functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops use `do-while` instead of original `for` constructs (e.g., `varargs_func`). Constant folding in `call_*` functions eliminates actual function calls, obscuring true control flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries correctly identified and preserved. However, aggressive constant folding merges call sites into direct returns (e.g., `call_cdecl` returns `0xf` instead of calling `cdecl_func(5, 10)`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Loop structures are recognizable despite using `do-while` pattern instead of `for`.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding creates redundancy by computing values at compile-time rather than showing runtime behavior. `test_calling_conventions` has inline computation instead of function calls.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Return types degraded to `undefined8` where `int` was original (e.g., `call_cdecl`, `func_no_args`). Pointer types inconsistent (`int *` becomes `long *` in `func_struct_byptr`). Varargs signature loses `...` notation entirely.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—`LargeStruct` and `SmallStruct` types not recovered. `func_struct_byval` accesses stack directly (`*(long *)(&stack0x00000008 + lVar2 * 8)`) instead of struct fields. `func_struct_byptr` treats struct as `int[2]` array.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe implicit casts present (`(double)param_4`, `(int)sVar2`). Varargs parameter access uses raw pointer arithmetic without type safety. Pointer comparisons use `(char *)0x0` instead of `NULL`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each test case, calling convention details, and expected values—all completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not recognized (complex stack access instead of `va_list` abstraction). Struct access patterns not identified. No algorithm or design pattern annotations.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Varargs implementation complexity not flagged. Type mismatches (`undefined8` vs `int`) not warned. DAT_ references not explained as string literals.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null checks present (`if (param_3 == (char *)0x0)`) but not documented as preconditions. No postcondition inference for return values or side effects.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible but string references obscured (`DAT_0010234e` instead of `"=== 测试基础调用约定 ==="`). External function declarations present but variadic nature lost.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat file. No logical grouping by test category (calling conventions vs. parameter passing vs. return values). Original section organization lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External function declarations present (`puts`, `printf`, `strlen`) but DAT_ references require resolution. Would need significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+7)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (4+2+5)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+3+3+3)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (6+5+5)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.0/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Struct types completely lost**: `LargeStruct` and `SmallStruct` accessed via raw pointer arithmetic instead of field names
+- **Zero comments**: All original documentation explaining test purposes and expected values eliminated
+- **Variable names generic**: `param_1`, `iVar1`, `local_d0` provide no semantic information about purpose
+- **Hex literals obscure values**: `0xf`, `0x32`, `0x2a` instead of decimal `15`, `50`, `42` from source
+- **Varargs signature degraded**: `...` notation lost, complex stack access pattern instead of `va_list` abstraction
+- **String literals as DAT_ references**: printf format strings not recovered as readable strings
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, maintaining semantic intent across decompilation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation; original source had extensive explanatory comments for each test case
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types from memory access patterns** - Analyze consistent offset patterns (e.g., `[0]` and `[1]` access) to reconstruct `SmallStruct { int x; int y; }`
+2. **Restore string literals from data section references** - Resolve `DAT_` references to actual string content for printf format strings and messages
+3. **Infer variable names from usage context** - Variables used in loop counters should be named `i`, sum accumulators as `sum`, count parameters as `count`

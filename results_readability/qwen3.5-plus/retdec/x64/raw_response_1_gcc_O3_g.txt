@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of semantic names like `a`, `b`, `c` from source. Local variables are `v1`, `v2`, `v3`, `result` obscuring their purpose (e.g., `sum`, `count`, `temp1`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`sequential_ops`, `single_if`, `nested_if_2`). However, helper functions use generic names (`function_1080`, `function_1090`) losing semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xffffffff`, `0x100000000`, `0x66666667` appear throughout without explanation. These are compiler artifacts from type conversions that obscure original simple arithmetic.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive bitwise masking (`& 0xffffffff`) on nearly every return. SIMD intrinsics (`__asm_movdqa`, `__asm_paddd`) appear in simple loop functions. Unnecessary type casts clutter expressions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple `sequential_ops` reduced to single expression `2 * (a2 + a1) - a3 & 0xffffffff`. `loop_for_fixed` expanded to 80+ lines of complex arithmetic instead of simple for-loop. Goto labels (`lab_0x1b70`) used where structured control flow would suffice.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved but some are overly complex (`loop_for_fixed` 80 lines for 5-line source). Generic wrapper functions (`function_1080`, `function_1090`) add fragmentation without value.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple goto labels disrupt flow (`lab_0x1e7d`, `lab_0x1ea4` in `indirect_recursion_a`). Loop structures converted to while loops with complex conditions instead of natural for-loops.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Repetitive masking operations on every return statement. Loop unrolling artifacts in `loop_for_fixed` and `loop_continue` create massive code bloat without comments explaining the optimization.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` types unnecessarily promoted to `int64_t`. Signed/unsigned confusion throughout (e.g., `uint64_t a1` in `loop_for_fixed`). Function pointer types degraded to `int64_t` losing signature information.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered (`__jmp_buf_tag`, `_TYPEDEF___sigset_t`) but array types often lost (`int arr[]` becomes pointer arithmetic). Field names generic (`e0`, `e1`, `e2`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many implicit casts between `int32_t` and `int64_t`. Pointer arithmetic without proper typing in `call_func_ptr_array`. Stack canary checks (`__stack_chk_fail`) add noise but maintain safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Complex arithmetic expressions have zero documentation. Only line range metadata present (`Line range: 955 - 960`) which is not useful for understanding.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition (state machines, loops, recursion not identified). Duff's device in `duffs_device` not recognized as optimization pattern. Simple operations obscured by complex expressions.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Computed goto in `computed_goto` not flagged as problematic. `UNREACHABLE` marker present but no explanation of why.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`). No postconditions inferred. Error conditions not documented despite being present in source comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships not documented. Global variables named generically (`g1`, `g2`, `g3`) losing string content meaning. No call graph information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Test functions mixed with implementation. No header file separation for API declarations.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes present (`stdio.h`, `setjmp.h`, `stdint.h`). Some functions may not compile due to SIMD intrinsics. External dependencies noted but not documented clearly.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3 + 7 + 4 + 3) / 4 = 4.25
+Level 2 Average: (4 + 6 + 5 + 4) / 4 = 4.75
+Level 3 Average: (4 + 5 + 5) / 3 = 4.67
+Level 4 Average: (2 + 3 + 3 + 2) / 4 = 2.50
+Level 5 Average: (5 + 5 + 6) / 3 = 5.33
+
+Overall = (4.25 × 0.30) + (4.75 × 0.25) + (4.67 × 0.20) + (2.50 × 0.15) + (5.33 × 0.10)
+        = 1.275 + 1.1875 + 0.934 + 0.375 + 0.533
+        = 4.30/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects
+- **Variable `a1`, `a2`, `a3`** should be named `a`, `b`, `c` or semantic names based on usage context
+- **Excessive masking `& 0xffffffff`** on every return obscures simple arithmetic operations
+- **`loop_for_fixed`** expanded from 5 lines to 80+ lines with SIMD intrinsics for a simple summation
+- **No comments** explaining complex arithmetic expressions or control flow transformations
+- **Type inflation** from `int` to `int64_t` throughout without justification
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most original function names preserved (`sequential_ops`, `nested_if_2`, `switch_fallthrough`), maintaining semantic connection to source code purpose.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Virtually no documentation explaining non-trivial logic, complex expressions, or decompilation confidence, making code nearly impossible to understand without source comparison.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in loop counters should be `i`, `j`; accumulators should be `sum`, `count`)
+2. **Eliminate compiler artifact noise** - Remove unnecessary bitwise masks (`& 0xffffffff`) when they don't affect semantics, and avoid emitting SIMD intrinsics for simple scalar operations
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions, explain complex transformations, and document when original control flow structures (loops, switches) were recovered from jump patterns

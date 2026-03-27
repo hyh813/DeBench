@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Function parameters retain semantic names (`size`, `x`, `y`, `arr`, `counter`) but local variables use generic names (`v0`, `v1`, `v2`, `temp_1`). Some variables like `page_size`, `addr`, `mem` are well-named, showing inconsistent recovery quality.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation of original function names (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). Only startup/runtime functions use generic names (`sub_4EC`, `_start`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `57072` (should be `0xDF20` from multi-branch compile), `282` (line number + counters), and `30` (sysconf constant) lack explanation. Some literals correctly computed from macros (1024, 512, 64).
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. Stack variable declarations (`[sp+0h] [bp-10h]`) are present but don't impede reading. No redundant casts or debug instrumentation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures correctly recovered as if-else and for loops. `param_asm_clobber` shows natural `for(i=0; i<n; ++i)` pattern. At -O0, this matches expected source structure well.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries perfectly preserved with appropriate granularity. Each test function remains separate; no inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately (e.g., `param_dynamic_code` returns -1 on mmap failure). No disruptive forward jumps.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or duplicate expressions observed. Macro-expanded constants computed once (e.g., `x + 16` instead of nested ADD_16 expansion).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types correct (int, void*, size_t) but lacks precision (int32_t, uint8_t). Pointer arithmetic uses generic `int*` instead of specific types. Some `__int64` usage on ARM32 is questionable.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays correctly recovered (`arr[7]`, `src[12]`, `a[4]`, `b[4]`). No complex structs in this code to evaluate. Stack arrays properly sized.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe casts present: `(int *)mmap(...)`, `(unsigned __int8)dst`, `(_DWORD)global_var`. `param_memory_clobber_demo` shows suspicious pointer arithmetic `(int)&word_32`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal comments beyond function headers. No explanation of magic numbers or recovered macro semantics. Original source comments about preprocessing completely lost.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Macro expansions correctly recognized (ADD_16 → x+16, SQUARE → x*x). Assembly patterns converted to equivalent C (memcpy, atomic operations). Pattern intent preserved.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed decompilations listed at end (12 external functions). Warning present for `_start` ("positive sp value has been detected"). No inline anomaly markers in code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or error contracts documented. Return value meanings unclear (e.g., what does -1, -2, -3 mean in `param_memory_protection`).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call graph clear through direct calls. Global variable `global_var` referenced but not defined in output. External library calls listed as failed decompilations.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source (preprocessing tests, then assembly tests). Related call functions follow their param functions. No header file organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 12 external functions failed to decompile (`printf`, `mmap`, `memcpy`, etc.). Would require stub implementations to compile. No dependency documentation provided.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+9+5+8)/4 = 7.00 × 0.30 = 2.10
+Level 2 (Structural):  (8+9+8+8)/4 = 8.25 × 0.25 = 2.06
+Level 3 (Type):        (7+7+6)/3   = 6.67 × 0.20 = 1.33
+Level 4 (Semantic):    (4+7+6+3)/4 = 5.00 × 0.15 = 0.75
+Level 5 (Contextual):  (7+7+5)/3   = 6.33 × 0.10 = 0.63
+
+Overall Score: 6.87/10
+```
+
+**Overall Readability Score:** 6.9/10
+
+### Critical Defects:
+- **Magic numbers unexplained**: `57072`, `282`, `30` (sysconf constant) lack semantic meaning
+- **No contract documentation**: Error return values (-1, -2, -3) have no explanation of failure conditions
+- **Unsafe casts present**: `(int *)mmap(...)`, `(_DWORD)global_var` without safety justification
+- **Missing comments**: Original source's extensive preprocessing documentation completely lost
+- **External dependencies unresolved**: 12 library functions failed to decompile, blocking standalone compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Original function names perfectly preserved, making code immediately recognizable and navigable
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No documentation of preconditions, error conditions, or return value semantics, making error handling opaque
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics as comments** - When macros expand to constants, add comments showing original macro name (e.g., `return 64; // BUFFER_COUNT * 4`)
+2. **Document error return values** - Analyze return value patterns and add comments explaining failure conditions (e.g., `// Returns -1: mmap failed, -2: mprotect failed`)
+3. **Resolve external function signatures** - Import standard library type information to properly declare `printf`, `mmap`, `memcpy` instead of listing as failed decompilations

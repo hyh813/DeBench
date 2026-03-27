@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Parameter names like `x`, `c`, `p` are correctly preserved from source. However, the decompiler adds unnecessary `_local` suffixes (e.g., `x_local`, `c_local`) which adds noise. Loop variables like `i`, `j`, `k` are appropriately named, but some auxiliary variables like `bVar1`, `uVar2` are cryptic.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Every function name perfectly matches the original source: `double_value`, `process_char`, `process_short`, `process_int`, `process_long`, `process_ll`, `process_float`, `process_double`, `process_ld`, `process_bool`, `const_param`, `volatile_access`, and all array/pointer/struct test functions. This is exemplary decompilation.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are clear (e.g., `'\0'` for null terminator, `' '` for space in case conversion). However, ASCII hex values like `0x40` and `0x5b` in `process_char` could be annotated as `'@'` and `'['` bounds. Some numeric literals like `10` in various contexts lack semantic explanation.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean. The main noise is the `_local` variable suffix pattern (e.g., `x_local`, `p_local`) which is standard Ghidra behavior for tracking stack variables. No debug artifacts or register spilling visible. Minor warnings about unreachable blocks in startup code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow perfectly matches source. `for` loops are correctly rendered, `if-else` chains are clear. The `enum_switch` function uses a chain of if-statements which is typical for decompilers (switch lowering). At -O0, no loop unrolling or restructuring should occur, and indeed none is present.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function is appropriately sized (10-50 lines), matching the original source decomposition exactly. Functions like `test_data_types_l1` appropriately call individual test functions. No inlining artifacts or function outline issues.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom without unusual jumps. Early returns are preserved. No forward jumps into loop bodies. The code structure closely mirrors the original source's linear flow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy. Loop constructs are not unrolled (as expected at -O0). The code is clean with no duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Types are precisely recovered: `int`, `char`, `short`, `long`, `long long`, `float`, `double`, `long double`, `_Bool`, and pointer types all match source. Const correctness is preserved in `const_param`. Minor issue: some `int*` vs `int[]` distinctions could be clearer in array parameters.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: Exemplary recovery. All structs (`Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Device`, `Edge`, `Graph`) are recovered with correct field names. Unions (`UnionData`) and enums (`State`) are perfectly reconstructed. Bitfields in `Flags` are handled with proper masking operations. This is near-perfect recovery.
+
+**11. Type Safety:** Score: 9/10  
+Justification: No unsafe casts or type confusion. Pointer arithmetic is correct. Function pointers are properly typed (e.g., `_func_int_int *f`). The `ptr_diff` function correctly casts to `long` before subtraction. Minor: some implicit conversions between signed/unsigned could be more explicit.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are minimal - mostly just function signatures. No algorithm explanations, no documentation of non-obvious logic, no recovery of original comments from source. The decompiler header comment is present but provides no semantic insight into the code's purpose.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Common patterns like linked list traversal (`while (current != NULL)`), array iteration, and struct field access are correctly rendered. However, no explicit pattern naming (e.g., "This implements a state machine") or algorithm identification (e.g., "KMP string matching") is provided.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Ghidra provides some useful warnings: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "WARNING: Subroutine does not return". However, these are generic and don't specifically explain what the anomaly means for analysis. No indication of potential undefined behavior in functions like `array_oob`.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had no explicit contracts either, so this is expected. However, the decompiler could infer some (e.g., "requires: n > 0" for array functions).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are visible through the code (e.g., `test_data_types_l1()` calls `process_char`, `process_short`, etc.). Global variable usage is clear. However, no explicit documentation of who calls whom or callback relationships.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped - test functions are separate from implementation functions. The single-file output matches the original source structure. Static functions like `double_value` are properly scoped. Minor: could benefit from section comments.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code should compile as standard C. It uses standard library functions (`printf`, `puts`, `builtin_strncpy`). External dependencies are minimal. The `__stack_chk_guard` and `__stack_chk_fail` are compiler-generated but standard. Would compile with `gcc -c`.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.8/10
+
+**Critical Defects:**
+- Variable naming includes unnecessary `_local` suffixes that add visual noise
+- Comments are nearly absent - no explanation of algorithm purpose or non-obvious logic
+- No recovery of original source code comments that documented the test scenarios
+
+**Best Quality Aspect:** Type System Fidelity (scored 9.3/10)  
+- Composite types (structs, unions, enums) are perfectly recovered with all field names intact. This is exceptional decompilation work.
+
+**Most Needs Improvement:** Semantic Transparency (scored 5.0/10)  
+- The code lacks any meaningful comments, pattern identification, or contract documentation. While the code is structurally correct, there's no explanatory context to help an analyst understand what they're looking at.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Instead of adding `_local` suffixes, analyze how variables are used (e.g., a variable used as array index → name it `index` or `i`)
+2. **Recover comments from debug symbols**: The source was compiled with `-g`, so DWARF information may contain original comments that could be extracted
+3. **Add semantic annotations**: When detecting patterns like linked lists, state machines, or memory operations, add comments explaining what the code does (e.g., "// Linked list traversal")

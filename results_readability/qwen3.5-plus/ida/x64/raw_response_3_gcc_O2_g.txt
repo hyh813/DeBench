@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `v3`) losing all semantic meaning. Original `arr`, `head`, `current`, `sum`, `large_buf` become `_DWORD *v1`, `_QWORD *v0`, etc., making purpose inference difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`), but helper functions use generic names (`sub_1020`, `sub_1030`). Main test functions retain original semantic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation: `0x28u` (40 bytes), `0x10u` (16 bytes), `0x18u` (24 bytes for TreeNode). Some inferable from context but no named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack canaries (`__readfsqword(0x28u)`), redundant type casts (`(_DWORD *)`, `(_QWORD *)`), unused variables (`v5`, `v10`, `v12` as canary storage), and `JUMPOUT(0)` stubs.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops mostly recovered as do-while/for constructs, but `vla_stack` and `alloca_usage` have complex, awkward control flow with multiple conditional branches that obscure the simple original logic.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical semantic loss: `test_stack_memory` has printf calls with constant values (20, 10, 15) instead of calling actual functions. `local_vars` constant-folded to `return 2 * x + 10;` losing intermediate variable semantics.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `vla_stack` has forward references and complex stack alignment logic that disrupts flow. Most simple functions maintain reasonable linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Optimization artifacts create redundancy: `test_stack_memory` duplicates computation results as constants instead of calling functions. Loop conditions sometimes use awkward patterns (`v3 != 3 * n` vs `i < n`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Types mostly preserved but degraded: `int` becomes `_DWORD` or `__int64`, pointers sometimes generic (`void *`). Original `Node *`, `TreeNode *` preserved but array types often become raw pointers.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `Node` struct referenced with field names (`data`, `next`) but many accesses through pointer arithmetic (`v0[1]`, `*(_DWORD *)v0`). `TreeNode` partially recovered but field access inconsistent.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(_DWORD *)`, `(_QWORD *)`, `(__int64 *)` throughout. Pointer arithmetic without bounds checking. `dangling_pointer` returns `*v1` after free with no warning.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments except function headers with addresses. No algorithm explanations, no decompilation confidence indicators, no API contracts. Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Memory allocation patterns visible but unlabeled. Linked list creation/traversal in `linked_list_heap` not identified as such. No design pattern recognition despite clear data structure operations.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies noted ("positive sp value has been detected, the output may be wrong!"). Failed decompilations listed at end. But `dangling_pointer` and `double_free` undefined behavior not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present in code but not documented as preconditions. No postcondition inference (e.g., "return is heap-allocated"). Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`global_counter`, `file_scope_static`) referenced but usage patterns not explained. Callback (`global_func_ptr`) relationship visible but not highlighted.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order but don't match source organization (stack/heap/static/memory_op sections lost). Static functions preserved but not grouped by semantic category.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 18 external functions marked "FAILED to decompile" (malloc, free, printf, etc.). Would require significant stubbing and external library linking. Not standalone compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (6+5+4)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.72/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (`arr`, `head`, `sum`, `current`) - semantic meaning completely lost
+- **`test_stack_memory`** has constant-folded printf values instead of actual function calls, hiding the test structure
+- **No comments** explaining algorithm intent, despite original source having extensive documentation
+- **Unsafe casts** (`(_DWORD *)`, `(_QWORD *)`) throughout without safety annotations
+- **Undefined behavior** in `dangling_pointer` and `double_free` not flagged as anomalous
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved from source, making high-level navigation possible despite internal obfuscation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic documentation makes understanding algorithm intent nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable naming** - Analyze how variables are used (loop counters, array indices, pointers) to infer semantic names like `i`, `arr`, `head`
+2. **Detect and flag optimization artifacts** - Identify constant folding, dead code elimination, and mark them as "OPTIMIZED: original computation removed"
+3. **Add anomaly detection for undefined behavior** - Flag use-after-free, double-free, buffer overflows with warnings like "WARNING: Access after free detected"

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `a0`, `a1`) with zero semantic meaning. For example, `param_macro_constants` uses `a0` instead of `size`, and `param_asm_clobber` uses `ptr`, `i`, `v3-v6` instead of `arr`, `sum`, `index`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Original function names preserved for main functions (`param_macro_constants`, `call_macro_constants`), but numerous wrapper functions use mechanical naming (`sub_400824`, `sub_40091c`, `sub_400a94`). Some functions like `$x` have nonsensical names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x400` (should be `MAX_SIZE`), `0x200` (should be `MAX_SIZE/2`), `57072` (should be `0xDEF0`), `282` (line number + counter sum). No constant recovery from original macros.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive wrapper functions (`sub_400xxx` calling actual functions), unnecessary stack frame setup (`v0 = &v1` in nearly every function), redundant function calls (`memcpy` called twice in `sub_400824`), and ARM64-specific artifacts (`arm64g_calculate_condition`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions have natural flow, but complex functions like `param_asm_clobber` and `param_asm_simd` use confusing `arm64g_calculate_condition` calls instead of clear conditionals. Some functions use `goto` patterns (`goto g_412f60`).
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Severe over-fragmentation with wrapper functions for every call site (`sub_400a94` just calls `param_macro_constants`). Some functions completely constant-folded (`call_macro_constants` returns literal 64 instead of calling `param_macro_constants(2048)`).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but complex assembly functions have deeply nested conditionals with forward references. The `param_asm_clobber` function has multiple exit points that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Duplicate function calls throughout (`memcpy` called twice in same function, `register_tm_clones` called multiple times). Wrapper functions duplicate call logic. No dead code elimination for constant-folded branches.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Excessive use of `unsigned long long` where `int` or `unsigned int` would suffice. Pointer types often degraded to `void*`. Return types inconsistent (`unsigned long long` vs `int` vs `long long` for similar functions). No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: N/A for most tested functions (no structs in source). Array parameters degraded to pointers without size information. No struct recovery needed but pointer arithmetic loses array semantics.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple implicit casts between `unsigned int` and `unsigned long long`. Pointer arithmetic without bounds checking. Some functions like `param_memory_protection` have incorrect `mprotect()` call signature (missing parameters).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, macro semantics, or assembly behavior. No indication of what was constant-folded vs. preserved. Original source had extensive documentation; decompiled code has none.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Macro expansions not identified (e.g., `SQUARE(x) + MAX(x,y)` not recognized). Assembly patterns not labeled. No recognition of atomic operations, SIMD intrinsics, or preprocessing patterns.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One explicit failure noted ("Failed to decompile function __aarch64_ldadd4_acq_rel"). However, many other issues (constant folding, architecture mismatch) not flagged. `/* do not return */` annotations present but inconsistent.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_asm_clobber` requires valid array pointer). No postconditions. Error conditions not documented (e.g., `mmap` failure returns cast pointer instead of `MAP_FAILED`).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Global variables named generically (`g_4014d0`, `g_4014f8`). No call graph documentation. External dependencies (`__printf_chk`, `sysconf`, `mmap`) not clearly declared.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions scattered without logical grouping. Preprocessing tests and assembly tests intermixed. No separation between test harness and implementation. Wrapper functions disrupt organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Multiple undeclared external functions (`__printf_chk`, `__aarch64_ldadd4_acq_rel`, `arm64g_calculate_condition`). Architecture-specific intrinsics won't compile on x86. Missing header includes.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+3)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (4+3+5+3)/4 = 3.75 × 0.25 = 0.938
+Level 3 (Type):        (4+5+5)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (1+2+4+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.367
+
+Overall Score: 3.55/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Variable `a0`, `a1`, `v0-v6`** should be named semantically (e.g., `size`, `x`, `y`, `sum`, `index`) based on usage patterns
+- **Constant folding eliminated original logic** - `call_macro_constants()` returns literal 64 instead of showing `param_macro_constants(2048)` call
+- **Wrapper function proliferation** - Every call site has a `sub_400xxx` wrapper that adds no value
+- **Magic numbers without recovery** - `0x400`, `0x200`, `57072`, `282` should be recovered as `MAX_SIZE`, `MAX_SIZE/2`, `0xDEF0`, computed constants
+- **Architecture mismatch unaddressed** - x86 assembly compiled to ARM64 with no indication of translation artifacts
+
+### Best Quality Aspect:
+- **Type System Fidelity (Level 3, scored 4.7/10)** - While types are generic, they are at least consistent and don't cause immediate type safety violations; function signatures mostly preserve parameter counts.
+
+### Most Needs Improvement:
+- **Semantic Transparency (Level 4, scored 2.3/10)** - Zero comments, no macro recognition, no idiom identification, and no contract documentation makes understanding the original intent nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement macro semantic recovery** - Detect constant-folded patterns and annotate with original macro names (e.g., `// Originally: MAX_SIZE = 1024`)
+2. **Eliminate wrapper function artifacts** - Recognize tail-call patterns and inline trivial wrappers that just forward to another function
+3. **Add confidence annotations** - Flag regions where decompilation is uncertain (architecture translation, constant folding, inline assembly) with explicit warnings for manual review

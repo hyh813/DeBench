@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `ptr`, `a0`) with no semantic meaning. For example, in `local_array`, variables `v5`, `v6`, `v8` should be named `stack_canary`, `loop_index`, and `array_ptr` based on usage patterns.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some original names preserved (`double_value`, `local_vars`, `heap_basic`) but many critical functions named `sub_10598`, `sub_106d8`. Test functions like `test_stack_memory` retained names but internal logic is broken.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `4294967295` (should be `-1` or `ERROR`), `4294967294` (should be `-2`), `0xfffffff8` (alignment mask). No constants recovered from original source.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifacts: stack canary checks (`GLIBC_2.4::__stack_chk_guard`), `armg_calculate_condition` calls, register spilling variables (`v0`, `v1` as `[bp-0x4]`), and 30+ sync helper functions that are pure noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` statements instead of loops (e.g., `local_array` uses `do-while` with `goto` pattern). Complex nested conditionals with `armg_calculate_condition` obscure simple logic like null checks.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Original function boundaries mostly preserved, but `main` incorrectly calls `test_static_global` with nested `test_heap_memory` result. 30+ `__sync_*` helper functions are fragmentation artifacts.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Multiple forward jumps (`LABEL_106fc`, `LABEL_10718`) disrupt reading flow. Functions like `memop_memcmp` have 15+ labels making top-to-bottom reading impossible.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Duplicate condition checks (e.g., `memop_memset` checks null twice with different variable sets). Stack canary code duplicated in every function. Sync functions repeat identical `do { } while (4294905792());` patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `unsigned int` or `char*`. Original `int`, `size_t`, `Point*`, `Node*` all lost. Function `heap_realloc` incorrectly returns `unsigned int [5]` (invalid C syntax).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered (`struct_0`, `struct_1`, `struct_2`) but with generic field names (`field_0`, `field_4`, `padding_1`). Original `Point {x, y}` and `Node {data, next}` semantics completely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: `goto global_func_ptr` in `call_global_callback` (function pointer as address), incorrect pointer arithmetic in `heap_basic` (`ptr[a0 + (a0 >> 31) >> 1]` after `free(ptr)`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only auto-generated annotations like `/* do not return */`. No algorithm explanations, no parameter documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns not recognized: linked list traversal in `linked_list_heap` appears as raw pointer chasing, tree creation in `tree_heap_traversal` loses all structure semantics.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical anomalies not flagged: `stack_alias` returns constant `20` instead of implementing alias logic, `test_stack_memory` uses hardcoded values instead of actual function calls. No warnings about these semantic losses.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `n > 0` checks not explained). No postconditions. Error return values (`4294967295`) not documented as error codes.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships obscured. `test_stack_memory` shows printf calls but doesn't actually call the tested functions. Global variables declared as `extern` without context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file (expected for decompilation). Related functions not grouped logically. Sync helper functions (30+) pollute namespace without organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Metadata claims "Compilation Result: Yes" but code has issues: `heap_realloc` returns array type (invalid C), `goto global_func_ptr` is non-standard, many undefined externals (`GLIBC_2.4::__stack_chk_guard`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+3+3)/4 = 3.00 × 0.30 = 0.90
+Level 2 (Structural):  (3+4+4+3)/4 = 3.50 × 0.25 = 0.875
+Level 3 (Type):        (3+4+3)/3   = 3.33 × 0.20 = 0.666
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (3+4+5)/3   = 4.00 × 0.10 = 0.400
+
+Overall Score: 3.07/10
+```
+
+**Overall Readability Score:** 3.1/10
+
+### Critical Defects:
+- **Semantic Loss**: `stack_alias` returns constant `20` instead of implementing pointer alias logic—complete functionality loss
+- **Test Function Broken**: `test_stack_memory` uses hardcoded printf values instead of calling actual functions, defeating test purpose
+- **Variable Naming**: All variables are `v0`, `v1`, `ptr`, `a0` with zero semantic meaning
+- **Type Degradation**: All types collapsed to `unsigned int`; original `Point`, `Node`, `TreeNode` structs lost field semantics
+- **Compiler Artifacts**: Stack canary checks and `armg_calculate_condition` calls obscure simple logic throughout
+
+### Best Quality Aspect:
+- **Build System Compatibility (5/10)** - Metadata claims compilation succeeds and most function signatures are syntactically valid C, despite semantic issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero meaningful comments; no explanation of recovered logic, no confidence indicators, no documentation of assumptions
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming**: Analyze usage patterns to infer names (e.g., variables used in loop bounds → `count`, `index`; variables passed to `malloc` → `size`, `buffer_size`)
+2. **Recover high-level control structures**: Convert `goto`-based loops back to `for`/`while` constructs and eliminate `armg_calculate_condition` wrappers for simple comparisons
+3. **Add decompilation confidence annotations**: Flag uncertain recoveries (e.g., `// DECOMPILER_UNCERTAIN: indirect call target not resolved`) and document semantic losses explicitly

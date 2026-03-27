@@ -1,0 +1,103 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar5`, `puVar1` which completely obscure their semantic purpose. The original source uses meaningful names like `size`, `x`, `y`, `arr`, `n`, `counter`, `increment` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test functions correctly preserve original names (e.g., `param_macro_constants`, `param_asm_basic`, `call_asm_atomic`). However, some internal helpers like `FUN_001007a0` and `__aarch64_ldadd4_acq_rel` are generic. Overall, the primary API functions match well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some constants are meaningful (e.g., `0x40` = 64, `0x200` = 512 match MAX_SIZE/BUFFER_COUNT), but macro names are lost. Magic numbers like `0xdef0`, `0xdf22`, `0x1e` (page_size) appear without explanation. The original macro semantics (MAX_SIZE, BUFFER_COUNT, PLATFORM values) are not recovered.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts; no obvious dead code from register spilling. The `__aarch64_ldadd4_acq_rel` function is a necessary compiler helper for atomic operations. Code is relatively clean without redundant casts or debug instrumentation.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: At -O0, control flow is nearly identical to source. Simple if-else structures, for-loops, and while-loops are all properly recovered. The `param_asm_clobber` function shows unrolled loops which is appropriate for a decompiler showing actual implementation.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity matches source well. Each test function (`param_*`, `call_*`) is properly separated. The 669 LOC decompiled output vs 709 LOC source shows reasonable decomposition without over-fragmentation.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom without goto abuse or confusing jumps. Early returns are used appropriately (e.g., in `param_asm_clobber` when `param_2 < 1`). No forward jumps into loop bodies.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling in `param_asm_clobber` is present but represents actual compiled code, not redundant duplication. The code is clean.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Ghidra uses `undefined4` and `undefined8` for unspecified integer types instead of `int`/`long`. Parameters like `param_1` are correctly typed as `int`, but return types often use `undefined4`/`undefined8` rather than specific types. The `ulong` and `uint` usage is inconsistent.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Not applicable to most of this code (no complex structs). The few pointer operations (e.g., `int *param_1`) are correctly handled. No struct recovery needed for this particular source.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally safe code with correct pointer arithmetic (e.g., `param_1 + uVar7 * 4` for array indexing). Minor concerns: some casts between pointer types could be safer, but no severe violations like buffer-overflow-prone patterns.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments whatsoever** in the decompiled output. The original source has extensive comments explaining preprocessing behavior, macro expansions, and assembly semantics - all completely lost. This is a critical deficiency.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are visible (atomic operations, SIMD vector operations, memory protection) but not identified or named. The decompiler doesn't recognize "atomic fetch-add" or "memory barrier" idioms from the assembly patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of decompilation uncertainty or anomalies. The `<EXTERNAL>` markers show external functions but don't explain why certain functions couldn't be fully resolved. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source has implicit contracts (e.g., `param_1 > 0` for array functions, memory alignment requirements for SIMD) that are not communicated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible through direct calls (e.g., `test_preprocessing_features()` calls `puts`, `printf`). However, no documentation of who calls whom, global variable usage, or callback relationships. The `global_var` in `param_memory_clobber_demo` is used but not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are in logical order matching the source file structure (preprocessing tests first, then assembly tests). Static functions like `my_func` are properly scoped. However, all in single file without clear section grouping.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The `<EXTERNAL>` markers indicate external dependencies (printf, mmap, sysconf, etc.) but don't document what headers are needed. The code would require significant stubbing to compile standalone. No `#include` directives or dependency documentation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Calculation:**
+- L1 avg: (3+8+5+8)/4 = 6.0 × 0.30 = 1.80
+- L2 avg: (9+9+9+8)/4 = 8.75 × 0.25 = 2.19
+- L3 avg: (5+8+7)/3 = 6.67 × 0.20 = 1.33
+- L4 avg: (1+4+3+2)/4 = 2.50 × 0.15 = 0.38
+- L5 avg: (5+7+7)/3 = 6.33 × 0.10 = 0.63
+- **Total: 6.33**
+
+**Critical Defects:**
+- Variable names are entirely generic (`param_1`, `iVar1`, `uVar5`) losing all semantic meaning from source
+- No comments whatsoever - original source's extensive macro/assembly explanations completely lost
+- Type precision uses `undefined4`/`undefined8` placeholders instead of specific types like `int32_t`
+- No idiom recognition for atomic operations, SIMD, or memory protection patterns
+- No anomaly indication or decompilation confidence markers
+
+**Best Quality Aspect:** Control Flow Naturalness (9/10)  
+- At -O0, the decompiled control structures (if-else, loops) closely match the original source code, making execution flow easy to follow.
+
+**Most Needs Improvement:** Comment Quality (1/10)  
+- The complete absence of comments is severe. The original source has rich semantic information about macro behavior, assembly constraints, and test purposes that should be recovered as comments.
+
+**Top 3 Recommendations:**
+1. **Add semantic comments**: Document macro expansions (e.g., "/* MAX_SIZE = 1024 */"), assembly constraints, and test purposes that were in original source
+2. **Improve variable naming**: Use usage pattern analysis to infer names like `array_ptr` from `param_1 + offset * 4` patterns, or `counter` from atomic operation contexts
+3. **Recover type precision**: Replace `undefined4`/`undefined8` with specific types (`int`, `long`, `uint32_t`) based on architecture knowledge (arm64 uses 64-bit longs)

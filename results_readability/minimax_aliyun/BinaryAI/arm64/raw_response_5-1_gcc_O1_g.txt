@@ -1,0 +1,165 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variable naming is severely degraded. Generic names like `iVar1`, `iVar2`, `sVar1`, `pvVar2`, `plVar3`, `local_8`, `local_10`, `local_c`, `param_1`, `param_2` completely obscure semantic meaning. The original source had meaningful names like `value`, `name`, `data`, `size`, `x`, `y`, `capture_by_value`, `capture_by_ref` - all lost in decompilation. Stack-allocated array `acStack_2c` is cryptic.
+
+### 2. Function Naming Quality
+**Score: 6/10**
+
+Justification: Main test functions are correctly named (`test_cpp_member_func`, `test_cpp_constructor`, `call_virtual_func`). Template instantiations show partial recovery (`template_max_int_`, `template_max_double_`, `template_swap_int_`). However, internal functions use mechanical names like `FUN_00101470`, `FUN_001016fc`, and operator overloads have inconsistent naming (`operator_new__` vs `operator_new`).
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: Multiple unexplained magic numbers throughout: `0x1f` (31 for strncpy limit), `0x14` (20), `0x15` (21), `0x1e` (30), `0x28` (40), `0x2a` (42), `0x96` (150), `0xfa` (250), `0x125c` (4704). String literals like "Test", "Base", "Derived" are preserved. However, critical constants like `0x1234` (class ID) and calculation results lack explanation.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Justification: Significant compiler artifact pollution. Functions like `_init`, `_start`, `deregister_tm_clones`, `register_tm_clones`, `__do_global_dtors_aux`, `_GLOBAL__sub_I_test_cpp_member_func` are CRT/initialization code that shouldn't be in main decompilation. Stack canary checks (`___stack_chk_guard`, `__stack_chk_fail`) add noise. Multiple destructor overloads for same class (e.g., `DiamondDerived::~DiamondDerived` appears 3 times) indicate internal compiler artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Justification: Control flow is generally natural and readable. Functions maintain proper if/else structures and return statements. The `test_cpp_member_func` has awkward stack canary check at end but logic is traceable. Virtual function calls use vtable indirection which is expected. Loop constructs in template functions (`template_swap_int_`) are correctly recovered.
+
+### 6. Function Decomposition
+**Score: 6/10**
+
+Justification: Test functions are properly separated. Member functions extracted correctly. Template instantiations separated (`template_max_int_`, `template_max_double_`). However, multiple destructor variants exposed (overloading artifacts), and some internal functions like `FUN_00101470` (null function pointer call) shouldn't be prominent. Function sizes are reasonable.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom. Early returns present but appropriate. Stack canary checks create forward jumps but are manageable. No excessive nesting observed. The `test_cpp_rtti` function has complex nested conditionals but still traceable.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+Justification: Some redundancy from multiple destructor variants for same class. Dead code not present. Loop unrolling not significant. However, the repeated destructor definitions create visual noise. Overall manageable but not clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Mixed precision - basic types like `int`, `char`, `size_t`, `double` are correct. However, significant use of imprecise types: `undefined4`, `undefined8`, `undefined1*` indicate type uncertainty. Function pointers use generic `code` type. Parameter types like `param_1` (ulong) lack precision. Const correctness not preserved.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+Justification: Some struct-like access patterns recovered (e.g., `Container<int>` uses `this + 0x28` for size field). However, field names lost - uses raw offset arithmetic (`this + (long)iVar1 * 4`) instead of array indexing. Virtual inheritance offsets use complex pointer arithmetic (`*(long *)(*(long *)this + -0x18)`) without clear struct reconstruction.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Some unsafe patterns present. Multiple `undefined*` types could lead to undefined behavior. Pointer arithmetic in virtual inheritance functions is complex and potentially error-prone. Virtual function calls use triple-indirection `***(code ***)param_1` which is technically correct but lacks type safety. No `restrict` or alignment annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Almost no useful comments. Only header "Decompiled by BinaryAI" and minimal function comments. No explanation of complex logic, algorithms, or non-obvious code patterns. No indication of decompilation confidence or uncertainty. Original source had extensive comments explaining each test case - none recovered.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some C++ idioms partially recognized: virtual function vtable calls (`***(code ***)param_1`), template instantiation suffixes (`_int_`, `_double_`). However, operator overloading not clearly identified as such (appears as regular functions). Lambda expressions completely lost (returns constant `0x55`). Exception handling shows raw `__cxa_throw` but not the try-catch structure.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+Justification: No anomalies flagged. The decompiler presents all code with equal confidence, including potentially incorrect reconstructions. No warnings about indirect calls that couldn't be resolved, unusual stack layouts, or uncertain type reconstructions. Silent on potential issues.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants documented. No bounds checking documentation (e.g., Container::get boundary checks). No error condition documentation. Original source had implicit contracts (e.g., "requires: idx >= 0") completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function call relationships visible through code (`test_cpp_oo_features` calls all test functions). Virtual dispatch relationships partially clear through vtable usage. However, no explicit documentation of call graph or callback relationships. Static function relationships not documented.
+
+### 17. Module Organization
+**Score: 4/10**
+
+Justification: Functions somewhat grouped by class but all in single monolithic file. No namespace recovery (`std::` not preserved). No clear separation between test functions, member functions, and CRT artifacts. Arbitrary ordering based on address rather than logical grouping.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+Justification: Code would require significant patching to compile. External function declarations incomplete or incorrect (e.g., `operator_new__` recursive call). Many undefined types (`undefined4`, `undefined8`). Missing standard library includes. Template instantiations have non-standard names. Would not compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 avg: (2+6+3+4)/4 = 3.75
+Level 2 avg: (7+6+7+6)/4 = 6.50
+Level 3 avg: (5+5+5)/3 = 5.00
+Level 4 avg: (2+5+2+2)/4 = 2.75
+Level 5 avg: (5+4+3)/3 = 4.00
+
+Overall = (3.75 × 0.30) + (6.50 × 0.25) + (5.00 × 0.20) + (2.75 × 0.15) + (4.00 × 0.10)
+        = 1.125 + 1.625 + 1.000 + 0.413 + 0.400
+        = 4.56/10
+```
+
+### Overall Readability Score: 4.6/10
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming completely generic**: `iVar1`, `iVar2`, `local_8`, `param_1` - all semantic meaning lost from original `value`, `name`, `capture_by_ref`, etc.
+
+2. **No comments or documentation**: Zero explanation of algorithms, magic numbers, or complex patterns. Original source had extensive explanatory comments.
+
+3. **Type precision severely degraded**: Heavy use of `undefined4`, `undefined8`, `undefined1*` indicates type uncertainty. Original `int`, `size_t`, `const` correctness lost.
+
+4. **Lambda expressions completely lost**: `test_cpp_lambda` returns constant `0x55` instead of capturing lambda logic. Semantic meaning of closures not recovered.
+
+5. **No anomaly indication**: All code presented with equal confidence. No warnings about uncertain reconstructions or indirect calls.
+
+---
+
+### Best Quality Aspect (Single Dimension)
+- **Control Flow Naturalness (7/10)**
+- **Why?** Despite some noise from stack canaries, the fundamental control flow structure is preserved and readable. Loops, conditionals, and returns are in expected positions.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)**
+- **Why?** This is the most severe degradation - every meaningful variable name from the original source has been replaced with generic patterns like `var_N`, `param_N`, `local_N`. This makes the code practically unusable for analysis.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, string operations, arithmetic) to suggest semantic names. `param_1` used in `strlen()` should suggest `string` or `str`. `local_10` used in comparison `local_10 < 10` should suggest `size` or `count`.
+
+2. **Recover lambda/closure semantics**: When a function returns a constant that matches expected test output (like `0x55`), flag as potential lambda or inline function that couldn't be fully recovered. Add comments indicating uncertainty.
+
+3. **Add meaningful comments automatically**: Insert comments for magic numbers (e.g., `// 0x1234 = 4704 expected result`), explain vtable dispatch patterns, document virtual inheritance offset calculations. Even basic annotations would significantly improve readability.

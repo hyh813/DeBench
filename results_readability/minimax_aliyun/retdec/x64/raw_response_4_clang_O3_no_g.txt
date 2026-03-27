@@ -1,0 +1,90 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2`, `a3` and local variables use `v1`, `v2`, `v3`, `v4`. Compare to source where parameters are meaningfully named `a`, `b`, `count`, `str`, `x`, `y`. The decompiled names provide no semantic information about variable purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names correctly recovered: `cdecl_func`, `stdcall_func`, `varargs_func`, `func_many_args`, `ret_pointer`. However, some internal helpers like `function_1030` (puts), `function_1040` (strlen), `function_1050` (printf) remain generic. Main test functions match source well.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many unexplained magic numbers throughout. For example, `0x100000000` appears in `stdcall_func` and `ret_small_struct` without explanation. Bit manipulation `& 0xffffffff` and `& 0xfffffffe` scattered throughout. The source had clear constants like `5`, `10`, `42` that are preserved in call sites but obscured in implementations.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution from inline assembly intrinsics: `__asm_movaps`, `__asm_movdqa`, `__asm_paddq`, `__asm_pshufd`, `__asm_movsd`, `__asm_cvtsi2sd`, `__asm_cvttsd2si`, `__asm_addsd`. These SSE/AVX intrinsics appear in `varargs_func`, `func_mixed_args`, `func_struct_byval`, `ret_large_struct` - completely obscuring the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is preserved - simple functions like `cdecl_func` are straightforward. However, `varargs_func` and `param_varargs` use complex goto-based loops with labels like `lab_0x1396`, `lab_0x13ab` that are difficult to follow. At -O0, this level of complexity is unexpected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source well. Each test function (`call_cdecl`, `call_stdcall`, etc.) is separate. Helper functions like `func_a`, `func_b` properly extracted. No excessive inlining or outlining artifacts. Function sizes are reasonable.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Many forward jumps disrupt flow. The varargs functions have nested while loops with gotos to labels, making linear reading difficult. Some early returns present but overall flow is interrupted by computed jumps.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in varargs functions - similar pointer arithmetic and addition operations repeat. The loop in `param_ptr_array` processes 4 elements at a time with manual unrolling. Some dead code from register spilling visible.
+
+### LEVEL 3: TYPE SYSTEM FIDELITY
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - uses `int64_t` for most parameters (appropriate for arm64), but `func_many_args` has last two params as `int32_t a7, int32_t a8` while source uses `int`. `param_struct_byval` takes `int32_t` but source has `struct BigStruct`. Inconsistent signed/unsigned handling with casts throughout.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. `func_struct_byptr` takes `int64_t a1` instead of `SmallStruct *p`. `param_struct_byval` takes `int32_t a1` instead of `struct BigStruct s`. All struct operations reduced to raw pointer arithmetic. The source's `LargeStruct` (128 bytes) and `SmallStruct` are completely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts: `(int32_t *)a1` in `param_by_value_ptr`, `(int32_t *)result` in `ret_large_struct`, `(char *)str` in `func_mixed_args`. Pointer arithmetic like `a1 + 4`, `result + 4`, `result + 20` without type safety. Function pointer treated as `int64_t` in `param_func_ptr`.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in decompiled output. The source had extensive comments explaining each test case (e.g., "CALL-L1-01: cdecl调用约定", "PARAM-L2-06: 可变参数"). This complete absence makes understanding the test scenarios impossible.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No patterns recognized. Varargs handling shown as raw stack manipulation instead of `va_list`, `va_start`, `va_arg`. Struct by-value shown as memory copies instead of struct assignment. No recognition of calling convention patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The decompiler silently produces incorrect-looking code (e.g., `stdcall_func` computes `(0x100000000 * a2 >> 32) * (0x100000000 * a1 >> 32)` which is clearly wrong - should be `a1 * a2`). No indication of uncertainty or potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information. Source had preconditions like "ptr != NULL" checks, postconditions, and invariants - none recovered. The `func_struct_byptr` null check is preserved but not documented as a precondition.
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships visible in code but not documented. No indication that `call_cdecl` calls `cdecl_func`, or that `test_calling_conventions` orchestrates multiple tests. Global variables like `g1`, `g2`, `g3` used in `ret_large_struct` have no relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 81 functions in single file. No logical grouping or sections. Source had clear sections: "4.1 调用约定", "4.2 参数传递模式", "4.3 返回值处理". Static functions not properly scoped (all appear as global).
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Does not compile. Uses undefined `int128_t` type. Inline assembly functions like `__asm_movaps`, `__asm_paddq` are not defined. Missing standard library includes for `puts`, `printf`, `strlen`. Would require significant patching.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable naming uses completely generic names (`a1`, `a2`, `v1`, `v2`) providing no semantic information about purpose
+- Inline assembly intrinsics (`__asm_movaps`, `__asm_paddq`, `__asm_movdqa`) completely obscure logic in varargs and struct functions
+- No struct type recovery - all composite types reduced to raw pointer arithmetic with `int64_t`
+- No comments explaining test scenarios, algorithm logic, or purpose
+- `stdcall_func` produces semantically incorrect code: `(0x100000000 * a2 >> 32) * (0x100000000 * a1 >> 32)` instead of `a1 * a2`
+- Code does not compile due to undefined `int128_t` type and missing assembly function definitions
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Function boundaries match source well, with each test function properly separated and helper functions like `func_a`/`func_b` correctly extracted. No excessive inlining or fragmentation.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+Complete absence of comments leaves the decompiled code without any explanation of test scenarios, algorithm purposes, or semantic context. The source had extensive documentation explaining each test case that is completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a1` used in arithmetic with `a2` suggests parameters; `v1` initialized to 0 and used as accumulator suggests `sum` or `result`
+2. Replace inline assembly intrinsics with standard C constructs - `__asm_paddq` should become simple addition, `__asm_movdqa` should become struct/array operations
+3. Recover struct types from memory access patterns - consecutive `*(int32_t*)(result + offset)` accesses with consistent offsets indicate struct fields
+4. Add comments explaining test scenarios and expected behavior based on function names and call patterns
+5. Flag anomalous or likely-incorrect code generation (like the stdcall_func multiplication) with uncertainty indicators

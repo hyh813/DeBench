@@ -1,0 +1,113 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `a0`, `a1`, `a2`, `ptr`, `p`). The original source had meaningful names like `value`, `name`, `data`, `size`, `instance_count` - all lost in decompilation. Only `flag1` and `result` provide minimal semantic hints.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some C++ name-mangled functions recovered correctly (`test_cpp_member_func`, `template_max<int>`, `Container<int>::push`), but most functions use mechanical `sub_XXXXX` naming (e.g., `sub_401020`, `sub_401175`). The original source had descriptive test function names like `test_cpp_virtual_func`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: String literals are completely obscured - referenced as `&g_4021d4`, `&g_40207d` etc. with no indication of content. Magic numbers like `4`, `8` for allocation sizes appear without explanation. The expected values (4704, 42, 71, 650) are embedded in printf but not documented.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Some spurious constructs like `goto *((long long *)*((long long *)&arg_0));` for virtual calls. Many empty stub functions (`sub_401225`, `sub_401774`). However, no obvious register spilling artifacts or debug instrumentation visible.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: At -O0, control flow should be nearly source-equivalent, but we see: goto used for virtual dispatch, many functions that just `return;` with no body, and computed jumps. The original source had clear if-else, loops, and try-catch blocks - all obscured.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Many tiny wrapper functions (e.g., `sub_401239` just calls `test_cpp_member_func`). Template instantiations properly separated. However, the original class member functions (getValue, setValue, compute) are not recovered as separate entities - only the test functions remain.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom without excessive forward jumps. Exception handling code has some non-linearity with throw/catch flow. Most functions are short enough to follow linearly.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. Some common operations like `operator new` repeated but that's expected. Loop unrolling not significant at -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate: `unsigned long`, `unsigned int`, `void*`. Template instantiations recovered (`template_max<int>`, `Container<int>`) but underlying types are generic. Original had `int`, `size_t`, `char[32]` - all lost. Const correctness not preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Original classes (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `Container<T>`) completely lost. Only generic structs like `struct_0 { char padding_0[8]; struct struct_1 *field_8; }` remain. Field names are `field_0`, `field_8` - no semantic meaning.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: `*((int *)ptr[40])` - pointer arithmetic without bounds, `*((char **)ptr) = &g_403d78` - raw pointer casting, `goto *((long long *)*((long long *)&arg_0))` - dangerous indirect jump. No type safety annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. Original source had extensive comments explaining each test case, expected values, and C++ features being demonstrated. Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some C++ patterns partially visible (exception throw/catch, virtual function dispatch via vtable) but not named or explained. Original demonstrated 12 distinct C++ features - none are identified in decompiled code.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flags for unresolved indirect calls, uncertain type reconstructions, or potential issues. The virtual function call via goto is presented as normal code with no warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear expectations (e.g., "期望: 4704", "期望: 42") - none recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships visible (e.g., `main` calls `test_cpp_oo_features`). But no documentation of what each test validates or how they relate. Virtual dispatch relationships not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions ordered by address, not logically grouped. Original had clear sections: CPP-L3-01 through CPP-L4-03. Decompiled shows arbitrary ordering with startup code, test functions, template instantiations, destructors mixed together.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Extensive `extern` declarations required. Many undefined symbols (`g_403fe8`, `_ZTIi`, etc.). Would not compile without significant stubbing. Original compiled with `g++ -std=c++14` - no recovery of build configuration.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 4 + 3 + 5) / 4 = 3.5
+L2_avg = (3 + 4 + 7 + 8) / 4 = 5.5
+L3_avg = (4 + 2 + 3) / 3 = 3.0
+L4_avg = (1 + 3 + 1 + 1) / 4 = 1.5
+L5_avg = (3 + 4 + 2) / 3 = 3.0
+
+Overall = (3.5 × 0.30) + (5.5 × 0.25) + (3.0 × 0.20) + (1.5 × 0.15) + (3.0 × 0.10)
+        = 1.05 + 1.375 + 0.6 + 0.225 + 0.3
+        = 3.55/10
+```
+
+**Overall Readability Score:** 3.55/10
+
+### Critical Defects (Bullet List)
+- **Variable names**: All meaningful variable names lost - `value`, `name`, `data`, `size` replaced with `v0`, `v1`, `ptr`, `a0`
+- **Class/struct recovery**: Original classes (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`) completely lost; only generic `struct_0`, `struct_1` remain
+- **No comments**: Zero documentation recovered from original 540 lines of well-commented source
+- **Type precision**: All specific types erased - `int`, `size_t`, `char[32]` become `unsigned long`, `void*`
+- **Function naming**: Most functions use mechanical `sub_XXXXX` naming instead of semantic names
+
+### Best Quality Aspect (Single Dimension)
+- **Redundancy Elimination (8/10)**  
+- Why? No obvious dead code or duplicate expressions; code is relatively clean of optimization artifacts at -O0 level.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (1/10)**  
+- Why? The original source had extensive comments (540 LOC with detailed explanations of each C++ feature, expected values, and scene descriptions). Zero comments recovered makes it impossible to understand what each function tests without comparing to source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover variable names from usage patterns**: Analyze how variables are used (e.g., `v0 = 10` followed by arithmetic → likely `value` or `count`; `ptr[40]` for array indexing → likely `size` or `index`)
+2. **Reconstruct class/struct layouts**: Use vtable patterns, constructor semantics, and field access patterns to recover class member names and layouts
+3. **Add semantic comments**: When expected values are embedded in code (e.g., `printf(&g_40207d, strlen(&v1) + 4700)`), infer and document what is being tested

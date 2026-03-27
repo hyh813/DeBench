@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler uses generic parameter names (`param_1`, `param_2`, `param_3`) and auto-generated local variable names (`iVar1`, `uVar2`, `lVar1`, `puVar3`) that completely obscure semantic meaning. The original had clear names like `size`, `x`, `y`, `arr`, `n`, `counter`, `increment`. This is a severe degradation.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are accurately recovered from debug symbols, matching the original source almost perfectly (`param_macro_constants`, `call_macro_functions`, `param_asm_basic`, `param_dynamic_code`). Minor deduction for some internal functions like `FUN_00101020` with generic names.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some computed constants are preserved (e.g., `0x40` for BUFFER_COUNT*4, `0xdf22` for multi_branch result), but many magic numbers lack semantic labels. Values like `0x200` (MAX_SIZE/2), `0x1e` (50 decimal), `0x22` (MAP flags) appear without explanation. The decompiler shows computed values but doesn't explain their origins.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. Stack protection checks (`__stack_chk_fail`) are present but expected at -O0. No inline assembly remnants or debug instrumentation clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow structures match the original well. Simple if-else constructs are clear, loops are properly recovered as for/while loops. The `param_asm_clobber` function correctly shows a for loop instead of raw assembly. At -O0, control flow should closely match source, and it does.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions are properly separated with correct boundaries. Each test function (`call_*` wrappers and `param_*` implementations) is correctly extracted. The granularity matches the original source exactly.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns in functions like `param_dynamic_code` are handled appropriately. No forward jumps into loop bodies or computed goto patterns that would disrupt flow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or significant redundancy observed. The decompiled code is clean. Loop unrolling from the original source is appropriately represented as loops (since at -O0 no unrolling occurs).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are generic - mostly `int` or `undefined4`/`undefined8` instead of specific types. The original used `int`, `size_t`, `int *`, but the decompiler shows `long` for pointer-sized values and `undefined4` for 32-bit integers. Some proper types like `size_t` appear for sysconf results, but overall precision is lacking.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery visible. Arrays like `local_28[6]` are shown as raw arrays with indices, but the original's `int arr[]` is decompiled as `long param_1` with manual index calculations (`*(int *)(param_1 + uVar2 * 4)`). The SIMD function shows raw 16-byte arrays as `undefined (*param_3)[16]` instead of proper vector types.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. Pointer arithmetic is explicit (`param_1 + uVar2 * 4`). The SIMD function uses concerning patterns like `auVar1._4_4_` for field access. However, no obviously dangerous buffer overflow patterns or type-confused function pointers are present.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments in the decompiled output whatsoever. The original source had extensive comments explaining each test case (PP-L2-01, PP-L3-04, ASM-L4-06, etc.), macro purposes, and expected values. All this semantic information is completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable but not explicitly named or documented. The test wrapper pattern (`call_*` functions calling `param_*`) is preserved structurally. The atomic operations show `LOCK()`/`UNLOCK()` macros. However, no explicit identification of patterns like "test harness" or "macro expansion test" is present.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: External functions are marked with `<EXTERNAL>::` prefix, which is helpful. However, no flags for suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. The dynamic code generation in `param_dynamic_code` shows machine code bytes (`0xc083f889`) but no warning about this unusual pattern.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition comments recovered. The original had no explicit assertions but the test functions implied contracts (e.g., "期望: 64"). None of this semantic information is preserved. No documentation of error conditions from mmap/mprotect failures.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are visible - you can see `test_preprocessing_features()` calls the various `call_*` functions. External dependencies are marked with `<EXTERNAL>::`. However, no explicit documentation of call graphs or usage relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions (0x101210-0x1013d0), asm functions (0x101600-0x101ac0). Related functions are near each other. However, the original had clear section comments (5.2, 5.3) that are lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External function declarations are present with proper signatures. The code should compile with libc headers. However, `<EXTERNAL>` markers need resolution, and no build instructions or dependency documentation is provided.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable naming is severely degraded: `param_1`/`param_2`/`param_3` and `iVar1`/`uVar2`/`lVar1` completely obscure semantic meaning
+- Complete loss of all comments - the original's extensive documentation explaining test cases, macros, and expected values is entirely absent
+- Type precision is poor - generic `undefined4`/`undefined8` instead of specific integer types
+- No struct recovery - raw pointer arithmetic replaces array/buffer semantics
+- No semantic annotations - no indication of test expectations, macro purposes, or anomaly warnings
+
+**Best Quality Aspect:** Function Decomposition (scored 9/10)  
+Function boundaries are correctly identified, matching the original source exactly. Each test function and wrapper is properly separated.
+
+**Most Needs Improvement:** Comment Quality (scored 1/10)  
+The decompiler produces completely uncommented output, losing all the semantic context from the original source including test case descriptions, macro explanations, expected values, and architectural notes.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: When a parameter is used as array base with index multiplication (e.g., `param_1 + uVar2 * 4`), infer it's an array and name accordingly (`arr`, `index`)
+2. **Recover comments from debug info**: The source had extensive comments - if present in DWARF, recover them; otherwise, generate semantic comments based on function behavior (e.g., "// Returns: MAX_SIZE/2 if size <= MAX_SIZE, else BUFFER_COUNT*4")
+3. **Add semantic annotations for magic numbers**: Flag constants like `0x22` (MAP_ANONYMOUS|MAP_PRIVATE), `0x1e` (_SC_PAGESIZE), `7` (PROT_READ|PROT_WRITE|PROT_EXEC) with suggested constant names

@@ -1,0 +1,89 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic: `v0`, `v1`, `v2` for locals and `a0`, `a1`, `a2` for parameters. Even when names could be inferred from usage (e.g., `param_by_value_int` returning `a0 * 2`), the decompiler uses register names. Only a few functions like `callback_func` have meaningful names.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - test functions are well-named (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`), and core functions like `cdecl_func`, `stdcall_func`, `func_no_args` match source. However, many functions use generic names like `sub_103e8`, `sub_104ac`, and internal functions like `param_by_value_int` lose their semantic connection to the original.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Return values like `15`, `50`, `6` are computed constants (not magic numbers). String literals are shown as hex addresses (`0x1148c`) without decoding. The `GLIBC_2.4::__stack_chk_guard` is properly named. Minor issue: format string addresses aren't resolved to actual strings.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution includes: register annotations (`// r0`, `// r1`), stack frame comments (`// [bp-0x4]`), type uncertainty notes (`Other Possible Types: unsigned int`), condition calculation functions (`armg_calculate_condition`), and stack protector checks. These artifacts dominate the output and obscure actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures are correct - loops use `while`, conditionals use `if-else`. However, the pervasive use of `armg_calculate_condition(18, a0, 0, 0)` instead of simple boolean expressions makes the code harder to read. At -O0, this artificial complexity is unnecessary.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches the source well. The three test functions (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) are properly separated. Each function has a single responsibility. Minor: some functions like `call_varargs_param` have redundant calls.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately. Some goto statements exist but are manageable. The main disruption is the verbose condition calculations rather than structural jumps.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Most functions are clean. One notable redundancy: `call_varargs_param` calls `param_varargs(4, 10, 20, 30)` twice in succession and returns the result twice. Otherwise, no significant dead code or duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: All integers are generic `unsigned int` or `int`, losing signed/unsigned distinction. Pointers are correctly typed (`char *a1`, `unsigned int *ptr`). Function pointers like `callback_func` are properly typed. The main issue is the pervasive use of `unsigned int` where `int` would be more accurate for the original source.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor. Instead of reconstructing `SmallStruct` with fields `x` and `y`, we get individual parameters. The `param_double_ptr` function creates a typedef with generic `field_0`. Large structures like `LargeStruct` are passed as individual parameters (`a0` through `a15`) rather than as a coherent type.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns exist: pointer arithmetic in `func_struct_byval` using `ptr + 2`, casting through `char*` in `func_mixed_args`, and the `param_complex_cast` function uses void pointers with complex casting logic. The code compiles but contains type safety risks that the original source avoided.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are almost entirely auto-generated noise: register annotations (`// r0`), stack frame offsets (`// [bp-0x4]`), and type uncertainty notes. No meaningful comments explaining algorithm intent, preconditions, or non-obvious logic. The original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No design patterns or algorithms are explicitly identified. The code structure is clear enough to infer patterns (e.g., varargs handling, callback usage), but the decompiler doesn't name or highlight these. The original source explicitly tested calling conventions and parameter passing idioms, but these aren't recognized as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code, unresolved indirect calls, or potential undefined behavior. The decompiler presents all code with equal confidence. The `call_weak_fn` function has an obvious issue (returns `v0` uninitialized) but no warning is shown.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero contract information recovered. No preconditions (e.g., "requires: ptr != NULL"), postconditions, or invariants documented. The original source had clear function contracts that are completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships aren't documented. It's unclear which functions call `cdecl_func` or what the callback relationships are. The `param_func_ptr` takes `callback_func` as parameter but this relationship isn't highlighted.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are logically grouped - test functions together, parameter passing functions together, return value functions together. The original source's section organization (4.1 Calling Conventions, 4.2 Parameter Passing, 4.3 Return Values) is partially preserved in the function grouping.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions are declared with `extern` (e.g., `GLIBC_2.4::__stack_chk_guard`, library functions). However, the code would require significant patching to compile - removing the decompiler annotations, fixing the condition calculations, and adding proper headers.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`v0`, `v1`, `a0`, `a1`) - loses all semantic meaning from source
+- No struct recovery - `LargeStruct` with 16 `long long` fields becomes 16 individual parameters
+- Comments are auto-generated noise (register annotations, stack offsets) with no meaningful explanation
+- No contract/precondition/postcondition recovery despite -O0 optimization
+- `armg_calculate_condition` obscures simple boolean logic throughout
+- Type precision lost - all values are `unsigned int` or `int`, losing `char*`, `size_t`, etc.
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+The decompiler correctly separated the three test functions and maintained reasonable function granularity matching the source structure.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+At -O0, the decompiler should be able to infer meaningful variable names from usage patterns. The complete reliance on register names (`v0`, `a0`) makes the code nearly unusable for analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage**: At -O0, track how variables are used (e.g., `a0 * 2` in `param_by_value_int` suggests `a0` is the doubled value; `strlen(a1)` in `func_mixed_args` suggests `a1` is a string)
+2. **Recover struct types**: Instead of 16 individual parameters for `LargeStruct`, reconstruct the struct type with field names
+3. **Replace condition calculations with boolean expressions**: `armg_calculate_condition(18, a0, 0, 0)` should be simplified to `a0 != 0` at -O0
+4. **Add semantic comments**: Document calling convention tests, parameter passing patterns, and return value semantics that the original source explicitly tested

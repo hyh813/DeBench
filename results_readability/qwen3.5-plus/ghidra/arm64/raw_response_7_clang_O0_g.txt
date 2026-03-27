@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`local_18`, `local_14`, `iVar1`, `iVar2`) with no semantic meaning. Original names like `result`, `p1`, `p2`, `p3`, `a`, `b` are completely lost, replaced by stack offset-based names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user function names preserved accurately (`param_fake_branch`, `decrypt_string`, `param_opaque_predicate`). However, some runtime functions use generic names (`FUN_00100760`, `FUN_001008fc`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (`-0x21524111` instead of `0xDEADBEEF`, `0x21` for loop bound). String literals replaced with `&DAT_001015f1` references. Key `'Z'` shown instead of `0x5A` encryption key.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple decompiler warnings pollute code: "WARNING: Removing unreachable block", "Unresolved local var", "Unknown calling convention". Type artifacts like `undefined4`, `undefined1` add noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as natural for/while constructs. However, `param_fake_branch` lost the second `if` condition entirely (strlen check eliminated). GCD loop in `param_opaque_predicate` uses awkward division pattern instead of modulo.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries well-preserved with appropriate granularity. `lto_target_func` correctly kept separate. No excessive inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. `call_vectorized_loop` has awkward array initialization with non-sequential indices (`local_70[0x12]`, `local_70[0x10]`) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Dead code from unreachable branches correctly removed. `param_instruction_substitution` simplified multiple operations into one expression (`x * 0x15`). Some redundant assignments remain (`local_14 = acc` before conditional).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation with `undefined4`, `undefined8`, `undefined1` throughout. Array types sometimes lost (`byte local_30 [32]` vs `char decrypted[32]`). Basic int/char types mostly preserved.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Bitfield struct in `param_implementation_defined` recovered as `anon_struct_4_3_4e909822` with lost field names. `jmp_buf` cast to `(__jmp_buf_tag *)` shows partial type recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(undefined *)0x0`, `(char *)`, `(int *)0x0`, `(byte *)`. Pointer arithmetic in `param_buffer_overflow_heap` uses `(long)__ptr + (long)local_24` pattern.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only technical decompiler warnings present ("Unresolved local var", "WARNING: Removing unreachable block"). No semantic documentation explaining algorithm purpose or function intent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. setjmp/longjmp pattern partially recognized (shows `__jmp_buf_tag`). String decryption loop not identified as such. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system for uncertainties: "Unresolved local var" flags missing variables, "WARNING: Subroutine does not return" for longjmp, "Removing unreachable block" for optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `x != 0` for division). No postcondition recovery. Error conditions not documented. Original comments about expected values completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear within decompiled code. Global variables referenced but not documented (`div_zero_caught`, `jmp_buffer`). Signal handler callback relationships not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no header separation. Runtime functions (`_init`, `_start`, `_fini`) mixed with user code. Static functions not clearly marked.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile standalone. Missing type definitions (`__jmp_buf_tag`, `__sighandler_t`). External dependencies (printf, malloc, signal) not documented. Requires significant stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+7+7+7)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.066
+Level 4 (Semantic):    (4+3+7+2)/4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.18/10
+```
+
+**Overall Readability Score: 5.2/10**
+
+### Critical Defects:
+- **Variable names completely lost**: `local_18`, `iVar1`, `local_14` instead of `result`, `p1`, `p2`, `p3`, `a`, `b`
+- **Magic numbers unexplained**: `-0x21524111` (should relate to `0xDEADBEEF`), loop bounds like `0x21`, `0x11`
+- **String literals replaced with data references**: `&DAT_001015f1` instead of actual printf format strings
+- **No contract documentation**: Division by zero precondition (`x != 0`) not documented
+- **Type degradation**: `undefined4`, `undefined1` types throughout obscure actual data types
+
+### Best Quality Aspect:
+- **Anomaly Indication (7/10)** - The decompiler effectively flags uncertainties with "Unresolved local var" and "WARNING: Removing unreachable block" comments, helping analysts identify where confidence is low.
+
+### Most Needs Improvement:
+- **Variable Naming Quality (3/10)** - Complete loss of semantic variable names is the most significant readability degradation, requiring manual reverse-engineering of each variable's purpose.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable renaming**: Analyze variable usage patterns to infer names (e.g., variables used in loop bounds → `i`, `count`; variables in arithmetic → `result`, `sum`)
+2. **Recover and preserve string literals**: Instead of `&DAT_001015f1`, display actual string content when recoverable from binary
+3. **Add semantic comment generation**: Detect common patterns (GCD, string decryption, signal handling) and add explanatory comments describing the algorithm purpose

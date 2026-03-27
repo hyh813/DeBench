@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Parameters are consistently lost and replaced with uninitialized local variables like `v1`, `v2`, and `v3` (e.g., `param_macro_constants` uses `v1` instead of `size`). This obscures data flow completely, as seen in `param_variadic_macro` where `x`, `y`, and `z` are all collapsed into a single `v1`.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: User-defined function names are perfectly recovered (e.g., `param_macro_constants`, `test_preprocessing_features`). However, library wrappers are reduced to generic names like `function_930` (mmap) or `function_960` (printf), which is standard but less helpful.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are recovered excellently, including preprocessor results like `"src/5-23.c"` and `"1.2.3"`. However, a critical error occurs in `param_macro_constants` where the constant `1024` (0x400) is misidentified as the address of global variable `g28` (`&g28`), creating semantic confusion.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean of debug artifacts, but frequent masking operations like `& 0xffffffff` and `& 0xfffffffe` appear throughout to handle ARM64 integer truncation, which adds visual noise without adding semantic value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent and matches the source structure perfectly due to the `-O0` optimization level. Loops and conditionals are preserved naturally (e.g., the loop in `param_asm_clobber`), with no spaghetti code or excessive jumps.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries are recovered 1:1 with the source. There is no inlining or outlining, maintaining the original granularity and cohesion of the test functions.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom. There are no confusing forward jumps or computed branches interrupting the flow, making it easy to follow execution paths.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no dead code or loop unrolling present. The logic is direct, though the bit-masking operations (`& 0xffffffff`) are technically redundant for the logic but necessary for the decompiler's type system.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Function signatures are frequently incorrect, showing `void` for functions that take parameters (e.g., `param_macro_constants(int size)` becomes `void`). While `int64_t` and `int32_t` are used appropriately for locals, the loss of parameter types is a major failure.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: N/A. The source code does not define any structs or unions, so there are no composite types to recover or fail at.
+
+**11. Type Safety:** Score: 5/10
+Justification: The use of "uninitialized" variables `v1` in place of function parameters makes the code look unsafe and undefined. Additionally, the comparison `(int32_t)v1 > (int32_t)&g28` in `param_macro_constants` casts a pointer to an integer for comparison, which is a type safety violation in the decompiled view.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. No explanations of the preprocessor logic, macro expansions, or the purpose of specific constants (like the `&g28` issue) are provided.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The decompiler fails to recognize that the math in `param_macro_functions` corresponds to `SQUARE(x) + MAX(x, y)`. It presents the raw arithmetic and logic (`v6 + v3 * v3`) without identifying the macro pattern.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler does not flag the suspicious logic in `param_variadic_macro` where the same variable `v1` is printed three times instead of three distinct arguments. It presents this confidently as correct code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions or postconditions are recovered. For example, the requirement that `param_asm_clobber` receives a valid array pointer and length is lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and standard library calls are mapped to wrappers. The relationship between `test_preprocessing_features` and the various `call_*` functions is preserved.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are listed in memory address order rather than logical source order, but this is standard for decompilers. The grouping of related functions is still discernible.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code includes necessary headers and prototypes. However, the `&g28` bug and the missing function parameters would likely cause compilation errors or logic errors if one tried to recompile the decompiled C code without fixing the signatures.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.3/10
+
+**Critical Defects:**
+- **Parameter Loss**: Function parameters are systematically dropped (e.g., `param_macro_constants` loses `size`), replaced by uninitialized locals `v1`, breaking data flow understanding.
+- **Logic Error in `param_variadic_macro`**: The decompiler shows `printf` printing `v1` three times instead of `x, y, z`, misrepresenting the source logic.
+- **Constant Misidentification**: The constant `1024` is incorrectly replaced by `&g28` (address of a global variable), creating a confusing and accidental comparison.
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 9/10)
+- The `-O0` compilation allowed the decompiler to perfectly preserve the original structure, loops, and conditionals without optimization artifacts.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)
+- The failure to recover function parameters and the generic use of `v1`, `v2` makes it nearly impossible to understand what data the functions are actually processing.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Improve ARM64 Parameter Recovery**: The decompiler must correctly map input registers (x0-x7) to function parameters instead of treating them as uninitialized local variables.
+2. **Fix Constant/Address Aliasing**: Prevent the confusion between immediate values (like 1024) and memory addresses (like 0x400) when resolving constants.
+3. **Variadic Argument Support**: Enhance stack analysis to correctly recover distinct arguments for variadic functions like `printf` rather than collapsing them into a single variable.

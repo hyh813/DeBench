@@ -1,0 +1,96 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic register names (v0, v1, v2, a0, v5, v6, etc.) or stack location comments (// [bp-0x4]). The original source uses meaningful names like `result`, `x`, `str`, `p1`, `p2`, `p3` which are completely lost. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are almost perfectly preserved from the source: `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `param_division_by_zero`, etc. all match exactly. Only minor issue is some internal functions have generic names like `sub_400498`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some constants like `90` (for XOR key 0x5A) and `32` (buffer size) are used correctly, but magic numbers like `0xDEADBEEF` from the original source are not visible in the decompiled output. The constant `4294967295` (0xFFFFFFFF) appears but without explanation as a return value for error cases.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution from compiler artifacts including: register annotations (// r0, // r4, // lr), stack frame comments (// [bp-0x4]), internal compiler functions (armg_calculate_condition, __aeabi_idivmod, __divsi3), and goto-based control flow that obscures loops. These artifacts significantly impede readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Control flow is severely degraded. The gcd loop in `param_opaque_predicate` uses goto-style jumps (`LABEL_400614`) instead of while loops. The `param_tail_call_optimized` function has duplicate recursive calls at the end instead of proper tail call optimization. At -O0, these should be more recognizable as natural loops and proper tail recursion.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable granularity - none are excessively large. The original source's function boundaries are preserved. However, some functions like `param_opaque_predicate` could benefit from extracting the gcd computation into a helper function.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read reasonably top-to-bottom, but the goto-based control flow in `param_opaque_predicate` and the duplicate recursive calls in tail call functions create non-linear patterns. The forward jumps to labels disrupt the natural reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy found: `call_tail_call_optimized` calls `param_tail_call_optimized(1000, 0)` twice with identical results. Similarly, `call_non_tail_call` has duplicate calls. This appears to be a decompilation artifact where both the assignment and return statements were preserved.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation. Most integers are `unsigned int` when the original uses `int` (signed). Parameters like `a0` are unsigned but should be signed. The distinction between signed and unsigned arithmetic is lost. Function return types are often `unsigned int` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some array recovery is present (e.g., `char v0[31]`, `char dst[2]`), but struct recovery is minimal. The original source's `jmp_buffer`, `bitfield` struct, and other composite types are not reconstructed. The decompiler uses raw pointer arithmetic instead of struct field access.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple type safety issues: unsafe pointer arithmetic in string decryption loops, mixing of signed/unsigned in comparisons (e.g., `armg_calculate_condition` with various condition codes), and lack of const-correctness. The string decryption uses pointer increment patterns without bounds checking.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are almost entirely limited to register assignments (// r0, // r4) and stack frame locations (// [bp-0x4]). No comments explain the algorithm, document preconditions, or indicate uncertainty. The original source's rich comments about obfuscation techniques are completely absent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms are explicitly identified. The opaque predicates, instruction substitutions, and other obfuscation techniques from the source are not labeled or explained. A knowledgeable reader could identify them, but the decompiler provides no assistance.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies are flagged. The duplicate function calls in tail call functions, the unusual control flow patterns, and potential undefined behavior scenarios are not indicated. The decompiler presents all code with equal confidence regardless of reliability.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source's error handling patterns (setjmp/longjmp for signal handling) are present but their contracts (e.g., "requires: x != 0 for division") are not recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present and can be traced, but relationships are not documented. There's no indication of which functions call which, what callbacks exist, or how globals are used. The call graph must be inferred from the code itself.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the output, roughly corresponding to their categories (obfuscation, optimization, edge cases). Static functions are properly scoped. The organization mirrors the original source's structure reasonably well.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code requires significant external dependencies (libc functions like signal, longjmp, setjmp, printf, malloc, free). Many internal compiler functions need linking. While the code structure is valid C, it cannot compile standalone without proper library declarations and linking.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (v0, v1, v2, a0, v5, etc.) losing all semantic meaning from the original source
+- Control flow uses goto-based patterns instead of natural loops, especially for the gcd computation in opaque predicates
+- Duplicate function calls in wrapper functions (call_tail_call_optimized calls param_tail_call_optimized twice)
+- Type precision severely degraded - most signed ints become unsigned int
+- No comments explaining algorithms, contracts, or indicating uncertainty
+- Excessive compiler noise (register annotations, internal function names like __aeabi_idivmod)
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names are almost perfectly preserved from the original source, making it easy to identify which decompiled function corresponds to which source function.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Variables are almost entirely generic register names (v0, v1, a0) or stack location comments, completely losing the semantic meaning present in the original source (result, x, str, p1, p2, p3).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - the gcd loop uses variables that clearly correspond to 'a' and 'b' for the two numbers being compared; the result variable should be named 'result' based on its return usage
+2. Recover natural control flow constructs - the gcd computation should be displayed as a while loop, not goto-based jumps; tail recursion should be recognized and presented cleanly
+3. Eliminate compiler artifacts from output - remove register annotations (// r0, // lr) and internal compiler function names (__aeabi_idivmod) that add noise without semantic value

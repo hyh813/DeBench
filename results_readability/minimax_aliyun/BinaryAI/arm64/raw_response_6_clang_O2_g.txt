@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `param_1`, `param_2`, `param_3` instead of semantic names like `dst`, `src`. Local variables use cryptic names like `local_30`, `uVar1`, `iVar2`. Only globals like `signal_received`, `signal_number`, `shared_counter` are well-named. The generic naming makes it extremely difficult to track variable purposes.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User-defined functions correctly preserve original names: `param_strcpy`, `call_strcpy`, `param_strcmp`, `param_malloc_free`. Standard library functions are properly identified: `strlen`, `strcpy`, `memcpy`, `pthread_create`. Minor deduction for some internal functions with cryptic names like `FUN_001012e0`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are meaningful: `0x2a` (42 return value) is used consistently, syscall numbers `0x38` (openat) and `0x39` (close) are present. However, many magic numbers lack explanation: `0xffffff9c` (AT_FDCWD), `0x42`, `0x1b6` for file open flags, and complex expressions like `-(param_1 >> 0x1f) & 0xfffffff800000000 | param_1 << 3` for malloc size calculation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some noise present: `&stack0xffffffffffffff70` in stat calls, `CONCAT44`, `CONCAT53` macros for compound literals. No excessive register spilling artifacts or debug instrumentation. Overall manageable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Standard control structures (if/else, loops, function calls) are properly recovered. At -O0, control flow should closely match source. Some unusual patterns like the complex do-while in `param_signal_handling` with nested boolean conditions, but generally follows natural C patterns.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the original source. `param_malloc_free` is 60+ lines but logically cohesive. Thread functions properly separated: `thread_compute`, `thread_sum`, `thread_increment`. No over-fragmentation or monolithic functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in error handling. Some complexity in `param_signal_handling` with nested conditionals, but traceable. No severe disruption to reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop unrolling in `param_malloc_free` and `param_memset` is present (expected at -O0 for small fixed iterations) but not commented. Some duplicate expressions in the verification logic but manageable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Standard library types correctly identified: `FILE *`, `pthread_t`, `size_t`, `ssize_t`. However, many parameters use generic types: `undefined8`, `undefined4`, `undefined`. Return types often wrong: `param_strcpy` returns `void` instead of `int`. Integer types not specific (should be `int32_t`, `size_t`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `sockaddr` partially reconstructed with `sa_family` and `sa_data[14]` fields. `ThreadData` struct not recovered - parameters passed as separate values (`local_60`, `uStack_54`, etc.). Some struct-like accesses visible but field names lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally safe pointer usage. Some concerning patterns: `(pthread_mutex_t *)counter_mutex` treats global as cast to pointer type. No major undefined behavior risks. Minor unsafe casts present but don't cause dangerous code.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled output. Only function signatures have minimal information. No explanation of algorithm logic, no documentation of preconditions/postconditions, no indication of decompilation confidence. The code is essentially undocumented.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable: pthread create/join pattern, signal handler registration, mutex lock/unlock. However, no explicit naming or highlighting of these patterns. The decompiler doesn't identify "producer-consumer" or "reference counting" idioms.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of uncertain or anomalous code. Complex expressions like `__aarch64_ldadd4_acq_rel` and `__aarch64_cas4_acq_rel` are presented as regular function calls without explanation that they represent atomic operations. No warnings about indirect calls or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error handling code is present (checking return values) but not explained. No documentation of what conditions must hold before function calls or what guarantees are provided after.
+
+### LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in the code. Global variables like `signal_received`, `signal_number`, `shared_counter` used across functions but scope not documented. No indication of who calls whom or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped: standard library tests, system calls, thread functions. Related functions placed near each other. Static functions properly identified. Some arbitrary ordering but overall organized.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code compiles (marked as "Compilation Result: Yes" in metadata). External function declarations present. Dependencies clear from function signatures. Minor issues with type mismatches but functional.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`param_1`, `param_2`, `local_30`) making code nearly impossible to follow without cross-referencing source
+- `param_strcpy` returns `void` instead of `int` (should return `strlen(dst)`)
+- No comments explaining any algorithm, pattern, or semantic intent
+- Type precision severely degraded: `undefined8`, `undefined4` instead of proper types
+- Composite types not recovered: `ThreadData` struct lost, passed as separate parameters
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- User-defined function names match original source exactly, making it easy to locate specific functions
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+- Complete lack of comments makes it impossible to understand algorithm intent, decompilation confidence, or semantic relationships without referring to original source
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1` passed to `strcpy` as destination → name it `dst` or `dest`)
+2. **Recover return types from calling conventions**: `param_strcpy` should return `int` based on the calling convention and usage in `strlen()`
+3. **Add semantic comments**: Include basic documentation explaining what functions do, especially for non-trivial logic like atomic operations, signal handling, and thread synchronization patterns

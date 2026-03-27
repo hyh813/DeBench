@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `v0`, `v1`, `i`, `p`, `arr`, `result`. While some context-specific names exist (e.g., `head`, `current` for linked lists), the majority obscure semantic purpose. For example, `int *leak` in `memory_leak` is good, but loop counters are uniformly `i` making it hard to track which loop does what.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source: `double_value`, `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `linked_list_heap`, `tree_heap_traversal`, `memory_leak`, `dangling_pointer`, `double_free`, `global_var_access`, `static_local`, etc. The decompiler recovered the exact function names from debug symbols.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4 * n` (should be `sizeof(int) * n`), `0x14u` (5 * sizeof(int)), `0xCu` (sizeof(TreeNode)), `0x28u` (10 * sizeof(int)) appear without explanation. The decompiler didn't recover sizeof() expressions, leaving raw calculations. However, array bounds like `< 0xA` for 10-element arrays are interpretable.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Stack canary checks (`__readgsdword(0x14u)`) appear but don't significantly impede readability. No redundant casts or debug instrumentation. The code is relatively clean for an O0 binary.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow uses natural C constructs - `for` loops, `if-else` chains, while loops for traversal. At O0, loops are straightforward. Minor issue: `stack_alias` has confusing logic with `if (!local)` which should be checking pointers, but this reflects the original code's semantics.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - each test function is 30-80 lines with clear single responsibility. Helper functions like `create_tree_node` are properly extracted. No 500-line monoliths. Parameter lists are reasonable and don't expose excessive implementation details.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error-checking code (e.g., `if (!arr) return -1;`). No excessive forward jumps or goto statements. The `linked_list_heap` function has nested loops but they're clearly delineated.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling is minimal at O0. Common subexpressions are not unnecessarily duplicated. The code is clean without redundant computations.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are mostly precise - `int` for integers, `char` for buffers, proper pointer types (`int *arr`, `Node *head`). Function pointer types are correctly typed (`int (*f)(int)`). Minor issue: some `size_t` parameters could be more specific, but overall type accuracy is good.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery. `Point`, `Node`, `TreeNode` structs are perfectly reconstructed with accurate field names (`data`, `next`, `left`, `right`, `x`, `y`). The decompiler correctly identified nested structures and pointer relationships.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe code. No obviously dangerous casts. Pointer arithmetic is correct (e.g., `arr[i]`). Minor issue: some pointer arithmetic in `memop_memcpy` with `(n & 0xFFFFFFFC)` is questionable but matches source. No buffer-overflow-prone patterns in the decompiled output itself.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only function signatures have minimal documentation. No explanation of algorithm logic, no preconditions/postconditions, no decompilation confidence indicators. The code is essentially bare without documentation explaining what each function does.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable from structure (linked list traversal, tree traversal) but not explicitly named or documented. The decompiler doesn't identify "this is a linked list" or "this implements X algorithm" - the user must infer from code patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code. The `dangling_pointer` function returns `*p` after `free(p)` - undefined behavior - but there's no warning. No indication of potential issues, undefined behavior, or unusual patterns. The decompiler presents code as if it's perfectly normal.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No contract information recovered. Preconditions like "n > 0" are implicit in code but not documented. Postconditions like "returns heap-allocated pointer" are not indicated. Error conditions are handled but not explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear from code structure - you can see `main` calls `test_stack_memory`, which calls `local_vars`, etc. However, there's no explicit documentation of call graphs or which functions call which. Global variable usage is visible but not annotated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single monolithic output file. No logical grouping of related functions. Static functions (`static_local`, `static_helper`) are not marked as file-scoped. No header file structure or API declarations. The organization is essentially flat.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code appears to compile as standard C. External functions (`malloc`, `free`, `printf`, `fork`, `waitpid`) are properly referenced. However, some issues: `__readgsdword` is x86-specific (not arm64 as stated in metadata), and TLS access uses `__writegsdword`/`__readgsdword` which is x86_64 specific. The code would need patching for different architectures.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- Variable naming is predominantly generic (`v0`, `v1`, `i`, `p`, `result`) making it hard to track variable purpose across functions
+- Magic numbers like `4 * n`, `0x14u`, `0xCu` not replaced with sizeof() expressions
+- No comments explaining algorithm logic, preconditions, or postconditions
+- Architecture mismatch: metadata says arm64 but decompiled code is clearly x86 (uses `__readgsdword`, `ebx`, `esp`, `ebp` registers)
+- No anomaly flagging for undefined behavior (e.g., `dangling_pointer` returns value after free)
+
+**Best Quality Aspect:** Type System Fidelity (scored 8.3/10)  
+The decompiler excellently recovered composite types (Point, Node, TreeNode) with accurate field names and proper pointer relationships. Type precision is high with correct int/char/pointer distinctions.
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.5/10)  
+The decompiled code lacks any meaningful comments, pattern identification, anomaly warnings, or contract documentation. It's essentially "bare metal" output that requires significant reverse-engineering effort to understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Variables used as array indices should be named `index` or `i`, those used as sizes should be `size` or `n`, pointers to linked structures should carry the structure name
+2. **Recover sizeof() expressions**: Detect patterns like `malloc(4 * n)` and replace with `malloc(n * sizeof(int))` using type information
+3. **Add semantic annotations**: Flag potential undefined behavior (dangling pointers, double-free), identify common patterns (linked lists, trees), and document preconditions/postconditions where inferable

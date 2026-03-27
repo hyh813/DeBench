@@ -1,0 +1,123 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `ptr`, `flag1`, `result`) with no semantic meaning. Original source had meaningful names like `encrypted`, `decrypted`, `canary`, `heap_buffer` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved (`param_fake_branch`, `call_opaque_predicate`, `param_vectorized_loop`) matching original source. However, numerous wrapper functions use mechanical names (`sub_401241`, `sub_401255`) adding noise.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (XOR key `90` instead of `0x5A`, signal numbers `8` and `11` for SIGFPE/SIGSEGV). Some constants were optimized away entirely (dead branches eliminated).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: wrapper functions (`sub_401xxx`), initialization code (`register_tm_clones`, `__do_global_dtors_aux`), architecture-specific thunks (`__x86.get_pc_thunk.*`), and bizarre struct padding (`padding_0[11943]`).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as while/do-while constructs. However, `param_opaque_predicate` has convoluted conditionals with `_ccall` operations, and initialization code uses goto patterns that disrupt natural flow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original functions preserved but many optimized to trivial returns (`param_fake_branch` returns `a0` directly, `call_fake_branch` returns constant `10`). Wrapper functions create artificial fragmentation without semantic value.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. Loop structures in `param_vectorized_loop` are linear but verbose. Some initialization functions have forward jumps that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Compiler optimizations eliminated dead code (fake branches gone) but introduced redundancy through loop unrolling in `param_vectorized_loop`. Wrapper functions duplicate call logic unnecessarily.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - all parameters become `unsigned int` regardless of original type. Pointer types lost (`char*` becomes `unsigned int`). Signed/unsigned distinctions frequently incorrect (original `int x` becomes `unsigned int a0`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor with meaningless padding arrays (`padding_0[11943]`, `field_2ea7`). Original bit-field struct in `param_implementation_defined` completely lost. Field names are generic (`field_0`, `padding_0`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts present: `(int)v1[16]`, `(char *)&ptr[3017]`, `(unsigned int [1])v0`. Pointer arithmetic lacks type checking. Function pointer calls use incorrect signatures creating potential undefined behavior.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only assembly-style address comments exist. No algorithm explanations, no decompilation confidence indicators, no API documentation. Original source's extensive comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not identified: GCD algorithm in `param_opaque_predicate` not named, XOR decryption pattern unlabeled, tail call optimization not noted, vectorization not explained. Patterns present but obscured.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`). No warnings about optimized-away code, constant folding, or architecture mismatch (x86 decompilation of arm64 binary). Silent failures on significant transformations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a0 != 0` for division). No postconditions inferred. Signal handling contracts not explained. Error conditions undocumented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables referenced without context (`g_402008`, `jmp_buffer`). No call graph documentation. Callback relationships (signal handlers) not explicitly linked.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output with no logical grouping. Initialization code mixed with application logic. No header file structure or namespace organization. Original source's section comments lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile without major modifications. Architecture mismatch (x86 vs arm64). External dependencies declared but signatures incorrect. Missing includes (`signal.h`, `setjmp.h`). Type mismatches prevent compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+4)/4 = 5.00  × 0.30 = 1.500
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50  × 0.25 = 1.375
+Level 3 (Type):        (4+3+3)/3   = 3.33  × 0.20 = 0.667
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75  × 0.15 = 0.413
+Level 5 (Contextual):  (5+4+3)/3   = 4.00  × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.355/10
+```
+
+**Overall Readability Score: 4.4/10**
+
+---
+
+### Critical Defects
+
+- **Variable names completely generic** (`v0`, `v1`, `ptr`, `flag1`) losing all semantic meaning from original source (`encrypted`, `decrypted`, `canary`)
+- **Type system severely degraded** - all parameters become `unsigned int` regardless of original signed/unsigned distinction
+- **No comments recovered** - original source's extensive documentation completely lost
+- **Architecture mismatch** - x86 decompilation of arm64 binary introduces incorrect thunk functions
+- **Struct recovery produces nonsense** - padding arrays like `padding_0[11943]` obscure actual data layout
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (7/10)** - Core function names preserved accurately (`param_fake_branch`, `param_opaque_predicate`, `param_vectorized_loop`) matching original source intent, making basic navigation possible.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (2/10)** - Virtually no documentation recovered despite original source having extensive comments explaining obfuscation techniques, expected values, and test scenarios.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in XOR operations with constant should be named `key` or `encrypted_data`)
+
+2. **Recover and preserve source comments** - When debug symbols (`-g`) are available, extract and embed original comments into decompiled output
+
+3. **Add decompilation confidence annotations** - Flag optimized-away code, constant-folded expressions, and architecture mismatches with clear warnings (e.g., `// OPTIMIZED: dead branch eliminated by compiler`)

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `iVar1`, `uVar1`) with no semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions recovered with original names (`sequential_ops`, `single_if`, `nested_if_2`), but runtime helpers use generic names (`FUN_00011030`, `FUN_000110a0`). Good recovery rate for user-defined functions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout test functions (`0x14`, `0x15`, `0x2d`, `0x3e9`) without explanation. Original source had comments explaining expected values (e.g., "期望: 21").
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Runtime initialization functions present (`_init`, `__do_global_dtors_aux`, `__x86_get_pc_thunk_*`), stack canary checks visible. Core test functions are relatively clean.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions recovered well (`sequential_ops`, `ternary_op`), but `loop_multi_exit` uses goto labels (`LAB_00011a9e`). `goto_forward` and `goto_backward` correctly recovered as natural if/loop structures.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with clear single responsibility. Helper functions (`double_value`, `op_add`) properly separated. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `loop_complex_cond` has extremely nested if-else chains (10+ levels). `loop_multi_exit` uses forward goto labels disrupting top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `if_elseif_long` optimized to arithmetic (`(param_1 + 1) * 100`) losing original switch semantics. `duffs_device` shows significant code duplication from loop unrolling.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Inconsistent types - `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `char` instead of `int`. Function pointers shown as generic `code *` rather than proper signatures.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays handled reasonably (`local_1c[3]`, `local_30[8]`). Source code had minimal struct usage, so limited opportunity to evaluate struct recovery.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some signed/unsigned mismatches (`param_1` as `uint` vs `int`). Stack canary checks present (`__stack_chk_fail_local`). Function pointer calls use unsafe generic types.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Zero comments** in decompiled code. Original source had extensive documentation explaining each function's purpose, test cases, and expected results.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Loop and conditional patterns recognized but not named. State machine functions (`state_machine`, `fsm_func_table`) recovered but not identified as state machine pattern.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for uncertain recoveries. `computed_goto.constprop.0` shows constant propagation without indication. Silent failures on unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error condition documentation. Original source had test validation comments (e.g., "测试验证: 输入5,7,3应返回21").
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables referenced as `DAT_00013008` without explanation. Callback relationships visible but not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Test functions grouped together (`test_control_flow_l1/2/3`). Helper functions interspersed. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires significant stubs to compile standalone. External functions undefined (`FUN_000110e0`, `FUN_000110f0` for printf). No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+6)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+7+5+5)/4 = 5.75  × 0.25 = 1.44
+Level 3 (Type):        (5+7+6)/3   = 6.00  × 0.20 = 1.20
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75  × 0.15 = 0.41
+Level 5 (Contextual):  (5+6+4)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                                  5.05/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Zero comments** - Complete absence of documentation despite complex control flow patterns
+- **Generic variable names** - `param_1`, `iVar1`, `uVar1` obscure semantic purpose throughout
+- **Type degradation** - `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `char`
+- **Magic numbers** - Test values (`0x14`, `0x3e9`, `0x65`) without explanation of expected results
+- **Non-compilable** - External function calls (`FUN_000110e0`, `FUN_000110f0`) undefined
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most core test functions recovered with original names (`sequential_ops`, `single_if`, `nested_if_2`, `loop_for_fixed`), preserving semantic intent.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding complex control flow patterns (Duff's device, state machines, indirect recursion) extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** - Analyze usage patterns to suggest semantic names (e.g., `iVar1` used in accumulation → `sum`, `count`)
+2. **Add decompilation confidence annotations** - Flag uncertain recoveries with comments like `// DECOMPILER UNCERTAIN: indirect call target`
+3. **Recover test assertion documentation** - Detect printf patterns with constant arguments and restore as comments showing expected values

@@ -1,0 +1,121 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `a0`, `a1` throughout; `sequential_ops` parameters should be `a, b, c` not `a0, a1, a2`; no semantic meaning conveyed.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Target functions retain original names (`sequential_ops`, `single_if`, `recursion_factorial`) which is good, but many helper functions use generic `sub_*` names like `sub_401030`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (UINT_MAX/-1) appears frequently without explanation; test value literals (10, 20, 30) are clear but not contextualized.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise from `__x86.get_pc_thunk.*` calls, stack checking code (`__stack_chk_fail_local`), struct padding definitions, and runtime initialization functions mixed throughout.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Functions like `if_elseif_long` and `switch_large` use `goto` with computed addresses instead of proper switch constructs; some loops recovered as do-while but many use unnatural patterns.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Target functions properly separated but runtime/initialization code (`_init`, `_start`, `__do_global_ctors_aux`) mixed with test functions; no logical grouping.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Goto statements disrupt flow in multiple functions (`switch_fallthrough` uses `LABEL_4015a4`); `sequential_ops` reads linearly but many others don't.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant variable assignments (`v0 = v1` patterns) common; stack checking code adds redundancy; no dead code elimination visible.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Many `unsigned int` where `int` was in source; `if_else` returns `char` instead of `int`; `state_done` has no parameters but source had `int event`; type confusion throughout.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct definitions are mostly padding with generic field names (`field_0`, `field_28`, `padding_0[40]`); no semantic field recovery; original source had no complex structs but decompiler invented meaningless ones.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe pointer casts; `call_func_ptr` treats function pointer as `unsigned int *a0`; stack checking suggests safety concerns but no actual safety annotations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code; no algorithm explanations, no decompilation confidence indicators, no API documentation; completely bare output.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized (loops, conditionals) but not named; `switch_fallthrough` partially recovered with labels but not identified as fallthrough pattern; no design pattern recognition.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: One anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`) but inconsistent; no systematic flagging of unresolved indirect calls or suspicious patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented; functions like `duffs_device` require `n>0` but this isn't indicated; no error condition documentation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented; global variables (`g_403064`, `g_40316c`) referenced without explanation; no call graph documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output; runtime functions mixed with test functions; no logical grouping by control flow level (L1/L2/L3); no namespace structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Contains compilation artifacts but would need significant cleanup; external dependencies (`_ccall`, `__stack_chk_fail_local`) not clearly documented; platform mismatch (original ARM64, decompiled X86).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Avg Score | Weight | Contribution |
+|-------|-----------|--------|--------------|
+| L1: Lexical Clarity | 4.25 | 30% | 1.275 |
+| L2: Structural Intelligibility | 4.75 | 25% | 1.188 |
+| L3: Type System Fidelity | 3.33 | 20% | 0.666 |
+| L4: Semantic Transparency | 2.25 | 15% | 0.338 |
+| L5: Contextual Coherence | 3.67 | 10% | 0.367 |
+
+**Overall Readability Score: 3.8/10**
+
+---
+
+### Critical Defects
+
+- **Variable `a0, a1, a2` should be named `a, b, c`** in `sequential_ops` based on source comparison
+- **Control flow uses `goto` with computed addresses** instead of proper switch constructs (`if_elseif_long`, `switch_large`)
+- **Zero comments** throughout entire decompiled output despite complex control flow patterns
+- **Struct definitions are meaningless padding** (`field_0`, `padding_0[40]`) with no semantic recovery
+- **Platform mismatch**: Original compiled for ARM64 but decompiled as X86, causing architecture-specific artifacts
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (6/10)** - Target functions retained original names (`sequential_ops`, `recursion_factorial`, `double_value`) making identification possible despite other issues
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, algorithm explanations, or decompilation confidence indicators makes understanding extremely difficult
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement semantic variable naming** - Infer variable names from usage patterns and parameter positions (e.g., `a0` → `a` in `sequential_ops`)
+
+2. **Recover high-level control structures** - Replace `goto` + computed address patterns with proper `switch` statements and named labels for fallthrough cases
+
+3. **Add decompilation confidence annotations** - Insert comments indicating uncertainty levels, unresolved calls, and potential optimization artifacts to guide manual review

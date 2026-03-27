@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use meaningless generic names like `str2`, `str`, `v1`, `v2`, `v3` throughout. In `param_strcpy`, the parameters are completely lost - `str2` should be `src` and `str` should be `dst`. The naming provides no semantic information about variable purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Function names like `param_strcpy`, `call_strcpy` are preserved but lack parameter information. Names are mechanical and don't indicate parameter types or count (e.g., should suggest `param_strcpy(char* dst, const char* src)`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some string literals like "Value: %d, Name: %s\n" are preserved correctly, but Chinese test labels are encoded as raw hex bytes (e.g., `"\xe6\xb5\x8b\xe8\xaf\x95"`). Magic numbers like `66` for file open flags remain unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifacts present: `__stack_chk_fail`, `__printf_chk`, `__snprintf_chk`, `__asm_*` blocks, and address comments (`// 0x1bc4`). These obscure the actual logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Control flow is convoluted with excessive goto statements and backward jumps. In `param_strcpy`, the function incorrectly treats the return address as the first parameter, causing completely wrong control flow. Loop constructs are obscured.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are extracted but `param_strcpy` has broken parameter handling - it takes no parameters when it should take two. Some functions are reasonably sized but lack proper parameter abstraction.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent jumps disrupt flow. In `param_fork_exec` and `param_pipe_communication`, multiple goto labels (`lab_0x24d4`, `lab_0x25e8`) create non-linear reading. Deep nesting in some functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some loop unrolling present but not commented. Common subexpression patterns visible (e.g., repeated `*(int64_t *)g2 == *(int64_t *)g2` checks). Not severe but noticeable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type degradation. `int64_t` used for everything including what should be `char*`, `int`, `size_t`. In `param_strcpy`, parameters are completely lost - function takes void but should take `(char* dst, const char* src)`. Const-correctness is absent.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct definitions provided but with meaningless field names: `struct ipc_perm { int32_t e0; int32_t e1; ... }`. Original field semantics (uid, gid, mode, etc.) completely lost. Raw pointer arithmetic used instead of struct access in many places.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Multiple unsafe casts: `(char *)str2`, `(int64_t *)` everywhere. In `param_strcpy`: `strcpy(str, (char *)str2)` copies from itself to itself - completely wrong. Function pointer casts are unsafe: `(int64_t * (*)(int64_t *))((int64_t)&g1 + 2456)`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are exclusively address markers (`// 0x1bc4`) - not useful. No algorithm explanations, no decompilation confidence indicators, no API contracts. Auto-generated noise provides no value.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions like `strcpy`, `strlen`, `strcmp`, `memcpy` are recognized and called correctly in most cases. However, the broken parameter handling in `param_strcpy` shows incomplete recovery.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of the broken parameter handling in `param_strcpy`. No indication that the function signature is incorrect. Silent failures throughout - code presents incorrect information confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not explained. The broken `param_strcpy` has no indication that something is wrong with the parameter handling.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships aren't documented. No indication of which functions call which, or global variable usage patterns. Callbacks not clearly identified.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by category (string, memory, thread, etc.) but the organization is arbitrary within groups. Static functions not properly scoped. No header file structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has many compilation issues: wrong function signatures (param_strcpy takes no parameters), missing parameter types, incorrect pointer casts. Would require extensive patching to compile. Dependencies not documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.5/10
+
+**Critical Defects:**
+- `param_strcpy` function signature completely wrong - takes no parameters when it should take `(char *dst, const char *src)`, causing `strcpy(str, (char *)str2)` to copy from itself
+- All variables use meaningless generic names (`str2`, `v1`, `v2`, `e0`, `e1`) losing all semantic meaning
+- Type precision severely degraded - `int64_t` used for everything including pointers and integers
+- No useful comments - only address markers present
+- Unsafe casts and type safety violations throughout code
+
+**Best Quality Aspect:** Idiom Recognition (5/10)  
+Standard library functions like `strcpy`, `strlen`, `strcmp`, `memcpy` are generally recognized and called correctly where parameters are handled properly.
+
+**Most Needs Improvement:** Type System Fidelity (2.7/10)  
+Type precision is catastrophically bad - function parameters lost entirely in `param_strcpy`, wrong types everywhere, no const-correctness, unsafe casts. This fundamental failure makes the code practically unusable.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover function parameters from stack frame analysis** - The original `param_strcpy(char *dst, const char *src)` has two parameters that were completely lost. Analyze stack frame and register usage to recover parameter types and positions.
+2. **Infer variable names from usage patterns** - Variables like `str2` used in `strcpy(str, str2)` should be named `src` based on semantic usage analysis.
+3. **Add useful comments explaining decompilation confidence** - Flag uncertain reconstructions, indirect calls, and anomalies rather than presenting broken code as fact.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Local variables are almost entirely generic (`v1`, `v2`, `v3`, `result`) obscuring their semantic purpose. For example, in `loop_for_fixed`, `v1` and `v2` should be `i` and `sum` based on usage pattern.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core application functions retained original names (`sequential_ops`, `recursion_factorial`, `state_machine`). However, runtime helpers use generic names (`sub_1030`, `sub_1040`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (e.g., `0x14u` in `__readgsdword`, `14` and `7` in `duffs_device`). Array values like `{10, 20, 30, 40, 50}` are clear but not named constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present throughout: `__readgsdword(0x14u)` stack canary checks, register annotations (`// eax`, `// ecx`), and 7 failed decompilations of library functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `do-while` constructs correctly. However, `switch_fallthrough` uses goto labels (`LABEL_7`) instead of proper fall-through, and `duffs_device` has excessive goto chains.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity matching source. Test functions are large but cohesive. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns. `duffs_device` disrupts flow with 8+ goto labels (`_L174`, `LABEL_7`, `LABEL_9`, etc.) making it difficult to follow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `duffs_device` shows significant redundancy from unrolled loop pattern with repeated `*v3++ = *v4++` sequences. Other functions are reasonably clean.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic `int` types preserved correctly with proper function signatures. However, all integers are generic `int` without `int32_t` specificity, and const-correctness is lost (e.g., `volatile int *flag` becomes `int *flag` in some contexts).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays recovered (`arr[5]`, `matrix[3][4]`) but no struct definitions present. `loop_multi_exit` uses raw memory initialization (`*(_QWORD *)&matrix[0][0] = 0x200000001LL`) instead of proper array syntax.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Function pointer types preserved correctly (`int (*funcs[3])(int)`). No unsafe casts observed. Stack canary variables (`v6 = __readgsdword(0x14u)`) are implementation artifacts, not safety issues.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero explanatory comments in decompiled code. No algorithm descriptions, no parameter documentation, no decompilation confidence indicators. Only compiler-generated register annotations present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: State machine pattern in `state_machine` and `fsm_func_table` not identified. Recursion patterns recognized structurally but not labeled. Duff's device not identified as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations clearly marked ("FAILED to decompile: __libc_start_main"). However, suspicious patterns like `computed_goto` inline assembly not flagged as requiring manual review.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`). Error conditions not explained. Return value semantics not documented anywhere.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Callback relationships (`process_with_callback`) not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat output. No logical grouping by feature (L1/L2/L3 control flow tests mixed). Static functions properly scoped but not organized.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__printf_chk`, `__libc_start_main`, `__longjmp_chk`) not declared. 7 library functions failed to decompile. Cannot compile standalone without significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (6+5+7)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.41/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on usage (e.g., `loop_for_fixed`: `i`, `sum`; `loop_while`: `digits`, `count`)
+- **Zero comments** explaining function purpose, algorithm, or non-obvious logic
+- **`duffs_device`** decompiled with 8+ goto labels instead of recognizing Duff's device pattern
+- **7 library functions failed** to decompile (`__libc_start_main`, `_setjmp`, `__longjmp_chk`, etc.)
+- **Compiler artifacts** (`__readgsdword(0x14u)`, register annotations) clutter readable code
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core application functions retained original semantic names accurately, making function purpose immediately clear.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding non-trivial logic require significant reverse engineering effort.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., loop counters, accumulators, array indices should get semantic names)
+2. **Add pattern recognition** for common idioms (Duff's device, state machines, recursion patterns) with explanatory comments
+3. **Filter compiler artifacts** by default (stack canaries, register annotations) or move to optional verbose mode

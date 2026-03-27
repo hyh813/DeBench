@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source used meaningful names like `size`, `counter`, `exec_mem`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_macro_constants`, `call_asm_basic`) matching source, but cluttered with 30+ meaningless wrapper functions (`sub_401231`, `sub_401256`) that don't exist in source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers everywhere (`1025`, `0x200`, `57072`, `57122`) without macro recovery. Original `MAX_SIZE`, `BUFFER_COUNT` constants completely lost; decompiler shows raw values only.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler runtime artifacts (`_init`, `_start`, `__do_global_ctors_aux`, `deregister_tm_clones`). Wrapper functions for every call site add 50%+ code bloat. Error message `[D] Unsupported jumpkind Ijk_SigTRAP` leaked into output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural if-else and for loops, but `register_tm_clones` has convoluted nested conditionals. Some functions use goto where while loops would be clearer.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Excessive wrapper functions (`sub_401231` just calls `param_macro_constants`). Constant folding eliminated actual logic (`call_macro_constants` returns 64 directly instead of calling `param_macro_constants(2048)`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. `test_preprocessing_features` has long sequential printf calls that are reasonably linear despite length.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Wrapper function pairs create 100% redundancy for call sites. `test_preprocessing_features` repeats identical printf patterns. Constant-folded functions duplicate return values.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Everything degraded to `unsigned int`/`int`/`void*`. Original `size_t`, `const char*`, `_Atomic` types lost. SIMD partially recovered as `uint128_t` but `AddV` is undefined pseudo-function.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct definitions appear to be decompiler artifacts with absurd padding (`padding_0[11959]`). No meaningful struct recovery from source; original had no complex structs in these functions anyway.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts (`(int)v1[16]`, `(char *)&v0`). Pointer arithmetic without bounds checking. `atomic_exchange_add` semantics may not match original `__atomic_fetch_add`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments recovered. Original had extensive documentation explaining macros, expected values, conditional compilation branches. No decompiler confidence indicators or API contracts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Macro expansion patterns not identified (e.g., `SQUARE(x)`, `MAX(a,b)`). Atomic operations recognized as function calls but not labeled. SIMD shown as `AddV` without explanation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (`Unsupported jumpkind Ijk_SigTRAP`). Constant folding behavior changes not indicated. Type mismatches presented confidently without warnings.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for atomic ops). No postconditions or expected return values. Error conditions from `mmap`/`mprotect` not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables shown as `extern` without context (`g_4020cb`, `global_var`). No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 80+ functions in single flat file. Runtime functions mixed with application code. No logical grouping of preprocessing vs. assembly test functions.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies (`printf`, `mmap`, `atomic_exchange_add`, `AddV`) not fully declared. `AddV` is undefined pseudo-function. Requires significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+5+7+5)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                              4.75/10
+```
+
+**Overall Readability Score: 4.75/10**
+
+### Critical Defects
+- **Variable names completely generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original (`size`, `counter`, `exec_mem`)
+- **Zero comments recovered** despite original having extensive documentation explaining macros, expected values, and conditional compilation
+- **30+ wrapper functions** (`sub_401xxx`) that don't exist in source, adding 50%+ code bloat
+- **Magic numbers without macro recovery** (`1025`, `57072`, `57122`) instead of `MAX_SIZE`, platform constants
+- **Constant folding eliminated actual logic** (`call_macro_constants` returns 64 directly instead of showing the call to `param_macro_constants(2048)`)
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Core function names preserved from debug symbols (`param_macro_constants`, `param_asm_basic`, `test_preprocessing_features`) matching original source accurately
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of any comments loses all semantic context about macro behavior, conditional compilation branches, and expected values that were extensively documented in source
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover macro semantics from constant patterns** - Detect when constants like `1024`, `16`, `64` appear together and suggest original macro names (`MAX_SIZE`, `BUFFER_COUNT`)
+2. **Eliminate call-site wrapper functions** - Recognize thunk/wrapper patterns and inline them to reduce code bloat and improve readability
+3. **Generate semantic comments from debug info** - Use DWARF debug symbols to recover original comments, variable purposes, and expected value ranges

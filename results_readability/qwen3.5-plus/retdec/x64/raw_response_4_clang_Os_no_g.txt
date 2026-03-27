@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `v3`) with zero semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `s`, `len` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`cdecl_func`, `call_cdecl`, `varargs_func`), but library wrappers became anonymous (`function_1030`, `function_1040`). Names still indicate purpose reasonably well.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals stored as hex-encoded globals (`g8 = "CALL-L2-06\xef\xbc\x9a..."`). Magic numbers like `0xffffffff`, `0x100000000` appear without explanation or named constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy assembly intrinsics throughout (`__asm_movaps`, `__asm_movdqa`, `__asm_paddq`, `__asm_pshufd`). Unnecessary type casts and compiler artifacts obscure actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: While loops present but many functions constant-folded to return literals (e.g., `call_cdecl` returns 15 directly). Actual call relationships lost, making flow tracing difficult.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions properly separated but caller functions collapsed (e.g., `call_cdecl` doesn't call `cdecl_func`). Loses the actual call structure from source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with manageable forward references. Some awkward variable initialization patterns but no severe jump disruption.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Assembly intrinsics create significant verbosity. Repeated `__asm_movaps` sequences in varargs functions add noise without semantic value.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Complete type erasure—everything is `int64_t` or `int32_t`. Original had `int`, `char*`, `double`, `long long`, `void*` distinctions all lost. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct types completely lost (`LargeStruct`, `SmallStruct`, `TestIntPair`). All struct access done through pointer arithmetic (`*(int32_t *)(a1 + 4)`). No struct definitions in output.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout. Pointer arithmetic without type safety. `int64_t` used where specific types needed, risking undefined behavior on different architectures.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No explanation of assembly intrinsics, no decompilation confidence indicators, no algorithm documentation whatsoever.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Variable argument handling (`va_list`, `va_start`, `va_arg`) not identified. No pattern recognition for common C idioms like string operations or struct manipulation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Assembly intrinsics not explained. No indication that varargs handling may be incorrect or that struct types were lost.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `p != NULL` checks not highlighted). No postconditions, no error condition documentation, no contract inference.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but many constant-folded away. Global variable usage (`g1`-`g30`) not documented. No call graph or relationship information provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed but not logically grouped by category (calling conventions vs. parameter passing vs. return values). All in one file with no header structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Uses assembly intrinsics (`__asm_movaps`, etc.) that won't compile standalone. Missing proper declarations for some functions. Would require significant modification to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+4+3)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (5+5+6+4)/4 = 5.00  × 0.25 = 1.25
+Level 3 (Type):        (3+2+3)/3   = 2.67  × 0.20 = 0.53
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50  × 0.15 = 0.23
+Level 5 (Contextual):  (4+5+3)/3   = 4.00  × 0.10 = 0.40
+─────────────────────────────────────────────────────
+Overall Score:                                  3.61/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Complete type erasure**: All variables are `int64_t`/`int32_t`; original `double`, `char*`, `long long` distinctions lost
+- **Struct definitions missing**: `LargeStruct`, `SmallStruct`, `TestIntPair` completely unrecovered; accessed via raw pointer arithmetic
+- **Assembly intrinsics pollution**: `__asm_movaps`, `__asm_movdqa`, `__asm_paddq` make code non-compilable and unreadable
+- **Constant folding destroyed call relationships**: `call_cdecl` returns 15 directly instead of calling `cdecl_func(5, 10)`
+- **Zero documentation**: No comments explaining varargs handling, assembly blocks, or decompilation uncertainty
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved, allowing identification of purpose despite other degradation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding decompiler decisions impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from memory access patterns** - Detect struct layouts from consistent offset access patterns (e.g., `a1+0`, `a1+4` pairs indicate 2-field structs)
+2. **Replace assembly intrinsics with semantic C equivalents** - Convert `__asm_movdqa`/`__asm_paddq` sequences to readable array operations or loop constructs
+3. **Add decompilation confidence annotations** - Mark uncertain regions (varargs handling, type-erased code) with comments indicating analysis limitations

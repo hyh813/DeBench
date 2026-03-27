@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `result`, `a1`, and `str`. No semantic names like `obj`, `value`, or `multiplier` from the original source are preserved.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: The decompiler successfully demangles C++ symbols (e.g., `_Z20test_cpp_member_funcv` is commented as `test_cpp_member_func()`), providing accurate semantic names, though the implementation often fails to match the name's implied complexity.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `0x125c` (representing 4700) and `0x11d58` appear without explanation. Furthermore, string literals are subjected to bizarre casts like `(float64_t)*(float128_t *)"Test"`, which obscures their meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: The code contains unnecessary wrapper functions for standard library calls (e.g., `function_d80` wrapping `puts`, `function_df0` wrapping `_Znwm`), and the incorrect floating-point casts on string literals act as significant noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: High-level C++ control flow is lost; `test_cpp_exception` is reduced to a low-level `switch` statement on a global variable (`g6`) rather than showing `try-catch` blocks, and other functions are flattened to single return statements.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: The Object-Oriented structure is completely destroyed; classes like `SimpleClass` and `Base` are not recovered, and their methods are either missing or inlined into flat procedural functions.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: While the code is short, the logic is non-linear and confusing; for example, `test_cpp_member_func` performs a nonsensical cast on a string pointer before calculating the result, disrupting the top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: There is little dead code, but the redundancy comes from the decompiler's failure to abstract low-level operations, such as the manual vtable setup or the wrapper functions for system calls.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: C++ types are heavily degraded; class instances are replaced by `int64_t` or raw pointers, and specific types like `std::unique_ptr` or `SimpleClass` are entirely absent, replaced by generic integer types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: While vtables are partially recovered as structs (e.g., `struct vtable_11d58_type`), the actual user-defined classes (`SimpleClass`, `Base`, `Derived`) with their data members and inheritance relationships are not reconstructed.
+
+**11. Type Safety:** Score: 1/10  
+Justification: The decompiler generates dangerous and incorrect type casts, specifically casting string pointers to `float128_t` and then dereferencing them as `float64_t` (e.g., `(float64_t)*(float128_t *)"Test"`), which is a severe type safety violation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10  
+Justification: The inclusion of demangled function names and class origins (e.g., `// From class: RTTIDerivedB`) is helpful, but there are no comments explaining the logic or the bizarre type casts.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms are completely missed; virtual function calls, constructor/destructor patterns, and smart pointer usage are not recognized, leaving behind only low-level memory allocations and indirect calls.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The decompiler presents the incorrect floating-point casts and flattened logic with high confidence, failing to flag these as potential anomalies or decompilation errors.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the checks in `Container::get` are obscured or lost in the translation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: While mangled names allow tracing, the lack of class structure makes understanding relationships (like inheritance between `Base` and `Derived`) difficult, as they appear as disjoint functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: The output is a flat file; functions are ordered by address rather than logical grouping, and there is no reconstruction of namespaces or the original file's class-based organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code includes standard headers, but the hallucinated type casts (e.g., dereferencing a string pointer as a float) would likely cause compilation errors or segmentation faults if executed.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- **Type Hallucination:** String literals are incorrectly cast to `float128_t` and dereferenced (e.g., in `test_cpp_member_func`), creating dangerous and meaningless code.
+- **Loss of OO Structure:** C++ classes, inheritance, and member functions are not recovered; the code is reduced to procedural C with generic `int64_t` types.
+- **Logic Elimination:** Complex logic (e.g., in `test_cpp_virtual_func`) is reduced to `return 42`, completely obscuring the algorithmic steps present in the source.
+- **Exception Handling Obfuscation:** `try-catch` blocks are replaced by low-level `__cxa` calls and `switch` statements on global variables, making the control flow unintelligible.
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+- The decompiler successfully demangles C++ symbols, providing accurate function names that map back to the original source.
+
+**Most Needs Improvement:** Type Safety (scored 1/10)  
+- The generation of incorrect and unsafe casts (specifically treating string pointers as floating-point numbers) renders the code dangerous and misleading.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Fix String Literal Handling:** Prevent the decompiler from casting string pointers to floating-point types; ensure strings remain as `char*` or appropriate array types.
+2. **Recover C++ Class Hierarchies:** Implement analysis to reconstruct class definitions, inheritance relationships, and member layouts rather than flattening everything to structs and raw pointers.
+3. **Preserve Logic at -O0:** When debug symbols or low optimization levels are detected, avoid constant propagation that collapses complex functions into single return values, ensuring the source logic remains visible.

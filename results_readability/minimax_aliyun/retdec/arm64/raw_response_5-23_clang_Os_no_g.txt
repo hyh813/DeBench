@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler uses generic numbered variables (`v1`, `v2`, `v3`, `v4`) throughout all functions. For example, in `param_macro_constants`, variable `v1` should be named `size` based on the function parameter, but instead it's an unnamed generic. This makes tracking variable purposes nearly impossible across the 690-line output.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: User-defined test functions like `param_macro_constants`, `call_asm_basic`, `param_dynamic_code` correctly match source names. However, internal runtime functions use address-based names like `function_7c0`, `function_7d0`, `function_830` which provide no semantic meaning about their purpose (e.g., `function_7c0` is actually `memcpy`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Some numeric constants like `0xdef0`, `0xdf22`, `512`, `64` are preserved but lack connection to their macro origins (MAX_SIZE=1024, BUFFER_COUNT=16). String literals contain garbled UTF-8 escape sequences (`\xe6\x9c\x9f`) instead of readable Chinese characters. The magic number `512` in `param_macro_constants` should be explained as `MAX_SIZE/2`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The output is relatively clean without obvious compiler artifacts like debug instrumentation or frame pointer manipulation. The unusual division `0 / 0x8000000000000000` in `register_tm_clones` appears to be a decompilation artifact but doesn't significantly impede readability.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures (if-else, while loops) are correctly recovered. However, the ternary operator in `param_macro_constants` (`v3 == 0 | v3 < 0 != ... ? 512 : 64`) is an overly complex reconstruction of a simple `if (size > MAX_SIZE)` that could be more clearly expressed.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity - user test functions are properly separated from runtime helpers. The decompiler correctly identified 65 functions. Some inlining occurred in call sites (e.g., `call_macro_constants` returns constant 64 directly), which is acceptable at the assembly level.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. The `while` loops in `param_asm_clobber` and `param_asm_simd` are correctly linearized. Early returns in `param_memory_protection` are appropriately placed.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or duplicate expressions. Loop unrolling in `param_asm_simd` (manually expanded 4 iterations) is present but represents the actual compiled structure, not decompiler redundancy.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: The decompiler uses `int64_t` and `int32_t` appropriately, showing awareness of ARM64's 64-bit nature. However, `int` parameters become `int64_t` in function signatures (e.g., `param_asm_basic` takes `int64_t` instead of `int`). Unsigned types are often lost (e.g., `size_t` becomes `int64_t`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union recovery is evident. All structure access uses raw pointer arithmetic. For example, in `param_memory_protection`, accessing `*(int32_t *)v2` loses the semantic that this is a `int *data` field access. The global variable `g15` is incorrectly cast to `(int32_t *)1952` instead of being recognized as a structure.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns exist: `(int64_t *)-1` for MAP_FAILED check, extensive raw pointer arithmetic (`v3 += 4`), and `(int64_t *)` casts throughout. The pattern `*(int32_t *)(v1 + v2)` in SIMD code is particularly unsafe without bounds checking.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only address range comments are present (e.g., `// Address range: 0x9d0 - 0x9d4`). No algorithm explanations, no reconstruction confidence indicators, no @param/@return documentation. The comment in `register_tm_clones` about division by zero is misleading.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns, algorithms, or idioms are identified or named. The atomic operation pattern in `__aarch64_ldadd4_acq_rel` is not labeled as such. The memory protection pattern (mmap → mprotect → munmap) is not identified as a common idiom.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No suspicious code is flagged. The unusual division in `register_tm_clones` (`(uint64_t)0 / 0x8000000000000000`) is not flagged as anomalous. Indirect calls that couldn't be resolved are not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The implicit contract that `param_dynamic_code` requires valid mmap is not indicated. Error handling (MAP_FAILED checks) is present but not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships aren't documented. It's unclear which functions call `param_asm_atomic` or how globals like `g15`, `g16`, `g17` are used across functions. No call graph information is provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped logically (preprocessing functions, asm functions, runtime helpers), but this organization isn't explicitly documented. Static vs. external function distinction isn't clear.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code includes necessary headers (stdio.h, stdlib.h, string.h, sys/mman.h, unistd.h). Function declarations are present but some are incomplete (e.g., `param_asm_atomic` takes no parameters in declaration but should take `int *counter, int increment`). Would require moderate patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming uses only generic `v1`, `v2`, `v3` etc. with no semantic meaning - should infer names from parameter usage and function context
+- No struct/union recovery - all composite types lost to raw pointer arithmetic, losing field semantics
+- No comments explaining algorithms, reconstruction confidence, or contracts - code is a "black box"
+- Type precision issues: `int` parameters become `int64_t`, unsigned types lost, `size_t` not recognized
+- No anomaly indication for suspicious patterns like the division-by-zero expression in `register_tm_clones`
+
+**Best Quality Aspect:** Noise Reduction (scored 7/10)  
+The decompiled output is relatively clean without obvious compiler artifacts like debug instrumentation polluting the code. Basic control flow structures are recognizable.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Generic numbered variables (v1-v4) make the code nearly impossible to analyze semantically. The decompiler should infer meaningful names from usage patterns, parameter positions, and function context.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When a parameter is used in comparison with constant 1024, name it `size` or `max_size`. When `v1` is repeatedly used as array index with `+4` increments, name it `index` or `i`.
+2. **Recover composite types**: Detect patterns like `*(int32_t *)(base + offset)` and reconstruct struct layouts with field names. The global `g15` at address 0x12000 is clearly a data structure, not just a number.
+3. **Add semantic comments**: Include algorithm explanations, reconstruction confidence levels, and flag anomalies like the suspicious division expression that produces zero. Document preconditions (e.g., "requires: ptr != NULL" for mmap results).

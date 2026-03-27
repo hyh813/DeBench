@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `ptr`, `temp` with no semantic meaning. For example, `capture_by_value` and `capture_by_ref` from the lambda test become indistinguishable `v0`/`v1` variables.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some mangled names recovered (`_Z20test_cpp_member_funcv`) but many functions are just `sub_401XXX`. Class methods partially recovered (`Base::virtual_func`) but test functions lack descriptive names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (4700, 42, 100, 250) without explanation. String literals referenced via opaque globals (`g_401ba0`) instead of inline strings.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive compiler artifacts including `__stack_chk_guard` checks, redundant wrapper functions (`sub_401294` just calls `test_cpp_member_func`), and frame pointer manipulation visible throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Heavy goto usage with labels like `LABEL_4014de`, `LABEL_4014dd` instead of structured control flow. Exception handling completely broken—`test_cpp_exception` just throws without any catch blocks recovered.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Many functions are empty stubs returning immediately. Redundant wrapper functions everywhere (e.g., `sub_40130c`, `sub_401328`) that just call one other function with no added value.
+
+**7. Code Linearization:** Score: 2/10  
+Justification: Cannot read top-to-bottom due to excessive forward jumps. The `test_cpp_rtti` function has nested goto labels making execution paths nearly impossible to follow.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Duplicate function wrappers for every test function. Same thunk patterns repeated for virtual dispatch without consolidation or explanation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Most types degraded to `void*`, `char*`, `unsigned long long`. C++ class types become `void* this` parameters. Template instantiations lose all type information.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Some structs recovered but with generic names (`struct_2`, `struct_3`, `struct_4`). All fields named generically (`field_0`, `field_8`, `padding_0`) losing all semantic meaning.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Extensive unsafe casts throughout. Pointer arithmetic on `void*` without type safety. The `test_cpp_rtti` function has multiple dangerous casts like `(long long)v4[8](ptr, ...)`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. No algorithm explanations, no decompilation confidence indicators, no documentation of what any function actually does.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No C++ idioms recognized. RAII patterns, smart pointers, virtual dispatch, template instantiation all appear as raw pointer operations without any pattern identification.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies flagged despite severe issues. Broken exception handling, empty function bodies, and incomplete type recovery all presented confidently without warnings.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions that should validate input (like `Container::get`) have no contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch partially recovered through thunks but callback relationships not documented. Global variable usage opaque.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output with no logical grouping. Related class methods scattered throughout file. No namespace or package structure recovered.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Would not compile standalone. References undefined external symbols (`operatornew`, `__cxa_allocate_exception`, `arm64g_calculate_condition`). Missing header declarations.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (2×10 + 4×10 + 3×5 + 3×5) / 30 = 2.17/10
+Level 2 (25%): (2×8 + 3×7 + 2×5 + 3×5) / 25 = 2.48/10
+Level 3 (20%): (2×8 + 3×7 + 2×5) / 20 = 2.35/10
+Level 4 (15%): (1×5 + 1×3 + 1×3 + 1×4) / 15 = 1.00/10
+Level 5 (10%): (3×4 + 3×3 + 2×3) / 10 = 2.70/10
+
+Overall = (2.17 × 0.30) + (2.48 × 0.25) + (2.35 × 0.20) + (1.00 × 0.15) + (2.70 × 0.10)
+        = 0.651 + 0.620 + 0.470 + 0.150 + 0.270
+        = 2.16/10
+```
+
+**Overall Readability Score:** 2.2/10
+
+### Critical Defects:
+- **Empty function bodies**: Most test functions (`test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_lambda`, etc.) return immediately without any logic
+- **Exception handling completely broken**: `test_cpp_exception` throws but never catches, losing all try/catch semantics
+- **Goto-based control flow**: Labels like `LABEL_4014de` instead of structured if/while constructs
+- **No semantic variable names**: All variables are `v0`, `v1`, `ptr` with no indication of purpose
+- **Type information lost**: C++ classes become `void*`, templates lose all type parameters
+
+### Best Quality Aspect:
+- **Function Naming Quality (4/10)** - Some mangled C++ names were recovered (`_Z20test_cpp_member_funcv`, `Base::virtual_func`), providing minimal semantic hints about original function purposes.
+
+### Most Needs Improvement:
+- **Semantic Transparency (1.0/10 average)** - Zero comments, no idiom recognition, no anomaly indication, and no contract recovery make this decompilation practically unusable for understanding program semantics.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ exception handling semantics** - Detect `__cxa_throw`/`__cxa_begin_catch` patterns and reconstruct try/catch blocks instead of emitting raw throw calls
+2. **Implement semantic variable naming** - Analyze variable usage patterns to infer names (e.g., variables used in size comparisons should be named `size`, `length`, `count`)
+3. **Add decompilation confidence annotations** - Flag incomplete recovery (empty functions, unresolved calls) with comments like `// DECOMPILATION INCOMPLETE: function body not recovered`

@@ -1,0 +1,91 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `a0`, `a1`, `a2` for parameters and `v0`, `v1`, `v2` for locals. The original source uses meaningful names like `count`, `args`, `sum`, `str`, `ptr` which are completely lost. Only a few variables like `idx`, `ptr`, `i` are somewhat descriptive.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered: `cdecl_func`, `stdcall_func`, `fastcall_func`, `func_a`, `func_b`, `varargs_func`. However, many functions remain as cryptic `sub_400xxx` addresses (e.g., `sub_4007e0`, `sub_400830`), and wrapper functions like `sub_400948` that just call `call_cdecl()` are not eliminated.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Return values like `15`, `50`, `6` are hardcoded without explanation. Magic numbers like `4294967295` (0xFFFFFFFF) appear frequently without being named. String format references like `&g_401678` are not decoded to actual format strings. Some literals like `42` are correct but lack context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler/runtime artifacts present: redundant goto statements in `varargs_func` and `param_varargs`, unnecessary stack frame setup code (`v0 = &v15`), duplicate function calls in returns (e.g., `return __printf_chk(1, &g_401748, 50)` called twice), and spurious wrapper functions that just call other functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some natural patterns exist (simple returns, basic arithmetic). However, `varargs_func` uses goto-based loops with complex conditional logic that is hard to follow. The `register_tm_clones` function has an unnecessarily complex expression. At -O0, such goto patterns are unexpected.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are correctly separated, but `test_calling_conventions` is 100+ lines handling multiple test cases. Many spurious wrapper functions exist (e.g., `sub_400948` → `call_cdecl`). Function granularity is acceptable but could be improved by inlining trivial wrappers.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but has forward jumps in `varargs_func` loop and complex goto chains. Some functions like `register_tm_clones` have confusing conditional expressions that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns present: duplicate function calls in return statements (e.g., `param_varargs` called twice in `call_varargs_param`), repeated stack frame setup code in every function. Not severe but noticeable.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are reasonably precise for ARM64: `unsigned int` for integers, `unsigned long` for pointers, `unsigned long long` for 64-bit values. However, `char*` is used where `int*` would be more appropriate (e.g., `param_string`). Some return types are `long long` where `int` would suffice.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct recovery is poor. `func_struct_byval` takes `unsigned long long *a0` instead of `LargeStruct`. `func_struct_byptr` takes `unsigned int *a0` instead of `SmallStruct *`. A synthetic typedef `struct_0` is created for `param_double_ptr` but fields are generic. The original struct names and field names are completely lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some type safety issues exist. In `param_ptr_array`, pointer arithmetic `a0 + v0 * 8` for array indexing is unclear. The `param_double_ptr` has a confusing `*(ptr)->field_0` syntax. Function pointer handling in `param_func_ptr` uses `unsigned long long *a0` instead of proper function pointer type.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled code whatsoever. The original source has extensive comments explaining each test case (e.g., "CALL-L1-01: cdecl调用约定"). This complete absence of documentation severely impacts understandability.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C idioms are partially recognizable (va_list handling, function pointers) but not explicitly named or documented. The stdarg pattern in `varargs_func` is present but convoluted. No design patterns or algorithm patterns are identified.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of uncertain or anomalous areas. The decompiler confidently presents potentially incorrect interpretations (e.g., `ret_opaque_handle` returning `"d"` instead of `&handle1`). No flags for indirect calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source has clear expectations (e.g., "期望: 15", "期望: 42") that are completely lost. No null-check documentation or bounds-checking expectations.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are somewhat clear through direct calls. External dependencies are declared with `extern` (e.g., `extern char __stack_chk_guard`). However, no documentation of who calls whom or the purpose of relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are loosely grouped by address but not logically organized. The original groups test_calling_conventions, test_parameter_passing, test_return_values are not reflected in the organization. All functions appear in a flat list.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has `extern` declarations for external functions but lacks definitions for standard library functions like `puts`, `__printf_chk`, `strlen`. Would require significant patching to compile. No clear dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic `a0`, `a1`, etc.; locals use `v0`, `v1` - completely losing semantic meaning from source
+- **No comments**: Zero documentation despite 665 lines of well-commented original source
+- **Struct type loss**: All struct types converted to raw pointers (`unsigned long long *a0`), losing field names and structure definitions
+- **Wrapper function pollution**: Many spurious `sub_400xxx` functions that just call other functions
+- **Anomaly silence**: No indication of uncertain decompilation decisions or potential issues
+
+### Best Quality Aspect: Type Precision (7/10)
+- Integer types are reasonably accurate for ARM64 (unsigned int, unsigned long, unsigned long long)
+- Basic type categories are preserved (pointers, integers, characters)
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+- The original source has extensive explanatory comments for each test case
+- Zero comments in decompiled output makes it impossible to understand the purpose of each function without cross-referencing source
+
+### Top 3 Recommendations:
+1. **Add variable name inference**: Analyze usage patterns to infer meaningful names (e.g., `a0` used in multiplication → `multiplier`; `v0` accumulating sum → `total`)
+2. **Recover struct types**: Use stack analysis and pointer arithmetic patterns to reconstruct struct layouts with meaningful field names
+3. **Generate documentation comments**: Add function purpose comments based on test case patterns (e.g., "// Test: cdecl calling convention - caller cleans stack")

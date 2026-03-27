@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `iVar2`, `local_44`, `aiStack_94`) with many marked as "Unresolved local var"; original semantic names like `sum`, `args`, `val` are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Excellent preservation of original function names (`cdecl_func`, `varargs_func`, `test_calling_conventions`) from debug symbols; only internal runtime functions use generic names (`FUN_00011030`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Hex constants (`0xf`, `0x32`, `0x2a`, `0x12345678`) replace decimal values without explanation; string literals referenced as `&DAT_00012352` obscuring message content.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Repeated "WARNING: Unknown calling convention" messages and "Unresolved local var" annotations clutter output; stack artifacts (`auStack_4`, `aiStack_94`) add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Do-while loops correctly recovered for iteration patterns; however, test functions are constant-folded (`return 0xf` instead of actual function calls) obscuring original control flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved correctly matching source; but test functions collapsed to constant returns losing their testing logic structure entirely.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with appropriate loop structures; stack variable indexing (`aiStack_94[iVar1 * 2 + 1]`) disrupts linear reading in some functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Aggressive constant folding creates redundancy (similar test functions all return constants); `varargs_func` and `param_varargs` show nearly identical decompiled patterns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved correctly (`int`, `char*`, `double`, `longlong`); complex types like `va_list` degraded to "Unresolved local var" with stack pointer manipulation.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types well-recovered (`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData`); field access works correctly (`s.data[i]`, `p->x`, `p->y`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe stack pointer casts present (`(int *)&stack0x00000008`); varargs handling uses raw pointer arithmetic; otherwise type-safe for simple functions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Technical warnings present ("Unknown calling convention", "Unresolved local var") but zero semantic comments explaining algorithm purpose or function intent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Varargs pattern partially recognized but shown as raw stack manipulation; struct access patterns recognized; no design pattern identification.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly flagging with WARNING messages for calling convention uncertainty and unresolved variables; clearly indicates decompilation confidence issues.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation; null checks preserved in some functions (`func_struct_byptr`) but no contract inference or documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but many optimized to constants losing call relationships; global data references shown as `&DAT_00012352` without semantic meaning.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable source order; no file organization information; static functions not clearly distinguished from external API.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires external headers for `printf`, `puts`, `strlen`; struct type definitions need recovery; not compilation-ready without significant manual work.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+6+6+6)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.27
+Level 4 (Semantic):    (4+5+7+3)/4 = 4.75 × 0.15 = 0.71
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.60/10
+```
+
+### Overall Readability Score: **5.6/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`iVar1`, `local_44`) losing all semantic meaning from original source (`sum`, `args`, `val`, `result`)
+- **Test functions constant-folded** to return values (`return 0xf`) instead of showing actual function call logic, destroying test verification capability
+- **Varargs handling degraded** to raw stack pointer manipulation (`(int *)&stack0x00000008`) instead of `va_list` abstraction
+- **String literals externalized** as `&DAT_00012352` references, losing printf message content
+- **Calling convention warnings** repeated throughout without resolution, creating noise without actionable information
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Debug symbols preserved original function names perfectly, making navigation and identification straightforward despite other degradation.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (3/10)**
+- Zero precondition/postcondition documentation recovered; null checks exist in code but aren't documented as contracts, missing opportunity for semantic clarity.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (e.g., loop counters, accumulators) to suggest semantic names like `sum`, `index`, `count` instead of `iVar1`, `iVar2`
+2. **Preserve constant expressions in test functions** - Avoid aggressive constant folding that eliminates function call relationships; show `cdecl_func(5, 10)` instead of `return 0xf` to maintain call graph visibility
+3. **Recover high-level abstractions for standard patterns** - Recognize `va_list` stack manipulation patterns and restore `va_start`/`va_arg`/`va_end` semantics instead of raw pointer arithmetic

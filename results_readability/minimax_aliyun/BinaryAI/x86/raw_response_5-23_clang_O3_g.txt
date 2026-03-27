@@ -1,0 +1,126 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: All parameters use generic names like `param_1`, `param_2`, `param_3`. Local variables are auto-generated (`iVar1`, `iVar2`, `uVar1`, `puVar2`, `local_1c`, `local_38`). No semantic meaning can be derived from these names - e.g., `param_1` in `param_macro_constants` should be `size` based on source.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+Justification: Most test functions correctly recovered: `param_macro_constants`, `call_macro_constants`, `param_conditional_compile`, `param_asm_basic`, etc. However, some utility functions have auto-generated names like `FUN_00011030`, `FUN_00011a85`. External library functions properly named.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Multiple unexplained magic numbers: `0x200` (512), `0x40` (64), `0xdef0`, `0xdf22`, `0x10` (16), `0xb` (11), `0x32` (50). String literals from source are embedded but numeric constants lack explanation. The value `0x1e` for `_SC_PAGESIZE` is unexplained.
+
+### 4. Noise Reduction
+**Score: 6/10**
+Justification: Some decompilation artifacts present: `__regparm1` attribute on `param_variadic_macro`, `ZEXT816(0)` for zero-extension, `CONCAT22` for token pasting. LOCK()/UNLOCK() macros inserted for atomic operations. These are manageable but add noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural and matches source well. Loops use `for` constructs, conditionals use `if` statements. At `-O0` optimization, the flow closely mirrors original source. Minor awkwardness in `call_asm_multi_insn` with manual pointer manipulation.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Function granularity matches source - small test functions preserved separately (e.g., `call_macro_constants` calls `param_macro_constants`). Each function has single responsibility. No over-fragmentation or monoliths.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code reads top-to-bottom with minimal jumps. Early returns used appropriately (e.g., in `param_dynamic_code`). No excessive forward jumps disrupting flow. Good linearity overall.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No dead code or significant redundancy. Loop unrolling in `call_asm_clobber` is appropriate for the test case. Common subexpressions not duplicated unnecessarily.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Uses generic `int` for most variables. Ghidra-specific types like `undefined4` (32-bit), `undefined` (byte), `undefined4*` pollute the code. `size_t` correctly used in `param_dynamic_code` and `param_memory_protection`. Mixed precision - some specific types, many generic.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+Justification: No struct/union recovery. Array access uses raw pointer arithmetic: `*(int *)(param_1 + iVar2 * 4)` instead of `param_1[iVar2]`. The `param_3` in `param_asm_simd` is `undefined (*param_3) [16]` - a confused type representation.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Generally safe code with no major undefined behavior. Pointer arithmetic is bounds-checked by loop conditions. Minor issues: some void pointer casts, but no dangerous operations like buffer overflows or type-confused function pointers.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: No comments in decompiled code explaining logic. No documentation of what functions do, no indication of macro origins, no algorithm explanations. The source had extensive comments that are completely lost.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+Justification: No pattern recognition. The original source contains specific patterns (macro expansion, inline assembly with clobbers, SIMD operations, atomic operations) but decompiled code presents them as generic operations without identifying the patterns.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+Justification: No flagging of suspicious or uncertain code. The decompiler presents everything confidently. No warnings about indirect calls, unusual stack layouts, or potential issues. The architecture mismatch (source says arm64, binary is x86_64) not noted.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants documented. No error condition explanations. The source had specific expectations (e.g., "期望: 64") that are completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+Justification: No explicit function call relationships documented. It's unclear which functions call which. No indication of callbacks or global variable usage. The call graph must be inferred manually.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions organized in binary order, roughly matching source file structure (preprocessing tests first, then asm tests). Static functions properly scoped. External functions grouped together. Minor organization issues but acceptable.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+Justification: Uses Ghidra-specific types (`undefined4`, `undefined`, `undefined *`) that won't compile with standard compilers. Requires patching: replace `undefined4` with `int`, `undefined` with `char`, etc. External declarations present but may need standard headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 4 + 6) / 4 = 4.75
+L2_avg = (8 + 8 + 8 + 8) / 4 = 8.00
+L3_avg = (5 + 3 + 7) / 3 = 5.00
+L4_avg = (2 + 3 + 3 + 2) / 4 = 2.50
+L5_avg = (3 + 7 + 5) / 3 = 5.00
+
+Overall = (4.75 × 0.30) + (8.00 × 0.25) + (5.00 × 0.20) + (2.50 × 0.15) + (5.00 × 0.10)
+        = 1.425 + 2.0 + 1.0 + 0.375 + 0.5 = 5.30/10
+```
+
+**Overall Readability Score: 5.3/10**
+
+---
+
+### Critical Defects (Bullet List)
+- Variable naming completely generic (`param_1`, `iVar1`, `local_1c`) - no semantic meaning recoverable
+- No comments explaining macro origins, assembly patterns, or algorithm logic
+- No struct/union recovery - all composite types lost to raw pointer arithmetic
+- Magic numbers unexplained (0x200, 0x40, 0xdef0, 0xdf22, etc.)
+- Ghidra-specific types (`undefined4`, `undefined`) prevent standard compilation
+
+### Best Quality Aspect (Single Dimension)
+- **Control Flow Naturalness (8/10)**
+- Why: At -O0 optimization, control flow structures closely match the original source. Loops and conditionals are properly formed and readable.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (2/10)**
+- Why: Complete absence of comments means all semantic context from the original source (which had extensive documentation explaining each test case) is lost. The decompiled code provides no guidance to analysts.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1 > 0x400` suggests it's a size/limit parameter) to generate semantically meaningful names like `size` or `max_size`.
+
+2. **Recover macro semantics**: Detect constant expressions that likely originated from macro expansion (e.g., `0x200` from `MAX_SIZE/2`) and add comments indicating possible macro origins.
+
+3. **Add explanatory comments for non-trivial constructs**: Document inline assembly with clobber explanations, flag atomic operations with memory ordering notes, and explain SIMD operations as such rather than showing raw pointer arithmetic.

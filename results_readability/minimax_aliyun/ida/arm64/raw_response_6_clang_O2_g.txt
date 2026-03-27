@@ -1,0 +1,125 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+Let me analyze the decompiled code for `param_strcpy` and related functions in context.
+
+### Decompiled `param_strcpy`:
+```c
+int __fastcall param_strcpy(char *dst, const char *src)
+{
+  char *v2; // x0
+
+  v2 = strcpy(dst, src);
+  return strlen(v2);
+}
+```
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Parameters `dst` and `src` match source exactly, but temporary variable `v2` is generic. It should be named `result` or `copied_string` based on its usage as the return value from strcpy passed to strlen.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function name `param_strcpy` perfectly matches the original source function name. Clear, action-oriented, and semantically accurate.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No magic numbers or unclear literals in this function. String literals "HelloLib" in `call_strcpy` are preserved correctly.
+
+**4. Noise Reduction:** Score: 10/10  
+Justification: Clean decompilation with no compiler artifacts, redundant casts, or debug instrumentation in this function.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10  
+Justification: Simple sequential flow - strcpy followed by strlen return. At `-O0` (debug), this is exactly as expected with no optimization distortions.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Function is 4 lines - appropriate granularity. The function has clear single responsibility: copy string and return length.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Code reads perfectly top-to-bottom with no jumps, forward references, or goto statements.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code, dead paths, or duplicate expressions. The decompilation is clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 10/10  
+Justification: Type signatures match source exactly: `char *dst`, `const char *src`, and return type `int`. Const-correctness is preserved.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types (structs/unions) in this simple function, so nothing to recover. N/A applies.
+
+**11. Type Safety:** Score: 10/10  
+Justification: No unsafe casts, no incorrect pointer arithmetic, type-safe code throughout.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining the function's purpose, the strcpy-strlen idiom, or the return value semantics. The decompiled code lacks any documentation that would help understand this is a "string copy and return length" pattern.
+
+**13. Idiom Recognition:** Score: 9/10  
+Justification: The strcpy + strlen pattern is correctly identified as separate library calls. Could be better if annotated as "returns string length after copy" idiom.
+
+**14. Anomaly Indication:** Score: 10/10  
+Justification: No anomalies in this function - the decompilation is straightforward.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: dst buffer large enough"). No postconditions (e.g., "ensures: returns byte count copied"). The function's contract is implicit.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 10/10  
+Justification: External function calls to `strcpy` and `strlen` are clearly visible. The relationship to `call_strcpy` (which calls this function) is preserved.
+
+**17. Module Organization:** Score: 10/10  
+Justification: Functions are grouped logically - `param_strcpy` and `call_strcpy` are adjacent, matching source organization.
+
+**18. Build System Compatibility:** Score: 10/10  
+Justification: The function would compile cleanly as standalone code with proper headers. Dependencies (string.h) are obvious.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (6 + 10 + 10 + 10) / 4 = 9.0
+L2_avg = (10 + 10 + 10 + 10) / 4 = 10.0
+L3_avg = (10 + 10 + 10) / 3 = 10.0
+L4_avg = (2 + 9 + 10 + 3) / 4 = 6.0
+L5_avg = (10 + 10 + 10) / 3 = 10.0
+
+Overall = (9.0 × 0.30) + (10.0 × 0.25) + (10.0 × 0.20) + (6.0 × 0.15) + (10.0 × 0.10)
+        = 2.7 + 2.5 + 2.0 + 0.9 + 1.0 = 9.1/10
+```
+
+**Overall Readability Score:** 9.1/10
+
+### Critical Defects:
+- Variable `v2` should be named `result` or `copied_str` to indicate it holds the strcpy return value
+- No comments explaining the function's purpose or the strcpy+strlen idiom pattern
+- Missing documentation of preconditions (dst buffer must be large enough) and postconditions (returns string length)
+
+### Best Quality Aspect: Type System Fidelity (10/10)
+- Types are precise and match original source exactly. The decompiler correctly preserved `char *dst`, `const char *src`, and return type `int` with const-correctness.
+
+### Most Needs Improvement: Comment Quality & Presence (2/10)
+- The function has zero comments despite being a key test case for library function call recovery. Adding even a simple comment like "// Copies src to dst and returns length" would significantly improve readability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: The variable `v2` receives strcpy's return and passes it to strlen - it should be named `result` or `copied_string`
+2. **Add semantic comments for library call patterns**: When detecting strcpy+strlen sequence, comment that it "copies string and returns length"
+3. **Recover function contracts**: Document basic preconditions/postconditions, e.g., "// Returns: strlen(dst) after copy"

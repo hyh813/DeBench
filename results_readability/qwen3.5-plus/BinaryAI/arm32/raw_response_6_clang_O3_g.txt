@@ -1,0 +1,102 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_14`, `iVar1`, `uVar2` with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `fd`, `shm` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`param_strcpy`, `thread_compute`, `param_mutex_lock`). Action verbs and purpose are clear, matching original intent closely.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xffffffff` (-1), `0x12` (18), `0x1000` (4096). String literals preserved but numeric constants lack symbolic names or explanations.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: External function stubs create clutter (50+ stub functions that just call themselves). Stack variables like `local_28`, `local_24` are compiler artifacts. Redundant type casts present throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if-else and loops preserved, but awkward overflow checks like `iVar1 + 1 < 0 == SCARRY4(iVar1,1)` obscure intent. Do-while used where for-loops would be clearer.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized with good separation (thread functions properly extracted). Some functions like `param_thread_local_storage` are large but cohesive.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but forward references to data (`DAT_00012b0c`, `DAT_00012e66`) disrupt flow. Nested conditionals present but manageable depth.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Repetitive error return patterns (`0xffffffff`, `0xfffffffe`, `0xfffffffd`) across functions. Similar null-check patterns duplicated without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int`, `void*`, `char*` used instead of specific types (`size_t`, `ssize_t`, `pid_t`, `key_t`). Parameters often `undefined4` losing type information from original source.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `struct stat` partially recovered (`sStack_60.st_size`) but no proper struct definitions. `sockaddr` fields accessed directly (`sa_family`, `sa_data[0]`) without type declaration.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int *)0x0`, `(char *)0xffffffff`, `(pthread_mutex_t *)counter_mutex`. Pointer arithmetic without proper typing throughout thread functions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API contract documentation. Completely bare compared to well-commented source.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `pthread_create`) but no pattern identification. Thread synchronization patterns visible but not named or explained.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for uncertain decompilation. `SCARRY4` checks present but unexplained. No warnings about potential issues or unresolved references.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). Error conditions visible through return values but not documented. No postcondition inference.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`signal_received`, `shared_counter`, `atomic_counter`) used without clear declaration context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: External stubs listed at top, test functions grouped together. No clear module boundaries or logical grouping matching source organization (6.1, 6.2, 6.3 sections lost).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions declared but many as self-recursive stubs. Would require significant work to compile standalone. Dependencies (pthread, libc) not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25  × 0.25 = 1.56
+Level 3 (Type):        (5+4+4)/3   = 4.33  × 0.20 = 0.87
+Level 4 (Semantic):    (1+4+3+3)/4 = 2.75  × 0.15 = 0.41
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.81/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- Variable `param_1`, `param_2` should be named `dst`, `src` based on `strcpy` usage pattern
+- Magic number `0x2a` (42) used throughout without explanation as success code
+- Zero comments despite complex threading and signal handling logic
+- External function stubs (50+) create noise without adding value
+- Type `undefined4` loses semantic meaning for function parameters
+- `SCARRY4` overflow checks not explained or abstracted
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names preserved from source with clear semantic meaning (`param_strcpy`, `thread_compute`, `param_mutex_lock`)
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of comments makes understanding complex logic (signal handling, threading, atomic operations) extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from function call semantics** - When `strcpy(param_1, param_2)` is detected, rename to `dst` and `src`
+2. **Replace magic numbers with symbolic constants** - Detect repeated values (0x2a=42, 0xffffffff=-1) and suggest named constants
+3. **Add decompilation confidence annotations** - Flag uncertain patterns (SCARRY4, indirect calls) with explanatory comments

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named with generic identifiers like `v1`, `v2`, `v3`, `v4`, `v5`, `v6` throughout. The original source had meaningful names like `arr`, `n`, `x`, `local`, `out`, `p1`, `p2` which are completely lost. Loop variables use single letters (`i`, `j`, `k`) which is acceptable but doesn't compensate for the pervasive generic naming.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately match the original source: `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `global_var_access`, `static_local`, `memop_memset`, `memop_memcpy`. Some internal functions like `sub_568` remain unnamed, but the primary test functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: The decompiler hardcodes expected values directly into printf statements (e.g., `printf("MEM-L1-01 (local_vars): %d\n", 20);` instead of calling the function). Magic numbers like `0xFFFFFC18` in VLA bounds checking and `0xFFFFFFFD` in index calculations are unexplained. The literal `42` in `address_of_local` is preserved but not explained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. No obvious dead code from register spilling. Some unusual type casts like `_DWORD` and `_BYTE` but these are manageable. The code is free from debug instrumentation artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most control flow is natural (for/while loops), but some patterns are confusing. The `local_array` function uses `for ( i = 0; i != -10; --i )` which is an unusual decompilation artifact. VLA and alloca functions use complex pointer arithmetic that obscures the original loop structure. At -O0, such artifacts are unexpected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches the original source well. Each test function (MEM-L1-01, MEM-L1-02, etc.) is properly separated. Functions are cohesive with reasonable parameter lists. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate use of early returns for error conditions. Some forward jumps exist in complex functions like `tree_heap_traversal` but are manageable. No severe disruption to reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some loop unrolling is present in test functions (e.g., `test_stack_memory` uses manual loop expansion) but this is a minor issue. Common subexpression elimination artifacts are minimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `_DWORD` for 32-bit integers, `_BYTE` for bytes, and proper pointer types. However, `int` is used generically throughout. Function pointer types are not precisely recovered (e.g., `global_func_ptr` could be more specific). The original used `size_t` for memory sizes but this is lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `Node` and `TreeNode` structs are properly recovered with field names (`data`, `next`, `left`, `right`). However, the `Point` struct is completely lost - `local_struct` returns `3 * x` instead of accessing `p.x + p.y`. The original typedef `typedef struct { int x, y; } Point;` is not reconstructed.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with appropriate pointer usage. Some pointer arithmetic in VLA/alloca functions but no severe violations. Function pointers are used correctly. No obvious buffer overflow patterns that would be dangerous.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining algorithm logic, purpose, or non-obvious operations. The only comments are the decompiler header and occasional "BYREF" annotations for parameters. Original source had extensive comments (MEM-L1-01, SCENE-ALL, etc.) that are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are explicitly identified. The linked list and tree structures could be named as patterns but aren't. Memory management idioms (malloc/free pairs) are not highlighted or documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code patterns. The `dangling_pointer` function contains undefined behavior (accessing freed memory) but this is not indicated. The "FAILED to decompile" messages for import functions are present but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had safety checks (e.g., `if (n <= 0 || n > 1000) return -1;`) that are present in the code but not explained as contracts or assertions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear within test functions. However, relationships with external code (like `extern_global_var` and `extern_function`) are not documented. The callback mechanism in `set_global_callback`/`call_global_callback` could be better explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically by category (stack, heap, static, memory operations). However, all functions are in a single file with no separation. Static functions are not explicitly marked as file-scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple "FAILED to decompile" messages for import functions (printf, malloc, free, etc.). These are library functions that should be resolved. The code would require significant patching to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Variable naming uses generic identifiers (`v1`, `v2`, `v3`) throughout, completely losing semantic meaning from original source
+- The `Point` struct is not recovered - `local_struct` returns `3 * x` instead of accessing struct fields `p.x + p.y`
+- No comments explaining algorithm logic, contracts, or anomalies
+- Expected values hardcoded in printf statements instead of function calls (e.g., `printf(..., 20)` instead of `printf(..., local_vars(5))`)
+- Multiple import functions failed to decompile (`__imp_printf`, `__imp_malloc`, etc.)
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+Most function names accurately match the original source, making it easy to identify which test case each function implements.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The pervasive use of generic variable names (`v1`, `v2`, etc.) makes it extremely difficult to track data flow and understand variable purposes, especially in complex functions like VLA handling and linked list traversal.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v1` used as array index should be named `index` or `i`, `v2` used for size should be named `size` or `count`
+2. Recover composite types like structs even when optimized away - the `Point` struct in `local_struct` could be reconstructed from the arithmetic pattern `x + x*2`
+3. Add explanatory comments for non-obvious patterns, magic numbers, and potential undefined behavior (like the dangling pointer access)

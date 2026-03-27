@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`, `ptr`, `idx`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `len` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retained names (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but numerous wrapper functions use mechanical names (`sub_401201`, `sub_401219`). Some names match source but many are address-based.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers throughout (15, 50, 42, 100) with no explanation. String literals externalized to opaque globals (`g_4020a8`, `g_4020d0`). No constant recovery for array sizes or expected values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution with `[D] Unsupported jumpkind` and `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers throughout `func_mixed_args`. Multiple stub functions (`sub_401086`, `sub_401103`) add no value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but `varargs_func` uses incorrect loop condition (`i != 1` instead of `i != 0`). Some functions degenerate to bare `goto` statements (`sub_401030`, `sub_401080`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Excessive wrapper functions created (`sub_401201` just calls `cdecl_func`). Core functions properly separated but granularity is poor with many single-purpose stubs that add no value.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom adequately. However, `test_calling_conventions` uses sequential assignments instead of actual function calls, disrupting logical flow understanding.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive constant folding replaced actual logic with hardcoded returns (`call_cdecl()` returns 15 directly). This loses the semantic relationship between caller and callee functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - all parameters become `unsigned int`. `func_mixed_args` loses `char*`, `double`, `long long` distinctions. Function pointers typed as `unsigned int *`. Return types often wrong (`void` → `unsigned int`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct recovery is catastrophic. Generated structs have meaningless fields (`field_0`, `padding_0[12007]`). `LargeStruct` and `SmallStruct` completely lost. Struct parameters flattened to individual integers.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: pointer arithmetic on stack variables (`(&v0)[2 * idx]`), function pointers as integers, missing NULL checks. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of unsupported operations, algorithm intent, or API contracts. Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Calling conventions, varargs handling, struct passing patterns all obscured. No identification of standard library patterns (printf, strlen, va_list).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies marked with `[D]` tags but inconsistently. `func_mixed_args` shows unsupported operations but no guidance for manual resolution. Silent failures elsewhere.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks present in code but not explained as contracts. Error conditions undocumented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables have opaque names (`g_4020a8`). No call graph documentation or callback relationship explanation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order. No logical grouping of related functions. No header file structure or API declarations. Test functions scattered throughout.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will NOT compile due to `[D]` unsupported operation markers. Missing external declarations. Malformed struct definitions. Requires extensive manual patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+6+5+3)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):   (5+5+6+4)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type System):  (3+2+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):     (1+2+4+1)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):   (5+4+2)/3   = 3.67 × 0.10 = 0.37
+
+Overall Score: 3.80/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **`[D]` unsupported operation markers** in `func_mixed_args` prevent compilation and obscure logic
+- **Complete type information loss** - all parameters become `unsigned int`, losing `char*`, `double`, `long long` distinctions
+- **Aggressive constant folding** - functions like `call_cdecl()` return hardcoded values (15) instead of showing actual computation
+- **Zero struct recovery** - `LargeStruct`, `SmallStruct` completely lost, replaced with meaningless `field_0`, `padding_0[N]`
+- **No comments or documentation** - original source had extensive comments, decompiled code has none
+
+### Best Quality Aspect: Function Naming Quality (scored 6/10)
+- Core function names were preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`, `main`) allowing basic identification
+
+### Most Needs Improvement: Type System Fidelity (averaged 2.67/10)
+- Complete type erasure makes understanding parameter purposes, return types, and data flow nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Eliminate unsupported operation markers** - Either resolve VEX IR expressions properly or provide clear manual resolution guidance instead of `[D]` placeholders
+2. **Recover type information from debug symbols** - With `-g` flag present, original variable types, struct layouts, and function signatures should be recoverable
+3. **Disable aggressive constant folding** - Preserve actual function call relationships instead of replacing with hardcoded return values; this destroys semantic understanding of the code

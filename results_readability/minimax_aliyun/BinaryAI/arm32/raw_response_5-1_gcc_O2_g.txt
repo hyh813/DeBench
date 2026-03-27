@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `acStack_2c`, `local_c`, `local_d`, `sVar1`, `puVar1`, `iVar1`, `param_1` that obscure their semantic purpose. For example, `acStack_2c` should be `name_buffer` based on its use with strncpy("Test"), and `local_c` appears to be a zero-initialized return accumulator.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some C++ operators correctly named (`operator_new`, `operator_delete`), but most functions use mechanical addresses (e.g., `FUN_0001092c`, `test_cpp_member_func`). The `<EXTERNAL>` prefix indicates unresolved symbols but doesn't explain purpose. Member functions like `Base::virtual_func` are correctly scoped but lack semantic clarity.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Multiple magic numbers appear without explanation: `0x2a` (42), `0x47` (71), `0x28a` (650), `0x16` (22), `0x55` (85), `0x2bf` (703), `0x125c` (4700), `0x3e9` (1000). The string "Test" is correctly preserved but no constants like `MAX_NAME_LEN` (31) are recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Minimal compiler artifacts at -O0, but the decompilation includes 30+ external function stubs (e.g., `__cxa_throw`, `__gxx_personality_v0`) that clutter output. No dead code or register spilling artifacts, but the external declarations create significant noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with if-else constructs. However, `call_virtual_func` uses triple-indirect vtable call `(***(code ***)param_1)()` which is confusing. Exception handling in `test_cpp_exception` is reduced to just the throw, losing the try-catch structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: At -O0, functions are appropriately separated. Each test function remains distinct. Template instantiations correctly generate separate functions (`template_max_int_`, `template_max_double_`). Minor issue: some destructors are duplicated (e.g., `DiamondDerived::~DiamondDerived` appears 4 times).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. The `test_cpp_oo_features` function has sequential printf calls which is linear. Minor forward jump in `test_cpp_member_func` with the `__stack_chk_fail` call.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy at -O0. Template functions are instantiated separately as expected. Some duplicated destructor definitions but these appear to be different variants (deleting vs. non-deleting).
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`), but many uses of `undefined4`, `undefined8`, `undefined1*`. Class member access uses raw pointer arithmetic (e.g., `*(int *)(this + 4)`) losing type information. The `this` pointer is correctly typed in member functions.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Classes are recovered (`Base`, `Derived`, `MultiDerived`, `DiamondDerived`) with virtual functions. However, data members are not named - `Derived::virtual_func` accesses `*(int *)(this + 4)` for `multiplier` without field name. Template class `Container<int>` uses raw offsets (0x28 for size).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: virtual function calls use triple-indirect pointers `(***(code ***)param_1)()`; RTTI code uses raw pointer arithmetic `*(int *)(iVar6 + -4)`; no bounds checking annotations. The `Container<double>::push` uses raw register parameters (`in_r0`, `in_r2`, `in_r3`) without proper typing.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining logic. Function signatures have minimal documentation. The decompilation header provides file info but no algorithm explanations. No indication of uncertainty for complex patterns like virtual inheritance or exception handling.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ idioms not explicitly labeled. Virtual function mechanism uses raw vtable access without comment. Exception handling completely loses try-catch structure. RAII patterns (smart pointers, destructors) not identified. Template instantiation pattern not recognized as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for uncertain decompilation. Complex virtual inheritance calculations (e.g., `MiddleA::func` with multiple pointer adjustments) have no warnings. The `call_virtual_func` indirect call could not be resolved but no indication given.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The `Container::get` has implicit bounds checking but no contract. No documentation of exception safety guarantees or memory ownership semantics.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Class relationships partially shown through inheritance (`class Derived : public Base`). Virtual function overrides indicated but not explicitly documented. No call graph or caller/callee relationships shown. Template instantiations not linked to their generic definitions.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions organized by address rather than logical grouping. The original source groups by feature (member functions, constructors, virtual functions, templates), but decompiled output is sequential by address. External stubs mixed with user code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would not compile standalone due to many unresolved externals (`operator_new`, `__cxa_throw`, `__gxx_personality_v0`, etc.). No `#include` or dependency documentation. The `<EXTERNAL>` prefix indicates these are library functions but doesn't specify which library or how to resolve them.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable naming**: Generic names like `acStack_2c`, `local_c`, `sVar1`, `iVar1` completely obscure semantic purpose - `acStack_2c` should be `name_buffer` based on strncpy("Test") usage
+- **Literal clarity**: At least 9 magic numbers (0x2a, 0x47, 0x28a, etc.) without named constants - expected values like 42, 71, 650 are unrecognizable
+- **Comment absence**: Zero meaningful comments explaining algorithms, contracts, or uncertainties - complex virtual inheritance code has no guidance
+- **Type safety**: Triple-indirect virtual call `(***(code ***)param_1)()` is dangerous and unreadable; raw pointer arithmetic throughout
+- **Exception handling loss**: `test_cpp_exception` completely loses try-catch structure, only showing the throw
+
+### Best Quality Aspect: Function Decomposition (8/10)
+At -O0, functions are appropriately separated with clear boundaries. Template instantiations correctly generate separate functions. Each test function remains distinct and cohesive.
+
+### Most Needs Improvement: Literal Clarity (2/10)
+Magic numbers pervade the output - return values like 4704, 21, 42, 71, 650 are all computed from uncommented hex values. A reader cannot understand what these functions return without manually computing the hex values.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `acStack_2c` used with strncpy("Test") should be named `name_buffer`; `local_c` initialized to 0 and used as return accumulator should be `result`
+2. **Replace magic numbers with computed constants**: Convert `0x125c` to `4700` and add comment `// expected: 10 + 34 + 4660 - strlen("Test")`
+3. **Add semantic comments for complex patterns**: Virtual inheritance vtable adjustments, RTTI dynamic_cast implementation, and exception handling structure need explanatory comments

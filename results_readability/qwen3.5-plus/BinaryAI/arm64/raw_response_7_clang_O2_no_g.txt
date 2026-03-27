@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `iVar1`, `iVar2`, `param_1`, `local_40`, `pbVar3` throughout. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names preserved (`param_fake_branch`, `param_opaque_predicate`), but helper functions use generic names (`FUN_00100730`, `FUN_001008bc`). External stubs marked `<EXTERNAL>::` which is helpful.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0x23` appear without explanation. Original constants like `0xDEADBEEF` and `0x12345678` are optimized away entirely, losing semantic context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: External function stubs call themselves recursively (e.g., `strlen` calls `strlen`, `abort` calls `abort`). These compiler/linker artifacts pollute the output significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_opaque_predicate` uses do-while loops for GCD instead of original while loop. `param_vectorized_loop` has complex SIMD-unrolled structure that's hard to follow.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical failure: `param_fake_branch` is empty (returns void) despite having logic in source. `call_fake_branch` returns constant `10` instead of calling the function—optimization eliminated recoverable structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. `param_vectorized_loop` has multiple loop sections with `goto LAB_00100c50` that disrupts flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `param_vectorized_loop` contains significant redundant-looking code from SIMD vectorization (multiple accumulator variables `iVar14` through `iVar24`). Not recognized as unrolled loop.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types degraded to generic `int`, `uint`, `ulong`, `undefined8`. Original `size_t`, `char*`, `__jmp_buf_tag*` partially preserved but inconsistent. Pointer types often `undefined8*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Bitfield struct in `param_implementation_defined` completely lost—function returns constant `0x30` instead of computing. No struct definitions recovered anywhere.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible: `(undefined8 *)`, `(ulong)local_40 | 1`, `(__sighandler_t)0x0`. Pointer arithmetic on generic types throughout `param_vectorized_loop`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only header comment with SHA256 hash. Zero comments explaining logic, algorithms, or decompilation uncertainty. Original source had extensive documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption pattern not labeled. No design patterns or algorithm names recovered.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about optimized-away functions (`param_fake_branch` empty). No indication that `call_fake_branch` constant-folded. Silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). No postconditions or error condition documentation. Original had clear expected return values in comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`jmp_buffer`, `div_zero_caught`) referenced without declaration context. No call graph provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output. No logical grouping by section (obfuscation vs. optimization vs. edge cases). Original had clear section headers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External stubs call themselves (won't link properly). Missing type definitions for `__jmp_buf_tag`, `EVP_PKEY_CTX`. Would require significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (5+4+6+5)/4 = 5.00  × 0.25 = 1.25
+Level 3 (Type):        (5+3+4)/3   = 4.00  × 0.20 = 0.80
+Level 4 (Semantic):    (2+2+3+2)/4 = 2.25  × 0.15 = 0.34
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.21/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects
+- **`param_fake_branch` completely empty** - Function body eliminated despite -O0 compilation; should show fake branch conditions
+- **External function stubs call themselves** - `strlen`, `signal`, `abort` defined as recursive self-calls (linker artifacts)
+- **Constant folding eliminated call structure** - `call_fake_branch` returns `10` directly instead of calling `param_fake_branch(10)`
+- **Zero semantic comments** - No explanation of obfuscation patterns, GCD algorithm, or decryption logic
+- **Bitfield struct lost** - `param_implementation_defined` returns constant instead of computing bitfield operations
+
+### Best Quality Aspect
+- **Function Naming Quality (6/10)** - Core function names preserved from source (`param_opaque_predicate`, `param_instruction_substitution`), providing some semantic anchor points
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding obfuscation patterns and algorithm intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Detect and flag optimization artifacts** - When functions are constant-folded or eliminated, add comments like `// OPTIMIZED: Original called param_fake_branch(10), result constant-folded to 10`
+2. **Recover algorithm patterns** - Identify common patterns (GCD, XOR decryption, bitfield access) and add explanatory comments with algorithm names
+3. **Fix external stub generation** - External functions should be declared as imports (`extern size_t strlen(char*);`) not defined as recursive self-calls

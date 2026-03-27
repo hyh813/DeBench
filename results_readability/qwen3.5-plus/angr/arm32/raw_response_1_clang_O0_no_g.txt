@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `a0`, `a1`) obscuring semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` that are lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`sequential_ops`, `single_if`, `loop_for_fixed`), but some helpers have cryptic names (`$a.18`, `sub_4004bc`, `sub_400568`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX/-1) and `1717986919` (division optimization) appear without explanation. Original test values are preserved but not contextualized.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present including `armg_calculate_condition` calls, redundant variable assignments (`v0 = a0; v1 = v0;`), and optimization artifacts from division-by-10 multiplication.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops and conditionals recovered well, but switch statements degrade to computed gotos (`switch_small`, `switch_large`). Some ternary operators recovered correctly (`if_else`, `nested_if_2`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity preserved from original source. Helper functions like `$a.18` (double_value) are extracted but poorly named.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Switch statements use goto but this is expected for jump table recovery on ARM.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Optimization artifacts visible (multiply-by-constant for division). Some redundant stack variable assignments that don't add clarity.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All variables degraded to `unsigned int`, losing signed/unsigned distinction from original `int` types. Function pointer signatures incorrect (`call_func_ptr` shows `a0(a1, a0)` instead of proper callback).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays in `loop_break` recovered as individual variables (`v2`, `v3`, `v4`...). No complex structs in this code but matrix handling in `loop_multi_exit` shows pointer arithmetic instead of array indexing.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe function pointer calls with incorrect signatures. Cast operations like `(char *)&$d.1[0]` present without safety annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels—all lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns (loops, conditionals) recognized but not named. No identification of state machine patterns (`state_machine`, `fsm_func_table`) or recursion patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `armg_calculate_condition` calls appear without explanation of what they represent. No warnings about potential decompilation uncertainty or unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n > 0`). No error condition documentation or return value semantics.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g_414008`, `g_413ebc`) referenced without explanation of their purpose.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by control flow level (L1/L2/L3) as in original source organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`g_414008`, `__libc_start_main`, `armg_calculate_condition`) require stubs. Would need moderate patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+7+5)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.92/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Zero comments recovered** despite original source having extensive documentation explaining each function's purpose and test cases
+- **All variables generic** (`v0`, `v1`, `a0`, `a1`) losing semantic meaning from original names like `sum`, `count`, `temp1`
+- **Type precision lost** - all `int` types became `unsigned int`, breaking signed/unsigned semantics
+- **`armg_calculate_condition` calls** appear without explanation of what ARM condition codes they represent
+- **Switch statements degrade to computed gotos** instead of recovered switch-case structures
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were successfully preserved (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`), maintaining semantic identity across decompilation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation despite original source having comprehensive comments explaining purpose, test cases, and difficulty levels for each function.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover debug symbol comments** - When `-g` flag is present, extract and preserve source comments and function documentation in decompiled output
+2. **Infer variable names from usage patterns** - Analyze variable roles (accumulator, counter, temporary) to generate semantic names like `sum`, `count`, `result` instead of `v0`, `v1`
+3. **Flag analysis uncertainty** - Add annotations for constructs like `armg_calculate_condition` explaining they represent ARM condition code evaluations that couldn't be fully resolved

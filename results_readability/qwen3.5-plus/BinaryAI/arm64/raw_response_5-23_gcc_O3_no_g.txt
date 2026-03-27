@@ -1,0 +1,123 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY (30% weight)
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar1`, `pvVar1`, `local_c`) instead of semantic names like `size`, `result`, `counter`, `exec_mem`, `page_size` from source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved accurately (`param_macro_constants`, `call_macro_functions`, `param_asm_basic`), but several anonymous functions exist (`FUN_00100810`, `FUN_0010091c`, `FUN_00100a3c`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: All constants became magic numbers (0x400 instead of MAX_SIZE, 0x40 instead of BUFFER_COUNT*4, 0xdef0 instead of hex constant); no named constant recovery.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Runtime initialization code mixed in (`_init`, `_start`, `__do_global_dtors_aux`, `register_tm_clones`), architecture-specific atomic functions (`__aarch64_ldadd4_acq_rel`) not in original source.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions recovered well (`param_macro_constants`, `param_conditional_compile`), but `param_asm_clobber` shows extremely convoluted control flow vs. simple assembly loop in source.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but `param_asm_clobber` became a 100+ line monolithic mess; runtime functions added that weren't in source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `param_asm_clobber` has deeply nested conditionals obscuring the simple loop logic from source.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundancy in `test_preprocessing_features` (repeated `__printf_chk` patterns); `call_variadic_macro` and `FUN_00100bcc` have duplicate code.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined8`, `ulong` instead of proper types; function returns often `undefined8` instead of `int`; `size_t` degraded to generic types.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Source had minimal structs, but pointer types often became `undefined8*`; no struct recovery issues since source was primitive-type heavy.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many implicit casts, `undefined` types throughout; `param_asm_clobber` has unsafe pointer arithmetic operations that weren't in source.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: ZERO comments in decompiled code except decompiler header; source had extensive section comments, expected values, and architecture notes.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No macro pattern recognition (all expanded); assembly patterns simplified away without indication; atomic operations show as architecture-specific calls.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of what was lost (macros, conditionals); ARM64 atomic operations vs. x86 assembly mismatch completely unflagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Source had expected value comments ("期望：64"); decompiled code has no precondition/postcondition documentation anywhere.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved and external functions marked `<EXTERNAL>`, but call relationships not documented; no call graph information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Source organized by sections (5.2 preprocessing, 5.3 assembly); decompiled is one flat file with runtime code mixed with application code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would require extensive modification to compile—undefined types, architecture-specific functions (`__aarch64_ldadd4_acq_rel`), missing headers.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+3+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+6+6+7)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (4+6+5)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+4+3+3)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                                  4.86/10
+```
+
+### Overall Readability Score: **4.9/10**
+
+---
+
+### Critical Defects
+
+- **Zero comment recovery** - All source documentation, expected values, and section headers completely lost
+- **Magic number proliferation** - Constants like MAX_SIZE (1024), BUFFER_COUNT (16) became 0x400, 0x40 with no named recovery
+- **Variable name degradation** - All semantic names (`size`, `counter`, `exec_mem`) became `param_1`, `iVar1`, `local_c`
+- **Architecture mismatch unflagged** - Source was x86 assembly but decompiled shows ARM64 atomic operations without warning
+- **Type precision loss** - `undefined4`, `undefined8`, `ulong` used instead of proper C types (`int`, `size_t`, `void*`)
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (7/10)** - Most function names were preserved accurately from source (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`), maintaining semantic identity despite other degradations.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (2/10)** - Complete absence of any documentation; source had extensive section headers, expected values, and architecture notes that would dramatically improve readability if recovered.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement constant recovery from comparison patterns** - Detect `if (param_1 > 0x400)` patterns and suggest named constants based on usage context (e.g., `MAX_SIZE` for size comparisons).
+
+2. **Add anomaly flagging for architecture mismatches** - When decompiled code shows ARM64-specific operations (`__aarch64_*`) but binary was compiled for x86, flag this as a potential recovery issue.
+
+3. **Recover macro semantics from expanded code patterns** - Detect repeated arithmetic patterns (e.g., `param_1 * 3 + 2` in conditional branch) and annotate as "likely from #ifdef conditional compilation."

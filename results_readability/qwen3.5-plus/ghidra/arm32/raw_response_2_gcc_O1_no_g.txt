@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar1`, `piVar2`) with zero semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `head` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`double_value`, `process_char`, `array_1d_stack`, `struct_simple`). This is the decompiler's strongest aspect—action-oriented names clearly reflect purpose.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation (e.g., `0x41`, `0x1a`, `0x20` in `process_char`; `0x3fc00000` for float constants). Test functions show hardcoded expected values instead of actual computations.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler runtime functions included (`__muldf3`, `__aeabi_dadd`, `__addsf3`) mixing with user code. Stack canary checks (`__stack_chk_fail()`) at function ends. Unreachable block warnings present.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered as do-while patterns in array functions. However, test functions are heavily optimized—actual function calls replaced with constant values, obscuring original test logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries correctly preserved with appropriate granularity. No inappropriate inlining. However, runtime helper functions mixed with user code creates confusion.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but forward jumps disrupt flow in complex functions. Stack canary early returns at function ends are awkward but understandable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Floating point helper functions show significant redundancy. Test functions have optimization artifacts (hardcoded values instead of actual calls). Some dead code warnings present.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `char`→`uint` in `process_char`, `short`→`int` in `process_short`, `long long` split into two `int` params in `process_ll`. Float/double functions return `void` instead of proper types. Pointer types become `undefined4*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—structs represented as `int*` with array indexing (`param_1[0]`, `param_1[1]`). No struct/union/enum definitions recovered. `Point3D`, `Rect`, `Widget` all lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts throughout. Pointer arithmetic on `int*` for struct field access. Function pointers become `code*` or `undefined4*`. Void pointer conversions without proper typing.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only compiler-generated WARNING comments about unreachable blocks. Zero semantic comments explaining logic, algorithms, or intent. Original source's extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithm idioms identified. Common patterns (string length calculation, linked list traversal) not recognized or named.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some WARNING comments about unreachable blocks and non-returning subroutines. Stack canary checks noted. However, no indication of type uncertainty or decompilation confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero preconditions, postconditions, or invariants documented. No error condition documentation. No parameter validation hints recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but global references shown as opaque (`DAT_00011fa0`, `DAT_00012120`). Callback relationships partially visible but not explicitly documented.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output with no logical grouping. Runtime library functions mixed with user code. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Would not compile standalone—missing type definitions, struct declarations, and external function prototypes. Requires extensive manual patching to build.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+8+3+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (2+2+4+1)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+3+2)/3   = 3.33 × 0.10 = 0.33
+
+Overall Score: 4.05/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Complete struct type loss**: `Point3D`, `Rect`, `Widget` all reduced to `int*` with array indexing, losing all field semantics
+- **Floating point function signatures broken**: `process_float`, `process_double`, `process_ld` return `void` instead of proper types
+- **Test functions optimized away**: Actual function calls replaced with hardcoded expected values, destroying test logic
+- **Zero semantic comments**: Original source's extensive documentation completely absent
+- **Type precision collapse**: `char`→`uint`, `short`→`int`, `long long` split into two parameters
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names like `double_value`, `process_char`, `array_1d_stack` preserved from source, providing clear semantic anchors throughout the decompilation.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (1/10)** - Zero preconditions, postconditions, or parameter validation hints recovered; no documentation of expected input ranges or error conditions.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze struct access patterns (`param_1[0]`, `param_1[1]`, `param_1[2]`) to reconstruct `Point3D` and similar structures with named fields
+2. **Preserve floating point return types** - Track FPU register usage to correctly identify float/double return values instead of defaulting to `void`
+3. **Infer variable semantics from usage** - Variables used in loop accumulation should be named `sum`, string traversal variables should be `len` or `index`, pointer iteration should indicate `current` or `head`

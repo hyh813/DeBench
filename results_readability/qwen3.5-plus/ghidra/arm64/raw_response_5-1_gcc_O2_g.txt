@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `iVar1`, `lVar1`, `puVar1`, `__s`; many locals marked as "Unresolved local var: int r1@[???]" losing all semantic meaning from original `r1`, `r2`, `r3`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names preserved correctly (`test_cpp_member_func`, `test_cpp_virtual_func`); class methods recovered with proper names (`Base::virtual_func`, `Derived::getName`); some helpers generic (`FUN_00100eb0`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers dominate return statements (`0x125c`, `0x2a`, `0x47`, `0x28a`) which are computed values but unexplained; string literals preserved ("Test", "Base", "Derived").
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks add noise (`___stack_chk_guard`, `__stack_chk_fail`); compiler initialization code included (`_GLOBAL__sub_I`, `__do_global_dtors_aux`); many WARNING comments clutter output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Most test functions reduced to single `return` statements losing all original logic (loops, conditionals, object lifecycle); only simple functions like `template_max` retain natural flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Class methods properly separated (`Container<int>::push`, `Base::virtual_func`); test functions collapsed into monolithic returns; thunk functions for virtual dispatch are appropriate.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Functions generally read top-to-bottom; stack check creates conditional return at end; some "Removing unreachable block" warnings indicate lost optimization paths.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Multiple thunk functions for virtual methods expected for C++; stack canary checks add redundancy; no obvious dead code in recovered logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (int, char*, double); many variables degraded to `undefined4`, `undefined8`; template instantiations recovered (`Container<int>`, `template_max<int>`); class types partially recovered.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class member access preserved (`obj.name`, `this->multiplier`, `this->size`); vtable pointers recovered (`_vptr_Base`); diamond inheritance shows `super_MiddleA`, `super_MiddleB` but struct definitions not fully shown.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`undefined4 *`, `long *`, `char **`); pointer arithmetic visible in diamond inheritance code; virtual function calls have warnings about indirect jumps.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: DWARF prototype comments helpful for class methods; "Unresolved local var" warnings throughout; no algorithm explanations or semantic documentation of what code does.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic C++ patterns recognized (virtual functions, inheritance, templates); exception handling partially recovered; lambda expressions completely lost (just return values); smart pointer semantics not visible.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Excellent warning system ("WARNING: Unknown calling convention", "Could not recover jumptable", "Struct ignoring overlapping field"); clearly marks unresolved elements for manual review.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation; exception contracts not recovered; no invariant documentation for class methods; return value expectations not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented; virtual dispatch partially recovered; no call graph documentation; global variable usage (`instance_count`) not clearly linked.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output; class methods grouped by class (good); test functions scattered without logical grouping; no namespace structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References many external functions (`__cxa_allocate_exception`, `operator_new`, `__dynamic_cast`); would need extensive stubs and C++ runtime to compile; no dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (4+6+6+6)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (5+5+4)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (5+4+7+3)/4 = 4.75 × 0.15 = 0.713
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.03/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Test functions collapsed**: `test_cpp_virtual_func`, `test_cpp_constructor`, `test_cpp_lambda` reduced to single `return` statements losing all original logic
+- **Unresolved local variables**: Every test function has "Unresolved local var" comments for all local variables (`r1`, `r2`, `obj`, etc.)
+- **Magic number returns**: Return values like `0x125c`, `0x28a`, `0x2bf` are computed results but not explained or traced to source calculations
+- **Exception handling incomplete**: `test_cpp_exception` shows allocation but not the try/catch structure or re-throw logic
+- **Type degradation**: Many variables typed as `undefined4`, `undefined8` instead of recovered C++ types
+
+### Best Quality Aspect:
+- **Anomaly Indication (7/10)** - Ghidra's warning system clearly marks unresolved elements, indirect calls, and structural issues, enabling analysts to focus manual effort where needed.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No documentation of preconditions, postconditions, exception contracts, or expected return values, making it difficult to verify correctness.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover local variable semantics** - Use data flow analysis to name variables based on usage patterns (e.g., variables used in return calculations should be named `r1`, `r2`, `result`)
+2. **Preserve control flow in test functions** - Don't constant-fold test functions; recover the actual object construction, method calls, and computation logic
+3. **Add semantic comments for magic numbers** - When returning computed constants, add comments showing the calculation (e.g., `// 10 + 34 + 4660 = 4704`)

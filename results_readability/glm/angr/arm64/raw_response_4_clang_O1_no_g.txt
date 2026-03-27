@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: Parameters are generic (`a0`, `a1`), and local variables often lack semantic meaning (`v0`, `v1`), though some like `idx` or `ptr` are descriptive. The `varargs` handling variables (`v19`, `v31`) are particularly cryptic.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names match the source code perfectly (e.g., `cdecl_func`, `test_calling_conventions`), likely due to the presence of debug symbols (`-g`), making navigation trivial.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are replaced with opaque global references (e.g., `puts(&g_4014be)`), obscuring the output messages. Magic numbers like `18446743528248704968` in `varargs_func` appear without explanation.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean of compiler artifacts, but some simple arithmetic operations are over-complicated (e.g., `param_by_value_int` uses bit masking for a simple multiplication).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Basic control flow is natural, with `for` loops correctly recovered as `do-while` loops typical of unoptimized code. However, the `varargs` implementation details leak into the control flow, creating complex loops that don't match the source's simple iteration.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries are preserved exactly as in the source, with no inlining or outlining, which is expected and correct for `-O0` compilation.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal jumps or forward references, facilitating easy understanding of execution order.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no dead code or obvious redundancy; the decompiled code is concise and maps well to the source logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Signedness is often lost (`int` becomes `unsigned int`), and struct parameters are demoted to generic pointers or integers (e.g., `func_struct_byval` takes `unsigned long` instead of `LargeStruct`).
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct definitions (`LargeStruct`, `SmallStruct`) are completely missing. Struct member access is replaced by raw pointer arithmetic (e.g., `a0[1]` instead of `p->y`), significantly obscuring the data layout.
+
+**11. Type Safety:** Score: 6/10
+Justification: While the logic is correct, the lack of struct types forces the use of unsafe pointer arithmetic and casts (e.g., casting `unsigned long` to `long long*`), which requires manual verification.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output, leaving complex logic (like the varargs pointer manipulation) unexplained.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard C idioms like `va_list` are not recognized; the decompiler outputs the low-level register/stack manipulation implementation instead of abstracting it to `va_arg`.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: No anomalies are flagged, but the decompiler presents the complex `varargs` logic with high confidence, which might be misleading to a user expecting high-level C code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the null check in `func_struct_byptr` is present but not explicitly annotated as a contract).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and the call graph is easily reconstructible due to the accurate function naming.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are organized logically, matching the source file's structure with test functions grouped together.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code would not compile standalone due to missing struct definitions and undefined global references for string literals.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- Struct types (`LargeStruct`, `SmallStruct`) are completely lost, replaced by raw pointer arithmetic and integer parameters.
+- String literals are replaced with opaque global address references (e.g., `&g_4014be`), destroying the readability of `printf` statements.
+- Variable argument functions (`varargs_func`) are decompiled into low-level pointer manipulation rather than the standard `va_list` idiom.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The presence of debug symbols allowed for perfect recovery of function names, making the high-level structure of the program immediately obvious.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- The failure to recover struct definitions turns structured data operations into raw memory access, which is the single biggest impediment to understanding the data manipulation logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement robust struct type recovery for function parameters, distinguishing between pass-by-value (hidden pointer) and pass-by-pointer.
+2. Resolve and inline string literal contents into the decompiled view instead of displaying global memory addresses.
+3. Detect and abstract standard ABI-specific varargs implementations (like ARM64's va_list) back into high-level `va_start`/`va_arg` constructs.

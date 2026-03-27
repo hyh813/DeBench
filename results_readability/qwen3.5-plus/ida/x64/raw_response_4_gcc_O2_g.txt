@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a1`, `a2`, `temp`) with no semantic meaning. For example, `varargs_func` uses `v13[8]`, `v14`, `v15` instead of meaningful names like `arg_buffer` or `stack_frame`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but helper functions use generic names (`sub_1020`, `sub_1030`). Action verbs missing from test functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound (`0x28u`, `0x2F`, `17`) without explanation. However, test functions return pre-computed constants (15, 50, 6) which is constant folding from O0, not magic numbers per se.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: stack canary reads (`__readfsqword(0x28u)`), register variable assignments (`v14 = v3`), and excessive stack frame variables in varargs functions obscure logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops use do-while instead of for (e.g., `func_struct_byval`). Varargs functions have nested while loops that could be simplified. At O0, this level of transformation is acceptable but not ideal.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized and separated. However, many test functions (`call_cdecl`, `call_stdcall`) are constant-folded to single return statements, losing the original call structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but varargs functions have complex stack setup that interrupts flow. Forward jumps present in loop structures.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Register spilling creates redundant variables (`v14 = v3; v15 = v1`). Varargs handling code duplicated between `varargs_func` and `param_varargs` with identical complex stack logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mix of `int`, `__int64`, and `unsigned int` without clear rationale. `func_b` returns `__int64` but original returns `int`. Some function pointers use `(_QWORD)` casts losing type information.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Excellent struct recovery - `LargeStruct`, `SmallStruct`, `BigStruct` all preserved with field names (`data[16]`, `x`, `y`). Field access uses proper syntax (`p->x * p->y`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(__int64 (__fastcall *)(_QWORD))callback`, `(unsigned int)x`. Void pointer conversions in `param_complex_cast` lack safety annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments explaining logic. Only decompiler warnings present ("local variable allocation has failed", "positive sp value has been detected"). No algorithm explanations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern not identified as such despite using `va_list` semantics. Function pointer callback pattern not recognized. No design pattern documentation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present for failed decompilations (7 external functions marked "FAILED"). Stack anomalies noted. However, no confidence indicators for recovered code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `p != NULL` for `func_struct_byptr`). No postconditions or invariants. Null checks present but not documented as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear within decompiled code. External functions (`puts`, `strlen`, `__printf_chk`) marked as FAILED. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Test functions mixed with implementation. No header file or API separation visible.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 7 external functions failed to decompile. Would require stubs for `__printf_chk`, `strlen`, `__libc_start_main`. Type definitions missing for some structs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (6+8+5)/3   = 6.33 × 0.20 = 1.267
+Level 4 (Semantic):    (3+4+6+2)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 5.40/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable names completely generic** - `v0`, `v1`, `a1` provide no semantic information about purpose
+- **Test functions constant-folded** - `call_cdecl()` returns `15` directly instead of showing `cdecl_func(5, 10)` call
+- **No comments explaining logic** - Complex varargs stack manipulation has zero documentation
+- **Unsafe casts undocumented** - Function pointer casts like `(__int64 (__fastcall *)(_QWORD))` lack safety context
+- **7 external functions failed** - `puts`, `strlen`, `__printf_chk` etc. not recovered, breaking compilation
+
+### Best Quality Aspect: **Composite Type Recovery (8/10)**
+- Struct definitions (`LargeStruct`, `SmallStruct`, `BigStruct`) perfectly recovered with accurate field names and types, enabling readable field access patterns.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- Zero preconditions, postconditions, or invariants documented despite many functions having clear requirements (null pointers, valid ranges).
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables used in size checks should be named `count`/`length`, pointer arithmetic should suggest `buffer`/`array`
+2. **Preserve call structure in test functions** - Avoid constant folding that hides the actual function call relationships being tested
+3. **Add confidence annotations** - Mark recovered code with confidence levels and document assumptions about calling conventions and type safety

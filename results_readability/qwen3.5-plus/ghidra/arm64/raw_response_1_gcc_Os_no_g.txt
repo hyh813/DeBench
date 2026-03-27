@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1` instead of semantic names (e.g., `sequential_ops` uses `param_1, param_2, param_3` instead of `a, b, c` or `temp1, temp2, temp3`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user-defined function names preserved correctly (`sequential_ops`, `recursion_factorial`, `switch_fallthrough`), but internal functions use generic names (`FUN_00100940`, `FUN_00100afc`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex (`0x14`, `0x1e`, `0x32`, `0xffffffff` for -1) without explanation in test functions; some decimal literals remain clear (10, 5, 100).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple compiler warnings present ("WARNING: Removing unreachable block", "WARNING: Could not recover jumptable"), stack canary artifacts (`___stack_chk_guard`), and `__printf_chk` instead of `printf`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if-else and loops recovered well, but `switch_fallthrough` uses explicit goto labels (`LAB_00100d7c`), and `duffs_device` has complex switch-case goto patterns that obscure the original fall-through intent.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes are appropriate, but several have incorrect signatures (`loop_break` returns `void` instead of `int`, `state_done` returns `undefined8` instead of `int`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally; goto usage in `switch_fallthrough` and `duffs_device` is appropriate for those patterns rather than structural failure.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant type casts visible (`(ulong)(uint)((int)param_1 << 1)`), and `op_div` checks `param_2 != 0` twice in nested conditions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation—`single_if` takes `ulong` instead of `int`, `if_else` returns `bool` instead of `int`, function pointers degraded to `code *`, and many parameters use `undefined4`/`undefined8`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays shown as raw stack variables (`local_20[8]`, `local_58[10]`) without proper types; no struct definitions recovered; matrix in `loop_multi_exit` becomes individual stack variables.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout, function pointer calls treated as `code *` with warnings ("Treating indirect jump as call"), and mismatched return types create potential undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only compiler-generated warning comments present; no semantic documentation explaining function purpose, algorithm, or parameter meaning.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns (loops, switches) recognized but not explicitly identified; recursion converted to iteration without noting the transformation; state machine pattern visible but unlabeled.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warnings for critical issues ("Could not recover jumptable", "Treating indirect jump as call"), but some anomalies silently handled without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation; return value semantics not explained; error conditions not documented despite being present in source.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented; global variable usage unclear (`jump_buffer`, `completed_0`); no call graph information provided.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in flat output with no logical grouping; test functions mixed with implementation; no header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds, but requires external dependencies (`printf`, `puts`, `__libc_start_main`) and undefined symbols (`___stack_chk_guard`, `__dso_handle`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+6+7+7)/4 = 6.50  × 0.25 = 1.63
+Level 3 (Type):        (4+3+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (2+5+6+2)/4 = 3.75  × 0.15 = 0.56
+Level 5 (Contextual):  (4+4+6)/3   = 4.67  × 0.10 = 0.47
+
+Overall Score: 4.89/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Variable names completely generic** - `param_1`, `param_2`, `iVar1` throughout instead of semantic names like `a`, `b`, `sum`, `count`
+- **Type precision severely degraded** - `if_else` returns `bool` instead of `int`, `state_done` returns `undefined8`, function pointers as `code *`
+- **No semantic comments** - Zero documentation explaining function purpose, algorithms, or parameter meanings
+- **Composite types lost** - Arrays become `local_20[8]` stack variables; no struct recovery
+- **Function signature errors** - `loop_break` and `loop_multi_exit` return `void` instead of `int`, breaking semantic correctness
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most user-defined function names preserved correctly from source (`sequential_ops`, `recursion_factorial`, `switch_fallthrough`), maintaining semantic identity.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no semantic documentation; only compiler warnings present, making code understanding entirely dependent on reverse engineering logic.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** - Analyze usage patterns to suggest semantic names (e.g., loop counters → `i`, accumulators → `sum`, condition results → `is_valid`)
+2. **Recover type information from debug symbols** - Since compiled with `-g`, leverage DWARF info to restore original types, struct layouts, and variable names
+3. **Add semantic annotation generation** - Automatically generate comments for non-trivial patterns (recursion→iteration conversion, state machines, Duff's device) with confidence indicators

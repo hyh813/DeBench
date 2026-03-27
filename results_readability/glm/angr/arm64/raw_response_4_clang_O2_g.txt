@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `a0`, and `ptr`, providing no semantic context (e.g., `v22` used as a sum accumulator in `varargs_func`).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Function names like `cdecl_func` and `param_by_value_int` are preserved accurately from the source symbols, making the high-level purpose clear despite the poor internal implementation.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are replaced with opaque global pointers (e.g., `&g_401228`), and arithmetic operations are obscured by magic masks like `4294967294` instead of clear constants.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is heavily polluted with low-level IR artifacts such as `arm64g_calculate_condition`, `AddV`, `CONCAT`, and `unsupported_Iop_ZeroHI64ofV128`, rendering it non-compilable and noisy.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Simple loops are often represented as complex `do-while` constructs with manual pointer arithmetic (e.g., `varargs_func`), and the `$x` function uses a `goto` for a tail call, breaking readability.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Functions are correctly separated and not inlined (consistent with `-O0`), maintaining appropriate granularity, though the internal logic of some is obfuscated.
+
+**7. Code Linearization:** Score: 4/10
+Justification: Forward jumps and non-linear pointer manipulation in functions like `varargs_func` disrupt the top-to-bottom reading flow, requiring significant mental effort to trace execution.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: Simple operations like `x * 2` in `param_by_value_int` are expanded into complex bit-masking expressions `(a0 * 2 | a0 >> 31) & 4294967294`, adding unnecessary verbosity.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Integers are consistently typed as `unsigned int` regardless of source signedness, and small structs are returned as packed `long long` integers with bit-manipulation, losing type distinction.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are generally not recovered; `LargeStruct` parameters are treated as raw pointers, and `SmallStruct` returns are mangled into integer bit-packing operations.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts and bit manipulation to simulate struct operations, such as casting `void*` to access struct fields in `ret_large_struct`.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of the obscure IR artifacts present in the code.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms like `va_list` and `va_arg` are completely missed; instead, the decompiler exposes the raw stack frame manipulation and `va_list` structure internals.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: Critical failures like `unsupported_Iop_ZeroHI64ofV128` are embedded directly into the code flow as function calls rather than being flagged as decompilation errors or warnings.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the null check in `param_double_ptr` is present but not explicitly highlighted as a contract requirement.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While function calls are visible, string references are opaque pointers to global data segments (`g_401228`), obscuring the relationship to the actual string literals used in the source.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a logical address-based order, which roughly corresponds to the source order, providing a basic, albeit not semantic, module structure.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile due to the inclusion of non-standard IR primitives (`AddV`, `CONCAT`, `arm64g_calculate_condition`) and missing type definitions.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.3/10
+
+**Critical Defects:**
+- **IR Artifacts:** The presence of VEX IR primitives like `AddV`, `CONCAT`, and `arm64g_calculate_condition` makes the code look like a raw assembly dump rather than C.
+- **Varargs Failure:** The `varargs_func` completely fails to recover the `va_list` idiom, instead exposing stack frame variables and complex pointer arithmetic.
+- **Arithmetic Obfuscation:** Simple multiplication (`x * 2`) is obfuscated into complex bit-masking operations, significantly reducing readability.
+- **Struct Loss:** Composite types are not recovered; structs are treated as integers or raw pointers, losing semantic meaning.
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)
+- **Why?** The decompiler successfully preserved the original function symbols from the binary, allowing the user to identify the high-level purpose of each block immediately.
+
+**Most Needs Improvement:** Noise Reduction (scored 1/10)
+- **Why?** The code is saturated with low-level intermediate representation artifacts that should have been abstracted away, making it look like a failed IR-to-C translation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Implement IR-to-C High-Level Mapping:** Replace low-level VEX IR opcodes (e.g., `AddV`, `CONCAT`) with standard C operators (`+`, struct assignments) to ensure the output is valid, compilable C.
+2.  **Enhance Varargs Pattern Recognition:** Detect standard `va_list` initialization and access patterns to reconstruct `va_start`/`va_arg` loops instead of exposing stack frame layout details.
+3.  **Refine Arithmetic Simplification:** Add a pass to simplify redundant bit-masking and shifting operations that result from compiler instruction selection (e.g., simplifying `(a * 2 | a >> 31) & mask` back to `a * 2`).

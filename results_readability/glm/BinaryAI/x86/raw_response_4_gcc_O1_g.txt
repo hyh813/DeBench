@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `param_1`, `param_2`, `uVar1`, and `local_10`, providing no semantic context about their usage (e.g., `count`, `sum`, `args` in the original).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `main` are perfectly preserved from the source, making the high-level purpose immediately clear.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Integer results are represented as hex literals (e.g., `0xf` instead of `15`, `0x32` instead of `50`) which reduces readability, and string literals are referenced via pointers (e.g., `&DAT_00012008`) rather than inline strings.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains compiler-generated stack canary checks (e.g., `if (local_10 == *(uint *)(in_GS_OFFSET + 0x14))`) and Position Independent Code (PIC) thunks (`__x86.get_pc_thunk.bx`) which clutter the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally linear and easy to follow, but varargs functions like `varargs_func` are decompiled into manual stack walking loops (`piVar1 = (int *)&stack0x00000008`) rather than idiomatic `va_list` usage.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source code; there is no inlining or outlining, maintaining the original modular structure perfectly.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal jumps or complex branching, making execution paths easy to trace.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no dead code or loop unrolling present; the logic is concise, though some simple functions like `call_cdecl` were optimized to constant returns by the compiler.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are heavily degraded; `undefined4` is used extensively for integers, and 64-bit integers (`long long`) are split into two `undefined4` parameters (e.g., `param_4`, `param_5` in `func_mixed_args`).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely lost; `func_struct_byval` takes no arguments and accesses the stack directly, and `func_struct_byptr` treats a struct pointer as an `int*` array rather than recovering the `SmallStruct` definition.
+
+**11. Type Safety:** Score: 5/10
+Justification: The decompiler uses Ghidra-specific macros like `CONCAT44` to reconstruct 64-bit values from two 32-bit registers, which is not standard C and indicates type confusion.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code to explain logic, algorithms, or data structures.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard idioms like `varargs` are not recognized; instead of `va_start`/`va_arg`, the code shows raw stack pointer manipulation, obscuring the programmer's intent.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: There are no warnings or flags indicating potential issues, such as the manual stack access in `varargs_func` or the split 64-bit parameters.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred (e.g., the null check in `func_struct_byptr` is present but not highlighted as a contract).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are explicit and use the recovered names, making the call graph easy to understand, though standard library calls like `printf` are renamed to generic addresses (`FUN_000110e0`).
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically in the output, generally following the order of the source file, which aids in navigation.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on non-standard constructs like `undefined4`, `CONCAT44`, and magic stack variables (`stack0x00000008`), making it impossible to compile without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Composite types (structs) are completely lost, replaced by raw stack access or generic pointer arithmetic.
+- Type precision is poor, with extensive use of `undefined4` and splitting of 64-bit integers into two 32-bit parts.
+- Varargs functions are decompiled into manual stack walking rather than standard `va_list` idioms.
+- No comments or semantic annotations are provided to assist understanding.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names from the binary symbols, making the high-level structure easy to navigate.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover `LargeStruct` and `SmallStruct` definitions turns structured data access into obscure pointer arithmetic, significantly hindering comprehension.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic analysis to recover struct layouts from stack access patterns and field offsets.
+2. Recognize standard varargs prologues/epilogues to emit idiomatic `va_list` code instead of raw stack manipulation.
+3. Improve type inference to replace `undefined4` with concrete types (e.g., `int`, `char`) based on register usage and arithmetic operations.

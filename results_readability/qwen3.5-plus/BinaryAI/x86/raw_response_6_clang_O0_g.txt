@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_10`, `local_14` with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `fd`, `ptr` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_strcpy`, `call_strcpy`, `param_mutex_lock`). However, helper functions have generic names (`FUN_00011030`, `FUN_000113d0`) and some return types are wrong (`undefined4` instead of `int`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xffffffff` (-1), `0xfffffffe` (-2), `0xfffffffd` (-3). String literals preserved well ("HelloLib", "/etc/passwd") but error codes lack named constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: `__i686.get_pc_thunk.bx`, `deregister_tm_clones`, `register_tm_clones`. External function stubs add verbosity without value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow generally follows source structure. Signal handling uses awkward `while(true)` with break instead of clean condition. If-else chains are clear and readable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized and separated (thread functions vs. main logic). Some functions like `param_thread_local_storage` are large but cohesive.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom. Signal handling loops have forward jumps that slightly disrupt flow. Early returns used appropriately in error paths.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. Error handling patterns repeat but this reflects source structure. No significant loop unrolling artifacts at -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many types degraded to `undefined4`, `void*`, `char*`. Original had `size_t`, `FILE*`, `pthread_t`, `atomic_int`. Some types preserved (`pthread_t`, `FILE*`) but inconsistent.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs like `sockaddr`, `stat` referenced but not fully defined. `ThreadData` struct lost—accessed via array indexing (`param_1[2]`, `local_3c[local_48 * 3 + 2]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts pervasive: `(int *)0x0`, `(char *)0xffffffff`, `(pthread_mutex_t *)counter_mutex`. Pointer arithmetic on void* in thread functions. Type-confused function pointers in atomic operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining each function's purpose, test scenarios, and expected values. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `pthread_create`). Thread synchronization patterns not explicitly identified. No design pattern naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for suspicious code. Signal handling code not marked as special. Atomic operations shown as `LOCK()/UNLOCK()` macros without explanation of original `__atomic_*` intrinsics.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). No postconditions inferred. Error return values (-1, -2, -3) not documented with meaning.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`signal_received`, `shared_counter`, `atomic_counter`) used without explanation. Callback relationships implicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by category (standard library, system calls, threading). External functions listed separately at top. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code marked as compilable ("Compilation Result: Yes"). External dependencies declared via stubs. Some platform-specific code present but manageable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+7+7+7)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.24/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- Variable names `param_1`, `local_10` should be `dst`, `src`, `buffer` based on usage patterns
+- Magic numbers `0x2a`, `0xfffffffd` should be named constants (SUCCESS, ERROR_FILE_WRITE)
+- No comments explaining function purpose despite original having extensive documentation
+- Struct `ThreadData` lost—fields accessed via array indexing `param_1[2]` instead of `data->result`
+- Type safety violations with casts like `(char *)0xffffffff` for error checking
+
+### Best Quality Aspect: **Structural Intelligibility (7.0/10)**
+- Control flow and function decomposition preserved well from -O0 compilation, making execution paths traceable despite other issues.
+
+### Most Needs Improvement: **Semantic Transparency (3.0/10)**
+- Complete absence of comments and contract documentation makes understanding intent nearly impossible without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Variable name inference**: Analyze usage patterns to suggest semantic names (e.g., variables passed to `strcpy` first param → `dst`, second → `src`)
+2. **Comment recovery**: Extract and preserve source comments from debug symbols when `-g` flag is present
+3. **Magic number detection**: Identify common error codes and suggest named constants (0x2a→SUCCESS, 0xffffffff→ERROR)

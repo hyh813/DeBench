@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `a0`, `a1`, `v0`, `v1`, or obscure lifted register names like `vvar_24`. No semantic meaning (e.g., `dst`, `src`) is preserved or inferred.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `param_strcpy`, `call_strcpy`, and `main` are perfectly recovered, likely due to symbol table presence. The names accurately reflect the original source.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are preserved, but integer logic is obscured by magic numbers like `4294967295` (representing -1) and condition codes like `66` or `193` used in `armg_calculate_condition`.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is heavily polluted with intermediate representation (IR) artifacts such as `armg_calculate_condition`, `Not Conv`, `Goto None`, and `vvar_24`, making it look like a raw IR dump rather than C code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is obscured by `armg_calculate_condition` calls replacing standard comparisons and frequent `goto` statements. Logic in `param_strcmp` is incorrectly represented as `if (result) v4 = -1`, which loses the original ternary logic.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: Function boundaries match the source, and granularity is correct. However, the internal implementation is so degraded that the decomposition is the only salvageable structural element.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code is difficult to read linearly due to spurious labels (e.g., `LABEL_401304`) and `goto` jumps that could be simplified into standard `if/else` blocks.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: Severe redundancy is present; for example, `param_strcpy` calls `strlen(strcpy(a0, a1))` twice on the same line instead of storing the result, indicating a failure in value propagation or temporary variable recovery.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Basic types like `char*` and `int` are used, but signedness is often lost (e.g., returning `4294967295` instead of `-1`). Parameters are generic (`a0`, `a1`) without `const` qualifiers.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are poorly recovered; `struct FILE` is defined as empty, and `sockaddr` is only partially defined. Access to `ThreadData` in `thread_sum` uses raw pointer arithmetic (`ptr[2]`, `ptr[1]`) instead of field names.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code contains unsafe casts and type confusion, such as casting function results to `char` in condition checks `(char)armg_calculate_condition(...)` and treating integers as pointers interchangeably in `vvar_24`.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic. The only comment is the header indicating the decompiler name, which provides no semantic value.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: While standard library functions like `strcpy` and `printf` are recognized, the idioms surrounding them (e.g., the specific comparison logic in `param_strcmp`) are completely lost or mangled.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag potential issues; instead, it presents confusing artifacts like `armg_calculate_condition` as standard code, misleading the reader about the program's actual structure.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or error handling contracts. For example, the check for `fp == NULL` in `param_fopen_fclose` is buried in IR logic.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are visible, and global variables are declared as `extern`, but the usage is obscured by the IR artifacts, making the data flow hard to trace.
+
+**17. Module Organization:** Score: 7/10
+Justification: The functions are listed in an order that roughly matches the binary layout, and related functions are grouped, which is the only positive aspect of the organization.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile. It relies on non-existent functions like `armg_calculate_condition` and variables like `vvar_24`, and contains syntax errors like `Goto None`.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.9/10
+
+**Critical Defects:**
+- **IR Artifacts**: Extensive use of `armg_calculate_condition` and `vvar_24` makes the code look like a disassembly dump rather than C.
+- **Redundant Expressions**: `param_strcpy` executes `strlen(strcpy(...))` twice due to poor temporary variable recovery.
+- **Incorrect Logic**: The logic in `param_strcmp` is semantically incorrect (`if (result) v4 = -1`), failing to capture the original ternary comparison.
+- **Type Erasure**: Signed integers are displayed as large unsigned values (e.g., `4294967295` for -1).
+- **Struct Loss**: Composite types like `FILE` are empty, and struct access is done via raw array offsets.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- **Why?** The decompiler successfully recovered symbol names (e.g., `param_strcpy`, `main`) from the binary, which is the only feature that makes the code navigable.
+
+**Most Needs Improvement:** Noise Reduction (scored 1/10)
+- **Why?** The presence of low-level IR artifacts (`armg_calculate_condition`, `Not Conv`) completely destroys the illusion of high-level C code, making it nearly unreadable.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Implement IR-to-C Lowering**: Replace architecture-specific condition helpers (like `armg_calculate_condition`) with native C comparison operators (`<`, `>`, `==`).
+2.  **Fix Value Propagation**: Ensure that the result of a function call or expression is stored in a temporary variable if used multiple times, preventing redundant calls (e.g., in `param_strcpy`).
+3.  **Improve Type Recovery**: Detect and apply signedness to integers to avoid displaying `-1` as `4294967295`, and attempt to recover struct field names from standard library usage patterns.

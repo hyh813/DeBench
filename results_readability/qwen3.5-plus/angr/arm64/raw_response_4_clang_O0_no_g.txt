@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `len` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions preserved original names (`cdecl_func`, `varargs_func`, `test_calling_conventions`). However, helper functions use mechanical names (`sub_4006e4`, `sub_4007b0`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Pervasive magic numbers like `4294967295` (UINT_MAX), `4294967294` (bitmask), `858993459300` without explanation. String literals referenced as opaque globals (`&g_401e82`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Frame pointer setup (`v0 = &v1`) repeated in nearly every function. Redundant assignments (`v0 = v2; v1 = v3`) and duplicate function calls (`memcpy` called twice in `sub_4006e4`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but `varargs_func` and `param_varargs` have convoluted logic with nested conditionals that obscure the original simple for-loop with `va_arg`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. No monolithic functions. However, some helper functions appear that weren't in source (`frame_dummy`, `register_tm_clones`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but varargs functions have complex non-linear flow with forward references. Some functions use `goto` (`register_tm_clones`).
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy: `sub_4006e4` calls `memcpy` twice, `call_weak_fn` calls `__gmon_start__` twice, `call_array_decay` calls `param_array_decay` twice unnecessarily.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `int` becomes `unsigned int`, `LargeStruct` becomes `unsigned long ptr`, `va_list` becomes multiple `uint128_t` variables. Function signatures have extra parameters (`varargs_func` has 8 parameters instead of 2).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `LargeStruct` completely lost (becomes `unsigned long ptr`). `SmallStruct` degraded to `unsigned int *ptr`. Only `struct_0` partially recovered in `param_double_ptr`. Most struct field access becomes pointer arithmetic.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: `func_mixed_args` missing `double d` and `long long ll` parameters, `param_func_ptr` takes `unsigned long long *a0` instead of function pointer, `ret_opaque_handle` returns `"d"` (string) instead of `&handle1`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern completely unrecognizable (should use `va_start`/`va_arg`/`va_end`). Standard C idioms not identified. No pattern naming.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite obvious issues: type mismatches in `func_mixed_args`, incorrect return in `ret_opaque_handle`, complex varargs logic that should be marked uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not explained). No postconditions. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variable usage opaque (`g_401e82`, `g_401eaa`). Callback relationships not documented (`callback_func` called but relationship unclear).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by section (calling conventions vs. parameter passing vs. return values). Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple undefined external references (`g_412ff8`, `$d.2`, `__TMC_END__`). Would require significant stubbing and global variable definitions to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+4)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.31/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable `a0`, `a1`, `v0`, `v1`** should be named semantically (e.g., `count`, `sum`, `args_ptr`) based on usage patterns
+- **`varargs_func`** completely fails to recover `va_list` pattern—shows 37 local variables instead of simple `va_start`/`va_arg`/`va_end`
+- **`func_struct_byval`** takes `unsigned long ptr` instead of `LargeStruct`, losing all struct semantics
+- **`func_mixed_args`** missing `double d` and `long long ll` parameters (only shows 3 params instead of 4)
+- **Redundant function calls** in `sub_4006e4`, `call_weak_fn`, `call_array_decay` call same function twice unnecessarily
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - User-defined function names were preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`), maintaining semantic connection to source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero comments despite complex varargs handling and type conversions that desperately need explanation for human understanding.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover varargs patterns** - Detect `va_start`/`va_arg`/`va_end` sequences from ARM64 varargs calling convention and emit proper C varargs syntax instead of 37 local variables
+2. **Infer semantic variable names** - Use data flow analysis to name variables based on usage (e.g., loop counters → `i`, accumulators → `sum`, pointers → `ptr`)
+3. **Add decompilation confidence annotations** - Flag uncertain type recoveries, missing parameters, and anomalous patterns with comments like `// DECOMPILER: Type uncertain - original may be struct`

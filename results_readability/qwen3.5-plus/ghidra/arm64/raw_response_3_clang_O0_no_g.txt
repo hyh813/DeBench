@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `local_14`, `local_24`, `aiStack_2c` with no semantic meaning. For example, in `heap_basic`, `__ptr` is clear but `local_24` (loop counter) and `local_14` (return value) obscure their purposes.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user functions preserved original names (`local_vars`, `heap_basic`, `global_var_access`). However, runtime functions like `FUN_00100920` and `FUN_00100b3c` remain generic, and `double_value` appears at end rather than top.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers prevalent: `0x2a` (42), `0x400` (1024), `0x800` (2048), `0x14` (20), `0x28` (40). Hex values used inconsistently with decimal, making mental conversion necessary.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Type casts like `(undefined4)`, `(undefined8)`, `(long)` add visual noise. Stack variable names like `auStack_192`, `local_1ac` are compiler artifacts. Some WARNING comments present but not excessive.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: For-loops generally recovered correctly (e.g., `local_array`, `heap_basic`). However, `linked_list_heap` uses `while(true)` with break instead of cleaner for-loop. Conditional logic mostly clear.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized with single responsibility. Helper functions like `create_tree_node` properly separated. Original function boundaries well-preserved at -O0.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Test functions have some forward references but no excessive gotos. `vla_stack` and `alloca_usage` have complex stack calculations disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some redundant type casts from decompilation process. Loop structures not unnecessarily duplicated. Clean error handling paths.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Extensive use of `undefined4`, `undefined8` instead of proper types (`int`, `long`, `size_t`). Return types often mismatch (e.g., `local_array` returns `undefined4` not `int`). Pointer types frequently generic `void*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Critical failure - `Point` struct not recovered (`global_point + DAT_001140d4`). `Node` struct accessed via pointer arithmetic (`*(int **)(local_20 + 2)`). `TreeNode` fields accessed as `__ptr + 2`, `__ptr + 4` offsets.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts: `(undefined4 *)`, `(long)param_1`, `(byte *)`. Pointer arithmetic without bounds checking. `dangling_pointer` use-after-free not flagged as dangerous.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No functional comments in decompiled code. Only compiler warnings ("WARNING: Removing unreachable block"). No algorithm explanations, no parameter documentation, no return value descriptions.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Linked list creation in `linked_list_heap` not recognized. Tree traversal in `tree_heap_traversal` not named. Memory allocation patterns not annotated.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Heritage AFTER dead removal", "Restarted to delay deadcode"). `stack_alias` has suspicious handling. However, dangerous patterns like double-free not prominently flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_1 > 0` checks not annotated). No postconditions inferred. Error return values (-1, -2, 0xffffffff) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`global_counter`, `file_scope_static`) used without context. Callback mechanism in `call_global_callback` not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 67 functions in single output file. No logical grouping by category (stack/heap/static). Static functions not visually distinguished from public API.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies (`extern_global_var`, `extern_function`) declared but not defined. Platform-specific code (`__thread`, `bzero`) handled with fallbacks.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+8+7+7)/4 = 7.25 × 0.25 = 1.81
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (2+3+5+3)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.28/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Composite types completely lost**: `Point`, `Node`, `TreeNode` structs accessed via raw pointer arithmetic instead of field names
+- **Variable names entirely generic**: `local_14`, `local_24`, `param_1` provide zero semantic information
+- **No comments whatsoever**: Zero documentation for any non-trivial logic or error conditions
+- **Type precision degraded**: `undefined4`/`undefined8` used instead of proper C types throughout
+- **Magic numbers unexplained**: `0x2a`, `0x400`, `0x800` used without constant definitions
+
+### Best Quality Aspect:
+- **Function Decomposition (8/10)** - Original function boundaries and responsibilities well-preserved; helper functions like `create_tree_node` properly separated with appropriate granularity.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation makes understanding complex functions like `vla_stack` and `linked_list_heap` significantly harder than necessary.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types from access patterns** - Detect consistent field offsets (e.g., `+8` for `next` pointer in Node) and reconstruct named struct definitions with field names.
+2. **Infer variable names from usage context** - Variables used in loop bounds should be named `count`/`size`; return values should be named `result`/`status`; pointers should indicate target type.
+3. **Generate semantic comments for common patterns** - Automatically annotate memory allocation sequences, linked list operations, and error handling patterns with explanatory comments.

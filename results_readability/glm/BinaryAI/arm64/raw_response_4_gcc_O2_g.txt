@@ -1,0 +1,109 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `lVar1`, `param_1`, `local_88`, `uStack_80`). In `test_calling_conventions`, stack variables used to build the `LargeStruct` are named `alStack_110`, `local_88`, etc., completely obscuring the fact that they represent a single structured object.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Most user-defined function names (`cdecl_func`, `test_calling_conventions`) are preserved, likely due to debug symbols (`-g`). However, library functions and some internal helpers use generic names like `FUN_00100710` or standard external names.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers like `0xf` (15) and `0x38` (stack offset) are used without explanation. While `0x12345678` is preserved, the stack offset `0x38` in `varargs_func` is opaque, and the decompiler does not explain its significance as a varargs setup.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is cluttered with stack canary checks (`___stack_chk_guard`) in almost every function with local variables. While this is a security feature, its explicit presence in the decompiled C code (e.g., `if (local_8 - ___stack_chk_guard == 0)`) significantly adds noise and distracts from the core logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Control flow is generally linear, but `varargs_func` is decompiled into a confusing loop that manipulates a stack offset (`iVar2 = iVar2 + 8`) without clearly showing the argument access. The loop in `test_calling_conventions` for initializing the struct is also awkward due to explicit stack variable assignments.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly. No inlining or outlining occurred (expected for `-O0`), and the granularity is appropriate, with each test function remaining distinct.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom. However, `test_calling_conventions` contains a large block of variable assignments (`uStack_80 = alStack_110[2];`) before the actual logic, which disrupts the linear flow of reading the test setup.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The initialization of `LargeStruct` in `test_calling_conventions` is highly redundant, explicitly copying array elements to stack slots one by one (`alStack_110[lVar2] = lVar2;` followed by individual assignments). This reflects the `-O0` stack handling but makes the code verbose and repetitive.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Significant type errors exist. In `func_mixed_args`, parameters are reordered and retyped (`double param_1` appears first, likely corresponding to the float register `v0`, whereas source had `int x` first). Return types like `undefined8` are used instead of `int` in `call_cdecl`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Complete failure to recover structs. `LargeStruct`, `SmallStruct`, and `SmallPoint` are all lost. `func_struct_byval` takes a `long *` instead of a struct, and `ret_small_struct` returns `ulong` and `long` instead of a struct value. The logic is reduced to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies heavily on casts like `**(byte **)(param_1 + lVar1)` in `param_ptr_array`. While technically correct for the machine instructions, it loses the type safety of the original `char *arr[]`. The use of `undefined8` and `undefined4` also degrades type safety.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. The rich comments in the source explaining calling conventions and test scenarios are completely absent.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler fails to recognize the `varargs` idiom in `varargs_func`, presenting it as a loop manipulating a stack offset rather than iterating over a `va_list`. Struct passing idioms are also missed.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No warnings are provided about the potential issues in `varargs_func` or the strange parameter ordering in `func_mixed_args`. The code is presented confidently despite the semantic mismatches.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the contract that `param_array_decay` expects a pointer is not explicit (it's even decompiled as taking no arguments in one instance, `param_array_decay(void)`).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and use the recovered names. The relationship between `call_cdecl` and `cdecl_func` is obvious. However, the loss of struct definitions breaks the data flow context.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are listed in a logical order that roughly follows the source flow. Related test functions are grouped together.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses non-standard types like `undefined8`, `undefined4`, `code *`, and `ulong`. It would not compile without significant modification or defining these Ghidra-specific types.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 7 + 5 + 5) / 4 = 5.0
+L2_avg = (6 + 9 + 7 + 4) / 4 = 6.5
+L3_avg = (4 + 2 + 5) / 3 = 3.67
+L4_avg = (1 + 3 + 2 + 1) / 4 = 1.75
+L5_avg = (7 + 8 + 3) / 3 = 6.0
+
+Overall = (5.0 * 0.30) + (6.5 * 0.25) + (3.67 * 0.20) + (1.75 * 0.15) + (6.0 * 0.10)
+Overall = 1.5 + 1.625 + 0.734 + 0.2625 + 0.6
+Overall = 4.72
+```
+
+### Overall Readability Score: **4.7/10**
+
+### Critical Defects
+- **Struct Recovery Failure**: All composite types (`LargeStruct`, `SmallPoint`, etc.) are lost and replaced by raw pointers or integers, destroying the data model.
+- **Varargs Obfuscation**: The `varargs_func` logic is reduced to stack pointer arithmetic (`iVar2 = iVar2 + 8`) rather than showing the standard `va_list` iteration.
+- **Parameter Type Confusion**: In `func_mixed_args`, the decompiler incorrectly maps parameters (e.g., listing `double` first), likely due to register mapping confusion between integer and float registers.
+- **Excessive Stack Canary Noise**: Security checks (`___stack_chk_guard`) are inlined into every function, cluttering the logic without abstraction.
+- **Generic Naming**: Variables are named `local_XX`, `uStack_XX`, or `iVar1`, making it impossible to understand the purpose of stack variables without manual mapping.
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)**: The decompiler successfully preserved the original function names (e.g., `cdecl_func`, `test_calling_conventions`), likely due to the presence of debug symbols, which provides a high-level skeleton of the code.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)**: The complete inability to reconstruct `struct` types is the single biggest failure. The source code relies heavily on structs for testing calling conventions, and their reduction to pointers/ints makes the decompiled code semantically unrecognizable compared to the source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhanced Struct Recovery**: Implement analysis to detect hidden pointer parameters (sret) and register-packed returns to reconstruct struct definitions, especially for `-O0` binaries where stack layouts are explicit.
+2.  **Varargs Pattern Recognition**: Improve pattern matching for `va_start`, `va_arg`, and `va_end` sequences to abstract raw stack offset manipulation into standard `va_list` terminology.
+3.  **Stack Canary Abstraction**: Add an option or automatic logic to fold stack canary checks (`___stack_chk_guard`) into a simplified representation or comment block to reduce visual noise in the decompiled listing.

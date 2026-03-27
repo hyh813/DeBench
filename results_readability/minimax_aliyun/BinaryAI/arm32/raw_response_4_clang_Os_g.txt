@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_10`, `local_40`, `local_48`, `local_90`. These stack location names provide no semantic meaning - the original source used meaningful names like `count`, `args`, `sum`, `val`, `ptr`. The decompiler failed to infer purpose from usage patterns.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions like `cdecl_func`, `call_cdecl`, `stdcall_func`, `varargs_func`, `func_no_args` match source exactly. However, some internal functions like `<EXTERNAL>::__libc_start_main` are generic, and floating-point helper functions have auto-generated names like `__adddf3`, `__subdf3`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers appear throughout: `0xf` (15), `0x32` (50), `0x15` (21), `0x12345678`. The decompiled code prints these directly without explaining their origin. No named constants recovered from source like `MAX_SIZE` or meaningful enum values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution from CRT startup code (`_init`, `__libc_start_main`, `__cxa_finalize`, `deregister_tm_clones`, `register_tm_clones`) and extensive floating-point library functions (`__adddf3`, `__subdf3`, `__floatsidf`, `__floatdidf`, `__fixdfsi`, `__extendsfdf2`, `__aeabi_drsub`, `__floatundidf`). These 400+ lines of boilerplate obscure the actual test logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow closely matches source. Loops use do-while constructs correctly, conditionals are straightforward. Minor artifact: `param_varargs` uses pointer arithmetic on stack-allocated array `local_c` which is technically incorrect (should use va_list), but the logic is traceable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions properly separated matching source. Each test function (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) is distinct. Minor issue: some small wrapper functions like `call_cdecl` could be inlined but are correctly kept separate at -O0.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `func_no_args`, `param_array_decay`. No excessive forward jumps or goto abuse. The `test_calling_conventions` function has sequential printf calls which is natural.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No significant redundancy. Loop unrolling is minimal at -O0. Dead code is absent. The decompilation correctly avoids duplicating expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` and `undefined4` instead of specific types like `int32_t`, `uint32_t`. Function parameters typed as `int` when source used `int`. No `size_t` recovery for `strlen` return. Mixed types like `byte*` for strings instead of `char*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. The source defines `LargeStruct` (128 bytes), `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData` - all lost. The decompiler represents struct parameters as raw integers (`func_struct_byval(int param_1,undefined4 param_2,undefined4 param_3,undefined4 param_4)`) instead of reconstructing the struct type. Field access like `local_40[iVar1]` loses semantic meaning.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `param_double_ptr` has confusing parameter list with 4 parameters when source had 2 (`int **pp, int new_val`). The decompiler added extra parameters incorrectly. Function pointer typed as `code *` instead of proper function signature. Raw pointer arithmetic without casts in `func_struct_byval`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments. The source had extensive comments explaining each test case (e.g., "CALL-L1-01: cdecl调用约定", "测试: 参数从右到左压栈"). The decompiled output has zero comments explaining the test scenarios, calling convention tests, or expected values.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns present but not named. Varargs (`va_list`, `va_start`, `va_arg`, `va_end`) not recognized - appears as raw pointer arithmetic on stack. Function pointers recognized as `code*` but not identified as callback pattern. No recognition of calling convention patterns (cdecl, stdcall, fastcall).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The `param_double_ptr` function has incorrect parameter count (4 vs 2) - this should be flagged. The `func_mixed_args` has 6 parameters when source had 4 - should indicate uncertainty. No warnings about potential undefined behavior in `call_order_dep` (source had intentional UB).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information. Source had explicit null checks (`if (!p) return -1`) and preconditions. The decompiled code shows these checks but doesn't document the contracts. No recovery of "requires: ptr != NULL" or "ensures: return value in range".
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships not documented. The source clearly showed which functions call which (e.g., `call_cdecl()` calls `cdecl_func()`). The decompiled output doesn't indicate that `test_calling_conventions` calls multiple helper functions, or that `call_ret_pointer` uses the return value of `ret_pointer`.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single flat file output. The source had logical sections (Calling Conventions, Parameter Passing, Return Values) with clear separation. The decompiled output is one long listing without grouping. However, functions are at least in address order which roughly correlates with source order.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Does not compile standalone. Requires declarations for `printf`, `strlen`, `puts`, `abort`, `__libc_start_main`, `__gmon_start__`, `__cxa_finalize`. The floating-point functions (`__adddf3`, etc.) are external dependencies. No header information or dependency documentation provided.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming uses generic `param_N` and `local_N` patterns, losing all semantic meaning from source (e.g., `count`, `args`, `sum`, `val`, `ptr`)
+- No struct type recovery - `LargeStruct`, `SmallStruct`, `BigStruct` all lost, replaced with raw integer parameters
+- No comments explaining test scenarios - source had extensive documentation for each calling convention and parameter passing pattern
+- Severe noise from CRT and floating-point library functions (~400 lines of boilerplate)
+- Type precision lost - uses `undefined4`, `int`, `byte*` instead of specific types like `int32_t`, `char*`
+- `param_double_ptr` incorrectly decompiled with 4 parameters instead of 2, breaking semantic understanding
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+At -O0, the decompiler correctly recovered loop structures (do-while), conditional logic, and function call relationships. The basic program flow is traceable and matches source structure.
+
+**Most Needs Improvement:** Lexical Clarity (4.25/10)  
+Variable naming is the primary readability killer. Generic names like `param_1`, `local_10`, `uVar1` make it impossible to understand what data flows through functions without cross-referencing source. Combined with literal confusion (magic numbers without explanation), the code is nearly incomprehensible as standalone.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1` used in multiplication → `multiplier`, `local_c` iterated with `va_arg` pattern → `args`). The source shows clear patterns like `va_start(args, count)` that should trigger `args` naming.
+2. **Recover struct/union types from stack layout**: When seeing sequential integer parameters like `param_1, param_2, param_3, param_4` that are always accessed together, attempt struct reconstruction. The 128-byte `LargeStruct` should be recognized as a composite type.
+3. **Filter or separate CRT/library noise**: Either exclude well-known CRT startup functions and math library stubs from output, or place them in a separate "system code" section with collapsible regions. The 400+ lines of `__adddf3`, `__subdf3` etc. completely obscure the actual test code.

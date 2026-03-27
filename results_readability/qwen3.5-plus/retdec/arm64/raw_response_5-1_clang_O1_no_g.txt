@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `v3`, `result`, `str`) with zero semantic meaning. For example, in `_Z20test_cpp_constructorv`, variables `v1` through `v7` should be named `data_ptr`, `index`, `value`, `instance_count`, etc. based on usage patterns.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Functions retain mangled C++ names (`_Z20test_cpp_member_funcv`, `_ZN4Base12virtual_funcEi`) instead of readable names. Demangled comments exist but the actual function identifiers remain unusable for human understanding.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals preserved in globals (`g16` = "CPP-L3-01: %d...") but magic numbers like `0x13d58`, `0x2050` appear without explanation. Expected values (4704, 21, 42) are in strings but not as named constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler runtime pollution including `__do_global_dtors_aux`, `register_tm_clones`, `deregister_tm_clones`, and 40+ wrapper functions that aren't part of original source logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Try-catch blocks in `test_cpp_exception` converted to switch statements on global `g7`. The original structured exception handling is completely lost, making the control flow semantically incorrect.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Many functions return constant values instead of actual logic (`test_cpp_operator_overload` returns 22, `test_cpp_lambda` returns 85). This is the expected result, not the computation—fundamental decomposition failure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom within functions, but forward references and confusing jump patterns in functions like `_Z13test_cpp_rttiv` disrupt logical flow with nested conditionals on type info.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repetitive type casts throughout (`(int64_t)(int32_t)v2`, `(int64_t *)&g1`). Some functions like `test_cpp_virtual_func` contain redundant variable assignments that serve no purpose.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Everything collapsed to `int64_t` regardless of original type. `SimpleClass::value` (int), `name` (char[32]), and pointer types all become `int64_t`. Original `size_t`, `bool`, and class types completely lost.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Class definitions listed as comments only ("// VirtualBase", "// MultiDerived") with no actual struct definitions. No field names recovered—`SimpleClass` should have `value` and `name[32]` fields but shows nothing.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Pervasive unsafe casts like `*(int32_t *)(v3 + v1)` and pointer arithmetic on `int64_t`. Virtual function calls use raw pointer dereferencing without type safety. Multiple buffer-overflow-prone patterns.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated demangled name comments exist ("// Demangled: test_cpp_member_func()"). No algorithm explanations, no uncertainty indicators, no documentation of non-obvious logic like vtable mechanics.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: Zero C++ idiom recognition. Virtual dispatch, multiple inheritance thunks (`_ZThn16_`, `_ZTv0_n24_`), and diamond inheritance patterns present but completely unexplained. Lambda closures not identified.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warnings about suspicious code. Functions returning constants instead of computations should be flagged. Broken exception handling in `test_cpp_exception` has no anomaly indication despite being semantically wrong.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original code had clear expectations ("期望: 10 + 34 + 4660 = 4704") but decompiled version has no contract information.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls visible but virtual dispatch relationships unclear. Vtable structures (`g5`, `g6`) defined but their relationship to classes not explained. Inheritance hierarchy not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with no logical grouping. Related test functions scattered. No separation between class implementations, test functions, and runtime support code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Missing C++ standard library headers (`<iostream>`, `<memory>`, `<typeinfo>`). Uses C headers only. Won't compile as C++ due to missing class definitions and operator overloads.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+3+4+3)/4 = 3.00  × 0.30 = 0.90
+Level 2 (Structural):  (2+3+5+5)/4 = 3.75  × 0.25 = 0.94
+Level 3 (Type):        (2+1+2)/3   = 1.67  × 0.20 = 0.33
+Level 4 (Semantic):    (3+1+1+1)/4 = 1.50  × 0.15 = 0.23
+Level 5 (Contextual):  (3+4+3)/3   = 3.33  × 0.10 = 0.33
+─────────────────────────────────────────────────────
+Overall Score:                                  2.73/10
+```
+
+**Overall Readability Score:** 2.7/10
+
+### Critical Defects:
+- **Functions return constants instead of logic**: `test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_lambda` return expected values (22, 39, 85) rather than computing them
+- **Zero class structure recovery**: All C++ classes listed as comments only; no struct definitions with field names
+- **Exception handling broken**: Try-catch converted to switch statement on global variable `g7`, semantically incorrect
+- **All variables generic**: `v1`, `v2`, `v3`, `result` throughout with no semantic naming
+- **Type system collapsed**: Everything is `int64_t`; original types (int, char[], size_t, class pointers) completely lost
+
+### Best Quality Aspect:
+- **Code Linearization (5/10)** - Code generally reads top-to-bottom within functions without excessive goto statements, making basic tracing possible despite other issues
+
+### Most Needs Improvement:
+- **Composite Type Recovery (1/10)** - Complete failure to recover any C++ class structures; this is fundamental for C++ decompilation and makes the output nearly useless for understanding object-oriented code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts** - Analyze vtable pointers to reconstruct class definitions with field names and inheritance relationships
+2. **Detect constant-returning functions and flag as incomplete** - Functions returning expected test values instead of computations indicate analysis failure; add uncertainty annotations
+3. **Preserve C++ exception handling semantics** - Recognize `__cxa_*` runtime calls and reconstruct try-catch blocks instead of converting to switch statements

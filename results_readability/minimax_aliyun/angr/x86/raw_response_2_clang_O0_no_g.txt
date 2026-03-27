@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `ptr`, `idx`. Parameter names are just `a0`, `a1`, `a2`. The original source had meaningful names like `packet_size`, `sum`, `i` but these are lost. Only a few like `idx`, `sum` in array functions are preserved.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: About half the functions retain their original names (process_char, process_short, array_1d_stack, ptr_single, etc.), but many use generic address-based names like `sub_401030`, `sub_401070`. The naming is inconsistent - some test functions are properly named while others are not.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like 65, 90 (ASCII range), 32 (case offset), 10, 100 appear without explanation. Constants like `4294967295` (0xFFFFFFFF) for error returns are unexplained. String literals are referenced via numeric offsets (e.g., `v4 + 11954`) without clarity.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe VEX IR artifacts pollute the code: `[D] unsupported_<class 'pyvex.expr.GetI'>()`, `[D] PutI(72:F64x8)[t3,0] = t6()`. Functions like `__x86.get_pc_thunk.bx` are compiler boilerplate that should be filtered. These artifacts make reading float/double functions especially difficult.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most loops are correctly recovered as `for` loops. However, some goto statements remain (e.g., `goto ptr[2]` in sub_401030, computed goto in enum_switch). At -O0, control flow should be more straightforward. Some computed jumps disrupt natural flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately separated with reasonable granularity. The original test functions (test_data_types_l1, test_array_types, etc.) are correctly decomposed. Some wrapper functions exist (sub_401030 calling process_char) but overall decomposition is good.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. Early returns are present. Some forward jumps exist (enum_switch uses computed goto). The main test functions have good linear flow, but some helper functions have non-linear patterns.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Some redundant memory accesses in volatile_access (intentional for volatile). Loop unrolling is minimal. Overall the code is reasonably clean of redundant expressions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type erosion - most parameters are `unsigned int` when original had `char`, `short`, `int`, `long`, `long long`. The `process_short` correctly returns `short`, but `process_char` returns `int` instead of `char`. Float/double handling shows severe issues with VEX IR artifacts. Const/volatile qualifiers mostly lost.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs are reconstructed with generic names (`struct_0`, `struct_1` with `field_0`, `field_1`). Union types partially recovered. Bitfields handled via bit operations. However, many composite types are just raw pointer arithmetic (e.g., struct_simple uses `a0[1]`, `a0[2]` instead of proper struct access).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present. Manual pointer arithmetic throughout (e.g., `ptr + idx * 4`). Function pointer types are imprecise (ptr_func_simple uses `unsigned int *` instead of proper function pointer signature). Some type-confused operations visible.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Essentially no useful comments. No algorithm explanations, no decompilation confidence indicators, no API contracts. The code is bare of documentation that would help understand the original intent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns like loops, conditionals, pointer traversal are recognizable. However, no design patterns or algorithms are explicitly identified or named. The original source had clear idioms (linked list traversal, binary tree recursion) but these aren't highlighted.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The VEX IR artifacts `[D] unsupported_<class...>` do indicate decompilation problems, but they're presented as code rather than warnings. No flagging of suspicious code, potential undefined behavior, or indirect call resolution failures.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of error conditions or invariants. The original source had clear contracts (e.g., "requires: ptr != NULL") that are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible and traceable. Global variable usage is somewhat clear through extern declarations. However, no documentation of call graphs, callback relationships, or usage contexts. The relationship between test functions and tested functions is not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are in a single large file. Some logical grouping exists (test functions together, data type functions together). However, no clear separation into modules or logical units matching the original source structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Many `extern` declarations present for standard library functions. Would require moderate patching to compile (stub functions for missing symbols). No clear dependency documentation. The code structure suggests it could compile with appropriate stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic `a0`, `a1`, `a2`; local variables are `v0`, `v1`, `v2` - completely obscuring semantic purpose
+- **VEX IR artifacts**: Float/double functions (process_float, process_double, process_ld) are flooded with `[D] unsupported_<class 'pyvex.expr.GetI'>()` making them unreadable
+- **Type precision loss**: Most types degraded to `unsigned int`; char, short, long, long long distinctions lost; const/volatile qualifiers missing
+- **No comments**: Zero useful documentation explaining algorithms, contracts, or intent
+- **Struct field names**: Generic `field_0`, `field_1` instead of meaningful names like `x`, `y`, `data`, `next`
+
+### Best Quality Aspect: Function Decomposition (7/10)
+- Functions are appropriately separated with reasonable granularity
+- Test functions correctly call their respective test targets
+- Overall function boundaries match the original source well
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Nearly all meaningful variable names are lost
+- Parameters should be named based on usage patterns (e.g., `a0` used as character → `c`, `a0` used as count → `n`)
+- Local variables should infer names from their roles (accumulators, indices, temporaries)
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Analyze how parameters and locals are used to suggest semantically meaningful names (e.g., `a0` compared to 'A' → likely `c` for char; `v1 += *ptr` → likely `sum`)
+2. **Filter VEX IR artifacts**: The `[D] unsupported_<class...>` statements should be replaced with clear comments or placeholder functions, not embedded in the code as executable statements
+3. **Recover struct field names**: Use type information and field access patterns to name fields meaningfully (e.g., `a0[1]` + `a0[2]` in Point3D context → `y`, `z` instead of `field_1`, `field_2`)

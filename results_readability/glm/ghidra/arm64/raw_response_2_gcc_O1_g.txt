@@ -1,0 +1,128 @@
+### LEVEL 1: LEXICAL CLARITY (30% weight)
+
+#### 1. Variable Naming Quality (10% weight)
+**Score: 6/10**
+**Justification:** While function parameters like `x`, `arr`, and `n` are preserved correctly (likely due to debug symbols), local variables are frequently renamed to generic types like `iVar1`, `lVar2`, or `uVar1`, obscuring their original semantic meaning (e.g., `sum` becomes `iVar1` in `array_1d_stack`).
+
+#### 2. Function Naming Quality (10% weight)
+**Score: 10/10**
+**Justification:** All function names match the original source exactly (e.g., `double_value`, `process_char`, `struct_bitfields`), providing perfect semantic context for the code's purpose.
+
+#### 3. Literal Clarity (5% weight)
+**Score: 7/10**
+**Justification:** Most literals are clear, but some are transformed into less readable forms, such as the range check in `process_char` using `(byte)(c + 0xbfU) < 0x1a` instead of `c >= 'A' && c <= 'Z'`, and ASCII values appearing as hex (e.g., `0x61` for 'a') in test functions.
+
+#### 4. Noise Reduction (5% weight)
+**Score: 7/10**
+**Justification:** The code is generally clean, but contains "Unresolved local var" comments (e.g., in `volatile_access`) and warnings like "Unknown calling convention," which add minor noise without significantly impeding understanding.
+
+---
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+#### 5. Control Flow Naturalness (8% weight)
+**Score: 8/10**
+**Justification:** The decompiler consistently converts `for` loops into `do-while` loops (e.g., in `array_1d_stack`), which is a common Ghidra pattern. While slightly less idiomatic than the original `for` loops, the logic remains easy to follow.
+
+#### 6. Function Decomposition (7% weight)
+**Score: 10/10**
+**Justification:** Functions map 1:1 with the source code; there is no inlining or outlining, maintaining the original modular structure perfectly.
+
+#### 7. Code Linearization (5% weight)
+**Score: 9/10**
+**Justification:** The code reads linearly from top to bottom with minimal forward jumps or complex nesting, making execution paths easy to trace.
+
+#### 8. Redundancy Elimination (5% weight)
+**Score: 10/10**
+**Justification:** There is no loop unrolling or dead code present; the code is concise and matches the expected structure for unoptimized (`-O0`) compilation.
+
+---
+
+### LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+#### 9. Type Precision (8% weight)
+**Score: 10/10**
+**Justification:** Types are recovered with high precision, correctly distinguishing between `int`, `short`, `long`, `long long`, `float`, `double`, and `long double`, as well as `_Bool` and pointer types.
+
+#### 10. Composite Type Recovery (7% weight)
+**Score: 10/10**
+**Justification:** Structures, unions, and enums are recovered perfectly with correct names and field names (e.g., `Point3D`, `UnionData`, `State`), preserving the original data layout definitions.
+
+#### 11. Type Safety (5% weight)
+**Score: 9/10**
+**Justification:** Pointer arithmetic and casts are handled correctly, though some expressions like `piVar3 = piVar2 + 0xb` in `array_2d_stack` appear complex due to pointer type conversions, they are technically safe and accurate to the compiled logic.
+
+---
+
+### LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+#### 12. Comment Quality & Presence (5% weight)
+**Score: 3/10**
+**Justification:** Comments are limited to decompiler warnings (e.g., "WARNING: Removing unreachable block") and technical notes about unresolved variables; there are no comments explaining the logic or purpose of the functions.
+
+#### 13. Idiom Recognition (3% weight)
+**Score: 7/10**
+**Justification:** Common idioms like pointer difference calculation (`ptr_diff` using `>> 2`) and string traversal are recognizable in the code structure, though they are not explicitly labeled as such.
+
+#### 14. Anomaly Indication (3% weight)
+**Score: 6/10**
+**Justification:** The decompiler flags technical issues like "Unknown calling convention" and "Unresolved local var," but does not highlight semantic anomalies, such as the complex pointer arithmetic in `array_2d_stack` which might confuse a reader.
+
+#### 15. Assertion & Contract Recovery (4% weight)
+**Score: 2/10**
+**Justification:** There is no recovery of preconditions, postconditions, or invariants (e.g., no indication that `arr` should not be `NULL`).
+
+---
+
+### LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+#### 16. Cross-Reference Clarity (4% weight)
+**Score: 9/10**
+**Justification:** Function calls are clear and use the correct names (e.g., `main` calls `test_data_types_l1`), making the call graph easy to understand.
+
+#### 17. Module Organization (3% weight)
+**Score: 8/10**
+**Justification:** Functions are organized logically, generally following the source order, and related functions are grouped together in the output.
+
+#### 18. Build System Compatibility (3% weight)
+**Score: 6/10**
+**Justification:** The code relies on specific compiler builtins (e.g., `__printf_chk`, `___stack_chk_guard`) and types like `undefined1` for soft-float operations, requiring specific headers and environment to compile successfully.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (6 + 10 + 7 + 7) / 4 = 7.5
+L2_avg: (8 + 10 + 9 + 10) / 4 = 9.25
+L3_avg: (10 + 10 + 9) / 3 = 9.67
+L4_avg: (3 + 7 + 6 + 2) / 4 = 4.5
+L5_avg: (9 + 8 + 6) / 3 = 7.67
+
+Overall = (7.5 × 0.30) + (9.25 × 0.25) + (9.67 × 0.20) + 
+          (4.5 × 0.15) + (7.67 × 0.10)
+Overall = 2.25 + 2.3125 + 1.934 + 0.675 + 0.767
+Overall = 7.94
+```
+
+### Overall Readability Score: **7.9/10**
+
+### Critical Defects
+- **Variable Naming**: Local variables are renamed to generic types (`iVar1`, `lVar2`), losing semantic context (e.g., `sum` -> `iVar1`).
+- **Literal Clarity**: Range checks are obfuscated (e.g., `c + 0xbfU < 0x1a` instead of `c >= 'A' && c <= 'Z'`).
+- **Semantic Comments**: Lack of high-level comments explaining function logic or algorithms.
+- **Pointer Arithmetic**: Complex pointer math in `array_2d_stack` (`piVar2 + 0xb`) is harder to read than the original array indexing.
+- **Contract Recovery**: No documentation of preconditions or null checks.
+
+### Best Quality Aspect
+- **Composite Type Recovery (10/10)**: Structs, unions, and enums are recovered perfectly with accurate field names and types, making data structures trivial to understand.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (3/10)**: The output lacks semantic comments entirely, relying only on technical warnings, which significantly hinders quick comprehension of complex logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Improve Local Variable Naming**: Utilize debug information more aggressively to recover original local variable names instead of defaulting to `iVar1`.
+2. **Simplify Range Checks**: Detect and simplify compiler-optimized range checks (like the `c + 0xbfU` pattern) back into standard comparison operators for better readability.
+3. **Add Semantic Annotations**: Generate comments summarizing function behavior or detected algorithms (e.g., "Calculates the sum of diagonal elements") to bridge the semantic gap.

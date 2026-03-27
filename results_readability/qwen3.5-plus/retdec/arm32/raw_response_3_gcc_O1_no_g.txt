@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `mem`) with no semantic meaning. Original source had meaningful names like `arr`, `local`, `head`, `current`, `sum` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved (`local_array`, `heap_basic`, `vla_stack`), but some degraded (`function_ffff0fa0`, `call_global_callback` lost parameter semantics).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals stored as hex-encoded globals (`g1 = "=== \xe6\xb5\x8b..."`), magic numbers throughout (`4 * a1`, `v1 + 4`, `v1 + 8`) with no named constants recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks present (`__stack_chk_fail()`), unreachable code after failures (`return &g15;`), verbose pointer arithmetic patterns that obscure intent.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: For loops converted to while loops with manual pointer arithmetic (`v2 += 4; *(int32_t *)v2 = v3;`), `linked_list_heap` uses goto labels (`lab_0x10d58`) instead of structured loops.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but `linked_list_heap` has complex goto structure; helper `create_tree_node` preserved but `local_vars` missing from output entirely.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Many forward jumps and goto statements disrupt flow; `linked_list_heap` has label-based branching; stack pointer manipulation (`bp-56`, `bp-2061`) breaks linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Dead code after `__stack_chk_fail()` returns, duplicate pointer arithmetic patterns in loops, but no severe loop unrolling artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `int32_t` or `int32_t *`; lost `size_t`, `char *`, `void *` distinctions; original had proper types like `Node *`, `TreeNode *`, `size_t`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct types (Point, Node, TreeNode) completely lost; all struct access through pointer arithmetic (`*(int32_t *)(v1 + 4)`); no struct definitions in output.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts (`(int32_t)mem`, `(char *)v2`), pointer arithmetic without type safety, function pointer types degraded to `int32_t` (`g13 = 0x1077c`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code; original had extensive comments explaining each test case (MEM-L1-01, HEAP-L2-01, etc.); no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: malloc/free patterns not identified as memory management, linked list operations not recognized, tree traversal not labeled, memory operation patterns unnamed.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: `dangling_pointer` undefined behavior not flagged, `memory_leak` not identified, no warnings about potential issues; code presents incorrect information confidently.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Some null checks present but not documented as contracts; no precondition documentation (e.g., "requires: ptr != NULL"); original had implicit contracts through comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships undocumented; global variable usage unclear (`g1`, `g2`, `g11`); callback relationships lost (`global_func_ptr` → `g13`).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping; original had clear section headers (3.1 Stack, 3.2 Heap, 3.3 Static, 3.4 MemOp); static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes present but some incorrect; references undefined globals (`g15`); `extern_function` stub added but external dependencies not documented; requires patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+6+5+6)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.533
+Level 4 (Semantic):    (2+3+2+3)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.11/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on usage (e.g., `array_ptr`, `index`, `sum`)
+- **Struct types completely lost** - Node, TreeNode, Point accessed via raw pointer arithmetic (`*(int32_t *)(v1 + 4)`)
+- **Control flow uses goto** in `linked_list_heap` instead of structured while/for loops
+- **String literals hex-encoded** as globals (`g1 = "=== \xe6\xb5\x8b..."`) instead of readable strings
+- **No comments** despite original having extensive documentation for each test case
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`local_array`, `heap_basic`, `vla_stack`), making it possible to identify function purposes despite other degradations.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union definitions; all composite types reduced to pointer arithmetic, making data structure understanding nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from access patterns** - Detect repeated offset patterns (`+4`, `+8`) and propose struct layouts with field names based on usage context.
+2. **Restore loop constructs from backward jumps** - Convert while loops with manual pointer increments back to for loops when iteration patterns are detected.
+3. **Add semantic annotations for memory operations** - Flag malloc/free pairs, identify memory leaks, and warn about dangling pointer patterns with confidence indicators.

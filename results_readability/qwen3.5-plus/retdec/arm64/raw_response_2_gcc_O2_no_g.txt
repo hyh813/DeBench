@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, etc.) with zero semantic meaning. For example, `process_char` uses `v1`, `v2`, `v3` instead of `input_char`, `ascii_value`, `result`. No variable indicates its purpose or type.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), which is good. However, helper functions use generic names (`function_6f0`, `function_710`) and some are misnamed (`binary_tree` calls `binary_tree_sum` incorrectly).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation (e.g., `0x7ffe`, `0x8000000000001`, `0x4000000000000`). String literals are stored as hex-encoded globals (`g6`, `g7`) instead of readable strings. No constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from compiler artifacts: `__asm_ubfx`, `__asm_mrs`, `__asm_bfi` calls throughout. Excessive type casts (`& 0xffffffff`, `>> 32`). Frame pointer manipulation and stack check calls (`__stack_chk_fail`) pollute logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Catastrophic degradation. `binary_tree_sum` (originally 6 lines recursive) becomes 500+ lines of goto-labeled spaghetti with 80+ temporary variables. Loops converted to while-with-goto patterns instead of for/while constructs.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Function boundaries preserved but internal structure destroyed. `__addtf3` and `__multf3` are 1000+ line monoliths for simple float operations. Test functions don't call actual functions—they just print hardcoded expected values.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Extreme non-linearity with forward jumps into middle of logic blocks. `binary_tree_sum` has 30+ labeled sections (`lab_0x1488`, `lab_0x1590`, etc.) that jump back and forth, making top-to-bottom reading impossible.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Massive redundancy from failed optimization reversal. Same bit manipulation patterns repeated dozens of times. Variable assignments like `v25 = v6; v15 = *(int64_t *)(v25 + 8);` repeated identically in multiple branches.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Complete type erasure. Everything is `int64_t` regardless of original type (char, short, float, double, pointers). `process_float` returns `int64_t` instead of `float`. Function parameters all lost—everything is `void` or `int64_t`.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Zero struct/union recovery. All struct access is raw pointer arithmetic (`*(int32_t *)(v2 + 8)`). No `Point3D`, `Rect`, `Widget`, `Node`, or `Graph` types reconstructed. Bitfields completely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout. Pointer arithmetic without bounds checking. Type-confused operations (treating floats as integers). No const-correctness preserved. Function pointers reduced to `int64_t`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no parameter documentation, no decompilation confidence indicators. Original source had extensive comments; all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list traversal, tree recursion, and graph traversal all reduced to opaque pointer chasing. No identification of common algorithms or data structure patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly warnings despite obvious issues. Function parameters missing but not flagged. Type mismatches not indicated. Stack canary checks present but not explained as security artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks exist but aren't labeled as safety assertions. Error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call graph partially visible through calls, but relationships obscured. Global variables (`g1`-`g12`) have no semantic names. Callback relationships (function pointers) completely lost.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped somewhat logically (data types, arrays, pointers, composites), but all in single file. No header file separation. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes standard headers and compiles (per metadata), but requires stub implementations for `__asm_*` functions. External dependencies (`__printf_chk`, `__libc_start_main`) declared but platform-specific.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+7+3+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):   (2+4+3+2)/4 = 2.75 × 0.25 = 0.688
+Level 3 (Type System):  (2+1+3)/3   = 2.00 × 0.20 = 0.400
+Level 4 (Semantic):     (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):   (4+5+6)/3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 2.94/10
+```
+
+**Overall Readability Score:** 2.9/10
+
+### Critical Defects:
+- **All function parameters lost** - `process_char(void)` instead of `process_char(char c)`, making functions unusable
+- **Complete type erasure** - Everything is `int64_t`; float/double/char/short distinctions destroyed
+- **Zero struct/union recovery** - All composite types accessed via raw pointer arithmetic offsets
+- **Catastrophic control flow degradation** - `binary_tree_sum` expanded from 6 lines to 500+ lines of goto spaghetti
+- **Test functions don't call actual code** - They print hardcoded expected values instead of testing functionality
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), providing some semantic anchor points despite other failures.
+
+### Most Needs Improvement: **Composite Type Recovery (1/10)**
+- Complete failure to recover any struct, union, or enum definitions; all composite type access reduced to opaque pointer arithmetic with magic offsets.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameter types from calling conventions** - Analyze register/stack usage at call sites to reconstruct parameter lists instead of defaulting to `void`
+2. **Implement type propagation analysis** - Track type information through operations (e.g., float arithmetic should indicate float types, not int64)
+3. **Add struct pattern recognition** - Detect repeated offset patterns (`+8`, `+16`, `+20`) across functions to reconstruct struct layouts with field names

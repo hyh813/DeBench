@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `a0`, `a1`, `a2` for parameters and `v0`, `v1`, `v2` for locals. The original had meaningful names like `temp1`, `temp2`, `sum`, `count`, `i`, `j` which are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions retain original names (`sequential_ops`, `single_if`, `loop_for_fixed`, `recursion_factorial`), but many use generic addresses like `sub_4004dc`, `sub_400594`, or auto-generated names like `$a.14`, `$a.16`. The test functions are properly named.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently for -1 unsigned representation. Some constants like `1001` in `infinite_loop` lack explanation. The `armg_calculate_condition` helper is a decompiler artifact rather than a meaningful constant.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise from the `armg_calculate_condition` function appearing repeatedly. Some redundant goto patterns and dead code branches. The decompilation includes many helper functions that clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most loops are properly recovered (for, while, do-while), but some use goto labels like `LABEL_400c6c` instead of structured constructs. The `armg_calculate_condition` creates confusing conditional patterns. Some control flow is natural but much is fragmented.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and cohesive. The `armg_calculate_condition` is appropriately extracted as a helper. Main functions like `sequential_ops` are single-purpose. Minor issues with some functions being slightly large.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Some goto statements create non-linear flow. The `switch_fallthrough` function has confusing goto-based structure. Most code flows naturally.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant condition checks in the output. The `armg_calculate_condition` is called multiple times with same arguments. Some dead code branches exist. Loop patterns show some redundancy from optimization.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All parameters and return types are `unsigned int` throughout. Original used `int` for most functions and `volatile int*` for pointer parameters. No distinction between signed/unsigned in most cases. Function pointer types are not properly typed.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery visible. Arrays from source like `int arr[] = {10, 20, 30, 40, 50}` and `int matrix[3][4]` are completely lost - the `loop_break` function uses a switch on the target value directly instead of array access.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe pointer arithmetic present. The `process_with_callback` uses `unsigned int*` for what was `int*` and `int (*cb)(int)`. No bounds checking on array accesses. Mixed pointer types in function calls.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments in the decompiled output whatsoever. The original source had extensive comments explaining each function's purpose, test scenarios, and difficulty ratings. This complete absence makes understanding non-trivial logic impossible.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like switch-case and loops are recognized. However, the `duffs_device` is completely mangled - returns -1 for most cases. The `computed_goto` function is empty. Design patterns not explicitly identified or named.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of anomalies or uncertainties. The `computed_goto` function is completely empty. The `duffs_device` has wrong logic but no warning. No flags for suspicious code or unresolvable indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No pre/postconditions documented. No invariant recognition. No error condition documentation. The original had explicit test cases with expected outputs that are completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some external functions marked with `extern` keyword. But no clear documentation of function call relationships, global variable usage, or callback connections. The `call_func_ptr` uses goto to function pointer which is confusing.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are roughly grouped by type (control flow L1, L2, L3). But no clear logical separation. Static functions not properly scoped. No header/API documentation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has multiple compilation issues. Missing function definitions for `armg_calculate_condition`. The `computed_goto` function is empty. Many `extern` declarations needed. Not standalone compilation ready.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable naming uses only generic names (`a0`, `a1`, `v0`, `v1`) losing all semantic meaning from source
+- No comments whatsoever - original had 900+ lines of explanatory comments
+- Type precision severely degraded - all `int` became `unsigned int`, pointers lost
+- Composite types completely lost - arrays and structs not recovered
+- `duffs_device` function completely mangled with wrong logic
+- `computed_goto` function is empty/placeholder
+- No anomaly indication for suspicious or unresolvable code
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Functions are reasonably sized and cohesive, with helper functions appropriately extracted. Main functions maintain single responsibility.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+The complete absence of comments makes understanding any non-trivial logic impossible. The original had extensive documentation explaining each function's purpose, test scenarios, and difficulty ratings that is completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `temp1 = a + b; temp2 = temp1 * 2`) to suggest meaningful names like `sum`, `doubled`
+2. **Recover comments from debug symbols**: The binary was compiled with `-g` debug flag; extract DWARF information to recover original variable and function names
+3. **Improve type precision**: Use debug symbols to recover signed/unsigned distinctions and proper pointer types rather than defaulting to `unsigned int`

@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use mechanical names (`v2`, `v3`, `i`, `result`). The original source used meaningful names like `size`, `x`, `y`, `arr`, `n` - all lost in decompilation. This is the worst-scoring dimension.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions like `test_preprocessing_features`, `test_asm_features`, and parameter functions like `param_macro_constants` are correctly preserved. However, initialization functions use generic names (`sub_1020`, `sub_1030`, etc.). Mixed result - main logic functions named well, infrastructure functions poorly.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are clear (e.g., `1024` in size comparison, `64` return value), but magic numbers like `57072` (0xDEF0) and `0x28` (stack canary offset) lack explanation. The decompiler correctly computed `57122` from `0xDF22` but didn't explain the origin.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some noise from `LODWORD()` casts and `__readfsqword(0x28u)` for stack canary, but no excessive register spilling or debug instrumentation. Manageable level of noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At `-O0`, control flow is nearly perfect. Loops use `for` constructs naturally, conditionals are clear `if` statements. The `param_asm_clobber` shows proper loop structure. No spurious goto usage. Excellent recovery given no optimization.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-50 lines each). The original's parameter/call function pairs are preserved. Good separation between `param_*` functions and their `call_*` wrappers. No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately (e.g., in `param_dynamic_code`). No deep nesting or confusing forward jumps. Good linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. No obvious common subexpression duplication. At `-O0`, minimal optimization artifacts expected and none significant found. Clean code.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Integer types are mostly correct (`int`, `unsigned int`). Pointers properly typed as `int*`, `char*`. However, `size_t` is represented as `__int64` without explanation. Minor type erosion but generally usable.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. The original uses `int arr[]` and `int *arr` but decompilation shows raw pointer arithmetic (`a1 + 4 * i`). The `__m128i` types for SIMD are correctly recovered, but no custom structs from the source.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe. No obvious unsafe casts. Pointer arithmetic is explicit but correct. Minor issues with `volatile` not always specified for atomic operations. Overall acceptable.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only a header comment indicating decompilation tool. No useful comments explaining algorithm intent, macro expansion results, or inline assembly behavior. The original had extensive comments about preprocessing - all lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized (atomic operations via `_InterlockedExchangeAdd`, SIMD via intrinsics), but no explicit naming. The preprocessing macro expansions are not identified as such - they're just shown as computed values.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler marks "positive sp value has been detected" warning and notes "FAILED to decompile" for 9 library functions. However, it doesn't flag the inline assembly patterns or the dynamic code generation in `param_dynamic_code` as unusual.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original had clear expectations (e.g., "期望: 64") which are not recovered. No contract information.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are implicit in the code structure but not documented. No indication of which functions call `param_*` functions or global variable usage. The `global_var` is referenced but not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - preprocessing test functions together, asm test functions together. Static functions properly scoped. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code compiles (marked as "Compilation Result: Yes"). External dependencies (`mmap`, `munmap`, `sysconf`, etc.) are properly declared. Minor issues with some library functions failing to decompile but not blocking compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 6 + 7) / 4 = 5.25
+L2_avg = (8 + 8 + 8 + 8) / 4 = 8.00
+L3_avg = (7 + 3 + 7) / 3 = 5.67
+L4_avg = (3 + 4 + 5 + 2) / 4 = 3.50
+L5_avg = (4 + 7 + 8) / 3 = 6.33
+
+Overall = (5.25 × 0.30) + (8.00 × 0.25) + (5.67 × 0.20) + 
+          (3.50 × 0.15) + (6.33 × 0.10)
+        = 1.575 + 2.0 + 1.134 + 0.525 + 0.633
+        = 5.867 ≈ 5.87/10
+```
+
+**Overall Readability Score:** 5.87/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic `a1`, `a2`, `a3` instead of semantic names like `size`, `x`, `y`, `arr`
+- **No struct recovery**: Composite types like `int arr[]` are lost, shown only as pointer arithmetic
+- **Missing comments**: Original's extensive preprocessing explanations completely absent
+- **No contract recovery**: Expected values ("期望: 64") and preconditions not documented
+- **Anomalies unflagged**: Dynamic code generation (`param_dynamic_code`) and inline assembly not marked as unusual
+
+### Best Quality Aspect: Structural Intelligibility (L2)  
+**Why?** At `-O0` optimization, control flow is nearly perfectly preserved. Loops, conditionals, and function decomposition match the original source closely. This is where the decompiler performs best.
+
+### Most Needs Improvement: Semantic Transparency (L4)  
+**Why?** Comments, idiom recognition, and contract recovery are severely lacking. The decompiler provides no explanation of what the code does or flags unusual patterns. Users must infer everything from raw code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: `a1` used in `if (a1 > 1024)` should suggest `size` or `threshold`
+2. **Recover struct types from pointer arithmetic**: `a1 + 4 * i` accessing `int` arrays should suggest `int* arr` with proper type
+3. **Add semantic comments**: Explain preprocessing results (e.g., "macro expanded: MAX_SIZE → 1024"), flag inline assembly blocks, document expected values from constant propagation

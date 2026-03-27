@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `idx`) with no semantic meaning. Original source used descriptive names like `count`, `sum`, `args`, `large`, `ptr` which are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions retained original names (`cdecl_func`, `varargs_func`, `func_no_args`), but numerous wrapper functions use generic `sub_401XXX` naming. Some function purposes are clear from names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive without explanation: `4294967295` (uint32 max mask), `206158430216` in varargs_func, `8`, `16`, `4` in pointer arithmetic. No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive wrapper functions that just call other functions (`sub_401159`, `sub_401164`). Register spilling artifacts visible as excessive local variable declarations (`v0` through `v36` in varargs_func).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but complex functions like `varargs_func` use confusing do-while loops with manual pointer arithmetic instead of clean for-loops.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Excessive wrapper functions fragment code unnecessarily. Critical issue: test functions are constant-folded (`call_cdecl()` returns 15 directly), losing actual logic entirely.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but some functions have forward jumps that disrupt flow. Most simple functions are reasonably linear.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Many redundant wrapper functions. Variable declarations are excessive. Some constant folding creates redundancy between actual functions and their callers.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Specific types degraded to generic `unsigned long long`. Original `int`, `char*`, `double`, `long long` lost. Pointer types often become `unsigned long`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs like `LargeStruct` and `SmallStruct` not recovered—become generic `struct_0` with `field_0`. Array types become pointer arithmetic. Critical loss of semantic structure.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts visible throughout. Pointer arithmetic without proper typing. Function pointer types degraded to `unsigned long long *`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments despite original having extensive documentation for each function. No decompiler confidence indicators or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. Variadic function pattern not properly identified. No algorithm naming or design pattern detection.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`), but most issues unflagged. Constant folding not indicated as optimization artifact.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition documentation or parameter validation hints.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced without explanation. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in address order, not logical groups. No header file structure. Related functions not grouped together.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies unresolved. Some functions reference undefined globals. Would require significant work to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (2+5+3+4)/4 = 3.50
+Level 2 Average: (6+3+6+5)/4 = 5.00
+Level 3 Average: (4+3+4)/3 = 3.67
+Level 4 Average: (2+3+4+2)/4 = 2.75
+Level 5 Average: (5+4+3)/3 = 4.00
+
+Overall = (3.50×0.30) + (5.00×0.25) + (3.67×0.20) + (2.75×0.15) + (4.00×0.10)
+        = 1.05 + 1.25 + 0.734 + 0.4125 + 0.40
+        = 3.85/10
+```
+
+**Overall Readability Score: 3.8/10**
+
+### Critical Defects:
+- **Constant folding destroyed test logic**: Functions like `call_cdecl()` return hardcoded `15` instead of calling `cdecl_func(5, 10)`, losing all actual computation
+- **Variable names completely generic**: `v0`, `v1`, `a0` instead of `count`, `sum`, `packet_size` based on usage patterns
+- **Struct types lost**: `LargeStruct` and `SmallStruct` became `struct_0` with `field_0`, losing all semantic meaning
+- **No variadic handling**: `varargs_func` shows confusing register spilling instead of clean `va_list` pattern
+- **Excessive wrapper functions**: `sub_401XXX` functions that just call the real function add noise without value
+
+### Best Quality Aspect:
+- **Control Flow Naturalness (6/10)** - Simple functions maintain readable top-to-bottom flow with recognizable loop structures
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero comments despite original having extensive documentation; no decompiler confidence indicators
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve function call semantics**: Avoid aggressive constant folding that destroys test logic; keep actual function calls visible even when computable at compile-time
+2. **Infer variable names from usage patterns**: Variables used in loop counters should be named `i`, `idx`, `count`; pointer arithmetic variables should indicate buffer/size semantics
+3. **Recover struct types from memory access patterns**: Detect repeated field access patterns (`[bp+0x0]`, `[bp+0x4]`) and suggest named struct fields instead of `field_0`, `field_1`

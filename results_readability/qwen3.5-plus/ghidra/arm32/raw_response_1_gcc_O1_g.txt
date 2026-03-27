@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generically named (`iVar1`, `iVar2`, `uVar3`, `piVar2`) obscuring semantic purpose; original source had meaningful names like `temp1`, `sum`, `count`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names perfectly preserved from source (`sequential_ops`, `recursion_factorial`, `loop_for_fixed`); action-oriented and semantically accurate.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers converted to hex (`0x14`=20, `0x3e9`=1001, `0x65`=100) obscuring meaning; original decimal values were self-documenting.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple "WARNING: Removing unreachable block" comments and runtime calls (`__printf_chk`, `__aeabi_idiv`) add noise; DWARF debug info comments clutter function bodies.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most structures recovered well (if-else, switch, loops); `switch_fallthrough` and `duffs_device` use goto labels instead of proper fall-through semantics.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly; helper functions (`double_value`, `op_add`) remain separate; no inappropriate inlining or fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom; `duffs_device` has complex goto-based structure with 8 labeled cases disrupting linear flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `__aeabi_idiv` has 35 boolean variables (`bVar1`-`bVar35`) showing massive redundancy; test functions have hardcoded expected values duplicating logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic `int` types used instead of specific types; function pointers use helpful `_func_int_int` typedef but pointer arithmetic loses type information.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered well (`matrix[3][4]`, `arr[5]`, `funcs[3]`); no complex structs in this codebase to fully evaluate struct recovery capabilities.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Implicit casts in pointer arithmetic; function pointer calls use generic types but no major type confusion or unsafe operations visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Auto-generated "Unresolved local var" and "WARNING" comments present; no algorithm explanations or API contracts documented.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Loop and switch patterns recovered correctly; recursion preserved; no explicit pattern naming (e.g., "State Machine" not identified in `state_machine`).
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system ("Could not recover jumptable", "Treating indirect jump as call"); unreachable blocks flagged appropriately.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation; error conditions not documented; `duffs_device` requires n>0 but this isn't noted.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear through preserved names; callback relationships visible through function pointer types; no call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file; no logical grouping by control flow level (L1/L2/L3); static functions properly identified.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Requires stubs for runtime functions (`__printf_chk`, `__aeabi_idiv`, `__longjmp_chk`); some functions marked "Subroutine does not return".
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+5+6)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00  × 0.25 = 1.75
+Level 3 (Type):        (6+7+7)/3 = 6.67    × 0.20 = 1.33
+Level 4 (Semantic):    (5+6+7+3)/4 = 5.25  × 0.15 = 0.79
+Level 5 (Contextual):  (6+5+5)/3 = 5.33    × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  6.20/10
+```
+
+### Overall Readability Score: **6.2/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`iVar1`, `iVar2`) losing all semantic meaning from original `temp1`, `sum`, `count`
+- **Hex literals obscure values** (`0x3e9` instead of `1001`, `0x65` instead of `100`)
+- **`duffs_device` decompilation uses goto labels** instead of recognizing Duff's Device pattern
+- **No contract documentation** for functions with preconditions (e.g., `duffs_device` requires n>0)
+- **`__aeabi_idiv` has 35 boolean variables** showing massive redundancy from compiler runtime
+
+### Best Quality Aspect: **Function Naming Quality (9/10)**
+- Function names perfectly preserved from source code, making identification and navigation trivial.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (3/10)**
+- Zero precondition/postcondition documentation despite many functions having clear requirements.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from DWARF debug info** - The metadata shows DWARF info is available (`DW_OP_breg0`, `DW_OP_plus`) but not being used to restore original variable names.
+2. **Convert hex literals to decimal when semantically meaningful** - Values like `0x14`, `0x3e9` should display as `20`, `1001` for readability.
+3. **Recognize and document Duff's Device pattern** - The `duffs_device` function's switch-with-fallthrough structure should be identified and commented as a known optimization pattern.

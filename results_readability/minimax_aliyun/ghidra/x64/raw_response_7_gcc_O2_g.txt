@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+The original source code contains multiple obfuscation techniques (fake branches, opaque predicates, instruction substitution) compiled with `-O0 -g`. However, the decompiled binary appears to have been compiled with `-O2` (as indicated by the path "7_gcc_O2_g"), resulting in significant optimization differences. The decompiled output shows 797 LOC vs 464 original LOC, with many functions having generic variable names and auto-generated warnings.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Throughout the decompiled code, variables use generic names like `iVar1`, `iVar2`, `pbVar2`, `pbVar3`, `uVar4`, `lVar1`, `__s`, `sVar4`. For `param_fake_branch` specifically, the local variables `result` and `str` from the original source are completely eliminated due to optimization, but in other functions like `param_opaque_predicate`, the variables `p1`, `p2`, `p3`, `a`, `b`, `temp` are marked as "Unresolved local var" with generic names.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Most function names match the original source exactly: `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `div_zero_handler`, `segv_handler`. Only `FUN_00101020` uses a generic name. The function naming is excellent overall.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation: `0x5A` (encryption key), `0x14` (20 decimal), `0x23` (35 decimal), `0xDEADBEEF` (original source) is completely lost. Some constants like `0x2a` (42) are used correctly but unexplained. The decompiler doesn't recover the named constant `0xDEADBEEF` from the fake branch.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple "WARNING" comments clutter the output: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Subroutine does not return", "WARNING: Subroutine does not return". These auto-generated warnings are numerous but don't completely obscure the code logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper loops and conditionals. In `param_opaque_predicate`, the GCD computation loop is correctly rendered as a do-while. However, `param_fake_branch` lost all control flow structure due to optimization - the fake branches were eliminated entirely, showing only `return x;`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably decomposed. The original source's `param_fake_branch` (14 lines) became a 1-liner in decompilation, while `param_opaque_predicate` retained its structure (18 lines). Static helper functions like `decrypt_string` are properly separated. No severe fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in functions like `param_tail_call_optimized`. No severe forward jumps or goto-like patterns that disrupt flow significantly.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or redundant expressions observed. The decompiler properly eliminated the unreachable code from fake branches. Loop unrolling in `param_vectorized_loop` is present but the logic remains clear.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct: `int x`, `int *p`, `char *buffer`, `size_t len`. However, some type precision is lost: `unsigned int` in original becomes `(uint)` in decompilation, and some pointer types are generic. The parameter types generally match the original source.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No struct/union types were used in the original source for these functions, so there's nothing to recover. The decompiled code uses primitive types appropriately. For the signal handlers and jmp_buf usage, the types are correctly inferred.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe code. No obvious unsafe casts between incompatible types. The use of `(uint)x >> 1` for division by 2 is correct. Some minor issues like `(int)(10 / (long)x)` show unnecessary casts but don't cause safety concerns.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are predominantly auto-generated warnings: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "Unresolved local var: int temp@[???]". No algorithm explanations or intent documentation. The original source's comments explaining fake branches ("永假条件") are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: The decompiler does not recognize any obfuscation idioms. The "fake branch" (always-false condition) pattern is completely eliminated without comment. The opaque predicate pattern in `param_opaque_predicate` is partially preserved but not labeled as such. No recognition of instruction substitution patterns.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies are flagged: "Unresolved local var" for several variables, "WARNING: Subroutine does not return" for longjmp calls. However, the decompiler doesn't indicate that the fake branch logic was optimized away or that the binary may have been compiled at different optimization level than claimed.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source's implicit contracts (e.g., "x can be any int") are not recovered. No error handling contracts for the signal-based exception handling are documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are visible: `call_fake_branch` calls `param_fake_branch`, `test_obf_opt_edge` calls all test functions. However, the caller-callee relationships in `param_opaque_predicate` showing the complex predicate computation aren't documented. Global variables like `jmp_buffer`, `div_zero_caught` are properly identified as extern.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically: test functions, handler functions, implementation functions. Static functions like `decrypt_string` are properly scoped. The organization generally matches the original file structure with functions appearing in a reasonable order.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The decompiled code should compile with minimal changes. External dependencies (libc functions like `signal`, `setjmp`, `malloc`, `strlen`, `strncpy`) are properly declared. The code uses standard library functions correctly. Some minor adjustments might be needed for platform-specific headers.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Calculation:**
+- L1_avg = (4+9+5+6)/4 = 6.0
+- L2_avg = (7+7+8+8)/4 = 7.5
+- L3_avg = (7+7+8)/3 = 7.3
+- L4_avg = (4+3+6+3)/4 = 4.0
+- L5_avg = (6+7+8)/3 = 7.0
+
+Overall = (6.0 × 0.30) + (7.5 × 0.25) + (7.3 × 0.20) + (4.0 × 0.15) + (7.0 × 0.10) = **6.0**
+
+---
+
+### Critical Defects:
+- **Fake branch obfuscation completely lost**: `param_fake_branch` shows only `return x;` - the original fake branches with `0xDEADBEEF` are eliminated without any indication
+- **Generic variable names throughout**: `iVar1`, `iVar2`, `pbVar2`, `uVar4`, `lVar1` obscure variable purposes
+- **No idiom recognition**: Obfuscation patterns (fake branches, opaque predicates, instruction substitution) not identified or labeled
+- **Magic numbers unexplained**: `0x5A`, `0x14`, `0x23` appear without context or named constants
+- **Optimization level mismatch**: Binary appears compiled with -O2 (not -O0 as claimed), causing structural differences
+
+### Best Quality Aspect: Function Naming (9/10)
+- Nearly all function names match the original source exactly, making it easy to locate specific functions in the decompiled output
+
+### Most Needs Improvement: Idiom Recognition (3/10)
+- The decompiler fails to recognize and label obfuscation patterns, making it difficult to understand that the simplified code represents intentional obfuscation techniques from the original source
+
+### Top 3 Recommendations:
+1. **Add idiom recognition**: Detect and label patterns like fake branches, opaque predicates, and instruction substitution with explanatory comments
+2. **Infer variable names from usage**: Analyze how variables are used (e.g., `x * x < 0` suggests mathematical computation) to generate semantically meaningful names
+3. **Document optimization artifacts**: When code significantly differs from source (e.g., fake branches eliminated), add comments explaining what was optimized away rather than just showing the result

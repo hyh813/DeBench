@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `a1`, `a2`), obscuring semantic meaning. For example, in `cdecl_func`, parameters are named `a1` and `a2` instead of `a` and `b`, and local variables in `test_calling_conventions` are just `v1`, `v2`, etc., making it hard to track data flow.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Most high-level function names like `cdecl_func`, `test_calling_conventions`, and `param_by_value_int` are preserved accurately from the source. However, some runtime wrappers are given generic names like `function_1090` or `function_10a0`, which provides no context.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are accessed via offsets from a base pointer (e.g., `(char *)(v1 + 0x1935)`), hiding the actual string content. Magic numbers like `4` (representing `sizeof(int*)`) in `param_array_decay` are used without explanation or constant definitions.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is heavily polluted with Position Independent Code (PIC) artifacts, specifically `__x86_get_pc_thunk_ax(v1)` appearing in almost every function. Stack canary checks (`__readgsdword(20)`) are also inlined everywhere, significantly cluttering the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Basic control flow is generally natural, with `for` and `while` loops reconstructed correctly (e.g., in `varargs_func`). However, some complex logic in `test_calling_conventions` involves manual pointer arithmetic for string handling that disrupts the flow.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While function boundaries are mostly respected, the decompiler failed to recover correct signatures for `fastcall_func` (shows 1 arg instead of 3) and `func_struct_byval` (shows 0 args instead of 1 struct), breaking the modularity and call graph accuracy.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom with appropriate early returns. There are no excessive `goto` statements or spaghetti structures, making the execution path reasonably easy to follow despite the noise.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: There is significant redundancy in the form of repeated `__x86_get_pc_thunk_ax` calls and stack canary checks. The decompiler did not abstract these compiler-inserted safety checks, forcing the reader to ignore them manually.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are frequently incorrect or generic. `long long` parameters are demoted to `int32_t`, `double` is misidentified as `float80_t`, and `char*` parameters are often cast to `int32_t` for arithmetic, losing type safety and semantic information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct definitions are completely lost. In `func_struct_byptr`, the struct is accessed via raw pointer arithmetic (`*(int32_t *)((int32_t)a1 + 4)`), and `func_struct_byval` fails to show the struct argument entirely, treating it as a void function accessing stack memory.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code contains numerous unsafe casts, such as casting `int32_t` to `char*` (e.g., `(char *)(v1 + 0x1935)`) and performing pointer arithmetic on integer types. This obscures the memory access patterns and introduces potential for misinterpretation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no meaningful comments explaining the logic. The only comments are address ranges (e.g., `// Address range: 0x1000 - 0x102e`) and auto-generated headers, providing no semantic insight.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard idioms are not recognized. The `va_list` (varargs) implementation is exposed as raw pointer arithmetic (`v6 += 4`) rather than using `va_arg` macros, and the `switch` statement in `ret_multi_branch` is flattened into nested `if` statements.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents incorrect code confidently without flagging anomalies. For instance, the signature mismatch in `fastcall_func` (missing arguments) or the `float80_t` type usage are not flagged as potential uncertainties or errors.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or postconditions. For example, the requirement that `p` should not be NULL in `func_struct_byptr` is checked in code but not documented as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clearly visible, and the relationship between callers and callees is preserved. However, string references are obscured by offset calculations, making it hard to see what string is being passed to `printf`.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped in a logical order that roughly matches the source file structure. Helper functions and test functions are separated, though the runtime/stdlib wrappers are intermixed.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code includes non-standard inline assembly calls like `__asm_hlt()` and `__asm_rep_movsd_memcpy`, and relies on specific compiler intrinsics (`__readgsdword`), making it unlikely to compile without significant modification or a specific environment setup.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 7 + 4 + 2) / 4 = 4.0
+L2_avg = (7 + 5 + 7 + 4) / 4 = 5.75
+L3_avg = (3 + 2 + 3) / 3 = 2.67
+L4_avg = (2 + 3 + 2 + 2) / 4 = 2.25
+L5_avg = (6 + 7 + 4) / 3 = 5.67
+
+Overall = (4.0 × 0.30) + (5.75 × 0.25) + (2.67 × 0.20) + 
+          (2.25 × 0.15) + (5.67 × 0.10)
+Overall = 1.20 + 1.44 + 0.53 + 0.34 + 0.57
+Overall = 4.08
+```
+
+### Overall Readability Score: 4.1/10
+
+### Critical Defects
+- **Function Signature Corruption**: `fastcall_func` is decompiled with only 1 argument (`int32_t a1`) instead of 3, and `func_struct_byval` has 0 arguments instead of 1, completely breaking the API understanding.
+- **Severe Noise Pollution**: Every function contains `__x86_get_pc_thunk_ax(v1)` calls, which are compiler artifacts for Position Independent Code that should have been abstracted away.
+- **Loss of Composite Types**: Struct definitions are not recovered; fields are accessed via raw offsets (e.g., `*(int32_t *)((int32_t)a1 + 4)`), making data layout understanding difficult.
+- **Type Misidentification**: `double` is identified as `float80_t`, and `long long` is truncated to `int32_t`, leading to incorrect semantic interpretation of operations.
+- **Obscured String Literals**: Strings are accessed via calculated offsets from a base register (e.g., `v1 + 0x1935`) rather than displaying the actual string content.
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)**: Despite other issues, the decompiler successfully preserved the original names for most user-defined functions (e.g., `cdecl_func`, `test_calling_conventions`), which helps significantly in navigating the code.
+
+### Most Needs Improvement
+- **Noise Reduction (2/10)**: The pervasive inclusion of `__x86_get_pc_thunk_ax` calls in every function drastically reduces readability. These low-level details should be hidden or abstracted into a global variable context to make the high-level logic visible.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Abstract PIC Artifacts**: Implement logic to detect and hide `__x86_get_pc_thunk` patterns, replacing them with a resolved global base pointer or removing the calls entirely if they only serve to load a GOT address.
+2.  **Improve Calling Convention Analysis**: Enhance the analysis of register-passed arguments (like `fastcall` or `fastcall`-like conventions) to ensure all function parameters are recovered, not just those passed on the stack.
+3.  **Recover Composite Types**: Implement stack frame analysis to identify contiguous memory accesses as structure fields and attempt to reconstruct struct definitions or at least replace offsets with field names like `field_0x4`.

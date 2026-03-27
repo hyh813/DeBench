@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `result` throughout (e.g., `param_macro_constants` uses `v1` instead of `half_max`). Function parameters retain some meaning (`size`, `x`, `y`, `dest`, `src`) but locals are completely opaque.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved accurately (`param_macro_constants`, `call_asm_basic`, `param_memory_protection`). Only a few exceptions like `sub_4EC` remain unnamed, showing good symbol recovery.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `57072` (should be `0xDEF0`), `282`, `382`, `57122`. Some recoverable (`1024` for MAX_SIZE, `16` for ADD_16), but most constants lose semantic meaning.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output without excessive compiler artifacts. Some optimization remnants remain (e.g., `LODWORD`/`HIDWORD` in `register_tm_clones`), but most functions are readable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Natural if/while/do-while structures recovered well (e.g., `param_asm_clobber` shows proper loop). However, aggressive O2 optimization collapses many functions to single returns, losing original structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source well with appropriate granularity. No monolithic functions or over-fragmentation. Each test function remains separate and cohesive.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally with minimal jumps. Loop constructs use standard `do-while` patterns rather than goto chains.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding is aggressive—`call_macro_constants` returns `64` directly instead of calling `param_macro_constants(2048)`. This loses the call relationship and original computation logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, void*, size_t), but precision lost—`__int64` used where `int` suffices, no int32_t/uint32_t distinctions. `param_stringize` loses `const char*` string variables entirely.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited structs in source code. Pointer/array distinctions maintained correctly (e.g., `param_asm_clobber(int *arr, int n)`). No significant composite type loss observable.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts or type violations observed. Pointer arithmetic in `param_asm_clobber` (`*arr++`) is semantically correct. Atomic operations use proper helper functions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. Original source had extensive documentation explaining macro behavior, assembly intent, and test expectations—all lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Macro expansion patterns not identified (e.g., `SQUARE(x) + MAX(x,y)` becomes `y + x * x` without noting macro origin). Assembly-to-C recovery is good but unannotated.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (12 external functions), but no inline warnings about optimization artifacts or confidence levels. `param_dynamic_code` loses the actual code generation logic.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `arr != NULL` for `param_asm_clobber`). Return value semantics not explained. Error conditions like `MAP_FAILED` checks present but unannotated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. `test_preprocessing_features` calls known functions but no call graph provided. External dependencies listed as failed.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically matching source structure (preprocessing tests together, assembly tests together). Static functions like `header_func` properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 12 external functions failed decompilation (`printf`, `mmap`, `memcpy`, etc.). Cannot compile standalone without stubs. Dependencies not documented beyond failure list.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (4+8+4+7)/4 = 5.75  → 5.75 × 0.30 = 1.725
+Level 2 Average: (7+8+8+6)/4 = 7.25  → 7.25 × 0.25 = 1.813
+Level 3 Average: (6+7+8)/3 = 7.00    → 7.00 × 0.20 = 1.400
+Level 4 Average: (2+4+5+3)/4 = 3.50  → 3.50 × 0.15 = 0.525
+Level 5 Average: (6+7+4)/3 = 5.67    → 5.67 × 0.10 = 0.567
+
+Overall Readability Score: 6.03/10
+```
+
+### Overall Readability Score: **6.0/10**
+
+### Critical Defects:
+- **Variable `v1` in `param_macro_constants`** should be named `half_max` or `default_result` based on usage pattern (returns `MAX_SIZE / 2`)
+- **Magic number `57072`** in `param_multi_branch_compile` should be `0xDEF0` with comment explaining platform default branch
+- **No comments** explaining that functions were heavily optimized at O2 (constant folding collapsed computation logic)
+- **`param_stringize`** loses all string variables—returns constant `19` instead of showing `strlen` computations
+- **12 external function stubs** failed decompilation, preventing standalone compilation
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Original semantic function names preserved accurately, enabling immediate recognition of test purpose and structure.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of documentation means readers cannot understand why optimized code differs from source or what original macros intended.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics from constant patterns**—detect when `return 64` comes from `BUFFER_COUNT * 4` and annotate accordingly
+2. **Add optimization-level annotations**—flag functions where constant folding or inlining occurred, explaining divergence from source structure
+3. **Infer variable names from usage context**—`v1` assigned `512` before conditional should be `default_result` or `half_buffer_size`

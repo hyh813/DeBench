@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v1, v2, v3, temp_1) with zero semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `len`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but many renamed to `function_770`, `function_780`, `function_fe0`. Critical: function signatures show `(void)` when parameters exist.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals stored as hex-encoded globals (g8-g25) instead of inline strings. Magic numbers like `0x12345678` appear without context. Constant-folded returns (15, 50, 6) hide original computation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__stack_chk_fail()` calls, initialization functions (`_init`, `_fini`, `__do_global_dtors_aux`), redundant type casts throughout. Debug metadata partially preserved but adds clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some loops recovered (varargs_func while loop), but many functions constant-folded losing original flow. Switch statements awkward (`param_complex_cast` has fall-through cases that don't match source logic).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but helper functions incorrectly extracted (`function_770` for strlen). Some functions too small due to constant folding (`call_cdecl` returns 15 directly).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but forward jumps disrupt flow in varargs handling. Stack canary checks at function ends create artificial branching.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding creates semantic redundancy (computation replaced with constants). Redundant type conversions (`int64_t` to `int32_t` and back) throughout arithmetic operations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy int64_t/int32_t usage instead of original types. Parameter types lost (`cdecl_func(void)` instead of `cdecl_func(int a, int b)`). Pointer types sometimes preserved but inconsistently.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**: All struct definitions lost (`LargeStruct`, `SmallStruct`, `SmallPoint`, `LargeData`). Struct access via pointer arithmetic (`*(int32_t *)(v2 + 4)`) instead of field names.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Function pointers degraded to integers (2324, 2332, 2340). Unsafe casts throughout (`(int64_t)v1`, `(int32_t *)v8`). Varargs implementation has dangerous pointer arithmetic without bounds checking.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments except address ranges (`// Address range: 0x914 - 0x91c`). No algorithm explanations, no parameter documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern partially recognized but poorly implemented. No design pattern identification. Calling convention differences not documented despite being the test's purpose.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: **Critical**: Incorrect code presented confidently (wrong signatures, missing parameters). No warnings about unresolved indirect calls or type ambiguities. Stack canary checks suggest uncertainty but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `p != NULL` checks not explained). No postconditions. Error conditions silent (stack check failures not contextualized).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but signatures wrong. Global variables poorly named (g1-g26) with no semantic meaning. No call graph documentation despite 88 detected functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped somewhat logically (test functions together). Line range metadata preserved for some functions. No header file organization or API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Headers included but type mismatches would cause compilation warnings/errors. Function pointer calls use raw integers. Struct types undefined making compilation impossible without manual fixes.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+5)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (4+5+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────
+Overall Score:                                  3.95/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Struct definitions completely lost** - `LargeStruct`, `SmallStruct`, `SmallPoint` all reduced to pointer arithmetic
+- **Function signatures incorrect** - `cdecl_func(void)` should be `cdecl_func(int a, int b)`; parameters missing from 20+ functions
+- **Variable names all generic** - v1, v2, v3 throughout with zero semantic meaning
+- **Function pointers degraded to integers** - Values like 2324, 2332, 2340 instead of function addresses
+- **String literals hex-encoded in globals** - g8-g25 contain UTF-8 bytes instead of readable strings
+
+### Best Quality Aspect:
+- **Function Decomposition (6/10)** - Original function boundaries mostly preserved with correct line range metadata for many functions
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions, forcing pointer arithmetic for all composite type access
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from stack layouts** - Analyze consistent offset patterns (e.g., `v2 + 4`, `v2 + 8`) to reconstruct `SmallStruct { int x; int y; }`
+2. **Preserve function parameter information from debug symbols** - With `-g` flag, parameter names and types should be recoverable from DWARF data
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., `// UNCERTAIN: varargs parameter count inferred`) instead of presenting incorrect code confidently

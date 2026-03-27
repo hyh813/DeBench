@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_30`, `iVar1`, `uVar1`, `pcVar1`. While parameter names for libc functions like `__dest`, `__src`, `__n` are preserved, the decompiled function parameters lack semantic meaning - `param_1` should be `dst`, `param_2` should be `src`.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names perfectly match the original source - `param_strcpy`, `call_strcpy`, `param_strcmp`, `call_strlen`, `param_malloc_free`, etc. All 30+ functions have accurate, action-oriented names matching source exactly.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers throughout: syscall numbers `0x38` (openat), `0x39` (close), signal numbers `10` (SIGUSR1), `14` (SIGALRM), `0x42` (O_CREAT|O_RDWR), `0x1b6` (0666 permissions). The value `0x2a` (42) appears frequently without explanation. No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: `CONCAT44`, `CONCAT53`, `CONCAT35` macros for combining values; `extraout_w8` from register allocation; undefined types (`undefined8`, `undefined4`, `undefined3`, `undefined5`, `byte`); redundant masking operations like `param_1 & 0xffffffff`. These obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Generally natural control flow with `do-while` loops and `if-else` conditionals. However, `param_signal_handling` has an unusual complex conditional structure with nested `do-while` loops that don't match the original simple polling pattern. Loop unrolling in `param_malloc_free` creates awkward control flow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source exactly. Each function is reasonably sized (20-80 lines). Helper functions like `thread_compute`, `thread_sum`, `thread_increment` are properly extracted. No over-fragmentation or monolith issues.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Some goto-like patterns in `param_malloc_free` and `param_signal_handling` but manageable. Nesting depth typically 2-3 levels, acceptable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling in `param_malloc_free` (unrolled 8 iterations) and `param_memset` creates repetitive code blocks. Some common subexpression patterns visible. However, no completely dead code sections.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - libc functions have proper types (`char*`, `size_t`, `int`), but decompiled functions use generic types: `undefined4`/`undefined8` instead of `int`/`long`, `ulong` instead of `size_t`. Parameter types like `param_1` as `undefined8` lose semantic meaning. Signed/unsigned inconsistencies present.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. The `ThreadData` struct used in `param_pthread_join` becomes raw memory access with `local_60`, `uStack_54`, `uStack_50`, `local_48` - losing all field semantics. All composite types are lost to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: inconsistent masking with `& 0xffffffff`; mixing signed/unsigned in comparisons like `-1 < (int)uVar1`; pointer arithmetic in `param_malloc_free` without proper type safety; potential integer overflow in `param_1 << 2` for size calculation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. Zero explanation of algorithm logic, no documentation of non-obvious transformations, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable (pthread patterns, syscall patterns) but not explicitly named or documented. The atomic operations use intrinsics (`__aarch64_ldadd4_acq_rel`) which hints at the pattern but isn't explained.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication. The `<EXTERNAL>` markers for libc functions are helpful but don't flag suspicious patterns. No warnings about indirect calls, unusual stack layouts, or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information recovered. No preconditions documented (e.g., "requires: dst != NULL"), no postconditions (e.g., "ensures: return >= 0"), no invariant recognition.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function relationships somewhat clear through naming conventions (e.g., `call_*` functions call `param_*` functions). However, no explicit documentation of call graphs, global variable usage, or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically in the output. Related functions (test functions and their helpers) appear near each other. Static vs. external function distinction maintained.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: `<EXTERNAL>` markers help identify libc dependencies. However, undefined types (`undefined4`, `undefined8`) prevent compilation. Requires significant patching to compile - need to replace undefined types with concrete types and add proper includes.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`param_1`, `local_30`, `iVar1`) losing all semantic meaning
+- No struct recovery - `ThreadData` becomes raw memory access losing field semantics
+- No comments or documentation - zero explanation of algorithm logic
+- Magic numbers throughout (syscall IDs, signal numbers, flags) without named constants
+- Undefined types (`undefined4`, `undefined8`, `undefined`) prevent compilation
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+Function names perfectly match the original source - every function from `param_strcpy` to `param_thread_local_storage` has the correct, semantically accurate name.
+
+**Most Needs Improvement:** Lexical Clarity (scored 5.0/10)  
+Variable naming is severely degraded with generic names like `param_1`, `local_30`, `iVar1` that completely obscure the variable's purpose. Combined with magic numbers without explanation, the code is very difficult to read.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1` used as destination in `strcpy` → name it `dst` or `dest`)
+2. **Recover struct types from memory access patterns**: Detect sequential field accesses and reconstruct struct layouts with meaningful field names
+3. **Detect magic numbers and suggest constants**: Identify common syscall numbers, signal numbers, and flag values and replace with named constants (e.g., `0x38` → `SYS_openat`)

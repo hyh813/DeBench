@@ -1,0 +1,127 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic auto-generated names (`param_1`, `param_2`, `iVar1`, `uVar1`, `lVar1`, `bVar1`). The original source used meaningful names like `a`, `b`, `c`, `temp1`, `temp2`, `sum`, `count` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are accurately recovered: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, etc. External library functions (`printf`, `puts`, `longjmp`) correctly identified. Minor issue: some internal helpers have generic names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation: `0x3e9` (1001), `0x65` (101), `0x12` (18), `0x80000000`, `0x7fffffff`. Test functions hardcode expected values (`0x15` for 21) instead of showing computation. No named constants recovered.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some type casts present but not excessive. No obvious debug instrumentation. The code is readable without significant noise pollution.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Mixed results - some switches recovered (`switch_small`, `switch_large`), but others converted to if-else chains. Loops use do-while with goto-style jumps. The `goto_forward` function has confusing logic: `if (param_1 < 2) { iVar1 = 1; } return param_1 * iVar1 * 2;` doesn't clearly represent the original goto pattern.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions properly separated with good granularity. Each function handles one logical unit. At -O0, no inlining occurred, preserving original decomposition. Parameter counts match original (e.g., 3 params for `sequential_ops`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns. Some forward jumps present in complex functions like `duffs_device` with its switch-case fall-through pattern. Not severely disrupted but requires tracing.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some loop optimization visible in `loop_for_fixed` (uses formula instead of iteration), which is acceptable at -O0. Common subexpressions not excessively duplicated.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - uses generic `int`, `uint`, `undefined4` instead of specific types. No `int32_t`, `size_t`, or signed/unsigned distinction in many places. Function pointers use `code *` which is completely generic. Original `int` parameters lost their semantics.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery. Arrays like `matrix[3][4]` in `loop_multi_exit` accessed via pointer arithmetic: `*(int *)(&DAT_00011e9c + uVar1 * 4)`. The original `int arr[] = {10, 20, 30, 40, 50}` completely lost, replaced with data section references.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate type safety issues. Some unsafe pointer arithmetic: `*(int *)(&DAT_00011e9c + uVar1 * 4)`. Function pointer type `code *` is unsafe. No bounds checking on array access. However, no obviously dangerous operations like buffer overflows.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in decompiled output. Only auto-generated function headers like `// Function: sequential_ops @ 0x106c4`. No explanation of algorithm, no documentation of preconditions/postconditions. Original source had extensive comments explaining each function's purpose.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized but not named. Switch statements partially recovered. The `duffs_device` pattern is present but not identified as such. No explicit pattern naming (e.g., "Duff's device", "state machine pattern").
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some indirect calls marked as `UNRECOVERED_JUMPTABLE` (e.g., `call_func_ptr`). However, no flags for suspicious code, unusual stack layouts, or potential undefined behavior. The `non_local_jump` function has complex logic but no indication of potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information whatsoever. No preconditions (e.g., "requires: n >= 0"), no postconditions, no invariant documentation. Original source had clear return value expectations completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No cross-reference comments. Function call relationships not documented. No indication of who calls whom or what globals are used. The `jump_buffer` global is used across functions but not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - test functions together, control flow functions together, helper functions at end. Static functions properly scoped. However, all in single file with no header separation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code should compile with standard library stubs. External dependencies (`printf`, `puts`, `longjmp`, `setjmp`) are standard C. Some functions like `__divsi3` are compiler runtime - expected. Minor patching needed for `undefined4` type.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 4 + 8) / 4 = 5.75
+L2_avg = (5 + 8 + 6 + 7) / 4 = 6.50
+L3_avg = (3 + 2 + 5) / 3 = 3.33
+L4_avg = (1 + 4 + 4 + 1) / 4 = 2.50
+L5_avg = (2 + 7 + 6) / 3 = 5.00
+
+Overall = (5.75 × 0.30) + (6.50 × 0.25) + (3.33 × 0.20) + 
+          (2.50 × 0.15) + (5.00 × 0.10)
+        = 1.725 + 1.625 + 0.666 + 0.375 + 0.500
+        = 4.89/10
+```
+
+**Overall Readability Score:** 4.89/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Variable naming completely generic**: All variables use `param_1`, `iVar1`, `uVar1` style names instead of semantic names like `a`, `b`, `temp1`, `sum` from source
+- **No comments or documentation**: Zero explanatory comments despite -O0 optimization level where source structure is fully preserved
+- **Type precision severely degraded**: Uses `undefined4`, `uint`, `code *` instead of specific types; no struct recovery
+- **No contract/precondition recovery**: Original function semantics (preconditions, return value meanings) completely lost
+- **Composite types not recovered**: Arrays like `int arr[] = {10, 20, 30, 40, 50}` replaced with raw data section references
+
+---
+
+### Best Quality Aspect (Single Dimension)
+
+**Function Naming Quality (score 9/10)**  
+Function names accurately match the original source: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `recursion_factorial`, etc. External library calls also correctly identified.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+
+**Comment Quality & Presence (score 1/10)** and **Variable Naming Quality (score 2/10)** are tied for worst. At -O0, the decompiler should preserve nearly everything. The complete absence of comments and generic variable names makes the code nearly unusable for analysis despite being semantically correct.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When `param_1` is always used as a loop bound and added to other values, name it `n` or `count`. When `iVar1` accumulates sums, name it `sum`.
+
+2. **Recover comments from debug symbols**: With `-g` flag, DWARF info contains variable names and inline source locations. Use this to recover meaningful names and potentially comments.
+
+3. **Add semantic annotations**: For functions like `duffs_device`, add pattern识别 comments. For `non_local_jump`, document that it uses setjmp/longjmp. Add preconditions like "requires: n >= 0" where inferable.

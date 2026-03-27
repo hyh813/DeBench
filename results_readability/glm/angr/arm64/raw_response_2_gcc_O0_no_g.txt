@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `ptr`). In `test_data_types_l1`, variable `v10` is reused for different types (`long long` then `float`), obscuring data flow. No semantic names like `sum` or `index` are recovered.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names match the source exactly (e.g., `process_char`, `array_1d_stack`). This is likely due to the presence of debug symbols (`-g`), providing excellent high-level context despite the poor internal code quality.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Character literals like `'A'` are converted to magic numbers (`64`). Simple arithmetic constants are obscured; e.g., `x * 2` becomes `(a0 * 2 | a0 >> 31) & 4294967294`. String literals are preserved well, but numeric logic is opaque.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is polluted with `__ROL__` macros (Rotate Left) representing simple shifts/multiplies and excessive masking (`& 4294967295`). While stack canaries are expected, the arithmetic noise significantly hinders readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Loop constructs (`for`, `while`) and conditionals are generally recovered correctly. However, the logic inside blocks is often obfuscated by the poor arithmetic recovery (e.g., complex bit-masking for simple addition), making the flow hard to follow mentally.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity. There is no inlining or outlining, which is expected and correct for `-O0` code. The separation of concerns is preserved.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom. There are minor disruptions from stack integrity checks (e.g., `__stack_chk_fail`) at the end of functions, but overall flow is linear.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Significant redundancy exists in the form of repeated bit-masking operations (e.g., `& 255`, `& 4294967295`) and the use of `__ROL__` macros for what should be simple shifts, adding unnecessary complexity.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are frequently incorrect or generic. `double_value` returns `unsigned int` instead of `int`. `process_float` and `process_double` return `long long` (often holding addresses or raw registers) instead of floating-point values. Structs are treated as `int*` or `void*`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are not recovered; fields are accessed via array indexing on the base pointer (e.g., `a0[1]`, `a0[3]` in `struct_nested`). Bitfields in `struct_bitfields` are completely lost, replaced by manual bit extraction and masking.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code is rife with unsafe casts, e.g., `*((int *)(a0 + ...))`. Function pointers in `ptr_func_simple` have incorrect signatures, and treating struct memory as raw integer arrays is inherently type-unsafe in the decompiled view.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic, algorithms, or data structures. The output lacks any annotation to help decipher the obfuscated arithmetic or type casts.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms are missed. Simple multiplication is represented as bit-rotation. Struct field access is not recognized. The code fails to identify standard patterns, reducing it to low-level memory manipulation.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: There is no indication that the decompilation might be uncertain or that the `__ROL__` patterns are suspicious. The code confidently presents incorrect floating-point logic (e.g., `process_float` returning `v0` directly) without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, pointer validity checks in the source are not explicitly noted as contracts in the decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and reference the correct symbols. Global variables are referenced, albeit with generic names (e.g., `g_403000`). The call graph is easily navigable due to the preserved function names.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are grouped logically, matching the source file's structure. The separation between data type tests, array tests, and pointer tests is maintained.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on non-standard macros like `__ROL__` and undefined helper functions (e.g., `arm64g_calculate_flag_c`). It would not compile without significant modification or inclusion of specific decompiler runtime headers.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Arithmetic Obfuscation:** Simple operations like `x * 2` are decompiled into complex bit-rotations (`__ROL__`) and masks (`& 4294967294`), destroying semantic clarity.
+- **Floating-Point Failure:** Functions `process_float` and `process_double` are completely broken, returning raw registers or addresses instead of calculated values.
+- **Composite Type Loss:** Structs and bitfields are not recovered; memory is accessed as raw byte/integer arrays (e.g., `a0[3]`), losing all structural context.
+- **Literal Degradation:** Readable character constants (`'A'`) are replaced by magic numbers (`64`), and logic is obscured by unnecessary masking.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- **Why?** The presence of debug symbols allowed the exact recovery of original function names, which is the primary saving grace for navigating the code.
+
+**Most Needs Improvement:** Type System Fidelity (scored 3/10)
+- **Why?** The decompiler fails to recognize basic types (floats, structs) and arithmetic patterns, reducing high-level logic to low-level bit manipulation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Refine Arithmetic Pattern Matching:** Implement logic to recognize that `__ROL__(x, n) & mask` patterns often correspond to simple multiplication or shifting, especially in unoptimized (`-O0`) code.
+2.  **Fix Floating-Point Lifting:** Correct the analysis of ARM64 floating-point instructions to ensure operations and return values are represented as `float`/`double` rather than raw integer registers or memory addresses.
+3.  **Enhance Struct Recovery:** Improve type propagation to identify struct layouts from sequential access patterns (e.g., `base + 0`, `base + 4`) and reconstruct composite types instead of defaulting to array indexing.

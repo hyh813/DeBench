@@ -1,0 +1,111 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic names (`v1`, `v2`, `v3`, `result`) throughout; e.g., `loop_break` uses `v5` for array element instead of `element` or `value`. Function parameters retain original names (`a`, `b`, `c`) which is good.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery—debug symbols preserved nearly all original names (`sequential_ops`, `nested_if_deep`, `duffs_device`). Names accurately reflect functionality.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are meaningful in context (e.g., `10`, `20`, `30` in switch cases). However, array initialization in `loop_break` uses raw values without explanation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Register comments (`// r0`, `// r3`) and `__fastcall` conventions add minor noise. Stack variable annotations (`[sp+0h] [bp+0h] BYREF`) clutter function signatures.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: `switch_fallthrough` uses goto labels (`LABEL_7`) instead of proper fall-through. `duffs_device` has complex label chains. `computed_goto` contains inline assembly that breaks structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. No inappropriate inlining or fragmentation. Each function maintains single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Goto patterns in `switch_fallthrough` and `duffs_device` disrupt linear flow but remain traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: `duffs_device` has redundant label structure (LABEL_6 through LABEL_14). Otherwise clean with no obvious dead code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Most types correctly recovered as `int` matching source. `volatile int*` preserved in `infinite_loop` and `loop_external_state`. Function pointer signatures recovered accurately.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Arrays correctly recovered (`matrix[3][4]`, `arr[5]`, `ops[10]`). No complex structs in this codebase to evaluate. Stack arrays properly annotated with `BYREF`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Questionable cast in `call_func_ptr_array`: `v4[idx - 4]` with offset arithmetic. Most operations type-safe. No buffer overflow patterns detected.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in decompiled output. No algorithm explanations, no documentation of non-obvious logic (e.g., Duff's device purpose not explained).
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: State machine pattern in `state_machine`/`fsm_func_table` not identified. Duff's device structure not recognized as optimization idiom.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External function failures noted ("FAILED to decompile"). Inline assembly in `computed_goto` not explained. No warnings about potentially incorrect reconstructions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`). No postconditions or error condition documentation recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls clear and traceable. Global variable `jump_buffer` referenced but not well documented. Callback relationships visible through function pointer usage.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file. No logical grouping by control flow level (L1/L2/L3 functions mixed). Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 10 external functions failed to decompile (`printf`, `memset`, `setjmp`, etc.). Would require stubs to compile. Architecture mismatch (ARM64 source vs ARM32 decompiled).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (5×0.10 + 9×0.10 + 7×0.05 + 7×0.05) / 0.30 = 7.00
+Level 2 (25%): (6×0.08 + 8×0.07 + 7×0.05 + 7×0.05) / 0.25 = 6.96
+Level 3 (20%): (8×0.08 + 8×0.07 + 7×0.05) / 0.20 = 7.75
+Level 4 (15%): (3×0.05 + 4×0.03 + 5×0.03 + 3×0.04) / 0.15 = 3.60
+Level 5 (10%): (7×0.04 + 6×0.03 + 5×0.03) / 0.10 = 6.10
+
+Overall = 7.00×0.30 + 6.96×0.25 + 7.75×0.20 + 3.60×0.15 + 6.10×0.10
+        = 2.10 + 1.74 + 1.55 + 0.54 + 0.61
+        = 6.54/10
+```
+
+**Overall Readability Score:** 6.5/10
+
+### Critical Defects
+- **Variable naming**: Generic names (`v1`, `v2`, `result`) obscure semantic meaning in complex functions like `loop_break` and `duffs_device`
+- **Control flow degradation**: `switch_fallthrough` uses goto labels instead of proper fall-through semantics, reducing readability
+- **No semantic documentation**: Zero comments explaining algorithm purpose, Duff's device optimization, or state machine patterns
+- **Architecture mismatch**: Source compiled for ARM64 but decompiled as ARM32 (r0-r3 registers), indicating potential binary mismatch
+- **External dependency failures**: 10 functions failed to decompile (printf, memset, setjmp), requiring manual stubs for compilation
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** — Debug symbols (-g flag) enabled near-perfect function name recovery, preserving original semantic intent across all 50+ functions.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (3/10)** — Complete absence of explanatory comments means readers must infer all algorithm intent from code structure alone, significantly increasing cognitive load.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic comment generation**: Detect common patterns (Duff's device, state machines, factorial recursion) and auto-generate explanatory comments describing the algorithm's purpose.
+2. **Improve variable name inference**: Use data flow analysis to infer semantic names (e.g., `sum` for accumulators, `count` for loop counters, `result` for return values) based on usage patterns.
+3. **Recover high-level control flow idioms**: Recognize switch fall-through patterns and reconstruct them as proper C fall-through rather than goto labels; detect loop modifications and annotate them clearly.

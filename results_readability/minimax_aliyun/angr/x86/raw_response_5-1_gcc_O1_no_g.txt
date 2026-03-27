@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `ptr`, `p`, `i` throughout. For example, in `test_cpp_member_func()`, variables `v4`, `v5`, `v6` obscure their roles as ldt/gdt/gs registers. The original source's `value`, `name`, `size` are completely lost.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - C++ mangled names like `_Z20test_cpp_member_funcv` and class methods like `Base::virtual_func` are well-preserved, but most utility functions use mechanical address-based names like `sub_401030`, `sub_401040`. The original `getValue`, `setValue`, `compute` are not recovered.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `20` (stack canary), `4`, `8`, `12` (struct offsets) appear without explanation. The value `0x1234` from `getClassID()` is not recovered. String literals like "Test" are partially recovered but not named. Constants like `sizeof(name)-1` become magic numbers.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution from Angr-specific artifacts: `[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] PutI(136:I8x8)[t6,0] = 0x00()`, numerous `__x86.get_pc_thunk.*` functions, `__stack_chk_fail_local` calls. The decompiled output contains 1952 LOC vs 540 source LOC - a 3.6x expansion from noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive use of `goto` for control flow (e.g., `goto v1->field_5c`, `goto ptr[2]`). The decompiler fails to recover loop constructs - instead uses computed jumps. In `test_cpp_template_func()`, the swap logic is obscured by goto patterns. At -O0, this should be much cleaner.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are properly separated, and C++ member functions are extracted correctly (e.g., `Container<int>::push`, `template_swap<int>`). However, some functions are trivial wrappers (e.g., `sub_40103c` just calls `sub_401040`). The granularity is reasonable but not optimal.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Poor linearization - many forward jumps disrupt reading flow. In `test_cpp_exception()`, the control flow is nearly impossible to follow with multiple computed jumps. The code does not read top-to-bottom naturally.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some dead code present (multiple `__x86.get_pc_thunk` variants). Template instantiations generate separate functions (`template_max<int>` and `template_max<double>`) which is expected. Loop unrolling is minimal. Some redundant struct definitions (`struct_0` reused with different padding).
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - `int`, `unsigned int`, `char` are used correctly in places, but many types are generic. The decompiler uses `int` for most things. Some pointers are properly typed (e.g., `void* *ptr`), but `void*` is overused. The original `size_t` becomes `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Partial struct recovery with generic field names. Structures like `struct_0 { char padding_0[92]; unsigned int field_5c; }` are created but field names are meaningless. The original `SimpleClass { int value; char name[32]; }` is not recovered - becomes raw memory operations with offsets.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations present. In `test_cpp_rtti()`, pointer arithmetic like `*(ptr)[4]` and `*((int *)((int)(*(ptr))[4] + 4))` is dangerous. In `template_swap<int>`, raw pointer casting `*((int *)ptr)` without bounds checking. Some vtable calls use unsafe function pointer casting.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. The decompiler provides function signatures but no logic explanation. Original comments like "测试: 类成员函数调用，隐含this指针传递" are completely lost. No explanation of vtable mechanism or inheritance relationships.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ patterns are recognized - virtual function calls via vtable (`(*((int *)*((int *)arg_0)))(arg_0, arg_1)`), thunks for multiple inheritance (`_ZThn8_N12MultiDerived5funcBEv`). However, the decompiler doesn't name these patterns or explain them. Templates are partially recognized but not clearly documented.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Angr does flag some unsupported operations with `[D] Unsupported jumpkind` and `[D] unsupported_<class 'pyvex.expr.GetI'>()`. However, these are generic messages without specific guidance. Some indirect calls are marked but not explained. The message "Failed to decompile function" for `template_max<double>` is helpful but isolated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source has implicit contracts (e.g., "requires: idx < size" in `getData()`) that are completely lost. No bounds checking documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are partially visible through the call graph. `test_cpp_oo_features()` shows calls to all test functions. However, the relationships between classes (inheritance) and virtual function overrides are not clearly documented. External dependencies are listed as `extern` but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are somewhat grouped by type (test functions, class methods, template functions), but the organization is arbitrary. The 1952 LOC output is a single monolithic block. No logical grouping or separation into sections matching the original source's structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will not compile standalone. Many `extern` declarations needed for runtime functions (`_ZNSt8ios_base4InitD1Ev`, `__dso_handle`). The Angr-specific annotations (`[D] ...`) are not valid C. Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable naming uses generic `v0`-`v9`, `ptr`, `p` instead of semantic names like `value`, `name`, `size`
+- Control flow uses goto/jumps instead of natural loops and conditionals
+- Struct field names are generic (`field_0`, `padding_0`) losing original `value`, `name` semantics
+- Severe noise from Angr annotations (`[D] PutI`, `[D] Unsupported`) tripling code size
+- No comments explaining C++ patterns (vtable, multiple inheritance thunks, diamond inheritance)
+
+**Best Quality Aspect:** Type System Fidelity (scored 4.7/10)  
+- Some type precision maintained (int, unsigned int, pointers) and C++ mangled names preserved for class methods
+
+**Most Needs Improvement:** Lexical Clarity (scored 2.8/10)  
+- Variable and function naming is nearly unusable with generic names like `sub_401030`, `v0`, `v1` that completely obscure semantic meaning
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `v0` used as `value` in `SimpleClass` should be named based on context
+2. Recover natural control flow constructs - convert goto/jumps to for/while loops and if/else chains
+3. Eliminate Angr-specific noise artifacts from output - remove `[D] PutI`, `[D] Unsupported` annotations that are not valid C code

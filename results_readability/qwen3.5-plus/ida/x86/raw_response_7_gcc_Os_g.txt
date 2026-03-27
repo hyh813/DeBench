@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Almost all local variables use generic names (`v0`, `v1`, `v2`, `temp`, `result`) losing semantic meaning from original (`decrypted`, `heap_buffer`, `canary`). Only global variables retained some original names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved original names (`param_fake_branch`, `param_opaque_predicate`), but helper functions use generic `sub_XXXX` naming. Metadata inconsistency (claims Ghidra, header says IDA Pro) is concerning.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers present without explanation (`0x14u` for GS offset, `90` instead of `0x5A` for XOR key). Signal numbers (8, 11) are inferable but not named constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary code repeated across functions (`__readgsdword(0x14u)`), `__usercall` register annotations, and 12 "FAILED to decompile" messages create significant noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops recovered as while/for constructs appropriately. TCO conversion from recursion to iteration in `param_tail_call_optimized` is well-handled. No excessive goto usage.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized (most under 50 lines), original structure preserved. However, jump stub functions (`sub_1030` through `sub_10C0`) are unnecessary fragmentation.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately. No deep nesting or forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Excellent constant folding (`call_fake_branch` returns `10` directly), dead fake branches eliminated. Some redundancy in repeated stack canary checks across functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision with type degradation—`param_string_encryption` returns `__int64` when original returns `int`. Pointer types mostly preserved but `__usercall` annotations add noise.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays recovered (`char decrypted[32]`, `int a[8]`), but struct types completely lost. `param_implementation_defined` bitfield struct eliminated entirely (returns constant `43`).
+
+**11. Type Safety:** Score: 7/10  
+Justification: Minor unsafe casts present (`(__sighandler_t)div_zero_handler`). No obvious buffer overflow patterns in decompiled code as original overflow code was eliminated by optimizer.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Virtually no comments in decompiled code. Original had extensive documentation explaining obfuscation techniques, expected values, and test scenarios—all completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: TCO and signal handler patterns recognized and converted appropriately, but not explicitly named or documented. No algorithm identification (e.g., "GCD calculation" for opaque predicate).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "FAILED to decompile" messages for 12 functions and stack warning present, but no explanation of what code was eliminated (fake branches, opaque predicates) or transformation confidence.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Original had clear expected values in comments (e.g., "期望: 10") that are completely absent in decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Failed decompilations of libc functions (`signal`, `malloc`, `free`) break call chain visibility and dependency understanding.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single file with no logical grouping. Runtime startup code mixed with application code. Original had clear section comments (7.1, 7.2, 7.3) that are completely absent.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile without significant stubbing for 12 external functions. Platform-specific code (`__readgsdword`) and remaining assembly blocks prevent standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+6+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (8+7+8+7)/4 = 7.50 × 0.25 = 1.875
+Level 3 (Type):        (6+5+7)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (3+5+5+3)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+
+Overall Score: 5.76/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `v2`) losing all semantic meaning from original source
+- **Zero comments** despite original having extensive documentation explaining obfuscation techniques and expected values
+- **12 external functions failed to decompile** breaking dependency chain visibility
+- **Architecture mismatch** (original arm64, decompiled shows x86 registers like `ebx`, `eax`)
+- **Metadata inconsistency** (claims Ghidra 12.0_PUBLIC but header says "IDA Pro 9.1 with Hex-Rays")
+
+### Best Quality Aspect:
+- **Control Flow Naturalness (8/10)** - Loops and conditionals recovered idiomatically; TCO conversion from recursion to iteration handled elegantly without confusing constructs.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Complete absence of documentation despite original having extensive comments explaining obfuscation techniques, test scenarios, and expected values.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (e.g., `v1` in string operations should be `buffer` or `decrypted`) and suggest semantic names.
+2. **Add decompilation confidence annotations** - Mark transformed code regions (e.g., "/* TCO applied: original was recursive */") and indicate eliminated dead code from optimization.
+3. **Resolve external function dependencies** - Provide stub declarations or link to standard library headers for the 12 failed libc functions to enable standalone compilation.

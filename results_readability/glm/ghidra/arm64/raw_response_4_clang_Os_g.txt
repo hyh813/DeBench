@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Most local variables use generic names like `local_130`, `uVar2`, and `lVar3`, which obscure their purpose (e.g., loop counters or struct fields), though parameters like `a`, `b`, and `count` are preserved.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are recovered almost perfectly from symbols (e.g., `cdecl_func`, `test_calling_conventions`, `param_by_value_int`), with only minor exceptions like `FUN_00100680`.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Logic is obscured by constant propagation; for example, `call_cdecl` returns `0xf` (15) instead of showing the addition `5 + 10`, and `printf` arguments are hardcoded hex values like `0x32` instead of the original expressions.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains frequent Ghidra-specific warnings like `/* WARNING: Unknown calling convention -- yet parameter storage is locked */` and `/* Unresolved local var: ... */`, which clutter the output, though the core logic is free of register spilling artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While simple functions are readable, `varargs_func` and `param_varargs` are decompiled into complex manual pointer arithmetic and `do-while` loops instead of the standard `va_list` idioms, making the logic hard to follow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions match the source granularity well; complex test functions like `test_calling_conventions` are kept intact rather than being inlined or fragmented, preserving the original structure.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom with appropriate `do-while` loops for iterations, though the initialization of `LargeStruct` in `test_calling_conventions` involves slightly convoluted pointer arithmetic.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately reflects the compiler's optimization (e.g., removing dead code), resulting in clean output without redundant assignments, though this sometimes hides the original calculation steps.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Standard types like `int` and `char *` are accurate, and structs like `LargeStruct` are recovered, but generic types like `undefined8` appear in some contexts (e.g., `_start`), and `long` is used where `int64_t` might be more specific.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs are recovered excellently with correct names (`LargeStruct`, `SmallStruct`, `SmallPoint`) and field names (`data`, `x`, `y`), perfectly matching the original source definitions.
+
+**11. Type Safety:** Score: 6/10
+Justification: Large structs passed by value in the source (e.g., `func_struct_byval(LargeStruct s)`) are represented as pointers in the decompiled code (`func_struct_byval(LargeStruct *s)`), which is ABI-accurate but semantically different from the source signature.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to decompiler warnings (e.g., "Removing unreachable block") and do not explain the logic or intent of the code, offering no semantic insight into the algorithms used.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler fails to recognize the `varargs` idiom, representing `va_list` operations as raw stack pointer manipulation (`register0x00000008`) rather than abstracting them to `va_start`/`va_arg`.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Ghidra clearly flags potential issues like "Unknown calling convention" and "Unresolved local var," which helps identify areas where the decompilation might be unreliable or incomplete.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the null check in `func_struct_byptr` is visible code but not explicitly documented as a contract requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to understand (e.g., `main` calls `test_calling_conventions`), and global data references are explicit.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order that roughly follows the source file's structure, grouping related calling convention tests and parameter passing tests together.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Ghidra-specific types like `undefined8`, `CONCAT44`, and `register0x00000008`, preventing it from compiling without significant modification or a custom header.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Variable names are predominantly generic (`local_130`, `uVar2`), obscuring the data flow.
+- The `varargs` implementation is decompiled into raw pointer arithmetic rather than the standard `va_list` idiom, severely impacting readability.
+- Constant propagation replaces logic with magic numbers (e.g., `0xf` instead of `5 + 10`), hiding the original operations.
+- Large struct parameters passed by value are displayed as pointers, altering the semantic signature compared to the source.
+
+**Best Quality Aspect:** Composite Type Recovery (scored 9/10)
+- Structs and their fields are recovered with high precision, including names and types, which is crucial for understanding the data manipulations in the test functions.
+
+**Most Needs Improvement:** Idiom Recognition (scored 3/10)
+- The failure to abstract standard C idioms like `va_list` into readable constructs results in low-level pointer manipulation that is difficult to map back to the source intent.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching to detect and abstract `va_list` usage (stack walking with register offsets) into standard `va_start`/`va_arg` pseudo-code.
+2. Improve variable naming heuristics to infer names from context (e.g., `sum`, `i`, `ptr`) instead of relying solely on debug symbols or generic `local_X` patterns.
+3. For constant propagation in optimized binaries, optionally annotate the return value with the original expression (e.g., `return 0xf /* 5 + 10 */`) to preserve semantic meaning.

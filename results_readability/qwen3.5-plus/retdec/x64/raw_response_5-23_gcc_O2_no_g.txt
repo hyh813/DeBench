@@ -1,0 +1,109 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v1`, `v2`, `a1`, `a2`, `result`) with no semantic meaning. Original source had meaningful names like `size`, `counter`, `increment`, `exec_mem` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_macro_constants`, `call_asm_basic`, `param_atomic_c11`), matching original source. However, helper functions use mechanical names (`function_1090`, `function_10b0`) and some have incorrect parameter counts.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xdef0`, `0xffffffff`, `0x5341206f6c6c6548` appear without explanation. String literals stored as hex-encoded globals (`g1`, `g2` with UTF-8 Chinese bytes) are unreadable. Some constants (64, 512, 30) are recoverable but lack context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`) add noise to every function. Excessive type casting (`& 0xffffffff`, `(int32_t)`) and compiler initialization functions (`deregister_tm_clones`) clutter the output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: While loops recovered in some functions (`param_asm_clobber`), but complex conditionals use awkward expressions like `v2 < 0 == ((v2 ^ v1) & (v1 ^ (int32_t)&g20)) < 0`. At `-O0`, this level of transformation is excessive.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Several functions have incorrect signatures (`param_dynamic_code` has 6 parameters instead of 1, `call_asm_clobber` has 4 parameters instead of 0). System call wrappers extracted (`function_10b0` for mmap) but original structure partially lost.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with proper while loops, but stack canary checks at function ends disrupt flow. Some functions have unnecessary conditional branches for error paths that could be simplified.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding occurred (`call_macro_constants` just returns 64), which is acceptable. However, stack canary verification is duplicated in nearly every function, and some expressions are unnecessarily complex (`a1 + 2 + 2 * a1 & 0xffffffff`).
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation—everything is `int64_t`, `int32_t`, or `uint64_t`. Lost `size_t`, `char*`, `void*`, and function pointer types. Original `int param_macro_constants(int size)` became `int64_t param_macro_constants(int64_t a1)`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No structs or unions recovered. Arrays treated as pointer arithmetic (`*(int32_t *)(4 * v1 + a1)`). Original code had minimal composite types, so impact is limited but still degraded.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(int32_t)`, `(int64_t)`, `(char *)`). Pointer arithmetic without type safety. No const correctness preserved. Assembly intrinsics (`__asm_movaps`, `__asm_paddd`) lack proper type wrappers.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining macros, assembly, and expected values. No decompiler confidence indicators or uncertainty warnings present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Assembly intrinsics preserved (`__asm_movaps`, `__asm_paddd`) but not explained. No pattern recognition for common idioms (atomic operations, memory mapping, string operations). Loop patterns not identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation despite obvious issues (wrong parameter counts, hex-encoded strings). Stack canary checks present but not explained as compiler artifacts. No indication of potential miscompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `size > 0`, `ptr != NULL`). No postconditions or return value semantics. Error conditions not documented (e.g., `mmap` failure returns `-1`).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables (`g1`-`g20`) referenced without explanation of their purpose. No indication of which functions are test helpers vs. core logic.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Original source had clear section comments (`5.2 预处理与条件编译`, `5.3 内联汇编`) completely lost. No namespace or module structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. Includes present (`stdint.h`, `stdlib.h`, `sys/mman.h`). External function declarations provided. Some platform-specific intrinsics may need stubs for non-x86 compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+5+6+6)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+4+7)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.72/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v1`, `v2`, `a1`) losing all semantic meaning from original (`size`, `counter`, `increment`)
+- **Function signatures corrupted** (`param_dynamic_code` has 6 parameters instead of 1, `call_asm_clobber` has 4 instead of 0)
+- **Zero comments** despite original having extensive documentation explaining macros, assembly, and expected values
+- **String literals hex-encoded** in globals (`g1`-`g20`) making test output messages unreadable
+- **Type system degraded** to `int64_t`/`int32_t` losing `size_t`, `char*`, and const correctness
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved accurately from source (`param_macro_constants`, `call_asm_basic`, `param_atomic_c11`), enabling basic identification of functionality.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation despite original having extensive comments explaining preprocessing behavior, assembly semantics, and expected test values.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (e.g., compared to constants, passed to specific functions) to infer semantic names like `packet_size` instead of `v1`.
+2. **Add decompiler confidence annotations** - Flag uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: indirect call target` to help analysts identify potential errors.
+3. **Preserve string literal readability** - Decode UTF-8 string literals at decompilation time instead of storing as hex-encoded globals, especially for test/assertion messages.

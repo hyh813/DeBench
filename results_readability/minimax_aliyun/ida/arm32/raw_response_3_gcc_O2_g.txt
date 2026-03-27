@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler uses exclusively generic variable names (`v0`, `v1`, `v2`, `v3`, `v4`) throughout all functions. For example, in `heap_basic`, the pointer `v2` should be named `arr` based on usage pattern `v2[n/2]`, and loop counter `v3` should be `i`. This makes tracking variable purpose extremely difficult across all 114 functions.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `double_value`, `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `global_var_access`, `memop_memset`, etc. The decompiler correctly preserved the semantic naming from the source, which is the strongest aspect of this decompilation.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Literal values are preserved correctly (e.g., `42` in `address_of_local`, `2048` in `large_stack_frame`, `50` in loop termination), but they appear as unexplained magic numbers. The decompiler does not suggest named constants or provide context for values like `0x14u` (20) or `0x28u` (40) in memory allocations.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant artifacts pollute the output: `JUMPOUT(0);` in initialization functions, `MEMORY[0xFFFF0FC0]()` patterns for atomic operations, spurious `_sync_synchronize()` calls, and 18 failed decompilation messages for import functions (`__imp_memset`, `__imp_free`, etc.). These artifacts significantly impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: The decompiler converts `for` loops to `do-while` constructs (e.g., in `local_array`: `do { v2[1] = v1; ++v2; v1 += n; } while (v2 != &arr[9]);`). At `-O0`, this transformation is unnecessary and reduces readability. However, the control flow is semantically correct and traceable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches the source well. Each test function (`test_stack_memory`, `test_heap_memory`, etc.) is properly separated, and helper functions like `create_tree_node` are correctly extracted. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns for error conditions (e.g., `if (!v2) return -1;`). The `do-while` loops create minor non-linearity but the overall flow is manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling patterns are present (e.g., manual index calculations in `heap_basic`), but these are relatively clean. No severe dead code or excessive duplication observed. The main issue is the verbose pointer arithmetic (`v2 - 1`, `v4 + 1`) that could be abstracted.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are generally appropriate: `int` for integers, `_DWORD` for 32-bit values, `char*` for byte buffers. However, function pointers like `global_func_ptr` are typed as `int (*)(int)` rather than the proper function signature. The `size_t` parameter in memory functions is not recovered.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: The decompiler recovers `Node` structure with `data` and `next` fields correctly, and `TreeNode` with `data`, `left`, `right`. The `Point` typedef is used but not fully reconstructed in the output. Field names are preserved, which is good.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns exist: pointer arithmetic like `v2 - 1` and `v4 + 1` in heap functions, casting `malloc` returns to `_DWORD*` without validation. The `dangling_pointer` function correctly shows the unsafe access `*(_DWORD *)v0` after `free(v0)`, but no warnings are added.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are virtually absent. The only comments are the header indicating "Decompiled by IDA Pro 9.0" and occasional uncertainty notes like "positive sp value has been detected". No explanation of algorithms, parameter contracts, or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: While the decompiler recovers linked list structures (`Node*` with `next`), it doesn't identify the patterns as "linked list" or "binary tree". Memory allocation patterns (malloc/free pairs) are recognized but not named as "RAII" or "resource management" patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The output shows "FAILED to decompile" messages for 18 import functions, which is helpful. However, there's no indication of suspicious patterns like the intentional bugs in `dangling_pointer`, `double_free`, or `heap_overflow` - these are presented as normal code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. For example, `vla_stack` has an implicit requirement `n > 0 && n <= 1000` that is not indicated. Error return values (-1, -2) are not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (`malloc`, `free`, `memcpy`), but relationships aren't documented. For example, `set_global_callback` and `call_global_callback` work with `global_func_ptr`, but the callback pattern isn't explained. No call graph or usage context provided.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped: stack functions together, heap functions together, static/global functions together. The test functions (`test_stack_memory`, etc.) appropriately wrap their related functions. However, all functions appear in a single flat listing.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will not compile standalone. It relies on undefined symbols: `extern_global_var`, `extern_function`, `global_counter`, `global_array`, `const_string`, `file_scope_static`, `global_func_ptr`. Additionally, 18 import functions failed to decompile, creating significant gaps.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming uses exclusively generic names (`v0`-`v4`) making code comprehension extremely difficult
+- No comments explaining algorithms, parameters, or return values
+- 18 import functions failed to decompile, creating incomplete code
+- Type safety issues with pointer arithmetic (`v2 - 1`, `v4 + 1`) without explanation
+- No contract or precondition documentation for functions with implicit requirements
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The decompiler preserved nearly all function names exactly from the source, which is the single strongest area. Names like `double_value`, `heap_calloc`, `global_array_access` accurately reflect their functionality.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The generic `v0`, `v1`, `v2` naming scheme makes it nearly impossible to track variable purpose across function boundaries. At `-O0` with debug symbols, the decompiler should infer meaningful names from usage patterns.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `v2` used as `v2[n/2]` should be `arr` or `buffer`)
+2. Add basic comments explaining function purpose, parameters, and return values
+3. Recover preconditions from bounds checks (e.g., `if (n <= 0)` implies `requires: n > 0`)

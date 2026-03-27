@@ -1,0 +1,670 @@
+/*
+ * Decompiled by IDA Pro 9.1 with Hex-Rays
+ * Binary: PROJECT_ROOT/compiler/build/x86/5-23/5-23_clang_O3_g
+ * Processor: pc
+ */
+
+/* Function: .init_proc @ 0x1000 */
+int init_proc()
+{
+  if ( &_gmon_start__ )
+    ((void (*)(void))_gmon_start__)();
+  frame_dummy();
+  return _do_global_ctors_aux();
+}
+
+
+/* Function: sub_1030 @ 0x1030 */
+void sub_1030()
+{
+  __asm { jmp     dword ptr [ebx+8] }
+}
+
+
+/* Function: sub_10B0 @ 0x10B0 */
+int __usercall sub_10B0@<eax>(int a1@<ebx>)
+{
+  return (*(int (**)(void))(a1 - 16))();
+}
+
+
+/* Function: _start @ 0x10C0 */
+// positive sp value has been detected, the output may be wrong!
+void __usercall __noreturn start(int a1@<eax>, void (*a2)(void)@<edx>)
+{
+  int v2; // esi
+  int v3; // [esp-4h] [ebp-4h] BYREF
+  char *retaddr; // [esp+0h] [ebp+0h] BYREF
+
+  v2 = v3;
+  v3 = a1;
+  __libc_start_main((int (*)(int, char **, char **))main, v2, &retaddr, 0, 0, a2, &v3);
+  __halt();
+}
+
+
+/* Function: sub_10EC @ 0x10EC */
+void sub_10EC()
+{
+  ;
+}
+
+
+/* Function: __x86.get_pc_thunk.bx @ 0x10F0 */
+void _x86_get_pc_thunk_bx()
+{
+  ;
+}
+
+
+/* Function: deregister_tm_clones @ 0x1100 */
+char *deregister_tm_clones()
+{
+  return &_bss_start;
+}
+
+
+/* Function: register_tm_clones @ 0x1140 */
+int register_tm_clones()
+{
+  return 0;
+}
+
+
+/* Function: __do_global_dtors_aux @ 0x1190 */
+void _do_global_dtors_aux()
+{
+  int v0; // eax
+  unsigned int i; // ebx
+
+  if ( !_bss_start )
+  {
+    if ( &_cxa_finalize )
+      sub_10B0((int)&GLOBAL_OFFSET_TABLE_);
+    v0 = dtor_idx_0;
+    for ( i = &_DTOR_END__ - _DTOR_LIST__ - 1; dtor_idx_0 < i; v0 = dtor_idx_0 )
+    {
+      dtor_idx_0 = v0 + 1;
+      ((void (*)(void))_DTOR_LIST__[v0 + 1])();
+    }
+    deregister_tm_clones();
+    _bss_start = 1;
+  }
+}
+
+
+/* Function: frame_dummy @ 0x1220 */
+int frame_dummy()
+{
+  return register_tm_clones();
+}
+
+
+/* Function: __x86.get_pc_thunk.dx @ 0x1229 */
+void _x86_get_pc_thunk_dx()
+{
+  ;
+}
+
+
+/* Function: __x86.get_pc_thunk.di @ 0x122D */
+void _x86_get_pc_thunk_di()
+{
+  ;
+}
+
+
+/* Function: param_macro_constants @ 0x1240 */
+int __cdecl param_macro_constants(int size)
+{
+  int result; // eax
+
+  result = 512;
+  if ( size >= 1025 )
+    return 64;
+  return result;
+}
+
+
+/* Function: call_macro_constants @ 0x1260 */
+int call_macro_constants()
+{
+  return 64;
+}
+
+
+/* Function: param_macro_functions @ 0x1270 */
+int __cdecl param_macro_functions(int x, int y)
+{
+  int v2; // eax
+
+  v2 = y;
+  if ( x > y )
+    v2 = x;
+  return x * x + v2;
+}
+
+
+/* Function: call_macro_functions @ 0x1290 */
+int call_macro_functions()
+{
+  return 30;
+}
+
+
+/* Function: param_conditional_compile @ 0x12A0 */
+int __cdecl param_conditional_compile(int x)
+{
+  return 3 * x + 2;
+}
+
+
+/* Function: call_conditional_compile @ 0x12B0 */
+int call_conditional_compile()
+{
+  return 32;
+}
+
+
+/* Function: param_multi_branch_compile @ 0x12C0 */
+int __cdecl param_multi_branch_compile(int x)
+{
+  return 5 * x + 57072;
+}
+
+
+/* Function: call_multi_branch_compile @ 0x12D0 */
+int call_multi_branch_compile()
+{
+  return 57122;
+}
+
+
+/* Function: param_macro_recursion @ 0x12E0 */
+int __cdecl param_macro_recursion(int x)
+{
+  return x + 16;
+}
+
+
+/* Function: call_macro_recursion @ 0x12F0 */
+int call_macro_recursion()
+{
+  return 116;
+}
+
+
+/* Function: param_stringize @ 0x1300 */
+int param_stringize()
+{
+  return 19;
+}
+
+
+/* Function: call_stringize @ 0x1310 */
+int call_stringize()
+{
+  return 19;
+}
+
+
+/* Function: my_func @ 0x1320 */
+int __cdecl my_func(int x)
+{
+  return 10 * x;
+}
+
+
+/* Function: param_token_paste @ 0x1330 */
+int __cdecl param_token_paste(int x)
+{
+  return 11 * x + 5;
+}
+
+
+/* Function: call_token_paste @ 0x1340 */
+int call_token_paste()
+{
+  return 60;
+}
+
+
+/* Function: param_variadic_macro @ 0x1350 */
+int __cdecl param_variadic_macro(int x, int y, int z)
+{
+  printf("LOG: Values: %d, %d, %d\n", x, y, z);
+  return x + 50;
+}
+
+
+/* Function: call_variadic_macro @ 0x1390 */
+int call_variadic_macro()
+{
+  printf("LOG: Values: %d, %d, %d\n", 10, 20, 30);
+  return 60;
+}
+
+
+/* Function: param_macro_override @ 0x13C0 */
+int __cdecl param_macro_override(int x)
+{
+  return 3 * x + 1;
+}
+
+
+/* Function: call_macro_override @ 0x13D0 */
+int call_macro_override()
+{
+  return 16;
+}
+
+
+/* Function: param_include_guard @ 0x13E0 */
+int param_include_guard()
+{
+  return 500;
+}
+
+
+/* Function: call_include_guard @ 0x13F0 */
+int call_include_guard()
+{
+  return 500;
+}
+
+
+/* Function: param_builtin_macros @ 0x1400 */
+int __cdecl param_builtin_macros(int x)
+{
+  printf(
+    "file=%s, func=%s, line=%d, date=%s, time=%s\n",
+    "src/5-23.c",
+    "param_builtin_macros",
+    279,
+    "Jan 15 2026",
+    "03:00:15");
+  return x + 282;
+}
+
+
+/* Function: call_builtin_macros @ 0x1450 */
+int call_builtin_macros()
+{
+  printf(
+    "file=%s, func=%s, line=%d, date=%s, time=%s\n",
+    "src/5-23.c",
+    "param_builtin_macros",
+    279,
+    "Jan 15 2026",
+    "03:00:15");
+  return 382;
+}
+
+
+/* Function: test_preprocessing_features @ 0x14A0 */
+void test_preprocessing_features()
+{
+  puts(asc_22C9);
+  printf(aPpL201D, 64);
+  printf(aPpL202D, 30);
+  printf(aPpL203D, 32);
+  printf(aPpL204D, 57122);
+  printf(aPpL301D, 116);
+  printf(aPpL302D, 19);
+  printf(aPpL303D, 60);
+  printf("LOG: Values: %d, %d, %d\n", 10);
+  printf(aPpL304D, 60);
+  printf(aPpL305D, 16);
+  printf(aPpL306D, 500);
+  printf(
+    "file=%s, func=%s, line=%d, date=%s, time=%s\n",
+    "src/5-23.c",
+    "param_builtin_macros",
+    279,
+    "Jan 15 2026",
+    "03:00:15");
+  printf(aPpL307D, 382);
+}
+
+
+/* Function: param_asm_basic @ 0x15D0 */
+int __cdecl param_asm_basic(int x)
+{
+  return x + 10;
+}
+
+
+/* Function: call_asm_basic @ 0x15E0 */
+int call_asm_basic()
+{
+  return 15;
+}
+
+
+/* Function: param_asm_clobber @ 0x15F0 */
+int __cdecl param_asm_clobber(int *arr, int n)
+{
+  int result; // eax
+  int i; // ecx
+
+  result = 0;
+  for ( i = 0; i < n; ++i )
+    result += arr[i];
+  return result;
+}
+
+
+/* Function: call_asm_clobber @ 0x1610 */
+int call_asm_clobber()
+{
+  int result; // eax
+  int i; // ecx
+  __int128 v2; // [esp+0h] [ebp-1Ch]
+  int v3; // [esp+10h] [ebp-Ch]
+
+  v3 = 5;
+  v2 = xmmword_231C;
+  result = 0;
+  for ( i = 0; i < 5; ++i )
+    result += *((_DWORD *)&v2 + i);
+  return result;
+}
+
+
+/* Function: param_asm_multi_insn @ 0x1660 */
+void __cdecl param_asm_multi_insn(void *dst, const void *src, size_t n)
+{
+  qmemcpy(dst, src, n);
+}
+
+
+/* Function: call_asm_multi_insn @ 0x1680 */
+int call_asm_multi_insn()
+{
+  int result; // eax
+  char v1[12]; // [esp+4h] [ebp-38h] BYREF
+  _OWORD v2[2]; // [esp+10h] [ebp-2Ch] BYREF
+
+  strcpy(v1, "Hello ASM");
+  memset(v2, 0, sizeof(v2));
+  qmemcpy(v2, v1, 9u);
+  result = -1;
+  if ( !(LOBYTE(v2[0]) ^ 0x48 | BYTE4(v2[0]) ^ 0x6F) )
+    return 42;
+  return result;
+}
+
+
+/* Function: param_asm_simd @ 0x16F0 */
+int __cdecl param_asm_simd(int *a, int *b, int *result)
+{
+  *(__m128i *)result = _mm_add_epi32(*(__m128i *)a, *(__m128i *)b);
+  return 0;
+}
+
+
+/* Function: param_simd_intrinsics @ 0x1710 */
+int __cdecl param_simd_intrinsics(int *a, int *b, int *result)
+{
+  *(__m128i *)result = _mm_add_epi32(_mm_load_si128((const __m128i *)b), *(__m128i *)a);
+  return 0;
+}
+
+
+/* Function: call_asm_simd @ 0x1730 */
+int call_asm_simd()
+{
+  __m128i si128; // xmm0
+  __m128i v1; // xmm1
+  __m128i v3[3]; // [esp+0h] [ebp-3Ch] BYREF
+
+  v3[2] = (__m128i)xmmword_2030;
+  v3[1] = (__m128i)xmmword_2040;
+  v3[0] = _mm_add_epi32((__m128i)xmmword_2030, (__m128i)xmmword_2040);
+  si128 = _mm_load_si128(v3);
+  v1 = _mm_add_epi32(_mm_shuffle_epi32(si128, 238), si128);
+  return _mm_cvtsi128_si32(_mm_add_epi32(_mm_shuffle_epi32(v1, 85), v1));
+}
+
+
+/* Function: param_asm_atomic @ 0x1790 */
+int __cdecl param_asm_atomic(int *counter, int increment)
+{
+  return increment + _InterlockedExchangeAdd(counter, increment);
+}
+
+
+/* Function: param_atomic_c11 @ 0x17B0 */
+int __cdecl param_atomic_c11(int *counter, int increment)
+{
+  return increment + _InterlockedExchangeAdd(counter, increment);
+}
+
+
+/* Function: call_asm_atomic @ 0x17D0 */
+int call_asm_atomic()
+{
+  signed __int32 v0; // eax
+  signed __int32 v2; // [esp+0h] [ebp-4h] BYREF
+
+  v2 = 10;
+  v0 = _InterlockedExchangeAdd(&v2, 5u);
+  return v2 + v0 + 5;
+}
+
+
+/* Function: param_dynamic_code @ 0x17F0 */
+int __cdecl param_dynamic_code(int x)
+{
+  size_t len; // esi
+  void *v2; // eax
+  int v3; // edi
+
+  len = sysconf(30);
+  v2 = mmap(0, len, 7, DWORD1(xmmword_2010), DWORD2(xmmword_2010), HIDWORD(xmmword_2010));
+  if ( v2 == (void *)-1 )
+    return -1;
+  v3 = x + 5;
+  munmap(v2, len);
+  return v3;
+}
+
+
+/* Function: param_memory_protection @ 0x1860 */
+int param_memory_protection()
+{
+  size_t len; // esi
+  int *v1; // eax
+  int *v2; // edi
+  int v3; // ebp
+  int v5; // [esp+18h] [ebp-14h]
+
+  len = sysconf(30);
+  v1 = (int *)mmap(0, len, 3, DWORD1(xmmword_2020), DWORD2(xmmword_2020), HIDWORD(xmmword_2020));
+  if ( v1 == (int *)-1 )
+    return -1;
+  v2 = v1;
+  *v1 = 42;
+  v3 = -2;
+  if ( !mprotect(v1, len, 1) )
+  {
+    v5 = *v2;
+    v3 = -3;
+    if ( !mprotect(v2, len, 3) )
+    {
+      *v2 = 100;
+      v3 = v5;
+    }
+  }
+  munmap(v2, len);
+  return v3;
+}
+
+
+/* Function: param_clobber_importance @ 0x1920 */
+int __cdecl param_clobber_importance(int a, int b)
+{
+  return 2 * (b + a);
+}
+
+
+/* Function: call_asm_privileged @ 0x1940 */
+int call_asm_privileged()
+{
+  size_t len; // edi
+  void *v1; // ebp
+  int v2; // esi
+  int v3; // eax
+  size_t v4; // edi
+  int *v5; // eax
+  int *v6; // ebp
+  int result; // eax
+  int v8; // [esp+20h] [ebp-1Ch]
+  int v9; // [esp+24h] [ebp-18h]
+  void *v10; // [esp+28h] [ebp-14h]
+
+  len = sysconf(30);
+  v1 = mmap(0, len, 7, DWORD1(xmmword_2010), DWORD2(xmmword_2010), HIDWORD(xmmword_2010));
+  v2 = -1;
+  v3 = -1;
+  if ( v1 != (void *)-1 )
+  {
+    munmap(v1, len);
+    v3 = 15;
+  }
+  v9 = v3;
+  v10 = v1;
+  v4 = sysconf(30);
+  v5 = (int *)mmap(0, v4, 3, DWORD1(xmmword_2020), DWORD2(xmmword_2020), HIDWORD(xmmword_2020));
+  if ( v5 != (int *)-1 )
+  {
+    v6 = v5;
+    *v5 = 42;
+    v2 = -2;
+    if ( !mprotect(v5, v4, 1) )
+    {
+      v8 = *v6;
+      v2 = -3;
+      if ( !mprotect(v6, v4, 3) )
+      {
+        *v6 = 100;
+        v2 = v8;
+      }
+    }
+    munmap(v6, v4);
+  }
+  result = 77;
+  if ( v2 != 0x2A )
+    result = v9;
+  if ( v10 == (void *)-1 )
+    return v9;
+  return result;
+}
+
+
+/* Function: param_memory_clobber_demo @ 0x1A80 */
+int param_memory_clobber_demo()
+{
+  return (int)global_var + 50;
+}
+
+
+/* Function: test_asm_features @ 0x1AA0 */
+void test_asm_features()
+{
+  int v0; // eax
+  int i; // ecx
+  int v2; // ecx
+  __m128i si128; // xmm0
+  __m128i v4; // xmm1
+  signed __int32 v5; // esi
+  int v6; // eax
+  __int128 v7; // [esp+10h] [ebp-5Ch] BYREF
+  __int128 v8; // [esp+20h] [ebp-4Ch] BYREF
+  __int128 v9; // [esp+30h] [ebp-3Ch]
+  __m128i v10[2]; // [esp+40h] [ebp-2Ch] BYREF
+
+  puts(asc_22F0);
+  printf(aAsmL401D, 15);
+  LODWORD(v9) = 5;
+  v8 = xmmword_231C;
+  v0 = 0;
+  for ( i = 0; i < 5; ++i )
+    v0 += *((_DWORD *)&v8 + i);
+  printf(aAsmL402D, v0);
+  strcpy((char *)&v7, "Hello ASM");
+  v9 = 0;
+  v8 = 0;
+  qmemcpy(&v8, &v7, 9u);
+  v2 = -1;
+  if ( !((unsigned __int8)v8 ^ 0x48 | BYTE4(v8) ^ 0x6F) )
+    v2 = 42;
+  printf(aAsmL403D, v2);
+  v8 = xmmword_2030;
+  v7 = xmmword_2040;
+  v10[0] = _mm_add_epi32((__m128i)xmmword_2030, (__m128i)xmmword_2040);
+  si128 = _mm_load_si128(v10);
+  v4 = _mm_add_epi32(_mm_shuffle_epi32(si128, 238), si128);
+  printf(aAsmL404D, _mm_cvtsi128_si32(_mm_add_epi32(_mm_shuffle_epi32(v4, 85), v4)));
+  LODWORD(v8) = 10;
+  v5 = _InterlockedExchangeAdd((volatile signed __int32 *)&v8, 5u);
+  printf(aAsmL405D, v5 + (_DWORD)v8 + 5);
+  v6 = call_asm_privileged();
+  printf(aAsmL406D, v6);
+}
+
+
+/* Function: main @ 0x1C30 */
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  test_preprocessing_features();
+  test_asm_features();
+  return 0;
+}
+
+
+/* Function: __do_global_ctors_aux @ 0x1C60 */
+void (*_do_global_ctors_aux())(void)
+{
+  void (*result)(void); // eax
+  int *v1; // ebx
+
+  result = (void (*)(void))_CTOR_LIST__;
+  if ( _CTOR_LIST__ != -1 )
+  {
+    v1 = &_CTOR_LIST__;
+    do
+    {
+      result();
+      result = (void (*)(void))*--v1;
+    }
+    while ( result != (void (*)(void))-1 );
+  }
+  return result;
+}
+
+
+/* Function: .term_proc @ 0x1CAC */
+void term_proc()
+{
+  _do_global_dtors_aux();
+}
+
+
+/* FAILED to decompile: __libc_start_main @ 0x4040 */
+
+/* FAILED to decompile: mprotect @ 0x4044 */
+
+/* FAILED to decompile: printf @ 0x4048 */
+
+/* FAILED to decompile: sysconf @ 0x404C */
+
+/* FAILED to decompile: __cxa_finalize @ 0x4050 */
+
+/* FAILED to decompile: puts @ 0x4054 */
+
+/* FAILED to decompile: mmap @ 0x4058 */
+
+/* FAILED to decompile: munmap @ 0x405C */
+
+/* Total functions decompiled: 57, failed: 8 */

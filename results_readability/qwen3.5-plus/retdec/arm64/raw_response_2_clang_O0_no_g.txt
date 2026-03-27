@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v1, v2, v3, result) with zero semantic meaning. For example, `process_char` uses `v1`, `v2`, `v3` instead of `input_char`, `ascii_value`, `converted_char`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Original function names preserved (process_char, array_1d_stack) but signatures are broken—`process_char(void)` should be `process_char(char c)`. Helper functions use mechanical names (function_6a0, function_15bc).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (0x1000000, 0x20000000, 0x7ffe) without explanation. String literals stored as hex-encoded globals (g7, g8) instead of readable strings.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive compiler artifacts including `__asm_mrs`, `__asm_ubfx`, `__asm_bfi` intrinsics. Redundant casts (`(int64_t)(int32_t)v1`) and frame pointer manipulation throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Heavy goto usage with labels (lab_0x2694, lab_0x23e0, lab_0x25b0). Floating point functions have 50+ goto labels creating spaghetti code. Loops not recovered as for/while constructs.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Function boundaries preserved but parameter passing completely broken. `array_1d_stack(void)` should have `(int *arr, int n)`. `__addtf3` is 500+ lines of monolithic code.
+
+**7. Code Linearization:** Score: 2/10  
+Justification: Cannot read top-to-bottom due to excessive forward jumps. Floating point functions jump between 50+ labels. Loop bodies accessed via goto instead of natural iteration.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Significant redundancy in floating point functions with duplicate variable assignments. Dead code not eliminated. Same bit manipulation patterns repeated without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Everything collapsed to int64_t regardless of original type. `char`, `short`, `float`, `double` all become int64_t. `process_float(void)` returns int64_t instead of float. Pointer types degraded to int64_t.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Complete failure—struct types (Point3D, Rect, Widget, Node) completely lost. All struct access shown as pointer arithmetic (`v2 + 8`, `v2 + 4`, `v2 + 12`). Union and bitfield types not recovered at all.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Numerous unsafe casts throughout. Pointer arithmetic without type safety (`*(int32_t *)(4 * (int64_t)v3 + v1)`). Function pointer types lost entirely.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only auto-generated file header. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No design patterns recognized. Linked list traversal, binary tree recursion, graph traversal all appear as raw pointer arithmetic with no pattern identification.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies flagged despite severe issues. Incorrect code (uninitialized returns in process_float/process_double) presented confidently without warnings.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., NULL checks not noted). No postconditions inferred. No error condition documentation despite many functions that could fail.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls present but with wrong signatures. Global variables poorly named (g1-g16). No callback relationships documented. `double_value` called but signature broken.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. No header file structure. Static functions not properly scoped. Test functions mixed with implementation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone—missing struct definitions, wrong function signatures, undefined intrinsics (`__asm_mrs`, `llvm_ctlz_i64`). Requires extensive modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+3)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (3+4+2+3)/4 = 3.00 × 0.25 = 0.750
+Level 3 (Type System): (2+1+2)/3   = 1.67 × 0.20 = 0.334
+Level 4 (Semantic):    (1+1+1+1)/4 = 1.00 × 0.15 = 0.150
+Level 5 (Contextual):  (3+4+3)/3   = 3.33 × 0.10 = 0.333
+─────────────────────────────────────────────────────────
+Overall Score:                                  2.54/10
+```
+
+**Overall Readability Score:** 2.5/10
+
+### Critical Defects:
+- **Parameter information completely lost**: `process_char(void)` should be `process_char(char c)`, `array_1d_stack(void)` should be `array_1d_stack(int *arr, int n)`
+- **All types collapsed to int64_t**: char, short, float, double, pointers all degraded to generic int64_t
+- **Struct/union types completely unrecovered**: Point3D, Rect, Widget, Node, UnionData all reduced to pointer arithmetic
+- **Floating point functions incomprehensible**: `__addtf3` and `__multf3` are 500+ lines of goto-laden bit manipulation
+- **No semantic recovery**: Zero comments, no pattern recognition, no anomaly warnings despite severe issues
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- Original function names mostly preserved (process_char, array_1d_stack, struct_simple) providing some semantic anchors despite broken signatures.
+
+### Most Needs Improvement: **Composite Type Recovery (1/10)**
+- Complete failure to recover any struct, union, or bitfield types—all composite data structures reduced to raw pointer arithmetic losing all semantic meaning.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameter information from calling conventions**: Analyze register usage and stack access patterns to reconstruct parameter lists instead of defaulting to `void`.
+2. **Implement type propagation analysis**: Track data flow to distinguish char/short/int/long and recover float/double operations from FP register usage patterns.
+3. **Add struct/union pattern detection**: Identify consistent offset access patterns (e.g., +0, +4, +8 for 3-int struct) and propose composite type recovery with field naming suggestions.

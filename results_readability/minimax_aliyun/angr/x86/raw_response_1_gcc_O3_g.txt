@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v0, v1, v2, ptr, a0, a1, a2, i) with no semantic meaning. The original meaningful names like `temp1`, `temp2`, `count`, `sum` are completely lost. This makes tracking variable purpose nearly impossible without extensive cross-referencing.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Every function uses cryptic address-based names (sub_401030, sub_401040, sub_401470). The original function names like `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed` are completely lost. The decompiler made no attempt to recover meaningful identifiers.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number 4294967295 (unsigned -1) appears frequently without explanation. Some constants like 100, 50, 10 are used directly. The decompiler did not recover any named constants from the source. The value 1717986919 (magic constant for division by 10) is unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise includes: generic struct typedefs (struct_0, struct_1) with padding fields, weird `goto` patterns in functions like sub_401030 using `goto ptr[2]`, and the "[D] Unsupported jumpkind Ijk_SigTRAP" error message. Many functions have empty bodies or return statements that add noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control structures (if-else, loops) are preserved, but with issues. The `loop_while` function has a broken condition `while (i != v3)` where v3 is never properly initialized. Some goto statements are used incorrectly (e.g., sub_401030 uses computed goto). At -O0, such issues are unexpected.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are mostly kept separate as in the original. However, some functions like `test_control_flow_l1` have their logic inlined into print statements, losing the original function structure. The parameter lists expose implementation details (e.g., passing &v0 to functions that don't need it).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: The code generally reads top-to-bottom but has problematic forward jumps. Functions like `loop_multi_exit` use extensive goto labels (LABEL_401a9e, LABEL_401aab, etc.) that disrupt linear reading. Some loops have confusing conditions that break the natural flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some dead code exists (empty functions like sub_40151a, sub_401526). The `loop_complex_cond` function has deeply nested if-else chains that appear to be unrolled loop iterations, creating significant redundancy. Multiple similar patterns could be abstracted.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All integer types are generic `unsigned int` or `unsigned int*`. The original `int` types (including negative return values) are lost. Function parameters are all unsigned, losing the signed semantics. The decompiler uses `char` for some operations but inconsistently.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Generic struct typedefs (struct_0, struct_1) with meaningless field names (field_0, field_28, padding_0). The original array `int arr[] = {10, 20, 30, 40, 50}` in `loop_break` was converted to a switch statement. No meaningful struct recovery was achieved.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns exist. The `op_div` and `op_mod` functions have complex ternary expressions that could cause issues. Pointer arithmetic is sometimes incorrect (e.g., in `process_with_callback` using `a0 + v0 * 4`). No const correctness preserved.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments present. The only comments are decompiler artifacts like "// Platform: X86", "// Function: main at 0x401110", and error messages like "[D] Unsupported jumpkind". No explanation of algorithm logic or intent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are implicitly recognized (switch statements, loops) but not named or documented. The state machine pattern in `state_machine` and `fsm_func_table` could be identified but isn't. The ternary operator in `ternary_op` is correctly recovered as if-else.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The decompiler does flag some anomalies: "[D] Unsupported jumpkind Ijk_SigTRAP" and "__stack_chk_fail_local()" calls. However, many semantic issues are silent - like the broken loop condition in `loop_while` or the incorrect return value computation in `recursion_factorial`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had no explicit assertions, but the decompiler could have inferred some (e.g., "requires: n > 0" for factorial). Nothing recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible in the code (e.g., main calls test_control_flow_l1, test_control_flow_l2). However, there's no documentation of who calls whom or the purpose of callback relationships. The function pointer arrays in `call_func_ptr_array` and `large_jump_table` show some relationship but aren't explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in a single file, grouped by address rather than logically. The original had clear sections (L1, L2, L3 control flow) which are lost. Static functions like `double_value`, `triple_value` are scattered throughout rather than grouped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would not compile as-is. Issues include: undefined extern variables (g_405ff4, g_403008, g_403110, g_403294), undefined functions (frame_dummy, __do_global_ctors_aux), and the broken loop condition in `loop_while`. Significant patching would be required.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Function names**: All meaningful names lost (sequential_ops → sub_401470, single_if → sub_401490)
+- **Variable names**: All generic (v0, v1, a0, a1) - no semantic recovery
+- **Broken loop condition**: `loop_while` has `while (i != v3)` where v3 is uninitialized - semantic error
+- **Type loss**: All `int` converted to `unsigned int`, losing negative return value semantics
+- **No comments**: Zero algorithm or intent documentation
+
+### Best Quality Aspect: Control Flow Naturalness (5/10)
+- Basic if-else and loop structures are preserved, making the general logic traceable
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Every variable uses generic names making code comprehension extremely difficult
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: Use data flow analysis to name variables based on how they're used (e.g., `a0` used in division → `divisor`, loop counter → `i` or `index`)
+2. **Recover function names from debug symbols**: The binary was compiled with `-g`, so debug info should contain original names
+3. **Fix semantic errors**: The broken `loop_while` condition and incorrect `recursion_factorial` return computation indicate fundamental decompilation issues that need addressing

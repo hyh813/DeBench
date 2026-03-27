@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Extensive "Unresolved local var" comments throughout (e.g., `int a@[???]`, `int[10] arr@[???]`, `int * p1@[???]`). Temporary variables use generic names like `iVar1`, `iVar2`, `uVar1` that indicate type but not purpose. The decompiler failed to recover meaningful variable names from debug symbols despite -O0 -g compilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly: `local_vars`, `heap_basic`, `global_var_access`, `memop_memset`, `double_value`. Minor issue: `FUN_00011030` is an unnamed internal function. The naming is highly accurate to the original source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers: `0x2a` (42), `0x14` (20), `0xf` (15), `0x3c` (60), `0x41` (65). Test functions print computed values directly rather than explaining the source. The decompiler computed some results but didn't explain the constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution: "Unresolved local var" comments on every function, "WARNING: Unknown calling convention" messages, "WARNING: Removing unreachable block" artifacts. Loop unrolling in `large_stack_frame`, `heap_basic`, `heap_calloc` creates massive redundant code blocks. This level of noise is inappropriate for -O0 compiled binary.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Loop unrolling in multiple functions creates unreadable control flow (e.g., `large_stack_frame` uses manual 8-element unroll). At -O0, we should see natural for/while loops. The decompiler also uses complex computed jumps in VLA/alloca functions. Basic if/else preserved but loop structures are broken.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good function granularity matching source. Each test function is separate, helper functions like `create_tree_node` extracted properly. Minor: `test_stack_memory` and `test_heap_memory` are large but this matches source organization. No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but VLA/alloca functions have complex pointer arithmetic disrupting flow. The `vla_stack` and `alloca_usage` functions use confusing indexed access patterns that make linear reading difficult.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive loop unrolling in `large_stack_frame` (2048 iterations manually unrolled), `heap_basic`, `heap_calloc`, `heap_array`, `memory_leak`. These should be recognized and either collapsed or clearly commented as unrolled loops. Current presentation is maintainability nightmare.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types correct (`int`, `char`, `void*`). Issues: `undefined4` used instead of `int` in some places, function pointer type `_func_int_int` is generic, `size_t` not used consistently. Some type erosion but core types accurate.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Node` and `TreeNode` structs properly recovered with field names (`data`, `next`, `left`, `right`). However, `Point` struct in `heap_struct` not recovered (just returns `x*3`), and many heap allocations use raw `void*` without struct interpretation.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns: extensive `void*` casting, pointer arithmetic in VLA functions. However, no severe violations like type-confused function pointers. Basic NULL checks present. Code is usable but not type-safe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments present: "Decompiled by Ghidra", "Unresolved local var", "WARNING" messages. No algorithm explanation, no preconditions/postconditions documented, no recovery confidence indicators. Comments are noise, not useful documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Recognizable patterns present (linked list creation, binary tree traversal, memory pool patterns) but not explicitly named or identified. The decompiler doesn't say "this is a linked list" or "this implements X algorithm".
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only decompilation warnings present ("Unknown calling convention", "Removing unreachable block"). Critical code anomalies NOT flagged: `memory_leak` has obvious leak, `dangling_pointer` uses freed memory, `heap_overflow` has buffer overflow. These dangerous patterns are silently presented as normal code.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: Basic NULL checks recovered (e.g., `if (__ptr == (void *)0x0)`) but no explicit contract documentation. No preconditions, postconditions, or invariants documented. Implicit contracts not made explicit.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are explicit and traceable. Global variable access is clear. However, no documentation of call relationships ("called by X", "calls Y"), no callback relationship documentation, no cross-reference comments.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Single-file output matches original source structure. Functions grouped logically by category (stack, heap, static, memory ops). Static functions properly scoped. Organization reflects source layout.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Uses `undefined4` type which won't compile. External functions (puts, printf, malloc, free, etc.) assumed available. Function pointer types unclear. Would require moderate patching to compile. No dependency documentation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming completely failed: "Unresolved local var" throughout despite -O0 -g debug symbols
+- Loop unrolling at -O0 level creates massive redundant code blocks in 6+ functions
+- No meaningful comments - only auto-generated noise
+- Magic numbers everywhere (0x2a, 0x14, 0xf, 0x3c) without explanation
+- Dangerous code patterns (memory leak, dangling pointer, heap overflow) not flagged as anomalies
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names accurately match the original source code, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The decompiler failed to recover any meaningful variable names despite debug symbols being present in the -O0 binary. This is the most severe readability issue.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from debug symbols**: The -O0 -g compilation should have provided DWARF debug info. The decompiler should extract variable names like `arr`, `i`, `leak` from debug metadata rather than showing "Unresolved local var".
+2. **Recognize and handle loop unrolling**: When detecting unrolled loops, either collapse them back to idiomatic for/while loops or add clear comments explaining the unrolling pattern. Don't present 256 lines of manual loop expansion.
+3. **Flag dangerous code patterns**: The `memory_leak`, `dangling_pointer`, and `heap_overflow` functions contain intentional bugs for testing. The decompiler should add warnings like "POTENTIAL MEMORY LEAK" or "DANGLING POINTER ACCESS" to help analysts identify these critical issues.

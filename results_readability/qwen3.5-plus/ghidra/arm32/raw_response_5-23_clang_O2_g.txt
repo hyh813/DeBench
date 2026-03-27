@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `__len`, `__addr`, `local_c`) with no semantic meaning. Original source had meaningful names like `result`, `exec_mem`, `page_size` that were lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`) matching original source exactly, making navigation easy.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x200` (should be `MAX_SIZE`), `0x40` (should be `BUFFER_COUNT * 4`), `0xdef0`, `0x1e` (should be `_SC_PAGESIZE`). No constant recovery.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output without excessive compiler artifacts. However, many "Unresolved local var" comments add noise without value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with proper if/else and loop constructs. The `param_asm_clobber` function correctly recovered a do-while loop from assembly.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries perfectly preserved. Each original function remains separate with correct parameter lists and return types.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. No spurious gotos or forward jumps disrupting flow. Early returns used appropriately.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some constant folding occurred (e.g., `call_macro_constants` returns `0x40` directly instead of calling `param_macro_constants`), losing call relationship visibility.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `void*`, `size_t`) but lost specificity. Original `const char*` became `char*`. Some parameters show as `undefined4` in `_start`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Array types partially recovered (`int[5]`, `char[32]`) but shown only in "Unresolved local var" comments, not in actual type declarations. Struct recovery not applicable for this code.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No unsafe casts introduced. Pointer arithmetic in `param_asm_clobber` is correctly typed. Atomic operations preserved with `__atomic_fetch_add_4`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are mostly auto-generated warnings ("Unknown calling convention", "Unresolved local var"). No semantic explanations of what functions do or why.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Assembly patterns correctly converted to C equivalents (e.g., `param_asm_multi_insn` → `memcpy`), but no indication this was assembly originally.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Does flag unresolved variables and calling convention issues. However, doesn't warn about architecture mismatch (source ARM64, decompiled ARM32).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. No indication of expected return values or error conditions. Original comments about expected values completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships preserved (`test_preprocessing_features` calls all `call_*` functions). Global variable `global_var` referenced correctly.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions appear in logical order similar to source. Related functions grouped together (macro tests, asm tests).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code references external functions (`printf`, `mmap`, `sysconf`) without declarations. Would need headers to compile. Some architecture-specific issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+3+7)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (8+9+8+7)/4 = 8.00 × 0.25 = 2.000
+Level 3 (Type):        (6+5+7)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (3+4+6+2)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (7+8+6)/3   = 7.00 × 0.10 = 0.700
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.19/10
+```
+
+**Overall Readability Score:** 6.2/10
+
+### Critical Defects:
+- **Magic numbers everywhere**: `0x200`, `0x40`, `0xdef0`, `0x1e` should be named constants (`MAX_SIZE`, `BUFFER_COUNT * 4`, platform constants, `_SC_PAGESIZE`)
+- **Generic variable names**: `iVar1`, `__addr`, `local_c` lose all semantic meaning from original `result`, `exec_mem`, `counter`
+- **No semantic comments**: Original documentation about expected values, test purposes, and macro behavior completely lost
+- **Constant folding hides relationships**: `call_macro_constants` returns `0x40` directly instead of showing it calls `param_macro_constants(2048)`
+- **Architecture mismatch unreported**: Source claims ARM64/O0, decompiled shows ARM32/O2 with no warning
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from source, making navigation and identification trivial.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No documentation of expected behaviors, return value meanings, or error conditions that were explicit in original source comments.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Constant Recovery**: Detect and name magic numbers by cross-referencing with common system constants (`_SC_PAGESIZE`, `PROT_*`, `MAP_*`) and recovering macro definitions from usage patterns.
+
+2. **Variable Name Inference**: Use data flow analysis to infer semantic names (e.g., variables used in size comparisons should be named `size`, `length`, `count`; variables receiving `mmap` results should be `memory`, `buffer`, `region`).
+
+3. **Comment Preservation/Generation**: Either preserve original debug comments from `-g` flag or generate semantic comments explaining function purpose, expected return values, and notable transformations (e.g., "/* Constant folded: originally returned BUFFER_COUNT * 4 */").

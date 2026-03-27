@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `local_10`, `iVar1`, `uVar2` with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `x`, `y` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), which is excellent. However, compiler helper functions have cryptic names (`__adddf3`, `__floatsidf`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers in hex without context (`0xf`, `0x32`, `0x2a`, `0x12345678`). Original source used decimal values in clear context (e.g., `cdecl_func(5, 10)` became `return 0xf`).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts including floating-point helper functions (`__adddf3`, `__floatsidf`, `__fixdfsi`), redundant type casts, and `undefined4`/`undefined8` placeholder types throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but complex operations like `func_mixed_args` expanded into verbose helper call chains. Loops use `do-while` patterns that are readable but not idiomatic C.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical issue: test functions like `call_cdecl`, `call_stdcall` were constant-folded to return literals instead of calling underlying functions. Original call relationships lost entirely.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. Floating-point helper functions (`__subdf3`, `__adddf3`) have excessive branching that disrupts flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding removed actual function calls (redundancy elimination gone too far). Floating-point helpers show repetitive bit-manipulation patterns that could be abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Extensive use of `undefined4`, `undefined8` for unknown types. Float/double operations use integer helpers instead of proper floating-point types. Pointer types sometimes preserved but often degraded.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure: `LargeStruct` and `SmallStruct` completely lost. `func_struct_byval` shows `int param_1, undefined4 param_2, undefined4 param_3, undefined4 param_4` instead of struct parameter. `func_struct_byptr` uses `int *` instead of `SmallStruct *`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(int)uVar2`, `(ulonglong)uVar2 >> 0x20`). Pointer type confusion throughout (`int *` used where `SmallStruct *` expected). No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each test case, expected values, and calling convention details. Complete loss of semantic documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not identified (`varargs_func` shows raw stack access). Structure passing patterns not recognized. No algorithm or design pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags for critical issues like constant-folded test functions, lost struct types, or expanded floating-point operations. Code presents incorrect simplifications confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Null checks present (`if (param_1 == (int *)0x0)`) but not documented as preconditions. No postcondition inference. Original source's test expectations completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships mostly lost due to constant folding. `test_calling_conventions` prints hardcoded values instead of calling test functions. Cannot trace actual execution flow.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source. However, compiler helper functions mixed with application code without clear separation. No header file structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References external functions (`printf`, `strlen`, `puts`) without declarations. Floating-point helpers (`__adddf3`, etc.) require special linking. Would need significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.400
+
+Overall Score: 4.13/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Constant folding destroyed test semantics**: Functions like `call_cdecl()` return `0xf` instead of actually calling `cdecl_func(5, 10)`, losing all call relationship information
+- **Complete struct type loss**: `LargeStruct` and `SmallStruct` degraded to `int` and `undefined4` parameters, making `func_struct_byval` and `func_struct_byptr` unintelligible
+- **Zero documentation**: No comments recovered despite original source having extensive test documentation and expected value annotations
+- **Floating-point operation explosion**: `func_mixed_args` expanded from 4 lines to 15+ lines of helper function calls (`__floatsidf`, `__adddf3`, `__fixdfsi`)
+- **Generic variable naming**: All variables use `param_N`, `local_N`, `iVarN`, `uVarN` patterns with no semantic meaning
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names were preserved accurately, allowing identification of test purposes despite other degradation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, comments, or semantic hints that were abundant in the original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve call relationships over constant folding**: When decompiling test code, maintain actual function calls even if compiler optimized them to constants, as the call structure carries semantic meaning
+2. **Recover composite types from usage patterns**: Analyze parameter access patterns (e.g., `param_1[0]`, `param_1[1]`) to infer struct types and field names
+3. **Generate semantic comments from analysis**: Add comments indicating optimization artifacts (e.g., "// OPTIMIZED: constant-folded from cdecl_func(5, 10)") and type uncertainty (e.g., "// TYPE UNCERTAIN: may be struct")

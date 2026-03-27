@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `uVar2`, `local_30`). Original semantic names like `dst`, `src`, `buffer`, `fd` are lost, making it difficult to track data flow without referring to source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names are preserved from source (`param_strcpy`, `call_memcpy`, `param_fork_exec`). However, some functions have generic names (`FUN_001012e0`, `FUN_001017fc`) and external wrappers add noise (`<EXTERNAL>::memcpy`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals preserved ("HelloLib", "/etc/passwd"), but magic numbers abound (`0x2a` for 42, `0xffffffff` for -1, `0x12` for 18 bytes) without explanation or named constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present throughout: redundant casts (`(undefined8 *)0x0`), ARM64-specific atomics (`__aarch64_cas4_acq_rel`), stack manipulation (`stack0xffffffffffffff70`), and type confusion (`undefined4`, `undefined8`).
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered but signal handling uses complex nested conditionals with `do-while` instead of clean `while`. Some functions use `goto` labels (`LAB_00102240`) for error paths instead of structured returns.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match source well. Thread functions (`thread_compute`, `thread_sum`) properly separated. No severe monolithic functions, though `param_malloc_free` is overly complex due to loop unrolling artifacts.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but forward jumps disrupt flow (e.g., `goto LAB_00102240` in `param_shmget_shmat`). Deep nesting in `param_signal_handling` with multiple condition levels.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling visible in `param_malloc_free` with NEON operations (`NEON_cmhs`). Some expressions duplicated across branches. Dead code minimal but optimization artifacts present.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types partially preserved (`int`, `char*`, `size_t`), but many degraded to `undefined8`, `undefined4`, `ulong`. Return types often wrong (`void` functions return `undefined8`). Pointer types frequently become `void*`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `sockaddr` struct partially recovered but fields generic (`sa_data[0]` through `sa_data[13]`). `ThreadData` struct not reconstructed—uses array indexing instead. `stat` struct accessed via stack offsets.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Numerous unsafe casts: `(undefined8 *)0x0`, `(pthread_mutex_t *)counter_mutex`, `(int *)0xffffffffffffffff`. Pointer arithmetic present but generally correct. No const-correctness preserved.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered from original source. Only decompiler header present ("Decompiled by BinaryAI"). No algorithm explanations, API contracts, or parameter documentation. Critical loss of semantic context.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library patterns identifiable (`strcpy`, `memcpy`, `pthread_create`), but not explicitly named as patterns. Thread synchronization patterns (mutex, condition variable) recognizable but unlabeled.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged. Indirect calls, unusual stack layouts, and potential undefined behavior presented confidently without warnings. User cannot distinguish certain from uncertain recovery.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). No postconditions or invariants. Error return values (`0xffffffff`, `0xfffffffd`) unexplained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`shared_counter`, `atomic_counter`, `signal_received`) used without declaration context. Callback relationships implicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file. Original section organization (6.1 Standard Library, 6.2 System Calls, 6.3 Threads) completely lost. No logical grouping or header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would not compile standalone. `undefined8`, `undefined4` types need definition. External function signatures incomplete. ARM64-specific intrinsics require special handling.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+6+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (1+5+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────
+Overall Score:                                  4.92/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Variable `param_1`, `param_2`** should be named `dst`, `src` based on `strcpy` semantics
+- **Zero comments recovered** from 1174 LOC of well-documented original source
+- **Magic numbers** (`0x2a`, `0xffffffff`, `0x12`) used without named constant recovery
+- **Type degradation** to `undefined8`, `undefined4` obscures data sizes and intent
+- **Struct fields** all generic (`sa_data[0]` through `sa_data[13]`) losing semantic meaning
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`param_strcpy`, `call_memcpy`, `param_fork_exec`), maintaining semantic connection to source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete loss of all original documentation, making non-trivial logic impossible to understand without source reference.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Even at -O0, debug symbols should enable comment recovery from DWARF or separate debug sections.
+2. **Infer variable names from usage patterns** - `param_1` in `strcpy` context should become `dst`; `param_2` should become `src` based on standard library semantics.
+3. **Replace magic numbers with named constants** - Detect repeated values (`0x2a`=42, `0xffffffff`=-1) and suggest/create symbolic constants with explanatory comments.

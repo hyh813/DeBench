@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+The original source is a C++ test file (540 LOC) testing various object-oriented features including member functions, virtual functions, multiple inheritance, templates, lambdas, exceptions, smart pointers, and RTTI. The decompiled output is 3061 LOC - approximately 6x larger due to extensive boilerplate, compiler artifacts, and poor abstraction.
+
+The specific function `getValue` from `SimpleClass` is decompiled as:
+```cint64_t _ZNK11SimpleClass8getValueEv(void) {
+    int64_t v1;
+    return v1 & 0xffffffff;
+}
+```
+
+This shows severe readability issues - the variable `v1` should be named `this` or `obj`, and the return expression is confusing.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic (v1, v2, a1, a2, result). The decompiled code contains hundreds of instances like `int64_t v1;` with no semantic meaning. For `getValue`, the `this` pointer should be explicitly named, not `v1`. Global variables like `g1`, `g2`, `g28` are meaningless compared to source names like `instance_count`.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: While demangled names exist (e.g., `_ZN11SimpleClass8getValueEv` → `SimpleClass::getValue`), many helper functions use generic names like `function_19c0`, `function_1a20`. The demangled names are accurate but buried among noise. The function naming is inconsistent - some are demangled while others are generic "function_" labels.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear throughout without explanation. For example, in `test_cpp_smart_ptr`: `*(int32_t *)(v5 + 16) = 5;` with no explanation of array size. The value `0x4000000000000000` in `LifecycleClass` constructor is unexplained. Constants like `1000` (multiplier) in test functions lack semantic naming.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: The output is severely polluted with compiler artifacts including: vtable structures (g5-g20), hundreds of standard library stub functions, exception handling machinery (`_Unwind_Resume`, `__cxa_throw`), thunk functions for multiple inheritance, and template instantiation boilerplate. The actual test code is buried among ~2000 lines of noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow (if/while/return) is preserved, but exception handling creates complex control flow that obscures logic. In `test_cpp_exception`, the try-catch structure is decompiled as manual exception allocation and rethrow, making it hard to recognize the original C++ exception pattern. Loop constructs are generally preserved but use confusing variable access patterns.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: The decompilation produces a single monolithic 3061-line file rather than separating classes. Template instantiations are expanded inline rather than abstracted. The `test_cpp_smart_ptr` function is 200+ lines mixing multiple test cases. Standard library internals (tuple, unique_ptr implementation) are fully expanded rather than abstracted as library calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom without excessive forward jumps. However, exception handling in `test_cpp_exception` uses complex control flow with `__cxa_throw` and `_Unwind_Resume` that disrupts linear reading. The `call_virtual_func` shows confusing pointer manipulation that breaks linear flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in template instantiation code - each template specialization (Container<int>, Container<double>) generates separate functions with similar patterns. The unique_ptr implementation has duplicated code across different instantiations. Standard library boilerplate repeats extensively.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int64_t` and `int32_t` consistently, which is better than generic `int`, but loses semantic precision. `size_t` is not used (uses `uint64_t`). Const correctness is partially preserved in demangled names (`_ZNK` prefix) but not in function signatures. Pointers are generally typed correctly.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Vtables are recovered as structures but with generic names (`vtable_17858_type`). Class member access is decompiled as pointer arithmetic (e.g., `*(int32_t *)((int64_t)result + 4)` for `name[32]` array). The `SimpleClass` members (value, name) are not recovered as named fields - just raw memory access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout: `(int32_t)&g44` (taking address of global as int), `(int64_t *)v1` (void* to typed pointer), `(int32_t *)v5` (raw memory as array). Pointer arithmetic is error-prone, e.g., `4 * v2 + v1` for array indexing. No bounds checking is visible in array operations like `Container::get`.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Some useful comments exist: address ranges, demangled names, line ranges from source. However, comments like `// 0x3020` are just addresses, not explanations. No comments explain algorithm intent, preconditions, or non-obvious logic. The comment "Line range: 23 - 26" references source but doesn't explain what the code does.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: C++ idioms are partially recognized: constructors/destructors are identified, virtual function mechanism is visible through vtables, RAII patterns can be seen in unique_ptr. However, the exception handling pattern is not recognized as try-catch - it's decompiled as manual exception machinery. Lambda expressions are not recognized as such (just anonymous function objects).
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Indirect virtual calls are not flagged. The `call_virtual_func` has suspicious code (`return (int64_t)a1;` - just returns the pointer!) but no anomaly is indicated. Unusual patterns like `v1 & 0xffffffff` in getValue are presented without question.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The `getData` function has implicit bounds checking (`if (v2 < size) return data[idx] else return -1`) but this contract is not explained. No documentation of what functions expect or guarantee.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are not documented. The `test_cpp_oo_features` calls all test functions but there's no comment listing them. Virtual dispatch relationships (vtable entries) are visible but not explained. Global variable usage (like `g28` for `instance_count`) is obscure.
+
+**17. Module Organization:** Score: 2/10  
+Justification: All code is in a single massive file. Classes are not separated. The original source has clear sections (CPP-L3-01, CPP-L3-02, etc.) but the decompiled code has no such organization. Related functions (all SimpleClass methods) are scattered throughout the file.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code includes standard headers but has missing declarations. The metadata says "Compilation Result: Yes" but the code has incomplete types and would require significant patching to compile standalone. No dependency documentation exists.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- Variable naming is universally generic (v1, a1, result) - the `this` pointer in `getValue` should be named
+- Single monolithic 3061-line file with no logical organization - classes and functions not separated
+- Composite type recovery failure - struct fields are accessed via raw pointer arithmetic without field names
+- Severe noise pollution from vtables, thunks, and standard library internals (~2000 lines of boilerplate)
+- Exception handling decompiled as manual machinery obscures the original try-catch pattern
+
+**Best Quality Aspect:** Type System Fidelity (scored 4.0/10)  
+- While imperfect, the decompiler does use explicit integer types (int64_t, int32_t) rather than generic "int" throughout
+
+**Most Needs Improvement:** Lexical Clarity (scored 2.5/10)  
+- Variable and function naming is the most severe issue - almost nothing is named semantically. The code is essentially unreadable without constant reference to demangled names.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from context**: The `this` pointer in member functions should be named `this` or the class name. Variables used as array indices should be named after the array purpose.
+2. **Separate classes into logical units**: Instead of one 3000-line file, organize output by class with clear section headers matching source structure.
+3. **Abstract standard library internals**: Don't expand `unique_ptr`, `tuple`, and `default_delete` implementations - replace with calls to the actual STL headers or mark as "STL implementation detail".

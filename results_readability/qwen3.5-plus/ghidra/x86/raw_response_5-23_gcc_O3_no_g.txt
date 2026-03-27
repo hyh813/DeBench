@@ -1,0 +1,125 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Nearly all variables use generic names like `param_1`, `iVar1`, `uVar1`, `__addr`, `__len` instead of semantic names (e.g., `size`, `result`, `exec_mem`). Original source had meaningful names like `size`, `counter`, `exec_mem` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). This is the strongest lexical aspect—decompiler recovered original function names accurately.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Critical magic numbers everywhere: `0x400` (should be `MAX_SIZE`), `0x40` (should be `BUFFER_COUNT * 4`), `0xdef0` (platform constant), `0x1e` (should be `_SC_PAGESIZE`). Original macro semantics completely lost to preprocessing.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (`__x86.get_pc_thunk.bx` warnings, `in_GS_OFFSET` stack canary checks, `LOCK()/UNLOCK()` pseudo-instructions). However, most dead code is eliminated cleanly.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper if/for/while constructs. However, aggressive constant folding makes some functions trivial (e.g., `call_macro_constants` just returns `0x40`), losing the original conditional logic structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries are well-preserved; each original function maps to one decompiled function. No inappropriate inlining or fragmentation. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom. Some functions have excessive stack canary boilerplate at the end (`if (local_10 == *(int *)(in_GS_OFFSET + 0x14))`), but flow is traceable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or duplicate expressions. The `call_asm_multi_insn` function has verbose zero-initialization of `local_3a[0x10]` through `local_3a[0x29]` which is redundant but harmless.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of `undefined4`, `undefined1` instead of proper types. `param_stringize` returns `undefined4` but should return `int`. Pointer types often generic (`void*` instead of `char*`, `int*`). Some signedness lost.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays are recovered (`local_24[5]`, `local_3a[42]`), but no struct definitions appear. Original code had no complex structs, so this is acceptable. Stack arrays are properly sized.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No dangerous casts visible. Pointer arithmetic is explicit (`param_1 + iVar2 * 4`). The `LOCK()/UNLOCK()` pseudo-instructions for atomics are unusual but not unsafe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only Ghidra warnings ("WARNING: Function...replaced with injection"). No algorithm explanations, no macro recovery notes, no indication of what was optimized away.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized (memcpy recovered as loop, atomic operations as LOCK/UNLOCK), but no explicit identification. The string copy in `call_asm_multi_insn` is verbose without explaining it's a test verification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Ghidra does flag some issues ("WARNING: Subroutine does not return", "Removing unreachable block"). However, critical semantic losses (macro expansion, conditional compilation branches) are not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. Stack canary checks present but not explained as security features. No indication of expected return values or error conditions.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear (`test_preprocessing_features()` calls `call_macro_constants()`, etc.). Global variable `global_var` referenced but not declared in output. External functions (`mmap`, `printf_chk`) assumed available.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source. Test functions grouped together. However, all 58 functions in one file without header declarations or separation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code references undefined symbols (`DAT_000121f4`, `LOCK()`, `UNLOCK()`, `__printf_chk`). Would require significant stubbing to compile. Architecture mismatch (x86 vs original ARM64) is problematic.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+8+3+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):   (7+8+7+8)/4 = 7.50 × 0.25 = 1.875
+Level 3 (Type):         (5+6+7)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):     (2+4+5+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):   (6+7+5)/3   = 6.00 × 0.10 = 0.600
+
+Overall Score: 5.775 ≈ 5.8/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+---
+
+### Critical Defects
+
+- **Macro semantics completely lost**: `MAX_SIZE` (1024) becomes `0x400`, `BUFFER_COUNT` (16) becomes `0x40`—no indication these were named constants
+- **Variable names are generic**: `param_1`, `iVar1`, `uVar1` throughout instead of `size`, `result`, `counter`
+- **No comment recovery**: Original 200+ lines of documentation comments completely absent; no decompiler annotations explaining transformations
+- **Conditional compilation branches invisible**: `param_conditional_compile` only shows the `#else` branch (×3+2); no indication `DEBUG_MODE` branch existed
+- **Architecture mismatch unexplained**: Metadata says ARM64, decompiled code is x86—this fundamental discrepancy is not flagged
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (8/10)**
+- Original function names preserved accurately (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`), making navigation and identification straightforward.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (2/10)**
+- Virtually no useful comments; decompiler provides warnings but no semantic recovery notes, making it impossible to understand what preprocessing transformations occurred.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Macro Constant Recovery**: Detect constant-folded values and cross-reference against common patterns to suggest original macro names (e.g., `0x400` → `MAX_SIZE`, `0x1e` → `_SC_PAGESIZE`)
+
+2. **Conditional Compilation Annotation**: When only one branch of `#ifdef` code exists in binary, add comments indicating alternative branches were compiled out (e.g., `// DEBUG_MODE branch not compiled`)
+
+3. **Semantic Variable Renaming**: Use data-flow analysis to infer variable purposes from usage patterns (e.g., parameter used in size comparison → `size`, variable holding return value → `result`)

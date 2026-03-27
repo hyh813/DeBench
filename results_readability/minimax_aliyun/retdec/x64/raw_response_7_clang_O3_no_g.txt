@@ -1,0 +1,145 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names throughout. Parameters are named `a1`, `a2`, `a3` etc., and local variables are `v1`, `v2`, `v3`, `v4` etc. For example, in `param_fake_branch`, the parameter `a1` should be named `x` and the function should return `a1` directly. The reuse of `v1`, `v2` across different functions with different meanings creates complete semantic opacity.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+
+The target functions (`param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`, etc.) are correctly named matching the original source. However, standard library wrapper functions have generic names like `function_1030` (strncpy), `function_1040` (puts), `function_1050` (strlen), `function_1060` (printf). The core test functions are well-preserved.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+The encrypted string `"\x1a+<M"` is shown raw without explaining it's the XOR-encrypted "Hello". The value `90` appears without explanation (it's the XOR key 0x5A). Some format strings have embedded UTF-8 bytes shown as escape sequences. Magic numbers like `0x7a314` (500500 in decimal) for the tail call result are not explained.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+The code contains extensive compiler artifacts including: SIMD intrinsics shown as `__asm_movdqu`, `__asm_paddd`, `__asm_pxor`, `__asm_pshufd`; explicit struct initializations for `longjmp`/`setjmp` calls; complex 64-bit arithmetic patterns like `0x100000000 * v2 >> 32` for division; and many bitmask operations with `& 0xffffffff`. These artifacts severely impede readability.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Basic control flow (loops, conditionals) is preserved, but the code uses extensive goto statements with labeled labs (`lab_0x1403`, `lab_0x1590`, `lab_0x1561`, `lab_0x159d`) creating spaghetti-like flow. The `param_vectorized_loop` function has extremely convoluted control flow due to SIMD handling. At -O0 optimization, this level of complexity is unexpected.
+
+### 6. Function Decomposition
+**Score: 6/10**
+
+The original small functions are correctly preserved as separate entities. However, `param_vectorized_loop` is ~300 lines of complex code that should be decomposed. Parameter lists are reasonable but expose implementation details (e.g., 6 parameters for what was 4 in source).
+
+### 7. Code Linearization
+**Score: 4/10**
+
+The code has numerous forward jumps via goto labels that disrupt natural top-to-bottom reading. The vectorized loop function especially has multiple跳转 points making linear comprehension difficult. Early returns and breaks are used but buried among goto statements.
+
+### 8. Redundancy Elimination
+**Score: 4/10**
+
+Significant redundancy exists in the vectorized loop code - the same SIMD operation patterns repeat with minor variations. Loop unrolling is present but completely uncommented. The code shows 4x and 8x unrolled versions without explanation.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+
+The decompiler uses `int64_t` appropriately for ARM64. There's inconsistent type usage - mixing `int32_t`, `uint32_t`, and `int64_t` without clear rationale. Function parameters are mostly correct but some have extra parameters not in original source (e.g., `param_division_by_zero` has 3 params vs 1 in source).
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+The decompiler created struct definitions for `__jmp_buf_tag` and `_TYPEDEF___sigset_t`, which are implementation details of the runtime. No recovery of application-specific composite types. The `setjmp`/`longjmp` structures are reconstructed but shown with implementation detail field names (`e0`, `e1`, `e2`).
+
+### 11. Type Safety
+**Score: 4/10**
+
+Multiple type safety issues exist: extensive use of `& 0xffffffff` truncations; pointer arithmetic without bounds checking; the `param_null_pointer_deref` function has a critical bug where it returns `v2` uninitialized. Many casts between int32/uint32/int64 without clear justification.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+No comments whatsoever in the decompiled output. The original source had extensive comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.) which are completely lost. No explanation of what each function does or why.
+
+### 13. Idiom Recognition
+**Score: 2/10**
+
+No recognition of the obfuscation patterns. The fake branch (always-false condition) was optimized out but not documented. The opaque predicates are present but not identified as such. No indication this is testing obfuscation techniques.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+No flagging of suspicious code or uncertainties. The uninitialized variable `v2` in `param_null_pointer_deref` is presented confidently but is actually a bug. No indication of the SIMD complexity or optimization artifacts.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No pre/post conditions or invariants documented. The error handling patterns (setjmp/longjmp) are present but not explained. No documentation of what conditions each function expects or guarantees.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Function call relationships are somewhat clear from the code structure - `test_obf_opt_edge` calls all the test functions. However, there's no explicit documentation of the call graph or which functions are helpers vs. main entry points.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Functions are in a reasonable order matching the original source organization (obfuscation, optimization, edge cases sections). However, everything is in one monolithic file with no logical grouping or separation.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+The code includes standard headers (`<stdio.h>`, `<stdlib.h>`, etc.) and should compile with standard libraries. The function prototypes are declared. However, some issues exist with the decompiled code (einitialized variables, extra parameters).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+7+5+3)/4 = 4.25
+L2_avg = (5+6+4+4)/4 = 4.75
+L3_avg = (6+5+4)/3 = 5.00
+L4_avg = (1+2+1+2)/4 = 1.50
+L5_avg = (5+6+7)/3 = 6.00
+
+Overall = (4.25 × 0.30) + (4.75 × 0.25) + (5.00 × 0.20) + (1.50 × 0.15) + (6.00 × 0.10)
+        = 1.275 + 1.1875 + 1.0 + 0.225 + 0.6
+        = 4.29/10
+```
+
+**Overall Readability Score: 4.29/10**
+
+### Critical Defects
+
+- **Variable naming is completely generic**: All variables are `a1`, `v1`, `v2` etc. with no semantic meaning - completely unusable for analysis
+- **No comments or documentation**: Zero explanation of what functions do, what patterns they implement, or what the obfuscation techniques are
+- **Uninitialized variable bug**: `param_null_pointer_deref` returns uninitialized `v2` - a critical functional error in the decompilation
+- **Excessive compiler artifacts**: SIMD intrinsics, 64-bit arithmetic patterns, and struct initializations for runtime functions obscure the actual logic
+- **Control flow uses goto**: Forward jumps with labeled labs create spaghetti code instead of natural loop/conditional constructs
+
+### Best Quality Aspect
+
+**Function Naming Quality (7/10)** - The core test functions (`param_fake_branch`, `call_opaque_predicate`, etc.) are correctly named matching the original source, preserving the semantic intent of the program.
+
+### Most Needs Improvement
+
+**Semantic Transparency (1.5/10)** - The decompiled code has zero comments, no pattern recognition, no anomaly indication, and no contract recovery. This dimension is essentially non-functional, making it impossible to understand what the code is actually testing or why the obfuscation patterns exist.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: When a parameter is used in arithmetic with multiplication/division, name it `x` or `multiplier`. When a variable holds string data, name it `str` or `buffer`. Use data flow analysis to assign semantic names.
+
+2. **Add comments explaining decompilation decisions**: Document when code was optimized out (like the fake branch), when SIMD operations are present, and when patterns like opaque predicates are detected.
+
+3. **Recover natural control flow structures**: Convert backward jumps to while/for loops, eliminate goto statements by restructuring code blocks, and clearly mark loop unrolling when detected.

@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7` and parameters `a0`, `a1`, `a2`. These obscure semantic meaning entirely - for example, in `sequential_ops`, the parameters should be named `a`, `b`, `c` based on the original source, not `a0`, `a1`, `a2`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: About half the functions have proper semantic names matching the source (`sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `recursion_factorial`), while the other half use auto-generated address-based names like `sub_401030`, `sub_401090`, `sub_401113`. Mixed result - main test functions are correctly named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Extensive use of magic numbers without explanation. The value `4294967295` (representing -1 as unsigned) appears frequently. The constant `1717986919` (0x66666667) is used for division by 10 optimization but not explained. No named constants recovered from the source.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant decompilation artifacts present. The `CONCAT` keyword appears multiple times (e.g., `>> 32 CONCAT (a0 - 1) * (a0 - 2)`). Some spurious struct definitions like `struct_0` with `padding_0` fields. Register-related noise from `__x86.get_pc_thunk.*` functions pollutes the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0 optimization, control flow is mostly preserved naturally. Loops are recognizable (`while`, `do-while`), conditionals use `if-else` chains. Some minor awkwardness in complex functions like `loop_multi_exit` with its nested goto labels, but overall readable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. The test functions properly call individual test cases. No 500-line monoliths. Parameter counts match original (e.g., `nested_if_deep` correctly has 5 parameters).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. However, some functions like `loop_multi_exit` use goto labels (`LABEL_401832`) that disrupt linear flow. The `goto_forward` and `goto_backward` functions preserve goto structure but this is appropriate given the source used goto.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Some optimization artifacts like the complex division-by-10 formula in `loop_while` and `loop_dowhile` (`a0 * 1717986919 >> 34`) are present but represent legitimate compiler optimizations at -O0 that could be cleaner.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Parameters are all `unsigned int` which loses sign information from the original `int`. Function pointers are not properly typed - `call_func_ptr` takes `unsigned int *a0` instead of a function pointer type. The `conditional_func_ptr` assigns function addresses to `unsigned int*` variables incorrectly.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Generic struct names like `struct_0`, `struct_1` with meaningless field names like `field_0`, `padding_0`. The `register_tm_clones` function has an absurd struct definition with `padding_0[20183]` - clearly a decompilation failure. No meaningful struct recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. In `call_func_ptr`, the function pointer is called via `a0(a1)` which treats a pointer as a function - unsafe. In `op_div` and `op_mod`, complex bit manipulation with `CONCAT` creates type confusion. Moderate risk of undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Absolutely no comments in the decompiled output. The original source has extensive comments explaining each function's purpose, test scenarios, and difficulty ratings. Zero recovery of this documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like switch-case are recognized. The `duffs_device` is partially recognized but with incorrect goto implementation. State machines are partially recovered but not named as patterns. No explicit pattern naming or documentation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags or warnings. The decompiler silently produces incorrect code in some places (e.g., `call_func_ptr_array` returns -1 without actually calling anything). No indication of indirect calls that couldn't be resolved or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source has explicit test cases with expected values that could inform contracts. Zero contract recovery.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are syntactically clear (e.g., `recursion_factorial(a0 - 1)`). However, there's no documentation of which functions call which, callback relationships, or global variable usage. The `extern` declarations show dependencies but relationships aren't explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are somewhat grouped (test functions together, control flow L1 functions together). However, the organization is essentially alphabetical by address, not logical grouping. Static functions like `op_add`, `op_sub` etc. could be better organized.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code has `extern` declarations for external references. Many functions would require stubs to compile (e.g., `puts`, `printf`, `__libc_start_main`). The `CONCAT` keyword is not valid C syntax, making compilation impossible without editing.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming uses only generic `v*` and `a*` names, completely obscuring semantic meaning
+- Zero comments recovered from the original source's extensive documentation
+- Type precision severely degraded - all parameters are `unsigned int`, losing sign information
+- Composite type recovery failed - generic `struct_0` with `padding_0` fields
+- The `CONCAT` keyword is invalid C syntax, preventing compilation
+- Function pointer types not properly recovered - treated as `unsigned int*`
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions are appropriately sized with clear single responsibilities. The test functions properly call individual test cases, and parameter counts match the original source.
+
+**Most Needs Improvement:** Comment Quality & Type Precision (both scored 1-2/10)  
+The decompiler produces zero comments despite the original having 961 lines of well-documented code. Type information is severely degraded with all parameters as `unsigned int` and no proper function pointer types.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Variables like `v0` in `sequential_ops` should be named `temp1`, `temp2` based on sequential assignment patterns. Parameters `a0`, `a1`, `a2` should be renamed to match source parameter names when function signature matches.
+2. **Recover comments from debug symbols**: The source was compiled with `-g` (debug info). The decompiler should extract comment strings from DWARF debug information to restore the extensive documentation present in the original source.
+3. **Fix type precision and syntax errors**: Replace `CONCAT` with proper C code, recover signed types from debug info, and properly type function pointers instead of using `unsigned int*`.

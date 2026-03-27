@@ -1,0 +1,105 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar1`, `local_64`) with zero semantic meaning. For example, `process_char` uses `param_1` instead of `c` or `character`, and `array_1d_stack` uses `piVar2`/`piVar3` instead of `ptr`/`end_ptr`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), but some show degradation like `ptr_func_simple` with "UNRECOVERED_JUMPTABLE" warning and `opaque_handle_create` returning `void` instead of `void*`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x41`, `0x20`, `0x1a` in `process_char` instead of `'A'`, `32`, `26`). Test functions show pre-computed constants (`0x61`, `0x62`) instead of actual function calls, obscuring the test logic.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler runtime calls visible (`__mulsf3`, `__aeabi_dadd`, `__fixsfsi`). Multiple "WARNING: Removing unreachable block" annotations. Excessive temporary variables (`uVar1`, `uVar2`, `iVar1`, etc.) from register spilling.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `binary_tree_sum` transformed from elegant recursion to 200+ lines of deeply nested iterative loops. `array_3d` unrolled into 125-term addition expression instead of triple-nested loops. Basic functions like `process_int` remain readable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Most functions maintain reasonable size, but `binary_tree_sum` is catastrophically large (200+ lines). Test functions (`test_data_types_l1`, `test_array_types`) have actual function calls replaced with constant values, losing test semantics.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read top-to-bottom adequately. However, `binary_tree_sum` has 10+ levels of nested do-while loops that are extremely difficult to trace. `pointer_array` uses chained if-statements instead of a loop.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `array_3d` shows extreme redundancy with 125 explicit array accesses. `pointer_array` has 10 nearly-identical if-blocks for each array index. No loop unrolling annotations to explain the transformation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Critical type failures: `process_char` returns `uint` not `char`; `process_float`/`process_double` return `void` not float types; `process_ll` takes `(uint, int)` not `long long`; `volatile_access` loses volatile qualifier entirely.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—all structs degraded to `int*` with array indexing. `struct_simple(Point3D*)` becomes `struct_simple(int *param_1)` accessing `param_1[0]`, `param_1[1]`, `param_1[2]`. No struct definitions recovered; `Widget`, `Rect`, `Node` all lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(int *)param_1[1]`), pointer arithmetic on `int*` for struct field access, function pointers degraded to `code*`. `ptr_func_simple` shows "Treating indirect jump as call" warning indicating type uncertainty.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero semantic comments. Only compiler warnings present ("WARNING: Could not recover jumptable"). No algorithm explanations, no parameter documentation, no recovery confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Recursive tree traversal pattern completely lost in `binary_tree_sum`. Linked list iteration pattern obscured by `int*` typing. No design patterns identified (state machine in `enum_switch`, strategy pattern in function pointers).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("UNRECOVERED_JUMPTABLE", "Subroutine does not return", "Removing unreachable block"), but these are generic compiler warnings, not semantic anomaly flags. No explanation of why recovery failed.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions. No error condition documentation. `array_complex_index` bounds checking present but not documented as a contract.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Function pointer calls show as `(*param_1)(param_2)` with no indication of expected signature. Callback relationships (`ptr_func_simple`, `struct_func_ptr`) completely opaque.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source-order grouping (data types, arrays, pointers, composites), but no header file structure, no static function scoping visible, no namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone—requires ARM runtime functions (`__mulsf3`, `__aeabi_dadd`, `__fixsfsi`, `__printf_chk`). No dependency documentation. External function declarations missing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+5+5+4)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (3+2+4)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+5+1)/4 = 2.25 × 0.15 = 0.3375
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.66/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **All struct/union types lost** - `Point3D`, `Widget`, `Node`, `Graph` all degraded to `int*` with array indexing
+- **Floating point functions return `void`** - `process_float`, `process_double`, `process_ld` have broken signatures
+- **Recursive algorithms destroyed** - `binary_tree_sum` transformed from 5-line recursion to 200+ line nested iteration
+- **Zero semantic comments** - No documentation of algorithm intent, recovery confidence, or anomalies
+- **Test functions optimized away** - Actual function calls replaced with pre-computed constants, losing test semantics
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), providing basic semantic anchors despite other degradation.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of semantic documentation; even basic recovery confidence indicators or algorithm explanations would dramatically improve usability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze consistent field access patterns (`param_1[0]`, `param_1[1]`, `param_1[2]`) to reconstruct struct definitions with meaningful field names.
+2. **Preserve recursive call patterns** - Detect tail-recursive and tree-traversal patterns instead of unrolling into iterative equivalents that obscure algorithm intent.
+3. **Add semantic annotations** - Include recovery confidence indicators, algorithm pattern hints, and type uncertainty warnings (e.g., "LIKELY: struct with 3 int fields" instead of `int*`).
+
+---
+
+**Note on Metadata Discrepancy:** The original source claims `-O0 -g` (debug build), but the decompiled code shows aggressive optimization artifacts (loop unrolling, constant folding, function inlining) consistent with `-O3`. The binary path also references `arm32/2/2_gcc_O3_no_g`. This mismatch significantly impacts expected readability—true `-O0` decompilation should score 8-10, not 3.7.

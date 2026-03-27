@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names like `local_28`, `iVar1`, `uVar1` obscuring purpose (e.g., `local_14` should be `fd` in `param_fopen_fclose`), though parameter names (`dst`, `src`, `str`) are preserved from debug symbols.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from debug info (`param_strcpy`, `thread_compute`, `signal_handler`), though some runtime functions remain generic (`FUN_001012e0`, `FUN_001017fc`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation: `0x2a` (42), `0x38` (syscall number), `0x1000` (4096), socket constants `2,1,0` instead of `AF_INET, SOCK_STREAM, 0`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Decompiler warnings present ("Unknown calling convention", "Unresolved local var") but not overwhelming; no excessive dead code or redundant casts for -O0 compilation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as for/while constructs correctly; signal handling uses `while(true)` with break patterns that could be cleaner but remain readable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Appropriate function granularity maintained; thread functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`); no excessive inlining visible.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps; nested conditionals in signal handling are clear but slightly deep.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant variable assignments visible (`local_14 = iVar1` patterns); no obvious dead code; loop structures are clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used where `size_t`, `ssize_t`, `atomic_int` would be precise; pointer types mostly correct but `void*` overused; signal numbers as raw integers (10, 0xe) instead of `SIGUSR1`, `SIGALRM`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `ThreadData` struct not recovered (accessed via pointer arithmetic `*(int *)((long)arg + 8)`); `sockaddr` partially recovered; TLS accessed via raw `tpidr_el0` register instead of `__thread` variables.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts visible (`(int)pcVar1 - (int)str`); pointer arithmetic on void*; atomic operations use generic int; code compiles but with potential warnings.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated decompiler comments ("Unresolved local var", DWARF info); no semantic comments explaining algorithm purpose or API contracts.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`); producer-consumer pattern in condition variables not explicitly named; atomic intrinsics identified as architecture-specific.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly flagging with "WARNING: Unknown calling convention", "Unresolved local var", "Subroutine does not return" for `_exit`; uncertainty properly communicated.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., `dst != NULL` for strcpy); no postcondition inference; error return values visible but not explained; no invariant recognition.
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls and global variables visible (`signal_received`, `atomic_counter`); thread function relationships clear; no explicit call graph or callback documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 75 functions in single output file; no logical grouping by category (stdlib/syscall/thread); functions appear mostly in address order.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Metadata confirms "Compilation Result: Yes"; external dependencies visible (pthread, libc); architecture-specific intrinsics present but compilable with appropriate toolchain.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+5+7)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (7+8+7+7)/4 = 7.25 × 0.25 = 1.8125
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (4+6+7+3)/4 = 5.00 × 0.15 = 0.75
+Level 5 (Context):     (6+4+8)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                              = 5.97 ≈ 6.0/10
+```
+
+**Overall Readability Score: 6.0/10**
+
+### Critical Defects
+- **Variable `local_XX` naming**: Generic names like `local_28`, `local_14` should be inferred as `ret`, `fd`, `sum` based on usage patterns and DWARF debug info
+- **Composite type loss**: `ThreadData` struct accessed via pointer arithmetic (`*(int *)((long)arg + 8)`) instead of recovered struct with named fields
+- **Magic numbers**: `0x2a` (42), `0x38` (syscall), signal numbers (10, 0xe) should be named constants
+- **TLS variable degradation**: `__thread` variables accessed via raw `tpidr_el0` register instead of thread-local storage semantics
+- **No contract documentation**: Missing precondition/postcondition comments for error handling paths
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Debug symbols preserved most function names accurately, making code navigation straightforward
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (3/10)** - No documentation of preconditions, postconditions, or error semantics despite clear error handling patterns in source
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Leverage DWARF debug info more aggressively** - Variable names are present in "Unresolved local var" comments but not applied to actual variable declarations
+2. **Recover struct layouts from type information** - ThreadData and similar structs should be reconstructed with named fields instead of pointer arithmetic
+3. **Add semantic comments for standard patterns** - Recognize producer-consumer, mutex-protected critical sections, and signal handling patterns with explanatory comments

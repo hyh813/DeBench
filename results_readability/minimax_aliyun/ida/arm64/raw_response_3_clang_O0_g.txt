@@ -1,0 +1,161 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+Justification: Variables use generic names like `v0`, `v1`, `v2` in test functions, `ptr` for heap allocations, and `i`, `j` for loops. The original source had meaningful names like `local`, `arr`, `out`, `head`, `current`, `new_node`. These generic names make it difficult to track variable purpose across function calls.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: Most function names match the original source exactly: `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `global_var_access`, `memop_memset`, etc. Minor issues include some internal functions with generic names like `sub_920`, but the core test functions are well-named.
+
+### 3. Literal Clarity
+**Score: 6/10**
+
+Justification: Some literals are clear (42 in address_of_local, 10 in stack_alias), but many magic numbers lack explanation: `0x14u`, `0x28u`, `0x10u` for malloc sizes, `0xAu` for loop bounds. The original had meaningful constants like `n * sizeof(int)` which became opaque numbers.
+
+### 4. Noise Reduction
+**Score: 8/10**
+
+Justification: Minimal compiler artifacts present. Some type casts like `_DWORD*` and `unsigned __int8` appear, but these don't significantly impede readability. No debug instrumentation or register spilling artifacts observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 9/10**
+
+Justification: Control flow structures match source exactly - for loops, while loops, if-else conditionals are all natural. At -O0 optimization, no loop unrolling or goto transformations occurred. The code is easy to follow.
+
+### 6. Function Decomposition
+**Score: 9/10**
+
+Justification: Functions maintain appropriate granularity (10-50 lines each). The original's function boundaries are preserved. No inlining or outlining artifacts since -O0 was used.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately in error-checking code. One minor forward jump in `vla_stack` but overall good linearity.
+
+### 8. Redundancy Elimination
+**Score: 9/10**
+
+Justification: No dead code or significant redundancy. Loop unrolling is not present (as expected at -O0). Code is clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 6/10**
+
+Justification: Function signatures are mostly correct (`int`, `char*`, `void*`), but the decompiler uses generic types like `_DWORD` (4-byte), `_BYTE`, `unsigned __int8` instead of `int`, `char`. Pointers to structs are correctly typed as `Node*`, `TreeNode*`.
+
+### 10. Composite Type Recovery
+**Score: 8/10**
+
+Justification: Struct types `Node` and `TreeNode` are recovered with proper field names (`data`, `next`, `left`, `right`). The `Point` typedef is also recovered. However, some struct operations in `heap_struct` use raw pointer arithmetic instead of proper struct access.
+
+### 11. Type Safety
+**Score: 7/10**
+
+Justification: Minor type safety issues present. In `global_heap_store`, the code uses `global_heap_ptr = (__int64)p` which loses type safety. Some pointer arithmetic casts are present but not severe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining each test case (MEM-L1-01, HEAP-L2-01, etc.) and their expected values. This is a significant loss of semantic information.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some patterns are recognizable (linked list creation/traversal, binary tree operations) but not explicitly named or documented. The decompiler doesn't identify these as common data structure patterns.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+
+Justification: The output lists failed decompilations (memcpy, memmove, exit, malloc, etc.) but provides no explanation of why they failed or workarounds. No flags for suspicious code patterns like the dangling pointer access in `dangling_pointer()`.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+
+Justification: No contract information recovered. Preconditions like null checks are present in code but not documented. Postconditions and invariants are not indicated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+
+Justification: Function calls are clear and direct. However, relationships between functions (who calls whom, global variable usage) are not documented. The callback pattern in `set_global_callback`/`call_global_callback` is recovered but not explained.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Justification: Functions are grouped logically - test functions (`test_stack_memory`, `test_heap_memory`, etc.) are separate from implementation functions. Static functions like `static_helper` are properly scoped.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+
+Justification: Uses undefined types like `_DWORD`, `_BYTE` which won't compile. External references like `extern_global_var`, `extern_function` are declared but not defined. Would require patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 avg = (3+8+6+8)/4 = 6.25
+Level 2 avg = (9+9+8+9)/4 = 8.75
+Level 3 avg = (6+8+7)/3 = 7.00
+Level 4 avg = (2+5+5+3)/4 = 3.75
+Level 5 avg = (6+7+5)/3 = 6.00
+
+Overall = (6.25 × 0.30) + (8.75 × 0.25) + (7.00 × 0.20) + (3.75 × 0.15) + (6.00 × 0.10)
+        = 1.875 + 2.1875 + 1.4 + 0.5625 + 0.6
+        = 6.625/10
+```
+
+**Overall Readability Score: 6.6/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Variable naming**: Generic names like `v0`, `v1`, `v2`, `ptr`, `i`, `j` obscure variable purpose; should infer from usage patterns (e.g., `ptr` in `heap_basic` is clearly `arr`)
+- **No comments**: Complete loss of semantic documentation from original source (MEM-L1-01, HEAP-L2-01 patterns, expected values)
+- **Type precision**: Uses `_DWORD`, `_BYTE` instead of `int`, `char`; makes code non-compilable
+- **Missing anomaly flags**: `dangling_pointer()` returns `*ptr` after `free(ptr)` - undefined behavior not flagged
+- **Magic numbers**: malloc sizes like `0x14u`, `0x28u` lose original expressions like `5 * sizeof(int)`
+
+---
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Control Flow Naturalness (9/10)**
+- **Why?** At -O0 optimization, the decompiler preserved all loop and conditional structures exactly as written in source. No goto transformations or loop unrolling occurred.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Comment Quality & Presence (2/10)**
+- **Why?** The original source had extensive comments explaining each test case, expected values, and memory operation patterns. The decompiled output has zero comments, losing significant semantic context.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a variable is used as array index, name it `i` or `index`; when used as size parameter, name it `n` or `size`. The original source names should be recoverable from typical C patterns.
+
+2. **Recover comments from debug symbols**: Since the binary was compiled with `-g`, debug information contains source line numbers and could potentially recover comment text or at least test case identifiers (MEM-L1-01, etc.).
+
+3. **Flag undefined behavior**: The `dangling_pointer()` function accesses memory after free - this should be flagged as a critical anomaly with a warning, not silently decompiled as returning an undefined value.

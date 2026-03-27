@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`, `idx`) with no semantic meaning. For example, `param_macro_constants(unsigned int a0)` should have `size` as the parameter name based on original source usage.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retained original names (`param_macro_constants`, `call_macro_constants`) which is excellent, but numerous wrapper functions (`sub_401189`, `sub_4011a4`) with meaningless names clutter the output and obscure the actual API.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `1025`, `0x200`, `57072`, `57122` appear without explanation. Original constants (`MAX_SIZE=1024`, `BUFFER_COUNT=16`) were lost during preprocessing and not recovered as named constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise from wrapper functions that just call real functions (e.g., `sub_401189` calls `param_macro_constants`). Stack variable assignments like `v0 = v2` add no value and should be eliminated.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow recovered as natural C constructs (if/else, for loops). However, `sub_401020` uses `goto g_404010` which is unnatural. At `-O0` optimization, cleaner control flow was achievable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved well, but excessive wrapper functions fragment the code. Each real function has a corresponding `sub_XXXXXX` wrapper that serves no purpose and inflates the function count.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with proper loop structures. The `param_asm_clobber` function correctly recovered a for-loop from assembly. Minor disruptions from goto statements in initialization code.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding created redundancy—`call_macro_constants()` just returns `64` instead of showing the computation. Wrapper functions duplicate call patterns unnecessarily throughout the codebase.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `unsigned int`, `unsigned long long`) but inconsistent. `param_macro_functions` returns `long long` when original returned `int`. Pointer types sometimes generic (`void*`) losing specificity.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Only one trivial struct defined (`struct_0` with single field) that isn't meaningfully used. No recovery of complex types from the original code. Arrays handled as raw pointers without dimension information.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (`(unsigned long long)v1`, `(char *)&v0`) but generally safe pointer arithmetic. No obvious buffer overflow patterns in decompiled output. Atomic operations correctly typed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **CRITICAL**: Zero comments recovered from original source which had extensive documentation explaining each section, expected values, and test purposes. Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Macro expansions not recognized as such (e.g., `ADD_16(x)` became `a0 + 16`). SIMD operations shown as `AddV()` without identifying as vector intrinsics. No pattern documentation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`). Constant-folded functions not marked as optimized. No uncertainty indicators for ambiguous decompilation sites.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Original had expected values in comments (e.g., "期望：64", "期望：32") none recovered. No preconditions, postconditions, or error handling documentation present in decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear but global variables have meaningless names (`g_40207f`, `g_40209a`). String literals for printf format strings stored in globals without indicating their purpose.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions arranged by address order, not logical grouping. Original had clear sections (5.2 Preprocessing, 5.3 Assembly) completely lost. Related functions not grouped together.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies declared (printf, puts, mmap, sysconf). Some functions may need stubs for globals but overall structure is compilable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (7+6+7+5)/4 = 6.25  × 0.25 = 1.56
+Level 3 (Type):        (6+5+7)/3   = 6.00  × 0.20 = 1.20
+Level 4 (Semantic):    (2+4+4+3)/4 = 3.25  × 0.15 = 0.49
+Level 5 (Contextual):  (5+4+7)/3   = 5.33  × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  5.28/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects
+- **Zero comments recovered** from original source that had extensive documentation explaining each test section and expected values
+- **Excessive wrapper functions** (`sub_401189`, `sub_4011a4`, etc.) that just call real functions, doubling the function count unnecessarily
+- **Generic variable names** (`v0`, `v1`, `a0`, `a1`) throughout instead of semantic names like `size`, `result`, `counter`
+- **Magic numbers without context** (`57072`, `57122`, `0x200`) that were originally named constants (`MAX_SIZE`, `BUFFER_COUNT`)
+- **Constant-folded functions** (`call_macro_constants` returns `64` directly) hide the original computation logic
+
+### Best Quality Aspect
+- **Function Naming Quality (6/10)** - Core function names were preserved from original source (`param_macro_constants`, `param_asm_basic`, etc.), making the API surface recognizable despite other issues.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete loss of all original documentation including section headers, test descriptions, expected values, and usage notes that made the source code self-explanatory.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover and preserve source comments** - Integrate debug symbols (`-g` flag) to extract and retain original comments, especially for test functions with expected value documentation
+2. **Eliminate wrapper function artifacts** - Detect and remove thunk/wrapper functions that simply forward calls, consolidating to the actual implementation functions
+3. **Infer semantic variable names from usage patterns** - Analyze parameter usage (e.g., `a0` compared against `1025`) to suggest meaningful names like `size` instead of generic `a0`

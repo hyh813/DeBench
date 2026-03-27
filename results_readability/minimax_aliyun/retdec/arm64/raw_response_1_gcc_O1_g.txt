@@ -1,0 +1,165 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses exclusively generic variable names (`v1`, `v2`, `v3`, `result`, `v4`, etc.) that provide no semantic meaning. For example, in `sequential_ops`, the variable `v1` represents the first parameter `a`, but this is completely obscured. The pattern `int64_t v1; // 0xc04` repeats throughout the entire codebase with no attempt to infer meaningful names from usage patterns. This makes it practically impossible to track which variable represents which semantic value without extensive manual analysis.
+
+### 2. Function Naming Quality
+**Score: 4/10**
+
+A mixed result: some functions like `recursion_factorial`, `double_value`, `triple_value`, `loop_for_fixed`, and `loop_while` are correctly named. However, many functions have severe issues: (1) Parameters are completely missing from function signatures - `sequential_ops(void)` should be `sequential_ops(int a, int b, int c)`, (2) Many wrapper functions have meaningless names like `function_960`, `function_970`, `function_980`, `function_15ec`, (3) The test functions are completely inlined with hardcoded values instead of being callable.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+The code is riddled with unexplained magic numbers and bit manipulation constants. Examples include: `0x66666667` (used for division by 10), `0x400000000`, `0xffffffff`, `0xfffffffe`, `0x13fe8` (addresses), and `0x3039` (12345 in hex). The test functions have hardcoded expected values printed directly (e.g., `__printf_chk(1, "CF-L1-01 (sequential_ops): %d\n", 21);`) rather than calling the functions. No attempt to define meaningful constants or explain the purpose of these values.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+Severe noise pollution throughout. The code contains: (1) Excessive bit-masking operations (`& 0xffffffff`, `& 0xfffffffe`) that obscure the actual logic, (2) Redundant type casts at every operation, (3) Unnecessary address computations like `& 0xfffffff8`, (4) Assembly-related artifacts (`__asm_ld1`, `__asm_st1`), (5) Dead code patterns in complex functions. The `duffs_device` function is particularly bad - it has 30+ local variables (`v1` through `v30`) with goto labels scattered throughout, making it nearly incomprehensible.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 2/10**
+
+The control flow is severely degraded. Examples: (1) `sequential_ops` shows `return 2 * 2 * v1 - v1 & 0xffffffff;` - this is mathematically wrong and completely obscures the original `(a + b) * 2 - c` logic, (2) `single_if` produces `return v2 << (int64_t)((int32_t)v2 > 0) & 0xffffffff;` which is nonsensical, (3) Switch statements are often converted to chains of if-else with incorrect fall-through behavior, (4) The `duffs_device` decompilation uses goto labels (`lab_0x149c`, `lab_0x141c`) instead of the original switch-case structure, (5) `nested_if_deep` has duplicate conditions checking the same variable.
+
+### 6. Function Decomposition
+**Score: 5/10**
+
+The decompiler correctly identified individual functions, and some like `recursion_factorial` and `loop_for_fixed` are well-decomposed. However, the test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) are completely inlined with hardcoded values, losing all function call structure. The parameter loss in function signatures is a major decomposition issue.
+
+### 7. Code Linearization
+**Score: 3/10**
+
+Poor linearization with many forward jumps disrupting flow. The `duffs_device` function has 15+ goto labels creating a spaghetti-like structure. The `loop_nested` function has deeply nested while loops that are hard to follow. Many functions have early returns mixed with complex conditionals that make tracing difficult.
+
+### 8. Redundancy Elimination
+**Score: 3/10**
+
+Significant redundancy present: (1) Repeated bit-masking operations (`& 0xffffffff`) on the same variables throughout functions, (2) Duplicate condition checks in `nested_if_deep` (checks `v1 < 1` multiple times), (3) The test functions contain duplicate printf patterns, (4) No common subexpression elimination was applied to clean up the decompiled output.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 3/10**
+
+Severe type degradation: (1) All function parameters are lost - functions like `sequential_ops(int a, int b, int c)` become `sequential_ops(void)`, (2) Integer types are inconsistently handled - sometimes `int32_t`, sometimes `int64_t`, sometimes `uint64_t`, (3) The return type for many functions is wrong - `single_if` should return `int` not `int64_t`, (4) Function pointer types are often wrong or missing - `call_func_ptr` takes parameters but shows incorrect signature.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+
+Some struct recovery is present: the `__jmp_buf_tag` structure is correctly reconstructed with fields `e0`, `e1`, `e2`. Global variables like `g1` through `g12` are identified. However, the local arrays in test functions (like `int arr[5]`) are not properly handled - the decompilation shows `arr = {0, 0, 0, 0, 0};` which is invalid C syntax.
+
+### 11. Type Safety
+**Score: 3/10**
+
+Multiple type safety issues: (1) Unsafe casts everywhere - `(int32_t)v1`, `(int64_t)v2`, `(uint64_t)(int64_t)n`, (2) Pointer arithmetic without proper type checking, (3) The `loop_break` function has suspicious pointer manipulation: `int64_t * v1 = (int64_t *)g1;` using a global as a pointer, (4) The `process_with_callback` returns `(int64_t)arr` instead of the computed sum, (5) Many functions return `&g12` which is a pointer cast to int.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Comments are minimal and unhelpful. The only comments are address ranges (e.g., `// Address range: 0xc04 - 0xc14`) and line ranges from the source file. No explanation of algorithm logic, no indication of uncertainty, no documentation of what the functions do. The test functions have no comments explaining what they're testing.
+
+### 13. Idiom Recognition
+**Score: 2/10**
+
+No recognizable idioms or patterns. The decompiler failed to identify: (1) Duff's device - instead produced a goto-based mess, (2) State machine patterns in `state_machine` and `fsm_func_table`, (3) The ternary operator in `ternary_op` is completely mangled, (4) The goto-based loops in `goto_forward` and `goto_backward` are not recognized as loops, (5) No recognition of common patterns like factorial, matrix traversal, etc.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+No anomaly indication whatsoever. The decompiled code confidently presents incorrect logic as if it were correct. For example, `sequential_ops` shows completely wrong arithmetic but there's no warning. The missing function parameters are not flagged. The invalid C syntax in test functions is not noted.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No contract recovery. Preconditions, postconditions, and invariants are not documented. The function `duffs_device` has no indication that `n > 0` is required. No documentation of what the functions return or what parameters they expect.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 2/10**
+
+Poor cross-reference clarity. Function call relationships are not documented. The test functions call other functions but this relationship isn't made explicit. Global variables `g1` through `g12` are listed but their purpose isn't explained. Callback relationships in `process_with_callback` are not clear.
+
+### 17. Module Organization
+**Score: 4/10**
+
+The decompiled output is a single large file with all functions. Some grouping exists (related functions like `op_add`, `op_sub`, etc. are near each other), but there's no logical organization matching the original source's structure. The test functions are at the end rather than grouped with the functions they test.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+The code has multiple compilation issues: (1) Missing function parameters in signatures will cause compilation failures, (2) Invalid C syntax: `arr = {0, 0, 0, 0, 0};` in `test_control_flow_l2`, (3) Many functions return incorrect types (returning pointer `&g12` as int), (4) The `_start` function has `abort();` which is clearly wrong, (5) Missing proper includes for some functions used.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 4 + 3 + 2) / 4 = 2.75
+L2_avg = (2 + 5 + 3 + 3) / 4 = 3.25
+L3_avg = (3 + 6 + 3) / 3 = 4.0
+L4_avg = (2 + 2 + 1 + 1) / 4 = 1.5
+L5_avg = (2 + 4 + 2) / 3 = 2.67
+
+Overall = (2.75 × 0.30) + (3.25 × 0.25) + (4.0 × 0.20) + (1.5 × 0.15) + (2.67 × 0.10)
+        = 0.825 + 0.8125 + 0.8 + 0.225 + 0.267
+        = 2.93/10
+```
+
+### Overall Readability Score: 2.93/10
+
+---
+
+### Critical Defects
+
+1. **All function parameters are lost** - Functions like `sequential_ops(int a, int b, int c)` become `sequential_ops(void)`, making them completely non-functional
+
+2. **Logic is mathematically incorrect** - `sequential_ops` shows `2 * 2 * v1 - v1` instead of `(a + b) * 2 - c`, completely wrong semantics
+
+3. **Duff's device is completely mangled** - The classic pattern is reduced to 30+ variables with goto labels, losing all structural meaning
+
+4. **Test functions are inlined with hardcoded values** - Instead of calling functions and printing results, the decompiler embedded the expected output values directly
+
+5. **Excessive bit-masking obscures all logic** - Every operation has `& 0xffffffff` or similar, making the code unreadable
+
+---
+
+### Best Quality Aspect
+
+**Composite Type Recovery (Score: 6/10)** - The decompiler did correctly reconstruct the `__jmp_buf_tag` structure used for setjmp/longjmp, showing some ability to recover complex types. Some simple functions like `recursion_factorial` and `double_value` are also reasonably well recovered.
+
+---
+
+### Most Needs Improvement
+
+**Semantic Transparency (Score: 1.5/10)** - The decompiled code fails completely at making the logic understandable. No comments explain algorithms, no patterns are recognized, no anomalies are flagged, and the code confidently presents incorrect logic. This is the most critical area needing improvement.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Parameter Recovery**: Implement data flow analysis to recover function parameters from usage patterns. The current output is useless if you can't call the functions.
+
+2. **Expression Simplification**: Apply algebraic simplification to clean up bit-masking operations. Expressions like `2 * 2 * v1 - v1 & 0xffffffff` should simplify to meaningful arithmetic.
+
+3. **Pattern Recognition**: Implement recognition for common idioms like Duff's device, state machines, ternary operators, and common algorithm patterns. The current goto-based output for Duff's device is unacceptable.

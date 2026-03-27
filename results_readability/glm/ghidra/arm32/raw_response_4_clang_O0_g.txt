@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are predominantly generic names like `iVar1`, `local_10`, and `uVar2`, which obscure their semantic purpose (e.g., `sum`, `index`). While `param_1` is standard for arguments, local variables lack descriptive context.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the debug symbols, matching the original source exactly (e.g., `cdecl_func`, `test_calling_conventions`, `param_by_value_int`).
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Integer constants are often represented in hex (e.g., `0x2a` instead of `42`, `0x14` instead of `20`), which is less readable for high-level logic than the decimal values used in the source.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The output is cluttered with repetitive warnings like `/* WARNING: Unknown calling convention -- yet parameter storage is locked */` and `/* Unresolved local var: ... */`, which significantly distract from the code logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Loop structures are frequently decompiled into confusing pointer arithmetic. For example, in `ret_large_struct`, the loop iterator `local_8` is cast between `LargeData*` and `int`, resulting in nonsensical logic like `(int)local_8 < 0x10` and `local_8->data` used as an offset.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are mapped 1:1 with the source, maintaining appropriate granularity and cohesion. There is no artificial splitting or merging of functions.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code generally reads top-to-bottom with minimal forward jumps or spaghetti logic, aside from the specific loop reconstruction issues mentioned in control flow.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler successfully removes dead code and handles simple optimizations (e.g., `x << 1` for `x * 2`), though the expansion of floating-point arithmetic into library calls (`__adddf3`) adds verbosity.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Standard types are often replaced with generic Ghidra types like `undefined4` and `undefined8`, losing the specific distinction of `int`, `uint32_t`, or specific size requirements.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: While struct types like `LargeStruct` are named, member access is severely corrupted. In `func_struct_byval`, array access `s.data[i]` is decompiled into confusing union-like access `s.data[0]._0_4_` and pointer casts.
+
+**11. Type Safety:** Score: 2/10
+Justification: Critical type safety violations occur in function returns. `ret_small_struct` returns `(SmallPoint *)y` (casting an int to a pointer) instead of the hidden return storage pointer, and `ret_large_struct` returns a cast loop iterator.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to automated warnings (e.g., "Removing unreachable block") and offer no semantic explanation of the algorithm or logic.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard idioms like `va_arg` in varargs functions are reduced to raw pointer arithmetic (`local_14 = local_14 + 1`), failing to abstract the variable argument mechanism.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler consistently flags "Unknown calling convention" and "Unresolved local var", which accurately alerts the user to analysis uncertainties, even if the warnings are repetitive.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants (e.g., the null check in `func_struct_byptr` is present but not explicitly documented as a contract).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered symbol names, making the call graph easy to follow despite the variable naming issues.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled code maintains the exact order and grouping of functions found in the source file, preserving the logical structure of the test suite.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on Ghidra-specific types (`undefined4`, `undefined1`) and would require significant modification (typedefs) to compile with a standard C compiler.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (4 + 10 + 6 + 5) / 4 = 6.25
+L2_avg: (3 + 8 + 8 + 7) / 4 = 6.50
+L3_avg: (5 + 4 + 2) / 3 = 3.67
+L4_avg: (2 + 4 + 7 + 1) / 4 = 3.50
+L5_avg: (8 + 9 + 2) / 3 = 6.33
+
+Overall = (6.25 × 0.30) + (6.50 × 0.25) + (3.67 × 0.20) + 
+          (3.50 × 0.15) + (6.33 × 0.10)
+Overall = 1.875 + 1.625 + 0.734 + 0.525 + 0.633
+Overall = 5.39 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.4/10
+
+### Critical Defects (Bullet List)
+- **Control Flow Corruption**: In `ret_large_struct`, the loop iterator is confused with a pointer, resulting in `(int)local_8 < 0x10` and nonsensical pointer dereferencing.
+- **Type Safety Violation**: `ret_small_struct` returns `(SmallPoint *)y` (an integer) instead of the valid return storage pointer, breaking the function signature.
+- **Struct Access Obfuscation**: In `func_struct_byval`, array access `s.data[i]` is decompiled into confusing union-like syntax `s.data[0]._0_4_` and manual pointer arithmetic.
+- **Generic Types**: Extensive use of `undefined4` and `undefined8` instead of concrete C types reduces type precision and compile-ability.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (10/10)**
+- **Why?** The presence of debug symbols (`-g`) allowed Ghidra to perfectly recover all original function names, making the high-level structure immediately identifiable.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Assertion & Contract Recovery (1/10)**
+- **Why?** There is a complete absence of semantic documentation regarding preconditions, postconditions, or invariants, leaving the reader to infer safety guarantees solely from the code logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Loop/Iterator Analysis**: Fix the logic that confuses loop counters with pointers in struct/array iterations to prevent generating casts like `(int)local_8 < 0x10` where `local_8` is a pointer.
+2.  **Correct SRET (Struct Return) Handling**: Ensure functions returning structs via hidden pointer correctly return that pointer (or void) rather than returning one of the integer parameters by mistake.
+3.  **Standardize Type Output**: Replace `undefined` types with standard C integer types (e.g., `uint32_t`, `int`) based on size and signedness usage to improve readability and compilation potential.

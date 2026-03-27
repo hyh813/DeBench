@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `param_1`, `iVar1`, `uVar2`, `auVar5` instead of semantic names. Original `temp1`, `temp2`, `sum`, `count` are completely lost, making purpose tracking extremely difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`sequential_ops`, `single_if`, `nested_if_deep`). This is the decompiler's strongest aspect—semantic function identity maintained throughout.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions replaced actual calls with magic numbers (`0x15`, `0x3e9`, `0xfffffffb`). No constants recovered; hex values like `0x65` (101) appear without explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifact pollution. Functions like `goto_backward` contain 200+ lines of vector variables (`auVar5`, `auVar6`, `auVar7`...) from loop unrolling that obscure the simple factorial logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions (`sequential_ops`, `ternary_op`) recover well, but complex ones degrade severely. `loop_continue` transforms a 10-line odd-sum loop into 100+ lines of bit manipulation. Test functions use hardcoded values instead of actual calls.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved correctly, but internal structure explodes. `recursion_factorial` and `goto_backward` become monolithic with vector operations that should be abstracted or commented as optimization artifacts.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read top-to-bottom naturally. Complex functions have deeply nested vector operation loops that disrupt linear reading. Test functions are linear but semantically broken.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy from loop unrolling. `goto_backward` repeats nearly identical vector operations 20+ times. No attempt to abstract or comment these as compiler optimizations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic `int` types preserved but precision degrades. `if_else` returns `bool` instead of `int`. Function pointers become `code *` without signatures. `undefined4`/`undefined8` appear in return types.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited composite types in source, but array handling shows issues. `loop_break` uses switch instead of array iteration. Function pointer arrays in `call_func_ptr_array` partially recovered via switch.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: `undefined` types throughout, function pointers as `code *`, return type mismatches (`bool` vs `int`). No const-correctness preserved from original.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output despite original having extensive documentation explaining each function's purpose, test cases, and difficulty levels. Complete semantic information loss.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. State machines, Duff's device, and recursion patterns not identified. Vector operations from loop unrolling not explained as optimization artifacts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged (`UNRECOVERED_JUMPTABLE` in `call_func_ptr`), but most issues silent. Vector operation explosions in factorial functions not marked as decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error conditions documented. Original test cases showing expected behavior completely lost—test functions now contain hardcoded expected values.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible but test functions broken (hardcoded values instead of calls). Global `jump_buffer` referenced without context. Callback relationships unclear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable source order. Helper functions (`double_value`, `triple_value`) grouped together. No header structure but basic organization preserved.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External function declarations present (`puts`, `printf`, `_setjmp`). `undefined` types require patching. Test functions would need significant modification to actually test anything.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+3)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+6+5+3)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (1+2)/2     = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):  (4+2+5+6+6)/5 = 4.60 × 0.10 = 0.46
+
+Overall Score: 4.24/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Test functions completely broken**: Replaced actual function calls with hardcoded expected values, destroying testability
+- **Vector operation explosion**: `goto_backward`, `recursion_factorial`, `loop_continue` expanded 10x with unexplained vector math from loop unrolling
+- **Zero comments**: Original had extensive documentation; decompiled has none
+- **Generic variable names**: `param_1`, `iVar1`, `auVar5` obscure all semantic meaning
+- **Type degradation**: `bool` returned where `int` expected, `undefined` types throughout
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names preserved accurately from source, maintaining semantic identity across all 40+ functions
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation despite original having comprehensive comments explaining purpose, test cases, and difficulty levels
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Even basic function-purpose comments would dramatically improve readability
+2. **Detect and annotate optimization artifacts** - Mark vector operations from loop unrolling as compiler transformations, not original logic
+3. **Infer variable names from usage patterns** - Variables used in size checks should be named `size`/`count`, accumulators should be `sum`/`total`

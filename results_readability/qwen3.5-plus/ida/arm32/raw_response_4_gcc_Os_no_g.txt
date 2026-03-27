@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `v0`, `v1`, `varg_r1`) with no semantic meaning recovered. For example, `func_mixed_args` parameters should be `x`, `str`, `d`, `ll` but appear as `a1`, `a2`, `a3`, `a4`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`cdecl_func`, `call_cdecl`, `varargs_func`), but some are generic (`sub_103E8`, `_start`). Function names accurately reflect source intent where recovered.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers present without explanation (e.g., `0x80u` in memcpy, `0x100000` in float operations). Constant-folded values (15, 50, 100) are clear but hide original computation logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Register variable comments present (`// r0`, `// r12`) adding visual noise. Some redundant type casts (`(size_t)a2`, `(__int64 *)`) from compiler promotions remain.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with proper while/for loops. However, `func_struct_byval` uses a do-while pattern that's less clear than the original for-loop structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity matching source. However, aggressive constant folding collapsed `call_cdecl()`, `call_stdcall()` etc. into single return statements losing call relationships.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads reasonably top-to-bottom. Some functions like `ret_large_struct` have excessive temporary variables (`v5` through `v17`) disrupting linear reading flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `ret_large_struct` shows significant redundancy with 16 individual assignments that could be a loop. Register spilling artifacts visible in float helper functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Types degraded to generic forms (`_DWORD *`, `__int64`, `int` instead of `int32_t`, `size_t`). `func_mixed_args` shows `double a3` correctly but `__int64 a4` loses `long long` semantics.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct types completely lost - `LargeStruct` appears as 4 int parameters in `func_struct_byval`, `SmallStruct` shown as `_DWORD *a1` with array access `a1[0]`, `a1[1]` instead of `x`, `y` fields.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(size_t)a2`, `(_DWORD *)*a1`). Pointer arithmetic visible in `param_ptr_array` (`a1 + 4 * v2++`) instead of proper array indexing.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no meaningful comments. Only auto-generated register annotations (`// r0`, `// [sp+0h]`) and one warning about stack detection. No algorithm or logic explanations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithm idioms identified. Varargs pattern (`va_start`/`va_arg`/`va_end`) preserved but not labeled as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 8 functions marked "FAILED to decompile" at end, but no inline warnings for suspicious patterns. Stack detection warning present but generic.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should note `a1 != NULL` check). Null checks present but not explained as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships clear through direct calls. Callback relationship visible in `call_func_ptr_param` → `param_func_ptr` → `callback_func`.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in roughly source order but flat organization. No grouping comments or namespace structure. Runtime helpers (`__aeabi_*`) mixed with application code.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 8 external functions failed to decompile requiring stubs. Internal references use undefined symbols (`handle1_1`, `handle2_0`, `unk_11836`). Would need significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (6+4+6)/3   = 5.33 × 0.20 = 1.066
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (7+6+5)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                              5.45/10
+```
+
+**Overall Readability Score: 5.45/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `a2`, `v0`) losing all semantic meaning from original (`x`, `s`, `count`, `sum`)
+- **Struct types not recovered** - `LargeStruct` decomposed to 4 int parameters, `SmallStruct` shown as `_DWORD *` with array indexing
+- **Aggressive constant folding** collapsed test functions (`call_cdecl` returns 15 directly instead of showing `cdecl_func(5, 10)`)
+- **No comments explaining logic** - zero algorithm documentation or decompiler confidence indicators
+- **8 external functions failed** requiring manual stub creation for compilation
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved accurately, maintaining semantic connection to source code purpose.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no explanatory comments; only auto-generated register annotations that add noise without value.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Infer names from usage patterns (e.g., loop counters → `i`, accumulators → `sum`, pointers → `ptr`)
+2. **Recover composite type structures** - Analyze field access patterns to reconstruct struct definitions with meaningful field names
+3. **Add decompiler confidence annotations** - Mark constant-folded regions, uncertain type recoveries, and failed analysis points inline

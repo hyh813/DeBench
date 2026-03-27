@@ -1,0 +1,103 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v2`, `v4`, `v6`), providing no semantic hint about their role in the logic, such as loop counters or buffer pointers.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the source (e.g., `local_vars`, `heap_basic`, `test_stack_memory`), accurately reflecting the original intent.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with compiler-generated magic numbers for SIMD operations (e.g., `0x1010101010101010LL`, `0x7FFFFFFF0LL`) and vector constants (`xmmword_1CC0`), obscuring the simple logic present in the source.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The decompiled code contains significant noise from aggressive compiler optimizations, such as SIMD intrinsics (`vaddq_s8`, `vshlq_n_s32`) and vector casts, which clutter the simple C logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Natural loops are completely replaced by constant propagation (e.g., `local_array` returns `5 * a1`) or complex SIMD vector loops (`large_stack_frame`), making the flow unrecognizable compared to the source.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly; there is no artificial splitting or merging of functions, maintaining the original modular structure.
+
+**7. Code Linearization:** Score: 4/10
+Justification: Code flow is disrupted by labels and jumps (e.g., `LABEL_8`, `LABEL_10` in `vla_stack`) and deeply nested unrolled allocations in `linked_list_heap`, hindering top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately represents the optimized binary without introducing redundant variables, though the "redundancy" here is the compiler's loop unrolling which the decompiler presents literally.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While SIMD types like `int8x16_t` are detected, they obscure the original `char` and `int` types; standard integers are often cast to `__int64` or `unsigned int` unnecessarily.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Struct definitions are completely lost; `Point` and `Node` are accessed via raw pointer casts (e.g., `_QWORD *`, `_DWORD *`) and offsets, with no field names recovered.
+
+**11. Type Safety:** Score: 3/10
+Justification: Extensive unsafe pointer arithmetic is present, such as casting `malloc` results to `int32x4_t *` and accessing memory via `(_DWORD *)v2 + v3`, which is dangerous and hard to track.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the complex SIMD logic, the vector constants, or the optimized control flow, leaving the user to decipher compiler artifacts alone.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms like "array initialization" or "linked list traversal" are missed; instead, the decompiler shows unrolled `malloc` calls and vector addition intrinsics.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: No anomalies are flagged; the decompiler presents the highly optimized, unrecognizable code with high confidence, failing to indicate that the structure deviates significantly from standard C patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the safety check `if (n <= 0 || n > 1000)` in `vla_stack` is transformed into a complex arithmetic check without explanation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls to standard library (`malloc`, `free`) and other user functions are clear and preserved, maintaining the call graph's integrity.
+
+**17. Module Organization:** Score: 9/10
+Justification: The order of functions and their grouping (e.g., all `test_` functions at the end) matches the source file structure perfectly.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on ARM NEON headers (`int8x16_t`) and specific global data references (`xmmword_1CC0`) that would prevent standalone compilation without significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 10 + 3 + 3) / 4 = 4.5
+L2_avg: (3 + 9 + 4 + 8) / 4 = 6.0
+L3_avg: (5 + 1 + 3) / 3 = 3.0
+L4_avg: (1 + 2 + 5 + 1) / 4 = 2.25
+L5_avg: (8 + 9 + 2) / 3 = 6.33
+
+Overall = (4.5 × 0.30) + (6.0 × 0.25) + (3.0 × 0.20) + 
+          (2.25 × 0.15) + (6.33 × 0.10)
+Overall = 1.35 + 1.5 + 0.6 + 0.3375 + 0.633
+Overall = 4.42
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects
+- **Struct Loss:** Composite types (`Point`, `Node`) are completely lost, replaced by raw pointer arithmetic and casts (e.g., `*(_DWORD *)v2 = 10`).
+- **Loop Obfuscation:** Simple `for` loops are replaced by SIMD intrinsics (e.g., `vaddq_s8`) or constant folding (e.g., `return 5 * a1`), destroying algorithmic readability.
+- **Variable Naming:** Variables are generic (`v0`, `v1`), making it impossible to track data flow or intent without mapping registers manually.
+- **Magic Numbers:** Compiler-generated vector constants (e.g., `0x1010101010101010LL`) appear as literals with no explanation of their purpose (byte-wise increment).
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**
+- **Why?** The decompiler perfectly preserved all original function names, allowing for easy navigation and high-level understanding of the module's purpose despite the low-level obfuscation.
+
+### Most Needs Improvement
+- **Composite Type Recovery (1/10)**
+- **Why?** The complete absence of struct definitions (`Point`, `Node`, `TreeNode`) turns data manipulation into meaningless pointer offsetting, which is the single biggest barrier to understanding the code's logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **De-optimization / Pattern Matching:** Implement heuristics to recognize SIMD vector initialization patterns (e.g., `vaddq_s8` with increment vectors) and reconstruct them back into simple `for` loops for readability.
+2.  **Struct Recovery from Access Patterns:** Aggressively analyze pointer arithmetic and access patterns (e.g., `*(ptr+0)`, `*(ptr+8)`) to reconstruct struct definitions and field names, even at high optimization levels.
+3.  **Variable Renaming from Context:** Infer variable names from usage context (e.g., variables used as loop counters or sizes) rather than defaulting to `v0`, `v1`, especially when debug symbols are missing or optimization is high.

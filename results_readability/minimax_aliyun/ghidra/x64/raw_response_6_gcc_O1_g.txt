@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy` and related library functions
+
+Let me analyze the decompiled code against the original source, focusing on the standard library function tests (LIB-L1-01 through LIB-L1-12).
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Mixed results - `dst`, `src`, `buffer`, `filename` are well-named, but many variables use generic names like `sVar1` (should be `len`), `iVar1`/`iVar2`, `pcVar2`, `pbVar1`. The pattern `Var` suffix obscures semantic purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Most function names match source exactly: `param_strcpy`, `param_strcmp`, `param_strlen`, `param_memcpy`, `param_memset`, `thread_compute`, `thread_sum`. Minor issue: some internal functions like `FUN_00102020` remain unnamed.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literals like "HelloLib", "/etc/passwd" preserved correctly. However, magic numbers like `0x2a` (42), `0x14` (20), `0xff` (255) appear without explanation. The value `42` is used as success indicator throughout but never named.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Relatively clean output. Stack canary checks (`__stack_chk_fail`) appear but are compiler-generated and appropriately flagged with warnings. Unresolved local variable comments (`/* Unresolved local var: int i@[???] */`) are present but don't severely impede readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use `do-while` constructs appropriately. However, some awkward patterns exist: in `param_strcmp`, the normalization logic uses `iVar1 >> 0x1f` (arithmetic shift for sign extension) instead of the clearer ternary from source. The `call_fopen_fclose` uses bitwise `iVar1 >> 0x1f | 0x2a` which obscures the simple conditional logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-80 lines each). Thread helper functions (`thread_compute`, `thread_sum`, `thread_increment`) are properly extracted. The decomposition matches the source organization well.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Most functions read top-to-bottom. Early returns used appropriately in error handling (e.g., `param_fopen_fclose`). Some nested conditions in `param_fread_fwrite` but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundancy in error handling paths. The stack canary checks add noise but are necessary for correctness. Loop unrolling is minimal at -O0 level.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Several type issues: (1) `param_strcpy` uses `char *src` but source has `const char *src` - const qualifier lost; (2) `param_strlen` parameter should be `const char *str` but is `char *str`; (3) `param_scanf` uses `char *input_str` instead of `const char *`. Integer types generally correct (`int`, `size_t`).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: `ThreadData` struct correctly recovered with fields `start`, `end`, `result`. Global variables `signal_received`, `signal_number`, `shared_counter`, `atomic_counter`, `ready`, `data`, `cond_mutex` all properly identified. Some struct types like `sockaddr_in` use raw field access rather than proper type definition.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally safe code. Minor issues: (1) In `param_strcmp`, the sign-extension trick `iVar1 >> 0x1f` is obscure; (2) Some pointer arithmetic in `param_malloc_free` loop could be safer. No severe type safety violations like incorrect function pointer casts.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Almost no useful comments in the decompiled output. The only comments are Ghidra's auto-generated warnings ("WARNING: Removing unreachable block", "WARNING: Unknown calling convention"). No explanation of algorithm intent, parameter contracts, or return value semantics.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Standard library functions correctly identified: `strcpy`, `strcmp`, `strlen`, `memcpy`, `memcmp`, `printf` (as `__printf_chk`), `scanf` (as `__isoc99_sscanf`), `fopen`, `fclose`, `malloc`, `free`, `pthread_*`. Threading patterns recognized. Some Windows API stubs identified.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra provides warnings for "Unknown calling convention" and "Subroutine does not return". However, the indirect call resolution in signal handling uses magic numbers (10 for SIGUSR1, 0xe for SIGALRM) without explanation. No indication that syscall numbers (2 for open, 3 for close) could be documented.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No pre/postcondition recovery. Error return values (-1, -2, etc.) are not documented. The semantic meaning of return values (e.g., "returns 42 on success") is not captured.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are implicit in the code (e.g., `param_strcpy` calls `strcpy`). However, no explicit documentation of who calls whom. Global variables like `signal_received` are used across multiple functions but relationships aren't highlighted.
+
+**17. Module Organization:** Score: 9/10  
+Justification: Functions are grouped logically: standard library wrappers, system call wrappers, thread functions. The decompiled output follows the source organization well with test functions grouped together.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code states "Compilation Result: Yes" - it compiles. External dependencies (libc, libpthread) are implicit. Some minor issues: `builtin_strncpy` is a compiler builtin that may need special handling.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.8/10
+
+**Critical Defects:**
+- Variable naming uses generic patterns (`sVar1`, `iVar1`, `iVar2`) obscuring semantic purpose
+- `const` qualifier lost on string parameters (`src` in `param_strcpy`, `str` in `param_strlen`)
+- No comments explaining algorithm intent or return value semantics
+- Magic numbers like `0x2a` (42), syscall numbers (2, 3), signal numbers (10, 14) lack symbolic names
+- Stack canary checks clutter the code without adding readability value
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names match the original source almost perfectly, making it easy to identify the purpose of each decompiled function.
+
+**Most Needs Improvement:** Comment Quality & Presence (4/10)  
+The decompiled output lacks any meaningful comments explaining what functions do, their parameters, return values, or non-obvious logic patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover `const` qualifiers** - Track const-ness through function calls and preserve in decompiled output
+2. **Name inference from usage** - Analyze how variables are used (e.g., `sVar1` = result of `strlen` → name it `len` or `str_len`)
+3. **Symbolic constant detection** - Recognize magic numbers that correspond to known constants (syscall numbers, signal numbers, return codes) and suggest or inject named constants

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named (`param_1`, `uVar1`, `lVar1`, `iVar2`, `local_8`) with no semantic meaning. Original source had meaningful names like `arr`, `head`, `current`, `sum`, `new_node` that clearly indicated purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Most original function names preserved (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`), but some are generic (`FUN_001009b0`, `FUN_00100bfc`). However, function signatures often don't match original (wrong return types/parameters).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `0x2a` (42), `0x14` (20), `0xf` (15), `0x1e` (30), `0x32` (50). Original used clear decimal values. Hex encoding obscures intent (e.g., `0x2a` instead of `42`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`) repeated in many functions. External function stubs call themselves redundantly (e.g., `memcpy` calling `memcpy`). VLA code has excessive stack alignment logic that obscures core logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (`double_value`, `local_vars`) have natural flow, but complex functions (`vla_stack`, `alloca_usage`) have awkward manual stack management. Many functions return `void` when they should return `int`, breaking expected flow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function sizes are reasonable, but signatures are often wrong (`local_array` returns `void` instead of `int`, `stack_alias` takes no parameters). `create_tree_node` returns `void` instead of `TreeNode*`, breaking the call chain.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but labels like `LAB_00101680` indicate goto usage in `test_heap_memory`. VLA allocation code has complex non-linear patterns with manual pointer arithmetic.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks duplicated across nearly every function. Type casts repeated throughout (`(undefined4 *)`, `(long)`). VLA code has redundant zero-initialization loops that could be simplified.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined4`, `undefined8`, `ulong` used throughout. Original `int`, `Point*`, `Node*` types lost. Pointer types often just `void*` or `undefined*`. Sign/unsigned information frequently lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**: Struct `Point` not recovered (fields accessed via `param_1 * 3` instead of `p->x + p->y`). Struct `Node` lost (fields at offsets `+2`, `+4` via pointer arithmetic). All composite types reduced to raw pointer operations.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts present (`(undefined4 *)`, `(undefined8 *)`). `global_func_ptr` called without parameters (`(*global_func_ptr)()`). Pointer arithmetic on void pointers throughout. Buffer operations have unclear bounds.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled code. Original had extensive comments explaining each test case (e.g., `// MEM-L1-01: 局部变量（基础类型）`). No decompilation confidence indicators or uncertainty markers.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Memory allocation patterns (malloc/free pairs) not recognized as such. Linked list and tree traversal patterns not documented. Algorithm intent completely obscured.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged. `stack_alias` returns constant `0x14` without explanation (original had complex alias logic). `dangling_pointer` undefined behavior not indicated. `double_free` dangerous pattern not warned.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `requires: n > 0`). NULL checks present but not documented as contracts. No postconditions or error condition documentation. Return value meanings unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (`global_counter`, `file_scope_static`) used without context. Callback relationship (`global_func_ptr = double_value`) unclear from code alone.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in somewhat logical order (stack tests, heap tests, static tests). Test functions grouped together. No header file structure. Static functions not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External function stubs call themselves (won't link properly). Many incompatible signatures (`create_tree_node` returns void). Would require extensive patching to compile. Dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25  × 0.25 = 1.31
+Level 3 (Type):        (4+2+3)/3   = 3.00  × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75  × 0.15 = 0.26
+Level 5 (Contextual):  (4+5+4)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────
+Overall Score:                                  3.95/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Zero comments** - Original had extensive documentation; decompiled has none
+- **Complete struct loss** - `Point`, `Node`, `TreeNode` all reduced to pointer arithmetic
+- **Wrong function signatures** - `local_array`, `stack_alias`, `create_tree_node` have incorrect return types/parameters
+- **Magic numbers everywhere** - `0x2a`, `0x14`, `0xf` without explanation of semantic meaning
+- **Generic variable names** - `param_1`, `uVar1`, `lVar1` obscure all semantic intent
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Most original function names were preserved (`double_value`, `heap_basic`, `test_stack_memory`), providing some semantic anchor points despite signature issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding intent nearly impossible; even basic decompilation confidence markers would help.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from memory access patterns** - Analyze consistent offset patterns (e.g., `+8`, `+16`) to reconstruct `Node`, `Point`, `TreeNode` structs with field names.
+2. **Infer variable names from usage context** - Variables used in size checks should be named `size`/`count`; loop indices should be `i`/`j`; pointers to allocated memory should indicate purpose.
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions (e.g., `// DECOMPILER_UNCERTAIN: VLA stack allocation`), flag potential undefined behavior, and document recovered contracts.

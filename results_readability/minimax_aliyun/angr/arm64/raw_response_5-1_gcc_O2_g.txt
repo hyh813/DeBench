@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `ptr`, `p`, `a0`, `a1`. The original source uses meaningful names like `value`, `name`, `data`, `size`, `multiplier`, but these are completely lost in decompilation. Even where `result` appears, it's inconsistent.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions are correctly demangled (`test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`), but many internal functions remain as address-based names like `sub_4011c8`, `sub_401294`. Class method names like `Base::virtual_func` are partially recovered but lack parameter context.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `42` (thrown exception), `31` (buffer size), and expected test values `4700`, `42`, `71`, `22` appear without explanation. The decompiler doesn't infer that `4700` represents `10 + 34 + 4660` (the expected test result).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise present including: stack protection variables (`__stack_chk_guard`), redundant register saves (`v0 = v2; v1 = v3;`), duplicate returns (`return v0; return v0;`), empty functions that just `return;`, and unnecessary goto statements. At -O0, these compiler artifacts should be minimal.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Control flow is hampered by goto-based vtable dispatch (`goto *((long long *)*((long long *)&arg_0));`), many empty functions that just return, and some spurious goto statements. The original source has clear if-else and loop structures, but these are obscured.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: The original 12 test functions are preserved, but many class methods are empty stubs (e.g., `Base::virtual_func` just returns). Template functions like `template_max<int>` and `template_swap<int>` are extracted but lack proper parameter handling.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom but is disrupted by goto statements in vtable dispatch, forward declarations, and the unusual pattern of calling functions twice in sequence (e.g., `call_virtual_func(); return call_virtual_func();`).
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy present - duplicate return statements (`return v0; return v0;`), redundant variable assignments (`v0 = &v1;` then unused), and the pattern of calling functions twice unnecessarily. Dead code is not eliminated.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `unsigned int`, `long long`, `double`), but significant type erosion: `char*` used for generic pointers instead of proper types, `void*` overused, and parameter types often wrong (e.g., `template_swap<int>` takes single pointer instead of two references).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Class definitions are empty shells (`class Base {} Base;`), struct definitions use generic names (`struct_2`, `struct_3` with `field_0`, `field_8`), and vtable structures are not properly recovered. The original class members like `value`, `name`, `multiplier`, `dataA`, `dataB` are completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: pointer arithmetic without bounds checking (`ptr[40]`, `ptr[80]`), incorrect pointer casting (`(char *)ptr + 4 * v0`), and void* used extensively. The template functions have wrong signatures that could lead to undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated notes like "do not return" appear. No explanation of algorithm logic, no recovery of original comments from debug symbols, no indication of uncertainty for indirect calls.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognizable. No RAII pattern recognition, no vtable mechanism explanation, no smart pointer cleanup detection. The virtual function dispatch is shown as raw goto instead of polymorphic call.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies flagged. The decompiler silently produces incorrect code (empty functions, wrong parameter counts, duplicate calls) without any warnings about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source has clear semantics (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated") that are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships not documented. No indication of which functions call which, no virtual method table relationships explained, no callback or inheritance hierarchy clarity.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions organized by address rather than logically. Related test functions and their corresponding class methods are scattered. No namespace or class grouping preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many extern declarations present but incomplete. Template functions have wrong signatures, class methods missing proper this pointers, and the code would not compile without significant fixes.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`v0`, `v1`, `ptr`, `a0`) losing all semantic meaning from original source
+- Class member variables completely lost - `value`, `name`, `data`, `size`, `multiplier` not recovered
+- Many functions are empty stubs that just `return;` - losing all implementation logic
+- Template functions have incorrect signatures (e.g., `template_swap<int>` takes one pointer instead of two reference parameters)
+- No comments explaining algorithms, magic numbers, or recovered semantics
+- Duplicate/redundant code (calling functions twice, duplicate returns) makes code confusing
+- Vtable dispatch shown as raw goto instead of polymorphic call idiom
+
+**Best Quality Aspect:** Function Naming Quality (6/10)  
+The test function names are correctly demangled from C++ mangled names, preserving the original function identities.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Every meaningful variable name from the original source is replaced with generic identifiers like `v0`, `v1`, `ptr`, making it impossible to track data flow or understand variable purposes without extensive manual analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Track how variables are used (e.g., `ptr[40]` for size field → name it `size` or `count`; `strlen()` result → name it `len`)
+2. **Recover class member variables**: Analyze constructor implementations and member access patterns to reconstruct struct/class field names
+3. **Eliminate redundant code**: Detect and remove duplicate statements, empty functions, and spurious goto statements that add noise without semantic value

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `local_28`, `uStack_24`, `puVar1`, `iVar3`. The original source has meaningful names like `value`, `name`, `data`, `size`, `multiplier`, but these are completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names almost perfectly match the original source: `test_cpp_member_func`, `test_cpp_constructor`, `call_virtual_func`, `test_cpp_virtual_func`, etc. The verb choices accurately reflect functionality.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x125c` (4700), `0x3e9` (1001), `0x2a` (42) appear without explanation. The value `0x74736554` represents the string "Test" but is not annotated. Constants like `instance_count` are used correctly but not explained.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: No obvious compiler artifacts like redundant casts or debug instrumentation. However, several functions (`test_cpp_virtual_func`, `test_cpp_multiple_inheritance`) return constant values instead of showing actual computation, which is suspicious for -O0 code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is straightforward - most functions are simple returns or basic computations. No goto statements or spaghetti code. The few functions that do compute (like `test_cpp_member_func`) have natural flow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good granularity - each test function is separate, template instantiations are properly extracted as `template_max_int_`, `template_swap_int_`, etc. Member functions like `Container<int>::push` are properly decomposed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without forward jumps. Even complex functions like `test_cpp_member_func` have linear execution flow. No deep nesting or computed jumps disrupting readability.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Loop unrolling is not excessive. The code is clean in this regard.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined2`, `undefined` types instead of concrete types like `int`, `uint32_t`. The original `int` and `size_t` types are sometimes recovered but inconsistently. Function return types sometimes show `undefined4` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery is evident. Classes like `SimpleClass`, `LifecycleClass`, `Container<T>` are not reconstructed as structs. Instead, the code uses raw stack variables with offsets like `*(undefined4 *)(this + 0x28)`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Pointer arithmetic with undefined types (e.g., `*(undefined4 *)(this + 0x28)`) creates type safety concerns. No obvious buffer overflows, but the use of `undefined` types makes safety analysis difficult.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments except the decompiler header. No explanation of what functions do, no documentation of parameters, no algorithm descriptions.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are identified. The virtual function mechanism is partially visible (vtable calls) but not explained. Template instantiation is recognized (`template_max_int_`) but not documented as such.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies are flagged. The fact that several functions return hardcoded constants (suggesting the binary may have been compiled differently or contains optimized code) is not mentioned.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No cross-references documented. The relationship between `call_virtual_func` and the virtual dispatch mechanism is not explained. No call graph information.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - test functions together, template instantiations together, class member functions together. Matches the original single-file structure reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: External functions are marked with `<EXTERNAL>` prefix (e.g., `<EXTERNAL>::printf`). Library functions like `operator_new`, `operator_delete` are properly identified. Would require minimal stubs to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming is nearly useless - `local_28`, `puVar1`, `iVar3` provide no semantic meaning
+- No struct/class recovery - classes like `SimpleClass`, `Container<T>` are completely lost
+- Type precision is poor - heavy use of `undefined4`, `undefined` instead of concrete types
+- No comments or documentation whatsoever
+- Several functions return constants instead of showing computation, which is suspicious for -O0
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names almost perfectly match the original source, making it easy to identify what each function does.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.5/10)  
+Complete absence of comments, pattern recognition, anomaly indication, and contract recovery makes the code opaque and difficult to understand at a semantic level.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `local_28` used with `strlen()` should be named `name_buffer` or similar based on context
+2. **Recover class/struct types**: Instead of `*(undefined4 *)(this + 0x28)`, reconstruct as `this->size` with proper struct definitions
+3. **Add semantic comments**: Document virtual function calls, template instantiations, and flag suspicious patterns like constant-returning functions at -O0

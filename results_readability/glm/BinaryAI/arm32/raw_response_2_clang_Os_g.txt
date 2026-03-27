@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Parameters are generic (`param_1`, `param_2`) and local variables in test functions are stack offsets (`local_4e8`, `local_464`), offering no semantic insight into their purpose (e.g., `sum`, `i`, `matrix`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names (`process_char`, `array_1d_stack`, `main`) are perfectly preserved from the original source, accurately reflecting their purpose.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers obscure logic; array strides and struct sizes appear as hex values like `0x2c` (44) and `0x1b8` (440) instead of `sizeof(Point3D)` or loop bounds, and float constants appear as raw hex (e.g., `0x3fc00000` for 1.5f).
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant arithmetic noise is present, such as `(param_2 + param_1) * 0x10000 >> 0x10` for a simple short addition, and 64-bit multiplication is split into `CONCAT44` calls rather than showing the operator.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Loops are generally recovered as `do-while` structures with decrementing counters, which is a valid compiler pattern for `-O0`, though slightly less natural than the original `for` loops.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source; there is no inlining or outlining, maintaining the original granularity perfectly.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom within functions, with minimal forward jumps or confusing control flow disruptions.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While there is no dead code, simple operations are often expanded into redundant low-level arithmetic (e.g., bit shifts for multiplication), adding unnecessary complexity.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are significantly degraded; floating-point parameters are `undefined4`, `long long` becomes `undefined8`, and function signatures often use `void` for return values that should be floats.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Complete failure to recover structs; `struct_simple` takes `int *` and accesses indices `[0]`, `[1]`, `[2]` instead of `x`, `y`, `z`, and `struct_nested` is flattened to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10
+Justification: While casts are present, the underlying types are incorrect (e.g., treating a struct pointer as `int*`), leading to unsafe-looking pointer arithmetic that doesn't reflect the original type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output to explain the logic, data structures, or algorithm intent.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Basic loop idioms are recognized, but higher-level patterns like string operations (`array_string`) are just loops, and floating-point math is obscured by soft-float intrinsics (`__mulsf3`).
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler correctly flags issues like `UNRECOVERED_JUMPTABLE` in `ptr_func_simple`, alerting the user to indirect call resolution failures.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred in the output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls to other defined functions (e.g., `main` calling test functions) are clear and use the correct recovered names.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are organized by address, which roughly groups related test functions, but it lacks the logical section grouping (e.g., "Data Types", "Arrays") present in the source.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on Ghidra-specific types (`undefined4`, `undefined8`) and macros (`CONCAT44`), making it non-compilable without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- **Composite Type Loss**: Structs like `Point3D` and `Rect` are completely flattened to `int*` arrays, destroying the semantic meaning of field access (e.g., `p->x` becomes `param_1[0]`).
+- **Floating Point Obfuscation**: Simple float operations are replaced by soft-float intrinsics (`__mulsf3`) and hex literals (`0x3fc00000`), making the math unreadable.
+- **Literal Magic Numbers**: Array strides and sizes are represented as unexplained hex offsets (e.g., `0x2c`) instead of struct sizes or named constants.
+- **Generic Naming**: Parameters are universally `param_1`, `param_2`, and locals are stack offsets (`local_4e8`), providing no context.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved the original function names, making it easy to locate specific logic blocks despite the poor internal variable naming.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The failure to recover `struct`, `union`, or `enum` types is the most critical issue, turning structured data access into meaningless pointer arithmetic and array indexing.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhance Struct Recovery**: Implement algorithms to detect sequential array access patterns on pointer parameters (e.g., `p[0]`, `p[1]`, `p[2]`) and automatically suggest or define struct types to replace raw `int*` signatures.
+2.  **Improve Floating-Point Analysis**: Map soft-float intrinsic calls (like `__mulsf3`, `__adddf3`) back to standard C arithmetic operators (`*`, `+`) and convert hex float literals back to decimal/standard notation.
+3.  **Infer Variable Names**: Utilize usage patterns to infer names for local variables (e.g., variables used in accumulation should be named `sum` or `acc`) rather than defaulting to stack offsets like `local_4e8`.

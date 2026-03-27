@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`), providing no semantic hint about their purpose (e.g., `size` vs `count`). While `ptr` and `dst` appear occasionally, the lack of descriptive names like `result` or `counter` significantly hinders understanding.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Most high-level user functions retain their original names (e.g., `param_macro_constants`, `test_preprocessing_features`), which is excellent. However, library wrappers and internal helpers are reduced to generic names like `sub_400824` or `sub_40091c`.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers resulting from macro expansion (e.g., `0x400` instead of `MAX_SIZE`, `57072` instead of `0xDEF0`, `282` instead of `line + 3`). Since the source relies heavily on preprocessor macros, the decompiled code loses the semantic meaning of these constants.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: There is significant noise from stack protector checks (`__stack_chk_guard`, `__stack_chk_fail`) and redundant variable initializations (`v0 = &v1;`). Additionally, some functions contain redundant calls (e.g., `sub_400824` calls `memcpy` twice).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While most control flow is natural, `param_asm_clobber` contains a loop reconstruction error where the index increment appears to be hoisted incorrectly, causing an off-by-one semantic error in the decompiled view compared to the source logic.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are well-separated and match the source granularity. The `-O0` optimization level helped preserve function boundaries, preventing inlining that would have confused the decomposition.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with clear `if/else` blocks. Loops are generally represented as `do-while`, which is standard for decompilers and easy to follow.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: There are instances of redundant code, such as in `sub_400824` where `memcpy` is called and assigned, then called again in the return statement. Some functions also have redundant register-to-register moves.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate for the ARM64 architecture (e.g., `unsigned long long` for 64-bit values, `unsigned int` for 32-bit). Pointers are correctly distinguished from integers, and atomic operations use the correct intrinsic signatures.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: The source primarily uses primitives and stack arrays. The decompiler handles stack arrays via pointer arithmetic (e.g., `(&v12)[i]`), which is functional but not as clean as recovering a proper array type or struct definition.
+
+**11. Type Safety:** Score: 8/10
+Justification: The code is largely type-safe, with appropriate casts for `mmap` and `memcpy`. The use of `__aarch64_ldadd4_acq_rel` correctly represents the atomic operation without unsafe casts.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, the lost macro definitions, or the purpose of complex calculations. The reader must infer everything from the code.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library functions like `memcpy`, `mmap`, and `printf` (as `__printf_chk`) are recognized. However, the specific logic for macro recursion or token pasting is not identified as such; it just appears as arithmetic.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: The decompiler introduces obscure helper calls like `arm64g_calculate_condition` without explanation, which looks like an anomaly or artifact. It also fails to flag the missing arguments in the `mprotect` call within `param_memory_protection`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are documented. For example, the requirement for `mmap` success or valid pointer usage is not stated, and the error handling paths are not explicitly annotated as such.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: While function calls are clear, global variables are referenced via opaque addresses (e.g., `g_412f60`) without their original names or types, making it hard to understand their role in the broader context.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are ordered logically, roughly matching the source flow. Related test functions are grouped together, which aids navigation.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on decompiler-specific intrinsics (`__ROL__`, `arm64g_calculate_condition`) and non-standard constructs (e.g., `if (mprotect())` with missing args), making it impossible to compile without significant manual modification.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- **Missing Function Arguments**: In `param_memory_protection`, the call `if (mprotect())` is missing its arguments, rendering the logic incorrect and opaque.
+- **Loop Reconstruction Error**: In `param_asm_clobber`, the loop index increment is misplaced, causing the decompiled code to skip the first array element compared to the source logic.
+- **Loss of Macro Semantics**: Critical constants like `MAX_SIZE` (1024) are replaced by magic numbers (`0x400`), obscuring the original intent of the preprocessor-heavy source.
+- **Noise Artifacts**: Persistent redundant assignments (`v0 = &v1;`) and stack canary checks clutter the function prologues.
+- **Opaque Globals**: Global variables are referenced by address (e.g., `g_412f60`) rather than symbolic names, losing context.
+
+**Best Quality Aspect:** Function Decomposition (scored 9/10)  
+- **Why?** The decompiler successfully preserved the original function boundaries and granularity, avoiding the monolithic or over-fragmented output often seen with optimized code.
+
+**Most Needs Improvement:** Semantic Transparency (scored 3/10)  
+- **Why?** The complete lack of comments, combined with the failure to recover macro definitions and the presence of unexplained decompiler artifacts, makes understanding the *intent* of the code extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Macro/Constant Recovery**: Implement analysis to identify repeated magic numbers (like `0x400` or `0xDEF0`) and suggest them as named constants or at least comment on their potential symbolic meaning.
+2. **Argument Lifting Fixes**: Fix the bug causing function arguments to be dropped in specific contexts (e.g., the `mprotect` call in `param_memory_protection`).
+3. **Loop Normalization**: Improve loop reconstruction algorithms to ensure index increments are placed correctly relative to array accesses to avoid off-by-one errors in the decompiled view.

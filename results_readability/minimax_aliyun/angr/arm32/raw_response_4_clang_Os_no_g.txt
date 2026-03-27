@@ -1,0 +1,88 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use completely generic names like `a0`, `a1`, `v0`-`v19`, `ptr`, `i`, `j`, `idx` with no semantic meaning. Compare to source where `int a, int b` should be named meaningfully. The decompiler provides no inference from usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Many functions retain original names (cdecl_func, call_cdecl, varargs_func, func_no_args, test_calling_conventions, main), but some are missing or renamed incorrectly. Functions like `sub_4003f0` have no semantic meaning. The mix is inconsistent.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are clear - the decompiler preserves constant values like `15`, `50`, `6`, `21`, `42`. However, some magic numbers like `4294967295` (0xFFFFFFFF) appear without explanation. The literal values themselves are correct.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution throughout. Excessive register annotations like `unsigned int v1; // r0`, `unsigned int v0; // [bp-0x4]`. Confusing variable declarations with multiple conflicting type annotations. The decompiler output is cluttered with implementation artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural with standard if/else and loops. Some goto statements present (e.g., in `func_struct_byptr`, `param_double_ptr`) but manageable. At -O0, control flow should be nearly perfect, but some awkward patterns exist.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function decomposition matches source exactly. No inlining or outlining issues at -O0. Functions maintain appropriate granularity - test functions call sub-functions as expected.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some goto statements create minor discontinuities (e.g., LABEL_4004b4, LABEL_4004e0). Not severe but could be cleaner.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant redundancy issues. Some duplicate calculations in test functions but that's from source. At -O0, dead code should be minimal and it is.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. Almost everything uses `unsigned int` regardless of original type. Source `int` becomes `unsigned int`, `int*` becomes `unsigned int*`. No `int32_t`, `size_t`, or precise types. `char*` sometimes preserved but inconsistent.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. `SmallStruct {int x, int y}` becomes raw pointer arithmetic. `LargeStruct` (128 bytes) becomes raw pointer arithmetic with no field names. The decompiler lost all composite type information.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate type safety issues. Some unsafe pointer operations present. Function pointer types not properly recovered (e.g., `param_func_ptr` takes `unsigned int*` instead of proper function pointer type). Not catastrophic but concerning.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. Zero explanation of algorithm intent, parameter purposes, or return value semantics. The source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns identified. The varargs handling, struct passing, and calling convention tests are not recognized as idioms. Could have labeled these as "varargs pattern", "struct return via hidden pointer", etc.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of anomalies or uncertainties. The decompiler produces confident but sometimes incorrect output (e.g., `ret_opaque_handle` returns `"d"` which is clearly wrong - should return `&handle1`). No warnings about indirect calls or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Source had none to recover, but the decompiler could have inferred some (e.g., "requires: ptr != NULL" for `func_struct_byptr`).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are implicit through code but not documented. No comments indicating "called by X" or "calls Y". Global variable usage not clearly marked.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - test functions together, implementation functions together. Matches source organization reasonably well. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Some functions have compilation issues. `ret_opaque_handle` returns `"d"` (a string literal) instead of a pointer to `handle1`. Type mismatches throughout. Would require moderate patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.0/10
+
+**Critical Defects:**
+- Variable names are completely generic (`a0`, `a1`, `v0`-`v19`) with no semantic meaning
+- No struct recovery - all composite types lost to raw pointer arithmetic
+- No comments explaining algorithm intent or parameter purposes
+- Type precision severely degraded - almost everything is `unsigned int`
+- `ret_opaque_handle` returns wrong type (`"d"` string literal instead of `&handle1`)
+- Excessive noise from register annotations cluttering every function
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Function boundaries match source exactly at -O0, with appropriate granularity and no inlining issues.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Variables are named with completely generic patterns (`a0`, `v0`, `ptr`) with no semantic inference from usage. This makes tracking data flow nearly impossible.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `a0`, `a1` used as arithmetic operands should be named `first_param`, `second_param` or similar
+2. Recover struct types from stack layout analysis - `func_struct_byptr` clearly operates on a 2-field struct, not raw pointer
+3. Add comments explaining calling convention patterns, varargs handling, and struct return mechanisms
+4. Remove register annotation noise (`// r0`, `// [bp-0x4]`) that clutters every variable declaration
+5. Fix type precision - use `int` for signed values, preserve `char*`, `int*` pointer types

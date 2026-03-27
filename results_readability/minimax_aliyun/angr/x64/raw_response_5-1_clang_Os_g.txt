@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named with generic identifiers like `v0`, `v1`, `v2`, `ptr`, `i` throughout. The original source had meaningful names like `value`, `name`, `data`, `size`, `capture_by_value`, `capture_by_ref` - all completely lost in decompilation. Even `flag1` is ambiguous.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - test functions like `test_cpp_member_func` are correctly demangled, but internal functions use address-based names (`sub_401020`, `sub_40102c`). Template functions partially recovered (`template_max<int>`), but many class methods lack proper names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals like loop bounds (50 in `test_cpp_constructor`) are inferable, but magic numbers like `4` in `strncpy(&v1, "Test", 4)` lack explanation. The expected values in printf statements (4704, 42, 71) are hardcoded without context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise present - multiple empty functions (`sub_401245`, `sub_401196`), spurious goto statements used for loops, incomplete return statements, and many stub functions that add no semantic value.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Control flow is severely degraded. Loops are implemented with goto statements (e.g., `test_cpp_constructor` uses `do { ... } while(i != 50)` pattern but poorly structured). Many functions have empty bodies or `return;` with no value. The `call_virtual_func` uses `goto *((long long *)*((long long *)&arg_0));` which is incomprehensible.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are extracted but with poor granularity. Many small fragments exist (e.g., `sub_401635`, `sub_401643` just call methods). Some functions like `test_cpp_member_func` are too large with all logic inline. Parameter lists expose implementation details.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Poor linearization - goto statements disrupt flow, forward jumps present, and computed indirect jumps (`goto *...`) break readability. The code does not read naturally top-to-bottom.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some dead code eliminated, but loop unrolling in `test_cpp_constructor` is not commented or abstracted. Duplicate patterns in template instantiations not consolidated.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are generic - uses `unsigned int`, `unsigned long`, `unsigned long long` rather than specific sizes. Some type info preserved (e.g., `int arg_0`), but const-correctness lost. Function parameters often use generic types.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Partial struct recovery - `struct_0` and `struct_1` in RTTI code have generic field names (`field_0`, `field_8`). Class names partially recovered (`class Base`, `Container<int>`) but data members lost. Many composite types remain as raw pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations - pointer arithmetic like `ptr += 1`, `&ptr[40]`, `&ptr[80]` without bounds checking. Casts like `*((int *)ptr)` and `*((unsigned int *)&ptr[40])` are unsafe. The `goto *` indirect jump in `call_virtual_func` is type-unsafe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated headers like "Angr Decompilation" present. No explanation of algorithms, vtable mechanisms, or non-obvious logic. The original source had extensive Chinese comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Virtual function calls not labeled as vtable dispatch. Exception handling not identified as try-catch-throw pattern. Template instantiation not recognized as such. Lambda expressions completely lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `goto *((long long *)*((long long *)&arg_0));` indirect call should be flagged as unresolvable vtable call. Empty function bodies not indicated as potential stub code. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of error conditions or assumptions. The original source had clear semantics completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some relationships visible through function calls, but not documented. Virtual dispatch relationships unclear. No indication of which functions call which. Global variable usage not clearly marked.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions organized by address rather than logically. Related test functions scattered. Template instantiations mixed with other code. No namespace or class grouping visible.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has `extern` declarations for external functions, but code likely won't compile standalone. Missing standard library includes. Dependencies on `operator new`, `__cxa_*` functions not documented. No build instructions.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- Variable names are all generic (`v0`, `v1`, `ptr`, `i`) - original semantic names like `value`, `data`, `size` completely lost
+- Control flow uses goto for loops and has empty function bodies - `call_virtual_func` uses incomprehensible indirect jump
+- No comments explaining vtable mechanism, exception handling, or any C++ idioms
+- Type precision severely degraded - generic `unsigned long long` instead of specific types, struct fields all generic
+- Many functions return nothing (`void`) when they should return values (e.g., `test_cpp_member_func` should return int)
+
+**Best Quality Aspect:** Function Naming Quality (5/10)  
+- Test function names correctly demangled (`test_cpp_member_func`, `test_cpp_constructor`) and some template function names partially recovered
+
+**Most Needs Improvement:** Lexical Clarity (3.25/10 avg)  
+- Variable naming is nearly unusable with generic names throughout. At -O0 optimization, the decompiler should have much better name inference from debug symbols.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from debug symbols and usage patterns** - At -O0, debug info should allow recovery of `value`, `data`, `size` instead of `v0`, `ptr`, `i`
+2. **Recover natural control flow constructs** - Convert goto-based loops to for/while, flag empty functions as stubs, resolve indirect vtable calls
+3. **Add semantic comments for C++ idioms** - Label vtable calls, exception handling blocks, template instantiations, and virtual inheritance patterns

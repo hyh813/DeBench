@@ -1,0 +1,162 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables are named with cryptic patterns like `lVar1`, `iVar2`, `puVar3`, `param_1`, `local_28`, `local_810`. The original source used meaningful names like `x`, `arr`, `n`, `p1`, `p2`, `leak`, `head` - all completely lost. Generic naming makes tracking variable purpose extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+
+Justification: Nearly all function names match the original source exactly: `local_vars`, `local_array`, `local_struct`, `heap_basic`, `heap_calloc`, `heap_realloc`, `global_var_access`, `static_local`, `memop_memset`, `memop_memcpy`. Excellent recovery of function identities.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0xf` (15), `0x800` (2048), `0x28` (40) appear without explanation. The source had clear constants like `42`, `10`, `100` with semantic meaning. Only `0xffffffff` for error returns is reasonably clear.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+Justification: Minor auto-generated warnings present ("WARNING: Removing unreachable block", "WARNING: Subroutine does not return"). Otherwise clean decompilation without excessive compiler artifacts like register spilling or debug instrumentation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+
+Justification: Loops correctly recognized as do-while constructs (e.g., `do { *puVar3 = (int)lVar1; ... } while (lVar1 != 0x28)`). Conditionals are clear. At -O0, control flow closely matches source. Minor awkwardness in some complex functions like `linked_list_heap`.
+
+### 6. Function Decomposition
+**Score: 9/10**
+
+Justification: Each source function is decompiled as a separate function with appropriate granularity. No over-fragmentation or monolithic combining. Functions like `test_stack_memory` properly inlined test calls. Parameter counts match source.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error checking. Some forward jumps in complex functions like `linked_list_heap` but manageable. No severe disruption to reading flow.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+Justification: No dead code observed. Loop unrolling present but minimal (e.g., small fixed iterations). Common subexpressions not excessively duplicated. Clean code overall.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Mixed results - `int`, `uint`, `long` used correctly for most cases, but `undefined4`, `undefined8` appear for return types where `int`/`long` would be appropriate. Pointer types use `long` on arm64 rather than `uint64_t`. Some type erosion but inferable.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+Justification: Severe degradation. The `Point` struct from source is completely lost - `heap_struct` just computes `param_1 * 3`. The `Node` struct for linked lists uses raw pointer arithmetic (`piVar4[2]`, `piVar4[3]`) without struct recovery. `TreeNode` similarly lost. All composite types reduced to raw memory operations.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Significant unsafe pointer arithmetic throughout (e.g., `*(int *)((long)pvVar2 + uVar3 * 4)`). No bounds checking visible. Function pointers stored as `code*` instead of proper function signatures. Some casts between incompatible types. Moderate risk of undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Justification: Only auto-generated warnings present ("WARNING: Removing unreachable block", "WARNING: Subroutine does not return"). No meaningful comments explaining algorithm logic, parameter purposes, or return value semantics. Source had detailed comments like "// MEM-L1-01: 局部变量（基础类型）" completely absent.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: No design patterns or algorithms explicitly identified. Memory operations (malloc/free pairs) not labeled as any pattern. Linked list traversal not recognized as such. Some common C idioms present but not named or highlighted.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+
+Justification: Basic warnings for unreachable blocks present. No flagging of potential issues like the dangling pointer access in `dangling_pointer()` function (which dereferences freed memory). No indication of undefined behavior. Silent on semantic anomalies.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants documented. Source had explicit checks like `if (n <= 0 || n > 1000) return -1` but no contract recovery. Error return values not explained. The semantic contracts of functions are opaque.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Justification: No function call relationships documented. No indication that `double_value` is used as a callback in `call_global_callback`. Global variable usage not explained. External dependencies like `extern_global_var` not documented with their sources.
+
+### 17. Module Organization
+**Score: 8/10**
+
+Justification: Functions logically grouped by category (stack, heap, static, memory ops). Static functions properly identified. Single file structure matches source. Minor ordering differences but overall good organization.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+Justification: Several compilation issues: undefined `EVP_PKEY_CTX` in `_init`, undefined `extern_global_var` and `extern_function` (referenced but not defined in this binary). Some type mismatches with `undefined4`/`undefined8`. Would require stubs to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 4 + 7) / 4 = 5.50
+L2_avg = (8 + 9 + 8 + 8) / 4 = 8.25
+L3_avg = (5 + 2 + 5) / 3 = 4.00
+L4_avg = (3 + 4 + 5 + 2) / 4 = 3.50
+L5_avg = (3 + 8 + 4) / 3 = 5.00
+
+Overall = (5.50 × 0.30) + (8.25 × 0.25) + (4.00 × 0.20) + 
+          (3.50 × 0.15) + (5.00 × 0.10)
+        = 1.65 + 2.0625 + 0.80 + 0.525 + 0.50
+        = 5.54/10
+```
+
+**Overall Readability Score: 5.54/10**
+
+---
+
+### Critical Defects
+
+- **Variable naming completely generic**: `lVar1`, `iVar2`, `puVar3`, `param_1` obscure semantic purpose - original names like `x`, `arr`, `n`, `head` completely lost
+- **Composite types not recovered**: `Point`, `Node`, `TreeNode` structs reduced to raw pointer arithmetic, losing all semantic meaning
+- **No struct field names**: Code uses array indexing like `piVar4[2]`, `piVar4[3]` for struct fields instead of named access
+- **No comments explaining logic**: Source had detailed test case identifiers ("MEM-L1-01", "HEAP-L2-03") completely absent
+- **No anomaly detection**: Dangerous patterns like dangling pointer dereference in `dangling_pointer()` not flagged
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (9/10)** - Nearly all function names match the original source exactly, making it easy to identify which function is being analyzed.
+
+---
+
+### Most Needs Improvement
+
+**Composite Type Recovery (2/10)** - Struct and union types are completely lost. The decompiler treats all structured data as raw memory, losing critical semantic information about data layouts and field meanings.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover struct/union types from allocation patterns**: Analyze malloc sizes and field access patterns to reconstruct composite types. The allocation of `sizeof(Node)` (0x10 bytes) and subsequent field accesses should yield a reconstructed struct with named fields.
+
+2. **Infer variable names from usage patterns**: Use data flow analysis to suggest meaningful names. For example, `param_1` used in `param_1 * 2 + 10` should suggest `x` or `input_value`; `puVar3` used as array index should suggest `index` or `i`.
+
+3. **Add semantic comments for test identifiers**: Recognize test framework patterns and preserve test case IDs (MEM-L1-01, HEAP-L2-03) as comments to aid understanding of the code's purpose.

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `result`, `a1`, `a2`) with no semantic meaning. For example, `param_fake_branch` uses unnamed `result` instead of preserving the original `x` parameter name, making it impossible to understand variable purpose without tracing usage.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Function names like `param_fake_branch`, `call_opaque_predicate` are preserved from source, which is good. However, helper functions use mechanical names (`function_4b8`, `function_4d0`) and some signatures are wrong (e.g., `param_fake_branch(void)` loses the `int x` parameter).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals are hex-encoded (`"\xe6\x9c\x9f\xe6\x9c\x9b: 10"` instead of "期望：10"), magic numbers like `0x100000001` appear without explanation, and the encrypted string `"\x1a+<M"` lacks decryption key documentation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler runtime artifacts (`__do_global_dtors_aux`, `register_tm_clones`, `deregister_tm_clones`) that clutter the output. The massive `__aeabi_idiv` function (200+ lines) is compiler library code that should be excluded from decompilation output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `param_opaque_predicate` has unnatural nested conditionals with `==` chaining (`v2 | 1) + a1 * a1 == v1 * v1 == v3 == 1`) that doesn't match original clear if-else structure. `param_tail_call_optimized` loses tail recursion entirely, replacing it with complex arithmetic.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Some functions are correctly separated, but `param_fake_branch(void)` loses its parameter entirely. `test_obf_opt_edge` inlines code from `call_*` functions instead of calling them, creating a 300-line monolithic function that should be ~50 lines with proper calls.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `decrypt_string` has a do-while pattern that reads awkwardly with manual pointer arithmetic (`v1 = v2; v2 = v1 + 1`). The while loop in `param_opaque_predicate` is recoverable but the surrounding logic flow is confusing with multiple exit paths.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `call_string_encryption` and `param_string_encryption` have nearly identical code duplicated. The `__aeabi_idiv` function contains massive loop unrolling (v1 through v130) that should be recognized as a division algorithm and simplified.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently but loses original semantics (e.g., `param_instruction_substitution(uint32_t a1)` should be `int x`). Pointer types are often `int32_t` instead of proper types (`int32_t * a1` in `param_null_pointer_deref` is correct, but `decrypt_string` uses `int32_t str2` instead of `const char*`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `struct __jmp_buf_tag` is recovered with field names (`e0`, `e1`, `e2`) but these are generic. The bitfield struct from `param_implementation_defined` is completely lost - the function just returns constant `44` instead of computing from bitfields.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout (`(char *)&str`, `(int32_t)dest_str`). `param_null_pointer_deref` loses the signal handler logic entirely, making the type-unsafe NULL dereference invisible. Function pointer types use generic `void (*handler)(int32_t)` without proper signal handler typing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments in decompiled output. No explanation of obfuscation patterns, no indication that `param_fake_branch` should have dead code branches, no documentation of the encryption key (0x5A) used in string decryption.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Setjmp/longjmp exception handling pattern is present but not identified as such. The GCD algorithm in `param_opaque_predicate` is not recognized. String decryption XOR pattern is not documented as a common obfuscation technique.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical semantic failures are not flagged: `param_fake_branch` losing its parameter, `param_tail_call_optimized` not being recursive, `param_null_pointer_deref` missing the actual dereference. No warnings about decompilation confidence.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note `a1 != 0` for normal path). No postconditions. The signal handler contracts (`div_zero_handler`, `segv_handler`) are not explained as exception handlers.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph is partially preserved (`call_fake_branch` → constant, should call `param_fake_branch`). Global variables (`g1` through `g25`) are named generically instead of by purpose. String references show hex addresses but not content meaning.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file without logical grouping. Helper functions (`function_4d0` = printf wrapper) are mixed with application logic. No header file separation between API and implementation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes necessary headers and compiles (metadata says "Compilation Result: Yes"). However, many functions return wrong values (constants instead of computations), so while it compiles, it doesn't produce correct behavior.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+5+5+6)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.60
+
+Overall Score: 4.54/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **`param_fake_branch(void)` loses the `int x` parameter entirely** - function signature is semantically wrong
+- **`param_tail_call_optimized` is not recursive** - completely different algorithm that doesn't match source
+- **`param_null_pointer_deref` returns -1 unconditionally** - missing the actual pointer dereference and signal handling logic
+- **Zero comments explaining obfuscation patterns** - dead code branches, opaque predicates, and encryption are not documented
+- **String literals hex-encoded** - Chinese characters and meaningful strings appear as `\xe6\x9c\x9f` instead of readable text
+
+### Best Quality Aspect: **Build System Compatibility (7/10)**
+- The code includes proper headers and compiles successfully, providing a working (though semantically incorrect) binary.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments means readers cannot understand the obfuscation intent, encryption schemes, or why certain patterns exist.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve function signatures accurately** - `param_fake_branch(int x)` must retain its parameter; losing parameters destroys semantic meaning
+2. **Add confidence annotations for uncertain decompilation** - Flag functions like `param_tail_call_optimized` where recursion recovery failed with "DECOMPILATION UNCERTAIN" warnings
+3. **Recover string literals as readable text** - Decode UTF-8 strings instead of showing hex bytes; document encryption keys for obfuscated strings

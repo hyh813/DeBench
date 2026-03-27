@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3` instead of source names like `size`, `x`, `y`. Local variables are `v1`, `v2`, `v3`, `v4` - completely obscuring their semantic purpose (e.g., `v2` should be `page_size`, `v3` should be `result`). Only loop counters like `i` and accumulator `result` are reasonably named.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `test_preprocessing_features`, `main`. However, some CRT functions have generic names like `sub_4EC`, and internal functions like `call_weak_fn` could be more descriptive.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Magic numbers like `1024`, `512`, `64` are correctly preserved from macro expansion. The hex constant `57072` (0xDEF0) and result `57122` (0xDF22) are accurate. However, `30` used for `sysconf(_SC_PAGESIZE)` is a magic number without explanation. String literals are present but some are in separate data areas (e.g., `asc_122F`).
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. One auto-generated comment "// positive sp value has been detected" appears, but no redundant casts, frame pointer manipulations, or debug instrumentation. The "FAILED to decompile" messages for import thunks are appropriate indicators of decompilation limitations.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and matches source patterns. Loops use `for` constructs (`for ( i = 0; i != 4; ++i )`), conditionals use `if` statements. The `param_asm_clobber` function correctly shows a do-while loop. At `-O0`, the flow closely mirrors the original source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the source. Each function has a single responsibility (e.g., `param_macro_constants` does one thing). The 590 LOC output is well-organized into logical functions, compared to the 709 LOC source. Parameter counts are reasonable.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns are used appropriately (e.g., `param_dynamic_code` returns early on mmap failure). No excessive forward jumps or goto statements. The flow is easy to follow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or significant redundancy observed. Loop unrolling in `param_asm_simd` is appropriately represented as a for-loop (the decompiler recognized the pattern). Common subexpressions are not unnecessarily duplicated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types are correct: `int` for parameters, `size_t` for page sizes, `void*` for memory pointers. However, all parameters use generic `int` instead of more specific types. The `size_t` is correctly used for `sysconf` and `mmap` parameters. Some type precision is lost (e.g., `int *a1` could indicate `int* arr`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: No complex struct recovery needed for this code - it primarily uses primitive types and arrays. The decompiler correctly handles `int *a1` as array pointer in `param_asm_clobber`. No significant struct/union reconstruction was required.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts observed. Pointer arithmetic is correct (e.g., `a1++` in loop). Function signatures are preserved correctly. The atomic operations use proper `_atomic_fetch_add_4` intrinsic. No buffer-overflow-prone patterns or type-confused function pointers.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Sparse comments - mostly auto-generated function headers. The decompiler includes some useful metadata (e.g., "// positive sp value has been detected"). However, no explanation of macro semantics, inline assembly behavior, or algorithm intent. The "FAILED to decompile" messages are helpful but could be more descriptive.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard library functions are recognized and named: `memcpy`, `mmap`, `munmap`, `mprotect`, `sysconf`, `printf`. The atomic operation `_atomic_fetch_add_4` is correctly identified. However, macro patterns (SQUARE, MAX) are not explicitly labeled as such - they're just shown as computed values.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed decompilations are clearly marked with "FAILED to decompile: __imp___libc_start_main" messages. However, no flags for suspicious code patterns, indirect calls that couldn't be resolved, or potential undefined behavior. The decompiler presents code confidently without uncertainty indicators for complex assembly.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. For example, `param_dynamic_code` could have "requires: page_size > 0" or `param_memory_protection` could note "ensures: returns 42 on success, negative on failure". This information is completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are implicit in the code (e.g., `main` calls `test_preprocessing_features`). However, there's no documentation of which functions call which, global variable usage, or callback relationships. The `global_var` is referenced in `param_memory_clobber_demo` but not clearly linked to its definition.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single monolithic output file - all 52 functions in one block. The original source had clear section comments (5.2 Preprocessing, 5.3 Inline Assembly) that are not reflected. Static functions like `my_func` are properly scoped. No logical grouping or separation between preprocessing tests and assembly tests.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The decompiled code compiles (Compilation Result: Yes). External dependencies are via import thunks (e.g., `__imp_printf`). However, the use of data area references like `asc_122F`, `dword_1290`, `dword_1280` requires understanding of the binary's data section. No clear dependency documentation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.5/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `v1`, `v2` instead of semantic names like `size`, `page_size`, `result`
+- No comments explaining macro semantics (e.g., that `64` comes from `BUFFER_COUNT * 4`)
+- No contract/precondition documentation (e.g., "requires: ptr != NULL" for memory functions)
+- Cross-reference relationships not documented (which functions call which)
+- Module organization lost - all functions in single block without logical grouping
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- At -O0, the decompiled control flow closely matches the original source with natural loops and conditionals
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+- Generic parameter names (`a1`, `a2`, `a3`) and local variables (`v1`, `v2`, `v3`) completely obscure semantic meaning and require constant cross-referencing to understand purpose
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a1` compared against 1024 should be named `size` or `input_size`
+2. Add semantic context comments - explain that `64` is the result of `BUFFER_COUNT * 4` macro expansion
+3. Recover preconditions/postconditions from function behavior - document requirements like "requires: page_size > 0" for memory allocation functions

@@ -1,0 +1,3578 @@
+// Angr Decompilation of 2_clang_O1_no_g
+// Platform: ARMEL
+
+// Function: _init at 0x4003ec
+void _init()
+{
+    call_weak_fn();
+    return;
+}
+
+
+// Function: sub_4003f8 at 0x4003f8
+extern unsigned int g_413008;
+
+int sub_4003f8()
+{
+    unsigned int v1;  // lr
+    unsigned int v0;  // [bp-0x4]
+
+    v0 = v1;
+    goto g_413008;
+}
+
+
+// Function: _start at 0x400460
+int _start(unsigned int a0)
+{
+    unsigned int v0;  // [bp+0x0]
+    char v1;  // [bp+0x4]
+
+    __libc_start_main(main, v0, &v1, 0, 0, a0, v0); /* do not return */
+}
+
+
+// Function: sub_400498 at 0x400498
+void sub_400498()
+{
+    abort(); /* do not return */
+}
+
+
+// Function: call_weak_fn at 0x4004a4
+extern unsigned int g_413030;
+
+int call_weak_fn()
+{
+    unsigned int v0;  // r0
+
+    if (g_413030)
+        goto LABEL_4004bc;
+    return v0;
+LABEL_4004bc:
+    __gmon_start__(); /* do not return */
+}
+
+
+// Function: deregister_tm_clones at 0x4004c8
+extern char __TMC_END__;
+extern unsigned int g_41302c;
+
+int deregister_tm_clones()
+{
+    if (0)
+        goto LABEL_4004e8;
+    return &__TMC_END__;
+LABEL_4004e8:
+    if (g_41302c)
+        goto LABEL_4004f8;
+    return &__TMC_END__;
+LABEL_4004f8:
+    goto g_41302c;
+}
+
+
+// Function: register_tm_clones at 0x40050c
+extern char __TMC_END__;
+extern unsigned int g_413038;
+
+int register_tm_clones()
+{
+    if (0)
+        goto LABEL_400538;
+    return &__TMC_END__;
+LABEL_400538:
+    if (g_413038)
+        goto LABEL_400548;
+    return &__TMC_END__;
+LABEL_400548:
+    goto g_413038;
+}
+
+
+// Function: __do_global_dtors_aux at 0x40055c
+extern char __TMC_END__;
+extern unsigned int __dso_handle;
+extern unsigned int g_413028;
+
+unsigned int __do_global_dtors_aux()
+{
+    unsigned int v2;  // r0
+    unsigned int v3;  // lr
+    unsigned int v4;  // r4
+    unsigned int v5;  // r0
+    unsigned int v0;  // [bp-0x8]
+    unsigned int v1;  // [bp-0x4]
+
+    if (!__TMC_END__)
+        goto LABEL_400578;
+    return v2;
+LABEL_400578:
+    v1 = v3;
+    v0 = v4;
+    if (!g_413028)
+    {
+        v5 = deregister_tm_clones();
+        __TMC_END__ = 1;
+        return v5;
+    }
+    __cxa_finalize(__dso_handle); /* do not return */
+}
+
+
+// Function: frame_dummy at 0x4005c4
+unsigned int frame_dummy()
+{
+    unsigned int v0;  // r0
+
+    v0 = register_tm_clones();
+    return register_tm_clones();
+}
+
+
+// Function: process_char at 0x4005c8
+unsigned int process_char(unsigned int a0)
+{
+    if ((a0 - 65 & 255) < 26)
+        a0 += 32;
+    return a0 & 255;
+}
+
+
+// Function: process_short at 0x4005e0
+unsigned int process_short(unsigned short a0, unsigned short a1)
+{
+    return a1 + a0 & 65535;
+}
+
+
+// Function: process_int at 0x4005f0
+unsigned int process_int(unsigned int a0)
+{
+    return 1 | a0 * 2;
+}
+
+
+// Function: process_long at 0x4005fc
+unsigned int process_long(unsigned int a0)
+{
+    return a0 * 2;
+}
+
+
+// Function: process_ll at 0x400604
+int process_ll(unsigned int a0, unsigned int a1)
+{
+    return a0 * a0;
+}
+
+
+// Function: process_float at 0x40061c
+void process_float()
+{
+    unsigned int v2;  // r0
+    unsigned int v3;  // r2
+    unsigned int v4;  // r3
+    char v0;  // [bp-0x4]
+    char v1;  // [bp+0x0]
+
+    v2 = __mulsf3();
+    __addsf3(v2, 0x3f000000, v3, v4, &v1, *((int *)&v0));
+    return;
+}
+
+
+// Function: process_double at 0x400638
+void process_double()
+{
+    unsigned int v2;  // r0
+    unsigned int v3;  // r1
+    char v0;  // [bp-0x4]
+    char v1;  // [bp+0x0]
+
+    v2 = __muldf3();
+    __adddf3(v2, v3, 2576980378, 1069128089, &v1, *((int *)&v0));
+    return;
+}
+
+
+// Function: process_ld at 0x400668
+void process_ld(unsigned int a0, unsigned int a1)
+{
+    unsigned int v2;  // r0
+    char v0;  // [bp-0x4]
+    char v1;  // [bp+0x0]
+
+    v2 = __muldf3();
+    __adddf3(v2, a1, 0, 0x3ff00000, &v1, *((int *)&v0));
+    return;
+}
+
+
+// Function: process_bool at 0x400690
+unsigned int process_bool(unsigned int a0)
+{
+    unsigned int v0;  // r1
+
+    v0 = a0 & 1;
+    return (0 < a0 ? 1 : 0) & v0 + -(v0) + (v0 <= 0);
+}
+
+
+// Function: const_param at 0x4006b0
+int const_param(unsigned int *a0)
+{
+    return *(a0) + 10;
+}
+
+
+// Function: volatile_access at 0x4006bc
+unsigned int volatile_access(unsigned int *a0)
+{
+    return *(a0) * 2;
+}
+
+
+// Function: test_data_types_l1 at 0x4006cc
+extern char g_4024c3;
+
+int test_data_types_l1()
+{
+    unsigned int v1;  // r1
+    unsigned int v2;  // r0
+    unsigned int v0;  // [bp-0xc]
+
+    puts(&g_4024c3);
+    printf("DT-L1-01 (process_char): %c\n", 97);
+    printf("DT-L1-01 (process_char): %c\n", 98);
+    printf("DT-L1-02 (process_short): %d\n", 300);
+    printf("DT-L1-03 (process_int): %d\n", 11);
+    printf("DT-L1-04 (process_long): %ld\n", 200);
+    printf("DT-L1-05 (process_ll): %lld\n", v1);
+    printf("DT-L1-06 (process_float): %.2f\n", v1);
+    printf("DT-L1-07 (process_double): %.2f\n", v1);
+    printf("DT-L1-08 (process_ld): %.2Lf\n");
+    printf("DT-L1-09 (process_bool): %d\n", 1);
+    printf("DT-L1-09 (process_bool): %d\n", 0);
+    printf("DT-L1-09 (process_bool): %d\n", 0);
+    printf("DT-L1-10 (const_param): %d\n", 15);
+    v0 = 10;
+    v2 = printf("DT-L1-11 (volatile_access): %d\n", v0 * 2);
+    return printf("DT-L1-11 (volatile_access): %d\n", v0 * 2);
+}
+
+
+// Function: array_1d_stack at 0x40082c
+unsigned int array_1d_stack(unsigned int *a0, unsigned int i)
+{
+    unsigned int v0;  // r0
+    unsigned int v1;  // r0
+    unsigned int *ptr;  // r2
+    unsigned int *v3;  // r2
+    unsigned int v4;  // r0
+
+    if (i < 1)
+        return 0;
+    v0 = 0;
+    do
+    {
+        v1 = v0;
+        v3 = a0 + 1;
+        v4 = *(a0) + v1;
+        a0 = v3;
+        v0 = v4;
+        i -= 1;
+    } while (i != 1);
+    return *(ptr) + v1;
+}
+
+
+// Function: array_string at 0x400858
+unsigned int array_string(unsigned int a0)
+{
+    unsigned int v0;  // r1
+    unsigned int v1;  // r1
+    unsigned int v2;  // r1
+
+    v0 = 0;
+    do
+    {
+        v2 = v0 + 1;
+        v0 = v2;
+    } while (*((char *)(a0 + v1)));
+    return v1 - 0;
+}
+
+
+// Function: array_2d_stack at 0x400874
+unsigned int array_2d_stack(unsigned int a0)
+{
+    unsigned int i;  // r2
+    unsigned int v1;  // r1
+
+    i = 0;
+    v1 = 0;
+    do
+    {
+        v1 += *((int *)(a0 + i));
+        i += 44;
+    } while (i != 440);
+    return v1;
+}
+
+
+// Function: array_3d at 0x400898
+unsigned int array_3d(unsigned int *a0)
+{
+    unsigned int i;  // r12
+    unsigned int v1;  // r1
+    unsigned int *v2;  // r3
+    unsigned int *ptr;  // r3
+    unsigned int k;  // r2
+
+    i = 0;
+    v1 = 0;
+    do
+    {
+        vvar_36{r64|4b} = 0;
+        v2 = a0;
+        do
+        {
+            ptr = v2;
+            k = 0;
+            do
+            {
+                v1 += ptr[-1 * k];
+                k -= 1;
+            } while (k != 4294967291);
+            vvar_46{r64|4b} = vvar_13{r64|4b} + 1;
+            v2 = ptr + 5;
+        } while (vvar_13{r64|4b} != 5);
+        a0 += 25;
+        i += 1;
+    } while (i != 5);
+    return v1;
+}
+
+
+// Function: array_vla at 0x4008f0
+unsigned int array_vla(unsigned int i, unsigned int *a1)
+{
+    unsigned int v0;  // r0
+    unsigned int *ptr;  // r1
+    unsigned int v2;  // r0
+    unsigned int *v3;  // r1
+    unsigned int v4;  // r0
+
+    if (i < 1)
+        return 0;
+    v0 = 0;
+    do
+    {
+        v2 = v0;
+        v3 = a1 + 1;
+        v4 = *(a1) + v2;
+        i -= 1;
+        v0 = v4;
+        a1 = v3;
+    } while (i != 1);
+    return *(ptr) + v2;
+}
+
+
+// Function: array_pointer at 0x40091c
+unsigned int array_pointer(unsigned int *a0, unsigned int i)
+{
+    unsigned int v0;  // r0
+    unsigned int v1;  // r0
+    unsigned int *ptr;  // r2
+    unsigned int *v3;  // r2
+    unsigned int v4;  // r0
+
+    if (i < 1)
+        return 0;
+    v0 = 0;
+    do
+    {
+        v1 = v0;
+        v3 = a0 + 10;
+        v4 = *(a0) + v1;
+        a0 = v3;
+        v0 = v4;
+        i -= 1;
+    } while (i != 1);
+    return *(ptr) + v1;
+}
+
+
+// Function: pointer_array at 0x400948
+typedef struct struct_0 {
+    unsigned int field_0;
+} struct_0;
+
+unsigned int pointer_array(struct_0 **a0, unsigned int a1)
+{
+    unsigned int v0;  // r2
+    unsigned int result;  // r1
+    unsigned int v2;  // r1
+
+    if (a1 < 1)
+        return 0;
+    if (10 <= a1)
+        a1 = 10;
+    if (a1 <= 1)
+        a1 = 1;
+    v0 = 0;
+    do
+    {
+        result = a1;
+        if (*(a0))
+            v0 += *(a0)->field_0;
+    } while ((a0 += 4, v2 = result - 1, a1 = result - 1, result != 1));
+    return v0;
+}
+
+
+// Function: array_complex_index at 0x400994
+unsigned int array_complex_index(unsigned int a0, unsigned int a1, unsigned int a2, unsigned int a3)
+{
+    char v0;  // [bp+0x0]
+
+    if ((char)armg_calculate_condition(66, a3, 0, 0))
+        return 4294967295;
+    vvar_26{r64|4b} = *((int *)&v0);
+    if (v0 < a2)
+    {
+        if (!((char)armg_calculate_condition(178, (armg_calculate_condition(178, a3, 0, 0) ? a3 : a3), (armg_calculate_condition(178, a3, 0, 0) ? a1 : 0), (armg_calculate_condition(178, a3, 0, 0) ? 0 : 0))))
+            return 4294967295;
+    }
+    else
+    {
+        if (!((char)armg_calculate_condition(178, (armg_calculate_condition(178, a3, 0, 0) ? a3 : a3), (armg_calculate_condition(178, a3, 0, 0) ? a1 : 0), (armg_calculate_condition(178, a3, 0, 0) ? 0 : 0))))
+            return 4294967295;
+    }
+    return *((int *)(a0 + (armg_calculate_condition(82, (unsigned int)v0, 0, 0) ? a3 + v0 * a1 : 4294967295) * 4));
+}
+
+
+// Function: array_oob at 0x4009d4
+unsigned int array_oob(unsigned int *ptr, unsigned int a1)
+{
+    unsigned int result;  // r2
+    unsigned int v1;  // r1
+    unsigned int *v2;  // r0
+
+    if ((char)armg_calculate_condition(66, a1, 0, 0))
+        return 0;
+    result = a1 + 1;
+    v1 = 0;
+    do
+    {
+        v2 = ptr + 1;
+        v1 += *(ptr);
+        result -= 1;
+        ptr = v2;
+    } while (result != 1);
+    return v1;
+}
+
+
+// Function: test_array_types at 0x400a08
+extern char g_4024e4;
+
+int test_array_types()
+{
+    unsigned int i;  // r0
+    char *iter;  // r1
+    unsigned int i3;  // r1
+    unsigned int l;  // r12
+    unsigned int v23;  // r1
+    unsigned int i2;  // r0
+    unsigned int *v25;  // r3
+    unsigned int *ptr;  // r3
+    unsigned int i4;  // r2
+    unsigned int idx;  // r1
+    unsigned int n;  // r2
+    unsigned int pos;  // r2
+    unsigned int v31;  // r1
+    unsigned int off;  // r0
+    unsigned int v33;  // r1
+    unsigned int index;  // r0
+    unsigned int v35;  // r0
+    unsigned int v14;  // r3
+    unsigned int j;  // r0
+    unsigned int v17;  // r1
+    unsigned int k;  // r12
+    unsigned int cur;  // r3
+    unsigned int i1;  // r0
+    unsigned long v36;  // [bp-0x4e0]
+    char v0;  // [bp-0x49c]
+    char *v1;  // [bp-0x490]
+    char *v2;  // [bp-0x48c]
+    char *v3;  // [bp-0x488]
+    unsigned int flag1;  // [bp-0x484]
+    char v5;  // [bp-0x480]
+    unsigned int v6;  // [bp-0x468]
+    unsigned int v7;  // [bp-0x464]
+    unsigned int v8;  // [bp-0x460]
+    unsigned long v37;  // [bp-0x45c]
+    char v9;  // [bp-0x394]
+    char v10;  // [bp-0x1a0]
+
+    puts(&g_4024e4);
+    printf("ARR-L1-01 (array_1d_stack): %d\n", 15);
+    printf("ARR-L1-02 (array_string): %d\n", 5);
+    i = 0;
+    iter = &v10;
+    do
+    {
+        pos = 0;
+        do
+        {
+            if (i == pos)
+                v14 = i;
+            else
+                v14 = 0;
+        } while ((*((unsigned int *)&iter[4 * pos]) = v14, pos += 1, pos != 10));
+        iter += 40;
+        i += 1;
+    } while (i != 10);
+    j = 0;
+    v17 = 0;
+    do
+    {
+        v17 += *((int *)&(&v10)[j]);
+        j += 44;
+    } while (j != 440);
+    printf("ARR-L1-03 (array_2d_stack): %d\n", v17);
+    k = 0;
+    vvar_161{r64|4b} = &v9;
+    do
+    {
+        cur = vvar_17{r64|4b};
+        i1 = 0;
+        do
+        {
+            i3 = 0;
+            do
+            {
+                *((unsigned int *)(cur - i3 * 4)) = 1;
+                i3 -= 1;
+            } while (i3 != 4294967291);
+            cur += 20;
+            i1 += 1;
+        } while (i1 != 5);
+        vvar_177{r64|4b} = vvar_17{r64|4b} + 100;
+        k += 1;
+    } while (k != 5);
+    l = 0;
+    vvar_184{r64|4b} = &v9;
+    v23 = 0;
+    do
+    {
+        i2 = 0;
+        v25 = vvar_38{r64|4b};
+        do
+        {
+            ptr = v25;
+            i4 = 0;
+            do
+            {
+                v23 += ptr[-1 * i4];
+                i4 -= 1;
+            } while (i4 != 4294967291);
+            i2 += 1;
+            v25 = ptr + 5;
+        } while (i2 != 5);
+        vvar_202{r64|4b} = vvar_38{r64|4b} + 100;
+        l += 1;
+    } while (l != 5);
+    printf("ARR-L1-04 (array_3d): %d\n", v23);
+    printf("ARR-L2-01 (array_vla): %d\n", 60);
+    idx = 0;
+    do
+    {
+        (&v37)[idx] = idx;
+        idx += 10;
+    } while (idx != 50);
+    n = 0;
+    v31 = 0;
+    do
+    {
+        v31 += *((int *)((char *)&v37 + n));
+        n += 40;
+    } while (n != 200);
+    printf("ARR-L2-02 (array_pointer): %d\n", v31);
+    v8 = 10;
+    v7 = 20;
+    v6 = 30;
+    off = 0;
+    flag1 = 0;
+    v3 = &v6;
+    v2 = &v7;
+    v1 = &v8;
+    memset(&v5, 0, 24);
+    v33 = 0;
+    do
+    {
+        if ((&v1)[off])
+            v33 += *((int *)&(&v1)[off]);
+    } while ((off += 1, off != 3));
+    printf("ARR-L2-03 (pointer_array): %d\n", v33);
+    index = 0;
+    do
+    {
+        (&v36)[index] = index;
+        index += 1;
+    } while (index != 20);
+    v35 = printf("ARR-L2-04 (array_complex_index): %d\n", *((int *)&v0));
+    return printf("ARR-L2-04 (array_complex_index): %d\n", *((int *)&v0));
+}
+
+
+// Function: ptr_single at 0x400c68
+int ptr_single(unsigned int *a0)
+{
+    return *(a0) + 10;
+}
+
+
+// Function: ptr_double at 0x400c74
+typedef struct struct_0 {
+    unsigned int field_0;
+} struct_0;
+
+int ptr_double(struct_0 **a0)
+{
+    return *(a0)->field_0 + 5;
+}
+
+
+// Function: ptr_triple at 0x400c84
+typedef struct struct_1 {
+    struct struct_0 *field_0;
+} struct_1;
+
+typedef struct struct_0 {
+    unsigned int field_0;
+} struct_0;
+
+int ptr_triple(struct_1 **a0)
+{
+    return *(a0)->field_0->field_0 + 1;
+}
+
+
+// Function: ptr_increment at 0x400c98
+unsigned int ptr_increment(unsigned int *a0, unsigned int i)
+{
+    unsigned int v0;  // r0
+    unsigned int v1;  // r0
+    unsigned int *ptr;  // r2
+    unsigned int *v3;  // r2
+    unsigned int v4;  // r0
+
+    if (i < 1)
+        return 0;
+    v0 = 0;
+    do
+    {
+        v1 = v0;
+        v3 = a0 + 1;
+        v4 = *(a0) + v1;
+        a0 = v3;
+        v0 = v4;
+        i -= 1;
+    } while (i != 1);
+    return *(ptr) + v1;
+}
+
+
+// Function: ptr_offset at 0x400cc4
+int ptr_offset(unsigned int a0, unsigned int a1)
+{
+    return *((int *)(a0 + a1 * 4));
+}
+
+
+// Function: ptr_diff at 0x400ccc
+unsigned int ptr_diff(unsigned int a0, unsigned int a1)
+{
+    return a0 - a1 >> 2;
+}
+
+
+// Function: ptr_void at 0x400cd8
+int ptr_void(void* a0, unsigned int a1)
+{
+    if (a1 == 1)
+        return *((char *)a0);
+    if (a1)
+        goto LABEL_400cf4;
+    return *((int *)a0);
+LABEL_400cf4:
+    return *((int *)a0);
+}
+
+
+// Function: ptr_const at 0x400d00
+unsigned int ptr_const(unsigned int *a0)
+{
+    return *(a0) * 2;
+}
+
+
+// Function: ptr_const_ptr at 0x400d0c
+unsigned int ptr_const_ptr(unsigned int *ptr)
+{
+    unsigned int v0;  // r1
+
+    v0 = *(ptr) + 5;
+    *(ptr) = v0;
+    return v0;
+}
+
+
+// Function: ptr_func_simple at 0x400d20
+int ptr_func_simple(unsigned int *a0, unsigned int a1)
+{
+    unsigned int v0;  // r0
+
+    v0 = a0(a1);
+    return a0(a1);
+}
+
+
+// Function: ptr_func_complex at 0x400d3c
+extern unsigned int g_412f08;
+extern unsigned int g_412f0c;
+
+int ptr_func_complex(unsigned int *a0, unsigned int a1)
+{
+    unsigned int v3;  // r0
+    unsigned int v0;  // [bp-0x10]
+    char v1;  // [bp-0x4]
+    char v2;  // [bp+0x0]
+
+    v0 = g_412f08;
+    v3 = a0(a1, &v0, a0, a1, g_412f08, g_412f0c, &v2, *((int *)&v1));
+    return a0(a1, &v0, a0, a1, g_412f08, g_412f0c, &v2, *((int *)&v1));
+}
+
+
+// Function: ptr_cast at 0x400d8c
+int ptr_cast(unsigned int *a0)
+{
+    return *(a0);
+}
+
+
+// Function: opaque_handle_create at 0x400d94
+int opaque_handle_create()
+{
+    unsigned int v0;  // r0
+
+    return v0;
+}
+
+
+// Function: opaque_handle_op at 0x400d98
+unsigned int opaque_handle_op(unsigned int a0)
+{
+    return a0 * 2;
+}
+
+
+// Function: test_pointer_types at 0x400da0
+extern char g_4024ff;
+
+int test_pointer_types()
+{
+    unsigned int i;  // r2
+    unsigned int v6;  // r1
+    unsigned int v7;  // r0
+    unsigned int result;  // [bp-0x24]
+    unsigned int v1;  // [bp-0x20]
+    unsigned int v2;  // [bp-0x1c]
+    unsigned int v3;  // [bp-0x18]
+    unsigned int v4;  // [bp-0x14]
+
+    puts(&g_4024ff);
+    printf("PTR-L2-01 (ptr_single): %d\n", 15);
+    printf("PTR-L2-02 (ptr_double): %d\n", 15);
+    printf("PTR-L2-03 (ptr_triple): %d\n", 6);
+    result = 1;
+    v1 = 2;
+    v2 = 3;
+    v3 = 4;
+    v4 = 5;
+    i = 0;
+    v6 = 0;
+    do
+    {
+        v6 += (&result)[-1 * i];
+        i -= 1;
+    } while (i != 4294967291);
+    printf("PTR-L2-04 (ptr_increment): %d\n", v6);
+    printf("PTR-L2-05 (ptr_offset): %d\n", 30);
+    printf("PTR-L2-06 (ptr_diff): %d\n", 4);
+    printf("PTR-L2-07 (ptr_void): %d\n", 42);
+    printf("PTR-L2-07 (ptr_void): %d\n", 65);
+    printf("PTR-L2-08 (ptr_const): %d\n", 20);
+    printf("PTR-L2-09 (ptr_const_ptr): %d\n", 15);
+    printf("PTR-L2-10 (ptr_func_simple): %d\n", 10);
+    printf("PTR-L2-11 (ptr_func_complex): %d\n", 1);
+    printf("PTR-L2-12 (ptr_cast): 0x%x\n", 305419896);
+    v7 = printf("PTR-L2-13 (opaque_handle_op): %d\n", 20);
+    return printf("PTR-L2-13 (opaque_handle_op): %d\n", 20);
+}
+
+
+// Function: struct_simple at 0x400f10
+int struct_simple(unsigned int *a0)
+{
+    return a0[1] + *(a0) + a0[2];
+}
+
+
+// Function: struct_array at 0x400f24
+unsigned int struct_array(unsigned int *a0, unsigned int i)
+{
+    unsigned int v0[3];  // r2
+    unsigned int v1;  // r0
+    unsigned int v2;  // r0
+    unsigned int ptr[3];  // r2
+    unsigned int v4;  // r0
+
+    if (i < 1)
+        return 0;
+    v0 = a0 + 1;
+    v1 = 0;
+    do
+    {
+        v2 = v1;
+        ptr = v0;
+        v4 = ptr[1] + v2 + ptr[0] + ptr[1];
+        v0 = ptr + 1;
+        v1 = v4;
+        i -= 1;
+    } while (i != 1);
+    return ptr[1] + v2 + ptr[0] + ptr[1];
+}
+
+
+// Function: struct_nested at 0x400f6c
+int struct_nested(unsigned int *a0)
+{
+    return a0[3] + *(a0);
+}
+
+
+// Function: struct_deep at 0x400f7c
+int struct_deep(unsigned int *a0)
+{
+    return a0[5] + a0[2];
+}
+
+
+// Function: struct_with_ptr at 0x400f8c
+typedef struct struct_0 {
+    unsigned int field_0;
+    struct struct_1 *field_4;
+} struct_0;
+
+typedef struct struct_1 {
+    unsigned int field_0;
+} struct_1;
+
+int struct_with_ptr(struct_0 *idx)
+{
+    unsigned int v0;  // r0
+
+    v0 = idx->field_4->field_0;
+    if (!idx->field_4)
+        v0 = 0;
+    return v0 + idx->field_0;
+}
+
+
+// Function: struct_bitfields at 0x400fa8
+int struct_bitfields(unsigned short *ptr)
+{
+    unsigned int v0;  // r0
+
+    v0 = *(ptr);
+    return (v0 & 1) + (v0 >> 6) + (3 & v0 >> 1) + (7 & v0 >> 3);
+}
+
+
+// Function: union_type at 0x400fd0
+int union_type(void* a0, unsigned int a1)
+{
+    unsigned int v0;  // r0
+
+    if (a1 == 1)
+    {
+        v0 = __fixsfsi(*((int *)a0));
+        return __fixsfsi(*((int *)a0));
+    }
+    return *((int *)*((char *)a0));
+}
+
+
+// Function: union_array at 0x401000
+unsigned int union_array(unsigned int *a0, unsigned int i)
+{
+    unsigned int v0;  // r0
+    unsigned int v1;  // r0
+    unsigned int *ptr;  // r2
+    unsigned int *v3;  // r2
+    unsigned int v4;  // r0
+
+    if (i < 1)
+        return 0;
+    v0 = 0;
+    do
+    {
+        v1 = v0;
+        v3 = a0 + 1;
+        v4 = *(a0) + v1;
+        a0 = v3;
+        v0 = v4;
+        i -= 1;
+    } while (i != 1);
+    return *(ptr) + v1;
+}
+
+
+// Function: enum_type at 0x40102c
+unsigned int enum_type(unsigned int a0)
+{
+    return a0 * 10;
+}
+
+
+// Function: enum_switch at 0x401038
+extern unsigned int g_402568;
+
+int enum_switch(unsigned int a0)
+{
+    unsigned int v0;  // r0
+
+    v0 = 5400;
+    if (a0 <= 3)
+        v0 = &g_402568;
+    return *((int *)(v0 + a0 * 4));
+}
+
+
+// Function: struct_func_ptr at 0x401058
+typedef struct struct_0 {
+    unsigned int field_0;
+    struct struct_1 *field_4;
+} struct_0;
+
+typedef struct struct_1 {
+    unsigned int field_0;
+} struct_1;
+
+int struct_func_ptr(struct_0 *a0)
+{
+    unsigned int v0;  // r0
+
+    v0 = a0->field_4(a0->field_0, a0->field_0, a0->field_4);
+    return a0->field_4(a0->field_0, a0->field_0, a0->field_4);
+}
+
+
+// Function: linked_list at 0x401074
+typedef struct struct_0 {
+    unsigned int field_0;
+    struct struct_0 *field_4;
+} struct_0;
+
+struct_0 * linked_list(struct_0 *a0)
+{
+    struct_0 *result;  // r0
+    struct_0 *v1;  // r0
+    unsigned int v2;  // r0
+    struct_0 *ptr;  // r1
+    unsigned int v4;  // r0
+    struct_0 *v5;  // r1
+    unsigned int v6;  // r0
+
+    if (!a0)
+    {
+        result = NULL;
+        if (!((char)armg_calculate_condition(2, a0, 0, 0)))
+            goto LABEL_401080;
+        return NULL;
+        v1 = result;
+    }
+    else
+    {
+        if (!((char)armg_calculate_condition(2, a0, 0, 0)))
+            goto LABEL_401080;
+        return a0;
+        v1 = a0;
+    }
+LABEL_401080:
+    v2 = 0;
+    do
+    {
+        ptr = v1;
+        v4 = v2;
+        v5 = ptr->field_4;
+        v6 = ptr->field_0 + v4;
+        v2 = v6;
+        v1 = v5;
+    } while (ptr->field_4);
+    return ptr->field_0 + v4;
+}
+
+
+// Function: doubly_linked_list at 0x4010a0
+typedef struct struct_0 {
+    unsigned int field_0;
+    struct struct_0 *field_4;
+} struct_0;
+
+struct_0 * doubly_linked_list(struct_0 *a0)
+{
+    struct_0 *result;  // r0
+    struct_0 *v1;  // r0
+    unsigned int v2;  // r0
+    struct_0 *ptr;  // r1
+    unsigned int v4;  // r0
+    struct_0 *v5;  // r1
+    unsigned int v6;  // r0
+
+    if (!a0)
+    {
+        result = NULL;
+        if (!((char)armg_calculate_condition(2, a0, 0, 0)))
+            goto LABEL_4010ac;
+        return NULL;
+        v1 = result;
+    }
+    else
+    {
+        if (!((char)armg_calculate_condition(2, a0, 0, 0)))
+            goto LABEL_4010ac;
+        return a0;
+        v1 = a0;
+    }
+LABEL_4010ac:
+    v2 = 0;
+    do
+    {
+        ptr = v1;
+        v4 = v2;
+        v5 = ptr->field_4;
+        v6 = ptr->field_0 + v4;
+        v2 = v6;
+        v1 = v5;
+    } while (ptr->field_4);
+    return ptr->field_0 + v4;
+}
+
+
+// Function: binary_tree_sum at 0x4010cc
+unsigned int [3] binary_tree_sum(unsigned int *a0)
+{
+    unsigned int result[3];  // r0
+    unsigned int v4[3];  // r0
+    unsigned int v5;  // r5
+    unsigned int v6;  // r4
+    unsigned int v7;  // r0
+    unsigned int v8;  // r0
+    unsigned int v0;  // [bp-0x10]
+    unsigned int v1;  // [bp-0xc]
+    unsigned int v2;  // [bp-0x4]
+
+    if (!a0)
+    {
+        result = NULL;
+        if (!((char)armg_calculate_condition(2, a0, 0, 0)))
+            goto LABEL_4010d8;
+        return NULL;
+        v4 = result;
+    }
+    else
+    {
+        if (!((char)armg_calculate_condition(2, a0, 0, 0)))
+            goto LABEL_4010d8;
+        return a0;
+        v4 = a0;
+    }
+LABEL_4010d8:
+    v2 = vvar_3{r64|4b};
+    v1 = v5;
+    v0 = v6;
+    v7 = binary_tree_sum(v4[1]);
+    v8 = binary_tree_sum(v4[2]);
+    return v7 + v4[0] + v8;
+}
+
+
+// Function: binary_tree at 0x401104
+unsigned int [3] binary_tree()
+{
+    unsigned int *v0;  // r0
+    unsigned int v1[3];  // r0
+
+    v1 = binary_tree_sum(v0);
+    return binary_tree_sum(v0);
+}
+
+
+// Function: graph_traverse at 0x401114
+typedef struct struct_1 {
+    struct struct_0 *field_0;
+    char padding_4[36];
+    unsigned int field_28;
+} struct_1;
+
+typedef struct struct_2 {
+    char padding_0[4];
+    unsigned int field_4;
+} struct_2;
+
+typedef struct struct_0 {
+    unsigned int field_0;
+    struct struct_0 *field_4;
+} struct_0;
+
+unsigned int graph_traverse(struct_1 *p)
+{
+    unsigned int v0;  // r1
+    struct_2 *ptr;  // r2
+    unsigned int v2;  // r2
+
+    if (p->field_28 < 1)
+        return 0;
+    vvar_41{r64|4b} = 0;
+    v0 = 0;
+    do
+    {
+        ptr = (&p->field_0)[vvar_2{r64|4b}];
+        if ((&p->field_0)[vvar_2{r64|4b}])
+        {
+            do
+            {
+                v2 = ptr->field_4;
+                v0 += ptr->padding_0;
+                ptr = v2;
+            } while (ptr->field_4);
+        }
+    } while ((vvar_55{r64|4b} = vvar_2{r64|4b} + 1, vvar_55{r64|4b} != p->field_28));
+    return v0;
+}
+
+
+// Function: test_composite_types at 0x401170
+typedef struct struct_0 {
+    char field_0[4];
+    struct struct_0 *field_4;
+} struct_0;
+
+typedef struct struct_1 {
+    char field_0[4];
+    struct struct_1 *field_4;
+} struct_1;
+
+typedef struct struct_2 {
+    char padding_0[4];
+    unsigned int field_4;
+} struct_2;
+
+extern char g_40251a;
+
+int test_composite_types()
+{
+    unsigned int v20;  // r1
+    struct_0 *ptr;  // r0
+    unsigned int v29;  // r1
+    unsigned int v30;  // r0
+    unsigned int v31;  // r0
+    struct_0 *v22;  // r0
+    struct_1 *p;  // r0
+    unsigned int v24;  // r1
+    struct_1 *v25;  // r0
+    unsigned int pos;  // r5
+    struct_2 *addr;  // r0
+    char v0;  // [bp-0x84]
+    char *v1;  // [bp-0x84]
+    unsigned int v2;  // [bp-0x5c]
+    unsigned int flag6;  // [bp-0x58]
+    unsigned int flag5;  // [bp-0x54]
+    unsigned int v5[1];  // [bp-0x4c]
+    unsigned int flag4;  // [bp-0x48]
+    unsigned int flag3;  // [bp-0x44]
+    char v8;  // [bp-0x40], Other Possible Types: unsigned int
+    char *v9;  // [bp-0x3c]
+    unsigned int flag2;  // [bp-0x38]
+    unsigned int v11;  // [bp-0x34]
+    unsigned int flag1;  // [bp-0x30]
+    char *v13;  // [bp-0x2c]
+    char v14;  // [bp-0x28], Other Possible Types: unsigned int
+    char *v15;  // [bp-0x24]
+    unsigned int v16;  // [bp-0x20]
+    char *v17;  // [bp-0x1c]
+    unsigned int v18;  // [bp-0x18]
+    unsigned int result;  // [bp-0x14]
+
+    puts(&g_40251a);
+    printf("CMP-L2-01 (struct_simple): %d\n", 6);
+    printf("CMP-L2-02 (struct_array): %d\n", 9);
+    printf("CMP-L2-03 (struct_nested): %d\n", 105);
+    printf("CMP-L2-04 (struct_deep): %d\n", 258);
+    printf("CMP-L2-05 (struct_with_ptr): %d\n", 30);
+    printf("CMP-L2-06 (struct_bitfields): %d\n", 106);
+    printf("CMP-L2-07 (union_type): %d\n", 305419896);
+    printf("CMP-L2-08 (union_array): %d\n", 60);
+    printf("CMP-L2-09 (enum_type): %d\n", 10);
+    printf("CMP-L2-10 (enum_switch): %d\n", 50);
+    printf("CMP-L2-11 (struct_func_ptr): %d\n", 21);
+    v20 = 0;
+    result = 0;
+    v18 = 30;
+    ptr = &v14;
+    v17 = &v18;
+    v16 = 20;
+    v15 = &v16;
+    v14 = 10;
+    do
+    {
+        v22 = ptr->field_4;
+        v20 += ptr->field_0;
+        ptr = v22;
+    } while (ptr->field_4);
+    printf("CMP-L2-12 (linked_list): %d\n", v20);
+    p = &v8;
+    v13 = &v8;
+    v24 = 0;
+    flag1 = 0;
+    v11 = 20;
+    flag2 = 0;
+    v9 = &v11;
+    v8 = 10;
+    do
+    {
+        v25 = p->field_4;
+        v24 += p->field_0;
+        p = v25;
+    } while (p->field_4);
+    printf("CMP-L2-13 (doubly_linked_list): %d\n", v24);
+    flag3 = 0;
+    flag4 = 0;
+    *((unsigned int [1])v5) = 100;
+    printf("CMP-L2-14 (binary_tree): %d\n", binary_tree_sum(&v5));
+    flag5 = 0;
+    flag6 = 1;
+    pos = 0;
+    memset(&v0, 0, 44);
+    v2 = 2;
+    v1 = &flag6;
+    v29 = 0;
+    do
+    {
+        addr = *((int *)&(&v0)[4 * pos]);
+        if (*((int *)&(&v0)[4 * pos]))
+        {
+            do
+            {
+                v30 = addr->field_4;
+                v29 += addr->padding_0;
+                addr = v30;
+            } while (addr->field_4);
+        }
+    } while ((pos += 1, pos != 2));
+    v31 = printf("CMP-L2-15 (graph_traverse): %d\n", v29);
+    return printf("CMP-L2-15 (graph_traverse): %d\n", v29);
+}
+
+
+// Function: main at 0x401408
+unsigned int main()
+{
+    test_data_types_l1();
+    test_array_types();
+    test_pointer_types();
+    test_composite_types();
+    return 0;
+}
+
+
+// Function: __muldf3 at 0x401428
+unsigned int __muldf3(unsigned int a0, unsigned int a1, unsigned int a2, unsigned int a3, unsigned int a4, unsigned int a5, unsigned int a6, unsigned int a7, unsigned int a8, unsigned int a9, unsigned int a10, unsigned int a11)
+{
+    unsigned int v2;  // r4
+    unsigned int v3;  // r5
+    unsigned int v12;  // r5
+    unsigned int v13;  // cc_op
+    unsigned int v14;  // cc_dep1
+    unsigned int v15;  // cc_dep2
+    unsigned int v16;  // cc_ndep
+    unsigned int v21;  // cc_op
+    unsigned int v4;  // cc_op
+    unsigned int v22;  // cc_dep1
+    unsigned int v23;  // cc_dep2
+    unsigned int v24;  // cc_ndep
+    unsigned int v5;  // cc_dep1
+    unsigned int v33;  // cc_op
+    unsigned int v34;  // cc_dep1
+    unsigned int v35;  // cc_dep2
+    unsigned int v36;  // cc_ndep
+    unsigned int v6;  // cc_dep2
+    unsigned int v45;  // r4
+    unsigned int v46;  // r6
+    unsigned int v47;  // r1
+    unsigned int v48;  // r3
+    unsigned int v49;  // cc_op
+    unsigned int v50;  // cc_dep1
+    unsigned int v7;  // cc_ndep
+    unsigned int v51;  // cc_dep2
+    unsigned int v52;  // cc_ndep
+    unsigned int v53;  // r1
+    unsigned int v54;  // r3
+    unsigned int v55;  // r5
+    unsigned int v56;  // r5
+    unsigned int v57;  // r6
+    unsigned int v58;  // r5
+    unsigned int v60;  // cc_ndep
+    unsigned int v8;  // cc_op
+    unsigned int v61;  // r4
+    unsigned int v62;  // r6
+    unsigned int v63;  // r5
+    unsigned int v64;  // cc_dep1
+    unsigned int v65;  // cc_dep2
+    unsigned int v67;  // cc_dep1
+    unsigned int v68;  // r1
+    unsigned int v69;  // r0
+    unsigned int v70;  // r12
+    unsigned int v9;  // cc_dep1
+    unsigned int v71;  // cc_dep1
+    unsigned int v72;  // cc_dep2
+    unsigned int v73;  // cc_ndep
+    unsigned int v74;  // cc_op
+    unsigned int v75;  // cc_dep1
+    unsigned int v76;  // cc_dep2
+    unsigned int v77;  // cc_ndep
+    unsigned int v78;  // r1
+    unsigned int v79;  // r4
+    unsigned int v80;  // cc_op
+    unsigned int v10;  // cc_dep2
+    unsigned int v81;  // cc_dep1
+    unsigned int v82;  // cc_dep2
+    unsigned int v83;  // cc_ndep
+    unsigned int v84;  // r0
+    unsigned int v85;  // r4
+    unsigned int v86;  // r4
+    unsigned int v87;  // r4
+    char v88;  // r4
+    unsigned int v11;  // cc_ndep
+    unsigned int v93;  // r0
+    unsigned int v0;  // [bp-0x10]
+    unsigned int v1;  // [bp-0x10]
+
+    v2 = 2047 & a1 >> 20;
+    if ((2047 & a1 >> 20))
+    {
+        v3 = 2047 & a3 >> 20;
+        v8 = (armg_calculate_condition(v4 | 16, v5, v6, v7) ? 5 : v4);
+        v9 = (armg_calculate_condition(v4 | 16, v5, v6, v7) ? 2047 & a3 >> 20 : v5);
+        v10 = (armg_calculate_condition(v4 | 16, v5, v6, v7) ? a3 >> 19 & 1 : v6);
+        v11 = (armg_calculate_condition(v4 | 16, v5, v6, v7) ? armg_calculate_flag_v(v4, v5, v6, v7) : v7);
+        if (!armg_calculate_condition(v8 | 16, v9, v10, v11))
+            goto LABEL_40143e;
+LABEL_40143d:
+        v21 = 5;
+        v22 = (armg_calculate_condition(v8 | 16, v9, v10, v11) ? v2 ^ 2047 : v9);
+        v23 = (armg_calculate_condition(v8 | 16, v9, v10, v11) ? armg_calculate_flag_c(v8, v9, v10, v11) : v10);
+        v24 = (armg_calculate_condition(v8 | 16, v9, v10, v11) ? armg_calculate_flag_v(v8, v9, v10, v11) : v11);
+        if (!armg_calculate_condition(21, v22, v23, v24))
+            goto LABEL_401442;
+LABEL_401441:
+        v33 = 5;
+        v34 = (armg_calculate_condition(v21 | 16, v22, v23, v24) ? v3 ^ 2047 : v22);
+        v35 = (armg_calculate_condition(v21 | 16, v22, v23, v24) ? armg_calculate_flag_c(v21, v22, v23, v24) : v23);
+        v36 = (armg_calculate_condition(v21 | 16, v22, v23, v24) ? armg_calculate_flag_v(v21, v22, v23, v24) : v24);
+        if ((char)armg_calculate_condition(5, v34, v35, v36))
+        {
+            v93 = sub_401608();
+            return sub_401608();
+        }
+    }
+    else
+    {
+        v3 = v12;
+        v8 = (armg_calculate_condition(v13 | 16, v14, v15, v16) ? 5 : v13);
+        v9 = (armg_calculate_condition(v13 | 16, v14, v15, v16) ? 2047 & a3 >> 20 : v14);
+        v10 = (armg_calculate_condition(v13 | 16, v14, v15, v16) ? a3 >> 19 & 1 : v15);
+        v11 = (armg_calculate_condition(v13 | 16, v14, v15, v16) ? armg_calculate_flag_v(v13, v14, v15, v16) : v16);
+        if (armg_calculate_condition(v8 | 16, v9, v10, v11))
+            goto LABEL_40143d;
+LABEL_40143e:
+        v21 = v8;
+        v22 = (armg_calculate_condition(v8 | 16, v9, v10, v11) ? v2 ^ 2047 : v9);
+        v23 = (armg_calculate_condition(v8 | 16, v9, v10, v11) ? armg_calculate_flag_c(v8, v9, v10, v11) : v10);
+        v24 = (armg_calculate_condition(v8 | 16, v9, v10, v11) ? armg_calculate_flag_v(v8, v9, v10, v11) : v11);
+        if (armg_calculate_condition(v21 | 16, v22, v23, v24))
+            goto LABEL_401441;
+LABEL_401442:
+        v33 = v21;
+        v34 = (armg_calculate_condition(v21 | 16, v22, v23, v24) ? v3 ^ 2047 : v22);
+        v35 = (armg_calculate_condition(v21 | 16, v22, v23, v24) ? armg_calculate_flag_c(v21, v22, v23, v24) : v23);
+        v36 = (armg_calculate_condition(v21 | 16, v22, v23, v24) ? armg_calculate_flag_v(v21, v22, v23, v24) : v24);
+        if ((char)armg_calculate_condition(v33, v34, v35, v36))
+        {
+            v93 = sub_401608();
+            return sub_401608();
+        }
+    }
+    v45 = v2 + v3;
+    v46 = a1 ^ a3;
+    v47 = a1 & ~(0xffe00000);
+    v48 = a3 & ~(0xffe00000);
+    if (a0 || v47 * 0x1000)
+    {
+        v49 = (armg_calculate_condition(v33 | 16, v34, v35, v36) ? 5 : v33);
+        v50 = (armg_calculate_condition(v33 | 16, v34, v35, v36) ? a2 | v48 * 0x1000 : v34);
+        v51 = (armg_calculate_condition(v33 | 16, v34, v35, v36) ? v48 >> 20 & 1 : v35);
+        v52 = (armg_calculate_condition(v33 | 16, v34, v35, v36) ? armg_calculate_flag_v(v33, v34, v35, v36) : v36);
+    }
+    else
+    {
+        v49 = (armg_calculate_condition(v33 | 16, v34, v35, v36) ? 5 : v33);
+        v50 = (armg_calculate_condition(v33 | 16, v34, v35, v36) ? a2 | v48 * 0x1000 : v34);
+        v51 = (armg_calculate_condition(v33 | 16, v34, v35, v36) ? v48 >> 20 & 1 : v35);
+        v52 = (armg_calculate_condition(v33 | 16, v34, v35, v36) ? armg_calculate_flag_v(v33, v34, v35, v36) : v36);
+    }
+    v53 = v47 | 0x100000;
+    v54 = v48 | 0x100000;
+    if (!((char)armg_calculate_condition(v49, v50, v51, v52)))
+    {
+        v55 = (0 CONCAT a0 * a2 >> 32) + v53 * a2 >> 32;
+        vvar_204{r64|4b} = (0 CONCAT a0 * a2 >> 32) + v53 * a2;
+        v56 = (v55 CONCAT vvar_204{r64|4b}) + a0 * v54 >> 32;
+        vvar_209{r64|4b} = (v55 CONCAT vvar_204{r64|4b}) + a0 * v54;
+        v57 = (0 CONCAT v56) + v53 * v54 >> 32;
+        v58 = (0 CONCAT v56) + v53 * v54;
+        if (a0 * a2)
+            vvar_221{r64|4b} = vvar_209{r64|4b} | 1;
+        v60 = 0;
+        v61 = v45 - 1023 - (0x200 > v57);
+        vvar_74{r64|4b} = vvar_73{r64|4b};
+        v62 = v57;
+        v63 = v58;
+        v64 = v57;
+        v65 = 0x200;
+        if (0x200 > v62)
+        {
+            v60 = vvar_73{r64|4b} >> 31 & 1;
+            v62 = v57 * 2 + armg_calculate_flag_c(3, v58, v58, vvar_73{r64|4b} >> 31 & 1);
+            vvar_472{r64|4b} = vvar_73{r64|4b} * 2;
+            v63 = v58 * 2 + (vvar_73{r64|4b} >> 31 & 1);
+            v64 = v58;
+            v65 = v58;
+        }
+        v67 = v64;
+        v68 = v46 & 0x80000000 | v62 * 0x800 | v63 >> 21;
+        v69 = v63 * 0x800 | vvar_74{r64|4b} >> 21;
+        vvar_247{r64|4b} = vvar_74{r64|4b} * 0x800;
+        v70 = v61 - 253;
+        if (253 < v61)
+        {
+            v71 = (armg_calculate_condition(130, v67, v65, v60) ? v70 : v67);
+            v72 = (armg_calculate_condition(130, v67, v65, v60) ? 0x700 : v65);
+            v73 = (armg_calculate_condition(130, v67, v65, v60) ? 0 : v60);
+            if ((char)armg_calculate_condition(130, v71, v72, v73))
+                goto LABEL_40150c;
+LABEL_4014cc:
+            if (vvar_86{r64|4b} == 0x80000000)
+            {
+                v74 = (armg_calculate_condition(2, v71, v72, v73) ? 5 : 2);
+                v75 = (armg_calculate_condition(2, v71, v72, v73) ? v69 >> 1 : v71);
+                v76 = (armg_calculate_condition(2, v71, v72, v73) ? v69 & 1 : v72);
+                v77 = (armg_calculate_condition(2, v71, v72, v73) ? armg_calculate_flag_v(2, v71, v72, v73) : v73);
+            }
+            else
+            {
+                v74 = (armg_calculate_condition(2, v71, v72, v73) ? 5 : 2);
+                v75 = (armg_calculate_condition(2, v71, v72, v73) ? v69 >> 1 : v71);
+                v76 = (armg_calculate_condition(2, v71, v72, v73) ? v69 & 1 : v72);
+                v77 = (armg_calculate_condition(2, v71, v72, v73) ? armg_calculate_flag_v(2, v71, v72, v73) : v73);
+            }
+            return v69 + armg_calculate_flag_c(v74, v75, v76, v77);
+        }
+        else
+        {
+            v71 = (armg_calculate_condition(130, v67, v65, v60) ? v70 : v67);
+            v72 = (armg_calculate_condition(130, v67, v65, v60) ? 0x700 : v65);
+            v73 = (armg_calculate_condition(130, v67, v65, v60) ? 0 : v60);
+            if (!((char)armg_calculate_condition(130, v71, v72, v73)))
+                goto LABEL_4014cc;
+LABEL_40150c:
+            if ((char)armg_calculate_condition(194, v71, v72, v73))
+                return 0;
+        }
+    }
+    else
+    {
+        v69 = a0 | a2;
+        v78 = (v46 & 0x80000000 | v53) ^ v54;
+        v79 = v45 - 1023;
+        if (1023 < v45)
+        {
+            v80 = (armg_calculate_condition(v49 | 192, v50, v51, v52) ? 2 : v49);
+            v81 = (armg_calculate_condition(v49 | 192, v50, v51, v52) ? 2047 : v50);
+            v82 = (armg_calculate_condition(v49 | 192, v50, v51, v52) ? v79 : v51);
+            v83 = (armg_calculate_condition(v49 | 192, v50, v51, v52) ? 0 : v52);
+            if (!armg_calculate_condition(v80 | 192, v81, v82, v83))
+                goto LABEL_4014fa;
+LABEL_4014f9:
+            v78 |= v79 * 0x100000;
+            if (!((char)armg_calculate_condition(v80 | 192, v81, v82, v83)))
+                goto LABEL_401500;
+            return a0 | a2;
+            v1 = v0;
+        }
+        else
+        {
+            v80 = (armg_calculate_condition(v49 | 192, v50, v51, v52) ? 2 : v49);
+            v81 = (armg_calculate_condition(v49 | 192, v50, v51, v52) ? 2047 : v50);
+            v82 = (armg_calculate_condition(v49 | 192, v50, v51, v52) ? v79 : v51);
+            v83 = (armg_calculate_condition(v49 | 192, v50, v51, v52) ? 0 : v52);
+            if (armg_calculate_condition(v80 | 192, v81, v82, v83))
+                goto LABEL_4014f9;
+LABEL_4014fa:
+            if (!((char)armg_calculate_condition(v80 | 192, v81, v82, v83)))
+                goto LABEL_401500;
+            return a0 | a2;
+        }
+LABEL_401500:
+        v68 = v78 | 0x100000;
+        vvar_314{r64|4b} = 0;
+        v61 = v0 - 1;
+LABEL_40150c:
+        if ((char)armg_calculate_condition(194, v0, 1, 0))
+            return 0;
+    }
+    if (armg_calculate_condition(209, v61, 54, 0))
+    {
+        v84 = 0;
+        if (!armg_calculate_condition(209, v61, 54, 0))
+            goto LABEL_40151a;
+LABEL_401519:
+        v68 &= 0x80000000;
+        if (!((char)armg_calculate_condition(209, v61, 54, 0)))
+            goto LABEL_401520;
+        return v84;
+    }
+    else
+    {
+        v84 = v69;
+        if (armg_calculate_condition(209, v61, 54, 0))
+            goto LABEL_401519;
+LABEL_40151a:
+        if (!((char)armg_calculate_condition(209, v61, 54, 0)))
+            goto LABEL_401520;
+        return v84;
+    }
+LABEL_401520:
+    v85 = -(v1);
+    v86 = v85 - 32;
+    if (32 > v85)
+    {
+        v87 = v86 + 12;
+        if (!((char)armg_calculate_condition(193, v86, 12, 0)))
+        {
+            v88 = (char)v87 + 20;
+            if (vvar_86{r64|4b} || (v84 << ((char)(32 - (v87 + 20)) & 31) & (char)(32 - (v87 + 20)) - 32 >> 31) * 2)
+                return (v84 >> ((char)v87 + 20 & 31) & (v87 + 20 & 255) - 32 >> 31 | v68 << ((char)(32 - v88) & 31) & (char)(32 - v88) - 32 >> 31) + ((v84 << ((char)(32 - (v87 + 20)) & 31) & (char)(32 - (v87 + 20)) - 32 >> 31) >> 31);
+            return (v84 >> ((char)v87 + 20 & 31) & (v87 + 20 & 255) - 32 >> 31 | v68 << ((char)(32 - v88) & 31) & (char)(32 - v88) - 32 >> 31) + ((v84 << ((char)(32 - (v87 + 20)) & 31) & (char)(32 - (v87 + 20)) - 32 >> 31) >> 31) & ~((v84 << ((char)(32 - (v87 + 20)) & 31) & (char)(32 - (v87 + 20)) - 32 >> 31) >> 31);
+        }
+        else
+        {
+            if (!vvar_86{r64|4b} && !(v84 << ((char)(12 - v87) & 31) & (char)(12 - v87) - 32 >> 31) * 2)
+                return (v84 >> ((char)(32 - (12 - v87)) & 31) & (32 - (12 - v87 & 255) & 255) - 32 >> 31 | v68 << ((char)(12 - v87) & 31) & (char)(12 - v87) - 32 >> 31) + ((v84 << ((char)(12 - v87) & 31) & (char)(12 - v87) - 32 >> 31) >> 31) & ~((v84 << ((char)(12 - v87) & 31) & (char)(12 - v87) - 32 >> 31) >> 31);
+            return (v84 >> ((char)(32 - (12 - v87)) & 31) & (32 - (12 - v87 & 255) & 255) - 32 >> 31 | v68 << ((char)(12 - v87) & 31) & (char)(12 - v87) - 32 >> 31) + ((v84 << ((char)(12 - v87) & 31) & (char)(12 - v87) - 32 >> 31) >> 31);
+        }
+    }
+    else if (!vvar_86{r64|4b} && !(v84 << ((char)(32 - v86) & 31) & (char)(32 - v86) - 32 >> 31) && !(v84 >> ((char)v86 & 31) & (v86 & 255) - 32 >> 31 | v68 << ((char)(32 - v86) & 31) & (char)(32 - v86) - 32 >> 31) * 2)
+    {
+        return (v68 >> ((char)v86 & 31) & (v86 & 255) - 32 >> 31 & ~((v68 & 0x80000000) >> ((char)v86 & 31) & (v86 & 255) - 32 >> 31)) + ((v84 >> ((char)v86 & 31) & (v86 & 255) - 32 >> 31 | v68 << ((char)(32 - v86) & 31) & (char)(32 - v86) - 32 >> 31) >> 31) & ~((v84 >> ((char)v86 & 31) & (v86 & 255) - 32 >> 31 | v68 << ((char)(32 - v86) & 31) & (char)(32 - v86) - 32 >> 31) >> 31);
+    }
+    else
+    {
+        return (v68 >> ((char)v86 & 31) & (v86 & 255) - 32 >> 31 & ~((v68 & 0x80000000) >> ((char)v86 & 31) & (v86 & 255) - 32 >> 31)) + ((v84 >> ((char)v86 & 31) & (v86 & 255) - 32 >> 31 | v68 << ((char)(32 - v86) & 31) & (char)(32 - v86) - 32 >> 31) >> 31);
+    }
+}
+
+
+// Function: sub_401608 at 0x401608
+unsigned int sub_401608(unsigned int a0, unsigned int a1, unsigned int a2, unsigned int a3, unsigned int a4, unsigned int a5, unsigned int a6, unsigned int a7)
+{
+    unsigned int v0;  // r12
+    unsigned int flag3;  // r5
+    unsigned int v10;  // cc_dep2
+    unsigned int v11;  // cc_ndep
+    unsigned int v15;  // cc_op
+    unsigned int v16;  // cc_dep1
+    unsigned int v17;  // cc_dep2
+    unsigned int v18;  // cc_ndep
+    unsigned int v19;  // cc_dep1
+    unsigned int flag2;  // r4
+    unsigned int v20;  // cc_dep2
+    unsigned int v21;  // cc_ndep
+    unsigned int v22;  // cc_dep1
+    unsigned int v23;  // cc_dep1
+    unsigned int flag1;  // cc_dep2
+    unsigned int v25;  // r2
+    unsigned int v26;  // cc_dep1
+    unsigned int result;  // cc_dep2
+    unsigned int v3;  // cc_dep1
+    unsigned int v31;  // cc_dep1
+    unsigned int v32;  // cc_dep2
+    unsigned int v33;  // cc_ndep
+    unsigned int v34;  // r0
+    unsigned int v35;  // r1
+    unsigned int v36;  // cc_op
+    unsigned int v4;  // cc_dep2
+    unsigned int v37;  // cc_dep1
+    unsigned int v38;  // cc_dep2
+    unsigned int v39;  // cc_ndep
+    unsigned int v40;  // cc_dep1
+    unsigned int v41;  // cc_dep2
+    unsigned int v42;  // cc_ndep
+    unsigned int v43;  // cc_dep1
+    unsigned int v44;  // cc_dep2
+    unsigned int v5;  // cc_ndep
+    unsigned int v47;  // cc_dep1
+    unsigned int v48;  // cc_dep2
+    unsigned int v49;  // cc_ndep
+    unsigned int v50;  // r0
+    unsigned int v6;  // cc_dep1
+    unsigned int v7;  // cc_dep2
+    unsigned int v8;  // cc_ndep
+    unsigned int v9;  // cc_dep1
+
+    flag3 = v0 & a3 >> 20;
+    if ((flag2 ^ v0))
+    {
+        v6 = (armg_calculate_condition(21, v3, v4, v5) ? flag3 ^ v0 : v3);
+        v7 = (armg_calculate_condition(21, v3, v4, v5) ? armg_calculate_flag_c(5, v3, v4, v5) : v4);
+        v8 = (armg_calculate_condition(21, v3, v4, v5) ? armg_calculate_flag_v(5, v3, v4, v5) : v5);
+        if ((char)armg_calculate_condition(5, v6, v7, v8))
+            goto LABEL_401634;
+    }
+    else
+    {
+        v6 = (armg_calculate_condition(21, v9, v10, v11) ? flag3 ^ v0 : v9);
+        v7 = (armg_calculate_condition(21, v9, v10, v11) ? armg_calculate_flag_c(5, v9, v10, v11) : v10);
+        v8 = (armg_calculate_condition(21, v9, v10, v11) ? armg_calculate_flag_v(5, v9, v10, v11) : v11);
+        if ((char)armg_calculate_condition(5, v6, v7, v8))
+        {
+LABEL_401634:
+            v31 = a0 | a1 * 2;
+            v32 = a1 >> 31 & 1;
+            v33 = armg_calculate_flag_v(5, v6, v7, v8);
+            if (!a0 && !a1 * 2)
+            {
+                v34 = a2;
+                if (!armg_calculate_condition(5, v31, v32, v33))
+                    goto LABEL_40163e;
+LABEL_40163d:
+                v35 = a3;
+                if (!armg_calculate_condition(21, v31, v32, v33))
+                    goto LABEL_401642;
+LABEL_401641:
+                v36 = (armg_calculate_condition(21, v31, v32, v33) ? 5 : 5);
+                v37 = (armg_calculate_condition(21, v31, v32, v33) ? a2 | a3 * 2 : v31);
+                v38 = (armg_calculate_condition(21, v31, v32, v33) ? a3 >> 31 & 1 : v32);
+                v39 = (armg_calculate_condition(21, v31, v32, v33) ? armg_calculate_flag_v(5, v31, v32, v33) : v33);
+                if ((char)armg_calculate_condition(v36, v37, v38, v39))
+                    return v34;
+            }
+            else
+            {
+                v34 = a0;
+                if (armg_calculate_condition(5, v31, v32, v33))
+                    goto LABEL_40163d;
+LABEL_40163e:
+                v35 = a1;
+                if (armg_calculate_condition(21, v31, v32, v33))
+                    goto LABEL_401641;
+LABEL_401642:
+                v36 = (armg_calculate_condition(21, v31, v32, v33) ? 5 : 5);
+                v37 = (armg_calculate_condition(21, v31, v32, v33) ? a2 | a3 * 2 : v31);
+                v38 = (armg_calculate_condition(21, v31, v32, v33) ? a3 >> 31 & 1 : v32);
+                v39 = (armg_calculate_condition(21, v31, v32, v33) ? armg_calculate_flag_v(5, v31, v32, v33) : v33);
+                if ((char)armg_calculate_condition(v36, v37, v38, v39))
+                    return v34;
+            }
+            v40 = flag2 ^ v0;
+            v41 = armg_calculate_flag_c(v36, v37, v38, v39);
+            v42 = armg_calculate_flag_v(v36, v37, v38, v39);
+            v43 = v40;
+            v44 = v41;
+            if (!(flag2 ^ v0))
+            {
+                v42 = armg_calculate_flag_v(5, v40, v41, v42);
+                v43 = v34 | v35 * 0x1000;
+                v44 = v35 >> 20 & 1;
+                if (v34 || v35 * 0x1000)
+                    return v34;
+            }
+            if (!(flag3 ^ v0))
+            {
+                v47 = a2 | a3 * 0x1000;
+                v48 = a3 >> 20 & 1;
+                v49 = armg_calculate_flag_v(5, flag3 ^ v0, armg_calculate_flag_c(5, v43, v44, v42), armg_calculate_flag_v(5, v43, v44, v42));
+                if (a2 || a3 * 0x1000)
+                {
+                    v50 = a2;
+                    if (!armg_calculate_condition(21, v47, v48, v49))
+                        goto LABEL_40166a;
+LABEL_401669:
+                    if ((char)armg_calculate_condition(21, v47, v48, v49))
+                        return v50;
+                }
+                else
+                {
+                    v50 = v34;
+                    if (armg_calculate_condition(21, v47, v48, v49))
+                        goto LABEL_401669;
+LABEL_40166a:
+                    if ((char)armg_calculate_condition(21, v47, v48, v49))
+                        return v50;
+                }
+            }
+        }
+    }
+    if (a0 || a1 * 2)
+    {
+        v15 = (armg_calculate_condition(21, v6, v7, v8) ? 5 : 5);
+        v16 = (armg_calculate_condition(21, v6, v7, v8) ? a2 | a3 * 2 : v6);
+        v17 = (armg_calculate_condition(21, v6, v7, v8) ? a3 >> 31 & 1 : v7);
+        v18 = (armg_calculate_condition(21, v6, v7, v8) ? armg_calculate_flag_v(5, v6, v7, v8) : v8);
+        if (!((char)armg_calculate_condition(v15 | 16, v16, v17, v18)))
+            return 0;
+    }
+    else
+    {
+        v15 = (armg_calculate_condition(21, v6, v7, v8) ? 5 : 5);
+        v16 = (armg_calculate_condition(21, v6, v7, v8) ? a2 | a3 * 2 : v6);
+        v17 = (armg_calculate_condition(21, v6, v7, v8) ? a3 >> 31 & 1 : v7);
+        v18 = (armg_calculate_condition(21, v6, v7, v8) ? armg_calculate_flag_v(5, v6, v7, v8) : v8);
+        if (!((char)armg_calculate_condition(v15 | 16, v16, v17, v18)))
+            return 0;
+    }
+    v19 = flag2;
+    v20 = armg_calculate_flag_c(v15, v16, v17, v18);
+    v21 = armg_calculate_flag_v(v15, v16, v17, v18);
+    v22 = v19;
+    if (!flag2)
+    {
+        while (true)
+        {
+            a0 *= 2;
+            a1 = a1 * 2 + (a0 >> 31 & 1);
+            v23 = a1 & 0x100000;
+            flag1 = 0;
+            v21 = armg_calculate_flag_v(5, v19, v20, v21);
+            if (!(a1 & 0x100000))
+            {
+                v19 = v23;
+                v20 = flag1;
+                if (!((char)armg_calculate_condition(5, v19, 0, v21)))
+                    break;
+            }
+            else
+            {
+                v19 = v23;
+                v20 = flag1;
+                if (!((char)armg_calculate_condition(5, v19, 0, v21)))
+                    break;
+            }
+        }
+        v20 = armg_calculate_flag_c(5, v23, 0, v21);
+        v21 = armg_calculate_flag_v(5, v23, 0, v21);
+        if (!flag3)
+            goto LABEL_4015e8;
+        return a0;
+        v22 = flag3;
+    }
+LABEL_4015e8:
+    while (true)
+    {
+        v25 = a2 * 2;
+        a3 = a3 * 2 + (a2 >> 31 & 1);
+        v26 = a3 & 0x100000;
+        result = 0;
+        v21 = armg_calculate_flag_v(5, v22, v20, v21);
+        if (!(a3 & 0x100000))
+        {
+            v22 = v26;
+            v20 = result;
+            a2 = v25;
+            if (!((char)armg_calculate_condition(5, v22, 0, v21)))
+                return a0;
+        }
+        else
+        {
+            v22 = v26;
+            v20 = result;
+            a2 = v25;
+            if (!((char)armg_calculate_condition(5, v22, 0, v21)))
+                return a0;
+        }
+    }
+}
+
+
+// Function: __mulsf3 at 0x401694
+extern char g_800000;
+
+unsigned int __mulsf3(unsigned int a0, unsigned int a1, unsigned int a2, unsigned int a3)
+{
+    unsigned int v0;  // r2
+    unsigned int v1;  // r3
+    unsigned int v10;  // cc_op
+    unsigned int v79;  // cc_ndep
+    unsigned int v80;  // r0
+    unsigned int v81;  // r2
+    unsigned int v82;  // cc_op
+    unsigned int v83;  // cc_dep1
+    unsigned int v84;  // cc_dep2
+    unsigned int v85;  // cc_ndep
+    unsigned int v86;  // cc_dep1
+    unsigned int v87;  // cc_dep2
+    unsigned int v88;  // cc_ndep
+    unsigned int v11;  // cc_dep1
+    unsigned int v89;  // r0
+    unsigned int v90;  // cc_dep1
+    unsigned int v91;  // cc_dep2
+    unsigned int v92;  // cc_ndep
+    unsigned int v93;  // cc_dep1
+    unsigned int v94;  // cc_dep2
+    unsigned int v12;  // cc_dep2
+    unsigned int v95;  // cc_ndep
+    unsigned int v96;  // cc_dep1
+    unsigned int v97;  // cc_dep2
+    unsigned int v98;  // cc_ndep
+    unsigned int v99;  // cc_dep1
+    unsigned int v100;  // cc_dep2
+    unsigned int v103;  // cc_dep1
+    unsigned int v104;  // cc_dep2
+    unsigned int v13;  // cc_ndep
+    unsigned int v105;  // cc_ndep
+    unsigned int v18;  // cc_op
+    unsigned int v19;  // cc_dep1
+    unsigned int v2;  // cc_op
+    unsigned int v20;  // cc_dep2
+    unsigned int v21;  // cc_ndep
+    unsigned int v3;  // cc_dep1
+    unsigned int v30;  // cc_op
+    unsigned int v31;  // cc_dep1
+    unsigned int v32;  // cc_dep2
+    unsigned int v33;  // cc_ndep
+    unsigned int v4;  // cc_dep2
+    unsigned int v42;  // cc_dep1
+    unsigned int v43;  // cc_dep2
+    unsigned int v44;  // cc_ndep
+    unsigned int v45;  // cc_op
+    unsigned int v46;  // cc_dep1
+    unsigned int v47;  // cc_dep2
+    unsigned int v48;  // cc_ndep
+    unsigned int v49;  // cc_op
+    unsigned int v5;  // cc_ndep
+    unsigned int v50;  // cc_dep1
+    unsigned int v51;  // cc_dep2
+    unsigned int v52;  // cc_ndep
+    unsigned int v53;  // r0
+    unsigned int v54;  // r0
+    unsigned int v6;  // cc_op
+    unsigned int v55;  // r1
+    unsigned int v7;  // cc_dep1
+    unsigned int v56;  // r1
+    unsigned int v8;  // cc_dep2
+    unsigned int v61;  // r2
+    unsigned int v62;  // r12
+    unsigned int result;  // r0
+    unsigned int v64;  // r1
+    unsigned int v65;  // cc_op
+    unsigned int v66;  // cc_dep1
+    unsigned int v67;  // cc_dep2
+    unsigned int v68;  // cc_ndep
+    unsigned int v9;  // cc_ndep
+    unsigned int v71;  // r1
+    unsigned int v72;  // r3
+    unsigned int v73;  // r1
+    unsigned int v74;  // r1
+    unsigned int v75;  // r0
+    unsigned int v76;  // r2
+    unsigned int v77;  // cc_dep1
+    unsigned int v78;  // cc_dep2
+
+    v0 = 255 & a0 >> 23;
+    if ((255 & a0 >> 23))
+    {
+        v1 = 255 & a1 >> 23;
+        v6 = (armg_calculate_condition(v2 | 16, v3, v4, v5) ? 5 : v2);
+        v7 = (armg_calculate_condition(v2 | 16, v3, v4, v5) ? 255 & a1 >> 23 : v3);
+        v8 = (armg_calculate_condition(v2 | 16, v3, v4, v5) ? a1 >> 22 & 1 : v4);
+        v9 = (armg_calculate_condition(v2 | 16, v3, v4, v5) ? armg_calculate_flag_v(v2, v3, v4, v5) : v5);
+        if (!armg_calculate_condition(v6 | 16, v7, v8, v9))
+            goto LABEL_4016a2;
+LABEL_4016a1:
+        v18 = 5;
+        v19 = (armg_calculate_condition(v6 | 16, v7, v8, v9) ? v0 ^ 255 : v7);
+        v20 = (armg_calculate_condition(v6 | 16, v7, v8, v9) ? armg_calculate_flag_c(v6, v7, v8, v9) : v8);
+        v21 = (armg_calculate_condition(v6 | 16, v7, v8, v9) ? armg_calculate_flag_v(v6, v7, v8, v9) : v9);
+        if (!armg_calculate_condition(21, v19, v20, v21))
+            goto LABEL_4016a6;
+LABEL_4016a5:
+        v30 = 5;
+        v31 = (armg_calculate_condition(v18 | 16, v19, v20, v21) ? v1 ^ 255 : v19);
+        v32 = (armg_calculate_condition(v18 | 16, v19, v20, v21) ? armg_calculate_flag_c(v18, v19, v20, v21) : v20);
+        v33 = (armg_calculate_condition(v18 | 16, v19, v20, v21) ? armg_calculate_flag_v(v18, v19, v20, v21) : v21);
+        if ((char)armg_calculate_condition(5, v31, v32, v33))
+            goto LABEL_4017a8;
+    }
+    else
+    {
+        v1 = a3;
+        v6 = (armg_calculate_condition(v10 | 16, v11, v12, v13) ? 5 : v10);
+        v7 = (armg_calculate_condition(v10 | 16, v11, v12, v13) ? 255 & a1 >> 23 : v11);
+        v8 = (armg_calculate_condition(v10 | 16, v11, v12, v13) ? a1 >> 22 & 1 : v12);
+        v9 = (armg_calculate_condition(v10 | 16, v11, v12, v13) ? armg_calculate_flag_v(v10, v11, v12, v13) : v13);
+        if (armg_calculate_condition(v6 | 16, v7, v8, v9))
+            goto LABEL_4016a1;
+LABEL_4016a2:
+        v18 = v6;
+        v19 = (armg_calculate_condition(v6 | 16, v7, v8, v9) ? v0 ^ 255 : v7);
+        v20 = (armg_calculate_condition(v6 | 16, v7, v8, v9) ? armg_calculate_flag_c(v6, v7, v8, v9) : v8);
+        v21 = (armg_calculate_condition(v6 | 16, v7, v8, v9) ? armg_calculate_flag_v(v6, v7, v8, v9) : v9);
+        if (armg_calculate_condition(v18 | 16, v19, v20, v21))
+            goto LABEL_4016a5;
+LABEL_4016a6:
+        v30 = v18;
+        v31 = (armg_calculate_condition(v18 | 16, v19, v20, v21) ? v1 ^ 255 : v19);
+        v32 = (armg_calculate_condition(v18 | 16, v19, v20, v21) ? armg_calculate_flag_c(v18, v19, v20, v21) : v20);
+        v33 = (armg_calculate_condition(v18 | 16, v19, v20, v21) ? armg_calculate_flag_v(v18, v19, v20, v21) : v21);
+        if ((char)armg_calculate_condition(v30, v31, v32, v33))
+        {
+LABEL_4017a8:
+            v1 = 255 & a1 >> 23;
+            if ((v0 ^ 255))
+            {
+                v42 = (armg_calculate_condition(21, v31, v32, v33) ? v1 ^ 255 : v31);
+                v43 = (armg_calculate_condition(21, v31, v32, v33) ? armg_calculate_flag_c(5, v31, v32, v33) : v32);
+                v44 = (armg_calculate_condition(21, v31, v32, v33) ? armg_calculate_flag_v(5, v31, v32, v33) : v33);
+                if ((char)armg_calculate_condition(5, v42, v43, v44))
+                    goto LABEL_4017d0;
+            }
+            else
+            {
+                v42 = (armg_calculate_condition(21, v31, v32, v33) ? v1 ^ 255 : v31);
+                v43 = (armg_calculate_condition(21, v31, v32, v33) ? armg_calculate_flag_c(5, v31, v32, v33) : v32);
+                v44 = (armg_calculate_condition(21, v31, v32, v33) ? armg_calculate_flag_v(5, v31, v32, v33) : v33);
+                if ((char)armg_calculate_condition(5, v42, v43, v44))
+                {
+LABEL_4017d0:
+                    if (a0)
+                    {
+                        v86 = (armg_calculate_condition(21, v42, v43, v44) ? a0 ^ 0x80000000 : v42);
+                        v87 = (armg_calculate_condition(21, v42, v43, v44) ? 1 : v43);
+                        v88 = (armg_calculate_condition(21, v42, v43, v44) ? armg_calculate_flag_v(5, v42, v43, v44) : v44);
+                        if (!armg_calculate_condition(5, v86, v87, v88))
+                            goto LABEL_4017da;
+LABEL_4017d9:
+                        v89 = a1;
+                        if (!armg_calculate_condition(21, v86, v87, v88))
+                            goto LABEL_4017de;
+LABEL_4017dd:
+                        v90 = (armg_calculate_condition(21, v86, v87, v88) ? a1 : v86);
+                        v91 = (armg_calculate_condition(21, v86, v87, v88) ? armg_calculate_flag_c(5, v86, v87, v88) : v87);
+                        v92 = (armg_calculate_condition(21, v86, v87, v88) ? armg_calculate_flag_v(5, v86, v87, v88) : v88);
+                        if (!armg_calculate_condition(21, v90, v91, v92))
+                            goto LABEL_4017e2;
+                    }
+                    else
+                    {
+                        v86 = (armg_calculate_condition(21, v42, v43, v44) ? 0x80000000 : v42);
+                        v87 = (armg_calculate_condition(21, v42, v43, v44) ? 1 : v43);
+                        v88 = (armg_calculate_condition(21, v42, v43, v44) ? armg_calculate_flag_v(5, v42, v43, v44) : v44);
+                        if (armg_calculate_condition(5, v86, v87, v88))
+                            goto LABEL_4017d9;
+LABEL_4017da:
+                        v89 = a0;
+                        if (armg_calculate_condition(21, v86, v87, v88))
+                            goto LABEL_4017dd;
+LABEL_4017de:
+                        v90 = (armg_calculate_condition(21, v86, v87, v88) ? a1 : v86);
+                        v91 = (armg_calculate_condition(21, v86, v87, v88) ? armg_calculate_flag_c(5, v86, v87, v88) : v87);
+                        v92 = (armg_calculate_condition(21, v86, v87, v88) ? armg_calculate_flag_v(5, v86, v87, v88) : v88);
+                        if (!armg_calculate_condition(21, v90, v91, v92))
+                        {
+LABEL_4017e2:
+                            v93 = (armg_calculate_condition(21, v90, v91, v92) ? a1 ^ 0x80000000 : v90);
+                            v94 = (armg_calculate_condition(21, v90, v91, v92) ? 1 : v91);
+                            v95 = (armg_calculate_condition(21, v90, v91, v92) ? armg_calculate_flag_v(5, v90, v91, v92) : v92);
+                            if ((char)armg_calculate_condition(5, v93, v94, v95))
+                                return v89 | 0x7f000000 | 0xc00000;
+LABEL_4017e8:
+                            v96 = v0 ^ 255;
+                            v97 = armg_calculate_flag_c(5, v93, v94, v95);
+                            v98 = armg_calculate_flag_v(5, v93, v94, v95);
+                            v99 = v96;
+                            v100 = v97;
+                            if (!(v0 ^ 255))
+                            {
+                                v98 = armg_calculate_flag_v(5, v96, v97, v98);
+                                v99 = v89 * 0x200;
+                                v100 = v89 >> 23 & 1;
+                                if (v89 * 0x200)
+                                    return v89 | 0x7f000000 | 0xc00000;
+                            }
+                            if ((v1 ^ 255))
+                                return (v89 ^ a1) & 0x80000000 | 0x7f000000 | &g_800000;
+                            v103 = a1 * 0x200;
+                            v104 = a1 >> 23 & 1;
+                            v105 = armg_calculate_flag_v(5, v1 ^ 255, armg_calculate_flag_c(5, v99, v100, v98), armg_calculate_flag_v(5, v99, v100, v98));
+                            if (a1 * 0x200)
+                            {
+                                if (!((char)armg_calculate_condition(21, v103, v104, v105)))
+                                    return (a1 ^ a1) & 0x80000000 | 0x7f000000 | &g_800000;
+                                return a1 | 0x7f000000 | 0xc00000;
+                            }
+                            else
+                            {
+                                if (!((char)armg_calculate_condition(21, v103, v104, v105)))
+                                    return (v89 ^ a1) & 0x80000000 | 0x7f000000 | &g_800000;
+                                return v89 | 0x7f000000 | 0xc00000;
+                            }
+                        }
+                    }
+                    v93 = (armg_calculate_condition(21, v90, v91, v92) ? a1 ^ 0x80000000 : v90);
+                    v94 = (armg_calculate_condition(21, v90, v91, v92) ? 1 : v91);
+                    v95 = (armg_calculate_condition(21, v90, v91, v92) ? armg_calculate_flag_v(5, v90, v91, v92) : v92);
+                    if ((char)armg_calculate_condition(5, v93, v94, v95))
+                        return v89 | 0x7f000000 | 0xc00000;
+                    goto LABEL_4017e8;
+                }
+            }
+            if ((a0 & 2147483647))
+            {
+                v45 = (armg_calculate_condition(21, v42, v43, v44) ? 5 : 5);
+                v46 = (armg_calculate_condition(21, v42, v43, v44) ? a1 & 2147483647 : v42);
+                v47 = (armg_calculate_condition(21, v42, v43, v44) ? 1 : v43);
+                v48 = (armg_calculate_condition(21, v42, v43, v44) ? armg_calculate_flag_v(5, v42, v43, v44) : v44);
+                if (!((char)armg_calculate_condition(v45 | 16, v46, v47, v48)))
+                    return (a0 ^ a1) & 0x80000000;
+            }
+            else
+            {
+                v45 = (armg_calculate_condition(21, v42, v43, v44) ? 5 : 5);
+                v46 = (armg_calculate_condition(21, v42, v43, v44) ? a1 & 2147483647 : v42);
+                v47 = (armg_calculate_condition(21, v42, v43, v44) ? 1 : v43);
+                v48 = (armg_calculate_condition(21, v42, v43, v44) ? armg_calculate_flag_v(5, v42, v43, v44) : v44);
+                if (!((char)armg_calculate_condition(v45 | 16, v46, v47, v48)))
+                    return (a0 ^ a1) & 0x80000000;
+            }
+            v49 = 5;
+            v50 = v0;
+            v51 = armg_calculate_flag_c(v45, v46, v47, v48);
+            v52 = armg_calculate_flag_v(v45, v46, v47, v48);
+            v53 = a0;
+            if (armg_calculate_condition(5, v50, v51, v52))
+                goto LABEL_401775;
+            else
+                goto LABEL_401776;
+            while (true)
+            {
+                v53 = v54;
+                if (armg_calculate_condition(v49, v50, v51, v52))
+                {
+LABEL_401775:
+                    v54 = v53 * 2;
+                    if (!armg_calculate_condition(v49, v50, v51, v52))
+                        goto LABEL_40177a;
+                    goto LABEL_401779;
+                }
+                else
+                {
+LABEL_401776:
+                    v54 = v53;
+                    if (armg_calculate_condition(v49, v50, v51, v52))
+                    {
+LABEL_401779:
+                        v49 = 5;
+                        v50 = (armg_calculate_condition(v49, v50, v51, v52) ? v54 & &g_800000 : v50);
+                        v51 = (armg_calculate_condition(v49, v50, v51, v52) ? 0 : v51);
+                        v52 = (armg_calculate_condition(v49, v50, v51, v52) ? armg_calculate_flag_v(v49, v50, v51, v52) : v52);
+                        if (!armg_calculate_condition(5, v50, v51, v52))
+                            goto LABEL_40177e;
+                        goto LABEL_40177d;
+                    }
+                    else
+                    {
+LABEL_40177a:
+                        v50 = (armg_calculate_condition(v49, v50, v51, v52) ? v54 & &g_800000 : v50);
+                        v51 = (armg_calculate_condition(v49, v50, v51, v52) ? 0 : v51);
+                        v52 = (armg_calculate_condition(v49, v50, v51, v52) ? armg_calculate_flag_v(v49, v50, v51, v52) : v52);
+                        if (armg_calculate_condition(v49, v50, v51, v52))
+                        {
+LABEL_40177d:
+                            v0 -= 1;
+                            if (!((char)armg_calculate_condition(v49, v50, v51, v52)))
+                                break;
+                        }
+                        else
+                        {
+LABEL_40177e:
+                            if (!((char)armg_calculate_condition(v49, v50, v51, v52)))
+                                break;
+                        }
+                    }
+                }
+            }
+            a0 = v54 | a0 & 0x80000000;
+            v30 = 5;
+            v31 = v1;
+            v32 = armg_calculate_flag_c(v49, v50, v51, v52);
+            v33 = armg_calculate_flag_v(v49, v50, v51, v52);
+            v55 = a1;
+            if (armg_calculate_condition(5, v31, v32, v33))
+                goto LABEL_401791;
+            else
+                goto LABEL_401792;
+            while (true)
+            {
+                v55 = v56;
+                if (armg_calculate_condition(v30, v31, v32, v33))
+                {
+LABEL_401791:
+                    v56 = v55 * 2;
+                    if (!armg_calculate_condition(v30, v31, v32, v33))
+                        goto LABEL_401796;
+                    goto LABEL_401795;
+                }
+                else
+                {
+LABEL_401792:
+                    v56 = v55;
+                    if (armg_calculate_condition(v30, v31, v32, v33))
+                    {
+LABEL_401795:
+                        v30 = 5;
+                        v31 = (armg_calculate_condition(v30, v31, v32, v33) ? v56 & &g_800000 : v31);
+                        v32 = (armg_calculate_condition(v30, v31, v32, v33) ? 0 : v32);
+                        v33 = (armg_calculate_condition(v30, v31, v32, v33) ? armg_calculate_flag_v(v30, v31, v32, v33) : v33);
+                        if (!armg_calculate_condition(5, v31, v32, v33))
+                            goto LABEL_40179a;
+                        goto LABEL_401799;
+                    }
+                    else
+                    {
+LABEL_401796:
+                        v31 = (armg_calculate_condition(v30, v31, v32, v33) ? v56 & &g_800000 : v31);
+                        v32 = (armg_calculate_condition(v30, v31, v32, v33) ? 0 : v32);
+                        v33 = (armg_calculate_condition(v30, v31, v32, v33) ? armg_calculate_flag_v(v30, v31, v32, v33) : v33);
+                        if (armg_calculate_condition(v30, v31, v32, v33))
+                        {
+LABEL_401799:
+                            v1 -= 1;
+                            if (!((char)armg_calculate_condition(v30, v31, v32, v33)))
+                                break;
+                        }
+                        else
+                        {
+LABEL_40179a:
+                            if (!((char)armg_calculate_condition(v30, v31, v32, v33)))
+                                break;
+                        }
+                    }
+                }
+            }
+            a1 = v56 | a1 & 0x80000000;
+        }
+    }
+    v61 = v0 + v1;
+    v62 = a0 ^ a1;
+    result = a0 * 0x200;
+    if (a0 * 0x200)
+    {
+        v64 = a1 * 0x200;
+        v65 = (armg_calculate_condition(v30 | 16, v31, v32, v33) ? 5 : v30);
+        v66 = (armg_calculate_condition(v30 | 16, v31, v32, v33) ? a1 * 0x200 : v31);
+        v67 = (armg_calculate_condition(v30 | 16, v31, v32, v33) ? a1 >> 23 & 1 : v32);
+        v68 = (armg_calculate_condition(v30 | 16, v31, v32, v33) ? armg_calculate_flag_v(v30, v31, v32, v33) : v33);
+        if ((char)armg_calculate_condition(v65, v66, v67, v68))
+            goto LABEL_401704;
+LABEL_4016c0:
+        v71 = (0x8000000 | result >> 5) * (0x8000000 | v64 >> 5) >> 32;
+        v72 = (0x8000000 | result >> 5) * (0x8000000 | v64 >> 5);
+        if (v71 < &g_800000)
+        {
+            v73 = v71 * 2;
+            if (!armg_calculate_condition(50, v71, &g_800000, 0))
+                goto LABEL_4016de;
+LABEL_4016dd:
+            v74 = v73 | v72 >> 31;
+            if (!armg_calculate_condition(50, v71, &g_800000, 0))
+                goto LABEL_4016e2;
+LABEL_4016e1:
+            v72 *= 2;
+        }
+        else
+        {
+            v73 = v71;
+            if (armg_calculate_condition(50, v71, &g_800000, 0))
+                goto LABEL_4016dd;
+LABEL_4016de:
+            v74 = v73;
+            if (armg_calculate_condition(50, v71, &g_800000, 0))
+                goto LABEL_4016e1;
+LABEL_4016e2:
+        }
+        v75 = v62 & 0x80000000 | v74;
+        v76 = v61 - 127 - (armg_calculate_flag_c(2, v71, &g_800000, 0) ^ 1);
+        if (253 >= v76)
+        {
+            if (v72 == 0x80000000)
+                return (v62 & 0x80000000 | v74) + v76 * &g_800000 + (0x80000000 <= v72) & 4294967294;
+            return (v62 & 0x80000000 | v74) + v76 * &g_800000 + (0x80000000 <= v72);
+        }
+        else
+        {
+            if ((char)armg_calculate_condition(194, v76, 253, 0))
+                return (v62 & 0x80000000 | v74) & 0x80000000 | 0x7f000000 | &g_800000;
+        }
+    }
+    else
+    {
+        v64 = a1;
+        v65 = (armg_calculate_condition(v30 | 16, v31, v32, v33) ? 5 : v30);
+        v66 = (armg_calculate_condition(v30 | 16, v31, v32, v33) ? a1 * 0x200 : v31);
+        v67 = (armg_calculate_condition(v30 | 16, v31, v32, v33) ? a1 >> 23 & 1 : v32);
+        v68 = (armg_calculate_condition(v30 | 16, v31, v32, v33) ? armg_calculate_flag_v(v30, v31, v32, v33) : v33);
+        if (!((char)armg_calculate_condition(v65, v66, v67, v68)))
+            goto LABEL_4016c0;
+LABEL_401704:
+        v77 = result;
+        v78 = armg_calculate_flag_c(v65, v66, v67, v68);
+        v79 = armg_calculate_flag_v(v65, v66, v67, v68);
+        if (!result)
+            v64 *= 0x200;
+        v80 = v62 & 0x80000000 | result >> 9 | v64 >> 9;
+        v81 = v61 - 127;
+        if (127 < v61)
+        {
+            v82 = (armg_calculate_condition(197, v77, v78, v79) ? 2 : 5);
+            v83 = (armg_calculate_condition(197, v77, v78, v79) ? 255 : v77);
+            v84 = (armg_calculate_condition(197, v77, v78, v79) ? v81 : v78);
+            v85 = (armg_calculate_condition(197, v77, v78, v79) ? 0 : v79);
+            if (!armg_calculate_condition(v82 | 192, v83, v84, v85))
+                goto LABEL_401722;
+LABEL_401721:
+            v80 |= v81 * &g_800000;
+            if (!((char)armg_calculate_condition(v82 | 192, v83, v84, v85)))
+                goto LABEL_401728;
+            return v80 | v81 * &g_800000;
+        }
+        else
+        {
+            v82 = (armg_calculate_condition(197, v77, v78, v79) ? 2 : 5);
+            v83 = (armg_calculate_condition(197, v77, v78, v79) ? 255 : v77);
+            v84 = (armg_calculate_condition(197, v77, v78, v79) ? v81 : v78);
+            v85 = (armg_calculate_condition(197, v77, v78, v79) ? 0 : v79);
+            if (armg_calculate_condition(v82 | 192, v83, v84, v85))
+                goto LABEL_401721;
+LABEL_401722:
+            if (!((char)armg_calculate_condition(v82 | 192, v83, v84, v85)))
+                goto LABEL_401728;
+            return v80;
+        }
+LABEL_401728:
+        v75 = v80 | &g_800000;
+        v72 = 0;
+        v76 = v81 - 1;
+        if ((char)armg_calculate_condition(194, v81, 1, 0))
+            return (v80 | &g_800000) & 0x80000000 | 0x7f000000 | &g_800000;
+    }
+    if (armg_calculate_condition(209, v76, 25, 0))
+    {
+        v75 &= 0x80000000;
+        if (!((char)armg_calculate_condition(209, v76, 25, 0)))
+            goto LABEL_401744;
+        return v75 & 0x80000000;
+    }
+    else
+    {
+        if (!((char)armg_calculate_condition(209, v76, 25, 0)))
+            goto LABEL_401744;
+        return v75;
+    }
+LABEL_401744:
+    if (v72 || (v75 << ((char)(32 - -(v76)) & 31) & (32 - (!(v76) & 255) & 255) - 32 >> 31) * 2)
+        return ((v75 >> 31 & 1) * 0x80000000 | (v75 * 2 >> ((char)-(v76) & 31) & (char)-(v76) - 32 >> 31) >> 1) + (v75 * 2 >> ((char)-(v76) & 31) & (char)-(v76) - 32 >> 31 & 1);
+    return ((v75 >> 31 & 1) * 0x80000000 | (v75 * 2 >> ((char)-(v76) & 31) & (char)-(v76) - 32 >> 31) >> 1) + (v75 * 2 >> ((char)-(v76) & 31) & (char)-(v76) - 32 >> 31 & 1) & ~((v75 << ((char)(32 - -(v76)) & 31) & (32 - (-(v76) & 255) & 255) - 32 >> 31) >> 31);
+}
+
+
+// Function: __aeabi_drsub at 0x40182c
+int __aeabi_drsub(unsigned int a0, unsigned int a1, unsigned int a2, unsigned int a3)
+{
+    unsigned int v0;  // r0
+
+    v0 = __adddf3();
+    return __adddf3();
+}
+
+
+// Function: __subdf3 at 0x401834
+int __subdf3(unsigned int a0, unsigned int a1, unsigned int a2, unsigned int a3)
+{
+    unsigned int v0;  // r0
+
+    v0 = __adddf3();
+    return __adddf3();
+}
+
+
+// Function: __adddf3 at 0x401838
+extern unsigned int g_400000;
+
+int __adddf3(int a0, int a1, int a2, int a3)
+{
+    unsigned int v1;  // r4
+    unsigned int v2;  // r5
+    unsigned int v11;  // cc_ndep
+    unsigned int v94;  // cc_dep1
+    unsigned int v95;  // r2
+    unsigned int v96;  // r2
+    unsigned int v97;  // r0
+    unsigned int v98;  // r1
+    unsigned int v100;  // r1
+    unsigned int v101;  // r4
+    unsigned int v102;  // r4
+    char v103;  // r4
+    unsigned int v104;  // cc_op
+    unsigned int v105;  // cc_dep1
+    unsigned int v106;  // cc_dep2
+    unsigned int v107;  // cc_ndep
+    unsigned int v108;  // cc_dep1
+    unsigned int v109;  // cc_dep2
+    unsigned int v110;  // cc_ndep
+    unsigned int v111;  // cc_dep1
+    unsigned int v112;  // cc_dep2
+    unsigned int v113;  // cc_ndep
+    unsigned int v114;  // cc_dep1
+    unsigned int v115;  // cc_dep2
+    unsigned int v116;  // cc_ndep
+    unsigned int v117;  // r1
+    unsigned int v15;  // cc_op
+    unsigned int v16;  // cc_dep1
+    unsigned int v17;  // cc_dep2
+    unsigned int v18;  // cc_ndep
+    unsigned int v3;  // cc_dep1
+    unsigned int v25;  // cc_op
+    unsigned int v26;  // cc_dep1
+    unsigned int v27;  // cc_dep2
+    unsigned int v28;  // cc_ndep
+    unsigned int v29;  // r4
+    unsigned int v30;  // cc_dep1
+    unsigned int v4;  // cc_dep2
+    unsigned int v31;  // r5
+    unsigned int v32;  // r5
+    unsigned int v33;  // r2
+    unsigned int v34;  // r3
+    unsigned int v35;  // cc_op
+    unsigned int v36;  // cc_dep1
+    unsigned int v38;  // cc_ndep
+    unsigned int v39;  // r1
+    unsigned int v40;  // cc_dep2
+    unsigned int v5;  // cc_ndep
+    unsigned int v41;  // r0
+    unsigned int v43;  // cc_op
+    unsigned int v44;  // cc_dep1
+    unsigned int v46;  // cc_ndep
+    unsigned int v47;  // r3
+    unsigned int v48;  // cc_dep2
+    unsigned int v49;  // r2
+    unsigned int v6;  // cc_dep1
+    unsigned int v51;  // cc_dep1
+    unsigned int v52;  // cc_dep2
+    unsigned int v53;  // cc_ndep
+    unsigned int v54;  // cc_dep2
+    unsigned int v55;  // cc_ndep
+    unsigned int v7;  // cc_dep2
+    unsigned int v56;  // r4
+    unsigned int v57;  // cc_dep2
+    unsigned int v58;  // r12
+    unsigned int v59;  // r0
+    unsigned int v60;  // r1
+    unsigned int v61;  // cc_dep2
+    unsigned int v62;  // cc_ndep
+    char v63;  // r5
+    unsigned int v64;  // r12
+    unsigned int v8;  // cc_ndep
+    unsigned int v65;  // r0
+    unsigned int v66;  // r1
+    unsigned int v70;  // r1
+    unsigned int v71;  // cc_dep1
+    unsigned int v72;  // cc_op
+    unsigned int v73;  // cc_dep2
+    unsigned int v74;  // cc_ndep
+    unsigned int v9;  // cc_dep1
+    unsigned int v75;  // r12
+    unsigned int v76;  // r0
+    unsigned int v78;  // r12
+    unsigned int v79;  // r0
+    unsigned int flag3;  // r1
+    unsigned int v81;  // r4
+    unsigned int v82;  // cc_op
+    unsigned int v83;  // cc_dep1
+    unsigned int v84;  // cc_dep2
+    unsigned int v10;  // cc_dep2
+    unsigned int v85;  // cc_ndep
+    unsigned int v86;  // cc_dep2
+    unsigned int v87;  // cc_ndep
+    unsigned int flag2;  // r1
+    unsigned int v89;  // r3
+    unsigned int v90;  // r3
+    unsigned int v91;  // r2
+    unsigned int v92;  // cc_op
+    unsigned int v93;  // cc_dep2
+    unsigned int v0;  // [bp-0xc]
+
+    v1 = a1 * 2;
+    v2 = a3 * 2;
+    if (!(v1 ^ v2))
+    {
+        v6 = (armg_calculate_condition(5, v3, v4, v5) ? a0 ^ a2 : v3);
+        v7 = (armg_calculate_condition(5, v3, v4, v5) ? armg_calculate_flag_c(5, v3, v4, v5) : v4);
+        v8 = (armg_calculate_condition(5, v3, v4, v5) ? armg_calculate_flag_v(5, v3, v4, v5) : v5);
+        if (!armg_calculate_condition(21, v6, v7, v8))
+            goto LABEL_40184e;
+LABEL_40184d:
+        v15 = (armg_calculate_condition(21, v6, v7, v8) ? 5 : 5);
+        v16 = (armg_calculate_condition(21, v6, v7, v8) ? v1 | a0 : v6);
+        v17 = (armg_calculate_condition(21, v6, v7, v8) ? armg_calculate_flag_c(5, v6, v7, v8) : v7);
+        v18 = (armg_calculate_condition(21, v6, v7, v8) ? armg_calculate_flag_v(5, v6, v7, v8) : v8);
+    }
+    else
+    {
+        v6 = (armg_calculate_condition(5, v9, v10, v11) ? a0 ^ a2 : v9);
+        v7 = (armg_calculate_condition(5, v9, v10, v11) ? armg_calculate_flag_c(5, v9, v10, v11) : v10);
+        v8 = (armg_calculate_condition(5, v9, v10, v11) ? armg_calculate_flag_v(5, v9, v10, v11) : v11);
+        if (armg_calculate_condition(21, v6, v7, v8))
+            goto LABEL_40184d;
+LABEL_40184e:
+        v15 = (armg_calculate_condition(21, v6, v7, v8) ? 5 : 5);
+        v16 = (armg_calculate_condition(21, v6, v7, v8) ? v1 | a0 : v6);
+        v17 = (armg_calculate_condition(21, v6, v7, v8) ? armg_calculate_flag_c(5, v6, v7, v8) : v7);
+        v18 = (armg_calculate_condition(21, v6, v7, v8) ? armg_calculate_flag_v(5, v6, v7, v8) : v8);
+    }
+    v25 = (armg_calculate_condition((armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? 5 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15)) | 16, (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? ~(v1 >> 21) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? v1 >> 20 & 1 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? armg_calculate_flag_v((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18))) ? 5 : (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? 5 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15)));
+    v26 = (armg_calculate_condition((armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? 5 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15)) | 16, (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? ~(v1 >> 21) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? v1 >> 20 & 1 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? armg_calculate_flag_v((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18))) ? ~(v2 >> 21) : (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? ~(v1 >> 21) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16)));
+    v27 = (armg_calculate_condition((armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? 5 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15)) | 16, (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? ~(v1 >> 21) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? v1 >> 20 & 1 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? armg_calculate_flag_v((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18))) ? v2 >> 20 & 1 : (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? v1 >> 20 & 1 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17)));
+    v28 = (armg_calculate_condition((armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? 5 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15)) | 16, (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? ~(v1 >> 21) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? v1 >> 20 & 1 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? armg_calculate_flag_v((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18))) ? armg_calculate_flag_v((armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? 5 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? ~(v1 >> 21) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? v1 >> 20 & 1 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? armg_calculate_flag_v((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18))) : (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? armg_calculate_flag_v((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)));
+    if (!((char)armg_calculate_condition((armg_calculate_condition((armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? 5 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15)) | 16, (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? ~(v1 >> 21) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? v1 >> 20 & 1 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? armg_calculate_flag_v((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18))) ? 5 : (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? 5 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15))), (armg_calculate_condition((armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? 5 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15)) | 16, (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? ~(v1 >> 21) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? v1 >> 20 & 1 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? armg_calculate_flag_v((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18))) ? ~(v2 >> 21) : (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? ~(v1 >> 21) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16))), (armg_calculate_condition((armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? 5 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15)) | 16, (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? ~(v1 >> 21) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? v1 >> 20 & 1 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? armg_calculate_flag_v((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18))) ? v2 >> 20 & 1 : (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? v1 >> 20 & 1 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17))), (armg_calculate_condition((armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? 5 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15)) | 16, (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? ~(v1 >> 21) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? v1 >> 20 & 1 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? armg_calculate_flag_v((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18))) ? armg_calculate_flag_v((armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? 5 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? ~(v1 >> 21) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? v1 >> 20 & 1 : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17)), (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? armg_calculate_flag_v((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18))) : (armg_calculate_condition((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15) | 16, (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) ? armg_calculate_flag_v((armg_calculate_condition(v15 | 16, v16, v17, v18) ? 5 : v15), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? v2 | a2 : v16), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_c(v15, v16, v17, v18) : v17), (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18)) : (armg_calculate_condition(v15 | 16, v16, v17, v18) ? armg_calculate_flag_v(v15, v16, v17, v18) : v18))))))
+    {
+        v29 = v1 >> 21;
+        v30 = v2 >> 21;
+        if (v2 >> 21 < v29)
+        {
+            v32 = -(v31);
+            if (!((char)armg_calculate_condition(210, v30, v29, 0)))
+                goto LABEL_401870;
+        }
+        else
+        {
+            v31 = (v2 >> 21) - v29;
+            if (!((char)armg_calculate_condition(210, v30, v29, 0)))
+            {
+LABEL_401870:
+                v29 += v32;
+                v33 = a0 ^ a2;
+                v34 = a1 ^ a3;
+                a0 ^= v33;
+                a1 ^= v34;
+                a2 = a0 ^ v33;
+                a3 = a1 ^ v34;
+            }
+        }
+        if (54 >= v32)
+            goto LABEL_401894;
+        return a0;
+LABEL_401894:
+        v35 = 5;
+        v36 = a1 & 0x80000000;
+        v38 = armg_calculate_flag_v(2, v32, 54, 0);
+        v39 = 0x100000 | a1 & 1048575;
+        v40 = 1;
+        v41 = a0;
+        if ((a1 & 0x80000000))
+        {
+            v35 = 2;
+            v36 = 0;
+            v38 = 0;
+            v39 = -(v39) - (a0 > 0);
+            v40 = a0;
+            v41 = -(a0);
+        }
+        v43 = 5;
+        v44 = a3 & 0x80000000;
+        v46 = armg_calculate_flag_v(v35, v36, v40, v38);
+        v47 = 0x100000 | a3 & 1048575;
+        v48 = 1;
+        v49 = a2;
+        if ((a3 & 0x80000000))
+        {
+            v43 = 2;
+            v44 = 0;
+            v46 = 0;
+            v47 = -(v47) - (a2 > 0);
+            v48 = a2;
+            v49 = -(a2);
+        }
+        v51 = v29 ^ v32;
+        v52 = armg_calculate_flag_c(v43, v44, v48, v46);
+        v53 = armg_calculate_flag_v(v43, v44, v48, v46);
+        if (!(v29 ^ v32))
+        {
+            v54 = armg_calculate_flag_c(5, v51, v52, v53);
+            v55 = armg_calculate_flag_v(5, v51, v52, v53);
+            v47 ^= 0x100000;
+            if (!v29)
+            {
+                v39 ^= 0x100000;
+                if (!armg_calculate_condition(5, v29, v54, v55))
+                    goto LABEL_401a3e;
+LABEL_401a3d:
+                v29 += 1;
+                if (!armg_calculate_condition(21, v29, v54, v55))
+                    goto LABEL_401a42;
+LABEL_401a41:
+                v32 -= 1;
+            }
+            else
+            {
+                v39 = v39;
+                if (armg_calculate_condition(5, v29, v54, v55))
+                    goto LABEL_401a3d;
+LABEL_401a3e:
+                if (armg_calculate_condition(21, v29, v54, v55))
+                    goto LABEL_401a41;
+LABEL_401a42:
+            }
+        }
+        v56 = v29 - 1;
+        vvar_286{r64|1b} = (char)(32 - v32);
+        v57 = v32;
+        if (32 >= v32)
+        {
+            v58 = v49 << (vvar_286{r64|1b} & 31) & vvar_286{r64|1b} - 32 >> 31;
+            v39 += armg_calculate_flag_c(1, v41, v49 >> ((char)v32 & 31) & (v32 & 255) - 32 >> 31, 0);
+            v59 = v41 + (v49 >> ((char)v32 & 31) & (v32 & 255) - 32 >> 31) + (v47 << (vvar_286{r64|1b} & 31) & vvar_286{r64|1b} - 32 >> 31);
+            if ((v32 & 255) < 32)
+            {
+                v60 = v39 + (v47 >> (char)v32) + armg_calculate_flag_c(2, 32, v57, 0);
+                v61 = v47 >> (char)v32;
+                v62 = armg_calculate_flag_c(2, 32, v57, 0);
+            }
+            else
+            {
+                v60 = v39 + (v47 >> 31) + armg_calculate_flag_c(2, 32, v57, 0);
+                v61 = v47 >> 31;
+                v62 = armg_calculate_flag_c(2, 32, v57, 0);
+            }
+        }
+        else
+        {
+            v63 = v32 - 32;
+            v58 = (1 <= v49 ? v47 << (vvar_286{r64|1b} + 32 & 31) & vvar_286{r64|1b} - 0 >> 31 | 2 : v47 << (vvar_286{r64|1b} + 32 & 31) & vvar_286{r64|1b} - 0 >> 31);
+            v59 = v41 + (v47 >> (char)(v63 < 32 ? v63 : 31));
+            v60 = v39 + (v47 >> 31) + armg_calculate_flag_c(1, v41, v47 >> (char)(v63 < 32 ? v63 : 31), 0);
+            v61 = v47 >> 31;
+            v62 = armg_calculate_flag_c(1, v41, v47 >> (char)(v63 < 32 ? v63 : 31), 0);
+        }
+        v64 = v58;
+        v65 = v59;
+        v66 = v60;
+        if (!((char)armg_calculate_condition(83, v39, v61, v62)))
+        {
+            v64 = -(v58);
+            v65 = -(v59) - (v58 > 0);
+            v66 = -(v60) - ((v58 <= 0 ? v59 <= 0 : v59 < 0) ^ 1);
+        }
+        v70 = v66;
+        v71 = v70;
+        if (v70 >= 0x100000)
+        {
+            v72 = 2;
+            v73 = 0x200000;
+            v74 = 0;
+            v75 = v64;
+            v76 = v65;
+            if (v70 >= 0x200000)
+            {
+                v75 = (v65 & 1) * 0x80000000 | v64 >> 1;
+                v70 = (v56 + 1) * 0x200000;
+                v72 = 1;
+                v73 = &g_400000;
+                v74 = 0;
+                v76 = (v70 & 1) * 0x80000000 | v65 >> 1;
+                if ((char)armg_calculate_condition(33, v70, &g_400000, 0))
+                    return 0;
+            }
+        }
+        else
+        {
+            v78 = v64 * 2;
+            v79 = v65 * 2 + (v64 >> 31 & 1);
+            flag3 = v70 * 2 + armg_calculate_flag_c(3, v65, v65, v64 >> 31 & 1);
+            v81 = v56 - 1;
+            if (1 <= v56)
+            {
+                v72 = 2;
+                v70 = (armg_calculate_condition(34, v71, 0x100000, 0) ? flag3 : v71);
+                v73 = (armg_calculate_condition(34, v71, 0x100000, 0) ? 0x100000 : 0x100000);
+                v74 = (armg_calculate_condition(34, v71, 0x100000, 0) ? 0 : 0);
+                v75 = v78;
+                v76 = v79;
+                if (!((char)armg_calculate_condition(34, v70, v73, v74)))
+                    goto LABEL_401980;
+            }
+            else
+            {
+                v72 = 2;
+                v70 = (armg_calculate_condition(34, v71, 0x100000, 0) ? flag3 : v71);
+                v73 = (armg_calculate_condition(34, v71, 0x100000, 0) ? 0x100000 : 0x100000);
+                v74 = (armg_calculate_condition(34, v71, 0x100000, 0) ? 0 : 0);
+                v75 = v78;
+                v76 = v79;
+                if (!((char)armg_calculate_condition(34, v70, v73, v74)))
+                {
+LABEL_401980:
+                    v86 = armg_calculate_flag_c(2, v70, v73, v74);
+                    v87 = armg_calculate_flag_v(2, v70, v73, v74);
+                    if (!flag3)
+                    {
+                        flag2 = v79;
+                        if (!armg_calculate_condition(5, flag3, v86, v87))
+                            goto LABEL_40198a;
+LABEL_401989:
+                        v79 = 0;
+                    }
+                    else
+                    {
+                        flag2 = flag3;
+                        if (armg_calculate_condition(5, flag3, v86, v87))
+                            goto LABEL_401989;
+LABEL_40198a:
+                    }
+                    if (!flag2)
+                    {
+                        v89 = 32;
+                        if (!armg_calculate_condition(5, flag3, v86, v87))
+                            goto LABEL_401992;
+LABEL_401991:
+                        v89 += 32;
+                    }
+                    else
+                    {
+                        v89 = Clz(flag2);
+                        if (armg_calculate_condition(5, flag3, v86, v87))
+                            goto LABEL_401991;
+LABEL_401992:
+                    }
+                    v90 = v89 - 11;
+                    v91 = v90 - 32;
+                    v92 = 2;
+                    v93 = 32;
+                    v94 = v90;
+                    v95 = v91;
+                    if (32 > v94)
+                    {
+                        v96 = v91 + 12;
+                        v92 = 1;
+                        v93 = 12;
+                        if (!((char)armg_calculate_condition(209, v91, 12, 0)))
+                        {
+                            v97 = flag2 << ((char)v96 + 20 & 31) & (char)v96 - 12 >> 31;
+                            v98 = flag2 >> ((char)(12 - v96) & 31) & (12 - v96 & 255) - 32 >> 31;
+                            goto LABEL_4019d0;
+                        }
+                        else
+                        {
+                            v94 = v91;
+                            v95 = v96 + 20;
+                        }
+                    }
+                    v98 = (armg_calculate_condition(v92 | 208, v94, v93, 0) ? flag2 << ((char)v95 & 31) & (v95 & 255) - 32 >> 31 | v79 >> ((char)(armg_calculate_condition(v92 | 208, v94, v93, 0) ? 32 - v95 : v78) & 31) & ((armg_calculate_condition(v92 | 208, v94, v93, 0) ? 32 - v95 : v78) & 255) - 32 >> 31 : flag2 << ((char)v95 & 31) & (v95 & 255) - 32 >> 31);
+                    v97 = (armg_calculate_condition(v92 | 208, v94, v93, 0) ? v79 << ((char)v95 & 31) & (v95 & 255) - 32 >> 31 : v79);
+LABEL_4019d0:
+                    if (v90 <= v81)
+                    {
+                        v100 = v98 + (v81 - v90) * 0x100000;
+                        if (!armg_calculate_condition(162, v81, v90, 0))
+                            goto LABEL_4019da;
+LABEL_4019d9:
+                        v100 |= v60 & 0x80000000;
+                        if (!((char)armg_calculate_condition(162, v81, v90, 0)))
+                            goto LABEL_4019e0;
+                        return v97;
+                    }
+                    else
+                    {
+                        v100 = v98;
+                        if (armg_calculate_condition(162, v81, v90, 0))
+                            goto LABEL_4019d9;
+LABEL_4019da:
+                        if (!((char)armg_calculate_condition(162, v81, v90, 0)))
+                            goto LABEL_4019e0;
+                        return v97;
+                    }
+LABEL_4019e0:
+                    v101 = ~(v0);
+                    v102 = v101 - 31;
+                    if (31 <= v101)
+                    {
+                        return v100 >> ((char)v102 & 31) & (v102 & 255) - 32 >> 31;
+                    }
+                    else if (!((char)armg_calculate_condition(193, v102, 12, 0)))
+                    {
+                        v103 = (char)v102 + 32;
+                        return v97 >> (v103 & 31) & v103 - 32 >> 31 | v100 << ((char)(32 - v103) & 31) & (32 - v103 & 255) - 32 >> 31;
+                    }
+                    else
+                    {
+                        return v97 >> ((char)(32 - (12 - (v102 + 12))) & 31) & (32 - (12 - (v102 + 12)) & 255) - 32 >> 31 | v100 << ((char)(12 - (v102 + 12)) & 31) & (12 - (v102 + 12) & 255) - 32 >> 31;
+                    }
+                }
+            }
+        }
+        if (v75 == 0x80000000)
+        {
+            v82 = (armg_calculate_condition(v72, v70, v73, v74) ? 5 : v72);
+            v83 = (armg_calculate_condition(v72, v70, v73, v74) ? v76 >> 1 : v70);
+            v84 = (armg_calculate_condition(v72, v70, v73, v74) ? v76 & 1 : v73);
+            v85 = (armg_calculate_condition(v72, v70, v73, v74) ? armg_calculate_flag_v(v72, v70, v73, v74) : v74);
+        }
+        else
+        {
+            v82 = (armg_calculate_condition(v72, v70, v73, v74) ? 5 : v72);
+            v83 = (armg_calculate_condition(v72, v70, v73, v74) ? v76 >> 1 : v70);
+            v84 = (armg_calculate_condition(v72, v70, v73, v74) ? v76 & 1 : v73);
+            v85 = (armg_calculate_condition(v72, v70, v73, v74) ? armg_calculate_flag_v(v72, v70, v73, v74) : v74);
+        }
+        return v76 + armg_calculate_flag_c(v82, v83, v84, v85);
+    }
+    else
+    {
+        if (~(v1 >> 21))
+        {
+            v104 = (armg_calculate_condition(v25 | 16, v26, v27, v28) ? 5 : v25);
+            v105 = (armg_calculate_condition(v25 | 16, v26, v27, v28) ? ~(v2 >> 21) : v26);
+            v106 = (armg_calculate_condition(v25 | 16, v26, v27, v28) ? v2 >> 20 & 1 : v27);
+            v107 = (armg_calculate_condition(v25 | 16, v26, v27, v28) ? armg_calculate_flag_v(v25, v26, v27, v28) : v28);
+            if ((char)armg_calculate_condition(v104, v105, v106, v107))
+                goto LABEL_401ab8;
+        }
+        else
+        {
+            v104 = (armg_calculate_condition(v25 | 16, v26, v27, v28) ? 5 : v25);
+            v105 = (armg_calculate_condition(v25 | 16, v26, v27, v28) ? ~(v2 >> 21) : v26);
+            v106 = (armg_calculate_condition(v25 | 16, v26, v27, v28) ? v2 >> 20 & 1 : v27);
+            v107 = (armg_calculate_condition(v25 | 16, v26, v27, v28) ? armg_calculate_flag_v(v25, v26, v27, v28) : v28);
+            if ((char)armg_calculate_condition(v104, v105, v106, v107))
+            {
+LABEL_401ab8:
+                return (armg_calculate_condition(21, ~(v1 >> 21), v1 >> 20 & 1, armg_calculate_flag_v(v104, v105, v106, v107)) ? a0 : a2);
+            }
+        }
+        if (!(v1 ^ v2))
+        {
+            v108 = (armg_calculate_condition(5, v105, v106, v107) ? a0 ^ a2 : v105);
+            v109 = (armg_calculate_condition(5, v105, v106, v107) ? armg_calculate_flag_c(5, v105, v106, v107) : v106);
+            v110 = (armg_calculate_condition(5, v105, v106, v107) ? armg_calculate_flag_v(5, v105, v106, v107) : v107);
+            if ((char)armg_calculate_condition(5, v108, v109, v110))
+                goto LABEL_401a70;
+        }
+        else
+        {
+            v108 = (armg_calculate_condition(5, v105, v106, v107) ? a0 ^ a2 : v105);
+            v109 = (armg_calculate_condition(5, v105, v106, v107) ? armg_calculate_flag_c(5, v105, v106, v107) : v106);
+            v110 = (armg_calculate_condition(5, v105, v106, v107) ? armg_calculate_flag_v(5, v105, v106, v107) : v107);
+            if ((char)armg_calculate_condition(5, v108, v109, v110))
+            {
+LABEL_401a70:
+                v114 = a1 ^ a3;
+                v115 = armg_calculate_flag_c(5, v108, v109, v110);
+                v116 = armg_calculate_flag_v(5, v108, v109, v110);
+                if ((a1 ^ a3))
+                {
+                    v117 = 0;
+                    if (!armg_calculate_condition(21, v114, v115, v116))
+                        goto LABEL_401a7a;
+LABEL_401a79:
+                    a0 = 0;
+                    if (!((char)armg_calculate_condition(21, v114, v115, v116)))
+                        goto LABEL_401a80;
+                    return 0;
+                }
+                else
+                {
+                    v117 = a1;
+                    if (armg_calculate_condition(21, v114, v115, v116))
+                        goto LABEL_401a79;
+LABEL_401a7a:
+                    if (!((char)armg_calculate_condition(21, v114, v115, v116)))
+                        goto LABEL_401a80;
+                    return a0;
+                }
+LABEL_401a80:
+                if (!v0 >> 21)
+                    return a0 * 2;
+                if (armg_calculate_condition(49, v0, &g_400000, 0))
+                {
+                    if (!((char)armg_calculate_condition(49, v0, &g_400000, 0)))
+                        goto LABEL_401aa4;
+                    return a0;
+                }
+                else
+                {
+                    if (!((char)armg_calculate_condition(49, v0, &g_400000, 0)))
+                        goto LABEL_401aa4;
+                    return a0;
+                }
+LABEL_401aa4:
+                return 0;
+            }
+        }
+        v111 = v1 | a0;
+        v112 = armg_calculate_flag_c(5, v108, v109, v110);
+        v113 = armg_calculate_flag_v(5, v108, v109, v110);
+        if (!v1 && !a0)
+        {
+            if (!armg_calculate_condition(5, v111, v112, v113))
+                return a0;
+        }
+        else
+        {
+            if (!armg_calculate_condition(5, v111, v112, v113))
+                return a0;
+        }
+        return a2;
+    }
+}
+
+
+// Function: __aeabi_ui2d at 0x401ae4
+unsigned int __aeabi_ui2d(unsigned int a0, unsigned int a1)
+{
+    unsigned int v3;  // cc_op
+    unsigned int v4;  // cc_dep1
+    unsigned int v5;  // cc_dep2
+    unsigned int v6;  // cc_ndep
+    unsigned int v7;  // cc_dep2
+    unsigned int v8;  // cc_ndep
+    unsigned int v9;  // r5
+    unsigned int v10;  // r4
+    unsigned int v0;  // [bp-0xc]
+    unsigned int v1;  // [bp-0x8]
+    unsigned int v2;  // [bp-0x4]
+
+    v7 = armg_calculate_flag_c(v3, v4, v5, v6);
+    v8 = armg_calculate_flag_v(v3, v4, v5, v6);
+    if (!a0)
+    {
+        if (!((char)armg_calculate_condition(5, a0, v7, v8)))
+            goto LABEL_401af0;
+        return 0;
+    }
+    else
+    {
+        if (!((char)armg_calculate_condition(5, a0, v7, v8)))
+            goto LABEL_401af0;
+        return a0;
+    }
+LABEL_401af0:
+    v2 = vvar_4{r64|4b};
+    v1 = v9;
+    v0 = v10;
+}
+
+
+// Function: __floatsidf at 0x401b08
+unsigned int __floatsidf(unsigned int a0, unsigned int a1)
+{
+    unsigned int v3;  // cc_op
+    unsigned int v4;  // cc_dep1
+    unsigned int v5;  // cc_dep2
+    unsigned int v6;  // cc_ndep
+    unsigned int v7;  // cc_dep2
+    unsigned int v8;  // cc_ndep
+    unsigned int v9;  // r5
+    unsigned int v10;  // r4
+    unsigned int v0;  // [bp-0xc]
+    unsigned int v1;  // [bp-0x8]
+    unsigned int v2;  // [bp-0x4]
+
+    v7 = armg_calculate_flag_c(v3, v4, v5, v6);
+    v8 = armg_calculate_flag_v(v3, v4, v5, v6);
+    if (!a0)
+    {
+        if (!((char)armg_calculate_condition(5, a0, v7, v8)))
+            goto LABEL_401b14;
+        return 0;
+    }
+    else
+    {
+        if (!((char)armg_calculate_condition(5, a0, v7, v8)))
+            goto LABEL_401b14;
+        return a0;
+    }
+LABEL_401b14:
+    v2 = vvar_4{r64|4b};
+    v1 = v9;
+    v0 = v10;
+}
+
+
+// Function: __extendsfdf2 at 0x401b30
+unsigned int __extendsfdf2(unsigned int a0, unsigned int a1, unsigned int a2, unsigned int a3)
+{
+    unsigned int v3;  // r2
+    unsigned int v4;  // r0
+    unsigned int v13;  // cc_ndep
+    unsigned int v14;  // cc_op
+    unsigned int v15;  // cc_dep1
+    unsigned int v16;  // cc_dep2
+    unsigned int v17;  // cc_ndep
+    unsigned int v22;  // cc_op
+    unsigned int v5;  // r3
+    unsigned int v23;  // cc_dep1
+    unsigned int v24;  // cc_dep2
+    unsigned int v25;  // cc_ndep
+    unsigned int v6;  // cc_op
+    unsigned int v7;  // cc_dep1
+    unsigned int v42;  // cc_dep1
+    unsigned int v43;  // cc_ndep
+    unsigned int v44;  // r5
+    unsigned int v45;  // r4
+    unsigned int v8;  // cc_dep2
+    unsigned int v9;  // cc_ndep
+    unsigned int v10;  // cc_op
+    unsigned int v11;  // cc_dep1
+    unsigned int v12;  // cc_dep2
+    unsigned int v0;  // [bp-0xc]
+    unsigned int v1;  // [bp-0x8]
+    unsigned int v2;  // [bp-0x4]
+
+    v3 = a0 * 2;
+    v4 = v3 * 0x10000000;
+    if (a0 * 2)
+    {
+        v5 = v3 & 0xff000000;
+        v10 = (armg_calculate_condition(v6 | 16, v7, v8, v9) ? 5 : v6);
+        v11 = (armg_calculate_condition(v6 | 16, v7, v8, v9) ? v3 & 0xff000000 : v7);
+        v12 = (armg_calculate_condition(v6 | 16, v7, v8, v9) ? 1 : v8);
+        v13 = (armg_calculate_condition(v6 | 16, v7, v8, v9) ? armg_calculate_flag_v(v6, v7, v8, v9) : v9);
+        if (!armg_calculate_condition(v10 | 16, v11, v12, v13))
+            goto LABEL_401b46;
+LABEL_401b45:
+        v22 = 5;
+        v23 = (armg_calculate_condition(v10 | 16, v11, v12, v13) ? v5 ^ 0xff000000 : v11);
+        v24 = (armg_calculate_condition(v10 | 16, v11, v12, v13) ? 1 : v12);
+        v25 = (armg_calculate_condition(v10 | 16, v11, v12, v13) ? armg_calculate_flag_v(v10, v11, v12, v13) : v13);
+        if (!armg_calculate_condition(21, v23, v24, v25))
+            goto LABEL_401b4a;
+LABEL_401b49:
+        if (!((char)armg_calculate_condition(v22 | 16, v23, v24, v25)))
+            goto LABEL_401b50;
+        return v4;
+    }
+    else
+    {
+        v5 = a3;
+        v10 = (armg_calculate_condition(v14 | 16, v15, v16, v17) ? 5 : v14);
+        v11 = (armg_calculate_condition(v14 | 16, v15, v16, v17) ? v3 & 0xff000000 : v15);
+        v12 = (armg_calculate_condition(v14 | 16, v15, v16, v17) ? 1 : v16);
+        v13 = (armg_calculate_condition(v14 | 16, v15, v16, v17) ? armg_calculate_flag_v(v14, v15, v16, v17) : v17);
+        if (armg_calculate_condition(v10 | 16, v11, v12, v13))
+            goto LABEL_401b45;
+LABEL_401b46:
+        v22 = v10;
+        v23 = (armg_calculate_condition(v10 | 16, v11, v12, v13) ? v5 ^ 0xff000000 : v11);
+        v24 = (armg_calculate_condition(v10 | 16, v11, v12, v13) ? 1 : v12);
+        v25 = (armg_calculate_condition(v10 | 16, v11, v12, v13) ? armg_calculate_flag_v(v10, v11, v12, v13) : v13);
+        if (armg_calculate_condition(v22 | 16, v23, v24, v25))
+            goto LABEL_401b49;
+LABEL_401b4a:
+        if (!((char)armg_calculate_condition(v22 | 16, v23, v24, v25)))
+            goto LABEL_401b50;
+        return v4;
+    }
+LABEL_401b50:
+    if ((v3 & 16777215))
+        goto LABEL_401b58;
+    return v4;
+LABEL_401b58:
+    v42 = v5 ^ 0xff000000;
+    v43 = armg_calculate_flag_v(5, v3 & 16777215, 1, armg_calculate_flag_v(v22, v23, v24, v25));
+    if (!(v5 ^ 0xff000000))
+    {
+        if (!((char)armg_calculate_condition(5, v42, 1, v43)))
+            goto LABEL_401b64;
+        return v4;
+    }
+    else
+    {
+        if (!((char)armg_calculate_condition(5, v42, 1, v43)))
+            goto LABEL_401b64;
+        return v4;
+    }
+LABEL_401b64:
+    v2 = vvar_32{r64|4b};
+    v1 = v44;
+    v0 = v45;
+}
+
+
+// Function: __floatundidf at 0x401b78
+unsigned int __floatundidf(unsigned int a0, unsigned int a1)
+{
+    unsigned int v3;  // lr
+    unsigned int v4;  // r5
+    unsigned int v5;  // r4
+    unsigned int v6;  // r12
+    unsigned int v0;  // [bp-0xc]
+    unsigned int v1;  // [bp-0x8]
+    unsigned int v2;  // [bp-0x4]
+
+    if (a0 || a1)
+        goto LABEL_401b80;
+    return a0;
+LABEL_401b80:
+    v2 = v3;
+    v1 = v4;
+    v0 = v5;
+    v6 = a1 >> 22;
+    if (!a1 >> 22)
+        goto LABEL_0x401924;
+}
+
+
+// Function: __aeabi_l2d at 0x401b8c
+unsigned int __aeabi_l2d(unsigned int a0, unsigned int a1)
+{
+    unsigned int v3;  // lr
+    unsigned int v4;  // r5
+    unsigned int v5;  // r4
+    unsigned int v0;  // [bp-0xc]
+    unsigned int v1;  // [bp-0x8]
+    unsigned int v2;  // [bp-0x4]
+
+    if (a0 || a1)
+        goto LABEL_401b94;
+    return a0;
+LABEL_401b94:
+    v2 = v3;
+    v1 = v4;
+    v0 = v5;
+    if (!(a1 & 0x80000000) >> 31)
+        goto LABEL_0x401ba8;
+}
+
+
+// Function: __aeabi_frsub at 0x401bec
+int __aeabi_frsub(unsigned int a0, unsigned int a1, unsigned int a2, unsigned int a3)
+{
+    unsigned int v0;  // r0
+
+    v0 = __addsf3(a0 ^ 0x80000000);
+    return __addsf3(a0 ^ 0x80000000);
+}
+
+
+// Function: __aeabi_fsub at 0x401bf4
+int __aeabi_fsub(unsigned int a0, unsigned int a1, unsigned int a2, unsigned int a3)
+{
+    unsigned int v0;  // r0
+
+    v0 = __addsf3();
+    return __addsf3();
+}
+
+
+// Function: __addsf3 at 0x401bf8
+extern char g_400000;
+extern char g_800000;
+
+int __addsf3(int a0, int a1, int a2, int a3)
+{
+    unsigned int result;  // r2
+    unsigned int v1;  // cc_op
+    unsigned int v10;  // cc_dep1
+    unsigned int v11;  // cc_dep2
+    unsigned int v12;  // cc_ndep
+    unsigned int v17;  // cc_op
+    unsigned int v18;  // cc_dep1
+    unsigned int v19;  // cc_dep2
+    unsigned int v2;  // cc_dep1
+    unsigned int v20;  // cc_ndep
+    unsigned int v21;  // r2
+    unsigned int v22;  // r3
+    unsigned int v23;  // cc_dep1
+    unsigned int v24;  // r2
+    unsigned int v25;  // r1
+    unsigned int v26;  // r0
+    unsigned int v27;  // r1
+    unsigned int v3;  // cc_dep2
+    unsigned int v28;  // r0
+    unsigned int v29;  // cc_dep1
+    unsigned int v30;  // cc_ndep
+    unsigned int v31;  // r1
+    unsigned int v32;  // cc_dep1
+    unsigned int v33;  // cc_dep2
+    unsigned int v34;  // cc_ndep
+    unsigned int v35;  // cc_dep2
+    unsigned int v4;  // cc_ndep
+    unsigned int v36;  // cc_ndep
+    unsigned int v37;  // r2
+    unsigned int v38;  // r0
+    unsigned int v39;  // cc_dep2
+    unsigned int v40;  // r1
+    unsigned int v41;  // r3
+    unsigned int v42;  // r1
+    unsigned int v43;  // r0
+    unsigned int v5;  // cc_op
+    unsigned int v46;  // r0
+    unsigned int v47;  // r2
+    unsigned int v48;  // r1
+    unsigned int v49;  // r0
+    unsigned int v51;  // r1
+    unsigned int v52;  // r0
+    unsigned int v53;  // r2
+    unsigned int v6;  // cc_dep1
+    unsigned int v54;  // r0
+    unsigned int v55;  // r12
+    unsigned int v56;  // r2
+    unsigned int v57;  // r0
+    unsigned int v58;  // r0
+    unsigned int v59;  // r3
+    unsigned int v60;  // cc_op
+    unsigned int v61;  // cc_dep1
+    unsigned int v62;  // cc_dep2
+    unsigned int v7;  // cc_dep2
+    unsigned int v63;  // cc_ndep
+    unsigned int v64;  // cc_dep1
+    unsigned int v65;  // cc_dep2
+    unsigned int v66;  // cc_ndep
+    unsigned int v67;  // cc_dep1
+    unsigned int v68;  // cc_dep2
+    unsigned int v69;  // cc_ndep
+    unsigned int v70;  // r1
+    unsigned int v8;  // cc_ndep
+    unsigned int v9;  // cc_op
+
+    result = a0 * 2;
+    if (a0 * 2)
+    {
+        a3 = a1 * 2;
+        v5 = (armg_calculate_condition(v1 | 16, v2, v3, v4) ? 5 : v1);
+        v6 = (armg_calculate_condition(v1 | 16, v2, v3, v4) ? a1 * 2 : v2);
+        v7 = (armg_calculate_condition(v1 | 16, v2, v3, v4) ? a1 >> 31 & 1 : v3);
+        v8 = (armg_calculate_condition(v1 | 16, v2, v3, v4) ? armg_calculate_flag_v(v1, v2, v3, v4) : v4);
+    }
+    else
+    {
+        v5 = (armg_calculate_condition(v9 | 16, v10, v11, v12) ? 5 : v9);
+        v6 = (armg_calculate_condition(v9 | 16, v10, v11, v12) ? a1 * 2 : v10);
+        v7 = (armg_calculate_condition(v9 | 16, v10, v11, v12) ? a1 >> 31 & 1 : v11);
+        v8 = (armg_calculate_condition(v9 | 16, v10, v11, v12) ? armg_calculate_flag_v(v9, v10, v11, v12) : v12);
+    }
+    v17 = (armg_calculate_condition((armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? 5 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5)) | 16, (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? ~(result >> 24) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? result >> 23 & 1 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? armg_calculate_flag_v((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8))) ? 5 : (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? 5 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5)));
+    v18 = (armg_calculate_condition((armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? 5 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5)) | 16, (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? ~(result >> 24) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? result >> 23 & 1 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? armg_calculate_flag_v((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8))) ? ~(a3 >> 24) : (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? ~(result >> 24) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6)));
+    v19 = (armg_calculate_condition((armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? 5 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5)) | 16, (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? ~(result >> 24) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? result >> 23 & 1 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? armg_calculate_flag_v((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8))) ? a3 >> 23 & 1 : (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? result >> 23 & 1 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7)));
+    v20 = (armg_calculate_condition((armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? 5 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5)) | 16, (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? ~(result >> 24) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? result >> 23 & 1 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? armg_calculate_flag_v((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8))) ? armg_calculate_flag_v((armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? 5 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? ~(result >> 24) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? result >> 23 & 1 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? armg_calculate_flag_v((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8))) : (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? armg_calculate_flag_v((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)));
+    if ((char)armg_calculate_condition((armg_calculate_condition((armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? 5 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5)) | 16, (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? ~(result >> 24) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? result >> 23 & 1 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? armg_calculate_flag_v((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8))) ? 5 : (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? 5 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5))), (armg_calculate_condition((armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? 5 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5)) | 16, (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? ~(result >> 24) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? result >> 23 & 1 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? armg_calculate_flag_v((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8))) ? ~(a3 >> 24) : (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? ~(result >> 24) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6))), (armg_calculate_condition((armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? 5 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5)) | 16, (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? ~(result >> 24) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? result >> 23 & 1 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? armg_calculate_flag_v((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8))) ? a3 >> 23 & 1 : (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? result >> 23 & 1 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7))), (armg_calculate_condition((armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? 5 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5)) | 16, (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? ~(result >> 24) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? result >> 23 & 1 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? armg_calculate_flag_v((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8))) ? armg_calculate_flag_v((armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? 5 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? ~(result >> 24) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? result >> 23 & 1 : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7)), (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? armg_calculate_flag_v((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8))) : (armg_calculate_condition((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5) | 16, (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) ? armg_calculate_flag_v((armg_calculate_condition(v5 | 16, v6, v7, v8) ? 5 : v5), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? result ^ a3 : v6), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_c(v5, v6, v7, v8) : v7), (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)) : (armg_calculate_condition(v5 | 16, v6, v7, v8) ? armg_calculate_flag_v(v5, v6, v7, v8) : v8)))))
+    {
+        v59 = a1 * 2;
+        if (~(result >> 24))
+        {
+            v60 = (armg_calculate_condition(v17 | 16, v18, v19, v20) ? 5 : v17);
+            v61 = (armg_calculate_condition(v17 | 16, v18, v19, v20) ? ~(v59 >> 24) : v18);
+            v62 = (armg_calculate_condition(v17 | 16, v18, v19, v20) ? v59 >> 23 & 1 : v19);
+            v63 = (armg_calculate_condition(v17 | 16, v18, v19, v20) ? armg_calculate_flag_v(v17, v18, v19, v20) : v20);
+            if ((char)armg_calculate_condition(v60, v61, v62, v63))
+            {
+                v70 = ((!~(result >> 24) ? ~(v59 >> 24) : ~(result >> 24)) ? (~(result >> 24) ? a1 : a0) : a1);
+                return ((!(!(~(result >> 24) ? a0 : a1) * 0x200 ? (~(result >> 24) ? a0 : a1) * 0x200 : v70 * 0x200) ? (!(~(result >> 24) ? a0 : a1) * 0x200 ? (~(result >> 24) ? a0 : a1) * 0x200 : v70 * 0x200) : (~(result >> 24) ? a0 : a1) ^ v70) ? (~(result >> 24) ? a0 : a1) : (~(result >> 24) ? a0 : a1) | &g_400000);
+            }
+        }
+        else
+        {
+            v60 = (armg_calculate_condition(v17 | 16, v18, v19, v20) ? 5 : v17);
+            v61 = (armg_calculate_condition(v17 | 16, v18, v19, v20) ? ~(v59 >> 24) : v18);
+            v62 = (armg_calculate_condition(v17 | 16, v18, v19, v20) ? v59 >> 23 & 1 : v19);
+            v63 = (armg_calculate_condition(v17 | 16, v18, v19, v20) ? armg_calculate_flag_v(v17, v18, v19, v20) : v20);
+            if ((char)armg_calculate_condition(v60, v61, v62, v63))
+            {
+                v70 = ((!~(result >> 24) ? ~(v59 >> 24) : ~(result >> 24)) ? (~(result >> 24) ? a1 : a0) : a1);
+                return ((!(!(~(result >> 24) ? a0 : a1) * 0x200 ? (~(result >> 24) ? a0 : a1) * 0x200 : v70 * 0x200) ? (!(~(result >> 24) ? a0 : a1) * 0x200 ? (~(result >> 24) ? a0 : a1) * 0x200 : v70 * 0x200) : (~(result >> 24) ? a0 : a1) ^ v70) ? (~(result >> 24) ? a0 : a1) : (~(result >> 24) ? a0 : a1) | &g_400000);
+            }
+        }
+        v64 = result ^ v59;
+        v65 = armg_calculate_flag_c(v60, v61, v62, v63);
+        v66 = armg_calculate_flag_v(v60, v61, v62, v63);
+        if ((result ^ v59))
+        {
+            if (!result)
+                return a1;
+            return a0;
+        }
+        v67 = a0 ^ a1;
+        v68 = armg_calculate_flag_c(5, v64, v65, v66);
+        v69 = armg_calculate_flag_v(5, v64, v65, v66);
+        if ((a0 ^ a1))
+        {
+            a0 = 0;
+            if (!((char)armg_calculate_condition(21, v67, v68, v69)))
+                goto LABEL_401d34;
+            return 0;
+        }
+        else
+        {
+            if (!((char)armg_calculate_condition(21, v67, v68, v69)))
+                goto LABEL_401d34;
+            return a0;
+        }
+LABEL_401d34:
+        if (!(result & 0xff000000))
+        {
+            if (armg_calculate_condition(37, a0 * 2, a0 >> 31 & 1, armg_calculate_flag_v(5, result & 0xff000000, 1, armg_calculate_flag_v(5, v67, v68, v69))))
+                return a0 * 2 | 0x80000000;
+            return a0 * 2;
+        }
+        if (armg_calculate_condition(49, result, 0x2000000, 0))
+        {
+            a0 = &(&g_800000)[a0];
+            if (!((char)armg_calculate_condition(49, result, 0x2000000, 0)))
+                goto LABEL_401d54;
+            return &(&g_800000)[a0];
+        }
+        else
+        {
+            if (!((char)armg_calculate_condition(49, result, 0x2000000, 0)))
+                goto LABEL_401d54;
+            return a0;
+        }
+LABEL_401d54:
+        v41 = a0 & 0x80000000;
+LABEL_401d58:
+        return v41 | 0x7f000000 | &g_800000;
+    }
+    v21 = result >> 24;
+    v22 = (a3 >> 24) - v21;
+    v23 = a3 >> 24;
+    if (v21 < a3 >> 24)
+    {
+        v24 = v21 + v22;
+        if (!armg_calculate_condition(194, v23, v21, 0))
+            goto LABEL_401c1e;
+LABEL_401c1d:
+        v25 = a0 ^ a1;
+        if (!armg_calculate_condition(194, v23, v21, 0))
+            goto LABEL_401c22;
+LABEL_401c21:
+        v26 = v25 ^ a0;
+        if (!armg_calculate_condition(194, v23, v21, 0))
+            goto LABEL_401c26;
+LABEL_401c25:
+        v27 = v26 ^ v25;
+        if (!armg_calculate_condition(178, v23, v21, 0))
+            goto LABEL_401c2a;
+        goto LABEL_401c29;
+    }
+    else
+    {
+        v24 = v21;
+        if (armg_calculate_condition(194, v23, v21, 0))
+            goto LABEL_401c1d;
+LABEL_401c1e:
+        v25 = a1;
+        if (armg_calculate_condition(194, v23, v21, 0))
+            goto LABEL_401c21;
+LABEL_401c22:
+        v26 = a0;
+        if (armg_calculate_condition(194, v23, v21, 0))
+            goto LABEL_401c25;
+LABEL_401c26:
+        v27 = v25;
+        if (armg_calculate_condition(178, v23, v21, 0))
+        {
+LABEL_401c29:
+            v22 = -(v22);
+        }
+        else
+        {
+LABEL_401c2a:
+        }
+    }
+    if (25 >= v22)
+        goto LABEL_401c34;
+    return v26;
+LABEL_401c34:
+    v28 = (v26 | &g_800000) & 16777215;
+    if ((v26 & 0x80000000))
+        v28 = -(v28);
+    v29 = v27 & 0x80000000;
+    v30 = armg_calculate_flag_v(5, v26 & 0x80000000, 1, armg_calculate_flag_v(2, v22, 25, 0));
+    v31 = (v27 | &g_800000) & 16777215;
+    if ((v27 & 0x80000000))
+        v31 = -(v31);
+    v32 = v24 ^ v22;
+    v33 = armg_calculate_flag_c(5, v29, 1, v30);
+    v34 = armg_calculate_flag_v(5, v29, 1, v30);
+    if (!(v24 ^ v22))
+    {
+        v35 = armg_calculate_flag_c(5, v32, v33, v34);
+        v36 = armg_calculate_flag_v(5, v32, v33, v34);
+        v31 ^= &g_800000;
+        if (!v24)
+        {
+            v28 ^= &g_800000;
+            if (!armg_calculate_condition(5, v24, v35, v36))
+                goto LABEL_401cfa;
+LABEL_401cf9:
+            v24 += 1;
+            if (!armg_calculate_condition(21, v24, v35, v36))
+                goto LABEL_401cfe;
+LABEL_401cfd:
+            v22 -= 1;
+        }
+        else
+        {
+            v28 = v28;
+            if (armg_calculate_condition(5, v24, v35, v36))
+                goto LABEL_401cf9;
+LABEL_401cfa:
+            if (armg_calculate_condition(21, v24, v35, v36))
+                goto LABEL_401cfd;
+LABEL_401cfe:
+        }
+    }
+    v37 = v24 - 1;
+    if ((v22 & 255) < 32)
+    {
+        v38 = v28 + (v31 >> (char)v22);
+        v39 = v31 >> (char)v22;
+    }
+    else
+    {
+        v38 = v28 + (v31 >> 31);
+        v39 = v31 >> 31;
+    }
+    v40 = v31 << ((char)(32 - v22) & 31) & (32 - v22 & 255) - 32 >> 31;
+    v41 = v38 & 0x80000000;
+    v42 = v40;
+    v43 = v38;
+    if (!((char)armg_calculate_condition(81, v28, v39, 0)))
+    {
+        v42 = -(v40);
+        v43 = -(v38) - (v40 > 0);
+    }
+    v46 = v43;
+    if (v46 >= &g_800000)
+    {
+        v47 = v37;
+        v48 = v42;
+        v49 = v46;
+        if (v49 >= 0x1000000 && (v48 = (v46 & 1) * 0x80000000 | v42 >> 1, v47 = v37 + 1, v49 = v46 >> 1, 254 <= v47))
+            goto LABEL_401d58;
+    }
+    else
+    {
+        v51 = v42 * 2;
+        v52 = v46 * 2 + (v42 >> 31 & 1);
+        v53 = v37 - 1;
+        if (1 <= v37)
+        {
+            v47 = v53;
+            v48 = v51;
+            v49 = v52;
+            if (!((char)armg_calculate_condition(34, (armg_calculate_condition(34, v46, &g_800000, 0) ? v49 : v46), (armg_calculate_condition(34, v46, &g_800000, 0) ? &g_800000 : &g_800000), (armg_calculate_condition(34, v46, &g_800000, 0) ? 0 : 0))))
+                goto LABEL_401cc8;
+        }
+        else
+        {
+            v47 = v53;
+            v48 = v51;
+            v49 = v52;
+            if (!((char)armg_calculate_condition(34, (armg_calculate_condition(34, v46, &g_800000, 0) ? v49 : v46), (armg_calculate_condition(34, v46, &g_800000, 0) ? &g_800000 : &g_800000), (armg_calculate_condition(34, v46, &g_800000, 0) ? 0 : 0))))
+            {
+LABEL_401cc8:
+                v55 = (!v52 ? 32 : Clz(v52)) - 8;
+                v56 = v53 - v55;
+                if (v55 <= v53)
+                {
+                    v58 = v57 + v56 * &g_800000;
+                    if (!armg_calculate_condition(178, v53, v55, 0))
+                        goto LABEL_401cde;
+LABEL_401cdd:
+                    v56 = -(v56);
+                }
+                else
+                {
+                    v57 = v52 << ((char)v55 & 31) & (v55 & 255) - 32 >> 31;
+                    if (armg_calculate_condition(178, v53, v55, 0))
+                        goto LABEL_401cdd;
+LABEL_401cde:
+                }
+                return (armg_calculate_condition(178, v53, v55, 0) ? (armg_calculate_condition(162, v53, v55, 0) ? v58 : v58 | v38 & 0x80000000) : v38 & 0x80000000 | (armg_calculate_condition(162, v53, v55, 0) ? v58 : v58 | v38 & 0x80000000) >> ((char)v56 & 31) & (v56 & 255) - 32 >> 31);
+            }
+        }
+    }
+    v54 = v49 + v47 * &g_800000 + (0x80000000 <= v48);
+    if (v48 == 0x80000000)
+        v54 &= 4294967294;
+    return v54 | v38 & 0x80000000;
+}
+
+
+// Function: __aeabi_ui2f at 0x401d88
+extern char g_800000;
+
+unsigned int __aeabi_ui2f(unsigned int a0)
+{
+    unsigned int v0;  // r2
+    unsigned int v1;  // r2
+    unsigned int v2;  // r3
+
+    if (a0)
+        goto LABEL_401da0;
+    return a0;
+LABEL_401da0:
+    v0 = (!a0 ? 32 : Clz(a0));
+    v1 = v0 - 8;
+    v2 = 0x4a800000 - v1 * &g_800000;
+    if (v0 >= 8)
+    {
+        if ((0 << ((char)v1 & 31) & (v1 & 255) - 32 >> 31) == 0x80000000)
+            return v2 + (a0 << ((char)v1 & 31) & (v1 & 255) - 32 >> 31) + (0 >> ((char)(32 - v1) & 31) & (32 - v1 & 255) - 32 >> 31) + (0x80000000 <= (0 << ((char)v1 & 31) & (v1 & 255) - 32 >> 31)) & 4294967294;
+        return v2 + (a0 << ((char)v1 & 31) & (v1 & 255) - 32 >> 31) + (0 >> ((char)(32 - v1) & 31) & (32 - v1 & 255) - 32 >> 31) + (0x80000000 <= (0 << ((char)v1 & 31) & (v1 & 255) - 32 >> 31));
+    }
+    else
+    {
+        if (!(a0 << ((char)v1 + 32 & 31) & (char)v1 - 0 >> 31) * 2)
+            return v2 + (a0 >> ((char)(32 - ((char)v1 + 32)) & 31) & (32 - ((char)v1 + 32) & 255) - 32 >> 31) + ((a0 << ((char)v1 + 32 & 31) & (char)v1 - 0 >> 31) >> 31 & 1) & ~((a0 << ((char)v1 + 32 & 31) & (char)v1 - 0 >> 31) >> 31);
+        return v2 + (a0 >> ((char)(32 - ((char)v1 + 32)) & 31) & (32 - ((char)v1 + 32) & 255) - 32 >> 31) + ((a0 << ((char)v1 + 32 & 31) & (char)v1 - 0 >> 31) >> 31 & 1);
+    }
+}
+
+
+// Function: __floatsisf at 0x401d90
+int __floatsisf(unsigned int a0)
+{
+}
+
+
+// Function: __floatundisf at 0x401db0
+unsigned int __floatundisf(unsigned int a0, unsigned int a1)
+{
+    unsigned int v0;  // cc_dep1
+    unsigned int v1;  // cc_op
+    unsigned int v2;  // cc_dep1
+    unsigned int v3;  // cc_dep2
+    unsigned int v4;  // cc_ndep
+    unsigned int v5;  // cc_dep2
+    unsigned int v6;  // cc_ndep
+    unsigned int v7;  // cc_dep2
+    unsigned int v8;  // cc_ndep
+
+    v0 = a0 | a1;
+    v5 = armg_calculate_flag_c(v1, v2, v3, v4);
+    v6 = armg_calculate_flag_v(v1, v2, v3, v4);
+    if (a0 || a1)
+        goto LABEL_401db8;
+    return a0;
+LABEL_401db8:
+    v7 = armg_calculate_flag_c(5, v0, v5, v6);
+    v8 = armg_calculate_flag_v(5, v0, v5, v6);
+    if (!a1)
+    {
+        if (!armg_calculate_condition(5, a1, v7, v8))
+            goto LABEL_401de2;
+LABEL_401de1:
+        if (!armg_calculate_condition(5, a1, v7, v8))
+            goto LABEL_401de6;
+LABEL_401de5:
+    }
+    else
+    {
+        if (armg_calculate_condition(5, a1, v7, v8))
+            goto LABEL_401de1;
+LABEL_401de2:
+        if (armg_calculate_condition(5, a1, v7, v8))
+            goto LABEL_401de5;
+LABEL_401de6:
+    }
+}
+
+
+// Function: __aeabi_l2f at 0x401dc0
+unsigned int __aeabi_l2f(unsigned int a0, unsigned int a1)
+{
+    if (a0 || a1)
+        goto LABEL_401dc8;
+    return a0;
+LABEL_401dc8:
+    if (!(a1 & 0x80000000) >> 31)
+        goto LABEL_0x401dd8;
+}
+
+
+// Function: __fixsfsi at 0x401e3c
+unsigned int __fixsfsi(unsigned int a0)
+{
+    unsigned int v0;  // r2
+
+    v0 = a0 * 2;
+    if (v0 < 0x7f000000)
+    {
+        return 0;
+    }
+    else if (158 <= v0 >> 24)
+    {
+        if (158 - (v0 >> 24) == 4294967199 && a0 * 0x200)
+            return 0;
+        if ((a0 & 0x80000000))
+            return a0 & 0x80000000;
+        return 2147483647;
+    }
+    else if ((a0 & 0x80000000))
+    {
+        return -((a0 * 0x100 | 0x80000000) >> ((char)(158 - (v0 >> 24)) & 31) & (158 - (v0 >> 24) & 255) - 32 >> 31);
+    }
+    else
+    {
+        return (a0 * 0x100 | 0x80000000) >> ((char)(158 - (v0 >> 24)) & 31) & (158 - (v0 >> 24) & 255) - 32 >> 31;
+    }
+}
+
+
+// Function: _fini at 0x401e98
+int _fini()
+{
+    unsigned int v0;  // r0
+
+    return v0;
+}
+

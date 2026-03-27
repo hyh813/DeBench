@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `uVar3`, etc.) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`sequential_ops`, `single_if`, `nested_if_2`), but test functions are broken - they print hardcoded values instead of actually calling the functions they claim to test.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout (`0x3e9`, `0x65`, `0x12`) without explanation. Test functions print hardcoded expected values (e.g., `0x15` for sequential_ops result) instead of computing them.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts including self-referential external wrappers (`puts` calls `puts`), vector operations (`auVar13`, `auVar14` 16-byte arrays), and startup code mixed with application logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical failures: `loop_continue` transformed into incomprehensible bit manipulation, `recursion_factorial` and `goto_backward` became vector operations instead of loops/recursion. Simple functions like `sequential_ops` recovered well.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but internal structure severely degraded. Test functions are monolithic printf blocks. Helper functions (`double_value`, `triple_value`) preserved correctly.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably. `duffs_device` uses goto labels for fall-through (acceptable). Test functions are linear printf sequences.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Vector operations in factorial functions show redundant computation patterns. Unnecessary intermediate variables (`uVar4` through `uVar18`) in optimized recovery.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Most parameters correctly typed as `int`/`uint`, but critical errors: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `byte` instead of `int`. Function pointers degraded to `code *`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited composite types in source. Array handling in `loop_break` shows pointer arithmetic (`piVar2 = piVar2 + 1`) instead of array indexing, losing semantic clarity.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: function pointers as `code *` or `undefined4`, incorrect return types, implicit casts throughout. `call_func_ptr` shows `UNRECOVERED_JUMPTABLE` indicating type uncertainty.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining each function's purpose, difficulty level, and test cases - all completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Loop idioms converted to bit manipulation, recursion converted to vector operations, state machines not identified. `duffs_device` fall-through partially recognized.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Minimal anomaly flags (`UNRECOVERED_JUMPTABLE` in two places). Test functions silently produce wrong behavior (hardcoded outputs) with no warning that actual function calls were lost.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error documentation. Original source had explicit test validation comments (e.g., "输入5,7,3应返回21") completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but test functions don't actually call tested functions - they print hardcoded expected values. Global variables (`jump_buffer`, `DAT_00102090`) referenced without context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no separation. Startup code (`_init`, `_start`, `__do_global_dtors_aux`) mixed with application logic. No header file structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds, but functionality is broken - test functions won't actually validate anything since they print constants instead of calling functions.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Calculation:**
+```
+L1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+L2 (Structural):  (4+5+6+5)/4 = 5.00 × 0.25 = 1.250
+L3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.200
+L4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+L5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+--------------------------------------------
+Total:                                    4.821 ≈ 4.7/10
+```
+
+**Critical Defects:**
+- Test functions print hardcoded values instead of actually calling the functions they test (complete semantic failure)
+- Complex control flows (`loop_continue`, `recursion_factorial`, `goto_backward`) transformed into incomprehensible vector/bit operations
+- All variable names are generic (`param_1`, `iVar1`, `uVar3`) losing all semantic meaning
+- Zero comments despite original source having extensive documentation
+- Type errors: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `byte` instead of `int`
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)  
+- Most function names preserved from original source, maintaining basic semantic identification despite other degradations.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Complete absence of documentation means readers cannot understand algorithm intent, test cases, or decompiler confidence levels.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover actual control flow structures** - Loops and recursion should not be transformed into vector/bit operations; implement pattern matching for common algorithm idioms
+2. **Infer semantic variable names from usage patterns** - Analyze how variables are used (e.g., loop counters, accumulators) to generate meaningful names instead of `param_1`/`iVar1`
+3. **Generate decompilation confidence annotations** - Add comments indicating uncertain recoveries, especially for test functions that should call actual functions rather than printing constants

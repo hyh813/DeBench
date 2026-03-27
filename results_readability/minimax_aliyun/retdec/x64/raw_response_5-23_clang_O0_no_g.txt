@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `a1`, `a2`, `v1`, `v2`, `v3`, `v4`. For example, `param_macro_constants(int64_t a1)` should have `size` as parameter name. The parameter `a1` in `param_asm_basic` should be `x`. These cryptic names make it nearly impossible to track variable purpose without extensive analysis.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main test functions like `param_macro_constants`, `param_asm_basic`, `param_dynamic_code` match source names well. However, infrastructure functions use mechanical names like `function_1030`, `function_1040`, `function_1050` which provide no semantic meaning. The main API functions are good but supporting functions lack clarity.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `64` and `512` in macro constants lack explanation (should reference MAX_SIZE/BUFFER_COUNT). The `& 0xffffffff` casts appear frequently without comment. The `__LINE__` macro is hardcoded as `"155"` losing the dynamic nature. Some literals like `7` for mmap PROT flags are opaque. However, string literals like `"Hello World"` are clear.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy decompiler artifacts include: excessive casts `(int32_t)a1`, `(int64_t)a1` throughout; pseudo-assembly functions like `__asm_movaps`, `__asm_paddd`, `__asm_movdqa` that don't exist in source; redundant variable declarations in SIMD functions; the unusual `int128_t` typedef. These artifacts significantly obscure the actual code logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is preserved - if-else statements and while loops are recognizable. However, `param_asm_simd` uses goto-style jumps with labels that are harder to follow. The `call_asm_multi_insn` has convoluted pointer manipulation. At -O0, control flow should be more natural. Some loop constructs could be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and match source decomposition well - `param_dynamic_code`, `param_memory_protection`, `param_clobber_importance` are separate as expected. However, `param_asm_simd` has excessive variable declarations (v1-v10) that could be simplified. Infrastructure functions like `function_1040` (mmap wrapper) could be better organized.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns in error handling (`if (v2 != -1)`) are used appropriately. Some forward references exist but don't severely disrupt flow. The code is mostly linear and follows natural execution order.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in SIMD code with repeated `__asm_movdqa` calls. The `param_simd_intrinsics` has verbose chained operations. However, no severe dead code or obvious duplication that makes the code unmaintainable. Loop unrolling is minimal at -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int64_t` appropriately for arm64 pointers. However, loses precision from original `int` to `int32_t` in many places. The `int32_t * a1` in `param_asm_atomic` should be `int *`. Mixed usage of `int32_t` and `int64_t` for what were simple `int` values in source creates confusion. Some type precision is lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: The source doesn't define complex structs, so there's nothing to recover. The decompilation correctly handles simple types. No struct/union reconstruction was needed, so this dimension is not applicable as a failure.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: excessive casting throughout `(int32_t)a1`, `(int64_t)a1` without justification; pointer arithmetic `4 * v2 + (int64_t)a1` without bounds; the unusual `int128_t` type with unclear semantics; casting `*(int32_t *)v2` in memory protection code. These patterns could lead to undefined behavior. The atomic operation code doesn't properly represent the lock prefix semantics.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only the file header mentions "Retargetable Decompiler". No function-level comments explaining what `param_macro_recursion` does or why `param_builtin_macros` prints specific values. Zero explanation of the macro expansion semantics or assembly clobber lists. The decompilation provides no guidance for understanding the code.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No recognition of preprocessing idioms (macro expansion, stringization, token pasting). The assembly patterns (clobber lists, memory barriers) are not identified. The conditional compilation branches are not labeled. The source uses specific patterns like `#define` macros that are completely lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The unusual `int128_t` pseudo-type is presented without warning. The hardcoded string `"155"` for `__LINE__` is not flagged as potentially incorrect. No indication of indirect calls or unresolved references. The decompiler presents everything as confident when some items should be uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The `param_dynamic_code` requires `x + 5` return but doesn't document this. No indication that `param_memory_protection` modifies memory protection. No contracts for the assembly functions. The code provides no semantic contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present but relationships are not documented. No indication that `call_macro_constants` calls `param_macro_constants`. Global variables like `g21` (the `false` boolean) are not explained. No call graph or usage context provided. The relationships exist but aren't made explicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (preprocessing functions together, asm functions together). Infrastructure functions (mmap, printf wrappers) are separated. However, everything is in one massive file with no logical section headers. Could benefit from grouping into logical modules matching the source's section organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes necessary headers (`<stdio.h>`, `<stdint.h>`, `<sys/mman.h>`, `<string.h>`). Should compile with minor adjustments. The pseudo-assembly functions like `__asm_movaps` would cause compilation errors and need replacement with actual intrinsics. Some function signatures may need tweaking. Basic compilation infrastructure is present.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `v1`, `v2` etc. throughout, making it impossible to track purpose without analyzing every usage
+- No comments explaining macro semantics, assembly clobbers, or algorithm intent
+- Excessive decompiler artifacts: pseudo-functions `__asm_movaps`, `__asm_paddd`, unusual `int128_t` typedef
+- Magic numbers like `64`, `512`, `0xdef0` appear without named constant equivalents
+- Type safety issues: excessive unsafe casts, pointer arithmetic without bounds
+- The `__LINE__` macro is hardcoded as `"155"` losing dynamic nature
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+The decompiler preserved the original function boundaries well - `param_dynamic_code`, `param_memory_protection`, `param_clobber_importance` are all separate as in source. Function granularity is appropriate.
+
+**Most Needs Improvement:** Comment Quality & Semantic Transparency (scored 2/10)  
+The decompilation provides zero useful comments. Without comments explaining macro expansions, assembly semantics, or algorithm purpose, the code is nearly incomprehensible. This is the single biggest readability blocker.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When `a1` is compared to `1024` (MAX_SIZE), name it `size`; when `v1` is used in arithmetic with `a1`, name it based on that relationship
+2. **Add semantic comments for preprocessing**: Explain that `64` comes from `BUFFER_COUNT * 4`, that `& 0xffffffff` is uint32_t truncation, that `__LINE__` was hardcoded
+3. **Replace pseudo-assembly with actual intrinsics**: Convert `__asm_movaps`, `__asm_paddd` to `_mm_load_si128`, `_mm_add_epi32` which are real compiler intrinsics that compile and are readable

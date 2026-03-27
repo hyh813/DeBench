@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `ptr`, `v2` with no semantic meaning. For example, in `test_cpp_member_func()`, the `name` array becomes `v1[31]` and `result` loses its purpose entirely.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some C++ mangled names recovered (e.g., `_Z20test_cpp_member_funcv`) but many functions are named `sub_401XXX` with addresses. Original test function names are partially preserved but wrapper functions clutter the output.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `4700`, `42`, `0x4004000000000000` appear without explanation. String literals like `"Test"` are preserved but numeric constants lose their semantic meaning (e.g., expected return values become opaque).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: `__stack_chk_guard` checks, `arm64g_calculate_condition` calls, frame pointer manipulation (`v0 = &v1`), and redundant `sub_XXXXXX` wrapper functions that just call the real function.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` statements replace natural control flow (e.g., `goto g_412f00`, `goto LABEL_4014de`). Many functions are empty stubs with just `return;` instead of actual logic from source.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: Severe fragmentation with wrapper functions (`sub_401294` calls `test_cpp_member_func`). Critical test functions like `test_cpp_constructor`, `test_cpp_virtual_func` are completely empty - logic entirely lost.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps disrupt reading flow (e.g., `LABEL_4014dd`, `LABEL_4014de` in RTTI function). Some functions read linearly but many have confusing jump patterns that obscure execution order.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Duplicate wrapper functions for every real function (`sub_40130c` → `test_cpp_constructor`). Stack canary checks repeated in multiple functions. No dead code elimination evident.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy type erosion - `unsigned long long` used everywhere instead of specific types. Class types reduced to `void* this` parameters. Template types partially recovered but `template_max<double>` has broken comparison logic.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered (`struct_2`, `struct_3`, `struct_4`, `struct_5`) but with generic field names (`field_0`, `field_8`, `padding_0`). Class inheritance relationships completely lost - `Base`, `Derived` appear as empty classes.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Numerous unsafe casts throughout (`(long long)v4[8]`, `(char *)a0 + (*(a0))[24]`). Pointer arithmetic on void pointers. Function pointers called without proper type signatures. Stack canary comparisons use incorrect casting.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Only auto-generated function signatures present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ OOP patterns (virtual functions, inheritance, templates) partially recognized in function names but not in structure. Lambda expressions, smart pointers, exception handling completely unrecognizable in output.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about unresolved calls, broken logic, or uncertain recovery. Functions like `test_cpp_exception()` throw without catch blocks - clearly broken but not flagged. `arm64g_calculate_condition` calls indicate unresolved architecture-specific logic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts lost. Class method contracts (const-correctness, virtual dispatch) not preserved in any meaningful way.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships partially visible but virtual dispatch obscured. Global variables named `g_412XXX` with no semantic meaning. Vtable relationships not clearly documented despite being critical for C++ code.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped somewhat logically but mixed with runtime initialization code (`_init`, `_start`, `__do_global_dtors_aux`). No separation between test code and infrastructure code.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code references undefined symbols (`operatornew`, `arm64g_calculate_condition`, `__gmon_start__`). Many functions have mismatched signatures. Would require extensive stubbing and fixing to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+3+3)/4 = 3.00 × 0.30 = 0.90
+Level 2 (Structural):  (3+2+4+3)/4 = 3.00 × 0.25 = 0.75
+Level 3 (Type):        (3+4+2)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):  (3+4+2)/3   = 3.00 × 0.10 = 0.30
+
+Overall Score: 2.78/10
+```
+
+**Overall Readability Score:** 2.8/10
+
+### Critical Defects:
+- **Empty function bodies**: Critical test functions (`test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_operator_overload`, etc.) contain only `return;` - all logic lost
+- **Generic variable naming**: All variables named `v0`, `v1`, `ptr` with no semantic meaning, making data flow impossible to trace
+- **Broken exception handling**: `test_cpp_exception()` throws but never catches - completely non-functional compared to source
+- **Lost class structure**: C++ classes reduced to empty structs with `void* this` parameters, inheritance relationships obliterated
+- **Architecture-specific artifacts**: `arm64g_calculate_condition` calls indicate unresolved decompilation that should be flagged
+
+### Best Quality Aspect: **Function Naming Quality (4/10)**
+- Some C++ mangled names were successfully recovered and demangled, preserving original function identity despite other failures
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero explanatory comments throughout 1308 lines of code, making it impossible to understand intent or identify decompilation uncertainties
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function body logic**: The decompiler is extracting function signatures but failing to recover actual implementation - prioritize control flow graph reconstruction for C++ methods
+2. **Add decompilation confidence annotations**: Flag uncertain recoveries (like `arm64g_calculate_condition` calls) with warnings so analysts know which code needs manual review
+3. **Preserve C++ semantic structures**: Implement better class/vtable recovery to maintain inheritance relationships, virtual dispatch patterns, and member function associations rather than reducing everything to void* parameters

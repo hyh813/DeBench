@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `result`) instead of semantic names from source (`temp1`, `temp2`, `sum`, `count`). For example, `loop_for_fixed` uses `v1`/`v2` instead of `i`/`sum`, obscuring the loop counter and accumulator roles.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery—function names like `sequential_ops`, `recursion_factorial`, `switch_fallthrough` match original source exactly, preserving semantic intent and making code immediately recognizable.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers appear without explanation (e.g., `100 * (x + 1)` in `if_elseif_long`, `0x14u` for stack canary). Some literals like array bounds (5, 10) are inferable from context but lack named constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains x86-specific artifacts (`__readgsdword(0x14u)`, stack canary variables `v6 = __readgsdword(0x14u)`) and unnecessary temp variables (`result = x; if (x > 0) return 2 * x; return result;`). Architecture mismatch (arm64 source vs x86 decompilation) adds confusion.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control structures recovered well, but `switch_fallthrough` uses goto labels (`LABEL_7`) instead of proper fall-through, and `duffs_device` has excessive goto labels (`_L194`, `_L196`, etc.). At -O0, these should be clean structured constructs.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is appropriate—no monolithic functions, helper functions (`double_value`, `op_add`) preserved separately. However, `recursion_factorial` was incorrectly transformed from recursive to iterative.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Some disruption from goto usage in `switch_fallthrough` and `duffs_device`, but most functions maintain linear flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Unnecessary variable assignments present (e.g., `result = x;` followed by conditional return of `result`). Some functions have redundant temp variables that could be eliminated for cleaner code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved correctly (int parameters/returns), but uses generic `int` instead of precise types (`int32_t`). Function pointer types recovered correctly (`int (*f)(int)`). No const-correctness annotations.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Arrays recovered well (`int arr[5]`, `int matrix[3][4]`). Function pointer arrays properly reconstructed (`int (*funcs[3])(int)`). No complex struct recovery needed for this benchmark.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No dangerous casts observed. Some implicit conversions present but safe. Function pointer calls properly typed. Stack canary handling adds noise but doesn't compromise safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. Original source had extensive documentation (test cases, difficulty ratings, scene labels). Only auto-generated warnings present ("bad sp value at call has been detected").
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: State machine pattern in `state_machine`/`fsm_func_table` recognizable but not explicitly identified. Duff's device structure preserved but not labeled as such. No algorithm pattern documentation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some warnings present ("bad sp value", "FAILED to decompile") but inconsistent. `computed_goto` has inline assembly without explanation. No confidence indicators for uncertain decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation recovered. Original source had test validation comments (e.g., "输入5,7,3应返回21"). Error conditions not documented in function signatures.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships visible through direct calls. Test functions clearly call target functions. No explicit call graph documentation, but relationships inferable from code structure.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output without logical grouping. Original source had clear section headers (L1/L2/L3 control flow). No header file separation or namespace organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 7 functions failed to decompile (`__libc_start_main`, `__longjmp_chk`, etc.). External dependencies not documented. Architecture mismatch (arm64 source vs x86 decompilation) would prevent direct compilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+6+5)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (6+8+7+6)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (7+8+7)/3   = 7.33 × 0.20 = 1.47
+Level 4 (Semantic):    (2+5+4+3)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (7+6+5)/3   = 6.00 × 0.10 = 0.60
+
+Overall Score: 6.09/10
+```
+
+### Overall Readability Score: **6.1/10**
+
+### Critical Defects:
+- **Variable names generic**: `v0`, `v1`, `v2` instead of semantic names like `sum`, `count`, `temp1`
+- **Semantic loss in `if_else`**: Returns `x > 0` (boolean) instead of explicit `1`/`0` values from source
+- **Recursion transformed**: `recursion_factorial` converted from recursive to iterative loop, losing original algorithm structure
+- **No documentation**: Zero comments explaining logic, test cases, or function purpose
+- **Architecture mismatch**: Source claims arm64 but decompiled code contains x86-specific instructions (`__readgsdword`, `ebx`, `eax`)
+
+### Best Quality Aspect: **Function Naming Quality (9/10)**
+- Function names perfectly preserved from source, making code immediately identifiable and navigable
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments loses all the rich documentation from original source (test cases, difficulty ratings, usage scenarios)
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer semantic variable names from usage patterns** - Analyze how variables are used (accumulators, counters, indices) to generate meaningful names like `sum`, `count`, `i` instead of `v0`, `v1`, `v2`
+
+2. **Preserve original control flow semantics** - Detect recursive patterns and maintain them rather than converting to loops; recover switch fall-through without goto labels
+
+3. **Generate documentation from binary metadata** - Extract and include test case information, function purpose hints, and decompilation confidence indicators as comments

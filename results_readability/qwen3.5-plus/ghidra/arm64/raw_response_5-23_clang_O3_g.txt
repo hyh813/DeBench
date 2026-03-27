@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names like `iVar1`, `uVar5`, `piVar4` instead of semantic names (`result`, `page_size`, `exec_mem`). Parameters are reasonably named (`size`, `x`, `y`, `arr`, `n`), but 40+ "Unresolved local var" comments indicate lost variable semantics.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Excellent recovery of original function names (`param_macro_constants`, `param_asm_clobber`, `test_preprocessing_features`) from debug symbols. Some helper functions remain generic (`FUN_001007a0`, `FUN_0010097c`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: All constants folded to magic numbers: `0x40` (BUFFER_COUNT*4), `0x401` (MAX_SIZE+1), `0x200` (MAX_SIZE/2), `0xdef0`. Original `MAX_SIZE`, `BUFFER_COUNT`, `PROT_READ` semantics completely lost.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: "Unresolved local var" comments clutter output (40+ instances). Warning annotations ("Unknown calling convention") add noise. No dead code from register spilling, but debug artifacts present.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural if-else structures. `param_asm_clobber` shows aggressive loop unrolling (8-element chunks) from O3 optimization. Constant-folded functions (`call_macro_constants` returns `0x40` directly) lose original logic structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with reasonable granularity. `param_asm_clobber` is 80+ lines due to unrolling. Helper functions like `__aarch64_ldadd4_acq_rel` properly separated from main logic.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Loop unrolling in `param_asm_clobber` creates non-linear accumulation pattern. No excessive goto usage; early returns used appropriately.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `param_asm_clobber` has 8 nearly identical accumulation paths (`iVar9` through `iVar16`) from loop unrolling. Variable `iVar1 = 0x40` then immediately overwritten in `param_macro_constants`. Optimization artifacts visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `void*`, `size_t`, `char*`). Lacks precise width types (`int32_t`, `uint64_t`). Array types sometimes lost (`int[5]` becomes `int*`). `ulong` casts for printf parameters show type erosion.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Stack arrays shown as "Unresolved local var: char[32] dst@[???]" - type known but location unclear. No struct/union definitions visible. Original source had minimal complex types, limiting recovery opportunities.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No unsafe casts visible in most functions. Pointer arithmetic reasonable. Atomic operations use proper intrinsics (`__aarch64_ldadd4_acq_rel`). Some `ulong`/`uint` conversions for printf but semantically correct.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only technical recovery notes ("Unresolved local var", "WARNING: Unknown calling convention"). No algorithm explanations, no macro semantics recovered, no decompilation confidence indicators beyond basic warnings.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Atomic intrinsics identified (`__aarch64_ldadd4_acq_rel`). Inline assembly recovered as C equivalents (excellent!). No macro pattern identification (constants folded instead). No higher-level algorithm recognition.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "Unresolved local var" indicates recovery limitations. "WARNING: Removing unreachable block" shows optimization artifacts. Limitations indicated but could be more explicit about confidence levels and potential misinterpretations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., `arr != NULL`, `n > 0`). No postcondition inference. Error conditions not documented. Return values unexplained beyond raw values.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible and named correctly. Global variables referenced (`global_var`, `__aarch64_have_lse_atomics`). String data shown as `DAT_001014c7` instead of content. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output. No logical grouping by section (preprocessing vs. assembly). Static functions not distinguished from external API. Original source organization (5.2, 5.3 sections) completely lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code appears structurally compilable. External dependencies visible (`printf`, `mmap`, `sysconf`). Intrinsics need proper headers (`__aarch64_ldadd4_acq_rel`). String data references (`DAT_001014c7`) need resolution to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+8+4+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):   (6+7+7+5)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type System):  (6+5+7)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):     (4+5+6+3)/4 = 4.50 × 0.15 = 0.675
+Level 5 (Contextual):   (5+4+5)/3   = 4.67 × 0.10 = 0.467
+---------------------------------------------------------
+Overall Score:                                  = 5.63/10
+```
+
+**Overall Readability Score: 5.6/10**
+
+### Critical Defects
+- **Magic number proliferation**: `0x40`, `0x401`, `0x200`, `0xdef0` replace all original constants (`MAX_SIZE`, `BUFFER_COUNT`, platform-specific values)
+- **Variable semantics lost**: 40+ "Unresolved local var" comments indicate local variable names and types couldn't be recovered
+- **No contract documentation**: No preconditions, postconditions, or error handling semantics documented
+- **Module structure flattened**: Original 5.2/5.3 section organization completely lost in single output file
+- **Data references opaque**: String literals shown as `DAT_001014c7` instead of actual content in many places
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Debug symbols preserved original function names perfectly, making navigation and identification straightforward despite other readability issues.
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (3/10)** - Zero recovery of preconditions, postconditions, or error semantics; critical for understanding function behavior and safe usage.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Constant recovery from debug info**: Extract `#define` constants from DWARF debug information to replace magic numbers with named constants (e.g., `0x400` → `MAX_SIZE`)
+2. **Variable name recovery from DWARF**: Use debug variable names instead of generic `iVar1`, `uVar5` patterns; currently only parameter names are recovered
+3. **Semantic annotation generation**: Add comments indicating optimization artifacts (e.g., "// O3 loop unrolling: 8-element chunks") and decompilation confidence levels for uncertain reconstructions

@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Most local variables use generic names like `v0`, `v1`, `v2`, `ptr`, `i`, `index`, `idx`. While some globals like `global_counter`, `file_scope_static` are correctly recovered, the majority of variable names are uninformative and obscure semantic purpose.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Test functions like `local_vars`, `heap_basic`, `test_stack_memory` are correctly named, but internal functions use address-based names like `sub_401030`, `sub_401130`. The wrapper functions that just call other functions add noise without semantic value.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) is used for error returns throughout but never explained. String literals are referenced via external symbols (`&g_4035c1`) without clarity. Some loop bounds like `0x800` are recognizable but not documented.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Relatively clean output with minimal compiler artifacts. No debug instrumentation or excessive register spilling visible. The code is straightforward without significant noise pollution.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops are properly recovered as `do-while` constructs. However, some computed jumps like `goto ptr[2]` in `sub_401030` are unnatural. At `-O0`, more natural control flow should be recoverable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and cohesive. The decompiler correctly separates test functions. However, some wrapper functions (e.g., `sub_4012b1` calling `local_vars`) seem unnecessary - these could be inlined.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in error handling paths. Some complex index calculations in loops slightly disrupt linear flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling is present in functions like `vla_stack` and `heap_basic` with manual index calculations (`index += 8`). This redundancy from optimization should either be abstracted or commented. Some duplicate patterns in memory initialization.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most integers use generic `unsigned int` instead of specific types like `int32_t` or `size_t`. Pointers are generally correctly typed as pointers, but the distinction between signed/unsigned is often lost. Function parameters like `a0` lack type information.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs are reconstructed (e.g., `struct_0`, `struct_1` in `heap_nested`) but with generic field names like `field_0`, `field_4`. The original `Point` struct is lost - recovered as just arithmetic operations. Nested structures like `Node` have partial recovery but lose semantic field names.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations present: pointer arithmetic like `ptr + 2 * ((v2 >> 31) + v2 & 4294967294)` is error-prone. The `dangling_pointer` function correctly shows the freed pointer access but doesn't warn about undefined behavior. Some casts between pointer and integer types.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled code. No explanation of algorithms, preconditions, or postconditions. The decompiled code provides no guidance on what the functions do or how to interpret complex expressions.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns like malloc/free pairs are recognizable. The linked list creation pattern in `linked_list_heap` is partially identifiable. However, no design patterns or algorithms are explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `dangling_pointer` function accesses freed memory but there's no warning. The `memory_leak` function allocates without freeing but isn't flagged. No indication of undefined behavior or potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. Error return values like `-1` (as 4294967295) aren't explained. No contracts or assumptions are recovered from the code.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible and some extern declarations exist (e.g., `extern unsigned int global_counter`). However, the call graph isn't documented, and relationships between functions (who calls whom) aren't explicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are somewhat grouped by functionality (stack functions, heap functions, static functions). However, the file is monolithic with 2000+ lines. No logical section headers or organization markers.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code uses standard library functions (malloc, free, printf) that should compile. Some external symbols need linking. The code would require moderate patching to compile standalone (missing extern definitions for some globals).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+4+5+8)/4 = 5.0
+L2_avg = (6+7+7+5)/4 = 6.25
+L3_avg = (5+4+5)/3 = 4.67
+L4_avg = (2+5+2+2)/4 = 2.75
+L5_avg = (5+6+6)/3 = 5.67
+
+Overall = (5.0 × 0.30) + (6.25 × 0.25) + (4.67 × 0.20) + 
+          (2.75 × 0.15) + (5.67 × 0.10)
+        = 1.5 + 1.5625 + 0.934 + 0.4125 + 0.567
+        = 4.976 ≈ 5.0/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects (Bullet List)
+- Variable names are almost entirely generic (`v0`, `v1`, `ptr`, `i`, `index`) making code flow extremely difficult to trace
+- No comments explaining algorithm logic, preconditions, or postconditions
+- Struct field names are generic (`field_0`, `field_1`) losing all semantic meaning of original types like `Point` and `Node`
+- No anomaly indication for dangerous patterns like dangling pointer access and memory leaks
+- Loop unrolling in functions like `vla_stack` and `heap_basic` creates massive redundancy without abstraction or explanation
+
+### Best Quality Aspect: Noise Reduction (8/10)
+The decompiled code is relatively clean without excessive compiler artifacts, debug instrumentation, or register spilling noise that would further degrade readability.
+
+### Most Needs Improvement: Semantic Transparency (2.75/10)
+The decompiled code lacks any meaningful comments, pattern recognition, anomaly warnings, or contract documentation. A reader has no guidance on what functions do, what assumptions to make, or what dangerous patterns exist.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `ptr` used in malloc/free context → name it `buffer` or `array`; `i` used as loop counter → keep as `i` but add context)
+2. **Recover struct field names from type information**: Use debug symbols and common patterns to reconstruct meaningful field names like `data`, `next`, `x`, `y` instead of `field_0`, `field_1`
+3. **Add semantic annotations**: Include comments explaining algorithm intent, flag dangerous operations (dangling pointers, memory leaks), and document preconditions/postconditions where inferable

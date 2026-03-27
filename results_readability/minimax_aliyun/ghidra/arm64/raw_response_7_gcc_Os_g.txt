@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled code shows "Unresolved local var" comments for both `result` and `str` variables. The local variable `result` is completely eliminated (merged into direct return), and `str` is never declared. This represents severe variable name loss.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: The function name `param_fake_branch` is correctly preserved from the original source. The naming accurately reflects the function's purpose as a test of fake branch obfuscation.
+
+**3. Literal Clarity:** Score:1/10  
+Justification: All literals from the source are lost. The magic number `0xDEADBEEF` used in the fake branch, the string literal `"test"`, and the constant `1000` are all eliminated. The decompiled code contains only the input parameter `x` and returns it directly.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The code is clean with minimal compiler artifacts. However, the "Unresolved local var" comments add minor noise. No debug instrumentation or frame pointer manipulation is present.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: The decompiled code shows only `return x;` - the two fake if-statements are completely eliminated. The original source had two always-false conditions (obfuscation technique), but the decompiler has incorrectly treated them as dead code rather than preserving them as obfuscation. This loses the semantic intent of the obfuscation.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The function remains appropriately small (single return statement). No inlining or outlining artifacts are present. The function granularity matches the source.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: The code is perfectly linear - a single return statement. No jumps, loops, or complex control flow structures disrupt the reading order.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No redundant code exists. The simplified version is clean, though it has eliminated too much semantic content (the fake branches).
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: The parameter `x` is correctly typed as `int`. The return type is also correctly `int`. Minor deduction for losing the `const` qualifier from the original `const char *str` declaration.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No structs, unions, or arrays are used in this function. The type recovery is appropriate for the simplified output.
+
+**11. Type Safety:** Score: 9/10  
+Justification: The simplified code is type-safe with no unsafe casts or pointer arithmetic. The direct return of `x` is safe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: The only comments are "Unresolved local var" annotations which are auto-generated and not useful. No comments explain the fake branch obfuscation technique or why the branches were eliminated. The original source had explanatory comments about "永假条件" (always-false conditions) that are completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The decompiler failed to recognize the OBF-L4-02 obfuscation pattern (fake/always-false branches). This is a deliberate obfuscation technique that should be preserved and documented. The decompiler treated it as dead code rather than recognizing it as an obfuscation idiom.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The significant semantic loss (complete elimination of two fake branches) is not flagged as an anomaly. There's no indication that the code has been simplified beyond what the compiler would typically optimize at -O0. The "Unresolved local var" comments don't explain why these variables disappeared.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No preconditions or postconditions were present in the source, so none could be recovered. The simplified output doesn't document any implicit contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: The function `call_fake_branch` shows it being called with argument 10, which provides context. However, the relationship to other obfuscation functions in the file is not documented.
+
+**17. Module Organization:** Score: 8/10  
+Justification: The function appears in the correct position among other obfuscation test functions (param_opaque_predicate, param_instruction_substitution). The grouping is logical.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The decompiled code is part of a larger compilable binary. The function signature is valid and would compile. External dependencies (standard library) are minimal.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Both fake branch conditions (`x * x < 0` and `strlen(str) < 0`) are completely eliminated, losing the OBF-L4-02 obfuscation technique
+- Local variables `result` and `str` are marked as "Unresolved" and never declared
+- Magic number `0xDEADBEEF` and string literal `"test"` are completely lost
+- No comment explains the intentional fake branches or why they were eliminated
+- The decompiler incorrectly treats deliberate obfuscation as dead code
+
+**Best Quality Aspect:** Type System Fidelity (scored 9.0/10)  
+- Types are precise (int for parameter and return), and the simplified code is type-safe
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.3/10)  
+- The decompiler failed to recognize and preserve the fake branch obfuscation pattern, eliminated all literals, and provided no useful comments about the semantic intent
+
+**Top 3 Recommendations:**
+1. Preserve always-false conditional branches as potential obfuscation indicators rather than treating them as dead code
+2. Recover local variable declarations even when optimized away, using usage patterns to infer names (e.g., `result` used in multiplication and return)
+3. Add comments explaining significant semantic losses, such as "NOTE: Two fake branch conditions were eliminated - this may be intentional obfuscation"

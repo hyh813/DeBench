@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v2`, `v3`) with zero semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`sequential_ops`, `nested_if_deep`, `loop_for_fixed`). Only runtime helpers like `sub_930` use generic naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xFFFFFFFFLL` (-1) and `4294967294LL` (-2) appear without explanation. Array initializations use opaque hex values (`0x140000000ALL`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive type casts (`(unsigned int)`, `(__int64)`) and stack annotations (`[xsp+1Ch] [xbp-4h]`) clutter the code throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Excellent recovery of for/while/do-while loops and switch statements. Goto patterns successfully restructured (e.g., `goto_backward` recovered as for-loop).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly. Helper functions (`double_value`, `triple_value`) remain separate. No inappropriate inlining observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Duff's device uses goto labels (LABEL_7, LABEL_13) which disrupts flow slightly.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Some redundant type casting present but loop structures not unnecessarily unrolled.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy degradation to generic `__int64`, `unsigned int`. Original `int` parameters often become `__int64` return types. Function pointers use `_QWORD` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays represented as `_OWORD v4[3]` instead of proper types. Matrix data stored in opaque vector types. No struct recovery visible.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(unsigned int)result`, `LODWORD(result)`). Pointer arithmetic with generic `_DWORD *` types throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. No algorithm explanations, confidence indicators, or API contract documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns (loops, switches) recognized structurally but not explicitly named or documented. No pattern identification comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (9 functions) but no inline warnings. Computed goto shows `__asm { BR X0 }` without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. No error condition documentation or invariant recognition.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Callback relationships not explicitly noted.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (L1, L2, L3 test functions). Helper functions grouped together but no header file structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Claims compilation success but 9 functions failed decompilation. External library functions need stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (3+8+5+5)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):     (8+8+7+7)/4 = 7.50  × 0.25 = 1.875
+Level 3 (Type System):    (4+3+4)/3   = 3.67  × 0.20 = 0.734
+Level 4 (Semantic):       (2+5)/2     = 3.50  × 0.15 = 0.525
+Level 5 (Contextual):     (4+2+5+6+5)/5 = 4.40 × 0.10 = 0.440
+─────────────────────────────────────────────────────────────
+Overall Score:                                    5.15/10
+```
+
+**Overall Readability Score:** 5.15/10
+
+### Critical Defects:
+- **Variable names completely lost**: `a1`, `a2`, `v2` instead of `temp1`, `sum`, `count` - makes tracking data flow difficult
+- **Type precision severely degraded**: `__int64` and `_QWORD` used where original had specific `int` types
+- **Zero semantic comments**: No documentation explaining algorithm purpose or non-obvious logic
+- **Magic numbers unexplained**: `0xFFFFFFFFLL`, `4294967294LL` appear without indicating they represent -1, -2
+- **Composite types lost**: Arrays shown as `_OWORD` vectors instead of proper array/struct types
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names were preserved almost perfectly from source, making high-level navigation straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding non-trivial logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., loop counters should be `i`, `j`; accumulators should be `sum`, `count`)
+2. **Add semantic comment generation** for recognized patterns (loops, switches, state machines) with confidence indicators
+3. **Improve type recovery** by analyzing data flow to distinguish `int32_t` from `int64_t` and recover array/struct layouts from access patterns

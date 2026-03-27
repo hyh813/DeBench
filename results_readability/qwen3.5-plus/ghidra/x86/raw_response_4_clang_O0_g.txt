@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `iVar2`, `local_8`, `uVar7`, `puVar4`) obscuring semantic purpose. Only basic loop counters (`i`, `sum`, `count`) and some parameters (`a`, `b`, `x`) retain meaning.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but runtime functions use generic names (`FUN_00011030`, `__do_global_dtors_aux`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0x1e` (30) used without explanation. String literals preserved but printf format strings separated from actual values in `test_calling_conventions`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive "WARNING: Unknown calling convention" annotations on nearly every function. Compiler artifacts like `__i686.get_pc_thunk.bx` and "Removing unreachable block" warnings clutter output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops recovered reasonably, but `test_calling_conventions` has broken printf logic where format strings and values are disconnected. Switch statements converted to if-else chains appropriately.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but `test_calling_conventions` is 100+ lines with confusing variable assignments. Some helper functions appear inlined unnecessarily.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally, but `test_calling_conventions` has confusing stack manipulation loops that disrupt flow with pointer arithmetic.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minor redundancy with `iVar1`, `iVar2` temporary patterns. No obvious dead code. At `-O0` optimization, expected minimal transformation artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, void*), but `longlong` instead of `long long`. Function pointer types partially recovered as `_func_int_int*` instead of proper typedef.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types (`LargeStruct`, `SmallStruct`, `BigStruct`) recovered with field names preserved. However, struct operations sometimes show pointer arithmetic instead of clean field access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: **Critical semantic errors**: `ret_small_struct` and `ret_large_struct` return pointers instead of structs by value, fundamentally changing program behavior. Multiple unsafe casts present.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are almost exclusively decompiler warnings ("WARNING: Unknown calling convention"). No algorithm explanations, API contracts, or helpful documentation recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard C idioms (varargs, struct passing) recognized structurally but not explicitly named or documented. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warning system for unknown calling conventions and unreachable blocks. However, critical semantic errors (struct return bugs) are NOT flagged as anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. NULL checks present in code (`if (p == (SmallStruct *)0x0)`) but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Global variable usage (`DAT_00013008`) not clearly indicated as string constants.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable source order. Static functions not clearly marked. No file/header organization information preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions (printf, strlen, memset) without declarations. Struct type definitions missing from output. Would require significant stubbing to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (4×0.10 + 7×0.10 + 5×0.05 + 4×0.05) = 1.55
+Level 2 (25%): (5×0.08 + 6×0.07 + 6×0.05 + 7×0.05) = 1.47
+Level 3 (20%): (6×0.08 + 7×0.07 + 4×0.05) = 1.17
+Level 4 (15%): (3×0.05 + 5×0.03 + 6×0.03 + 3×0.04) = 0.60
+Level 5 (10%): (5×0.04 + 6×0.03 + 4×0.03) = 0.50
+
+Overall = 1.55 + 1.47 + 1.17 + 0.60 + 0.50 = 5.29/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects
+- **`ret_small_struct` and `ret_large_struct` return pointers instead of structs by value** - fundamental semantic error that changes program behavior
+- **`test_calling_conventions` printf calls don't pass actual return values** - format strings printed without corresponding arguments
+- **Variable names predominantly generic** (`iVar1`, `local_8`, `uVar7`) requiring manual inference of purpose
+- **`varargs_func` uses manual stack pointer arithmetic** (`args = &stack0x00000008`) instead of proper va_list macros
+- **No type definitions for structs** (`LargeStruct`, `SmallStruct`, `BigStruct`) in decompiled output
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most original function names were preserved accurately, maintaining semantic connection to source code purpose.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (3/10)** - Comments are exclusively decompiler warnings with zero helpful documentation about algorithm intent or API contracts.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Fix struct return value semantics** - Detect when functions return structs by value vs. pointer and preserve the original calling convention behavior
+2. **Recover printf argument binding** - Analyze printf format strings and bind corresponding arguments to restore readable output statements
+3. **Infer variable names from usage context** - Use data flow analysis to name variables based on their role (e.g., `sum` for accumulators, `count` for loop bounds)

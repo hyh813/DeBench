@@ -1,0 +1,122 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning recovered. Original `size` parameter becomes `a0`, `counter` becomes `v0`, losing all intent.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User functions retained original names (`param_macro_constants`, `call_asm_basic`), which is excellent. However, helper functions are generic (`sub_10438`, `__sync_fetch_and_add_4`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x400` instead of `MAX_SIZE`, `57072` instead of `0xDEF0`, `282` for line calculations. No constant recovery from original `#define` statements.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_guard`), `armg_calculate_condition` calls, and redundant assignments (`v0 = v1`) clutter the code. Atomic stubs contain infinite loops (`while(4294905792())`).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses `goto LABEL_...` patterns instead of structured loops. `param_macro_constants` has confusing nested conditionals with `armg_calculate_condition` that obscure the simple `if (size > MAX_SIZE)` logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but aggressive constant folding collapsed many functions to trivial returns (`call_macro_constants()` just returns 64), losing original structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but forward jumps (`goto LABEL_10948`) disrupt flow. Loop structures recovered as `do-while` but with awkward pointer arithmetic.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant variable assignments present (`v0 = v1`). Atomic operation stubs contain identical broken patterns repeated 30+ times with no deduplication.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything is `unsigned int` or `int` - no `int32_t`, `size_t`, or `ptrdiff_t`. Lost const-correctness entirely. Pointer types sometimes preserved but inconsistently.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited opportunity in this code. Arrays handled as pointers. No struct/union recovery needed but pointer arithmetic loses array semantics.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Implicit signed/unsigned conversions throughout. Atomic operation stubs have broken signatures (`__sync_fetch_and_add_4()` takes no parameters but should take pointer). Dangerous pointer arithmetic without bounds.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments in decompiled output. Original source had extensive documentation explaining each macro test case. Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. Macro expansions not identified. Atomic operations not recognized (broken stubs). SIMD code reduced to scalar loops without annotation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about decompilation uncertainty. Broken atomic stubs with infinite loops not flagged. `armg_calculate_condition` calls unexplained. Silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions inferred. Error conditions from `mmap`/`mprotect` not documented with meaning.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but not documented. Global variables named generically (`g_11ec0`, `g_23008`). No call graph or relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in some logical order matching source. No file organization (single output). No header declarations or API boundaries.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References external functions (`__printf_chk`, `mmap`, `sysconf`) without declarations. Atomic stubs are broken and won't link. Requires extensive patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Contribution |
+|-------|-----------|---------|--------|--------------|
+| L1: Lexical Clarity | 3, 7, 4, 5 | 4.75 | 30% | 1.425 |
+| L2: Structural | 5, 6, 6, 5 | 5.50 | 25% | 1.375 |
+| L3: Type System | 4, 6, 4 | 4.67 | 20% | 0.934 |
+| L4: Semantic | 1, 2, 2, 2 | 1.75 | 15% | 0.263 |
+| L5: Contextual | 4, 5, 3 | 4.00 | 10% | 0.400 |
+
+**Overall Readability Score: 4.4/10**
+
+---
+
+### Critical Defects
+
+- **Variable `a0`, `a1`, `v0` should be named semantically** (e.g., `size`, `counter`, `result`) based on usage patterns
+- **Zero comments** despite original source having extensive documentation explaining each test case
+- **Magic numbers everywhere**: `0x400` (MAX_SIZE), `57072` (0xDEF0), `282` (line number) with no constant recovery
+- **Broken atomic operation stubs** with infinite loops (`while(4294905792())`) that are non-functional
+- **Aggressive constant folding** collapsed logic functions to trivial returns, losing original algorithm structure
+- **`armg_calculate_condition` calls** in `param_macro_constants` obscure simple conditional logic
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (7/10)** - User-defined function names were preserved from symbols (`param_macro_constants`, `call_asm_basic`), maintaining semantic connection to original source.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (1/10)** - Complete absence of any comments despite original source having extensive documentation. This is the most severe readability degradation, as semantic intent is entirely lost.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover macro constant semantics** - Detect patterns like `if (a0 <= 0x400)` and suggest named constants (`MAX_SIZE`) based on comparison patterns and surrounding context.
+
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., `// DECOMPILER UNCERTAIN: armg_calculate_condition may represent simplified conditional`) and broken stubs.
+
+3. **Preserve or infer comments from debug symbols** - When `-g` flag is present, extract any available debug information to generate contextual comments explaining function purpose and parameter meaning.

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use cryptic generic names like `param_1`, `param_2`, `iVar1`, `uVar1`, `puVar1`, `pvVar1`, `unaff_retaddr`, `aiStack_24`. The original source had meaningful names like `x`, `n`, `arr`, `p1`, `p2`, `head`, `temp`. These generic names make it extremely difficult to track variable purposes.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test functions are correctly named matching source: `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `linked_list_heap`, `memory_leak`, `dangling_pointer`, `double_value`, `memop_memset`, etc. Only a few internal functions remain as `FUN_00011030`, `FUN_00011f75`. The naming is action-oriented and semantically accurate.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like `"MEM-L1-01 (local_vars): %d\n"` are preserved and clear. However, numeric literals like `0x2a` (42), `0x14` (20), `0xf` (15), `0x800` (2048) are unexplained magic numbers. Error return `-1` as `0xffffffff` is common but not documented.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise present including: type definitions (`undefined4`, `undefined`, `byte`), startup code (`__gmon_start__`, `frame_dummy`), PIC thunks (`__x86_get_pc_thunk_bx`), C++ runtime clones (`register_tm_clones`), infinite loop in `_start` (`do { } while(true)`), and external function wrappers that recursively call themselves.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural control flow - simple returns in `local_vars`, `local_array`. Loop constructs in `large_stack_frame` use `do-while` appropriately. However, `heap_basic`, `heap_array`, `memory_leak` show loop unrolling (8-element chunks) which is expected at -O0 but makes code verbose. The `_start` function has spurious infinite loop at end.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good function granularity - most functions are 10-50 lines with single responsibility. Test functions (`test_stack_memory`, `test_heap_memory`) appropriately group related tests. No obvious over-fragmentation or monoliths. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom with early returns for error conditions (NULL checks). No excessive goto usage. Minor forward jumps in error handling paths. The `_start` function has a disruptive infinite loop at end (compiler artifact).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling is explicit in `large_stack_frame`, `heap_basic`, `heap_array`, `memory_leak` (processing 8 elements per iteration). This is not commented as loop unrolling. No obvious dead code. The unrolling makes code longer but doesn't obscure logic significantly.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - uses `int` in some places but `undefined4` (4-byte undefined) extensively: `undefined4 param_1`, `undefined4 *puVar1`. Uses `byte` instead of `char`, `uint` for unsigned. `void *` used appropriately for malloc. The original had precise types like `int`, `size_t`, `Point *`, `Node *`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. The `Point` struct was used in `heap_struct` but decompiled to just `return param_1 * 3;`. The `Node` struct in linked list is not defined - uses raw `malloc(8)` and pointer arithmetic: `*(undefined4 *)((int)__ptr + uVar3 * 4)`. All composite types lost to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations: `(int)__ptr + iVar3 * 2 + -8` pointer arithmetic, `(int)aiStack_24 + iVar3 * 2 + iVar6` complex stack indexing, `*(undefined4 *)(param_1 + 1)` unaligned access. No bounds checking visible. Function pointers use `code *` type which is somewhat safe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No useful comments in any function. Only auto-generated header `"Decompiled by BinaryAI"`. No explanation of algorithms, non-obvious logic, or decompilation confidence. String literals contain test names but provide no additional context about what the function does.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are recognizable: linked list creation/traversal in `linked_list_heap`, tree creation in `tree_heap_traversal`, memory operations (malloc/free). However, no explicit naming or comments identify these as design patterns. The "State machine" or "Strategy" patterns are not identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of uncertain calls or suspicious code. The `dangling_pointer` function which accesses freed memory is presented as normal code without any warning. No flags for potential undefined behavior in `double_free` or `heap_overflow`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. Error conditions (NULL checks) are present in code but not documented as contracts. No indication of what functions require or guarantee.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (`malloc`, `free`, `printf`). Global variables accessed directly (`global_counter`, `global_func_ptr`, `file_scope_static`). No explicit call graph or relationship documentation. External functions declared but relationships not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are roughly grouped by category (stack tests, heap tests, static tests, memory ops). Test functions grouped together. No file separation - all in one output. Static functions not explicitly marked in output (though they exist in binary).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will NOT compile as-is. Uses `undefined4`, `undefined`, `byte` types which are Ghidra-specific and not valid C. External declarations for `extern_function`, `extern_global_var` missing definitions. Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use cryptic generic names (`param_1`, `iVar1`, `puVar1`, `unaff_retaddr`) instead of semantic names from source (`x`, `n`, `arr`, `head`)
+- **No struct recovery**: `Point`, `Node`, `TreeNode` structs completely lost - all composite types reduced to raw pointer arithmetic with `malloc(8)`, `malloc(0xc)`
+- **Type precision**: Extensive use of `undefined4`, `undefined`, `byte` instead of standard C types (`int`, `char`)
+- **No comments**: Zero useful comments explaining algorithms, contracts, or non-obvious logic
+- **Compilation failure**: Code uses Ghidra-specific types that won't compile with standard C compiler
+
+### Best Quality Aspect: Function Naming (scored 8/10)
+- Nearly all test functions are correctly named matching the original source (`local_vars`, `heap_basic`, `linked_list_heap`, `memory_leak`, `double_value`, etc.)
+
+### Most Needs Improvement: Variable Naming (scored 2/10)
+- Every variable uses cryptic generic names that completely obscure semantic purpose. A reader cannot determine that `param_1` is `x` or `n`, or that `puVar1` is a `Node*` pointer without extensive cross-referencing.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, function calls) to suggest semantic names like `packet_size`, `node_ptr`, `buffer_len`
+2. **Recover struct/union definitions**: Detect related field accesses at fixed offsets and reconstruct struct layouts with field names rather than raw pointer arithmetic
+3. **Add type precision**: Map `undefined4` to `int`, `byte` to `char`, `code *` to proper function pointer types based on call signatures

@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled C++ Object-Oriented Code
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `ptr`, `p`, `arg_0`) with no semantic meaning. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some mangled names recovered (`_Z20test_cpp_member_funcv`) but many are generic (`sub_401020`, `sub_40127c`). Template functions partially recovered (`template_max<int>`) but most test functions lack descriptive names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear without context (`4700`, `1001`, `42`, `703`). String literals replaced with global references (`&g_40207d`) instead of actual text, obscuring printf format strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler initialization artifacts present (`_init`, `_GLOBAL__sub_I_5_1.cpp`, `deregister_tm_clones`). Duplicate wrapper functions (`sub_401239` calls `test_cpp_member_func`) create unnecessary indirection.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Uses `goto` for function calls (`goto g_404010`) and virtual dispatch (`goto *((long long *)*((long long *)&arg_0))`). Most test functions are empty stubs (`return;`) losing all original logic.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Severe fragmentation with wrapper functions duplicating calls. Critical functions like `test_cpp_constructor`, `test_cpp_virtual_func` are empty despite source having 20-50 lines of logic each.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Some functions read linearly but many have jump artifacts. Exception handling code has confusing control flow with multiple `__cxa_*` calls that don't match source try-catch structure.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate wrapper functions for each test function. Compiler runtime code (`register_tm_clones`, `frame_dummy`) mixed with application logic without separation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Most types degraded to `void*`, `unsigned long`, `unsigned int`. Lost `const` correctness, specific integer types (`int32_t`), and class types. Template instantiation partially recovered but type parameters often lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Classes like `SimpleClass`, `LifecycleClass`, `Point` completely lost. Only generic structs recovered (`struct_0`, `struct_1` with `field_0`, `field_8`). Template class `Container<int>` partially recovered but field names lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Extensive unsafe casts (`(unsigned long long)(MaxV(...))`). Pointer arithmetic without type safety (`ptr[40]`, `ptr[80]`). Virtual table access uses raw pointer dereferencing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining logic. Only auto-generated anomaly note (`[D] Unsupported jumpkind Ijk_SigTRAP`). No algorithm explanations or API documentation recovered.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely lost - no recognition of RAII, virtual dispatch patterns, exception handling structure, or template instantiation. Lambda expressions not recovered at all.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly flagged (`Unsupported jumpkind Ijk_SigTRAP`) but most issues silent. Empty function bodies not flagged as decompilation failures. Incorrect type casts not warned.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts lost (no indication of what exceptions functions may throw). Null pointer checks not identified.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Global variables referenced by address (`g_40207d`, `g_403d78`) without semantic meaning. Virtual dispatch not clearly indicated.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output without logical grouping. Initialization code mixed with application code. No namespace or class structure preserved.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone - missing headers (`<iostream>`, `<memory>`), undefined symbols (`operatornew`, `operatordelete`), and incomplete type definitions. Requires extensive patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (2+4+4+5)/4 = 3.75
+Level 2 Average: (3+3+4+5)/4 = 3.75
+Level 3 Average: (3+3+3)/3 = 3.0
+Level 4 Average: (2+2+4+2)/4 = 2.5
+Level 5 Average: (4+4+3)/3 = 3.67
+
+Overall = (3.75 × 0.30) + (3.75 × 0.25) + (3.0 × 0.20) + (2.5 × 0.15) + (3.67 × 0.10)
+        = 1.125 + 0.9375 + 0.6 + 0.375 + 0.367
+        = 3.4045
+```
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects:
+- **Most test functions are empty stubs** - `test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_lambda` etc. all just `return;` despite source having substantial logic
+- **Complete class structure loss** - `SimpleClass`, `LifecycleClass`, `Point`, `Base`, `Derived` not recovered; only generic `struct_0`, `struct_1`
+- **Variable names entirely generic** - `v0`, `v1`, `ptr`, `p` provide no semantic information about purpose
+- **String literals replaced with global addresses** - `printf(&g_40207d, ...)` instead of actual format strings
+- **Exception handling structure broken** - `__cxa_*` calls don't reflect source try-catch blocks
+
+### Best Quality Aspect:
+- **Noise Reduction (5/10)** - While compiler artifacts exist, the core application functions are at least separated from initialization code, and some template functions (`template_max<int>`) were correctly recovered with working logic.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments explaining what the code does, no decompilation confidence indicators, and no documentation of recovered vs. guessed structures.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover class structures from vtable layouts** - Use virtual function tables to reconstruct class hierarchies with proper inheritance relationships and method names
+2. **Preserve string literals in output** - Instead of replacing with global addresses (`&g_40207d`), include actual string content for printf format strings and other literals
+3. **Flag incomplete decompilation explicitly** - Empty function bodies that should contain logic need clear warnings like `// DECOMPILATION INCOMPLETE: Function body not recovered`

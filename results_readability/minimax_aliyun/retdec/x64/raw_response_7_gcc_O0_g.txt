@@ -1,0 +1,87 @@
+### LEVEL 1: LEXICAL CLARITY
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4` throughout. For example, in `param_opaque_predicate`, `v1` represents `x+1` but this semantic meaning is lost. The naming provides no indication of variable purpose (e.g., `gcd_a`, `gcd_b`, `result_acc`).
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: Main test functions like `param_fake_branch`, `call_fake_branch` are correctly named. However, utility functions use mechanical names like `function_10d0`, `function_10e0`, `function_10f0` which map to `free`, `strncpy` but provide no semantic hint. Mixed result - target functions good, infrastructure functions poor.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: Critical literals completely lost. The magic constant `0xDEADBEEF` in the fake branch is eliminated entirely along with the dead code. The string "test" used in `strlen(str) < 0` check is gone. These were intentional obfuscation constants that should be preserved to show the fake branch logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise present: address range comments (`// Address range: 0x1269 - 0x128a`), line range comments (`// Line range: 19 - 34`), module path comments (`// From module: /work/7.c`), and redundant stack canary checks (`__readfsqword(40)`). The inline struct initializers for `jmp_buf` in signal handlers are verbose and obscure logic.
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: **CRITICAL DEFECT** - The decompiler completely eliminated the fake branches in `param_fake_branch`. The original has two dead code branches (`x*x < 0` and `strlen(str) < 0`), but decompiled version simply `return x;`. This destroys the semantic purpose of the obfuscation test. At -O0, these branches should be preserved.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Functions are appropriately sized - main test functions like `param_fake_branch` (2 lines), `param_opaque_predicate` (~30 lines) are reasonable. The decompiler correctly separated helper functions like `decrypt_string`. Minor issue: some infrastructure functions are too granular.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Generally reads top-to-bottom. However, in `param_vectorized_loop`, the loop structure is obscured with manual index calculations (`v3++`, `v4 = 4 * v3`) instead of natural `for` loops. Some forward jumps present but manageable.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The decompiler aggressively eliminated "dead code" - specifically the fake branches in `param_fake_branch`. While dead code elimination is normal at higher optimization levels, at -O0 this is incorrect. The obfuscation intent is lost. Loop unrolling in `param_vectorized_loop` creates redundant code patterns.
+
+### LEVEL 3: TYPE SYSTEM FIDELITY
+
+**9. Type Precision:** Score: 8/10
+Justification: Good type precision for ARM64 - uses `int32_t`, `uint32_t`, `int64_t` appropriately. The parameter `x` in `param_fake_branch` correctly typed as `int32_t`. Minor issue: some pointer types could be more specific (e.g., `char*` vs `const char*`).
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: The decompiler created verbose struct definitions for `jmp_buf_tag` and `_TYPEDEF___sigset_t` with generic field names (`e0`, `e1`, `e2`). These obscure the actual jmp_buf structure. However, the structs are present and usable.
+
+**11. Type Safety:** Score: 6/10
+Justification: Some unsafe patterns present. In `param_null_pointer_deref`, the code returns `(int32_t)v2` where `v2` is uninitialized (`int64_t v2; // 0x17fd`). This is undefined behavior. The inline struct initializers in signal handlers involve complex casts that could be safer.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are primarily metadata (address ranges, line numbers, module paths) rather than semantic explanations. No comments explain the fake branch logic, opaque predicates, or obfuscation intent. The comment `// From module: /work/7.c` is auto-generated noise.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The fake branch pattern (永假条件) is completely eliminated - the decompiler doesn't recognize it. Opaque predicates in `param_opaque_predicate` are partially recovered but the complex boolean expression `(x + 2) * x + 1 == v1 * v1 == v3 == 1` is confusing. No pattern naming (e.g., "opaque predicate detected").
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No indication that branches were eliminated or that the function contains obfuscation. The decompiler silently removes what it considers dead code without flagging this as potentially intentional. No warnings about suspicious never-taken branches.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants documented. The function `param_fake_branch` has implicit requirements (input validation) and expected behavior (return x) but these aren't expressed. No documentation of the fake branch semantics.
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function call relationships are somewhat clear from the code structure (e.g., `call_fake_branch` calls `param_fake_branch`). However, no explicit documentation of call graph or global variable usage. The relationship between `param_*` and `call_*` pairs is inferable but not stated.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are logically grouped - all test functions from the source file are together. Static helper functions like `decrypt_string`, `lto_target_func` are properly scoped. Minor issue: infrastructure functions (memory management, string ops) are interspersed with test functions.
+
+**18. Build System Compatibility:** Score: 8/10
+Justification: The code compiles successfully (as noted in metadata: "Compilation Result: Yes"). All necessary headers are included. External dependencies (libc functions) are properly declared. Minor issue: some non-standard constructs (inline struct initializers) may cause warnings.
+
+---
+
+### FINAL SUMMARY
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- **Fake branches eliminated**: `param_fake_branch` returns just `x` - both dead code branches (`x*x < 0` and `strlen(str) < 0`) with `0xDEADBEEF` constant are completely removed, destroying the obfuscation test purpose
+- **Magic constants lost**: The literal `0xDEADBEEF` and string "test" used in fake branches are gone
+- **No anomaly indication**: Decompiler silently removes what it considers dead code without flagging potential intentional obfuscation
+- **Uninitialized variable**: `param_null_pointer_deref` returns uninitialized `v2` - undefined behavior
+- **Opaque predicate confusion**: Complex boolean expression in `param_opaque_predicate` is nearly incomprehensible
+
+**Best Quality Aspect:** Type System Fidelity (scored 6.3/10)
+- Types are generally precise (int32_t, uint32_t, int64_t correctly used for ARM64)
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.8/10)
+- No recognition of obfuscation patterns, no anomaly warnings, no comments explaining intentional dead code
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Preserve dead code at -O0**: At debug optimization level, don't eliminate branches even if they appear unreachable - they may be intentional obfuscation (fake branches, opaque predicates)
+2. **Add anomaly flags**: When eliminating code paths, add comments like "// DEAD CODE: x*x<0 eliminated" so analysts know something was removed
+3. **Improve variable naming from usage**: Analyze how variables are used (e.g., `v1 = x + 1` followed by gcd computation) to infer names like `x_plus_1`, `gcd_result`

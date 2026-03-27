@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `iVar2`, `__ptr`, `local_28`), providing no semantic hint about their purpose. For instance, in `heap_basic`, the array pointer is named `__ptr` and loop indices are `iVar1`, obscuring the logic compared to the source's `arr` and `i`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source symbols (e.g., `local_vars`, `heap_basic`, `test_stack_memory`), accurately reflecting the high-level functionality. Only `FUN_00011030` remains an anonymous artifact.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers where constants were likely used in the source, such as `0x2a` (42) in `address_of_local` and `0x800` (2048) in `large_stack_frame`. While `x * 2 + 10` in `local_vars` is clear, the hex values elsewhere hinder readability.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The output contains frequent decompiler artifacts like `/* WARNING: Unknown calling convention */`, `/* Unresolved local var: ... */`, and `/* WARNING: Removing unreachable block */`. While these indicate uncertainty, they significantly clutter the code view.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Standard `for` loops are frequently converted into `do-while` loops with manual index management (e.g., in `local_array` and `heap_basic`), which is less idiomatic than the source. The use of `goto` for error handling in `linked_list_heap` is structurally correct but disrupts the natural reading flow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity. The `test_...` functions are large, but this accurately reflects the source structure rather than being a decompilation artifact.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom. While the `goto` in `linked_list_heap` creates a minor jump, the overall flow is logical. The `fork` logic in `test_heap_memory` is linearized well.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully presents the optimized code without obvious redundancy. Intermediate variables from the source (like `a`, `b`, `c` in `local_vars`) are correctly folded into the return statement.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int` and `void*` are mostly correct, but struct types are inconsistent. In `heap_nested`, `Node` is recognized, but in `linked_list_heap`, the same struct is treated as `int*` with fields accessed via array indices (`piVar2[1]`), losing type precision.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Struct recovery is hit-or-miss. `heap_nested` correctly uses `->data`, whereas `linked_list_heap` and `tree_heap_traversal` resort to raw pointer arithmetic and array indexing (`__ptr[1]`, `__ptr[2]`) to access struct fields, failing to reconstruct the `Node` or `TreeNode` layout semantically.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code exhibits unsafe type patterns, such as accessing struct fields via array indexing on `int*` pointers. Variable Length Arrays (VLA) in `vla_stack` are represented as dangerous stack pointer arithmetic (`stack0xfffffff4`), which is highly unsafe and difficult to reason about.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are exclusively decompiler warnings (e.g., "Unknown calling convention") and do not explain the code's logic. There are no comments describing the purpose of algorithms or data structures (e.g., "Creating a linked list").
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Common idioms like `malloc`/`free` are visible, but higher-level patterns are obscured. The `alloca` and VLA usage is transformed into raw stack math, completely hiding the "dynamic stack allocation" idiom.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler explicitly flags uncertainties with "WARNING" and "Unresolved local var" comments, which is helpful. However, it does not flag the suspicious array-indexing access on structs as a potential type recovery failure.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: Preconditions (like `n > 0` checks) are present as code but are not documented as contracts. The decompiler fails to infer or annotate the API contracts implied by the source code.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Calls to standard library functions (`malloc`, `printf`) and global variables (`global_counter`) are clear. The relationship between functions is preserved, though the loss of struct types weakens the understanding of data passed between functions.
+
+**17. Module Organization:** Score: 8/10
+Justification: The decompiled code maintains the logical grouping of functions found in the source (stack tests, heap tests, etc.), making it easy to navigate the module.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses Ghidra-specific types (`undefined4`) and pseudo-functions (`LOCK()`, `UNLOCK()`) that would not compile without significant modification. References to `stack0xfffffff4` are also non-compilable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable names are overwhelmingly generic (`iVar1`, `__ptr`), obscuring data flow.
+- Struct access is inconsistent; often represented as array indexing on raw pointers (`ptr[1]`) instead of field access (`ptr->next`).
+- Variable Length Arrays (VLA) and `alloca` are reduced to obscure stack pointer arithmetic (`stack0xfffffff4`), losing the semantic intent of dynamic stack allocation.
+- Magic numbers (e.g., `0x2a`, `0x14`) are used instead of original constants or enums.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function symbols, making the high-level flow easy to follow despite the poor local variable naming.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)
+- The reliance on generic names like `iVar1`, `iVar2`, and `__ptr` makes tracking data flow within functions difficult and requires significant manual effort to rename.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic naming for variables based on usage context (e.g., variables used as loop counters should be named `i` or `counter`, not `iVar2`).
+2. Improve type inference for heap-allocated structs to consistently use `->` field access instead of array indexing.
+3. Detect and annotate VLA/alloca patterns to represent them as pseudo-arrays or comments rather than raw stack pointer math.

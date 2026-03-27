@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (v0, v1, v2, x, result) with no semantic meaning recovered. For example, `v5`, `v6`, `v7` in `param_string_encryption` should be `encrypted_byte`, `decrypted_char`, `original_first_char` based on usage.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names preserved well (param_fake_branch, call_opaque_predicate, param_vectorized_loop). Action-oriented naming clearly reflects purpose, though startup functions use generic names (sub_730).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers throughout without explanation (0x5A XOR key, signal numbers 8/11, 0x20 buffer size). The 0x5A key should be named `DECRYPTION_KEY` for clarity.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present including LOBYTE macros, explicit type casts ((unsigned __int8)), and register variable hints (// w8, // x9). These don't prevent understanding but add visual clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if/else and while loops recovered well, but complex functions use goto labels (LABEL_9, LABEL_11, LABEL_17) in `param_vectorized_loop` instead of structured loops.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Aggressive constant folding eliminated original logic—`call_fake_branch` returns constant 10 instead of calling `param_fake_branch(10)`. This loses the call relationship entirely.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `param_vectorized_loop` has multiple forward jumps (goto LABEL_9, goto LABEL_17) that disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: SIMD vectorization code has duplicate patterns (v10/v11, v12/v13 processing) but this reflects actual optimization. No obvious dead code remains.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char*, size_t) and SIMD types recovered (int32x4_t). However, original int32_t specificity lost to generic int, and signedness sometimes ambiguous.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The bitfield struct from `param_implementation_defined` is completely absent from decompiled output. No struct definitions recovered despite original having explicit struct with named fields (a:3, b:5, c:24).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(__sighandler_t)` function pointer casts, LOBYTE operations, and implicit pointer arithmetic. Each cast introduces potential type confusion.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments except function headers. No algorithm explanations, no documentation of the obfuscation techniques (opaque predicates, fake branches) that are central to this code's purpose.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition for obfuscation techniques. The GCD algorithm in `param_opaque_predicate` isn't identified, and opaque predicate patterns aren't flagged.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (11 functions) but no inline warnings. The dead code elimination in `param_fake_branch` (removed x*x<0 branch) isn't flagged as optimization artifact.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "x must not be 0" for division), no postconditions, no invariant documentation. Signal handler contracts completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no call graph documentation. The relationship between `param_*` and `call_*` functions isn't explicitly documented despite being test harness pairs.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed sequentially by address, not logically grouped. Original source had clear sections (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 11 functions failed to decompile (strlen, signal, printf, etc.) requiring external stubs. Metadata inconsistency (claims Ghidra but output shows IDA Pro style) suggests potential tooling issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+5+6+7)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (7+4+5)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 5.10/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named semantically (e.g., `gcd_result`, `predicate_value`, `loop_counter`) based on usage context
+- **Dead code elimination** in `param_fake_branch` removed the obfuscation branches entirely, losing the security testing purpose
+- **11 external functions failed to decompile** (strlen, signal, printf, longjmp) requiring manual stub creation
+- **No comments** explaining the obfuscation techniques (opaque predicates, fake branches, instruction substitution) that are the core purpose of this code
+- **Bitfield struct completely lost** from `param_implementation_defined` - all field names and layout information gone
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names were preserved accurately, maintaining semantic connection to source code purpose
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation despite this being educational/test code where understanding the obfuscation techniques is critical
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns and string references (e.g., variables used with XOR 0x5A should be named `decryption_key`, `encrypted_buffer`)
+2. **Preserve dead code branches** with annotations when optimization is detected, rather than eliminating them silently (critical for obfuscation analysis)
+3. **Add inline uncertainty markers** for optimized/transformed code regions, especially when original control flow differs from decompiled output

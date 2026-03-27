@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `a1`, `a2`, `a3` for parameters and `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9` for locals. No semantic names like `size`, `buffer`, `counter` were recovered. This is extremely poor - the original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` but all were lost.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly every function name perfectly matches the original source: `param_macro_constants`, `call_macro_constants`, `param_conditional_compile`, `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, `param_memory_protection`, `test_preprocessing_features`, `test_asm_features`. Excellent recovery of function identities.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `1024`, `64`, `512`, `57072` (0xDEF0), `57122` (0xDF22), `282` (line + counters), `15`, `42`, `77` appear without explanation. The decompiler correctly computed constant expressions but didn't provide symbolic names. Some values like `30` for `sysconf(_SC_PAGESIZE)` are not explained.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No redundant casts, dead code, or debug instrumentation visible. The code is relatively clean. Some library helper functions like `__sync_fetch_and_add_4` appear but these are actual library code, not decompilation noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow uses natural if-else and while constructs. Loop structures are properly recovered (e.g., `param_asm_clobber` uses do-while). At -O0, the control flow closely matches source. Minor awkwardness in some complex cases but generally readable.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each source function is correctly decomposed into a single decompiled function. Function granularity is appropriate - no monoliths or over-fragmentation. Parameter counts match original (e.g., `param_asm_simd(int a1, int a2, int a3)` correctly has 3 parameters). Excellent recovery.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns used appropriately. No goto statements or spaghetti code. The flow is mostly linear and easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. At -O0, there's minimal optimization artifacts to clean up. Loop unrolling wasn't excessive. Code is clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation. Original types like `size_t`, `int *`, `unsigned char`, `uint32_t` are all reduced to generic `int` or `void*`. The `size_t` return from `sysconf()` is stored in `size_t v2` in one place but `int v0` in another. Parameter types are all `int` regardless of original. Const correctness is lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union types were recovered. The code uses raw pointer arithmetic throughout: `*(_DWORD *)(v4 + 4)`, `*(_DWORD *)(v3 + 4)`. Original structs like array parameters are lost, replaced with integer pointers and manual offset calculations.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No obviously unsafe casts. Pointer arithmetic is correct. Function signatures, while generic, are internally consistent. The main issue is lack of type safety from the lost type information, but no actively dangerous patterns are present.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining algorithm logic, macro semantics, or assembly behavior. The decompilation provides zero documentation about what the code does. The header mentions "Decompiled by IDA Pro 9.1" but no function-level comments exist.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are identified or named. The inline assembly patterns, atomic operations, and macro expansions are not recognized as idioms. The SIMD loop could be identified as "vectorized addition" but isn't.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: The output shows "FAILED to decompile" for 10 functions including `__imp_sysconf`, `__imp_mmap`, `__imp___printf_chk`, etc., but these failures are not flagged in the decompiled code itself. No warnings about indirect calls, unusual stack layouts, or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The error return values (-1, -2, -3) in functions like `param_dynamic_code` and `param_memory_protection` are not explained. No contracts recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are implicit in the code structure but not explicitly documented. The `test_preprocessing_features` calls all the `call_*` functions, but there's no comment explaining this. Global variable `global_var` is used but relationships aren't clarified.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically by prefix: `param_*` functions, `call_*` functions, `test_*` functions. Static functions like `my_func` are properly scoped. However, the many `__sync_*` library functions are interleaved with user code, slightly disrupting organization.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code appears to compile. It uses standard library functions (`_printf_chk`, `mmap`, `sysconf`, `memcpy`, `munmap`, `mprotect`). External dependencies are minimal and standard. The code is relatively standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming is extremely poor: all parameters are `a1`, `a2`, `a3` and locals are `v0`-`v9`, completely losing semantic meaning from original source
+- No struct/union recovery - all composite types replaced with raw pointer arithmetic like `*(_DWORD *)(v4 + 4)`
+- Zero comments explaining macro semantics, assembly behavior, or algorithm logic
+- Type precision severely degraded: all specific types (`size_t`, `int*`, `uint32_t`) reduced to generic `int`
+- Anomaly indication completely missing - 10 functions failed to decompile but no warnings in output
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+The decompiler almost perfectly recovered all function names from the original source, including test function names like `param_macro_constants`, `call_conditional_compile`, `param_asm_basic`, `param_memory_protection`, etc.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Anomaly Indication (1/10)  
+Variable names are completely generic and uninformative, making it nearly impossible to understand code purpose without referring to the original. Additionally, the decompiler silently failed on 10 functions without any indication in the output.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., `a1 > 1024` suggests `a1` should be named `size`; `v4 += 4` in a loop suggests `v4` is an index/iterator
+2. Recover struct types from pointer arithmetic patterns - consecutive field accesses like `*(ptr+0)`, `*(ptr+4)`, `*(ptr+8)` should reconstruct a struct
+3. Add anomaly warnings directly in the code - failed imports should show as `// WARNING: Unresolved import: sysconf` rather than separate text block

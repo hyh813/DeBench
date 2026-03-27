@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `v0`, `v1`, `a0`, and `a1`, completely losing semantic meaning (e.g., `temp1`, `sum`, `target` in the source).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from debug symbols (e.g., `sequential_ops`, `duffs_device`, `opaque_predicate`), matching the source exactly.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `4294967295` (representing `-1`) and `0x12345678` are used directly without named constants or comments explaining their purpose.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The output contains numerous wrapper functions (e.g., `sub_401179` calling `sequential_ops`) and artifacts like `CONCAT` operations in arithmetic, which clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While simple loops and `if` statements are recovered well, `switch` statements are frequently decompiled into jump table `goto` instructions (e.g., in `switch_small`), and nested `if-else` blocks are flattened into nested ternary operators, reducing readability.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The core logic functions are well-separated and match the source granularity, though the presence of compiler-generated wrapper functions adds minor clutter.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code reads linearly for simple functions, but the use of computed `goto` statements for switches and state machines disrupts the top-to-bottom flow significantly.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is little obvious redundancy or dead code; the logic is presented concisely, even if the variable names are poor.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally correct (e.g., `unsigned int`), but signed/unsigned distinctions are sometimes lost or obscured, leading to literals like `4294967295` instead of `-1`.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Arrays are handled as stack variables or pointers, but there is no reconstruction of higher-level semantics; for example, the matrix in `loop_multi_exit` is copied via `memcpy` rather than accessed as a 2D array.
+
+**11. Type Safety:** Score: 7/10
+Justification: The decompiled code accurately reflects the binary's type usage, including necessary casts for pointer arithmetic, though it lacks the safety hints of the original source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output; complex logic like Duff's device or state machines is presented without explanation.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard library calls like `setjmp`/`longjmp` are recognized, but specific patterns like Duff's device, computed gotos, or state machines are not identified or labeled.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents obfuscated code (e.g., `opaque_predicate`) and unusual control flow (e.g., `goto *targets[idx]`) without any warnings or flags indicating potential anomalies or compiler extensions.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants; for example, the requirement for `n > 0` in `duffs_device` is not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are direct and clear, and global data references (e.g., `g_403010`) are explicit, making the data flow traceable despite the generic names.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, roughly matching the source file structure, which helps in locating specific test cases.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on undefined global variables (`g_...`) and external symbols, making it impossible to compile without significant stubbing or linker script modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v0`, `v1`), obscuring the logic of operations like `temp1 = a + b`.
+- `switch` statements are decompiled into raw jump table `goto` instructions (e.g., in `switch_small`), destroying the high-level structure.
+- Signed integers are often represented as unsigned, resulting in confusing magic numbers like `4294967295` instead of `-1`.
+- No semantic comments or pattern recognition for complex constructs like Duff's device or state machines.
+- Presence of redundant wrapper functions (e.g., `sub_401179`) that add no value.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully recovered the original function names from debug symbols, making it easy to map the decompiled output back to the source code's intent.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.5/10)
+- The complete lack of comments, idiom recognition, and anomaly indication makes understanding complex control flow features like Duff's device or computed gotos extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Enhance Variable Recovery**: Utilize debug information (DWARF) more aggressively to recover original variable names instead of defaulting to `v0`, `a0`.
+2. **Pattern Match Switch Statements**: Implement heuristics to detect jump tables and reconstruct them into high-level `switch-case` structures rather than `goto` statements.
+3. **Add Semantic Annotations**: Automatically detect and comment on known compiler patterns (e.g., "Duff's Device detected") and library calls (e.g., `setjmp` usage) to aid comprehension.

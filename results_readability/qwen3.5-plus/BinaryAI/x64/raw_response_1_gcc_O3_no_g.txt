@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generically named `param_1`, `param_2`, `iVar1`, `uVar1` instead of semantic names like `a`, `b`, `c`, `sum`, `count` from source. Example: `loop_for_fixed` has 9 generic variables (`iVar2` through `iVar9`) that obscure the loop unrolling logic.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`sequential_ops`, `single_if`, `recursion_factorial`). Some have optimization suffixes (`.constprop.0`) and external functions marked `<EXTERNAL>::` which is acceptable decompiler notation.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions use hex literals (`0x14`, `0x15`, `0x2d`) instead of decimal values from source. Magic numbers like `CSWTCH_55` in `switch_small` obscure the jump table reference. No named constants recovered.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail`), frame pointer setup (`in_FS_OFFSET`), and redundant variable assignments present. Example: `call_func_ptr_array` has unnecessary stack cookie validation that obscures the core logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions recover well (`sequential_ops` is single expression), but complex loops are heavily transformed. `loop_for_fixed` and `loop_continue` show aggressive unrolling with nested if-chains instead of clean for-loops. `loop_multi_exit` uses goto labels instead of structured returns.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions properly separated with appropriate granularity. Helper functions (`op_add`, `double_value`) recovered correctly. However, `loop_for_fixed` is excessively large (~100 lines) due to unrolling that should be abstracted.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `loop_multi_exit` has multiple `LAB_` labels with goto jumps disrupting flow. `duffs_device` has complex fall-through switch with goto labels that obscure the original pattern.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from loop unrolling in `loop_for_fixed` and `loop_continue`. Multiple similar conditional checks repeated (e.g., `if ((int)(uVar1 + N) < (int)param_1)` pattern repeated 9 times). Original simple loops transformed into verbose unrolled code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic `int` used instead of specific types. `if_else` returns `bool` but source returns `int`. `state_done` returns `undefined8` instead of `int`. Function pointers sometimes typed as `code*` instead of proper signatures. Some unsigned/signed confusion (`uint param_1` vs `int`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Function pointer arrays recovered (`local_28[3]`, `local_68[4]`). `jmp_buf` used but not fully typed. No complex structs in this code sample, but array handling is reasonable. `__jmp_buf_tag*` shows some type recovery effort.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Stack canary checks present (good). Some unsafe patterns: `op_div` returns `undefined[16]` instead of proper struct. Function pointer calls sometimes have mismatched signatures (`call_func_ptr` shows `UNRECOVERED_JUMPTABLE`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels. No decompiler confidence indicators or algorithm explanations recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns (loops, conditionals) recognized. State machine pattern in `state_machine` not explicitly identified. `duffs_device` fall-through switch partially recognized but not named. No design pattern documentation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some functions marked `UNRECOVERED_JUMPTABLE` (good). `constprop.0` suffixes indicate optimization but not explained. No explicit warnings about uncertain recovery or potential issues. `computed_goto` recovery incomplete without clear anomaly flag.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`). No postconditions inferred. Error conditions not documented. Original source had test validation comments that are completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but no call graph documentation. Global variable `jump_buffer` usage visible. Callback relationships somewhat clear through `code*` parameters. No explicit relationship documentation between test functions and target functions.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order (L1 tests, L2 tests, L3 tests grouped). No clear module boundaries or header file structure. Static functions not properly scoped in output. Test functions mixed with implementation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies visible (`puts`, `__printf_chk`, `_setjmp`). Some functions need stubs (`__stack_chk_fail`, `__cxa_finalize`). Architecture-specific code present but portable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.266
+Level 4 (Semantic):    (2+5+4+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+6+7)/3   = 6.33 × 0.10 = 0.633
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.65/10
+```
+
+**Overall Readability Score: 5.6/10**
+
+### Critical Defects:
+- **Variable names completely generic**: `param_1`, `iVar1` instead of `a`, `b`, `sum`, `count` - makes tracking data flow difficult
+- **Zero comments recovered**: Original source had extensive documentation; decompiled code has none
+- **Loop unrolling obscures logic**: `loop_for_fixed` transformed from 6-line for-loop to 80+ line unrolled mess
+- **Type degradation**: `if_else` returns `bool` instead of `int`; `state_done` returns `undefined8`
+- **Magic number artifacts**: `CSWTCH_55` reference in `switch_small` instead of clear jump table explanation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it easy to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments is the most severe degradation; original source had comprehensive documentation explaining purpose, test cases, and difficulty levels that would aid reverse engineering.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from debug symbols**: At `-O0 -g`, DWARF debug info contains original variable names that should be extracted instead of generating `param_N`/`iVar_N`
+2. **Add confidence annotations**: Mark uncertain recoveries with comments like `// DECOMPILER: switch table reconstructed` or `// WARNING: loop structure may differ from source`
+3. **Preserve loop structures from debug info**: When debug symbols indicate original loop bounds, reconstruct for/while instead of emitting unrolled if-chains

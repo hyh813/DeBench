@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) instead of semantic names like `sum`, `len`, `current`, `head`. Loop counters `i`, `j`, `k` are acceptable, but critical variables like `sum` in `array_1d_stack` became `v0`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`double_value`, `process_char`, `array_1d_stack`, `ptr_single`), but runtime functions degraded to `sub_401020`, `sub_401030`. Function names that survived accurately reflect functionality.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Character literals `'A'`, `'Z'` became magic numbers `65`, `90`. Floating-point constants converted to hex (`0x3f000000`, `0x3fc00000`). Repeated `& 4294967295` masking obscures intent without explanation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant decompilation artifacts: `[D] Unsupported jumpkind`, `[D] unsupported_<class 'pyvex.expr.GetI'>()`, stack frame annotations (`[bp-0x10]`), and redundant type casts throughout test functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple loops recovered as `for` constructs, but `enum_switch` became chained if-else instead of switch. Some runtime functions use `goto` (`sub_401020` has `goto g_405fb8`). At `-O0`, natural flow expected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved with appropriate granularity. Some helper functions are trivial (`sub_40102d` just calls `sub_401030`), but no inappropriate inlining of user code observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Test functions have forward variable references but maintain logical flow. No spaghetti control flow in user functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Repeated `& 4294967295` masking on every printf call is redundant. No dead code observed, but type promotion artifacts create visual noise without semantic value.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `process_char` returns `int` not `char`, `process_float` returns `double` with missing parameters, `process_double` returns `long long`. Pointer types often `unsigned long` instead of typed pointers.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered as generic `struct_0`, `struct_1` with `field_0`, `field_1` instead of `x`, `y`, `z`, `data`, `next`. Bitfields completely lost (converted to bit operations). Nested structures have no semantic field names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(unsigned long long)`, `(char *)`), function pointer types degraded to `unsigned long long *`, pointer arithmetic on generic types. `ptr_func_complex` has incorrect signature recovery.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test scenarios, and expected values. No decompilation confidence indicators provided.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic loop patterns recognized (for/while). Linked list traversal recovered in `linked_list` function. No design pattern identification or algorithm naming (e.g., no "binary tree traversal" annotation).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `[D]` markers indicate failures in `process_float`, `process_double`, `process_ld`, but no explanation of what went wrong or manual analysis guidance. Silent failures in type recovery.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`), no postconditions inferred, no error condition documentation. Original had explicit test expectations that are lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but global variables have opaque names (`g_403010`, `g_405fe8`). Callback relationships partially preserved (`ptr_func_simple` calls `double_value`) but not explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output without logical grouping. Original had clear sections (Data Types, Arrays, Pointers, Composite Types) that are lost. No header file or API declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code contains syntax errors (`[D]` markers), missing type definitions, and unsupported operations. Would require significant manual patching to compile. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+5+4)/4 = 4.75  × 0.30 = 1.425
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50  × 0.25 = 1.625
+Level 3 (Type):        (4+3+4)/3   = 3.67  × 0.20 = 0.733
+Level 4 (Semantic):    (2+5+5+2)/4 = 3.50  × 0.15 = 0.525
+Level 5 (Contextual):  (5+4+3)/3   = 4.00  × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.71/10
+```
+
+**Overall Readability Score:** 4.71/10
+
+### Critical Defects
+- **Floating-point functions completely broken**: `process_float`, `process_double`, `process_ld` have unsupported operations and wrong return types
+- **Struct field names lost**: All composite types use generic `field_0`, `field_1` instead of semantic names like `x`, `y`, `data`, `next`
+- **Character literals became magic numbers**: `'A'` → `65`, `'Z'` → `90` without explanation
+- **No comments recovered**: Original had extensive documentation; decompiled output has zero comments
+- **Type precision degraded**: `char` functions return `int`, pointer types become `unsigned long`
+
+### Best Quality Aspect
+- **Function Decomposition (7/10)** - Function boundaries and granularity mostly preserved; user functions maintain appropriate size and single responsibility
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding function purpose require reverse engineering from code alone
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover semantic variable names from usage patterns** - Variables used in summation should be named `sum`, string length counters should be `len`, pointer traversals should be `current`/`head`
+2. **Preserve original type information from debug symbols** - With `-g` flag, char/short/float types should be recovered accurately instead of promoting to int/long long
+3. **Generate confidence annotations for uncertain recoveries** - Add comments like `// DECOMPILER UNCERTAINTY: float operation may be incorrect` instead of silent `[D]` markers

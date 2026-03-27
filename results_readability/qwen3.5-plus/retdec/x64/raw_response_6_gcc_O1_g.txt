@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Most variables use generic names (`v1`, `v2`, `v3`, `thread`, `mem`) obscuring semantic purpose; only occasional meaningful names like `file`, `strcmp_rc`, `found_char_pos` appear. Global variables named `g1`, `g2`...`g34` are completely non-descriptive.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions retain original names (`param_strcpy`, `call_strcmp`, `thread_compute`), but 50+ helper functions use mechanical names (`function_23c0`, `function_2410`) losing all semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals stored in globals `g4`-`g31` with UTF-8 encoded Chinese characters (`\xe6\x9c\x9f\xe6\x9c\x9b`); magic numbers like `42`, `100`, `150`, `255` appear without explanation or named constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive compiler artifacts: `__readfsqword(40)` stack canary checks in nearly every function, `__stack_chk_fail()` calls, redundant type casts `(int64_t)`, `(int32_t)`, and frame pointer manipulation throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Heavy use of `goto` with labels (`lab_0x39fa`, `lab_0x3a1f`) instead of structured loops; `param_pthread_join` and `param_thread_local_storage` use complex jump patterns that obscure simple iteration logic.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: `param_thread_local_storage` spans 200+ lines with nested logic that should be split; thread helper functions (`thread_sum`, `thread_increment`) are appropriately sized but lack clear separation of concerns.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading; `param_atomic_ops` and `param_mutex_lock` have multiple exit points connected via goto labels making linear comprehension difficult.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary check pattern repeated in 30+ functions; identical type cast sequences appear throughout; no consolidation of common patterns despite -O0 compilation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Thread functions return `char*` instead of `void*`; struct fields use generic `e0`, `e1` naming; pointer types frequently degraded to `int64_t*` losing semantic distinction between data and addresses.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs defined but with meaningless field names (`e0`-`e19`); `ThreadData` struct not recovered (uses raw pointer arithmetic `v1 + 8`, `v1 + 4`); `struct _IO_FILE` fields completely opaque.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout: `(int64_t *)dst`, `(int32_t *)&thread_ret`; thread function signatures don't match pthread conventions; pointer arithmetic used where struct access should occur.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated line range comments (`// Line range: 662 - 665`); zero semantic comments explaining algorithm purpose, non-obvious logic, or API contracts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Producer-consumer pattern in `param_condition_variable` not identified; mutex locking patterns not labeled; no recognition of standard library call patterns despite clear `strcpy`, `strcmp` usage.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some `// UNREACHABLE` markers present; indirect calls not flagged; no warnings about potential undefined behavior in signal handling or thread synchronization code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"); no postcondition inference; error return values not documented; no invariant recognition for shared state.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation; global variable usage (`atomic_counter`, `shared_counter`) not traced; callback relationships between thread functions implicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by category (standard library, system calls, threads) matching source structure; static functions properly scoped; but no header file separation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code reportedly compiles; necessary headers included; external dependencies (pthread, libc) declared; but no build instructions or dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+7+4+4)/4 = 5.00
+Level 2 (Structural):   (4+5+4+5)/4 = 4.50
+Level 3 (Type):         (5+4+4)/3   = 4.33
+Level 4 (Semantic):     (2+3+5+2)/4 = 3.00
+Level 5 (Contextual):   (5+6+7)/3   = 6.00
+
+Overall = (5.00 × 0.30) + (4.50 × 0.25) + (4.33 × 0.20) + 
+          (3.00 × 0.15) + (6.00 × 0.10)
+        = 1.50 + 1.125 + 0.866 + 0.45 + 0.60
+        = 4.54/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on usage (e.g., `loop_counter`, `thread_id`, `buffer_ptr`)
+- **Global variables `g4`-`g31`** contain string literals but use meaningless names instead of `fmt_lib_l1_01`, etc.
+- **Control flow uses goto** for simple loops in `param_pthread_join`, `param_mutex_lock`, `param_thread_local_storage`
+- **Struct fields all generic** (`e0`, `e1`, `e2`) losing all semantic meaning for `ThreadData`, `stat`, `sockaddr`
+- **Zero semantic comments** despite complex concurrency patterns (mutex, condition variables, atomics)
+
+### Best Quality Aspect:
+- **Build System Compatibility (7/10)** - Code compiles with proper headers and external dependencies declared, making it at least usable for further analysis.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic documentation makes understanding complex concurrency patterns extremely difficult; only auto-generated line ranges provided.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables used in size checks should be named `size`/`length`; loop counters should be `i`, `j`, `index`; pointer parameters should reflect their purpose.
+2. **Recover structured control flow from jump patterns** - Convert `goto` + label patterns back to `for`/`while` loops, especially for simple iteration visible in source.
+3. **Add semantic comments for recognized patterns** - Identify and document producer-consumer, mutex-protected critical sections, and standard library call patterns with explanatory comments.

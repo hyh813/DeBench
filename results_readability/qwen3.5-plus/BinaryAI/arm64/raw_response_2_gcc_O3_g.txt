@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar1`, `puVar2` with no semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `head` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions preserved original names (`process_char`, `array_1d_stack`, `struct_simple`), but helper functions use generic names (`FUN_001006d0`, `call_weak_fn`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions show hardcoded expected values (`0x61`, `0xb`, `0x3c`) instead of actual computations. Floating-point constants appear as hex (`0x3fc00000`, `0x3fe0000000000000`) without explanation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`___stack_chk_guard`) and `__printf_chk` wrappers add noise. Excessive temporary variables in array functions (`iVar4`, `iVar5`, `iVar6`, `iVar7`) from compiler optimization.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions maintain natural flow, but `binary_tree_sum` transformed from clean recursion to 200+ lines of nested loops. Array functions use unrolled loops with complex indexing instead of simple `for` loops.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved, but `binary_tree_sum` became massively complex (originally 5 lines recursive). Array summing functions bloated with loop unrolling artifacts.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom, but `binary_tree_sum` has 10+ levels of nesting with forward jumps. Array functions have complex loop termination conditions disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling present without comments. Similar code patterns repeated across `array_1d_stack`, `array_vla`, `union_array` with nearly identical unrolled structures.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Many types degraded to `undefined8`, `undefined4`, `ulong`. Original `long long` became `long`. `float`/`double` became `undefined4`/`undefined8`. Pointer types often just `int *` or `undefined8 *`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All structs lost. `Point3D` accessed as `param_1[0]`, `param_1[1]`, `param_1[2]`. No struct definitions recovered. Bitfields converted to manual bit operations (`uVar1 & 1`, `uVar1 >> 1 & 3`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present (`(int *)0x0`, `(undefined8 *)`). Pointer arithmetic without type safety. `ptr_triple` shows `**(int **)*param_1` which obscures the triple-indirection.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments whatsoever** in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Recursive tree traversal became iterative mess. Linked list patterns obscured by pointer arithmetic. No design pattern identification (state machine, strategy, etc.).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly noted (`UNRECOVERED_JUMPTABLE` in `ptr_func_simple`), but most type degradation issues not flagged. No warnings about struct loss or recursion transformation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions. Error conditions not documented despite many functions returning sentinel values.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Test functions call original functions but with hardcoded results instead of actual calls.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. No header file structure. System functions mixed with user code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions declared but some missing (`__multf3`, `__addtf3`). Would require significant patching to compile. Dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Weighted |
+|-------|--------------|--------|----------|
+| L1: Lexical Clarity | 5.0 | 30% | 1.50 |
+| L2: Structural Intelligibility | 5.0 | 25% | 1.25 |
+| L3: Type System Fidelity | 3.3 | 20% | 0.67 |
+| L4: Semantic Transparency | 2.3 | 15% | 0.34 |
+| L5: Contextual Coherence | 4.3 | 10% | 0.43 |
+| **TOTAL** | | **100%** | **4.19/10** |
+
+**Overall Readability Score: 4.2/10**
+
+### Critical Defects:
+- **All struct/union types lost** - `Point3D`, `Rect`, `Widget`, `Node` all accessed via raw pointer arithmetic (`param_1[0]`, `param_1[1]`)
+- **Recursive functions transformed to iterative mess** - `binary_tree_sum` went from 5-line recursion to 200+ lines of nested loops
+- **Zero comments** - No documentation of any kind, making complex functions nearly incomprehensible
+- **Test functions show hardcoded results** - Instead of calling functions, test code prints expected values (`__printf_chk(1,"DT-L1-01...: %c\n",0x61)`)
+- **Type precision severely degraded** - `undefined8`, `undefined4` used extensively instead of proper types
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - User-defined function names were preserved from debug symbols, maintaining semantic clarity for function purposes
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding complex decompiled logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze access patterns to reconstruct struct layouts with field names (e.g., detect `param_1[0]`, `param_1[1]`, `param_1[2]` as `x`, `y`, `z` fields)
+2. **Preserve recursive structures** - Detect tail-call patterns and recursive call graphs to maintain original recursive form instead of iterative transformation
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions with comments like `// DECOMPILE UNCERTAINTY: indirect call target unknown`

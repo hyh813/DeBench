@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Local variables use generic names (`iVar1`, `uVar2`, `iVar10`-`iVar17` in `loop_continue`) obscuring purpose. Parameter names preserved (`a`, `b`, `c`, `x`, `op`) but locals like `temp1`, `temp2`, `temp3` in `sequential_ops` marked as "Unresolved local var".
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`sequential_ops`, `nested_if_deep`, `switch_fallthrough`). Only internal helpers use generic names (`FUN_00100880`, `FUN_001009fc`). Test functions correctly named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers unexplained (`0x3e9`=1001, `0x65`=101, `0xfffffff8`). Switch cases use hex (`0x14`, `0x1e`, `0x28`) instead of decimal. Some literals clear in context (`10`, `2`, `100`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "Unresolved local var" comments clutter output. NEON vector operations (`NEON_ext`, `auVar3`, `auVar9`) appear in scalar functions. Warnings present ("Could not recover jumptable", "Subroutine does not return").
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `single_if` uses bit trick `x << (0 < x)` instead of if-statement. `loop_for_fixed` converted to formula `(n-1)*(n-2)/2+n-1`. `nested_if_deep` well-recovered as sequential ifs. `loop_continue` heavily unrolled and unreadable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity. Helper functions properly separated (`double_value`, `op_add`, `state_idle`). Test functions consolidated output calls rather than actual function invocations.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. `duffs_device` appropriately uses goto labels for fallthrough. `loop_continue` and `goto_backward` have complex flow from aggressive unrolling disrupting readability.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy in `loop_continue`, `recursion_factorial`, `goto_backward` with 15+ similar variables (`iVar14`-`iVar21`). NEON vector operations duplicated. Loop unrolling not abstracted or commented.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision: generic `int` vs `uint`/`ulong`. Function pointers use helpful `_func_int_int *`. `volatile` lost in `infinite_loop` parameter. Some casts unclear: `(ulong)(uint)n`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays shown in comments (`int[5]`, `int[3][4]`, `int[8]`). `loop_multi_exit` recovers matrix access pattern. No struct definitions visible. Pointer arithmetic mostly avoided.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present: `(int)((ulong)...)`, `(ulong)(uint)n`. Function pointer calls marked with warnings. No obvious buffer overflow patterns. Division by zero checks recovered in `op_div`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: "Unresolved local var" comments helpful for tracking lost variables. WARNING comments for uncertain operations. No algorithm explanations or API contracts. No semantic enrichment beyond decompiler defaults.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Loop patterns not identified (formula substitution instead). Switch fallthrough not explicitly noted. Duff's device partially recognized (goto labels). No design pattern identification.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system: "Could not recover jumptable", "Treating indirect jump as call", "Subroutine does not return". "Unresolved local var" annotations help identify decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., `n > 0` for factorial). No postcondition inference. No invariant recognition. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. No call graph information. Global variable usage (`jump_buffer`, `completed_0`) not clearly documented. Test functions show expected outputs as constants.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file. Helper functions grouped together. Test functions separate from implementation. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies required (`printf`, `puts`, `__libc_start_main`). Function pointer types defined. Some platform-specific code (NEON) may need adaptation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (5+7+6+4)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.27
+Level 4 (Semantic):    (5+4+7+3)/4 = 4.75 × 0.15 = 0.71
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.61/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Variable `iVar10`-`iVar17` in `loop_continue`** should be consolidated; loop unrolling destroyed original iteration semantics
+- **`loop_for_fixed`** converted to closed-form formula instead of preserving loop structure, losing algorithmic intent
+- **`goto_backward`** decompiled with NEON vector operations for simple factorial, completely obscuring original logic
+- **Magic numbers** (`0x3e9`, `0x65`, `0xfffffff8`) lack semantic meaning or constant definitions
+- **Test functions** output hardcoded expected values instead of calling actual functions, breaking verification capability
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No preconditions, postconditions, or invariants documented despite many functions having clear requirements (e.g., `n > 0` for factorial)
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and preserve loop constructs** from back-edge patterns instead of converting to closed-form formulas or aggressive unrolling
+2. **Infer semantic variable names** from usage patterns (e.g., variables used in division by 10 likely represent digit counters)
+3. **Recover function contracts** by analyzing parameter validation patterns and return value constraints to generate precondition/postcondition documentation

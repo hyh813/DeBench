@@ -1,0 +1,109 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `a1`, `a2`, `v8`, `v9`, `v11` with no semantic meaning. For example, in `varargs_func`, `v8` accumulates the sum but isn't named `sum`, and `v17` tracks stack offset without indication.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Original function names are preserved accurately (`cdecl_func`, `call_cdecl`, `varargs_func`, `test_calling_conventions`). This is excellent recovery that maintains semantic intent from source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xFFFFFF80FFFFFFC8LL` in varargs functions are unexplained. However, return constants (15, 50, 42) match expected test values, making them inferable from context.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Excessive type casts (`(unsigned int)`, `(__int64)`) clutter simple expressions. Stack variable declarations like `v13[8]`, `v14`, `v15` in varargs functions represent compiler artifacts that obscure logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Simple functions have natural if/else structures. However, `varargs_func` uses complex loop with `goto LABEL_5` pattern that could be a cleaner while loop.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Each test function is separate. However, constant folding eliminates actual call relationships (e.g., `call_cdecl()` returns 15 directly instead of calling `cdecl_func`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. The varargs functions have backward jumps and goto labels that disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding creates redundancy - both `cdecl_func` AND `call_cdecl` exist but caller doesn't actually call the function. This loses the call relationship semantics from source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types (`__int64`, `_DWORD`, `_QWORD`) instead of proper C types. `func_mixed_args` shows `__int64 a3` instead of `long long`, and `char *` becomes `unsigned __int8 *`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `LargeStruct` and `SmallStruct` are completely lost. `func_struct_byval` takes `_DWORD *a1` with array indexing (`a1[30]`, `a1[28]`) instead of `s.data[i]`. No struct definitions recovered.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(unsigned int)`, `(_DWORD *)`). Pointer arithmetic on struct data (`a1[1] * *a1`) loses type safety guarantees from original `p->x * p->y`.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated function headers present. No comments explain varargs stack manipulation, calling convention differences, or why some functions return constants.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern (`va_start`/`va_arg`/`va_end`) is not recognized - shown as raw stack manipulation. Function pointer callback pattern in `param_func_ptr` is preserved but not identified.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Bottom shows "FAILED to decompile" for 7 library functions (strlen, printf, etc.). However, no warnings about constant folding losing call relationships or struct type loss.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` requires non-NULL pointer). Null checks exist in code but aren't documented as contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are lost due to constant folding. `test_calling_conventions` shows `printf("CALL-L1-01: %d\n", 15)` instead of `call_cdecl()`, breaking the call graph.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source file. Related functions grouped together. However, no file/module boundaries indicated in decompiled output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 7 external functions failed to decompile. ARM-specific types (`int32x4_t`, `vdupq_n_s32`) require NEON headers. Would need significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+7+5)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (4+2+6)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (3+4+5+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+7+4)/3   = 5.33 × 0.10 = 0.533
+
+Overall Score: 5.27/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Struct types completely lost**: `LargeStruct` and `SmallStruct` reduced to `_DWORD *` with raw array indexing, losing all field semantics
+- **Constant folding destroys call relationships**: Caller functions return constants (15, 50, 42) instead of showing actual function calls, breaking the call graph
+- **Varargs implementation opaque**: `va_list` mechanics shown as complex stack manipulation with magic numbers instead of recognizable stdarg pattern
+- **Generic variable naming**: All parameters named `a1`, `a2`, `a3` with no semantic indication of purpose (count, pointer, value, etc.)
+- **ARM-specific intrusions**: NEON types (`int32x4_t`, `vdupq_n_s32`) appear in `ret_large_struct`, reducing portability and clarity
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Original function names perfectly preserved, maintaining semantic intent and making navigation straightforward
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct definitions, forcing readers to reverse-engineer field layouts from array indexing patterns
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types from stack access patterns** - Detect consistent offset patterns (e.g., `[0]`, `[1]` access) and propose struct definitions with field names
+2. **Preserve call relationships over constant folding** - When constants can be computed, still show the actual call with a comment noting the constant result
+3. **Recognize stdarg patterns** - Detect `va_start`/`va_arg`/`va_end` sequences and emit readable varargs code instead of raw stack manipulation

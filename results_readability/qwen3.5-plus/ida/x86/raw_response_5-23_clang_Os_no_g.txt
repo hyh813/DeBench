@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic names like `a1`, `a2`, `v2`, `result` instead of semantic names (`size`, `counter`, `increment`). For example, `param_macro_constants(int a1)` loses the meaningful `size` parameter name from source.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`) matching original source exactly, indicating good symbol recovery.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers replace all macro constants: `1025` instead of `MAX_SIZE+1`, `64` instead of `BUFFER_COUNT*4`, `512` instead of `MAX_SIZE/2`, `57072` instead of `0xDEF0`. No constant recovery attempted.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Register annotations (`// eax`, `// ecx`) present but not excessive. Some stack variable comments (`[esp+0h] [ebp+0h] BYREF`) add noise but don't severely impede reading.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with standard if/while/for constructs. The condition `a1 >= 1025` is semantically equivalent to original `size > 1024` but slightly less intuitive.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries perfectly preserved; each source function maps to one decompiled function with appropriate granularity (no monolithic functions or over-fragmentation).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Loops use standard `for`/`while` constructs rather than goto chains. Early returns used appropriately.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Constant folding applied correctly (e.g., `call_macro_constants()` returns `64` directly). No dead code or duplicate expressions observed in most functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`), but some degradation: `volatile signed __int32*` instead of `atomic_int*`, `__m128i` correctly recovered for SIMD. Generic `int` used where `int32_t` would be more precise.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Stack arrays recovered (`char v1[12]`), but no struct definitions visible. SIMD types (`__m128i`) correctly identified. Pointer arithmetic present in `param_asm_clobber` (`*(_DWORD *)(a1 + 4 * i)`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe casts present: `(char *)global_var + 50` in `param_memory_clobber_demo` is semantically wrong (should be addition, not pointer arithmetic). `__int128` usage without clear purpose.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. All original documentation about macros, preprocessing, and assembly semantics completely lost. Only register/stack annotations present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized (memcpy in `param_asm_multi_insn`, atomic operations via `_InterlockedExchangeAdd`), but no explicit pattern identification or algorithm naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Failed decompilations listed at end (`FAILED to decompile: __libc_start_main`), but no inline warnings about uncertain reconstructions or potential issues within function bodies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling contracts documented. Functions like `param_memory_protection` have complex error paths with no explanation of return values (-1, -2, -3).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships clear through direct calls. Global variable `global_var` referenced but not declared in output. String references use opaque names (`asc_22C9`, `aPpL201D`).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source, but no file/module structure preserved. Helper functions (`frame_dummy`, `deregister_tm_clones`) mixed with application code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 8 external functions failed to decompile (`printf`, `mmap`, `mprotect`, etc.). Would require significant stubbing to compile. Platform-specific intrinsics (`_mm_add_epi32`) need proper headers.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+9+4+7)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (8+9+8+8)/4 = 8.25 × 0.25 = 2.063
+Level 3 (Type):        (7+6+6)/3   = 6.33 × 0.20 = 1.267
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (7+6+4)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 6.18/10
+```
+
+### Overall Readability Score: **6.2/10**
+
+### Critical Defects:
+- **Magic number proliferation**: All macro constants (`MAX_SIZE`, `BUFFER_COUNT`) folded to literals (1025, 64, 512) with no recovery of original constant names
+- **Parameter name loss**: Meaningful parameter `size` becomes `a1`, `counter` becomes `a1`, losing semantic context throughout
+- **Zero comment recovery**: All 200+ lines of original documentation about preprocessing, assembly, and test expectations completely absent
+- **Type safety issue**: `param_memory_clobber_demo` returns `(char *)global_var + 50` which is pointer arithmetic, not the intended `global_var + 50` integer addition
+- **String reference opacity**: Format strings referenced as `aPpL201D`, `asc_22C9` instead of recovered content, requiring cross-reference hunting
+
+### Best Quality Aspect: **Function Naming Quality (9/10)**
+- Function names perfectly preserved from source symbols, enabling immediate identification of each function's purpose without analysis.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of semantic documentation means readers cannot understand why code exists, only what it does—critical for macro/assembly recovery where preprocessing information is inherently lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Constant recovery from debug symbols**: When `-g` flag is present, recover macro names and constant definitions from DWARF debug info instead of folding to literals
+2. **Parameter name preservation**: Extract parameter names from debug symbols (DWARF) to maintain `size`, `counter`, `increment` instead of `a1`, `a2`, `a3`
+3. **Semantic comment generation**: Auto-generate comments for pattern-recognized code (e.g., "// Atomic fetch-add operation" for `_InterlockedExchangeAdd`, "// Macro-expanded: MAX_SIZE/2" for constant 512)

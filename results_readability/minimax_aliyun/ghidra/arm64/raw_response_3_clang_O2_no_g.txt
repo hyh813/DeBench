@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic systematic names (param_1, uVar1, lVar2, puVar3) that provide zero semantic meaning. In `local_vars()`, parameter "param_1" should be "x", and all local variables are eliminated entirely - the function just computes `param_1 * 2 + 10` inline.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are correctly preserved from debug symbols: local_vars, heap_basic, global_array_access, etc. Minor deduction for some startup/runtime functions with cryptic names (FUN_001008e0).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (0x2a=42, 0x14=20, 0xf=15 appear in test output), but magic numbers like 0xfffffffc00000000 in malloc calculations and complex CONCAT operations are unexplained. Test functions show hardcoded expected values rather than computed ones.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution. Functions like `large_stack_frame`, `vla_stack`, `alloca_usage` contain massive loop unrolling with CONCAT operations (CONCAT11, CONCAT12, etc.) spanning 30+ lines. The `test_stack_memory` function duplicates this noise inline. Compiler artifacts completely obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Basic if/else preserved, but loop unrolling in vla_stack, alloca_usage, heap_basic creates spaghetti control flow with 8-way unrolled loops. The original simple "for i < n" loops are unrecognizable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are properly separated and maintain single responsibility. No obvious over-fragmentation. Each test function correctly calls its sub-functions. Minor issue: some functions like heap_realloc contain inline logic that could be separate.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: The loop-unrolled functions (vla_stack, alloca_usage, heap_basic) have extremely poor linearization with complex do-while patterns and forward jumps. The original simple top-to-bottom flow is completely lost.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy from loop unrolling - the same 8-element pattern repeated with i, i+1, i+2... indices. Dead code elimination is poor; the test functions inline all the noisy loop logic rather than calling the functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. Uses undefined4, undefined8, undefined1 instead of int, long, char. Pointers are often undefined4* or void*. No distinction between signed/unsigned. The original "int x" parameter becomes "int param_1" but intermediate calculations use undefined types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. The Point, Node, TreeNode structures are completely lost. Node* is represented as undefined4* with manual field offsets (e.g., *(undefined4**)(__ptr + 2) for next pointer). Array access becomes pointer arithmetic.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally correct pointer arithmetic, but significant unsafe patterns: *(undefined8*)(param_1 + offset) casts, manual memory layout calculations. The dangling_pointer function correctly shows the unsafe access after free.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal useful comments. Some WARNING comments about unreachable blocks and indirect jumps, but no explanation of algorithm intent, preconditions, or what the complex CONCAT operations represent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns implicitly recognized (malloc/free pairs, linked list traversal) but not explicitly named or documented. The original patterns like "create 5-node linked list" are not identified.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some WARNING comments present: "WARNING: Subroutine does not return", "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable". However, the severe loop unrolling is not flagged as an anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information. Preconditions like "n > 0" in alloca_usage, "arr != NULL" checks are present in code but not documented. Postconditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear (test functions call sub-functions). Global variable usage is visible but not documented. Callback relationships (global_func_ptr) are present but not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically by category (stack, heap, static, memory ops). However, all 65 functions in one file with no clear module boundaries.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile as-is. Uses undefined4, undefined8 types. External dependencies (puts, printf, malloc, free, etc.) not declared. Many implicit assumptions would cause compilation errors.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable naming uses meaningless systematic names (uVar1, lVar2, puVar3) providing zero semantic value
+- Loop unrolling in vla_stack, alloca_usage, heap_basic creates 30+ line noise blocks with CONCAT operations that completely obscure the original simple for-loops
+- No struct recovery - Point, Node, TreeNode all lost; represented as raw pointer arithmetic
+- Type precision severely degraded - uses undefined4, undefined8 instead of int, long, char
+- Test functions inline the noisy loop logic rather than calling the actual functions, duplicating the noise
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names from debug symbols are mostly preserved correctly (local_vars, heap_basic, global_array_access), making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The systematic generic naming (param_1, uVar1, lVar2) provides absolutely no semantic information about what each variable represents or is used for, making the code extremely difficult to understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - if a parameter is used as array index, name it "index" or "i"; if it's multiplied by 2, name it "value" or "x"
+2. Recognize loop unrolling patterns and reconstruct original loop structure rather than displaying expanded code
+3. Recover struct types from pointer arithmetic patterns - if code accesses *(ptr+2) after *(ptr+0) and *(ptr+1), this indicates a 3-field struct

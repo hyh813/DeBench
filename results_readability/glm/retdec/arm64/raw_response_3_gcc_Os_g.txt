@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`, `v4`), providing no semantic context. For example, in `local_struct`, the input parameter is named `v1`, and in `heap_basic`, the allocated memory is `mem`, which is acceptable, but loop counters and intermediate values are indistinguishable.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most high-level function names (`double_value`, `local_vars`, `heap_basic`) are preserved accurately, likely due to the presence of debug symbols (`-g`). However, library wrappers are named generically (e.g., `function_9d0` for `memcpy`).
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers related to stack alignment and bit manipulation, such as `0xfffffffe`, `0x10000`, and `0xfff0`, without explanation. While string literals are preserved (though sometimes hex-encoded in globals), numeric constants lack semantic context.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant noise is present in the form of ARM64 compiler intrinsics like `__asm_sbfiz`, `__asm_dmb`, and `__asm_ubfx`. Additionally, stack canary checks (`__stack_chk_fail`) and `__printf_chk` calls clutter the logic, distracting from the core algorithm.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While loops are generally recovered as `while` statements, the decompiler frequently resorts to `goto` for control flow, particularly in functions like `vla_stack`, `alloca_usage`, and `test_heap_memory`, where structured `if/else` or early returns would have been more readable.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler perfectly matches the source function boundaries; there is no inlining or outlining of code blocks. Each function from the source is represented as a distinct unit in the output, maintaining excellent cohesion.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The readability is hampered by non-linear jumps. For instance, `vla_stack` and `test_heap_memory` contain `goto` statements that jump both forward and backward, forcing the reader to scan the entire function to understand the execution flow.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little dead code or loop unrolling (expected for `-O0`). However, some redundant masking operations (e.g., `& 0xffffffff`) and casts persist, which are technically accurate but slightly verbose.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Integer types (`int32_t`, `int64_t`) and pointer types (`char *`, `int64_t *`) are accurately recovered for the ARM64 architecture. Signed/unsigned distinctions are mostly preserved, though `size_t` is often mapped to `int64_t` or `uint32_t` depending on context.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct definitions are completely lost. In `local_struct`, the `Point` struct usage is reduced to arithmetic `3 * v1`. In `heap_struct`, the `Point` allocation is just `malloc(8)`, and field accesses are lost. `Node` and `TreeNode` are similarly flattened to raw memory allocations (`malloc(16)`, `malloc(24)`).
+
+**11. Type Safety:** Score: 7/10
+Justification: The code uses explicit casts for pointer arithmetic (e.g., `*(int32_t *)(v1 + 1)`), which is safe but verbose. There are no obvious type-confused function pointers, though the lack of struct types forces the use of `void*` or raw byte offsets implicitly.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no semantic comments explaining the logic. The only comments present are metadata markers like `// Address range:` and `// Line range:`, which are useful for mapping but do not aid in understanding the code's intent.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library calls like `malloc`, `free`, and `fork` are recognized. However, higher-level idioms like Variable Length Arrays (VLA) or `alloca` are obscured by complex stack pointer arithmetic and intrinsics rather than being abstracted into a clear idiom.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler does not flag intentional bugs or anomalies from the source code, such as the double free in `double_free` or the buffer overflow in `heap_overflow`. It presents the code as-is without warnings about undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or postconditions. For example, the check `if (n <= 0 || n > 1000)` in `vla_stack` is decompiled but not annotated as a guard clause or contract requirement.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are direct and easy to follow. Global variables like `global_counter` are accessed directly. However, the lack of struct definitions makes it harder to visualize data relationships (e.g., linked list nodes) without cross-referencing `malloc` sizes manually.
+
+**17. Module Organization:** Score: 8/10
+Justification: The output is organized logically with prototypes at the top, followed by global variables, and then function implementations. This matches standard C file organization and makes navigation easy.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile out-of-the-box due to the use of non-standard compiler intrinsics (`__asm_sbfiz`, `__asm_dmb`) and internal glibc functions (`__printf_chk`). It requires significant patching or a specific compatibility header.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Composite types (structs) are completely lost; `Point`, `Node`, and `TreeNode` are reduced to raw `malloc` calls with magic sizes and pointer arithmetic.
+- Variable naming is extremely poor, relying on generic names (`v1`, `v2`) that obscure the semantic meaning of parameters and local variables.
+- ARM64 intrinsics (`__asm_sbfiz`, `__asm_dmb`) are inserted directly into the C code, acting as significant noise that impedes understanding for anyone not familiar with the specific assembly instructions.
+
+**Best Quality Aspect:** Function Decomposition (Score: 9/10)
+- The decompiler perfectly preserved the function boundaries and granularity from the original source, making it easy to locate specific logic blocks.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 2/10)
+- The failure to recover `struct` definitions turns high-level data manipulation into low-level memory offsetting, which is the single biggest barrier to understanding the code's logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement robust struct recovery by analyzing `malloc` sizes and subsequent field access patterns to reconstruct definitions like `struct Point { int x; int y; };`.
+2. Replace architecture-specific intrinsics (e.g., `__asm_sbfiz`) with equivalent standard C bitwise operations or macros to improve portability and readability.
+3. Enhance variable naming heuristics to infer names from usage context (e.g., a variable used in a loop counter could be named `i` or `counter`).

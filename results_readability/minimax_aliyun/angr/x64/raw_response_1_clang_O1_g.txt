@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic single-letter names (`v0`, `v1`, `v2`, `a0`, `a1`, `a2`) with no semantic meaning. The original source used descriptive names like `temp1`, `temp2`, `sum`, `count` which are completely lost. Even register hints like `// rax` don't indicate purpose.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Functions are named with address-based placeholders (`sub_401020`, `sub_40102c`, `sub_401170`) rather than meaningful names. The original function names `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed` are completely lost. Only a few functions like `deregister_tm_clones` were recovered.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The magic number `4294967295` (0xFFFFFFFF, representing -1 as unsigned) appears extensively without explanation. Test functions have hardcoded expected values (`printf("CF-L1-01 (sequential_ops): %d\n", 21);`) instead of calling actual functions. Some array references like `g_403654[4]` are unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some type casts present (e.g., `(unsigned int)`) but these are manageable. No debug instrumentation or frame pointer manipulation clutter visible. The main "noise" is the generic naming rather than compiler artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow logic is generally correct - `sequential_ops` correctly shows `(a0 + a1) * 2 - a2`. However, some expressions are awkward (e.g., `loop_for_fixed` uses complex arithmetic instead of clear loop). At -O0, this should be nearly perfect, but the decompiler introduced some confusing expressions.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each source function is correctly separated. Wrapper functions exist (e.g., `sub_401169` calls `sequential_ops`) but this matches the call graph. Function granularity matches source - no monoliths or over-fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some goto statements present in complex functions like `loop_multi_exit` with labeled jumps (`LABEL_4016d5`). Early returns used appropriately. Minor disruption from computed jumps.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant expressions visible, particularly in `loop_for_fixed`: `(a0 - 1 & 4294967295) * (a0 - 2 & 4294967295) >> 1` is an awkward way to express n*(n-1)/2. Loop unrolling not present at -O0, but some optimization artifacts remain.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results - uses `unsigned int`, `unsigned long`, `long long` while original used `int`. The original `int sequential_ops(int a, int b, int c)` became `int sequential_ops(unsigned int a0, unsigned int a1, unsigned int a2)`. Signed/unsigned correctness is compromised. Function pointer types are generic `unsigned long long *`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: No complex struct recovery needed for this code as source uses mostly primitives. Some external arrays like `g_403654[4]` for switch tables are present but not fully explained. Basic type handling is adequate.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Several type safety issues exist. In `loop_break`: `v1 = "\n";` treats string literal as pointer to iterate. Extensive use of `4294967295` (unsigned -1) creates signed/unsigned confusion. Some pointer arithmetic without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments present. Only auto-generated register hints like `// rax`, `// [bp-0x8]` which are noise. No algorithm explanations, no decompilation confidence indicators, no API contracts. The test functions should call actual functions with comments explaining expected behavior.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like loops and conditionals are visible but not explicitly named. The `switch_fallthrough` pattern is somewhat recognizable but not highlighted. State machine patterns in `state_machine` function are present but not identified as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags present. The decompiler silently produces potentially incorrect code (e.g., `loop_while` has unclear loop condition logic) without warning. No indication of indirect calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `duffs_device` have complex control flow that would benefit from contract documentation but none is provided.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some external references visible (e.g., `extern unsigned long long g_406008`) but relationships not clearly documented. Function call graph is implicit through wrapper functions but not explicitly documented. Callback relationships in `process_with_callback` not explained.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are grouped by address (sub_401xxx) rather than by functionality. The original source organized functions by control flow level (L1, L2, L3) which is completely lost. Static functions not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has `extern` declarations for external references. Should compile with stubs for undefined symbols. Some dependencies documented but not fully explained. The hardcoded test values mean the test functions won't actually test the decompiled code.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable names are completely generic (`v0`, `v1`, `a0`, `a1`) - original names like `temp1`, `sum`, `count` completely lost
+- Function names are address-based placeholders (`sub_401170`) - original names like `sequential_ops`, `loop_for_fixed` not recovered
+- Test functions have hardcoded expected values instead of calling actual decompiled functions, making them useless for verification
+- No comments explaining algorithms, contracts, or decompilation confidence
+- Type precision compromised - original `int` parameters became `unsigned int`, losing signedness semantics
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+- Each source function is correctly separated and maintains appropriate granularity matching the original structure
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- All variables use generic single-letter names with no semantic meaning, making it extremely difficult to track data flow and understand function logic
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparison) to suggest semantic names like `index`, `count`, `sum`, `result`
+2. **Recover function names from symbol table or heuristics**: Use common naming patterns, parameter types, and functionality to suggest meaningful names instead of address-based placeholders
+3. **Add meaningful comments for complex patterns**: Document switch tables, fall-through cases, state machines, and recursive patterns to aid understanding

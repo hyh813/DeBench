@@ -1,0 +1,127 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `idx`, `ptr`. Parameters are named `a0`, `a1`, `a2`. The original source used meaningful names like `size`, `x`, `y`, `result`, `counter`. The decompiler made no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some functions correctly recovered (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `my_func`), but many use address-based names like `sub_401020`, `sub_40102c`. The original source had 18+ meaningful function names that were mostly lost.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `1025`, `0x200`, `57072`, `57122` appear without explanation. The original source defined `MAX_SIZE = 1024`, `BUFFER_COUNT = 16`, and other meaningful constants that are now literal values. Some values like `64`, `30`, `32` can be inferred but lack semantic context.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No redundant casts, debug instrumentation, or frame pointer manipulation cluttering the output. The decompilation is relatively clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is natural with proper if-else and for-loop constructs. At -O0, the code should closely match source structure. Some minor awkwardness in `call_asm_multi_insn` with manual pointer arithmetic instead of array notation.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with clear single responsibilities. The original source's function boundaries are mostly preserved. Some wrapper functions (like `sub_4011b6` calling `param_macro_functions`) exist but are minimal.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Some complex functions like `call_asm_privileged` have multiple variables initialized in sequence that slightly disrupt linear flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code or obvious redundancy. Some loop unrolling in `call_asm_clobber` and `test_asm_features` but at -O0 this is minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are mixed - uses `unsigned int`, `unsigned long`, `unsigned long long`, `int`. Original source used `int` consistently. Some type precision lost: `param_macro_constants` returns `unsigned long long` instead of `int`. Signed/unsigned distinctions are unclear.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct recovery. The original source had no complex structs but did have arrays (like `int arr[]`). The decompiler uses raw pointer arithmetic (`ptr + idx * 4`) instead of array notation. No composite types to recover in this specific source.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. In `param_asm_simd`, function pointer call `ptr(a0)` uses raw pointer without type safety. Mixed integer types in expressions. No alignment annotations or restrict keywords.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in decompiled output. The original source had extensive comments explaining each test case (e.g., "// PP-L2-01: 宏定义常量", "// 测试: 编译时宏替换"). Zero effort to recover documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The original source tests specific preprocessor and assembly patterns that could be documented (e.g., "macro expansion", "inline assembly with clobbers", "self-modifying code"). None of this semantic information is conveyed.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The decompiled code shows `param_dynamic_code` calling `ptr(a0)` as a function pointer - this is a critical indirect call that couldn't be fully resolved, but there's no indication of uncertainty. The architecture mismatch (arm64 source vs AMD64 output) is also not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had implicit contracts (e.g., `param_asm_atomic` requires valid pointer, `mmap` result must be checked) that are not communicated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., `test_preprocessing_features` calls various functions). However, no documentation of call graphs, global variable usage, or callback relationships. External dependencies like `puts`, `printf`, `mmap`, `munmap`, `mprotect`, `sysconf` are declared as extern.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (preprocessing functions together, asm functions together). However, the file is a single monolithic output. The original source had clear section comments separating test categories.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard C compiler. External functions properly declared as `extern`. Some issues: `uint128_t` type used without definition, `AddV` function undefined. These would require header definitions to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 4 + 4 + 8) / 4 = 4.5
+L2_avg = (7 + 7 + 7 + 7) / 4 = 7.0
+L3_avg = (5 + 5 + 6) / 3 = 5.33
+L4_avg = (1 + 3 + 1 + 1) / 4 = 1.5
+L5_avg = (5 + 6 + 7) / 3 = 6.0
+
+Overall = (4.5 × 0.30) + (7.0 × 0.25) + (5.33 × 0.20) + (1.5 × 0.15) + (6.0 × 0.10)
+        = 1.35 + 1.75 + 1.066 + 0.225 + 0.6
+        = 4.99 / 10
+```
+
+**Overall Readability Score:** 5.0/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `a0`, `a1`, `idx`) with no semantic inference from usage patterns
+- **No comments**: Zero effort to recover the extensive documentation from original source (test names, expected values, explanations)
+- **Anomaly silent failure**: `param_dynamic_code` uses indirect function call `ptr(a0)` with no indication this is an unresolved call
+- **Architecture mismatch**: Source compiled for arm64 but decompiled as AMD64 - no warning about this discrepancy
+- **Type precision loss**: Functions return `unsigned long long` when original used `int`; no type consistency
+
+---
+
+### Best Quality Aspect (Single Dimension)
+
+**Structural Intelligibility (L2)** scored highest at 7.0/10  
+Control flow is natural with proper loops and conditionals. Function decomposition is reasonable and code linearization is good. At -O0, the structural recovery is acceptable.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+
+**Semantic Transparency (L4)** scored lowest at 1.5/10  
+This is the most critical failure. Zero comments, no idiom recognition, no anomaly indication, and no contract recovery. The decompiler provides no semantic context about what the code does or confidence levels about uncertain reconstructions.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover comments from debug symbols**: The source was compiled with `-g` (debug info). Extract line number comments, function names, and variable names from DWARF debug information to restore documentation like "PP-L2-01: 宏定义常量" and expected test values.
+
+2. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `ptr + idx * 4` suggests array access, `a0 > 1025` suggests size check) to generate semantically meaningful names instead of `v0`, `v1`.
+
+3. **Flag uncertain reconstructions**: Mark indirect calls (like `ptr(a0)` in `param_dynamic_code`), architecture mismatches, and other ambiguous constructs with comments indicating confidence level and what manual analysis is needed.

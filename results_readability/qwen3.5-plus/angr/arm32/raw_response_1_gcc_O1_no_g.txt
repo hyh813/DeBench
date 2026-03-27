@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`) with no semantic meaning. Original names like `temp1`, `sum`, `count`, `total` are completely lost. Only occasional names like `result`, `cur`, `ptr` provide minimal hints.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retained original names (`sequential_ops`, `recursion_factorial`, `double_value`), but several are degraded to `sub_10454`, `sub_10518`. Test functions preserved names which aids identification.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive without explanation: `4294967295` (UINT_MAX/-1), `1717986919` (division optimization), `143428`. Original constants and test values replaced with opaque literals.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant artifacts: `armg_calculate_condition()` calls obscuring simple comparisons, stack canary checks (`__stack_chk_guard`), register spill variables on stack, unnecessary goto labels (`LABEL_1053c`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Critical failures: `if_elseif_long`, `switch_small`, `switch_large` all return constant `4294967295`. Loops use confusing variable assignments instead of clear iteration. Goto patterns replace structured conditionals throughout.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Parameter lists frequently wrong: `nested_if_deep` has 4 params (should be 5), `goto_forward` has 4 params (should be 1), `loop_nested` has 4 params (should be 2). Stack canary code bloats function bodies.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps (`goto LABEL_10904`, `goto LABEL_1053c`) disrupt top-to-bottom reading. Deep nesting with `armg_calculate_condition` creates confusing conditional chains that obscure execution flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Repeated stack canary checks in every function. `tail_recursion` calls itself twice in return statement. Register spill variables create duplicate assignments (`v1 = v2; v0 = v3;`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most types degraded to `unsigned int` or `int`. Original `int` mostly preserved but no `int32_t` precision. No const-correctness. Function pointer types partially recovered but often use generic `unsigned int *`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Arrays completely lost: `int arr[] = {10, 20, 30, 40, 50}` becomes individual variables `v0`, `v1`, `v2`, `v3`, `v4`. No struct recovery. Function pointer arrays use raw pointer arithmetic `(&v0)[a0](a1)`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer arithmetic for array access. Function pointer calls lack proper type signatures. Mixed signed/unsigned comparisons throughout. Stack canary provides minimal safety but doesn't address type issues.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining algorithms, test cases, and control flow patterns. No decompilation confidence indicators or uncertainty markers.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: State machine pattern in `state_machine` not identified. Switch-case dispatch patterns lost. Recursion patterns present but not labeled. `armg_calculate_condition` obscures recognizable conditional idioms.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Broken functions (`if_elseif_long` returning constant) not flagged. `armg_calculate_condition` calls unexplained. No indication of decompilation failures or unresolved references despite obvious problems.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or error conditions documented. Original test validation comments completely absent. No parameter validation hints recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variable usage unclear (`g_23008`, `g_23034`). Callback relationships present but not explained. Test functions call implementation functions without context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order but no logical grouping. Test functions mixed with implementation. No namespace or file organization. Helper functions (`op_add`, `op_sub`) grouped but not marked as such.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Requires external dependencies: `GLIBC_2.4::__stack_chk_guard`, `armg_calculate_condition`, `__aeabi_idiv`. Some functions reference undefined globals. Metadata claims compilation success but code has obvious issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+3+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (3+4+4+4)/4 = 3.75 × 0.25 = 0.94
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):  (5+5+5)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 3.60/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Function `if_elseif_long`, `switch_small`, `switch_large`** completely broken - return constant `4294967295` instead of actual logic
+- **Variable names all generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original source
+- **`armg_calculate_condition()` calls** obscure simple comparisons, making conditionals unreadable
+- **Parameter lists incorrect** for multiple functions (`nested_if_deep` missing 5th parameter, `goto_forward` has extra params)
+- **Zero comments** despite original source having extensive documentation explaining algorithms and test cases
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core function names preserved from original source (`sequential_ops`, `recursion_factorial`, `double_value`), providing some semantic anchor points for understanding.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation, algorithm explanations, or decompilation confidence indicators makes understanding intent nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover control flow structures from jump tables** - Functions like `if_elseif_long` and `switch_large` should reconstruct the original conditional chains instead of returning constants
+2. **Infer variable names from usage patterns** - Variables used in size checks should be named `size`/`count`, accumulators should be `sum`/`total`
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: indirect call resolution failed`

@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (`v0` through `v17`, `a0`, `a1`) or mechanically generated (`field_0`, `field_4`). Rare instances like `ptr` or `idx` provide minimal relief, but most semantic meaning is lost.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: User-defined functions like `local_vars` and `heap_basic` retain their original names, which is helpful. However, runtime and helper functions are reduced to generic names like `sub_400568` or obscure labels like `$a.30`.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers such as `4294967295` (representing -1), `0x800`, and `0xfffffff8` without named constants or comments to explain their purpose (e.g., alignment or array sizes).
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The decompilation is heavily polluted with compiler/engine artifacts, most notably the intrusive `armg_calculate_condition` calls and invalid C syntax like `vvar_3{r64|4b}`, which severely impedes readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Natural `for` loops are replaced by confusing `do-while` constructs with negative indices (e.g., `(&v3)[-1 * i]`). Control flow relies heavily on `goto` statements and `armg_calculate_condition` calls instead of standard `if` conditions.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: While functions map 1:1 with the source, test functions like `test_stack_memory` have been aggressively inlined or optimized into monolithic blocks of logic with hardcoded results (e.g., `printf(..., 20)`), destroying the original structure.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The flow is disrupted by frequent `goto` jumps (e.g., `LABEL_4006b0`) and forward jumps within loops, making it difficult to read the code top-to-bottom without tracing labels.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: There is significant redundancy in the form of repeated `armg_calculate_condition` calls and register spilling artifacts (e.g., `v1 = v3; v0 = v4;`) that add no semantic value.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are broadly reduced to generic `unsigned int` or `void*`. Signed integers are often represented as unsigned (e.g., returning `4294967295` instead of `-1`), and specific types like `size_t` are lost.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Structures are recovered but with generic field names like `field_0` and `field_4`. Padding is explicitly exposed as `padding_0`, which is accurate but low-level, and semantic field names (like `x`, `y` in `Point`) are missing.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies on unsafe pointer arithmetic and casts, such as `*((unsigned int *)((char *)ptr + 2 * idx))`, rather than array indexing, which obscures type boundaries and safety.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code to explain logic, algorithms, or the purpose of obscure artifacts like `armg_calculate_condition`.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: While standard library calls like `malloc` and `printf` are visible, common C idioms like array indexing or simple loops are obscured by pointer arithmetic and symbolic condition checks.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents confusing code (e.g., `vvar_3{r64|4b}`) with absolute confidence, providing no warnings or indicators that the logic might be uncertain or an artifact of the decompilation process.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the check `if (arr == NULL)` in the source is present but not documented as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: External variables and functions are marked with `extern`, and global variables like `global_counter` are referenced correctly, providing some context, though the relationships are not explicitly documented.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are generally presented in the order they appear in the binary address space, which roughly correlates to the source file order, providing a logical enough grouping.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code contains invalid C syntax (e.g., `vvar_3{r64|4b}`) and calls to undefined functions (`armg_calculate_condition`), making it impossible to compile without significant modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.1/10
+
+**Critical Defects:**
+- **Intrusive Symbolic Artifacts:** The pervasive use of `armg_calculate_condition` and `vvar` syntax renders the code unreadable and invalid.
+- **Loss of Loop Semantics:** `for` loops are converted into confusing `do-while` loops with negative indexing and magic number terminators.
+- **Generic Naming:** Variables and struct fields are reduced to `v0`, `field_0`, etc., stripping all semantic meaning.
+- **Aggressive Inlining:** Test functions contain hardcoded results (e.g., `printf(..., 20)`) instead of function calls, hiding the program's logic.
+- **Type Confusion:** Signed values are displayed as large unsigned integers (e.g., `4294967295` for `-1`), and pointer arithmetic replaces array access.
+
+**Best Quality Aspect:** Module Organization (scored 7/10)
+- Functions are listed in a logical order that generally matches the source, making it possible to locate specific functions despite the poor internal quality.
+
+**Most Needs Improvement:** Noise Reduction (scored 1/10)
+- The removal of decompiler-specific artifacts like `armg_calculate_condition` and invalid syntax `vvar_3{r64|4b}` is the most critical step to making this code readable.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Suppress Symbolic Artifacts:** Replace `armg_calculate_condition` calls with actual boolean expressions or standard `if` statements to reflect high-level logic.
+2.  **Recover High-Level Loops:** Reconstruct `for` and `while` loops from counter patterns instead of emitting `do-while` loops with negative indices and magic numbers.
+3.  **Fix Variable Naming:** Infer variable names from context (e.g., `i` for loop counters, `ptr` for pointers) and recover struct field names from debug symbols if available, rather than defaulting to `field_0`.

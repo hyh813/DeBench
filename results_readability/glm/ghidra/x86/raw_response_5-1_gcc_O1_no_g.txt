@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `local_30`, `iVar1`, and `pvVar1`, completely obscuring semantic intent (e.g., `local_30` is the `name` buffer of `SimpleClass`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Excellent demangling of C++ symbols; function names like `Base::virtual_func`, `virtual thunk to MultiDerived::funcB`, and `template_max<int>` perfectly match the source structure.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Logic is obscured by constant propagation; for example, `test_cpp_member_func` returns `sVar1 + 0x125c` (4704) instead of showing the calculation `r1 + r2 + r3`, making the algorithm hard to follow.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Significant compiler artifacts remain, including `__x86.get_pc_thunk.bx` injections and stack canary checks (`in_GS_OFFSET`), which clutter the function logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is natural where logic exists, but optimization has reduced many functions to simple constant returns (e.g., `test_cpp_multiple_inheritance` returns `0x47`), flattening the structure.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: C++ methods are correctly separated into individual functions, and complex features like virtual thunks (e.g., `non-virtual thunk to DiamondDerived::func`) are properly isolated.
+
+**7. Code Linearization:** Score: 9/10
+Justification: Code reads linearly with minimal jumps; exception handling ranges are clearly marked in comments without disrupting the flow.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler presents the optimized code cleanly without introducing artificial redundancy; the lack of redundancy is due to compiler optimization.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: While class types (e.g., `Base *`, `Derived *`) are recovered in signatures, local variables often default to generic types like `undefined4` or `int` instead of specific class instances.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Although types are used in function signatures, stack variables are not mapped to their composite structures (e.g., `SimpleClass` is represented as a raw `char` array and an `int` rather than a struct object).
+
+**11. Type Safety:** Score: 5/10
+Justification: C++ features like virtual calls are represented as unsafe pointer casts (e.g., `(*(code *)**(undefined4 **)param_1)`), which is accurate to the binary but unsafe in C.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10
+Justification: Comments are limited to technical warnings (e.g., `WARNING: Unknown calling convention`) and exception handler ranges; there are no comments explaining the high-level logic or algorithms.
+
+**13. Idiom Recognition:** Score: 10/10
+Justification: Excellent recognition of C++ idioms, correctly identifying `__cxa_throw` for exceptions, `__dynamic_cast` for RTTI, and `virtual thunk` for multiple inheritance adjustments.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: Technical anomalies like PIC thunks and calling convention issues are clearly flagged, though the semantic impact of optimization (constant propagation) is not explicitly noted.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: No preconditions or postconditions are recovered; for example, the null check in `Container::get` is decompiled but not documented as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Demangled names clearly show inheritance relationships (e.g., `Derived::virtual_func` overriding `Base::virtual_func`), making the class hierarchy understandable.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically by the compiler's layout, with related class methods (constructors, destructors, virtual thunks) appearing in proximity.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses non-standard types like `undefined4` and relies on injected functions, making it non-compilable without significant modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`local_30`, `iVar1`), losing all semantic meaning of objects like `SimpleClass` or `LifecycleClass`.
+- Composite types (structs/classes) are not applied to stack variables, representing objects as raw arrays and integers.
+- Logic is obscured by constant propagation (e.g., returning `0x47` instead of calculating `30 + 40 + 1`), making the source algorithm unrecoverable.
+
+**Best Quality Aspect:** Idiom Recognition (scored 10/10)
+- Ghidra expertly identifies complex C++ runtime mechanisms like virtual thunks, RTTI casts, and exception handling frames.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)
+- The reliance on generic local variable names (`local_X`, `iVarX`) makes it nearly impossible to map the decompiled code back to the original source objects without manual analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve type propagation to apply recovered class structures to stack variables instead of treating them as raw byte arrays.
+2. Infer variable names from constructor calls or usage patterns (e.g., identifying `local_30` as `obj.name` based on the `strncpy` call).
+3. Add annotations or comments when constant propagation has replaced significant logic, indicating that the value was computed at compile time.

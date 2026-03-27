@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2` and local variables use `v1`, `v2`, `v3`, `result`. The original source uses meaningful names like `arr`, `n`, `sum`, `str`, `len`, `head`, `node` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source: `array_1d_stack`, `linked_list`, `binary_tree_sum`, `struct_simple` all match exactly. Minor deduction for some helper functions like `complex_callback` not being named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `110` in `array_2d_stack` is incorrect (should represent 10×10 matrix access pattern). Some constants like `0x2710` (10000) appear without explanation. String literals are UTF-8 encoded Chinese text which is readable but unusual.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Minimal compiler artifacts, but excessive pointer arithmetic creates noise. The pattern `(int32_t)a1 - 4` followed by `v2 += 4` is a decompilation artifact that obscures simple array indexing.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `array_2d_stack` uses `for(int32_t i = 0; i < 110; i += 11)` which is incorrect - the original uses nested loops for 10×10 matrix. Many for-loops converted to while-loops with manual increment, making control flow less natural.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Each test function is separate, helper functions like `binary_tree_sum` extracted correctly. Parameter counts preserved appropriately.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps in complex functions like `array_3d` but manageable. Early returns used appropriately in null-check patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns in `array_3d` with repeated code blocks for nested loops. Loop unrolling not properly recognized - the 5×5×5 loop structure is flattened into confusing manual iteration.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` appropriately for arm64. However, all pointers are just `int32_t*` with no distinction between pointer types. Function pointers like `ptr_func_simple` take `int32_t` instead of proper function pointer type `int (*)(int)`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - no struct/union/enum definitions recovered. All composite types lost: `Point3D*` becomes `int32_t*` with manual field access at offsets `+0`, `+4`, `+8`. `Node` struct becomes raw pointer arithmetic. No enum recovery - all replaced with magic numbers.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations: `(int32_t)a1` casts in `ptr_triple` treating pointer as integer. Manual field access `*(int32_t *)(v1 + 4)` without type safety. No bounds checking on array accesses. Treating function pointers as integers.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled code. Original source has extensive comments explaining each test case (e.g., "DT-L1-01: 字符类型"). Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable (linked list traversal, tree recursion) but not explicitly named or documented. The original uses clear idioms like "self-referential struct" for Node that are completely lost.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of uncertain or anomalous code. The incorrect loop `i < 110; i += 11` in `array_2d_stack` is presented as confident output when it's actually wrong. No warnings about indirect calls or unresolved references.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source has implicit contracts (e.g., "requires: n > 0" for array functions) completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships partially clear from names (e.g., `binary_tree` calls `binary_tree_sum`). However, no documentation of who calls whom, global variable usage, or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped by type (array functions together, pointer functions together, struct functions together). Static functions properly marked. All in single file which is acceptable for decompiled output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Uses internal glibc functions `__printf_chk` and `__stack_chk_fail` without declarations. Missing `#include` for standard functions. Would require significant patching to compile (replacing with standard `printf`, removing stack check).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- **Composite type recovery completely failed**: All structs (`Point3D`, `Node`, `Rect`, `Widget`), unions (`UnionData`), and enums (`State`) reduced to raw `int32_t*` with manual offset access
+- **Variable naming is unusable**: All parameters `a1`, `a2` and locals `v1`, `v2`, `v3` provide zero semantic information
+- **Incorrect loop in array_2d_stack**: Uses `i < 110; i += 11` instead of proper nested 10×10 loop, producing wrong logic
+- **No type safety**: Function pointers treated as integers (`ptr_func_simple` takes `int32_t` instead of function pointer)
+- **Zero comments**: All original documentation explaining test scenarios completely lost
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Function names match source almost exactly: `array_1d_stack`, `linked_list`, `binary_tree_sum`, `struct_simple` preserve semantic meaning
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+- The decompiler failed to recover any struct, union, or enum definitions, reducing all composite types to raw pointer arithmetic with integer offsets, completely losing the semantic relationships between fields
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/union layouts**: Analyze memory access patterns to identify field offsets and reconstruct struct definitions with meaningful field names
+2. **Infer variable names from usage**: Use data flow analysis to rename `a1`→`array`, `a2`→`length`, `v1`→`sum` based on how variables are used
+3. **Add confidence indicators**: Flag uncertain decompilations like the `array_2d_stack` loop with comments rather than presenting incorrect code as fact

@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+Let me analyze the decompiled code for the `param_strcpy` function and related code.
+
+### Decompiled `param_strcpy`:
+```c
+size_t __fastcall param_strcpy(char *a1, const char *a2)
+{
+  char *v2; // x0
+
+  v2 = strcpy(a1, a2);
+  return strlen(v2);
+}
+```
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters `a1` and `a2` are generic address-based names. Should be `dst` and `src` based on strcpy usage. Local variable `v2` is also generic - no indication it's holding the destination pointer for strlen.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function correctly named `param_strcpy` matching the original source. Uses action verb and accurately reflects functionality.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No magic numbers or literals in this function. Clean.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: Minimal noise - just the `__fastcall` calling convention annotation and register comment. No redundant casts or debug artifacts.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Natural sequential flow - strcpy followed by strlen. At -O0, this is exactly as source. No goto or confusing conditionals.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Function is appropriately small (3 lines). Single responsibility - copy string and return length. Matches source granularity.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Perfectly linear - reads top-to-bottom with no jumps, forward references, or breaks.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code. strcpy result used directly in strlen.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Return type `size_t` is correct. Parameters `char*` and `const char*` match source. Minor: could use `size_t` for return but `size_t` is used.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: N/A - no structs/unions in this function. Simple pointers.
+
+**11. Type Safety:** Score: 9/10  
+Justification: Type-safe code. strcpy receives correct pointer types. strlen receives char*. No unsafe casts.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only comment is `// x0` which is register noise, not useful. No explanation of what the function does or what parameters represent.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Standard strcpy+strlen pattern recognized. Could add comment "Returns length of copied string" for clarity.
+
+**14. Anomaly Indication:** Score: 8/10  
+Justification: No anomalies in this function. Clean decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No pre/post conditions documented. Should indicate "requires: dst has sufficient buffer space" and "ensures: returns byte count not including null terminator".
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls strcpy and strlen - these are visible. But no documentation of caller (call_strcpy) or relationship to other param_* functions.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Function appears in logical section with other string library wrappers (param_strcmp, param_strlen). Grouped with call_* variants.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code would compile with standard libc. Header comments indicate IDA Pro decompilation. External dependencies (libc) implicit.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.1/10
+
+**Critical Defects:**
+- Variable names `a1`, `a2`, `v2` are generic and obscure parameter roles (dst, src)
+- No comments explaining function purpose or parameter semantics
+- Missing pre/post conditions (buffer size requirement, return value meaning)
+
+**Best Quality Aspect:** Structural Intelligibility (scored 9.75/10)  
+- Control flow is natural, function decomposition is appropriate, code is linear with no redundancy
+
+**Most Needs Improvement:** Lexical Clarity (scored 5.75/10)  
+- Variable naming is generic and uninformative; lacks comments for semantic clarity
+
+**Top 3 Recommendations:**
+1. Rename parameters `a1` → `dst`, `a2` → `src` based on strcpy usage pattern
+2. Add comment: "// Returns length of copied string (excluding null terminator)"
+3. Add precondition comment: "// Requires: dst buffer must be large enough to hold src"

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `idx`) with no semantic meaning. Original source used descriptive names like `sum`, `len`, `current`, `head` which are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions recovered original names (`process_char`, `array_1d_stack`, `ptr_single`), but many wrapper functions use mechanical names (`sub_401030`, `sub_401216`). Test functions (`test_data_types_l1`) are correctly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (e.g., `4294967295` for -1, `44` for struct stride). Original constants and expected values appear as raw literals in test functions.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `[D]` decompilation failure markers, compiler runtime functions (`_init`, `deregister_tm_clones`, `__x86.get_pc_thunk.*`), and unsupported operation stubs polluting the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as do-while constructs reasonably well, but some functions use goto (`sub_401030`, `sub_401070`). Floating point functions completely fail with unsupported operation branches.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Unnecessary wrapper functions created (`sub_401216` just calls `process_short()`). Core logic functions are appropriately sized but fragmentation from wrappers reduces clarity.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom with standard loop/conditional patterns. Some forward jumps and goto statements disrupt flow in initialization functions.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Test functions print expected values rather than computing them (e.g., `v0 = 15; printf("...%d\n")` instead of calling actual functions). Wrapper function pairs create redundant call chains.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion - `short`, `long`, `long long` all become `unsigned int`. Float/double/long double completely fail. Original `char`, `int`, pointer distinctions lost to generic `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered as `struct_0`, `struct_1` with `field_0`, `field_4` naming. Original names (`Point3D`, `Rect`, `Widget`, `Node`) completely lost. Bitfields converted to manual bit manipulation.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer casts throughout (`(char *)`, `(int *)`). Pointer arithmetic uses integer math (`ptr + idx * 4`) instead of proper pointer types. Void pointer handling loses type information.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each test case, expected values, and scenarios - all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns (linked list traversal, array summation, tree recursion) not identified or named. No algorithm pattern recognition evident.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `[D]` markers indicate decompilation failures, and "unsupported" warnings appear for floating point operations. However, no explanatory context provided for manual analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Null checks exist but aren't documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Global variables use opaque names (`g_4035bf`, `g_405ff0`). No call graph documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions ordered by address rather than logical grouping. No header file structure. Related functions scattered throughout output.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Contains `[D] unsupported` markers that prevent compilation. External dependencies (`_GLOBAL_OFFSET_TABLE_`, `__libc_start_main`) undeclared. Will not compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (3+6+4+3)/4 = 4.0  × 0.30 = 1.20
+Level 2 (Structural):     (5+5+6+4)/4 = 5.0  × 0.25 = 1.25
+Level 3 (Type System):    (3+3+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):       (1+2+5+2)/4 = 2.5  × 0.15 = 0.38
+Level 5 (Contextual):     (4+3+2)/3   = 3.0  × 0.10 = 0.30
+─────────────────────────────────────────────────────────────
+Overall Score:                                    3.80/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Floating point functions completely broken** - `process_float`, `process_double`, `process_ld` contain `[D] unsupported` markers and return incorrect types
+- **All type information lost** - `short`, `long`, `long long`, `float`, `double` all degraded to `unsigned int`
+- **Struct field names generic** - `Point3D.x/y/z` became `field_0/field_4/field_8` losing all semantic meaning
+- **Test functions don't execute** - Print hardcoded expected values instead of calling actual functions
+- **Zero documentation** - No comments recovered despite extensive original source documentation
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core computational functions retained original names (`process_char`, `array_1d_stack`, `ptr_single`) making basic identification possible
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of comments makes understanding intent impossible; original had extensive documentation explaining each test scenario
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover type information from debug symbols** - The `-g` flag was present but types still degraded to `unsigned int`; leverage DWARF info for precise type recovery
+2. **Preserve struct/union field names from debug info** - Field names like `x`, `y`, `z`, `data`, `next` should be recovered from DWARF rather than generic `field_0`, `field_4`
+3. **Eliminate wrapper function fragmentation** - Functions like `sub_401216` that only call another function should be inlined or removed to reduce noise

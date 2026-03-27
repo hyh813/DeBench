@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `v0`, `v1`, `v2`, `a1`, `a2` with no semantic meaning. For example, in `test_cpp_rtti`, variables `v0` through `v7` obscure their roles as object pointers, type info, and result values.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some C++ mangled names recovered (e.g., `_Z20test_cpp_member_funcv`), but many are generic (`sub_1030`, `sub_11AC`). Test function names are partially recovered but not human-readable without demangling.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4700`, `1001`, `130`, `14` appear without explanation. The decompiler folded computations into constants (e.g., `return 42` instead of showing the virtual function calculation logic).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (`__usercall`, `@<eax>`, `BYREF` annotations), but not excessive. However, 18 functions completely failed to decompile, creating noise in the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Most test functions return pre-computed constants instead of showing actual control flow. The `test_cpp_exception` function shows exception throwing but the catch blocks are completely missing from the decompilation.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function granularity is reasonable, but critical logic is lost. `test_cpp_oo_features` calls other test functions but their internal logic is folded away, making the decomposition meaningless.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code reads top-to-bottom reasonably well where logic exists. However, the constant-folding makes most functions trivial single-return statements.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious redundancy in the decompiled output. However, this is because the optimizer eliminated the actual computation, not because the decompiler cleaned it up.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types recovered (`int`, `double`, `void*`), but C++ class types are lost. `Container<int>::push` shows `int a1` for `this` pointer instead of proper `Container<int>* this`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Class structures completely lost. `SimpleClass`, `LifecycleClass`, `Base`, `Derived` etc. are not recovered as structs. Only raw pointer arithmetic remains (e.g., `*(a1 + 40)` for Container size field).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present. In `test_cpp_rtti`, `__dynamic_cast` parameters use raw `void*` instead of proper type_info pointers. `operator new` returns `_DWORD*` instead of typed pointers.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated annotations like `BYREF`, `@<eax>`. No explanation of what the code does or why constants exist.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely lost. Virtual function calls, RAII patterns, template instantiation, lambda captures are not recognized or documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations are listed at the end ("FAILED to decompile: _Znwj"), but no inline warnings about uncertain code. The `test_cpp_exception` marked `__noreturn` is helpful.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts completely lost (catch blocks not shown in decompiled code).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch shown as `(**a1)(a1, a2)` without indicating it's a vtable call. Inheritance relationships not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in some logical order but no namespace or class grouping. Static members like `LifecycleClass::instance_count` referenced but not defined in context.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 18 external functions failed to decompile. Would require significant stubbing to compile. C++ runtime functions (`__cxa_*`, `operator new`) need proper declarations.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+6)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+5+6+7)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type System): (5+3+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (2+2+5+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+
+Overall Score: 4.34/10
+```
+
+### Overall Readability Score: **4.3/10**
+
+### Critical Defects:
+- **Constant folding destroyed logic**: Test functions return pre-computed values (42, 71, 650) instead of showing actual computation, making reverse engineering impossible
+- **Class structures not recovered**: All C++ classes (`SimpleClass`, `Container`, `Base`, `Derived`) lost; only raw pointer arithmetic remains
+- **Variable names completely generic**: `v0`, `v1`, `a1`, `a2` provide zero semantic information about purpose
+- **Exception handling incomplete**: `test_cpp_exception` shows throw but catch blocks are missing from decompilation
+- **Metadata mismatch**: Source claims arm64/-O0 but decompiled code shows x86/-O2 optimization (constant folding shouldn't occur at -O0)
+
+### Best Quality Aspect: **Noise Reduction (6/10)**
+- The decompiled code doesn't have excessive compiler artifacts; where logic exists, it's relatively clean without redundant operations.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no explanatory comments; a reader cannot understand what the code does without referring to the original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Disable aggressive constant folding for decompilation**: Preserve computation logic even when compiler optimized it, as the goal is understanding not execution
+2. **Recover C++ class structures from vtable layouts**: Use RTTI and vtable analysis to reconstruct class definitions with field names
+3. **Add semantic annotations for C++ constructs**: Mark virtual calls, template instantiations, exception handlers, and RAII patterns explicitly in comments

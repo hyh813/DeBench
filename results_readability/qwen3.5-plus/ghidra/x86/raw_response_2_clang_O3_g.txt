@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Local variables use generic names like `iVar1`, `uVar2`, `local_c` throughout; only function parameters retain semantic names from debug info (e.g., `char c`, `int x`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions preserve original names (`process_char`, `array_1d_stack`, `ptr_single`), but initialization functions have generic names (`FUN_00011030`, `_init`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Test functions show constant-folded results (0x61, 0x62, 300) instead of actual function calls, obscuring what computation is being tested.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Frequent "Unresolved local var" comments, architecture mismatch warnings, and compiler artifacts (`get_pc_thunk` injections) clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple loops transformed into unrolled 8-element chunks with bit manipulation for remainders; `array_2d_stack` becomes 10 explicit additions instead of a loop.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes are reasonable, but test functions lost their structure through constant folding, showing results instead of actual calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but unrolled loops create repetitive patterns that obscure the underlying algorithm.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive loop unrolling creates significant duplication; `array_3d` repeats similar memory access patterns 25 times in one function.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types recovered well (int, char, float), but `longdouble` handling is broken (`process_ld` returns pointer instead of value), and function pointer types are generic (`_func_int_int`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct field names preserved (`p->x`, `p->y`, `p->z`), but bitfields converted to bit manipulation operations losing semantic meaning.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple explicit casts throughout (`(int)handle`, `(void *)size`), and pointer arithmetic lacks proper type safety annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are sparse and auto-generated ("Unresolved local var", "WARNING"); no algorithmic explanations or purpose documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns (linked list traversal, array summation) not identified; no pattern hints provided to aid understanding.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some issues flagged ("Unresolved local var", "Unknown calling convention") but warnings are generic without specific guidance.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling documentation; null checks present but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in main code, but test functions show constant results instead of actual invocations, breaking call graph understanding.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source order without logical grouping; no header file structure or API documentation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies present (`EVP_PKEY_CTX`, `__libc_start_main`), architecture mismatch (source arm64, decompiled x86), won't compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+3+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (3+4+5+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.86/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Test functions constant-folded**: `test_data_types_l1` shows hardcoded results (0x61, 300) instead of actual function calls, destroying test semantics
+- **`process_ll` overly complex**: Simple `x * x` transformed into bit manipulation with `CONCAT44` and shifts
+- **`process_ld` signature broken**: Returns `longdouble *` with extra `__return_storage_ptr__` parameter instead of `longdouble`
+- **`volatile_access` semantics lost**: Volatile qualifier not preserved, two reads collapsed to `*p + *p`
+- **Architecture mismatch**: Source compiled for arm64 but decompiled as x86, indicating wrong binary analyzed
+
+### Best Quality Aspect: **Type System Fidelity (6.0/10)**
+- Basic types (int, char, float, double) and struct field names recovered accurately from debug information
+
+### Most Needs Improvement: **Semantic Transparency (3.5/10)**
+- No meaningful comments, no pattern recognition, no contract documentation; decompiler provides minimal semantic guidance
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve test function call structure**: Avoid constant-folding test harnesses; show actual function invocations to maintain test semantics
+2. **Simplify arithmetic patterns**: Recognize `x * x` patterns even after optimization transforms them into bit operations
+3. **Add semantic annotations**: Generate comments explaining recovered patterns (e.g., "// Loop unrolled 8 elements at a time") and flag potential issues with specific guidance

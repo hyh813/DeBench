@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v1`, `v2`, `v4`, `add_4`, `result` throughout (e.g., `param_macro_constants` uses `v1` for the return value 512). No semantic meaning is recovered from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names are well-preserved (`param_macro_constants`, `call_asm_basic`, `param_memory_protection`). Only helper functions like `sub_4EC` use generic naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `57072`, `282`, `382` appear without explanation. These are pre-computed from macro expansions at O3, but semantic meaning is lost (e.g., `57072` should be `0xDEF0` or explained as platform default).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack annotations like `[sp+4h] [bp-Ch] BYREF` and register comments (`// r0`, `// r5`) add visual noise. Some redundant type casts present but not severe.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with proper if/else and do-while loops (e.g., `param_asm_clobber` recovered a proper loop). At O3, constant folding is expected and handled well.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but aggressive optimization causes semantic loss (e.g., `call_macro_constants` returns 64 directly instead of calling `param_macro_constants(2048)`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom with minimal jumps. Early returns are used appropriately. No spaghetti control flow observed.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy exists (e.g., `test_preprocessing_features` and `main` have duplicate printf sequences). This appears to be inlining artifacts from O3 optimization.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, void*, size_t), but `__int64` used instead of specific types. Pointer types generally correct but some precision lost in arithmetic.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in this code to evaluate. Pointer arithmetic recovered correctly (e.g., `*arr++` in `param_asm_clobber`).
+
+**11. Type Safety:** Score: 7/10  
+Justification: Unsafe casts inherited from source (e.g., `(int *)mmap(...)`). No new type safety issues introduced by decompilation. Atomic operations correctly typed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Only technical annotations like `// attributes: thunk` and `// positive sp value has been detected`. No algorithm or intent documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition (e.g., atomic operations, memory protection patterns not labeled). Assembly recovery is good but semantic patterns not identified.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("positive sp value has been detected", "FAILED to decompile" for 12 functions). However, optimization artifacts aren't distinguished from decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Function contracts (e.g., `mmap` return values, atomic operation semantics) not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships not documented. No call graph information. External dependencies (printf, mmap, etc.) listed as failed decompilations.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed in address order, not logical grouping. All code in single file without header separation or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 12 external functions failed to decompile (`__imp_printf`, `__imp_mmap`, etc.). Would require stubs and external library linking to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4×10 + 8×10 + 5×5 + 6×5) / 30  = 5.83
+Level 2 (Structural):  (7×8 + 6×7 + 7×5 + 6×5) / 25    = 6.52
+Level 3 (Type):        (6×8 + 7×7 + 7×5) / 20          = 6.60
+Level 4 (Semantic):    (2×5 + 4×3 + 5×3 + 3×4) / 15    = 3.27
+Level 5 (Contextual):  (5×4 + 5×3 + 4×3) / 10          = 4.70
+
+Overall = (5.83×0.30) + (6.52×0.25) + (6.60×0.20) + (3.27×0.15) + (4.70×0.10)
+        = 1.75 + 1.63 + 1.32 + 0.49 + 0.47
+        = 5.66/10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v4`** should be named based on semantic usage (e.g., `return_value`, `page_size`, `mmap_result`)
+- **Magic numbers** like `57072`, `282`, `382` lack explanation of their macro/constant origins
+- **12 external functions failed to decompile** requiring manual stub creation
+- **No comments** explaining the purpose of assembly-recovered functions or optimization artifacts
+- **Constant folding** obscures original computation logic (e.g., `call_macro_constants` returns 64 directly)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names are well-preserved, making it easy to identify test purposes and correlate with source documentation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no semantic documentation; decompiler provides zero explanation of recovered logic, optimization artifacts, or confidence levels.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how variables are used (size comparisons, pointer arithmetic, return values) to suggest semantic names like `page_size` instead of `v2`.
+2. **Add confidence annotations for optimization artifacts** - Distinguish between "this was constant-folded at O3" vs "this computation could not be recovered" to help analysts understand semantic loss.
+3. **Recover and document macro/constant origins** - When magic numbers appear from macro expansion, add comments indicating the original macro name and expansion (e.g., `// 57072 = 0xDEF0 from PLATFORM default branch`).

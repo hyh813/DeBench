@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `a1`, `a2`) with zero semantic meaning. Original source had descriptive names like `dst`, `src`, `buffer`, `pid`, `status`, `thread_count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Most functions named mechanically (`function_10cd4`, `function_e59f0024`). A few recovered names exist (`param_fork_exec_part_0`, `param_mutex_lock_constprop_0`) but lose original clarity like `param_strcpy`, `call_memcpy`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals preserved in globals (g8-g34) but magic numbers abound (`16`, `12`, `4`, `42`, `66`, `438`) without explanation. Original had meaningful constants and clear numeric purposes.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: 60+ stub functions (`function_e12fff1e`, `function_e59f0024`, etc.) that just return undefined results. Frame manipulation and compiler artifacts not cleaned up despite -O0 compilation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Extensive goto usage with labels (`lab_0x11408`, `lab_0x11558`, `lab_0x1165c`) instead of natural loops. Original while/for loops converted to jump-based patterns even at -O0.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: 101 functions detected vs ~25 in original. Many are fragments (`param_fork_exec_part_0`) or useless stubs. Original cohesive functions like `param_signal_handling` fragmented unnecessarily.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. Multiple exit points via goto rather than return statements. Original code flowed naturally.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns from compiler artifacts, but no severe loop unrolling issues. Stub function proliferation creates redundancy but doesn't obscure core logic significantly.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything reduced to `int32_t`, `char*`, or `void*`. Original had `size_t`, `pid_t`, `pthread_t`, `FILE*`, `atomic_int`, `volatile` - all lost. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Zero struct recovery visible. `ThreadData` struct from original completely lost. All composite types reduced to pointer arithmetic (`*(int32_t *)v18`, `v18 + 4`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts and pointer arithmetic without type safety. Original had proper type distinctions for pthread operations, atomic operations, and file handles that are now `int32_t`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining each function's purpose, test scenarios, and expected values. Complete semantic information loss.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Standard library calls (strcpy, memcpy, pthread_create) not identified. Producer-consumer pattern in `param_condition_variable` not recognized. No algorithm pattern detection.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No uncertainty flags for unresolved calls. Stub functions don't indicate decompilation confidence. Original signal handling and atomic operations have no anomaly warnings despite complexity.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). Error return values (-1, -2, -3) not explained. Original had clear error handling contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships unclear. 42 global variables (g1-g42) without purpose documentation. Original had clear test function hierarchy.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Original had clear sections (6.1 Standard Library, 6.2 System Calls, 6.3 Threads) completely lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile standalone - missing library dependencies (pthread, libc), stub functions need implementation. No dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+3+4+3)/4 = 3.00  × 0.30 = 0.90
+Level 2 (Structural):   (3+4+3+5)/4 = 3.75  × 0.25 = 0.94
+Level 3 (Type System):  (3+2+3)/3   = 2.67  × 0.20 = 0.53
+Level 4 (Semantic):     (1+2+2+2)/4 = 1.75  × 0.15 = 0.26
+Level 5 (Contextual):   (4+4+3)/3   = 3.67  × 0.10 = 0.37
+─────────────────────────────────────────────────────────────
+Overall Score:                                  = 3.00/10
+```
+
+**Overall Readability Score:** 3.0/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on usage (e.g., `thread_count`, `buffer_ptr`, `result`)
+- **60+ stub functions** (`function_e12fff1e`, etc.) create noise without functionality
+- **Goto-based control flow** replaces natural loop constructs even at -O0 optimization
+- **Zero struct recovery** - `ThreadData` and other composite types lost to pointer arithmetic
+- **No comments** despite original having extensive documentation for each test case
+
+### Best Quality Aspect:
+- **Redundancy Elimination (5/10)** - While not excellent, this scored highest because the decompiler didn't introduce severe loop unrolling artifacts or duplicate code blocks beyond the stub function issue.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding the decompiled code's purpose nearly impossible without comparing to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (variables used in loop bounds → `count`, `iterations`; variables passed to `malloc` → `size`, `buffer_size`)
+2. **Recover high-level control structures** - Convert goto-based loops back to while/for constructs, especially at -O0 where original structure should be preserved
+3. **Add decompilation confidence annotations** - Flag unresolved calls, uncertain type recoveries, and stub functions with comments indicating manual review needed

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `param_1`, `param_2` instead of original names like `size`, `x`, `y`. Local variables are auto-generated as `iVar1`, `uVar1`, `piVar2`, `piVar3` - completely losing semantic meaning. The original had meaningful names like `result`, `arr`, `n` but these are now cryptic.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names are perfectly preserved from source: `param_macro_constants`, `call_macro_functions`, `param_asm_basic`, `param_memory_protection`, etc. The decompiler correctly maintained the original function naming.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x401` (1025 = MAX_SIZE+1), `0x200` (512 = MAX_SIZE/2), `0x40` (64 = 16*4), `0xdef0`, `0xdf22`. The original had named constants MAX_SIZE=1024, BUFFER_COUNT=16 which are now lost. Some values like `0x1e` (30) and `0x2a` (42) are completely opaque.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts in main decompiled functions. However, the output includes ~60 auto-generated atomic operation functions (`__sync_fetch_and_add_4`, etc.) that weren't in original source - these are library implementations. "WARNING: Removing unreachable block" comments are present but don't impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with if-else and loops. The `param_asm_clobber` correctly recovered a do-while loop. Some issues: `call_asm_atomic` has incomplete logic showing `if (local_c == 0) return;` followed by `__stack_chk_fail` - this appears to be a decompilation artifact.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is well-preserved. Original had small 10-30 line functions; decompiled maintains this: `param_macro_constants` (6 lines), `param_asm_clobber` (14 lines), `param_memory_protection` (30 lines). Good cohesion.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately. No excessive nesting observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code in main functions. Loop unrolling in `param_asm_simd` is appropriate for the optimization level. The atomic functions show some redundancy but are library code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `undefined4` for 32-bit integers and `undefined8` for 64-bit values instead of `int`/`long`. Pointers are sometimes `undefined4` (e.g., `param_asm_atomic(undefined4 param_1, int param_2)` where param_1 should be `int*`). No `size_t` recovery.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct types were recovered. The original had no complex structs anyway, but array parameters like `int *arr` are just treated as `int param_1` with pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues: `param_asm_atomic` takes `undefined4` instead of pointer for first parameter. `call_asm_atomic` shows `__sync_fetch_and_add_4(&local_10,5,0)` with 3 arguments but function signature shows 2 parameters - clear mismatch. Some unsafe pointer arithmetic in `param_asm_clobber`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings like "WARNING: Subroutine does not return" and "WARNING: Removing unreachable block". No meaningful comments explaining macro semantics, assembly behavior, or algorithm intent. Original had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No explicit pattern recognition. The atomic operations could be identified as "GCC sync builtins" but aren't labeled. The conditional compilation results are shown but not explained as "preprocessor branch taken".
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present for unreachable blocks and non-returning functions. However, the `call_asm_atomic` anomaly (3-argument call to 2-parameter function) isn't flagged. No indication of indirect call resolution failures.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No pre/postconditions or invariants documented. The original had clear expectations (e.g., "期望: 64", "期望: 15") but these aren't recovered. No documentation of error conditions from mmap/mprotect failures.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear (e.g., `main` calls `test_preprocessing_features` and `test_asm_features`). However, no documentation of which functions are internal vs. external, or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the output. Related functions like `param_*` and `call_*` pairs are near each other. However, the massive atomic library functions clutter the output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will NOT compile as-is. Uses `undefined4`, `undefined8`, `bool` types that aren't standard C. Requires significant patching to compile. Missing declarations for `__printf_chk`, `__stack_chk_fail`, etc.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming completely generic: `param_1`, `param_2`, `iVar1`, `uVar1` - loses all semantic meaning from original `size`, `x`, `y`, `result`
+- Magic numbers everywhere: `0x401` instead of `MAX_SIZE+1`, `0x40` instead of `BUFFER_COUNT*4`
+- Type information lost: uses `undefined4` instead of `int`, pointers treated as `undefined4`
+- `call_asm_atomic` shows incorrect decompilation: 3-argument call to 2-parameter function
+- No comments explaining macro expansion results, assembly semantics, or test expectations
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+All function names perfectly preserved from original source, maintaining clear identification of each test case function.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The complete loss of semantic variable names makes it extremely difficult to track what each parameter and local variable represents. At -O0, variables should be recoverable with their original names.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: At -O0, parameters like `param_1` used in comparisons like `param_1 > 1024` should be named `size` based on the constant value and context
+2. **Recover macro constants**: Detect magic numbers that match compile-time constants (1024=MAX_SIZE, 16=BUFFER_COUNT) and suggest or replace with named constants
+3. **Fix type inference for pointers**: The `param_asm_atomic` taking `undefined4` for what should be `int*` is a fundamental type recovery failure - pointer parameters should be typed as pointers, not integers

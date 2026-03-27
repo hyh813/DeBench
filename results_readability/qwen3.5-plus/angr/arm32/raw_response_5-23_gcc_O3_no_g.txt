@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named (`a0`, `a1`, `v0`, `v1`, `ptr`, `i`) with no semantic meaning. Original source used meaningful names like `size`, `x`, `y`, `result`, `counter` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved accurately (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`). However, helper functions like `sub_10438`, `sub_10510` use generic address-based naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x400` (MAX_SIZE=1024), `0x200` (512), `57072` (0xDEF0) appear without explanation. Some values like `64` can be inferred from context but lack constant names.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant decompilation artifacts present: `armg_calculate_condition()` calls, stack canary checks (`GLIBC_2.4::__stack_chk_guard`), and nonsensical infinite loops in atomic operation stubs (`while(4294905792())`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Mixed patterns - some functions use natural if/else (`param_macro_functions`), but others use confusing goto labels (`LABEL_10948`, `LABEL_10d41`). The `param_macro_constants` function has convoluted conditional logic that obscures the simple original `if (size > MAX_SIZE)`.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but semantic loss occurred - `call_macro_constants()` returns constant `64` instead of calling `param_macro_constants(2048)`. Constant folding eliminated meaningful call relationships.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Moderate non-linearity with forward jumps disrupting flow. Functions like `test_asm_features` have complex label-based branching that requires effort to trace execution paths.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Excessive redundancy in atomic operation stubs - 30+ nearly identical `__sync_*` functions with infinite loop patterns. Constant folding created redundant return statements in caller functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most types degraded to generic `unsigned int` or `int`. Original `size_t`, `void*`, and specific integer types lost. No const-correctness preserved. Pointer types sometimes correct (`unsigned int *a0`) but inconsistent.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Adequate for this code sample as original had minimal struct usage. Array parameters handled as pointers appropriately. No significant composite type loss since source didn't define complex structures.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns visible - atomic operations have incorrect signatures (`__sync_fetch_and_add_4()` with no parameters). Pointer arithmetic present but not obviously dangerous. No buffer overflow protections visible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining macros, preprocessing behavior, and expected values. Complete loss of semantic documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. Macro expansions not identified as such. Atomic operations not recognized as synchronization patterns. SIMD operations decompiled to scalar loops without vector semantics noted.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags despite obvious decompilation failures. The `__sync_*` functions with infinite loops (`while(4294905792())`) should be flagged as unresolved. No uncertainty indicators for indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error documentation. Original had clear expected values in comments (e.g., "期望: 64"). No contract information recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables use generic names (`g_11dbc`, `g_23008`). Some relationships inferable but not explicit. External dependencies (`__printf_chk`, `mmap`) referenced without context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in roughly logical order matching source. Related functions somewhat grouped (preprocessing tests together, asm tests together). No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires extensive stubbing to compile. External dependencies on GLIBC symbols (`GLIBC_2.4::__stack_chk_guard`), system calls (`mmap`, `sysconf`), and broken atomic stubs. Would not compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+5+5)/4 = 5.25 × 0.25 = 1.3125
+Level 3 (Type):        (5+7+6)/3 = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.3375
+Level 5 (Contextual):  (5+6+4)/3 = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.78/10
+```
+
+**Overall Readability Score: 4.78/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`a0`, `v1`, `ptr`) - original semantic names like `size`, `counter`, `result` lost entirely
+- **Atomic operation stubs are broken** - `__sync_fetch_and_add_4()` contains infinite loops (`while(4294905792())`) making code non-functional
+- **Constant folding eliminated call relationships** - `call_macro_constants()` returns `64` directly instead of calling `param_macro_constants(2048)`
+- **Zero comments or documentation** - all original explanatory comments about macros, expected values, and preprocessing behavior lost
+- **No anomaly indication** - obvious decompilation failures (infinite loops, unresolved calls) not flagged for manual review
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately, allowing identification of test purposes despite other degradation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding macro semantics and expected behavior nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns** - Analyze how variables are used (e.g., compared to 1024 → `size`, used in counter increment → `counter`) to infer meaningful names
+2. **Flag unresolved atomic operations and inline assembly** - Instead of generating broken infinite loops, mark these regions as "UNRESOLVED: atomic intrinsic" with confidence indicators
+3. **Preserve constant relationships instead of folding** - Maintain call relationships (`call_macro_constants` → `param_macro_constants(2048)`) rather than constant-folding to hide semantic structure

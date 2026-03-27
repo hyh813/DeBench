@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `arg`, `ptr`) with no semantic meaning. For example, in `param_strcpy`, `v2` should be named `copied_string` based on its usage as the strcpy return value.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: User-defined functions retain original names (`param_strcpy`, `call_strcpy`), but helper functions use generic labels (`sub_12E0`, `thread_compute`). Function names accurately reflect functionality where preserved.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers abound without explanation: syscall numbers (56, 57), signal numbers (10, 14), hex constants (0x12u, 0x1Fu). The string comparison in `param_fread_fwrite` uses opaque XOR constants (`0x68636E65426E6942LL`) instead of readable string comparison.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: SIMD intrinsics (`vmulq_s32`, `vaddq_s32`, `vmovl_u8`) and architecture-specific operations (`_aarch64_ldadd4_acq_rel`) clutter user code. Frame pointer manipulation and register spilling artifacts present in multiple functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control structures are recognizable (if/else, while loops), but optimization artifacts create awkward patterns. The signal handling polling loop in `param_signal_handling` uses do-while with boolean flags instead of clean while condition.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; no monolithic functions. However, `param_malloc_free` (80+ lines) includes loop unrolling that could be abstracted. Thread helper functions are properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but optimization introduces forward jumps. The `param_fread_fwrite` function has nested conditionals that disrupt linear reading flow with multiple early returns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling in `param_malloc_free` and `param_memset` creates significant code duplication. The SIMD vectorized loops repeat similar operations 8x without abstraction or comments explaining the optimization.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved but architecture-specific types reduce clarity (`int32x4_t`, `__int64`, `uint8x8_t`). Pointer types often degraded to generic `void*` with casts. Size types (`size_t`) sometimes become `unsigned __int32`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `ThreadData` struct completely lost—uses raw pointer arithmetic (`*(_DWORD *)arg`, `*((_DWORD *)arg + 1)`, `*((_DWORD *)arg + 2)`). The `sockaddr` struct is accessed via `*(_QWORD *)&addr.sa_family` instead of proper struct fields.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(_DWORD)v5 - (_DWORD)str` for pointer arithmetic, `(_BYTE *)&v7[-1]` for byte access. Function pointer casts like `(void *(*)(void *))consumer_thread` lose type information.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled code. No algorithm explanations, no API contract documentation, no decompilation confidence indicators. Only auto-generated type annotations present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library patterns (strcpy/strlen, pthread_create/join) are identifiable through function names but not explicitly documented. Producer-consumer pattern in `param_condition_variable` not recognized or named.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (61 functions) but no inline warnings. No indication of uncertain indirect calls or potential undefined behavior. The "FAILED to decompile" list is helpful but disconnected from call sites.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `dst != NULL` for strcpy). No postconditions or error condition documentation. Return value semantics (42 = success, negative = error) not explained anywhere.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible through code but not documented. Global variables (`signal_received`, `atomic_counter`, `shared_counter`) used without declaration context. No call graph provided.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (library functions, syscalls, threads) matching source structure. However, all code in single file without header declarations or API/implementation separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 61 library functions failed to decompile, making standalone compilation impossible. External dependencies (pthread, libc syscalls) not documented. Would require extensive stubbing to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+5)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (1+4+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.42/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `v2`) obscuring all semantic meaning
+- **ThreadData struct lost** - replaced with raw pointer arithmetic (`*(_DWORD *)arg + 1`)
+- **61 library functions failed to decompile** - prevents standalone compilation
+- **Zero comments** - no algorithm explanations or decompilation confidence indicators
+- **Magic numbers unexplained** - syscall numbers (56, 57), signal numbers (10, 14), XOR constants for string comparison
+
+### Best Quality Aspect:
+- **Function Decomposition (7/10)** - Function granularity is appropriate with cohesive single-responsibility functions matching source structure
+
+### Most Needs Improvement:
+- **Comment Quality (1/10)** - Complete absence of any documentation, explanations, or decompilation confidence indicators makes code nearly unusable for analysis
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Infer names from usage patterns (e.g., variables used in size checks should be named `size`, `length`, `count`)
+2. **Recover composite types from access patterns** - Detect struct usage from consistent field offsets and generate named struct definitions
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions, failed library calls, and potential optimization artifacts inline with the code

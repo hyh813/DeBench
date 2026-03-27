@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Overwhelming use of generic names like `param_1`, `iVar1`, `uVar2`, `lVar4`, `auVar1` obscures semantic meaning. Only occasional meaningful names like `__ptr` in heap functions provide clarity.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some original names recovered (`local_vars`, `heap_basic`, `main`), but many functions use generic names (`FUN_001008e0`, `FUN_00100afc`). External functions properly marked but test functions lose context.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout (`0x14`, `0x2a`, `0xf`, `0x3c`) without explanation. Original constants like `2048` for buffer size become `0x800` with no semantic context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe NEON vector operation noise (`NEON_cmhi`, `auVar1[16]`, `CONCAT17`) obscures simple loops. Excessive `undefined` type declarations and redundant vector variable assignments throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple for-loops transformed into complex do-while with NEON comparisons. Example: `local_array`'s clean 10-iteration loop becomes 50+ lines of vector operations with unclear termination conditions.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions properly separated but test functions are monolithic (`test_stack_memory` is 200+ lines). Helper functions like `create_tree_node` correctly extracted but return type degraded to `void`.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally top-to-bottom reading possible, but complex loop conditions with vector operations disrupt flow. Multiple forward references to labels (`LAB_00101384`) in `linked_list_heap`.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from vector operation unrolling. Same NEON comparison pattern repeated multiple times within single functions without consolidation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined`, `undefined4`, `undefined8` instead of proper types. Return types often wrong (`undefined [16]` for `vla_stack` instead of `int`). Pointer types sometimes recovered (`int*`, `void*`) but inconsistently.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `Point` struct completely lost - `local_struct` and `heap_struct` reduced to arithmetic (`param_1 * 3`). `Node` struct partially visible in `heap_nested` but fields accessed via offset (`__ptr + 2`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(undefined4 *)`, `(ulong)`), pointer arithmetic without bounds checking. `stack_alias` signature changed from `(int*, int*)` to `void()` losing critical parameter information.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled output. No algorithm explanations, no parameter documentation, no decompilation confidence indicators. Only auto-generated function headers present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. Common patterns like linked list traversal, tree creation, memory allocation not identified or named. VLA and alloca patterns obscured by vector operations.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flagging for suspicious patterns. `dangling_pointer`'s use-after-free not highlighted. `double_free`'s dangerous pattern not warned about.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Null checks present in code but not documented as contracts. Error return values (`-1`, `-2`, `0xffffffff`) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`global_counter`, `file_scope_static`) referenced but no usage map. Callback mechanism in `set_global_callback` not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Static functions not properly scoped. No header file or API documentation. Test functions mixed with implementation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would require significant modification to compile. Missing includes, external function declarations incomplete, `NEON_cmhi` and `DataMemoryBarrier` need platform-specific implementations.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+6+5+4)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.78/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **NEON vector operations obscure simple loops** - `local_array`'s 10-line loop becomes 50+ lines of incomprehensible vector comparisons
+- **Variable names completely generic** - `param_1`, `iVar1`, `uVar2` provide zero semantic information about purpose
+- **Struct types lost entirely** - `Point` struct reduced to arithmetic, `Node` accessed via raw offsets
+- **Zero documentation** - No comments explaining algorithm intent, error conditions, or decompilation uncertainty
+- **Type degradation pervasive** - `undefined`, `undefined4`, `undefined8` instead of proper C types throughout
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Some original function names successfully recovered (`local_vars`, `heap_basic`, `main`, `double_value`) providing anchor points for understanding
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding decompiler intent and confidence impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Suppress aggressive vectorization** - Detect when NEON operations represent simple scalar loops and recover original loop structure
+2. **Implement semantic variable naming** - Use data flow analysis to infer variable purposes (e.g., `param_1` used in size calculation → `buffer_size`)
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions, unresolved types, and potential anomalies with inline comments

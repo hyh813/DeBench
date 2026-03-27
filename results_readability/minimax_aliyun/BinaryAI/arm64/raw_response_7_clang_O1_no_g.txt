@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_fake_branch`
+
+The original function demonstrates "永假条件" (always-false conditions) - a code obfuscation technique where impossible branch conditions are used. The decompiled version has **critical failures** that require comprehensive evaluation across all dimensions.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: For `param_fake_branch`, there are no variables at all - the function body is empty. For other functions like `param_opaque_predicate`, generic names like `iVar1`, `iVar2`, `iVar3`, `iVar4` obscure their actual roles as loop counters and predicate results. The naming provides no semantic hints about variable purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Function names like `param_fake_branch`, `param_opaque_predicate` are correctly preserved from the source. However, the return type is incorrectly recovered as `void` instead of `int` for `param_fake_branch`, and many wrapper functions like `call_fake_branch` return `undefined8` instead of `int`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The decompiled code contains many unexplained magic numbers like `0x14`, `0xe1`, `0x1e` without context. The constant `0xDEADBEEF` from the original source is completely lost. Some values like `0x5A` (encryption key) appear but without explanation of their purpose.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: The code is relatively clean from compiler artifacts like register spills. However, there are redundant patterns - `call_string_encryption` duplicates the entire decryption logic from `param_string_encryption` instead of calling the function. Some type casts like `(ulong)` appear frequently.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: `param_fake_branch` has **no control flow at all** - it's completely empty. For `param_opaque_predicate`, the GCD computation loop is present but uses confusing variable swapping (`iVar3 = iVar2; iVar2 = 0; ...`) that obscures the algorithm. The opaque predicate logic is convoluted and hard to follow.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: The critical failure is `param_fake_branch` being completely eliminated - the decompiler failed to recover any logic. Additionally, `call_string_encryption` duplicates code from `param_string_encryption` instead of calling it, showing poor decomposition. Some functions like `param_tail_call_optimized` are correctly decomposed.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read reasonably top-to-bottom. However, `param_opaque_predicate` has complex nested conditions that disrupt linear flow. The `test_obf_opt_edge` function is monolithic (140+ lines) with all logic inlined, making it difficult to follow.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy in `call_string_encryption` - it duplicates the entire decryption loop from `param_string_encryption` instead of calling the function. The `test_obf_opt_edge` function also duplicates the decryption logic inline. Loop unrolling in `call_vectorized_loop` is not commented.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Critical type errors: `param_fake_branch` returns `void` instead of `int`. Many functions return `undefined8` or `undefined4` instead of proper integer types. The parameter `param_1` in `param_instruction_substitution` is `uint` but should be `int`. `param_division_by_zero` uses `int` for signal numbers instead of proper signal_t.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct/union recovery is needed for these simple functions. However, the code uses raw byte arrays like `byte local_40 [31]` for string buffers without recovering the original `char decrypted[32]` type. The `jmp_buf` type is correctly identified.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns exist: `(ulong)local_40 | 1` in string decryption uses bit manipulation on pointers. The `param_integer_overflow` function uses `uint` parameters but the original used `int`, changing overflow semantics. Multiple implicit casts between signed/unsigned.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments exist in the decompiled output at all.** The original source had extensive comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.), the purpose of fake branches, and opaque predicates. None of this semantic information was recovered.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms are identified. The GCD algorithm in `param_opaque_predicate` is not recognized as such - it's just a confusing loop. The fake branch technique is completely lost. No recognition of the string encryption/decryption idiom.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies are flagged. The complete elimination of `param_fake_branch` function body should have been flagged as a decompilation failure. The wrong return type (`void` vs `int`) is presented without any warning. The code confidently presents incorrect information.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contracts or preconditions are documented. The original source had clear expectations (e.g., "期望: 10" for call_fake_branch). The decompiled code provides no indication of expected behavior or input constraints.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are present but relationships are unclear. The `call_*` wrapper functions don't indicate they're testing the main functions. No documentation of call graphs or dependencies. Global variables like `jmp_buffer`, `segv_buffer` appear without context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped by address but not logically organized. The original had clear sections: "7.1 混淆与保护", "7.2 编译器特有优化", "7.3 异常与边界情况". This organization is completely lost in decompilation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code would not compile as-is. `param_fake_branch` returns void but is called in expressions expecting int. Many `undefined8` return types would cause compilation errors. External dependencies (printf, signal, longjmp) are declared but some signatures are incorrect.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.1/10
+
+**Critical Defects:**
+- `param_fake_branch` is completely eliminated - function body is empty, return type is wrong (void vs int)
+- No comments recovered from original source explaining obfuscation techniques
+- Function return types frequently wrong (undefined8, undefined4 instead of int)
+- `call_string_encryption` duplicates code instead of calling `param_string_encryption`
+- Magic numbers like 0xDEADBEEF, 0x5A (encryption key) lost without explanation
+- No anomaly indication for the completely broken `param_fake_branch` function
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+- Function names from source are correctly preserved, making it possible to identify which function is being analyzed
+
+**Most Needs Improvement:** Semantic Transparency (1.25/10)  
+- Zero comments, no pattern recognition, no anomaly indication, and no contract recovery make the code semantically opaque. The decompiler failed to recover any of the original source's explanatory content.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover function bodies for simple functions**: The elimination of `param_fake_branch` suggests the decompiler may be incorrectly applying dead code elimination. Always attempt to recover the function logic even if branches are unreachable.
+2. **Preserve return types accurately**: Use cross-referencing with call sites to infer correct return types (if `call_fake_branch` returns 10, `param_fake_branch` must return int).
+3. **Add semantic comments**: Recover comments from debug symbols (-g flag was used) or at minimum add placeholder comments indicating what the function should do based on its name and call sites.

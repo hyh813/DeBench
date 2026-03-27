@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v2`, `a0`), providing no semantic hint about their purpose. While `ptr` or `idx` appear occasionally, the reliance on `v`-numbered variables makes tracking data flow difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most high-level test functions retain their original names (e.g., `local_vars`, `heap_basic`), which is excellent. However, static helper functions like `double_value` are renamed to meaningless symbols like `$a.30`, losing semantic context.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: The code uses unsigned decimal representations for negative values (e.g., `4294967295` instead of `-1`, `4294967293` instead of `-3`). This obscures the logic of error checking and return values significantly.
+
+**4. Noise Reduction:** Score: 1/10  
+Justification: The decompiled output is heavily polluted with lifting artifacts, specifically `armg_calculate_condition` calls and `vvar_` references. These compiler/analysis internals make the code look like pseudo-assembly rather than C.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: While `do-while` loops are recovered, the conditions are wrapped in opaque `armg_calculate_condition` calls rather than standard comparison operators. This forces the reader to decipher the lifting logic rather than the program logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The decompiler successfully maps the binary functions back to the source structure, maintaining a 1:1 correspondence for the test suite. The granularity is appropriate, avoiding monolithic functions.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: The code generally reads top-to-bottom, but the frequent insertion of `armg_calculate_condition` checks interrupts the visual flow. Forward jumps are minimal, but the noise makes linear reading tedious.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: The decompiler accurately reflects the optimized binary (e.g., `local_vars` is reduced to `return 10 + a0 * 2`). While this deviates from the source structure, it is a correct representation of the optimized assembly.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Integer types are almost exclusively `unsigned int`, even where the source uses `int` (e.g., function parameters and return values). This loss of signedness information can lead to misinterpretation of comparison logic.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs are recovered but with generic names like `struct_0` and fields like `field_0`, `field_4`. The semantic meaning of structures like `Point` or `Node` is completely lost, reducing them to raw memory offsets.
+
+**11. Type Safety:** Score: 6/10  
+Justification: The code uses standard C casts (e.g., `(char *)ptr + 2 * idx`) which are technically correct but verbose. The lack of struct types forces pointer arithmetic that looks unsafe compared to the original source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures. The output is devoid of any semantic annotation beyond auto-generated headers.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard patterns like `malloc`/`free` and loops are visible, but they are buried under noise. The decompiler fails to highlight or simplify common idioms like the "linked list traversal" or "VLA allocation".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: There are no explicit warnings about suspicious code or unresolved indirect calls. The presence of `armg_calculate_condition` suggests complexity, but it is not flagged as an anomaly or uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Preconditions (like `if (arr == NULL)`) are present in the code but are not documented as contracts. The reader must infer the safety requirements manually.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls to standard library (`malloc`, `printf`) and internal functions are clear. However, the relationship between the generic `struct_0` definitions and their usage across functions is not explicitly linked.
+
+**17. Module Organization:** Score: 5/10  
+Justification: The output is a flat list of functions ordered by address. While logical groupings (like all heap functions) are somewhat preserved by proximity, there is no explicit module or namespace structure.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: The code will not compile due to artifacts like `armg_calculate_condition`, `vvar_4`, and `Not Conv(...)`. It requires significant manual cleanup to be valid C.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- **Lifting Artifacts**: The code is littered with `armg_calculate_condition` calls, making control flow unreadable.
+- **Literal Representation**: Negative integers are represented as large unsigned values (e.g., `4294967295`), obscuring error handling logic.
+- **Type Erasure**: All integers are `unsigned int`, and structs use generic field names (`field_0`), destroying semantic meaning.
+- **Uncompilable Output**: The presence of analysis engine variables (`vvar_...`) prevents the code from being treated as valid C.
+
+**Best Quality Aspect:** Function Decomposition (Score: 8/10)  
+- The decompiler successfully identified and separated the high-level functions from the binary, maintaining the original structure of the test suite.
+
+**Most Needs Improvement:** Noise Reduction (Score: 1/10)  
+- The intrusion of analysis engine artifacts (`armg_calculate_condition`, `vvar_...`) renders the code nearly unusable for human analysis without extensive filtering.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Abstract Lifting Artifacts**: Replace `armg_calculate_condition` and similar internal calls with standard C comparison operators (`<`, `>`, `==`) to restore natural control flow.
+2. **Signedness Recovery**: Analyze usage context (e.g., comparisons with `0` or `-1`) to correctly infer `signed int` vs `unsigned int` instead of defaulting to unsigned.
+3. **Constant Folding**: Convert unsigned representations of negative numbers (e.g., `4294967295`) back to their signed literal equivalents (`-1`) to improve literal clarity.

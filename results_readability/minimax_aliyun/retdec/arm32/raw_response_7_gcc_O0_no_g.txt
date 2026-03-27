@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use cryptic names like `a1`, `v1`, `v2`, `v3`. The parameter in `param_fake_branch` is named `result` which is misleading since it's an input parameter, not a local variable. Generic iterator names obscure loop purpose throughout.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names like `param_fake_branch`, `param_opaque_predicate` are preserved from source. However, the naming is mechanical without semantic action verbs, and parameter count/type isn't indicated (e.g., could be `param_fake_branch_i32`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic number `0xDEADBEEF` from the fake branch is completely lost (branch eliminated). Chinese string literals are encoded as hex UTF-8 (`\xe6\xb5\x8b\xe8\xaf\x95...`) rather than decoded. The constant `90` for XOR key in decryption is unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Address comments (`// 0x106b0`) add clutter. The expanded `_setjmp` struct literal is verbose and obscures logic. Some redundant variable assignments present but not severe.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: **CRITICAL DEFECT**: The fake branches in `param_fake_branch` are completely eliminated - the decompiled code simply returns the input. This is a fundamental semantic loss. The original source had two unreachable if-statements that are core to the obfuscation technique (OBF-L4-02). Loop structures in other functions are acceptable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good separation between `param_*` (implementation) and `call_*` (wrapper) functions. Function granularity is reasonable - no excessive inlining or fragmentation. Parameter lists are clean.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. The `param_opaque_predicate` has a complex ternary expression that's hard to parse, but no severe forward jumps or goto abuse. Acceptable for -O0.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: The expression in `param_opaque_predicate`: `(a1 + 2) * a1 + 1 == v1 * v1 == v2 == 1` is confusing and appears to have redundant comparisons. Some loop variable reinitialization in `param_vectorized_loop` but manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Uses `int32_t` consistently which matches ARM64 32-bit int. `uint32_t` correctly used for `param_instruction_substitution` and `param_vectorized_loop` length parameter. Good signed/unsigned distinction.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No complex structs in this specific code to recover. The `_setjmp` buffer is represented as an anonymous struct which is reasonable. Global arrays `g17[8]`, `g18[8]` are generic but functional.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe pointer arithmetic in string decryption (`*(char *)(n - 1 + result)`). The complex `_setjmp` struct construction is unusual. Minor issues but no severe violations that would cause undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address comments (`// 0x106b0`) present. No explanation of the fake branch elimination, no documentation of the opaque predicate logic, no indication that semantic content was lost. Very sparse and unhelpful.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: The opaque predicate pattern in `param_opaque_predicate` is not recognized or named. The instruction substitution (bit shifts) in `param_instruction_substitution` is simplified to arithmetic, losing the obfuscation technique. No design patterns identified.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: **CRITICAL**: No indication that the fake branches were eliminated. No warnings about the semantic loss in `param_fake_branch`. The decompiler confidently presents incorrect code (just `return result;`) without flagging the anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that the function expects specific input ranges or guarantees output properties.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear (call_* calls param_*). Global variable usage (g17, g18 for jmp buffers) is implicit but not documented. No call graph or usage documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (obfuscation, optimization, edge cases sections in original). All in single file which is acceptable for decompiled output. Static function scoping not indicated.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes all necessary headers. Function prototypes declared. Should compile with standard libc. Minor issues with the complex `_setjmp` struct literal may need adjustment.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+6+3+5)/4 = 4.00
+L2_avg = (3+7+6+5)/4 = 5.25
+L3_avg = (8+5+6)/3 = 6.33
+L4_avg = (2+3+1+2)/4 = 2.00
+L5_avg = (5+6+7)/3 = 6.00
+
+Overall = (4.00 × 0.30) + (5.25 × 0.25) + (6.33 × 0.20) + 
+          (2.00 × 0.15) + (6.00 × 0.10)
+        = 1.20 + 1.31 + 1.27 + 0.30 + 0.60
+        = 4.68/10
+```
+
+**Overall Readability Score:** 4.68/10
+
+### Critical Defects (Bullet List)
+- **Fake branches eliminated**: `param_fake_branch` decompiles to just `return result;` - the two unreachable if-statements with `0xDEADBEEF` constant are completely lost
+- **No anomaly indication**: Decompiler provides no warning about the eliminated control flow, presenting incorrect semantics as fact
+- **Cryptic variable naming**: Parameters named `a1`, `v1`, `v2` obscure purpose; `result` used as input parameter name is misleading
+- **Undecoded string literals**: Chinese text remains as hex UTF-8 escape sequences instead of readable strings
+- **No idiom recognition**: Opaque predicates and instruction substitution patterns not identified or documented
+
+### Best Quality Aspect (Single Dimension)
+- **Type Precision (Level 3)** scored highest at 8/10
+- **Why?** The decompiler correctly uses `int32_t` for ARM64, distinguishes signed/unsigned appropriately, and maintains type fidelity throughout most functions.
+
+### Most Needs Improvement (Single Dimension)
+- **Anomaly Indication (Level 4)** scored lowest at 1/10
+- **Why?** The decompiler silently eliminated critical obfuscation code (fake branches) without any warning or flag. This is a fundamental failure to communicate uncertainty or semantic loss to the analyst.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Detect and flag eliminated dead code**: When control flow is completely optimized away (like the fake branches), add a comment like `// DEAD CODE ELIMINATED: if (x*x < 0) {...}` to preserve semantic information
+2. **Improve variable naming inference**: Use usage pattern analysis to rename `a1` to `input_x` or `param` based on how variables are used in calculations and returns
+3. **Decode string literals**: Convert UTF-8 encoded strings to readable text, especially for printf format strings that are meant to be human-readable

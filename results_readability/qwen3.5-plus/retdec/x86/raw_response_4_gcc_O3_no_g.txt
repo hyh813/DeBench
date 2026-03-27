@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `result`) with no semantic meaning recovered. Original source had meaningful names like `count`, `sum`, `args`, `large`, `str` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names are preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`). This is excellent recovery, though helper functions use generic names (`function_1080`, `function_1090`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in printf addresses (`v1 + (int32_t)&g5 - 0x1fc8`) are opaque. Some constants are clear (42, 15, 50), but string literals are referenced via global offsets rather than inline.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_*` functions, `__do_global_ctors_aux`, `register_tm_clones`, and runtime initialization code mixed with user functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but varargs handling degrades to while loops with pointer arithmetic (`while (v1 != a1)`). Complex expressions like `ret_complex_expr` become unreadable bit manipulation.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries preserved well. However, constant propagation creates duplicate functions (`varargs_func_constprop_0`) and runtime functions are mixed with user code.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Functions generally read top-to-bottom with while loops that are recognizable. Address calculations (`v1 + (int32_t)&g5 - 0x1fc8`) occasionally disrupt flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant-propagated variants create redundancy (`varargs_func` vs `varargs_func_constprop_0`). Runtime initialization code appears multiple times across the output.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: `int32_t` used consistently but pointer types degrade to integers. Float types defined (`float64_t`) but not always applied correctly. Original type information partially lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - Struct types completely lost. `LargeStruct` becomes 16 individual parameters (`func_struct_byval(int32_t a1, int32_t a2, ... a16)`). `SmallStruct` accessed via raw pointer arithmetic (`*(int32_t *)(a1 + 4) * *(int32_t *)a1`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(int32_t *)a1`, `(char *)str`). Pointer arithmetic without type checking. void* conversions not recovered properly.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled output. Original source had extensive documentation explaining calling conventions, test scenarios, and expected values. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not recognized as such (manual pointer iteration). Struct passing not identified. Function pointer patterns not named or explained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Code presented confidently even when incorrect (e.g., `fastcall_func` has uninitialized `v1` variable). No flags for potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (NULL checks not highlighted as contracts). No postconditions or invariants. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage opaque (`g1`, `g2`, etc. with hex addresses). No call graph information provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Runtime functions mixed with user code. No separation between test functions and implementation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes standard headers and has function prototypes. However, requires stubs for `__printf_chk`, `__libc_start_main`, `__cxa_finalize`. Would need moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3+8+5+4)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):   (6+7+7+6)/4 = 6.50  × 0.25 = 1.625
+Level 3 (Type System):  (5+2+4)/3 = 3.67    × 0.20 = 0.734
+Level 4 (Semantic):     (1+3+2+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):   (5+5+6)/3 = 5.33    × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.69/10
+```
+
+**Overall Readability Score: 4.7/10**
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct` expanded to 16 parameters, `SmallStruct` accessed via raw pointer arithmetic
+- **Zero comments** - Original had extensive documentation; decompiled has none
+- **Generic variable names** - All variables are `a1`, `a2`, `v1`, `result` with no semantic meaning
+- **Runtime artifacts pollution** - `__x86_get_pc_thunk_*`, `register_tm_clones` mixed with user code
+- **Unsafe type casts everywhere** - No type safety, pointer arithmetic without bounds checking
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it possible to identify test purposes
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding intent nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack layouts** - Analyze parameter access patterns to reconstruct struct definitions instead of expanding to individual parameters
+2. **Infer variable names from usage context** - Variables used in loops with counters should be named `i`, `count`; pointer dereferences should suggest `ptr`, `buffer`
+3. **Add decompiler confidence annotations** - Mark uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: varargs handling` to guide manual review

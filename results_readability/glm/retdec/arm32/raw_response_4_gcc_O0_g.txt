@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: Function parameters are well-preserved (e.g., `a`, `b`, `count`), likely due to debug symbols, but local variables are generic (`v1`, `v2`, `v3`), obscuring the logic in functions like `varargs_func` and `test_calling_conventions`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `cdecl_func`, `test_calling_conventions`), providing perfect semantic context for the code's purpose.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals are preserved, but pointer arithmetic offsets (e.g., `v5 - 136`, `8 * i`) appear as magic numbers without the context of the original struct layouts, making the logic harder to follow.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but contains redundant casts like `(int32_t)p` on a 64-bit architecture and the inclusion of runtime helpers like `__aeabi_l2d` which add minor clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: While basic loops are preserved, the `va_list` implementation in `varargs_func` is lowered to manual pointer arithmetic (`v3 += 4`), and the struct initialization in `test_calling_conventions` is convoluted with `memcpy` and pointer math.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly; there is no inlining or outlining that disrupts the original modularity.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with appropriate early returns; however, the complex pointer arithmetic in `test_calling_conventions` disrupts the linear flow slightly.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no obvious dead code or loop unrolling artifacts; the logic is concise despite the low-level representation of some operations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types are accurate (`int32_t`, `float64_t`), but composite types are completely lost; `LargeStruct` and `SmallStruct` are demoted to `int32_t` or `int32_t*`, losing significant semantic information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct definitions (`LargeStruct`, `SmallStruct`) are entirely missing. Functions like `func_struct_byval` accept `int32_t` instead of a struct, and struct member access is replaced by raw pointer arithmetic (e.g., `*(int32_t *)(8 * i + (int32_t)&v1)`).
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts, such as casting `int32_t` to pointers and accessing memory via calculated offsets (e.g., `*(int32_t *)(v5 - 136)`), which mimics the compiler's output but looks unsafe in high-level code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to metadata (module, address range) and do not explain the logic, algorithms, or the purpose of complex pointer manipulations.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard idioms like `va_list` are not recognized; the decompiler emits the underlying pointer manipulation instead of the abstract `va_arg` pattern.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: There are no warnings or flags indicating the loss of struct types or the unusual nature of the pointer arithmetic used to access struct members.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the requirement for `va_list` usage or struct size constraints).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to understand despite the type issues.
+
+**17. Module Organization:** Score: 9/10
+Justification: The file structure matches the original source, with functions appearing in the correct order and logical groupings.
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code includes necessary headers and prototypes, but the loss of struct definitions means it would not compile without significant manual intervention to redefine the types.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- Composite types (`LargeStruct`, `SmallStruct`) are completely lost, replaced by raw pointer arithmetic and `int32_t` arguments.
+- The `va_list` abstraction is lowered to manual pointer walking (`v3 += 4`), obscuring the variable argument logic.
+- Array initialization loops (e.g., in `test_calling_conventions`) are replaced by complex `memcpy` and offset calculations.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Debug symbols allowed for perfect recovery of function names, making the high-level flow easy to track.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover `struct` types significantly degrades readability, turning simple field accesses into confusing pointer math.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement robust struct recovery for stack-allocated variables, especially those passed by value or initialized via loops.
+2. Recognize and lift `va_list`/`stdarg.h` patterns to emit `va_arg` instead of raw pointer increments.
+3. Improve pattern matching for array initialization to preserve `for` loops instead of emitting `memcpy` or scalar assignments.

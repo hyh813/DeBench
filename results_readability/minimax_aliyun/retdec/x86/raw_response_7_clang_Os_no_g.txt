@@ -1,0 +1,91 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score:5/10  
+Justification: The parameter is named `result` which is semantically incorrect - in the original source, `result` is a local variable initialized to `x`, while the parameter is `x`. The decompiler has conflated the parameter name with the local variable name, causing semantic confusion.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function name `param_fake_branch` exactly matches the original source function name. The naming is action-oriented and accurately reflects the obfuscation purpose.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: The decompiled function contains ZERO literals - the magic number `0xDEADBEEF` from the fake branch and the string `"test"` used in the strlen check are completely eliminated. The decompiler has removed the very essence of the obfuscation technique.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The function body is clean with no compiler artifacts, register spills, or redundant casts. However, this cleanliness comes at the cost of eliminating the fake branch logic entirely.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: The simplified function has natural control flow - just a direct return. However, this is misleading because the original had two fake if-statements that were intentionally always-false.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: The function is appropriately sized (1 line). No decomposition issues.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: The code reads perfectly top-to-bottom with no jumps or disruption.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: The decompiler has over-aggressively eliminated "dead code" - the fake branches that were intentionally never executed. This is a critical loss because the original source specifically tests "永假条件" (always-false conditions) as an obfuscation technique. The decompiler treated the obfuscation as redundant code and removed it.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Uses `int32_t` which is appropriate for ARM64 at -O0. The type matches the original `int` parameter.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types (structs/unions) are used in this function, so none need recovery.
+
+**11. Type Safety:** Score: 9/10  
+Justification: No type safety issues in the simplified function. Proper integer types used.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the function. The decompiler should have noted that fake branches were eliminated or that this is an obfuscation test function. The original source has extensive comments explaining the OBF-L4-02 technique.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The "fake branch" (永假分支) idiom is completely unrecognized. The original source explicitly tests "永假条件分支" (always-false conditional branch) as an obfuscation technique. The decompiler has eliminated this pattern entirely, making it impossible to identify the obfuscation method.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly is flagged. The decompiler should indicate that significant code was removed (the fake branches with their conditions and the 0xDEADBEEF constant). The output is silently incorrect - it presents a trivial function when the original was specifically designed to test obfuscation.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: Not applicable for this simple function, but the decompiler could have noted the precondition that x can be any integer.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The function is called by `call_fake_branch()` which is correctly named and the relationship is clear.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically in the decompiled output, with related obfuscation test functions near each other.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code appears to compile cleanly with proper includes and function signatures.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- **Fake branch elimination**: The decompiler has completely removed the always-false conditional branches (`if (x*x < 0)` and `if (strlen(str) < 0)`), eliminating the core obfuscation technique being tested
+- **Magic number loss**: The literal `0xDEADBEEF` used in the fake branch is completely absent from the decompiled output
+- **No anomaly flagging**: The decompiler silently removed significant code without any indication that the function was simplified
+- **Variable name confusion**: Parameter named `result` when it should be `x` (the original parameter name)
+- **Idiom loss**: The "fake branch" (永假分支) obfuscation pattern is completely unrecognizable in the output
+
+**Best Quality Aspect:** Type System Fidelity (scored 9.0/10)  
+- Types are precise (int32_t), appropriate for the ARM64 architecture, and type-safe
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.0/10)  
+- The decompiler failed to recognize or indicate the fake branch idiom, eliminated all meaningful literals, and provided no anomaly warnings about the removed code. This is particularly critical because the original source specifically tests obfuscation techniques that rely on "dead code" patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Preserve fake branches**: Add an option to preserve always-false conditionals as they may be intentional obfuscation (OBF-L4-02 pattern). Flag them as "likely dead code" rather than silently removing
+2. **Detect and preserve magic numbers**: The value `0xDEADBEEF` is a well-known sentinel value used in obfuscation. The decompiler should preserve such meaningful constants
+3. **Add anomaly indicators**: When significant code transformations occur (like removing entire branches), add comments like "NOTE: fake branch eliminated" or "ANOMALY: always-false condition removed" to maintain semantic transparency

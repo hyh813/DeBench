@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic names like `param_1`, `local_4`, `iVar1` instead of semantic names like `size`, `result`, `counter`. Some variables like `__addr` and `__len` are descriptive, but most obscure purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`param_macro_constants`, `call_asm_basic`, `param_dynamic_code`). Action-oriented naming clearly reflects purpose, though some internal functions like `FUN_001007a0` remain opaque.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers dominate: `0x401` (should be `MAX_SIZE+1`), `0x200` (512), `0x40` (64), `0xdef0`. No constant recovery from macro definitions. String literals preserved but numeric constants unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean code without excessive compiler artifacts. Some redundant patterns exist (e.g., `local_4 = 0x200; return local_4;` could be direct return). External function wrappers properly marked.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At `-O0`, control flow is well-recovered with standard if-else and for loops. No spurious goto statements in main logic. Loop structures in `param_asm_clobber` and `param_asm_simd` are natural.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions properly separated but return type errors exist (e.g., `call_macro_constants` returns `void` instead of `int`). Param/call function pairs maintained but some signature mismatches.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. No excessive forward jumps disrupting flow. Loop bodies properly contained. Early returns used appropriately.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minor redundancy in local variable assignments before return. No significant loop unrolling artifacts. Dead code from optimization not present (expected at `-O0`).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation with `undefined4`, `undefined8`, `ulong` appearing. Original `int` types sometimes preserved but pointer types inconsistent. `size_t` recovered in some places (`__len`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited composite types in source code. Array access recovered as pointer arithmetic (`*(int *)(param_1 + (long)local_14 * 4)`). No struct reconstruction needed for this code.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present (e.g., `(undefined4 *)mmap(...)`). Pointer arithmetic visible without safety annotations. Some function signatures mismatch source (void vs int returns).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Critical deficiency**: Zero comments explaining logic. Original source had extensive section headers and inline comments. Decompiled code has only decompiler header with no semantic documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Macro patterns completely lost (e.g., `MAX_SIZE` comparison shown as `0x401`). No recognition of common patterns like atomic operations, memory protection workflows, or SIMD idioms.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No anomalies flagged despite questionable patterns. Atomic operations (`__aarch64_ldadd4_acq_rel`) not explained. Architecture-specific code paths not documented.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1` constraints). No postconditions or error condition documentation. Return value semantics completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible and traceable. Global variables (`global_var`, `__aarch64_have_lse_atomics`) identifiable. No callback relationship documentation or call graph summaries.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order with param_*/call_* pairs grouped. No header file structure or API declarations. Related assembly functions grouped together.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would require significant patching to compile. Type mismatches (`undefined4` returns), missing external declarations, and architecture-specific intrinsics need resolution.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+4+7)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):  (8+6+8+7)/4 = 7.25  × 0.25 = 1.81
+Level 3 (Type):        (5+7+5)/3   = 5.67  × 0.20 = 1.13
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75  × 0.15 = 0.41
+Level 5 (Contextual):  (6+6+4)/3   = 5.33  × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  5.68/10
+```
+
+**Overall Readability Score: 5.7/10**
+
+### Critical Defects
+- **Zero semantic comments**: Original had extensive documentation; decompiled has none
+- **Magic numbers everywhere**: `0x401`, `0x200`, `0x40`, `0xdef0` instead of named constants like `MAX_SIZE`
+- **Type degradation**: `undefined4`, `undefined8` types obscure original `int` semantics
+- **Return type errors**: `call_macro_constants` returns `void` instead of `int`
+- **Macro semantics lost**: No recovery of `SQUARE(x)`, `MAX(a,b)`, or conditional compilation intent
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)**: Function names preserved accurately from source, maintaining semantic clarity for entry points
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)**: Complete absence of documentation makes understanding intent nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover macro constants**: Analyze comparison patterns to suggest named constants (e.g., `param_1 < 0x401` → `size <= MAX_SIZE`)
+2. **Generate semantic comments**: Add function-level documentation explaining purpose based on call patterns and string literals
+3. **Improve type inference**: Replace `undefined4/8` with appropriate integer types based on usage context and architecture word size

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`param_1`, `iVar1`, `uVar3`, `auVar13`) instead of semantic names like `sum`, `count`, `result`. Original source had meaningful names (`temp1`, `temp2`, `temp3`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved correctly (`sequential_ops`, `single_if`, `loop_for_fixed`). Some helper functions have generic names (`FUN_00101020`), but core test functions match source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions hardcode expected values as hex (`0x15`, `0x2d`, `0x78`) without explanation. Magic numbers like `0x3e9` (1001) and `0x65` (101) appear without context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Severe noise from vector operations (`auVar13`, `auVar14` 16-byte arrays) in simple scalar functions like `loop_continue` and `goto_backward`. These are decompiler artifacts, not original code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple loops transformed into complex vector operations. `loop_continue` (original: simple for-loop with continue) becomes 30+ lines of bit manipulation. `duffs_device` uses goto labels instead of structured fall-through.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly. Each source function maps to one decompiled function. However, some functions are bloated with optimization artifacts.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `duffs_device` uses explicit goto labels (`switchD_00101717_caseD_1`). Most functions read top-to-bottom but complex ones have disruptive jump patterns.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy in vector operations. `recursion_factorial` and `tail_recursion` have nearly identical 50+ line vector operation blocks that should be simple recursive calls.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical type errors: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `byte` instead of `int`, `switch_small` returns `undefined4`. Function pointers become `code *UNRECOVERED_JUMPTABLE`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays referenced as external data (`&DAT_001020d0` for `loop_break`). No struct definitions recovered. Matrix in `loop_multi_exit` accessed via pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts implicit in `undefined` types. Function pointer calls use `code *` without proper signatures. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompiler confidence indicators, no documentation of non-obvious transformations.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Loop idioms not recognized (converted to vector ops). Duff's device partially recognized but not labeled. State machine patterns in `state_machine` not identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `UNRECOVERED_JUMPTABLE` indicates unresolved function pointer, but no explanation. Vector operation anomalies in scalar functions not flagged as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Parameter validation logic not extracted as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved but relationships not documented. External data references (`&DAT_00102090`) not explained. Test functions call correct targets.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically. Test functions (`test_control_flow_l1/2/3`) kept separate from implementation. Helper functions (`double_value`, `triple_value`) preserved.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears compilable but uses undefined types (`undefined`, `undefined4`, `undefined8`). External dependencies (`__libc_start_main`, `puts`) need linking.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (4+7+5+3)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (4+6+5)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (1+2+3+1)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (6+7+6)/3   = 6.33 × 0.10 = 0.63
+─────────────────────────────────────────────────────
+Overall Score:                              4.58/10
+```
+
+### Overall Readability Score: **4.6/10**
+
+### Critical Defects:
+- **Vector operation artifacts** in scalar functions (`loop_continue`, `goto_backward`, `recursion_factorial`) make code completely unreadable
+- **Type errors**: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `byte` instead of `int`
+- **Zero comments** - no documentation of algorithm intent or decompiler confidence
+- **Generic variable names** (`param_1`, `iVar1`, `uVar3`) lose all semantic meaning from source
+- **Logic corruption**: `nested_if_2` has inverted condition order changing program semantics
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Core function names preserved accurately from source, enabling quick identification of test cases
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding decompiler transformations impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag optimization artifacts** - Vector operations in -O0 compiled code should be flagged as suspicious decompiler output, not emitted as code
+2. **Recover semantic variable names** - Use data flow analysis to infer names like `sum`, `count`, `result` from usage patterns instead of `iVar1`, `uVar3`
+3. **Add decompiler confidence annotations** - Mark uncertain reconstructions (function pointers, complex loops) with comments indicating manual review needed

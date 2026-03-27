@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3` instead of semantic names (`a`, `b`, `count`). Local variables use cryptic names like `v1`, `v2`, `v3`, `v4` throughout (e.g., `varargs_func` has 12+ such variables). Only `result`, `len`, `count` are descriptive. This severely impedes understanding of variable purposes.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names are correctly recovered (`cdecl_func`, `stdcall_func`, `varargs_func`, `func_many_args`). However, some helper functions have auto-generated names like `function_1070`, `function_1080`, `function_1090`, `function_10a0`, `function_10b0` which lack semantic meaning. The core test functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are meaningful (e.g., `42` in `func_no_args`), but many are unexplained: `0x40091eb851eb851f` (should be 3.14), `0x11a9`/`0x11b1`/`0x11b9` (function addresses), `40` (stack canary offset), `48` (threshold). The magic numbers obscure their semantic meaning without explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: extensive `__asm_` blocks (`__asm_movq`, `__asm_addsd`, `__asm_cvtsi2sd`, `__asm_movdqa`, `__asm_movaps`), stack canary checks (`__readfsqword(40)`, `__stack_chk_fail`), redundant casts, and auto-generated helper functions. These obscure the actual logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (while loops, if-else). However, `ret_multi_branch` shows unusual switch case ordering (case 2 returns before case 1), and `ret_complex_expr` has an overly complex ternary expression with bit manipulation that obscures the simple `x > y ? z + 10 : z * 2` logic. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries are preserved. Some functions are large (`test_calling_conventions` ~300 lines, `varargs_func` ~80 lines) but this matches the source. Minor outline artifacts exist (functions 1070-10b0). Overall decomposition is reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. While loops are used appropriately. Some non-linearity exists in complex functions but doesn't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling is present in `varargs_func` and `param_varargs` (nearly identical implementations). Some common subexpression patterns. Not severely redundant but could be cleaner.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - uses `int64_t` for most parameters even when original is `int32_t`. Some correct types: `uint32_t` for count parameters, `char*` for strings. Function pointer types partially correct but with casting issues. Signed/unsigned confusion present.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct definitions recovered. All struct access is through raw pointer arithmetic: `func_struct_byval` uses `*(int64_t *)v2` instead of struct fields, `func_struct_byptr` uses `*(int32_t *)(a1 + 4)` instead of `p->y`. The `SmallStruct` and `LargeStruct` types are completely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts: `(int32_t *)a1`, `(int64_t *)v2`, `(char *)v2`, `(int32_t **)&v3`. Function pointer to integer casts: `(int32_t (*)(int32_t))0x11a9`. Pointer arithmetic in `param_ptr_array` is complex and error-prone. Significant type safety issues throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Some metadata comments present ("From module: /work/4.c", "Line range: XXX - XXX", address ranges). However, no algorithm explanations, no recovery confidence indicators, no API contracts. Comments are purely auto-generated metadata, not semantic documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. Varargs (`va_list`, `va_start`, `va_arg`) not recognized - implemented manually with raw pointer manipulation. Callback patterns not identified. The decompiler doesn't recognize common C idioms.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. Indirect calls not resolved (e.g., callback function pointer). No warnings about unusual stack layouts or potential undefined behavior. The code presents everything as confident when some parts are uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks not explained. No documentation of error conditions or return value semantics. The contracts are completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. Global variables have names (`g1`-`g22`). However, callback relationships not explicitly documented (e.g., `callback_func` usage). The call graph isn't explicitly stated but is inferable from code structure.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped somewhat logically (test functions together, runtime helpers at top). Static functions properly scoped. Single file output is reasonable for decompilation. Some arbitrary ordering exists but organization is acceptable.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code requires extensive libc stubs: `__printf_chk`, `__libc_start_main`, `__cxa_finalize`, `__gmon_start__`, `__stack_chk_fail`. Won't compile standalone. External dependencies not documented. Requires significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `v1`, `v2` instead of semantic names (`a`, `b`, `count`, `sum`)
+- No struct type recovery - all composite types accessed via raw pointer arithmetic (`*(int32_t *)(a1 + 4)`)
+- Extensive compiler noise: `__asm_` blocks, stack canary checks, redundant casts
+- No idiom recognition for varargs, callbacks, or common patterns
+- Type safety issues: unsafe casts between pointers and integers, function pointer abuse
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+- Core function names from source are correctly recovered (`cdecl_func`, `varargs_func`, etc.)
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Generic variable names (`a1`, `v1`, `v2`) completely obscure variable purposes and make code analysis extremely difficult
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a1 + a2` in arithmetic context should suggest `a` and `b`; `v1` used as loop counter should be `i` or `count`
+2. **Recover struct/union definitions**: Analyze memory access patterns to reconstruct composite types with field names instead of raw pointer arithmetic
+3. **Recognize and label standard idioms**: Varargs, callbacks, and common patterns should be detected and presented with their semantic names rather than manual implementations

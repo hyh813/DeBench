@@ -1,0 +1,121 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `iVar1`, `uVar2`, `lVar1`) with zero semantic meaning. For example, in `sequential_ops`, parameters should be named `a`, `b`, `c` based on source, but decompiler uses `param_1`, `param_2`, `param_3`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - all original function names preserved (`sequential_ops`, `single_if`, `nested_if_deep`, `duffs_device`, etc.). Names accurately reflect functionality and match source exactly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation (`0x12`, `0x3e9`, `0x65`, `0x15`). Test functions print hex constants (`0x2d` for 45) instead of decimal, obscuring expected values.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler warnings present ("Removing unreachable block") are helpful, but `__divsi3` has excessive boolean variables (`bVar5` through `bVar35` - 31 variables) from loop unrolling that obscure the division algorithm.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Significant optimization artifacts destroy original structure. `loop_for_fixed` converted to mathematical formula instead of loop. `single_if` uses bit shift `param_1 << (uint)(0 < param_1)` instead of conditional. `nested_if_2` restructured from nested to sequential ifs.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity appropriate; helper functions preserved (`double_value`, `triple_value`, `op_add`, etc.). However, `duffs_device` became overly complex (100+ lines) due to optimization.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but `duffs_device` uses goto labels (`switchD_00010d38_caseD_2`, etc.) disrupting flow. `__divsi3` has 31 sequential boolean checks that could be a loop.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `__divsi3` contains 31 nearly identical boolean comparison blocks from unrolled division loop. Test functions print pre-computed constants instead of calling functions, losing verification value.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed types throughout (`int`, `uint`, `undefined4`, `longlong`). Function pointers degraded to `code *` with `UNRECOVERED_JUMPTABLE` warnings. `if_else` return type changed from `int` to `bool`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays handled reasonably (e.g., `int matrix[3][4]` in `loop_multi_exit`). No complex structs in this sample to evaluate, but pointer arithmetic preserved correctly.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Function pointer calls marked with warnings ("Could not recover jumptable at 0x00010f4c. Too many branches"). No obvious buffer overflows, but `undefined4` types indicate type information loss.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only compiler-generated warnings present ("WARNING: Subroutine does not return"). No algorithm explanations, no parameter documentation, no recovery confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Zero pattern recognition. `duffs_device` not identified as Duff's Device optimization. State machines (`state_machine`, `fsm_func_table`) not labeled. Recursion-to-loop transformations not documented.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present ("Could not recover jumptable", "Subroutine does not return" for `longjmp`), but inconsistent. `call_func_ptr` shows "Treating indirect jump as call" which is helpful.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n > 0`). No postconditions or error condition documentation. Return value semantics not explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no call graph documentation. No indication of which functions call which. Test functions don't actually call target functions (print constants instead).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 76 functions in single output file. No header file separation. No logical grouping of related functions (control flow tests mixed with runtime support functions).
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies visible (`__libc_start_main`, `puts`, `printf`). Would need stubs for runtime functions but structure is compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Contribution |
+|-------|-----------|---------|--------|--------------|
+| L1: Lexical Clarity | 3, 9, 5, 6 | 5.75 | 30% | 1.725 |
+| L2: Structural Intelligibility | 5, 7, 6, 5 | 5.75 | 25% | 1.438 |
+| L3: Type System Fidelity | 5, 7, 6 | 6.00 | 20% | 1.200 |
+| L4: Semantic Transparency | 3, 4, 6, 3 | 4.00 | 15% | 0.600 |
+| L5: Contextual Coherence | 5, 5, 7 | 5.67 | 10% | 0.567 |
+
+**Overall Readability Score: 5.54/10**
+
+---
+
+### Critical Defects
+
+- **Variable names completely generic**: `param_1`, `iVar1`, `uVar2` throughout - zero semantic recovery despite clear usage patterns
+- **Control flow destroyed by optimization**: `loop_for_fixed` converted to incomprehensible mathematical formula instead of recognizable loop
+- **No comments or documentation**: Zero algorithm explanations, no recovery confidence indicators, no parameter documentation
+- **Test functions useless**: Print pre-computed constants instead of actually calling functions, losing verification capability
+- **Magic numbers unexplained**: `0x3e9`, `0x65`, `0x12` scattered throughout without constant definitions or comments
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (9/10)** - All original function names perfectly preserved, making it immediately clear what each function does despite other readability issues.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (3/10)** - Complete absence of semantic documentation; decompiler provides no algorithm explanations, recovery confidence indicators, or parameter documentation that would help analysts understand transformed code.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement variable name inference from usage patterns**: Analyze how variables are used (e.g., `param_1` used in loop bound → `loop_count`, `param_2` used in arithmetic → `accumulator`) and suggest meaningful names.
+
+2. **Add optimization transformation annotations**: When control flow is transformed (loop→formula, conditional→bit-shift), add comments explaining the original structure: `// Original: for loop, optimized to closed-form formula`.
+
+3. **Recover and display test function semantics**: Instead of printing constants, preserve actual function calls in test functions, or at minimum add comments showing expected inputs/outputs: `// Expected: sequential_ops(5,7,3) = 21`.

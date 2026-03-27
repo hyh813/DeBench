@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v2`, `a1`, `a2`), obscuring the logic in functions like `test_cpp_rtti` where tracking `obj1` vs `obj2` is difficult. Only `dest` in `test_cpp_member_func` provides a slight semantic hint.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully demangled C++ symbols (e.g., `_Z20test_cpp_member_funcv` to `test_cpp_member_func`) and recovered template specializations (e.g., `Container<int>::push`), which accurately reflects the original source structure.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `0x1F` (31), `0x14` (20), and `4700` appear without explanation. While `4700` is a compiler optimization artifact (constant folding), the lack of context makes the code's intent harder to grasp compared to the source.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains compiler artifacts such as `__asm { jmp dword ptr [ebx+8] }` in `sub_1030` and `__usercall` annotations. While the main logic is visible, these low-level details interrupt the high-level reading flow.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally natural, with `do-while` loops recovered in `test_cpp_constructor`. However, some functions like `test_cpp_virtual_func` are reduced to `return 42;` due to aggressive compiler optimization (constant propagation), which hides the source logic.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Template instantiations are correctly decomposed into separate functions (e.g., `Container<int>::push` and `Container<double>::push`), matching the source's generated code structure. The granularity is appropriate.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with minimal forward jumps. The logic in `test_cpp_rtti` flows linearly through the checks and casts, making it easy to follow despite poor variable names.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler presents the optimized binary cleanly; for example, `test_cpp_member_func` is simplified to a `memcpy` and addition. While this loses source fidelity, it eliminates the redundancy present in the unoptimized source's object construction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are mostly precise, correctly identifying `size_t`, `int`, and `long double`. However, complex types like the vtable pointer in `call_virtual_func` are represented as raw `int (__cdecl ***a1)` rather than a class pointer.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery is poor. `Container` members are accessed via raw pointer arithmetic (e.g., `*(_DWORD *)(a1 + 40)` for size) rather than named fields. `SimpleClass` is reduced to a raw `char dest[40]` array on the stack, losing the class structure entirely.
+
+**11. Type Safety:** Score: 6/10
+Justification: The code uses C-style casts (e.g., `(_DWORD *)operator new[]`) which are unsafe. While this reflects the binary reality, the lack of type-safe C++ constructs (like `static_cast` or references) reduces the perceived safety and readability.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are sparse and mostly limited to warnings (e.g., "positive sp value has been detected"). There are no comments explaining the C++ idioms used (like vtable lookups or exception handling).
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: The decompiler successfully identifies complex C++ ABI idioms, explicitly naming `__cxa_throw`, `__dynamic_cast`, and `typeid`. This allows a knowledgeable reader to understand the high-level intent despite the low-level presentation.
+
+**14. Anomaly Indication:** Score: 9/10
+Justification: The decompiler provides a clear list of "FAILED to decompile" functions at the end and flags potential stack issues. This transparency about failures is excellent for assessing the reliability of the output.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the bounds check in `Container::get` is visible as code but not documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Demangled function names and references to `typeinfo for'RTTIBase` provide good context about relationships. The virtual table calls are clearly indirect, preserving the relationship between classes.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in a flat order (address-based) rather than grouped logically by class or functionality (e.g., all `Container` methods are scattered). This makes it harder to find related code.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on external symbols (e.g., `__dynamic_cast`, `operator new`) that are marked as "FAILED to decompile", meaning the output cannot be compiled without significant stubbing or manual intervention.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Composite types (structs/classes) are not recovered; code uses raw pointer arithmetic (e.g., `a1 + 40`) instead of field access.
+- Variable naming is entirely generic (`v0`, `v1`), making it difficult to track data flow in complex functions like `test_cpp_rtti`.
+- Aggressive compiler optimization (constant folding) has reduced functions like `test_cpp_virtual_func` to `return 42;`, completely hiding the source logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler's ability to demangle C++ symbols and template instantiations provides immediate high-level context that matches the source perfectly.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct `SimpleClass`, `Container`, or `Base`/`Derived` structures forces the reader to interpret raw memory offsets, which is the biggest barrier to understanding the object-oriented logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve structure recovery to identify and reconstruct class layouts from vtable usage and constructor/destructor patterns, replacing raw offsets with named fields.
+2. Implement variable renaming heuristics based on usage context (e.g., variables passed to `strlen` could be named `str` or `name`).
+3. Detect and annotate constant-folded functions (e.g., "Function optimized to constant return value") to alert the user that source logic is missing.

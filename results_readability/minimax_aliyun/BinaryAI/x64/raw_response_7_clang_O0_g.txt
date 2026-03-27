@@ -1,0 +1,115 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names `param_1` and `local_10` instead of semantic names `x` and `result` from the original source. The decompiler fails to infer meaningful names from usage patterns.**2. Function Naming Quality:** Score: 10/10  
+Justification: Function name `param_fake_branch` exactly matches the original source function name. The decompiler preserved the semantic naming perfectly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: The magic number `0xDEADBEEF` is rendered as `-0x21524111` (two's complement representation), making it nearly unrecognizable. The `strlen("test")` call is preserved but its purpose (dead code from always-false condition) is unclear.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean. The unused `strlen("test")` result is a minor artifact from the source, not compiler noise. No redundant casts or debug artifacts present.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: The if-else structure exactly matches the source. At `-O0`, control flow should be preserved, and the decompiler correctly recovered the conditional structure without spurious goto statements.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: This is a single, focused function with appropriate granularity. The function does one thing and does it well - matches source decomposition.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: The code reads top-to-bottom with no forward jumps or complex branching. The structure is perfectly linear.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code. The `strlen("test")` call is present in source as intentional dead code (always-false condition), not redundancy to eliminate.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 10/10  
+Justification: Type `int` is correctly preserved for both parameter `param_1` (original: `int x`) and local variable `local_10` (original: `int result`). No type degradation observed.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No structs, unions, or composite types in this function - not applicable to evaluate.
+
+**11. Type Safety:** Score: 10/10  
+Justification: No unsafe casts, no incorrect pointer arithmetic, no type-confused operations. The code is type-safe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The source contains explanatory comments about "永假条件" (always-false condition) that would help understand the obfuscation pattern, but these are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: The "always-false condition" pattern (`x * x < 0`) is not recognized or labeled. The decompiler doesn't identify this as an obfuscation idiom (OBF-L4-02 from source comments).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for the suspicious always-false condition that will never execute. The dead code path (`local_10 = param_1 * 2 + -0x21524111`) is presented as normal code without any indication of its unreachable status.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "x can be any int"), no postconditions, no indication that the function simply returns its input unchanged in practice.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: The function is called by `call_fake_branch()` which is visible. However, the relationship to other obfuscation functions (`param_opaque_predicate`, `param_instruction_substitution`) is not documented.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically in the decompiled output. The obfuscation-related functions appear together, matching the source file organization.
+
+**18. Build System Compatibility:** Score: 10/10  
+Justification: The decompiled code compiles successfully (as noted in metadata: "Compilation Result: Yes"). No stubs or modifications needed.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.8/18 = 3.78/10
+
+Wait, let me recalculate using the weighted formula:
+
+```
+L1_avg = (3+10+5+8)/4 = 6.5
+L2_avg = (10+10+10+10)/4 = 10.0
+L3_avg = (10+10+10)/3 = 10.0
+L4_avg = (1+3+2+2)/4 = 2.0
+L5_avg = (7+8+10)/3 = 8.33
+
+Overall = (6.5 × 0.30) + (10.0 × 0.25) + (10.0 × 0.20) + (2.0 × 0.15) + (8.33 × 0.10)
+Overall = 1.95 + 2.5 + 2.0 + 0.3 + 0.833 = 7.583/10
+```
+
+**Overall Readability Score:** 7.6/10
+
+---
+
+### Critical Defects:
+- **Variable naming**: `param_1` should be `x`, `local_10` should be `result` - generic names obscure semantic purpose
+- **Magic number rendering**: `-0x21524111` is confusing representation of `0xDEADBEEF`; should be rendered as positive hex
+- **No comments**: Complete loss of source comments explaining "永假条件" (always-false condition) obfuscation pattern
+- **No anomaly indication**: The unreachable code path is not flagged as suspicious or unreachable
+
+### Best Quality Aspect: Type System Fidelity (10/10)
+- Types are precisely preserved: `int` for both parameter and return value match the original source exactly
+
+### Most Needs Improvement: Semantic Transparency (2/10)
+- No comments, no idiom recognition, no anomaly indication - the decompiler presents the obfuscated code as if it were normal code, losing critical context about the obfuscation technique
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: `param_1` is used in `x * x` and returned directly - should be named `x` or `input_value`; `local_10` is assigned from param and returned - should be `result`
+2. **Render magic numbers in canonical form**: Display `-0x21524111` as `0xDEADBEEF` (positive hex) for readability
+3. **Add anomaly comments**: Flag the always-false condition `x * x < 0` as "unreachable code - always-false condition (obfuscation)" and the dead assignment as "dead code path"

@@ -1,0 +1,103 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `param_1`, `iVar1`, `uVar1`, and `local_4c`, providing no semantic hint about their purpose (e.g., `sum`, `count`, `target` are lost).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the symbol table (e.g., `sequential_ops`, `duffs_device`, `loop_break`), matching the original source exactly.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Decimal constants in source (e.g., `20`, `100`) appear as hex (`0x14`, `0x64`) in the decompiled code, and switch cases are replaced by references to data tables like `CSWTCH_56`, requiring manual lookup.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, but the pervasive use of `undefined4` types and Ghidra-specific warnings (e.g., "WARNING: Subroutine does not return") adds minor noise that interrupts reading.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: `switch` statements are frequently decompiled into array lookups or chained `if` statements (e.g., `switch_small`), and recursive functions like `recursion_factorial` appear as iterative loops, deviating significantly from the source structure.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without artificial splitting or merging.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While most code reads linearly, complex constructs like `duffs_device` are decompiled into a mess of `goto` labels and nested `switch` cases that disrupt top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully removes redundant stack operations and register shuffling, presenting concise logic (e.g., `sequential_ops` is reduced to a single expression).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often imprecise, with `undefined4` used for standard integers and `code *` used for function pointers, losing the specific `int` or `void(*)(int)` distinctions present in the source.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Arrays and stack layouts are handled correctly (e.g., `apcStack_18` arrays for function pointers), though no complex structs were present in this specific snippet to challenge the recovery.
+
+**11. Type Safety:** Score: 7/10
+Justification: Function pointer calls are wrapped in `(*UNRECOVERED_JUMPTABLE)` syntax which is safe, but the lack of specific type signatures makes static analysis of arguments difficult.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10
+Justification: Comments are limited to Ghidra's auto-generated warnings (e.g., "Removing unreachable block") and offer no explanation of the underlying algorithms or logic.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler failed to recognize specific idioms: `recursion_factorial` is shown as a loop, `duffs_device` is unstructured spaghetti, and `switch` fall-through logic is obscured by arithmetic.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: Ghidra clearly flags problematic areas with warnings like "WARNING: Could not recover jumptable" and "WARNING: Treating indirect jump as call," accurately identifying where analysis failed.
+
+**15. Assertion & Contract Recovery:** Score: 5/10
+Justification: No preconditions or postconditions are inferred or documented; for example, the requirement that `n > 0` in `duffs_device` is present in code but not explicitly stated as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are direct and clear, and the relationship between callers and callees is preserved, though indirect calls are marked as unresolved.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled output maintains the original file's logical grouping of functions (Control Flow L1, L2, L3), making it easy to navigate.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on Ghidra-specific types (`undefined4`, `code *`) and compiler intrinsics (`__aeabi_idiv`), requiring significant cleanup to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 6 + 7) / 4 = 6.5
+L2_avg = (5 + 9 + 6 + 8) / 4 = 7.0
+L3_avg = (5 + 8 + 7) / 3 = 6.67
+L4_avg = (5 + 3 + 8 + 5) / 4 = 5.25
+L5_avg = (8 + 9 + 6) / 3 = 7.67
+
+Overall = (6.5 × 0.30) + (7.0 × 0.25) + (6.67 × 0.20) + 
+          (5.25 × 0.15) + (7.67 × 0.10)
+Overall = 1.95 + 1.75 + 1.334 + 0.7875 + 0.767
+Overall = 6.59
+```
+
+### Overall Readability Score: **6.6/10**
+
+### Critical Defects
+- **Switch Statement Loss**: Functions like `switch_small` and `switch_large` are decompiled into array lookups or arithmetic formulas instead of `switch` blocks, obscuring the original control flow intent.
+- **Recursion Obscured**: The recursive function `recursion_factorial` is decompiled as an iterative `do-while` loop due to compiler tail-call optimization, losing the semantic meaning of the source.
+- **Duff's Device Failure**: The `duffs_device` function results in highly complex, unstructured code with `goto` labels (`switchD_00010d90_caseD_7`), failing to recover the famous structured fall-through pattern.
+- **Generic Variable Naming**: All variables use generic names (`param_1`, `iVar1`), forcing the reader to manually track the purpose of variables that were named `a`, `b`, `sum` in the source.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**
+- **Why?** Ghidra perfectly recovered all function symbols from the binary, making the high-level purpose of every code block immediately identifiable.
+
+### Most Needs Improvement
+- **Idiom Recognition (3/10)**
+- **Why?** The decompiler failed to recognize standard programming patterns like recursion, switch fall-throughs, and Duff's device, presenting them as generic loops or spaghetti code instead of their intended structured forms.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhanced Switch Recovery**: Improve pattern matching to reconstruct `switch` statements from jump tables and array lookups, even when the compiler optimizes cases into arithmetic.
+2.  **Recursion Detection**: Implement analysis to detect when loops are the result of tail-call optimization and annotate them or reconstruct the recursive structure for better semantic transparency.
+3.  **Semantic Variable Renaming**: Utilize data flow analysis to infer variable names based on usage (e.g., variables accumulating sums should be named `sum` or `acc`) rather than relying solely on generic `param_X` naming.

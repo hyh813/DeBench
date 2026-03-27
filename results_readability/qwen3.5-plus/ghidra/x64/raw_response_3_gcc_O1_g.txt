@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `plVar1`, `puVar4`, `lVar1`, `uVar3`) obscuring their semantic purpose. Only a few meaningful names preserved (`__ptr`, `head`, `buffer`, `status`), requiring significant effort to trace variable roles.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test function names preserved accurately (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`). Runtime functions use standard conventions (`_init`, `_start`, `_fini`). Good semantic fidelity to original source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers prevalent without explanation: `0x2a` (42), `0x14` (20), `0xf` (15), `0x800` (2048), `0x400` (1024). Some recognizable (`0x41` = 'A'), but hex literals obscure intent compared to original decimal constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks add verbosity (`local_10 = *(long *)(in_FS_OFFSET + 0x28)`, `__stack_chk_fail()`). "WARNING: Unknown calling convention" comments appear frequently. Compiler artifacts present but not overwhelming.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: For-loops converted to do-while patterns with manual index management. Some functions overly simplified (`local_vars` → `return x * 2 + 10`). VLA/alloca functions have complex pointer arithmetic obscuring original loop structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity well-preserved with appropriate single responsibilities. No excessive inlining or fragmentation. Each function maintains cohesive purpose matching original source structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with logical flow. Stack check at function end creates minor non-linearity. Complex functions (e.g., `vla_stack`) have forward references but remain traceable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Constant folding occurred appropriately (`local_struct` simplified to `x * 3`). No obvious dead code or duplicate expressions. Loop unrolling not present, keeping code concise.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char, void*) but `size_t` degraded to `ulong`/`long`. Function pointer types partially recovered (`_func_int_int`). Some type erosion from original precision.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `Node` struct recovered with field names (`data`, `next`). `TreeNode` struct preserved (`data`, `left`, `right`). `Point` struct not explicitly shown. Array types sometimes lost to pointer decay.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Numerous casts present (`(long)`, `(int *)`, `(void *)`, `(char *)`). Pointer arithmetic visible but no major type confusion detected. Moderate safety concerns from cast proliferation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are auto-generated warnings only ("WARNING: Subroutine does not return", "Unresolved local var"). No semantic documentation explaining algorithm purpose or logic intent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns visible (malloc/free pairs, linked list traversal, tree creation) but never explicitly identified or named. Pattern recognition absent from decompilation output.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Stack canary checks flagged with warnings. "Unknown calling convention" noted. Some anomalies detected but not comprehensively documented with actionable guidance.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: NULL checks preserved in most functions. No explicit precondition/postcondition documentation. Error return values visible (-1, -2, -3) but meaning not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented with call graph. Global variables referenced without context (`global_counter`, `file_scope_static`). No relationship documentation between functions.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. No explicit module boundaries or file organization preserved from original structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External dependencies visible (`malloc`, `free`, `printf`, `fork`). Platform-specific `#ifdef` not preserved. Would require stubs for some functions to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (25%): (6+8+7+8)/4 = 7.25 × 0.25 = 1.8125
+Level 3 (20%): (6+7+6)/3  = 6.33 × 0.20 = 1.267
+Level 4 (15%): (3+5+6+5)/4 = 4.75 × 0.15 = 0.7125
+Level 5 (10%): (5+6+6)/3  = 5.67 × 0.10 = 0.567
+
+Overall = 1.725 + 1.8125 + 1.267 + 0.7125 + 0.567 = 6.08/10
+```
+
+**Overall Readability Score:** 6.1/10
+
+### Critical Defects
+- Variable `iVar1`, `plVar1`, `puVar4` should be named based on usage (e.g., `result`, `array_ptr`, `stack_ptr`)
+- Magic numbers like `0x2a`, `0x14`, `0x800` lack semantic meaning compared to original constants (42, 20, 2048)
+- No comments explain algorithm purpose—only auto-generated warnings present
+- Stack canary code (`in_FS_OFFSET`, `__stack_chk_fail`) adds noise without semantic value
+- Hex literals obscure readability compared to original decimal constants
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** — Most original function names preserved accurately, maintaining semantic connection to source code purpose.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (3/10)** — Only auto-generated warnings exist; no semantic documentation explaining what functions do or why logic exists.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns** — Analyze how variables are used (e.g., `iVar1` accumulates values → `sum`, `plVar1` iterates array → `array_ptr`)
+2. **Replace magic numbers with named constants** — Detect repeated literals and suggest constant definitions (e.g., `0x800` → `BUFFER_SIZE`)
+3. **Add semantic comments for non-trivial logic** — Generate explanatory comments for algorithms (e.g., "Creates linked list with 5 nodes, sums data, frees memory")

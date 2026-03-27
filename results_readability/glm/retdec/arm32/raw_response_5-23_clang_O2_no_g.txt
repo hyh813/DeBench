@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`a1`, `v1`, `v2`) and provide no semantic context. For example, in `param_asm_clobber`, `v1` is the array pointer and `v2` is the count, but these names require tracing the logic to understand.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are excellent and match the source exactly (e.g., `param_macro_constants`, `call_asm_basic`). This is likely due to the presence of debug symbols (`-g`), which the decompiler preserved perfectly.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: Critical failure in constant recovery. In `param_macro_constants`, the constant `1024` is represented as `(int32_t)&g18` (the address of a global variable), and `512` as `(int32_t)&g16`. In `param_multi_branch_compile`, the constant `0xDEF0` is split into `0xd000 + (int32_t)&g24`. This obscures the original logic significantly.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is generally clean of register spilling, but there is significant noise from pointer casts. For example, `(int32_t)&g18` is used where a simple integer constant belongs, and `int32_t *` casts are used frequently on what should be `void*` or `char*`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is mostly natural, though `for` loops are often reconstructed as `while` loops with manual pointer arithmetic (e.g., `param_asm_clobber`). The logic is traceable, but the idiom of a C `for` loop is lost.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly. The granularity is appropriate, with no monolithic functions or over-fragmentation.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom. There are no confusing forward jumps or spaghetti code structures, which is expected for `-O0` compilation.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no dead code or loop unrolling artifacts. The decompiler successfully removed the redundancy of the unoptimized assembly, presenting the core logic clearly.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Major failure: the architecture is ARM64 (64-bit), but pointers are consistently typed as `int32_t *` (e.g., `mmap` return value in `param_dynamic_code`). This truncates pointer width and is a severe type error. Additionally, `size_t` arguments are demoted to `int32_t`.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: While there are few complex structs in the source, array access is handled correctly via pointer arithmetic (e.g., `*(int32_t *)(a3 + 4)`), which accurately reflects the memory layout.
+
+**11. Type Safety:** Score: 4/10
+Justification: The incorrect use of `int32_t *` for pointers on a 64-bit platform creates unsafe type casts throughout the code. Comparing integers to addresses of global variables (e.g., `a1 > (int32_t)&g18`) is also a type safety violation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. The rich comments explaining macro behavior and assembly logic in the source are completely absent.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard patterns like `memcpy` are recognized, but specific macro idioms (like the `SQUARE` or `MAX` macro expansion) are lost, reduced to simple arithmetic expressions without context.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler does not flag the suspicious pointer arithmetic used to reconstruct constants (e.g., `&g24 + 0xd000`). It presents this confusing code confidently without warning.
+
+**15. Assertion & Contract Recovery:** Score: 5/10
+Justification: No preconditions or postconditions are documented. For example, the requirement that `exec_mem` in `param_dynamic_code` must be checked against `MAP_FAILED` is implicit in the control flow but not stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the correct names. The relationship between `call_*` functions and their `param_*` implementations is obvious due to the preserved naming.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, and the order matches the source file reasonably well. The separation between preprocessing tests and assembly tests is maintained.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code would likely fail to compile or produce warnings on a standard ARM64 system due to the `int32_t *` pointer type mismatch. The reliance on global addresses for constants also breaks portability.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 9 + 2 + 6) / 4 = 5.0
+L2_avg: (7 + 9 + 8 + 8) / 4 = 8.0
+L3_avg: (3 + 8 + 4) / 3 = 5.0
+L4_avg: (1 + 5 + 5 + 5) / 4 = 4.0
+L5_avg: (8 + 8 + 5) / 3 = 7.0
+
+Overall = (5.0 * 0.30) + (8.0 * 0.25) + (5.0 * 0.20) + 
+          (4.0 * 0.15) + (7.0 * 0.10)
+        = 1.5 + 2.0 + 1.0 + 0.6 + 0.7
+        = 5.8
+```
+
+### Overall Readability Score: 5.8/10
+
+### Critical Defects
+- **Constant Recovery Failure**: Constants like `1024` and `0xDEF0` are represented as pointer arithmetic involving global variable addresses (e.g., `(int32_t)&g18`), making the code extremely confusing.
+- **Type Width Mismatch**: Pointers on an ARM64 binary are incorrectly typed as `int32_t *` instead of `int64_t *` or `void *`, leading to unsafe and incorrect code.
+- **Loss of Macro Semantics**: All macro definitions are lost; while this is expected, the resulting arithmetic (e.g., `a1 * a1`) lacks the context that it was originally a `SQUARE(x)` macro.
+- **Magic Numbers**: System call flags (e.g., `3` for `PROT_READ|PROT_WRITE`, `34` for `MAP_PRIVATE|MAP_ANONYMOUS`) are not mapped to their named constants.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**
+- **Why?**: The decompiler perfectly preserved the original function names (e.g., `param_macro_constants`), likely due to the presence of debug symbols, which makes navigating the code trivial.
+
+### Most Needs Improvement
+- **Literal Clarity (2/10)**
+- **Why?**: The representation of immediate constants as addresses of global variables (e.g., `&g18` instead of `1024`) is a severe readability blocker that fundamentally breaks the understanding of simple conditional logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Fix Constant Propagation**: Improve the analysis of load instructions to recognize when a value is being loaded from a literal pool or data section and represent it as an immediate value rather than a pointer to a global.
+2.  **Correct Architecture Type Widths**: Ensure that pointer types match the architecture width (64-bit for ARM64) rather than defaulting to 32-bit integers.
+3.  **Map System Constants**: Implement a database to recognize common system call flags (like `mmap` protections or flags) and replace the raw integers with their symbolic names.

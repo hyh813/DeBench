@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a0`, `a1`, `a2`) and local variables are cryptic (`v0`, `v1`, `v2`). The source uses meaningful names like `temp1`, `temp2`, `temp3` in `sequential_ops`, but these are completely lost. Register hints like `// r0`, `// r2` add noise but don't improve semantic understanding.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some function names are preserved from source (`sequential_ops`, `single_if`, `if_else`), but many use auto-generated address-based names like `sub_4004dc`, `sub_400594`. The naming is inconsistent - some functions retain original names while others are generic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF for -1) appear frequently without explanation. The value `1001` in `infinite_loop` is unexplained. No named constants recovered from source (e.g., array sizes, operation codes).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive compiler artifacts including register annotations (`// r0`, `// r1`, `// r2`, `// lr`), stack frame offsets (`[bp-0x4]`, `[bp+0x0]`), spurious goto labels (`LABEL_4005b8`, `LABEL_400720`), and dead code fragments clutter the output significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `single_if` uses bizarre bit manipulation `a0 << ((char)(0 < a0 ? 1 : 0) & 31)` instead of simple if-else. `loop_for_fixed` uses complex formula `(((v1 - 1) * (v1 - 2) >> 32 & 1) * 0x80000000 | ...)` instead of loop. `loop_while` has convoluted division-by-10 using magic constant `1717986919`. These are highly unnatural.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable granularity matching source. Each function handles a single control flow pattern. No excessive inlining or outlining artifacts observed. Parameter counts generally match original signatures.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Excessive goto statements and labels disrupt flow. Functions like `nested_if_deep` have 8+ labels creating spaghetti code. Forward jumps interrupt readability. The code does not read naturally top-to-bottom.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant calculations present (e.g., `loop_for_fixed` computes same value multiple ways). Dead code detection is reasonable. Loop unrolling is not excessive at -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: All parameters typed as `unsigned int` when source uses `int`. This causes issues - `single_if(-5)` returns `4294967291` instead of `-5`. No distinction between signed/unsigned in decompiled output. Function pointers use generic types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. `loop_break` accesses `*((int *)(4200520 + 4 * v0))` with raw addresses instead of array `arr[]`. `loop_multi_exit` uses `&g_40185c` pointer arithmetic. The original `int arr[] = {10, 20, 30, 40, 50}` is completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe pointer casts (`(int *)(4200520 + 4 * v0)`). Pointer arithmetic without bounds checking. Function pointer type confusion in `call_func_ptr` uses `goto a0` which is dangerous. No const correctness.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are minimal and mostly auto-generated register annotations. No algorithm explanations. No documentation of non-obvious logic. The source's detailed comments explaining each control flow pattern are completely absent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized (switch statements in `switch_small`, `switch_large`). However, design patterns like state machine, Duff's device, or callback patterns are not explicitly identified or named. The source explicitly tests these patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. `duffs_device` is completely broken (returns -1 for most cases). `computed_goto` is empty. `call_func_ptr` uses dangerous `goto a0`. No warnings about these issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of error handling paths. The source's validation logic (e.g., `if (x < 0) return -1`) is decompiled but not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships not documented. No indication of which functions call `process_with_callback` or use `double_value`. Global variable usage (`g_40185c`, `g_401e70`) unexplained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching binary layout. Static functions (`$a.16`, `triple_value`) grouped near usage. However, no logical grouping matching source's CF-L1, CF-L2, CF-L3 sections.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has `extern` declarations for external references. May compile with stubs for missing functions like `__divsi3`. However, broken functions like `duffs_device` and `computed_goto` will cause issues.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`a0`, `a1`, `v0`, `v1`) - original semantic meaning completely lost
+- Type precision failure: all `int` parameters become `unsigned int`, causing signed/unsigned bugs (e.g., `single_if(-5)` returns wrong value)
+- Control flow unnatural: `single_if` uses bizarre bit manipulation instead of if-else; `loop_for_fixed` uses complex formula instead of loop
+- No composite type recovery: array `int arr[] = {10,20,30,40,50}` becomes raw pointer arithmetic `*((int *)(4200520 + 4 * v0))`
+- Excessive noise: register annotations (`// r0`, `// r1`), stack offsets (`[bp-0x4]`), goto labels clutter output
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Functions maintain reasonable granularity matching source structure. Each control flow pattern is in its own function with appropriate parameter counts.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+All meaningful variable names from source are lost. Parameters should be inferred from usage (e.g., `a0` in `sequential_ops` is clearly `a` based on formula `(a1 + a0) * 2 - a2`).
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - in `sequential_ops`, `a0` should be `a`, `a1` should be `b`, `a2` should be `c` based on the formula
+2. Recover proper types - detect signed vs unsigned from arithmetic operations and comparisons
+3. Replace goto-based control flow with natural constructs - recognize the formula in `loop_for_fixed` as loop unrolling and restore the loop form at -O0

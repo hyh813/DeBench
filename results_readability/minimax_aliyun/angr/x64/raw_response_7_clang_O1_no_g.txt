@@ -1,0 +1,123 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+The original source code is a 464-line C file containing multiple test functions for obfuscation, optimization, and edge case handling. The decompiled output is 946 lines of AMD64 code (note: architecture mismatch - source specifies arm64 but decompiled shows AMD64). The decompiler used appears to be Angr/Ghidra.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `a2`, `a3`, `idx`, `ptr`. The original source had meaningful names like `x`, `result`, `str`, `n`, `acc`. For example, in `param_fake_branch`, the parameter `a0` should be `x`, and local variables are completely generic.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: All functions use address-based mechanical names (e.g., `sub_401020`, `sub_4011a0`, `sub_4011b0`) instead of the original semantic names like `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`. The decompiler completely failed to recover any meaningful function names from the debug symbols.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (e.g., `10`, `1000`, `100`, `5`) but magic numbers like `0xDEADBEEF` from the original source are not visible - the decompiler simplified the logic. Constants like `4294967295` (0xFFFFFFFF) appear but without explanation. Mixed result.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some unusual constructs like `CONCAT` operations for division/modulo reconstruction and `uint128_t` type appear, but these are understandable decompilation artifacts. No significant register spilling noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural - loops use `do-while` constructs, conditionals are clear. However, some awkward patterns exist like the complex gcd computation in `param_opaque_predicate` using bit manipulation with `CONCAT` operations. At -O0, the flow should be more straightforward.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are properly separated with appropriate granularity. Each test function (`param_fake_branch`, `param_opaque_predicate`, etc.) is correctly isolated. However, some wrapper functions like `sub_401199` that just call `param_fake_branch()` add unnecessary fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. The main disruption is in complex functions like `param_opaque_predicate` where the gcd loop creates some non-linear flow, but it's manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy visible - for example, `call_fake_branch()` returns constant `10` instead of calling `param_fake_branch(10)`. The decompiler appears to have constant-folded some calls. However, no severe duplication.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results. Parameters correctly use `unsigned int` for integers, but return types are inconsistent (sometimes `unsigned long long`, sometimes `int`). The original source used `int` consistently. Pointer types are often shown as `unsigned long` instead of proper pointer types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Very little struct/union recovery. The original source had no complex structs, but the decompiler creates artificial structures like `struct_0` and `uint128_t` that don't correspond to source types. The `jmp_buffer` type is not properly recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns present. The `param_opaque_predicate` function has complex expression reconstruction with `CONCAT` operations that could cause issues. Pointer arithmetic like `ptr + idx * 4` is used without bounds checking. Some signed/unsigned mixing visible.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled code. The original source had extensive comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.) and their purposes. The decompiler provides zero recovery of this documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are recognizable - the gcd algorithm in `param_opaque_predicate` is visible as a loop, the tail recursion in `param_tail_call_optimized` is preserved. However, no explicit naming of patterns like "opaque predicate" or "fake branch" that were in the original.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some anomalies are flagged (e.g., `/* do not return */` comments for `longjmp` and signal handlers), but the decompiler doesn't indicate uncertainty about the complex expression reconstruction in `param_opaque_predicate`. The architecture mismatch (arm64 source vs AMD64 output) isn't flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear expectations (e.g., "期望: 10" for expected return values) that are completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible (e.g., `call_fake_branch` calls `param_fake_branch`), but global variable usage is unclear - extern declarations like `g_403fe8`, `g_404008` are not connected to meaningful names. The relationship between test functions and their callers isn't explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by address but not logically organized. The original grouped functions by category (obfuscation, optimization, edge cases). The decompiled output is just an address-ordered list.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many extern declarations needed (e.g., `extern unsigned long long g_403fe8;`). The code would require significant patching to compile - missing definitions for global variables, undefined `puts`/`printf` references. The `CONCAT` operations are not valid C syntax.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Calculation:**
+- L1 Average: (2+2+5+7)/4 = 4.0
+- L2 Average: (6+7+7+6)/4 = 6.5
+- L3 Average: (5+3+5)/3 = 4.3
+- L4 Average: (2+4+3+2)/4 = 2.75
+- L5 Average: (4+5+4)/3 = 4.33
+
+Overall = (4.0 × 0.30) + (6.5 × 0.25) + (4.3 × 0.20) + (2.75 × 0.15) + (4.33 × 0.10) = 1.2 + 1.625 + 0.86 + 0.4125 + 0.433 = 4.53
+
+Wait, let me recalculate with proper precision:
+- L1: 4.0 × 0.30 = 1.20
+- L2: 6.5 × 0.25 = 1.625
+- L3: 4.33 × 0.20 = 0.866
+- L4: 2.75 × 0.15 = 0.4125
+- L5: 4.33 × 0.10 = 0.433
+
+Total = 4.54/10
+
+**Critical Defects:**
+- Function names are all address-based (`sub_401020`) instead of semantic (`param_fake_branch`)
+- Variable names are completely generic (`v0`, `v1`, `a0`, `a2`) with no semantic recovery
+- No comments recovered from original source explaining obfuscation techniques
+- Type precision is inconsistent - mix of `unsigned long long`, `unsigned int`, `int`
+- Complex expression reconstruction uses non-standard `CONCAT` operations
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 6/10)  
+- Despite some complexity in `param_opaque_predicate`, the basic loop and conditional structures are recognizable and follow natural C patterns.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- The original source had extensive documentation explaining each obfuscation technique (OBF-L4-02, OBF-L4-03, etc.) with expected values. This semantic information is completely lost in the decompiled output.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover function names from debug symbols**: The original binary was compiled with `-g` (debug info), so the decompiler should have access to DWARF information to recover names like `param_fake_branch` instead of `sub_4011a0`.
+
+2. **Infer variable names from usage patterns**: Variables like `a0` used in arithmetic operations should be named based on context (e.g., `input_value`, `x`). The parameter `a0` in `param_fake_branch` is clearly the input `x`.
+
+3. **Replace `CONCAT` operations with standard C constructs**: The complex expression reconstruction for division/modulo operations produces unreadable code. Use standard `/` and `%` operators with appropriate type casts instead.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `uVar2`, `bVar2` through `bVar17`), losing all semantic meaning from original names like `arr`, `local`, `head`, `current`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user functions retained original names (`local_vars`, `heap_basic`, `test_stack_memory`), but some are generic (`FUN_00101020`, `_init`) and some semantics lost.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex (`0x2a`, `0x14`, `0xf`, `0x3c`) instead of decimal values from source (`42`, `20`, `15`, `60`), requiring mental conversion.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive compiler artifacts including 16+ byte variables (`bVar2`-`bVar17`) in `large_stack_frame`, redundant type casts, and unnecessary intermediate variables throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple for-loops transformed into massive unrolled structures (e.g., `large_stack_frame` has 1000+ lines for a 16-byte pattern fill), using labels like `LAB_0010145f` instead of natural loops.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but some oversimplified (`stack_alias` reduced to `return 0x14`), while `linked_list_heap` lost proper loop structure becoming nested conditionals.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but forward jump labels (`LAB_0010145f`, `LAB_0010159f`) disrupt flow, requiring mental tracking of jump targets.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe loop unrolling redundancy—`large_stack_frame` expands a simple 2048-byte fill into 800+ lines of repetitive assignments instead of recognizing the pattern.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate (`undefined4`, `undefined8`, `ulong`) instead of precise types (`int32_t`, `size_t`, `char*`); pointer types often `void*` or `undefined4*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `Point`, `Node`, and `TreeNode` structs completely lost—functions use pointer arithmetic (`*(undefined4**)(__ptr + 2)`) instead of field access (`node->next`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(undefined4*)`, `(int*)`), pointer arithmetic without bounds checking, and type-confused operations on heap structures.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic; no algorithm descriptions, no decompilation confidence indicators, no API contract documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified (linked list creation, tree traversal); memory allocation patterns not recognized as idioms.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about potential issues like `dangling_pointer` undefined behavior, `double_free` errors, or unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`), no postconditions inferred, no error condition explanations.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships not documented; global variable usage (`global_counter`, `file_scope_static`) not clearly indicated in calling functions.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in somewhat logical order matching source, but no header file structure or logical grouping comments.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External function declarations present but would require significant patching (type corrections, struct definitions) to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+5+6+3)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+6+5)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.19/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1`, `uVar2`** should be named based on usage (e.g., `array_size`, `loop_index`, `result`)
+- **Loop unrolling in `large_stack_frame`** creates 800+ lines for a simple 16-byte pattern fill—should recover as `for` loop
+- **Struct types (`Point`, `Node`, `TreeNode`) completely lost**—replaced with raw pointer arithmetic
+- **No comments** explaining any non-trivial logic or decompilation uncertainty
+- **Magic numbers as hex** (`0x2a`, `0x14`) instead of meaningful decimal values from source
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most user-defined functions retained original semantic names like `local_vars`, `heap_basic`, `test_stack_memory`
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation, making complex decompiled logic nearly impossible to understand without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover loop constructs from unrolled patterns** - Detect repetitive assignment sequences and reconstruct as `for`/`while` loops with proper bounds
+2. **Infer variable names from usage context** - Analyze how variables are used (size checks, array indexing, pointer dereference) to suggest semantic names
+3. **Reconstruct composite types from access patterns** - Identify consistent offset patterns (`+0`, `+8`, `+16`) to recover struct definitions with field names

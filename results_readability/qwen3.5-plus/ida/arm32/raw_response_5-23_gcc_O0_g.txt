@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Generic names like `v0`, `v1`, `v2` through `v10` in `test_preprocessing_features` obscure their purpose, while some functions use meaningful names like `sum`, `page_size`, `exec_mem`. Original source had semantic names that are partially lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation of original function names (`param_macro_constants`, `call_asm_clobber`, `param_builtin_macros`). Only startup functions like `sub_10480` use generic naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `57072` appears instead of `0xDEF0` (should be 57072 decimal but loses hex context), line number `279` and date strings are hardcoded without explanation. Some literals like `1024`, `512`, `64` remain clear.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Register variables (`v4`, `r0`) and `BYREF` annotations add minor noise. The 30+ atomic helper functions (`__sync_fetch_and_add_4`, etc.) are compiler runtime artifacts not in original source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Clean if/else and for-loop structures throughout. Macro-expanded code correctly simplified (e.g., `param_macro_constants` shows direct comparison instead of macro). No spurious goto usage in main logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source exactly with appropriate granularity. Each function has single responsibility. Atomic helper functions are verbose but necessary for correctness.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom well. Some nested if-else in `param_memory_protection` could be flattened. No forward jumps disrupting flow in user code.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Inline assembly correctly converted to equivalent C (e.g., `param_asm_clobber` shows for-loop instead of assembly). Atomic helpers are repetitive but functionally necessary.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, void*, size_t), but `_DWORD *` used instead of `int *` in atomic functions. Const-correctness lost in string literals. Some platform-specific type information erased.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays handled correctly (`arr[5]`, `result[4]`). No complex structs in this code to evaluate. Pointer-to-function types simplified appropriately.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present: `(_DWORD *)-1`, `(char **)va`, `(__int16)v6`. Pointer arithmetic in atomic helpers uses bit manipulation that obscures safety. No buffer overflow warnings.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no semantic comments. Only auto-generated register annotations (`// r0`, `// [sp+0h]`). No explanation of what functions do or why logic exists. Original source had extensive documentation.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Macro expansions correctly recognized and simplified (ADD_16 → x+16). Atomic operations recognized as library calls. No explicit pattern naming or algorithm documentation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "FAILED to decompile" notices for 12 external functions is helpful. No warnings about potentially incorrect recovery or confidence levels. Platform-specific code silently simplified.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`). No postconditions or error condition documentation. Return value semantics not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships clear through direct calls. Global variable `global_var` usage visible. No explicit call graph or dependency documentation.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions appear in logical order matching source file structure. Related test functions grouped together. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 12 external functions marked "FAILED to decompile" requiring stubs. Platform-specific syscalls (`sysconf`, `mmap`) need library linkage. Would not compile standalone without significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+9+5+7)/4 = 6.75 × 0.30 = 2.025
+Level 2 (Structural):  (8+8+7+8)/4 = 7.75 × 0.25 = 1.938
+Level 3 (Type):        (7+7+6)/3   = 6.67 × 0.20 = 1.334
+Level 4 (Semantic):    (3+6+5+2)/4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):  (7+8+5)/3   = 6.67 × 0.10 = 0.667
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.56/10
+```
+
+**Overall Readability Score:** 6.6/10
+
+### Critical Defects
+- **Variable names `v0`-`v10`** in test functions should reflect their semantic purpose (e.g., `result_macro_constants`, `result_macro_functions`)
+- **Magic number `57072`** loses the original hex constant `0xDEF0` context and platform-specific meaning
+- **Zero semantic comments** - original source had extensive documentation explaining each test case
+- **12 failed external function decompilations** require manual stub creation for compilation
+- **Unsafe casts** like `(_DWORD *)-1` and `(__int16)v6` obscure type safety guarantees
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - Decompiler excellently preserved original function names, making code navigation and understanding significantly easier than typical decompilation output.
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or error handling documentation recovered, making it difficult to understand function contracts and valid input ranges.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage context** - Analyze how variables are used (e.g., `v0` receives `call_macro_constants()` return) to suggest semantic names like `result_constants`
+2. **Preserve constant provenance** - When constants originate from macros or hex literals, include comments showing original form (e.g., `57072 /* 0xDEF0 from PLATFORM default */`)
+3. **Generate contract documentation** - Analyze null checks, range validations, and error returns to infer and document function preconditions and postconditions

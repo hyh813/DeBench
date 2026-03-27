@@ -1,0 +1,94 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: All variables use generic names like `a0`, `a1`, `v0`, `v1`, `v2`, `ptr`, `i`. Parameters like `unsigned int a0` in `process_int` should be named `x` based on source. Loop counters use `v0`, `v1` with register hints (`// r0`, `// r3`) but no semantic meaning whatsoever.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions preserve original names: `test_data_types_l1`, `test_array_types`, `test_pointer_types`, `test_composite_types`. Core functions like `process_char`, `process_int`, `process_long` match source. However, many utility functions use address-based names: `sub_103a0`, `sub_10450`, `_init`, `_start`, `frame_dummy`.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Magic numbers everywhere without explanation: `65`, `25`, `32` in `process_char` (should be 'A', 25, 32 for ASCII conversion); `65535` for short mask; `4294967295` for -1 return; `1069128089` (0x3FB99999) for 0.1 double. String literals are just addresses: `0x12344`, `0x124c4`. No enum values recovered.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Expected floating-point library functions present: `__mulsf3`, `__addsf3`, `__aeabi_dadd`, `__floatundidf`. These are ARM64 ABI requirements. Some redundant variable declarations but manageable. No debug instrumentation visible.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive use of `goto` with labeled blocks: `LABEL_10768`, `LABEL_10794`, etc. Loop constructs use backward jumps with goto instead of while/for. `process_bool` has convoluted flow with multiple conditional gotos. `armg_calculate_condition` calls obscure logical intent.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and cohesive. Test functions appropriately call sub-functions. Some large functions like `binary_tree_sum` with many local variables but single responsibility. Library functions properly separated. Minor granularity issues but acceptable.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Many forward jumps with goto labels disrupt flow. Example: `goto LABEL_10768` appears before the label definition. Some early returns present. Generally readable but jumps interrupt top-to-bottom flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling visible in `array_1d_stack` and similar functions. Common subexpression patterns present but not excessive. Dead code minimal. Loop unrolling from -O0 is unexpected but present.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation throughout. `process_char` takes `unsigned int` instead of `char`. `process_bool` returns `unsigned int` instead of `_Bool`. `const_param` takes `unsigned int *` instead of `const int *`. `volatile_access` takes `unsigned int *` instead of `volatile int *`. Most integers are `unsigned int` regardless of signedness.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct recovery with generic names: `struct_0`, `struct_1` with `field_0`, `field_4`. `linked_list` and `doubly_linked_list` recover structure with `field_0` (data) and `field_4` (next pointer). `binary_tree_sum` has massive struct typedef spam - over 100 typedefs with meaningless names. Union types not clearly recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations: pointer arithmetic without bounds in `array_complex_index`: `*((int *)(a0 + (a3 + v1 * a1) * 4))`. Function pointer casts in `ptr_func_simple`: `goto a0`. Some array accesses could overflow. Mixed signed/unsigned comparisons.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments - only register location hints like `// r0`, `// r3`, `// [bp-0x4]`. No algorithm explanations. No decompilation confidence indicators. No API contracts (@param, @return). Comments are purely mechanical, not semantic.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified or named. No algorithm patterns (KMP, Dijkstra, etc.) recognized. Data structure patterns (linked list, tree) hinted by struct recovery but not explicitly named or documented. Completely missing pattern documentation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for indirect calls that couldn't be resolved. No warnings about unusual stack layouts. No indication of potential undefined behavior (like the intentional out-of-bounds in `array_oob`). Silent failures throughout. Code presents everything with equal confidence.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented anywhere. No postconditions inferred. No invariant recognition. Zero contract information recovered. The code provides no guidance about expected input ranges or output guarantees.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are syntactically clear. External functions marked as `extern`. But no documentation of call relationships: "Calls: X, Y" or "Called by: Z". Global variable usage not documented. Relationships must be inferred from code.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically: test functions together, core functions first, library functions at end. Static functions properly marked. Related functions (like array functions) grouped. Some arbitrary ordering but reasonable.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Many `extern` declarations for library functions. Would require linking against libgcc for floating-point. Dependencies not documented. Some functions have incorrect signatures that would cause linking errors. Not standalone-compilation ready without fixes.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- All variables use generic names (`a0`, `v0`, `ptr`) with no semantic meaning
+- Excessive goto usage for control flow instead of natural loops/conditionals
+- Type precision severely degraded: `char`→`unsigned int`, `_Bool`→`unsigned int`, `const int*`→`unsigned int*`
+- No comments explaining algorithms, contracts, or decompilation confidence
+- Magic numbers everywhere without named constants or explanations
+- `binary_tree_sum` has 100+ meaningless struct typedefs creating massive noise
+
+### Best Quality Aspect: Function Decomposition (7/10)
+- Functions are reasonably sized with good cohesion
+- Test functions properly call sub-functions
+- Single responsibility principle mostly followed
+
+### Most Needs Improvement: Variable Naming Quality (1/10)
+- Every variable uses generic mechanical names
+- No semantic inference from usage patterns
+- Compare to source: `x` becomes `a0`, `sum` becomes `v0`, `ptr` becomes `v1`
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: `a0` used as `*a0 + 10` in `const_param` should be `p` or `ptr`. Loop accumulator starting at 0 should be `sum`.
+2. **Recover natural control flow**: Convert backward goto jumps to while/for loops. The pattern `if (cond) goto LABEL; ... goto LOOP_START; LABEL:` is a while loop.
+3. **Add semantic comments**: Document what functions do, not just register locations. Add "DECOMPILER NOTE" for uncertain constructs. Explain magic numbers like `65` = 'A'.

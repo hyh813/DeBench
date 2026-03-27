@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named `v1`, `v2`, `v3`, `mem`, `result` with no semantic meaning. Global variables are `g1`, `g2`, `g3` through `g36` - completely opaque. Original parameter names like `x`, `n`, `arr` are lost to `a1`, `a2`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some original names preserved (`local_vars`, `heap_basic`, `double_value`) but many functions are `function_5a8`, `function_5b4` with address-based naming. Runtime helpers have verbose but meaningless names (`__sync_fetch_and_add_4`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (`0x1000000`, `0x10000`, `255`, `0xffff`). String literals stored as globals `g29`, `g30` with hex-encoded content. No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive compiler runtime functions included (50+ `__sync_*` variants, `__aeabi_read_tp`, `function_ffff0fa0`). Many wrapper functions that just call standard library (`function_5cc` = memmove, `function_5d8` = free).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: For loops degraded to while loops with manual increment. `linked_list_heap` uses goto labels (`lab_0x12f0`, `lab_0x1328`). `large_stack_frame` has infinite while loop instead of for loop with bounds.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but compiler added 50+ helper functions. Some functions like `test_heap_memory` are monolithic (200+ lines) without logical subdivision.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple forward jumps disrupt reading flow. `linked_list_heap` has complex goto-based control. `vla_stack` and `alloca_usage` have non-linear stack pointer calculations obscuring logic.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns from optimization (bit manipulation for array indexing). `__sync_*` functions have nearly identical code repeated 30+ times with only size suffixes differing.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently but loses distinction between `int`, `size_t`, `uint32_t`. Pointer types often degraded to `int32_t *` without proper const/volatile qualifiers. Function pointers become `int32_t *`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `Point`, `Node`, `TreeNode` structs not recovered. Field access becomes raw pointer arithmetic: `*(int32_t *)(v1 + 4)`, `*(int32_t *)(result + 8)`. No struct definitions in output.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(int32_t)mem`, `(char *)v1`). Pointer arithmetic without bounds checking. `dangling_pointer` use-after-free not flagged. `double_free` pattern preserved without warning.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, algorithms, or purpose. No decompilation confidence indicators. Original source comments completely lost. Only auto-generated header comments present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Linked list creation/traversal in `linked_list_heap` not identified. Tree structure in `tree_heap_traversal` not recognized. Memory allocation patterns not labeled.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Dangerous patterns (`dangling_pointer`, `double_free`, `heap_overflow`) not flagged. No warnings about undefined behavior. `unknown_ffff0fc0` calls not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 != NULL` checks not labeled as requirements). No postconditions. Error return values (-1, -2, -3) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls clear but global variable relationships opaque (`g11` = `global_counter` not indicated). Callback mechanism in `set_global_callback`/`call_global_callback` not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file. No logical grouping of related functions. Static functions not properly scoped. Test functions mixed with implementation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes necessary headers but has undefined references (`unknown_ffff0fc0`, `function_ffff0fa0`). Many `__sync_*` functions may not link. Should compile with stubs.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+5+4+4)/4 = 4.00 × 0.30 = 1.20
+L2 Average: (4+6+5+6)/4 = 5.25 × 0.25 = 1.31
+L3 Average: (5+2+4)/3   = 3.67 × 0.20 = 0.73
+L4 Average: (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+L5 Average: (4+5+6)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────
+Overall Score: 4.00/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Global variables `g1`-`g36`** have no semantic meaning - should be `global_counter`, `global_array`, `file_scope_static`, etc.
+- **Struct types completely lost** - `Point`, `Node`, `TreeNode` become raw pointer arithmetic with no type information
+- **Zero comments** - no explanation of logic, algorithms, or decompilation confidence
+- **Control flow degradation** - for loops become while loops, gotos introduced in `linked_list_heap`
+- **Dangerous patterns unflagged** - `dangling_pointer`, `double_free`, `heap_overflow` not warned about
+
+### Best Quality Aspect:
+- **Build System Compatibility (6/10)** - Code includes necessary headers and has proper function prototypes, requiring only stub implementations for undefined references to compile.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any explanatory comments makes understanding non-trivial logic extremely difficult for human analysts.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze consistent field access patterns to reconstruct struct layouts with meaningful field names based on usage context.
+2. **Add semantic annotations** - Flag dangerous patterns (use-after-free, double-free, buffer overflow) with warnings and document function contracts (preconditions, return value meanings).
+3. **Improve variable name inference** - Use data flow analysis to infer variable purposes from usage patterns (e.g., variables used in loop bounds should be named `count`, `size`, `length`).

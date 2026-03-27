@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `v2`, `ptr`, `result`. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier` which are completely lost. Even `result` is inconsistently applied.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Mixed results - some C++ names are properly demangled (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func`), but many functions use mechanical address-based names like `sub_401664`, `sub_401928`. The original source had clear, descriptive function names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `42` (exception value), `31` (strncpy length), `50`/`100` (diamond inheritance values) appear without explanation. Some values like `3` and `7` for template instantiation are contextually clear but not documented.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: stack canary checks (`__stack_chk_guard`), weak function references, thunk functions for virtual inheritance, vtable manipulation code, and empty stub functions (e.g., `Base::virtual_func` returns immediately). These obscure the actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Generally readable with appropriate early returns, but some awkward patterns exist: `goto *((long long *)*((long long *)&arg_0))` for virtual dispatch, and some functions like `test_cpp_constructor` are completely empty stubs. At -O0, more natural flow is expected.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions maintain reasonable granularity, but several are incomplete stubs (e.g., `test_cpp_constructor`, `test_cpp_lambda`, `test_cpp_multiple_inheritance` return immediately with no logic). The original had 12 test functions with complete implementations.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom with minimal forward jumps. Early returns used appropriately. Some computed jumps (`goto *`) for vtable dispatch but these are expected with virtual functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns present: `register_tm_clones()` called twice in `frame_dummy()`, duplicate return statements in some functions. Not severe but adds noise.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - uses `unsigned int`, `unsigned long long` appropriately in some places, but many instances of generic `int`, `char*`, and `void*`. The original had precise types like `size_t`, `int*`, `bool` which are often lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Partial struct recovery with generic field names: `struct_0 { field_0, field_8, field_10 }`, `struct_2`, `struct_3`. Class definitions are empty shells (`class Base {}`). Original had `SimpleClass`, `LifecycleClass`, `Base`, `Derived` with meaningful members.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations: raw pointer arithmetic (`(char *)ptr + 4 * v0`), unsafe casts like `*(int *)((char *)ptr + 4 * v0) = arg_0`, and pointer arithmetic in template functions. Not catastrophic but requires careful analysis.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only function headers with addresses. No explanation of algorithms, magic numbers, or non-obvious logic. Original source had extensive Chinese comments explaining each test scenario.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ patterns recognizable (virtual function calls via vtable, template instantiation, unique_ptr cleanup) but not explicitly identified or named. No pattern documentation like "virtual dispatch via vtable" or "RAII unique_ptr pattern."
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Basic annotations like "do not return" present for functions like `_start` and exception handlers. However, no flags for uncertain indirect calls, potential undefined behavior, or decompilation confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear expectations (e.g., "期望: 4704") which are completely lost. No contract information recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some relationships visible through `extern` declarations and function calls, but not comprehensively documented. No clear indication of who calls whom or global variable usage patterns.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are listed in address order rather than logical grouping. The original had clear sections (CPP-L3-01, CPP-L3-02, etc.) which are completely lost. Arbitrary organization based on binary layout.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has many `extern` declarations for standard library functions and would not compile standalone. No dependency documentation or stubs provided. Requires significant patching to produce compilable code.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.8/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`v0`, `v1`, `v2`, `ptr`) losing all semantic meaning from original source
+- Several test functions are empty stubs (`test_cpp_constructor`, `test_cpp_lambda`, `test_cpp_multiple_inheritance`) with no decompiled logic
+- No comments explaining algorithms, magic numbers, or expected values (original had "期望: 4704" annotations)
+- Composite types recovered with generic field names (`field_0`, `field_8`) instead of meaningful names
+- Class definitions are empty shells (`class Base {}`) with no member information
+
+**Best Quality Aspect:** Code Linearization (scored 7/10)  
+The decompiled code generally reads top-to-bottom with appropriate use of early returns, making the execution flow relatively easy to follow despite other issues.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The complete loss of meaningful variable names is the most severe readability issue. Original names like `value`, `name`, `data`, `size`, `multiplier` are replaced with generic `v0`-`v4`, making it extremely difficult to understand variable purposes.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `strlen()` on a buffer suggests `name` or `string`, arithmetic on pointer suggests `index` or `offset`) to generate semantically meaningful names
+2. **Recover complete function bodies**: Several functions are empty stubs - ensure all logic is decompiled, not just portions that survived optimization
+3. **Add explanatory comments for magic numbers and expected values**: When literal values match source expectations (e.g., "期望: 4704"), add comments documenting these to aid understanding

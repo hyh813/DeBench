@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Function parameters retain original names (`a`, `b`, `x`), but local variables are generic (`iVar1`, `uVar2`, `local_d8`) or marked "Unresolved local var" (e.g., `va_list args@[???]` in `varargs_func`).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`), though runtime functions use generic names (`FUN_00101020`, `_init`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Constants appear as hex (`0xf`, `0x32`, `0x2a`) instead of decimal values; printf format strings replaced with `&DAT_` references losing semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Warning comments clutter output ("WARNING: Unknown calling convention", "Unresolved local var"); no significant dead code but artifacts impede reading.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `varargs_func` shows complex stack manipulation instead of clean va_list loop; `ret_multi_branch` uses arithmetic (`op * 10 + 10`) instead of switch statement.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions properly separated, but constant folding merged call functions (e.g., `call_cdecl()` returns `0xf` directly instead of calling `cdecl_func(5, 10)`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `varargs_func` has confusing nested conditionals and loop structures that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `func_struct_byval` shows unrolled summation (16 separate additions) instead of loop; optimization artifacts not abstracted or commented.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, double), but `va_list` becomes raw pointer manipulation; function pointers use `_func_int_int *` instead of proper typedefs.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `LargeStruct` and `SmallStruct` field access preserved (`.data[i]`, `.x`, `.y`), but struct definitions not shown inline; `BigStruct` recovered correctly.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout (`(int *)`, `(char *)`, `(double *)`); void* conversions in `ret_opaque_handle` lack proper type annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warning comments present; no algorithm explanations, API contracts, or semantic documentation recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern not recognized as stdlib idiom; design patterns (callback, struct passing) not identified or named.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings flag calling convention issues and unresolved variables, but don't explain root causes or suggest manual analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `p != NULL` in `func_struct_byptr`); no error condition documentation or postcondition inference.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented; global references use `&DAT_` without context or symbol names.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source order but without logical grouping; no header file structure or API declarations recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone—missing struct definitions, external references (`__libc_start_main`), undefined `DAT_` symbols, and unresolved types.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        5.75 × 0.30 = 1.725
+Level 2 (Structural):     5.75 × 0.25 = 1.438
+Level 3 (Type System):    6.00 × 0.20 = 1.200
+Level 4 (Semantic):       3.75 × 0.15 = 0.563
+Level 5 (Contextual):     4.67 × 0.10 = 0.467
+─────────────────────────────────────────
+Overall Score:                    5.39/10
+```
+
+### Overall Readability Score: **5.4/10**
+
+### Critical Defects:
+- **Constant folding destroyed call relationships**: `call_cdecl()` returns `0xf` directly instead of showing `cdecl_func(5, 10)` call
+- **Varargs implementation unreadable**: `va_list` logic replaced with complex stack pointer arithmetic instead of recognizable `va_start/va_arg/va_end` pattern
+- **Printf strings lost**: All format strings replaced with `&DAT_` references, losing test case documentation
+- **Loop unrolling without abstraction**: `func_struct_byval` shows 16 separate additions instead of loop construct
+- **No struct type definitions**: `LargeStruct`, `SmallStruct`, `BigStruct` used but definitions not recovered in output
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Source function names preserved accurately, enabling immediate semantic understanding of purpose
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- Zero precondition/postcondition documentation; null checks present but not documented as contracts
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and preserve constant function calls**: When a function call is folded to a constant, add a comment showing the original call (e.g., `// Original: cdecl_func(5, 10) = 15`)
+2. **Recognize stdlib idioms**: Detect `va_list` stack patterns and recover as `va_start/va_arg/va_end` with appropriate comments
+3. **Recover string literals from data section**: Resolve `&DAT_` references to actual string content when possible, especially for printf format strings

@@ -1,0 +1,121 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`param_1`, `param_2`, `piVar1`) with zero semantic meaning recovered. Original source had meaningful names like `a`, `b`, `count`, `args`, `sum` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`). However, some anonymous functions exist (`FUN_00011030`, `FUN_00011ba5`) and external wrappers are poorly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Heavy constant folding produces magic numbers (`0xf`, `0x32`, `0x2a`, `0x12345678`) without explanation. Original constants like `5`, `10` in function calls are pre-computed, obscuring the actual operations.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present throughout: `unaff_EBX`, `unaff_retaddr`, `stack0x00000008`, `undefined4` types. These don't impede basic understanding but add cognitive load.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is natural, but aggressive constant folding obscures actual call structure (e.g., `call_cdecl()` returns `0xf` instead of showing `cdecl_func(5, 10)`). Varargs loops are overly complex with manual unrolling.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical failure: caller functions collapsed to constants (`call_cdecl`, `call_stdcall`, etc. all return pre-computed values), destroying the call graph relationships that were central to the original code's purpose.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom well. Some forward references to data labels (`DAT_00012352`, `DAT_000120a8`) disrupt flow but are manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Varargs functions (`varargs_func`, `param_varargs`) show identical loop unrolling patterns that should be recognized as the same idiom. No deduplication of repeated printf patterns in test functions.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Basic types preserved (`int`, `char*`, `double`) but degraded with `undefined4`, `uint`, `code*`. Original `va_list`, `size_t` types lost. Function pointer types reduced to generic `code*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**: `LargeStruct` (128 bytes) becomes 30+ individual `int`/`undefined4` parameters in `func_struct_byval`. `SmallStruct` becomes `int*` with no field names. `TestIntPair` completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `undefined4` casts throughout, pointer arithmetic visible in struct access (`param_1[1] * *param_1`), `code*` function pointers without signatures. No const-correctness recovered.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled output. No algorithm explanations, no confidence indicators, no API documentation. Original source had extensive comments explaining calling conventions and test purposes.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not identified (should be flagged as `va_list` iteration). Calling convention differences not explained. No recognition of test harness patterns or printf formatting idioms.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for critical issues: architecture mismatch (source says arm64, decompiled shows x86), constant folding artifacts, or struct type loss. Code presents incorrect information confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` null check not explained as precondition). No postconditions. Original source's test expectations completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships obscured by constant folding. No call graph documentation. External dependencies (`printf`, `strlen`) declared but not contextualized.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order but no logical grouping visible. Test functions mixed with implementation. No header file structure or API boundary indication.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears syntactically compilable with stubs. External function declarations present. However, architecture-specific constructs (`__regparm3`, `processEntry`) may cause portability issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Contribution |
+|-------|-----------|---------|--------|--------------|
+| L1: Lexical Clarity | 3.5/10 | 30% | 1.05 |
+| L2: Structural Intelligibility | 5.0/10 | 25% | 1.25 |
+| L3: Type System Fidelity | 3.3/10 | 20% | 0.67 |
+| L4: Semantic Transparency | 1.75/10 | 15% | 0.26 |
+| L5: Contextual Coherence | 5.0/10 | 10% | 0.50 |
+
+**Overall Readability Score: 3.73/10**
+
+---
+
+### Critical Defects
+
+- **Struct types completely lost**: `LargeStruct` (128 bytes) decomposed into 30+ individual parameters; `SmallStruct` reduced to `int*` with no field names
+- **Caller functions collapsed to constants**: `call_cdecl()`, `call_stdcall()`, etc. return pre-computed values (`0xf`, `0x32`) instead of showing actual function calls, destroying call graph
+- **Zero semantic comments**: No documentation recovered despite original source having extensive comments explaining calling conventions and test purposes
+- **Variable names entirely generic**: All parameters named `param_1`, `param_2` with no semantic meaning recovered from usage patterns
+- **Architecture mismatch unflagged**: Source metadata says arm64 but decompiled code shows x86 patterns (`__regparm3`, stack references) without any anomaly indication
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (7/10)** - Most original function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`), providing immediate semantic context for the code's purpose.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (1/10)** - Complete absence of any comments, documentation, or confidence indicators makes understanding the decompiler's reasoning impossible and loses all original source documentation.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover struct/union types from memory access patterns**: Analyze consistent field offsets (e.g., `param_1[0]`, `param_1[1]` access in `func_struct_byptr`) to reconstruct composite types with field names.
+
+2. **Preserve call relationships over constant folding**: When functions call other functions with constant arguments, show the actual call (`cdecl_func(5, 10)`) rather than pre-computed results (`0xf`) to maintain call graph visibility.
+
+3. **Generate semantic comments from usage analysis**: Infer variable purposes from usage patterns (e.g., loop counters, accumulators) and add confidence-annotated comments explaining decompiler decisions and uncertainties.

@@ -1,0 +1,123 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. For example, in `varargs_func`, variables `v8-v20` store va_list data but have no descriptive names indicating their purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`cdecl_func`, `call_cdecl`, `varargs_func`), but runtime functions use mechanical names (`sub_401020`, `sub_40102d`). The mismatch between preserved and generic names creates inconsistency.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears repeatedly for type casting without explanation. String literals are stored as opaque globals (`g_403008`, `g_4030d0`) instead of inline strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Runtime artifacts present (`_init`, `deregister_tm_clones`, `__stack_chk_fail`). Stack canary checks and frame pointer manipulation visible throughout, adding ~20% non-essential code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but `varargs_func` shows awkward stack manipulation with manual pointer arithmetic. One `[D] Unsupported jumpkind Ijk_SigTRAP` indicates decompilation failure.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical failures: `func_struct_byval()` lost its `LargeStruct` parameter entirely. `call_struct_byval()` and `param_struct_byval()` are broken - the latter returns nothing. Original function boundaries not properly recovered.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Varargs functions have forward references to stack variables but remain traceable. Loop structures generally recovered as `for` loops.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Excessive local variables from stack frame recovery (e.g., `varargs_func` has 30+ local variables). Redundant type casts like `& 4294967295` appear on every printf call.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `int` becomes `unsigned int` or `unsigned long long`. `func_mixed_args` lost the `double` and `long long` parameters entirely. Return types inconsistent (`long long` vs `int`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs completely lost semantic meaning. `LargeStruct` not recovered at all. `SmallStruct` accessed via pointer arithmetic (`*(a0) * a0[1]`). Generic `struct_0 { field_0 }` definitions provide no useful information.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: function pointers typed as `unsigned long long *`, pointer arithmetic on void-like types, implicit truncation via `& 4294967295`. `param_double_ptr` uses incorrect struct definition.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Only one anomaly marker: `[D] Unsupported jumpkind`.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not recognized (shows raw stack manipulation). Struct-by-value passing not identified. Function pointer callbacks not annotated. No design pattern detection.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (`Ijk_SigTRAP`). Stack canary checks present but unexplained. No warnings about type mismatches, parameter loss, or calling convention uncertainties.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should note NULL check). No postconditions. Error conditions not explained. Original source comments completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but globals opaque (`g_403008`, `g_405fe8`). No call graph documentation. Callback relationships (`callback_func` → `param_func_ptr`) not annotated.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime initialization code mixed with user test functions. No separation between test harness and tested functions.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies declared (`printf`, `puts`, `strlen`, `__stack_chk_fail`) but would need significant stubbing. Some type mismatches would prevent clean compilation without modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+4+7+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.41/10
+```
+
+**Overall Readability Score: 4.4/10**
+
+---
+
+### Critical Defects
+
+- **`func_struct_byval()` lost its `LargeStruct` parameter** - function signature completely broken, takes no parameters instead of struct
+- **`param_struct_byval()` returns nothing** - missing return statement, function body empty
+- **Type degradation throughout** - `int` → `unsigned long long`, `double` and `long long` parameters lost in `func_mixed_args`
+- **Zero semantic comments** - original source had extensive documentation; decompiled code has none
+- **Magic number `4294967295`** appears 20+ times without explanation (should be `UINT32_MAX` or cast)
+
+---
+
+### Best Quality Aspect
+
+**Code Linearization (7/10)** - Most functions maintain top-to-bottom readability with recognizable loop structures and minimal goto usage, making basic control flow traceable despite other issues.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding intent impossible. Original source had extensive comments explaining each test case; decompiled output has zero comments.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover struct definitions from stack layouts** - Analyze consistent field access patterns (`a0[0]`, `a0[1]`) to reconstruct `SmallStruct { x, y }` instead of raw pointer arithmetic.
+
+2. **Preserve function signatures from debug symbols** - With `-g` flag present, parameter types and names should be recovered (e.g., `func_mixed_args(int x, char *s, double d, long long ll)` not `(unsigned int, char*, unsigned long)`).
+
+3. **Add decompilation confidence annotations** - Flag uncertain recoveries (varargs handling, struct passing) with comments like `// DECOMPILER UNCERTAINTY: varargs stack layout inferred` to guide manual review.

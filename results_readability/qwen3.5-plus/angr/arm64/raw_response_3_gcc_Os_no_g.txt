@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `idx`) with no semantic meaning. For example, `local_array` uses `v4`, `v6`, `v1` instead of `arr`, `i`, `guard`. Only rare exceptions like `result` and `cur` provide any clarity.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`double_value`, `local_vars`, `heap_basic`), but many critical functions are `sub_4009c4`, `sub_400b24`. The `$x` function name is particularly cryptic and unusable.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Pervasive magic numbers like `4294967295` (UINT_MAX), `4294967294`, `0x100000000` obscure simple operations. The expression `(a0 * 2 | a0 >> 31) & 4294967294` should simply be `a0 * 2`.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Stack canary checks (`__stack_chk_guard`) inserted in nearly every function, redundant variable assignments (`v0 = &v1`), and complex bit manipulation for simple arithmetic create significant noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Some functions have natural loops, but many use `arm64g_calculate_condition` for simple comparisons. The `test_heap_memory` function has deeply nested conditionals that obscure the fork/wait logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are properly separated with reasonable granularity. Each test function is distinct, though some helper functions like `register_tm_clones` appear fragmented.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but complex functions like `vla_stack` and `test_heap_memory` have disruptive branching. The `linked_list_heap` function has a confusing `while(true)` with nested conditions.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Stack canary checks duplicated in every function, redundant return statements (`return memcpy(...); return memcpy(...);` in `sub_4009c4`), and unnecessary intermediate variables throughout.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degrades to `unsigned long long`, `unsigned int`, or `void*`. Original `int`, `char`, `size_t` distinctions lost. Function `double_value` takes `unsigned int` instead of `int`, changing signed behavior.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered (`struct_0`, `struct_1`, `struct_3`) but with generic field names (`field_0`, `field_8`, `padding_4`). The `Node` and `TreeNode` structures lost their semantic field names (`data`, `next`, `left`, `right`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(char *)&v9`, `(unsigned long long *)vvar_48`), pointer arithmetic on void pointers, and the `stack_alias` function completely loses its pointer aliasing semantics by returning constant 20.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of complex bit operations, no documentation of function purposes, no indication of decompiler uncertainty.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. Memory allocation patterns, linked list traversal, and tree operations are not identified. The `fork/wait` pattern in `test_heap_memory` is not annotated.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious code. The `stack_alias` function returning constant 20 (losing all logic) is not flagged. `dangling_pointer` use-after-free not indicated as undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a0 > 0` checks not annotated). No postconditions or error condition documentation. Null checks present but not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables declared as `extern` but usage patterns unclear. The `global_func_ptr` callback mechanism loses its function pointer type semantics.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically (stack tests, heap tests, static tests). Test functions call their respective implementation functions in expected order.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External declarations present (`extern char g_412f20`), but many globals are unnamed. Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+2+3)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (4+7+5+4)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (5+7+6)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.96/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **`stack_alias` function completely broken** - Returns constant `20` instead of implementing pointer aliasing logic; all semantic meaning lost
+- **Magic numbers everywhere** - `4294967295`, `4294967294`, `0x100000000` replace simple arithmetic operations
+- **Variable names are meaningless** - `v0`, `v1`, `v2`, `ptr`, `idx` provide no semantic information about purpose
+- **No comments or documentation** - Zero explanation of complex bit manipulation or decompiler uncertainty
+- **Type information severely degraded** - All integers become `unsigned long long`, losing signed/unsigned and size distinctions
+
+### Best Quality Aspect:
+- **Module Organization (7/10)** - Functions are logically grouped by category (stack, heap, static, memory operations) matching the source structure
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any comments, documentation, or decompiler confidence indicators makes understanding extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns** - Analyze how variables are used (e.g., loop counters, array indices, pointers) to infer meaningful names like `i`, `arr`, `guard` instead of `v0`, `v1`, `v2`
+
+2. **Simplify arithmetic expressions** - Recognize patterns like `(x * 2 | x >> 31) & 4294967294` as simple `x * 2` for signed integers and emit clean arithmetic instead of bit manipulation
+
+3. **Add decompiler confidence annotations** - Flag functions where logic was lost (like `stack_alias`), indicate uncertain type recovery, and document potential undefined behavior (use-after-free, double-free)

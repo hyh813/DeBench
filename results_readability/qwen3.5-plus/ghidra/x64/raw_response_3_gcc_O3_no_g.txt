@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `param_1`, `iVar1`, `puVar2`, `local_818` with no semantic meaning. For example, `large_stack_frame` uses `sVar1` through `sVar16` instead of meaningful names like `buffer_index` or `loop_counter`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`double_value`, `local_vars`, `heap_basic`), but others are mangled (`alloca_usage.constprop.0`) or generic (`FUN_00101020`). Function names don't indicate parameter semantics.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive without explanation: `0x2a` (should be 42), `0x14` (should be 20), `0xf` (should be 15). No constants recovered despite original source having clear semantic values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifacts: stack canary checks (`local_10 = *(long *)(in_FS_OFFSET + 0x28)`), SIMD vector variables (`auVar17` through `auVar49` in `large_stack_frame`), and redundant pointer arithmetic throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Loop unrolling transformed simple for-loops into complex unrolled sequences (see `heap_basic`, `vla_stack`). Some functions use goto patterns (`LAB_0010159c`) instead of structured loops despite `-O0` source.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but aggressive constant propagation collapsed some functions to single returns (`stack_alias` returns `0x14` directly). Test functions inlined expected values instead of calling actual functions.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple forward jumps disrupt reading flow (`goto LAB_001015ce`). Stack overflow checks at function ends create non-linear exit paths. Generally readable top-to-bottom but with interruptions.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling created massive code duplication (16+ similar assignment blocks in `large_stack_frame`). No abstraction of repeated patterns. Test functions duplicate printf calls with hardcoded values.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mix of recovered types (`int`, `void*`, `size_t`) and generic decompiler types (`undefined8`, `undefined4`, `undefined1`). Function pointers degraded to `code *` or `undefined8`. Some signedness lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `Node` struct not recovered—uses raw pointer arithmetic (`*(int **)(__ptr + 2)`). `Point` struct collapsed to arithmetic (`param_1 * 3` in `heap_struct`). No field names preserved.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(undefined4 *)`, `(undefined8 *)`). Pointer arithmetic on void pointers. However, no obvious buffer overflow patterns introduced by decompiler itself.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only compiler warnings as comments ("WARNING: Subroutine does not return", "WARNING: Removing unreachable block"). Zero semantic documentation explaining algorithm purpose or logic.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Memory allocation patterns (malloc/free pairs) visible but not identified. Linked list traversal in `linked_list_heap` not recognized as such. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("WARNING: Could not recover jumptable", "Treating indirect jump as call"). However, critical issues like constant-folded functions not flagged as potentially incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `param_1 != NULL`). Null checks present in code but not documented as contracts. Error return values not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships unclear (`call_global_callback` shows "Could not recover jumptable"). Global variable usage visible but not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order, not grouped by category (stack/heap/static). Related functions (`set_file_static`/`get_file_static`) not adjacent. No header file structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External symbols declared (`extern_global_var`, `extern_function`) but no stub implementations. Would require significant patching to compile standalone. Some functions return wrong types (`undefined8` vs `int`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+5+3+3)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):   (4+6+5+4)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type System):  (5+3+5)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):     (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):   (5+4+5)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 3.95/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1`, `puVar2`** should be named based on semantic usage (e.g., `input_value`, `loop_index`, `buffer_ptr`)
+- **`large_stack_frame`** has 30+ SIMD vector variables (`auVar17`-`auVar49`) that obscure the simple 2KB buffer fill logic
+- **`stack_alias`** constant-folded to `return 0x14` losing the aliasing demonstration logic entirely
+- **Test functions** (`test_stack_memory`, `test_heap_memory`) call constant values instead of actual functions, breaking test verification
+- **Struct types** (`Node`, `Point`) not recovered, replaced with raw pointer arithmetic losing field semantics
+
+### Best Quality Aspect:
+- **Function Decomposition (6/10)** - Most function boundaries preserved with reasonable granularity; only a few functions collapsed by constant propagation
+
+### Most Needs Improvement:
+- **Variable Naming Quality (2/10)** - Generic names throughout make tracking data flow extremely difficult; this is the single biggest barrier to understanding
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable naming** - Analyze how variables are used (loop counters, pointers, sizes) to infer semantic names like `index`, `buffer`, `count`
+2. **Detect and comment optimization artifacts** - When loop unrolling is detected, add comments explaining the original loop structure and iteration count
+3. **Recover struct types from access patterns** - Analyze consistent offset patterns (`+0`, `+8`, `+16`) to reconstruct struct definitions with field names based on usage context

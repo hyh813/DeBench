@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `local_24`, `puVar1`, `iVar1`, `uVar2`. Many are marked "Unresolved local var" with no semantic meaning (e.g., `/* Unresolved local var: SimpleClass obj@[???] */`).
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions retain original names (`test_cpp_member_func`), but helper functions use mangled names (`_ZThn16_N12MultiDerived5funcBEv`) or generic placeholders (`FUN_00102020`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `0x125c`, `0x14`, `0x32` appear without explanation. While `0x125c` equals 4704 (expected output), this relationship is not documented.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: "Unknown calling convention" warnings, infinite loop in `_start`, unresolved variable comments throughout, and redundant destructor versions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Many test functions return constant values instead of actual computation (e.g., `test_cpp_operator_overload` returns `0x16` directly). Real control flow is lost through optimization.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Excessive fragmentation with multiple destructor versions per class. `test_cpp_oo_features` duplicates code from individual test functions rather than calling them cleanly.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom, but forward references to unresolved variables and scattered vtable setup disrupt logical flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Multiple destructor implementations per class (e.g., `Base::~Base` appears twice at 00102920 and 00102a50). `test_cpp_oo_features` repeats initialization code instead of reusing test functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy type degradation with `undefined`, `undefined4`, `undefined8` throughout. Pointer types often reduced to generic `void*` or `long*` instead of proper class pointers.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Classes partially recovered with vtable pointers (`_vptr_Base`), but most fields missing or generic. `DiamondDerived` shows warning: "ignoring overlapping field super_MiddleB".
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer arithmetic on generic types (e.g., `*(int *)((long)&this->dataA + (long)this->_vptr_MiddleA[-3])`). Many implicit casts between incompatible types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: DWARF prototype comments preserved (`/* DWARF original prototype: int virtual_func(Base * this, int x) */`), but most comments are auto-generated warnings rather than semantic explanations.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized: RAII patterns, virtual dispatch, template instantiation, lambda captures, and smart pointer semantics all appear as raw operations.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Decompiler effectively flags issues: "WARNING: Unknown calling convention", "Unresolved local var", "Struct ignoring overlapping field". This is the strongest aspect.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling shows `/* WARNING: Subroutine does not return */` but no contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but virtual dispatch obscured through vtable indirection. Class relationships not documented (inheritance hierarchy unclear from decompiled output).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 83 functions in single output. Related class methods scattered (e.g., `Base` methods at 00102900, 00102a40, 00102a50). No logical grouping.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone. External dependencies (`operator_new__`, `__cxa_throw`, `__dynamic_cast`) undeclared. Custom deleters and lambda types unresolved.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+4)/4 = 3.50    × 0.30 = 1.05
+Level 2 (Structural):  (4+4+5+4)/4 = 4.25    × 0.25 = 1.06
+Level 3 (Type):        (3+3+4)/3   = 3.33    × 0.20 = 0.67
+Level 4 (Semantic):    (5+2+7+2)/4 = 4.00    × 0.15 = 0.60
+Level 5 (Contextual):  (4+5+3)/3   = 4.00    × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 3.78 ≈ 4/10
+```
+
+**Overall Readability Score:** 4/10
+
+### Critical Defects:
+- **Variable names completely generic**: `local_24`, `puVar1`, `iVar1` provide zero semantic information about their purpose
+- **C++ semantics lost**: Virtual dispatch, templates, lambdas, and smart pointers decompiled to raw operations without pattern recognition
+- **Functions return constants**: Many test functions (`test_cpp_operator_overload`, `test_cpp_template_func`) return pre-computed constants instead of actual logic
+- **Type system severely degraded**: `undefined`, `undefined4`, `undefined8` types throughout; class structures incomplete
+- **Unresolved variables**: Every test function has "Unresolved local var" comments indicating failed variable recovery
+
+### Best Quality Aspect:
+- **Anomaly Indication (Score: 7/10)** - The decompiler consistently flags problems with clear warnings ("Unknown calling convention", "Unresolved local var", "Struct ignoring overlapping field"), helping analysts identify unreliable sections.
+
+### Most Needs Improvement:
+- **Idiom Recognition (Score: 2/10)** - C++ language features (RAII, virtual dispatch, templates, lambdas, smart pointers) are completely unrecognized, appearing as raw memory operations instead of semantic patterns.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ semantic pattern recognition** - Detect vtable layouts, RTTI structures, and smart pointer patterns to recover high-level C++ constructs instead of raw pointer operations.
+
+2. **Recover variable names from debug symbols** - With `-g` flag present, leverage DWARF debug information to restore original variable names (`obj`, `r1`, `capture_by_value`) instead of `local_24`, `iVar1`.
+
+3. **Preserve control flow from unoptimized binaries** - At `-O0`, original control flow should be recoverable; avoid collapsing functions to constant returns when actual logic exists in the binary.

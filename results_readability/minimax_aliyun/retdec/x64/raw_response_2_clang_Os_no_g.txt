@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v1`, `v2`, `v3`, `a1`, `a2`, `a3`, `result`. No semantic meaning is conveyed - for example, in `process_int`, parameter `a1` should be `x`, and `result` should be the computed value. This makes tracking variable purpose nearly impossible.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Some functions retain original names (e.g., `process_char`, `array_1d_stack`), but critical functions like `double_value` are completely missing. Utility functions are named `function_1030`, `function_1040`, `function_1050` with no semantic meaning. The original `complex_callback` helper is also lost.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x3fc00000` (float 1.5), `0x3fe0000000000000` (double 0.5) appear without explanation. However, some string constants like `"DT-L1-01 (process_char): %c\n"` provide context. The boolean logic in `process_bool` uses complex bit manipulation without documentation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy presence of inline assembly intrinsics (`__asm_movsd`, `__asm_addss`, `__asm_mulsd`, `__asm_pxor`, `__asm_movdqa`) clutter the code. Redundant casts like `& 0xffffffff` appear throughout. The decompiled code includes 65 functions with significant noise from compiler-generated code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control structures (if/while/for) are present and recognizable. However, some loops are awkward - for example, `array_3d` uses complex nested while loops instead of clean for-loops. At `-O0`, this level of restructuring is excessive.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and test functions remain logically separated. The original source's modular structure (test_data_types_l1, test_array_types, etc.) is preserved. Minor issues with some helper functions not being extracted.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. However, `array_3d` has deeply nested loops (5+ levels) that disrupt linear flow. Some forward jumps exist in complex index calculations.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant code duplication in `test_array_types` - the matrix initialization loop pattern repeats many times. Loop unrolling is present but not commented. Dead code from register spills is evident.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All integers are `int64_t` regardless of original type (char, short, int lost). Float/double use `int128_t` which is non-standard. Function pointers are `int64_t` instead of proper signatures. The original `float` return type is misrepresented as `int128_t`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct types are reconstructed. All access is via raw pointer arithmetic: `*(int32_t *)(a1 + 8)`. The original `Point3D`, `Node`, `Rect`, `Widget` structs are completely lost. Union types are not recovered at all.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Extensive unsafe casts throughout: `(int32_t)a2`, `(int64_t)*(int32_t *)v4`. Pointer arithmetic like `v2 + 8` for struct field access is error-prone. No const correctness. Function pointer type confusion (all are `int64_t`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining algorithm intent. No documentation of what functions do. No indication of decompilation confidence. Only auto-generated address ranges like `// Address range: 0x114c - 0x115b` are present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns like linked list traversal (`while (v3 != 0)`) are recognizable but not named. No explicit identification of data structures (linked list, binary tree, graph). The original's clear algorithm purpose is lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `array_oob` function has intentional out-of-bounds access but no warning. Indirect calls and unresolved references are not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication of NULL checks needed, buffer size requirements, or error conditions. The original's clear parameter contracts are lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are not documented. The callback relationship between `ptr_func_simple` and `double_value` is not shown. Global variable usage (`g1`-`g20`) is not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped but appear in arbitrary order based on address. Related test functions are together but the original's clear section comments (Data Types, Array Types, etc.) are lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes standard headers (`<stdint.h>`, `<stdio.h>`, `<stdlib.h>`). Function prototypes are declared. However, inline assembly (`__asm_*`) would cause compilation failures on non-x86 architectures.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`v1`, `a1`, `result`) making code comprehension extremely difficult
+- All composite types (structs, unions) are lost - accessed via raw pointer arithmetic like `*(int32_t *)(a1 + 8)`
+- Type precision is severely degraded - all integers are `int64_t`, floats/doubles are `int128_t`
+- The original `double_value` function is completely missing from decompiled output
+- No comments or documentation explaining algorithm intent
+- Extensive inline assembly intrinsics (`__asm_movsd`, `__asm_pxor`, etc.) create severe noise
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+- Functions maintain appropriate granularity and test functions remain logically separated
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- All variables use generic names with no semantic meaning, making the code nearly unusable for analysis
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `a1` used in arithmetic should be named `x` or `input`)
+2. Recover struct/union types from field offset patterns instead of raw pointer arithmetic
+3. Add meaningful comments explaining algorithms and flagging suspicious code patterns

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `uVar2`, `param_1`, `local_2c`) with no semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Most function names preserved from source (`param_fake_branch`, `call_opaque_predicate`), but some corrupted with `.constprop.0` suffixes and some return wrong types (`param_fake_branch` returns void instead of int).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x1f`, `0xe1` appear without explanation. Original `0xDEADBEEF` constant completely lost. Hex literals dominate without named constant recovery.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: External function stubs call themselves recursively (`raise`, `free`, `signal`). `__aeabi_idiv` has 35+ boolean variables. Stack canary checks (`__stack_chk_fail`) appear where original had none.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as do-while instead of for loops. `param_opaque_predicate` has awkward nested conditionals. TCO correctly converted to iteration but loses recursive semantics.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: `param_division_by_zero` incorrectly split into `.constprop.0` and `.constprop.1`. `param_fake_branch` and `param_buffer_overflow_stack` are empty when they should contain logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom reasonably. `__aeabi_idiv` has excessive branching (35+ boolean checks in sequence) that disrupts flow significantly.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `__aeabi_idiv` and `_divsi3_skip_div0_test` are nearly identical. `call_string_encryption` duplicates `param_string_encryption` body. `test_obf_opt_edge` inlines decryption logic instead of calling function.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `undefined4` used for return types instead of proper types. `uint` vs `int` inconsistency throughout. Pointer types often generic (`undefined4 *` instead of `int *`). Original type information lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `__jmp_buf_tag` referenced but not defined. Bit-field struct from `param_implementation_defined` completely lost (function returns constant `0x2c`). No struct definitions visible.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many implicit casts (`(uint)local_2c[0]`, `(byte)uVar3`). `__stack_chk_fail` called with wrong arguments. Function signature mismatches (`param_null_pointer_deref` called with varying arg counts).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining obfuscation techniques, expected values, and test scenarios. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: TCO correctly recognized (recursive becomes iterative). Instruction substitution patterns not identified. Opaque predicate logic preserved but not labeled as such. No pattern naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `UNRECOVERED_JUMPTABLE` and `software_udf` markers indicate unresolved code. Empty functions (`param_fake_branch`) have no explanation. No warnings about type mismatches or signature issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Original had expected return values in comments (e.g., "期望: 10"), all lost. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`jmp_buffer`, `encrypted_0`) referenced without context. Signal handlers linked but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no header separation. Original section comments (7.1, 7.2, 7.3) completely lost. External functions marked but not organized logically.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External function stubs are self-recursive (won't link). ARM-specific functions (`__aeabi_idiv`) create portability issues. Function signature mismatches would cause compilation errors.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+5+6+4)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (1+4+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.43
+
+Overall Score: 4.15/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1`, `uVar2`** should be named based on semantic usage (e.g., `input_value`, `gcd_result`, `return_value`)
+- **`param_fake_branch` returns void** when original returns int with logic—critical semantic loss
+- **Zero comments** despite original having extensive documentation explaining obfuscation techniques
+- **`__aeabi_idiv` has 35+ boolean variables** for division logic—should be abstracted or library-called
+- **External function stubs call themselves** (`raise`, `free`, `signal`)—unusable for compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)**—Most original function names preserved, making it possible to identify which decompiled function corresponds to which source function despite other degradations.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)**—Complete absence of any documentation, confidence indicators, or semantic explanations makes understanding the decompiler's reasoning impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns**—Analyze how variables are used (e.g., `param_1` in division context should be `divisor`, loop counters should be `i`)
+2. **Add decompiler confidence annotations**—Mark uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: indirect call resolution failed`
+3. **Eliminate self-recursive external stubs**—Replace library function stubs with proper extern declarations instead of functions that call themselves

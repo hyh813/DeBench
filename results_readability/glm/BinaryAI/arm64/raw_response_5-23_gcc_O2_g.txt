@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `param_1`, `iVar1`, `lVar1`, and `uVar2`, completely obscuring the original semantic intent (e.g., `size`, `result`, `counter`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from debug symbols (e.g., `param_macro_constants`, `param_asm_atomic`), matching the source exactly and providing clear context.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Macro constants are replaced by magic numbers (e.g., `0x400` instead of `MAX_SIZE`, `7` instead of `PROT_READ|PROT_WRITE|PROT_EXEC`), making the code significantly harder to understand than the source.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is largely free of compiler artifacts, but generic types like `undefined4` and `undefined8` clutter the signatures, and stack canary checks (`___stack_chk_guard`) are visible in control flow.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent due to `-O0` compilation; loops are correctly identified as `do-while` constructs, and conditionals are standard `if-else` blocks without confusing jumps.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries match the source perfectly with no inlining or outlining, maintaining the original modular structure (e.g., `call_macro_constants` calling `param_macro_constants`).
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps or non-interrupting control flow transfers, making it easy to follow.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no apparent redundancy or dead code; the logic is concise and directly maps to the operations performed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: While basic types like `int` and `void*` are correct, the decompiler defaults to `undefined4`/`undefined8` in many signatures and local variables, losing signedness and specific type information.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Stack-allocated arrays are recovered as raw arrays (e.g., `int aiStack_3c [3]`) rather than being mapped to the logical variable names or structures used in the source (e.g., `int a[]`).
+
+**11. Type Safety:** Score: 9/10
+Justification: The code is type-safe with no dangerous or incorrect casts observed; pointer arithmetic and memory accesses are handled correctly.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output, leaving complex logic (like the `mprotect` flag calculations) unexplained.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: ARM64 atomic intrinsics are correctly identified (`__aarch64_ldadd4_acq_rel`), and standard library calls like `mmap`/`mprotect` are recognized, preserving high-level semantics.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: No anomalies are flagged, but the code is straightforward; however, the lack of indication regarding the "missing" x86 assembly blocks (which were compiled out) might be confusing without context.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred in the output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the recovered names, making the call graph easy to trace (e.g., `main` calling `test_preprocessing_features`).
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order that roughly follows the source file structure, grouping related test functions together.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on `undefined` types and compiler intrinsics (`__aarch64_ldadd4_acq_rel`) that would require specific headers or typedefs to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.8/10
+
+**Critical Defects:**
+- Variable names are generic (`param_1`, `iVar1`) instead of semantic names (`size`, `result`).
+- Macro constants are replaced by magic numbers (`0x400` vs `MAX_SIZE`), losing the "self-documenting" aspect of the source.
+- `undefined` types (`undefined4`, `undefined8`) are used instead of concrete types, reducing type clarity.
+- Complete absence of comments explaining logic or macro expansions.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Debug symbols were successfully leveraged to recover exact function names, providing high-level context immediately.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)
+- The pervasive use of generic variable names (`param_1`, `uVar2`) is the single biggest barrier to understanding the code's logic compared to the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Leverage DWARF debug information for local variables to recover names like `size` or `result` instead of `param_1`.
+2. Implement constant propagation analysis to map magic numbers back to potential named constants or flag sets (e.g., recognizing `7` as `PROT_READ|PROT_WRITE|PROT_EXEC`).
+3. Replace `undefined` types with concrete types based on usage context (e.g., using `int32_t` instead of `undefined4`).

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `ptr`, `a0`, `a1`, `a2` throughout. The original source had meaningful names like `value`, `name`, `data`, `size`, `x`, `y`, `capture_by_value`, `capture_by_ref`. The decompiled code provides no semantic hints about variable purpose.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some C++ mangled names are preserved (e.g., `_Z20test_cpp_member_funcv`, `template_max<int>`), but many functions use address-based generic names like `sub_401020`, `sub_40102c`. The original function names like `getValue`, `compute`, `call_virtual_func` are not consistently recovered.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `4`, `8`, `40`, `80` appear without explanation. String literals are referenced via global variables (`&g_4021d4`, `&g_40207d`) rather than inlined, making them unreadable. The value `42` in exception throwing lacks context about being an exception payload.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Many functions are empty (`return;`), which is expected from -O0 but creates noise. No redundant casts or debug instrumentation observed. The code is relatively clean aside from trivial wrapper functions.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: The virtual function call uses `goto *((long long *)*((long long *)&arg_0));` which is a computed goto through vtable - unusual and hard to follow. Most other functions are simple with minimal control flow. At -O0, more natural flow is expected.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Template functions are properly separated (`template_max<int>`, `template_max<double>`, `template_swap<int>`). However, many trivial wrapper functions exist (e.g., `sub_401239` just calls `test_cpp_member_func`). Some functions like `test_cpp_member_func` contain partial logic but don't return the computed value.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom with minimal jumps. The main disruption is the virtual function dispatch pattern. No excessive forward jumps or deep nesting observed. Generally good linearization.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. Loop unrolling is minimal (expected at -O0). Code is relatively clean without redundant computations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - some proper types like `unsigned int`, `class Base *`, `int &ptr` are used, but many generic types like `void*`, `unsigned long`, `unsigned long long` dominate. The original had precise types like `size_t`, `int*`, `bool` which are not consistently recovered.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery - `struct struct_0` and `struct struct_1` have generic names with generic fields (`field_0`, `field_8`). The original had well-defined classes like `SimpleClass`, `LifecycleClass`, `Container<T>` with proper data members, but these are lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Several unsafe operations present: `*((char **)ptr) = &g_403d78;` (unsafe cast), pointer arithmetic like `&ptr[40]`, `&ptr[80]` without bounds checking, and `*((unsigned int *)p) = v1;` (potential type confusion). The code has moderate risk of undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No useful comments in the decompiled code. Only the header comment "// Angr Decompilation of 5-1_clang_O2_no_g" exists. Original source had extensive comments explaining each test case, expected values, and C++ feature being tested - all lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ idioms are visible (virtual function dispatch through vtable, template instantiation, exception throw/catch patterns) but not explicitly identified or named. The decompiler doesn't annotate these as "virtual dispatch" or "template instantiation."
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indicators present. The decompiler doesn't flag suspicious patterns, indirect calls that couldn't be resolved, or potential issues. The code confidently presents potentially incorrect information (e.g., functions that should return values but declare `void`).
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information recovered. Original source had clear expectations (e.g., "// 期望: 10 + 34 + 4660 = 4704") which are completely lost. No preconditions, postconditions, or invariants documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some relationships visible through function calls (e.g., `test_cpp_member_func()` called from wrapper). However, no explicit documentation of call graphs, global variable usage, or virtual method relationships. The original's clear test function hierarchy is not reflected.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are organized by address (sub_401020, sub_40102c, etc.) rather than logically grouped. The original source had clear sections for each C++ feature (CPP-L3-01, CPP-L3-02, etc.) which is completely lost in the decompilation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code is not compilation-ready. Many `extern` declarations for undefined symbols (`g_403fe8`, `g_404008`, etc.). Functions that should return values declare `void`. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Variable names** are all generic (`v0`, `v1`, `ptr`, `a0`) with no semantic meaning recovered from source
+- **Function return types incorrect** - functions like `test_cpp_member_func()`, `test_cpp_constructor()` should return `int` but are declared `void`, losing computed results
+- **No comments** - original source had extensive documentation explaining each test case and expected values, completely lost
+- **Struct/class recovery poor** - `struct struct_0`, `struct struct_1` with generic fields instead of meaningful class members
+- **String literals not inlined** - referenced via `&g_4021d4` etc. making code unreadable
+
+### Best Quality Aspect: Redundancy Elimination (8/10)
+The decompiled code has minimal redundant computations and dead code. Template functions are properly separated, and the basic control flow structure is preserved without excessive duplication.
+
+### Most Needs Improvement: Semantic Transparency (1.75/4)
+The decompiled code lacks any comments, pattern identification, anomaly detection, or contract recovery. This dimension scored lowest because the original source's extensive documentation and expected value annotations are completely lost, making it impossible to understand what each function is supposed to compute without referring to the source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - `v0` used as `10` (the value being set) should be named `value`; `ptr` used for object allocation should indicate object type
+2. **Fix return type inference** - `test_cpp_member_func()` clearly computes `r1 + r2 + r3` and should return `int`, not `void`
+3. **Inline string literals and add expected value comments** - Replace `&g_40207d` with actual strings like "CPP-L3-01: %d (期望: 4704)" and add comments showing expected return values from source

@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `idx`) with no semantic meaning. For example, `heap_basic` uses `v2` for the parameter that should be `n`, and `local_array` uses `v4` for the array instead of `arr`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained names from debug symbols (`double_value`, `local_vars`, `heap_basic`), but runtime functions are generic (`sub_401020`, `sub_401030`). Function names match source for user code but not infrastructure.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive throughout: `4294967295` (UINT_MAX/-1) appears dozens of times, `8589934593`, `17179869187` with no explanation. No constants recovered from source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Redundant assignments present (`ptr = ptr;` in `heap_basic`), unnecessary type casts, and compiler artifacts like `vvar_56{r48|8b}` in VLA functions obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while patterns which is acceptable, but `stack_alias` completely loses its conditional logic and returns constant `20`. Some functions use goto patterns unnecessarily.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function granularity preserved but parameter lists corrupted—`heap_basic` has 4 parameters instead of 1, `test_heap_memory` has phantom parameters (`v4`, `v5`, `v6`) that don't exist in source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but VLA functions (`vla_stack`, `alloca_usage`) have complex alignment loops that disrupt flow. Some forward references to undefined variables.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant null checks, duplicate variable assignments (`ptr = ptr;`), and repeated mask operations (`& 4294967295`) throughout return statements add noise.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types degraded to `unsigned long long` universally instead of `int`. `double_value` returns `unsigned int` instead of `int`. Signed/unsigned distinctions lost in many functions.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_8`, `field_10`) instead of semantic names (`data`, `next`, `left`, `right`). `Node` structure partially recovered but fields unnamed.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer arithmetic throughout (`*((unsigned int *)((char *)ptr + 4 * idx))`), incorrect array indexing in `local_array` returns `*((int *)&v0)` instead of `arr[5]`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no parameter documentation, no recovery of source comments that explained test purposes.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition—linked list creation, tree traversal, and memory allocation patterns not identified. VLA/alloca patterns present but not labeled as such.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] MBusEvent-Imbe_Fence()`) but critical semantic errors like `stack_alias` returning constant not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` checks not explained), no postconditions, error return values (`4294967295`) not documented as `-1`.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. `call_global_callback` uses `goto global_func_ptr` which obscures the callback pattern. Global variables declared extern but usage not contextualized.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Source's clear sections (stack, heap, static, memory ops) not preserved in organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears compilable with proper headers, but external dependencies (`extern_function`, `extern_global_var`) not documented. Some undefined symbols (`g_403004`, `g_405fe8`).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+3+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (1+2+4+2)/4 = 2.25 × 0.15 = 0.3375
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 4.43/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Function signature corruption**: `heap_basic`, `heap_array`, `heap_struct` have 4 parameters instead of 1-2, breaking semantic clarity
+- **Complete logic loss in `stack_alias`**: Returns constant `20` instead of implementing pointer aliasing logic
+- **Generic struct field names**: All fields named `field_0`, `field_8` instead of `data`, `next`, `x`, `y`
+- **Magic number proliferation**: `4294967295` appears 30+ times without explanation (should be `-1` or `ERROR`)
+- **VLA/alloca recovery failure**: Complex alignment code (`vvar_56{r48|8b}`) instead of clean array allocation
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Debug symbols preserved for user-defined functions, allowing `double_value`, `local_vars`, `heap_basic` to retain meaningful names
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero comments recovered despite source having extensive documentation explaining test purposes and expected values
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns** - Analyze how variables are used (e.g., loop counters, array indices, size parameters) to infer names like `i`, `n`, `arr` instead of `v0`, `v1`, `v2`
+
+2. **Preserve original function signatures** - Don't add phantom parameters from calling convention; `heap_basic(int n)` should not become `heap_basic(unsigned int a0, unsigned long a1, unsigned long a2, unsigned long long a3)`
+
+3. **Detect and document magic numbers** - Replace `4294967295` with `-1` or `ERROR`, recover constant expressions, and add comments explaining non-obvious values like struct sizes and array bounds

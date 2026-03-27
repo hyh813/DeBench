@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names (v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21) with no attempt to infer meaningful names from usage patterns. For example, in `local_vars`, the parameter `x` is used directly in calculation `2 * x + 10` but no intermediate variables are named descriptively.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source (local_vars, local_array, local_struct, address_of_local, heap_basic, heap_calloc, heap_realloc, linked_list_heap, memory_leak, dangling_pointer, global_var_access, static_local, etc.). The naming is excellent and action-oriented.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers throughout: 0x1010101010101010, 0xAu, 2u, 0xBu, 0x28u, 0x14u, 0x18u, 0x10u, 0x1D00, 0x1D10, 0x1D20. These vector constants and size values have no explanatory comments, making the initialization logic in functions like `large_stack_frame` and `local_array` nearly incomprehensible.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from SIMD/vector operations (int64x2_t, uint64x2_t, int8x16_t, vmovn_s64, vcgtq_u64, vaddq_s64, vdupq_n_s64, vcgeq_u64) that obscure the actual logic. These compiler-generated artifacts from -O0 arm64 code make functions like `local_array`, `vla_stack`, and `heap_basic` extremely difficult to read.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with recognizable loops and conditionals. However, test functions like `test_stack_memory` show hardcoded constant outputs (e.g., `printf("MEM-L1-01 (local_vars): %d\n", 20);`) instead of actual function calls, losing the original control flow structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The original source's well-decomposed functions (40+ functions) are preserved in decompiled output. Function granularity is appropriate - each function has a single responsibility. Minor issue: some test wrapper functions are simplified but main logic functions maintain good decomposition.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. The main logic functions are linear. However, some complex loop implementations using vector operations create non-linear reading patterns that are hard to follow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some loop unrolling present (particularly in vectorized code) but not explicitly commented. The test functions show redundant patterns where the decompiler replaced function calls with constants. Main logic functions are relatively clean but the vector operation noise creates apparent redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed type precision - uses generic types (int, _DWORD, _QWORD, char*, void*) but also shows some vector types (int64x2_t, uint64x2_t). Function pointers are properly typed in some cases (e.g., `int (*f)(int)`) but cast to __int64 in others. Const correctness is not well preserved.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Some struct recovery is present - Node*, TreeNode*, Point are used. However, struct field access sometimes uses raw offsets (e.g., `*(_DWORD *)v0 = v1;` in linked_list_heap). The Node structure with data and next fields is reasonably recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Several type safety issues: use-after-free in `dangling_pointer()` returns `*v1` after `free(v1)`; many unsafe void* casts; pointer arithmetic without bounds checking. The `double_free` function is incorrectly simplified to just return -2, losing the actual double-free logic.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled code. Only the initial decompilation header exists. No explanation of algorithm logic, no indication of decompilation confidence, no documentation of preconditions or postconditions.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable (linked list traversal, tree creation) but not explicitly named or documented. The decompiler doesn't identify common idioms like "create and traverse linked list" or "binary tree with left/right children".
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The "FAILED to decompile" messages for 18 library functions (memcpy, memmove, exit, malloc, etc.) provide good indication of unresolved external dependencies. However, no warnings about potential undefined behavior (dangling_pointer, double_free, heap_overflow).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No explicit contracts or assertions recovered. Preconditions like "n > 0" in `alloca_usage` and "idx bounds check" in `global_array_access` are implicit in the code but not documented. Error return values (-1, -2) are preserved but their meaning is not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (e.g., `main` calls `test_stack_memory`, `test_heap_memory`, etc.). Global variables like `global_counter`, `global_array`, `static_local_counter` are properly identified. However, no explicit documentation of call graphs or usage relationships.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in binary order rather than logically grouped. The original source's clear section organization (Stack Memory, Heap Memory, Static & Global, Memory Operations) is lost. Static functions like `static_helper` are properly identified.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code shows external function declarations but won't compile standalone. Many undefined symbols: extern_global_var, extern_function, all library functions. No stub implementations or dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (v0-v21) making code comprehension extremely difficult
+- **Noise pollution**: Vector/SIMD operations (int64x2_t, vmovn_s64, vcgtq_u64, etc.) obscure actual logic in hot loops
+- **No comments**: Zero explanatory comments for algorithms, magic numbers, or decompilation confidence
+- **Type safety issues**: `dangling_pointer()` shows use-after-free, `double_free()` incorrectly simplified
+- **Test function degradation**: Test wrapper functions show hardcoded constants instead of actual function calls
+
+### Best Quality Aspect: Function Naming (9/10)
+Function names almost perfectly match the original source (local_vars, heap_basic, linked_list_heap, memory_leak, etc.), making it easy to locate specific functionality.
+
+### Most Needs Improvement: Variable Naming (2/10)
+Generic variable names (v0, v1, v2...) with no semantic inference from usage patterns. Even simple cases like `local_vars` where `int a = x; int b = a * 2; int c = b + 10;` could have been named `a`, `doubled`, `result` based on the computation.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, function calls) to suggest meaningful names like `index`, `count`, `buffer`, `result`
+2. **Abstract vector operations**: Recognize SIMD patterns (vmovn, vcgtq, vaddq) as loop unrolling and present as readable for loops with comments explaining the vectorization
+3. **Add explanatory comments**: Document magic numbers, algorithm intent, decompilation confidence, and potential undefined behavior (especially in memory safety test functions)

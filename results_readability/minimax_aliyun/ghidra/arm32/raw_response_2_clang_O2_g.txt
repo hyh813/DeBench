@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled code extensively uses "Unresolved local var" annotations with register references (e.g., `int sum@[???]`, `int i@[DW_OP_reg1(r1)]`). Most local variables in test functions have no meaningful names, making it extremely difficult to track variable purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names like `process_char`, `process_short`, `array_1d_stack`, `ptr_double` accurately match the original source function names. Library functions (`__muldf3`, `__adddf3`) are correctly identified. Minor issue: internal helper function `FUN_000115c4` could be better named.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Test functions use hardcoded literal values (e.g., `0x61` for 'a', `0xb` for 11) which are correct but lack symbolic names. However, most literals are easily inferable from context. The floating-point constants like `0x3fc00000` are properly used for library functions.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise present including: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "Unresolved local var" annotations. These artifacts clutter the code but don't completely obscure the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops are properly recovered as do-while constructs (e.g., `array_1d_stack`). However, `array_2d_stack` shows unrolled loop with explicit index calculations (`arr[9][9] + arr[8][8] + ...`), which is an -O0 artifact. Control flow is generally readable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with appropriate granularity. Each test function (`test_data_types_l1`, `test_array_types`, etc.) is correctly isolated. The main functions match source decomposition well.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The `array_3d` function has some complex index calculations that disrupt linear reading, but most functions are straightforward.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy in `array_3d` with fully unrolled 125-element access pattern. The `test_array_types` function has extensive manual array initialization code that could be abstracted. Some dead code from unreachable blocks.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate: `char`, `short`, `int`, `long`, `longlong`, `float`, `double`, `_Bool`. Some `undefined4` types appear in library functions. Function pointer types like `_func_int_int` are properly inferred. Minor type erosion but acceptable.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct/union recovery. All structures properly reconstructed: `Point3D` (x, y, z), `Rect` (position, size), `Widget` (bounds, style, id), `Node` (data, next), `DNode` (data, next, prev), `TreeNode` (data, left, right), `Edge` (dest, next), `Graph` (adjList, numVertices), `Flags` (bitfields), `UnionData`, `Device`. Field names match source exactly.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Minor type safety issues present. The `ptr_diff` function has operator precedence issue: `(int)p1 - (int)p2 >> 2` should be `((int)p1 - (int)p2) >> 2`. Some unsafe pointer arithmetic in array functions. Generally manageable.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly auto-generated warnings ("WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call") but no explanatory comments about algorithm logic. No documentation of preconditions, postconditions, or non-obvious behavior.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable: linked list traversal in `linked_list`, `doubly_linked_list`; tree traversal in `binary_tree_sum`. However, no explicit pattern naming or documentation. The enum switch is converted to table lookup which is a common pattern but not identified.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies are flagged: "WARNING: Unknown calling convention", "Unresolved local var", "WARNING: Could not recover jumptable". However, these are generic warnings without specific guidance on how to resolve or interpret them.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No explicit preconditions or postconditions recovered. Some NULL checks are explicit in code (e.g., `if (head != (Node *)0x0)`), but no documentation of what the function requires or guarantees.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and direct. The callback relationships in `ptr_func_simple` and `ptr_func_complex` are properly represented. However, no explicit documentation of call graph or which functions call which.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped: data type functions, array functions, pointer functions, struct functions. Test functions are separated from implementation. Single file output is reasonable for decompilation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard C library headers (`<stdio.h>`). External functions like `printf`, `puts` are properly declared. Library functions (`__muldf3`, etc.) are defined in the output. Minor patching may be needed for standalone compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable naming is severely degraded with "Unresolved local var" annotations using register references, making local variables nearly unusable
+- `ptr_diff` has operator precedence issue: `(int)p1 - (int)p2 >> 2` is parsed incorrectly (should be `((int)p1 - (int)p2) >> 2`)
+- Array `array_3d` has fully unrolled 125-element access pattern making code extremely verbose
+- No comments explaining algorithm logic or contracts
+- Test functions use hardcoded literal values instead of variables, losing the original test structure
+
+**Best Quality Aspect:** Composite Type Recovery (scored 9/10)  
+The decompiler excellently recovered all struct and union types with accurate field names matching the original source exactly.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The pervasive use of "Unresolved local var" with register references makes tracking variable purpose extremely difficult and is the primary readability barrier.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `sum@[???]` accumulating array elements should be named `sum`)
+2. Fix operator precedence in `ptr_diff` by adding parentheses around the subtraction
+3. Add explanatory comments for non-trivial logic like the enum switch table lookup and floating-point operations

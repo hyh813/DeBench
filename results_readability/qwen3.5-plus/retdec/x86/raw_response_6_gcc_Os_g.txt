@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`, `thread`, `result`) with no semantic meaning. For example, in `param_strcpy`, the decompiled code uses `v1` for what should be a base pointer, obscuring the function's simple string copy logic.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions (`param_strcpy`, `call_strcpy`, `thread_compute`) are correctly recovered from debug symbols, but wrapper functions use mechanical names (`function_13c0`, `function_13d0`) losing semantic clarity for library call wrappers.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervade the code (`0x5874`, `0x57de`, `0x2488`) without explanation. String literals like `"/etc/passwd"` are preserved, but hex constants for offsets and sizes obscure intent.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts including `__x86_get_pc_thunk_*` functions (architecture mismatch with arm64 source), `__stack_chk_fail_local()` calls in every function, and redundant stack canary checks (`__readgsdword(20)`) throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops are recovered but use awkward patterns with explicit counters (`v7++`, `while (v7 != v2)`). Goto labels (`lab_0x2a77_2`, `lab_0x2ea8_2`) disrupt natural flow where while/for constructs would be clearer.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries are preserved (good), but excessive fragmentation with 136 detected functions including trivial wrappers (`function_13d0` just calls `setsockopt`) creates noise without value.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but frequent goto jumps for loop exits and error handling (`goto lab_0x2f17`) disrupt linear reading. Deep nesting in thread functions compounds the issue.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Every function repeats stack canary check patterns (`if (v2 != __readgsdword(20))`). Redundant `__x86_get_pc_thunk_*` calls appear in nearly every function without consolidation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t`, `uint32_t` consistently but pointer types are often generic (`char*`, `int32_t*`). Thread function return types degraded to `char*` instead of `void*`, losing semantic precision.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs defined but with meaningless field names (`e0`, `e1`, `e2`...). For example, `struct stat` has 20 fields all named `e0` through `e19`, completely losing semantic meaning of `st_size`, `st_mode`, etc.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(int32_t)mem`, `(char*)arg`). Pointer arithmetic visible (`4 * v3 + v2`) without bounds checking. Thread return values cast through multiple types unsafely.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated metadata comments present (`// Line range: 1169 - 1174`, `// From module: /work/6.c`). No semantic explanations of algorithm logic or non-obvious operations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `malloc`, `pthread_create`) but not identified as patterns. Thread producer-consumer pattern in `param_condition_variable` not named or explained.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Architecture mismatch (arm64 source, x86 thunks in output) not flagged. `UNREACHABLE` markers present but no warnings about uncertain decompilation or unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"). Error return values visible but contracts not recovered. No postcondition or invariant information.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes listed at top but call relationships not documented. Global variables (`g1`, `g2`...`g27`) referenced without explaining their purpose or relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file with prototype section. No logical grouping beyond original function order. Related functions (thread helpers) scattered throughout output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes present but architecture-specific thunks (`__x86_get_pc_thunk_*`) won't compile on arm64. Would require significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.0  × 0.30 = 1.20
+Level 2 (Structural):  (5+6+5+4)/4 = 5.0  × 0.25 = 1.25
+Level 3 (Type):        (5+3+4)/3   = 4.0  × 0.20 = 0.80
+Level 4 (Semantic):    (4+5+3+2)/4 = 3.5  × 0.15 = 0.53
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.25/10
+```
+
+**Overall Readability Score:** 4.25/10
+
+### Critical Defects
+- **Variable names completely generic** (`v1`, `v2`, `g1`, `g2`) obscuring all semantic meaning
+- **Architecture mismatch** - arm64 source compiled but x86 thunk functions (`__x86_get_pc_thunk_*`) in output
+- **Struct field names lost** - all fields named `e0`, `e1`, `e2` instead of meaningful names like `st_size`, `sin_family`
+- **Excessive compiler noise** - stack canary checks in every function, redundant thunk calls
+- **No contract documentation** - preconditions, postconditions, and error semantics not recovered
+
+### Best Quality Aspect
+- **Function Naming Quality (6/10)** - Core test function names (`param_strcpy`, `thread_compute`, `call_mutex_lock`) were successfully recovered from debug symbols, preserving the original semantic intent for main entry points.
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (2/10)** - Zero precondition/postcondition documentation recovered; error handling semantics visible in code but never explained, making it difficult to understand valid inputs and expected behaviors.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in size comparisons should be named `size`, `count`, `length`)
+2. **Recover struct field semantics** - Use type information and access patterns to name struct fields meaningfully instead of `e0`, `e1`, `e2`
+3. **Add decompilation confidence annotations** - Flag architecture mismatches, uncertain indirect calls, and unrecoverable patterns with explicit warnings for analyst review

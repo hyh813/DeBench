@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`a0`, `v0`, `v1`, `ptr`), providing no semantic context. For example, in `varargs_func`, `cur` and `v0` obscure the `va_list` and accumulator logic.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: User-defined function names like `cdecl_func` and `test_calling_conventions` are recovered perfectly, likely from symbols. However, runtime functions are reduced to generic names like `sub_401030`.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are replaced with opaque global pointers (e.g., `g_4020a8`), and magic numbers like `4294967295` (UINT_MAX/-1) are used instead of symbolic constants, though some arithmetic constants like `15` are clear.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is littered with internal decompiler artifacts such as `[D] unsupported_<class 'pyvex.expr.GetI'>()` and `[D] PutI(...)`, which severely disrupt readability and indicate a failed decompilation pass.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: While simple functions like `cdecl_func` are readable, complex functions like `func_mixed_args` are broken into incoherent `if` blocks containing debug tags, completely obscuring the original flow.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: Functions are generally separated correctly, but optimization artifacts like `call_cdecl` returning a constant `15` (inlining) obscure the actual call structure present in the source.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom with standard loops, but the linear flow is frequently interrupted by the debug artifacts and failed reconstruction blocks in `func_mixed_args`.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: The decompiler successfully inlined constant calculations (e.g., `return 15`), but this is actually a negative for readability as it hides the logic `cdecl_func(5, 10)`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `int` and `char*` are mostly correct, but `double` in `func_mixed_args` is confused with `unsigned long`, and function signatures often mismatch the source (e.g., `fastcall_func` parameter count).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely lost. `LargeStruct` and `SmallStruct` are replaced by raw pointer arithmetic (e.g., `(&v0)[2 * idx]`) and generic `unsigned int*` parameters, destroying the data structure abstraction.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code contains unsafe casts and type confusion, such as `ret_opaque_handle` returning a string literal `"d"` where an `int` is expected, and the numerous `unsupported` cast operations in `func_mixed_args`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no helpful comments explaining the logic. The only text present are raw debug tags (`[D]`) which are noise, not documentation.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard idioms like `va_list` (varargs) are not recognized; instead, the decompiler outputs manual pointer arithmetic (`cur += 1`) that fails to convey the intent of iterating variable arguments.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: While the `[D] unsupported...` tags clearly indicate that the decompiler failed, they are raw internal error messages rather than user-friendly explanations of *why* the code is anomalous (e.g., "Failed to resolve SIMD instruction").
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions or postconditions. For example, the null check in `func_struct_byptr` is present but not highlighted as a contract requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: Function calls are visible, but string arguments are replaced with global addresses (`g_4020a8`), making it impossible to understand the context of `printf` calls without looking up the address manually.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in memory address order rather than logical grouping, mixing runtime initialization code (`_init`, `frame_dummy`) with the actual test functions.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code contains pseudo-code syntax (`[D]`, `PutI`) and type mismatches that would prevent any compilation attempt.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.0/10
+
+**Critical Defects:**
+- Decompilation artifacts (`[D] unsupported...`, `PutI`) render `func_mixed_args` and others unreadable.
+- Composite types (structs) are completely lost, replaced by raw pointer arithmetic and array indexing.
+- String literals are replaced with opaque global variable references (e.g., `g_4020a8`), hiding output context.
+- Variable naming is entirely generic (`a0`, `v0`), losing all semantic meaning.
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)
+- The decompiler successfully recovered the names of high-level test functions (e.g., `cdecl_func`, `test_calling_conventions`), likely from symbol tables, which anchors the analysis.
+
+**Most Needs Improvement:** Type System Fidelity (scored 3.3/10)
+- The failure to recover composite types (structs) and the confusion regarding basic types (double vs unsigned long) makes understanding the data manipulation nearly impossible.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Filter Internal Artifacts**: Implement a post-processing pass to remove or hide internal debug tags like `[D]` and `PutI` statements from the final output.
+2.  **Composite Type Recovery**: Enhance the type recovery engine to identify stack layouts and register usage that correspond to structure passing, rather than defaulting to raw pointer arithmetic.
+3.  **String Literal Recovery**: Map global string references back to their actual string content in the decompiled view to preserve the semantic meaning of print statements and error messages.

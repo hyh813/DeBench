@@ -1,0 +1,96 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Test functions use completely generic variable names (v0-v21, i, j, k) with no semantic meaning. While function parameters like `x`, `p`, `arr` are preserved from source, local temporaries in test functions are uninformative (e.g., `v0`, `v1`, `v2` for tracking computed values).
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Every function name perfectly matches the original source: `double_value`, `process_int`, `process_char`, `array_1d_stack`, `ptr_double`, `struct_simple`, `linked_list`, `binary_tree_sum`, etc. The decompiler correctly recovered all 40+ function names with full semantic accuracy.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: Enum values properly named (STATE_IDLE, STATE_RUNNING, etc.). Magic numbers like 0x1A (26 for 'Z'-'A'+1) and 0x28 (stack canary offset) are appropriate for low-level code. Test functions hardcode expected values rather than calling functions - this is a decompilation artifact but literals are correct.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: Clean output with minimal compiler artifacts. Only standard stack canary reads (`__readfsqword(0x28u)`) present, which are expected at -O0. No redundant casts, dead code, or debug instrumentation cluttering the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: At -O0, control flow closely matches source. Loops use do-while with pointer comparison (e.g., `array_1d_stack`), conditionals are straightforward. The `enum_switch` uses if-else chain which is appropriate for 4-case enum. No spurious goto statements.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Each function has clear single responsibility matching source. Functions like `binary_tree` correctly call helper `binary_tree_sum`. No monolithic functions; parameter lists don't expose implementation details.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Some pointer arithmetic in array functions creates slight complexity (e.g., `&arr[n-1+1]` pattern), but overall flow is clear with minimal forward jumps.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code observed. Loop constructs are clean. Some test functions inline expected values rather than calling functions - this is a decompilation choice, not redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Types are precise - `int`, `short`, `long`, `long long`, `float`, `double`, `long double` all correctly identified. Const correctness preserved (`const int *p` in const_param). Function pointer signatures accurate (`int (*f)(int)`). Minor: some uses of `int` where `size_t` might be more appropriate for array indices.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: Excellent struct/union recovery. All type names preserved: Point3D, Rect, Widget, Node, Flags, UnionData, State, Device, DNode, TreeNode, Edge, Graph. Field names accurate (x, y, z, data, next, prev, left, right). Nested structures handled correctly. Bitfield structure Flags properly reconstructed.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe. Minor issues: `ptr_void` uses unsafe casts `*(_DWORD *)p` and `*(char *)p` without validation. `ptr_cast` similarly uses `*(_DWORD *)p`. These are necessary for void pointer handling but lack explicit casts documentation.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled output. Only the header comment identifying IDA Pro/Hex-Rays and binary path. No algorithm explanations, no decompilation confidence indicators, no API contracts. The source had extensive comments (test scenarios, expected values) completely lost.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Common patterns recognized - linked list traversal (`while (head)`), binary tree recursion, graph adjacency list traversal. However, no explicit naming of patterns (e.g., "Implements: linked list traversal").
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed to decompile 6 library functions (`__libc_start_main`, `puts`, `__stack_chk_fail`, etc.) marked at end, but these are external library calls not anomalies in the user code. No warnings about potential undefined behavior in `array_oob` (intentional out-of-bounds access).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The source had no explicit assertions, but the decompiler could note obvious contracts (e.g., "requires: n >= 0" for array functions).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships clear - `main` calls test functions, test functions call implementation functions. Callback relationships visible (e.g., `ptr_func_simple` takes function pointer). However, no explicit documentation of call graph or global variable usage.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions logically grouped - data type functions, array functions, pointer functions, struct functions, test functions. Static functions properly scoped. Single file output is reasonable for decompilation.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code should compile as C with standard library (puts, printf via __printf_chk, memset). Dependencies are standard libc. No compiler-specific hacks. Minor: uses `__fastcall` which may need removal for portable compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.2/10
+
+**Critical Defects:**
+- Variable naming in test functions uses generic names (v0-v21) obscuring computed values
+- Almost complete absence of comments - source code's extensive documentation lost
+- No contract/precondition documentation for functions requiring validation (e.g., array bounds)
+- Test functions inline expected values rather than calling implementation functions (decompilation artifact)
+
+**Best Quality Aspect:** Function Naming Quality (10/10) and Composite Type Recovery (10/10)  
+- Every function name perfectly matches source. All struct/union types and field names accurately reconstructed.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10) and Variable Naming in test functions (3/10)  
+- Test functions use completely generic variable names (v0, v1, v2...) making it hard to track which value corresponds to which test case. Comments are virtually absent.
+
+**Top 3 Recommendations:**
+1. **Recover variable names from test expectations**: In test functions, infer that `v0 = array_1d_stack(arr1, 5)` should be named `sum_1d` or similar based on the printf format string
+2. **Add algorithm comments**: Document non-obvious patterns like "iterates linked list" or "recursive binary tree traversal"
+3. **Document contracts**: Add preconditions like "// requires: n >= 0" for array functions and note potential undefined behavior in functions like `array_oob`

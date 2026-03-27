@@ -1,0 +1,101 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are reduced to generic names like `v1`, `v2`, `result`, `a1`, `a2`, losing semantic meaning found in the original (e.g., `sum`, `count`, `temp1`). While `a1` maps to `a`, the loss of `count` in `loop_while` (renamed to `v1`) obscures the variable's purpose.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`sequential_ops`, `single_if`, `loop_break`, etc.) are perfectly recovered, matching the original source exactly. This is likely due to the presence of debug symbols (`-g`), providing excellent anchors for understanding.
+
+**3. Literal Clarity:** Score: 8/10
+Justification: Magic numbers (e.g., `10`, `5`, `100`) are preserved accurately. String literals are retained, though global strings are represented as hex-encoded bytes in the global variable section (e.g., `\xe6\xb5\x8b...`), which is slightly less readable but functionally correct.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Significant noise is present, particularly in the form of redundant global assignments (e.g., `g5 = a1;` in `switch_small`) and complex pointer arithmetic for stack variables that obscures the original logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The decompiler aggressively transforms control flow in ways that harm readability for this benchmark. `loop_for_fixed` is replaced by a mathematical formula (`v1 + (int33_t)v1 * ... / 2`), destroying the intended loop structure. `single_if` is transformed into a bit-shift operation (`a1 << (bool)(a1 > 0)`), which is obscure compared to the original `if` statement.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the original source. There is no outlining or inlining of functions, maintaining the original granularity and cohesion effectively.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While the top-down flow is generally preserved, readability is disrupted by complex pointer arithmetic expressions (e.g., in `loop_break`) that span multiple lines and operations, making it harder to read linearly than the original array indexing.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The decompiler eliminates "redundancy" to a fault. By replacing the explicit loop in `loop_for_fixed` with a closed-form arithmetic expression, it removes the semantic structure (iteration) that was the core purpose of the function, making the code harder to map back to the source logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally precise, correctly using `int32_t`, `uint32_t`, and `int64_t` (typedef'd as `int33_t` oddly). Signedness is mostly preserved, though the `int33_t` typedef suggests a minor internal confusion or artifact.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Stack-allocated arrays are completely lost. In `loop_break`, the local array `int arr[]` is not recovered; instead, the decompiler uses raw pointer arithmetic (`*(int32_t *)((int32_t)&v2 - 28 + 4 * v1)`), severely degrading readability.
+
+**11. Type Safety:** Score: 6/10
+Justification: The code is functionally type-safe, but the extensive use of casts in pointer arithmetic (e.g., `(int32_t)((int32_t)&v2 - 28 + 4 * v1)`) makes it look unsafe and fragile, even if it correctly represents the compiled behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: No meaningful comments from the source code are preserved. The only comments are decompiler metadata (e.g., `// Address range: 0x105b4 - 0x1060c`), which offer no semantic insight into the algorithm's logic.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler fails to recognize standard idioms. It misses the "sum of loop" idiom (replacing it with math) and the "array iteration" idiom (replacing it with pointer offsets). It does recognize `switch` structures generally, but `switch_fallthrough` is handled with explicit `goto` labels rather than implicit fallthrough.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: There are no explicit warnings about the aggressive transformations (like the loop-to-math conversion) or the lost array types. The code is presented confidently, which might mislead the user into thinking the math formula was the original source logic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or recovered from the code structure.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. The relationship between callers and callees is easy to trace due to the accurate function naming.
+
+**17. Module Organization:** Score: 9/10
+Justification: The file structure matches the original source well. Functions are ordered logically, and the separation between different test levels (L1, L2, L3) is preserved in the `test_...` functions.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code includes complex struct literals for `setjmp`/`longjmp` (e.g., `{(struct {int32_t e0[8]; ...})...}`) which are likely compiler-specific extensions and may not compile on a standard C compiler without modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 10 + 8 + 5) / 4 = 6.75
+L2_avg = (4 + 9 + 6 + 3) / 4 = 5.50
+L3_avg = (8 + 2 + 6) / 3 = 5.33
+L4_avg = (2 + 3 + 5 + 1) / 4 = 2.75
+L5_avg = (8 + 9 + 4) / 3 = 7.00
+
+Overall = (6.75 × 0.30) + (5.50 × 0.25) + (5.33 × 0.20) + 
+          (2.75 × 0.15) + (7.00 × 0.10)
+Overall = 2.025 + 1.375 + 1.066 + 0.4125 + 0.7
+Overall = 5.58
+```
+
+### Overall Readability Score: 5.6/10
+
+### Critical Defects
+- **Loop Structure Loss**: In `loop_for_fixed`, a simple `for` loop calculating a sum was replaced by a complex arithmetic formula (`v1 + (int33_t)v1 * ... / 2`), completely obscuring the iterative logic.
+- **Array Type Loss**: Stack-allocated arrays (e.g., in `loop_break`) were not recovered as types, replaced by raw pointer arithmetic (`*(int32_t *)((int32_t)&v2 - 28 + 4 * v1)`).
+- **Obscure Conditional Logic**: `single_if` was transformed into a bit-shift based on a boolean cast (`a1 << (uint32_t)(int32_t)(bool)(a1 > 0)`), which is significantly harder to read than the original `if` statement.
+- **Fallthrough Handling**: `switch_fallthrough` logic was implemented using explicit `goto` labels (`lab_0x10a64`) rather than standard C fallthrough, reducing readability.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**: The decompiler perfectly recovered all function names from the debug symbols, providing a solid foundation for understanding the code's purpose despite other readability issues.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)**: The failure to identify stack arrays is a major issue. Converting `arr[i]` into pointer offsets makes the code look like low-level memory manipulation rather than high-level logic, which is a significant barrier to understanding.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Preserve Loop Structures**: Avoid replacing simple loops with mathematical formulas, especially when the source optimization level is `-O0`. The loop structure is often semantically important to the reader.
+2. **Improve Stack Array Recovery**: Enhance pattern matching to identify stack-allocated arrays and initialize them as C arrays (e.g., `int arr[5]`) rather than leaving them as raw pointer offsets.
+3. **Simplify Boolean Logic**: Transform obscure bit-shifts based on boolean conditions (e.g., `x << (bool)cond`) back into standard conditional statements (`if (cond) x *= 2`) or ternary operators for better readability.

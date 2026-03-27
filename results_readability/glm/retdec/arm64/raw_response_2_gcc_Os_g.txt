@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `result`, or `a1`. For example, in `process_int`, the input parameter `x` is completely lost and replaced with an uninitialized stack variable `v1`, making the logic impossible to follow without the source.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: The function names themselves (e.g., `double_value`, `process_int`, `array_1d_stack`) are accurately recovered from the symbol table. However, the utility is severely undermined because the function signatures are incorrect (e.g., `process_int` is decompiled as taking `void` instead of `int x`).
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers representing struct offsets and array sizes (e.g., `v2 + 8`, `v2 + 12` in `struct_simple`) instead of field names. String literals are sometimes hex-encoded in global variables (e.g., `\xe6\xb5\x8b\xe8\xaf\x95`), obscuring their meaning.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The output includes massive, irrelevant compiler intrinsic functions like `__addtf3` and `__multf3` (for 128-bit floating point math) which span hundreds of lines. Additionally, simple operations are obscured by inline assembly intrinsics like `__asm_ubfx` and `__asm_mrs`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is often mangled; for instance, `process_char` uses complex modulo arithmetic `((int32_t)v2 + 191) % 256` to implement a simple range check `c >= 'A' && c <= 'Z'`. Loops in `array_3d` are flattened into confusing pointer arithmetic and manual offset calculations.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While the original functions are generally preserved as separate units, the decompiler failed to recognize standard library calls or helper functions, leaving them inlined or obscured. The inclusion of massive low-level math intrinsics disrupts the logical organization of the user's code.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code suffers from non-linear execution paths due to failed control flow reconstruction. For example, `array_1d_stack` uses a `while` loop structure that manually manages the loop counter and condition in a way that is less readable than a standard `for` loop.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: There is significant redundancy in pointer arithmetic. In `struct_array`, the decompiler repeatedly calculates offsets like `v2 + 8` and `v2 + 4` inside the loop instead of recognizing the struct access pattern `pts[i].y` and `pts[i].x`.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Type information is severely degraded. `int` and `char` parameters are frequently replaced with `void` or `int64_t`. For example, `process_int(int x)` becomes `process_int(void)`, and `process_char(char c)` returns `int64_t` instead of `char`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are completely lost; the decompiler treats them as raw byte arrays. In `struct_simple`, the access `p->x + p->y + p->z` is decompiled as `*(int32_t *)v2 + *(int32_t *)(v2 + 4) + *(int32_t *)(v2 + 8)`, losing all semantic context of the `Point3D` structure.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code contains numerous unsafe casts and type confusion. Pointers are frequently cast to `int64_t` for arithmetic and then back to pointers. Function pointers are cast to incompatible types (e.g., `int32_t (*)(int32_t)` cast to `int32_t (*)(int32_t, char **)` in `test_pointer_types`).
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to metadata like "Address range" and "Line range". There are no comments explaining the logic, algorithms, or the purpose of the complex arithmetic operations used to reconstruct high-level logic.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms are not recognized. A simple string length calculation in `array_string` is decompiled into a pointer arithmetic loop without recognizing it as a standard `strlen` pattern or string iteration.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents incorrect code confidently without flagging anomalies. For instance, it does not indicate that `process_int` is reading from an uninitialized variable `v1` (which should have been an argument), which is a critical analysis failure.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions or postconditions. For example, the requirement that `array_1d_stack` receives a valid pointer and a count is not documented, and the decompilation implies it reads from the stack frame (`v1`) rather than taking an argument.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: Cross-references are obscured because function signatures are wrong. Calls to `process_int(5)` in `test_data_types_l1` are inlined or replaced with constant results, breaking the call graph visibility and making it hard to trace data flow between functions.
+
+**17. Module Organization:** Score: 5/10
+Justification: The file is organized linearly, but the logical grouping is disrupted by the insertion of massive compiler runtime support functions (like `__addtf3`) directly alongside the user's test functions, making it difficult to navigate the user's actual code.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code is not compilable. It relies on non-standard intrinsics (`__asm_mrs`, `__asm_ubfx`), has incorrect function signatures (missing arguments), and references global variables (like `g1`, `g2`) that are likely artifacts of the decompilation process rather than actual source globals.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 3.75
+L2_avg: 3.75
+L3_avg: 2.33
+L4_avg: 1.50
+L5_avg: 3.33
+
+Overall = (3.75 × 0.30) + (3.75 × 0.25) + (2.33 × 0.20) + 
+          (1.50 × 0.15) + (3.33 × 0.10)
+Overall = 1.125 + 0.9375 + 0.466 + 0.225 + 0.333
+Overall ≈ 3.09
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.1/10
+
+### Critical Defects (Bullet List)
+- **Argument Loss**: Functions like `process_int` and `process_char` are decompiled as taking `void` arguments, reading from uninitialized stack variables (`v1`) instead of parameters.
+- **Struct Erasure**: Composite types like `Point3D` are completely lost; accesses are replaced by raw pointer offsets (e.g., `v2 + 8`).
+- **Intrinsic Pollution**: The output includes hundreds of lines of irrelevant compiler intrinsics (`__addtf3`, `__multf3`) for soft-float support, cluttering the listing.
+- **Logic Obfuscation**: Simple range checks like `c >= 'A' && c <= 'Z'` are transformed into confusing modulo arithmetic `((int32_t)v2 + 191) % 256`.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (Score: 8/10)**
+- **Why?** The decompiler successfully preserved the original function names from the symbol table, which is the only remaining link to the source code's intent.
+
+### Most Needs Improvement (Single Dimension)
+- **Type Precision (Score: 2/10)**
+- **Why?** The failure to recover basic function signatures (arguments missing) and the reduction of all types to generic `int64_t` or `void*` renders the code semantically meaningless.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **ABI/Signature Recovery**: Improve analysis of the ARM64 calling convention to correctly identify function arguments passed in registers (x0-x7) rather than treating them as uninitialized stack variables.
+2.  **Struct Type Reconstruction**: Implement heuristic analysis to identify pointer arithmetic patterns that access sequential offsets (e.g., `base`, `base+4`, `base+8`) and reconstruct them as structure field accesses.
+3.  **Library Function Filtering**: Detect and exclude or hide standard compiler runtime support functions (like soft-float intrinsics) by default to reduce noise in the decompilation output.

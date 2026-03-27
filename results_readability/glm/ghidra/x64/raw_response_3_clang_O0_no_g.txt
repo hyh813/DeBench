@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `local_3c`, `aiStack_38`, and `param_1`, which obscure the semantic meaning found in the original source (e.g., `i`, `arr`, `n`). This makes tracking data flow difficult without constant cross-referencing.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The vast majority of user-defined functions retain their original names (e.g., `heap_basic`, `local_array`), accurately reflecting their purpose. Only a few runtime stubs are labeled `FUN_XXXXXX`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers are prevalent and often expressed in hex (e.g., `0x2a` instead of `42`, `0x800` instead of `2048`), which reduces immediate readability compared to the decimal constants used in the source.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present in the form of complex stack pointer arithmetic, particularly in Variable Length Array (VLA) functions like `vla_stack`, where manual offset calculations obscure the actual array access logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow structures (loops, conditionals) are recovered naturally and match the source code well, as expected with `-O0` optimization. The `while(true)` pattern in `linked_list_heap` is handled correctly.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: While most functions map 1:1 with the source, there is a critical failure in `stack_alias` where the function signature is incorrectly recovered as `void stack_alias(void)` instead of accepting two pointer parameters, significantly altering the apparent logic.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps or confusing control flow transfers, making it easy to follow the execution path.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is little to no redundant code or loop unrolling artifacts; the logic is concise, though verbose due to stack access patterns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are frequently degraded to generic `undefined4` or `undefined8` instead of concrete types like `int` or specific pointer types. Signedness information is also often lost (e.g., `uint` used instead of `int`).
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Struct recovery is essentially non-existent. Accesses to struct fields like `p->y` or `head->data` are represented as raw array indexing (e.g., `__ptr[1]`) or pointer arithmetic (e.g., `*(undefined4 *)*param_1`), completely losing the semantic structure of `Point` or `Node`.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on casting stack variables to `long` to perform pointer arithmetic for array access, which results in unsafe-looking C code that does not reflect the type safety of the original source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to Ghidra's internal warnings (e.g., "WARNING: Removing unreachable block") and provide no insight into the algorithm's purpose or the logic of memory operations.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard memory allocation idioms (`malloc`/`free`) are visible in the code structure, but higher-level patterns like linked list traversal or tree operations are not explicitly identified or labeled.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Standard compiler warnings are present, but the decompiler fails to flag the intentional anomalies in the source code (like the double free or memory leak) as suspicious, treating them as standard logic.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: Preconditions (like null checks) are present in the code but are not documented or highlighted as contracts; they appear as standard conditional branches.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls and global variable accesses are clear. The usage of the global function pointer `global_func_ptr` is correctly represented as an indirect call.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are organized by memory address rather than logical grouping (e.g., all heap functions together), which scatters related test cases throughout the decompiled output.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses Ghidra-specific types like `undefined4` and `undefined8` which will not compile without a definitions header or significant manual replacement.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- **Struct Recovery Failure**: Composite types like `Point` and `Node` are completely lost, accessed via raw array offsets (e.g., `__ptr[1]`) instead of field names.
+- **Incorrect Function Signature**: The function `stack_alias` is decompiled with a `void` signature, losing its input parameters and mangling the logic.
+- **Generic Types**: Extensive use of `undefined4`/`undefined8` instead of standard C types (`int`, `void*`) hinders understanding and compilation.
+- **Stack Arithmetic Noise**: Variable Length Array (VLA) handling is obscured by complex manual stack pointer arithmetic (`lVar1 = -0x38 - ...`).
+
+**Best Quality Aspect:** Control Flow Naturalness (Score: 9/10)
+- The decompiler successfully preserved the high-level control flow structures (loops, ifs) accurately, making the execution path easy to follow despite the noise in variable handling.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 1/10)
+- The inability to recover `struct` definitions turns readable data structure manipulations into confusing pointer arithmetic and array indexing, which is the single biggest barrier to understanding the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Enhance Struct Recovery**: Implement logic to detect `malloc(sizeof(Type))` patterns and subsequent field accesses to reconstruct `struct` definitions with named fields.
+2. **Improve Type Propagation**: Replace generic `undefined` types with concrete types (e.g., `int32_t`) based on usage context and standard calling conventions.
+3. **Refine Stack Variable Analysis**: For VLA and stack array access, abstract the complex stack offset calculations into cleaner array indexing syntax to improve readability.

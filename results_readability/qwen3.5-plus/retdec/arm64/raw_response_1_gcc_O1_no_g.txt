@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `result`) with zero semantic meaning. Original source had meaningful names like `temp1`, `temp2`, `sum`, `count`, `i`, `j` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved correctly (`sequential_ops`, `single_if`, `loop_for_fixed`), but some renamed to `function_960`, `function_970`. Helper functions like `double_value`, `triple_value` retained.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive (`0xffffffff`, `0xfffffffe`, `0x66666667`) without explanation. String literals stored as global variables (`g8`, `g9`, `g10`) with hex-encoded Chinese text.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive type casting (`(int32_t)v1`, `(int64_t)&g12`), bitwise masking (`& 0xffffffff`), and stack checking calls (`__stack_chk_fail()`) clutter the code throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: For loops converted to while with manual increments, switch statements become if-else chains, extensive goto labels (`lab_0x1348`, `lab_0x149c`). Duff's device completely mangled into goto chains.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions preserved as separate units but parameter signatures destroyed (all show `void` or generic `int64_t a1`). Helper functions like `op_add` show incorrect logic (returns `2 * v1` instead of `a + b`).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Excessive forward jumps disrupt flow, loop bodies split across multiple labels, hard to trace execution paths without jumping between distant code sections.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant type casts throughout, duplicate masking operations on nearly every arithmetic expression, some dead code from stack checking infrastructure.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `int64_t` with casts to `int32_t`. Original `int` types lost, no unsigned/signed distinction preserved, function pointer types completely erased.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `jmp_buf` struct partially recovered but with generic field names (`e0[8]`, `e1`, `e2`). No other composite types in this codebase to evaluate.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(int32_t)v1`, `(int64_t)&g12`), pointer arithmetic obscured by type conversions, function pointers called without proper type signatures.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive Chinese comments explaining each function's purpose, test cases, and difficulty level.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition evident. State machines, loop patterns, and switch dispatch tables not identified or annotated despite being obvious in source.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly warnings despite severe parameter loss. Incorrect code presented confidently without indicating decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or error condition documentation. Original test validation comments completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but signatures wrong. Global variables named generically (`g1` through `g12`). No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in one file with basic grouping. No header separation, but function prototypes listed at top provide some structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has compilation errors (missing parameters, wrong types in function calls like `loop_for_fixed()` with no arguments). Would require significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+7+3+4)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):   (3+5+4+5)/4 = 4.25  × 0.25 = 1.06
+Level 3 (Type System):  (3+5+3)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):     (1+2+2+1)/4 = 1.50  × 0.15 = 0.23
+Level 5 (Contextual):   (4+5+3)/3   = 4.00  × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 3.62/10
+```
+
+**Overall Readability Score: 3.6/10**
+
+### Critical Defects:
+- **Parameter loss**: All function parameters lost; `sequential_ops(int a, int b, int c)` becomes `sequential_ops(void)` with undefined `v1`
+- **Variable naming**: Every variable is `v1`, `v2`, `v3`, `result` with no semantic meaning
+- **Control flow mangling**: For loops become while loops with manual increments; switch statements become if-else chains
+- **Zero comments**: Original had extensive documentation; decompiled has none
+- **Type degradation**: All types collapsed to `int64_t` with excessive casting and masking
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved correctly, making it possible to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, despite original source having comprehensive comments explaining purpose, test cases, and difficulty levels for every function.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameters from calling conventions** - Analyze register usage and stack access patterns to reconstruct parameter lists instead of defaulting to `void`
+2. **Infer variable names from usage patterns** - Variables used in loop counters should be named `i`, `j`; accumulators should be `sum`, `count`, `total`
+3. **Preserve control flow structures** - Recognize backward jumps as loops, switch jump tables as switch statements, and avoid excessive goto label generation

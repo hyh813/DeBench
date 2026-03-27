@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v1`, `v2`, `v3`, `a1`, `a2`, `a3`. For example, `sequential_ops(int64_t a1, int64_t a2, int64_t a3)` should be `(a, b, c)`. Local variables like `int64_t v1 = 0;` in `loop_for_fixed` obscure their role as loop counters. Only a few globals like `g7` are named, but without semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most target functions correctly recovered: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `loop_while`, `recursion_factorial`. However, some internal helpers use generic names like `function_1080`, `function_1090`, `function_10b0`. The main decompiled functions match source names well.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `0x66666667` (division by 10 constant) in `loop_while` and `loop_dowhile` appear without explanation. Constants like `0x80000000` in `op_div` are unexplained. The value `100` in `infinite_loop` should be named MAX_ITERATIONS. These compiler-generated constants obscure the actual logic.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive bit-masking artifacts throughout: `& 0xffffffff`, `& 0xfffffffe`, `& 0x3fffffffc`. Redundant casts like `(int32_t)v1 >> 31`. Stack protection checks (`__stack_chk_fail`) add noise. The expression `v1 + 1 & 0xffffffff` is repeated constantly. These compiler artifacts significantly impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control structures recovered: switches in `switch_small`, `switch_large` are recognizable. Loops use while constructs matching source. However, complex conditions like `(v8 == 9 || v8 < 9 != (8 - v8 & v8) < 0) == (v7 < 0 != ((v7 ^ v5) & (int32_t)(v2 ^ v1)) < 0)` in `loop_complex_cond` are nearly incomprehensible. Some goto statements from original source preserved.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions properly separated with appropriate granularity. Each test function (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) is distinct. No obvious over-fragmentation. Functions average 20-50 lines, reasonable for decompiled code.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Early returns present in `single_if`, `if_else`. Some goto-based breaks in `loop_break` and `loop_multi_exit` disrupt flow slightly. Nesting depth manageable (2-3 levels typical).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant expressions like repeated `& 0xffffffff` masks. The division constant computation `0x66666667 * (0x100000000 * v1 >> 32) / 0x400000000` is duplicated in both `loop_while` and `loop_dowhile`. Loop unrolling not excessive. Some dead code paths visible but minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `int64_t`, `uint32_t` appropriately in most places. However, `int64_t` used for all function parameters even when source uses `int` (e.g., `sequential_ops(int64_t a1)` should be `int`). Function pointer types like `int32_t (*f)(int32_t)` are mostly correct but lack const qualifiers. Some unsigned/signed confusion in `op_div`, `op_mod` using `uint32_t` parameters.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex struct recovery needed for this source file. The `struct __jmp_buf_tag` is reconstructed for `setjmp`/`longjmp` with reasonable field layout. Basic array handling in `loop_break` uses pointer arithmetic correctly. No major composite type issues given the source code nature.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations: `(int32_t)a1 > 0` casts in conditionals, pointer arithmetic like `4 * v3 + (int64_t)&v2` in `loop_break`. Function pointer cast in `call_func_ptr` returns `(int64_t)f` instead of calling it. The expression `result = &g9` in some return paths is type-incorrect. These issues could lead to undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments like "From module: /work/1.c" and "Line range: 546 - 551" present. No algorithm explanations, no recovery confidence indicators, no API contracts. The comment "Address range: 0x12ab - 0x12b7" provides no semantic value. Zero meaningful documentation about what functions do.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns like switch-case and loops recognized. State machine pattern in `state_machine` is identifiable but not explicitly named. The `duffs_device` pattern is completely lost - returns just `n < 1 ? -1 : n`. Callback pattern in `process_with_callback` recognizable but no pattern naming. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags present. The `call_func_ptr` function has a critical bug (returns function pointer instead of calling it) but no warning. Indirect recursion in `indirect_recursion_a` not flagged. The `_setjmp` reconstruction with inline struct literal is unusual but not flagged. Code confidently presents potentially incorrect information.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero contract information. No preconditions documented (e.g., "requires: n > 0" for factorial). No postconditions. No invariant recognition. The `non_local_jump` function using `setjmp`/`longjmp` has no documentation about its non-local jump semantics. Error conditions not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls within test functions are clear. However, no documentation of which functions call `recursion_factorial` or `call_func_ptr`. No indication of callback relationships. Global variable `jump_buffer` used by `non_local_jump` but not documented. External dependencies like `__printf_chk` not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped: test functions together, helper functions grouped, math operations (`op_add`, `op_mul`, etc.) clustered. Static functions properly scoped. However, all in single file with no header separation. Some arbitrary ordering (internal functions like `_init`, `_start` mixed with user code).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes present but incomplete: `<setjmp.h>`, `<stdio.h>`, `<stdlib.h>` needed but some declarations missing. The code has syntax issues: `arr = {0, 0, 0, 0, 0};` in `test_control_flow_l2` is invalid C. Some functions return wrong types (`call_func_ptr` returns pointer instead of int). Would require moderate patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming is nearly unusable: all parameters `a1/a2/a3`, locals `v1/v2/v3` - cannot track semantic purpose
+- `call_func_ptr` returns `(int64_t)f` (the function pointer) instead of calling `f(x)` - semantically incorrect
+- Magic numbers like `0x66666667` for division by 10 are unexplained, making loop counting logic incomprehensible
+- No comments explaining any algorithm, contract, or anomaly
+- Type mismatches: `int64_t` used where source has `int`, unsigned used where signed expected in `op_div`/`op_mod`
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+Functions are properly separated with reasonable granularity, matching the source structure well.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Generic names like `v1`, `v2`, `a1`, `a2` make it nearly impossible to understand variable purposes without constant cross-referencing to source.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `v1` used as loop counter in `for(int i=0; i<n; i++)` should be named `i` or `index`)
+2. Explain compiler-generated constants like division magic numbers with comments: `// 0x66666667 = reciprocal approximation for division by 10`
+3. Fix `call_func_ptr` to actually call the function pointer: `return f(x);` not `return (int64_t)f;`

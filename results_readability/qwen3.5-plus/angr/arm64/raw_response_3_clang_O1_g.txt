@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `ptr`, `i`) with no semantic meaning. For example, `local_vars` uses `a0` instead of `x`, and `heap_basic` uses `ptr` instead of `arr`, losing the original intent completely.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`local_vars`, `heap_basic`, `vla_stack`), but many helper functions are cryptic (`sub_4008f4`, `$x`, `call_weak_fn`). The main test functions are recoverable but runtime functions are not.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Pervasive magic numbers like `4294967295` (UINT_MAX), `4294967294`, `17179869180` obscure simple operations. The expression `(a0 * 2 | a0 >> 31) & 4294967294` should simply be `a0 * 2`.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts including redundant bit manipulation (`__ROL__`, shift operations for simple multiplication), frame pointer setup (`v0 = &v1`), and unnecessary type casts throughout.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions like `local_struct` compile to `return a0 * 3` (good), but complex functions like `vla_stack` use convoluted conditionals with `arm64g_calculate_condition` instead of clean if-statements.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but test functions are inlined into `test_stack_memory` and `test_heap_memory` losing the original call structure. Some functions like `stack_alias` are completely simplified to `return 20`.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but several use `goto` statements (`goto g_412ff8`, `goto g_412fe0`) for what should be function calls. Loop structures are generally preserved as do-while.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Massive redundancy in index calculations—every array access repeats the same complex expression `((0 <= a0 ? a0 : a0 + 1) >> 31 & 0x80000000 | ...)`. No common subexpression elimination visible.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Widespread type degradation—`int` becomes `unsigned long long`, `unsigned int` becomes `unsigned long`. Function `double_value` takes `unsigned int` instead of `int`. Pointer types often reduced to `char*` or `void*`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered (`struct_0`, `struct_1` for Node/TreeNode) but with generic field names (`field_0`, `field_8`, `padding_4`). The `Point` struct is completely lost—`local_struct` just returns `a0 * 3`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(char *)cur`, `(unsigned int *)ptr`). Pointer arithmetic on void pointers without proper casting. However, no obvious buffer overflow patterns introduced by decompiler.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled output. No explanation of complex bit manipulation, no algorithm descriptions, no parameter documentation. Only `/* do not return */` annotations present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns not recognized—malloc/free pairs not identified as memory management, loop patterns not labeled, no indication of VLA or alloca patterns despite being present in source.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some anomalies visible (`[D] MBusEvent-Imbe_Fence()` for memory barrier) but not explained. `stack_alias` simplified to `return 20` loses the aliasing semantics entirely without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. NULL checks present but not documented as contracts. Error return values (`4294967295` = -1) not explained as error codes.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls generally preserved but global variables have cryptic names (`$d.2`, `g_412ff8`). `extern_function` and `extern_global_var` references maintained but not contextualized.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in roughly original order but no file/section organization. Test functions grouped together but static globals scattered. No header file recovery.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has syntax issues (`[D] MBusEvent-Imbe_Fence()`), undefined types (`struct_0` defined multiple times inconsistently), and missing external declarations. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Weighted |
+|-------|-----------|---------|--------|----------|
+| L1: Lexical Clarity | 3, 6, 2, 3 | 3.5 | 30% | 1.05 |
+| L2: Structural | 5, 6, 5, 4 | 5.0 | 25% | 1.25 |
+| L3: Type System | 4, 5, 5 | 4.67 | 20% | 0.93 |
+| L4: Semantic | 1, 2, 3, 2 | 2.0 | 15% | 0.30 |
+| L5: Contextual | 5, 6, 4 | 5.0 | 10% | 0.50 |
+
+**Overall Readability Score: 4.03/10**
+
+### Critical Defects:
+- **Magic number explosion**: Expressions like `4294967295`, `17179869180`, `4294967294` replace simple constants (-1, type sizes, -2)
+- **Variable name loss**: All local variables are `v0`, `v1`, `ptr`, `i` with no semantic meaning
+- **Struct field anonymization**: `field_0`, `field_8`, `padding_4` instead of `data`, `next`, `x`, `y`
+- **Arithmetic obfuscation**: Simple `x * 2` becomes `(a0 * 2 | a0 >> 31) & 4294967294`
+- **Zero documentation**: No comments explaining complex transformations or recovered patterns
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions retained original names (`local_vars`, `heap_basic`, `vla_stack`), making basic navigation possible despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of explanatory comments makes understanding complex bit manipulation and type transformations nearly impossible without referencing original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement constant folding and simplification** - Replace complex bit manipulation patterns like `(x * 2 | x >> 31) & 4294967294` with simple arithmetic `x * 2` when semantically equivalent.
+
+2. **Add semantic variable naming inference** - Use usage patterns to name variables (e.g., variables used in malloc size calculations should be named `size` or `count`, loop indices should be `i`, `j`, `index`).
+
+3. **Generate confidence annotations and comments** - Add comments indicating decompiler uncertainty, explain recovered patterns (e.g., "// Recovered VLA allocation"), and document error return values as named constants.

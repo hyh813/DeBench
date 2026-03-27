@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively named `v1`, `v2`, `v3`, etc. with no semantic meaning (e.g., `int64_t v1`, `int128_t v14`). Original source had meaningful names like `arr`, `local`, `p`, `head` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retained original names (`double_value`, `local_vars`, `heap_basic`), but helper functions are generically named (`function_1120`, `function_1130`). Test functions preserved well (`test_stack_memory`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (`0xfffffffe`, `0x100000000`, `0x3fffffff0`) without explanation. String literals stored as `g1`, `g2` with hex-encoded Chinese characters instead of readable strings.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy assembly intrinsics pollution (`__asm_movdqa`, `__asm_paddd`, `__asm_pslld`). Stack canary checks (`__readfsqword`, `__stack_chk_fail`) and runtime boilerplate (`deregister_tm_clones`) clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` labels (`lab_0x15ce`, `lab_0x159c`) instead of structured loops. SIMD-optimized loops expanded into unreadable assembly-like sequences in `large_stack_frame` and `vla_stack`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Helper functions unnecessarily split (`function_1160` for `memset`, `function_11a0` for `malloc`). Some functions constant-folded (`alloca_usage_constprop_0` returns literal 15), losing original logic.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. Multiple exit points with `goto` patterns (e.g., `vla_stack` has 4+ labeled jumps). Deep nesting in heap functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: SIMD loop unrolling creates repetitive patterns across `heap_basic`, `heap_array`, `memory_leak`. Similar code blocks duplicated instead of abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: `int64_t` used excessively where `int` suffices. Pointer types degraded to `int64_t` (e.g., `int64_t * mem` instead of `int *`). Original `int32_t` sometimes preserved (`double_free`) but inconsistent.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `Point` struct not recovered—accessed via pointer arithmetic (`3 * (a1 & 0xffffffff)`). `Node` struct partially visible in `linked_list_heap` but fields accessed as offsets (`v15 + 8`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts pervasive (`(int64_t)(uint32_t)v32 >> 56`). Pointer-to-int conversions without justification. Function pointer typed as `int64_t` instead of proper signature in `call_global_callback`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. No algorithm documentation. Only auto-generated header comments present. Original source had extensive test case documentation lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Memory allocation patterns (`malloc`/`free` pairs) visible but not identified as such. Linked list traversal in `linked_list_heap` not recognized as a pattern. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about undefined behavior in `dangling_pointer` or `double_free`. Optimization artifacts (constant folding) not flagged. Silent about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` requirements). No postconditions inferred. Null checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`global_counter`, `file_scope_static`) used without usage context. Callback mechanism in `set_global_callback` not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file matching original structure. Static functions properly identified (`static int` preserved). No logical grouping beyond source order.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Standard headers included but external functions need stubs (`extern_function`). Assembly intrinsics require specific compiler support. Would need moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+5+4+5)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+6+5)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.10/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable names `v1`, `v2`, `v3`** should be inferred from usage (e.g., `loop_counter`, `array_ptr`, `result`)
+- **Assembly intrinsics** (`__asm_movdqa`, `__asm_paddd`) should be decompiled to C equivalents or at least commented
+- **Struct `Point` not recovered**—fields accessed via arithmetic instead of `p->x`, `p->y`
+- **Goto-based control flow** in loops should be recovered as `for`/`while` constructs
+- **No comments** explaining optimization artifacts or constant-folded functions
+
+### Best Quality Aspect:
+- **Module Organization (6/10)** - Function grouping and static scoping preserved from original source structure
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding optimization artifacts nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in loop bounds → `count`, `size`; pointer dereferences → `ptr`, `buffer`)
+2. **Recover high-level control structures** - Convert `goto` + comparison patterns back to `for`/`while` loops, especially for SIMD-unrolled code
+3. **Add decompilation confidence annotations** - Flag optimized/constant-folded regions and assembly intrinsics with comments explaining what was lost during compilation

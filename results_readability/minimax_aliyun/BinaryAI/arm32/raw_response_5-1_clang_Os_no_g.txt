@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `local_28`, `uStack_24`, `puVar1`, `iVar3` that provide no semantic meaning. The original `value` and `name` members of SimpleClass are completely lost, replaced with stack offset notation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (e.g., `test_cpp_member_func`, `call_virtual_func`, `test_cpp_virtual_func`). Template functions are named `template_max_int_` and `template_max_double_` which is reasonable. Minor issue: some internal functions like `<EXTERNAL>::operator.new` are duplicated.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple magic numbers appear without explanation: `0x74736554` (should be "Test" string), `0x125c` (4704), `0x3e9` (1001), `0x2a` (42). The string "Test" is encoded as a hex literal `0x74736554` which is unreadable. No named constants recovered.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. The `undefined4`, `undefined2`, `undefined` type definitions are standard Ghidra conventions and don't significantly impede readability. No debug instrumentation or register spilling artifacts visible.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Most functions are trivial (single return statements) due to the test functions computing expected results at compile time. Control flow is naturally linear. The `call_virtual_func` correctly shows indirect virtual dispatch through `***(code ***)param_1)()`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match the original source. Template instantiations are properly separated (`template_max_int_`, `template_max_double_`, `template_swap_int_`). Template class methods are correctly extracted as separate functions.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with no forward jumps or goto statements. Simple linear execution flow throughout. The only complexity is in `test_cpp_rtti` with its conditional logic.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. The hardcoded return values are the result of compiler optimization (constant folding), not decompilation failure.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: All types are generic: `undefined4` (should be `int`), `undefined8` (should be `double` or `long`), `undefined` (should be `char`). The `param_1` in `operator_new` should be `size_t`. No `const` correctness preserved. Function pointers use generic `code` type.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No class structures recovered. `SimpleClass` is completely absent - its `value` and `name[32]` members are not reconstructed. `Container<int>` shows raw offset `0x28` for size but doesn't reconstruct the `data[10]` array. `LifecycleClass` not decompiled at all.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `(***(code ***)param_1)()` is an untyped virtual call, pointer arithmetic in `Container<double>::get` (`this + param_1 * 8`) without bounds documentation, raw `operator_new(4)` without proper type. The `test_cpp_constructor` returns computed value without actual object construction.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only a header comment with BinaryAI attribution and SHA256 hash. No comments explaining algorithm logic, no decompilation confidence indicators, no @param/@return documentation. The comment "Decompiled by BinaryAI" provides no value for understanding.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No C++ idioms identified. Virtual function calls are shown as raw indirect calls without noting vtable pattern. Template instantiation pattern not recognized. Exception handling shown as raw `__cxa_throw` without try-catch structure recovery.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged. The indirect virtual call in `call_virtual_func` should have a warning about unresolved vtable dispatch. The `test_cpp_exception` function shows exception throw without catch recovery - this should be flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The `Container<int>::get` has implicit bounds checking but no comments explaining this. No documentation of what `getValue` should return.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present but relationships not documented. The virtual function call chain (`Base::virtual_func` → `Derived::virtual_func`) is not indicated. Template instantiations not linked to their generic definitions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in address order rather than logical grouping. Template functions are scattered among test functions. External library functions (`operator_new`, `printf`) are grouped but not clearly marked as external.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile - missing type definitions (`undefined4`, `undefined`), missing class definitions, missing standard library includes. External functions like `operator_new` and `strlen` need proper declarations. The `<EXTERNAL>` prefix indicates these are imports but not properly declared.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming uses generic stack references (`local_28`, `uStack_24`) instead of semantic names (`value`, `name`)
+- Type precision completely lost - all types are `undefined4`/`undefined8` instead of `int`/`double`
+- No class structure recovery - `SimpleClass`, `LifecycleClass`, `Container<T>` not reconstructed
+- Magic numbers everywhere (`0x74736554` for "Test", `0x125c` for 4704) without named constants
+- No comments explaining virtual dispatch, template instantiation, or exception handling patterns
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+Function names match the original source almost exactly, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Type System Fidelity (scored 3.0/10)  
+Types are completely generic (`undefined4`, `undefined`, `code`) with no recovery of original types. Composite types (classes, structs) are not reconstructed at all.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `local_28` used in `strlen()` call should be named `name` based on the string operation
+2. Recover class/struct definitions from constructor patterns and vtable references instead of showing raw stack offsets
+3. Detect magic numbers and suggest named constants - `0x74736554` should be displayed as "Test" string literal

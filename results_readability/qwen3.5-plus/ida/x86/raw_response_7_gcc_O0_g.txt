@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `v0`, `v1`, `v3`, `temp` are generic and obscure purpose (e.g., `v3` is stack canary, `v0` is strlen result). Some good names exist (`decrypted`, `heap_buffer`, `buffer`) but inconsistent.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User function names preserved well (`param_fake_branch`, `param_opaque_predicate`), but helper functions use generic names (`sub_1030`, `sub_1040`). 12 library functions failed entirely.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers present without explanation: `signal(8, ...)` instead of `SIGFPE`, `signal(11, ...)` instead of `SIGSEGV`, `0x14u` for stack canary offset, `90` for XOR key (0x5A).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary code clutters functions (`v3 = __readgsdword(0x14u)`, `HIDWORD(result) = v3 - __readgsdword(0x14u)`). Multiple stub functions (`sub_1030` through `sub_10E0`) add noise without value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as natural `for`/`while` constructs. However, `param_fake_branch` lost its fake branches entirely (should show `if (x * x < 0)` at -O0), indicating over-aggressive simplification.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. No monolithic functions or over-fragmentation. Some functions overly simplified (`param_implementation_defined` reduced to `return 43`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately. No excessive gotos or forward jumps disrupting flow in user code.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Decompiler simplified instruction substitutions back to multiplication (`6 * x`, `15 * x`), which improves readability. Stack canary checks add some redundancy but are consistent.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Architecture mismatch critical: original ARM64, decompiled shows x86 (`__readgsdword`, `__int64` returns). Basic types preserved but `__int64` used inconsistently for 32-bit return values.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays recovered well (`char decrypted[32]`, `int a[8]`). The bitfield struct in `param_implementation_defined` was completely optimized away to `return 43`, losing all structure information.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Minor unsafe casts present: `(__sighandler_t)div_zero_handler`. Pointer arithmetic generally safe. No buffer overflow patterns introduced by decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Zero comments** in function bodies. No algorithm explanations, no decompilation confidence indicators. Header metadata exists but provides no semantic help for understanding logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Loop patterns, signal handlers, and setjmp/longjmp patterns recognized structurally. However, no explicit pattern naming or documentation (e.g., "Exception handling via setjmp/longjmp").
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end ("FAILED to decompile: __libc_start_main"). No inline anomaly warnings. Architecture mismatch (ARM64→x86) not flagged anywhere.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. No invariant recovery. Error conditions (signal handlers, NULL checks) not explicitly documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Internal function calls clear through preserved names. Global variables referenced but undocumented (`encrypted_0`, `jmp_buffer`, `div_zero_caught`). 12 external functions failed to decompile.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No header file separation. Static functions not clearly marked. Original organization partially preserved through naming conventions.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: **12 functions failed to decompile** (printf, malloc, signal, etc.). Architecture-specific code (`__readgsdword`) requires x86. Cannot compile standalone without significant stubbing and modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (5 + 7 + 6 + 5) / 4 = 5.75
+L2 Average: (7 + 7 + 7 + 7) / 4 = 7.00
+L3 Average: (6 + 6 + 7) / 3 = 6.33
+L4 Average: (2 + 5 + 4 + 2) / 4 = 3.25
+L5 Average: (5 + 5 + 3) / 3 = 4.33
+
+Overall = (5.75 × 0.30) + (7.00 × 0.25) + (6.33 × 0.20) + (3.25 × 0.15) + (4.33 × 0.10)
+        = 1.725 + 1.75 + 1.266 + 0.4875 + 0.433
+        = 5.66 ≈ 5.7/10
+```
+
+**Overall Readability Score: 5.7/10**
+
+### Critical Defects:
+- **Architecture mismatch**: Original ARM64 compiled, decompiled as x86 (affects types, calling conventions)
+- **Zero semantic comments**: No documentation explaining obfuscation patterns, signal handling, or algorithm intent
+- **Fake branches lost**: `param_fake_branch` should show `if (x * x < 0)` but decompiler simplified to `return x`
+- **12 library functions failed**: printf, malloc, signal, strlen, etc. require manual stubbing
+- **Magic numbers unexplained**: Signal numbers (8, 11), XOR key (90), canary offset (0x14u) lack symbolic names
+
+### Best Quality Aspect:
+- **Structural Intelligibility (7.0/10)** - Control flow, function decomposition, and code linearization are well-recovered with natural loop/conditional constructs
+
+### Most Needs Improvement:
+- **Semantic Transparency (3.25/10)** - Complete absence of comments, no pattern documentation, and no contract recovery makes understanding intent difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add semantic comment generation** - Detect obfuscation patterns (fake branches, opaque predicates) and add explanatory comments like "// OBFUSCATION: Always-false condition"
+2. **Preserve optimization-sensitive code** - At -O0, do not simplify away intentionally misleading code paths that serve obfuscation purposes
+3. **Symbolic constant recovery** - Replace magic numbers with named constants (SIGFPE=8, SIGSEGV=11, XOR_KEY=0x5A) based on usage context

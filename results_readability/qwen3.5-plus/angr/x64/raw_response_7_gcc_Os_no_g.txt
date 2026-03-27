@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `idx`) with no semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core application functions preserved original names (`param_fake_branch`, `param_opaque_predicate`, `test_obf_opt_edge`), but runtime functions use mechanical names (`sub_401020`, `sub_401030`) and many are just initialization stubs.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `signal(8, ...)` instead of `SIGFPE`, `4294967295` for error returns, `90` for encryption key. Original had `0xDEADBEEF`, `SIGFPE`, `SIGSEGV` constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: useless assignments (`v0 = v2`), stack frame declarations (`[bp-0x8]`), unsupported jumpkind warnings, and many wrapper functions that just call other functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops generally recovered as for/while constructs, but some functions use goto patterns (`sub_401020` has `goto g_403f80`). CONCAT operations for division obscure semantics.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Excessive fragmentation with many single-purpose wrapper functions (`sub_40102d`, `sub_40103f`, etc.). Original function boundaries preserved but mixed with runtime initialization code.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably, but forward jumps and goto statements disrupt flow. Stack variable declarations at function tops are standard but add visual noise.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Dead code from original was optimized away (good), but redundant variable assignments persist (`v0 = v2` patterns). No obvious loop unrolling artifacts visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `unsigned long long` used generically instead of `int`, `size_t`. `param_fake_branch` takes `unsigned int` instead of `int`. Pointer types often become `void*` or `unsigned long`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Only one struct defined (`struct_0` with `field_0`). Bitfield struct from `param_implementation_defined` completely lost (function just returns constant 47). No union recovery visible.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts: `(unsigned int)v1`, `(char *)cur`, `*((int *)(ptr + idx * 4))`. CONCAT operations for division obscure type semantics. Signal handler type mismatches present.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments except `/* do not return */` for longjmp. Original had extensive comments explaining obfuscation techniques, expected values, and test scenarios—all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. GCD algorithm in `param_opaque_predicate` not named. String decryption pattern not recognized. Loop patterns recovered but unnamed.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`), but no indication of optimized-away dead code, no warnings about signal handling recovery, no confidence indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values (`4294967295`, `-1`, `-2`) have no explanation of their meaning.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables referenced (`g_403fe8`, `jmp_buffer`) without explanation. Signal handler callback relationships not clarified.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output with no logical grouping. Runtime initialization functions mixed with application code. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds, but external dependencies (signal, malloc, strlen) require proper headers. Would need significant work to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+6+5+4)/4 = 4.50
+Level 2 Average: (6+5+6+6)/4 = 5.75
+Level 3 Average: (5+3+4)/3 = 4.00
+Level 4 Average: (2+3+4+2)/4 = 2.75
+Level 5 Average: (5+4+6)/3 = 5.00
+
+Overall = (4.50 × 0.30) + (5.75 × 0.25) + (4.00 × 0.20) + (2.75 × 0.15) + (5.00 × 0.10)
+Overall = 1.35 + 1.4375 + 0.80 + 0.4125 + 0.50
+Overall = 4.50/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a0`) losing all semantic information from original (`result`, `encrypted`, `canary`)
+- **No comments recovered** despite original having extensive documentation explaining obfuscation techniques and expected values
+- **Type precision degraded** with `unsigned long long` used generically instead of proper `int`, `size_t`, `char*` types
+- **Composite types lost** - bitfield struct from `param_implementation_defined` completely eliminated, function returns constant
+- **Magic numbers unexplained** - signal numbers (8, 11), error codes (4294967295), encryption key (90) have no semantic labels
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core application function names were preserved from original source (`param_fake_branch`, `param_opaque_predicate`, `test_obf_opt_edge`), providing some semantic anchors for navigation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation recovered despite original having extensive comments explaining obfuscation techniques, test scenarios, and expected values; this severely impacts understandability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (e.g., `v0` in `param_fake_branch` is return value, should be `result`) and suggest semantic names.
+2. **Recover and preserve source comments** - When debug symbols (`-g`) are available, extract and embed original comments into decompiled output.
+3. **Add semantic annotations for magic numbers** - Detect common patterns (signal numbers, error codes, encryption keys) and suggest named constants with explanations.

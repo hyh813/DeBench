@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `local_28`, `uVar1`, and `piVar1`, completely obscuring the original semantic names like `obj`, `result`, or `capture_by_value`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully demangled C++ symbols, recovering accurate names like `Base::virtual_func`, `Container<int>::push`, and `test_cpp_member_func`, which strongly reflects the original source structure.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are often obfuscated as hex integers (e.g., `0x74736554` for "Test"), and computed results are inlined as magic numbers (e.g., `0x125c` for `4704`), hiding the original logic and constants.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains verbose stack setup for objects (e.g., assigning hex values to `local_28` for string initialization) and Position Independent Code artifacts (`__x86.get_pc_thunk.bx`), which adds noise to the logic flow.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: High-level control flow is lost in several functions; `test_cpp_exception` only shows the throw without the try/catch structure, and logic in `test_cpp_member_func` is reduced to a constant return, making the original flow unrecognizable.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Class methods and template instantiations are correctly separated into individual functions (e.g., `Derived::virtual_func`, `template_max_int_`), maintaining good granularity and cohesion.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom with minimal jumping, though the complex pointer arithmetic in virtual inheritance functions (e.g., `MiddleA::func`) disrupts the linear flow.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: While some redundancy is removed, the decompiler over-aggressively replaces logic with constants (e.g., `test_cpp_lambda` returning `0x55`), effectively deleting the source code's algorithmic content rather than just cleaning it up.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While class types like `Base*` and `Derived*` are recovered, many standard types are degraded to `undefined4` or `int`, and `double` is incorrectly returned as `longdouble` in `Container<double>::get`.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: The decompiler failed to reconstruct any `struct` or `class` definitions; member access is represented via raw pointer arithmetic (e.g., `*(int *)(this + 0x28)`), completely losing the object layout.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code relies heavily on unsafe pointer arithmetic and hard-coded offsets to access class members, presenting a significant risk of misunderstanding the data structure layout.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of the complex pointer manipulations found in the inheritance hierarchies.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Virtual function calls are recognizable via vtable lookups (`(***(code ***)param_1)`), but higher-level patterns like RAII, smart pointers, or exception handling are not identified or annotated.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the reduced constant-returning functions and missing exception blocks as normal code without any warnings or flags indicating potential loss of logic or reconstruction uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (like array bounds checks in `Container::get`) or postconditions; the logic is presented as raw operations.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear, and the relationship between base and derived class methods is evident through the naming convention and the `this` pointer passing.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a flat manner, roughly grouped by class, but there is no logical separation or namespace structure that mirrors the source file's organization.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code cannot be compiled standalone due to missing struct definitions and the reliance on undefined types like `Container_int_`, requiring significant manual intervention to reconstruct the headers.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 4.75
+L2_avg: 5.50
+L3_avg: 2.67
+L4_avg: 2.00
+L5_avg: 5.67
+
+Overall = (4.75 × 0.30) + (5.50 × 0.25) + (2.67 × 0.20) + 
+          (2.00 × 0.15) + (5.67 × 0.10)
+Overall = 1.425 + 1.375 + 0.534 + 0.300 + 0.567
+Overall = 4.20
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.2/10
+
+### Critical Defects (Bullet List)
+- **Missing Class Definitions**: The decompiler failed to reconstruct `struct` definitions for classes like `SimpleClass` or `Container`, replacing member access with raw pointer arithmetic (e.g., `*(int *)(this + 0x28)`).
+- **Loss of High-Level Logic**: Functions like `test_cpp_lambda` and `test_cpp_smart_ptr` are reduced to returning constant hex values (`0x55`, `0x2bf`), completely obscuring the original implementation logic.
+- **Exception Handling Erasure**: The `try-catch` blocks in `test_cpp_exception` are missing; only the low-level `__cxa_throw` mechanism is visible, making the control flow unintelligible.
+- **Literal Obfuscation**: String literals are represented as hex integers (e.g., `0x74736554` for "Test"), and magic numbers are used instead of named constants or the original calculation expressions.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (9/10)**
+- **Why?** Ghidra successfully demangled the C++ symbols, preserving the original function names like `Base::virtual_func` and `Container<int>::push`, which is crucial for navigating the code.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Composite Type Recovery (1/10)**
+- **Why?** The complete absence of reconstructed class structures forces the reader to interpret raw pointer offsets, which is the single biggest barrier to understanding C++ decompiled code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Reconstruct C++ Class Structures**: Implement analysis to identify `this` pointer usage patterns and vtable layouts to automatically generate `struct`/`class` definitions with correct field offsets and types.
+2.  **Preserve Logic over Constants**: Avoid replacing function bodies with constant return values unless the function is trivial; instead, show the calculation steps that led to the constant to maintain semantic transparency.
+3.  **Recover Exception Handling**: Identify patterns of `__cxa_throw`, `__cxa_begin_catch`, and landing pads to reconstruct `try-catch` blocks rather than showing just the low-level unwinding calls.

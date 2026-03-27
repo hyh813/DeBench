@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`, `result`) with no semantic meaning. Original source used meaningful names like `size`, `counter`, `exec_mem`, `page_size` which are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core function names preserved accurately (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`). Only runtime initialization functions use generic names (`sub_401020`, `deregister_tm_clones`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `0x400` (MAX_SIZE), `0x200` (MAX_SIZE/2), `57072` (0xDF22), `4294967295` (0xFFFFFFFF mask). String literals preserved but line numbers hardcoded ("155" for `__LINE__`).
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; some unnecessary casts (`(unsigned int)strlen(v3)`) and redundant assignments (`v0 = a0; v0 = v0 * 3 + 2`) but no severe noise pollution.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Clean if/else and for-loop constructs in main functions. Runtime initialization uses some goto patterns but core logic reads naturally. At -O0, this is expected quality.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity preserved well with appropriate single-responsibility functions. Some runtime helpers are fragmented (`sub_401020` through `sub_4010a0` chain) but main logic is cohesive.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally with standard loop constructs. No disruptive forward jumps in application functions; only runtime init has goto chains.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minor redundancy present (e.g., `v0 = a0; v0 = v0 * 3 + 2` could be `return a0 * 3 + 2`). No significant dead code or loop unrolling artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `int` → `unsigned long long` in many functions (`param_macro_constants` returns `unsigned long long` instead of `int`). Pointer types often generic (`void*`, `char*`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited opportunity (source has few structs). One struct recovered (`struct_0`) but with generic field name (`field_0`). Array handling mostly preserved correctly.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(unsigned int)strlen(v3)`, function pointer cast `v3(a0)`). Pointer arithmetic in `param_asm_clobber` uses generic `unsigned long ptr` instead of typed pointer.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Zero comments** in decompiled code. Original source had extensive documentation explaining macros, conditionals, assembly semantics, and expected values. Critical semantic information completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition. Macro expansions (SQUARE, MAX, ADD_16) appear as raw arithmetic without indicating original macro semantics. SIMD operations shown as `AddV()` without SSE context.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: One anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`). Most potential issues (hardcoded line numbers, architecture-specific code paths) not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Original comments like "期望: 64" (expected: 64) completely absent from decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships clear through preserved names. Global variables poorly documented (`g_402090`, `g_4020b7` for printf format strings). External dependencies declared but not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically (param_*/call_* pairs adjacent). Preprocessing tests before assembly tests matches source order. Runtime initialization functions clustered at top.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Metadata indicates successful compilation. External functions declared (`printf`, `strlen`, `mmap`, `atomic_exchange_add`). Some platform-specific code paths preserved with conditionals.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+7)/4 = 6.0  × 0.30 = 1.80
+Level 2 (Structural):  (8+7+8+7)/4 = 7.5  × 0.25 = 1.875
+Level 3 (Type):        (5+7+6)/3   = 6.0  × 0.20 = 1.20
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.5  × 0.15 = 0.525
+Level 5 (Contextual):  (6+7+8)/3   = 7.0  × 0.10 = 0.70
+─────────────────────────────────────────────────────
+Overall Score:                                  6.10/10
+```
+
+**Overall Readability Score: 6.1/10**
+
+### Critical Defects
+- **Zero comments** - All original documentation explaining macro semantics, expected values, and assembly behavior completely lost
+- **Generic variable names** - `v0`, `v1`, `a0`, `a1` obscure semantic roles (e.g., `page_size`, `exec_mem`, `counter`)
+- **Magic numbers unexplained** - `0x400`, `57072`, `4294967295` appear without indicating they represent `MAX_SIZE`, `0xDF22`, `UINT32_MAX`
+- **Type degradation** - `int` functions returning `unsigned long long` creates confusion about actual return types
+- **Hardcoded preprocessing values** - `__LINE__` resolved to "155" instead of indicating it was a line number macro
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source, maintaining semantic clarity for the main test functions
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of comments loses all contextual information about macro expansions, expected values, and architecture-specific behavior
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover macro semantics** - Detect constant folding patterns and annotate with original macro names (e.g., `// Expanded from: MAX_SIZE / 2`)
+2. **Preserve source comments** - Extract and embed DWARF debug info comments into decompiled output where available
+3. **Infer variable names from usage** - Analyze variable usage patterns to suggest semantic names (e.g., variables used in size comparisons → `size`, `limit`, `max`)

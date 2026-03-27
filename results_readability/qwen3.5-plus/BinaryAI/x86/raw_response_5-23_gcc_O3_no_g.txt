@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar1`, `local_10` instead of semantic names like `size`, `result`, `counter`. Original source had meaningful names (`size`, `x`, `y`, `result`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_macro_constants`, `call_macro_constants`, `test_preprocessing_features`). However, library calls degraded to `FUN_00011110` (printf) and `FUN_000110f0` (mmap), losing semantic meaning.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `0x400` instead of `MAX_SIZE` (1024), `0x40` instead of 64, `0x200` instead of 512, `0xdef0` instead of platform constant. No macro recovery attempted despite `-O0` compilation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail_local()`) added to many functions. Compiler helpers (`__x86_get_pc_thunk_*`, `deregister_tm_clones`) clutter the output. Frame pointer manipulation visible throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Basic control structures recovered well (if-else, for loops). `param_asm_clobber` correctly shows loop structure. However, some functions constant-folded completely (`call_macro_constants` just returns `0x40`), losing original logic visibility.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly. Individual functions have appropriate granularity. However, constant folding makes some functions trivial (`param_stringize` returns constant `0x13`), losing the string length calculation logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code mostly reads top-to-bottom. Stack canary checks at function ends disrupt flow (`if (local_10 == *(int *)(in_GS_OFFSET + 0x14))`). Some forward jumps in complex functions like `param_memory_protection`.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding creates information loss rather than helpful simplification. Test functions repeat similar `FUN_00011110` call patterns. No dead code removal for initialization routines that are present.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used instead of `int32_t`, `size_t`. Return types often `undefined4`. SIMD function uses awkward `undefined (*param_3) [16]`. Original type information from `-g` debug symbols not fully utilized.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited structs in source code. Arrays handled reasonably (`local_24 [5]`). No complex struct recovery needed for this code, so score reflects adequate handling of what exists.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout: `(undefined4 *)`, `(int)puVar3`, `(func_t)exec_mem`. `LOCK()`/`UNLOCK()` macros without proper type context. Pointer arithmetic without bounds checking visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive section headers and inline comments explaining macro behavior, expected values, and architecture-specific code. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Assembly patterns converted to C but not identified (e.g., `param_asm_atomic` shows `LOCK()` but no explanation of atomic semantics). No algorithm pattern naming. Macro expansion patterns not documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Unresolved calls (`FUN_00011110`, `FUN_000110f0`) not flagged as external/unknown. Stack canary checks present but unexplained. No indication of decompilation uncertainty for complex assembly regions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1` constraints). No postconditions inferred. Error conditions (return -1, -2, -3 in `param_memory_protection`) not explained. Original comments about expected values lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but many unresolved (`FUN_00011110` for printf). Global variable `global_var` referenced but definition location unclear. No call graph documentation or relationship hints.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. However, no header file structure, and initialization functions scattered throughout output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many undefined symbols (`FUN_00011110`, `LOCK()`, `UNLOCK()`, `__stack_chk_fail_local`). Would require extensive stubbing. External dependencies (printf, mmap, mprotect) not documented or declared.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+3+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (7+7+6+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+7+4)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.00/10
+```
+
+### Overall Readability Score: **5.0/10**
+
+### Critical Defects:
+- **Magic numbers everywhere**: `0x400`, `0x40`, `0x200`, `0xdef0` instead of recovered constants (`MAX_SIZE`, `BUFFER_COUNT`, platform constants)
+- **Zero comments**: Original had extensive documentation; decompiled output has none despite `-g` debug symbols being available
+- **Unresolved external calls**: `FUN_00011110` (printf), `FUN_000110f0` (mmap), `FUN_00011100` (mprotect) not identified
+- **Generic variable names**: `param_1`, `iVar1`, `uVar1` instead of semantic names like `size`, `result`, `counter`
+- **Constant folding loses logic**: Functions like `call_macro_constants` return constants directly, hiding the original computation path
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved accurately from source, maintaining semantic identity across decompilation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments despite original having extensive documentation and debug symbols being available at `-O0 -g`
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover debug symbol information**: At `-O0 -g`, variable names and type information should be extracted from DWARF debug sections rather than inferring from usage patterns
+2. **Identify and document external library calls**: Recognize common libc functions (printf, mmap, memcpy) and restore their original names with proper signatures
+3. **Preserve constant semantics**: When constants are used consistently (like `0x400` for size checks), suggest named constant recovery and add comments indicating original macro values

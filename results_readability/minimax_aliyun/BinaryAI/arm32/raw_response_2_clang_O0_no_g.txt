@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `local_10`, `local_c`, `local_8`. For example, in `array_1d_stack`, the index variable should be named `i` or `index`, not `local_10`. This makes tracking variable purpose nearly impossible without cross-referencing source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (e.g., `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). However, some compiler-generated functions have cryptic names like `FUN_000120f0` and floating-point intrinsics like `__mulsf3`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x40`, `0x5b`, `0x20` in `process_char` are used without explanation. However, struct field offsets like `0xc` (12 bytes for 3 int fields) can be inferred. Most literals remain unexplained.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Extensive floating-point helper library functions (`__mulsf3`, `__addsf3`, `__divdf3`, `__subdf3`, etc.) clutter the output. However, core application functions are relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures match source well. The `if` in `process_char`, `while` loops in `array_string`/`array_1d_stack`, and `for` loops in array traversals are all properly recovered. At -O0, control flow should be natural and it largely is.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each original function has a corresponding decompiled function of similar size. No monolithic functions created. Parameters are reasonable (not exposing implementation details).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Most functions read top-to-bottom. One forward jump in `array_complex_index` but overall good linearity. No excessive nesting.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some minor redundancy in test initialization code, but nothing severe. The core logic is clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: `process_char` returns `byte` instead of `char`. `process_float` returns `void` instead of `float`. `process_double` and `process_ld` return `void` instead of `double`/`long double`. Parameters often use `undefined4` instead of proper types. Mixed precision throughout.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: All structs are lost. `struct_simple` becomes `*param_1 + param_1[1] + param_1[2]` with no struct name or field names. `struct_nested` becomes `*param_1 + param_1[3]`. Linked list nodes use raw pointer arithmetic `local_c[1]` for the `next` field with no struct recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Significant unsafe pointer arithmetic throughout (e.g., `*(int *)(param_1 + local_10 * 4)`). Implicit conversions between integer types. Multiple unsafe casts in pointer handling. No `const` recovery in many places where it should be.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated header comment (`// Decompiled by BinaryAI`). No explanatory comments for algorithms, complex logic, or intent. No documentation of preconditions/postconditions.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Design patterns like linked list traversal, array iteration, struct access are not identified or named. Code just appears as raw logic.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of suspicious code, undefined behavior potential, or decompilation confidence issues. The OOB access bug in `array_oob` (`i <= param_2` causing off-by-one) is presented without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions (e.g., "ptr != NULL"), postconditions, and invariants are not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible in test functions, but no explicit call graph documentation. Relationships between functions (who calls whom) are not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped by type (data types, arrays, pointers, composites). Static functions properly marked. However, the file is monolithic (single output).
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code compiles (marked as "Yes" in metadata). External functions properly declared. Library dependencies are clear.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable names are all generic (`param_1`, `local_10`, `local_c`) making code nearly incomprehensible without source reference
+- All struct/union types completely lost - `Point3D`, `Rect`, `Node` become raw pointer arithmetic
+- Return types for floating-point functions are wrong (`void` instead of `float`/`double`)
+- No comments explaining any logic or algorithms
+- Type safety issues throughout with unsafe pointer arithmetic
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+Control structures (if, while, for) are properly recovered and match the source at -O0 optimization level.
+
+**Most Needs Improvement:** Variable Naming Quality and Composite Type Recovery (both 2-4/10)  
+Variables should be named based on usage patterns (e.g., `i` for loop index, `sum` for accumulator), and structs should be reconstructed with field names.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns** - Detect loop indices (iterating 0 to n), accumulators (repeatedly adding to), and name them accordingly (`i`, `sum`, `count`)
+2. **Recover struct types** - Detect fixed-offset accesses and reconstruct struct layouts with field names (e.g., offset 0 = `x`, offset 4 = `y`)
+3. **Fix return types for floating-point functions** - The functions `process_float`, `process_double`, `process_ld` must return their proper types, not `void`

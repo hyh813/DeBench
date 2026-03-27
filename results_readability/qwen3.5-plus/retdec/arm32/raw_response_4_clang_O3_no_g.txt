@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `result`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `len`, `str` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`cdecl_func`, `call_cdecl`, `test_calling_conventions`, `varargs_func`). However, helper functions use generic names (`function_410`, `function_41c`, `function_428`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals stored in encoded global variables (`g6`, `g7` with UTF-8 bytes like `\xef\xbc\x9a`). Magic numbers like `0x12345678` preserved but without context. Numeric constants in `__adddf3` are completely opaque.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler runtime artifacts present (`__do_global_dtors_aux`, `register_tm_clones`, `__aeabi_*` floating-point helpers). These add ~20 functions that obscure the actual program logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but `varargs_func` uses `while` loop instead of `for`. Complex function `__adddf3` has excessive branching with goto labels (`lab_0x1168`, `lab_0x1178`) making it nearly unreadable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but optimizer constant-folded many callers (`call_cdecl` returns 15 directly instead of calling `cdecl_func(5, 10)`). This loses the call relationship.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `param_complex_cast` has awkward switch fallthrough and `__adddf3` has multiple goto jumps disrupting linear reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `func_struct_byval` has absurd redundancy: `a3 + a1 + a5 + v1 + v1 + v1 + v1 + v1 + v1 + v1 + v1 + v1 + v1 + v1 + v1 + v1` (12 additions of `v1`). This is clearly failed struct field recovery.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All types degraded to `int32_t`, `uint32_t`. Original had `char*`, `double`, `long long`, struct types. `func_mixed_args` has 6 `int32_t` parameters instead of 4 mixed types (double and long long split into pairs).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - No struct types recovered. `LargeStruct`, `SmallStruct`, `TestIntPair` all lost. `func_struct_byval` takes 5 `int32_t` instead of `LargeStruct`. All struct access is raw pointer arithmetic (`*(int32_t *)(v3 + 4)`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present. `func_mixed_args` returns `(float64_t)(int64_t)a3 + ...` with implicit conversions. Pointer dereferences without null checks in many places. Type-confused parameters throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled output. No explanation of complex logic like `__adddf3` (200+ lines of floating-point arithmetic). No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not identified (should show `va_list` pattern). Struct patterns not recognized. No algorithm identification for any function.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags for type mismatches, failed struct recovery, or suspicious patterns. `func_struct_byval`'s redundant additions should be flagged as recovery failure.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` requires non-null pointer). No postconditions. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code, global variables (`g6`-`g24`) used but relationships not documented. No call graph or usage comments.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Original had clear sections (4.1, 4.2, 4.3) completely lost. No header file separation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has standard includes (`stdio.h`, `stdlib.h`, `string.h`, `stdint.h`, `stdbool.h`). External functions declared. Would require stubbing runtime functions to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.16/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct`, `TestIntPair` not recovered; all access via pointer arithmetic
+- **Variable names all generic** - `a1`, `a2`, `v1`, `v2` provide zero semantic information
+- **Zero comments** - No explanation of complex logic, especially 200+ line `__adddf3` function
+- **Type degradation** - `double`, `long long`, `char*` all collapsed to `int32_t`
+- **Constant folding lost call relationships** - `call_cdecl` returns 15 directly instead of showing `cdecl_func(5, 10)` call
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately, making it possible to identify test purposes
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes complex functions like `__adddf3` practically unusable for analysis
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack access patterns** - Detect struct field access patterns (`[offset]`, `[offset+4]`, etc.) and reconstruct struct definitions with field names
+2. **Add decompilation confidence annotations** - Flag uncertain recoveries (e.g., "// DECOMPILER UNCERTAIN: varargs pattern detected but types inferred")
+3. **Preserve call relationships over constant folding** - Show original call sites even when arguments are constant, with optional constant values in comments

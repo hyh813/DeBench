@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `ptr`, `result`, `flag1`, `i`). The decompiler made no attempt to infer semantic meaning from usage patterns. For example, in `test_cpp_member_func()`, the variable holding the stack canary check should be named `stack_chk_guard` based on its usage with `_ccall`.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Functions are almost exclusively named with address-based patterns (`sub_401000`, `sub_401030`, etc.). While some C++ mangled names are partially recovered (e.g., `_Z20test_cpp_member_funcv`), the vast majority of functions lack meaningful names. The metadata mentions `getValue` but this function is not visible in the decompiled output at all.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: The code is littered with unexplained magic numbers. Values like `20` (stack canary), `4`, `8`, `12`, `140`, `144` appear frequently without explanation. No named constants were recovered for semantically meaningful values like array sizes or error codes.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: `[D] Unsupported jumpkind Ijk_SigTRAP` annotations, `[D] PutI` and `[D] GetI` VEX expressions, multiple `__x86.get_pc_thunk` stub functions, stack canary checks, and a "Failed to decompile function" message. The code is nearly unreadable due to these artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Many functions use `goto` statements for computed jumps (e.g., `goto v1->field_5c;` in `sub_401170`). While some control flow is reasonable, the widespread use of computed gotos and the presence of `[D]` annotated branches make the logic extremely difficult to follow.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Functions are reasonably sized (not monolithic), but the decomposition is meaningless - functions are split by compiler artifacts (separate thunk functions, register thunk functions) rather than by semantic responsibility. Many tiny wrapper functions like `sub_40117a()` that just call another function add no value.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Most functions read somewhat top-to-bottom, but computed jumps and forward references disrupt flow significantly. The `register_tm_clones()` function has complex nested conditionals that are hard to trace. Overall readability is compromised by non-linear patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some dead code exists (empty stub functions), but the decompiler didn't introduce significant redundancy. The main issue is that optimization-related code (like the TM clone registration loops) appears as raw logic rather than being abstracted.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types are mostly generic (`int`, `unsigned int`, `char`, `void*`). The decompiler uses `unsigned int` for most things, losing precision like `size_t`, `uint32_t`, or `int32_t`. Some improvement is seen with segment register variables (`unsigned long` for ldt/gdt).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct definitions were recovered (e.g., `struct_0`, `struct_1`, `struct_2`), but field names are all generic (`field_0`, `field_4`, `field_5c`, `padding_0`). The RTTI-related code has slightly better struct recovery with `struct_4` containing `field_4` pointing to `struct_5`, but semantic meaning is lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns observed: extensive pointer arithmetic without bounds (e.g., `*((int *)((char *)ptr + 4 * index))`), void pointer casts throughout, and indirect function calls without type safety (`(*((int *)*((int *)arg_0)))(arg_0, arg_1)`). The code would not pass type-safe compilation.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only a header comment explaining "Angr Decompilation" is present. No inline comments explain algorithm logic, recovered intent, or decompilation confidence. The "[D]" annotations are auto-generated noise, not helpful comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ patterns are visible (virtual function thunks labeled as such, vtable access patterns), but they're not explicitly named or documented. The thunk functions for multiple inheritance are recognized but not explained. No design patterns or algorithm patterns are identified.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies are flagged (e.g., `[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] unsupported_<class 'pyvex.expr.GetI'>()`), but many suspicious patterns are silent. The failed decompilation message is helpful, but indirect calls that couldn't be resolved are not clearly flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants were recovered. The decompiled code provides no guidance on what inputs are valid or what guarantees the functions provide.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are somewhat visible through the call graph (e.g., `test_cpp_oo_features` calls other test functions), but there's no documentation of who calls whom or global variable usage. The `extern` declarations help slightly.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are grouped by address range rather than by logical purpose. The decompiled output is a single monolithic listing with no logical grouping matching the original source's class-based organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many `extern` declarations are present for undefined symbols, but the code would require significant patching to compile. Dependencies on runtime functions (`__stack_chk_fail_local`, `__do_global_ctors_aux`) are not documented. The "Failed to decompile" message indicates incomplete output.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.15/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`v0`-`v9`, `ptr`, `result`) with no semantic inference from usage patterns
+- **Function naming**: 95%+ of functions use address-based generic names (`sub_401000`, etc.) instead of meaningful names
+- **Noise pollution**: Severe `[D]` annotations, VEX expressions, and unsupported operation markers make code nearly unreadable
+- **Magic numbers**: Unexplained literals throughout (`20`, `140`, `144`, `4`, `8`) without named constants
+- **Type loss**: All struct fields are generic (`field_0`, `field_4`, `padding_0`) losing all semantic meaning
+
+### Best Quality Aspect: Type System Fidelity (scored 4.0/10)  
+While still poor, this dimension scored highest because some struct recovery was attempted and basic C++ types (classes, virtual functions) are partially recognized.
+
+### Most Needs Improvement: Lexical Clarity (scored 2.0/10)  
+Variable and function naming is completely generic, making the code essentially unreadable. Combined with literal clarity issues and noise, this represents the most severe degradation from the original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, string constants, arithmetic operations) to suggest semantically meaningful names like `array_index`, `buffer_size`, or `stack_guard`
+2. **Eliminate VEX expression noise**: Filter out `[D] PutI` and `[D] GetI` annotations that obscure the actual logic; these are internal decompilation artifacts that provide no value to analysts
+3. **Recover struct field names**: Use type information, string constants, and access patterns to infer field names like `vtable`, `instance_count`, or `data` instead of generic `field_N` names

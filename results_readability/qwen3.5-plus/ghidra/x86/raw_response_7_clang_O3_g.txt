@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use mechanical names (`iVar1`, `uVar2`, `pbVar3`, `local_2c`) with 30+ "Unresolved local var" comments. Original source had semantic names like `result`, `encrypted`, `decrypted`, `p1`, `p2`, `p3` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`), but helper functions use generic names (`FUN_00011030`) and some runtime functions have verbose technical names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic hex constants throughout (`0x5a`, `0x14`, `0x23`, `0xe1`, `0x7a314`) without explanation. Original source had comments explaining expected values; decompiled code shows raw hex with no semantic context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive warnings ("Unknown calling convention", "Unresolved local var", "Removing unreachable block"), compiler thunk functions (`__x86.get_pc_thunk.bx`), and stack variable declarations (`undefined1 auStack_4 [4]`) clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_fake_branch` completely optimized away (just returns x), losing the fake branch logic entirely. `param_vectorized_loop` shows loop unrolling with bit operations (`n & 0xfffffffcU`) instead of clean for-loops. Do-while patterns replace original for-loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved appropriately; `decrypt_string` remains separate. However, caller functions like `call_fake_branch` are constant-folded to just return values, losing the call relationship structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but nested conditionals in `param_vectorized_loop` create deep branching. Some do-while loops disrupt natural reading flow compared to original for-loop structure.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling in `param_vectorized_loop` creates repetitive code blocks (4-element and 8-element unrolled loops). Constant folding eliminates original computation logic in caller functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types recovered (`int`, `uint`, `byte`, `size_t`, `longlong`) but with excessive casts (`(int)(char)`, `(ulonglong)`, `(undefined *)`). Some generic `undefined` types used where specific types should exist.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Bitfield struct in `param_implementation_defined` shows as "Unresolved local var: anon_struct_4_3_4e909822 bitfield@[???]". Arrays shown as `local_2c [31]` without proper naming. No struct definitions recovered in output.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(undefined *)0x0`, `(__sighandler_t)0x0`, `(int *)0x0`). Pointer arithmetic visible but no obvious buffer overflow patterns introduced by decompiler.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only technical decompiler warnings ("WARNING:", "Unresolved local var"). Zero semantic comments explaining what code does. Original source had extensive documentation about obfuscation techniques completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String decryption loop not recognized as such. XOR decryption pattern (`bVar1 ^ 0x5a`) not documented as encryption/decryption.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "Unresolved local var" comments indicate decompiler uncertainty. "WARNING: Function... replaced with injection" notes issues. However, anomalies are technical not semantic (doesn't explain why resolution failed).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions inferred. Original source had "期望" (expected) comments for return values completely absent in decompiled output.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`div_zero_caught`, `jmp_buffer`, `segv_buffer`) referenced without explanation. No call graph or relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output. Original source had clear section organization (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases) completely lost. Static functions not clearly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Metadata shows "Compilation Result: Yes" but code has unresolved references and many warnings. Would require significant cleanup (removing warnings, fixing types) to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+7+6+6)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (6+4+6)/3   = 5.33 × 0.20 = 1.066
+Level 4 (Semantic):    (3+3+6+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 5.0/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **`param_fake_branch` logic completely lost** - Always-false conditions optimized away, function just returns `x` instead of showing the fake branch structure
+- **30+ "Unresolved local var" comments** - Variables like `result`, `str`, `p1`, `p2`, `p3`, `a`, `b`, `temp` not recovered with semantic names
+- **Zero semantic documentation** - Original source's extensive comments about obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.) completely absent
+- **Magic hex constants without context** - `0x5a`, `0x14`, `0x23`, `0xe1` used without explaining their purpose (XOR key, expected values)
+- **Architecture mismatch** - Original compiled for ARM64 but decompiled as x86, indicating potential binary mismatch
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `param_fake_branch`, `param_opaque_predicate`, `decrypt_string` were preserved from the original source, maintaining semantic identity.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or expected value documentation recovered; original source's "期望" (expected) comments completely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns** - Analyze how variables are used (e.g., `iVar1` in GCD loop should be named `gcd_result`, `pbVar3` in XOR loop should be `decrypted_buffer`)
+2. **Preserve original source comments in debug builds** - When `-g` flag is present, extract and embed DWARF debug information comments explaining obfuscation intent
+3. **Detect and document optimization artifacts** - Add comments like "/* OPTIMIZED: Always-false branch removed by compiler */" when code structures differ from expected source patterns

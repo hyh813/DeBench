@@ -1,0 +1,106 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `uVar2`, `pbVar4`, `local_28`) with no semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `heap_buffer`, `canary` which are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`, `param_tail_call_optimized`). Only compiler-generated functions use generic names (`FUN_00101020`, `_init`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound: `0x5a` (XOR key unexplained), `0x14`, `0x23`, `0xe1` (pre-computed results), signal numbers `8` and `0xb` without SIGFPE/SIGSEGV names. Original constants like `0xDEADBEEF` eliminated by optimization.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: External function stubs (`strncpy`, `puts`, `printf`) that just call themselves add noise. Compiler runtime functions (`deregister_tm_clones`, `__do_global_dtors_aux`) present but expected. Some functions overly simplified due to optimization.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs in `param_vectorized_loop` and `decrypt_string`. However, `param_tail_call_optimized` recursion optimized to formula (unnatural), and `param_opaque_predicate` has obfuscated condition logic that's hard to follow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized with single responsibility. However, `param_buffer_overflow_stack` and `param_buffer_overflow_heap` reduced to single return statements (overflow logic eliminated by optimizer).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom clearly. `call_vectorized_loop` has complex loop with many local variables (`iVar1` through `iVar6`, `lVar7`) disrupting flow. `test_obf_opt_edge` inlines GCD calculation that should be separate.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `call_vectorized_loop` has significant redundancy with repeated similar variable assignments. `test_obf_opt_edge` duplicates GCD calculation from `param_opaque_predicate`. Constant-folded functions show no logic at all.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed types (`undefined4`, `undefined8`, `int`, `uint`, `long`, `ulong`). `param_vectorized_loop` uses `long` for array pointers instead of `int*`. `param_division_by_zero` returns `ulong` but should return `int`. Signal handlers correctly use `__sighandler_t`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No structs recovered. Original bitfield struct in `param_implementation_defined` completely optimized away. `__jmp_buf_tag` referenced but not defined. Arrays handled as pointer arithmetic (`param_3 + uVar2 * 4`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(int)`, `(long)`, `(ulong)`, `(char*)`, `(undefined*)`. `param_null_pointer_deref` takes `undefined4 *` losing type information. Division function has questionable return type conversion.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only header comment present ("Decompiled by BinaryAI"). No function documentation, no algorithm explanations, no indication of optimization effects. Original source had extensive section comments (7.1, 7.2, 7.3) all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. XOR decryption pattern in `decrypt_string` not recognized. Tail call optimization not noted (converted to formula). No design patterns identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about optimized-away dead code in `param_fake_branch`. No indication that `param_buffer_overflow_*` logic was eliminated. Signal handling complexity not flagged. Silent about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). No postconditions inferred. Signal handling contracts not explained. Error conditions undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and traceable. Global variables (`jmp_buffer`, `div_zero_caught`, `segv_caught`) referenced but not documented. No call graph provided. External dependencies listed but not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Original section comments (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases) lost. Functions roughly maintain source order but no organizational structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External function declarations present but would need stub implementations. Type mismatches require fixing (`undefined4` vs `int`). Header inconsistency (says "BinaryAI" but metadata says "Ghidra"). Requires moderate patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00
+Level 3 (Type):        (6+4+5)/3   = 5.00
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50
+Level 5 (Contextual):  (6+5+5)/3   = 5.33
+
+Overall = (5.50 × 0.30) + (6.00 × 0.25) + (5.00 × 0.20) + 
+          (2.50 × 0.15) + (5.33 × 0.10)
+        = 1.65 + 1.50 + 1.00 + 0.375 + 0.533
+        = 5.06/10
+```
+
+**Overall Readability Score: 5.1/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`, `uVar2`) losing all semantic meaning from original source
+- **Zero comments** explaining function purpose, algorithms, or optimization effects
+- **No pattern recognition** for GCD algorithm, XOR decryption, or tail-call optimization
+- **Composite types lost** - bitfield struct in `param_implementation_defined` completely gone
+- **Magic numbers unexplained** - `0x5a`, `0x14`, `0x23`, signal numbers `8`/`0xb` without symbolic names
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it possible to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.5/10 average)** - Complete absence of comments, no algorithm identification, no anomaly warnings, and no contract recovery makes understanding the code's intent extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable name inference** - Analyze how variables are used (e.g., `param_1` in division context should be `divisor`, `local_28` used as buffer should be `decrypted_buffer`)
+
+2. **Add optimization awareness annotations** - Flag when dead code is eliminated (`// OPTIMIZED: Dead branch x*x<0 removed`), when recursion is converted to formulas, when constant folding occurs
+
+3. **Recognize common algorithm patterns** - Identify GCD loops, XOR decryption patterns, tail recursion, and add explanatory comments (`// GCD computation using Euclidean algorithm`)

@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `a2`) with no semantic meaning. Original names like `temp1`, `sum`, `count` were completely lost. Only occasional names like `result`, `iter`, `flag1` provide minimal clarity.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test function names preserved (`sequential_ops`, `single_if`, `nested_if_2`), but many helper functions use generic labels (`sub_401030`, `sub_401090`). Original function names recovered where symbol information existed.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (should be `-1`), `1717986919` (optimization artifact for division by 10), `0x80000000`. No constants recovered from original source.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86.get_pc_thunk.*` functions, struct padding fields (`padding_0[40]`), `CONCAT` operations, and architecture mismatch (X86 decompilation of ARM64 binary).
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple loops transformed into complex math (`loop_for_fixed` uses bit shifts instead of iteration). Switch statements partially recovered but `duffs_device` has goto labels. `sequential_ops` remains clean but many functions show optimization artifacts.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved with reasonable sizes. However, test functions became bloated monoliths and some helper functions appear fragmented with unclear responsibilities.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `duffs_device` uses goto labels (`LABEL_401777`), and loop conditions are complex (`while (!(a0) + v3 + 1 != 1)`). Most functions read top-to-bottom but test functions are severely disrupted.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Optimization artifacts create redundant expressions throughout. Loop unrolling not recognized as such. Some dead code from register spilling visible in variable declarations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `unsigned int` or `int`. Original `int` parameters became `unsigned int`. Function pointers incorrectly typed as `unsigned int *`. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct definitions exist but with generic field names (`padding_0`, `field_3ed7`). Original code had minimal structs, so most are decompiler noise from binary analysis.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`(char *)&ptr[4048]`), function pointer calls with wrong signatures (`v4()` with no arguments), and pointer arithmetic without proper typing throughout.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels. Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Switch statements recognized but not labeled as such. State machine pattern in `state_machine` not identified. Loop idioms transformed beyond recognition.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`). Most incorrect code presented confidently without warnings. Architecture mismatch not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling documentation recovered. Original test validation comments completely lost. No parameter constraints documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables use generic names (`g_4025d1`, `g_40204c`). Callback relationships in `process_with_callback` not clearly indicated.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with no logical grouping. Static functions not properly scoped. No header file structure. Original test organization (`test_control_flow_l1/2/3`) preserved but internals mangled.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: **Critical**: Test functions have broken printf calls (e.g., `printf("CF-L1-01 (sequential_ops): %d\n");` without value argument). External dependencies undefined. Architecture mismatch (X86 vs ARM64) prevents compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+6+5+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (1+3+3+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Context):     (5+4+3)/3   = 4.00 × 0.10 = 0.400
+
+Overall Score: 4.19/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Test functions completely broken**: `printf` calls missing format arguments (e.g., `printf("CF-L1-01 (sequential_ops): %d\n");` should include the computed value)
+- **Loop optimization destroyed readability**: `loop_for_fixed` transformed from simple iteration to complex bit manipulation (`(a0 - 1) * (a0 - 2) >> 32 CONCAT...`)
+- **Architecture mismatch**: Original compiled for ARM64 but decompiled as X86, causing fundamental structural issues
+- **Zero documentation recovery**: All original comments explaining function purpose, test cases, and difficulty levels lost
+- **Type degradation**: All `int` parameters became `unsigned int`, changing semantic meaning and potential behavior
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names like `sequential_ops`, `single_if`, `nested_if_2` were preserved from symbol information, providing basic semantic anchors.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation means analysts must reverse-engineer purpose from code alone, defeating the purpose of decompilation for understanding.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve original comments** from debug symbols (`-g` flag) when available, especially function documentation and test case descriptions
+2. **Detect and simplify compiler optimization patterns** - recognize division-by-constant multiplications (`1717986919` for `/10`) and loop-to-math transformations, presenting both forms
+3. **Validate decompiled output correctness** - flag functions where printf/scanf argument counts don't match format strings, and detect architecture mismatches before presenting results

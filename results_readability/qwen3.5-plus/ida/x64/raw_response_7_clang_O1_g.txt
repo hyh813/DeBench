@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `result` instead of semantic names (e.g., `encrypted`, `buffer`, `key` in `decrypt_string`). Original source had meaningful names like `div_zero_caught`, `jmp_buffer` that are preserved only for globals.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`). Helper functions like `sub_1020` and `init_proc` are generic but represent runtime infrastructure.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers present without explanation (0x5A for XOR key, 0x20u for buffer size). String literals replaced with opaque references (`s`, `format`, `aObfL403D`). Constants like `10`, `225`, `2000000000` are clear but lack context.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (register annotations `rax`, `ecx`, `rcx`). Stack variables marked with `BYREF` and offset comments (`[rsp+0h] [rbp-28h]`). Type casts like `(__sighandler_t)` add noise without value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as `for` and `do-while` constructs appropriately. However, `param_opaque_predicate` uses awkward conditional logic (`!(v5 | v2 ^ 1)`) instead of clear boolean expressions from source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly. Each source function maps to one decompiled function. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom. Some functions like `test_obf_opt_edge` have excessive variable declarations at top (v0-v20) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Compiler optimizations actually improve readability here - `call_fake_branch` returns constant `10` instead of calling `param_fake_branch(10)`. Dead code from fake branches eliminated cleanly.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`) but many use generic `__int64` instead of platform-specific types. Pointer types correct but lose const-correctness (`const char*` becomes `char*` in some places).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct from `param_implementation_defined` (bitfield with `a:3`, `b:5`, `c:24`) completely lost - function returns constant `47`. Array declarations recovered but struct layouts not visible.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`(__sighandler_t)div_zero_handler`, `(_BYTE)v19`). Pointer arithmetic in `call_vectorized_loop` uses `*(_DWORD *)((char *)&unk_2010 + i * 4)` which obscures array access.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. No algorithm documentation (GCD in `param_opaque_predicate`, XOR decryption in `decrypt_string`). Only metadata header present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not identified - GCD algorithm, XOR string decryption, tail recursion not commented. `param_tail_call_optimized` shows recursion but no TCO indication.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Library functions marked as "FAILED to decompile" (10 functions). Stack warning present ("positive sp value has been detected"). No indication of optimization-induced semantic loss.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). Error conditions not marked. Signal handler contracts (`div_zero_handler`, `segv_handler`) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call graph clear. Global variables visible (`jmp_buffer`, `div_zero_caught`, `segv_buffer`). External references to `unk_2010`, `unk_2030` for array data lack context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. No distinction between test functions, obfuscation functions, and runtime infrastructure. Source had clear section comments lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 10 library functions failed to decompile requiring stubs. External symbols (`_libc_start_main`, `__cxa_finalize`) need linking. Would require significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+7+8)/4 = 7.50 × 0.25 = 1.875
+Level 3 (Type):        (6+4+6)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (7+5+4)/3   = 5.33 × 0.10 = 0.533
+
+Overall Score: 5.65/10
+```
+
+**Overall Readability Score:** 5.65/10
+
+### Critical Defects:
+- **Variable names generic**: `v0`, `v1`, `v2` instead of `encrypted`, `buffer`, `key` in decryption functions
+- **Struct recovery failed**: Bitfield struct in `param_implementation_defined` completely lost, returns constant instead
+- **No semantic comments**: GCD algorithm, XOR decryption, opaque predicates not documented
+- **Magic string references**: Format strings replaced with `aObfL403D`, `s`, `format` losing printf context
+- **Library function failures**: 10 external functions marked "FAILED to decompile" requiring manual stubs
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Critical algorithms (GCD, XOR decryption, signal handling) have zero documentation, requiring reverse engineering of intent
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement pattern-based comment generation** - Detect common algorithms (GCD, XOR, memcpy) and auto-generate explanatory comments
+2. **Improve variable name inference** - Use data flow analysis to name variables based on usage (e.g., variables used in strlen → `string_length`)
+3. **Recover struct layouts from access patterns** - Analyze pointer arithmetic to reconstruct struct field names and types instead of returning constants

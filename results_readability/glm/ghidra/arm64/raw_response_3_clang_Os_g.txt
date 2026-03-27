@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `lVar2`, `uVar3`, `piVar4`), obscuring semantic meaning like loop counters or accumulators. While `local_28` hints at stack location, it fails to convey the original intent of `arr`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the source (e.g., `local_vars`, `heap_basic`, `linked_list_heap`), likely due to debug symbols, making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic hex numbers (e.g., `0x2a` for 42, `0x14` for 20, `0x3e9` for 1000) and hardcoded results in `printf` calls (e.g., `printf(..., 0x14)` instead of calling `local_vars(5)`), severely obscuring the original logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present, including complex `CONCAT17` macros in `large_stack_frame` representing vectorized/unrolled operations, `undefined8` types, and frequent `/* Unresolved local var */` comments that clutter the view.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is heavily distorted by compiler optimizations; simple `for` loops are transformed into complex `do-while` constructs with pointer arithmetic (e.g., `local_array`), and `test_stack_memory` is flattened into a sequence of `printf` calls.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Core logic functions like `heap_nested` and `create_tree_node` are well-preserved with appropriate granularity, though test harness functions suffer from aggressive inlining which destroys their structure.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Most functions read top-to-bottom, but `linked_list_heap` uses a `goto LAB_00101394` to break out of a loop, disrupting the linear flow and requiring backtracking to understand the exit condition.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The decompiler presents the redundancy introduced by optimization (e.g., loop unrolling in `local_array` and `vla_stack`) rather than abstracting it, resulting in verbose, repetitive code that is hard to map back to the simple source loops.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally accurate (e.g., `int`, `void *`, `Node *`), and signed/unsigned distinctions are mostly preserved, though stack variables often decay to generic `undefined` or `long` types during complex arithmetic.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs like `Node` and `TreeNode` are recovered perfectly with correct field names (`data`, `next`, `left`, `right`), allowing for high-level understanding of data structures without manual offset calculation.
+
+**11. Type Safety:** Score: 6/10
+Justification: While struct access is safe, stack manipulation involves ugly casts like `(int *)(&stack0xfffffffffffffff4 + lVar1)` which, while technically correct for the generated assembly, look unsafe and confusing to a human reader.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10
+Justification: Comments are primarily decompiler warnings (e.g., `/* WARNING: Unknown calling convention */`) or failure notices (`/* Unresolved local var */`), providing little semantic value or explanation of the algorithm's purpose.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard idioms like `malloc`/`free` are visible, but the specific logic of linked list traversal or tree operations is buried under pointer arithmetic and unrolled loops, making the patterns hard to recognize at a glance.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Ghidra effectively flags its own uncertainty, such as `/* WARNING: Could not recover jumptable */` or `/* WARNING: Removing unreachable block */`, which helps the analyst identify where the decompilation might be unreliable.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions (e.g., `n > 0` checks are just code) or postconditions; the decompiler presents the raw logic without documenting the implicit contracts present in the source logic.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls and global variable accesses (e.g., `global_counter`, `extern_global_var`) are clear and direct, making it easy to trace data flow between functions.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are listed in a logical order matching the source sections (stack, heap, static), and the separation of concerns is maintained despite the flat listing.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code is not compilable due to Ghidra-specific macros (`CONCAT17`), non-standard types (`undefined8`), and artificial stack references (`stack0xffffffff...`), requiring significant cleanup to rebuild.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- **Aggressive Inlining in Test Functions**: `test_stack_memory` and `test_heap_memory` are reduced to sequences of `printf` calls with hardcoded hex constants (e.g., `0x14`), completely erasing the source logic of calling functions like `local_vars(5)`.
+- **Loop Unrolling**: Simple `for` loops (e.g., in `local_array`) are decompiled into complex `do-while` loops with multiple pointers and conditions (`uVar3`, `uVar4`, `lVar2`), making the iteration logic extremely difficult to follow.
+- **Generic Variable Naming**: Logic variables are named `iVar1`, `lVar2`, etc., instead of semantic names like `i`, `sum`, or `index`, forcing the reader to reverse-engineer variable purposes from usage.
+
+**Best Quality Aspect:** Composite Type Recovery (scored 9/10)
+- Structs like `Node` and `TreeNode` are recovered with perfect field names and types, preserving the high-level data structure definitions accurately.
+
+**Most Needs Improvement:** Literal Clarity (scored 2/10)
+- The pervasive use of magic hex numbers (e.g., `0x2a` instead of `42`) and hardcoded results in place of function calls makes the decompiled code look like obfuscated assembly rather than high-level logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Pattern Matching for Constant Propagation**: Detect when a function call is inlined and replaced by a constant, and optionally annotate the line with the original function call (e.g., `/* inlined call: local_vars(5) */`).
+2. **Loop Re-rolling**: Attempt to recognize unrolled loop patterns (multiple similar operations in a block) and restructure them into a simpler `for` or `while` loop representation to improve readability.
+3. **Semantic Variable Renaming**: Infer variable names from context (e.g., variables used as loop counters should be named `i` or `counter`, variables used in multiplication should be named `product` or `result`).

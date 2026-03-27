@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are predominantly generic (`iVar1`, `lVar2`, `puVar3`, `__ptr`) with no semantic meaning. Many marked as "Unresolved local var" indicating complete naming failure (e.g., `local_vars` shows "Unresolved local var: int a@[DW_OP_reg5(RDI)]").
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`local_vars`, `heap_basic`, `global_var_access`). However, some helpers are generic (`FUN_00101020`) and `double_value` appears at end of file rather than with related functions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x2a` for 42, `0x14` for 20, `0x3c` for 60). Test functions hardcode expected values instead of showing actual computation (e.g., `test_stack_memory` returns constants like `0x14` instead of calling `local_vars(5)`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive "Unresolved local var" comments clutter every function. Redundant type casts present (`(ulong)(uint)n`, `(long)__ptr`). Some compiler artifacts like `__gmon_start__()` and infinite loop in `_start` remain.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Original `for` loops converted to awkward `do-while` patterns (e.g., `local_array` uses `do { aiStack_28[lVar2] = iVar1; ... } while (lVar2 != 10)`). Some functions over-simplified (`local_struct` returns `x * 3` directly, hiding struct operations).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but some reduced to constant returns (`tree_heap_traversal` returns `0x3c` instead of showing tree creation/traversal). `linked_list_heap` is overly complex with manual pointer chasing.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but complex functions have awkward jump patterns. `linked_list_heap` has label `LAB_001016ba` disrupting flow. Test functions have interleaved constant assignments.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding in test functions loses original logic. `test_stack_memory` shows duplicated loop patterns for different test cases. Some dead code from optimization visible in `deregister_tm_clones`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used where specific types needed. Pointer types degraded (`void*`, `int*` instead of `Node*`). Function pointer type `_func_int_int` is non-standard. Size calculations use shifts (`<< 2`) instead of `sizeof`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Node` struct partially recovered with `data` and `next` fields. `TreeNode` recovered. However, `Point` struct completely lost (`local_struct` shows no struct, just `x * 3`). Field names generic where recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts visible (`(undefined4 *)`, `(char *)`). Pointer arithmetic exposed (`(long)__ptr + lVar1 * 2`). Array bounds not checked in decompiled code. `dangling_pointer` shows use-after-free without warning.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments only indicate decompiler uncertainty ("Unresolved local var", "WARNING"). No algorithm explanations or API documentation. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. Common patterns (malloc/free pairs, linked list traversal, tree operations) not identified or named. `alloca_usage` VLA pattern not explained.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("Unresolved local var", "WARNING: Unknown calling convention"). However, critical issues like use-after-free in `dangling_pointer` not highlighted as dangerous behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., `n > 0` requirements not stated). NULL checks present but not documented as contracts. No postcondition or invariant recovery visible.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in test functions. Global variables referenced (`global_counter`, `file_scope_static`). Callback relationship partially visible (`set_global_callback` → `call_global_callback`).
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in roughly source order but `double_value` appears near end instead of top. No logical grouping comments. Static functions not clearly distinguished from external API.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears compilable with standard headers. External dependencies noted (`malloc`, `printf`, `fork`). Some platform-specific code (`#ifdef _WIN32`) lost in decompilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+6+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (4+3+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (6+5+7)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.97/10 ≈ 5.0/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable names completely generic** (`iVar1`, `lVar2`, `puVar3`) with no semantic meaning; original names like `arr`, `local`, `p` lost
+- **Test functions return hardcoded constants** instead of showing actual computation (e.g., `test_stack_memory` returns `0x14` instead of calling `local_vars(5)`)
+- **Control flow degraded** - original `for` loops converted to awkward `do-while` with manual index management
+- **Struct type `Point` completely lost** - `local_struct` shows `return x * 3` with no struct operations visible
+- **No semantic comments** - original documentation completely lost, only decompiler uncertainty warnings remain
+
+### Best Quality Aspect:
+- **Build System Compatibility (7/10)** - Code appears compilable with standard library dependencies properly identified and external function declarations present.
+
+### Most Needs Improvement:
+- **Idiom Recognition (3/10)** - No common patterns identified (malloc/free pairs, linked list traversal, tree operations all appear as raw pointer manipulation without pattern naming).
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from debug symbols** - With `-g` flag, DWARF info should provide original variable names instead of "Unresolved local var"
+2. **Preserve high-level control structures** - Detect loop patterns from assembly and emit `for`/`while` instead of `do-while` with manual counters
+3. **Add semantic annotations for common patterns** - Identify malloc/free pairs, linked list operations, and tree traversals with explanatory comments

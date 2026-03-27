@@ -1,0 +1,96 @@
+Looking at this decompilation task, I need to carefully analyze the significant mismatch between the source code (961 LOC, arm64, -O0) and the decompiled output (2578 LOC, x86). There's also an apparent mismatch - the metadata says "Ghidra" but the output format is clearly Angr-style (e.g., "Angr Decompilation").
+
+Let me provide my evaluation:
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `a0`, `a1`, `a2`, `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `ptr`, `i`. The original source used meaningful names like `a`, `b`, `c`, `x`, `y`, `n`, `sum`, `count`, `target`. No semantic meaning can be inferred from the decompiled variable names.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Most functions are named with address-based identifiers (sub_401030, sub_401040, etc.). Only a few functions like `recursion_factorial`, `double_value`, `triple_value`, `op_add`, `op_sub` were correctly recovered. The original function names like `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `switch_small` were completely lost.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (representing -1 in unsigned) appear frequently without explanation. Some arithmetic like `(a0 * 1717986919 >> 34) - (a0 >> 31)` is clearly division by 10 but is not annotated. No named constants from source (like array sizes) were recovered.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Massive noise from wrapper functions that just call other functions (sub_401040 calls sub_401030, sub_40104e calls sub_401050, etc.). These ~40+ wrapper functions add no semantic value. Additionally, there are unnecessary local variable declarations and frame pointer manipulations cluttering the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: For the actual logic functions, control flow is reasonably natural. Loops are rendered as do-while, if-else chains are clear. However, some functions like `duffs_device` use computed goto which obscures the switch-do-while pattern. At -O0 this is acceptable but could be improved.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: The original 20+ test functions are buried among ~60+ wrapper/thunk functions. The decompiled output has ~80 functions vs. ~35 in source. Many functions like `sub_401040` just wrap `sub_401030` with different parameters - severe over-fragmentation. Parameter lists expose implementation details.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom within functions. Some forward jumps in switch implementations. The complexity arises from the sheer number of functions and the noise from wrapper functions rather than from the control flow itself.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from repetitive wrapper functions. Some dead code paths visible (e.g., unreachable branches in test functions). The large test functions contain hardcoded expected values inline rather than computed results.
+
+### LEVEL 3: TYPE SYSTEM FIDELITY
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `unsigned int` universally for integers, losing sign information. The original source used signed `int` for most parameters. Function signatures differ - e.g., `loop_while` should take a single `int x` but shows complex parameter handling. Pointers are often generic `unsigned int*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct reconstruction is poor - multiple `struct_0` definitions with meaningless field names like `field_0`, `field_28`, `padding_0`. The original source had arrays like `int arr[] = {10, 20, 30, 40, 50}` and `int matrix[3][4]` but these are not recovered in decompiled form.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Moderate type safety issues. Many unsigned integer operations that should be signed. Pointer arithmetic is explicit but not always safe. Some function pointer casts could lead to undefined behavior.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality:** Score: 1/10  
+Justification: No meaningful comments. The decompiled output contains zero explanatory comments about algorithm intent, parameter meanings, or return value expectations. Even when the source had detailed comments about test scenarios, nothing was preserved.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns like "do-while loop" are recognized, but design patterns (state machine, jump table, Duff's device) are not explicitly named or identified. The source explicitly uses patterns like switch-fallthrough, goto-based loops, and function pointer arrays, but the decompiler doesn't identify these.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Only one mention of "Unsupported jumpkind Ijk_SigTRAP" appears in the output. Many anomalies exist but aren't flagged: indirect function calls, computed jumps, the stack_chk_fail_local calls. The decompiler doesn't indicate uncertainty about recovered constructs.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `duffs_device` should have "requires: n > 0" but this is absent. No documentation of error conditions or boundary checks from source.
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No documentation of which functions call which. The test functions call many helper functions but relationships aren't clear. No indication of who calls `test_control_flow_l1` (it's called from `main`).
+
+**17. Module Organization:** Score: 2/10  
+Justification: All functions dumped into single output with no logical grouping. The original source had clear sections (L1 Control Flow, L2 Advanced, L3 Extreme) but decompiled output is flat.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many undefined symbols: `_ccall`, `frame_dummy`, `register_tm_clones`, `deregister_tm_clones`, `__do_global_dtors_aux`, `__do_global_ctors_aux`. Cannot compile standalone. No indication of dependencies.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.2/10
+
+**Critical Defects:**
+- All function names lost (sub_401xxx pattern) - only 8 of 35+ original function names recovered
+- All variable names lost (a0, v0 pattern) - no semantic meaning
+- Excessive wrapper/thunk functions (~40 noise functions) fragmenting the code
+- No comments whatsoever - zero explanatory text
+- Type information degraded (all unsigned int, losing signed semantics)
+- No struct/array recovery (int arr[] and int matrix[][] completely lost)
+- Cannot compile - missing external declarations and dependencies
+- Architecture mismatch: source is arm64 but decompiled as x86
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)
+- Core algorithmic logic is reasonably readable once you filter out noise
+- Loops, conditionals, and basic structures are correctly represented
+
+**Most Needs Improvement:** Lexical Clarity (2.6/10 average for L1)
+- Variable and function naming is completely inadequate
+- This is the foundation of readability and must be addressed first
+
+**Top 3 Recommendations:**
+1. **Recover function names from debug symbols** - the source had debug info (-g flag), names like `sequential_ops`, `loop_for_fixed` should be extractable
+2. **Eliminate wrapper function noise** - implement logic to collapse functions that just forward to other functions with simple parameter passing
+3. **Infer variable names from usage patterns** - analyze how variables are used (array indices, arithmetic, comparisons) to assign semantic names like `count`, `sum`, `index`

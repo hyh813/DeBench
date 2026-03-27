@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `ptr`, `idx`, `result`, `a0`, `i`. The decompiler makes no attempt to infer semantic meaning from usage patterns. Compare source `arr[i] = i * n` vs decompiled `*((unsigned int *)((char *)ptr + 2 * idx)) = idx` - the variable `n` becomes untraceable.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are correctly recovered: `local_vars`, `heap_basic`, `global_var_access`, `test_stack_memory`, `memop_memset`. Minor issues: some internal functions like `$a.30` for callback, and `sub_400568` for startup code. The main test functions match source exactly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Mixed results - some constants like `20`, `10`, `15` are correctly inlined matching expected outputs, but magic number `4294967295` (unsigned -1) appears frequently without explanation. The value `0x800` (2048) in `large_stack_frame` is unexplained. Constants from source like `100` in `access_extern_global` are preserved.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant decompilation artifacts present: redundant type casts like `*((unsigned int *)((char *)ptr + 2 * idx))`, confusing conditional expressions with `armg_calculate_condition`, and some spurious variable declarations. However, no debug instrumentation or frame pointer manipulation clutter. The `__sync_*` atomic functions are compiler intrinsics, not noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most loops are correctly recognized as `do-while` constructs. However, some awkward goto patterns exist (e.g., `goto LABEL_4008a4`). The VLA and alloca functions show complex control flow with computed addresses. At -O0, this should be cleaner. Some conditionals use confusing ternary-like patterns with `armg_calculate_condition`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is appropriate - each test function remains separate as in source. The `test_stack_memory`, `test_heap_memory`, etc. are correctly decomposed. No over-fragmentation or monoliths. Parameter counts are reasonable. The decompiler correctly kept the 50+ functions separate.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns for error conditions. Some forward jumps exist in error handling paths. The `vla_stack` and `alloca_usage` functions have complex indexing that disrupts linear reading. Most other functions are reasonably linear.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling is present in `heap_basic` and `linked_list_heap` but it's minimal and doesn't obscure logic. Common subexpressions like `(4294967293 & (v0 + (v0 >> 31)) * 2)` appear but are manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of `unsigned int` where source used `int`. The parameter `a0` is always `unsigned int` losing sign information. Pointers are generally correct (`int*`, `void*`). Size calculations use `* 4` for int sizing. Const correctness is lost - `const_global` becomes regular access. Function pointers use `unsigned int` instead of proper function signatures.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct reconstruction with generic names: `struct_0`, `struct_1`, `struct_2`, `struct_3`. The `Node` struct is partially recovered with `field_0` (data) and `field_4` (next). The `Point` struct from source is completely lost - `global_struct_access` just returns `30` without any struct reference. Nested structs are confusingly named.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns: pointer arithmetic like `*((unsigned int *)((char *)ptr + 2 * idx))`, cast-heavy expressions. The `dangling_pointer` function has severe issues - it returns `*(v2)` after free which is undefined behavior but presented without warning. Some pointer-to-int conversions present. No `restrict` or alignment annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Absolutely no comments in the decompiled output. The source had extensive Chinese comments explaining each test case (e.g., "// MEM-L1-01: 局部变量（基础类型）⭐"), none of which are recovered. No explanation of algorithm intent, no @param/@return documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are recognizable: linked list traversal (`while(ptr3->field_4)`), tree structure creation. But no explicit naming of patterns like "linked list", "binary tree", "VLA", "alloca". The memory operation idioms (memset, memcpy, memmove) are correctly identified as function calls.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The `dangling_pointer` function exhibits clear undefined behavior (accessing freed memory) but is presented as normal code. The `double_free` case is simplified to just return -1. No warnings about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. The source had bounds checking (e.g., `if (idx < 0 || idx >= 10) return -1;`) but these are inlined as conditionals without contract documentation. No "requires: ptr != NULL" style annotations.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: External functions are declared (`extern unsigned int extern_function`, `extern unsigned int extern_global_var`). The callback relationship in `set_global_callback` / `call_global_callback` is visible but the actual function `$a.30` is not clearly linked. Global variable usage is partially visible through `extern` declarations.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped: stack memory functions together, heap functions together, static/global functions together, memory operations together. This matches the source organization well. The test functions (`test_stack_memory`, etc.) are properly grouped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code would require significant patching to compile. Many `extern` declarations needed for undefined symbols (`g_413008`, `g_402d56`). The `armg_calculate_condition` is a Ghidra internal not real code. Some type mismatches would prevent compilation. No clear dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 5 + 5) / 4 = 5.0
+L2_avg = (5 + 8 + 6 + 7) / 4 = 6.5
+L3_avg = (5 + 4 + 5) / 3 = 4.67
+L4_avg = (1 + 4 + 1 + 2) / 4 = 2.0
+L5_avg = (5 + 7 + 4) / 3 = 5.33
+
+Overall = (5.0 × 0.30) + (6.5 × 0.25) + (4.67 × 0.20) + 
+          (2.0 × 0.15) + (5.33 × 0.10)
+        = 1.5 + 1.625 + 0.934 + 0.3 + 0.533
+        = 4.89/10
+```
+
+**Overall Readability Score:** 4.89/10
+
+### Critical Defects (Bullet List)
+- Variable naming is nearly unusable - all semantic meaning lost with names like `v0`, `v1`, `ptr`, `idx` providing no insight into variable purpose
+- No comments whatsoever - source had extensive documentation explaining each test case, completely lost in decompilation
+- Struct/union recovery is poor - `Point` struct completely lost, `Node` struct fields generic (`field_0`, `field_4`)
+- Type precision severely degraded - all `int` become `unsigned int`, losing sign semantics
+- Anomaly detection absent - dangerous patterns like dangling pointer access presented without warning
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (8/10)**  
+- Function names are mostly correctly recovered matching source: `local_vars`, `heap_basic`, `global_var_access`, `test_stack_memory`, etc. The decompiler preserved the semantic names from the binary symbols.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (1/10)**  
+- Zero comments in output. The source had extensive documentation (888 LOC with Chinese comments explaining each test scenario), completely lost. Adding even basic comments explaining function purpose, parameter meanings, and algorithm intent would dramatically improve readability.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, pointer dereferencing, arithmetic) to suggest semantic names like `array_index`, `buffer_ptr`, `element_count` instead of `v0`, `v1`, `idx`
+2. **Recover struct field names from context**: Use field access patterns and type information to name fields like `next` (for linked lists), `data` (for nodes), `x`, `y` (for points) instead of generic `field_0`, `field_4`
+3. **Add semantic comments for non-trivial logic**: Document loop purposes, algorithm steps, and especially flag dangerous patterns (dangling pointers, double-free potential, buffer overflows) with warnings

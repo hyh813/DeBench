@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v0`, `v1`, `v2`, `temp`, `size`) with no semantic recovery. Even in decompiled Container methods, `v2` is used instead of `temp` or `old_value`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: C++ mangled names partially recovered (e.g., `_Z20test_cpp_member_funcv`), but many are generic (`sub_854`). Original function names are encoded but require demangling to understand.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4700`, `1001`, `130`, `14` appear without explanation in constant-folded functions. String literals referenced externally (`asc_1358`, `aCppL301D`) rather than shown inline.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack variable initialization noise present (`v2=0, v3=0, v4=0...` in `test_cpp_member_func`). 22 failed decompilation entries clutter the output without clear separation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Container methods show natural if-else patterns. Most test functions are constant-folded due to O3 optimization, making control flow trivial but uninformative.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Template instantiations properly separated (`template_max<int>`, `template_max<double>`). However, many functions reduced to single return statements due to aggressive optimization.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Decompiled portions read top-to-bottom without excessive jumps. No spurious goto statements in recovered code sections.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant stack initialization in `test_cpp_member_func` (10+ variables set to 0). Constant folding eliminated actual computation logic, losing educational value.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types recovered (int, double, size_t), but many pointers are generic (`void*`, `char*`). `test_cpp_rtti` uses `void*` where `RTTIDerivedA*` would be precise.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class structures partially recovered (`Container<int>`, `RTTIDerivedA` with `_vptr$RTTIBase`), but field names lost (`data`, `size` recovered but `name`, `value` in SimpleClass not visible).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts present (`(RTTIDerivedA *)this` in destructor thunk). `test_cpp_rtti` shows type confusion with `void*` conversions for dynamic_cast results.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal auto-generated comments only (function headers, type annotations). No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns visible (vtable calls `*obj->_vptr$Base`, `operator new/delete`) but not explicitly identified as such. No pattern naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end but not explained. One warning present ("positive sp value has been detected") but no guidance on resolution.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling in `test_cpp_exception` shows `_cxa_throw` but no contract information.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible through direct references. Virtual dispatch partially recovered (`_vptr$Base`) but callback relationships not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in link order, not source organization. Related class methods scattered (Container<int> methods separated from Container<double>).
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: 22 functions failed to decompile including critical runtime (`_cxa_throw`, `operator new`, `printf`). Standalone compilation impossible without extensive stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Components | Weighted Contribution |
+|-------|------------|----------------------|
+| L1: Lexical Clarity | (3×10 + 5×10 + 4×5 + 5×5)/30 = 4.17 | 4.17 × 0.30 = 1.25 |
+| L2: Structural | (7×8 + 6×7 + 7×5 + 5×5)/25 = 6.32 | 6.32 × 0.25 = 1.58 |
+| L3: Type System | (5×8 + 5×7 + 4×5)/20 = 4.75 | 4.75 × 0.20 = 0.95 |
+| L4: Semantic | (3×5 + 4×3 + 5×3 + 2×4)/15 = 3.33 | 3.33 × 0.15 = 0.50 |
+| L5: Contextual | (5×4 + 4×3 + 2×3)/10 = 3.80 | 3.80 × 0.10 = 0.38 |
+
+**Overall Readability Score: 4.66/10**
+
+### Critical Defects
+- **Variable `v0`, `v1`, `v2`** should be named semantically (e.g., `obj`, `result`, `temp`) based on usage patterns in Container methods
+- **22 failed decompilations** including critical C++ runtime functions (`_cxa_throw`, `operator new`, `__dynamic_cast`) make code non-compilable
+- **Constant folding at O3** eliminated actual computation logic—test functions return constants (42, 71, 650) instead of showing original algorithm
+- **Magic numbers** (4700, 1001, 130, 14) in `test_cpp_oo_features` have no explanation of their derivation
+- **Optimization level mismatch**: Source claims `-O0` but binary metadata shows `clang_O3_g`, causing unexpected code transformation
+
+### Best Quality Aspect
+- **Control Flow Naturalness (7/10)** - Decompiled Container class methods show clean, idiomatic if-else patterns that match expected C++ structure despite optimization
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or exception contracts documented despite heavy C++ exception and RAII usage in original source
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in size comparisons should be named `size`, `count`, `length`)
+2. **Add decompilation confidence annotations** - Mark constant-folded regions with comments like "// OPTIMIZED: Original computation folded to constant at O3"
+3. **Recover C++ runtime stubs** - Generate compilable stubs for failed external functions (`_cxa_throw`, `operator new`) with documented signatures instead of just listing failures

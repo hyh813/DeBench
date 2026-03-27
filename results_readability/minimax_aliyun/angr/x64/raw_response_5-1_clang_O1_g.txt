@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `ptr`, `i` throughout. For example, in `test_cpp_member_func()`, the variable `v0` holds the value 10 but has no semantic name. The decompilation fails to infer meaningful names from usage patterns.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: While some test functions retain original names (e.g., `test_cpp_member_func`, `test_cpp_constructor`), most internal functions use address-based names like `sub_402020`, `sub_40202c`. Virtual function thunks have mangled names like `_ZThn16_N12MultiDerived5funcBEv` that are not human-readable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Some literals are meaningful (e.g., `50` in loop bounds, `4` in strncpy), but many magic numbers lack explanation. String format pointers like `&g_40307d` are used without clarity on their content. The value `0x1234` from `getClassID()` is not visible in the decompiled output.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with numerous empty functions (e.g., `sub_402255`, `sub_402917`), incomplete struct definitions (`typedef struct struct_0 { unsigned long long field_0; } struct_0;`), and many `extern` declarations. The output is 1631 LOC vs 540 source LOC - a 3x expansion of mostly noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Control flow is severely degraded. Functions like `test_cpp_constructor()` use goto-based loops instead of while/for constructs. Many functions return without values (e.g., `void sub_4022ac()` calls `test_cpp_constructor()` but returns void instead of int). The `call_virtual_func` has incomplete virtual dispatch: `(*((long long *)*((long long *)&arg_0)))();` without proper return handling.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: The decompilation creates excessive fragmentation. Template functions are properly separated (e.g., `template_max<int>`, `template_max<double>`), but many empty wrapper functions exist (e.g., `sub_402318` just calls `test_cpp_virtual_func`). The function granularity is inconsistent.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Code has poor linearization with goto statements replacing loops. In `test_cpp_constructor()`, the do-while loop is present but uses goto-like structure. Multiple forward jumps and the overall flow is difficult to trace.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundancy from loop unrolling is present but minimal. The main issue is dead code from empty functions rather than algorithmic redundancy. Loop unrolling in `test_cpp_constructor()` is handled reasonably.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation. While basic types like `int` and `unsigned int` are preserved, many pointers become `void*` or `unsigned long`. The unusual `uint128_t` appears in stack variables. Function parameters often lose type info (e.g., `void sub_402904(unsigned long a0, unsigned long a1)`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor. Classes are defined but empty (`class Base { } Base;`), and structs use generic names (`struct_0`, `struct_1`) with only `field_0`. No field names like `value`, `name`, `multiplier` are recovered from the original `SimpleClass`, `Base`, or `Derived` classes.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations present. Extensive pointer arithmetic (e.g., `ptr += 1`, `*((int *)((char *)ptr + 4 * index))`). Unsafe casts like `*((unsigned int *)&v2)` and `*((int *)&ptr[40])`. Virtual function calls use raw pointer manipulation: `(*((long long *)*((long long *)&arg_0)))();`
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The only comments are auto-generated headers like "// Angr Decompilation of 5-1_clang_O1_g" and "// Platform: AMD64". No explanation of algorithms, preconditions, or decompilation confidence levels.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No C++ idioms recognized. RAII patterns (from unique_ptr, smart pointers) are not identified. Virtual dispatch is shown as raw pointer manipulation. Template instantiation is partially recognized but not explained. Lambda expressions completely missing (function returns empty).
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication whatsoever. Indirect virtual calls are presented as direct code without flags. The decompilation confidently presents incomplete or incorrect code (e.g., functions returning void when they should return int). No uncertainty markers.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The complex virtual inheritance logic in `DiamondDerived` has no explanation of the vtable layout or this pointer adjustment. Error conditions from exceptions are not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Some relationships visible through `extern` declarations (e.g., `_ZN14LifecycleClass14instance_countE`), but the overall call graph is unclear. Virtual dispatch relationships are obscured by raw pointer manipulation. No documentation of who calls what.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single large file with arbitrary ordering. Related test functions are grouped but internal implementation functions are scattered. No logical grouping matching the original class structure.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile. Many functions declared to return values but actually return nothing. Missing standard library definitions (printf, strncpy, strlen are used but not declared). Incomplete type definitions throughout.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.1/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `ptr`, `i`) making semantic purpose impossible to track
+- **Function naming**: Most functions use address-based names (`sub_402020`) instead of semantic names
+- **Type recovery**: Classes like `Base`, `Derived`, `SimpleClass` are empty shells with no data members recovered
+- **Control flow**: Functions return wrong types (void instead of int), goto used instead of loops
+- **No comments**: Zero useful comments explaining algorithms, contracts, or anomalies
+
+### Best Quality Aspect: Literal Clarity (4/10)
+- Some numeric literals like loop bounds (50) and string lengths (4) are preserved, though without explanation
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Every variable in the decompiled code uses generic names with no semantic inference from usage patterns. Even simple cases like `v0 = 10` in `test_cpp_member_func` where the source shows `value = 10` are not recovered.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: When a variable is assigned a constant and used in return statements, infer names like `result`, `value`, `count` based on semantic patterns
+2. **Recover class member names**: Analyze object layouts and constructor initialization to recover field names like `value`, `name`, `multiplier` instead of generic `field_0`
+3. **Add anomaly markers**: Flag indirect calls, type mismatches, and uncertain decompilation with comments rather than presenting incorrect code confidently

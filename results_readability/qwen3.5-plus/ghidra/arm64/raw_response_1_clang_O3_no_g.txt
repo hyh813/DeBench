@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `uVar1`) with no semantic meaning recovered. In `sequential_ops`, the original `temp1`, `temp2`, `temp3` were collapsed into a single expression, losing intermediate variable clarity. Functions like `loop_continue` have 17+ generic variables (`iVar10` through `iVar22`) making tracking impossible.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match original source exactly (`sequential_ops`, `single_if`, `nested_if_deep`, `loop_for_fixed`). Helper functions like `double_value`, `triple_value` are preserved. Some runtime functions have generic names (`FUN_00100880`, `FUN_001009fc`) but core logic functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3e9` (1001), `0x65` (101), `0xfffffff8` appear without explanation. However, return values (0, 1, 2, 3, 4, 5) in `nested_if_deep` are clear. No constants were recovered from the original source comments explaining test values.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant optimization artifacts visible: NEON vector operations (`NEON_ext`, `auVar3[16]`), 20+ temporary variables in `goto_backward` and `recursion_factorial`. Loop unrolling creates apparent code bloat. The decompiled binary path shows `O3` optimization despite metadata claiming `O0`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (`sequential_ops`, `ternary_op`) have natural flow. However, loops are transformed into mathematical formulas (`loop_for_fixed` uses `(n-1)*(n-2)/2` formula) or heavily unrolled (8x unrolling in `loop_continue`). `duffs_device` uses goto labels (`switchD_0010109c_caseD_7`) instead of clean fall-through.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are well-preserved; no inappropriate inlining observed. Each original function maps to one decompiled function. Helper functions (`double_value`, `triple_value`) remain separate. Parameter lists are reasonable without exposing implementation details.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom naturally. `duffs_device` has goto-based case handling disrupting flow. Loop unrolling in `recursion_factorial` and `goto_backward` creates non-linear appearance with 20+ variable declarations before actual logic.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive loop unrolling creates massive redundancy (8 iterations explicitly written in `loop_continue`, `goto_backward`, `recursion_factorial`). NEON vector operations duplicate logic across `auVar3`, `auVar9`, `auVar5`, `auVar11` arrays. No abstraction of repeated patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types degraded to generic `int`, `uint`, `undefined4`, `undefined8`. Original `int` parameters sometimes become `uint` (`single_if`, `if_elseif_chain`). Function pointers use `code *` instead of proper signatures. No precise types like `int32_t`, `size_t` recovered. `if_else` return type changed from `int` to `bool`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Limited composite types in source code. Arrays handled as pointer arithmetic (`int *param_1`). `jmp_buf` recovered as `__jmp_buf_tag *`. No struct/union reconstruction needed for this benchmark but pointer-to-array distinction is lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: `undefined4 *` pointer arithmetic in `duffs_device`, `UNRECOVERED_JUMPTABLE` warnings for indirect calls in `call_func_ptr` and `conditional_func_ptr`. Signed/unsigned confusion in comparisons (`-1 < (int)param_1`). No buffer overflow protections visible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only decompiler metadata comments present (function addresses, "WARNING: Subroutine does not return"). Zero semantic comments explaining algorithm purpose. Original source had extensive comments (e.g., "纯粹的顺序操作，无分支") completely lost. No @param/@return documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns recognized (switch statements, loops, conditionals). No design pattern identification. Optimization idioms (loop unrolling, vectorization) not explained. `duffs_device` pattern not identified despite being a well-known optimization technique.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warning coverage: "WARNING: Subroutine does not return" for `longjmp`, "WARNING: Removing unreachable block" for tm_clones, "WARNING: Could not recover jumptable" for indirect calls. However, optimization-induced semantic changes not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `loop_for_fixed`). No postconditions inferred. Error conditions not documented. Original test validation comments completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but no call graph documentation. Global variables (`jump_buffer`, `completed_0`) used without context. Callback relationships (`process_with_callback`) not explained. No indication of which functions are test helpers vs. core logic.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped (`test_control_flow_l1`, `l2`, `l3`). Helper functions (`double_value`, `op_add`, etc.) placed near usage. No clear module boundaries or namespace structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies (`__libc_start_main`, `_setjmp`, `longjmp`, `printf`) not clearly documented. Some undefined symbols would need linking. ARM64-specific code may not be portable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (5+7+6+4)/4 = 5.50  × 0.25 = 1.375
+Level 3 (Type):        (4+5+5)/3   = 4.67  × 0.20 = 0.934
+Level 4 (Semantic):    (2+4+6+2)/4 = 3.50  × 0.15 = 0.525
+Level 5 (Contextual):  (4+6+6)/3   = 5.33  × 0.10 = 0.533
+─────────────────────────────────────────────────────
+Overall Score:                                  4.87/10
+```
+
+**Overall Readability Score: 4.9/10**
+
+### Critical Defects:
+- **Variable naming completely generic**: `param_1`, `iVar1`, `uVar1` provide zero semantic information; original `temp1`, `temp2`, `temp3` lost
+- **Optimization artifacts not explained**: NEON vector operations (`NEON_ext`, `auVar[16]`) and 8x loop unrolling appear without context
+- **Zero semantic comments**: All original documentation (algorithm purpose, test cases, expected values) completely absent
+- **Type degradation**: `int` → `uint` conversions, `undefined4/8` types, function pointers as `code *`
+- **Magic numbers unexplained**: `0x3e9`, `0x65`, `0xfffffff8` appear without constant definitions
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved exactly from source (`sequential_ops`, `nested_if_deep`, `loop_for_fixed`), making function identification straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic documentation; decompiler provides only metadata warnings, no algorithm explanations or purpose documentation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop bounds should be named `count`, `limit`, `index`)
+2. **Add optimization detection and annotation** - When loop unrolling or vectorization is detected, add comments explaining the transformation
+3. **Recover and preserve source comments** - Integrate debug symbol comment extraction or implement heuristic comment generation for non-trivial logic blocks

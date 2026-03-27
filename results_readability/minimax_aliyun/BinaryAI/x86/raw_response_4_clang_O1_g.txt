@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `iVar2`, `local_8`, `aiStack_8c`. The original parameters `a` and `b` are lost, replaced with meaningless indices. Even stack variables like `unaff_EBX` and `unaff_EDI` are cryptic.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions correctly recovered: `cdecl_func`, `call_cdecl`, `stdcall_func`, `varargs_func`. However, some internal functions have auto-generated names like `FUN_00011030`, `FUN_00011ad5`, and `__i686_get_pc_thunk_bx` which provide no semantic value.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `0xf` (15), `0x32` (50), `0x2a` (42), `0x15` (21). The decompiler uses hex constants but provides no named constants or comments explaining what these values represent (e.g., expected return values).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present like `&stack0x00000008` for varargs handling and `undefined4` type usage. However, at -O0 debug level, there's minimal optimization-related noise. The code is relatively clean of spurious casts or debug instrumentation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops properly recovered as `do-while` constructs (e.g., `varargs_func`). Conditionals are straightforward. At -O0, control flow should closely match source, and the decompiler achieves this well. No goto abuse or confusing jumps.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibility. Test wrapper functions like `call_cdecl` are separate from implementation `cdecl_func`. The large `test_calling_conventions` function is expected given it's the test driver.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `func_struct_byptr`. Some forward jumps exist in complex functions but don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code at -O0. Loop unrolling is minimal. Some repeated printf patterns in test functions but that's source-accurate, not decompiler artifact.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` and `undefined4` instead of precise types like `int32_t` or `uint32_t`. Pointers marked as `int *` rather than type-specific pointers. Function parameters use `undefined4` for some arguments. At -O0, types should be more recoverable.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: `LargeStruct` (128 bytes) completely lost - `func_struct_byval` accesses stack via `*(int *)(&stack0x00000004 + iVar2 * 8)`. `SmallStruct` not recovered - uses raw pointer arithmetic `param_1[1] * *param_1`. No struct definitions visible anywhere in output.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present: raw pointer arithmetic in struct functions, `code *` type for function pointers instead of proper signatures, `undefined4` casts. The `param_double_ptr` function has correct null checks but uses generic types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining logic. Only auto-generated function headers like `// Function: cdecl_func @ 0x11210`. No algorithm explanations, no decompilation confidence indicators, no API contracts. The original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. Standard C idioms like varargs handling (`va_list`, `va_start`) not highlighted or named. The varargs pattern is mechanically translated but not recognized as a known idiom.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `call_ret_large_struct` function has obvious bugs (uses `local_44` instead of `aiStack_1d4` for the actual data) but no warnings. No indication of indirect calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition documentation. No inference of contracts like "requires: ptr != NULL" or "ensures: return value is sum of arguments". The original source had clear semantics completely unrecovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are syntactically clear (`call_cdecl()` calls `cdecl_func()`). However, no documentation of call graphs, global variable usage, or callback relationships. External functions marked `<EXTERNAL>::printf` but no dependency documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped somewhat logically (calling convention tests together, parameter tests together). Static functions properly scoped. However, all in single monolithic output without any logical section headers matching original source organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Uses `<EXTERNAL>` markers for library functions. Should compile with stubs for external dependencies. No compiler-specific hacks visible. However, requires moderate patching to link against real libc.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `iVar1`, `local_8`) - original parameter names `a`, `b`, `count` lost
+- Composite types completely lost - `LargeStruct` and `SmallStruct` reduced to raw pointer arithmetic
+- No comments or documentation - original source had extensive explanatory comments completely unrecovered
+- Magic numbers everywhere without explanation (`0xf` instead of expected value 15)
+- `call_ret_large_struct` uses wrong buffer (`local_44` instead of `aiStack_1d4`) - semantic error in decompilation
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- Loops properly recovered as do-while constructs, conditionals clear, at -O0 the flow closely matches source
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.25/10)  
+- No comments, no idiom recognition, no anomaly indication, no contract recovery - the decompiled code provides zero semantic context about what the functions do or their purpose
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `param_1` used in arithmetic with `param_2` should suggest `addend1`, `addend2` or similar meaningful names based on the function's return pattern
+2. **Recover composite types**: Detect stack access patterns like `*(int *)(&stack0x00000004 + iVar2 * 8)` and reconstruct the original struct layout with field names
+3. **Add semantic annotations**: Include comments explaining function purpose, expected return values, and flag anomalies like the `call_ret_large_struct` buffer mismatch

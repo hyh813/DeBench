@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `param_1`, `lVar1`, `bVar2`, and `__ptr`, providing no semantic context about their purpose (e.g., `i`, `n`, `arr` in the source).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `local_vars`, `heap_basic`, and `test_stack_memory` are perfectly preserved from the source, making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Meaningful constants like `42`, `10`, and `1000` are replaced with magic hex numbers (e.g., `0x2a`, `0x14`, `0x3e9`), obscuring the original logic without comments.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains Ghidra-specific artifacts like `undefined8`, `undefined4`, and `WARNING` comments about unreachable blocks, which act as noise for a human reader.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Natural loops are completely destroyed by aggressive loop unrolling (e.g., `large_stack_frame` is a 100+ line block of assignments), and VLA setup is reduced to complex pointer arithmetic (`lVar2 = -(uVar13 * 4 + 0xf & ...)`).
+
+**6. Function Decomposition:** Score: 6/10
+Justification: While functions are generally distinct, significant inlining has occurred (e.g., `large_stack_frame` logic appears inlined or expanded within `test_stack_memory`), creating massive functions that are hard to digest.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code reads linearly, but the massive blocks of unrolled loop code interrupt the flow so severely that it is difficult to track the program's progress.
+
+**8. Redundancy Elimination:** Score: 1/10
+Justification: The decompiler failed to abstract the compiler's loop unrolling optimizations, resulting in hundreds of lines of repetitive assignment statements (e.g., in `vla_stack` and `heap_basic`) that should be loops.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are frequently degraded to generic `undefined` types (e.g., `undefined8`, `undefined4`) or `void*`, losing the distinction between `int`, `size_t`, and specific pointer types present in the source.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct fields are accessed via raw pointer arithmetic offsets (e.g., `*(undefined4 **)(__ptr + 2)` in `heap_nested`) rather than field names (e.g., `node->next`), completely obscuring the data structure layout.
+
+**11. Type Safety:** Score: 5/10
+Justification: The reliance on raw pointer arithmetic and `undefined` types removes the type safety guarantees of the original C code, though the operations themselves are technically accurate to the binary.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to compiler warnings (e.g., "Removing unreachable block") and provide no insight into the algorithm's purpose or the logic behind complex arithmetic.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms like array initialization loops are not recognized; instead, they are presented as unrolled blocks of assignments, failing to convey the programmer's intent.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags potential issues like indirect jumps (`WARNING: Could not recover jumptable`) and unreachable blocks, which is helpful for understanding the binary's state.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no indication of preconditions (e.g., `n > 0` checks in `vla_stack`) or postconditions; the logic is presented as a flat sequence of operations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear, but the relationship between data structures (like the `Node` struct) is lost due to the lack of type recovery, making data flow harder to trace.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are presented in a logical order (roughly matching the source file's layout), and related test functions are grouped together.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Ghidra-specific types (`undefined8`, `undefined4`) and would require significant modification to compile or run in a standard C environment.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- **Loop Unrolling**: Functions like `large_stack_frame` and `heap_basic` are expanded into hundreds of lines of repetitive assignments, completely destroying the original loop logic.
+- **Struct Field Loss**: Accessing struct members via offsets (e.g., `__ptr + 2`) instead of names (e.g., `->next`) makes data structures unintelligible.
+- **Generic Naming**: Variables are named `param_1`, `lVar1`, etc., instead of semantic names like `n`, `i`, or `arr`.
+- **Magic Numbers**: Constants like `42` and `1000` appear as `0x2a` and `0x3e9` without explanation.
+- **Type Erasure**: Extensive use of `undefined` types obscures the actual data types used.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** The decompiler successfully recovered the original function names from the symbol table, making the high-level API easy to identify.
+
+**Most Needs Improvement:** Redundancy Elimination (scored 1/10)
+- **Why?** The failure to roll up unrolled loops into compact `for` or `while` loops makes the code exponentially longer and harder to read than the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Loop Rolling**: Implement pattern matching to detect and collapse aggressively unrolled loops back into idiomatic `for` or `while` loops.
+2. **Struct Recovery**: Improve type propagation to recover struct field names from access patterns (e.g., offset +8 on a pointer should map to the second field).
+3. **Variable Renaming**: Utilize data flow analysis or debug information (if available) to infer and apply semantic names to variables instead of generic `lVar`/`param` names.

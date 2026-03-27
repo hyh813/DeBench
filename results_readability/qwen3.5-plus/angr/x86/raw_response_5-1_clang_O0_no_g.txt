@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `ptr` with no semantic meaning. For example, in `test_cpp_member_func()`, variables `v0`, `v1`, `v2`, `v3` should be named `got_table`, `compute_result`, `value_result`, `obj_instance` based on usage.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Most functions retain mangled C++ names (`_Z20test_cpp_member_funcv`) or generic labels (`sub_401030`). Some original names like `test_cpp_member_func` are preserved, but standard library functions have unreadable names like `_ZNSt10unique_ptrIiZ18test_cpp_smart_ptrvE3$_2EC2IS0_vEEPiRKS0_`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `4660` for `getClassID`, offset calculations like `v9 - 996`). Some values like `100`, `200`, `10` are contextually clear from the original source.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with `[D] unsupported_<class 'pyvex.expr.GetI'>()` artifacts throughout template functions. Excessive padding fields (`padding_0[32099]`) and redundant struct definitions bloat the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses `goto` for loop constructs instead of natural `for/while` (e.g., `LifecycleClass::LifecycleClass()` uses `goto` pattern). Exception handling devolves into complex conditional chains instead of try-catch blocks.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Code expanded from 540 LOC to 5057 LOC (10x bloat). Standard library implementations are fragmented into dozens of tiny functions (e.g., 20+ functions for `unique_ptr` implementation), losing cohesion.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps and `goto` statements disrupt natural reading flow. Exception handling code has multiple non-linear paths that are difficult to trace.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Template instantiations create massive duplication (separate functions for `Container<int>` and `Container<double>`). Struct definitions repeat with minor variations throughout the output.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Generic types dominate (`unsigned int`, `void*`, `char*`) where specific types should appear. Double precision handling fails completely with `nan` and unsupported expressions. Lost const-correctness throughout.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs use generic field names (`field_0`, `padding_0[32099]`) instead of semantic names like `value`, `name`, `data`, `size`. Class hierarchies aren't properly reconstructed as inheritance relationships.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout (`(unsigned int)`, `(char *)`). Pointer arithmetic on generic `void*` types. Template type parameters completely lost, replaced with concrete instantiations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, algorithms, or decompilation confidence. No documentation of C++ semantics (virtual dispatch, RAII, exception handling).
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized - RAII patterns, virtual dispatch, smart pointer semantics, lambda captures all appear as raw pointer operations without identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Pyvex artifacts appear (`[D] unsupported_<class 'pyvex.expr.GetI'>()`) but without explanation of what failed or manual analysis guidance. Some functions marked "Failed to decompile" but no detail.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Exception contracts, null pointer checks, and bounds validation not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships exist but aren't documented. Virtual dispatch recovered as raw vtable lookups without indicating polymorphic behavior. No call graph documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All code in single output with no logical grouping. Related class methods scattered. No header file separation between interface and implementation.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Will not compile due to pyvex artifacts, missing external declarations, and incorrect type signatures. Requires extensive manual patching to become valid C/C++.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+5+2)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (4+3+4+3)/4 = 3.50 × 0.25 = 0.875
+Level 3 (Type):        (3+3+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (4+3+2)/3   = 3.00 × 0.10 = 0.300
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.05/10
+```
+
+**Overall Readability Score:** 3.1/10
+
+### Critical Defects:
+- **Architecture mismatch**: Original compiled for arm64, decompiled output targets X86 - fundamental incompatibility
+- **Pyvex artifacts**: Multiple functions contain `[D] unsupported_<class 'pyvex.expr.GetI'>()` making code non-compilable
+- **Variable naming**: All variables are `v0`, `v1`, `ptr` with no semantic meaning (e.g., `obj` becomes `v3`)
+- **C++ semantics lost**: Virtual dispatch, lambdas, exceptions, smart pointers all reduced to raw pointer operations
+- **10x code bloat**: 540 LOC source became 5057 LOC decompiled output due to excessive fragmentation
+
+### Best Quality Aspect: **Literal Clarity (5/10)**
+- Some numeric constants retain their original values and can be cross-referenced with source expectations
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero documentation exists to help readers understand recovered logic, C++ semantics, or decompilation confidence
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ semantic constructs**: Identify and reconstruct class hierarchies, virtual tables, smart pointers, and lambda captures as high-level C++ rather than raw pointer operations
+2. **Infer semantic variable names**: Use usage patterns and type information to name variables meaningfully (e.g., `obj` for class instances, `result` for return values)
+3. **Eliminate analysis artifacts**: Remove or properly comment pyvex/analysis failures instead of embedding them in output code

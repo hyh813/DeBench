@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: The target function `param_fake_branch` is empty, so there are no variables to name. However, examining the surrounding context (e.g., `param_opaque_predicate`), variables are generic (`v1`, `a1`), offering no semantic insight.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: The function name `param_fake_branch` is preserved exactly from the source, perfectly reflecting its semantic purpose.
+
+**3. Literal Clarity:** Score: 10/10
+Justification: There are no literals in the decompiled function body to evaluate.
+
+**4. Noise Reduction:** Score: 10/10
+Justification: The function body is empty (`;`), so there is absolutely no noise or compiler artifacts present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 1/10
+Justification: The original source contained two `if` statements (fake branches). The decompiled code has no control flow structures whatsoever; the logic is completely missing.
+
+**6. Function Decomposition:** Score: 1/10
+Justification: The function logic has been entirely removed (inlined/optimized away) into the caller `call_fake_branch`, leaving behind a useless empty stub.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code consists of a single empty statement, making it perfectly linear, albeit trivial.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While the compiler correctly eliminated the dead code (fake branches), the decompiler presents this as an empty function, which fails to convey the source's obfuscation intent.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 1/10
+Justification: The original signature is `int param_fake_branch(int x)`, but the decompiled version is `void param_fake_branch(void)`. This is a critical failure in type recovery.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: Not applicable to this specific function.
+
+**11. Type Safety:** Score: 10/10
+Justification: Not applicable to this specific function.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining why the function is empty or that it was likely optimized out, leaving the user confused.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: The "fake branch" (obfuscation) pattern is completely lost; the decompiler shows no trace of the conditional logic.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler does not flag the empty function or the signature mismatch as an anomaly or potential optimization artifact.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions or postconditions are recovered; the contract of taking an `int` and returning an `int` is lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 1/10
+Justification: The caller `call_fake_branch` has been optimized to `return 10` and no longer calls `param_fake_branch`. The link between the two is severed.
+
+**17. Module Organization:** Score: 8/10
+Justification: The function appears in the correct relative order within the file, maintaining the source's module structure.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: While the empty function compiles syntactically, it would cause linker or compiler errors if used according to the original header's `int(int)` signature.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Function signature is completely wrong: recovered as `void` instead of `int(int)`.
+- Function body is empty; all logic (fake branches) was eliminated by optimization and not recovered.
+- Call graph is broken; the caller inlines the function rather than calling it.
+
+**Best Quality Aspect:** Function Naming (scored 10/10)
+- The decompiler successfully preserved the exact function name from the source.
+
+**Most Needs Improvement:** Type Precision (scored 1/10)
+- The failure to recover the return type (`int`) and parameter (`int x`) makes the function definition semantically incorrect compared to the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Signature Recovery from Debug Info**: Even if the body is optimized, utilize available debug information (or heuristics) to preserve the correct function signature.
+2. **Optimization Artifact Flagging**: Detect functions that are empty or reduced to stubs and annotate them as "Likely optimized away" or "Inlined" to manage user expectations.
+3. **Cross-Reference Inlining**: When a function is inlined, provide a comment or annotation in the caller indicating the original call site (e.g., `/* inlined call to param_fake_branch(10) */`).

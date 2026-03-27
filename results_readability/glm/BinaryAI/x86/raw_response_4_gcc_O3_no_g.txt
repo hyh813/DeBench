@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `param_1`, `iVar1`, and `uVar1`, providing no semantic hint about their purpose (e.g., `count`, `sum`, or `a`/`b`).
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: User-defined function names like `cdecl_func` and `test_calling_conventions` are recovered accurately, but standard library calls like `printf` and `strlen` are obfuscated as `FUN_000110c0` and `FUN_000110b0`.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals are preserved perfectly, but integer constants are displayed in hexadecimal (e.g., `0xf` instead of `15`, `0x2a` instead of `42`), which adds unnecessary translation effort for simple arithmetic.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains significant noise from type definitions like `undefined4` and `undefined8`, as well as compiler artifacts like `__x86.get_pc_thunk.bx` and `unaff_EBX`, which clutter the output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: The control flow is very natural and linear, correctly representing `do-while` loops in functions like `varargs_func` and simple conditional logic without excessive `goto` statements.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Functions are kept small and distinct, matching the source's modular design, though the massive parameter list in `func_struct_byval` (22 params) makes the signature unwieldy.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads extremely well from top to bottom with minimal forward jumps or complex nesting, making execution paths easy to trace.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler successfully propagated constants (e.g., `call_cdecl` returns `0xf` directly), which simplifies reading but hides the original function call mechanism.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int` and `void*` are recovered, but the decompiler relies heavily on generic `undefined` types (`undefined4`, `undefined8`) instead of precise types like `uint32_t` or specific struct types.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: **Critical Failure**. The `LargeStruct` parameter in `func_struct_byval` is completely exploded into 22 separate integer parameters, and `SmallStruct` access is reduced to raw pointer arithmetic (`param_1[1]`), losing all structure semantics.
+
+**11. Type Safety:** Score: 6/10
+Justification: While operations are generally safe, the code uses verbose helper macros like `CONCAT44` and `ROUND` to handle type conversions (e.g., `longlong` reconstruction), which obscures the original simple casts.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output; complex logic like varargs stack walking or struct expansion is left unexplained.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard idioms are missed: `varargs_func` uses raw stack offset access (`stack0x00000008`) instead of `va_list`, and `printf` is not recognized as a formatted print function.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the bizarre 22-parameter signature of `func_struct_byval` and the opaque `FUN_000110c0` calls without any warnings or flags indicating potential recovery issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the null check in `func_struct_byptr` is present but not explicitly highlighted as a contract requirement.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: Calls to standard library functions (`printf`, `strlen`) are opaque, making it hard to understand the data flow without analyzing the arguments manually (e.g., format strings).
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in a flat order without logical grouping or separation between the test harness and the actual implementation functions, though the names do allow some inference.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile as-is due to Ghidra-specific types (`undefined4`), missing headers, and undefined function references (`FUN_000110c0`).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- **Struct Explosion**: `func_struct_byval` destroys the `LargeStruct` abstraction, expanding it into 22 generic parameters (`param_1` through `param_21`).
+- **Lost Idioms**: `varargs_func` is decompiled to raw stack pointer arithmetic (`*(int *)(&stack0x00000008 + iVar1 * 4)`) instead of using `va_list`.
+- **Missing Symbols**: Standard library functions like `printf` and `strlen` are not resolved, appearing as generic addresses (`FUN_000110c0`), severely impacting context.
+
+**Best Quality Aspect:** Code Linearization (scored 9/10)
+- The decompiled code flows naturally from top to bottom with minimal jumps or spaghetti logic, making the execution sequence easy to follow.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The complete failure to recover structure definitions—exploding structs into parameters and accessing struct fields via array indexing—makes understanding data layouts nearly impossible.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Implement Structure Recovery**: Analyze parameter passing patterns to reconstruct structs passed by value, collapsing long parameter lists back into composite types.
+2. **Signature Matching**: Integrate FLIRT or similar signature databases to identify and rename standard library functions (e.g., `printf`, `strlen`) correctly.
+3. **Varargs Abstraction**: Detect the stack access pattern used in variadic functions and re-abstract it into `va_list`, `va_start`, and `va_arg` idioms.

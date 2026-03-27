@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use IDA's generic naming convention (v0, v1, v2, v3, v4, v5, v6, v7, etc.) throughout, such as in `param_asm_clobber` where `v2`, `v3`, `v5`, `v6` obscure their roles as loop counters and accumulators. Only a few variables like `result`, `counter`, `size` have meaningful names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Many function names directly match source: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `test_preprocessing_features`, `test_asm_features`. However, some internal functions use generic names like `sub_7A0`, `init_proc`, and CRT initialization functions have standard but non-descriptive names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `1024`, `512`, `64`, `57072` (0xDEF0) appear without explanation. The decompiler correctly identified `30` as `sysconf(_SC_PAGESIZE)` but other constants like `7` (PROT_READ|PROT_WRITE|PROT_EXEC) and `34` (MAP_PRIVATE|MAP_ANONYMOUS) lack symbolic names.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. No debug instrumentation, redundant casts, or frame pointer manipulation visible. The code is straightforward and readable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with idiomatic if-else in `param_macro_constants`, proper while loops in `param_asm_clobber` (using do-while with condition check), and appropriate early returns. At -O0, the structure closely matches source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - each has a single responsibility (macro handling, assembly operations, memory protection). No monolithic functions; parameter lists are reasonable and don't expose implementation details.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately in functions like `param_asm_clobber` and `param_dynamic_code`. No forward jumps into loop bodies or excessive continue/break usage.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling in `param_asm_clobber` (processing 8 elements at a time with NEON vectors) is a legitimate optimization at -O0 for ARM64 and doesn't obscure logic. No significant redundant expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are accurate - `int` for parameters, `size_t` for sizes, `int*` for arrays. However, `atomic_uint*` is used correctly for atomic operations. Minor issues: some `int` should be `unsigned int` for indices, and `void*` could be more specific.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in this code, but the decompiler correctly handles array parameters as pointers. The `int32x4_t` NEON type is properly recognized in `param_asm_clobber`, showing good ARM64 vector type recovery.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts observed. Pointer arithmetic is correct (e.g., `arr + 4`, `v5 += 8`). Function pointers are properly typed in `param_dynamic_code` with `func_t` typedef. Memory operations use correct types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated function headers with addresses (e.g., `/* Function: param_macro_constants @ 0x9D4 */`). No explanation of macro semantics, assembly logic, or algorithm purpose. The string literal comments in `test_preprocessing_features` reference format strings but provide no context.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable (atomic operations via `_aarch64_ldadd4_acq_rel`, SIMD via NEON intrinsics), but the decompiler doesn't explicitly name them. The conditional compilation branches are correctly resolved but not documented as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler marks 12 functions as "FAILED to decompile" (memcpy, printf, sysconf, etc.) but these are external library functions, not anomalies in the code. No flags for suspicious patterns or indirect calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants recovered. The `param_asm_clobber` could document "requires: n > 0" but doesn't. Error handling (checking mmap/mprotect return values) is present but not documented as such.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible through direct calls (e.g., `main` calls `test_preprocessing_features`). However, no documentation of which functions call which, global variable usage, or callback relationships. The `global_var` in `param_memory_clobber_demo` is used but not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are roughly ordered: CRT init → macro test functions → asm test functions → main. However, the grouping is somewhat arbitrary - related test functions (e.g., all "call_" functions) could be better organized. Static functions like `my_func` are properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The decompiled code should compile as standalone C code with standard library linkage. Dependencies are standard (stdio.h, stdlib.h, sys/mman.h, unistd.h). The atomic builtins require libatomic on some platforms but this is documented in the code.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Variable naming uses generic IDA conventions (v0, v1, v2...) throughout, obscuring semantic purpose
+- No comments explaining macro semantics, assembly operations, or algorithm logic
+- Magic numbers like 57072 (0xDEF0), 7 (PROT flags), 34 (MAP flags) lack symbolic names
+- No recovery of preconditions/postconditions for functions like `param_asm_clobber` (n > 0)
+- Cross-reference relationships between functions not documented
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- At -O0, the decompiled control structures closely match the original source with idiomatic if-else and while loops
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+- Generic variable names (v0-v23) make it difficult to track the purpose of each variable without extensive cross-referencing
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `v2` used as loop counter in `param_asm_clobber` should be `i` or `index`)
+2. Detect magic numbers and suggest symbolic constants (57072 → 0xDEF0 or "default platform offset")
+3. Add semantic comments explaining resolved conditional compilation branches and macro expansions

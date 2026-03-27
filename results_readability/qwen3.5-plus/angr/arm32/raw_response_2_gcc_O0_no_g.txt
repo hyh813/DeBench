@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `idx`) with no semantic meaning. For example, `process_char` uses `a0` instead of `c` or `character`, and complex functions like `__aeabi_dadd` have 20+ variables named `v1` through `v117` with no indication of purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: User-defined functions preserved well (`double_value`, `process_char`, `test_data_types_l1`), but compiler runtime functions use cryptic names (`sub_103c0`, `sub_12434`, `sub_12dd8`). The mix creates inconsistency.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `65` and `90` in `process_char` (ASCII bounds), `0x3fc00000` and `0x3f000000` in `process_float` (IEEE 754 constants), `4294967295` for -1 in multiple places. No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack canary checks (`GLIBC_2.4::__stack_chk_guard`), ARM EABI runtime calls (`__aeabi_dadd`, `__mulsf3`, `armg_calculate_condition`), and redundant variable assignments (`v0 = v1; goto g_24008;` in `sub_103c0`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions use natural constructs (`if`, `for`, `while`), but complex functions like `__aeabi_dadd` use excessive `goto` with labels (`LABEL_1285a`, `LABEL_1298c`). At `-O0`, this level of control flow degradation is unacceptable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but compiler runtime functions (`__aeabi_dadd` at 400+ lines, `__mulsf3` at 300+ lines) are inappropriately included and should be external library calls, not decompiled.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read top-to-bottom, but complex functions have frequent forward jumps disrupting flow. `__aeabi_ddiv` has 15+ goto labels creating spaghetti code patterns.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant expressions present (duplicate `armg_calculate_condition` calls), but not severe. Stack canary checks at function end are repetitive but expected.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `process_float` returns `int` instead of `float`, `process_double` takes `unsigned int` parameters instead of `double`, pointer types shown as `unsigned int` (`array_1d_stack(unsigned int ptr, unsigned int a1)`). Signed/unsigned often incorrect.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered as generic `struct_0`, `struct_1` with `field_0`, `field_1`, `field_4` - no semantic field names. Original `Point3D {x, y, z}` becomes `struct_0 {field_0, field_4}`. Unions not distinguished from structs.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: void pointer casts without type info (`ptr_void(void* a0, unsigned int a1)`), integer-pointer confusion (`array_1d_stack(unsigned int ptr)` should be `int*`), bitfield operations shown as manual bit manipulation losing type semantics.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Essentially no useful comments. Only auto-generated annotations like `// [bp-0x10]` for stack offsets. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Linked list traversal in `linked_list` not identified as such, binary tree recursion in `binary_tree_sum` not labeled, enum-switch pattern in `enum_switch` not documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Floating point operations that are essentially unreadable (`__aeabi_dadd` with 100+ lines of `armg_calculate_condition`) presented confidently without flagging issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `array_complex_index` should note bounds checking), no postconditions, no null pointer requirements noted for pointer functions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. No call graph, no indication of which functions are test helpers vs. core logic. Global variables shown as `g_133b0`, `g_24008` without meaning.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source order roughly, but compiler runtime functions interspersed with user code. No header file structure, no logical grouping of related functions.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds, but external dependencies (`GLIBC_2.4::__stack_chk_guard`, `__aeabi_*` functions) not clearly documented. Would need significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+6+5+6)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.29/10
+```
+
+**Overall Readability Score: 4.3/10**
+
+### Critical Defects:
+- **Variable `a0`, `a1`, `v0` throughout** should be named based on semantic usage (e.g., `character`, `array_ptr`, `sum`)
+- **Floating point functions essentially unreadable** - `process_float`, `process_double`, `process_ld` show raw ARM EABI calls instead of `f * 1.5f + 0.5f`
+- **Struct fields all generic** (`field_0`, `field_4`) losing all semantic meaning from original `x`, `y`, `z`, `width`, `height`
+- **No comments explaining magic numbers** - ASCII bounds (65, 90), IEEE 754 constants (0x3fc00000), array sizes (10, 5)
+- **Compiler runtime code included** - `__aeabi_dadd`, `__mulsf3`, `armg_calculate_condition` should be external library references
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- User-defined function names preserved accurately from source (`double_value`, `process_char`, `test_data_types_l1`), showing the decompiler can recover symbolic information when available.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero meaningful comments despite complex floating-point operations and bit manipulation that desperately need explanation; even auto-generated confidence indicators are absent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in loop bounds → `count`, `size`; variables accumulating values → `sum`, `total`)
+2. **Recognize and abstract compiler runtime calls** - Identify `__aeabi_*`, `__mulsf3`, etc. as library functions and display as readable expressions (`f * 1.5f`) rather than raw calls
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (especially floating-point, complex conditionals) with comments like `// DECOMPILER UNCERTAINTY: floating-point operation`

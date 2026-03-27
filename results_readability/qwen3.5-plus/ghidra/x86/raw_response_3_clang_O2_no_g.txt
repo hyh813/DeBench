@@ -1,0 +1,105 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named (`param_1`, `iVar1`, `uVar2`, `local_800`) with no semantic meaning. Original source had meaningful names like `arr`, `large_buf`, `head`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved (`local_vars`, `heap_basic`, `double_value`), but many helpers became `FUN_00011030`, `FUN_00011f75`. Static functions like `static_local` lost their names entirely.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic hex numbers everywhere (`0x2a`, `0x14`, `0x3c`, `0xffffffff`) instead of clear decimal values. Original had `42`, `10`, `20` which are more readable.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `get_pc_thunk_bx` injections, "WARNING: Removing unreachable block" comments, and stack manipulation visible throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions preserved well, but complex loops aggressively unrolled (e.g., `large_stack_frame` writes 8 bytes per iteration). VLA/alloca functions have extremely convoluted control flow from optimization.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but `tree_heap_traversal` collapsed to `return 0x3c`. Test functions heavily constant-folded losing original structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably, but optimized loops create nested conditionals that disrupt flow (e.g., `heap_basic` has complex unrolled loop logic).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from loop unrolling (`large_stack_frame` has 8 nearly identical assignment lines per iteration). Dead code warnings present but not eliminated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types degraded to `int`, `undefined4`, `void*`. Lost `size_t`, proper struct types. `Point` struct completely lost in `local_struct` (just returns `param_1 * 3`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `Node` struct partially recovered (uses `__ptr[1]` for next pointer), but `Point` and `TreeNode` structs completely lost. Most composite types reduced to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts visible: `(undefined4 *)`, `(int *)`. Pointer arithmetic on void pointers throughout. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated warnings ("WARNING: Function... replaced"). No semantic comments explaining what code does. Original had extensive test case documentation completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Linked list traversal in `linked_list_heap` not recognized as such. Memory allocation patterns not annotated.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings about unreachable blocks and "Subroutine does not return". But no indication of undefined behavior in `dangling_pointer` or `double_free` functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions inferred. Error return values not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variable usage not clearly indicated. Callback relationship (`global_func_ptr`) partially visible but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Static functions not properly scoped. Original section organization (stack/heap/static) lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies visible (`extern_function`, `malloc`, `free`), but would need significant stubs for globals like `global_counter`, `const_string`.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Calculation:**
+```
+L1_avg = (3+6+4+5)/4 = 4.50
+L2_avg = (5+5+6+5)/4 = 5.25
+L3_avg = (4+3+4)/3 = 3.67
+L4_avg = (2+3+5+3)/4 = 3.25
+L5_avg = (5+4+6)/3 = 5.00
+
+Overall = (4.50×0.30) + (5.25×0.25) + (3.67×0.20) + (3.25×0.15) + (5.00×0.10)
+        = 1.35 + 1.31 + 0.73 + 0.49 + 0.50 = 4.38 ≈ 4.4/10
+```
+
+**Critical Defects:**
+- Variable names completely generic (`param_1`, `iVar1`) losing all semantic meaning from original source
+- Composite types (`Point`, `TreeNode`) not recovered—reduced to pointer arithmetic
+- No comments explaining test purpose; original documentation completely lost
+- Magic hex numbers (`0x2a`, `0x3c`) instead of readable decimal constants
+- Many functions constant-folded (`tree_heap_traversal` → `return 0x3c`) losing original logic
+
+**Best Quality Aspect:** Build System Compatibility (scored 6/10)  
+- Decompiled code reportedly compiles successfully with external dependencies properly declared
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Zero semantic comments; only auto-generated warnings present, making code intent completely opaque
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover variable names from usage patterns** - Analyze how variables are used (e.g., `param_1` multiplied by 2 in `double_value` should suggest `value` or `input`)
+2. **Reconstruct composite type definitions** - Detect struct access patterns (`__ptr[0]`, `__ptr[1]`) and propose named struct types with field names
+3. **Add semantic annotations for optimized code** - When constant folding occurs, add comments showing original computation (e.g., `// Original: root->data + root->left->data + root->right->data = 60`)
+
+---
+
+**Note on Metadata Discrepancy:** The source metadata claims `-O0 -g` compilation, but the decompiled binary path shows `3_clang_O2_no_g` and exhibits significant `-O2` optimization artifacts (loop unrolling, constant folding, function inlining). This assessment reflects the actual decompiled code quality, not the stated metadata.

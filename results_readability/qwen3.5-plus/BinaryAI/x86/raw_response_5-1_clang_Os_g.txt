@@ -1,0 +1,104 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `local_28`, `local_9`, `iVar1`, `puVar1` with no semantic meaning. Original source had meaningful names like `value`, `name`, `capture_by_value`, but decompiler lost all of them.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions preserved original names (`test_cpp_member_func`, `test_cpp_constructor`), but helper functions use generic labels (`FUN_00011030`, `FUN_00011160`). External wrapper functions show infinite recursion errors.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x125c`, `0x2a` (42), `0x47` (71) represent expected return values but lack explanation. String data referenced as `&DAT_000121fc` without content visibility.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: External function wrappers show infinite recursion (`operator_new` calls `operator_new`). Compiler artifacts like `__x86_get_pc_thunk_bx`, `deregister_tm_clones` present without cleanup.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most test functions constant-folded to single returns (`return 0x2a`), losing all original control flow. `test_cpp_constructor` uses do-while loop instead of for-loop from source.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions have reasonable granularity, but external wrapper functions are unnecessary artifacts. Template instantiations properly separated (`template_max_int_`, `template_max_double_`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code reads top-to-bottom within functions, but constant-folding obscures original execution paths. No excessive goto usage observed.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: External function wrappers create redundant call layers. `test_cpp_oo_features` duplicates printf calls that could be looped.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate (`undefined4`, `void*`). Some correct types (`size_t`, `int`, `double`) but inconsistent. Return types often wrong (`undefined4` instead of `int`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - No class/struct definitions recovered. Container access uses pointer arithmetic (`this + 0x28`) instead of field names. SimpleClass, LifecycleClass, Base, Derived all lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(undefined4 *)`, `(int *)`). Pointer arithmetic replaces member access. No const-correctness preserved from source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled output. Original source had extensive documentation explaining C++ features, test expectations, and scenarios - all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms not recognized. Virtual dispatch shown as `(***(code ***)param_1)` without vtable explanation. Exception handling, RAII patterns completely opaque.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about critical issues: infinite recursion in external wrappers, constant-folded test functions, missing class structures. Decompiler presents broken code confidently.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or contracts recovered. Original source had clear test expectations (e.g., "期望: 10 + 34 + 4660 = 4704") - all lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but class inheritance relationships lost. Virtual dispatch not clearly linked to vtable. Template instantiation relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order. No logical grouping by C++ feature category. External functions mixed with application code.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: **Will not compile** - missing struct definitions, undefined types (`undefined4`), infinite recursion in external wrappers, missing headers.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3 + 6 + 5 + 4) / 4 = 4.50
+Level 2 Average: (5 + 6 + 6 + 5) / 4 = 5.50
+Level 3 Average: (4 + 2 + 3) / 3 = 3.00
+Level 4 Average: (1 + 2 + 2 + 1) / 4 = 1.50
+Level 5 Average: (4 + 5 + 2) / 3 = 3.67
+
+Overall = (4.50 × 0.30) + (5.50 × 0.25) + (3.00 × 0.20) + 
+          (1.50 × 0.15) + (3.67 × 0.10)
+        = 1.35 + 1.375 + 0.60 + 0.225 + 0.367
+        = 3.92/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **No class/struct definitions recovered** - All C++ classes (SimpleClass, LifecycleClass, Base, Derived, Container, etc.) lost; pointer arithmetic used instead
+- **External function wrappers have infinite recursion** - `operator_new` calls `operator_new`, making code non-functional
+- **Test functions constant-folded** - Logic eliminated, only return constants remain (e.g., `test_cpp_virtual_func` returns `0x2a` directly)
+- **Zero comments** - All original documentation, test expectations, and feature explanations lost
+- **Generic variable naming** - `local_28`, `iVar1`, `puVar1` provide no semantic information
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Test function names preserved from source (`test_cpp_member_func`, `test_cpp_constructor`), providing some orientation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of comments makes understanding C++ feature tests nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures** - Analyze vtable layouts and object memory patterns to reconstruct class definitions with field names
+2. **Fix external function wrapper generation** - Detect library functions and emit proper declarations instead of recursive stubs
+3. **Preserve test expectation comments** - Detect printf patterns with expected values and recover them as inline comments explaining test purposes

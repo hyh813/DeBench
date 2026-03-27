@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_58`, `local_10` that completely obscure semantic meaning. The original source uses meaningful names like `a`, `b`, `count`, `args`, `sum` - all lost in decompilation. This is the most severe degradation in the entire output.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved accurately: `cdecl_func`, `stdcall_func`, `callback_func`, `func_a`, `func_b`, `varargs_func`. Only one anomaly: `FUN_00101020` is a placeholder. The verb-noun pattern is mostly maintained.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xf` (15), `0x32` (50), `0x2a` (42), `0x15` (21) appear without explanation. The original source has comments indicating expected values (e.g., "//期望: 15") but these are lost. Some constants like `0x40091eb851eb851f` for 3.14 are completely opaque.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts - only `__stack_chk_fail` calls and `in_FS_OFFSET` for stack canary checks. No redundant casts or debug instrumentation. The code is relatively clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with proper loops and conditionals. Some inlining occurred (e.g., `call_cdecl` returns constant directly), which is expected at -O0 but some optimization occurred. The varargs functions have awkward manual stack handling visible.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. The original test wrapper functions (call_cdecl, call_stdcall, etc.) are preserved as separate functions. No excessive fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The varargs functions have some backward jumps for loop handling but are traceable. No severe disruption to reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Some loop unrolling in `test_calling_conventions` where array initialization is explicit, but this is manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results - some functions correctly use `int` (cdecl_func), others use `undefined8` for return types (call_cdecl returns undefined8 instead of int). Parameter types are mostly preserved but `long` vs `int` confusion exists (param_double_ptr uses `long*` but should be `int**`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct types are mostly lost. `LargeStruct` becomes raw stack access (`in_stack_00000008`), `SmallStruct` becomes `int*` with pointer arithmetic. The original struct definitions with meaningful field names are not recovered.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some type safety issues - `param_ptr_array` takes `undefined8*` instead of `char**`, `param_func_ptr` uses `code*` instead of proper function pointer type. Pointer arithmetic is mostly correct but type coercion is implicit.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments like "WARNING: Removing unreachable block" and "WARNING: Subroutine does not return". No semantic comments explaining what functions do, parameter meanings, or expected behaviors. The original source's rich comments are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard calling convention patterns are visible but not explicitly named. The varargs pattern is recognizable but not identified as such. No pattern naming or explanation provided.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra provides some warnings about unreachable blocks and stack_chk_fail, but these are generic. No indication of why certain functions return `undefined8` or the meaning of unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source has no explicit assertions but the semantic contracts (e.g., "ptr != NULL" checks) are not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - main calls test functions, test functions call implementation functions. Global variables like `handle1_1`, `handle2_0` are visible. Callback relationships (callback_func passed to param_func_ptr) are traceable.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically by test category (calling conventions, parameter passing, return values). Static functions like callback_func, func_a, func_b are properly scoped. Some arbitrary ordering but acceptable.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard libc headers. External dependencies (puts, printf, __printf_chk, __stack_chk_fail, __libc_start_main) are standard. No unusual compiler-specific hacks.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 4 + 7) / 4 = 5.25
+L2_avg = (7 + 8 + 7 + 7) / 4 = 7.25
+L3_avg = (5 + 4 + 6) / 3 = 5.00
+L4_avg = (3 + 5 + 6 + 2) / 4 = 4.00
+L5_avg = (7 + 7 + 7) / 3 = 7.00
+
+Overall = (5.25 × 0.30) + (7.25 × 0.25) + (5.00 × 0.20) + 
+          (4.00 × 0.15) + (7.00 × 0.10)
+        = 1.575 + 1.8125 + 1.0 + 0.6 + 0.7
+        = 5.6875 / 10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects (Bullet List)
+- **Variable naming completely generic**: `param_1`, `param_2`, `local_XX` lose all semantic meaning from original `a`, `b`, `count`, `args`
+- **Struct type recovery failure**: `LargeStruct` and `SmallStruct` become raw stack/pointer operations without struct definitions
+- **No semantic comments**: Original source's rich documentation (test scenarios, expected values, explanations) completely lost
+- **Return type inconsistency**: Functions like `call_cdecl` return `undefined8` instead of `int`, indicating type inference failure
+- **Magic numbers unexplained**: Values like `0xf` (15), `0x32` (50) lack connection to original expected outputs
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+Function names are largely preserved from the original source, making it easy to identify which test case each function implements.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+The complete loss of semantic variable names is the single biggest readability barrier. Every parameter and local variable uses generic indexed names that require constant cross-referencing to understand.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparison) to suggest semantic names like `count`, `index`, `sum`, `pointer`
+2. **Recover struct types from stack access patterns**: Detect sequential stack accesses and reconstruct struct definitions with field names based on offset patterns
+3. **Preserve or reconstruct comments**: Either carry forward source comments from debug symbols or generate semantic comments explaining expected values and test purposes

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: All variables use generic names like `param_1`, `local_8`, `iVar1`, `uVar1` with no semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved from source (`sequential_ops`, `single_if`, `nested_if_deep`, `loop_for_fixed`). Action-oriented names clearly reflect functionality.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Decimal constants converted to hex (`0x14` instead of `20`, `0x1e` instead of `30`, `0xffffffff` instead of `-1`). Original source used readable decimal values throughout.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) added to many functions. Original `-O0` code had no such artifacts; these obscure the simple logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control structures recovered well (for/while loops, if-else chains). However, `switch_fallthrough` uses goto labels (`LAB_0001158c`) instead of recognizing fall-through semantics.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries correctly preserved with appropriate granularity. Each original function remains separate; no inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `switch_fallthrough` and `loop_break` use goto labels that disrupt flow. Original source had clean structured control flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant code duplication observed. Stack canary checks are repetitive but serve a purpose; no dead code from optimization artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `undefined4`, function pointers use generic `code *` instead of proper signatures like `int (*)(int)`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays handled adequately (`local_24[4]`, `local_1c[3]`). No complex structs in this code to evaluate, but array initialization is clear.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple implicit casts present (`(int)local_8`, `(undefined4 *)`). Generic `code *` function pointer type could lead to type confusion. No buffer overflow patterns detected.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had comprehensive documentation explaining each function's purpose, test cases, and difficulty level.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. `duffs_device` not identified as Duff's Device optimization, `state_machine` not labeled as state machine pattern, `opaque_predicate` not flagged as obfuscation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No warnings about suspicious patterns. `obfuscated_cf` with impossible condition `(param_1 * param_1 < -1)` not flagged. `computed_goto` uses raw addresses without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling documentation. Original source had explicit test validation comments for each function.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible through code but no call graph documentation. Callback relationships (`call_func_ptr`, `process_with_callback`) not explicitly marked as such.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file. Original source had clear section headers (`// === Control Flow Level 1 ===`) that organized related functions.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies (`FUN_000110c0` for printf, `__stack_chk_fail_local`) need stubs. Type mismatches (`bool` vs `int` returns) may cause compilation issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+5+5)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+6+8)/4 = 7.25 × 0.25 = 1.813
+Level 3 (Type):        (5+7+6)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (1+3+4+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (6+6+5)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 5.68/10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `local_8`, `iVar1`) - should infer semantic names from usage patterns
+- **Zero documentation** - original source had comprehensive comments explaining purpose, test cases, and difficulty
+- **Type precision lost** - `if_else` returns `bool` instead of `int`, `undefined4` used instead of concrete types
+- **Magic hex literals** - `0x14`, `0x1e`, `0xffffffff` instead of readable decimal `20`, `30`, `-1`
+- **Stack canary noise** - `in_GS_OFFSET` checks added to simple functions, obscuring core logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from source, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation; decompiler should recover or generate explanatory comments for non-trivial logic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., loop counters → `i`, accumulators → `sum`, condition results → `is_valid`)
+2. **Recover source comments from debug symbols** - When `-g` flag is present, extract and preserve original comments in decompiled output
+3. **Detect and document code patterns** - Identify common patterns (Duff's Device, state machines, opaque predicates) and add explanatory annotations

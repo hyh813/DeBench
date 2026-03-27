@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `v0`, `v1`, `v2`, `ptr`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`, `v13`, `v14`, `v15`. No semantic meaning can be derived from these names - for example, in `test_cpp_member_func()`, variables `v0`, `v1`, `v2`, `v3` should be named `obj`, `result1`, `result2`, `result3` based on their usage.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions retain C++ mangled names (e.g., `_Z20test_cpp_member_funcv`, `_ZN11SimpleClass8getValueEv`) which are partially readable, but many functions use generic names like `sub_401030`, `sub_401190`, `sub_401196` that provide no semantic information about their purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1234` (4660 in decimal) appear without explanation in `SimpleClass::getClassID()`. Some constants like array sizes are partially recoverable, but many literals remain unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise present including: `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers throughout template and container functions, excessive pointer casting, and auto-generated struct definitions with padding fields like `padding_0[32099]`, `padding_7cff[120]`.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is readable with if-else and while loops, but some functions use goto-based jumps (e.g., `sub_401030` uses `goto ptr[2]`) that obscure logic. At -O0, such goto patterns should be recoverable as proper loops.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions maintain reasonable size (mostly under 100 lines) and are cohesive. However, some template instantiations are split across many small functions (e.g., `std::tuple`, `std::_Tuple_impl` functions) creating fragmentation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Some functions have early returns which is appropriate. The main issue is nested ternary operators making expressions hard to parse.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. Some loop unrolling in template functions but it's manageable. No significant redundancy that would impede understanding.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - almost everything is `unsigned int` or `void*`. For example, in `test_cpp_member_func()`, the object should be `SimpleClass*` but is `char` buffer. Parameters like `int arg_0`, `int arg_1` lack semantic meaning. No `const` correctness preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery attempted (e.g., `struct_0`, `struct_1`) but field names are generic: `field_0`, `field_4`, `padding_0`, `padding_4[31]`. The `SimpleClass` struct has `field_0` and `field_23` instead of `value` and `name`. No union recovery visible.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate type safety issues. Many unsafe pointer casts like `*((int *)&v3)`, `*((unsigned int *)&ptr->padding_0[0])`. Some pointer arithmetic without bounds checking. Function pointers treated as integers in some cases.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated function headers like `// Function: sub_401030 at 0x401030`. No explanation of algorithms, no recovery confidence indicators, no pre/post conditions documented.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ idioms like RAII, virtual dispatch, exception handling are not explicitly identified. The vtable mechanism in `call_virtual_func` uses raw pointer dereference without comment explaining the virtual call pattern.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged with `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers indicating decompilation limitations, but these are generic and don't explain what specifically failed or provide workarounds.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. For example, `LifecycleClass::getData()` has implicit bounds checking but no comment explaining the contract.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are visible through direct calls but not documented. No indication of who calls whom or global variable usage. Virtual function targets are not resolved.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped by address which roughly corresponds to compilation order but not logical grouping. Related functions (e.g., all SimpleClass methods) are scattered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many `extern` declarations for undefined symbols. Won't compile standalone. Dependencies on standard library functions not documented. Template instantiations create complex interdependencies.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 4 + 5 + 3) / 4 = 3.5
+L2_avg = (5 + 6 + 6 + 7) / 4 = 6.0
+L3_avg = (3 + 4 + 5) / 3 = 4.0
+L4_avg = (2 + 3 + 4 + 2) / 4 = 2.75
+L5_avg = (3 + 4 + 3) / 3 = 3.33
+
+Overall = (3.5 × 0.30) + (6.0 × 0.25) + (4.0 × 0.20) + (2.75 × 0.15) + (3.33 × 0.10)
+        = 1.05 + 1.5 + 0.8 + 0.4125 + 0.333
+        = 4.095 ≈ 4.1/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `ptr`, etc.) making code semantics completely opaque
+- **Type precision**: Severe degradation - almost everything is `unsigned int` or `void*`; original types like `SimpleClass*`, `std::unique_ptr<int>` lost
+- **Struct field recovery**: Fields named `field_0`, `field_4`, `padding_0` instead of semantic names like `value`, `name`, `data`
+- **Comment absence**: No useful comments explaining algorithms, contracts, or decompilation confidence
+- **Noise artifacts**: `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers pollute template/container functions
+
+### Best Quality Aspect: Structural Intelligibility (L2)  
+**Why?** At 6.0/10, this is the highest-scoring dimension. Control flow is generally readable, functions are reasonably sized, and code mostly linearizes well.
+
+### Most Needs Improvement: Semantic Transparency (L4)  
+**Why?** At 2.75/10, this is the lowest-scoring dimension. Almost no useful comments, no idiom recognition, no contract recovery, and poor anomaly indication.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Track how variables are used (array indexing → `index`, size check → `size`, function result → `result`) to generate semantic names instead of `v0`, `v1`
+2. **Recover struct field names from constructor assignments**: Analyze constructor code to identify field assignments (e.g., `ptr->field_0 = v2` in constructor should infer field name `value`)
+3. **Add algorithm and idiom comments**: Recognize patterns like virtual dispatch, RAII, exception handling and add explanatory comments (e.g., "// Virtual function call via vtable")

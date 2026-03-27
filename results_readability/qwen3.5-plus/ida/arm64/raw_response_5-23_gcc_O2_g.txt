@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic auto-generated names (`v0`, `v1`, `v2`, `v3`, `result`) instead of semantic names like `page_size`, `exec_mem`, or `counter`. Some original names preserved (`counter`, `arr`, `dst`, `src`) but majority are opaque.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved accurately (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). A few generic names exist (`sub_810`, `start`) but core test functions maintain semantic clarity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `57072` (should be `0xDEF0`), `282` (line number + counters), `30` (sysconf constant). String literals preserved but numeric constants lose original macro semantics.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Register annotations (`// x0`, `// w0`), stack offsets (`[xsp+10h] [xbp+10h]`), and type casts (`(_QWORD *)`, `(__int64)`) create visual clutter. Some compiler artifacts remain but don't completely obscure logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as natural `for`/`while` constructs. However, aggressive constant folding eliminates original control structure (e.g., `call_macro_constants()` returns `64` directly instead of calling `param_macro_constants(2048)`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved well with appropriate granularity. Some caller functions collapsed into constants losing call relationship visibility. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Some complex functions (`test_asm_features`) have forward references that slightly disrupt flow but remain traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding creates redundancy (same printf calls in `param_builtin_macros` and `call_builtin_macros`). Some optimization artifacts visible but not severely impacting comprehension.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses ARM64-specific types (`__int64`, `__int32`) instead of standard C types (`size_t`, `int32_t`). Original type information partially lost (e.g., `atomic_uint*` vs `int*`). Pointer types generally accurate.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered correctly (`arr[5]`, `result[4]`, `v9[2]`). No complex structs in this codebase to evaluate. Stack frame layout annotations provide some structure hints.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts visible: `(_QWORD *)`, `*(_DWORD *)`, `(char *)v9 + 4 * v0++`. Pointer arithmetic exposed without safety annotations. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments beyond auto-generated register annotations (`// x0`, `// w0`). No semantic explanations for logic, algorithms, or recovered patterns. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Assembly patterns converted to C but not identified as such (e.g., atomic operations shown as `_aarch64_ldadd4_acq_rel` without explanation). No design pattern recognition visible.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (12 functions) but no inline anomaly flags. No warnings about uncertain recoveries or potential undefined behavior in recovered code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Function contracts completely absent. Error conditions not explained (e.g., when `mmap` returns `MAP_FAILED`).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code but no call graph documentation. Global variable usage (`global_var`, `_aarch64_have_lse_atomics`) shown but relationships not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No header separation or logical grouping. Original source's section organization (5.2 preprocessing, 5.3 assembly) not preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 12 external functions failed to decompile (`memcpy`, `mmap`, `printf_chk`, etc.). Would require significant stubbing to compile. Architecture-specific intrinsics need platform headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+5+6)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (3+4+5+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.72/10
+```
+
+### Overall Readability Score: **5.7/10**
+
+### Critical Defects:
+- **Variable names generic**: `v0`, `v1`, `v2` should be `page_size`, `exec_mem`, `counter` based on usage context
+- **Magic numbers unexplained**: `57072` should show as `0xDEF0` or `PLATFORM_DEFAULT_OFFSET`; `282` loses line number semantics
+- **No semantic comments**: Original source had extensive documentation; decompiled code has zero explanatory comments
+- **Constant folding obscures logic**: `call_macro_constants()` returns `64` directly, hiding the actual function call relationship
+- **12 external functions failed**: Critical libc functions (`mmap`, `memcpy`, `printf`) not recovered, requiring manual stubs
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names largely preserved (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`), maintaining semantic connection to source intent.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or error handling documentation recovered; critical for understanding function behavior and safety requirements.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming**: Analyze usage patterns to infer names (e.g., variables used with `sysconf(30)` should be `page_size`, variables passed to `mmap` should be `exec_mem`)
+2. **Recover constant semantics**: Detect folded constants and annotate with original macro names where inferable (e.g., `1024` → `MAX_SIZE`, `57072` → `0xDEF0`)
+3. **Add decompilation confidence annotations**: Flag uncertain recoveries with comments like `// DECOMPILED: atomic operation recovered as intrinsic` or `// UNCERTAIN: indirect call target not resolved`

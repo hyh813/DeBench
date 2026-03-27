@@ -1,0 +1,165 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+Justification: Variables use generic patterns like `lVar1`, `iVar2`, `sVar3`, `puVar1`, `plVar3`, `plVar4` which obscure semantic meaning. While `obj`, `a`, `b` are somewhat meaningful, the predominant use of type-prefixed generic names (l=int64, i=int, s=size_t, p=pointer) makes tracking purpose extremely difficult. For example, `lVar1` in `test_cpp_rtti` represents a pointer to RTTIDerivedA but is completely opaque.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+
+Justification: Test functions are correctly named (`test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`), and template functions are well-handled (`template_max<int>`, `template_swap<int>`). However, many helper functions use cryptic addresses (e.g., `FUN_00101020`, `FUN_00101040`) and some class methods lack proper namespacing (e.g., `virtual_func` instead of `Base::virtual_func`).
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Multiple magic numbers appear without explanation: `0x2a` (42), `0x47` (71), `0x28a` (650), `0x16` (22), `0x125c` (4704). While these match expected return values, they obscure the computation logic. String literals like "Test" are preserved, but the relationship between computed values and source expressions is lost.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Justification: Significant compiler artifacts include: stack canary checks (`__stack_chk_fail`), undefined function calls (`(*(code *)(undefined *)0x0)()`), multiple "WARNING" comments about unreachable blocks, and "WARNING: Unknown calling convention" messages. The `test_cpp_member_func` shows excessive noise with manual string null-termination loops that should be abstracted.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Justification: Basic control flow is preserved - if/else structures, loops, and returns are recognizable. However, some functions are reduced to constant returns (e.g., `test_cpp_virtual_func` returns `0x2a` directly), losing the original computation logic. The `call_virtual_func` has a warning about unresolved indirect jump.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Functions are appropriately sized with good separation between test functions and helper methods. Template instantiations are properly separated (`template_max<int>` vs `template_max<double>`). Member functions are correctly extracted from classes. Minor issue: some thunk functions add noise.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns are used appropriately. The main disruption is from stack canary checks that add conditional branches, but these are expected at -O0.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+Justification: No significant redundancy observed. Dead code from unreachable blocks is flagged with warnings. Loop unrolling is minimal (the string null-termination in `test_cpp_member_func` could be abstracted but isn't truly redundant).
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+
+Justification: Basic types are correct (int, double, long, size_t). However, `undefined4`, `undefined8` appear for uninitialized or generic data. Pointer types are generally correct but some function pointers lack proper signatures. The `Base*` in `call_virtual_func` is correctly typed.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+
+Justification: `SimpleClass` is partially recovered with `name[32]` array and `value` field. Template class `Container<T>` is well-recovered with `data[10]` and `size` fields. However, some class hierarchies have overlapping field warnings (e.g., "Struct 'DiamondDerived': ignoring overlapping field 'super_MiddleB'"). Virtual inheritance pointer manipulation is complex but accurate.
+
+### 11. Type Safety
+**Score: 6/10**
+
+Justification: Some unsafe patterns present: the virtual function call in `call_virtual_func` uses `(**obj->_vptr_Base)()` without proper signature. The `test_cpp_rtti` function has complex pointer arithmetic for dynamic casting. No explicit bounds checking comments despite array access. Minor issues with void pointer arithmetic in some places.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 7/10**
+
+Justification: DWARF original prototypes are preserved (e.g., "DWARF original prototype: int virtual_func(Base * this, int x)"), providing valuable type information. Warning comments flag issues like "Unknown calling convention" and "Removing unreachable block". However, algorithm explanations are absent, and no documentation of C++ semantics (virtual dispatch, RTTI mechanisms).
+
+### 13. Idiom Recognition
+**Score: 6/10**
+
+Justification: C++ features are partially recognized: virtual functions show vtable usage, templates are properly instantiated, constructors/destructors are identified. However, lambda expressions are completely absent (likely inlined), and exception handling logic is minimal. The "virtual thunk" comments indicate some understanding of vtable mechanics.
+
+### 14. Anomaly Indication
+**Score: 7/10**
+
+Justification: Good warning coverage: "WARNING: Unknown calling convention", "WARNING: Could not recover jumptable", "WARNING: Subroutine does not return". However, some anomalies could be better explained - the unresolved local variables in `test_cpp_rtti` could use more detail about what's missing.
+
+### 15. Assertion & Contract Recovery
+**Score: 4/10**
+
+Justification: No explicit preconditions, postconditions, or invariants are documented. The stack canary checks imply some runtime validation but aren't explained. Error handling paths are minimal - functions like `test_cpp_exception` just show the throw mechanism without the catch logic recovery.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 7/10**
+
+Justification: Function call relationships are clear - `main` calls `test_cpp_oo_features`, which calls individual test functions. Virtual dispatch relationships are shown through vtable access. Static member access (`LifecycleClass::instance_count`) is correctly represented. However, callback relationships and global variable usage could be more explicit.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Justification: Functions are grouped logically: test functions together, template instantiations together, class methods grouped by class. The decompilation includes initialization (`_GLOBAL__sub_I_`) and finalization (`_fini`) functions. Minor issue: all functions in single output rather than logical sections.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+Justification: Uses standard library functions (`operator_new`, `operator_delete`, `strlen`, `strcmp`). External dependencies are clear (std::ios_base, __cxa_* functions). Would require C++ runtime stubs to compile standalone. No compiler-specific hacks beyond standard -O0 debug output.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+5+4+4)/4 = 4.00
+L2_avg = (6+7+7+8)/4 = 7.00
+L3_avg = (6+6+6)/3 = 6.00
+L4_avg = (7+6+7+4)/4 = 6.00
+L5_avg = (7+7+7)/3 = 7.00
+
+Overall = (4.00 × 0.30) + (7.00 × 0.25) + (6.00 × 0.20) + (6.00 × 0.15) + (7.00 × 0.10)
+        = 1.20 + 1.75 + 1.20 + 0.90 + 0.70
+        = 5.75/10
+```
+
+### Overall Readability Score: 5.75/10
+
+---
+
+### Critical Defects
+
+1. **Variable naming is opaque**: Generic names like `lVar1`, `iVar2`, `puVar1` make tracking data flow extremely difficult - should infer names from usage patterns (e.g., `lVar1` in RTTI code is `derived_ptr`)
+
+2. **Computation logic replaced with constants**: Functions like `test_cpp_virtual_func` return `0x2a` directly instead of showing the actual computation (6+15+6+15=42), losing the algorithmic intent
+
+3. **Excessive noise from stack canaries**: The `__stack_chk_fail` infrastructure adds significant noise that obscures the actual logic, especially in `test_cpp_member_func`
+
+4. **Lambda expressions completely missing**: The `test_cpp_lambda` function returns constant `0x55` (85) without any lambda recovery, losing a key C++14 feature
+
+5. **Exception handling logic not recovered**: `test_cpp_exception` only shows `__cxa_throw` without the try-catch structure recovery
+
+---
+
+### Best Quality Aspect
+
+**Function Decomposition (7/10)** - The decompiler correctly separates template instantiations, class methods, and test functions. Template functions like `template_max<int>` and `template_swap<int>` are properly distinguished, and class methods are grouped logically.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (3/10)** - The predominant use of type-prefixed generic variables (lVar1, iVar2, sVar3, puVar1, plVar3) completely obscures semantic meaning. At -O0 with debug symbols available, the decompiler should be able to infer much better names from usage patterns and debug info.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Track how variables are used (array indexing, string operations, arithmetic) to generate semantic names. For example, `plVar3` used in `__dynamic_cast` should be named `derived_ptr` or `cast_result`.
+
+2. **Recover computation logic instead of constant folding**: Even at -O0, some functions return pre-computed constants. The decompiler should attempt to recover the expression that produces the value, not just the value itself.
+
+3. **Abstract compiler infrastructure noise**: Stack canary checks, initialization stubs, and thunk functions should be clearly labeled or optionally hidden to focus on application logic. The manual string null-termination loop should be recognized as `strncpy` or `memset`.

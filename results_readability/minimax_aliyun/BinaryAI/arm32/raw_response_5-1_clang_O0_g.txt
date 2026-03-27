@@ -1,0 +1,91 @@
+# Decompilation Readability Assessment
+
+## Evaluation of `SimpleClass::getValue` and Related Functions
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (iVar1, iVar2, pvVar1, local_c, local_10, aSStack_2c). The original source uses semantic names like `value`, `name`, `data`, `size`, `instance_count` - all lost in decompilation. Even stack objects use cryptic names like `aLStack_14` instead of descriptive names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names match original source well (SimpleClass::getValue, SimpleClass::setValue, test_cpp_member_func). However, operator overloads are mangled (operator_, operator__) and some internal functions use cryptic names. The core test functions are correctly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout without explanation: `0x1234` (class ID), `0x64` (100), `0xc8` (200), `0x1f` (31 for name buffer), `0x2a` (42 for exception throw). The original source uses named constants like `sizeof(name)-1` which are lost. Only `0x1234` is somewhat inferable from context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Moderate noise from decompilation artifacts including many undefined types (undefined4, undefined ***), redundant type casts, and auto-generated wrapper functions. However, core logic functions are relatively clean compared to template/STL heavy code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper loops and conditionals. At -O0, the decompilation correctly recovers for/while structures. Some indirect vtable calls (e.g., `(***(code ***)param_1)(param_1,param_2)`) are awkward but necessary for virtual dispatch.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are well-decomposed with appropriate granularity. Each member function (constructor, getValue, setValue, compute) is separate. The test functions properly call individual methods. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads mostly top-to-bottom without excessive forward jumps. Early returns are used appropriately in functions like getData(). No goto abuse or spaghetti code patterns.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy at -O0. Loop unrolling is minimal since optimization is disabled. Code is relatively clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4` instead of `int`. Function pointers use imprecise `code ***` and `code **` types. The original `int` return types become `undefined4`. Boolean returns become `bool` in some places but `byte` in others (operator== returns `byte`). Const correctness is partially preserved.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Class layouts are partially recovered - SimpleClass has value at offset 0 and name at offset 4, but accessed via raw pointer arithmetic (`*(int *)this`, `(char *)(this + 4)`) rather than struct field notation. Field names like `value` are lost, becoming generic offsets.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple type safety issues: extensive use of `undefined4` casts, raw pointer arithmetic throughout, function pointer type confusion (`code ***` vs proper function pointer), and no bounds checking annotations. The original source's bounds check in getData() is present but uses raw pointer math.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated function headers with addresses (e.g., "// Function: SimpleClass::getValue @ 0x12464"). No explanatory comments about algorithm, intent, or non-obvious logic. Zero useful documentation for understanding the code.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ idioms are present but not named or highlighted. RAII patterns (constructor/destructor pairs) exist but not identified. Virtual function mechanism is decompiled but vtable structure not explained. Template instantiation is recognized (template_max_int_) but not documented as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly warnings. Indirect calls through vtables are presented as normal code without flags. The complex multiple inheritance and virtual inheritance handling has no indicators of potential issues. Code presents potentially incorrect assumptions as fact.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source has implicit contracts (e.g., getData requires idx < size) that are not recovered. No error handling expectations documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present and traceable. Virtual function calls show the vtable mechanism. However, no documentation of who calls what, callback relationships, or global state dependencies. The static instance_count usage is visible but not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically by class (SimpleClass functions together, LifecycleClass functions together). Test functions are properly separated. However, the massive 2200+ line output is a single flat listing without namespace or file structure recovery.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would not compile as-is. Heavy use of undefined types (undefined4, undefined ***), missing struct definitions, no includes, and many external function declarations needed. Significant patching required for standalone compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (iVar1, local_c, aSStack_2c) - original semantic names like `value`, `name`, `data` are lost
+- No comments explaining any logic - only auto-generated function headers with addresses
+- Type precision severely degraded: `int` becomes `undefined4`, proper function pointers become `code ***`
+- Magic numbers everywhere without explanation (0x1234, 0x64, 0xc8, 0x1f, 0x2a)
+- No struct field recovery - raw pointer arithmetic used instead of struct.field notation
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+Functions are well-separated with appropriate granularity. Each class method is properly isolated, and test functions correctly call individual methods.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Every variable uses generic names that provide no semantic information. Combined with poor comment quality (2/10), the code is extremely difficult to understand without referring to the original source.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - e.g., variables used as array indices should be named `index` or `idx`, variables storing sizes should be `size` or `count`
+2. Add explanatory comments for non-trivial logic, especially around vtable dispatch, exception handling, and virtual inheritance
+3. Recover struct field access notation instead of raw pointer arithmetic - `(this + 4)` should be `this->name` when the struct layout is known

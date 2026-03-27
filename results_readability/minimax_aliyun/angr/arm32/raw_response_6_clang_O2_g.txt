@@ -1,0 +1,92 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Parameters use generic names `a0`, `a1` instead of `dst`, `src`. Local variables are `v0`, `v1`, `v2`, `v3` - completely non-descriptive. Only `dst` and `len` in param_strcpy are somewhat meaningful, but the majority of variables obscure their purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions like `param_strcpy`, `call_strcpy`, `param_memcpy` correctly match source names. However, internal functions like `sub_400c48`, `call_weak_fn`, `frame_dummy` use generic naming. The core test functions are well-named.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals like `"Value: %d, Name: %s\n"` are preserved correctly. However, magic numbers like `4294967295` (0xffffffff for -1) appear without explanation. The constant `42` used for success is also unexplained. Some literals clear, others are magic numbers.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution: redundant `strlen(dst)` called twice in param_strcpy, spurious goto statements with labels like `LABEL_401304`, confusing `armg_calculate_condition()` calls throughout, and dead code patterns. The code is cluttered with compiler artifacts that obscure logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses goto statements extensively (e.g., `goto LABEL_401304`) instead of natural if-else structures. The param_strcmp has convoluted conditional logic with multiple branches. At -O0 this restructuring is unnecessary and indicates poor decompilation.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable size (30-80 lines). The test functions are appropriately separated. Minor issue: some functions like `test_system_calls` are large but this matches the source organization.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom but has goto-based jumps that disrupt flow. The `armg_calculate_condition` expressions create non-linear branching. Early returns present but used appropriately.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Critical redundancy in param_strcpy: `strlen(dst)` called twice unnecessarily. Multiple redundant calls in param_printf. Dead code from register spilling visible. Loop constructs have unrolled patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Parameters mostly correct: `char *a0, char *a1` for param_strcpy, `void*` for memcpy. However, return types inconsistent - some functions return `unsigned int` where `int` would be appropriate. Some `char` used where `int` expected.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: FILE* partially recovered as `typedef struct FILE { } FILE;` - empty definition. sockaddr reconstructed but fields not named. pthread_t not properly typed. Basic types work but composite types lack field details.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations: pointer arithmetic on void* (e.g., `p + 1` in param_malloc_free), cast from int to pointer in pthread_create. Not severely dangerous but requires careful analysis.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining algorithm logic, no decompilation confidence indicators, no API contracts. The code is completely devoid of explanatory comments. Even auto-generated "may vary" comments are absent.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library functions (strcpy, strlen, memcpy, pthread_create) correctly identified. Some patterns like mutex lock/unlock recognized. However, design patterns (producer-consumer, thread pool) not explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. The decompiler presents everything as confident output without warnings about uncertain areas.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"), no postconditions, no invariant recognition. Error return values (0xffffffff) not explained. Contracts completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No indication of which functions call which. Global variables like `g_402ad0` referenced but not explained. Some relationships inferable from structure but not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single large file. Related functions (param_xxx and call_xxx) grouped together. Static functions not properly scoped. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has `extern` declarations for external references. Type issues (incomplete struct FILE) would cause compilation warnings. Some stub functions needed. Requires moderate patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Redundant function calls**: `strlen(dst)` called twice in param_strcpy - clear decompilation error
+- **Generic variable names**: `a0`, `a1`, `v0`, `v1`, `v2` obscure parameter and local variable purposes
+- **Goto spam**: Excessive goto statements with labels like `LABEL_401304` instead of natural if-else
+- **No comments**: Complete absence of explanatory comments for algorithms or intent
+- **Magic numbers**: `4294967295` used for -1 without explanation; success value `42` unexplained
+
+### Best Quality Aspect: Function Naming (Level 1, Dimension 2)
+- Test functions correctly match source names (param_strcpy, call_strcpy, param_memcpy, etc.)
+- Core functionality identifiable by name
+
+### Most Needs Improvement: Semantic Transparency (Level 4)
+- No comments, no anomaly indication, no contract recovery
+- Code presents as definitive when many areas are uncertain
+- Complete lack of documentation makes reverse engineering difficult
+
+### Top 3 Recommendations:
+1. **Eliminate redundant calls**: The double `strlen(dst)` in param_strcpy is a clear decompilation artifact that should be optimized to single call
+2. **Recover variable names from usage**: Analyze how parameters/locals are used (e.g., `a0` used as destination in strcpy should be named `dst`)
+3. **Add confidence indicators**: Flag uncertain decompilations with comments like "// UNCERTAIN: indirect call" rather than presenting as definitive

@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v1, v2, a1, a2, result) with zero semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `total` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Function names preserved (sequential_ops, single_if, if_else) but signatures are corrupted—`single_if` shows 4 parameters instead of 1, `loop_dowhile` shows 0 parameters instead of 1.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (0xffffffff, 0x100000000, 0x66666667) without explanation. Test functions print hardcoded expected values instead of computing results, making verification impossible.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise from SIMD intrinsics (__asm_pshufd, __asm_movdqa, __asm_paddd) in simple integer functions. Excessive bit masking (& 0xffffffff) on every operation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Basic if-else partially recovered but loops transformed into SIMD operations (loop_continue, goto_backward). Test functions use goto labels (lab_0x1a80) instead of structured flow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but parameter lists wrong. Helper functions like `function_1030` wrap `puts` unnecessarily. Some functions have 4+ parameters when original had 1-2.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but test functions use goto jumps (goto lab_0x1a80, goto lab_0x1a82). While loops with break patterns disrupt natural flow.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Repetitive bit masking on every return statement. SIMD vector operations repeated in loops for simple scalar integer math. No common subexpression elimination visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything promoted to int64_t regardless of original int type. Function signatures wrong (sequential_ops takes 3 int64_t instead of 3 int). Signed/unsigned distinctions lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: jmp_buf_tag struct recovered but with generic field names (e0, e1, e2). Arrays converted to pointer arithmetic. No semantic field naming.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Excessive casting throughout ((int32_t)a1, (uint32_t)(int32_t)a1). Pointer arithmetic without type safety. Function pointer types degraded to int64_t.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic. No decompilation confidence indicators. Only auto-generated file header present. Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Control flow patterns (loops, switch, state machines) not identified or named. SIMD intrinsics used where simple integer operations should appear—no idiom recovery.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious SIMD usage in integer functions. Wrong parameter counts not flagged. Test functions printing hardcoded values not indicated as problematic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or error documentation. Original test validation comments completely absent. No contract inference attempted.
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Global variables named generically (g1, g2...g21) with no semantic meaning. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Static functions not properly scoped. No header file separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes present but test functions don't actually call the decompiled functions—they print hardcoded expected values. Cannot verify correctness through execution.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+6+3+2)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):   (3+5+5+3)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type System):  (3+4+3)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):     (1+2)/2     = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):   (2+1+4+5+4)/5 = 3.20 × 0.10 = 0.320
+
+Overall Score: 3.19/10
+```
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects:
+- **SIMD intrinsics in simple integer functions**: `loop_continue`, `goto_backward`, `recursion_factorial` use __asm_pshufd/__asm_movdqa for basic arithmetic—completely obscures original logic
+- **Wrong function signatures**: `single_if` shows 4 parameters instead of 1, `loop_dowhile` shows 0 parameters instead of 1
+- **Test functions print hardcoded values**: Instead of calling actual functions, test functions print expected results directly—makes verification impossible
+- **Generic variable naming**: All variables are v1, v2, a1, a2 with zero semantic meaning
+- **Excessive bit masking**: Every return statement has `& 0xffffffff` cluttering the code
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)**: Original function names were preserved (sequential_ops, if_else, nested_if_2), providing some anchor points for understanding despite signature corruption.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)**: Complete absence of any explanatory comments, confidence indicators, or documentation—original source had extensive Chinese comments explaining each function's purpose that are entirely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and suppress SIMD intrinsics for scalar integer operations**: Simple arithmetic like `sum += i` should not generate __asm_pshufd/__asm_movdqa sequences—implement pattern recognition to recover scalar operations from vectorized code.
+
+2. **Recover accurate function signatures from calling conventions**: Analyze register usage and stack frames to determine actual parameter counts—`single_if(int x)` should not appear as `single_if(int64_t a1, int64_t a2, int64_t a3, int64_t a4)`.
+
+3. **Execute test functions to verify correctness**: Instead of printing hardcoded expected values, actually call the decompiled functions and compare results—this would immediately reveal signature and logic errors.

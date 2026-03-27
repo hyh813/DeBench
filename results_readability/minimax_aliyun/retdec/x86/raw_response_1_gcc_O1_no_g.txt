@@ -1,0 +1,106 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of source names (`a`, `b`, `c`). Local variables use cryptic names like `v1`, `v2`, `v3`, `result`. For example, in `sequential_ops`, parameters should be `a`, `b`, `c` matching source, not `a1`, `a2`, `a3`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user-defined functions retain correct names from source: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, etc. However, some CRT/utility functions have generic names like `function_10a0`, `function_10b0`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers present, e.g., `0x80000000` in division operations, `0x100000000` in mod operations. Some constants like `100`, `200` in switch statements are used directly without explanation. The boolean expression `a1 >= 0 == (a1 != 0)` is an obfuscated way to express simple conditions.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some unnecessary casts present but not overwhelming. Address range comments add noise but are manageable.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some control flow is natural (loops, conditionals), but boolean expressions are convoluted. Example: `a1 >= 0 == (a1 != 0)` instead of simple `a1 > 0`. The `if_else` function uses an overly complex expression `(bool)(a1 >= 0 == (a1 != 0))` when source clearly uses `if (x > 0)`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and maintain single responsibility. Each test function (`test_control_flow_l1`, `l2`, `l3`) is separate. No excessive inlining or outlining artifacts observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but some forward jumps exist in complex functions like `loop_multi_exit` with goto labels. Early returns used appropriately in some functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling present in `loop_for_fixed` but manageable. Common subexpression elimination artifacts are minimal.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently which is good. Some signed/unsigned mismatches: `loop_while` takes `int32_t *` but source takes `int`. Function parameters sometimes lose signedness (e.g., `uint32_t a1` in `if_elseif_long`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Basic struct recovery for `__jmp_buf_tag` is present with fields `e0`, `e1`, `e2`. However, field names are generic. The source's simple `int arr[]` in `loop_break` is not recovered as an array type.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. In `loop_break`, pointer arithmetic `*(int32_t *)(4 * v3 + (int32_t)&v2)` is error-prone. The `op_div` function has complex and potentially unsafe 64-bit arithmetic for what should be simple division.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only address range comments like `// Address range: 0x13aa - 0x13bd` are present. No algorithm explanation, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like switch statements are recognized. However, the source's clear state machine pattern in `state_machine` is decompiled to nested if-else chains, losing the semantic intent. Duff's device is partially recognized but not identified as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code or potential issues. The `call_func_ptr` function returns an uninitialized `result`, which is a bug - no warning is given. Indirect calls that couldn't be resolved are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The source's explicit comments about test cases (e.g., "测试验证: 输入5,7,3应返回21") are completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are implicit in the code but not documented. No comments indicating which functions call which. Global variables like `g1`-`g9` have no usage documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically (test functions together, helper functions together). Static functions are properly scoped. However, CRT initialization functions are interleaved with user code.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code uses standard library headers (`<stdio.h>`, `<setjmp.h>`, `<stdint.h>`). Some functions like `__stack_chk_fail_local` are compiler-specific. Would require linking with libc.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 4 + 7) / 4 = 5.25
+L2_avg = (5 + 8 + 6 + 7) / 4 = 6.50
+L3_avg = (7 + 6 + 6) / 3 = 6.33
+L4_avg = (2 + 4 + 2 + 2) / 4 = 2.50
+L5_avg = (4 + 7 + 6) / 3 = 5.67
+
+Overall = (5.25 × 0.30) + (6.50 × 0.25) + (6.33 × 0.20) + 
+          (2.50 × 0.15) + (5.67 × 0.10)
+        = 1.575 + 1.625 + 1.266 + 0.375 + 0.567
+        = 5.41/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects (Bullet List)
+- Variable naming uses generic names (`a1`, `a2`, `v1`, `v2`) instead of source names (`a`, `b`, `c`, `temp1`, `temp2`)
+- Boolean expressions are convoluted: `(bool)(a1 >= 0 == (a1 != 0))` instead of simple `a1 > 0`
+- No comments explaining algorithms, test cases, or decompilation confidence
+- `if_else` function has incorrect logic - returns `(bool)(a1 >= 0 == (a1 != 0))` which doesn't match source's `if (x > 0) return 1; else return 0;`
+- `loop_while` takes `int32_t *` parameter but source takes `int` - type mismatch
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (8/10)**
+- **Why?** Most user-defined functions retain their original names from source, making it easy to identify the purpose of each function.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (2/10)**
+- **Why?** The decompiled code has almost no useful comments - only address range annotations. All algorithm explanations, test case validations, and semantic context from the source are completely lost.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Parameters `a1, a2, a3` should be named `a, b, c` when they map directly to source parameters. Local variables like `v1` used as counters should be named `i` or `count`.
+2. **Simplify boolean expressions**: The pattern `a >= 0 == (a != 0)` should be recognized as equivalent to `a > 0` and simplified accordingly.
+3. **Add semantic comments**: Include test case comments from source (e.g., "// 测试验证: 输入5,7,3应返回21"), algorithm explanations, and decompilation confidence indicators for indirect calls.

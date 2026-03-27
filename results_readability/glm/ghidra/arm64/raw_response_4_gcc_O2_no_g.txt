@@ -1,0 +1,106 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (e.g., `param_1`, `iVar1`, `lVar1`), providing no semantic hint about their purpose (e.g., `count`, `sum`, `args`). In `varargs_func`, `iVar2` represents a stack offset but is named like a generic integer.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names from the symbol table are preserved perfectly (e.g., `cdecl_func`, `test_calling_conventions`, `ret_small_struct`), accurately reflecting the original source's intent and making the high-level flow easy to follow.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers resulting from constant propagation (e.g., `0xf` for 15, `0x32` for 50, `0x38` for stack offset 56) without comments explaining their derivation, obscuring the original logic.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While standard compiler artifacts like stack canary checks (`___stack_chk_guard`) are present, the decompiler adds noise like `undefined8` and `undefined4` types. Warnings like "Removing unreachable block" are helpful but clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Basic loops are recovered as `do-while` structures (e.g., in `varargs_func`), which is acceptable. However, the logic inside `varargs_func` is reduced to raw stack pointer arithmetic (`iVar2 = iVar2 + 8`), making the flow unnatural compared to the source's `va_arg` usage.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: The decompiler correctly identifies individual functions, but `test_calling_conventions` becomes a large monolith (approx. 60 lines) because the compiler inlined the small helper functions, losing the original modular structure.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with minimal forward jumps. The control flow is generally linear, even if the logic within blocks is complex due to optimization.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately reflects the compiler's optimizations, such as removing dead code and inlining functions. There is no redundant decompilation artifact; the code is concise, albeit highly optimized.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Significant type confusion exists, particularly in `func_mixed_args`. The source signature `(int, char*, double, long long)` is decompiled as `(double, int, char*, long)`, indicating a failure to correctly map AArch64 integer vs. floating-point register arguments.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are almost entirely lost. `LargeStruct` passed by value is represented as a pointer `long *param_1`, and `SmallStruct` returned by value is returned as a packed `ulong` with bitwise operations, completely obscuring the struct semantics.
+
+**11. Type Safety:** Score: 5/10
+Justification: The use of `undefined8` and `undefined4` creates type ambiguity. The representation of struct operations as raw pointer arithmetic (e.g., `*(param_1 + 1)`) and bit-packing (`param_1 & 0xffffffff | param_2 << 0x20`) is technically accurate to the binary but type-unsafe regarding the source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to auto-generated warnings (e.g., "WARNING: Removing unreachable block"). There are no comments explaining the logic, such as the stack manipulation in `varargs_func` or the bit-packing in `ret_small_struct`.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level idioms are not recognized. The `va_list` pattern in `varargs_func` is shown as raw stack offset math, and the struct return in `ret_small_struct` is shown as bitwise shifting, failing to abstract these common C patterns.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: The decompiler flags unreachable blocks, but it fails to flag the suspicious stack arithmetic in `varargs_func` or the parameter type mismatch in `func_mixed_args` as potential anomalies or decompilation uncertainties.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the requirement that `param_1` in `func_struct_byptr` should not be NULL is checked in code but not documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function names are preserved, so the relationships between functions are clear where calls exist. However, in `test_calling_conventions`, the calls are replaced by constants, breaking the explicit cross-reference to the logic being tested.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions. While the names are good, there is no logical grouping or indication of which functions belong to which "section" (e.g., Calling Conventions vs. Parameter Passing) as seen in the source.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses non-standard types like `undefined8` and `undefined4` which will not compile without manual definition or replacement. The signature of `func_mixed_args` is also incorrect relative to the source headers.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 9 + 3 + 6) / 4 = 5.5
+L2_avg = (6 + 7 + 8 + 8) / 4 = 7.25
+L3_avg = (4 + 2 + 5) / 3 = 3.67
+L4_avg = (2 + 2 + 4 + 1) / 4 = 2.25
+L5_avg = (7 + 5 + 3) / 3 = 5.0
+
+Overall = (5.5 × 0.30) + (7.25 × 0.25) + (3.67 × 0.20) + 
+          (2.25 × 0.15) + (5.0 × 0.10)
+Overall = 1.65 + 1.8125 + 0.734 + 0.3375 + 0.5
+Overall = 5.03 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.0/10
+
+### Critical Defects (Bullet Points)
+- **Type Confusion in Mixed Arguments**: `func_mixed_args` has incorrect parameter types and order (`double` vs `int`), likely due to AArch64 ABI register misclassification.
+- **Loss of Struct Semantics**: Large structs passed by value (`func_struct_byval`) are represented as pointers, and small structs returned (`ret_small_struct`) are represented as bit-packed integers, losing the data structure abstraction.
+- **Varargs Obfuscation**: The `va_list` logic in `varargs_func` is reduced to raw stack pointer arithmetic (`iVar2 = -0x38`), making the variable argument handling unreadable.
+- **Constant Propagation Hiding Logic**: In `test_calling_conventions`, function calls are replaced by hardcoded results (e.g., `0xf`), removing the evidence of the calling convention tests.
+- **Generic Naming**: Variables are exclusively generic (`param_1`, `iVar1`), providing no semantic context about their role in the algorithm.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (9/10)
+- **Why?** The decompiler successfully preserved all original function names from the symbol table, making the high-level purpose of each code block immediately identifiable despite the optimization.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Composite Type Recovery (2/10)
+- **Why?** The decompiler failed to recover any user-defined structs, representing them instead as raw pointers or integers, which fundamentally breaks the readability of the data structures used in the program.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve AArch64 Mixed-Type Parameter Recovery**: Enhance the analysis engine to correctly distinguish between integer and floating-point registers in the AArch64 ABI to fix parameter ordering in functions like `func_mixed_args`.
+2.  **Detect and Abstract Varargs Patterns**: Implement pattern recognition for `va_list` usage (stack walking loops) to reconstruct `va_start`/`va_arg` semantics instead of showing raw pointer arithmetic.
+3.  **Reconstruct Structs from Register Packing**: Detect bit-packing operations (shifts and ORs) in return values or register passing to reconstruct small struct types, and identify hidden pointer parameters for large struct pass-by-value scenarios.

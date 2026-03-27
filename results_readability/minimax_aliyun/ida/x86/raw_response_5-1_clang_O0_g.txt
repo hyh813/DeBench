@@ -1,0 +1,105 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `r1`, `r2`, `v0`, `v1`, `v2`, `Data` throughout. For example, in `test_cpp_member_func()`, variables `r1` and `r2` hold computed results but lack semantic meaning. The decompiler uses stack location comments (e.g., `[esp+18h] [ebp-30h]`) instead of inferring purpose from usage patterns.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main test functions correctly preserve original names: `test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`. However, utility functions use cryptic addresses: `sub_1030`, `sub_1190`, `sub_123C`. Class methods like `SimpleClass::getValue` and `SimpleClass::setValue` are properly named, but infrastructure functions lack semantic clarity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `0x1234` appears in `SimpleClass::getClassID()` returning 4660 without explanation. Numbers like `5u`, `10`, `20` in template instantiations are used directly. The literal `-1` in `LifecycleClass::getData` is somewhat self-explanatory, but `31` in strncpy boundary and array size limits lack symbolic names.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Generally clean output without excessive debug instrumentation. However, unusual artifacts include `__asm { jmp dword ptr [ebx+8] }` in `sub_1030`, and many empty functions like `_x86_get_pc_thunk_bx()` with just semicolons. The decompilation failed on 24 functions showing "FAILED to decompile" messages.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally readable with proper if-else structures and loops. In `test_cpp_lambda()`, lambda invocation is clear despite complex closure handling. The virtual function dispatch in `call_virtual_func()` uses standard vtable indirect call pattern. Some computed jumps in diamond inheritance handling are complex but structurally correct.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each test function is appropriately sized (30-60 lines). Class methods are properly separated. The template instantiations `template_max<int>`, `template_max<double>` are correctly distinguished. Good granularity between `test_cpp_*` functions. Minor issue: some std::internal functions could be combined.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Nested conditions in `test_cpp_exception()` and `test_cpp_rtti()` are manageable. Early returns absent but not missed. Some complex pointer arithmetic in diamond inheritance (`*(int *)((char *)&obj.dataA + *((_DWORD *)obj._vptr$MiddleA - 3))`) disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code. Loop constructs in `LifecycleClass` constructor are properly unrolled/preserved. The container template implementations are clean without duplication. Minor redundancy in similar vtable setup code across constructors.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct: `int`, `double`, `size_t`, `bool`. Integer types lose signedness in some cases (e.g., `size_t s` becomes `unsigned int`). Function pointers properly typed in virtual calls (`int (__cdecl *)(Base *, int)`). Some `void*` in template internals but acceptable.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Classes recovered well: `SimpleClass` with `value` and `name[32]`, `Base` and `Derived` with proper inheritance, `Container<int>` and `Container<double>`. Member access patterns (`obj.dataA`, `obj.dataB`) preserve structure. Slight issues: some internal std::tuple structures show as `_BYTE gap0[0]`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Most casts are necessary and correct. No obvious buffer overflow patterns. Virtual function calls through vtable are type-safe. Minor concerns: raw pointer arithmetic in diamond inheritance (`(char *)&obj.dataA + offset`), some `void**` conversions in smart pointer internals.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Header comments identify decompiler ("Decompiled by IDA Pro 9.1") and binary path. Stack frame comments (e.g., `[esp+18h] [ebp-30h]`) present but not useful. No explanatory comments about complex patterns like virtual inheritance or vtable layout. "positive sp value has been detected" warning present but doesn't explain impact.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: C++ idioms recognized: operator overloading (`Point::operator+`, `Point::operator==`), virtual dispatch (`*obj->_vptr$Base`), RAII with smart pointers. Template instantiation patterns clear. Thunk functions (`_ZThn8_N12MultiDerived5funcBEv`) properly identified. Some lambda internals confusing but structurally correct.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "FAILED to decompile" for 24 functions clearly marked. Failed functions include critical runtime support (`__cxa_throw`, `__cxa_begin_catch`, `strlen`, etc.). Warning about "positive sp value has been detected" in `_start`. However, no indication of uncertainty in resolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No explicit preconditions or postconditions documented. Bounds checking in `Container::get` (idx < 0 || idx >= size) not explained as defensive programming. The `__cxa_throw` pattern in exception test is not annotated as intentional test. No contract documentation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are traceable within each test function. Class method calls clearly show object + method pattern. Virtual dispatch through vtable is documented (`_vptr$Base`). However, no explicit comments about call graphs or callback relationships. Static method calls like `SimpleClass::getClassID` properly identified.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - test functions first, then class methods, then std internal implementations. Main entry point clearly identified. Class implementations grouped by class. Some std internal functions interleaved but understandable. No file structure provided (single output).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many undefined references: `_gmon_start__`, `frame_dummy`, `_do_global_ctors_aux`, libc functions (`printf`, `strlen`, `strcmp`), and C++ runtime (`__cxa_throw`, `__cxa_allocate_exception`). The "FAILED to decompile" entries indicate missing symbols. Would require significant patching to compile standalone.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Calculation:**
+- L1 (30%): (4+6+5+7)/4 = 5.5 × 0.30 = 1.65
+- L2 (25%): (7+8+7+8)/4 = 7.5 × 0.25 = 1.875
+- L3 (20%): (7+8+7)/3 = 7.33 × 0.20 = 1.467
+- L4 (15%): (5+7+5+3)/4 = 5.0 × 0.15 = 0.75
+- L5 (10%): (5+7+4)/3 = 5.33 × 0.10 = 0.533
+
+**Total:** 5.78 → rounded to 5.8/10
+
+**Critical Defects:**
+- Variable names are universally generic (`r1`, `r2`, `v0`, `v1`) losing all semantic meaning from source
+- 24 critical functions failed to decompile (exception handling, runtime, libc) - severe information loss
+- No explanatory comments for complex C++ patterns (virtual inheritance, vtable layout, multiple inheritance)
+- Diamond inheritance uses obfuscated pointer arithmetic without explanation of the virtual base offset mechanism
+- Literal values like `0x1234` used without symbolic constant names
+
+**Best Quality Aspect:** Type System Fidelity (score 7.3/10)  
+Class structures are well-recovered with proper member names, inheritance relationships clear, and template instantiations distinguished correctly.
+
+**Most Needs Improvement:** Lexical Clarity (score 5.5/10)  
+Variable naming is almost entirely generic - even result variables should be named based on what they represent (e.g., `getValue_result` instead of `r1`).
+
+**Top 3 Recommendations:**
+1. Infer variable names from semantic usage: `r1` used as result of `getValue()` call should be named `getValue_result` or similar
+2. Add explanatory comments for complex C++ ABI patterns (virtual inheritance offsets, thunk functions, vtable layout)
+3. Detect magic numbers and suggest symbolic constants; annotate `0x1234` as `CLASS_ID` or similar meaningful name
+4. Recover precondition/postcondition contracts from bounds checking and null pointer tests

@@ -1,0 +1,128 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 4/10**
+Justification: Parameters use generic single letters (`a`, `b`, `c`, `x`, `op`) while source used descriptive names like `packet_size`, `target`. Local variables are `v2`, `v3`, `i`, `j` - only `i`/`j` for loop indices are acceptable. The decompiler failed to infer semantic meaning from usage patterns (e.g., `temp1 = a + b` should suggest `sum`).
+
+### 2. Function Naming Quality
+**Score: 10/10**
+Justification: Nearly all function names match original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `goto_forward`, `duffs_device`, `recursion_factorial`, `state_machine`. Excellent verb usage and semantic accuracy.
+
+### 3. Literal Clarity
+**Score: 6/10**
+Justification: Magic numbers like `1000` in `infinite_loop` and `101` in `multi_return` lack explanations. However, switch case values are correct (e.g., `case 0: return 10`). The `switch_small` function returns `15` for case 0 (10+5) but doesn't explain the computation - this is a semantic transparency issue.
+
+### 4. Noise Reduction
+**Score: 9/10**
+Justification: Clean decompilation with minimal compiler artifacts. No debug traces, frame pointer manipulation, or redundant casts. Stack variable declarations like `int v2; // [sp+14h] [bp-4h]` are present but don't impede readability significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Most control flow is natural - if-else, switch-case, for/while loops all correctly identified. The `goto_forward` was properly converted to if-else. The `duffs_device` uses goto labels which is expected for this pattern. Minor: `loop_external_state` uses for-loop instead of while but semantics are preserved.
+
+### 6. Function Decomposition
+**Score: 9/10**
+Justification: Each function maintains appropriate granularity matching source. No monolithic functions or over-fragmentation. Parameter counts match original (e.g., `duffs_device(int *dst, int *src, int n)`). Static helper functions (`double_value`, `triple_value`, `op_add`) properly extracted.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in `multi_return`, `conditional_return`. Switch statements create some non-linearity but are necessary. No excessive forward jumps disrupting flow.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No dead code observed. Loop unrolling is minimal. Common subexpressions like `2 * x` appear repeatedly but are appropriate for the computation. The `duffs_device` has some redundancy in copy operations but reflects the original pattern.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Integer types are generally `int` which is appropriate for ARM. Function pointer types in `call_func_ptr_array` use `_DWORD` array instead of proper function pointer signatures - `v3[idxa](v4)` loses type safety. The `volatile int *flag` is correctly preserved.
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+Justification: Arrays are properly recovered (e.g., `int arr[5]`, `int dst[8]`). The 2D matrix in `loop_multi_exit` is flattened to 1D with index calculation `v4[4 * i + j]` - this is a reasonable decompilation choice. Struct recovery not applicable here as source didn't use structs.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Generally type-safe code. Minor issues: function pointer calls use indirect invocation `((int (__fastcall *)(int))v3[idxa])(v4)` which loses type precision. No obvious buffer overflow patterns. The `conditional_return` uses nested ternary which is clear.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Almost no useful comments in decompiled code. Only stack frame annotations like `// [sp+0h] [bp-4h]` which are auto-generated noise. No explanation of algorithm intent, no recovery confidence indicators, no @param/@return documentation. The source had extensive comments explaining each function's purpose.
+
+### 13. Idiom Recognition
+**Score: 8/10**
+Justification: Several patterns correctly identified: Duff's device in `duffs_device`, state machine in `state_machine` and `fsm_func_table`, jump table in `if_elseif_chain`/`switch_large`. However, pattern names aren't explicitly labeled (e.g., "Duff's device" not mentioned).
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No anomaly indicators present. Indirect function calls in `call_func_ptr_array`, `fsm_func_table`, `large_jump_table` are not flagged. The `computed_goto` uses inline assembly `__asm { BX R0 }` which is correct but not annotated as unusual.
+
+### 15. Assertion & Contract Recovery
+**Score: 4/10**
+Justification: No explicit preconditions/postconditions documented. However, implicit contracts are somewhat clear from code structure (e.g., `if (n <= 0) return -1` in `duffs_device` suggests precondition). No invariant documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function call relationships are implicit in the test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`). No explicit documentation of "called by" or "calls" relationships. Global `jump_buffer` is used across functions but not documented.
+
+### 17. Module Organization
+**Score: 9/10**
+Justification: Functions grouped logically matching source organization: control flow L1 functions first, then L2, then L3, then test functions, then helpers. Static functions properly scoped. Matches original file structure well.
+
+### 18. Build System Compatibility
+**Score: 9/10**
+Justification: Code should compile with minimal stubs. Standard library functions (`printf`, `setjmp`, `longjmp`) are used correctly. External dependencies are standard C library only. No compiler-specific hacks observed.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 10 + 6 + 9) / 4 = 7.25
+L2_avg = (8 + 9 + 8 + 8) / 4 = 8.25
+L3_avg = (7 + 7 + 7) / 3 = 7.00
+L4_avg = (3 + 8 + 2 + 4) / 4 = 4.25
+L5_avg = (5 + 9 + 9) / 3 = 7.67
+
+Overall = (7.25 × 0.30) + (8.25 × 0.25) + (7.00 × 0.20) + (4.25 × 0.15) + (7.67 × 0.10)
+        = 2.175 + 2.0625 + 1.4 + 0.6375 + 0.767
+        = 7.04/10
+```
+
+**Overall Readability Score:** 7.04/10
+
+### Critical Defects
+- **Variable naming**: Generic single-letter parameters (`a`, `b`, `c`, `x`) and `vN` locals obscure semantic purpose
+- **No comments**: Complete absence of explanatory comments for algorithms, parameters, return values
+- **Anomaly indication**: Indirect function calls not flagged; `computed_goto` assembly not annotated
+- **Function pointer types**: Lost type precision in `call_func_ptr_array` - uses `_DWORD` array instead of proper function pointer signatures
+
+### Best Quality Aspect: Function Naming (scored 10/10)
+Function names match original source exactly with excellent verb usage and semantic accuracy across all 40+ functions.
+
+### Most Needs Improvement: Anomaly Indication (scored 2/10)
+No suspicious code flagged; indirect calls, unusual patterns like `computed_goto` inline assembly, and potential issues are silently presented without warnings.
+
+### Top 3 Recommendations
+1. **Add variable name inference**: Analyze usage patterns (e.g., `temp1 = a + b` → infer `sum`) to replace generic `vN` names
+2. **Insert algorithm comments**: Add brief explanations for non-trivial patterns (Duff's device, state machines, jump tables)
+3. **Flag indirect calls**: Mark unresolved indirect function calls with confidence indicators like `// UNCLEAR: indirect call target`

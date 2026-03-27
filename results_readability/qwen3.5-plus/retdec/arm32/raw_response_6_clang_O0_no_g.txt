@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `v1`, `v2`, `v3`, `result` dominate (e.g., `param_memcpy` uses `a1`, `a2`, `result` instead of `dst`, `src`, `n`). Some better names exist (`strcmp_rc`, `items_written`) but generic names obscure semantic purpose throughout.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved well (`param_strcpy`, `call_strlen`, `test_standard_library_functions`), but 50+ helper functions use address-based names (`function_c4c`, `function_c58`, `function_c70`) losing semantic meaning for libc wrappers.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation: `42` (success code), `100`/`150` (TLS values), signal numbers `10`/`14` instead of `SIGUSR1`/`SIGALRM`. String literals preserved but some encoded as hex escapes.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean with minimal register spilling artifacts. Some redundant casts visible (`(char *)str`, `(int32_t)mem`) and struct fields named generically (`e0`, `e1`, `e2`) but no severe noise pollution.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Extensive goto usage degrades readability: `param_pthread_join`, `param_mutex_lock`, `param_thread_local_storage` all use labels (`lab_0x273c`, `lab_0x2954`, `lab_0x314c_2`) instead of natural loop constructs despite -O0 compilation.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions reasonably sized (most under 100 lines), libc wrappers extracted as separate functions. However, `param_thread_local_storage` (200+ lines) is monolithic and could be decomposed further.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps and labels disrupt top-to-bottom reading flow. `param_signal_handling` has complex branching with multiple while loops that could be linearized better.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. Thread creation/joining patterns repeat across functions but this reflects source code structure rather than decompiler artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t`, `uint32_t` appropriately but function pointers degraded to `int32_t` (e.g., `pthread_create` callback). Pointer arithmetic visible throughout (`4 * v2 + v1`) indicating type erasure.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Critical failure despite -g debug flags. All struct fields named generically (`e0`, `e1`, `e2`...) in `struct _IO_FILE`, `struct stat`, `struct shmid_ds`. No field name recovery from debug symbols.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(char *)str`, `(int32_t)mem`, `(void (*)(int32_t))`. Function pointer casts common without type safety. No const-correctness preserved from original source.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Complete absence despite complex concurrency logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `pthread_create`). Thread patterns visible but not named as patterns. No higher-level pattern identification (producer-consumer, mutex protection).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Silent failures on critical issues: signal handling uses `SIGBUS`/`SIGALARM` instead of `SIGUSR1`/`SIGALRM` without warning. No uncertainty indicators for indirect calls or type ambiguities.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `ptr != NULL` requirements). Error conditions not documented. No invariant recognition for shared state (`g5`, `g6` signal globals).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables (`g1` through `g53`) used without usage documentation. Callback relationships implicit rather than explicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by section (library, syscall, thread) matching source organization. However, all code in single file with no header separation or API boundary documentation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Standard includes present but would require significant patching to compile standalone. Some function prototypes mismatch actual usage. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5 + 6 + 5 + 7) / 4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):   (4 + 6 + 5 + 7) / 4 = 5.50 × 0.25 = 1.375
+Level 3 (Type System):  (5 + 3 + 4) / 3     = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):     (1 + 5 + 2 + 2) / 4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):   (5 + 6 + 5) / 3     = 5.33 × 0.10 = 0.533
+---------------------------------------------------------------
+Overall Score:                                  4.81/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Zero comments** despite complex concurrency and signal handling logic requiring explanation
+- **Struct field names completely lost** (`e0`, `e1`, `e2`...) despite -g debug compilation flags
+- **Extensive goto usage** in functions like `param_thread_local_storage` instead of natural loop constructs
+- **Signal handling corrupted** - uses `SIGBUS`/`SIGALARM` instead of `SIGUSR1`/`SIGALRM` without anomaly warning
+- **50+ helper functions** with address-based names (`function_c4c`, `function_c58`) obscuring libc wrapper purposes
+
+### Best Quality Aspect:
+- **Noise Reduction (7/10)** - Relatively clean output with minimal compiler artifacts and no severe dead code pollution
+
+### Most Needs Improvement:
+- **Comment Quality (1/10)** - Complete absence of any documentation despite complex semantics that require explanation for human understanding
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover debug symbol information** - The -g flag was present but struct field names (`e0`, `e1`...) and variable names were not recovered from DWARF debug info
+2. **Add anomaly detection warnings** - Signal number mismatches and indirect call uncertainties should be flagged with comments for manual review
+3. **Recover loop constructs from control flow** - Convert label-based gotos (`lab_0x273c`) back to natural for/while loops, especially at -O0 where original structure should be preserved

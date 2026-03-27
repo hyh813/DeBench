@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic auto-generated names like `param_1`, `param_2`, `local_8`, `iVar1`, `uVar1`, `pvVar1`, `sVar1`. None of the original semantic names like `MAX_SIZE`, `BUFFER_COUNT`, or meaningful variable names are recovered.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: User-defined functions like `param_macro_constants`, `call_macro_functions`, `param_asm_basic` are correctly named, but internal compiler functions use generic names like `FUN_00011030`, `FUN_000110d0`. External library functions (`printf`, `mmap`, `sysconf`) are correctly identified.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x401` (1025 = MAX_SIZE+1), `0x200` (512 = MAX_SIZE/2), `0x40` (64 = BUFFER_COUNT*4) appear without explanation. The original macro semantics are completely lost - macros are replaced with computed values but not annotated.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation output with minimal compiler artifacts. No obvious register spilling debris, redundant casts, or debug instrumentation. Ghidra's `undefined4` type is present but acceptable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow closely matches source. If-else structures are natural, loops properly recovered as `for` loops. No spurious goto abuse. The `param_asm_clobber` shows proper loop structure.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent function granularity. Each test function (`param_macro_constants`, `param_asm_basic`, etc.) is properly separated. No monolithic functions; all functions have single responsibility matching source organization.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without forward jumps into loop bodies. Early returns used appropriately (e.g., in `param_dynamic_code`). No deep nesting (>4 levels) observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Loop unrolling is not excessive. The SIMD function `param_asm_simd` shows element-wise operations without redundant expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` for most integers. `size_t` correctly used for memory sizes. Ghidra's `undefined4` appears for some parameters. Could be more precise (e.g., `int32_t` instead of generic `int`). Signed/unsigned is mostly correct.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: No complex structs in this source code. Simple types handled well. The `param_asm_simd` uses `undefined (*param_3) [16]` which is a reasonable reconstruction of the 128-bit vector output parameter.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No obvious unsafe casts. Pointer arithmetic in array operations is correct. The atomic operations use `LOCK()`/`UNLOCK()` macros appropriately. No type-confused function pointers observed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Absolutely no comments in the decompiled output. The original source had extensive comments explaining macro behavior, assembly semantics, and test expectations - all completely lost. No documentation of what the functions do.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: `printf` calls, `mmap`/`munmap` pairs, atomic operations with LOCK/UNLOCK. However, no explicit naming or documentation of these patterns (e.g., "This implements a memory pool" or "Atomic fetch-and-add pattern").
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of anomalies or uncertainties. The decompiler presents all code with equal confidence. Missing annotations for: indirect calls that couldn't be resolved, hand-written assembly patterns, or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had implicit contracts (e.g., `mmap` returns valid memory or -1, atomic operations require aligned memory) that are not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are technically present (function A calls function B) but not documented. No comments indicating "Called by: test_preprocessing_features" or "Calls: my_func". Global variable `global_var` is used but its role isn't explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped: preprocessing test functions together, asm test functions together, helper functions like `header_func` near their callers. However, the file is a single monolithic output without any separation markers.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: External functions properly declared (`printf`, `mmap`, `sysconf`, etc.). Should compile with standard libc. Minor issues: Ghidra's `undefined4` type may need typedef, some parameter types (`undefined`) are unusual.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`param_1`, `local_8`, `iVar1`) - original semantic names completely lost
+- No comments explaining macro behavior, assembly semantics, or algorithm intent
+- Magic numbers appear without explanation (e.g., `0x401` should indicate `MAX_SIZE + 1`)
+- No anomaly indication for indirect calls or hand-written assembly patterns
+- No contract/precondition documentation (e.g., `mmap` can fail, atomic operations require alignment)
+
+**Best Quality Aspect:** Function Decomposition (scored 9/10)  
+- Functions are properly separated with good granularity, matching the source's logical organization
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Zero comments in output; original source had extensive documentation explaining macro expansion, assembly constraints, and test expectations that is completely lost
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `param_1 > 0x401` suggests `param_1` is `size`; `local_8 = 0x200` suggests `local_8` is `MAX_SIZE / 2`
+2. **Add semantic annotations for macro replacements**: When a constant like `0x40` appears where `BUFFER_COUNT * 4` was in source, add comment: "// BUFFER_COUNT * 4 = 16 * 4"
+3. **Recover preconditions and contracts**: Document implicit requirements like "requires: ptr != NULL", "ensures: return value is page-aligned" for system calls

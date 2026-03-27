@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `uVar2`, `pbVar1`, `bVar3`) with no semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names preserved from debug symbols (`param_fake_branch`, `param_opaque_predicate`, `call_vectorized_loop`). Names accurately reflect purpose and match original source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout (`0x5a`, `0x14`, `0x23`, `0xe1`, `0x7a314`) with no explanation. Original had comments explaining expected values (e.g., "期望: 20").
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: External function stubs present (`raise`, `__libc_start_main`). Division functions (`__divsi3`) extremely verbose with 30+ boolean variables. Runtime functions (`__do_global_dtors_aux`) included unnecessarily.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_opaque_predicate` has complex conditionals that don't match source logic. Do-while loops used where for-loops would be clearer. `param_fake_branch` logic completely optimized away (empty function).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: `param_fake_branch` and `param_buffer_overflow_*` are empty (optimization artifacts). `__divsi3` is excessively large. `call_string_encryption` duplicates `param_string_encryption` logic instead of calling it.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Do-while patterns used consistently. No excessive goto usage. Generally linear flow despite optimization artifacts.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `__divsi3` and `_divsi3_skip_div0_test` are nearly identical (300+ lines each). `call_string_encryption` duplicates decryption logic instead of calling `param_string_encryption`. `test_obf_opt_edge` inlines function calls.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int`, `uint`, `byte`, `size_t` reasonably. Some parameters are `undefined4` (generic). Pointer types present but sometimes generic (`undefined4 *`). Original had more specific type annotations.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays present (`local_28[31]`, `local_30[7]`). `jmp_buf` used but not fully reconstructed. No complex structs in this code sample, so limited impact.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple casts present: `(byte *)`, `(char *)`, `(uint)`, `(int)`. `param_null_pointer_deref` takes `undefined4 *` which is generic. Frequent casting obscures type intent.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining obfuscation techniques, expected values, and test scenarios. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Obfuscation patterns (fake branches, opaque predicates, string encryption) not recognized or labeled. String decryption pattern present but not identified as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about optimized-away code. `param_fake_branch` is empty but no indication why (dead code elimination). Code presents confidently even when logic is lost.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented. No postconditions. No error condition documentation. Original had expected return values in comments (e.g., "期望: 10").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear. Global variables referenced (`jmp_buffer`, `div_zero_caught`) but not well documented. No call graph documentation. Relationships inferable from code structure.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in one output file. External functions separated. No header file structure. Original had section comments organizing code by category (OBF, OPT, EDGE).
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies declared. ARM-specific functions (`__aeabi_idivmod`) present. Some stubs needed for external functions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (5+6+7+4)/4 = 5.50  × 0.25 = 1.38
+Level 3 (Type):        (6+7+5)/3   = 6.00  × 0.20 = 1.20
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):  (6+5+7)/3   = 6.00  × 0.10 = 0.60
+─────────────────────────────────────────────────────
+Overall Score:                                  5.06/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable `iVar1`, `uVar2`, `pbVar1`** should be named based on usage (e.g., `result`, `encrypted_ptr`, `loop_counter`)
+- **`param_fake_branch` is empty** - no indication that dead code elimination removed the logic
+- **Zero comments** - original had extensive documentation explaining obfuscation techniques and expected values
+- **`call_string_encryption` duplicates logic** instead of calling `param_string_encryption` (redundancy)
+- **`__divsi3` has 30+ boolean variables** - extremely verbose library function inflating code size
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Debug symbols preserved original function names accurately, making it easy to identify purpose
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation loses all semantic context about obfuscation techniques, expected values, and test scenarios
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add decompilation confidence annotations** - Flag when code is optimized away (e.g., `// OPTIMIZED: dead branch eliminated at -O0`)
+2. **Infer variable names from usage patterns** - Analyze how variables are used to suggest semantic names (e.g., variables in XOR loops → `key`, `encrypted_byte`)
+3. **Detect and label obfuscation patterns** - Recognize fake branches, opaque predicates, and string encryption as known patterns with explanatory comments

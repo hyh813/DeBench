@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables like `iVar1`, `iVar2`, `bVar6`, `bVar7`, `ppuVar3` are auto-generated temp names that obscure purpose. While some parameters like `count`, `callback`, `p` are well-named, the majority use generic patterns like `param_1`, `param_2` that don't indicate semantic role.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions (`cdecl_func`, `stdcall_func`, `varargs_func`, `callback_func`) correctly recovered. However, some internal functions like `FUN_00011030` remain unnamed, and wrapper functions like `call_cdecl` could better indicate they're testing the cdecl convention.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Extensive use of unexplained magic numbers: `0xf` (15), `0x32` (50), `0x2a` (42), `0x14` (20), `0xad` (173), `0x12345678`. No constants or enum recovery. The literal `4` in `param_array_decay` returning `sizeof(arr)` is correct but unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy noise pollution from 20+ WARNING comments about unknown calling conventions, unresolved local variables (`int i@[???]`), inlined functions, and injected get_pc_thunk symbols. Stack canary checks (`__stack_chk_fail_local`) add clutter.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use `for`/`do-while`, conditionals use `if`. However, `test_calling_conventions` has complex bit manipulation in initialization (`bVar7 * -8 + 4`) that obscures simple array setup. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good separation between test functions and implementation functions preserved. Functions like `test_calling_conventions` are large (80+ lines) but logically cohesive. Minor issue: some simple wrapper functions like `call_cdecl` could be inlined.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. However, `test_calling_conventions` has deeply nested loops and complex initialization that disrupts linear flow. Forward jumps are minimal but some backward jumps in loops are hard to follow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Dead code from unreachable blocks is properly removed. Some loop unrolling visible in struct initialization but not excessive. Wrapper functions returning constants are appropriate for -O0.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types accurate (`int`, `char*`, `double`). Function pointers properly typed as `_func_int_int *callback`. However, `long long` rendered as `longlong` (no space), and some loss of signedness information. Integer types remain generic `int` rather than `int32_t`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `LargeStruct` and `SmallStruct` recovered with field names. `SmallPoint` has `x`, `y` fields. However, `BigStruct` uses generic `data[0xf]`, `data[0]` instead of meaningful field names. Some struct names lost (e.g., `TestIntPair` shown as raw pointer arithmetic).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations: `param_complex_cast` uses raw `*(int *)((int)p + 4)` casting, `ret_pointer` does pointer arithmetic, `func_mixed_args` has unsafe conversions. However, these are necessary for low-level code and don't cause semantic confusion.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: WARNING comments usefully flag unknown calling conventions and unresolved variables. However, these are compiler diagnostics, not semantic comments explaining algorithm intent. No recovery of original Chinese comments explaining test scenarios.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard calling conventions (cdecl, stdcall, fastcall) are recognizable but not explicitly named as patterns. No identification of AAPCS, System V AMD64 ABI as distinct calling convention patterns. Basic stdarg usage recognized.
+
+**14. Anomaly Indication:** Score: 8/10  
+Justification: Excellent anomaly detection - flags unknown calling conventions, unresolved local variables with `?`, unreachable blocks removed, inlined functions detected. Warnings are specific and helpful for further analysis.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. Null checks like `if (p != (SmallStruct *)0x0)` are present but not documented as contracts. No recovery of original assertions about expected parameter ranges.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible and traceable. `callback_func` is correctly identified as callback for `param_func_ptr`. However, no explicit documentation of call graph relationships or which functions test which scenarios.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat listing with address ordering. No logical grouping by functionality (calling conventions vs. parameter passing vs. return values). Static functions not explicitly marked as such.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code compiles (Compilation Result: Yes). Requires standard C library (puts, printf, strlen). External dependencies documented through function declarations. No compiler-specific hacks that would prevent portability.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable naming dominated by generic patterns (`iVar1`, `param_1`, `bVar7`) obscuring semantic purpose
+- Extensive magic numbers without explanation (`0xf`, `0x32`, `0x2a`) requiring reverse-engineering to understand
+- Heavy noise from 20+ WARNING comments about calling conventions and unresolved variables
+- Composite type field names lost (`data[0]`, `data[0xf]` instead of meaningful names)
+- No semantic comments explaining test scenarios or algorithm intent
+
+**Best Quality Aspect:** Anomaly Indication (scored 8/10)  
+- Excellent warning system flags unknown calling conventions, unresolved locals, unreachable blocks, and injected functions with specific details helpful for further analysis.
+
+**Most Needs Improvement:** Literal Clarity (scored 3/10)  
+- Code is littered with unexplained hex and decimal literals (0xf, 0x32, 0x2a, 0xad, 0x12345678) that require looking at original source to understand. No constant/enum recovery whatsoever.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `iVar1` accumulating sums in a loop should be named `sum` or `total`. Variables used as array indices should indicate their role.
+2. **Recover magic numbers as constants**: Detect repeated literal values and suggest named constants based on context (e.g., `0x2a` = 42 could be `ANSWER_TO_LIFE`).
+3. **Improve struct field name recovery**: Use type layout analysis and field access patterns to reconstruct meaningful field names rather than generic `data[index]`.

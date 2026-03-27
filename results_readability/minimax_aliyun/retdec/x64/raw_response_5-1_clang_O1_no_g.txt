@@ -1,0 +1,161 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables use extremely generic names like `v1`, `v2`, `v3`, `v4`, `a1`, `a2`, `a3`, `a4`, `result`, `result2`. Compare to original source's meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value`. The decompiled code makes it nearly impossible to track variable purpose without extensive analysis.
+
+### 2. Function Naming Quality
+**Score: 4/10**
+
+Justification: Functions use mangled C++ names (e.g., `_Z20test_cpp_member_funcv`, `_ZN4Base12virtual_funcEi`) in the code body. While demangled versions appear in comments (e.g., "// Demangled: test_cpp_member_func()"), the actual function definitions don't use these readable names, forcing readers to constantly reference comments.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: Multiple unexplained magic numbers appear throughout: `0x60a800000000`, `0x2ab0`, `32`, `0x2cb0`, `0x5fe8`, `4`, `8`, `16`, `24`, `32`. The original source has meaningful constants like `0x1234` for class ID, but these are lost. String literals have encoding issues (e.g., `\xe6\x9c\x9f\xe6\x9c\x9b` for Chinese characters).
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+Justification: Severe noise pollution from assembly intrinsics: `__asm_movups_13`, `__asm_hlt`, `__asm_maxsd`, `__asm_xorps`, `__asm_movsd`, `__asm_movsd_14`. Redundant casts everywhere (e.g., `(int64_t)(int32_t)&g1`). Debug artifacts like `*(int64_t *)0x5fe8 != 0` checking uninitialized pointers. This makes code nearly unreadable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Justification: At -O0, control flow is mostly preserved. Loops are recognizable (e.g., `while (v3 != 40)` in constructor). However, some patterns are unusual - the ternary expression in `template_max` is overly complex for what should be `a > b ? a : b`. Exception handling uses `_Unwind_Resume` which is low-level but expected.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Each test function from the original source is properly separated: `test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`, etc. Function granularity is appropriate - no 500-line monoliths. The decompiler correctly kept test functions separate rather than inlining them.
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Some goto-free structure. The main readability issues come from variable naming and noise, not control flow structure. Early returns used appropriately in some functions like `Container::get`.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+Justification: At -O0, there's minimal dead code or redundant expressions. The decompiler didn't introduce significant duplication. Loop unrolling is present in constructor initialization but this is expected at -O0 and represents actual compiled code, not decompiler artifacts.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 6/10**
+
+Justification: Uses `int64_t` and `int32_t` appropriately for arm64. Some parameters like `int64_t a1` in `test_cpp_exception` could be more precise. Const correctness is partially preserved in some `_ZNK*` (const) functions but inconsistent. Function pointer types are generic `int64_t (*)()` rather than proper signatures.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+Justification: **Critical failure.** No class structures recovered. Original classes `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `MultiDerived`, `DiamondDerived`, `Container<T>` are completely lost. Instead we get generic vtable structs (`vtable_59c8_type`) and raw pointer arithmetic: `*(int32_t *)(v1 + 40)` instead of `data[size]`. This is the single biggest readability failure.
+
+### 11. Type Safety
+**Score: 3/10**
+
+Justification: Multiple unsafe operations: `(int64_t *)(int64_t)size` in `function_20c0`, `(int32_t *)((int64_t)a1 + 80)` in Container<double> push, raw pointer arithmetic everywhere. No bounds checking visible. Function pointers cast to `int64_t` and back. This makes the code potentially dangerous to modify.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 5/10**
+
+Justification: Some useful comments present: "// Demangled: test_cpp_member_func()", "// From class: Base", "// Type: virtual member function". However, these are mechanical and don't explain algorithm logic or intent. No recovery of original Chinese comments explaining test scenarios. Auto-generated comments dominate over semantic explanations.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+Justification: No design patterns or algorithms identified. The original source demonstrates C++ patterns (RAII with smart pointers, virtual inheritance, diamond problem resolution, RTTI) but these aren't labeled or explained. A reader wouldn't understand this is a tutorial on C++ features without the source.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+
+Justification: No warnings about indirect calls, unusual stack layouts, or potential undefined behavior. The code confidently presents potentially incorrect patterns without flags. For example, the complex vtable manipulation in virtual inheritance could be flagged as complex.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants documented. Original source has implicit contracts (e.g., Container::get requires 0 <= idx < size) but these aren't recovered. No bounds checking documentation. Error conditions not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Justification: Some vtable structures hint at inheritance relationships (g20 for Base, g21 for Derived). Function prototypes show relationships. However, no clear documentation of "this function calls these functions" or "called by these functions". The call graph must be manually reconstructed.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Justification: Single large file (1273 LOC) vs original's modular structure. Functions are somewhat grouped (test functions first, then class methods). But original had clear sections with comments like "// CPP-L3-01: 类成员函数" which are lost. No namespace recovery.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+Justification: Code includes necessary headers (`stdint.h`, `stdio.h`, `stdlib.h`, `string.h`). "Compilation Result: Yes" indicates it compiles. However, depends on standard library functions (`printf`, `strlen`, `malloc` equivalents). No build instructions or dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 avg: (2+4+3+2)/4 = 2.75
+Level 2 avg: (6+7+6+8)/4 = 6.75
+Level 3 avg: (6+2+3)/3 = 3.67
+Level 4 avg: (5+3+3+2)/4 = 3.25
+Level 5 avg: (4+5+7)/3 = 5.33
+
+Overall = (2.75 × 0.30) + (6.75 × 0.25) + (3.67 × 0.20) + (3.25 × 0.15) + (5.33 × 0.10)
+        = 0.825 + 1.6875 + 0.734 + 0.4875 + 0.533
+        = 4.27/10
+```
+
+**Overall Readability Score: 4.27/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable names are cryptic**: `v1`, `v2`, `a1`, `a2` make it nearly impossible to track variable purpose without extensive analysis
+2. **Class structures completely lost**: Original classes (`SimpleClass`, `Base`, `Derived`, `Container<T>`) not recovered; replaced with raw pointer arithmetic like `*(int32_t *)(v1 + 40)` instead of `data[idx]`
+3. **Severe noise pollution**: Assembly intrinsics (`__asm_movups_13`, `__asm_hlt`) and redundant casts clutter every function
+4. **No pattern recognition**: C++ features (RAII, virtual inheritance, diamond problem, RTTI) not identified or explained
+5. **Magic numbers unexplained**: Values like `0x60a800000000`, `32`, `16`, `24` appear without context or named constants
+
+---
+
+### Best Quality Aspect
+
+**Function Decomposition (7/10)** - Each test function from the original source is properly separated and maintains single responsibility. The decompiler correctly kept `test_cpp_member_func`, `test_cpp_constructor`, etc. as separate functions rather than inlining them.
+
+---
+
+### Most Needs Improvement
+
+**Composite Type Recovery (2/10)** - The decompiler failed to reconstruct any class structures from the original source. All class names, data members, and member access patterns are lost. This is the single biggest factor degrading readability - readers must manually reconstruct what `*(int32_t *)(v1 + 40)` means (it's `data[size]` in Container<T>).
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover class/struct definitions**: Use vtable analysis and constructor patterns to reconstruct class layouts with meaningful field names. Instead of `*(int32_t *)(v1 + 40)`, generate `result->size` with proper struct definitions.
+
+2. **Infer variable names from usage**: Analyze how variables are used (array indexing, string operations, arithmetic) to suggest semantic names. `v1` used in `v1 + 40` for size lookup should suggest `container_ptr` or similar.
+
+3. **Eliminate assembly noise**: The `__asm_*` intrinsics and excessive casting should be abstracted away. At -O0, these are compiler artifacts that impede understanding rather than help it.

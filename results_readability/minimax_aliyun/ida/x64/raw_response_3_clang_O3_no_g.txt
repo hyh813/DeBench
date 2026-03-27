@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively named with generic patterns (v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v14, v15, v16, v17). Even loop indices and function parameters use these non-descriptive names. For example, in `heap_basic`, the malloc result is `v2`, the loop index is `v3`, and the result is `v16` -完全没有体现语义。
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (local_vars, heap_basic, global_var_access, static_local, call_static_func, tls_access). The test wrapper functions are also correctly named. Minor deduction for some internal functions like `sub_1020` which has no clear purpose.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Test functions print literal computed values (e.g., `printf("MEM-L1-01 (local_vars): %d\n", 20);`), making output clear. However, some functions contain unexplained magic numbers like `0x14u` (20) for realloc size and `0x28u` (40) without documentation. The constant folding in test functions is well-handled.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe SIMD artifact pollution - functions like `large_stack_frame`, `vla_stack`, `alloca_usage`, `heap_basic`, `heap_calloc`, `memory_leak` are cluttered with `_mm_load_si128`, `_mm_add_epi8`, `_mm_add_epi32`, `_mm_xor_si128` intrinsics that obscure the actual logic. These are compiler-generated but make the code nearly unreadable.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if/else and while structures are preserved. However, the SIMD loop unrolling in functions like `large_stack_frame` creates bizarre control flow with do-while loops and computed jumps that are hard to follow. The `vla_stack` function has deeply nested if-else chains that obscure logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity closely matches original source - each test case remains a separate function. Functions are reasonably sized (20-80 lines). The parameter lists are preserved. Minor issue: some functions that should be separate (like the Node struct operations) are inlined into larger functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom with minimal forward jumps. Early returns are used appropriately in error handling. However, some functions like `vla_stack` have multiple exit points and computed goto patterns that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: No obvious dead code. Loop unrolling is present but not commented - the compiler has unrolled loops in many functions (e.g., filling arrays 8 elements at a time using SIMD). This is aggressive for -O0 but somewhat expected given the test patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses generic types throughout: `int`, `unsigned int`, `char*`, `void*`, `_DWORD*`, `_QWORD*`. No use of fixed-width types (int32_t, uint64_t) or size_t. Function pointers are declared as `__int64` rather than proper function pointer types. The parameter types are sometimes wrong (e.g., `int` vs `unsigned int` for size parameters).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The Point struct is completely lost - `local_struct` just computes `3 * a1` instead of using struct fields. The Node struct is partially visible in `linked_list_heap` but accessed via raw pointer arithmetic (`*v0 = 0`, `v2[1] = v3`). The TreeNode struct is not recovered at all - `create_tree_node` returns `char*` and uses raw offsets.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: raw pointer arithmetic (`&v2[4 * v7]`, `v2 + 8`), incorrect pointer casting (`*(_DWORD *)v3 = 20`), no bounds checking visible. Function pointers called without proper type checking (`global_func_ptr()`). The dangling_pointer function correctly shows the bug but doesn't warn about it.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Almost no comments in the decompiled code. Only the header mentions "Decompiled by IDA Pro 9.0 with Hex-Rays". No explanation of algorithm logic, no recovery confidence indicators, no @param/@return documentation. The code is completely bare.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are visible (linked list traversal, tree operations) but not explicitly named or documented. The memory leak pattern in `memory_leak` is recognizable but not flagged. The double-free vulnerability in `double_free` is present but not annotated.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The dangling pointer access in `dangling_pointer` is presented as normal code without any warning. The heap overflow in `heap_overflow` returns 0 without indicating the bug. No indication of indirect calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. Error handling is present (NULL checks, return -1) but not explained. The contracts implied by the original code (e.g., "requires: n > 0" for alloca_usage) are not recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and direct. Global variables like `global_counter`, `global_array`, `file_scope_static` are correctly identified. However, the relationships (who calls whom, who uses which global) are not documented. Callback relationships (global_func_ptr) are visible but not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. The original source's section comments (Stack Memory, Heap Memory, Static & Global) are lost. Static functions are not marked as static in the decompiled output. No header file or API separation.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code will not compile. Multiple undefined references: `puts`, `printf`, `malloc`, `free`, `calloc`, `realloc`, `memset`, `memcpy`, `memmove`, `memcmp`, `fork`, `waitpid`, `exit`, `perror`. The test functions call these but they're not declared. No extern declarations or include headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming is universally generic (v0-v17), making it impossible to track variable purpose without extensive cross-referencing
+- SIMD intrinsics (_mm_load_si128, _mm_add_epi32, etc.) completely obscure logic in 8+ functions - these should be abstracted or commented
+- Composite types (Point, Node, TreeNode) are not recovered - struct operations reduced to raw pointer arithmetic
+- No comments whatsoever - zero documentation of algorithm intent, contracts, or anomalies
+- Build system completely broken - no includes, no extern declarations, unresolved library calls
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names match the original source almost perfectly, making it easy to locate specific test cases and understand the high-level organization.
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+The decompiled code has absolutely no comments explaining what functions do, what parameters mean, what invariants exist, or where anomalies lie. Combined with poor variable naming, this makes the code extremely difficult to understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Variables used as array indices should be named `i`, `j`, `index`; variables used as sizes should be `size`, `count`, `n`; variables assigned from malloc should indicate the data type
+2. **Abstract SIMD intrinsics**: When loop unrolling with SIMD is detected, either comment it as such or abstract into a helper function like `initialize_array_pattern()`
+3. **Recover struct types**: Analyze pointer dereference patterns to reconstruct struct layouts with field names, especially for linked data structures (Node, TreeNode)

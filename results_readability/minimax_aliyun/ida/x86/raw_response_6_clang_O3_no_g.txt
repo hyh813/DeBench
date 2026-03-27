@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy` (and related test functions)
+
+After analyzing both the original source code and the decompiled output, I'll provide a comprehensive evaluation across all 18 dimensions.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10  
+Justification: The decompiled `param_strcpy` uses `s` for destination and `src` for source. While `src` matches the original, `s` is less descriptive than `dst`. However, in `call_strcpy`, the buffer is unnamed (`char s[36]`), losing the semantic meaning of "buffer".
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names perfectly match the original source: `param_strcpy`, `call_strcpy`, `param_strcmp`, etc. The decompiler correctly preserved the semantic naming from the source.
+
+**3. Literal Clarity:** Score: 9/10  
+Justification: Most literals are clear (e.g., `"HelloLib"`, `"Value: %d, Name: %s\n"`). Minor issue: in `call_fopen_fclose`, the return expression `(v2 >> 31) | 0x2A` is obscure - the original uses ternary `(v2 >= 0 ? 42 : -1)` which is much clearer.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Generally clean code. However, some artifacts remain: in `param_malloc_free`, there's complex loop unrolling with `v5 -= 20` patterns that obscure the simple `ptr[i] = i * 10` logic. The `__usercall` and register annotations (e.g., `@<eax>`) add noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Most control flow is natural. However, in `param_strcmp`, the decompiled version uses a complex boolean expression: `v4 = v2 <= 0; result = 1; if (v4) return v3;` which is less clear than the original ternary chain. At -O0, this transformation is unnecessary.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions are appropriately sized and cohesive. The decompiler correctly separated the test harness functions (`call_*`) from the parameter wrapper functions (`param_*`). No over-fragmentation observed.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code generally reads top-to-bottom. Minor issue in `param_fread_fwrite` where there's nested if-else that could be cleaner, but overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: In `param_malloc_free`, the loop is heavily unrolled into 4-element chunks, making the original simple `ptr[i] = i * 10` pattern nearly unrecognizable. This is an -O3 artifact that should be commented or abstracted.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good type recovery overall - `size_t` for string lengths, `int` for return values. However, `const` correctness is lost: original has `const char *src` but decompiled shows `char *src`. Also, `pthread_t` is sometimes shown as array type rather than proper handle type.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structs like `ThreadData` are reasonably reconstructed with fields `arg[0]`, `arg[1]`, `arg[2]` instead of proper `start`, `end`, `result` names. The layout is correct but field names lack semantic meaning.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe. Minor issues: in `call_strcmp`, the return calculation uses raw pointer arithmetic without bounds checking. The `signal_handler` function incorrectly returns `Elf32_Dyn**` instead of `void`.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments in the decompiled output. The original source has extensive comments explaining each function's purpose, but these are completely lost. The only comments are decompiler-generated headers like "Decompiled by IDA Pro".
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard library calls are correctly identified (strcpy, strlen, pthread_create). However, patterns like the producer-consumer idiom in `param_condition_variable` are not explicitly labeled or commented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler correctly identifies failed to decompile functions at the end (59 functions), but doesn't flag anomalies within successfully decompiled functions. The `signal_handler` return type mismatch is not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source has clear return value semantics (e.g., "返回拷贝长度") that are completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are correctly resolved (strcpy, strlen, pthread_create). However, the relationship between test functions and param functions is not documented. Global variables like `signal_received`, `signal_number` are used but their purpose isn't explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the output. However, the original source's clear section organization (6.1 Standard Library, 6.2 System Calls, 6.3 Threads) is lost.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The code appears to compile (metadata says "Compilation Result: Yes"). Function signatures are mostly correct. Minor issues with some type mismatches that would require fixes.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.1/10
+
+**Critical Defects:**
+- Variable naming inconsistency: `s` vs `dst`, unnamed buffers in call_* functions
+- Loss of `const` correctness on pointer parameters (e.g., `char *src` should be `const char *src`)
+- Heavy loop unrolling in `param_malloc_free` obscures simple `ptr[i] = i * 10` logic
+- Complete loss of source code comments and documentation
+- No contract/precondition documentation (e.g., "requires: dst buffer large enough")
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+All function names perfectly match the original source, making it easy to locate specific functions.
+
+**Most Needs Improvement:** Assertion & Contract Recovery (2/10)  
+The decompiler provides no documentation of function contracts, preconditions, or return value semantics that were clearly specified in the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover const correctness**: Track `const` qualifiers through function calls and preserve them in parameter types
+2. **Add semantic comments**: Infer and add comments explaining function purpose based on library call patterns (e.g., "// strcpy: copies src including null terminator to dst")
+3. **Abstract loop unrolling**: When optimization creates unreadable loops, add comments like "// Original: for(i=0; i<size; i++) ptr[i] = i * 10" to aid understanding

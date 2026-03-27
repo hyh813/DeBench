@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of source names (`a`, `b`, `c`). Local variables are cryptic (`v1`, `v2`, `v3`, `result`, `i`). In `sequential_ops`, the decompiled version uses `a1`, `a2`, `a3` while source uses meaningful parameter names, making it very difficult to track variable purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Main test functions correctly named (`sequential_ops`, `single_if`, `if_else`), but many helper functions have cryptic addresses (`sub_1030`, `sub_1090`). The test entry functions (`test_control_flow_l1`, `test_control_flow_l2`) are properly named, matching source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xA` (10), `0x65` (101), `0x32` (50) appear without explanation. However, array indexing is correct (`dword_2660[a1]`) and loop bounds are reasonable. The literal `1001` in `infinite_loop` matches source but isn't explained.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. Some goto labels present (`LABEL_5`, `LABEL_8` in `switch_fallthrough`) but these are necessary for control flow. No register spilling debris or debug instrumentation observed.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (loops, conditionals), but some transformations are awkward. The `switch_fallthrough` uses goto labels instead of fall-through semantics. The `loop_for_fixed` uses a complex formula instead of loop structure. At -O0, more natural loops expected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-80 lines). Good separation between test functions and implementations. Helper functions like `op_add`, `op_sub` are properly extracted. Minor issue: some test functions have hardcoded values instead of calling implementations.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. However, `switch_fallthrough` has goto-based flow disruption. The `duffs_device` has complex label-based structure that breaks linear reading. Early returns used appropriately in many functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop unrolling present in `loop_for_fixed` (mathematical formula instead of loop) but this is acceptable at -O0. Some common subexpression patterns but nothing severe.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Most types are `int` which is correct for 32-bit. However, `unsigned int` used in some functions (`if_elseif_chain`, `switch_small`) where source uses `int`. Function pointer types are generic (`int (__cdecl *a1)(int)`) but acceptable. No `const` correctness preserved.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays are recognized (`int arr[]` becomes pointer arithmetic). The `loop_break` uses `unk_2038` for array, losing the actual data. Struct recovery is minimal - mostly raw pointer arithmetic. No struct reconstruction visible.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Mostly type-safe with correct pointer arithmetic. Some unsigned/signed mixing (`(unsigned int)a1 <= 0x32`). Function pointer calls are type-checked. No obvious buffer overflow patterns. Minor issues with cast usage.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in decompiled code. The header mentions "Decompiled by IDA Pro 9.1" but no functional comments. No explanation of algorithms, preconditions, or non-obvious logic. Source had extensive comments (Chinese annotations) completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized - switch statements, loops. However, `duffs_device` is not identified as such (uses goto labels). State machines recognized but not named. Callback patterns recognized but not explicitly documented as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly indicators. Failed to decompile functions (`__libc_start_main`, `printf`, etc.) listed at end but not flagged within code. No warnings about indirect calls or unusual patterns. The architecture mismatch (metadata says arm64, binary is x86) not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Source had test validation comments completely lost. No error condition documentation. The `if (x <= 0) return 1;` pattern in `goto_backward` has no comment explaining the base case.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are clear (`funcs_18EC[a1](a2)`). Global variables like `jump_buffer` visible. However, no documentation of who calls whom. The `funcs_18EC` array usage not explained (contains `double_value`, `triple_value`, `recursion_factorial`).
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - control flow L1, L2, L3 functions separated. Static functions properly scoped. Test functions grouped together. However, all in single file with no header structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears compilable with standard library stubs. External functions listed as failed to decompile (`printf`, `puts`, etc.) but these are standard library. Would need linking with libc. No compiler-specific hacks visible.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `a3`, `v1`, `v2` instead of source names like `a`, `b`, `c`, `temp1`, `temp2`
+- No comments explaining algorithms, preconditions, or test validation - source's extensive Chinese annotations completely lost
+- `switch_fallthrough` uses goto labels instead of recognizing C's fall-through semantics
+- Anomaly indication completely absent - failed decompilations listed but not flagged in context
+- Type precision lost - no `const` correctness, generic `int` instead of specific types
+
+**Best Quality Aspect:** Noise Reduction (8/10)  
+The decompiled code is clean without compiler artifacts like register spilling, debug instrumentation, or excessive auto-generated labels.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Generic parameter names (`a1`, `a2`, `a3`) and local variables (`v1`, `v2`, `v3`, `result`) make it extremely difficult to track which variable represents what semantic value from the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When `a1 + a2` is computed and used as `temp1`, infer the name `temp1` or better yet, map back to source parameter names when debug symbols available
+2. **Recover fall-through semantics in switch statements**: Recognize the `case N:` without `break` as fall-through and emit comments or use switch-with-goto pattern
+3. **Add semantic annotations for complex patterns**: Flag `duffs_device` as such, document state machine patterns, and indicate when indirect calls couldn't be resolved

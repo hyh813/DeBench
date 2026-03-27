@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `a0`, and `ptr`. For example, in `cdecl_func`, parameters are `a0` and `a1` instead of `a` and `b`, and in `test_calling_conventions`, local variables are `v0` through `v24`, completely obscuring their semantic purpose (e.g., `sum`, `large`, `s`).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: User-defined function names like `cdecl_func`, `main`, and `test_calling_conventions` are preserved perfectly. However, wrapper functions and thunks are given generic names like `sub_401159` or `sub_4011b3`, which slightly degrades the overall flow understanding.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are replaced with global address references (e.g., `printf(&g_403020)` instead of `printf("=== 测试基础调用约定 ===\n")`), making the output unintelligible without external data. Additionally, magic numbers like `4294967295` (0xFFFFFFFF) are used for masking instead of explicit casts or constants.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with `-O0` compiler artifacts that were not abstracted away. For instance, in `param_by_value_int`, the logic `v0 = a0; v0 *= 2; return v0;` is unnecessarily verbose compared to the source `return a * 2`. Redundant bitwise masks (`& 4294967295`) appear frequently after function calls.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Most control flow structures like `for` loops and `if/else` blocks are recovered correctly (e.g., `call_ptr_array`). However, the `varargs_func` decompilation is highly unnatural, exposing complex register spilling logic (`if (result) { v9 = v25; ... }`) instead of the simple loop and `va_arg` logic present in the source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are decomposed well, matching the source granularity. The separation of logic into distinct functions like `call_cdecl` and `cdecl_func` is preserved. The "thunk" functions (e.g., `sub_401159`) are isolated, though they clutter the listing.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads largely top-to-bottom with appropriate early returns. There are no confusing forward jumps or spaghetti code structures in the main logic paths, making it easy to follow the execution flow for standard functions.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: Significant redundancy exists due to the lack of optimization cleanup. For example, in `call_by_value_int`, variables are stored to the stack (`v1 = 5`) and immediately reloaded, mirroring the unoptimized assembly rather than the simplified source logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic integer types are often imprecise, with `int` frequently becoming `unsigned int` (e.g., `cdecl_func`). More critically, in `func_mixed_args`, the `double d` parameter is recovered as `unsigned long a2`, completely losing the floating-point type information.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structure recovery is poor. In `func_struct_byptr`, the `SmallStruct*` is treated as `unsigned int*`, accessing fields via array indexing (`a0[1] * *(a0)`). In `func_struct_byval`, the large structure passed by value is completely missing from the function signature, and the body accesses stack memory via a generic pointer `ptr = &v3`.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies heavily on unsafe casts and pointer arithmetic. For example, `func_mixed_args` uses `AddV` and bitwise masking to combine values, and `param_complex_cast` uses `*((unsigned int **)&v3[0]) = a0` to perform type casts, which is unsafe and difficult to read.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no meaningful comments. The only comments are register hints (e.g., `// rax`, `// [bp-0x8]`), which are low-level implementation details rather than semantic explanations. There is no documentation of the varargs or struct passing logic.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard C idioms are missed. The `va_list` pattern in `varargs_func` is not recognized; instead, the decompiler outputs the raw implementation details of the System V AMD64 ABI register save area. The struct passing idiom is also lost.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the obfuscated `varargs_func` and the signature-less `func_struct_byval` as normal code without any warnings or "UNCERTAIN" markers, potentially misleading the user into thinking the output is accurate.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the null check in `func_struct_byptr` is present in the code (`!a0`) but not explicitly documented as a contract requirement.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear and use the recovered names. However, string references are opaque global addresses, breaking the semantic link to the actual string data used in the source.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically in the output, generally following the order of the source file. Related test functions and their implementations are kept together.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code would not compile without significant modification. String literals are undefined global references, struct types used in the source (`SmallStruct`, `LargeStruct`) are missing or replaced by generic `struct_0`, and types like `uint128_t` may not be standard in all environments.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Variable Naming**: Extensive use of generic names (`v0`, `v1`) obscures logic, e.g., in `test_calling_conventions`.
+- **Composite Type Recovery**: `func_struct_byval` completely loses its argument and struct definition, accessing raw stack memory.
+- **Idiom Recognition**: The `varargs_func` implementation is decompiled into raw ABI register spilling logic instead of `va_list` operations.
+- **Literal Clarity**: String literals are replaced with global addresses (e.g., `&g_403020`), making print statements unreadable.
+- **Type Precision**: Floating point parameters are recovered as integers (`unsigned long a2` for `double d`).
+
+**Best Quality Aspect:** Function Naming (Score: 8/10)
+- The decompiler successfully preserved the names of almost all user-defined functions, allowing the reader to map the decompiled code back to the source logic structure easily.
+
+**Most Needs Improvement:** Semantic Transparency (Score: 2/10)
+- The decompiler fails to recognize high-level idioms like varargs and struct passing, presenting low-level ABI implementation details instead of the source's semantic intent. It also provides no comments or anomaly warnings.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Recover Varargs Idioms**: Detect the standard `va_list` initialization and access patterns (e.g., `va_start`, `va_arg`) on x64 and abstract them into high-level loop structures rather than exposing register save area manipulation.
+2.  **Improve Composite Type Recovery**: Analyze stack usage and hidden pointer arguments to reconstruct structures passed by value, rather than dropping them from the signature or treating them as raw memory blocks.
+3.  **Inline String Literals**: Instead of outputting global addresses for strings, attempt to read the string content from the binary image and inline it as a string literal (e.g., `"Hello"`) to dramatically improve readability.

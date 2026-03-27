@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `iVar1`, `uVar2`, `bVar3`) instead of semantic names like `sum`, `count`, `result`. Original source had meaningful names (`temp1`, `temp2`, `sum`, `count`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved correctly (`sequential_ops`, `single_if`, `nested_if_deep`), but helper functions use generic names (`FUN_000112f5`, `FUN_00011455`). Test functions properly named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (e.g., `0x3e9`, `0x65`, `0x12` in loop conditions). Original source had clear loop bounds (`n`, `10`, `100`) that are now opaque constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `_init`, `_start`, `__i686.get_pc_thunk.bx`, `__x86.get_pc_thunk.di`, `deregister_tm_clones`. Architecture mismatch (ARM64 source → x86 decompilation) adds confusion.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some transformations obscure intent: `single_if` becomes `param_1 << (0 < param_1)` instead of clear if-statement. `switch_fallthrough` uses nested ifs instead of fall-through. `duffs_device` has excessive goto labels.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but test functions (`test_control_flow_l1/2/3`) replaced with hardcoded printf values instead of actual function calls, breaking verification capability.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `duffs_device` has 8 goto labels (`switchD_0001191f_caseD_1` through `caseD_7`) disrupting flow. `loop_multi_exit` has complex jump patterns.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code, but `loop_for_fixed` has unnecessarily complex arithmetic (`((int)((ulonglong)lVar1 >> 0x20) << 0x1f | (uint)lVar1 >> 1)`) instead of simple formula.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Multiple type errors: `if_else` returns `bool` not `int`, `nested_if_deep` returns `byte` not `int`, `tail_recursion` returns `void` not `int`. Function pointers use generic `code *` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays like `matrix[3][4]` in `loop_multi_exit` become pointer arithmetic (`puVar5 = &DAT_00013050`). Function pointer arrays recovered but with generic typing (`undefined4 *`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts prevalent (`undefined4`, `undefined **`). Signed/unsigned confusion (`uint param_1` vs `int param_1`). Function pointer calls use generic `code *` type without signature safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation (version, difficulty, test validation, scene labels). No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Duff's device not recognized as such (appears as complex switch+goto). State machine patterns in `fsm_func_table` not identified. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about architecture mismatch (ARM64→x86), type errors, or semantic transformations. `tail_recursion` returns void (incorrect) without flagging.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n > 0`). No postconditions or error condition documentation. Original test validation comments completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global `jump_buffer` used without context. Callback relationships in `process_with_callback` not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped but initialization code (`_init`, `_start`, `__do_global_dtors_aux`) mixed with application logic. No separation between test and implementation code.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External functions declared but architecture-specific stubs needed. Type mismatches would prevent clean compilation. Metadata says "Compilation Result: Yes" but requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+7)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (4+6+5)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+4+3+3)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+6+6)/3   = 5.67 × 0.10 = 0.57
+
+Overall Score: 5.02/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`) losing all semantic meaning from original (`sum`, `count`, `result`)
+- **Type errors in return types**: `if_else` returns `bool` not `int`, `tail_recursion` returns `void` not `int`
+- **Test functions broken**: `test_control_flow_l1/2/3` output hardcoded values instead of calling actual functions
+- **Zero comments**: Original source had extensive documentation; decompiled code has none
+- **Architecture mismatch**: Metadata claims ARM64 but decompiled code shows x86-specific functions (`__i686.get_pc_thunk.bx`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved correctly, allowing identification of purpose despite other degradation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation, making it impossible to understand algorithm intent or decompilation confidence
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., accumulator variables in loops should be named `sum`, counter variables should be `count` or `i`)
+2. **Preserve original function signatures** including return types - verify against calling conventions and usage sites before finalizing types
+3. **Generate decompilation confidence annotations** indicating transformed code regions, architecture assumptions, and potential semantic changes from optimization

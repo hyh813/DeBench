@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v0`, `v1`, `a0`, `a1`) with no semantic meaning. For example, `sequential_ops` parameters `a0, a1, a2` should be `a, b, c` matching source intent.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main function names preserved correctly (`sequential_ops`, `nested_if_2`, `recursion_factorial`), but helper functions use mechanical names (`sub_400954`, `sub_400a30`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `4294967295` (should be `-1`), `4294967294`, `1717986919` for division. No constants recovered despite -O0 debug build.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_guard`), frame pointer setup (`v0 = &v1`), and redundant casts throughout obscure actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if-else preserved, but `arm64g_calculate_condition` calls obscure simple comparisons. `switch_fallthrough` uses goto instead of fall-through semantics.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. Runtime helpers (`deregister_tm_clones`) appropriately separated from user code.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `register_tm_clones` and `switch_fallthrough` use goto disrupting flow unnecessarily.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant type casts throughout (e.g., `(unsigned int)v0 & 4294967295`). Some variable reassignments serve no purpose.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` becomes `unsigned int` or `unsigned long long` inconsistently. `sequential_ops` returns `int` in source but `unsigned int` in decompilation.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays in `loop_break` become pointer arithmetic. Function pointer arrays partially recovered but with incorrect signatures in `call_func_ptr_array`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts, function pointer calls with wrong signatures (`call_func_ptr` takes `unsigned long long *` instead of function pointer type).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: ZERO comments in decompiled output. Original source had extensive documentation explaining each function's purpose and test cases—all lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Control flow patterns recognized but not named. State machine pattern in `state_machine` not identified or documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `nested_if_2` has bug (uses uninitialized `v0`), presented confidently without warning. No uncertainty indicators anywhere.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error documentation. Test cases from source not recovered as assertions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`g_413f78`, `jump_buffer`) referenced without explanation of purpose.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Test functions mixed with implementation and runtime code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires many external stubs (`__printf_chk`, `__stack_chk_guard`, `__gmon_start__`). Not standalone compilable without significant work.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+7+6+6)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.67/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a0`) despite -O0 debug build with symbol information available
+- **Zero comments** - all original documentation lost, no decompilation confidence indicators
+- **Type confusion** - `int` becomes `unsigned int`/`unsigned long long` inconsistently, breaking signed arithmetic semantics
+- **Magic numbers everywhere** - `4294967295` instead of `-1`, `1717986919` for division constants
+- **Silent bugs** - `nested_if_2` uses uninitialized variable `v0`, presented without warning
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Main function names preserved correctly from source, making basic identification possible
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding intent nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover debug symbol variable names** - At -O0 with `-g` flag, original variable names (`a`, `b`, `c`, `temp1`, `sum`) should be recoverable from DWARF info
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., `// DECOMPILER_UNCERTAIN: indirect call target`) and detect semantic bugs like uninitialized variables
+3. **Replace magic numbers with named constants** - Detect common patterns (`4294967295` → `-1` for signed, `0xFFFFFFFF` for unsigned) and suggest constant definitions based on usage context

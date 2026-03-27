@@ -1,0 +1,128 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Variables use cryptic generic names like `acStack_2c`, `local_d`, `local_8`, `puVar1`, `sVar1`, `iVar1`, `plVar3`, `lVar5`. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier` which are completely lost. These auto-generated names make tracking variable purpose extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+Justification: Test functions (`test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`, etc.) match original source names exactly. Member functions like `Base::virtual_func`, `Derived::virtual_func` are correctly named. However, some internal functions remain as `FUN_00100eb0`, `FUN_0010123c` with no semantic meaning.
+
+### 3. Literal Clarity
+**Score: 3/10**
+Justification: The code is littered with magic numbers: `0x2a` (42), `0x47` (71), `0x28a` (650), `0x16` (22), `0x55` (85), `0x2bf` (703), `0x125c` (4704), `0x3e9` (1000), `0x96` (150), `0xfa` (250). No named constants or explanatory comments for these values that clearly correspond to expected test results.
+
+### 4. Noise Reduction
+**Score: 4/10**
+Justification: Significant noise from 25+ external function declarations (`operator_new`, `operator_delete`, `__cxa_throw`, `__cxa_begin_catch`, etc.) that clutter the output. Many are compiler-generated stubs that add no readability value. The `_init`, `_start`, `_fini` functions are standard CRT artifacts.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+Justification: Most test functions have natural control flow returning computed values. However, virtual function calls like `(***(code ***)param_1)(param_1,param_2);` in `call_virtual_func` are awkward. At -O0, this could be cleaner. The `test_cpp_exception` function shows the throw mechanism clearly.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Good function granularity - each test function is separate, member functions properly extracted. Template instantiations correctly separated (`template_max_int_`, `template_max_double_`, `template_swap_int_`). Class methods (`Container<int>::push`, `Container<double>::get`) properly decomposed. No excessive inlining at -O0.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom. Early returns in some functions. No excessive forward jumps or goto abuse. The `test_cpp_oo_features` function sequences printf calls linearly. Good readability for the most part.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No obvious dead code or redundant expressions. Loop unrolling not present at -O0. Common subexpression elimination minimal. Clean code without duplication.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Mixed results - `Base *param_1` correctly typed, but return types vary between `int`, `undefined4`, `undefined8`, `void`. Parameter types use generic `undefined4` instead of `int`. `ulong` used for `operator_new` parameter. Original parameter names lost (e.g., `x` becomes `param_1`).
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+Justification: Classes recovered: `Base`, `Derived`, `MultiDerived`, `MiddleA`, `MiddleB`, `DiamondDerived`, `RTTIBase`, `RTTIDerivedA`, `RTTIDerivedB`. Virtual function tables implied. However, data members are not clearly recovered - `Derived::virtual_func` uses `*(int *)(this + 8)` without indicating this is the `multiplier` field. Template classes use suffix notation (`Container_int_`, `Container_double_`).
+
+### 11. Type Safety
+**Score: 4/10**
+Justification: Multiple unsafe operations: pointer arithmetic like `this + 8`, `this + *(long *)(*(long *)this + -0x18)` (virtual inheritance offset calculation), indirect function calls `(***(code ***)param_1)`. Casts like `(long *)operator_new(8)`, `(int)sVar6`. These patterns are common in decompiled C++ but represent type safety risks.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: Only the header comment "Decompiled by BinaryAI" present. No comments explaining algorithm logic, purpose of complex expressions, or uncertainty indicators. The original source had extensive comments explaining each test scenario which are completely lost.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+Justification: No design patterns or algorithms explicitly identified. Virtual function dispatch mechanism, vtable access patterns, and virtual inheritance offset calculations are not explained. The complex pointer arithmetic for virtual inheritance could benefit from pattern documentation.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No warnings or flags for suspicious code. The indirect virtual calls, unusual stack layouts, and potential undefined behavior are not indicated. The decompiler presents everything with equal confidence regardless of resolution quality.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants documented. The original source had clear expectations (e.g., "期望: 4704") which are not recovered. No documentation of what conditions must hold for functions to behave correctly.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function call relationships visible through code (e.g., `main` calls `test_cpp_oo_features`). Virtual dispatch relationships implied through vtable access patterns. However, no explicit documentation of call graphs, callback relationships, or global variable usage.
+
+### 17. Module Organization
+**Score: 5/10**
+Justification: Functions somewhat grouped by class (Base methods together, Derived methods together). Test functions at top. External stubs at beginning. However, no clear logical grouping matching the original source's section organization (CPP-L3-01, CPP-L3-02, etc.).
+
+### 18. Build System Compatibility
+**Score: 6/10**
+Justification: Metadata indicates "Compilation Result: Yes". Many external function declarations present requiring linking against C++ runtime. Would need `-lstdc++` and potentially libc. No clear dependency documentation provided.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+7+3+4)/4 = 4.0
+L2_avg = (6+8+7+8)/4 = 7.25
+L3_avg = (5+6+4)/3 = 5.0
+L4_avg = (2+3+2+2)/4 = 2.25
+L5_avg = (5+5+6)/3 = 5.33
+
+Overall = (4.0 × 0.30) + (7.25 × 0.25) + (5.0 × 0.20) + (2.25 × 0.15) + (5.33 × 0.10)
+        = 1.20 + 1.81 + 1.00 + 0.34 + 0.53 = 4.88/10
+```
+
+### Overall Readability Score: 4.9/10
+
+### Critical Defects
+- **Variable naming**: All variables use cryptic auto-generated names (`acStack_2c`, `puVar1`, `lVar5`) losing original semantic names like `value`, `multiplier`, `size`
+- **Magic numbers**: Dozens of unexplained literals (0x2a, 0x47, 0x28a, etc.) without corresponding expected value comments from source
+- **No comments**: Complete absence of explanatory comments; original source's extensive documentation lost
+- **Type precision loss**: Return types vary between `int`, `undefined4`, `undefined8`, `void` inconsistently
+- **Unsafe operations**: Complex pointer arithmetic for virtual inheritance (`this + *(long *)(*(long *)this + -0x18)`) without explanation
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions are well-separated with appropriate granularity. Test functions match source exactly, member functions properly extracted, template instantiations correctly distinguished. At -O0, the decompiler preserved good function boundaries.
+
+### Most Needs Improvement: Semantic Transparency (2.25/10)
+The decompiled code has virtually no comments, no pattern recognition, no anomaly indication, and no contract recovery. This dimension severely impacts understandability of the decompiled output.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns**: `acStack_2c` used with `strncpy("Test")` should suggest `name_buffer`; `*(int *)(this + 8)` in `Derived::virtual_func` should suggest `multiplier`
+2. **Add explanatory comments for magic numbers**: When returning constant values like `0x125c`, add comment "// expected: 4704" based on test function return value patterns
+3. **Document complex pointer arithmetic**: Virtual inheritance offsets and vtable access patterns should be annotated (e.g., "// virtual base offset calculation") rather than showing raw arithmetic

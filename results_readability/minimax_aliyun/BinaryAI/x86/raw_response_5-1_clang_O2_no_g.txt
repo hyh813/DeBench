@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Variables use extremely generic names like `local_28`, `local_24`, `uStack_10`, `sVar1`, `puVar1`, `piVar2`, `iVar3`. The original source had meaningful names like `value`, `name`, `data`, `size`, `result` which are completely lost. These cryptic names make tracking variable purpose extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Nearly all function names accurately match the original source: `test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_diamond_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_exception`, `test_cpp_smart_ptr`, `test_cpp_rtti`. Template instantiations like `template_max_int_` and `Container_int_` are also reasonably reconstructed.
+
+### 3. Literal Clarity
+**Score: 3/10**
+Justification: The decompiled code is littered with magic numbers representing computed results (e.g., `0x125c` for 4704, `0x3e9` for 1000, `0x2a` for 42) without any explanation of the underlying computation. The string "Test" appears as `0x74736554` (little-endian). These should be computed expressions, not hardcoded constants.
+
+### 4. Noise Reduction
+**Score: 7/10**
+Justification: Minimal compiler artifacts present. External function stubs (operator_new, __cxa_begin_catch, strlen) are expected from linking. Some unusual patterns like `FUN_00011130` using `unaff_EBX` add minor noise but don't significantly impede readability.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural and straightforward. Functions like `test_cpp_member_func` have simple sequential logic. `call_virtual_func` correctly shows indirect vtable call. At -O0, loop constructs should be perfectly clear, and they are.
+
+### 6. Function Decomposition
+**Score: 9/10**
+Justification: Function granularity is appropriate. Test functions are properly separated. Template functions are correctly instantiated as separate functions (`template_max_int_`, `template_swap_int_`). Container member functions are properly decomposed. No monolithic functions observed.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code generally reads top-to-bottom without excessive jumps. Most functions have simple linear structure. Early returns are used appropriately. No significant forward jumps disrupting flow.
+
+### 8. Redundancy Elimination
+**Score: 9/10**
+Justification: No dead code or significant redundancy observed. The code is clean with no duplicate expressions. Loop unrolling is not present (as expected at -O0).
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Types are mixed - `undefined4` is used extensively (generic 4-byte type), `size_t` is correctly used for strlen, `char*` for strings. At -O0, we should see more precise types like `int32_t`, `uint32_t`. The decompiler defaults to generic types rather than inferring precise C++ types.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+Justification: Classes are recovered as function names but struct layouts are not reconstructed. The code operates on raw memory offsets (e.g., `this + 0x28`, `this + 0x50`) without recovering the actual struct fields. Data members like `value`, `name`, `size`, `data` from the original source are completely lost.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Minor type safety issues present but not severe. Pointer arithmetic is used directly (e.g., `this + param_1 * 4`). Some unsafe-looking patterns but no obvious undefined behavior. The code would likely work correctly if compiled.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: Only a header comment about decompilation is present. No useful comments explaining algorithm logic, vtable mechanism, exception handling, or any of the C++ features being tested. The complex patterns (virtual functions, multiple inheritance, RTTI) have no explanatory comments.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some patterns are implicitly recognized (virtual function calls shown as indirect calls, template instantiations have distinct names) but no explicit pattern identification. Design patterns like RAII (smart pointers), polymorphism (vtable), or exception handling are not named or documented.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+Justification: No anomalies are flagged. The decompiler presents all code with equal confidence, even where analysis might be uncertain (e.g., indirect virtual calls, dynamic_cast resolution). No warnings about potential issues or uncertain analysis.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants are documented. The complex C++ semantics (e.g., that unique_ptr transfers ownership, that virtual functions use vtable dispatch) are not explained. No contract information recovered.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function names make relationships somewhat clear (e.g., `call_virtual_func` is called by `test_cpp_virtual_func`). However, there's no explicit documentation of call graphs, global variable usage, or callback relationships. The caller/callee relationships are implicit rather than documented.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Functions are grouped reasonably (test functions together, template functions together, Container methods together). However, there's no explicit module or namespace structure. The original source's logical grouping into test scenarios is not clearly represented.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+Justification: The code has many external dependencies (operator_new, __cxa_throw, __dynamic_cast, etc.) and wouldn't compile standalone. However, this is expected for decompiled C++ binaries with standard library usage. No dependency documentation is provided.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 3 + 7) / 4 = 5.25
+L2_avg = (8 + 9 + 8 + 9) / 4 = 8.50
+L3_avg = (5 + 4 + 7) / 3 = 5.33
+L4_avg = (2 + 5 + 3 + 2) / 4 = 3.00
+L5_avg = (6 + 6 + 5) / 3 = 5.67
+
+Overall = (5.25 × 0.30) + (8.50 × 0.25) + (5.33 × 0.20) + 
+          (3.00 × 0.15) + (5.67 × 0.10)
+        = 1.575 + 2.125 + 1.066 + 0.45 + 0.567
+        = 5.78/10
+```
+
+**Overall Readability Score:** 5.78/10
+
+### Critical Defects
+- **Variable naming**: All stack variables use generic names (`local_28`, `sVar1`, `puVar1`) losing semantic meaning of original names like `value`, `result`, `data`
+- **Magic numbers**: Computed results are hardcoded as literals (e.g., `0x125c` for 4704) instead of showing the actual computation `r1 + r2 + r3`
+- **No struct recovery**: Class data members are accessed via raw offsets (`this + 0x28`) without recovering field names
+- **No comments**: Complex C++ features (virtual functions, multiple inheritance, exceptions, RTTI) have no explanatory comments
+- **Type imprecision**: Extensive use of `undefined4` instead of precise integer types
+
+### Best Quality Aspect
+**Function Naming (Score: 9/10)** - Nearly all function names accurately match the original source, making it easy to identify what each function does. Template instantiations and class methods are reasonably reconstructed.
+
+### Most Needs Improvement
+**Variable Naming (Score: 2/10)** - Generic stack variable names like `local_28`, `sVar1`, `puVar1` completely obscure the semantic purpose of variables. At -O0, the decompiler should be able to infer meaningful names from usage patterns.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage**: Analyze how variables are used (e.g., `strlen(local_28)` suggests it's a string; `instance_count * 0x3e9` suggests it's a counter) to generate semantically meaningful names
+2. **Recover computed expressions**: Instead of showing hardcoded results like `0x125c`, reconstruct the computation that produces the value (e.g., `r1 + r2 + r3`)
+3. **Add explanatory comments**: For complex C++ patterns (vtable dispatch, exception handling, RTTI), add comments explaining the mechanism since these are non-trivial to understand from decompiled code alone

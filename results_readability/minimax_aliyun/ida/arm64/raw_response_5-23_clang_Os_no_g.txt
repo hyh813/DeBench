@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use cryptic names (`v2`, `v3`, `v4`, `v21`). The original source used meaningful names like `size`, `x`, `y` but these are completely lost. Even loop indices like in `param_asm_simd` use `i` but decompiler uses `i` - wait, it uses `i` which is good, but most others are generic.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions like `param_macro_constants`, `param_conditional_compile`, `param_asm_basic` match source names exactly. However, some infrastructure functions are generic (`sub_7A0`, `init_proc`). The naming is inconsistent - some are semantic, others are mechanical.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `1024`, `512`, `64` appear without explanation. The value `57072` (0xDEF0) is used directly when the original had `0xDEF0`. However, string literals in printf are preserved correctly. The decompiler didn't recover the original macro names like `MAX_SIZE`, `BUFFER_COUNT`.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. No redundant casts or debug instrumentation visible. The "FAILED to decompile" notices for external functions are appropriate and don't impede readability of the main code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0 optimization, control flow is natural with clear if-else structures. Example: `if ( a1 <= 1024 ) return 512; else return 64;` matches source structure. Loops in `param_asm_clobber` use do-while which is appropriate for ARM64. Minor issue: some ternary expressions could be clearer.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each test function (`param_macro_constants`, `param_asm_basic`, etc.) is properly separated. The call wrapper functions (`call_macro_constants`) are appropriately extracted. Function granularity is excellent - each function has single responsibility matching the source exactly.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal jumps. Early returns are used appropriately. The `param_asm_clobber` uses a do-while loop which is natural. No excessive nesting or forward jumps that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or redundant expressions. The SIMD loop in `param_asm_simd` is unrolled but that's expected for ARM64 at -O0. No duplicate computations that need elimination.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Parameters correctly use `int` for 32-bit values. Return types use `__int64` appropriately. However, `size_t` parameters are shown as `size_t` in some places but `unsigned __int64` in others. The atomic operations use proper atomic types. Minor inconsistency in pointer types (sometimes `void*`, sometimes specific types).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in this code, but the decompiler handles arrays correctly (e.g., `*(_DWORD *)(a3 + i)` for int arrays). The `param_asm_clobber` correctly identifies the array parameter. For this code's simplicity, type recovery is adequate.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts observed. Pointer arithmetic is correct. The atomic operations use proper atomic intrinsics (`_aarch64_ldadd4_acq_rel`). No obvious undefined behavior patterns. The code is type-safe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only minimal auto-generated comments like `// attributes: thunk`. No explanation of what functions do, no recovery of original macro semantics. The source had extensive comments explaining each test case, but these are completely lost. The decompiler provides no semantic context.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: The decompiler recognizes the conditional compilation pattern (shows `3 * a1 + 2` for the non-DEBUG_MODE branch). Macro expansion is correctly shown as computed values. The atomic operations are properly identified. However, no explicit naming of patterns like "macro expansion" or "conditional compilation".
+
+**14. Anomaly Indication:** Score: 9/10  
+Justification: The "FAILED to decompile" section clearly lists 12 functions that couldn't be decompiled (`memcpy`, `__libc_start_main`, etc.). This is excellent transparency about decompilation limitations. No false confidence in incorrect code.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No preconditions or postconditions documented. The source had no explicit assertions, but the decompiler could note things like "requires: page_size > 0" for mmap calls. Not present - just raw code.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are implicit in the code (e.g., `main` calls `test_preprocessing_features`). However, there's no documentation of which functions call which, or the purpose of wrapper functions. The infrastructure functions (`init_proc`, `frame_dummy`) have no explanation of their role in the binary.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped - preprocessing tests together, asm tests together, infrastructure functions at the beginning. This matches the source file organization reasonably well. Static functions are properly identified.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The metadata states "Compilation Result: Yes" - the code compiles. External dependencies are standard libc functions. No compiler-specific hacks. The decompiled code is ready for compilation with minimal effort.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 5 + 8) / 4 = 5.5
+L2_avg = (8 + 9 + 8 + 9) / 4 = 8.5
+L3_avg = (6 + 7 + 8) / 3 = 7.0
+L4_avg = (3 + 7 + 9 + 4) / 4 = 5.75
+L5_avg = (4 + 8 + 9) / 3 = 7.0
+
+Overall = (5.5 × 0.30) + (8.5 × 0.25) + (7.0 × 0.20) + (5.75 × 0.15) + (7.0 × 0.10)
+        = 1.65 + 2.125 + 1.4 + 0.8625 + 0.7
+        = 6.7375 ≈ 6.7/10
+```
+
+**Overall Readability Score:** 6.7/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic names (`a1`, `a2`, `a3`) losing original semantic names like `size`, `x`, `y`
+- **Macro semantics lost**: Original macros like `MAX_SIZE`, `BUFFER_COUNT` are replaced with literal values (1024, 16) without recovery
+- **No comments**: Extensive source comments explaining test scenarios are completely absent in decompiled output
+- **Magic numbers**: Values like `57072` (0xDEF0) appear without explanation of their origin from `#define` constants
+- **No cross-reference documentation**: Function relationships and purpose of infrastructure code not documented
+
+### Best Quality Aspect: Structural Intelligibility (8.5/10)
+The control flow is natural, functions are properly decomposed, and code reads linearly. At -O0, the decompiler recovered the original program structure very well.
+
+### Most Needs Improvement: Lexical Clarity (5.5/10)
+Variable naming is severely degraded - all meaningful names replaced with generic `a1`, `v2`, etc. This is the primary readability barrier.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how parameters are used (e.g., `if (a1 > 1024)` suggests `a1` is a size/limit value) to suggest semantic names
+2. **Recover macro semantics**: Detect magic numbers that appear in multiple locations and suggest they may be macro constants; provide option to show preprocessor-expanded vs. original form
+3. **Add semantic comments**: Generate comments explaining recognized patterns (e.g., "// Conditional compilation: DEBUG_MODE not defined") and document function purposes based on string literals and call patterns

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v0`, `exception`) with no semantic meaning. For example, `v1[31]` in `test_cpp_member_func` should be `name_buffer` based on the `"Test"` string initialization pattern.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: C++ mangled names are preserved (`_Z20test_cpp_member_funcv`) which can be demangled, but helper functions use cryptic names (`sub_D60`, `sub_1370`, `sub_1458`). Core test functions are identifiable but not human-readable without demangling.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers dominate without explanation (`4700`, `1001`, `130`, `30`). These are actually folded computation results (e.g., `4700` = expected return value minus `strlen("Test")`), but no context is provided.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (register comments like `// x0`, `// w22`), but not excessive. Type casts like `(__int64)` and `(_QWORD *)` add visual noise but are necessary for type clarity.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most functions are trivial constant returns losing original control flow. The `test_cpp_rtti` function shows proper if-else structure, but `test_cpp_exception` is marked `__noreturn` incorrectly, obscuring the try-catch logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but the decomposition is misleading—`test_cpp_member_func` should show object construction and method calls, not just `strlen(v1) + 4700`. Template functions are properly separated by type instantiation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom where logic exists. No excessive gotos or forward jumps. The warning "positive sp value has been detected" in `sub_1370` indicates stack analysis issues but doesn't disrupt flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or duplicate expressions. However, the constant folding means the original computational redundancy (which would show the algorithm) is lost entirely.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision—`int`, `double` are correct, but many pointers are generic (`_QWORD *`, `void *`). The `Base *_vptr$Base` vtable pointer is correctly typed, but `__dynamic_cast` parameters use opaque `struct __class_type_info *`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class structures partially recovered (`Container<int>`, `RTTIDerivedA`, `RTTIDerivedB`) with some methods intact. However, `SimpleClass`, `LifecycleClass`, `Point`, and lambda closures are completely lost. Field names are generic (`size`, `data`) where recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(_QWORD *)`, `(void *)`). The vtable call `(*obj->_vptr$Base)(obj, x)` is correctly typed but uses raw function pointer syntax. No buffer overflow protections visible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no semantic comments. Only auto-generated type annotations (`// x0`, `// BYREF`) and decompiler warnings. No explanation of what `4700` represents or why `test_cpp_exception` is `__noreturn`.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No C++ idioms recognized. Virtual dispatch, RAII, smart pointers, and lambda captures are completely opaque. The vtable mechanism is visible but not identified as such.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed decompilations are clearly listed (20 functions). Stack analysis warnings present ("positive sp value has been detected"). However, silent failures exist (e.g., `test_cpp_exception` logic lost without warning).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The `Container::get` bounds check `(idx & 0x80000000) == 0 && this->size > idx` is visible but not explained as a safety check.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships aren't documented. Virtual dispatch through `_vptr$Base` is shown but not explained. No call graph or inheritance hierarchy documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed sequentially but no logical grouping. Related template instantiations are adjacent (`Container<int>` methods together), but test functions aren't grouped by feature category.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 20 functions failed to decompile including critical runtime functions (`__cxa_throw`, `printf`, `operator new`). Cannot compile standalone without significant stubbing. External dependencies undocumented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+5+3+6)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+7+7)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (5+5+5)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (3+2+6+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                              4.83/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Constant folding eliminated computation logic**: Functions like `test_cpp_member_func` return `strlen(v1) + 4700` instead of showing object construction and method calls
+- **20 functions failed to decompile**: Critical runtime functions (`__cxa_throw`, `printf`, `operator new`) are missing, preventing standalone compilation
+- **Variable names are generic**: `v1`, `v2`, `v0` provide no semantic information about their purpose
+- **No C++ idiom recognition**: Virtual dispatch, RAII, smart pointers, and lambda captures are completely opaque
+- **Optimization level mismatch**: Source metadata claims `-O0` but binary path shows `O2`, causing unexpected constant folding
+
+### Best Quality Aspect: **Code Linearization (7/10)**
+- Code reads top-to-bottom without excessive jumps or goto statements where logic is present
+
+### Most Needs Improvement: **Idiom Recognition (2/10)**
+- No C++ patterns (virtual tables, RAII, templates, lambdas) are identified or explained, making the code appear as generic C rather than C++
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ semantic constructs**: Identify vtable calls, virtual dispatch, and class hierarchies, then annotate them explicitly (e.g., `// VIRTUAL CALL: Base::virtual_func`)
+2. **Preserve computation logic despite optimization**: When constant folding is detected, include comments showing the original computation (e.g., `// OPTIMIZED: 10 + 34 + 4660 = 4704`)
+3. **Improve variable name inference**: Use usage patterns to infer names (e.g., `v1[31]` initialized with `"Test"` should be `name_buffer`, `exception` in throw context should be `exception_object`)

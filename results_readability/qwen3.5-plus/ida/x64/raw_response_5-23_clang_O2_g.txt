@@ -1,0 +1,125 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Function parameters retain original names (`size`, `x`, `y`, `arr`, `dst`, `src`), but local variables are generic (`v0`, `v1`, `v2`, `result`, `i`) with no semantic meaning. For example, `v4` in `param_dynamic_code` should be `exec_result` based on usage.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation—function names like `param_macro_constants`, `param_asm_clobber`, `param_builtin_macros` match original source exactly, clearly indicating purpose and parameter types.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Critical loss of macro semantics—magic numbers like `1025` (should be `MAX_SIZE+1`), `57072` (should be `0xDEF0`), `282` (line number + counters) appear without explanation since preprocessing eliminated macro definitions.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts, though type casting noise (`__int64`, `_DWORD`, `__fastcall`) and stack variable annotations (`[rsp+0h] [rbp-8h] BYREF`) add visual clutter.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control structures recovered well (if/for/while), but aggressive constant folding obscures original logic—`call_macro_constants()` returns literal `64` instead of showing the conditional path, losing semantic transparency.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries perfectly preserved—each original function remains separate with appropriate granularity. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally with minimal forward jumps. Loop constructs properly recovered (e.g., `param_asm_clobber` shows clean for-loop instead of assembly jumps).
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or duplicate expressions. Constant folding is aggressive but appropriate for the optimization level—no unnecessary redundancy obscuring logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation—generic types (`__int64`, `_DWORD`, `__int32`) replace proper C types (`int32_t`, `size_t`, `int*`). Pointer types often unclear (`void*` vs `int*`), and `__m128i` casting obscures SIMD intent.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited composite types in source, but SIMD vector types (`__m128i`) recovered. Stack arrays like `v1[48]` should be named buffers with semantic types rather than raw byte arrays.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(__int64 (__fastcall *)(_QWORD))v2`), pointer arithmetic without bounds checking, and `_DWORD*` casting of `mmap` return values without validation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments beyond decompiler headers. Critical semantic information lost—no explanation of why `param_conditional_compile` returns `3*x+2` (release branch) vs original's conditional compilation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern identification. Assembly-to-C recovery is good (`param_asm_clobber` loop, `param_asm_multi_insn` → `qmemcpy`), but no annotation explaining these are recovered from inline assembly.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some warnings present ("local variable allocation has failed", "positive sp value has been detected") but no explanation of impact or manual review suggestions. Failed decompilations listed but not contextualized.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Functions like `param_dynamic_code` should note "requires: mmap success" and "ensures: munmap called", but no contracts recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships clear through direct calls. Global variable `global_var` referenced correctly. However, no call graph documentation or callback relationship annotations.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions grouped logically matching original structure. Test functions (`test_preprocessing_features`, `test_asm_features`) remain separate from implementation functions.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code structure allows compilation but requires external stubs for 9 failed decompilations (`printf`, `mmap`, `mprotect`, etc.). No dependency documentation or header file generation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+9+4+7)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (7+9+8+8)/4 = 8.00 × 0.25 = 2.000
+Level 3 (Type):        (4+6+5)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (7+8+6)/3   = 7.00 × 0.10 = 0.700
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.99/10
+```
+
+**Overall Readability Score: 6.0/10**
+
+---
+
+### Critical Defects
+
+- **Macro semantics completely lost**: Magic numbers `1025`, `57072`, `282` replace `MAX_SIZE`, `0xDEF0`, and `__LINE__+__COUNTER__` sums with no recovery hints
+- **Type precision severely degraded**: Generic `__int64`, `_DWORD` types replace proper C types, obscuring integer width and signedness semantics
+- **No semantic comments**: Zero documentation explaining why constant-folded functions return specific values or recovered assembly patterns
+- **Variable naming inconsistent**: Parameters preserved but locals are `v0`, `v1`, `v2`—should infer names from usage (e.g., `page_size`, `exec_mem`)
+- **Failed decompilations undocumented**: 9 external functions failed but no stubs or documentation provided for integration
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (9/10)**
+- Function names perfectly preserved from source, maintaining semantic clarity and making code navigation intuitive despite other degradation.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (2/10)**
+- Near-total absence of explanatory comments means readers cannot understand why constant-folded values exist or what original macro semantics were.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover macro semantics from debug symbols**: When `-g` flag is present, extract macro definitions from DWARF debug info and annotate magic numbers with original macro names (e.g., `// MAX_SIZE = 1024`).
+
+2. **Infer variable names from usage patterns**: Analyze how variables are used (size comparisons → `size`, pointer arithmetic → `buffer`, loop counters → `i`/`index`) and generate semantic names instead of `v0`, `v1`.
+
+3. **Add decompilation confidence annotations**: For constant-folded functions, add comments like `// Original: if (size > MAX_SIZE) return BUFFER_COUNT * 4;` to show recovered semantics vs. optimized output.

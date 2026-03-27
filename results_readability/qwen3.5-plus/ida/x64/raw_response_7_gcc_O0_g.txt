@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `v0`, `v1`, `v3`, `v4` dominate stack variables (e.g., `v4 = __readfsqword(0x28u)` for canary), while some semantic names exist (`decrypted`, `heap_buffer`, `signed_sum`). Generic names obscure purpose in critical functions.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core function names preserved accurately (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`), but runtime helpers use generic names (`sub_1020`, `sub_1030`, `_start`). Main logic functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound: `0x28u` (stack canary offset), `90` (should be `0x5A` for XOR key), `8` and `11` (signal numbers without SIGFPE/SIGSEGV names), `65`/`66` (ASCII 'A'/'B'). No constant recovery.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__readfsqword(0x28u)`) appear in 10+ functions. Runtime initialization code (`deregister_tm_clones`, `frame_dummy`) clutters output. 13 library functions failed to decompile.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as natural for/while constructs. However, `param_fake_branch` dead code was eliminated by compiler (永假 branches removed), losing obfuscation intent. Signal handling with setjmp/longjmp preserved correctly.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. `decrypt_string` properly separated from `param_string_encryption`. No excessive inlining or fragmentation. Helper functions appropriately extracted.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately (e.g., `param_division_by_zero`). No problematic goto statements or forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Compiler optimizations obscured original intent: `param_instruction_substitution` simplified to `6*x + 15*x` (lost bit-shift demonstration), `param_implementation_defined` constant-folded to `return 47`. Some redundancy from optimization artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types accurate (int, char, size_t). Array declarations present (`char decrypted[40]`, `int a[8]`). Issue: `int c[10]` vs original `int c[8]` in `call_vectorized_loop`. Stack canary correctly typed as `unsigned __int64`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Bitfield struct from `param_implementation_defined` completely optimized away (returned constant 47). No complex struct recovery needed for this code, but struct information lost where present.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Casts generally appropriate (`(__sighandler_t)`, `(unsigned int)x`). Issue: `param_null_pointer_deref(0)` passes literal 0 instead of NULL. No dangerous type confusion detected in recovered code.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Only function headers with addresses present. Critical loss of semantic context.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. XOR decryption pattern in `decrypt_string` unrecognized. setjmp/longjmp exception handling pattern not flagged. No design pattern detection.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 13 failed decompilations listed at end. Stack canary warning in `_start` ("positive sp value has been detected"). No anomaly flags for dead code elimination in `param_fake_branch` or constant folding.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "x != 0" for division). No postconditions or invariants recovered. Error conditions undocumented. Function contracts completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code. Global variables referenced (`encrypted_0`, `jmp_buffer`, `div_zero_caught`) but not documented. No call graph documentation. Callback relationships implicit only.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions ordered by address, not logical grouping. No file/module separation. Static functions not properly scoped. Related functions (e.g., handler + param pairs) not grouped together.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 13 library functions failed to decompile (free, malloc, printf, etc.). No external dependency declarations. Requires significant stubbing to compile standalone. Missing header includes.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+5+6)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (7+8+8+6)/4 = 7.25 × 0.25 = 1.81
+Level 3 (Type):        (7+6+7)/3   = 6.67 × 0.20 = 1.33
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.75/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects:
+- **Zero comments** in decompiled output loses all semantic context from original source documentation
+- **Magic numbers unexplained**: `90` (XOR key), `0x28u` (canary offset), `8`/`11` (signal numbers), `65`/`66` (ASCII values)
+- **Dead code elimination**: `param_fake_branch`永假 branches removed by compiler, losing obfuscation demonstration intent
+- **Constant folding**: `param_implementation_defined` reduced to `return 47`, losing all implementation-defined behavior testing
+- **13 library functions failed** to decompile, requiring external stubs for compilation
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Core function names preserved accurately from source (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`), maintaining semantic intent for main logic.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of comments loses all original documentation, algorithm explanations, and decompilation confidence indicators that would aid understanding.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** where debug symbols (-g) are available, especially for obfuscation test cases where intent matters
+2. **Detect and annotate magic numbers** with suggested constant names based on usage context (e.g., `0x5A` → `XOR_DECRYPT_KEY`)
+3. **Flag optimization artifacts** when dead code elimination or constant folding occurs, noting "Original code contained unreachable branch" for obfuscation analysis

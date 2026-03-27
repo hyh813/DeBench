@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, v2, idx, i, j, k) with no semantic meaning. For example, in `array_1d_stack`, variables like `v12`, `v13`, `v14` obscure their roles as accumulators, making the simple sum operation incomprehensible.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Original function names partially preserved (process_char, array_1d_stack, ptr_single) but surrounded by useless wrapper functions (sub_401149, sub_40115f) that add no value. Some critical functions like `process_ld` lost meaningful naming.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `4294967295` (UINT_MAX), `18446744073709551612`, `0xfffffff8`. Float constants shown as hex (`0x3fc00000`, `0x3fe0000000000000`) instead of decimal values like `1.5f` or `0.5`.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe decompilation artifacts: `[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] unsupported_<class 'pyvex.expr.GetI'>()`, `[D] PutI(904:F64x8)[t4,0]`. These markers appear in multiple functions (process_ld, test_data_types_l1) making code unreadable.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Simple loops transformed into complex SIMD operations with `AddV`, `InterleaveLOV`, and vector concatenations. The original `for (int i = 0; i < n; i++) sum += arr[i]` becomes 80+ lines of vector operations that obscure the simple logic.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Unnecessary wrapper functions created (sub_401149 calls process_char). Test functions like `test_data_types_l1` show constant values instead of actual function calls, losing the testing semantics entirely.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom but disrupted by complex vector operations and goto statements (`goto a0` in ptr_func_simple, `goto g_406010` in sub_401020).
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Aggressive loop unrolling creates massive redundancy. The same SIMD pattern repeats across `array_1d_stack`, `array_vla`, `array_oob`, `ptr_increment`, `union_array` - all nearly identical 100+ line functions for simple operations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `process_char` returns `long long` instead of `char`, `process_short` returns `int` instead of `short`, `volatile_access` loses volatile semantics entirely. Pointer types often become `unsigned long` instead of proper pointer types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs recovered but with generic field names (field_0, field_1, field_8). Nested structures like `Widget` → `Rect` → `Point3D` flattened to `unsigned int *a0` with array indexing (`a0[5] + a0[2]`). Bitfields completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `ptr_func_simple` uses `goto a0` for function pointer call, `ptr_double` uses struct dereference `*(a0)->field_0` instead of proper `**p`. Void pointer casts implicit without documentation.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only decompilation artifacts like `[D]` markers that indicate failures without explanation. No algorithm documentation, no parameter descriptions, no return value explanations.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Simple idioms like "sum array elements" become unrecognizable SIMD operations. Linked list traversal pattern obscured by generic struct field access.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `[D]` markers indicate problems but provide no actionable information. `process_ld` and `test_data_types_l1` have multiple unsupported operations but no guidance on manual recovery.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` requirements). No postconditions. Array bounds checks present but not explained as safety contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships partially visible through wrapper functions, but callback relationships lost. `ptr_func_complex` shows `a0(a1, &v0)` but function pointer signature unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single output with no logical grouping. Related functions (test functions and their targets) scattered. No header file or API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Contains unresolved externals (`g_405fe0`, `__TMC_END__`, `__libc_start_main`). `[D]` markers indicate code that won't compile. Test functions return constants instead of computing values.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+5+3+2)/4 = 3.00
+Level 2 (Structural):   (3+4+5+3)/4 = 3.75
+Level 3 (Type System):  (4+5+4)/3   = 4.33
+Level 4 (Semantic):     (1+2+4+2)/4 = 2.25
+Level 5 (Contextual):   (5+5+4)/3   = 4.67
+
+Overall = (3.00 × 0.30) + (3.75 × 0.25) + (4.33 × 0.20) + 
+          (2.25 × 0.15) + (4.67 × 0.10)
+        = 0.90 + 0.94 + 0.87 + 0.34 + 0.47
+        = 3.52/10
+```
+
+**Overall Readability Score: 3.5/10**
+
+### Critical Defects:
+- **Metadata mismatch**: Original claims arm64/-O0 but decompiled shows AMD64 with -O3 optimization patterns (SIMD, loop unrolling)
+- **Decompilation failures**: Multiple `[D] Unsupported` markers in `process_ld`, `test_data_types_l1` making code non-functional
+- **Variable naming**: All variables generic (v0, v1, v2) with zero semantic meaning
+- **Type degradation**: `char` functions return `long long`, `volatile` semantics completely lost
+- **Test function corruption**: Test functions output constants instead of calling actual functions, losing verification capability
+
+### Best Quality Aspect: **Contextual Coherence (4.67/10)**
+- Function call relationships are partially preserved and external dependencies are at least declared, even if unresolved.
+
+### Most Needs Improvement: **Semantic Transparency (2.25/10)**
+- Zero comments, no pattern recognition, and anomaly markers provide no actionable recovery guidance.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., loop counters should be `i`, accumulators should be `sum`, sizes should be `n` or `count`)
+2. **Recognize and simplify SIMD-optimized loops** back to scalar equivalents when the original was simple iteration
+3. **Add confidence indicators and recovery hints** for `[D]` markers explaining what manual analysis is needed (e.g., "long double operations require manual recovery")

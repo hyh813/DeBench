@@ -1,0 +1,88 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic single letters (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`) or cryptic names like `s[31]`, `exception`. The decompiler made no attempt to infer semantic meaning from usage patterns. Compare to source where variables like `obj`, `result`, `ptr1` are meaningful.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions like `call_virtual_func` and `test_cpp_virtual_func` are properly named, but most use mangled C++ names (`_Z20test_cpp_member_funcv`) or mechanical addresses (`sub_1020`, `sub_1120`). The demangling is incomplete - should show `test_cpp_member_func()`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Return values like `42`, `71`, `650`, `703` appear as magic numbers without explanation. The expression `1001 * LifecycleClass::instance_count + 21` is partially reconstructed but lacks context about what `1001` represents (the calculation logic).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise includes "FAILED to decompile" messages for 19 functions, `JUMPOUT(0)` artifacts, "positive sp value has been detected" warnings, and `__noreturn` annotations that clutter the output. The decompilation is incomplete and shows many failures.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Most functions reduce to single return statements with pre-computed values (e.g., `return 42;`, `return 650;`). This is due to compiler optimization (-O2) eliminating the computation, but the decompiler doesn't reconstruct the original control flow logic that produced these values.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately separated - each test function is distinct, template instantiations are separate (`template_max<int>`, `template_max<double>`), and class methods are properly decomposed. Minor issue: some small functions could be inlined back.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The decompiled code reads linearly - most functions are single return statements with no complex branching. This is actually a positive outcome of the optimization, making the code easy to follow despite losing the original computation.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or redundant expressions. The optimization has eliminated redundant computation, resulting in clean, direct return statements.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types are preserved (`int`, `double`, `char`), but there's mixing of decompiler-specific types (`_BYTE`, `_QWORD`, `_OWORD`, `__int64`) with standard types. Some type precision is lost - e.g., `size_t` becomes `int` or `__int64` inconsistently.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or class recovery is visible. The decompiled code treats all objects as raw memory (e.g., `*(_QWORD *)v1 = &off_3DA0;`). The original class members like `LifecycleClass::data`, `LifecycleClass::size` are completely lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present - e.g., `*(_OWORD *)&s[15] = *(__int128 *)((char *)&xmmword_21F8 + 15);` uses raw memory casting. However, no severe type safety violations that would cause undefined behavior at runtime.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only decompiler-generated comments present (e.g., "attributes: thunk", "positive sp value has been detected"). No explanation of what functions do, no recovery of original comments from source, no documentation of algorithm intent.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or idioms are identified. The virtual function call pattern `((__int64 (__fastcall *)(Base *, int))*obj->_vptr$Base)(obj, x)` is correctly shown but not explained as "virtual dispatch via vtable". Template instantiation is not recognized as a pattern.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler does show "FAILED to decompile" for 19 functions, which indicates some awareness of failures. However, it presents incorrect code confidently in some cases (e.g., `test_cpp_exception` shows a throw that never returns, but doesn't flag this as unusual).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiled code provides no information about what the functions expect or guarantee.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible (e.g., `test_cpp_oo_features()` calls `test_cpp_exception()`), but relationships to external code, global variables, and callbacks are not documented. The vtable references (`_vptr$Base`) are shown but their purpose isn't explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are loosely grouped by type (test functions, template functions, class methods), but the organization is arbitrary rather than matching the original source file structure. No namespace or class grouping is preserved.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code will not compile as-is. Many functions failed to decompile, mangled names need demangling, and external dependencies (like `std::ios_base::Init`) are referenced without proper headers. The "FAILED to decompile" functions are completely missing.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable naming is universally poor - all generic single letters (`v0`, `v1`, `v2`) with no semantic inference
+- 19 functions completely failed to decompile, leaving major gaps in the code
+- No struct/class recovery - all composite types lost, shown as raw memory operations
+- C++ name mangling not properly demangled (`_Z20test_cpp_member_funcv` should be `test_cpp_member_func()`)
+- No comments explaining algorithm intent or recovered from source
+- Magic numbers everywhere without explanation (42, 71, 650, 703, etc.)
+
+**Best Quality Aspect:** Code Linearization (scored 8/10)  
+The decompiled code is highly linear - each function is essentially a single return statement, making the control flow trivial to follow despite losing the original computation logic.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Every variable uses generic names like `v0`, `v1`, `s[31]`, `exception`. The decompiler should infer names from usage patterns (e.g., `s` used with `strlen()` suggests it's a string buffer).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - `s` used with `strlen()` should suggest `string_buffer` or similar; variables involved in arithmetic with named constants should inherit those semantic roles
+2. **Complete C++ name demangling** - Transform `_Z20test_cpp_member_funcv` to `test_cpp_member_func()` automatically
+3. **Recover class/struct types** - Instead of showing `*(_QWORD *)v1 = &off_3DA0;`, reconstruct the class layout with field names like `obj->vtable = &vtbl_RTTIDerivedA;`

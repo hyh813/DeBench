@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `ptr`, `idx`, `i` instead of meaningful names like `arr`, `n`, `result`, `sum` from the original source. The naming provides no semantic context - `v0` could be anything, making it nearly impossible to track variable purpose without analyzing the entire function.
+
+**2. Function Naming Quality:** Score: 1/10  
+Justification: All functions are named with address-based identifiers like `sub_4012c0`, `sub_401590`, `sub_401eb0` instead of the original descriptive names like `local_vars`, `heap_basic`, `global_var_access`. This completely obscures the functionality of each function.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Basic numeric literals (0, 1, 2) are clear, and error return values like `4294967295` (unsigned -1) are consistent. However, magic numbers like array sizes (10, 20) and loop bounds lack explanatory constants. String format literals are referenced externally but not visible.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some auto-generated struct definitions (`struct_0`, `struct_1`) exist but don't significantly impede readability. No excessive debug instrumentation or redundant casts observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow (if/else, loops) is preserved and recognizable. Some goto statements appear in initialization code (e.g., `deregister_tm_clones`). At -O0, loops should be more idiomatic. The `vla_stack` function has confusing computed indexing that obscures the simple loop logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries are correctly preserved. Each original function (`local_vars`, `heap_basic`, etc.) maps to a single decompiled function. No inlining artifacts or function fragmentation observed - the decompiler correctly kept functions separate at -O0.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in error-checking code (e.g., `if (!ptr) return 4294967295`). Some computed jumps in complex functions like `vla_stack` disrupt linear flow slightly.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Loop unrolling is minimal (appropriate for -O0). Some redundant index calculations in `vla_stack` and `alloca_usage` but not severe enough to impede understanding.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types are generic `unsigned int` or `void*`. Original had specific types like `int`, `char*`, `Point*`, `Node*`, `TreeNode*`. The decompiler lost signed/unsigned distinction in many places and converted all pointers to `void*` or generic types. Function pointers are incorrectly typed as `struct_0*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The decompiler created generic structs like `struct_0 { char padding_0[16]; unsigned int field_10; }` instead of the original `Point`, `Node`, `TreeNode` types. Field names are generic `field_0`, `field_4` rather than meaningful names like `data`, `next`, `x`, `y`. The struct layout is technically correct but semantically opaque.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. The `dangling_pointer` function correctly shows the use-after-free pattern but doesn't warn about it. Pointer arithmetic is used extensively (e.g., `ptr + idx * 4`) without bounds checking. No `restrict` or `_Atomic` annotations recovered.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The original source had extensive comments explaining each test case (e.g., "// MEM-L1-01: 局部变量（基础类型）⭐"). The decompiled code provides zero context about what each function tests or its purpose.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like malloc/free pairs are visible but not explicitly named or highlighted. The linked list creation and traversal in `linked_list_heap` is recognizable but the decompiler doesn't identify it as a linked list pattern. No algorithm or data structure naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The `dangling_pointer` function shows the dangerous pattern but doesn't flag it as problematic. No warnings about potential undefined behavior in `double_free` or `heap_overflow` test functions. The decompiler silently presents dangerous code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions documented. Original had input validation (e.g., `if (n <= 0 || n > 1000) return -1`) that isn't highlighted as contract requirements. No documentation of what conditions must hold before/after function execution.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships aren't documented. The callback pattern in `set_global_callback`/`call_global_callback` isn't explained. No indication of which functions call which, or the purpose of the test harness functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are present but in arbitrary address order rather than logical grouping. The original organized code by category (stack, heap, static, memory operations) but the decompiled output mixes these randomly based on address layout.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has many compilation issues. External references like `extern unsigned int global_counter;` are declared but the actual definitions aren't shown. Missing struct type definitions for external data. The code would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Function names**: All functions use `sub_XXXXX` pattern instead of original names like `local_vars`, `heap_basic`
+- **Variable names**: Generic names like `v0`, `v1`, `ptr`, `idx` provide no semantic meaning
+- **Struct types**: Original `Point`, `Node`, `TreeNode` replaced with generic `struct_0`, `struct_1` with field names like `field_0`, `field_4`
+- **No comments**: Complete loss of the extensive documentation explaining test scenarios
+- **Type precision**: All specific types converted to generic `unsigned int` or `void*`
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Function boundaries are correctly preserved at -O0. Each original function maps to exactly one decompiled function with no inlining or fragmentation artifacts.
+
+### Most Needs Improvement: Function Naming Quality (1/10)
+The address-based naming (`sub_4012c0`) completely obscures functionality. At -O0 with debug symbols available, the decompiler should recover the original function names.
+
+### Top 3 Recommendations:
+1. **Recover function names from debug symbols**: At -O0 with -g, function names should be extractable from DWARF debugging information
+2. **Infer variable names from usage patterns**: Variables used as array indices should be named `idx`/`i`, those used as sizes should be `n`/`size`, etc.
+3. **Preserve struct type information**: Use debug symbols to recover `Point`, `Node`, `TreeNode` with meaningful field names instead of generic `struct_0`/`field_0`

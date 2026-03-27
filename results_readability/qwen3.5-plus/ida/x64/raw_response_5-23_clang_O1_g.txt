@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4` throughout (e.g., `param_dynamic_code` uses `v1` for page_size, `v4` for exec_mem). Only `result` appears occasionally with semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Debug symbols preserved most function names accurately (`param_macro_constants`, `param_asm_basic`, `test_preprocessing_features`). Only startup helpers use generic names (`sub_1020`, `deregister_tm_clones`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers dominate without explanation: `1025` instead of `MAX_SIZE+1`, `57072` instead of `0xDEF0`, `7` for mmap prot flags, `34` for mmap flags. Original macro constants completely lost.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some stack annotations present (`[rsp-8h] [rbp-8h] BYREF`) but don't significantly impede reading.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Standard if/for/while constructs recovered well. `param_asm_clobber` correctly shows a for-loop from assembly. However, aggressive constant folding makes many functions trivial returns.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. No monolithic functions or over-fragmentation. Each original function maps to one decompiled function.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. No excessive gotos or forward jumps disrupting flow. Loop structures use standard for-loop syntax.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or duplicate expressions observed. Constant folding is aggressive but not redundant - it's optimization recovery.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `void*`, `size_t`) but many use generic `__int64` instead of specific types. `__m128i` recovered for SIMD. Pointer arithmetic uses `_DWORD*` casting.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `__m128i` struct recovered with field access (`v12.m128i_i32[0]`). No complex structs in this code to evaluate. Stack arrays declared properly (`_BYTE v1[48]`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe casts present: `(__int64 (__fastcall *)(_QWORD))v3` for function pointer, `(_DWORD *)-1LL` for error checking. No buffer overflow protections visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Only metadata comments at file top and occasional decompiler warnings ("local variable allocation has failed"). Zero semantic documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition. Assembly patterns recovered as C but not identified (e.g., memcpy pattern in `param_asm_multi_insn` not commented as such).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("positive sp value has been detected", "FAILED to decompile" for library functions) but no explanation of why or how to resolve.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error returns (-1, -2, -3) have no explanation of meaning.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but no call graph documentation. Global variable `global_var` referenced without context. Library functions marked as "FAILED to decompile".
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source structure. Test functions grouped together. No header file organization visible in output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 9 external functions failed to decompile (printf, mmap, mprotect, etc.). Would require significant stubbing to compile. No dependency documentation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+4+7)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+8+8)/4 = 7.75 × 0.25 = 1.938
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.267
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (6+7+4)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 6.0/10
+```
+
+### Overall Readability Score: **6.0/10**
+
+### Critical Defects:
+- **Magic numbers everywhere**: `57072`, `1025`, `7`, `34` replace meaningful constants like `0xDEF0`, `MAX_SIZE`, `PROT_*`, `MAP_*`
+- **Zero semantic comments**: No explanation of recovered logic, especially for assembly-to-C translations
+- **Generic variable names**: `v0` through `v4` obscure variable purposes (page_size, exec_mem, return values)
+- **Failed external functions**: 9 library functions marked "FAILED to decompile" without stubs
+- **Optimization mismatch**: Source claims `-O0` but decompiled code shows aggressive constant folding, suggesting metadata inconsistency
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Debug symbols preserved most function names accurately, maintaining semantic connection to original source intent.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments makes recovered assembly logic and magic numbers impossible to understand without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover constant semantics**: Detect compile-time constant folding and annotate with original expression (e.g., `// 57072 = 0xDEF0 = 10*5+0xDEF0`)
+2. **Add semantic comments for assembly recovery**: When inline assembly is converted to C, document the transformation (e.g., `// Recovered from: lock xadd instruction`)
+3. **Infer variable names from usage patterns**: Variables used in mmap calls should be named `page_size`, `exec_mem`; loop counters should be `i`, `index`

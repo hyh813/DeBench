@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `uVar1`, `pvVar2`, `local_3c`, `local_10` that obscure semantic purpose. For example, in `heap_struct`, the variable `__ptr` should indicate it's a `Point*`, but it's just a generic pointer. Loop counters like `local_18` and `local_14` lack descriptive purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions correctly match source names (`local_vars`, `heap_basic`, `global_var_access`, `memop_memset`). However, some internal functions like `FUN_00101020` and data references like `DAT_00103008` are not human-readable. The core functionality functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42) in `address_of_local` and `0x800` (2048) in `large_stack_frame` lack explanations. However, string literals in printf statements are preserved. Some constants like `0x14` (20) in `stack_alias` are unexplained.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts; stack canary checks (`__stack_chk_fail`) are appropriately included. No dead code or register spilling artifacts significantly pollute the output. The code is relatively clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow is generally natural with proper for/while loops. The `vla_stack` and `alloca_usage` functions have complex stack allocation logic that reflects the VLA/alloca implementation but remains readable. Minor awkwardness in `stack_alias` conditional checks.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - each test function is separate and focused. No 500-line monoliths. The decomposition matches the source organization well with logical grouping (stack, heap, static, memory ops sections).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error handling (e.g., `if (__ptr == 0) return -1`). Some forward jumps in complex functions like `vla_stack` but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some repeated malloc/free patterns across functions are necessary. Loop unrolling is minimal at -O0. Code is reasonably clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Extensive use of `undefined4`, `undefined8`, `byte*` instead of proper types. In `heap_basic`: `(long)param_1 << 2` should use `size_t`. Function parameters like `int param_1` lose signedness context in some places. The `tls_access` uses FS register offset which is architecture-specific.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The `Point` struct is completely lost - in `heap_struct`, it's treated as `int*` with manual field access (`__ptr[1]`). The `Node` struct is not recovered - `linked_list_heap` uses `int*` with manual offset calculations (`*(int **)(local_28 + 2)`). The `TreeNode` similarly lost. This is a severe degradation.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Manual pointer arithmetic throughout (e.g., `(long)__ptr + (long)local_18 * 4`). No bounds checking on array accesses. The `dangling_pointer` function correctly shows the use-after-free but doesn't warn about it. Some unsafe casts in memory operation functions.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled output. No explanation of algorithms, intent, or non-obvious logic. No indication of decompilation uncertainty. The source had rich comments explaining each test case, but none were recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like linked list traversal (`while(local_38 != 0)`) and tree traversal are recognizable but not explicitly named or documented. No explicit pattern naming like "linked list" or "binary tree". Memory management patterns (malloc/free) are clear but not highlighted.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about dangerous patterns. The `dangling_pointer` function shows use-after-free but isn't flagged. The `double_free` and `heap_overflow` functions aren't indicated as problematic. No indication of undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks are present (`if (__ptr == (void *)0x0)`) but not documented as preconditions. No `@param` or `@return` style documentation. Error return values (-1, -2) are present but their meaning isn't explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are clear (`malloc`, `free`, `printf`). Global variable usage is somewhat transparent (`global_counter`, `global_array`). However, no documentation of which functions call which, or the relationship between test functions and the functions they test.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped: stack memory functions, heap functions, static/global functions, memory operation functions. Static functions are properly marked. Matches the source file's section organization.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code structure suggests it would compile with minimal changes. External functions (printf, malloc, etc.) are properly declared. Some type mismatches might need fixing (undefined4 vs int). The code is close to compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Struct recovery failure**: `Point`, `Node`, and `TreeNode` structs are completely lost, replaced with raw pointer arithmetic (`__ptr[1]`, `*(int **)(local_28 + 2)`)
+- **Variable naming**: Generic names like `uVar1`, `local_3c`, `pvVar2` make tracking purpose difficult
+- **No comments**: Zero recovery of source code's explanatory comments
+- **Type precision**: Extensive use of `undefined4`/`undefined8` instead of proper types
+- **Anomaly silence**: Dangerous patterns (dangling pointer, double-free, heap overflow) not flagged
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+Functions are properly separated and logically grouped matching source organization.
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+Struct types are completely lost - this is the most severe semantic degradation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/union types**: Use field access patterns to reconstruct composite types with meaningful field names
+2. **Add semantic comments**: Infer and add comments explaining test scenarios, algorithm intent, and non-obvious logic
+3. **Improve variable naming**: Use usage pattern analysis to infer descriptive names (e.g., `local_18` used as loop counter → `i` or `index`)

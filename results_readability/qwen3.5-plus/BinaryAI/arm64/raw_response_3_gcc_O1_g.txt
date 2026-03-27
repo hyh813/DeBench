@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `uVar2`, `piVar2`, `local_8`) with no semantic meaning. Original names like `x`, `n`, `arr`, `local` are completely lost, making it difficult to track variable purpose across functions.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names are preserved (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`), which is excellent. However, some helper functions use generic names (`FUN_001009b0`, `FUN_00100bbc`) and some return types are wrong.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0xf` (15) appear without explanation. Some are recoverable from context (e.g., `0x41` = 'A'), but most lack named constant equivalents that existed in source.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack canary checks (`___stack_chk_guard`, `__stack_chk_fail`) in nearly every function, redundant type casts, and external function wrapper stubs that add no value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Original `for` loops converted to `do-while` with manual increment (`do { ...; iVar1 = iVar1 + 1; } while (iVar1 != 0x800)`). Stack overflow checks at function ends disrupt natural flow, though basic logic is traceable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but several have incorrect signatures (`local_array` returns `void` instead of `int`, `stack_alias` simplified to constant return). Some functions like `create_tree_node` lose return value semantics.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with early returns for error cases. Stack canary checks at function ends create minor disruption but don't severely impact readability.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary code repeated identically across 20+ functions. Type casting patterns (`(undefined4 *)`, `(long)`) appear redundantly. No dead code elimination visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `size_t` becomes `ulong` or `long`, pointer types often `void*` or `undefined*`, return types frequently wrong (`void` vs `int`). Original `int`, `char*`, `Point*` distinctions lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `Point` struct completely lost (operations simplified to `param_1 * 3`), `Node` struct accessed via pointer arithmetic (`*(int **)(__ptr + 2)`), `TreeNode` not recovered. All composite type semantics destroyed.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(undefined4 *)`, `(undefined8 *)`), pointer arithmetic without proper typing, function pointers degraded to `code*`. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Completely bare code.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. Linked list creation/traversal in `linked_list_heap` not identified as such. Tree operations in `tree_heap_traversal` not labeled. Memory allocation patterns unnamed.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged despite obvious issues (`stack_alias` simplified to constant, `dangling_pointer` UB not warned). Stack canary present but unexplained as compiler artifact.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL` checks exist but aren't labeled as contracts). No postconditions or error condition documentation recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`global_counter`, `file_scope_static`) used without declaration context. Callback relationship (`set_global_callback` → `call_global_callback`) not explicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file with no logical grouping. Static functions not properly scoped. Test functions mixed with implementation functions without separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions declared but signatures often wrong. Would require significant patching (fix return types, add struct definitions, remove stack canary calls). Dependencies not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.14/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Composite types completely lost**: `Point`, `Node`, `TreeNode` structs not recovered; all accessed via raw pointer arithmetic
+- **Variable names entirely generic**: `param_1`, `iVar1`, `uVar2` provide zero semantic information
+- **Function signatures incorrect**: `local_array` returns `void` instead of `int`, `stack_alias` simplified to constant `0x14`
+- **Zero documentation**: No comments explaining logic, algorithms, or decompilation confidence
+- **Stack canary noise**: `___stack_chk_guard` checks in every function obscure actual logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`double_value`, `heap_basic`, `test_stack_memory`), making it possible to identify function purpose despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any comments means readers must reverse-engineer all logic without guidance, severely impacting maintainability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze struct access patterns to reconstruct `Point`, `Node`, `TreeNode` with field names based on usage semantics
+2. **Infer variable names from context** - Use data flow analysis to name variables (e.g., loop counters → `i`, size parameters → `n`, pointers → `arr`/`ptr`)
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., `// DECOMPILE_UNCERTAIN: stack_alias logic simplified`) and explain compiler artifacts (stack canary checks)

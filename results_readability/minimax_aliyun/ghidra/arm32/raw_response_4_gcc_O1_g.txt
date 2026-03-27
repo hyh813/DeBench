@@ -1,0 +1,165 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: The decompiler uses exclusively generic variable names like `iVar1`, `iVar2`, `uVar2`, `param_1`, `param_2`, `local_c`, `plVar3`. The original source had meaningful names like `count`, `sum`, `i`, `arr`, `str`, `callback`, `x`, `val`, `ptr` - all completely lost. This makes tracking variable purpose extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 10/10**
+
+Justification: Nearly all function names are perfectly recovered from the original source: `cdecl_func`, `call_cdecl`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `func_many_args`, `param_by_value_int`, `ret_pointer`, `ret_small_struct`, `callback_func`, `test_calling_conventions`, etc. The decompiler correctly preserved all function names.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: The code is littered with unexplained magic numbers: `0xf` (15), `0x32` (50), `0x2a` (42), `0xad` (173), `0x24` (36), `0x75` (117), `0x14` (20). While some like `0x2a` are recognizable, most return values lack explanation. The original source had no magic numbers - all values were computed or named constants.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Justification: Severe noise pollution includes: "WARNING: Unknown calling convention" (appears 20+ times), "WARNING: Removing unreachable block", "WARNING: Subroutine does not return", "Unresolved local var: int sum@[???]" (appears frequently), internal compiler functions (`__aeabi_dadd`, `__floatsidf`, `__aeabi_l2d`), and types like `undefined1`, `undefined4`, `undefined8`. The code is buried under layers of decompiler artifacts.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Justification: Simple functions like `cdecl_func`, `param_by_value_int` have natural control flow. However, `func_struct_byval` shows convoluted pointer manipulation: `s.data[1]._4_4_ = local_10` with unusual struct field access patterns. At -O0, such complexity is unexpected. Some loop constructs are present but lack clarity.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Function decomposition largely matches the original - all test functions preserved separately. However, `test_calling_conventions` is ~80 lines with mixed responsibilities (testing multiple calling conventions). The decompiler didn't split it into logical sub-functions that might aid readability.
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Justification: Most functions read top-to-bottom without excessive jumps. Early returns used appropriately in functions like `func_no_args`, `varargs_func`. However, `func_struct_byval` has goto-like patterns with pointer manipulation that disrupts linear reading.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+
+Justification: Some loop unrolling present in `test_calling_conventions` for LargeStruct initialization. The `ret_large_struct` function explicitly copies each array element individually (`__return_storage_ptr__->data[0] = d.data[0]`, etc.) - 16 nearly identical statements. This is manageable but could be abstracted.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+
+Justification: Basic types are correct: `int`, `char*`, `int*`, `double`, `long long`. However, `longlong` appears as a single token instead of `long long`. Uninitialized types like `undefined1`, `undefined4`, `undefined8` are used for stack space. Function pointers shown as `_func_int_int *` instead of proper function pointer typedefs.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+
+Justification: Struct types recovered: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData`. However, field names are generic: `data[0]`, `data[15]`, `x`, `y` instead of meaningful names from source. The unusual struct access pattern `s.data[1]._4_4_ = local_10` in `func_struct_byval` is confusing.
+
+### 11. Type Safety
+**Score: 7/10**
+
+Justification: Generally type-safe with correct pointer usage. However, many casts present: `(uint)(byte)*str`, `(int)uVar3`, `(void*)&handle1`. Function pointer types sometimes incorrect (`_func_int_int *` vs proper typedef). No `restrict` or alignment annotations recovered.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+
+Justification: Only auto-generated comments present: file header ("Decompiled by Ghidra"), WARNING messages, and "Unresolved local var" notes. No algorithm explanation, no recovery of original comments from source (which had extensive documentation like "// CALL-L1-01: cdecl调用约定"). The decompiler doesn't explain what functions do.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+Justification: No design patterns or algorithms identified. The source contained clear test scenarios (calling conventions, parameter passing patterns, return value handling) but these aren't recognized or named in the decompiled output. The varargs usage, function pointers, and complex parameter passing aren't highlighted as patterns.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+
+Justification: Some anomalies flagged: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "Unresolved local var". However, these are generic decompiler warnings, not specific to the code's logic. No indication of potential undefined behavior in `call_order_dep` (which uses `++i, ++i` - undefined behavior in C).
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+
+Justification: No preconditions, postconditions, or invariants recovered. The original source had implicit contracts (e.g., "ptr != NULL" checks, return value expectations) but these aren't documented. No indication that `func_struct_byptr` returns -1 for NULL input.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Justification: No explicit call graph or relationship documentation. The original source clearly showed which functions call which (`call_cdecl()` calls `cdecl_func()`), but this relationship isn't documented in decompiled output. No indication which functions are static callbacks vs. public APIs.
+
+### 17. Module Organization
+**Score: 4/10**
+
+Justification: Functions appear in binary address order, not logical grouping. The original source had clear sections: calling conventions, parameter passing, return values. The decompiled output scatters related functions throughout the file with runtime linker functions (`_init`, `_start`, `register_tm_clones`) mixed in.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+Justification: The code has massive dependencies: `__aeabi_dadd`, `__floatsidf`, `__aeabi_l2d`, `__aeabi_d2iz`, `__extendsfdf2`, `__floatundidf`, `__printf_chk`, `memcpy`, `puts`. Uses non-standard types (`undefined4`, `undefined8`, `bool`). Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 10 + 4 + 3) / 4 = 4.75
+L2_avg = (5 + 7 + 6 + 6) / 4 = 6.00
+L3_avg = (7 + 6 + 7) / 3 = 6.67
+L4_avg = (4 + 3 + 5 + 3) / 4 = 3.75
+L5_avg = (3 + 4 + 3) / 3 = 3.33
+
+Overall = (4.75 × 0.30) + (6.00 × 0.25) + (6.67 × 0.20) + (3.75 × 0.15) + (3.33 × 0.10)
+        = 1.425 + 1.50 + 1.334 + 0.5625 + 0.333
+        = 5.15/10
+```
+
+### Overall Readability Score: 5.15/10
+
+---
+
+### Critical Defects
+
+1. **Variable naming completely generic**: All meaningful variable names lost (`count`, `sum`, `i`, `arr`, `str`, `callback`) replaced with `iVar1`, `param_1`, `local_c`
+
+2. **Severe noise pollution**: 20+ "WARNING: Unknown calling convention" messages, "Unresolved local var" annotations, internal compiler functions (`__aeabi_*`) cluttering output
+
+3. **No semantic comments**: Original source had extensive documentation ("// CALL-L1-01: cdecl调用约定") completely lost; only auto-generated warnings remain
+
+4. **Magic numbers everywhere**: Return values like `0x2a` (42), `0xad` (173), `0x75` (117) unexplained; original code computed all values meaningfully
+
+5. **Struct field names lost**: All struct fields are generic (`data[0]`, `data[15]`, `x`, `y`) instead of meaningful names from source
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (10/10)** - Nearly every function name perfectly matches the original source: `cdecl_func`, `varargs_func`, `param_by_value_ptr`, `ret_pointer`, `callback_func`, `test_calling_conventions`. This is excellent recovery.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - The complete loss of meaningful variable names is the most severe readability issue. At -O0 debug level, there's no excuse for not recovering names like `count`, `sum`, `i`, `val`, `ptr`, `str`, `callback` that were clearly present in the source.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., loop counter → `i` or `index`, accumulation → `sum` or `total`, string parameter → `str` or `message`) to generate meaningful names instead of generic `iVar1`, `param_1`
+
+2. **Eliminate noise artifacts**: Filter out generic warnings like "Unknown calling convention" that appear 20+ times; only保留 truly anomalous cases. Move "Unresolved local var" notes to a separate annotation layer, not inline in code
+
+3. **Recover struct field names**: Use type information and field access patterns to infer meaningful names. The original source had clear field names (`data[16]`, `x`, `y`, `value`) that should be recoverable when the struct layout is understood

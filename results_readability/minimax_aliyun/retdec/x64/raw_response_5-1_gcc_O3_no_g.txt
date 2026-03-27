@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10` and parameters `a1`, `a2`, `a3`, `a4`. The original source had meaningful names like `value`, `name`, `data`, `size`, `capture_by_value`, `capture_by_ref`. This makes tracking variable purpose nearly impossible.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most C++ functions are properly demangled (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func()`, `_ZN4Base12virtual_funcEi` → `Base::virtual_func(int)`). However, some wrapper functions use generic names like `function_1130`, `function_1140` without semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout without explanation: `40` (stack canary offset), `8`, `16`, `24`, `32`, `48` (object sizes), `0x125c` (return value calculation). String literals are shown as hex bytes (e.g., `0x74736554` for "Test"). No named constants replace these values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present including `__asm_movsd`, `__asm_maxsd`, `__asm_cvttsd2si`, `__asm_pxor` blocks, stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`), and various `__cxa_*` exception handling functions. These obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with straightforward if-else and return statements. Stack canary checks add minor noise but don't fundamentally distort flow. No goto abuse or spaghetti code patterns observed.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity generally matches the original source with separate test functions for each feature. However, `test_cpp_oo_features` is quite large (lines 0x1780-0x1990) and some template instantiations could be better organized.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately. The main disruption is the stack canary check pattern that wraps some functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some code duplication exists from inlining - `template_max` and `template_swap` are called in both `test_cpp_template_func` and `test_cpp_oo_features`. This is expected from compiler inlining but could be abstracted.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses appropriate types like `int64_t`, `int32_t`, `uint32_t`, `float64_t`, `int128_t`. However, many function parameters are generic `int64_t a1` when they should be more specific (e.g., pointers to specific struct types).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Some vtable structures were recovered (`struct vtable_3c70_type`, `struct vtable_3c98_type`), but class member access is predominantly done through raw pointer arithmetic (e.g., `*(int32_t *)((int64_t)result + 8)`) rather than struct field access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(int64_t *)`, `(int32_t *)`, `(int64_t)` conversions. Pointer arithmetic like `*(int32_t *)((int64_t)result + 8 + *(int64_t *)(v1 - 24))` is common with no bounds checking. This creates significant risk of undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Basic demangling comments present (e.g., "// Demangled: test_cpp_exception()"), but no substantive comments explaining algorithm logic, purpose, or non-obvious operations. Most functions lack any meaningful documentation.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some C++ patterns recognized - virtual function calls through vtable structures, constructor/destructor patterns, thunk functions for multiple inheritance. However, no explicit pattern naming or documentation of these idioms.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of uncertain or anomalous code. No warnings about indirect calls that couldn't be fully resolved, no flags for unusual stack layouts or potential undefined behavior. The decompiler presents everything with equal confidence.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. No invariant documentation. No recovery of assertions or error conditions that the original source might have had. Completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes are listed at the top, and some relationships are clear through naming. However, no explicit call graph documentation, no indication of which functions call which, and no global variable usage documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are listed in address order (0x1000, 0x1130, 0x1140, etc.) rather than logical groupings. No clear separation between test functions, class methods, template instantiations, and runtime support functions.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Has function prototypes at the top, uses standard types (`int64_t`, `int32_t`), includes necessary headers. Should compile with minimal patching. The main issues are some missing type definitions and stub functions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming is extremely poor: `v1`, `v2`, `v3`, `a1`, `a2` make tracking purpose nearly impossible
+- Type safety is severely compromised with numerous unsafe casts and pointer arithmetic
+- No contract or assertion recovery - completely absent
+- Magic numbers throughout without explanation (40, 8, 16, 24, 32, 48, 0x125c)
+- No anomaly indication for uncertain or potentially problematic code
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+The decompiler properly demangled most C++ function names, making it clear which function is which (e.g., `test_cpp_member_func`, `Base::virtual_func`, `template_max<int>`).
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The generic `v1`-`v10` and `a1`-`a4` naming scheme completely obscures variable purpose. At -O0 optimization, the decompiler should be able to infer much better names from usage patterns.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - e.g., variables used as array indices should be named `index` or `idx`, loop counters should be `i`, `j`, etc.
+2. Add anomaly indicators for indirect calls, unusual stack patterns, and potentially undefined behavior
+3. Recover struct field access instead of raw pointer arithmetic where possible, especially for class member access

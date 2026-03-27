@@ -1,0 +1,96 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6` throughout `param_opaque_predicate`, `param_integer_overflow`, and other functions. These obscure semantic meaning - for example, `v2` in `param_opaque_predicate` represents the GCD calculation result but is never named appropriately.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names perfectly match the original source: `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, etc. The decompiler accurately recovered the exact function identifiers.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `0x5A` (encryption key) appears in string decryption but without explanation. The fake branch constants like `0xDEADBEEF` were optimized away, so their absence is understandable. Some literals remain unclear.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Contains minor artifacts like `JUMPOUT(0);` and warning comments about "positive sp value has been detected." However, no significant compiler instrumentation or debug trash remains - relatively clean output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with recognizable loops and conditionals. The `param_opaque_predicate` has restructured logic but remains followable. At -O1, some transformations are expected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. The decompiler correctly separated `param_fake_branch` from `call_fake_branch`. No over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The `param_integer_overflow` has nested conditionals that require tracing, but no severe forward jump issues.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. The fake branches were correctly identified as unreachable (not duplicated). Loop unrolling is minimal at -O1.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct (`int`, `char`, `unsigned int`). However, `param_instruction_substitution` uses `(unsigned int)x >> 1` which loses the original `unsigned int ux` distinction. Some signed/unsigned mixing occurs.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in this code. The decompiler correctly handles simple types. Buffer handling in string functions uses raw arrays without recovery of original `char decrypted[32]`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with appropriate casts. Minor issues: the string decryption uses pointer arithmetic (`v7++`) without bounds documentation. No severe safety violations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The original source had extensive documentation explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.) that was completely lost.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Tail recursion in `param_tail_call_optimized` is correctly recognized as recursive. The opaque predicate logic shows pattern recognition but doesn't identify the mathematical identities (GCD for consecutive integers, XOR cancellation).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: One warning about "positive sp value has been detected" appears for `_start`. However, the decompiler doesn't flag the failed functions (10 functions failed to decompile) or indicate uncertainty in complex logic reconstruction.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source had explicit overflow detection logic that could be documented as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - `call_fake_branch` calls `param_fake_branch`. Global variables like `jmp_buffer`, `segv_buffer` are correctly identified. No documentation of call graphs.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically (obfuscation functions together, edge case handlers together). Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears standalone with external dependencies (libc functions) clearly marked as failed to decompile. Would require linking against libc.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable naming uses only generic identifiers (`v1`-`v6`) throughout complex functions, obscuring semantic purpose
+- Complete absence of comments - original documentation explaining obfuscation techniques is lost
+- Failed to decompile 10 functions (libc functions) - indicates incomplete analysis
+- No anomaly warnings for the 10 failed functions or complex control flow restructuring
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+- Every function name exactly matches the original source, demonstrating perfect symbol recovery
+
+**Most Needs Improvement:** Comment Quality (1/10)  
+- Zero comments in output loses all semantic context from the original source's extensive documentation
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: `v2` in `param_opaque_predicate` is used in GCD loop and compared to 1 - should be named `gcd_result` or `g`
+2. **Add semantic comments**: Document that `param_fake_branch` contains unreachable code (fake branches) and explain the mathematical identities in opaque predicates
+3. **Flag incomplete decompilation**: Clearly mark the 10 failed functions and provide uncertainty indicators for complex restructured logic like `param_integer_overflow`

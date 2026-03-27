@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and locals use numeric patterns (`local_4`, `local_8`, `local_c`). The original source used meaningful names like `x`, `c`, `arr`, `n`, `p`. This makes it extremely difficult to track variable purpose across the 2219 lines of decompiled code.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are correctly preserved from source: `double_value`, `process_char`, `process_int`, `array_1d_stack`, `ptr_single`, etc. However, `process_ld` has wrong return type (void instead of long double), and `ptr_triple` uses `undefined8 *` instead of proper `int ***` type.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervade the code: `0x40`, `0x5b` for ASCII bounds checking (should be 'A', 'Z'); `0x28` (40 bytes) for 2D array row stride; `0xc` (12 bytes) for 3-field struct. The original source had readable constants like `'A'`, `'Z'`, `32`, `10` (array size). No named constants recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack check guards (`___stack_chk_guard`) add noise; library functions `__addtf3` and `__multf3` are inlined (should be external calls); some redundant type casts present. However, no debug instrumentation or assembly artifacts pollute the main functions.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops correctly use `for` constructs matching source. The `process_bool` function uses inverted logic (`param_1 < 1` instead of `param_1 > 0`). At -O0, control flow should closely match source, and it mostly does.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The original's 40+ small functions are preserved. Each function maintains single responsibility. The test functions are appropriately large (containing multiple test cases) but this matches the source structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `array_complex_index`. Some forward jumps exist but don't severely disrupt flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Some loop unrolling in test functions but it's minimal. The code is relatively clean with no obvious redundant computations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Multiple type degradations: `process_char` returns `byte` not `char`; `process_ld` returns `void` not `long double`; `process_bool` returns `undefined4` not `_Bool`; pointers use `long` instead of proper pointer types (e.g., `int array_1d_stack(long param_1,int param_2)` should be `int*`). Integer types generally correct.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Zero struct/union types recovered. All structures use raw pointer arithmetic: `struct_simple` accesses `param_1[1]`, `param_1[2]` instead of `p->y`, `p->z`; `struct_array` uses `(long)local_4 * 0xc` for struct size; `struct_nested` accesses `param_1[3]` for nested field. The original had clear `Point3D`, `Rect`, `Widget`, `Node` typedefs - all lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: `ptr_diff` has incorrect calculation: `return param_1 - param_2 >> 2;` (should be `(param_1 - param_2) / 4` due to operator precedence). Some unsafe pointer arithmetic in array functions. Function pointer types are generic (`code *`) rather than proper signatures.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining algorithm intent, parameter purposes, or return value semantics. The original had extensive comments like "DT-L1-01: 字符类型（char）" and "大写转小写". Zero useful comments in decompiled output.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (loops, conditionals). Some idioms like linked list traversal (`local_8 = *(int **)(local_8 + 2)`) are readable. But no explicit pattern naming (e.g., "Implements linked list traversal").
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flags for suspicious code. The `process_ld` function returning void is incorrect but not flagged. No uncertainty indicators for indirect calls or unresolved references.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero contract information. No preconditions (e.g., "requires: n > 0"), postconditions, or invariants documented. The original had clear expectations like "计算数组元素和" (calculate sum of array elements).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit through direct calls (e.g., `test_data_types_l1()` calls `process_char`, `process_short`). No documentation of who calls whom or callback relationships. External dependencies (`puts`, `printf`) are implicit.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions grouped logically: data type functions together, array functions together, pointer functions together, composite type functions together. Matches original's test function grouping. Single file output is appropriate for the single-file source.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code would require patching: external declarations needed for `puts`, `printf`, `__stack_chk_fail`; stack guard variable `___stack_chk_guard` undefined; return type corrections needed (`process_ld`). Not immediately compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Struct/union types completely lost**: All composite types reduced to raw pointer arithmetic (`param_1[1]`, `param_1[2]` instead of `p->y`, `p->z`), losing all semantic meaning of fields
+- **Variable naming is unusable**: `param_1`, `param_2`, `local_4`, `local_8` provide no semantic information about variable purpose
+- **Type precision severely degraded**: `process_ld` returns `void` instead of `long double`; pointers use `long` instead of proper pointer types; `process_char` returns `byte` not `char`
+- **No comments or contracts**: Zero documentation of algorithm intent, parameter meanings, or expected behavior
+- **Magic numbers everywhere**: `0x28`, `0xc`, `0x40`, `0x5b` without explanation; original had readable constants like `'A'`, `'Z'`, `10`, `32`
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+The decompiler preserved the original function granularity - all 40+ small functions remain separate with appropriate responsibilities, matching the source structure.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)  
+The most severe readability loss is the complete absence of struct/union type recovery. The original had clear typedefs (`Point3D`, `Rect`, `Node`, `UnionData`) with named fields - all reduced to opaque pointer arithmetic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/union types**: Analyze stack frame layout and pointer access patterns to reconstruct composite types with field names (e.g., detect `*(int*)(param_1+4)` as field access and name it `y` based on offset patterns)
+2. **Infer variable names from usage**: Use data flow analysis to name parameters (e.g., `param_1` used as array subscript → `arr`; `param_2` compared to array length → `n`)
+3. **Add semantic comments**: Recognize common patterns (array traversal, linked list walk, struct field access) and add explanatory comments like "// Traversing linked list via next pointer"

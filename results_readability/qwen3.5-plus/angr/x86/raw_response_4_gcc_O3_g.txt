@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `i`) with no semantic meaning. In `varargs_func`, `v2` accumulates a sum but isn't named `sum`; in `func_mixed_args`, variables `v5`, `v4`, `v3` have no discernible purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Original names partially recovered (`cdecl_func`, `func_a`, `func_b`, `test_calling_conventions`) but many wrappers use opaque `sub_XXXXXX` naming. Inconsistent recovery creates confusion about which functions are original vs. decompiler artifacts.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals preserved (`"CALL-L1-01: %d\n"`), but magic numbers like `4294967295` (UINT_MAX/-1) appear without explanation. Constant-folded returns (15, 50, 6) are clear but hide computation logic.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe decompiler artifacts throughout: `[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] unsupported_<class 'pyvex.expr.GetI'>()`, `[D] PutI(72:F64x8)[t3,0] = t6()`. Function `func_mixed_args` is nearly unreadable due to these errors.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Some natural loops recovered (`varargs_func` do-while), but indirect jumps use `goto v1->field_20;` instead of proper call structures. `ret_multi_branch` uses if-else chain instead of switch for clear case logic.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Severe over-fragmentation with wrapper functions (`sub_4012cb` just calls `cdecl_func()`). Test functions constant-folded to single returns, losing actual call structure. Original cohesive functions split unnecessarily.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom reasonably, but `goto` statements for indirect jumps disrupt flow. Loop structures in `varargs_func` and `param_ptr_array` are clear, but computed jumps break linearity.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: `struct_0` redefined multiple times with different padding values across functions. Decompiler error patterns repeat throughout `func_mixed_args`. Constant-folded test functions duplicate return values instead of showing computation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned int` instead of specific types (`int32_t`, `size_t`). Function pointers lose signatures (`unsigned int *a0` called as function). Float/double types lost in `func_mixed_args` (shows `double v1` but operations fail).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`field_0`, `padding_0`). `LargeStruct` becomes 32 separate `unsigned int` parameters instead of struct. `SmallStruct` pointer access becomes array indexing (`a0[1] * *(a0)`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Function pointer calls use incorrect types (`a0(a1)` where `a0` is `unsigned int *`). `func_mixed_args` has unsupported operations indicating type confusion. Implicit casts throughout without safety checks.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only decompiler error markers `[D] Unsupported...` present. No algorithm explanations, no API contracts, no decompilation confidence indicators anywhere.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern partially recognized but poorly implemented. Loop patterns recovered in some functions. No design patterns identified. Constant-folding of test functions loses the testing idiom entirely.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Decompiler errors marked with `[D]` but not explained or contextualized. Unsupported operations flagged without guidance for manual resolution. Type mismatches silently present without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: NULL checks exist (`if (!a0) return 4294967295;`) but preconditions not documented. Error return values unexplained. No postconditions or invariants recognized anywhere.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Global variables declared (`extern unsigned int g_402008`) but purpose unclear. Callback relationships lost in constant-folding. Test structure visible but logic hidden.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped somewhat logically (calling conventions, parameter passing, return values together). Wrapper functions intersperse throughout creating noise. No clear module boundaries or header organization.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will NOT compile due to `[D]` error markers throughout. External dependencies unclear. Many function signatures mismatched. Requires extensive manual patching to become compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+6+2)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+4+5+3)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type):        (4+4+3)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (4+5+2)/3   = 3.67 × 0.10 = 0.37
+
+Overall Score: 3.60/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Architecture mismatch**: Original says ARM64, decompiled shows X86 - fundamental platform error
+- **Decompiler error markers**: `[D] Unsupported...` artifacts throughout make code non-compilable
+- **Constant folding**: Test functions return hardcoded values (15, 50, 6) instead of showing actual computation
+- **Type degradation**: All types collapse to `unsigned int`, losing function pointer signatures and float types
+- **Function over-fragmentation**: Wrapper functions (`sub_4012cb`) that just call original functions add no value
+
+### Best Quality Aspect: **Literal Clarity (6/10)**
+- String literals and some constants preserved correctly, making test output labels readable
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero meaningful comments; decompiler provides no guidance for understanding recovered code or resolving ambiguities
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Eliminate or explain error markers**: Replace `[D] Unsupported...` with actionable guidance or attempt alternative recovery strategies
+2. **Preserve original function names**: Use debug symbols (-g flag present) to recover all original function names instead of `sub_XXXXXX`
+3. **Avoid aggressive constant folding**: Show actual computation logic in test functions rather than pre-computed return values, as this obscures the calling convention being tested

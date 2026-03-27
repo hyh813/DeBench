@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a0`, `a1`, `a2`) and local variables use `v0`, `v1`, `v2`, `v3` patterns. The original source used meaningful names like `count`, `args`, `sum`, `str`, `ptr`, `x`, `y` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (`cdecl_func`, `call_cdecl`, `varargs_func`, `func_no_args`, `func_many_args`). Minor deduction for some internal functions with addresses like `sub_4006e4`, but primary test functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers throughout: `4294967295` (0xFFFFFFFF) used as -1 return, `4294967168`, `4294967240` in varargs handling, `128` for struct size. No named constants recovered; these should be documented or replaced with symbolic names.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise from redundant operations (e.g., `return memcpy(v0, v1, v2)` calling memcpy twice in `sub_4006e4`). Many unnecessary casts and frame pointer manipulations present. Some dead code from register spilling visible.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural - loops use `for` constructs, conditionals are clear. At `-O0` optimization, the flow closely matches source. Minor awkwardness in some switch statements converted to if-else chains.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions maintain reasonable granularity. However, `varargs_func` and `param_varargs` are excessively complex (40+ local variables) when they should be simpler. Some functions like `test_calling_conventions` are large (80+ lines) but this matches the original.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. Some forward jumps in varargs handling but manageable. No excessive goto abuse.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant expressions present (e.g., calling `memcpy` twice in `sub_4006e4`). Loop unrolling not excessive. Dead code minimal. Could be cleaner but not severe.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - original `int` parameters become `unsigned int`, losing sign information. `char*` strings become `unsigned long`. Function pointers like `int (*callback)(int)` become `unsigned long long *a0`. No `const` correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct recovery is poor. `LargeStruct` (128 bytes) is passed as `unsigned long ptr` with manual pointer arithmetic. `SmallStruct` fields accessed via `ptr[0]`, `ptr[1]` instead of named fields. No struct type definitions recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations: pointer arithmetic in `func_struct_byval` using `ptr + i * 8`, incorrect function pointer casting in `param_func_ptr` treating `unsigned long long *` as function pointer. Some buffer access patterns could overflow.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output whatsoever. The original source had extensive comments explaining each test case (e.g., "CALL-L1-01: cdecl调用约定", "场景: [SCENE-ALL]"). Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are somewhat recognizable (varargs handling, function pointers) but not explicitly identified or named. No recognition of calling convention patterns, AAPCS, System V AMD64 ABI distinctions.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication. The code silently produces incorrect results in some cases (e.g., `param_by_value_int` uses `__ROL__` and bit manipulation that doesn't match source `x = x * 2`). No warnings about indirect calls or uncertain reconstructions.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information recovered. Preconditions like "ptr != NULL" in `func_struct_byptr`, postconditions, and invariants are not documented. The original had explicit null checks that are present but unexplained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible through direct calls, but not documented. Global variables like `g_412dd0` are referenced but their purpose unclear. Callback relationships (e.g., `callback_func` passed to `param_func_ptr`) not explicitly marked.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - all calling convention tests together, parameter passing tests together, return value tests together. Matches source organization reasonably well. Single file output is expected.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple `extern` declarations present but incomplete. Missing function prototypes for `printf`, `strlen`, `memcpy`, `__libc_start_main`. The code would require significant patching to compile (missing headers, incomplete declarations).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic `a0`, `a1`, `a2` instead of semantic names like `count`, `args`, `sum`
+- **Type precision**: Original `int` parameters become `unsigned int`, losing sign semantics; function pointers become `unsigned long long *`
+- **Struct recovery**: `LargeStruct` and `SmallStruct` completely lost - accessed as raw memory with pointer arithmetic
+- **No comments**: Zero documentation recovered from source despite extensive comments present
+- **Magic numbers**: Unexplained constants like `4294967295`, `4294967168`, `4294967240` throughout varargs handling
+
+### Best Quality Aspect: Function Naming (8/10)
+Function names for the primary test functions (`cdecl_func`, `call_cdecl`, `varargs_func`, etc.) match the original source exactly and clearly indicate purpose.
+
+### Most Needs Improvement: Semantic Transparency (1.75/10)
+The decompiled code has zero comments, no anomaly indication, no idiom recognition, and no contract recovery. This dimension is severely lacking and makes understanding non-trivial logic extremely difficult.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `a0` used as `count` in loop `for (i = 0; a0 > i)` should be named `count`. Parameters used as array indices should reflect that.
+2. **Recover struct types**: The original defined `LargeStruct` and `SmallStruct` with specific fields - these should be reconstructed with field names, not treated as raw pointers.
+3. **Add semantic comments**: Document calling convention patterns, explain varargs handling, flag anomalies like the incorrect `__ROL__` in `param_by_value_int` that doesn't match source `x * 2`.

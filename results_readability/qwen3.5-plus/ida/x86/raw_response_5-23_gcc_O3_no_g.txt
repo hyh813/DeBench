@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and locals use `v0`, `v1`, `v2` with no semantic meaning. Original had meaningful names like `size`, `x`, `y`, `counter`, `result`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Original function names preserved perfectly (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). Action-oriented and semantically accurate.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers everywhere (`1024`, `64`, `512`, `57072`, `0x14u`) without explanation. Original had named constants (`MAX_SIZE`, `BUFFER_COUNT`, `MAP_ANONYMOUS`).
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack canary checks (`__readgsdword(0x14u)`) and thunk functions add noise. Most compiler artifacts cleaned up, but some remain in test functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Natural if/while/for constructs recovered. Some functions constant-folded to direct returns (e.g., `call_macro_constants` returns 64 directly).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Original function boundaries preserved. Appropriate granularity with no monolithic functions. Some caller functions collapsed due to optimization.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Stack canary setup/teardown adds minor disruption. Some functions have excessive local variable declarations.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `test_asm_features` duplicates code from individual test functions. Constant-folded callers create redundancy between `param_*` and `call_*` functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: `__m128i` preserved for SIMD, `size_t` for memory operations. However, many `int` types where `int32_t` or `uint32_t` would be more precise.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: `__m128i` struct with `m128i_i32[4]` array recovered. Limited structs in source code, but what exists is well-represented.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Pointer arithmetic in `param_asm_clobber` (`*(_DWORD *)(a1 + 4 * i)`) is unsafe but accurate. No egregious type confusion.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost zero comments despite original having extensive documentation (section headers, test descriptions, expected values). Critical loss of context.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition for macro expansion, conditional compilation, or atomic operations. Inline assembly converted to C without noting the transformation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings for constant-folded functions, architecture-specific code paths, or the 8 failed decompilations of external functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `a1 > 0` for size parameters). No postconditions or error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships clear through preserved names. External dependencies listed as "FAILED to decompile" at end.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions not grouped by test section (PP-L2, PP-L3, ASM-L4) as in source. All functions in single flat list.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 8 external functions failed to decompile (`mmap`, `printf_chk`, `sysconf`, etc.). Would need stub implementations to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+5+7)/4 = 6.0  × 0.30 = 1.80
+Level 2 (Structural):  (8+8+7+6)/4 = 7.25 × 0.25 = 1.81
+Level 3 (Type):        (7+8+7)/3 = 7.33   × 0.20 = 1.47
+Level 4 (Semantic):    (2+4+3+3)/4 = 3.0  × 0.15 = 0.45
+Level 5 (Contextual):  (7+6+5)/3 = 6.0    × 0.10 = 0.60
+─────────────────────────────────────────────────────
+Overall Score:                                  6.13/10
+```
+
+**Overall Readability Score: 6.1/10**
+
+### Critical Defects
+- **Variable names completely generic**: `a1`, `a2`, `v0`, `v1` instead of `size`, `counter`, `result`, `page_size`
+- **Zero comments**: Original had 200+ lines of documentation; decompiled has none
+- **Constant folding obscures logic**: `call_macro_constants()` returns `64` directly instead of showing `param_macro_constants(2048)` call
+- **Magic numbers unexplained**: `57072`, `0x14u`, `30` (for `_SC_PAGESIZE`) have no context
+- **8 external functions failed**: `mmap`, `munmap`, `mprotect`, `sysconf`, `printf_chk` need manual stubs
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - Original function names preserved perfectly, making navigation and identification trivial
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete loss of all documentation, test descriptions, and expected values that were in original source
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover variable names from debug symbols** - With `-g` flag, original variable names (`size`, `x`, `y`, `result`) should be available in DWARF info
+2. **Add decompilation confidence annotations** - Flag constant-folded functions with comments like "// Original: return param_macro_constants(2048)"
+3. **Preserve source comments in debug sections** - Extract and embed original comments where debug information is available

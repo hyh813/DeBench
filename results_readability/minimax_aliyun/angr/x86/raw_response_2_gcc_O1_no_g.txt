@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` instead of semantic names (`x`, `arr`, `n`). Local variables are `v0`, `v1`, `ptr`, `idx` - while `ptr` and `idx` are somewhat descriptive, most are meaningless. For example, in `double_value(unsigned int a0)`, parameter should be `x`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Target functions like `double_value`, `process_int`, `process_char`, `array_1d_stack` are correctly named matching source. However, many CRT/library functions use generic `sub_XXXXX` naming. The important test functions are properly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF) appear without explanation. Some values like `65` and `97` are actually ASCII but not commented. The code has no constant definitions - all are raw literals.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe pollution from `[D] Unsupported jumpkind`, `[D] PutI(...)` VEX IR artifacts, `__x86.get_pc_thunk.*` functions, and `nan` values. The floating-point functions (`process_float`, `process_double`, `process_ld`) are almost entirely VEX IR dump. This makes code practically unusable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural - loops use do-while, conditionals are clear. However, `sub_401030` uses computed goto `goto ptr[2]` which is unusual. At -O0, such patterns should be more idiomatic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and separated. Test functions call sub-test functions. Main calls all test functions. No obvious over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist but are manageable. The `array_2d_stack` uses pointer arithmetic that disrupts linear reading slightly.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some loop unrolling in `array_3d` but not excessive. Minor redundant expressions like `ptr += 1` could be `ptr++`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. All integers are `unsigned int` when source uses `int`, `short`, `char`, `long`, `long long`. Pointers are often just `unsigned int`. Floating-point types are completely broken - `process_float` and `process_double` contain VEX IR instead of actual code. `const` and `volatile` qualifiers lost.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered but with generic names like `struct_0`, `struct_1`. Fields are `field_0`, `field_1`, `field_4` - losing semantic names like `x`, `y`, `next`, `data`. Nested structures partially recovered but unclear.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns. `ptr_diff` has operator precedence bug: `a0 - a1 >> 2` should be `(a0 - a1) >> 2`. Function pointers cast to `unsigned int*` then called: `a0(a1)` in `ptr_func_simple`. Unsafe casts throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments. Only debug annotations like `[D] Unsupported` appear. No explanation of algorithms, preconditions, or intent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Linked list traversal, tree traversal, graph traversal are not labeled as such. The decompiler doesn't recognize these common patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged with `[D]` markers in floating-point functions. However, many issues are silently present without warning (type mismatches, precedence bugs).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication of expected input ranges or error conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no documentation of who calls whom. Callback relationships (like `complex_callback` passed to `ptr_func_complex`) not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output. No logical grouping or separation. Static vs extern not clearly indicated.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will NOT compile. Missing definitions for `frame_dummy`, `deregister_tm_clones`, `register_tm_clones`, etc. VEX IR artifacts prevent compilation. No headers or dependencies documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable naming uses generic `a0`, `a1`, `v0`, `v1` instead of semantic names like `x`, `sum`, `ptr`
+- Floating-point functions (`process_float`, `process_double`, `process_ld`) are completely broken - contain only VEX IR artifacts
+- Type precision severely degraded: all integers are `unsigned int`, losing `int`, `short`, `char`, `long`, `long long` distinctions
+- Struct field names are generic `field_0`, `field_1` instead of `x`, `y`, `next`, `data`
+- Operator precedence bug in `ptr_diff`: `a0 - a1 >> 2` is incorrect (should be `(a0 - a1) >> 2`)
+- Severe noise pollution from VEX IR (`[D] PutI`, `[D] unsupported`) makes code unreadable
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+The target functions (`double_value`, `process_int`, `array_1d_stack`, etc.) are correctly named, matching the original source. This is critical for understandability.
+
+**Most Needs Improvement:** Type System Fidelity (3.0/10)  
+Types are severely degraded - all become `unsigned int`, floating-point is completely broken, structs lose field names, const/volatile lost. This fundamentally undermines semantic understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Fix floating-point decompilation**: The VEX IR dump in `process_float`, `process_double`, `process_ld` must be converted to actual C code like `return f * 1.5f + 0.5f;`
+2. **Recover type precision**: Distinguish `int` from `unsigned int`, recover `short`, `char`, `long`, `long long`. Add `const` and `volatile` qualifiers based on usage patterns.
+3. **Name inference from usage**: Analyze how variables are used to infer names. `a0` used as array index → `idx` or `i`. `a0` used in arithmetic → likely `x` or `value`.

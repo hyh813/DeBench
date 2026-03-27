@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `ptr`, `result`) with no semantic meaning. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test function names recovered from symbols (`test_cpp_exception`, `test_cpp_member_func`), but helper functions remain cryptic (`sub_1092c`, `sub_10b90`). C++ method names are partially mangled (`_ZN4BaseD1Ev`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation (`0x21e98`, `0x1164c`, `71212`, `71232`). String literal truncated to `"=== "` instead of full `"=== 测试 C++ 面向对象特性 ==="`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack canary checks (`__stack_chk_guard`), `armg_calculate_condition` calls, redundant variable assignments (`v3 = v4`), and debug instrumentation throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Extensive `goto` usage replaces natural loops and conditionals. Exception handling is completely broken with confusing label jumps (`LABEL_10a90`, `LABEL_10e25`). No recognizable loop constructs.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical functions are empty stubs (`test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_lambda` all just `return;`). Original 540 LOC source reduced to non-functional shells.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into middle of logic blocks disrupt reading flow. Exception handling code has multiple entry/exit points that are impossible to trace linearly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate stack canary checks in multiple functions. Redundant variable assignments (`v0 = v1; v1 = v0`). Some dead code from register spilling visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Most types degraded to `unsigned int`, `void*`, or `char*`. C++ class types (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`) completely lost. Template instantiations not properly typed.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Generic structs only (`struct_0`, `struct_1` with `field_0`, `field_4`). No class layouts recovered. Original classes with members like `value`, `name[32]`, `data`, `size` are unrecoverable.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(int)(*(ptr))[4]`, `(void*)pa == (void*)pb`. Pointer arithmetic without bounds checking. `operatornew` returns `void*` without proper typing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero explanatory comments. Only auto-generated function headers present. No documentation of C++ semantics (vtable, exception handling, RAII).
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns completely unrecognized: exceptions (`try/catch`), RTTI (`typeid`, `dynamic_cast`), virtual dispatch, smart pointers (`unique_ptr`), lambda captures all lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about broken exception handling, empty function bodies, or unresolved indirect calls. Code presents incorrect information confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original comments about expected values (期望：4704, 期望：21) completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but virtual dispatch relationships unclear. Vtable calls shown as `goto *((int *)*((int *)arg_0))` without class hierarchy context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions in arbitrary order. Related class methods scattered. No logical grouping of inheritance hierarchies (Base/Derived, MiddleA/MiddleB/DiamondDerived).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Does not compile standalone. Missing dependencies (`__cxa_allocate_exception`, `operatornew`, `std::type_info`). Undefined external symbols throughout.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+3+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (3+4+4+5)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type System): (3+3+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (2+2+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.367
+
+Overall Score: 3.40/10
+```
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects:
+- **12+ functions are empty stubs** (`return;`) losing all original implementation logic
+- **Exception handling completely broken** - `try/catch` semantics not recovered, only raw `__cxa_*` calls
+- **All C++ class structures lost** - no member variables, no inheritance relationships visible
+- **Control flow uses goto exclusively** instead of structured loops and conditionals
+- **Variable names are entirely generic** (`v0`, `v1`, `ptr`) with no semantic meaning
+
+### Best Quality Aspect: Function Naming Quality (scored 5/10)
+- Some function names recovered from debug symbols (`test_cpp_exception`, `test_cpp_member_func`) providing minimal semantic anchors.
+
+### Most Needs Improvement: Semantic Transparency (averaged 2.0/10)
+- Zero comments, no pattern recognition, no anomaly warnings - the decompiler presents broken code with false confidence.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ high-level constructs** - Implement exception handling, virtual dispatch, and class structure recovery instead of outputting empty stubs
+2. **Replace goto chains with structured control flow** - Detect loop patterns and conditional blocks from jump targets to produce idiomatic C/C++ code
+3. **Infer variable names from usage context** - Analyze how variables are used (size comparisons, array indexing, pointer arithmetic) to suggest semantic names like `array_size`, `index`, `buffer_ptr`

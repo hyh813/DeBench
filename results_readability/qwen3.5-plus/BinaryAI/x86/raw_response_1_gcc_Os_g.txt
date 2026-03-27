@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar1` with no semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions recovered original names (`sequential_ops`, `single_if`, `nested_if_deep`), but helper functions use generic names (`FUN_00011030`, `FUN_000110e0`). Important functions are identifiable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14`, `0x3039`, `0x2694` appear without explanation. Test values in `test_control_flow_l1` are hex-encoded rather than decimal, obscuring their meaning compared to source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) appear in many functions. Array initialization uses verbose copy loops instead of simple initialization. Compiler artifacts visible throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops and conditionals recovered well (`loop_for_fixed`, `goto_forward`), but `switch_fallthrough` uses goto labels instead of fall-through, and `nested_if_deep` uses chained boolean expressions instead of nested if statements.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes are reasonable, but some signatures are incorrect (`call_func_ptr` missing second parameter, `state_done` missing parameter). Helper functions like `FUN_000110e0` (printf wrapper) not properly identified.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but `switch_fallthrough` and `loop_break` use goto labels that disrupt flow. `duffs_device` has complex label jumps (`_L194`, `_L196`, etc.) obscuring the pattern.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Array initialization uses explicit copy loops in multiple functions (`loop_break`, `loop_multi_exit`, `large_jump_table`). Stack canary checks duplicated across functions without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate (`int`, `uint`, `undefined4`). Some type errors: `if_else` returns `bool` instead of `int`, `state_idle` returns `bool` instead of `int`. Function pointer types partially recovered but signatures often wrong.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays shown as local arrays with manual copy loops instead of static initialization. No struct recovery visible. Matrix in `loop_multi_exit` becomes `undefined4 local_40[12]` losing 2D structure.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: function pointer calls with incorrect signatures (`call_func_ptr_array`), implicit type conversions (`param_1 * 2 + -1`), and stack canary checks indicating potential overflow concerns not addressed.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining purpose, test cases, and difficulty levels. No decompilation confidence indicators or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns (loops, conditionals) recognized, but `duffs_device` not identified as such, state machine pattern in `state_machine` not labeled, and recursion-to-loop optimization not documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags despite clear issues: incorrect function signatures, missing parameters, and type mismatches. `conditional_func_ptr` shows `UNRECOVERED_JUMPTABLE` but no explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No error condition documentation. Original test cases and expected values not preserved as assertions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Test functions call target functions but relationship not explicit. Global variables like `jump_buffer` not clearly identified.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Helper functions (`FUN_000110*`) mixed with test functions. No separation between test infrastructure and test cases.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds, but many undefined references exist (`FUN_000110e0`, `FUN_000110f0`, `__stack_chk_fail_local`). Requires significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+6+6+5)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (5+5+5)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (1+4+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.53
+
+Overall Score: 4.85/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`) losing all semantic meaning from original (`temp1`, `sum`, `count`)
+- **Zero comments** despite original having extensive documentation explaining purpose and test cases
+- **Type errors in recovered signatures** (`if_else` returns `bool` instead of `int`, `state_done` missing parameter)
+- **Control flow degradation** in complex patterns (`switch_fallthrough` uses goto, `nested_if_deep` uses chained booleans)
+- **Array initialization verbose** using copy loops instead of static initialization, adding noise
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core test functions recovered original names correctly, making the primary functionality identifiable despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding intent impossible without comparing to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in loop bounds should be `count`, `limit`; accumulators should be `sum`, `total`)
+2. **Recover and preserve source comments** - Extract debug information (`-g` flag was used) to restore original documentation and test case expectations
+3. **Improve type signature recovery** - Cross-reference call sites to validate function signatures, especially for functions returning values used in specific contexts (boolean vs. integer returns)

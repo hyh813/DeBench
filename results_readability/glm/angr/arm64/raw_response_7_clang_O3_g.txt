@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `cur`), providing no semantic context. For example, in `param_opaque_predicate`, `flag1` and `result` are used for GCD intermediate values but do not reflect their mathematical purpose.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names (`param_fake_branch`, `call_opaque_predicate`, etc.) are perfectly preserved from the original source, providing excellent high-level context despite the low readability of the function bodies.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers are prevalent and unexplained; e.g., `90` (XOR key), `4294967295` (UINT_MAX/-1), and `9223372036854775807` (INT64_MAX) appear directly in calculations without named constants or comments explaining their significance.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is heavily polluted with compiler/lifting artifacts such as `arm64g_calculate_condition`, `__ROL__`, and `unsupported_Iop_ZeroHI96ofV128`, which obscure the underlying C logic and require deep knowledge of the lifting framework to interpret.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: While the optimized control flow is accurately represented (e.g., recursion converted to arithmetic), the logic is obscured by complex condition helpers like `arm64g_calculate_condition` instead of standard C comparison operators, making it difficult to follow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries are recovered perfectly, matching the source granularity. Each logical unit (e.g., `param_tail_call_optimized`, `decrypt_string`) is distinct and separate.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code generally reads top-to-bottom, but uses `goto` (e.g., `LABEL_400c50` in `param_vectorized_loop`) and complex nested conditionals that disrupt the natural flow of the original source.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler successfully reflects the compiler's optimizations (e.g., removing dead code in `param_fake_branch`), presenting the non-redundant, optimized logic rather than the verbose source structure.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Type information is significantly degraded; pointers are often generic `void*` (e.g., in `param_vectorized_loop`), and integers are frequently widened to `unsigned long` or `unsigned long long` regardless of the original `int` type.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Composite types are largely lost or optimized out. The bitfield struct in `param_implementation_defined` is completely eliminated (reduced to `return 48`), and array parameters are often typed as `void*`.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code contains numerous unsafe casts and pointer arithmetic, such as `*((int128_t *)ptr)` and arithmetic on `void*` pointers (`a2 + v2`), which erodes type safety and makes the code dangerous to analyze.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of the complex lifting artifacts, leaving the user to decipher the code entirely on their own.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level patterns are not recognized. The tail-recursive sum in `param_tail_call_optimized` is presented as a complex bitwise formula rather than a mathematical series, and the GCD algorithm is obscured by condition flag lifting.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: While `unsupported_Iop_ZeroHI96ofV128` appears in the output, it is presented as raw code rather than a flagged warning or error, failing to communicate that the decompiler encountered an unsupported operation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred (e.g., the non-null requirement for pointers is not stated).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to follow despite the poor readability of the function internals.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are ordered logically, matching the structure of the original source file, which helps in navigating the code.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile as-is due to the presence of non-standard lifting functions (`arm64g_calculate_condition`, `AddV`) and undefined types.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- **Lifting Artifacts**: The code is cluttered with `arm64g_calculate_condition` and `__ROL__`, making it look like IR rather than C.
+- **Generic Naming**: Variables like `v0`, `v1`, and `a0` provide no semantic information, forcing the analyst to trace data flow manually.
+- **Type Erosion**: Extensive use of `void*` and incorrect integer widths (`unsigned long` vs `int`) obscures the original data structures.
+- **SIMD Exposure**: Vectorized operations are exposed as raw `AddV` intrinsics rather than being abstracted back into loop logic.
+- **Magic Numbers**: Constants like `90` and `4294967295` are used without context or named definitions.
+
+**Best Quality Aspect:** Function Naming (Score: 10/10)
+- **Why?** The decompiler successfully recovered the original function symbols, which is the only reliable anchor for understanding the code's purpose.
+
+**Most Needs Improvement:** Noise Reduction (Score: 1/10)
+- **Why?** The presence of low-level VEX/lifting artifacts makes the code extremely difficult to read for anyone not familiar with the specific intermediate representation used by the decompiler.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Pattern Matching for Condition Codes**: Implement a pass to replace `arm64g_calculate_condition` calls with standard C comparison operators (e.g., `==`, `<`, `>=`) to restore natural control flow.
+2. **Type Inference Heuristics**: Improve type recovery to distinguish `int*` from `void*` based on usage patterns (e.g., dereferencing size) and recover correct integer widths.
+3. **Macro/Constant Extraction**: Detect repeated magic numbers (like the XOR key `90`) and extract them into named constants or at least add comments indicating their likely role.

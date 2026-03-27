@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `v19`, `v20`, `v29`, `v33`) in complex functions like `varargs_func`, offering no semantic hint about their role in register passing or accumulation.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most high-level function names (`cdecl_func`, `test_calling_conventions`) are recovered accurately from symbols, though low-level helpers remain generic (`sub_401020`).
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers like `4294967295` (likely `-1` or `UINT_MAX`) and `206158430216` without context, and string literals are replaced with opaque global pointers (e.g., `&g_40238a`).
+
+**4. Noise Reduction:** Score: 2/10
+Justification: Significant noise is present, including non-standard intrinsics like `AddV` and `CONCAT`, and redundant register shuffling (e.g., `v5 = v19; v6 = v20;`) that obscures the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Complex functions like `varargs_func` rely heavily on `goto` statements (e.g., `goto LABEL_401396`) instead of structured loops, creating spaghetti code that is difficult to follow.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While function boundaries match the source, `varargs_func` is a monolithic block of lifted IR logic that should ideally be abstracted into helper functions or standard library calls.
+
+**7. Code Linearization:** Score: 4/10
+Justification: Forward jumps (e.g., into the middle of loop logic in `varargs_func`) disrupt the top-to-bottom reading flow significantly.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: There is extensive redundancy in the form of blocks assigning `v10` through `v17` to `v25` through `v32`, which appears to be ABI register saving rather than program logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Type information is severely degraded; `func_mixed_args` loses the `double` parameter in the signature (becoming `unsigned long a2`), and `int` is frequently mapped to `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Struct recovery failed completely; `LargeStruct` and `SmallStruct` are not reconstructed, instead replaced by generic `struct_0` definitions or raw pointer arithmetic (e.g., `func_struct_byval` returns nothing).
+
+**11. Type Safety:** Score: 2/10
+Justification: The code contains unsafe casts, such as treating `void*` as `struct_0*` and performing pointer arithmetic on generic buffers to access specific fields.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the complex logic, particularly for the varargs handling or the purpose of the generic `struct_0`.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: Standard idioms are missed; `varargs_func` is not recognized as a variadic function but rather as complex pointer arithmetic on registers and stack.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: While `sub_401095` flags an "Unsupported jumpkind", the complete failure to decompile `func_struct_byval` (empty body) is not explicitly flagged as an error.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement for `ptr` non-null in `param_double_ptr` is implicit in the check but not stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are visible, but the arguments are often constants due to optimization (e.g., `call_cdecl` returns `15` directly), obscuring the relationship between caller and callee parameters.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions without logical grouping or header separation, though the order roughly follows the binary layout.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code uses non-standard Angr intrinsics (`AddV`, `CONCAT`) and `uint128_t` in ways that are not valid standard C, making it non-compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.1/10
+
+**Critical Defects:**
+- **Variable Naming:** Variables like `v19`, `v20` in `varargs_func` provide no semantic context.
+- **Control Flow:** Extensive use of `goto` in `varargs_func` instead of loop constructs.
+- **Type Recovery:** `double` parameter in `func_mixed_args` is lost; structs are replaced by generic `struct_0`.
+- **Noise:** Non-standard intrinsics (`AddV`, `CONCAT`) and redundant register assignments clutter the code.
+- **Logic Loss:** `func_struct_byval` is decompiled as an empty function, completely missing the logic.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 8/10)
+- **Why?** The decompiler successfully recovered symbol names for most high-level functions, making the general structure of the program identifiable despite the low-level implementation details being poor.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 1/10)
+- **Why?** The failure to recover `LargeStruct` and `SmallStruct`, replacing them with meaningless generic types, renders the data manipulation logic unintelligible.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Idiom Recognition:** Implement specific pattern matching for `va_list`/varargs conventions to abstract the complex register/stack shuffling into standard `va_start`/`va_arg` logic.
+2.  **Type Inference:** Improve type recovery for floating-point arguments passed in registers (XMM registers) and for structures passed by value or hidden pointers.
+3.  **IR Cleanup:** Replace internal IR intrinsics (like `AddV`, `CONCAT`) with standard C operators (`+`, bitwise shifts) to ensure the output is valid, compilable C code.

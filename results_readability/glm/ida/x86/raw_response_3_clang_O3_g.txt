@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `v3`, `v4`), obscuring semantic meaning like loop counters or buffer pointers. For example, in `large_stack_frame`, the array is named `v2` instead of `large_buf`, and in `heap_basic`, the allocated pointer is `v2`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are preserved accurately from the source (e.g., `local_vars`, `heap_basic`, `linked_list_heap`), making the high-level intent immediately clear. Only runtime or compiler-generated functions use generic names like `sub_1030`.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers are prevalent and unexplained, such as `0x14u` (20), `0x28u` (40), and `0xFFFFFFFC` (alignment mask). String literals are preserved, but numeric constants lack the named constants (e.g., `MAX_SIZE`) used in the source.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant compiler artifacts remain, including `__asm { jmp dword ptr [ebx+8] }`, `__usercall` calling conventions, and `__x86.get_pc_thunk.bx` functions, which clutter the output and distract from the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: The code reflects aggressive `-O3` optimization (despite source metadata claiming `-O0`), resulting in heavily unrolled loops (e.g., `large_stack_frame` unrolled by 8) and constant propagation (e.g., `local_vars` reduced to `return 2 * x + 10`). While accurate to the binary, this deviates significantly from the source's natural loop structures.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: Many small functions were inlined into `test_...` functions (e.g., `local_vars` inlined into `test_stack_memory`), creating monolithic blocks. However, complex logic like `linked_list_heap` remains a separate function, though it contains inlined `malloc` calls.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom without excessive spaghetti jumps. However, the unrolled loops create long vertical blocks of repetitive code that disrupt the natural flow of reading a loop.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: Due to loop unrolling, there is massive textual redundancy (e.g., 8 nearly identical lines in `large_stack_frame`). While this is an optimization artifact, the decompiler fails to abstract it back into a loop, harming readability.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `int` and `char*` are mostly correct, but there are significant errors. `set_file_static` casts an `int` argument to `int*` when assigning to `file_scope_static`, and `get_file_static` returns `int*` instead of `int`. Function pointers are often cast to `int` (e.g., `global_func_ptr`).
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Structs like `Node` are partially recovered, using array indexing (e.g., `v0[1]` for `next`) instead of member access (e.g., `v0->next`). However, simpler structs like `Point` are completely optimized away, and `TreeNode` usage is reduced to a constant return value.
+
+**11. Type Safety:** Score: 4/10
+Justification: Unsafe casts are common, such as `*(_DWORD *)&v2[2 * v5 - 8]` in `heap_basic`. The use of `__usercall` implies register-based arguments that are not type-safe in standard C, and pointer arithmetic is used extensively where array access should be.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic. The only comment is a warning about stack pointer detection (`// positive sp value has been detected...`), which is a decompiler artifact rather than a semantic explanation.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common idioms like `malloc`/`free` pairs are recognizable, but higher-level patterns like loop unrolling or VLA setup are not identified or annotated. The code presents the raw mechanics of the optimization rather than the original intent.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: Aside from the stack pointer warning, suspicious code (like the complex pointer arithmetic in `vla_stack` or the inlined logic in `linked_list_heap`) is presented without flags or warnings about potential optimization artifacts or decompiler uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the check `if (n <= 0 || n > 1000)` in `vla_stack` is decompiled into complex arithmetic without a clear comment indicating it's a safety check.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls to standard library (`malloc`, `printf`) and internal functions are clear. However, the inlining of small functions obscures the call graph for simple operations.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source's sections (stack, heap, static tests). The order is preserved well, making it easy to locate specific test cases.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile without significant modification due to `__usercall` conventions, `__asm` blocks, and missing external declarations for runtime functions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 3 + 4) / 4 = 4.75
+L2_avg = (5 + 6 + 7 + 3) / 4 = 5.25
+L3_avg = (5 + 6 + 4) / 3 = 5.00
+L4_avg = (1 + 3 + 2 + 1) / 4 = 1.75
+L5_avg = (7 + 8 + 2) / 3 = 5.67
+
+Overall = (4.75 × 0.30) + (5.25 × 0.25) + (5.00 × 0.20) + 
+          (1.75 × 0.15) + (5.67 × 0.10)
+        = 1.425 + 1.3125 + 1.0 + 0.2625 + 0.567
+        = 4.567
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects (Bullet List)
+- **Variable Naming**: Extensive use of generic names (`v1`, `v2`) obscures semantic meaning (e.g., loop counters, buffer pointers).
+- **Optimization Artifacts**: Aggressive loop unrolling (e.g., in `large_stack_frame`) and constant propagation (e.g., `local_vars` reduced to a math expression) make the code structurally unrecognizable compared to the source.
+- **Type Inference Errors**: `set_file_static` and `get_file_static` have incorrect pointer types (`int*` vs `int`), and function pointers are cast to `int`.
+- **Magic Numbers**: Numeric constants like `0x14u`, `0x28u`, and `0xFFFFFFFC` are used without named constants or comments.
+- **Lack of Comments**: Zero semantic comments; the decompiler fails to explain complex logic or optimization artifacts.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (9/10)
+- **Why?** The decompiler successfully preserved the original function names (e.g., `heap_basic`, `test_stack_memory`), which is crucial for navigating the code.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Comment Quality & Presence (1/10)
+- **Why?** The complete absence of comments explaining logic, optimization artifacts, or complex pointer arithmetic makes the code very difficult to understand.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Loop Re-rolling**: Implement pattern matching to detect and re-roll unrolled loops into standard `for` or `while` constructs to improve readability.
+2. **Variable Name Inference**: Analyze usage patterns (e.g., `malloc` return values, loop counters) to infer and suggest semantic names instead of `v1`, `v2`.
+3. **Type System Refinement**: Improve type inference for static/global variables to avoid incorrect pointer casts (e.g., `int` vs `int*`) and recover struct member access (`->`) from array indexing (`[1]`).

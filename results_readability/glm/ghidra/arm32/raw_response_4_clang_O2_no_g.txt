@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`param_1`, `param_2`, `piVar1`, `uVar1`). In `varargs_func`, the varargs list is named `local_c`, which obscures the semantic meaning of a variable argument list.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are recovered perfectly from the symbol table (e.g., `cdecl_func`, `stdcall_func`, `test_calling_conventions`), matching the original source exactly and providing clear semantic intent.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Magic numbers like `0xf` (15) and `0x32` (50) are used due to compiler constant propagation. While hex is standard, the loss of the original decimal context (e.g., `5 + 10`) makes the literals slightly less readable than the source expressions.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is polluted with `undefined4` and `undefined8` types, and Ghidra-specific macros like `CONCAT44` appear in floating-point helper functions, significantly reducing readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally natural; `varargs_func` uses a `do-while` loop which accurately represents the iteration. However, the floating-point intrinsic functions (`__adddf3`) contain complex goto-based logic that obscures the high-level math operations.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: User-defined functions are appropriately sized, but the output includes massive, inlined floating-point library functions (e.g., `__adddf3` is 100+ lines), which clutters the decompilation and distracts from the source logic.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom with appropriate early returns. There are no confusing forward jumps or spaghetti code structures within the user-defined functions.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully presents the logic without obvious dead code or redundant assignments, though the verbosity of `ret_large_struct` (assigning every array index individually) reflects the source rather than optimization noise.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Type information is severely degraded. 64-bit types (`double`, `long long`) are split into pairs of `undefined4` (e.g., `func_mixed_args` takes 6 params instead of 4), and `size_t` is lost in favor of generic types.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Composite types are completely lost. `func_struct_byval` is decompiled with 32 separate integer parameters instead of a single `LargeStruct`, and `ret_small_struct` uses a raw pointer (`undefined4 *param_1`) instead of returning a struct.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on `undefined` types and raw pointer arithmetic. For example, `ret_large_struct` writes to `param_1[0xc]` using pointer math on an `int*` rather than accessing a struct field, which is unsafe and obscure.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are no meaningful comments explaining the logic. The only comments are Ghidra warnings like `/* WARNING: Removing unreachable block */`, which offer no semantic value.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level idioms are missed. The `varargs_func` implementation accesses a stack array (`local_c`) directly rather than showing `va_list` or `va_arg` usage, and struct passing is not recognized as a distinct idiom.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler confidently presents incorrect signatures (e.g., 32 parameters for `func_struct_byval`) without flagging them as anomalies or potential ABI failures, misleading the user.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., non-null pointers) or postconditions. For instance, `param_double_ptr` checks for NULL but this is not documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear because the function names were preserved. It is easy to see that `test_calling_conventions` calls `cdecl_func`, `stdcall_func`, etc.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are grouped, but the decompilation is cluttered with low-level runtime support functions (e.g., `__aeabi_drsub`, `__fixdfsi`) interleaved with the user logic, disrupting the module's logical organization.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile as-is due to `undefined4` types, `CONCAT44` macros, and missing headers for the runtime intrinsics.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- **Struct Passing Failure:** `func_struct_byval` is decompiled with 32 integer parameters (`param_1` through `param_31`) instead of one `LargeStruct` parameter.
+- **64-bit Type Splitting:** In `func_mixed_args`, the `double` and `long long` parameters are split into multiple `undefined4` parameters, destroying the function signature.
+- **Varargs Obfuscation:** `varargs_func` accesses the stack via a local array `local_c` and pointer arithmetic, failing to recover the `va_list` abstraction.
+- **Struct Return Loss:** Functions returning structs (e.g., `ret_small_struct`) are decompiled as `void` functions taking a hidden pointer parameter, losing the return type semantics.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully recovered symbol names for all user-defined functions, making the high-level call graph easy to follow despite the low-level type failures.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The complete inability to recover struct definitions (either passed by value or returned) renders complex functions nearly unreadable, turning a single struct argument into dozens of integer parameters.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhance ARM ABI Analysis:** Implement logic to detect stack-passed structures by analyzing contiguous stack slot access patterns and merge them into a single struct parameter.
+2.  **Register Pair Coalescing:** Detect adjacent 32-bit registers (e.g., R0/R1) or stack slots used in tandem (like in `__adddf3` calls) and merge them into 64-bit types (`long long`, `double`, `undefined8`).
+3.  **Varargs Pattern Recognition:** Identify standard stack frame layouts for variadic functions to recover `va_list` usage instead of representing arguments as a raw local array.

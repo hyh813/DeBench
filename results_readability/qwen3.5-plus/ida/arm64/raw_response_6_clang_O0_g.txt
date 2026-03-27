@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Mixed quality - `dst`, `src`, `write_data` are meaningful, but `v0`, `v1`, `v2`, `attemptsa` are generic. In `param_signal_handling`, variables `v3`, `v4` obscure their boolean purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Excellent preservation - `param_strcpy`, `call_strcmp`, `thread_compute`, `consumer_thread` all match source intent. Only startup functions like `sub_12E0` are generic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Severe magic number issues - signal numbers `10`, `14` instead of `SIGUSR1`, `SIGALRM`; syscall numbers `56`, `57` instead of `SYS_open`, `SYS_close`; socket constants `2`, `1` instead of `AF_INET`, `SOCK_STREAM`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present - redundant assignments (`tmpfilea = tmpfile`, `proga = prog`), excessive casts (`(_DWORD *)`, `(__int64)`), stack annotations (`[xsp+10h] [xbp-20h] BYREF`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Mostly natural if/else and for/while structures recovered. Signal handling uses `while(1)` with break which is acceptable. Fork/exec branching preserved correctly.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source well. Thread functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`). No excessive inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Some forward variable assignments (`xa = x`, `input = x`) but don't significantly disrupt flow. Loop structures are clear.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant parameter copies present (`thread_counta = thread_count`, `iterationsa = iterations`). These are compiler register-spilling artifacts that obscure intent.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved but degraded - `__int64`, `_DWORD`, `__int128` instead of precise types. Some unsigned/signed confusion (`(unsigned int)-1`). Pointer types generally correct.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Poor struct recovery - `ThreadData` accessed via pointer arithmetic (`*((_DWORD *)arg + 2)`). TLS access shows raw offsets (`StatusReg + 16`). `struct stat`, `struct sockaddr` not properly defined.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many unsafe casts (`(_DWORD *)`, `(__sighandler_t)`). Function pointer casts (`(void *(*)(void *))`). Pointer arithmetic without bounds checking in TLS and thread data access.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. No algorithm explanations, no decompilation confidence indicators. Only auto-generated function signatures present.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`). Thread patterns visible but not named. Signal handling and producer-consumer patterns not identified.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good transparency on failures - 61 functions marked "FAILED to decompile". However, no warnings about uncertain decompilation within successfully decompiled functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions inferred. Error conditions visible through return values but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear. Global variables visible (`signal_received`, `atomic_counter`). No call graph documentation. Callback relationships not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source. Test functions grouped together. No header file structure or namespace organization present.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 61 external functions failed to decompile - won't compile standalone. Would need significant stubbing for all libc, pthread, and syscall functions. Dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+8+4+5)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (6+4+5)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+5+6+3)/4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):  (6+6+3)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.58/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Magic numbers everywhere**: Signal numbers `10`, `14` should be `SIGUSR1`, `SIGALRM`; syscall numbers `56`, `57` should be `SYS_open`, `SYS_close`
+- **No comments**: Zero documentation for non-trivial logic like signal handling loops or TLS access patterns
+- **Struct recovery failure**: `ThreadData` struct accessed via pointer arithmetic (`*((_DWORD *)arg + 2)`) instead of named fields
+- **61 failed external functions**: Cannot compile standalone; all libc/pthread/syscall functions need stubs
+- **Redundant variable copies**: `tmpfilea = tmpfile`, `proga = prog` obscure data flow without adding value
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names like `param_strcpy`, `consumer_thread`, `thread_atomic_increment` are preserved accurately and clearly indicate purpose.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no comments exist to explain algorithm intent, decompilation confidence, or non-obvious logic patterns.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover symbolic constants** - Map magic numbers to named constants using debug symbols or pattern matching (e.g., `10` → `SIGUSR1`, `56` → `SYS_open`)
+2. **Add decompilation confidence annotations** - Insert comments indicating uncertain type recovery, unresolved indirect calls, or potential optimization artifacts
+3. **Recover composite type structures** - Use debug info to reconstruct struct definitions with field names instead of pointer arithmetic access patterns

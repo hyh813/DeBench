@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all local variables use generic names like `local_28`, `uStack_24`, `local_1c`. The decompiler explicitly marks variables as "Unresolved local var" (e.g., `/* Unresolved local var: SimpleClass obj@[???] */`), making it impossible to track variable purposes without significant reverse engineering effort.
+
+**2. Function Naming Quality:** Score:6/10  
+Justification: Some member functions are properly named (e.g., `Base::virtual_func`, `template_max<int>`), but many functions retain mangled C++ names like `_ZThn8_N12MultiDerived5funcBEv` and `_ZTv0_n12_N14DiamondDerived4funcEv`. The `call_virtual_func` is correctly named but doesn't indicate it's a polymorphic dispatch wrapper.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x125c` for 4704, `0x2a` for 42). Most test functions return hardcoded literal values (e.g., `return 0x16;` for operator overload) instead of showing the actual computation, completely obscuring the algorithmic logic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifact noise includes repeated "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", and "WARNING: Subroutine does not return" messages. These auto-generated warnings clutter the output and don't help understanding.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Many functions are reduced to single return statements with pre-computed values (e.g., `test_cpp_operator_overload` just returns `0x16`), making control flow assessment impossible. Where control flow exists, it's mostly natural but trivial. The exception handling uses `__cxa_throw` directly without try-catch recovery.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Template functions are properly separated into instantiations (`template_max<int>`, `template_max<double>`). However, test functions are oversimplified to single return statements, losing all decomposition. Member functions like destructors are correctly separated but often empty.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The code generally reads top-to-bottom without excessive forward jumps. Where complexity exists (like `test_cpp_rtti`), the flow is reasonably linear despite nested conditionals. No severe non-linearity issues observed.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some dead code visible (e.g., unreachable blocks flagged in warnings). Template instantiations show some code duplication but this is expected from compilation. No severe redundancy that makes code unmaintainable.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of imprecise types like `undefined4`, `undefined2`, `undefined1`, and `undefined**` for function pointers. While some proper types like `int`, `double`, `size_t` appear, the overall type precision is poor. The decompiler frequently uses `void*` equivalents through `undefined*` types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct fields are properly recovered (e.g., `local_20.super_BaseB.dataB`, `local_20.super_BaseA.dataA`), but many are generic. The `DiamondDerived` struct has a warning about "ignoring overlapping field", indicating incomplete recovery. Class layouts are partially reconstructed but with generic field names in many cases.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Pointer arithmetic is present (e.g., `*(int *)((int)pvVar1 + iVar3 * -4)`). Function pointer types are sometimes incorrect (using `undefined**`). Some unsafe casts visible in the RTTI code. Not severely dangerous but requires careful analysis to ensure safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: DWARF original prototypes are preserved (e.g., `/* DWARF original prototype: int virtual_func(Base * this, int x) */`), which is helpful. However, "Unresolved local var" comments provide no value, and the many "WARNING" comments are noise rather than useful documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are partially recognized (virtual function calls through vtable, template instantiations). However, there's no explicit naming or documentation of patterns like RAII, virtual inheritance, or exception handling mechanisms. The lambda expressions are completely unresolved.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The decompiler does flag some anomalies like "Unknown calling convention", "Subroutine does not return", and struct overlap warnings. However, indirect virtual calls are not always clearly flagged as uncertain, and the "Unresolved local var" comments don't indicate confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler provides no information about expected input constraints or guaranteed output properties. This is a significant gap for safety-critical analysis.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Virtual dispatch is partially visible through vtable pointers (`_vptr_Base`). Function call relationships are somewhat clear through naming (e.g., `Base::virtual_func` called from `test_cpp_virtual_func`). However, callback relationships and global variable usage are not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are present but organized in a single monolithic output file. There's no clear grouping by class or namespace. Related member functions are scattered rather than logically grouped with their classes.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code uses undefined types (`undefined4`, `undefined**`) and calls undefined functions (`operator_new__`, `operator_delete__`). It will not compile as-is and requires significant patching to produce working code. No dependency documentation is provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable naming**: All local variables use generic names (`local_28`, `uStack_24`) with "Unresolved local var" markers, making code comprehension extremely difficult
+- **Oversimplified test functions**: Most `test_cpp_*` functions return hardcoded literal values (e.g., `return 0x16;`) instead of showing actual computation, completely losing algorithmic meaning
+- **Type precision**: Heavy use of `undefined4`, `undefined1`, `undefined**` types instead of proper C++ types
+- **Magic numbers**: Values like `0x125c`, `0x2a`, `0x16` appear without explanation or constant names
+- **Lambda/exception loss**: Complex C++ features like lambda expressions and exception handling are either completely unresolved or reduced to single throw statements
+
+### Best Quality Aspect: Control Flow Naturalness (5/10)  
+While many functions are oversimplified, where control flow exists it is reasonably natural and readable. The template function instantiations are properly separated.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)  
+The complete loss of variable names is the most severe readability issue. Every local variable is marked as "Unresolved" with generic stack-based names, forcing analysts to manually track purpose through usage patterns.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: Use data flow analysis to suggest meaningful names (e.g., `local_28` used in `strlen()` should suggest `name_buffer` or similar)
+2. **Recover computed values**: Instead of returning hardcoded literals like `0x16`, show the actual computation that produces the value, even if it requires constant folding
+3. **Resolve C++ name mangling**: Demangle function names consistently and map them to their original class/namespace context (e.g., `_ZThn8_N12MultiDerived5funcBEv` → `MultiDerived::funcB via BaseB`)

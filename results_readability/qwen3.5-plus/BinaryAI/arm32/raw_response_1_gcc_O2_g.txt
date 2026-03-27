@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `local_28` with no semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source (`sequential_ops`, `nested_if_2`, `duffs_device`, `switch_fallthrough`). Names accurately reflect functionality and match original source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex literals (`0x14`, `0x1e`, `0xffffffff`, `0x3e9`) without explanation. Original used decimal values (10, 20, 30, -1, 1000) that were more readable.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Runtime stubs present (`_init`, `_start`, `__aeabi_idiv`) but don't overwhelm core logic. Function bodies are relatively clean without excessive compiler artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions recover natural structures, but `duffs_device` uses excessive gotos (`switchD_00010e24_caseD_7`), and test functions use forward jumps (`goto LAB_00010b8c`) instead of structured control flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; helper functions (`double_value`, `triple_value`) remain separate. Test functions are large but cohesive.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Test functions have disruptive forward jumps that break top-to-bottom reading. `duffs_device` has complex goto chains that obscure execution flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions repeat array initialization code multiple times (`local_28[0] = 10; local_28[1] = 0x14;...`). No dead code removal in test harnesses.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` types used throughout; some functions return `undefined4` instead of `int`. `if_else` incorrectly returns `bool` when source returns `int`. No `int32_t` precision.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays recovered as local variables (`local_28[4]`, `apcStack_18[6]`) but no struct definitions. Function pointer arrays partially recovered with generic naming.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Implicit casts present (`(int)param_1`, `(uint)bVar5`) but not severe. Function pointers use `code *` type. No buffer overflow patterns detected.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels. Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Control flow patterns partially recovered but not identified (no "state machine" or "Duff's device" labels). `recursion_factorial` optimized to iterative without noting the transformation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some markers present (`UNRECOVERED_JUMPTABLE` in `call_func_ptr`, `conditional_func_ptr`) but inconsistent. No warnings for type mismatches or semantic changes.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling contracts documented. Original had explicit test validation comments that are completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but call graph not documented. Callback relationships (`process_with_callback`) not explained. External dependencies mixed with application code.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file with no logical grouping. Runtime functions (`_init`, `_fini`, `__do_global_dtors_aux`) mixed with application logic.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: ARM-specific runtime functions (`__aeabi_idiv`, `__aeabi_idivmod`) require stubs. External calls (`__printf_chk`, `_setjmp`) need linking. Won't compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+9+5+7)/4 = 6.00
+L2 Average: (6+7+5+6)/4 = 6.00
+L3 Average: (5+5+6)/3 = 5.33
+L4 Average: (1+4+5+2)/4 = 3.00
+L5 Average: (5+5+4)/3 = 4.67
+
+Overall = (6.00 × 0.30) + (6.00 × 0.25) + (5.33 × 0.20) + (3.00 × 0.15) + (4.67 × 0.10)
+        = 1.80 + 1.50 + 1.07 + 0.45 + 0.47
+        = 5.29/10
+```
+
+**Overall Readability Score: 5.3/10**
+
+### Critical Defects
+- **Variable names completely generic** (`param_1`, `iVar1`, `local_28`) - should infer semantic names from usage patterns
+- **Zero comments preserved** - original had extensive documentation explaining purpose and test cases
+- **Type errors introduced** - `if_else` returns `bool` instead of `int`, `state_done` has wrong signature (no parameters)
+- **Control flow degradation** - `duffs_device` uses 7+ goto labels instead of structured switch/do-while
+- **Test functions have redundant code** - array initialization repeated 4+ times with forward jumps
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - Original function names perfectly preserved, making it easy to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of comments loses all semantic context, algorithm explanations, and test validation information from the original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** - Analyze usage patterns to suggest semantic names (e.g., variables used in loop bounds → `count`, `limit`; variables in arithmetic → `sum`, `result`)
+2. **Preserve or regenerate comments** - Either extract debug info comments from `-g` flag or generate explanatory comments for non-trivial control flow patterns
+3. **Improve control flow reconstruction** - Better pattern matching for Duff's device, switch fallthrough, and nested conditionals to avoid excessive goto generation

@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `temp_1`) with no semantic meaning. Original source had descriptive names like `result`, `sum`, `exec_mem`, `page_size` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). However, helper functions use mechanical names (`function_1030`, `function_1040`) for system call wrappers.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (`0xffffffff`, `0xdef0`, `& 0xffffffff` masks). String literals stored as hex-encoded globals (`g1 = "PP-L2-01: %d (\xe6\x9c\x9f..."`) making Chinese text unreadable. Original macros (`MAX_SIZE`, `BUFFER_COUNT`) lost.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive `& 0xffffffff` casts throughout. Compiler runtime artifacts present (`deregister_tm_clones`, `frame_dummy`, `__do_global_dtors_aux`). Assembly intrinsics (`__asm_movaps`, `__asm_paddd`) preserved but clutter output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural if-else flow. However, `param_macro_constants` uses convoluted overflow-check expression (`v2 < 0 == ((v2 ^ v1) & ...)`) instead of simple `if (size > MAX_SIZE)`.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical parameter count errors: `param_dynamic_code` shows 6 parameters instead of 1, `param_memory_protection` shows 6 instead of 0. System calls extracted to `function_1040` etc. but with wrong signatures.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. Loop structures in `param_asm_clobber` and `call_asm_multi_insn` are recognizable while-loops. Some forward references disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding loses semantics (`call_macro_constants` returns literal `64` instead of calling `param_macro_constants(2048)`). Redundant `& 0xffffffff` masks appear on nearly every return statement.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything promoted to `int64_t` regardless of original type. Original `int` parameters become `int64_t a1`. Pointer types degraded (`int64_t *` for `void *`). Custom typedef `int128_t` for SIMD registers is confusing.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No structs/unions in this code to recover. Arrays handled via pointer arithmetic (`*(int32_t *)(4 * v1 + a1)`). Global string arrays stored as opaque `int128_t g20/21/22`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout. Pointer arithmetic without proper typing (`*(char *)v5 = *(char *)v6`). Function pointer calls with mismatched signatures (`call_asm_privileged` called with 6 arguments).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each test case, expected values, and assembly semantics. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Assembly patterns preserved but not identified (SSE vector operations, atomic operations). Loop patterns recognized but not labeled. No algorithm pattern identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about suspicious parameter counts or type mismatches. Functions with 6 parameters when original had 1 are not flagged. Assembly intrinsic calls not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL` for `param_asm_clobber`). No postconditions or error handling documentation. Original expected return values lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph mostly intact. Global variables (`g1`-`g19`) referenced but not documented. String content not visible without hex decoding.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file. Functions grouped somewhat logically (preprocessing tests, assembly tests). No header file structure or API documentation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes present but assembly intrinsics (`__asm_movaps`, `__asm_paddd`, `__asm_hlt`) undefined. Would require significant stubs to compile. Some function signatures incompatible.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+4+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.48/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects:
+- **Parameter count corruption**: `param_dynamic_code(int64_t a1, ...a6)` has 6 parameters when original has 1 (`int x`)
+- **Complete variable name loss**: All variables are `v1`, `v2`, `v3` with no semantic meaning
+- **Zero documentation**: No comments despite original having extensive test documentation
+- **Constant folding over-optimization**: `call_macro_constants()` returns literal `64` instead of showing the function call relationship
+- **Unreadable string literals**: Chinese text stored as hex bytes (`\xe6\x9c\x9f\xe6\x9c\x9b`) without decoding
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved accurately, maintaining semantic connection to source code purpose.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding test purposes and expected behaviors nearly impossible without referencing original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro constant semantics** - Detect constant-folded values and annotate with original macro names (e.g., `return 64; // BUFFER_COUNT * 4`)
+2. **Validate parameter counts against call sites** - Cross-reference function definitions with actual call patterns to detect signature corruption
+3. **Add confidence annotations** - Flag suspicious patterns (unusual parameter counts, assembly intrinsics, type mismatches) with decompiler uncertainty indicators

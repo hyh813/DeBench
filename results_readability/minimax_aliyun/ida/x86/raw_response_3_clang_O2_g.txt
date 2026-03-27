@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named with generic identifiers (v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v15). The original source used meaningful names like `arr`, `n`, `x`, `buf`, `src`, `dst`, `head`, `temp`, `leak`, `p`, `p1`, `p2` - all completely lost in decompilation. Loop indices are sometimes register names like "eax" rather than "i".
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names are correctly recovered: `local_vars`, `local_array`, `local_struct`, `address_of_local`, `address_of_array`, `large_stack_frame`, `vla_stack`, `alloca_usage`, `stack_alias`, `heap_basic`, `heap_calloc`, `heap_realloc`, `heap_array`, `heap_struct`, `heap_nested`, `linked_list_heap`, `create_tree_node`, `tree_heap_traversal`, `memory_leak`, `dangling_pointer`, `double_free`, `heap_overflow`, `global_var_access`, `global_var_read`, `global_array_access`, `static_local`, `call_static_func`, `access_extern_global`, `call_extern_func`, `read_const_data`, `access_bss_var`, `access_bss_buffer`, `global_struct_access`, `set_file_static`, `get_file_static`, `set_global_callback`, `call_global_callback`, `global_heap_store`, `static_complex_init`, `tls_access`, `init_order_test`, `double_value`, `memop_memset`, `memop_memcpy`, `memop_memmove`, `memop_memcmp`, `memop_bzero`, `memop_bcopy`, `memop_unaligned_access`, `memop_memory_barrier`. Only minor issues with some internal functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are correctly preserved (42, 10, 20, 30, 50, 60, 100, 2048) but many magic numbers lack explanation. Values like `0xFFFFFC18`, `0xFFFFFFF0`, `0xFFFFFFFC`, `0x7FFFFFF8` are unexplained bit manipulation constants. The original source had clear constants like `n/2`, `i*2`, `i*3` which are sometimes reduced to hardcoded results in test functions.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Relatively clean output with minimal compiler artifacts. No excessive register spilling artifacts, redundant casts, or debug instrumentation. Some unusual variable names like "retaddr" appear but don't significantly impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper loops and conditionals. However, test functions like `test_stack_memory`, `test_heap_memory`, `test_static_global`, `test_memory_op_functions` have had their logic completely replaced with hardcoded printf statements showing constant values, losing the original control flow entirely. The VLA and alloca functions show complex loop unrolling that obscures the original simple for-loop structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity - none are excessively large. The original source's helper functions like `double_value`, `create_tree_node` are properly separated. However, the test functions inline what should be function calls, and some complex functions like `vla_stack` and `alloca_usage` could benefit from decomposition into clearer helper functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in error-checking code (e.g., `if (!v2) return -1;`). Some non-linearity exists in the VLA/alloca functions with complex loop structures, but it's manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: The decompiler has applied constant propagation extensively - test functions show hardcoded results (e.g., `printf("MEM-L1-01 (local_vars): %d\n", 20);` instead of calling the function). Loop unrolling is present in memory operation functions but not excessive. Some dead code elimination is evident.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are mostly correct: `int`, `char*`, `void*`, `_DWORD`. However, `size_t` is often shown as `int` or `unsigned int`, losing precision. The original source used `size_t` parameters in functions like `memop_memset(void *buf, size_t size, int fill_value)` but the decompiled version shows `unsigned __int8 *buf, size_t size` which is incorrect (buf should be `void*`). Function pointer types are sometimes shown as `(int)` casts rather than proper function pointer signatures.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: The `Node` structure is correctly recovered with `data` and `next` fields. The `TreeNode` structure is correctly recovered with `data`, `left`, `right` fields. The `Point` typedef is used but not shown as a typedef. However, the complex VLA handling in `vla_stack` and `alloca_usage` shows raw pointer arithmetic without recovering the VLA concept, and the original source's `Point` struct definition is not shown.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several type safety issues exist. In `set_file_static`, the function takes `int val` but assigns to `file_scope_static` which should be `int*`, showing type confusion. In `set_global_callback`, the function pointer is cast to `(int)` losing type safety. The `memop_unaligned_access` function uses unsafe `*(_DWORD *)(buf + 1)` without alignment warnings. Multiple instances of casting between `int` and pointers (e.g., `global_heap_ptr = (int)p;`).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No comments are present in the decompiled output. The original source had extensive comments explaining each test case (e.g., `// MEM-L1-01: 局部变量（基础类型）⭐`, `// 测试: 纯栈上基础变量`). Complex logic like the VLA allocation, memory barrier operations, and unaligned access have no explanatory comments.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some idioms are implicitly recognized (malloc/free pairs, memset usage, linked list traversal) but not explicitly named or documented. The original source's specific patterns like "VLA on stack", "alloca stack allocation", "TLS with __thread", "memory leak pattern", "dangling pointer", "double free" are not identified or flagged.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler correctly indicates failed to decompile functions (e.g., `/* FAILED to decompile: __libc_start_main @ 0x6078 */`). However, it doesn't flag dangerous patterns like the `dangling_pointer` function that accesses memory after `free()`, or the `double_free` function that intentionally frees the same pointer twice. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had implicit contracts (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated" in memory functions) that are not recovered. Error handling is present but not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (e.g., `malloc`, `free`, `printf` are correctly identified). However, the relationships between functions are not documented - there's no indication that `test_stack_memory` calls `local_vars`, `local_array`, etc. The callback mechanism in `set_global_callback`/`call_global_callback` is not explained. No call graph or usage documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped in the output but not matching the original source organization. The original had clear sections: "3.1 栈内存操作", "3.2 堆内存操作", "3.3 静态与全局内存", "3.4 内存操作函数". The decompiled output mixes test functions with implementation functions. Static functions like `static_local_counter` are not clearly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code has many unresolved external references (printf, malloc, free, memcpy, memmove, memcmp, memset, calloc, realloc, fork, waitpid, perror, exit, puts, __libc_start_main). These are listed as "FAILED to decompile" but no stubs or declarations are provided. The code cannot compile standalone without significant patching. No dependency documentation is provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 avg = (2 + 9 + 5 + 8) / 4 = 6.0
+Level 2 avg = (7 + 7 + 7 + 7) / 4 = 7.0
+Level 3 avg = (6 + 7 + 6) / 3 = 6.33
+Level 4 avg = (3 + 5 + 5 + 3) / 4 = 4.0
+Level 5 avg = (5 + 6 + 4) / 3 = 5.0
+
+Overall = (6.0 × 0.30) + (7.0 × 0.25) + (6.33 × 0.20) + (4.0 × 0.15) + (5.0 × 0.10)
+        = 1.80 + 1.75 + 1.27 + 0.60 + 0.50 = 5.92/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects (Bullet List)
+- **Variable naming completely generic**: All meaningful variable names (arr, n, x, buf, src, dst, head, temp, leak) replaced with v0-v15, making it impossible to track purpose without analyzing every usage
+- **Test functions lost all logic**: `test_stack_memory`, `test_heap_memory`, `test_static_global`, `test_memory_op_functions` have all their function calls replaced with hardcoded printf statements, completely losing the original control flow
+- **No comments or documentation**: Zero comments in output, while original source had extensive explanations for each test case and complex operation
+- **Type safety issues**: Multiple unsafe casts between int and pointers (e.g., `global_heap_ptr = (int)p;`, `file_scope_static = (int *)val;`), function pointers cast to int
+- **No anomaly warnings**: Dangerous patterns like dangling pointer access after free, double free, and memory leak are not flagged
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (score: 9/10)**  
+- Nearly all function names are correctly recovered from the original source, providing excellent semantic anchoring for understanding the code structure.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (score: 2/10)**  
+- The complete loss of meaningful variable names is the most severe readability issue. Generic names like v0-v15 make it extremely difficult to understand code logic without extensive cross-referencing.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, pointer dereferencing, arithmetic operations) to suggest semantic names. For example, `v1` used as `arr[v1]` in a loop should suggest "index" or "i".
+2. **Preserve test function logic**: Instead of replacing function calls with hardcoded values, maintain the original call structure. The test functions should still call `local_vars(5)`, not print `20` directly.
+3. **Add semantic comments for complex patterns**: Document recognized patterns like VLA allocation, TLS access, memory barriers, and dangerous operations (dangling pointers, double-free) with explanatory comments.

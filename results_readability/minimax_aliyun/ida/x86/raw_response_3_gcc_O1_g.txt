@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `ptr`, `i`. The original source used meaningful names like `arr`, `buf`, `p1`, `p2`, `head`, `temp`, `n`, `x`. Only loop counter `i` and pointer `ptr` are occasionally meaningful.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Every function name perfectly matches the original source: `double_value`, `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `linked_list_heap`, `create_tree_node`, `memory_leak`, `dangling_pointer`, `global_var_access`, `static_local`, `memop_memset`, `memop_memcpy`, etc. Excellent recovery.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are clear (e.g., `42`, `10`, `20`, `50`). However, magic numbers like `0x14u` (stack canary), `0x3E7` (999 bound), `0x28u` (40 bytes), `0xCu` (12 bytes) lack explanatory comments. String labels like `asc_3008` are auto-generated but serve as test identifiers.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: stack canary checks (`__readgsdword(0x14u)`), alloca handling in VLA functions, internal functions like `__x86.get_pc_thunk.bx`, `__do_global_dtors_aux`. Failed decompilations for 17 standard library functions create noise. However, core logic is relatively clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow closely matches original source at -O0. Loops use `for`/`while` constructs naturally. Conditionals are clear. Minor awkwardness in `vla_stack` with unusual while loop for stack alignment, but overall natural and easy to follow.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity is excellent - matches original source exactly. Each function has clear single responsibility (e.g., `heap_basic`, `linked_list_heap`, `create_tree_node`). No monoliths, no over-fragmentation. Test functions properly call individual test cases.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Minor issues: unusual while loop construct in `vla_stack` and `alloca_usage` for VLA handling creates non-intuitive flow. Early returns used appropriately. Some forward jumps in complex functions but manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy. Loop unrolling is minimal (appropriate for -O0). No obvious dead code. Some repeated patterns in test functions but these match the original source structure.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are mostly precise. Uses `int`, `_DWORD` (32-bit), `_BYTE`, `_WORD` appropriately. Function pointers properly typed (e.g., `int (*f)(int)`). Minor generic types in some places but overall good. Signed/unsigned mostly correct.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Mixed results. `TreeNode` partially recovered with `data`, `left`, `right` fields. However, `Point` struct lost - treated as raw memory operations. `Node` struct recovered but with generic field access patterns. Many operations use raw pointer arithmetic instead of struct member access.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Appropriate casts for memory operations. Some unsafe pointer arithmetic in `memop_unaligned_access` (intentional from source). No major type-confused function pointers. Minor issues but code is reasonably safe to reason about.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only a header comment identifying the decompiler. No explanations of algorithm logic, no recovery of original comments from source. Auto-generated function headers like `/* Function: double_value @ 0x13C1 */` provide only addresses, not semantics.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library functions correctly identified (`malloc`, `free`, `memset`, `memcpy`, `memmove`, `memcmp`, `calloc`, `realloc`). Some patterns like linked list traversal are recognizable. However, no explicit naming of design patterns or algorithm patterns.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Failed decompilations are clearly marked with "FAILED to decompile" messages for 17 functions. However, no explanations of why they failed or what they contain. Some unusual constructs (like the VLA while loops) could be flagged as anomalous.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions, postconditions, or invariants. Error handling is present (null checks, return -1) but no documentation of what conditions these handle. Original source had no formal contracts either, but decompiler could not infer implicit contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and direct. Global variables like `global_counter`, `global_array`, `file_scope_static` are properly identified. However, no explicit documentation of call graphs or usage relationships. Callback relationships (e.g., `global_func_ptr`) are clear from code structure.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically in the output but in a single flat file rather than matching original modular structure (stack, heap, static, memory operations sections). Static functions properly identified. No header file recovery.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: Code compiles successfully (as noted in metadata: "Compilation Result: Yes"). Uses standard C library functions. Minimal patching needed. Dependencies are clear from function calls. Only minor adjustments needed for standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`v0`, `v1`, `v2`, etc.) - should infer names from usage like `arr`, `buf`, `ptr`
+- No comments explaining algorithm logic or recovery confidence
+- Composite type recovery is incomplete - `Point` struct lost, `Node` struct partially recovered
+- No recovery of preconditions/postconditions from error handling patterns
+- Significant compiler artifacts (stack canary checks, alloca handling, internal functions) clutter the output
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+Every single function name perfectly matches the original source, demonstrating excellent symbol recovery.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Variables are almost exclusively generic single-letter names (`v0`, `v1`, `v2`, `ptr`, `i`) that completely obscure semantic meaning. At -O0, the decompiler should be able to infer meaningful names from usage patterns.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Variables like `v1` used as array index should be named `arr` or `buffer` based on how they're used; `v2` used in arithmetic should reflect the operation (e.g., `sum`, `result`)
+2. **Add explanatory comments**: Document algorithm logic, recovery confidence for indirect calls, and unusual constructs like VLA handling
+3. **Improve struct recovery**: The `Point` struct was completely lost - should reconstruct struct layouts with field names from memory access patterns rather than treating as raw pointer arithmetic

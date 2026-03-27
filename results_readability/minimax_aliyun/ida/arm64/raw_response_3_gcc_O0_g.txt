@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2` for return values, `na` for "n adjusted", and `temp_0`/`temp_1` for temporaries. While loop counters (`i`) and array pointers (`arr`) are acceptable, most names don't reflect semantic purpose. Original source had meaningful names like `global_counter`, `bss_var`, `heap_val` which are mostly preserved for globals but lost for locals.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source: `double_value`, `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `heap_realloc`, `linked_list_heap`, `tree_heap_traversal`, `memory_leak`, `dangling_pointer`, `double_free`, `heap_overflow`. The decompiler preserved the exact naming convention from source.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Some magic numbers lack explanation (e.g., `0x14u` = 20 bytes for 5 ints, `0x10u` = 16 bytes for Node struct), but size calculations like `4LL * n` are clear. The value `10 * i` for data initialization is understandable from context. Constants like `0xA` (10) are self-evident as array bounds.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: Very clean output with minimal compiler artifacts. Stack frame annotations like `[xsp+2Ch] [xbp+2Ch]` are present but don't impede readability. No redundant casts, debug instrumentation, or spurious code blocks observed. The decompilation is notably clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow uses natural constructs - `for` loops, `while` loops, `if-else` chains. However, `vla_stack` and `alloca_usage` contain unusual while loops with complex stack adjustment logic that appears to be a decompilation artifact rather than original code structure. At -O0, this is unexpected.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity closely matches original source. Small, focused functions like `double_value` (1 line), `local_vars` (1 line), `address_of_local` (3 lines) are preserved. Test wrapper functions appropriately call multiple test cases. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns for error conditions (NULL checks) are used appropriately. No excessive forward jumps or goto statements. Some nested conditionals in error handling paths but manageable.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: At -O0, minimal redundancy expected and delivered. No dead code observed. Loop unrolling is minimal. The code is clean with no obvious duplicate expressions that could be CSE'd.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct - `int` for integers, `char` for buffers, `size_t` for memory sizes, `int*` for pointers. However, VLA types are lost - `int vla[n]` becomes generic pointer arithmetic. Some loss of array vs pointer distinction (e.g., `address_of_array(int *arr)` loses original `int arr[10]` declaration).
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Struct types are well-recovered with accurate field names: `Point {x, y}`, `Node {data, next}`, `TreeNode {data, left, right}`. The decompiler correctly identified these composite types and their members. Nested structures handled properly.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe operations present but match original source patterns. `memop_memcpy` uses pointer arithmetic: `*(_DWORD *)((char *)dst + (n & 0xFFFFFFFFFFFFFFFCLL) - 4)`. `memop_unaligned_access` does unaligned read: `*(_DWORD *)(buf + 1)`. These are faithful to original but represent type safety concerns.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No meaningful comments explaining algorithm logic, preconditions, or postconditions. Only auto-generated stack frame annotations present. Original source had extensive comments (MEM-L1-01, HEAP-L2-01, etc.) which are completely lost. No documentation of what functions do.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Common patterns like linked list traversal (`while (head)` loop with `temp = head; head = head->next`) and binary tree creation/traversal are structurally recognizable. However, no explicit naming or comments identify these as idiomatic patterns. Reader must infer from code structure.
+
+**14. Anomaly Indication:** Score: 8/10  
+Justification: The decompiler clearly marks 19 functions as "FAILED to decompile" including standard library functions (`memcpy`, `memmove`, `exit`, `malloc`, `printf`, etc.). This is appropriate - these are external symbols that can't be decompiled. However, no warnings about potential issues in successfully decompiled functions like `dangling_pointer` or `double_free`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had safety checks (e.g., `if (n <= 0 || n > 1000) return -1;`) that are preserved as code but not explained as contracts. No documentation of what conditions must hold before/after function calls.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls are clear and direct. Global variables (`global_counter`, `global_array`, `bss_var`, `bss_buffer`, `file_scope_static`, `global_func_ptr`, `global_heap_ptr`) are properly identified and accessible. Callback pattern (`set_global_callback` → `call_global_callback`) is understandable. Static functions properly scoped.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Output is a single monolithic block without clear section organization. However, functions are logically grouped - test functions at end, helper functions before main. Original had clear sections (Stack Memory, Heap Memory, Static/Global, Memory Operations) which are lost in decompilation.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code compiles (metadata indicates "Compilation Result: Yes"). External functions properly declared. Struct types (`Point`, `Node`, `TreeNode`) defined in code. Some dependencies on standard library (malloc, free, printf, memset, etc.) but these are standard and expected.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 9 + 7 + 9) / 4 = 7.25
+L2_avg = (7 + 9 + 8 + 9) / 4 = 8.25
+L3_avg = (7 + 9 + 7) / 3 = 7.67
+L4_avg = (3 + 6 + 8 + 2) / 4 = 4.75
+L5_avg = (8 + 6 + 8) / 3 = 7.33
+
+Overall = (7.25 × 0.30) + (8.25 × 0.25) + (7.67 × 0.20) + 
+          (4.75 × 0.15) + (7.33 × 0.10)
+        = 2.175 + 2.0625 + 1.534 + 0.7125 + 0.733
+        = 7.22/10
+```
+
+**Overall Readability Score:** 7.22/10
+
+### Critical Defects (Bullet List)
+- Variable naming is generic (`v0`, `v1`, `v2`, `temp_0`, `temp_1`) losing semantic meaning from original source
+- No comments explaining algorithm logic, preconditions, or postconditions - original's extensive documentation (MEM-L1-01, HEAP-L2-01, etc.) completely lost
+- No contract recovery - safety checks in original source (bounds checking, NULL checks) not documented as such
+- VLA types lost in decompilation - `int vla[n]` becomes generic pointer arithmetic
+- Unusual while loop constructs in `vla_stack` and `alloca_usage` appear to be decompilation artifacts rather than original code
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+Function names are nearly perfectly preserved from the original source. The decompiler maintained exact naming for all test functions (`local_vars`, `heap_basic`, `linked_list_heap`, `tree_heap_traversal`, etc.), making it easy to map decompiled code back to source intent.
+
+### Most Needs Improvement: Comment Quality & Presence (3/10)
+The decompiled code lacks any meaningful comments explaining what functions do, their preconditions/postconditions, or algorithm logic. Original source had extensive documentation (test scenarios like "[SCENE-ALL]", "[SCENE-SYS]", expected outputs) that is completely lost. This severely impacts understandability for reverse engineers.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, arithmetic, function parameters) to suggest semantically meaningful names like `packet_size` instead of `v0`, or `node_count` instead of `na`.
+
+2. **Recover comments from debug symbols**: Since this binary was compiled with `-g` (debug info), attempt to recover variable names and comments from DWARF debugging information embedded in the binary.
+
+3. **Document contracts and invariants**: When encountering safety checks (NULL checks, bounds validation, return value assertions), add comments explaining these as preconditions/postconditions rather than just emitting the raw conditional code.

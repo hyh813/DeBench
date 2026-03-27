@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v0`, `v1`, `a0`, `a1`, `ptr`, `i` with no semantic meaning. For example, in `process_char`, `v0` and `v1` should be named `char_offset` and `result` based on their usage in the uppercase conversion logic.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some original names preserved (`process_char`, `process_int`, `struct_simple`) but many critical functions renamed to `sub_103a0`, `sub_10450`. Test functions like `test_data_types_l1` retained names but their implementations are broken.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `65`, `32`, `255`, `0x3f000000`, `0x100000`. The float constant `0x3f000000` (representing 1.5f) is not identified as a floating-point literal.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise from `armg_calculate_condition()` calls throughout (e.g., `process_bool` has 6+ calls), redundant flag calculations, and compiler artifacts that obscure the simple logic like `return x > 0 && x % 2 == 0`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` usage instead of natural loops. `array_1d_stack` uses `goto LABEL_10768` and `do-while` with label jumps instead of a clean `for` loop. `binary_tree_sum` is essentially unreadable with nested gotos.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved but signatures are wrong. `process_float` and `process_double` have no parameters in decompiled version despite taking float/double arguments. `binary_tree_sum` exploded from 5 lines to 300+ lines.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Poor linearization with forward jumps into loop bodies. `volatile_access` should be 3 lines but has label jumps. `test_data_types_l1` has unnecessary branching for simple printf sequences.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from optimization artifacts. `process_bool` has duplicated condition checks. Floating point functions (`__muldf3`, `__addsf3`) have massive redundant bit manipulation code that should be simple FPU operations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Catastrophic type loss. All types degraded to `unsigned int` or `void*`. `process_float` returns `void` instead of `float`. `process_short` takes `unsigned short` but returns `unsigned int`. `long long` operations in `process_ll` lost 64-bit semantics.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs recovered as generic `struct_0`, `struct_1` with `field_0`, `field_4`, `field_8` naming. `Point3D` becomes `unsigned int *a0` with array indexing. `TreeNode` structure completely lost - `binary_tree_sum` has 50+ different struct types generated.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts throughout. `ptr_void` casts `void*` to `int*` and `char*` without safety checks. `opaque_handle_create` returns `int` instead of `void*`. Pointer arithmetic uses raw integer math (`ptr + idx * 4`) instead of typed operations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of complex bit manipulation in floating point functions. No indication of decompilation uncertainty despite obvious errors.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns not recognized. Simple loops (`for`, `while`) converted to `do-while` with gotos. String length calculation in `array_string` not recognized as `strlen` pattern. Linked list traversal in `linked_list` obscured by generic struct names.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags despite obvious problems. `binary_tree_sum` has 300+ lines of nonsensical code with no warning. Function signature mismatches not indicated. Floating point operations completely broken without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks present but not documented as contracts. Array bounds checks in `array_complex_index` not explained as safety validations.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. `test_data_types_l1` calls printf with hardcoded values instead of actual function calls. Callback relationships in `ptr_func_simple` lost (shows `goto a0` instead of function call).
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions appear in arbitrary order. Helper functions (`__muldf3`, `__addsf3`) mixed with application code. No logical grouping of related functions (data types, arrays, pointers scattered).
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Will not compile. Missing includes, undefined symbols (`GLIBC_2.4::__stack_chk_guard`), incorrect function signatures, and platform-specific ARM artifacts. `binary_tree_sum` has undefined struct types.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+3+2)/4 = 2.75
+Level 2 (Structural):  (3+5+3+4)/4 = 3.75
+Level 3 (Type):        (2+2+3)/3   = 2.33
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50
+Level 5 (Contextual):  (4+3+2)/3   = 3.00
+
+Overall = (2.75 × 0.30) + (3.75 × 0.25) + (2.33 × 0.20) + 
+          (1.50 × 0.15) + (3.00 × 0.10)
+        = 0.825 + 0.9375 + 0.466 + 0.225 + 0.30
+        = 2.75/10
+```
+
+**Overall Readability Score: 2.8/10**
+
+### Critical Defects:
+- **Floating point functions completely broken**: `process_float`, `process_double`, `process_ld` return `void` and call internal FPU routines instead of simple arithmetic
+- **Variable names all generic**: `v0`, `v1`, `a0`, `a1` provide zero semantic information about purpose
+- **Control flow uses goto excessively**: Simple loops converted to label-based jumps making code unreadable
+- **Struct types lost**: `Point3D`, `TreeNode`, `Widget` all become `struct_0`, `struct_1` with `field_0`, `field_4` naming
+- **Test functions don't call actual functions**: `test_data_types_l1` prints hardcoded expected values instead of calling `process_char()`, etc.
+
+### Best Quality Aspect: **Function Naming Quality (4/10)**
+- Some original function names preserved (`process_char`, `process_int`, `struct_simple`) providing minimal semantic anchors
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero comments despite extremely complex and confusing code that desperately needs explanation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level control structures**: Detect loop patterns from backward jumps and reconstruct `for`/`while` loops instead of `goto`-based constructs
+2. **Preserve type information from debug symbols**: Since compiled with `-g`, use DWARF info to recover original types (float, double, struct names, field names)
+3. **Add decompilation confidence indicators**: Flag uncertain reconstructions (like `binary_tree_sum`'s 300-line explosion) with comments indicating manual review needed

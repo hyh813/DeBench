@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `lVar1`, `puVar1`, `__s`, `sVar2`) obscuring semantic purpose. Some class members preserved (`obj.name`, `derived.multiplier`, `int_container.size`) but local variables lack meaningful names like `capture_by_value` or `instance_count`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names preserved well (`test_cpp_member_func`, `test_cpp_virtual_func`). Class methods recovered with DWARF info (`Base::virtual_func`, `Derived::getName`). However, some functions remain generic (`FUN_00102020`) and thunk functions clutter the namespace.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many magic numbers without explanation: `0x125c`, `0x3e9`, `0x15`, `0x47`, `0x2bf` are computed return values that should be expressions. String literals preserved ("Test", "Base", "Derived") but numeric constants lack semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks pollute every function (`if (lVar1 != *(long *)(in_FS_OFFSET + 0x28)) { __stack_chk_fail(); }`). Compiler initialization functions (`_GLOBAL__sub_I_*`, `deregister_tm_clones`) included. Multiple "WARNING: Unknown calling convention" annotations add clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical logic loss - `test_cpp_exception` shows only throw without catch blocks. `test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, `test_cpp_lambda` return constants instead of executing logic. Virtual call warning: "Could not recover jumptable at 0x001024fc."
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: 87 functions recovered from ~15 original functions due to thunk proliferation. Multiple destructor variants per class (virtual, non-virtual, with `__in_chrg`, with `__vtt_parm`). Template instantiations properly separated but excessive fragmentation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably. Stack canary checks at function exits disrupt flow slightly. Exception handling paths not properly linearized (catch blocks missing entirely in `test_cpp_exception`).
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy in destructor variants (~6 versions of `~DiamondDerived`). Thunk functions duplicate logic (`virtual thunk`, `non-virtual thunk`). Same vtable setup code repeated across multiple functions without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `long`, `double`). C++ class types partially recovered (`SimpleClass`, `Container<int>`). Smart pointer types overly verbose (`unique_ptr<int,_std::default_delete<int>_>`). Some degradation to `undefined4`, `undefined8`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class fields partially named (`obj.name`, `derived.multiplier`, `int_container.data[0]`). Vtable pointers recovered (`_vptr_Base`). Diamond inheritance triggers warning: "ignoring overlapping field super_MiddleB". Smart pointer internal structures exposed rather than abstracted.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(undefined4 *)`, `(long *)`, `(char **)`. Pointer arithmetic on class objects: `(DiamondDerived *)&obj.field_0x20`. Vtable calls treated as raw function pointers: `(**obj->_vptr_Base)()`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: DWARF prototypes preserved (`/* DWARF original prototype: int virtual_func(Base * this, int x) */`). Warning comments indicate uncertainty but no algorithm explanations. Missing comments for complex patterns like virtual inheritance thunks.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ idioms not recognized - RAII, virtual dispatch, exception handling not identified. Template instantiation visible but not labeled as such. Lambda capture patterns completely lost (function returns constant `0x55`).
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings present for known issues: "Could not recover jumptable", "Struct ignoring overlapping field", "Unresolved local var: RTTIDerivedA * derivedA@[???]". Inconsistent coverage - some anomalies silent (missing catch blocks not flagged).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. Exception contracts absent despite try-catch in source. Stack canary checks present but not explained as safety mechanisms. No null-check documentation for pointer operations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch unclear. Class inheritance relationships partially visible through naming (`super_MiddleA`, `super_Base`). No explicit call graph or callback relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 87 functions in single output with no logical grouping. Initialization functions mixed with test functions. No namespace or class-based organization despite C++ source structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates "Compilation Result: Yes" but requires C++ standard library. External dependencies (`__cxa_allocate_exception`, `operator_new`, `__dynamic_cast`) need linking. Architecture mismatch (source: arm64, decompiled: x86).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):    (4+7+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural): (4+5+6+4)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):       (6+5+4)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):   (5+3+6+3)/4 = 4.25 × 0.15 = 0.64
+Level 5 (Context):    (5+4+6)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                              4.83/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Logic loss in test functions**: `test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, `test_cpp_lambda` return constants instead of executing original logic
+- **Exception handling broken**: `test_cpp_exception` shows throw without any catch blocks, losing critical control flow
+- **Variable names generic**: `iVar1`, `lVar1`, `puVar1` obscure semantic purpose throughout
+- **Magic numbers unexplained**: Return values like `0x125c`, `0x3e9`, `0x2bf` should be computed expressions
+- **Excessive thunk proliferation**: 6+ destructor variants per class with virtual/non-virtual thunks creating noise
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Test function names preserved accurately from source (`test_cpp_member_func`, `test_cpp_virtual_func`), and DWARF debug info helped recover class method names with proper signatures.
+
+### Most Needs Improvement:
+- **Idiom Recognition (3/10)** - C++ patterns (RAII, virtual dispatch, exception handling, lambda captures) completely unrecognized, resulting in lost semantics and constant returns instead of actual logic execution.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover exception handling control flow** - Analyze `.gcc_except_table` and landing pads to reconstruct try-catch blocks instead of showing only throw statements
+2. **Implement C++ idiom detection** - Recognize virtual dispatch patterns, RAII destructor calls, and lambda capture structures to preserve semantic meaning rather than returning constants
+3. **Reduce thunk proliferation** - Consolidate virtual/non-virtual thunk variants into single function representations with clear dispatch annotations

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `param_1`, `param_2`, `local_28`, `iVar1`, `uVar2` with no semantic meaning. For example, `param_strcpy` uses `param_1` and `param_2` instead of `dst` and `src`, completely obscuring the strcpy semantics.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`param_strcpy`, `call_strcpy`, `param_mutex_lock`), but helper functions like `thread_compute` and `thread_sum` are generic. Some startup functions use cryptic names (`FUN_00102020`, `deregister_tm_clones`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout: `0x2a` (42), `0xffffffff` (-1), `0xfffffffd` (-3), `0x1000` (4096). No constants recovered. String literals preserved but format strings like `"%d,%d"` lose context about expected input format.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Non-standard `LOCK()`/`UNLOCK()` macros appear in atomic operations instead of proper `__atomic_*` intrinsics. Complex bit-vector operations in `param_fread_fwrite` (16-element `auVar3`/`auVar4` arrays) obscure simple string comparison logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures preserved (if/else, loops), but `param_fread_fwrite` uses extremely convoluted bit-manipulation chains instead of simple `strcmp`. Loop unrolling in `param_memset` creates 40+ line blocks that should be a simple for-loop.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved with reasonable granularity. However, `param_malloc_free` expanded to 100+ lines with complex loop unrolling that should remain as a simple iteration. Thread helper functions properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `param_fread_fwrite` has deeply nested conditionals (6+ levels) with forward references to `auVar3`/`auVar4` that disrupt flow. Multiple early returns in error paths are clear.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy in `param_memset` with 18 separate `auVar` arrays doing identical byte-extraction operations. `param_fread_fwrite` compares each character twice (auVar3 and auVar4) when one comparison suffices.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type erosion: `param_strcpy` returns `void` instead of `int`. `param_printf` takes `ulong param_1` instead of `int x`. Pointer types often degraded to `void*` or `undefined*`. `size_t` frequently becomes `ulong`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `stat` struct partially recovered in `param_win32_api` but field access uses `local_90.st_size` without full struct definition. `sockaddr` in `param_socket_create` accessed via `sa_data[0]` array indexing instead of proper `sin_port`, `sin_family` fields.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(long)&local_8 + 4` in `param_scanf`, `(int*)thread_ret` without validation. Thread function signatures use `void*` parameters without proper type annotations. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated warnings present ("WARNING: Subroutine does not return", "WARNING: Removing unreachable block"). Zero semantic comments explaining algorithm purpose, preconditions, or decompilation confidence.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library calls (`strcpy`, `strcmp`, `pthread_create`) recognized but not annotated as such. Producer-consumer pattern in `param_condition_variable` not identified. No design pattern documentation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Subroutine does not return" for `execl`, "Read-only address is written"). However, critical issues like the `LOCK()`/`UNLOCK()` macro substitution for atomic operations go unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). Return value semantics unclear (what does `0x2a` mean vs `0xfffffffd`). Error conditions not annotated with meaning.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables (`signal_received`, `atomic_counter`, `shared_counter`) used without declaration context. Thread callback relationships not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (library functions, syscalls, threads) but all in single output. Test functions (`test_standard_library_functions`) properly call their respective implementations. No header file separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Non-standard `LOCK()`/`UNLOCK()` macros undefined. `EVP_PKEY_CTX` in `_init` suggests OpenSSL dependency not documented. `__isoc99_sscanf` requires specific libc. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+7+6+4)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (5+5+6)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 4.81/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable names completely generic**: `param_1`, `param_2`, `iVar1`, `uVar2` provide zero semantic information about purpose
+- **`param_fread_fwrite` string comparison obliterated**: 100+ lines of bit-vector operations replace simple `strcmp()` call
+- **Magic numbers everywhere**: `0x2a`, `0xffffffff`, `0xfffffffd` used without explanation or constant recovery
+- **Atomic operations corrupted**: `__atomic_*` intrinsics replaced with undefined `LOCK()`/`UNLOCK()` macros
+- **Zero documentation**: No comments explaining function purpose, preconditions, or return value semantics
+
+### Best Quality Aspect: **Function Decomposition (7/10)**
+- Function boundaries mostly preserved with reasonable granularity; thread helpers properly separated from main logic
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Completely absent semantic documentation; only auto-generated warnings present with no explanation of algorithm intent
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming**: Analyze usage patterns to infer names (e.g., parameters used in `strcpy` should be `dst`/`src`, loop counters should be `i`/`index`)
+2. **Recover standard library idioms**: Recognize `strcmp` patterns and emit readable comparisons instead of bit-vector operations; restore `__atomic_*` intrinsics instead of `LOCK()`/`UNLOCK()`
+3. **Add decompilation confidence annotations**: Document uncertain reconstructions, magic number interpretations, and recovered API contracts with `@param`/`@return` comments

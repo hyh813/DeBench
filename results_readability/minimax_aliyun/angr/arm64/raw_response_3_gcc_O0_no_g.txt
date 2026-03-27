@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `v0`, `v1`, `v2`, `ptr`, `a0` that completely obscure semantic meaning. Compare to source where variables like `arr`, `head`, `new_node`, `temp` clearly indicate purpose. The decompiled code makes it nearly impossible to track variable roles without extensive cross-referencing.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly retain original names (`double_value`, `local_vars`, `heap_basic`), but many compiler-generated functions have generic names like `sub_4009f4`, `sub_400b70`. The mix is inconsistent - test functions are named but internal helpers are not recovered.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is saturated with unexplained magic numbers: `4294967295` (0xFFFFFFFF) for error returns, `18446744073709551612` for alignment masks, `4294967294` for signed operations. These should be documented as `UINT_MAX`, `~3` (alignment), or explained as compiler artifacts.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts pollute the code: stack canary checks (`__stack_chk_guard`, `__stack_chk_fail()`), redundant operations (double `memcpy` calls in `sub_4009f4`), and unnecessary rotation operations (`__ROL__`) that complicate simple arithmetic. These obscure the actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures (loops, conditionals) are correctly recovered. However, the use of `__ROL__` for multiplication operations and complex indexing expressions like `(__ROL__(i, 2) & 18446744073709551612)` instead of `i * 4` creates unnecessary complexity. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable granularity - none are excessively large. The test wrapper functions properly call individual test cases. Minor issue: some compiler-generated functions like `frame_dummy` are included that don't correspond to source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive goto statements. Early returns are used appropriately in error checking. Some complex indexing expressions interrupt flow but don't create spaghetti code.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Several redundant patterns observed: duplicate function calls (`memcpy` called twice in `sub_4009f4`), redundant variable assignments, and loop unrolling in `local_array` that creates verbose code. The decompiler didn't clean these up.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - `int*` becomes `unsigned long long`, many pointers are `void*`. Function parameters like `unsigned int a0` lose signedness semantics. The code uses `unsigned int` everywhere instead of proper `int32_t`/`uint32_t`. At -O0, types should be more precise.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are reconstructed but with meaningless names: `struct_0`, `struct_1`, `struct_2`. Field names are generic: `field_0`, `field_8`, `field_10`. Original types like `Node`, `TreeNode`, `Point` are completely lost. The struct layout is correct but semantics are gone.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: raw pointer arithmetic with `__ROL__` masking, casting through `void*` everywhere, no const correctness. The code has many patterns that could lead to undefined behavior. No `restrict` or alignment annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments present in the decompiled output. No explanation of algorithm logic, no documentation of preconditions/postconditions, no indication of uncertainty. The source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns like linked list traversal and tree operations are recognizable from structure, but they're not explicitly labeled or identified. A reader would need to recognize these patterns themselves rather than having them pointed out.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code patterns. The source contains intentional bugs (double-free, dangling pointer, memory leak, heap overflow) but the decompiled code presents these as normal code without any warnings. This is dangerous for security analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions (e.g., "requires: n > 0"), postconditions, or invariants. Error return values like `-1` are not documented as error indicators. The semantic contracts from the source are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships aren't documented. No indication of who calls a function or what globals it uses. The call graph must be inferred manually. External dependencies like `extern_global_var` are marked but not explained.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions appear in memory address order rather than logical grouping. The source had clear sections (stack memory, heap memory, static memory, memory operations) but the decompiled output mixes everything together arbitrarily.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has external declarations and would require stubs for some compiler-generated functions. The `__stack_chk_fail` and other runtime functions need definitions. Not immediately compilable without additional work.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable names are completely generic (`v0`, `v1`, `ptr`, `a0`) - should infer semantic names from usage patterns
+- Struct types reconstructed with generic names (`struct_0`, `field_0`) losing all semantic meaning of original `Node`, `TreeNode`, `Point`
+- No comments explaining algorithm logic, contracts, or uncertainty - source had extensive documentation now completely lost
+- Magic numbers everywhere (`4294967295`, `18446744073709551612`) without explanation - should be documented as error codes or alignment masks
+- No anomaly detection for intentional bugs (double-free, dangling pointer, memory leak) - presents dangerous code as normal
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 6/10)  
+- Basic loop and conditional structures are correctly recovered; the fundamental algorithm logic is traceable despite other issues
+
+**Most Needs Improvement:** Lexical Clarity (scored 3.25/10)  
+- Variable and function naming is the primary failure - at -O0, the decompiler should be able to infer meaningful names from debug symbols or usage patterns
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage**: Analyze how variables are used (array indexing, pointer dereferencing, arithmetic) to suggest semantic names like `array_size`, `node_ptr`, `checksum` instead of `v0`, `v1`
+2. **Recover struct field names**: Use type information and field access patterns to reconstruct meaningful field names like `next`, `data`, `left`, `right` instead of `field_0`, `field_8`
+3. **Document magic numbers and anomalies**: Recognize common patterns (error returns as -1/UINT_MAX, alignment masks, stack canaries) and add explanatory comments; flag suspicious code patterns like double-free or dangling pointer usage

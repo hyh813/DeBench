@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `ptr`, `idx`. The original source uses meaningful names like `x`, `sum`, `c`, `arr`, `n`, but these are completely lost. Only occasional better names like `result` appear, making the code extremely difficult to follow.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions correctly named (`double_value`, `process_int`, `process_char`, `process_short`, `process_long`, `process_ll`, `process_bool`, `const_param`, `volatile_access`, `array_1d_stack`, `array_string`, `ptr_single`, `ptr_double`, `ptr_triple`, `struct_simple`, `linked_list`) but many use generic names like `sub_401020`, `sub_40102d`, `sub_401030` for initialization/crt functions. The test functions are correctly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `65` and `32` for ASCII uppercase-to-lowercase conversion appear without explanation. Constants like `4294967295` (0xFFFFFFFF) for error returns are unexplained. The original source has clear arithmetic (e.g., `c + 32`, `x * 2 + 1`) but these become opaque in decompiled form.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant artifacts present including `[D] unsupported_<class 'pyvex.expr.GetI'>()` in `process_float`, `process_double`, `process_ld`, and `test_data_types_l1`. Weird constructs like `AddV(MulV(v1, 0x3fc00000), 0x3f000000)` for floating-point operations add noise. However, basic control flow is relatively clean.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use `for` constructs, conditionals are clear. However, `ptr_func_simple` uses `goto a0` which is unusual. At `-O0` level, loop structures should be nearly perfect. Some array access patterns are convoluted (e.g., `array_2d_stack` uses pointer arithmetic `ptr += 11` instead of cleaner array indexing).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and cohesive. The original source's function boundaries are mostly preserved. Test functions properly call their respective test targets. No obvious over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in some functions like `array_complex_index`. Some nested loops in `array_3d` and `graph_traverse` create depth but are manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some loop unrolling visible in `array_3d` but not excessive. Common subexpressions not heavily duplicated. Overall clean from redundancy perspective.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - `int` becomes `unsigned int`, `long` becomes `unsigned long`, `short` becomes `unsigned int`. Function parameters like `process_short(unsigned int a0, unsigned int a1)` lose the original `short` type. `char` parameters become `unsigned int`. `size_t` not used. Const/volatile qualifiers partially preserved in function signatures but not always.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct recovery attempted with generic names `struct_0`, `struct_1`. Field names are generic: `field_0`, `field_1`, `field_8`. The original `Point3D`, `Node`, `TreeNode`, `DNode`, `Edge`, `Graph` are lost. Union recovery is poor - `union_type` uses `void*` instead of proper union type. Bitfield handling is convoluted.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns - extensive pointer arithmetic with raw offsets (e.g., `ptr + idx * 4`, `ptr + idx * 40`). Casts like `*(int *)(a0 + a1 * 4)` are common. Function pointer handling uses `goto` instead of proper call syntax. Some buffer-overflow-prone patterns in array access.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output whatsoever. The original source has extensive comments explaining each test case (e.g., "// DT-L1-01: 字符类型（char）⭐"). Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are recognizable (linked list traversal, binary tree recursion, array iteration) but not explicitly named or documented as such. The original source's clear patterns (e.g., "链表遍历", "二叉树递归") are lost.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged like `[D] unsupported_<class 'pyvex.expr.GetI'>()` for floating-point operations. However, many issues are silently handled - the float/double handling is clearly problematic but not adequately explained. No warnings about potential undefined behavior in functions like `array_oob` (which has intentional out-of-bounds access).
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source has clear expectations (e.g., "期望: 15", "期望: 'a'") but these are completely lost. No documentation of error conditions or boundary checks.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present and traceable (e.g., `test_data_types_l1()` calls `process_char`, `process_short`). However, relationships to external code (callers, global variables) not documented. Some `extern` declarations present but incomplete.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped somewhat logically - data type functions together, array functions together, pointer functions together. However, the organization is flat with no namespace or module structure. Test functions properly separated from implementation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has some `extern` declarations for library functions (`puts`, `__printf_chk`). Many missing declarations for internal functions. Function signatures don't match original (e.g., `int process_short(short a, short b)` becomes `int process_short(unsigned int a0, unsigned int a1)`). Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 4 + 5) / 4 = 4.0
+L2_avg = (7 + 8 + 7 + 7) / 4 = 7.25
+L3_avg = (4 + 5 + 5) / 3 = 4.67
+L4_avg = (1 + 4 + 4 + 1) / 4 = 2.5
+L5_avg = (5 + 6 + 4) / 3 = 5.0
+
+Overall = (4.0 × 0.30) + (7.25 × 0.25) + (4.67 × 0.20) + 
+          (2.5 × 0.15) + (5.0 × 0.10)
+        = 1.2 + 1.8125 + 0.934 + 0.375 + 0.5
+        = 4.82/10
+```
+
+**Overall Readability Score:** 4.82/10
+
+### Critical Defects (Bullet List)
+- **Variable naming is unusable**: All meaningful variable names (`x`, `sum`, `c`, `arr`, `n`, `ptr`, `head`, `root`) replaced with generic names (`v0`, `v1`, `a0`, `ptr`, `idx`)
+- **Type precision severely degraded**: `short` → `unsigned int`, `char` → `unsigned int`, `int` → `unsigned int` in many places
+- **No comments recovered**: Original source has extensive documentation explaining each test case, completely lost
+- **Composite types poorly recovered**: Structs use generic names (`struct_0`, `struct_1`) with generic fields (`field_0`, `field_1`, `field_8`)
+- **Floating-point handling broken**: Multiple `[D] unsupported_<class 'pyvex.expr.GetI'>()` artifacts make `process_float`, `process_double`, `process_ld` nearly unreadable
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (7/10 → 8/10)**: Functions are appropriately sized and cohesive. The original source's function boundaries are well-preserved with clear single responsibilities.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (1/10)**: Zero comments in the entire decompiled output. The original source has extensive Chinese comments explaining each test case (830 LOC with heavy documentation), but not a single comment was recovered.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover variable names from usage patterns**: Use data flow analysis to infer semantic names. For example, `v1` used in `if ((a0 - 65 & 255) <= 25) v1 = a0 + 32;` should be named `result` or `converted_char`.
+2. **Preserve type precision**: At `-O0` optimization, types should be nearly perfect. The decompiler incorrectly uses `unsigned int` for `short`, `char`, and `int` parameters.
+3. **Add semantic comments**: Recover the function's purpose, parameter meanings, and return value semantics. Even basic "// Converts uppercase to lowercase" would significantly help.

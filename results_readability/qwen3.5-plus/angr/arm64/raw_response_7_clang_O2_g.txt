@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `flag1`, `result`, `cur`) with no semantic meaning. Original source had meaningful names like `result`, `str`, `encrypted`, `decrypted` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`param_fake_branch`, `call_fake_branch`) but many are generic (`sub_400744`, `sub_400830`). Critical issue: `param_fake_branch` lost its parameter entirely in decompilation.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Proliferation of magic numbers like `4294967295` (0xFFFFFFFF), `9223372036854775807` without explanation. Original key `0x5A` appears as decimal `90` with no context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: frame pointer setup (`v0 = &v1`), register variables (`x0`, `x9`), and runtime helpers (`deregister_tm_clones`, `register_tm_clones`) mixed with user code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Complex condition calculations using `arm64g_calculate_condition` obscure simple logic. `param_fake_branch` completely broken—returns uninitialized `v0` instead of implementing the fake branch logic.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function sizes are reasonable but many runtime helper functions included. Critical functions like `param_buffer_overflow_stack` and `param_buffer_overflow_heap` have empty bodies (just `return v0`).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but uses goto labels (`LABEL_400c50`) and complex jump patterns in vectorized loop that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate expressions visible in condition checks. `call_fake_branch` and `call_instruction_substitution` return constants directly rather than calling underlying functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type degradation—original `int` becomes `unsigned long long` or `unsigned int`. Pointer types often `void*` or `char*`. `param_fake_branch(int x)` becomes `param_fake_branch()` with no parameter.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery visible. Original bitfield struct in `param_implementation_defined` completely lost. All composite access appears as raw pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many implicit casts visible (`(unsigned int)v0`, `(char)result`). Pointer arithmetic with `void*` in `param_vectorized_loop`. Return type mismatches (function returns `long long` but should return `int`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. No algorithm explanations, no documentation of the obfuscation techniques. Only minimal function headers present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption pattern not labeled. No recognition of the fake branch obfuscation pattern.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about broken functions. `param_fake_branch` completely wrong but not flagged. No uncertainty indicators for indirect calls or unresolved references.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions. Error handling in signal handlers not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but not documented. Global variables shown as `g_411ff8`, `$d.1`, `$d.2` with no semantic meaning. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output. Runtime functions (`_init`, `_fini`, `_start`) mixed with user code. No logical grouping by functionality.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External declarations present but incomplete. Missing headers (`stdio.h`, `string.h`, `signal.h`). Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+4)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (4+5+5+5)/4 = 4.75  × 0.25 = 1.19
+Level 3 (Type):        (4+3+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (2+2+2+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):  (4+4+3)/3   = 3.67  × 0.10 = 0.37
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 3.79/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **`param_fake_branch` completely broken**: Function signature lost parameter `int x`, body returns uninitialized `v0` instead of implementing fake branch logic
+- **`param_buffer_overflow_stack` and `param_buffer_overflow_heap` empty**: Both functions have no body logic, just `return v0`
+- **Variable names entirely generic**: `v0`, `v1`, `flag1` provide zero semantic information about purpose
+- **Magic numbers unexplained**: `4294967295`, `9223372036854775807`, `90` (should be `0x5A` key)
+- **No comments or documentation**: Zero explanation of obfuscation patterns, algorithms, or decompilation confidence
+
+### Best Quality Aspect: **Structural Intelligibility (4.75/10)**
+- Function boundaries mostly preserved and some original function names retained, though logic recovery is poor
+
+### Most Needs Improvement: **Semantic Transparency (2.0/10)**
+- Complete absence of comments, no idiom recognition, no anomaly flagging for obviously broken functions
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement function signature validation**: Cross-check recovered parameters against call sites to detect missing parameters (e.g., `param_fake_branch` should have `int x`)
+2. **Add anomaly detection for empty/broken functions**: Flag functions where body doesn't match expected complexity based on call patterns
+3. **Recover semantic names from usage patterns**: Analyze variable usage to suggest names (e.g., variables used in string operations should be named `buffer`, `ptr`, etc.)

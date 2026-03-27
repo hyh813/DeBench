@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Logic functions have meaningful names (sum, count, i, j), but test functions use generic names like `v0`-`v26`. The array in `loop_break` uses raw hex initialization (`0x140000000ALL`) instead of clear values, obscuring the array `{10,20,30,40,50}`.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All 40+ function names perfectly match the original source (`sequential_ops`, `single_if`, `nested_if_deep`, `loop_for_fixed`, etc.). The decompiler preserved every function name exactly.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x140000000ALL` and `0x280000001ELL` in `loop_break` are completely opaque. Test arrays use hex that requires decoding. However, simple literals like `1000` in `infinite_loop` are clear.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Stack frame annotations like `[xsp+0h] [xbp-4h]` are present but don't impede understanding. No redundant casts or debug instrumentation visible.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural and idiomatic. Loops use `for`/`while`/`do-while`, switches are properly structured, and conditionals are clear. The `goto_forward` correctly recovers the forward jump pattern. At -O0, control flow should be nearly identical to source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions maintain appropriate granularity (20-50 lines each). The test functions properly call smaller logic functions. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal disruption. Forward jumps are used appropriately in `goto_forward`. No excessive nesting (>4 levels) or continue/break abuse.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code observed. The `duffs_device` shows proper loop unrolling recognition with labeled sections. Common subexpressions are not unnecessarily duplicated.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Uses `int` appropriately for 32-bit integers. Function pointers have proper signatures like `int (*f)(int)`. Minor generic typing but nothing severe. `volatile int *flag` correctly preserved.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays are initialized inline with values (e.g., `*(_QWORD *)arr = 0x200000001LL` for `{1,2,3,4,5}`), making structure visible. However, field names are lost. 2D matrices use XMM registers for initialization.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts observed. Function pointer casts are appropriate. Array access in loops is bounds-checked by loop condition. No type-confused operations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only file-level header comment present ("Decompiled by IDA Pro 9.1"). No algorithm explanations, no @param/@return documentation, no decompilation confidence indicators. The comment is purely metadata.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Recognizes standard patterns: switch-case, for/while loops, recursion (factorial), tail recursion, Duff's device with labeled gotos, state machines. Patterns are clear but not explicitly named as design patterns.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: At the end, lists 9 functions that failed to decompile (`_setjmp`, `__libc_start_main`, etc.) with "FAILED to decompile" messages. However, no in-code warnings for suspicious patterns.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. No error condition explanations beyond return values. Contracts are implicit in the code but not recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function call relationships are clear from code structure. Test functions call logic functions directly. Static functions properly scoped. No explicit call graph documentation but relationships inferable.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output block. No logical grouping or separation between test functions and logic functions. Related functions (state handlers) are not grouped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile as valid C. External functions (printf, puts, setjmp) used but not declared - would need headers. No compiler-specific hacks visible.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.2/10
+
+**Critical Defects:**
+- Variable naming in test functions uses generic `v0`-`v26` instead of meaningful names
+- Array literals like `0x140000000ALL` are completely opaque, hiding `{10,20,30,40,50}`
+- No comments explaining algorithms, parameters, or return values
+- Module organization is a single flat block with no logical grouping
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 9/10)  
+- At -O0, the decompiler perfectly recovers all control structures including loops, switches, conditionals, and goto patterns. The code is structurally identical to source.
+
+**Most Needs Improvement:** Comment Quality (scored 3/10)  
+- Zero algorithm documentation, no @param/@return contracts, no pattern naming. The decompiler provides only raw code without semantic context.
+
+**Top 3 Recommendations:**
+1. Infer array contents from hex initialization (0x140000000ALL = {10,20,30,40}) and display as clear literals
+2. Add basic comments for non-trivial functions explaining parameters and return value semantics
+3. Group related functions (test functions, state handlers) into logical sections with headers

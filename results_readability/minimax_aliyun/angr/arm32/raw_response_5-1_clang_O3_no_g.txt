@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+The original source is a comprehensive C++ tutorial file (540 LOC) testing object-oriented features including member functions, constructors, virtual functions, multiple inheritance, templates, lambdas, exceptions, smart pointers, and RTTI. The binary was compiled with `-O0 -g` (debug mode), so high readability should be expected. The decompiled output (660 LOC) shows significant degradation across most dimensions.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `ptr`, `result`, `flag1`, `flag2`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`. The original source uses meaningful names like `value`, `name`, `obj`, `r1`, `r2`, `r3`, `data`, `size`. The decompiled code is essentially unusable for understanding without extensive reverse-engineering.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions are properly demangled (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func`, `_Z12template_maxIiET_S0_S0_` → `template_max<int>`), but many remain as mechanical addresses like `sub_400854`, `sub_4009cc`. The mix of demangled and address-based names creates inconsistency.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `42` (exception value), `4` (strncpy length), `10` (setValue argument) appear without explanation. The constant `0x1234` from `getClassID()` is not visible in the decompiled output. The string "Test" is passed but not clearly documented.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy noise includes register annotations (`// r0`, `// lr`, `// r4`), excessive goto statements, incomplete function bodies (many just `return;`), and struct padding declarations like `char padding_0[4]`. The code is cluttered with artifacts that obscure the actual logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive use of goto statements (e.g., `goto g_412008`, `goto LABEL_4009f0`, `goto *((int *)&g_41206c)`). Many functions like `test_cpp_constructor()`, `test_cpp_virtual_func()` are reduced to just `return;`, losing all logic. The control flow is highly fragmented and difficult to follow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are preserved from the original source. However, many functions are incomplete in the decompiled output. The parameter lists are partially preserved but use generic types. The decomposition is structurally present but semantically degraded.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: The code generally reads top-to-bottom, but forward jumps and goto statements disrupt flow. The `call_virtual_func` function uses `goto *((int *)*((int *)arg_0))` which is a computed jump that breaks linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some dead code exists (e.g., `return v0;` followed by unreachable code). The exception handling code has redundant checks. However, the redundancy is not severe enough to completely obscure the logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types are generic - mostly `unsigned int`, `char`, `void*`. The original `int`, `size_t`, `bool` types are not recovered. Const correctness is lost. The decompiler uses `int` for virtually everything, losing important type information from the source.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct reconstruction exists (e.g., `struct_0 { char padding_0[4]; struct struct_1 *field_4; }`), but field names are generic (`field_0`, `field_4`, `padding_0`). The original class members like `value`, `name`, `data`, `size` are not recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: pointer arithmetic like `ptr[40]`, `ptr[80]` without proper type context, casts like `*((char **)p)`, `*((int *)&ptr[40])`. The code uses void pointers extensively without safety checks. Function pointers are called through raw integer manipulation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are minimal and mostly auto-generated noise like `// r0`, `// lr`, `// [bp-0x4]`. No explanation of algorithm logic, no recovery of original comments from debug symbols. The decompiled code lacks any meaningful documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No recognition of C++ idioms. The virtual function mechanism is shown as raw `goto *((int *)*((int *)arg_0))` instead of being identified as vtable dispatch. Template instantiation, lambda capture, and smart pointer patterns are not identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The incomplete functions (returning void with no implementation) are presented without warning. The indirect calls that couldn't be resolved are not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original assertions and contracts from the source code are completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some function calls are visible (e.g., `test_cpp_oo_features()` calls other test functions), but relationships are not explicitly documented. The virtual dispatch relationships and inheritance hierarchies are not clearly shown.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are grouped by address but not logically organized by feature. The original source's clear separation into test functions (`test_cpp_member_func`, `test_cpp_constructor`, etc.) is partially preserved but lacks semantic grouping.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many `extern` declarations required but not provided. Incomplete function implementations would cause compilation failures. The code cannot compile as-is and would require significant patching.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v0`-`v9`, `ptr`, `result`, `flag1-4`) with no semantic meaning
+- Many functions reduced to empty shells (`return;`) losing all logic
+- Excessive goto statements instead of natural control flow constructs
+- Type information completely generic - `int` used for everything
+- No comments explaining any algorithm or purpose
+
+**Best Quality Aspect:** Function Decomposition (6/10)  
+Function boundaries from the original source are preserved, and some demangling works for C++ names.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The generic variable names make the code essentially unreadable without extensive manual analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `ptr[40]` for array size, `*((int*)p)` for integer dereferencing) to suggest semantic names like `array_size`, `count`, `data_ptr`
+2. **Recover complete function bodies**: The many `return;` statements suggest the decompiler failed to recover the full logic - improve control flow analysis to reconstruct the actual implementation
+3. **Add semantic comments**: Include explanations for vtable dispatch, exception handling, and other C++ runtime mechanisms rather than showing raw assembly patterns

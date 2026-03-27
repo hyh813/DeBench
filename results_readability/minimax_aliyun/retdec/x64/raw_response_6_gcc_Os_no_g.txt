@@ -1,0 +1,121 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+**Focus Function:** `param_strcpy` (and related `call_strcpy`)
+
+The original source shows a simple wrapper function:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+The decompiled version shows:
+```c
+int64_t param_strcpy(void) {
+    int64_t str;
+    return strlen(strcpy((char *)str, (char *)str));
+}
+```
+
+**Critical Issue:** The decompiled function has **NO parameters** - it takes void but the original clearly has `char *dst, const char *src`. This is a fundamental decompilation failure.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `str`, `result`, `mem`, `thread`) with no semantic meaning. The original's `dst`, `src` are completely lost. This makes tracking data flow practically impossible without cross-referencing source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Function name `param_strcpy` correctly matches the original. However, the function signature is completely wrong - it shows `param_strcpy(void)` when it should be `param_strcpy(char *dst, const char *src)`. The name is correct but the signature is catastrophically wrong.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x100000000` appear without explanation. The stack canary check `__readfsqword(40)` is unexplained. However, string literals like "HelloLib" are preserved in `call_strcpy`. The `66` in `open("/tmp/binbench_shm", 66)` is unclear (should be `O_CREAT|O_RDWR`).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifact pollution includes: `__readfsqword(40)` stack canary checks, `__stack_chk_fail()` calls, address comments (`// 0x29e5`), redundant casts like `(char *)str`, and `__asm_rep_movsb_memcpy` intrinsics. These obscure the actual logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: For `param_strcpy` specifically, the control flow is simple (single return statement). However, in `call_strcpy` and other functions, there are unnecessary stack canary checks that add complexity. The goto-free structure is good, but the stack protection code creates artificial branches.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are appropriately sized (not monolithic). However, many standard library functions are renamed to `function_XXXX` pattern (e.g., `function_2420` for `strcpy`, `function_2540` for `strcmp`). This creates unnecessary fragmentation - these should be recognized as libc calls.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The `param_strcpy` function itself reads linearly (top-to-bottom). However, in larger functions like `param_fork_exec`, there are complex goto patterns and early returns that disrupt flow. The code generally reads well for simple functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns exist - for example, in `call_memset`, there's a loop that initializes buffer to 255 followed by `param_memset` to clear it. The stack canary checks are repeated in every function. However, no severe dead code was observed.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: **Catastrophic type loss.** The function `param_strcpy` has NO parameters (should be `char *dst, const char *src`). Return type is `int64_t` instead of `int`. Many functions show wrong parameter counts - e.g., `param_strcmp` shows 4 parameters but original has 2. This is the most severe issue in the entire decompilation.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: For simple functions like `param_strcpy`, no composite types are needed. However, the decompiler created fake struct definitions at the top (e.g., `struct _IO_FILE`, `struct shmid_ds`) with generic field names (`e0`, `e1`, etc.) that don't match actual libc structures. This adds noise without value.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `int64_t str` used uninitialized as pointer destination in `strcpy`, `(char *)str` casts without validation, pointer arithmetic in `*(int32_t *)(4 * v2 + v1)` without bounds checking. The lack of `const` correctness throughout (e.g., `strcpy(dest, src)` should have `const char *src`).
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are almost entirely address markers (`// 0x29e5`) with no semantic content. No explanation of what `param_strcpy` does, what the parameters represent, or the expected behavior. The only useful comments are the format strings showing expected output values.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some standard library functions are recognized (e.g., `strlen`, `strcpy`, `strcmp` are correctly named), but many are renamed to `function_XXXX`. The string operation semantics are clear, but the "wrapper function calling libc" pattern is not identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: **No anomalies are flagged despite critical issues.** The missing parameters in `param_strcpy` should be flagged as "DECOMPILATION ERROR: function parameters not recovered". The incorrect function signatures are presented as confident output. The `param_linux_syscall` shows `syscall(SYS_fork)` but original uses `SYS_open` - this mismatch is not noted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. For `param_strcpy`, the contract "requires: dst buffer large enough to hold src" is not recovered. No error handling expectations are documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible (e.g., `call_strcpy` calls `param_strcpy`), but the parameter mismatch makes the actual data flow unclear. Global variables like `g35`, `g36`, `g37` are used without explaining their purpose (e.g., `g46` is `signal_received`).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (test functions, param functions, thread functions). However, the fake struct definitions at the top pollute the namespace. The mixing of real function names (`param_strcpy`) with numbered ones (`function_2420`) is inconsistent.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: **Code will not compile as-is.** The `param_strcpy(void)` call in `call_strcpy` passes no arguments but the (wrong) signature expects none - this actually compiles but is semantically broken. Many undefined references to standard library functions would occur since they're declared as local prototypes.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- **Function signature failure:** `param_strcpy` has NO parameters - completely missing `char *dst, const char *src`. This is a fundamental decompilation error.
+- **Type precision loss:** Return type is `int64_t` instead of `int`. Many functions show wrong parameter counts.
+- **Variable naming:** All variables use generic names (`v1`, `v2`, `str`, `mem`) with no semantic meaning.
+- **No anomaly indication:** The missing parameters should be flagged as a decompilation failure, not presented as confident output.
+- **Noise pollution:** Stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`) obscure the actual logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)  
+- The function name `param_strcpy` correctly matches the original source, preserving the semantic intent in the name.
+
+**Most Needs Improvement:** Type Precision (scored 2/10)  
+- The complete loss of function parameters in `param_strcpy` is a catastrophic failure. The decompiler failed to recover the function signature entirely, making the code fundamentally incorrect and unusable for analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover function parameters from stack frame analysis** - The original passes `dst` and `src` via registers (x0, x1 on ARM64). The decompiler must properly recover these parameter locations.
+2. **Flag decompilation failures explicitly** - When parameters cannot be recovered, add comments like `// WARNING: parameters not recovered` rather than presenting incorrect signatures.
+3. **Eliminate compiler artifact noise** - Stack canary checks, stack protector calls, and address comments should be optional output or clearly marked as compiler-generated.

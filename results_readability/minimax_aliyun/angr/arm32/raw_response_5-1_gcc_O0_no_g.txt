@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `ptr`, `result`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v12` throughout. For example, in `test_cpp_member_func()`, variables `v0`, `v1`, `ch`, `v3`, `v4` obscure their roles as return values and object instances. At -O0, variables should have meaningful names derived from debug symbols.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions are properly named (`test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`) matching source. Class methods use correct C++ mangled names (`SimpleClass::getValue`, `LifecycleClass::getData`). However, some helper functions remain as `sub_XXXXX` format (e.g., `sub_10a68`, `sub_11080`). Member functions like `getClassID` lack proper return type in signature.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1234` (class ID), `100`, `200` (data values), `5` (array size) appear without explanation. String literals in `test_cpp_oo_features()` use raw addresses (e.g., `0x1426c`) instead of recovered strings. However, some constants like `1000` (multiplier for instance count) are used correctly. The decompiler doesn't recover the format strings from the data section.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_guard`, `__stack_chk_fail`) are expected at -O0 -g. Some redundant casts present (e.g., `(unsigned int)` conversions). The `armg_calculate_condition` helper is a Ghidra artifact. However, no debug instrumentation or register spill artifacts significantly pollute the code. The noise level is moderate and manageable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural with proper if/else structures. However, `test_cpp_multiple_inheritance()` uses complex goto-based logic with `LABEL_11035` and `LABEL_11036` for pointer comparison that should be a simple conditional. The virtual function call in `call_virtual_func` uses convoluted pointer dereferencing: `(*((int *)*((int *)*((int *)&v0))))(arg_0, arg_1);` - this should be a cleaner vtable call.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - test functions are concise (20-40 lines). Class methods are properly separated. Template instantiations generate separate functions as expected. The decomposition matches the source structure well, with constructors, destructors, and member functions as separate entities.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom without excessive forward jumps. Early returns are used appropriately in some functions. The main `test_cpp_oo_features()` function has straightforward sequential calls. Some functions like `test_cpp_exception()` have complex control flow due to exception handling, but that's expected.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some duplicate patterns in template functions (e.g., `Container<int>` and `Container<double>` implementations are separate but that's necessary). The stack canary check pattern is repeated in every function but that's a compiler artifact. Overall, redundancy is minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `unsigned int` extensively instead of specific types like `int32_t`, `size_t`. Pointers are generally correct (`char *`, `int *`). The decompiler correctly identifies `class Base *` in `call_virtual_func`. However, return types are often missing or wrong (e.g., `SimpleClass::getClassID` returns `void` instead of `int`). Signed/unsigned confusion exists in some comparisons.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class names are recovered (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`). However, structs use generic names (`struct_0`, `struct_1`) with generic fields (`field_0`, `field_4`). For example, in `test_cpp_multiple_inheritance`: `typedef struct struct_1 { struct struct_0 *field_0; } struct_1;` - should have meaningful names like `BaseA* base_ptr`. The decompiler does recover vtable pointers in some cases.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. In `call_virtual_func`: `(*((int *)*((int *)*((int *)&v0))))(arg_0, arg_1);` - this convoluted pointer arithmetic is error-prone. The `test_cpp_exception` function has complex exception handling with raw pointer arithmetic. However, most member access uses proper method call syntax. Some potential buffer access issues in `Container::push` where index isn't fully bounds-checked in the decompiled form.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only basic parameter names like `// r0`, `// r1`, `// [bp-0x4]` appear. No explanation of algorithm logic, no recovery of original comments from debug info. The decompiler doesn't leverage debug symbols to recover source comments. This is a critical missing feature.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ idioms are recognized (constructor/destructor pairs, vtable for virtual functions, unique_ptr operations). However, the virtual function call pattern is not cleanly presented - it uses raw pointer dereferencing instead of the cleaner `obj->virtual_func(x)` syntax. Exception handling is shown as raw `__cxa_throw`, `__cxa_begin_catch` calls without the try-catch wrapper.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of decompilation uncertainties. The complex virtual function call in `call_virtual_func` is presented as definitive code when it should be flagged as a vtable lookup that couldn't be fully resolved. No warnings about potential undefined behavior or assumptions being made.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler doesn't infer contracts from the code. For example, `Container::get()` has implicit bounds checking but this isn't documented. Functions like `LifecycleClass::getData()` that return -1 on out-of-bounds don't have this documented as a contract.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear - you can see `SimpleClass::getValue(&v3)` being called. Global variable access is indicated with `extern`. However, the relationships between classes (inheritance) aren't explicitly documented. The vtable mechanism isn't explained. Callback relationships (e.g., lambda as deleter) aren't clearly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - test functions together, class methods with their classes, template instantiations separate. The decompiled output shows a reasonable organization matching the source structure. Static functions are properly scoped. However, the massive amount of std::template infrastructure code (for unique_ptr, tuple, etc.) creates noise.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code would require significant patching to compile. Many `extern` declarations needed. Template infrastructure functions have incorrect signatures. The `test_cpp_oo_features` function uses raw addresses for format strings which would need string recovery. Not standalone-compilable without substantial fixes.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Variable naming uses generic `v0`-`v12`, `ptr`, `result` instead of semantic names like `obj`, `return_value`, `instance_count`
+- No comments recovered from debug symbols - complete absence of explanatory text
+- Virtual function calls use convoluted pointer dereferencing instead of clean `obj->method()` syntax
+- Struct/union fields use generic `field_0`, `field_4` names losing semantic meaning
+- Format strings in `test_cpp_oo_features()` use raw addresses instead of recovered strings
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+- Functions are properly separated matching source structure; class methods, constructors, destructors are correctly decomposed; template instantiations are appropriately separate
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10) and Comment Quality (scored 2/10)  
+- Generic variable names like `v0`, `v1`, `ptr`, `result` make code nearly unreadable
+- Complete absence of comments means no algorithm explanation, no recovery of source documentation
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from debug symbols**: At -O0 with -g, variable names should be recovered from DWARF debug info. Transform `v0` → `obj`, `v1` → `return_value` based on usage patterns and debug symbols.
+2. **Recover comments from debug info**: Extract line comments, function documentation, and explanatory text from debug sections. Add "// NOTE: vtable call" for indirect dispatch sites.
+3. **Clean up virtual function calls**: Present vtable calls as `obj->virtual_func(args)` rather than `(*((int *)*((int *)vtable)))(obj, args)`. Add "// virtual dispatch" annotation.

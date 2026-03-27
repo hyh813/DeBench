@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `iVar2`, `iVar3`, `iVar4`) with no semantic meaning. Many variables marked as "Unresolved local var" indicating complete recovery failure (e.g., `result`, `str`, `p1`, `p2`, `p3` all lost).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`), but some generic names exist (`FUN_00100860`, `FUN_00100a7c`). Action verbs absent from most names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0xe1`, `0x7a314`, `0x30`, `0x2a`). Call functions return hardcoded constants instead of showing computation. Encryption key `'Z'` (0x5A) not explained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`) add noise to every function. Multiple "WARNING: Unknown calling convention" and "Unresolved local var" comments clutter the output. Runtime functions mixed with user code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_tail_call_optimized` correctly recovered as for-loop (good), but `param_fake_branch` lost ALL conditional branches (critical failure). `param_opaque_predicate` has convoluted while-loop for GCD that obscures the algorithm.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Severe degradation: `param_buffer_overflow_stack` reduced to empty `return;`, `param_fake_branch` collapsed to single `return x;`. Lost the obfuscation logic entirely, defeating the purpose of the source code.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns used appropriately. No goto statements observed in user functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding in call functions removes computation visibility. Stack canary checks duplicated across functions. Otherwise minimal redundant expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char, size_t, unsigned int). Some type information lost in "Unresolved local var" annotations. Pointer types generally correct but some casts obscure intent (`(uint)x >> 1`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Bitfield struct in `param_implementation_defined` recovered as generic `anon_struct_4_3_4e909822` with no field names. Arrays recovered correctly. No struct field semantic information preserved.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Casts present but generally safe (`(unsigned int)x`, `(char *)`). No obvious buffer overflow patterns in decompiled output. Pointer arithmetic visible but not dangerous.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("WARNING:", "Unresolved local var"). Zero semantic comments explaining algorithm purpose or obfuscation intent. No API documentation recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Tail call optimization recognized and converted to loop (good). GCD algorithm in `param_opaque_predicate` not identified. No pattern naming for any algorithms.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good use of "WARNING" comments for uncertain areas. "Unresolved local var" clearly indicates recovery failures. "Subroutine does not return" warnings present for signal handlers.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Signal handler relationships not explained. Error conditions (division by zero, null pointer) not documented in function contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variable usage shown (`div_zero_caught`, `jmp_buffer`) but relationships not explained. No callback relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Runtime functions (`_init`, `_fini`, `__do_global_dtors_aux`) mixed with user code. No namespace or module separation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: References external functions requiring stubs (`__libc_start_main`, `__stack_chk_fail`, `signal`). Would need significant modification to compile standalone. No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+4+7+6)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (6+5+7)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (4+4+7+2)/4 = 4.25 × 0.15 = 0.638
+Level 5 (Contextual):  (5+5+5)/3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 5.14/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **`param_fake_branch` completely lost obfuscation logic** - Both永假 (always-false) conditions eliminated, function reduced to `return x;`
+- **`param_buffer_overflow_stack` reduced to empty function** - All buffer overflow test code eliminated
+- **Generic variable names everywhere** - `iVar1`, `iVar2`, `iVar3`, `iVar4` provide zero semantic information
+- **Call functions return hardcoded constants** - `call_fake_branch()` returns `10` instead of showing `param_fake_branch(10)` computation
+- **No semantic comments recovered** - Original documentation about obfuscation techniques completely lost
+
+### Best Quality Aspect: **Anomaly Indication (7/10)**
+- Ghidra properly flags uncertain areas with "WARNING" and "Unresolved local var" comments, honestly indicating decompilation limitations.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- Zero precondition/postcondition documentation; signal handler contracts and error conditions completely undocumented despite being critical to function behavior.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve conditional branch semantics** - Even if optimizer eliminates dead code, annotate with comments like `// OPTIMIZED: Always-false condition removed by compiler`
+2. **Infer variable names from usage context** - Variables used in length checks should be named `length`/`size`, encryption keys should be named `key`
+3. **Recover algorithm patterns** - GCD loops, tail recursion, and string decryption patterns should be identified and commented with algorithm names

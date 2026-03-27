@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiled code contains extensive "Unresolved local var" markers (e.g., `int sum@[???]`, `int i@[???]`, `int len@[???]`). Most local variables are either unresolved or have generic placeholder names, making it difficult to track their semantic purpose. Only function parameters like `param_1` are reasonably named.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions retain their original names (e.g., `process_char`, `process_int`, `array_1d_stack`, `linked_list`). However, some internal functions have auto-generated names like `FUN_001006d0`, `FUN_0010190c`, and the long double arithmetic functions are not clearly named. The main API functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (e.g., `' '` for space in process_char, `0xb` for 11), but many magic numbers remain unexplained (e.g., `0xbfU`, `0x1a` in range check, `0x14` for 20). The enum values in `enum_switch` use a jump table `CSWTCH_62` without explaining the mapping. The volatile test function shows `*p + *p` without explaining why two reads occur.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: The output is heavily polluted with decompilation artifacts including: "Unresolved local var" comments throughout, "WARNING: Unknown calling convention" markers, "WARNING: Removing unreachable block" messages, stack protection checks (`___stack_chk_guard`), and "WARNING: Could not recover jumptable" warnings. These significantly impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural with recognizable loops and conditionals. However, `process_char` uses an unusual bit manipulation trick (`(byte)(c + 0xbfU) < 0x1a`) instead of the clear `c >= 'A' && c <= 'Z'` from source. The binary tree functions have deeply nested structures that are hard to follow. At -O0, such transformations are unexpected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity generally matches the source. Each test function is separate. However, `binary_tree_sum` is dramatically expanded from a simple 5-line recursive function to over 200 lines of spaghetti code with repeated patterns, suggesting decompilation failure rather than compiler transformation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom without excessive forward jumps. The main issues are in `binary_tree_sum` where control flow becomes extremely non-linear with nested loops and conditions that are difficult to trace. Other functions are reasonably linear.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns exist, particularly in array initialization code within test functions. The `array_3d` and `binary_tree_sum` functions show repeated code patterns that suggest incomplete optimization recovery. However, no obvious dead code from the original source is present.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types are correctly identified (`char`, `short`, `int`, `long`, `float`, `double`, `_Bool`). Function pointer types have reasonable signatures (`_func_int_int *`). However, `long double` operations use low-level constructs (`undefined1 [16]`), and some type information is lost (e.g., `int *param_1` instead of more specific pointer types).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types are well-recovered with accurate field names: `Point3D` with x, y, z; `Node` with data and next; `Rect` with nested position and size; `Widget` with deep nesting. Union types are correctly identified (`UnionData` with i, f, bytes). Bitfields are handled via manual bit manipulation which is acceptable. The only issue is some struct names could be more descriptive.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety concerns exist: `ptr_cast` function performs unsafe void pointer casting; `ptr_diff` uses manual pointer arithmetic with bit-shifting; `struct_bitfields` uses raw uint casting; the binary tree functions use extensive pointer manipulation without bounds checking. The volatile test shows `*p + *p` which is correct but not explained as a deliberate test.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Most comments are decompilation warnings ("Unresolved local var", "WARNING") rather than helpful explanations. No comments explain the purpose of functions or the meaning of complex logic. The test functions have no comments describing what they test or expected outcomes. Some "WARNING: Could not recover jumptable" comments acknowledge decompilation limitations.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Common patterns can be identified: linked list traversal in `linked_list`, tree traversal in `binary_tree_sum`, array iteration patterns. However, these are not explicitly labeled or documented as recognizable patterns. The decompiler doesn't identify the test-driven structure of the code.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies are flagged: "Unresolved local var" indicates missing variable information; "WARNING: Could not recover jumptable" for switch statements; "WARNING: Unknown calling convention" for test functions. However, the unusual `process_char` bit manipulation is not flagged as potentially incorrect, and the massive expansion of `binary_tree_sum` is not explained as a decompilation issue.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The volatile test function's semantic purpose (ensuring two separate memory reads) is not indicated. No contracts or assumptions are recovered from the source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible (e.g., `test_data_types_l1()` calls `process_char`, `process_int`). However, there's no documentation of which functions call which, the callback relationships (e.g., `complex_callback` used by `ptr_func_complex`), or the relationship between test functions and the functions they test.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically by type (data type functions, array functions, pointer functions, composite functions). However, the file is monolithic with no separation. The test functions are interspersed with the functions they test. Some internal functions like `__multf3` and `__addtf3` are library functions that could be separated.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code uses standard library functions (`puts`, `__printf_chk`, `__stack_chk_fail`) but doesn't declare them. No headers or dependencies are documented. The stack protection code suggests specific compiler features but these aren't explained. The code would require significant patching to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Extensive "Unresolved local var" markers make most local variables unusable (e.g., `int sum@[???]`, `int i@[???]`)
+- `binary_tree_sum` function is catastrophically decompiled - expanded from 5-line recursive function to 200+ lines of spaghetti code
+- `process_char` uses obfuscated bit manipulation (`(byte)(c + 0xbfU) < 0x1a`) instead of clear range check
+- Heavy noise pollution with "WARNING" comments and decompilation artifacts throughout
+- No meaningful comments explaining function purposes, algorithms, or test scenarios
+
+**Best Quality Aspect:** Composite Type Recovery (8/10)  
+Struct and union types are well-recovered with accurate field names. Point3D, Node, Rect, Widget, and UnionData all have proper structure and field names matching the source.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Most local variables are marked as unresolved or have generic placeholder names, making it nearly impossible to understand function logic without significant reverse engineering effort.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - variables like `sum`, `i`, `len` can be identified from loop patterns and operations
+2. Fix the binary tree decompilation - the recursive function should remain recursive, not be transformed into iterative spaghetti code
+3. Replace obfuscated expressions like `(byte)(c + 0xbfU) < 0x1a` with equivalent readable forms like `c >= 'A' && c <= 'Z'` when the transformation is semantically equivalent

@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `local_28`, `uVar1`) with no semantic meaning. For example, in `func_mixed_args`, parameters should be `x`, `str`, `d`, `ll` but appear as `param_1` through `param_6`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved from source (`cdecl_func`, `call_cdecl`, `varargs_func`, `test_calling_conventions`). This is excellent recovery matching original intent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0x12345678` appear without explanation. Some hex values are used where decimal would be clearer (e.g., `0xf` instead of `15` in `call_thiscall`).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack canary checks (`if (local_c != 0) { __stack_chk_fail(...); }`) in nearly every function, redundant temporary variables (`uVar1`, `iVar2`), and unnecessary type casts throughout.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper for/while loops and if-else constructs. However, `ret_multi_branch` uses chained if-statements instead of the original switch statement, reducing clarity.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is appropriate; each function maintains single responsibility. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with minimal forward jumps. Some functions have early returns that could be restructured for better linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks are duplicated in every function. Temporary variables like `uVar1` are used even when direct returns would suffice (e.g., `call_cdecl` could return `cdecl_func(5,10)` directly).
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `undefined4`, `undefined8`, `undefined` replace proper C types. `func_mixed_args` has `double` and `long long` parameters represented as multiple `undefined4` values. Return types like `undefined4` instead of `int` obscure semantics.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover structs. `LargeStruct` (128 bytes) appears as separate `int` parameters in `func_struct_byval`. `SmallStruct` is represented as `int *param_1` with array indexing (`param_1[1] * *param_1`) instead of `p->x * p->y`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `func_struct_byptr` uses `int *` instead of `SmallStruct *`, `param_double_ptr` has incorrect null check (`*param_1 == 0` vs `*param_1 == NULL`), and function pointers use `code *` instead of proper typedef.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled output. No algorithm explanations, no parameter documentation, no decompilation confidence indicators. Only auto-generated function headers present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not recognized - `varargs_func` incorrectly implements va_list as a local array (`local_c[3]`). Function pointer callback pattern in `param_func_ptr` is recovered but not identified as a callback pattern.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite critical issues: varargs implementation is fundamentally broken, struct passing is incorrect, and floating-point operations in `func_mixed_args` use ARM soft-float helpers (`__aeabi_dadd`) without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` requires non-NULL pointer). No postconditions or error condition documentation. Null checks exist but aren't explained as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are visible through direct calls. However, no call graph documentation, and external library functions (`printf`, `strlen`, `memcpy`) are declared but not distinguished from user code clearly.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat namespace. No logical grouping of related functions (calling convention tests vs. parameter passing tests). Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone. Missing: struct definitions, proper type definitions (`undefined4`), external function declarations incomplete, ARM-specific helpers (`__aeabi_*`) not available on x86.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+5+4)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+8+7+5)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (3+2+4)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (6+5+3)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 4.56/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Struct types completely lost**: `LargeStruct` and `SmallStruct` recovered as raw int arrays/pointers, losing all field semantics
+- **Type system severely degraded**: `undefined4`, `undefined8` throughout instead of proper C types (int, double, long long)
+- **Varargs implementation broken**: `varargs_func` uses local array instead of proper `va_list` handling
+- **Zero documentation**: No comments explaining any non-trivial logic, anomalies, or contracts
+- **Stack canary noise**: Every function has redundant `__stack_chk_fail` checks that obscure actual logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from source, making it easy to identify purpose of each function
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any explanatory comments makes understanding complex operations (floating-point, varargs, struct handling) extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack layouts** - Analyze parameter access patterns to reconstruct struct definitions with field names based on usage context
+2. **Add semantic comments for complex operations** - Auto-generate comments for varargs handling, floating-point conversions, and type casts explaining the transformation
+3. **Eliminate compiler artifact noise** - Filter out stack canary checks and redundant temporary variables that don't contribute to semantic understanding

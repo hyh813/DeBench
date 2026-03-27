@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic systematic names (`param_1`, `local_10`, `iVar1`, `uVar1`, `pvVar1`) that obscure semantic meaning. Original source had meaningful names like `arr`, `head`, `current`, `sum` which are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`local_vars`, `heap_basic`, `test_stack_memory`, `linked_list_heap`). Action verbs and semantic intent are maintained well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex (`0x2a` for 42, `0xffffffff` for -1, `0x14` for 20) obscuring meaning. Original source used decimal literals and named constants where appropriate.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler runtime functions included (`__sync_*` series - 40+ functions), WARNING comments about unreachable blocks, redundant type casts (`(undefined4 *)`, `(void *)0x0`) clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops generally recovered as for/while constructs, but `stack_alias` has corrupted parameter handling. Some functions use `while(true)` with break instead of cleaner for loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and cohesive. Helper functions like `create_tree_node` preserved. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with recognizable patterns. Early returns are clear. No excessive goto usage in main application functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant type casts present throughout. No obvious dead code in main functions, but compiler runtime functions add bulk without value.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `int` becomes `undefined4`, `char` becomes `undefined1`, `size_t` becomes `int` or `undefined4`. Original type information largely lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs not recovered - `Point` accessed as `global_point._4_4_`, `Node` accessed via pointer arithmetic (`local_10[1]`). Array/struct field semantics completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts throughout (`(undefined4 *)`, `(int *)`, `(void *)`). Pointer arithmetic visible (`__ptr + local_18 * 4`). Original type safety guarantees lost.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only decompiler warnings present ("WARNING: Removing unreachable block"). No algorithm explanations, API contracts, or semantic documentation recovered from original comments.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Common patterns (malloc/free pairs, linked list traversal, tree operations) not named or documented despite being recognizable.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present (`stack_alias` has "Heritage AFTER dead removal" warning). However, undefined behavior in `dangling_pointer`, `double_free` not flagged as dangerous.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: NULL checks preserved in most functions. No precondition/postcondition documentation. Original test expectation comments completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls and global variable references visible but not documented. No call graph, no callback relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 114 functions in single output file. No organization matching source file structure. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies (`extern_global_var`, `extern_function`) not documented. Runtime functions included but not separated.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50  × 0.25 = 1.625
+Level 3 (Type):        (4+3+4)/3   = 3.67  × 0.20 = 0.733
+Level 4 (Semantic):    (4+3+5+4)/4 = 4.00  × 0.15 = 0.60
+Level 5 (Contextual):  (5+4+6)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.11/10
+```
+
+### Overall Readability Score: **5.1/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `local_10`, `iVar1`) - requires manual reverse engineering to understand purpose
+- **Struct types not recovered** - `Point` struct accessed as `global_point._4_4_`, `Node` linked list accessed via array indexing `local_10[1]`
+- **`stack_alias` function corrupted** - parameters not recovered, shows `void` signature instead of `(int *p1, int *p2)`
+- **VLA/alloca functions unreadable** - complex pointer arithmetic obscures dynamic stack allocation intent
+- **40+ compiler runtime functions** (`__sync_*` series) pollute output without adding value
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names preserved almost perfectly from source, maintaining semantic intent and action verbs
+
+### Most Needs Improvement: **Composite Type Recovery (3/10)**
+- Complete failure to recover struct/union definitions, forcing pointer arithmetic interpretation for all composite data
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** from field access patterns to recover `Point`, `Node`, `TreeNode` definitions with meaningful field names
+2. **Add semantic variable naming** based on usage context (e.g., variables used in malloc size calculations should be named `size` or `count`)
+3. **Filter compiler runtime functions** from main output or separate them into a distinct runtime library section

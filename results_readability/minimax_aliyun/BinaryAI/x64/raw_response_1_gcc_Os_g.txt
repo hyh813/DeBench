@@ -1,0 +1,170 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+The decompiler uses generic parameter names (`param_1`, `param_2`, `param_3`) and register-derived local variable names (`iVar1`, `uVar1`, `lVar2`, `puVar3`). While the original source used descriptive names like `a`, `b`, `c`, `temp1`, `temp2`, `sum`, `count`, the decompiled version obscures these purposes. For example, in `sequential_ops`, the parameters should be `a`, `b`, `c` but are `param_1`, `param_2`, `param_3`.
+
+### 2. Function Naming Quality
+**Score: 10/10**
+
+All function names are correctly preserved from the original source. Functions like `sequential_ops`, `single_if`, `nested_if_2`, `loop_for_fixed`, `duffs_device`, `recursion_factorial`, `state_machine`, and `computed_goto` all match exactly. This is excellent recovery.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Magic numbers are prevalent without explanation. The decompiled code uses hex values like `0x15` (21), `0x14` (20), `0x3e9` (1001), `0x65` (101) without documentation. The original had clear test expectations in comments. However, some constants like `0xffffffff` (representing -1) are semantically clear.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Significant compiler/runtime artifacts pollute the code: `__stack_chk_fail()` calls, FS_OFFSET stack canary checks, `undefined`/`undefined4`/`undefined8` type annotations, `code *` function pointer types, and UNRECOVERED_JUMPTABLE markers. These artifacts significantly impede readability.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Most control flow is natural and matches the original. The `goto_backward` function was reasonably transformed into a do-while loop. However, some type mismatches affect semantic clarity: `if_else` returns `bool` instead of `int`, and `loop_while` returns `undefined [16]` instead of `int`.
+
+### 6. Function Decomposition
+**Score: 9/10**
+
+Function granularity is excellent. Each function maintains appropriate size and single responsibility. The original test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) are preserved. No over-fragmentation or monoliths observed.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Most code reads top-to-bottom. Minor forward jumps exist in `loop_break` (goto to exit) and `duffs_device` (switch fall-through labels). The overall flow is manageable.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+No significant redundancy detected. Loop unrolling is minimal. Dead code is absent. The decompiled code is clean in this regard.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+
+Several severe type errors exist:
+- `loop_while` returns `undefined [16]` instead of `int`
+- `loop_break` returns `ulong` instead of `int`
+- `op_div` returns `undefined [16]` instead of `int`
+- `if_else` returns `bool` instead of `int`
+- `loop_nested` has incorrect parameter handling with bounds checking
+
+These type degradations significantly impact type safety and semantic clarity.
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+
+The original source uses minimal composite types (mostly arrays like `int matrix[3][4]` and `int arr[]`). The decompiler handles these reasonably with inline array access patterns. No struct recovery was needed since the source didn't define custom structs.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Multiple type safety issues:
+- Incorrect return types in several functions
+- `code *` type used for function pointers without proper signatures
+- `undefined` types scattered throughout
+- Potential undefined behavior from incorrect type handling
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Minimal comments present. Only the decompilation header and some UNRECOVERED_JUMPTABLE markers exist. No algorithm explanations, no recovery confidence indicators, no API contracts. The original source had extensive comments explaining each test case.
+
+### 13. Idiom Recognition
+**Score: 8/10**
+
+Common patterns are recognizable:
+- Switch statements identified (with goto-based fall-through in `duffs_device`)
+- Loops correctly identified (for, while, do-while)
+- Duff's device pattern is identifiable despite complex goto structure
+- State machine patterns recognized
+
+### 14. Anomaly Indication
+**Score: 4/10**
+
+Some anomalies are marked (UNRECOVERED_JUMPTABLE), but critical issues are not flagged:
+- Type mismatches not indicated as errors
+- Incorrect return types not flagged as suspicious
+- No warnings about semantic inconsistencies between decompiled and expected behavior
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No precondition, postcondition, or invariant documentation. The original source had clear test expectations (e.g., "期望: 21") that are not recovered.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Function call relationships are somewhat clear through function names, but no explicit documentation of caller/callee relationships. External dependencies (like `puts`, `__printf_chk`) are marked as `<EXTERNAL>`.
+
+### 17. Module Organization
+**Score: 8/10**
+
+Functions are logically grouped: test entry functions, control flow L1/L2/L3 functions, helper operations. Static functions are properly scoped. The organization mirrors the original source structure.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+The code does not compile due to:
+- `undefined` types are not valid C
+- Incorrect return types (`bool` vs `int`, `undefined [16]` vs `int`)
+- Missing proper declarations for external functions
+- `code *` type is not standard C
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 5 + 4) / 4 = 5.5
+L2_avg = (7 + 9 + 7 + 8) / 4 = 7.75
+L3_avg = (4 + 7 + 5) / 3 = 5.33
+L4_avg = (3 + 8 + 4 + 2) / 4 = 4.25
+L5_avg = (5 + 8 + 2) / 3 = 5.0
+
+Overall = (5.5 × 0.30) + (7.75 × 0.25) + (5.33 × 0.20) + 
+          (4.25 × 0.15) + (5.0 × 0.10)
+        = 1.65 + 1.9375 + 1.066 + 0.6375 + 0.5
+        = 5.81/10
+```
+
+### Overall Readability Score: 5.81/10
+
+### Critical Defects
+- **Type errors**: `loop_while` returns `undefined [16]`, `if_else` returns `bool`, `loop_break` returns `ulong` - all should return `int`
+- **Variable naming**: Generic names like `param_1`, `iVar1`, `uVar1` obscure semantic purpose
+- **No comments**: Absence of algorithm explanations, test expectations, and recovery confidence indicators
+- **Build incompatibility**: Code uses non-standard types (`undefined`, `code *`) that prevent compilation
+- **Anomaly silence**: Type mismatches and semantic issues not flagged to user
+
+### Best Quality Aspect
+**Function Naming Quality (10/10)** - All function names are correctly preserved from the original source, making it easy to locate specific functions.
+
+### Most Needs Improvement
+**Variable Naming Quality (3/10)** - Generic parameter and local variable names severely impede understanding of data flow and purpose.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns**: Analyze how parameters and locals are used to generate semantic names (e.g., `param_1` used in addition → `addend` or `a`)
+2. **Fix type precision errors**: Ensure return types match expected semantics (bool → int, undefined → concrete type)
+3. **Add semantic comments**: Include test expectations, algorithm explanations, and recovery confidence indicators

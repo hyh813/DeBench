@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `a1`, `v1`, `v2`, `v3`), providing no semantic context about their role (e.g., `n`, `arr`, `i` are lost). While `mem` is used for heap allocations, local stack variables are reduced to meaningless temporaries.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: The decompiler successfully recovered the original function names exactly (e.g., `double_value`, `local_vars`, `heap_basic`), which significantly aids navigation and understanding of the codebase.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: String literals are completely lost, replaced by opaque pointer arithmetic offsets (e.g., `printf((char *)(v1 + 0x20d5))`). Magic numbers like `2041` (likely `2048` alignment logic) appear without explanation.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While the main function bodies are relatively clean, the global scope is polluted with compiler runtime artifacts like `__x86_get_pc_thunk_bx` and `frame_dummy`, and architecture-specific intrinsics like `__asm_hlt()` appear in `_start`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Despite the source being compiled with `-O0`, the decompiler presents aggressively optimized code, such as constant folding (`local_vars` reduced to `2 * a1 + 10`) and manual loop unrolling in `large_stack_frame`, which obscures the original simple logic.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source, maintaining appropriate boundaries and granularity. There is no artificial splitting or merging of functions, preserving the original modular structure.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom with minimal `goto` usage. However, the complex pointer arithmetic used to simulate stack frames (e.g., in `vla_stack`) slightly disrupts the linear flow of logic.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The decompiler eliminates source redundancy (e.g., intermediate variables) but introduces its own redundancy by unrolling loops (e.g., repeating assignment logic 4 times in `heap_basic`), making the code verbose.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded; most variables are generic `int32_t` or `int32_t*`. Specific types like `size_t` are mapped to `uint32_t` or `int32_t`, and signed/unsigned distinctions are often lost or inconsistent.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Struct types (`Point`, `Node`, `TreeNode`) are completely unrecovered. Accesses are replaced by raw pointer arithmetic offsets (e.g., `*(int32_t *)(v1 + 4)`), making it impossible to see the original data structures.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code is rife with unsafe casts, treating pointers as integers (`int32_t v2 = (int32_t)mem`) and performing pointer arithmetic on integer types, which obscures memory safety boundaries.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: The only comments are address range markers (e.g., `// Address range: 0x1000 - 0x102e`). There are no comments explaining the logic, algorithms, or the purpose of the complex pointer arithmetic.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard library calls (`malloc`, `printf`, `fork`) are recognized, but higher-level idioms like linked list traversal or tree operations are not identified; they appear as generic pointer manipulation loops.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents suspicious code (like the use-after-free in `dangling_pointer`) as standard logic without any warnings or flags indicating potential undefined behavior or anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the safety check `if (n <= 0 || n > 1000)` in `vla_stack` is present but not highlighted as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: While function calls are clear, global variable usage is opaque. Globals are renamed to `g1`, `g2`, etc., destroying the semantic link between `global_counter` and its usage across functions.
+
+**17. Module Organization:** Score: 4/10
+Justification: Functions are ordered by memory address rather than logical grouping (e.g., all stack operations together). This scatters related functionality (like the test functions) throughout the file.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code includes standard headers, but the use of inline assembly (`__asm_hlt()`) and architecture-specific thunks (`__x86_get_pc_thunk_bx`) prevents it from being a clean, portable C representation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Composite types (`Point`, `Node`, `TreeNode`) are completely lost, replaced by raw pointer offsets (e.g., `v1 + 4`).
+- String literals are replaced with pointer arithmetic offsets (e.g., `v1 + 0x20d5`), rendering `printf` statements unreadable.
+- Aggressive constant propagation and loop unrolling (e.g., in `local_vars` and `heap_basic`) obscure the original source structure despite `-O0` compilation.
+- Global variables are renamed generically (`g1`, `g2`), destroying semantic context.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved the original function names, which is the strongest anchor for understanding the code.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The total failure to recover structs makes data-heavy functions (linked lists, trees) extremely difficult to understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement struct recovery algorithms to group offset-based pointer accesses (e.g., `ptr+4`, `ptr+8`) back into named struct fields.
+2. Recover string literals from the read-only data section and replace pointer arithmetic offsets with the actual string constants.
+3. Heuristically detect `-O0` compilation characteristics (e.g., excessive stack movement) and disable aggressive constant folding/loop unrolling to preserve source fidelity.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `lVar3` with no semantic meaning. Original names like `count`, `sum`, `args`, `x`, `s` are completely lost, making it difficult to understand variable purposes without tracing usage.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but helper functions use generic names (`FUN_00100710`, `FUN_001008bc`). Most test function names match original source intent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear as hex constants (0xf, 0x32, 0x2a, 0x12345678) without explanation. Original source had clear decimal values with comments explaining expected results; decompiled version loses this context entirely.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: External function stubs are nonsensical (e.g., `strlen` calls itself recursively), `undefined8` return types appear throughout, and compiler artifacts like `___stack_chk_guard` checks add noise without value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `varargs_func` has confusing nested do-while loops instead of the original simple for loop. Most other functions have natural flow, but variadic handling shows significant structural degradation from optimization.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but caller functions are constant-folded (`call_cdecl` returns 0xf instead of calling `cdecl_func(5, 10)`). This breaks the call structure and hides actual function relationships.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally, but `varargs_func` and `param_varargs` have awkward jump patterns with nested loops that disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `func_struct_byval` unrolls the loop completely (16 explicit array accesses instead of a loop). This verbosity obscures the simple summation pattern from the original source.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - `undefined8` for return types, `long*` instead of struct pointers, `double` parameter order swapped in `func_mixed_args`. Original precise types (int, char*, double, long long) are lost or confused.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover struct types. `LargeStruct`, `SmallStruct`, `TestIntPair` all become generic pointer types (`long*`, `int*`). No struct definitions appear in decompiled output, losing all field semantics.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: structs treated as int arrays (`param_1[0xe]`), function pointers as `code*` without signatures, pointer type confusion throughout. Original type-safe code becomes error-prone.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each test case, expected values, and calling convention details. Complete loss of semantic guidance.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Function pointers partially recognized (`code*`), but variadic function idiom completely broken (wrong signature, no va_list handling). Struct passing idioms lost entirely.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about decompilation uncertainty despite clear issues (broken varargs, lost struct types, constant-folded calls). Code presents incorrect information confidently without flags.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., null checks in `func_struct_byptr` not explained), no postcondition inference. Original implicit contracts completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible but many calls optimized away through constant folding. Cannot trace actual execution flow from test functions to implementation functions.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions listed flat without logical grouping. Original source had clear sections (4.1 Calling Conventions, 4.2 Parameter Passing, 4.3 Return Values); decompiled output has no organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Uses Ghidra-specific types (`undefined8`, `code*`, `ulong`), external dependencies undefined, would require significant modification to compile. Not standalone compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+4+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.205/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct` become generic `long*`/`int*` pointers with no field semantics
+- **Variadic functions broken** - `varargs_func` signature shows `void varargs_func(int param_1)` instead of proper `...` handling
+- **Constant folding obscures call relationships** - `call_cdecl` returns `0xf` directly instead of calling `cdecl_func(5, 10)`
+- **Zero documentation** - No comments explaining purpose, expected values, or decompilation uncertainty
+- **Generic variable naming** - All variables are `param_N`, `iVar_N`, `lVar_N` with no semantic meaning
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `cdecl_func`, `varargs_func`, `test_calling_conventions` were preserved from debug symbols, maintaining semantic identity.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding intent impossible without comparing to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types from memory access patterns** - Detect consistent offset patterns (e.g., `[0]`, `[1]` access) and propose struct definitions with field names
+2. **Preserve variadic function signatures** - Detect `va_start`/`va_arg` patterns and restore `...` parameter syntax with appropriate warnings
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (constant-folded calls, type ambiguities) with comments indicating manual review needed

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `iVar1`, `uVar2`, `lVar3`) with zero semantic meaning. Original source had meaningful names like `x`, `c`, `arr`, `n`, `sum` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user functions preserved original names (`process_char`, `array_1d_stack`, `struct_simple`), but runtime helpers use generic names (`FUN_00100620`, `__addtf3`). Good preservation overall for -O0 compilation.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`0x20`, `0x41`, `0x19`, `0x2c`, `0x1b8`) without explanation. Original used character literals (`'A'`, `'Z'`) and named constants that are now opaque hex values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: NEON intrinsics (`NEON_fmadd`, `NEON_cmhi`) and floating-point helpers (`__addtf3`, `__multf3` with 800+ lines each) pollute output. Test functions show constant folding instead of actual function calls.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: For-loops converted to do-while patterns with manual decrement (`uVar2 = uVar2 - 1`). Logic is traceable but not idiomatic C. At -O0, original loop structure should be recoverable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: User functions appropriately sized, but `__addtf3` and `__multf3` are 800+ line monoliths. Test functions collapsed into single functions with pre-computed constants instead of actual calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but do-while loops with manual counter management disrupt natural flow. Some forward jumps in complex floating-point functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions show constant folding (printf with `0xf` instead of calling `array_1d_stack`). Floating-point helpers have massive redundant bit-manipulation code that could be abstracted.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `char` becomes `int` (`process_char` returns `int`), `long double` becomes `void` (`process_ld`), function pointers become `code*`. Original type information significantly degraded despite -O0 compilation.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - all structs accessed as `int*` with offsets (`param_1[1]`, `param_1 + 0x14`). No struct/union/enum type definitions recovered. Original had 15+ named struct types.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(undefined4 *)`, `(long)(int)`), pointer arithmetic without bounds, function pointers as generic `code*`. High risk of undefined behavior if recompiled.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original had extensive documentation explaining each test case, expected values, and scenarios. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Linked list traversal, tree recursion, and graph traversal patterns not identified. No algorithm or data structure pattern naming despite clear patterns in source.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `UNRECOVERED_JUMPTABLE` appears once but no explanation. No warnings about type degradation, missing struct definitions, or constant-folded test cases that don't actually call functions.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions (e.g., `ptr != NULL`), no postconditions, no error documentation. Original had clear test expectations that are now lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Global data references (`DAT_00102f1f`) have no meaning. No call graph or dependency information.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Single monolithic output with no logical grouping. Original had clear sections (Data Types, Arrays, Pointers, Composite Types) now lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would not compile without extensive patching. Missing struct definitions, type declarations, and external function prototypes. Floating-point helpers reference undefined symbols.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+3+1)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Context):     (4+3+4)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.03/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Variable `param_1`, `param_2`, `iVar1`** should be named based on semantic usage (e.g., `input_value`, `array_ptr`, `sum`)
+- **All struct/union types lost** - accessed as raw `int*` with offsets instead of named types with fields
+- **Zero comments** - no explanation of algorithm intent, test purposes, or decompilation confidence
+- **Test functions constant-folded** - printf calls show pre-computed values instead of actual function invocations
+- **Type degradation** - `char`→`int`, `long double`→`void`, function pointers→`code*`
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most user-defined function names preserved from original source (`process_char`, `array_1d_stack`, `struct_simple`), making basic navigation possible.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, making it impossible to understand test intent, expected behavior, or decompilation confidence without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze access patterns (`param_1[1]`, `param_1 + 0x14`) to reconstruct struct layouts with field names based on usage context
+2. **Add semantic variable naming** - Use data flow analysis to infer variable purposes (loop counters, accumulators, pointers) and generate meaningful names
+3. **Generate decompilation confidence annotations** - Flag uncertain reconstructions (function pointers, type casts, optimized code) with comments indicating manual review needed

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `a1`, `a2`, `result`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `len` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`cdecl_func`, `call_cdecl`, `test_calling_conventions`), but some degraded to `function_1040`, `function_1050` for library wrappers.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: String literals replaced with opaque pointer arithmetic (`(char *)(v1 + (int32_t)&g7 - 0x1cae)`). Magic numbers like `0x12345678` preserved but unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present (`__x86_get_pc_thunk_*`, `register_tm_clones`, `deregister_tm_clones`). Global variables `g1-g8` with cryptic hex values add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as `while` instead of `for` (e.g., `func_struct_byval`). Some functions constant-folded (`call_cdecl` returns 15 directly), losing call relationship clarity.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but parameter counts incorrect (`fastcall_func` takes 1 param instead of 3, `ret_func_ptr` takes 2 instead of 1).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Complex global pointer arithmetic disrupts flow in test functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Constant folding creates some redundancy (caller functions return constants instead of calling underlying functions).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `int32_t`. Pointer types often just `int32_t`. `float64_t` used inconsistently. Original `char*`, `void*`, `double` distinctions lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct definitions lost (`LargeStruct`, `SmallStruct`, `TestIntPair`, `BigStruct`, `SmallPoint`, `LargeData`). Access done through raw pointer arithmetic (`*(int32_t *)(a1 + 4)`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(char *)str`, `(int32_t *)a1`). Pointer arithmetic without bounds checking. Function pointer types degraded to `int32_t`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments whatsoever** in decompiled output. Original source had extensive documentation (CALL-L1-01, PARAM-L1-01, etc.) completely absent.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithm patterns identified. Varargs handling (`va_start`, `va_arg`, `va_end`) not recognized, implemented as raw pointer iteration.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Incorrect function signatures not flagged (`fastcall_func` with 1 param). No warnings about unrecovered structs or type degradation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` requires non-NULL). No postconditions or error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage (`g1-g8`) unexplained. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. No logical grouping beyond source order. No header file separation for declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References undefined globals (`g1-g8`). Library functions aliased (`function_1050` = `printf`). Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+3+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+6+7+7)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.666
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.41/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **All struct definitions lost** - `LargeStruct`, `SmallStruct`, `TestIntPair` completely absent; access via raw pointer arithmetic
+- **No comments in decompiled output** - Original source had extensive documentation (CALL-L1-01, PARAM-L1-01, etc.) completely missing
+- **Incorrect function signatures** - `fastcall_func(int32_t a1)` should take 3 parameters; `ret_func_ptr` has extra parameter
+- **String literals replaced with pointer arithmetic** - `(char *)(v1 + (int32_t)&g7 - 0x1cae)` instead of readable strings
+- **Variable names completely generic** - `v1`, `v2`, `a1`, `a2` provide no semantic information about purpose
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`cdecl_func`, `call_cdecl`, `test_calling_conventions`), maintaining semantic connection to source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero comments in decompiled output despite original source having extensive documentation; this severely impacts understandability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union definitions** - Analyze memory access patterns to reconstruct composite types with field names based on usage context
+2. **Preserve or infer comments** - Either retain source comments from debug info or generate explanatory comments for non-trivial logic patterns
+3. **Validate function signatures** - Cross-reference call sites to detect parameter count mismatches and flag them as anomalies for manual review

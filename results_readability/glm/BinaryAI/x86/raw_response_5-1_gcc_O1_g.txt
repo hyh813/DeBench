@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are generic stack offsets like `local_30`, `local_2c`, and `local_14`, or generic types like `uVar1` and `iVar1`, providing no semantic context about the original C++ objects like `SimpleClass` or `Point`.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: High-level test functions (e.g., `test_cpp_member_func`) and class methods (e.g., `Base::virtual_func`, `DiamondDerived::func`) are correctly identified and named, likely due to symbol table presence, but internal helpers like `FUN_000111c0` remain obscure.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: String literals are obfuscated; for example, the string "Test" appears as the hex integer `0x74736554` in `test_cpp_member_func`, and magic numbers like `0x125c` (4704) are used without explanation.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant noise from stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) and generic `undefined` types, which clutter the logic of the `-O0` debug build.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Exception handling in `test_cpp_exception` is reduced to a complex state machine using `goto LAB_00011750` and manual stack manipulation, completely obscuring the original `try/catch` structure.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: While the decomposition follows the binary structure, some functions like `test_cpp_multiple_inheritance` are reduced to a single `return 0x47;` statement due to constant propagation, hiding the logic entirely.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code generally flows top-to-bottom, but exception handling logic and virtual function dispatches introduce non-linear jumps and indirect calls that disrupt the reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The compiler's constant propagation (e.g., `test_cpp_smart_ptr` returning `0x2bf`) eliminates redundancy effectively, but this makes the code less readable as a source representation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are frequently degraded to generic `undefined4`, `undefined **`, or `int`, losing the specific C++ types like `std::unique_ptr` or class instances, though `double` is preserved in `test_cpp_template_func`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: No C++ class structures (e.g., `SimpleClass`, `Point`) are reconstructed; object data is accessed via raw stack offsets (e.g., `*(int *)(iVar1 + 4)`) rather than member field names.
+
+**11. Type Safety:** Score: 3/10
+Justification: Virtual function calls are exposed as unsafe indirect calls like `(***(code ***)param_1)(param_1,param_2);`, and pointers are cast to `undefined **` without type checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or C++ idioms used; the only header is "Decompiled by BinaryAI".
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Template instantiations are demangled (e.g., `template_max_int_`), which is helpful, but higher-level idioms like RAII, smart pointers, or exception handling are not recognized or annotated.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the code confidently without flagging potential issues, such as the suspicious hex encoding of strings or the opaque exception handling tables.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants; for example, the bounds checking in `Container::get` is present but not documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Named functions allow for some cross-referencing (e.g., `Base::virtual_func`), but the lack of class structure definitions makes understanding object relationships difficult.
+
+**17. Module Organization:** Score: 3/10
+Justification: Functions are ordered by address rather than logical grouping (e.g., all methods of a class are scattered), and there is no namespace or module reconstruction.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code uses non-standard types like `undefined4` and references undefined functions (`FUN_000111c0`), making it impossible to compile without significant manual modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- String literal "Test" is represented as a magic hex integer `0x74736554`, destroying semantic meaning.
+- C++ class structures are completely absent; objects are manipulated as raw stack memory offsets.
+- Exception handling is decompiled into a low-level state machine with `goto` labels, obscuring the `try/catch` logic.
+- Types are frequently generic (`undefined4`, `undefined **`), losing type safety and context.
+- No comments or annotations are provided to explain complex C++ constructs like virtual inheritance or RTTI.
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)
+- The decompiler successfully recovered and demangled names for test functions and class methods (e.g., `DiamondDerived::func`), providing crucial anchors for understanding.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct C++ classes, structs, and their member variables forces the reader to interpret raw pointer arithmetic and stack offsets, which is the single biggest barrier to readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement C++ class reconstruction to group member variables and methods into structs, replacing raw offsets with field names.
+2. Detect and format string literals stored in registers or on the stack to display as text strings (e.g., convert `0x74736554` to `"Test"`).
+3. Analyze exception handling tables (e.g., .gcc_except_table) to reconstruct high-level `try/catch/throw` blocks instead of showing the underlying state machine.

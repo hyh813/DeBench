@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, and `a2`. For example, in `test_cpp_rtti`, `v1` and `v2` represent the allocated objects, but their semantic purpose is completely lost.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: The decompiler preserves mangled C++ names (e.g., `_Z13test_cpp_rttiv`) but provides demangled names in comments (e.g., `// Demangled: test_cpp_rtti()`). While technically accurate, the primary identifiers in the code are the mangled strings, which hinders readability.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are preserved but often hex-encoded (e.g., `\xe6\xb5\x8b\xe8\xaf\x95` for Chinese characters), making them unreadable without decoding. Magic numbers like `4`, `10`, and `20` appear without explanation as constants.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with low-level C++ ABI implementation details, such as explicit calls to `__cxa_allocate_exception`, `__cxa_throw`, and vtable offset calculations (`*v1 - 4`), which obscure the high-level logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: High-level control structures like `try-catch` blocks are completely lost, replaced by a spaghetti of `__cxa` runtime calls and conditional jumps (e.g., in `_Z18test_cpp_exceptionv`). The logic is extremely difficult to follow compared to the original source.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Functions are generally well-separated into distinct units corresponding to the original methods (e.g., constructors, destructors, and test functions are split). However, the logic within `test_cpp_exception` is overly complex for a single function.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code generally reads top-to-bottom, but the exception handling logic in `test_cpp_exception` involves non-linear jumps and cleanup checks that disrupt the flow significantly.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: There is no obvious dead code, but the decompiler fails to abstract away the redundancy of C++ ABI mechanics, such as manual vtable lookups that could be represented as virtual method calls.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `int32_t` are used correctly, but template instantiation recovery is poor. The function `_Z12template_maxIdET_S0_S0_` incorrectly lists `int32_t *` as the first two parameters instead of `float64_t`, showing a failure to handle floating-point register passing conventions.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Vtables are recovered as C structs (`vtable_116b4_type`), which is good. However, the actual class definitions (`RTTIDerivedA`, `RTTIDerivedB`) are missing; objects are treated merely as pointers to vtables rather than structured data with members.
+
+**11. Type Safety:** Score: 2/10
+Justification: There is a critical semantic error in `_Z13template_swapIiEvRT_S1_`. The decompiled code `*a1 = (int32_t)a2; *a2 = (int32_t)a1;` swaps the *addresses* of the pointers rather than the values they point to, completely breaking the type safety and logic of the function.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 8/10
+Justification: The inclusion of demangled function names and class hierarchies in comments (e.g., `// RTTIDerivedA (base classes: RTTIBase)`) is the strongest feature, providing essential context that the C code lacks.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: C++ idioms are largely missed. RAII (smart pointers) is reduced to raw `new`/`delete` calls (`_Znwj`, `_ZdlPvj`), and exception handling is not recognized as a distinct idiom, appearing instead as a sequence of API calls.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the incorrect `template_swap` logic and the confusing `template_max` signature with high confidence, offering no warnings or "UNCERTAIN" markers despite the clear semantic mismatches.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the non-null requirements for pointers passed to `template_swap` are not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: The relationship between vtables and class methods is clear through the struct definitions and global variable initializers. However, the usage of class instances within functions is opaque due to the lack of struct definitions.
+
+**17. Module Organization:** Score: 5/10
+Justification: The code is organized into a single flat file. While vtables and globals are grouped, the lack of class-based grouping (headers/sections) makes it hard to see the modular structure of the original C++ classes.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: While the C code might syntactically compile, the semantic error in `template_swap` means the resulting binary would not function like the original. Dependencies on `__aeabi_*` and `__cxa_*` are declared but not fully abstracted.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Semantic Error in `template_swap`**: The decompiled code swaps pointer addresses (`*a1 = (int32_t)a2`) instead of values, rendering the logic incorrect.
+- **Loss of Exception Handling**: `try-catch` blocks are replaced by raw `__cxa` runtime calls, making the control flow extremely difficult to decipher.
+- **Incorrect Template Types**: `template_max<double>` is decompiled with `int32_t*` parameters instead of `double`, indicating a failure to analyze the calling convention.
+- **Missing Class Definitions**: Class structures are not recovered; objects are treated as raw pointers to vtables, losing all member variable context.
+
+**Best Quality Aspect:** Comment Quality & Presence (Score: 8/10)
+- The decompiler excels at annotating the code with demangled C++ symbols and class hierarchies, which is crucial for understanding the otherwise opaque C output.
+
+**Most Needs Improvement:** Type Safety (Score: 2/10)
+- The critical misinterpretation of the `template_swap` function logic represents a fundamental failure in preserving the program's semantics, making the decompiled code dangerous to use for analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve C++ Template Analysis**: Correctly identify floating-point and reference parameters in template functions to avoid type confusion (e.g., `int32_t*` vs `double`).
+2.  **Reconstruct High-Level Exception Handling**: Aggregate `__cxa_begin_catch`, `__cxa_throw`, and personality routine calls into reconstructed `try-catch` blocks to restore control flow readability.
+3.  **Recover Class Layouts**: Instead of just emitting vtable structs, attempt to reconstruct the full class definitions including member variables to give context to pointer arithmetic (e.g., `this->value`).

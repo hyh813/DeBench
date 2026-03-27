@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `a1`, `a2`, `v1`, `v2`, and `result`. For example, in `sequential_ops`, the parameters `a`, `b`, `c` become `a1`, `a2`, `a3`, and intermediate variables like `temp1` are eliminated entirely, obscuring the step-by-step logic present in the source.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully preserved the original function names (e.g., `sequential_ops`, `nested_if_deep`, `duffs_device`). This makes identifying the purpose of each unit trivial, matching the source intent perfectly.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers and compiler-generated constants. Examples include `0x66666667` (used for division by 10 optimization in `loop_while`), `0x13a4` (array offset in `switch_small`), and `0x3e9` (global variable `g1`), with no comments explaining their significance.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant compiler noise pollutes the output, such as `__x86_get_pc_thunk_bx`, `frame_dummy`, `__asm_hlt()`, and `__do_global_ctors_aux`. While some of this is unavoidable in low-level decompilation, its presence here heavily distracts from the core logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: The decompiler aggressively replaces high-level control structures with low-level logic or mathematical formulas. `switch_small` is decompiled as an array lookup (`*(int32_t *)(a1 + 0x13a4 + 4 * a2)`), and `loop_for_fixed` (a summation loop) is replaced by a mathematical formula (`n*(n-1)/2`), completely destroying the original loop structure.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source, and the granularity is appropriate. There are no monolithic functions or excessive fragmentation; however, helper functions like `double_value` are correctly separated.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but complex conditional expressions (e.g., in `single_if` or `ternary_op`) are condensed into single-line ternary or boolean operations that require significant mental effort to unpack compared to the source's `if` statements.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While the decompiler removes "redundancy" by optimizing loops into math formulas (e.g., `loop_for_fixed`), this is actually detrimental to readability in this context because the source code was specifically designed to test control flow structures, not mathematical optimization.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally precise, using `int32_t`, `uint32_t`, and specific pointer types (`int32_t *`). However, the decompiler frequently inserts verbose casts like `(uint32_t)(int32_t)(bool)` which clutter the code without adding safety value.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Structures like `struct __jmp_buf_tag` and `struct _TYPEDEF___sigset_t` are recovered with reasonable accuracy, including field types. However, field names are generic (`e0`, `e1`, `e2`), losing semantic meaning compared to a standard `jmp_buf` definition.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies heavily on pointer arithmetic for switch tables (e.g., `*(int32_t *)(a1 + 0x13a4 + 4 * a2)`) which bypasses type safety. There are also frequent redundant casts that suggest the decompiler is unsure about the underlying types.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of magic numbers. The output is purely code with address labels, offering no semantic guidance.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: The decompiler fails to recognize almost every specific control flow idiom tested. `duffs_device` is reduced to a simple division, `switch` statements become array lookups, and `goto` patterns are flattened into ternary operators, completely obscuring the original implementation patterns.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: There is no indication of potential issues, uncertain logic, or compiler artifacts. The code is presented confidently even when it represents a highly optimized version of the source that differs structurally (e.g., the architecture mismatch between ARM64 source and x86 decompilation).
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, `duffs_device` in the source requires `n > 0`, but the decompiled code offers no hint of this requirement.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear, and the relationship between callers and callees is visible. However, the use of function pointers (e.g., in `call_func_ptr_array`) is not explicitly annotated as such, appearing as generic memory accesses or calls.
+
+**17. Module Organization:** Score: 5/10
+Justification: The file is a flat list of functions. While it roughly follows the source order, there is no logical grouping or separation between the test functions and the runtime/boilerplate code (like `_init` or `__x86_get_pc_thunk`).
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code includes standard headers and defines prototypes, making it theoretically compilable. However, the reliance on compiler intrinsics (`__asm_hlt`, `__x86_get_pc_thunk`) and specific global variable layouts (`g1`, `g2`) would require significant patching to actually compile and run.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 2 + 4) / 4 = 4.5
+L2_avg = (3 + 8 + 6 + 5) / 4 = 5.5
+L3_avg = (7 + 7 + 5) / 3 = 6.33
+L4_avg = (1 + 1 + 1 + 1) / 4 = 1.0
+L5_avg = (6 + 5 + 6) / 3 = 5.67
+
+Overall = (4.5 × 0.30) + (5.5 × 0.25) + (6.33 × 0.20) + 
+          (1.0 × 0.15) + (5.67 × 0.10)
+Overall = 1.35 + 1.375 + 1.266 + 0.15 + 0.567
+Overall = 4.708
+```
+
+### Overall Readability Score: 4.7/10
+
+### Critical Defects
+- **Control Flow Loss**: `switch_small` and `switch_large` are recovered as array pointer arithmetic rather than switch statements, hiding the decision logic.
+- **Over-Aggressive Simplification**: `loop_for_fixed` (a simple summation loop) is reduced to a mathematical formula (`n*(n-1)/2`), erasing the loop structure intended by the source.
+- **Idiom Erasure**: `duffs_device` is completely decompiled away, leaving only a division calculation, which fails to demonstrate the specific control flow pattern.
+- **Boolean Obfuscation**: Simple `if` statements like `single_if` are transformed into complex bit-shift and boolean expressions (`a1 << (uint32_t)(int32_t)(bool)(...)`), making logic hard to follow.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**
+- The decompiler perfectly preserved the original function names, allowing immediate identification of the code's purpose despite the poor readability of the function bodies.
+
+### Most Needs Improvement
+- **Idiom Recognition (1/10)**
+- The decompiler failed to recognize standard programming constructs like switch statements, loops, and specific patterns like Duff's device, replacing them with low-level implementations or math formulas that obscure the source's intent.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover High-Level Switch Statements**: Implement pattern matching to detect jump tables and array-based dispatches, emitting `switch-case` constructs instead of raw pointer arithmetic.
+2.  **Preserve Loop Structures**: Avoid replacing simple loops with closed-form mathematical formulas unless the optimization level is explicitly known to be very high; prioritize structural fidelity for `-O0` or debug builds.
+3.  **Annotate Magic Numbers**: Automatically detect common compiler magic numbers (like `0x66666667` for division by 10) and replace them with the corresponding operations or add explanatory comments.

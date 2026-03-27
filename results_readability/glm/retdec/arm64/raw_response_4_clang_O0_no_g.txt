@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `v3`, or `result`, providing no semantic context (e.g., `v1` used for `a` and `b` in `cdecl_func`).
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Original function names like `cdecl_func` and `test_calling_conventions` are preserved, likely from symbol tables, which helps navigation, though helper functions are named generically (e.g., `function_6f0`).
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are extracted into global variables (`g7`, `g8`), preserving content but losing context, while magic numbers like `8` (pointer size) and `0xffffffff` (masking) appear without explanation.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is cluttered with redundant `& 0xffffffff` masks on almost every arithmetic operation and return statement, significantly obscuring the original logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Loops are frequently represented as `while(true)` constructs with explicit `goto` jumps to labels (e.g., `lab_0xc74`, `lab_0xcc4`), making the flow difficult to follow compared to standard `for` or `while` loops.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: Functions are generally separated correctly, and the granularity matches the source, but the internal logic is so distorted that the decomposition feels accidental rather than intentional.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The excessive use of `goto` labels for loop control and conditional breaks disrupts the top-to-bottom reading flow, requiring constant jumping around the code.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: There is significant redundancy in the form of repeated bitwise masking (`& 0xffffffff`) and unnecessary pointer casts that were not present in the original source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: The decompiler defaults to `int64_t` for almost all variables and parameters, failing to distinguish between `int`, `long`, and pointer types, and losing signed/unsigned information.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Structs like `LargeStruct` are completely lost; the decompiler replaces struct member access with raw pointer arithmetic and `memcpy` (e.g., `memcpy(&v4, &v3, 128)`).
+
+**11. Type Safety:** Score: 2/10
+Justification: The code contains unsafe casts, such as passing pointers as integers (e.g., `(int64_t)&g25`) to functions expecting integers, and treating memory blobs as generic `int64_t` arrays.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: The only comments are memory addresses (e.g., `// 0x894`), providing no semantic value or explanation of the algorithm's intent.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard idioms like `va_list` for variadic functions are not recognized; instead, the decompiler produces a mess of pointer arithmetic and labels (`varargs_func`).
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents incorrect logic (e.g., `a + b` becoming `2 * v1`) with high confidence, offering no warnings or indicators that the recovery might be flawed.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: Function signatures are incorrect (e.g., `cdecl_func(void)` instead of `cdecl_func(int, int)`), completely failing to recover the preconditions (parameters) or postconditions.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While function calls are visible, the data flow is broken; arguments passed to functions often do not match the callee's expected parameters, confusing the relationship between modules.
+
+**17. Module Organization:** Score: 6/10
+Justification: The order of functions roughly follows the source file, and related test functions are grouped together, maintaining some logical structure.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code would likely fail to compile or run correctly due to incorrect function signatures (missing parameters) and the use of undefined global variables in place of stack arguments.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.3/10
+
+**Critical Defects:**
+- Function signatures are incorrect; parameters are missing (e.g., `cdecl_func(void)` vs `cdecl_func(int, int)`).
+- Logic is incorrectly recovered; `a + b` is decompiled as `2 * v1`, and `a * b` as `v1 * v1`.
+- Composite types (structs) are not recovered; replaced by raw `memcpy` and pointer offsets.
+- Control flow relies heavily on `goto` labels instead of standard loop constructs.
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)
+- Original function names were preserved from symbols, allowing the reader to identify the general purpose of the code blocks despite the internal logic failures.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The complete failure to recover `LargeStruct` and `SmallStruct` reduces complex data manipulation to unintelligible memory operations.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve ARM64 calling convention analysis to correctly recover function parameters passed in registers (x0-x7).
+2. Implement stack frame analysis to identify and reconstruct composite types (structs) instead of defaulting to raw memory copies.
+3. Enhance control flow analysis to replace `while(true)`/`goto` patterns with idiomatic `for` and `while` loops.

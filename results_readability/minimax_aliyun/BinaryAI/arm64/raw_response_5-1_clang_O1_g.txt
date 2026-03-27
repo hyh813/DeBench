@@ -1,0 +1,165 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables use purely positional names like `local_38`, `local_34`, `uStack_2c`, `uStack_25`, `auStack_58` that convey no semantic meaning. Compare to source where variables like `value`, `name`, `data`, `size` are descriptive. The decompiler made no attempt to infer purposes from usage patterns (e.g., `local_38 = 10` should suggest `initial_value` or similar).
+
+### 2. Function Naming Quality
+**Score: 7/10**
+
+Justification: Test functions like `test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func` match source exactly. Member functions correctly identified (e.g., `Base::virtual_func`, `Derived::virtual_func`). However, some internal functions have auto-generated names like `FUN_00101630`, `FUN_001018bc`. Template instantiations named `template_max_int_`, `template_swap_int_` are adequate but could be cleaner.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Many magic numbers appear without explanation. For example, `0x125c` (which equals 4704, the expected return value) is used directly in `test_cpp_member_func`. The value `0x14` (20 in decimal) for array size is unexplained. However, some constants like `0x2a` (42) are recognizable as test values. The decompiler could have used named constants or comments to explain these.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+Justification: Relatively clean output with minimal compiler artifacts. No obvious register spilling debris or debug instrumentation visible. Some minor noise from type casting (`CONCAT44` macro usage) and pointer arithmetic expressions. The code is mostly readable without excessive artifacts from the compilation process.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+
+Justification: At -O0, control flow is well preserved. Loops use natural `do-while` constructs (e.g., in `test_cpp_constructor` and `test_cpp_oo_features`). Conditionals are straightforward. Virtual function calls through vtables are correctly represented as indirect calls. Minor awkwardness in some virtual inheritance cases but generally natural.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Each source function is decomposed into a separate decompiled function. Member functions are properly separated. Template instantiations are individual functions (`template_max_int_`, `template_max_double_`, `template_swap_int_`). Template class methods are properly extracted (`Container<int>::push`, `Container<int>::get`). Function granularity is appropriate.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Most functions read top-to-bottom with minimal forward jumps. The `test_cpp_oo_features` function is longer but follows logical sequence. Some complex virtual inheritance functions have nested pointer dereferences that disrupt linear reading, but this is expected given the complexity.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+
+Justification: Some loop unrolling visible in `test_cpp_constructor` where the initialization loop is expanded. No significant dead code. Common subexpression elimination artifacts are minimal. The redundancy level is acceptable for -O0 compilation.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 3/10**
+
+Justification: Severe type degradation throughout. Uses generic types like `undefined4`, `undefined8`, `undefined`, `undefined7` instead of `int`, `long`, `char`. Pointers are often `void *` or `undefined *`. The source used specific types (`int`, `size_t`, `char*`) but these are lost. Function parameters use generic types rather than the original `int`, `size_t`, etc.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: Some struct recovery is attempted but with generic field names. The `Container<int>` class shows array-like access patterns but fields are accessed via offset arithmetic (`this + 0x28`, `this + (long)param_1 * 4`). Virtual inheritance structures show complex vtable layouts but field names like `dataA`, `dataB`, `shared_data` from source are lost, replaced with offset calculations.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Moderate type safety issues. Many unsafe pointer arithmetic operations (e.g., `*(int *)((long)pvVar1 + lVar3)`). Some correct type usage but mixed with raw pointer arithmetic. Virtual function calls use `code **` type which is somewhat safe but could be better. No significant buffer overflow risks in the test code itself, but the pattern encourages unsafe practices.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Justification: Only auto-generated header comments present ("Decompiled by BinaryAI"). No useful comments explaining algorithm logic, vtable mechanisms, or virtual inheritance complexity. The source had Chinese comments explaining test scenarios which are completely lost. No indication of decompilation confidence or uncertain areas.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some C++ idioms recognized - virtual function calls are identified as vtable dispatches (`***(code ***)param_1`). Template instantiation patterns are identified. Exception handling shows `__cxa_throw`, `__cxa_allocate_exception`. However, no explicit naming of patterns (e.g., "vtable dispatch", "RAII pattern"). Virtual inheritance complexity is present but not explained.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+Justification: No anomaly indication. Complex virtual inheritance pointer adjustments are presented as raw arithmetic without warning. Indirect virtual calls could not be fully resolved but no flags or comments indicate uncertainty. The source had specific behaviors (like this pointer adjustment in multiple inheritance) that should be flagged.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No contract information recovered. Preconditions like non-null pointers, valid indices are not documented. Postconditions not inferred. The source had implicit contracts (e.g., `getData` requires idx < size) that are completely lost. No error handling documentation.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function calls are visible and traceable. Virtual dispatch relationships are partially shown through vtable pointers. Static member access (e.g., `LifecycleClass::instance_count`) is correctly identified. However, caller/callee relationships are not explicitly documented. The relationships between test functions and the classes they test are inferable but not highlighted.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Justification: Functions are grouped by class (all `Base::`, `Derived::`, `Container<int>::` functions together). External library functions are separated. However, the organization is purely alphabetical by address rather than logical grouping matching the source file structure. The source had clear sections (CPP-L3-01, CPP-L3-02, etc.) which are lost.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+Justification: The code compiles (marked as "Compilation Result: Yes" in metadata). External dependencies are clearly marked with `<EXTERNAL>` prefix. Standard library functions identified (`printf`, `strlen`, `operator_new`, `operator_delete`). However, some functions like `call_weak_fn` are stubs. The code would require linking with C++ runtime and standard library.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 4 + 7) / 4 = 5.0
+L2_avg = (8 + 8 + 7 + 6) / 4 = 7.25
+L3_avg = (3 + 4 + 5) / 3 = 4.0
+L4_avg = (3 + 5 + 2 + 2) / 4 = 3.0
+L5_avg = (5 + 6 + 7) / 3 = 6.0
+
+Overall = (5.0 × 0.30) + (7.25 × 0.25) + (4.0 × 0.20) + (3.0 × 0.15) + (6.0 × 0.10)
+        = 1.5 + 1.8125 + 0.8 + 0.45 + 0.6
+        = 5.1625 / 10
+```
+
+**Overall Readability Score: 5.2/10**
+
+---
+
+### Critical Defects
+
+- **Variable naming completely non-descriptive**: `local_38`, `uStack_2c`, `auStack_58` provide no semantic information about their purpose (e.g., should be `initial_value`, `name_buffer`, `instance_count`)
+
+- **Type precision severely degraded**: All specific types (`int`, `size_t`, `char*`) replaced with generic `undefined4`, `undefined8`, `undefined*`, losing type safety and semantic meaning
+
+- **Struct/union field names lost**: Composite types like `LifecycleClass` show only raw pointer arithmetic (`*(int *)((long)pvVar1 + 8)`) instead of named fields (`obj.data[2]`)
+
+- **No comments explaining C++ mechanisms**: Virtual function dispatch, vtable layout, virtual inheritance pointer adjustments are presented without explanation
+
+- **Magic numbers unexplained**: Values like `0x125c` (4704), `0x14` (20), `0x2a` (42) appear without named constants or comments explaining their origin
+
+---
+
+### Best Quality Aspect
+
+**Function Decomposition (8/10)** - The decompiler properly separates each source function into its own decompiled function. Member functions, template instantiations, and class methods are all correctly extracted with appropriate granularity.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - This is the most severe issue. The decompiler makes no attempt to infer meaningful names from usage patterns. Variables should be named based on how they're used (e.g., `local_38 = 10` suggests `initial_value`, `strlen((char *)((ulong)&local_38 | 4))` suggests `name_length`).
+
+---
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, function calls) to suggest semantically meaningful names. For example, a variable initialized to 10 and used in multiplication could be named `multiplier` or `base_value`.
+
+2. **Recover type information from debug symbols**: Since this was compiled with `-g`, debug information should be used to recover precise types (`int`, `size_t`, `char[32]`) instead of generic `undefined4`, `undefined8`.
+
+3. **Add explanatory comments for C++ mechanisms**: Document vtable dispatch patterns, virtual inheritance pointer adjustments, and other complex C++ features that are not immediately obvious from raw code.

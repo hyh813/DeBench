@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1`, `puVar2` throughout. The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` which are completely lost. Only a few variables like `result` in some functions retain semantic meaning.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user-defined functions correctly preserve original names: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `my_func`. However, some internal functions have cryptic names like `FUN_00011030`, `FUN_000119e5`, and external functions are marked with `<EXTERNAL>::` prefix which is boilerplate.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some constants are contextually clear (e.g., `0x1e` for page size, `7` for PROT_READ|PROT_WRITE|PROT_EXEC). However, magic numbers like `0x200` (should be MAX_SIZE/2 = 512), `0x40` (BUFFER_COUNT*4), `0xdef0` are unexplained. The original source's named constants MAX_SIZE, BUFFER_COUNT are completely lost.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean code with minimal compiler artifacts. Some decompilation-specific constructs like `ZEXT816(0)` for zero initialization and `undefined4`/`undefined *` types add noise but don't significantly impede understanding. No debug instrumentation or register spilling artifacts visible.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with standard if-else constructs and for loops. At -O0, loops are properly formed (e.g., `for (iVar2 = 0; iVar2 < param_2; iVar2 = iVar2 + 1)`). No goto statements or spaghetti code. The atomic operations show LOCK/UNLOCK which is appropriate for the semantics.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities matching the original source. Each function (e.g., `param_macro_constants`, `param_asm_basic`) does one thing. The decomposition matches the original 11 test functions plus helper functions.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately (e.g., in `param_dynamic_code`). No excessive forward jumps. The code structure follows natural execution flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Computations are not duplicated. Loop unrolling is not excessive - the original assembly loops are properly recovered as for loops.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` for most integers and `undefined4` for return types (should be `int`). Pointers use `undefined *` instead of proper types. Some improvement: `size_t` is used for sysconf/mmap lengths, and `int *` for array parameters. However, the original's precise types (size_t, uint32_t patterns) are lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct/union recovery visible. Arrays are accessed via pointer arithmetic (e.g., `*(int *)(param_1 + iVar2 * 4)`). The original source's array parameters like `int *arr` are correctly identified, but no composite type reconstruction.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. Manual pointer arithmetic (e.g., `param_1 + iVar2 * 4`). The `undefined *` types create ambiguity. No restrict keywords, _Atomic annotations, or alignment specifications from the original source are recovered.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in decompiled functions. Only the decompiler header comment present. The original source had extensive comments explaining macro expansion, conditional compilation branches, and inline assembly semantics - all completely lost. No explanation of what `LOCK()`/`UNLOCK()` represent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly present but not named or documented. The atomic operations show LOCK/UNLOCK but don't explain it's a spinlock. The conditional compilation results are visible but not labeled as such. No explicit pattern naming (e.g., "State machine", "Atomic compare-and-swap").
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of suspicious code or decompilation uncertainties. External functions are marked with `<EXTERNAL>::` but no explanation of why they couldn't be resolved or what they expect. The dynamic code generation in `param_dynamic_code` is simplified to just `param_1 + 5` without indicating this is a simplification.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions or invariants documented. The original source had implicit contracts (e.g., `param_1 > 0` for array functions, return value semantics) that are completely lost. No error condition documentation (e.g., returns -1 on mmap failure).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and direct. However, relationships between functions (caller/callee) are not documented. The original's `call_*` wrapper functions calling `param_*` functions are visible but not annotated. No global variable usage documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically in the output. Related functions (test functions and their helpers) appear near each other. However, it's a single monolithic file with no logical section headers. The original's clear separation between preprocessing tests and assembly tests is not reflected.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code should compile with standard libc headers. External functions (printf, mmap, sysconf) are properly declared. Some types may need adjustment (`undefined4` → `int`). The code is relatively standalone but would need minor patching for compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`param_1`, `iVar1`, `uVar1`) losing all semantic meaning from the original source
+- No comments explaining macro expansion results, conditional compilation branches, or inline assembly semantics
+- Type precision severely degraded - `undefined4`, `undefined *` types instead of proper int/void* types
+- No struct/union recovery - all composite types lost to raw pointer arithmetic
+- No pre/post conditions or contract documentation for functions with error handling (mmap failures)
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- At -O0, the decompiler properly recovers natural if-else and for loop constructs without goto spaghetti or excessive optimization artifacts
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- The original source had extensive documentation about preprocessing behavior, macro expansion, and inline assembly constraints that are completely lost in the decompiled output
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `param_1` compared against `0x400` should be named `size`; variables used in loop bounds should indicate their role (e.g., `array_ptr`, `element_count`)
+2. **Recover macro semantics through constant propagation analysis**: Recognize that `0x200` is `MAX_SIZE/2` and `0x40` is `BUFFER_COUNT*4` based on constant folding patterns
+3. **Add semantic comments for preprocessor and assembly artifacts**: Explain what conditional branches mean (e.g., "PLATFORM != 1,2,3, using default case"), document LOCK/UNLOCK as atomic operations, and flag simplified code with "Decompiler simplified this assembly"

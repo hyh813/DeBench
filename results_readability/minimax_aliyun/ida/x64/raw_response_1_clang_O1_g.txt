@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables like `v1`, `v2`, `v3`, `v4` dominate the decompiled code, obscuring semantic purpose. For example, in `loop_while`, variables `v1` and `v2` should be named `count` and `temp` respectively based on their usage patterns. Only parameters like `target`, `n`, `x` retain meaningful names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately match the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `recursion_factorial`. Test functions are properly named `test_control_flow_l1/l2/l3`. Minor transformation in `goto_forward` but semantic clarity is preserved.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `1001` in `infinite_loop` and `loop_external_state` is unexplained. Array references like `dword_3654[op]` and `unk_3040` are generic. However, expressions like `10 * x + 10` for if-elseif chain and `100 * v1 + 100` for switch cases are mathematically transparent.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: Clean decompilation with no compiler artifacts, register spill comments, or debug instrumentation. No redundant casts or frame pointer manipulation visible. The output is remarkably free of noise for an O0 build.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some transformations obscure intent - `single_if` uses `x << (x > 0)` instead of explicit if-else, and `nested_if_deep` returns `(e > 0) | 4` losing the 5-level nested structure. Loops are generally well-preserved but some use do-while instead of for/while. At O0, these transformations are unnecessary.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each function maintains appropriate granularity - test functions call individual test cases, helper functions like `op_add`, `op_sub` are properly extracted. No excessive inlining or fragmentation. Function sizes are reasonable (10-50 lines typical).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive jumps. The `loop_multi_exit` function has goto labels (LABEL_8, LABEL_11) that slightly disrupt flow but are manageable. Generally good linearization.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling in `duffs_device` is present but structurally clear (uses goto labels for fall-through). Common subexpression elimination is minimal. Clean output overall.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Integer types are consistently `int` which matches the original `int` parameters. Function pointer types are properly preserved: `int (*f)(int)` in `call_func_ptr`, `int (*cb)(int)` in `process_with_callback`. Minor generic typing but appropriate for the decompilation context.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays are referenced as generic `unk_3040`, `unk_3064`, `dword_3654` without proper type recovery. The `loop_break` and `loop_multi_exit` functions access these as raw pointers without struct recovery. No meaningful composite type reconstruction.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No obvious unsafe casts. Function pointer calls use proper signatures. Pointer arithmetic is minimal and appears safe. No type-confused function pointers or buffer-overflow-prone patterns detected.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in the decompiled output. No algorithm explanations, preconditions, postconditions, or decompilation confidence indicators. The code is completely bare of documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly recognizable: switch statements are properly structured, recursion is clear, function pointers are identifiable. However, no explicit naming of patterns like "state machine," "callback pattern," or "Duff's device" is provided.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious or uncertain code. The `call_func_ptr_array` uses indirect function pointer call `funcs_1967[idx]` without indicating resolution uncertainty. No warnings about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `duffs_device` with complex fall-through semantics have no contract explanation. Error conditions not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and direct. The relationship between `test_control_flow_l1` and the tested functions is implicit. However, no explicit documentation of call graphs, global usage, or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped: test functions together, operator functions (`op_add`, `op_sub`, etc.) together, state machine functions together. Static functions properly scoped. Reasonable organization.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code should compile cleanly with standard C. Function signatures are valid. No obvious compiler-specific hacks. External dependencies (puts, printf, etc.) are standard library.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4+8+5+9)/4 = 6.5
+L2_avg = (5+8+7+8)/4 = 7.0
+L3_avg = (8+3+8)/3 = 6.33
+L4_avg = (2+5+2+2)/4 = 2.75
+L5_avg = (5+7+8)/3 = 6.67
+
+Overall = (6.5 × 0.30) + (7.0 × 0.25) + (6.33 × 0.20) + 
+          (2.75 × 0.15) + (6.67 × 0.10)
+        = 1.95 + 1.75 + 1.27 + 0.41 + 0.67 = 6.05/10
+```
+
+**Overall Readability Score:** 6.05/10
+
+### Critical Defects (Bullet List)
+- Variable naming uses generic `v1`, `v2`, `v3` throughout, obscuring semantic purpose (e.g., `loop_while` uses `v1` for count, `v2` for temp)
+- No comments whatsoever - zero documentation for algorithms, contracts, or anomalies
+- Composite types not recovered - arrays referenced as `unk_3040`, `dword_3654` without proper type information
+- Control flow transformations lose structure: `nested_if_deep` returns `(e > 0) | 4` instead of nested if-else, `single_if` uses bit shift instead of conditional
+- No anomaly indication for indirect calls like `funcs_1967[idx]` or potential undefined behavior
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (8/10)** - Functions maintain appropriate granularity with clear single responsibilities. Test functions properly separated, helper functions extracted, no excessive fragmentation.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality (2/10)** - Zero comments in entire decompilation. No algorithm explanations, preconditions, postconditions, or decompilation confidence indicators. The code is completely bare.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Add semantic comments**: Document algorithm intent, e.g., "// Implements 5-level nested if returning level of first non-positive parameter" for `nested_if_deep`
+2. **Recover variable names from usage**: Infer `v1` → `count` in `loop_while` from `++v1` pattern, `temp` from division operations
+3. **Flag anomalies**: Add uncertainty indicators for indirect function calls like `funcs_1967[idx]` that couldn't be fully resolved

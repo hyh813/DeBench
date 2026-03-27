@@ -1,0 +1,121 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar2`, `local_4c0`, `local_478`. The original source had meaningful names like `x`, `c`, `arr`, `n`, `str` which are completely lost. This makes tracking variable purpose extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 9/10**  
+Justification: Function names are excellent and match the original source almost exactly: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `ptr_double`, `struct_simple`, `struct_nested`, `linked_list`, `binary_tree_sum`. The decompiler correctly preserved all function names.
+
+### 3. Literal Clarity
+**Score: 6/10**  
+Justification: Some literals are clear (e.g., `0x61` for 'a', `0xb` for 11, `0x14` for 20), but most appear as raw hex values without explanation. The original source had clear arithmetic like `c + 32` but decompiled shows `param_1 + 0x20`. Magic numbers like `0x400c000000000000` for float constants are unexplained.
+
+### 4. Noise Reduction
+**Score: 4/10**  
+Justification: Significant noise present including: "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable", "UNRECOVERED_JUMPTABLE" markers, and type artifacts like `undefined8`, `undefined1`, `undefined4`. The `__addtf3` and `__multf3` library functions are decompiled in full (500+ lines each), adding massive noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**  
+Justification: Most control flow is natural - do-while loops correctly recovered from backward jumps, for loops in `array_1d_stack` are clear. Minor awkwardness in `test_array_types` with complex nested loops. At -O0, control flow should be nearly perfect, and mostly is.
+
+### 6. Function Decomposition
+**Score: 6/10**  
+Justification: Function decomposition is mostly preserved - each original function remains separate. However, `test_array_types` (lines 00100b64-00100e26) is ~570 lines of complex nested loops that would be better decomposed. The `__addtf3` and `__multf3` functions (500+ lines each) are compiler library code that shouldn't be inlined.
+
+### 7. Code Linearization
+**Score: 7/10**  
+Justification: Code generally reads top-to-bottom with good linearity. Early returns present in `array_1d_stack`, `array_vla`. Some forward jumps in complex functions like `test_array_types` but overall flow is traceable.
+
+### 8. Redundancy Elimination
+**Score: 6/10**  
+Justification: Some redundancy in array initialization patterns in test functions. Loop unrolling is minimal at -O0. The code is mostly clean but has some duplicate calculation patterns in `test_array_types` initialization loops.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**  
+Justification: Significant type degradation. `process_double` returns `undefined1 [16]` instead of `double`. `process_ld` takes `undefined8` parameter. Function pointers use generic `code *` instead of proper signatures. Most integers are generic `int` rather than `int32_t`/`uint32_t`. `ptr_void` uses `uint *` instead of `void *`.
+
+### 10. Composite Type Recovery
+**Score: 3/10**  
+Justification: Struct fields are not recovered - instead of `p->x + p->y + p->z`, we see `param_1[1] + *param_1 + param_1[2]`. Union types lose their union nature - `union_type` treats float pointer as both int and float without union semantics. Nested structs accessed via raw offsets like `param_1 + 4`, `param_1 + 8`.
+
+### 11. Type Safety
+**Score: 4/10**  
+Justification: Multiple type safety issues: `ptr_void` has unsafe casts between int/char via pointer type confusion. `ptr_offset` uses `undefined4 *` instead of `int *`. `array_complex_index` returns `undefined4`. `ptr_diff` uses `ulong` for pointer arithmetic. `enum_switch` uses raw data table access instead of proper switch. Function pointers treated as `code *` lose type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 5/10**  
+Justification: Minimal useful comments. Auto-generated warnings present ("WARNING: Subroutine does not return", "WARNING: Removing unreachable block") but no algorithm explanations. No documentation of what functions do or how they relate to source. The original had extensive comments explaining each test case - none recovered.
+
+### 13. Idiom Recognition
+**Score: 5/10**  
+Justification: Some common patterns present (linked list traversal in `linked_list`, tree recursion in `binary_tree_sum`) but not explicitly identified or named. No recognition of the test patterns (DT-L1-01, ARR-L1-01, etc.) from original source.
+
+### 14. Anomaly Indication
+**Score: 6/10**  
+Justification: Some anomalies flagged: "WARNING: Could not recover jumptable at 0x00100ee4. Too many branches", "UNRECOVERED_JUMPTABLE". However, these are generic and not very informative. No indication of the volatile access semantics or the intentional OOB in `array_oob`.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**  
+Justification: No preconditions, postconditions, or invariants documented. Original source had no explicit contracts either, but decompiler could infer: "requires: n > 0" for array functions, "requires: ptr != NULL" for pointer functions. None recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**  
+Justification: No explicit call graph or relationship documentation. `main` clearly calls test functions, but relationships between helper functions (like `complex_callback` used by `ptr_func_complex`) are not documented. No indication of which functions are static vs. exported.
+
+### 17. Module Organization
+**Score: 6/10**  
+Justification: Functions appear in binary order, roughly matching source file structure (data types → arrays → pointers → composite types → tests → main). However, standard library init functions (`_init`, `_start`, `__do_global_dtors_aux`) are interleaved. No logical grouping or separation.
+
+### 18. Build System Compatibility
+**Score: 3/10**  
+Justification: Code would not compile as-is. Issues include: undefined types (`undefined8`, `undefined1`, `undefined4`, `bool`), missing standard library declarations (`puts`, `printf`, `__libc_start_main`), incorrect function signatures, and missing `EVP_PKEY_CTX` type. Requires extensive patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 6 + 4) / 4 = 5.25
+L2_avg = (7 + 6 + 7 + 6) / 4 = 6.50
+L3_avg = (4 + 3 + 4) / 3 = 3.67
+L4_avg = (5 + 5 + 6 + 3) / 4 = 4.75
+L5_avg = (4 + 6 + 3) / 3 = 4.33
+
+Overall = (5.25 × 0.30) + (6.50 × 0.25) + (3.67 × 0.20) + (4.75 × 0.15) + (4.33 × 0.10)
+        = 1.575 + 1.625 + 0.734 + 0.7125 + 0.433
+        = 5.08/10
+```
+
+### Overall Readability Score: 5.08/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use generic names (`param_1`, `iVar1`, `local_4c0`) losing all semantic meaning from source
+- **Type precision**: `process_double` returns `undefined1 [16]` instead of `double`; `long double` completely lost
+- **Composite type recovery**: Struct fields accessed via array indexing (`param_1[1]`, `param_1[2]`) instead of named fields (`p->x`, `p->y`)
+- **Noise**: Library functions `__addtf3` and `__multf3` decompiled in full (1000+ lines combined), overwhelming the actual user code
+- **Type safety**: Multiple unsafe casts and incorrect pointer types throughout (`uint *` instead of `void *`, `code *` for function pointers)
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (9/10)** - Function names match original source almost perfectly: `process_char`, `array_1d_stack`, `ptr_double`, `struct_nested`, `linked_list`, etc.
+
+### Most Needs Improvement (Single Dimension)
+- **Type System Fidelity (3.67/10)** - Severe type degradation: structs lost, unions confused, floating-point types broken, function pointers generic. This is the most critical issue.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct field names**: Instead of `param_1[1] + *param_1 + param_1[2]`, infer struct layout and generate `p->y + p->x + p->z` based on field offsets and usage patterns
+2. **Fix floating-point type handling**: `process_double` returning `undefined1 [16]` should be `double`. `long double` support needs improvement for ARM64
+3. **Filter library functions**: Don't decompile standard library functions like `__addtf3`, `__multf3` in full - either stub them out or exclude them entirely to reduce noise by ~1000 lines

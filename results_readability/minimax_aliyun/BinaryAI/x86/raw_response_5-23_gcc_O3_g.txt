@@ -1,0 +1,166 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names throughout. Parameters are named `param_1`, `param_2`, `param_3` with no semantic meaning. Local variables use patterns like `iVar1`, `iVar2`, `uVar1`, `uVar2`, `puVar4`, `puVar5`. The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`, `counter`, `increment`. This makes it nearly impossible to track variable purpose without extensive reverse engineering.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+
+A mixed result: some functions retain their original names (e.g., `main`, `param_macro_constants`, `call_macro_constants`, `my_func`), but critical functions are renamed to generic addresses like `FUN_00011030`, `FUN_00011110`. The latter is actually `printf` but is unrecognizable. The original source had clear names like `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, `param_memory_protection`.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+The decompiled code is riddled with unexplained magic numbers. For example, `param_macro_constants` returns `0x200` (512) and `0x40` (64) without indicating these are `MAX_SIZE/2` and `BUFFER_COUNT*4`. Similarly, `param_conditional_compile` uses `* 3 + 2` without explaining this is the non-DEBUG_MODE branch. The original source had named constants `MAX_SIZE`, `BUFFER_COUNT`, `ENABLE_FEATURE` that are completely lost.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+The code is relatively clean with minimal compiler artifacts. Some stack protection code appears (`__stack_chk_fail_local`), and there are some unusual type declarations like `undefined4`, `undefined *param_1`, but these don't significantly impede readability. The inline assembly functions have been converted to C loops, which is appropriate for -O0.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+
+Control flow is natural and readable. The if-else structures match the original source. For example, `param_macro_constants` correctly shows `if (0x400 < param_1)`. Loops in functions like `param_asm_clobber` are properly recovered as `for` loops. The inline assembly loops have been converted to C loops appropriately. At -O0, the control flow should closely match source, and it does.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Functions are well-separated and match the original source structure. Each test function (`param_macro_constants`, `param_asm_basic`, etc.) is properly decomposed. The original 709 LOC translates to 715 decompiled LOC, showing good 1:1 mapping. Parameter counts are preserved correctly (e.g., `param_asm_clobber(int param_1, int param_2)` matches `param_asm_clobber(int *arr, int n)`).
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Code reads linearly from top to bottom with minimal forward jumps. Early returns are used appropriately in functions like `param_macro_constants`. No excessive nesting or goto statements disrupting flow. The code structure closely follows the original source's linear progression.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+No significant redundancy observed. Loop unrolling is minimal (appropriate for -O0). Dead code is not present. The decompiled code is clean with no obvious duplicate expressions that could be factored.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+
+Significant type degradation. The original source used `int` for most parameters, which is preserved, but the decompiler uses `undefined4` (4-byte undefined) instead of `int` for many parameters and return types. For example, `param_macro_constants` returns `undefined4` instead of `int`. Function pointers are often represented as `undefined (*param_3) [16]` instead of proper types. The original `int *arr` became `int param_1` (losing pointer semantics).
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+
+No complex structs were in the original source (mostly primitives), so this is not heavily tested. The few arrays like `int local_24[5]` in `call_asm_clobber` are correctly recovered. The SIMD function uses `undefined (*param_3) [16]` which is a 128-bit type, correctly representing the xmm register width.
+
+### 11. Type Safety
+**Score: 6/10**
+
+Some type safety issues exist. Pointer arithmetic is sometimes obscured - in `param_asm_clobber`, the original `arr[i]` becomes `*(int *)(param_1 + iVar2 * 4)`, which is correct but verbose. The `undefined4` type is used extensively, which loses signed/unsigned distinction. No major safety violations like buffer overflows, but the verbose pointer arithmetic makes reasoning about safety difficult.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Almost no useful comments. The decompiled code has only the standard header comment about SHA256. There are no explanations of what functions do, no indication of macro expansion behavior, no documentation of the inline assembly logic that was replaced. The original source had extensive comments explaining each test case (e.g., "PP-L2-01: 宏定义常量", "ASM-L4-01: x86_64基础内联汇编"). These are completely lost.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+No design patterns or algorithms are explicitly identified. The inline assembly has been converted to C loops, but there's no comment indicating this transformation. The atomic operations show `LOCK()` and `UNLOCK()` macros, which is good, but there's no explanation of what they do. The original source's macro-based patterns (SQUARE, MAX, SAFE_ADD) are not recognized as idioms.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+
+No anomalies are flagged. The decompiled code presents everything as definitive, even where the decompiler may have made assumptions. For example, `FUN_00011110` is clearly `printf` but is not marked as uncertain or identified. The indirect function calls in the startup code are not flagged as potentially unresolvable.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No preconditions, postconditions, or invariants are documented. The original source had no explicit assertions, but the decompiler could infer some contracts (e.g., "param_1 > 0" for size parameters). None of this is present. The error return paths in functions like `param_dynamic_code` and `param_memory_protection` are not documented.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Function call relationships are somewhat visible through the code structure, but not explicitly documented. The test functions call the param functions, but there's no comment explaining this hierarchy. Global variables like `global_var` are used in `param_memory_clobber_demo` but the relationship isn't documented. The original source's clear `call_*` / `param_*` pairing is preserved structurally but not explained.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Functions are grouped logically in the output, matching the original source's organization. The preprocessing tests come first, then the assembly tests. Static functions like `my_func` are properly scoped. However, the file is a single monolithic output without any separation or headers.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+
+The code would not compile as-is due to `undefined4`, `undefined`, and `undefined *` types. These would need to be replaced with standard types. The `FUN_*` and `DAT_*` references would also need resolution. External dependencies like `printf` are not declared. Some stub functions would be needed for the startup code.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 3 + 7) / 4 = 4.25
+L2_avg = (8 + 8 + 8 + 8) / 4 = 8.00
+L3_avg = (4 + 7 + 6) / 3 = 5.67
+L4_avg = (2 + 3 + 3 + 2) / 4 = 2.50
+L5_avg = (4 + 7 + 5) / 3 = 5.33
+
+Overall = (4.25 × 0.30) + (8.00 × 0.25) + (5.67 × 0.20) + 
+          (2.50 × 0.15) + (5.33 × 0.10)
+        = 1.275 + 2.0 + 1.134 + 0.375 + 0.533
+        = 5.317 / 10
+```
+
+**Overall Readability Score: 5.3/10**
+
+---
+
+### Critical Defects
+
+- **Variable naming is unusable**: Parameters like `param_1`, `param_2` and locals like `iVar1`, `uVar1` provide no semantic information. The original `size`, `x`, `y`, `counter`, `increment` are completely lost.
+
+- **Magic numbers everywhere**: Constants like `0x200`, `0x40`, `0x400`, `* 3 + 2` appear without explanation. The original `MAX_SIZE`, `BUFFER_COUNT`, and macro expansions are not recovered.
+
+- **No comments or documentation**: Zero explanation of what functions do, no indication of the preprocessing/assembly transformations, no algorithm documentation.
+
+- **Type precision severely degraded**: Using `undefined4` instead of `int`, losing pointer semantics (`int param_1` instead of `int *arr`), and using `undefined *` for pointers.
+
+- **Function identity lost**: Critical functions like `printf` are renamed to `FUN_00011110`, making the code nearly impossible to understand without cross-referencing.
+
+---
+
+### Best Quality Aspect
+
+**Control Flow Naturalness (8/10)** - The decompiler correctly recovers if-else structures and loops. At -O0, the control flow closely matches the original source, making the execution logic easy to follow.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (2/10)** - The decompiled code has almost no useful comments. The original source was heavily documented with test case names, macro explanations, and expected values. This semantic information is completely lost in the decompiled output.
+
+---
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: When a parameter is used in size checks (e.g., `0x400 < param_1`), infer it could be named `size` or `max_size`. When a parameter is dereferenced in a loop (`*(int *)(param_1 + iVar2 * 4)`), infer it's a pointer like `arr` or `buffer`.
+
+2. **Detect and explain macro expansions**: Recognize that `0x200` (512) is `MAX_SIZE/2` and `0x40` (64) is `BUFFER_COUNT*4` based on constant analysis. Add comments explaining "likely macro expansion: MAX_SIZE/2".
+
+3. **Identify standard library functions**: The function at `FUN_00011110` is clearly `printf` based on the format string parameter and variadic behavior. Maintain a database of common library function signatures for recognition.

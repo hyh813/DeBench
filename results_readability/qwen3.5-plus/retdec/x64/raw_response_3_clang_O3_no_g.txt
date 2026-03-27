@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `v3`, `temp`, `result`) with no semantic meaning. Original source had meaningful names like `arr`, `local`, `head`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`local_vars`, `heap_basic`, `double_value`), but many helper functions are generic (`function_1030`, `function_1040`). Test functions retained names but implementation functions vary.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0xffffffff`, `0xfffffffe`, `0xfffffff8`) without explanation. String literals stored in opaque globals (`g22`, `g23`) with hex-encoded content instead of readable strings.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Heavy inline assembly intrinsics (`__asm_movdqa`, `__asm_paddd`, `__asm_pxor`) throughout. SIMD loop unrolling artifacts create hundreds of lines of noise. Frame pointer manipulation visible.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Extensive use of goto labels (`lab_0x1442`, `lab_0x1447`, `lab_0x1586`) instead of structured loops. Original simple for-loops transformed into complex conditional jump chains.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but some functions collapsed incorrectly (`stack_alias` returns constant `20` instead of showing aliasing logic). Helper functions like `function_1030` are just wrapper stubs.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Non-linear reading experience with forward jumps into loop bodies. While loops implemented as backward jumps with goto, disrupting top-to-bottom flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: SIMD vectorization creates massive code duplication. Same 16-instruction patterns repeated 10+ times in `vla_stack` and `alloca_usage` instead of clean loop representation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Everything degraded to `int64_t` or `int128_t`. Original `int`, `char*`, `struct Point*`, `Node*` all lost. No signed/unsigned distinction, no const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Complete failure. `Point` struct lost (function returns `3 * a1`), `Node` linked list accessed via raw pointer arithmetic (`v1 + 8`), `TreeNode` completely unrecognizable.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Numerous unsafe casts (`(int32_t *)`, `(int64_t *)`, `(char *)`). Pointer arithmetic without bounds checking. Function pointers stored as raw `int64_t` values.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of algorithm purpose, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No pattern recognition whatsoever. Linked list creation/traversal in `linked_list_heap` not identified. Tree structure in `tree_heap_traversal` collapsed to constant return.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about decompilation uncertainty. Dangerous patterns like `dangling_pointer` (use-after-free) not flagged. Assembly intrinsics not explained.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `n > 0` checks). No postconditions. Error return values (`0xffffffff`, `0xfffffffe`) not explained as error codes.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`g32`, `g35`, `g39`) used without indicating their semantic purpose (file_scope_static, global_counter, global_func_ptr).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Some logical grouping visible (test functions call related functions) but no header file or API separation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes present but assembly intrinsics (`__asm_movdqa`, `__asm_mfence`) may not compile on all platforms. Some external functions declared but not defined (`extern_function`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+5+3+2)/4 = 3.00  × 0.30 = 0.90
+Level 2 (Structural):   (3+5+3+4)/4 = 3.75  × 0.25 = 0.94
+Level 3 (Type System):  (2+1+2)/3   = 1.67  × 0.20 = 0.33
+Level 4 (Semantic):     (1+1+2+1)/4 = 1.25  × 0.15 = 0.19
+Level 5 (Contextual):   (4+5+5)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────────────
+Overall Score:                                  = 2.83/10
+```
+
+**Overall Readability Score:** 2.8/10
+
+### Critical Defects:
+- **Complete type information loss**: All structs (`Point`, `Node`, `TreeNode`) reduced to pointer arithmetic
+- **Variable names entirely generic**: `v1`, `v2`, `v3` provide zero semantic information
+- **SIMD artifacts obscure logic**: Assembly intrinsics (`__asm_movdqa`, `__asm_paddd`) dominate simple loops
+- **No comments or documentation**: Zero explanation of function purpose or decompilation confidence
+- **Control flow degraded to goto**: Simple for-loops transformed into label-based jump chains
+
+### Best Quality Aspect:
+- **Module Organization (5/10)** - Functions are at least grouped logically with test functions calling their respective implementation functions, maintaining some structural coherence.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (1/10)** - Complete failure to recover any struct/union definitions, making data structure manipulation incomprehensible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct/union pattern recognition** - Detect repeated pointer+offset access patterns to recover composite type definitions with field names based on usage context.
+
+2. **Add semantic variable naming from usage analysis** - Infer variable purposes from operation context (e.g., variables used in malloc size calculations should be named `size` or `count`).
+
+3. **Replace assembly intrinsics with high-level constructs** - Recognize SIMD loop unrolling patterns and collapse them back into simple for-loops with optional comments about vectorization.

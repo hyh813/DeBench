@@ -1,0 +1,123 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `uVar1`, `iVar2` through `iVar9` in `loop_for_fixed`), making it impossible to track semantic purpose. Many functions have "Unresolved local var" comments indicating complete name loss.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from debug symbols (`sequential_ops`, `recursion_factorial`, `duffs_device`), accurately reflecting original source. Only a few helpers like `FUN_00101020` remain unnamed.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions use hex literals (`0x15`, `0x14`, `0x32`) instead of decimal values. Loop unrolling introduces magic numbers (`0xfffffffc`, shift constants) without explanation. `CSWTCH_55` reference is opaque.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple warning comments clutter code ("WARNING: Unknown calling convention", "WARNING: Could not recover jumptable"). Stack canary checks (`__stack_chk_fail()`) and unreachable block warnings add noise without value.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (`sequential_ops`, `single_if`) recover well, but `loop_for_fixed` and `loop_continue` show severe loop unrolling destroying original structure. `duffs_device` retains switch fall-through but becomes convoluted with goto labels.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. No monolithic functions, but test functions contain embedded logic that should be extracted. Helper functions properly separated.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `loop_multi_exit` uses explicit goto labels (`LAB_00101b57`, `LAB_00101b62`) instead of structured loops. `duffs_device` has switch fall-through with goto patterns disrupting top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `loop_for_fixed` has 8+ nearly identical code blocks from unrolling. `loop_continue` duplicates odd-check logic across multiple branches. `loop_multi_exit` unrolls 12 matrix comparisons instead of nested loops.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic `int` types recovered correctly. Function pointer types partially recovered (`_func_int_int *f`). However, `computed_goto` treats void* labels as callable functions, and unsigned/signed distinctions blur in comparisons.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct definitions recovered. Matrix in `loop_multi_exit` not recognized as 2D array. `jmp_buf` treated as opaque pointer. Function pointer arrays lack proper composite type structure.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple "Treating indirect jump as call" warnings indicate unsafe function pointer handling. `computed_goto` incorrectly calls void* as function. Stack canary checks present but don't prevent type confusion.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("Unresolved local var", "Could not recover jumptable"). No algorithm explanations, no semantic documentation, no parameter/return descriptions.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Loop patterns not identified as such. State machine pattern in `state_machine`/`fsm_func_table` completely unrecognized. Duff's device in `duffs_device` not identified despite distinctive structure.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings do flag issues ("Could not recover jumptable at 0x00101f09", "Unresolved local var: void *[4] targets"). However, warnings lack specificity about root cause or manual recovery steps.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`). No postconditions or error condition documentation. Return value semantics completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships undocumented. Global `jump_buffer` usage unclear. No call graph documentation or virtual dispatch recovery for `call_virtual_func`.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 74 functions in single output with no logical grouping. Static functions marked correctly but no header file structure. Test functions mixed with implementation functions.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone—missing `__printf_chk`, `__libc_start_main`, `__stack_chk_fail` declarations. Undefined globals (`jump_buffer`, `completed_0`, `CSWTCH_55`). Architecture mismatch (ARM64 source vs x86 decompilation).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (5+7+5+4)/4 = 5.25  × 0.25 = 1.31
+Level 3 (Type):        (6+3+5)/3   = 4.67  × 0.20 = 0.93
+Level 4 (Semantic):    (3+2+6+2)/4 = 3.25  × 0.15 = 0.49
+Level 5 (Contextual):  (5+5+3)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.81/10
+```
+
+**Overall Readability Score: 4.8/10**
+
+---
+
+### Critical Defects
+
+- **Variable names completely generic** (`iVar1` through `iVar9`) obscuring semantic purpose in loop functions
+- **Loop unrolling destroys structure** in `loop_for_fixed` and `loop_continue`—original for-loop pattern unrecognizable
+- **No struct/composite type recovery**—matrix, jmp_buf, and function pointer arrays all degraded to raw pointers
+- **Zero semantic documentation**—no algorithm explanations, no pattern identification, no contract recovery
+- **Architecture mismatch**—source claims ARM64 but decompilation shows x86, indicating potential binary mismatch
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (8/10)**
+- Debug symbols preserved most original function names accurately, enabling immediate semantic understanding of function purpose.
+
+---
+
+### Most Needs Improvement
+
+- **Idiom Recognition (2/10)**
+- Zero pattern detection—loops, state machines, Duff's device, and other idioms completely unrecognized despite distinctive structures.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement loop pattern recognition**—detect unrolled loops and reconstruct original for/while structure with comments indicating optimization level
+2. **Add semantic comment generation**—infer variable purposes from usage patterns (e.g., loop counters, accumulators) and add explanatory comments
+3. **Recover composite types from access patterns**—analyze pointer arithmetic to reconstruct struct layouts and array dimensions with field name inference

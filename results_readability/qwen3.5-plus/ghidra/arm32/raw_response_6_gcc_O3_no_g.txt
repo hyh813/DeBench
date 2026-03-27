@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `local_14`, `uVar2`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `thread_count`, `iterations` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names preserved (`param_strcpy`, `thread_compute`, `signal_handler`), but optimization artifacts create confusing names like `param_fork_exec.part.0` and `param_mutex_lock_constprop.0`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `0x2a` (42), `0x5a` (90), `0xc` (12), signal numbers as `10` and `0xe`, socket constants as `2` and `1`. No named constants recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`local_c = 0; if (local_c != 0) __stack_chk_fail()`) repeated in nearly every function. `__printf_chk` instead of `printf`, excessive type casts, and WARNING comments about unreachable blocks.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops generally recovered as do-while constructs, but some functions use goto labels (`LAB_00011458`, `LAB_0001158c`). Fork/exec logic fragmented across multiple functions due to optimization.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Optimization created artificial function splits (`param_fork_exec.part.0`). Some functions are trivial constant returns (`call_strcpy` returns `8` directly). Constant propagation created duplicate functions (`_constprop.0` variants).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably, but forward jumps to labels disrupt flow. Stack check epilogues create artificial branching at function ends.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks duplicated across 30+ functions. `__sync_synchronize()` calls appear multiple times. Constant-propagated functions duplicate logic unnecessarily.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Ghidra-specific types (`undefined4`) mixed with recovered types (`pthread_t`, `FILE*`, `size_t`). Pointer types lose specificity (`char *` vs `const char *`). Some return types wrong (`void` instead of `int` in `param_printf`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `stat` struct recovered, `sockaddr` partially recovered (shows `sa_data` array). ThreadData struct lost—accessed as array indices (`param_1[2]`, `param_1[1]`). TLS access shows raw offset arithmetic (`*(int *)(iVar1 + 8)`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts: `(pthread_mutex_t *)`, `(void **)`, `(int *)`. Thread functions use `int*` for struct access. No const-correctness preserved. Pointer arithmetic without bounds checking throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only decompiler header comments and WARNING messages. No algorithm explanations, no API documentation. Original source comments explaining each function's purpose completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `memcpy`, `pthread_create`). Atomic operations shown as `__sync_*` functions. No higher-level pattern identification (producer-consumer, mutex protection patterns not named).
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: WARNING comments for unreachable blocks present. "Control flow encountered bad instruction data" in `test_system_calls`. "Type propagation algorithm not settling" warnings. Anomalies flagged but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented. No postconditions inferred. Error returns visible but not documented. Stack canary checks present but not explained as safety mechanisms.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible, global variables referenced by name (`signal_received`, `atomic_counter`). No call graph documentation. Callback relationships (thread entry functions) not explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No file organization matching source sections (6.1, 6.2, 6.3). Static functions not properly scoped. No header file recovery.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Uses Ghidra-specific types (`undefined4`, `undefined8`). External dependencies not documented. Would require significant modification to compile standalone. References external symbols without declarations.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+3+5)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (3+5+6+2)/4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.52/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable names completely generic**: `param_1`, `iVar1`, `local_14` provide zero semantic information about purpose
+- **Magic numbers throughout**: `0x2a`, `0x5a`, `10`, `0xe` instead of named constants (42, 90, SIGUSR1, SIGALRM)
+- **Struct recovery failed**: ThreadData accessed as `param_1[2]`, `param_1[1]` instead of named fields
+- **Stack canary noise**: Every function has `local_c = 0; if (local_c != 0) __stack_chk_fail()` boilerplate
+- **Optimization artifacts**: `.part.0`, `.constprop.0` function suffixes create confusion about function relationships
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names like `param_strcpy`, `thread_compute`, `signal_handler` were preserved, allowing basic identification of functionality despite optimization artifacts.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or error handling contracts documented. A reader cannot determine valid input ranges or expected return value semantics without examining original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming**: Analyze usage patterns to infer names (e.g., variables used in loop bounds → `count`, `iterations`; variables passed to `malloc` → `size`, `buffer_size`)
+2. **Recover named constants from usage context**: Detect repeated magic numbers and suggest constant definitions (e.g., `0x2a` appearing as success return → `#define SUCCESS 42`)
+3. **Reduce compiler artifact noise**: Filter out stack canary boilerplate and mark as compiler-generated rather than displaying as source-level code

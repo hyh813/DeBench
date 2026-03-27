@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively named with generic patterns like `v0`, `v1`, `v2`, `a1`, `a2`, `a3`, `v3[36]`, `_BYTE v5[20]`. Only a few exceptions like `Value`, `InstanceCount`, `Size` have meaningful names. The original source's `value`, `name`, `data`, `size` are completely lost.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: The decompiler outputs raw C++ mangled names like `_Z20test_cpp_member_funcv`, `_ZN11SimpleClassC2EiPKc`, `_ZNK11SimpleClass8getValueEv` instead of demangled readable names. These are technically accurate but completely unreadable, failing to provide human-understandable alternatives like `SimpleClass::getValue`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals like string `"Test"` and array sizes are preserved, but important constants like `4660` (which is `0x1234` for `getClassID`) appear as magic numbers without explanation. The `0x1Fu` limit for strncpy is present but unexplained.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: IDA-specific type annotations like `_BYTE`, `_DWORD`, `_QWORD`, `BYREF` add noise. However, there's no obvious dead code, register spilling artifacts, or debug instrumentation. The core logic is relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with proper if-else structures, loops, and return statements. At `-O0` optimization, the decompiler correctly recovers the original control flow patterns without spurious goto statements or confusing conditionals.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with good granularity. Member functions like `SimpleClass::getValue`, `SimpleClass::compute` are properly separated. The parameter passing (this pointer as first argument) is correctly represented, though verbose.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately. Some complex expressions in virtual function calls require extra effort to trace but don't severely disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. Loop unrolling is minimal at `-O0`. The decompiled code is clean without significant redundancy from optimizations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses a mix of precise types (`int`, `unsigned int`, `__int64`, `const char*`) and imprecise ones (`void*`, `_BYTE*`). Integer types are generally correct but signed/unsigned distinctions are sometimes lost. Function pointer types are represented as `__int64 (__fastcall **)(_QWORD, _QWORD)` which is overly complex.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Class names like `SimpleClass`, `LifecycleClass`, `Base`, `Derived` are correctly recovered. Member access patterns (`*(_DWORD *)this`, `*((_QWORD *)this + 1)`) show struct layouts. However, vtable pointers and internal structure details are not clearly documented.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns exist: direct pointer arithmetic (`*(_DWORD *)(*(_QWORD *)this + 4 * a2)`), casts between incompatible types, and no bounds checking annotations. The virtual function call pattern `(**v2)(v2)` lacks type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only the header comment indicating "Decompiled by IDA Pro 9.1 with Hex-Rays" is present. No comments explaining algorithm logic, vtable mechanisms, or recovery confidence. The code is completely devoid of useful documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are implicitly present (vtable setup in constructors, virtual dispatch in `call_virtual_func`, RAII in unique_ptr handling) but not explicitly identified or named. A reader would need deep knowledge to recognize these patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags or warnings for suspicious code. The "FAILED to decompile" section lists 25 functions that couldn't be decompiled, but these aren't integrated into the code flow as annotations. Indirect virtual calls could have been flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source's error handling (like bounds checking in `getData`) is present in code but not explained as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible in the code (e.g., `SimpleClass::getValue` called from `test_cpp_member_func`), but there's no documentation of who calls whom, global variable usage, or callback relationships.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are listed in memory address order rather than logically grouped. Related test functions (`test_cpp_member_func`, `test_cpp_constructor`, etc.) are scattered. No namespace or class grouping is visually indicated.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code cannot compile standalone. It depends on undefined symbols like `printf`, `operator new`, `std::` functions. No header declarations or dependency documentation is provided. The "FAILED to decompile" functions are completely missing.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable names are exclusively generic (`v0`, `v1`, `a1`, `a2`) losing all semantic meaning from source
+- Function names are raw mangled C++ symbols instead of demangled readable names
+- Complete absence of comments explaining logic, vtable mechanisms, or recovery confidence
+- No pre/postcondition or contract documentation for complex operations
+- Module organization is arbitrary (address-based) rather than logical grouping
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- At `-O0` optimization, the decompiler correctly recovers natural if-else, loop, and return structures without spurious goto statements
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Function Naming Quality (2/10)  
+- The lexical layer is severely degraded: all meaningful variable names from the original source (`value`, `name`, `data`, `size`) are replaced with generic patterns, and function names remain as unreadable mangled symbols
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Implement usage-based variable naming inference**: Analyze how variables are used (e.g., `if (size < 10)` suggests `size`; `strlen(name)` suggests `name`) to generate semantically meaningful names instead of `v0`, `v1`
+2. **Demangle C++ names and provide readable alternatives**: Transform `_ZN11SimpleClass8getValueEv` to `SimpleClass::getValue` automatically
+3. **Add explanatory comments for complex patterns**: Document vtable setup, virtual dispatch, RAII patterns, and flag uncertain indirect calls with recovery confidence indicators

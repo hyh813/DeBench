@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names (a0, a1, a2) instead of semantic names (a, b, count). Local variables are v0, v1, ptr, i - losing all semantic meaning. For example, in `cdecl_func(unsigned int a0, unsigned int a1)`, the parameters should be `a` and `b` based on source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core test functions correctly named: cdecl_func, stdcall_func, fastcall_func, varargs_func, func_no_args. However, some infrastructure functions use generic names (sub_401030, sub_401040). Overall good recovery of function names from source.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Return values are hardcoded correctly (15, 50, 6, 42, etc.) matching expected outputs. Magic number 4294967295 used for -1 (unsigned overflow). Some literals like 42 are self-explanatory as return from func_no_args.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant artifacts present - func_mixed_args contains unsupported pyvex expressions with PutI operations. Many functions have goto-based control flow that appears unnatural. Some struct definitions are duplicated (struct_0 defined multiple times).
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most simple functions (cdecl_func, stdcall_func) have natural flow. However, varargs_func uses goto-based loop instead of while/for. At -O0, goto should not be needed for simple loops. Some computed jumps present.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-50 lines typical). Good separation between test functions and helper functions. Some granularity issues with infrastructure functions but overall acceptable.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. Some forward jumps in varargs_func and param_ptr_array loops. Not severely disrupted but could be cleaner.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Some loop unrolling in test_calling_conventions but it's the compiler's natural output at -O0. Overall clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - all parameters are unsigned int. Original had int, char*, double, long long. Lost signed/unsigned distinction (param_by_value_int should be int, not unsigned int). Function pointers treated as unsigned int*.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery. func_struct_byptr shows raw pointer arithmetic (a0[1] * *(a0)) instead of struct field access. Some struct definitions exist but with generic names (struct_0, struct_1) and no field semantics.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. func_struct_byval uses char* pointer arithmetic stepping by 2 instead of proper struct field access. Function pointer calls use unsigned int* instead of proper function pointer types.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated comments for anomalies like "[D] unsupported_<class 'pyvex.expr.GetI'>()". No explanation of algorithms, calling convention behavior, or parameter purposes.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Calling conventions are correctly identified (cdecl, stdcall, fastcall). Some patterns like varargs recognized but not explicitly named or documented. No explicit pattern naming.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged with "[D]" prefix for unsupported pyvex expressions. However, these are generic and don't explain what the original code might have been. Many potential issues silently fail.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. func_struct_byptr has implicit null check but no comment about it. No contract information recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are clear within test functions. Some extern declarations for global variables (g_402008, etc.) but no documentation of what they contain or how they're used. Callback relationships not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions logically grouped by test category (calling conventions, parameter passing, return values). However, all in single file with infrastructure functions mixed in. No header file recovery.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many functions would not compile standalone. Missing extern declarations for frame_dummy, __do_global_ctors_aux, etc. Some functions have incomplete definitions (__stack_chk_fail_local).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming uses generic a0/a1/v0/v1 instead of semantic names (a, b, count, sum)
+- Type precision severely degraded - all unsigned int, losing original int/char*/double/long long
+- No struct field recovery - func_struct_byptr uses a0[1] * *(a0) instead of p->x * p->y
+- func_mixed_args contains unsupported pyvex artifacts making it unreadable
+- No comments explaining any function logic or calling convention behavior
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Core test functions correctly recovered: cdecl_func, stdcall_func, fastcall_func, varargs_func, etc.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- All parameters use generic a0, a1, a2 naming; local variables use v0, v1, ptr - losing all semantic meaning from original source
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - a0 used in multiplication should be named based on semantic purpose
+2. Recover struct types from memory access patterns - a0[1] * *(a0) clearly indicates struct with x, y fields
+3. Add semantic comments explaining calling convention behavior and parameter purposes at -O0 level

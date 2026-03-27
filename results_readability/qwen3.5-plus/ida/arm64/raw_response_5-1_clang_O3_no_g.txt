@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `result`, `a1`, `a2`) with no semantic meaning. For example, `v1[31]` in `test_cpp_member_func` should be `name` based on the original source's `char name[32]`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions use mangled C++ names (`_Z20test_cpp_member_funcv`) instead of readable names (`test_cpp_member_func`). Some like `test_cpp_virtual_func` are recoverable but most require demangling to understand.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4700`, `1001`, `130`, `14` appear without explanation. These are constant-folded results from O3 optimization but lack context (e.g., `4700` should be documented as pre-computed test result).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (`__int64`, `_QWORD`, `_DWORD` casts) but not excessive. The constant-folded functions are actually cleaner than original but lose semantic value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Most test functions collapsed to single `return` statements due to O3 constant folding, losing all original control flow. Exception handling in `test_cpp_exception` is incomplete (no catch blocks visible).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are appropriately sized but 20 functions failed to decompile entirely. Template functions recovered separately (`template_max<int>`, `template_max<double>`) which is good, but class methods lack proper grouping.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom reasonably well. No excessive gotos or forward jumps in the successfully decompiled portions.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Aggressive O3 optimization eliminated redundancy through constant folding. No dead code observed in decompiled portions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - everything is `__int64`, `_QWORD`, `_DWORD`, or `_BYTE`. Original types like `int`, `size_t`, `double`, class pointers are lost. Function `call_virtual_func` uses `__int64 (__fastcall ***a1)(_QWORD)` instead of `Base*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - No class/struct definitions recovered. `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `Container<T>`, `Point` all missing. Only raw pointer arithmetic visible (e.g., `*(int *)(result + 40)` for Container size field).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(_QWORD *)`, `(_DWORD *)`). Pointer arithmetic on `result + 40`, `result + 80` without struct definitions is dangerous. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal auto-generated comments only (type annotations like `// x0`, `// w22`). No algorithm explanations, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Virtual function calls, RAII patterns, template instantiation, lambda captures all obscured. `__dynamic_cast` calls visible but not explained as RTTI operations.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (`/* FAILED to decompile: puts */`) but no inline warnings. No indication of uncertain indirect calls or potential issues within successful decompilations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts completely lost (no catch block recovery in `test_cpp_exception`).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch through `__dynamic_cast` not explained. Static member `LifecycleClass::instance_count` referenced but definition missing.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order. Related class methods scattered (`Container<int>::push`, `Container<int>::get` separated by other functions). No namespace or logical grouping.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: **Does not compile** - 20 external functions failed to decompile (`printf`, `strlen`, `operator new`, etc.). Missing includes, struct definitions, and proper type declarations make standalone compilation impossible.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+4+5+6)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+5+7+8)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type System): (3+2+4)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (3+2+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (4+5+2)/3   = 3.67 × 0.10 = 0.37
+
+Overall Score: 4.23/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **No class/struct definitions recovered** - All C++ classes (`SimpleClass`, `Base`, `Derived`, `Container<T>`) lost, replaced with raw pointer arithmetic
+- **Severe type degradation** - Everything typed as `__int64`, `_QWORD`, `_DWORD` instead of proper C++ types
+- **20 functions failed to decompile** - Critical runtime functions (`printf`, `strlen`, `operator new`, exception handling) missing
+- **Constant folding obscures logic** - O3 optimization collapsed test functions to constant returns, losing all computational semantics
+- **Mangled names not demangled** - Function names like `_Z20test_cpp_member_funcv` require manual demangling to understand
+
+### Best Quality Aspect:
+- **Redundancy Elimination (8/10)** - O3 optimization produced clean, non-redundant code with no dead instructions
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any C++ class definitions, making object-oriented code unintelligible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class/struct layouts** from vtable patterns and field access offsets (e.g., `result + 40` should become `this->size`)
+2. **Demangle C++ symbol names** automatically to produce readable function names (`_Z20test_cpp_member_funcv` → `test_cpp_member_func`)
+3. **Add decompilation confidence annotations** for uncertain operations (indirect calls, type casts) and document failed external function dependencies inline

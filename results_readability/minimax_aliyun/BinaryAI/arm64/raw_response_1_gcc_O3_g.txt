@@ -1,0 +1,156 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality (10%)
+**Score: 2/10**
+
+Justification: Variables are almost entirely generic - parameters use `param_1`, `param_2`, `param_3` while local variables use patterns like `iVar1`, `iVar2`, `uVar1`, `uVar2`, `auVar1`. The source had meaningful names like `a`, `b`, `c`, `temp1`, `temp2`, `sum`, `i`, `j`, `count`. Only the parameter names partially match source (`param_1` corresponds to `a`, etc.), but local variables are completely opaque.
+
+### 2. Function Naming Quality (10%)
+**Score: 7/10**
+
+Justification: Most functions correctly recover source names: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `loop_while`, `recursion_factorial`, `duffs_device`, `non_local_jump`, `state_machine`. However, some test helper functions remain unnamed (`FUN_0010141c`, `FUN_00101d6c`) and some internal functions like `call_weak_fn` are misidentified. The core algorithmic functions are well-named.
+
+### 3. Literal Clarity (5%)
+**Score: 5/10**
+
+Justification: Some literals are clear - `0x3e9` (1001) for loop limit, `0x65` (101) for count limit. However, many magic numbers lack explanation: `0x1e` (30), `0x14` (20), `0xffffffff` (-1) appear without context. The decompiler uses hex for some values and decimal for others inconsistently. No named constants are recovered from the source.
+
+### 4. Noise Reduction (5%)
+**Score: 3/10**
+
+Justification: Significant compiler artifacts present: extensive use of `SUB164`, `NEON_ext`, `NEON_cmeq`, `CONCAT` functions for vector operations; `__stack_chk_guard` and `__stack_chk_fail` for stack protection; complex type conversions like `CONCAT44`, `CONCAT13`. While some artifacts are expected at -O0, the decompiler doesn't clean them up. The `recursion_factorial` and `goto_backward` functions show aggressive loop unrolling that obscures the original recursive structure.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness (8%)
+**Score: 5/10**
+
+Justification: Simple functions like `sequential_ops`, `single_if`, `if_else` have natural control flow. However, complex functions like `loop_for_fixed` and `loop_continue` use deeply nested conditionals instead of loops. The `loop_modify_var` and `goto_backward` functions are particularly convoluted - the original recursive `goto_backward` implementing factorial is transformed into an unreadable loop with vector operations. At -O0, such restructuring is unexpected.
+
+### 6. Function Decomposition (7%)
+**Score: 4/10**
+
+Justification: The decompiler fails to extract test functions properly - `test_control_flow_l1` is embedded in `FUN_0010141c` with hardcoded print values instead of function calls. Functions like `recursion_factorial` and `goto_backward` are over-fragmented with loop unrolling. Some functions like `duffs_device` are reasonably decomposed. The test infrastructure is not properly separated from the logic.
+
+### 7. Code Linearization (5%)
+**Score: 5/10**
+
+Justification: Simple functions read top-to-bottom. However, `loop_for_fixed` has 8+ levels of nested if-statements for loop unrolling, making linear reading impossible. `loop_continue` similarly has deeply nested conditions. Forward jumps are used appropriately in some cases but the overall flow is disrupted by optimization artifacts.
+
+### 8. Redundancy Elimination (5%)
+**Score: 5/10**
+
+Justification: Loop unrolling in `loop_for_fixed` and `loop_continue` creates significant redundancy - the same calculations repeated with slight variations. The `recursion_factorial` has both unrolled loops AND recursive paths, creating duplicate logic. No comments indicate these are unrolled loops. Some dead code may exist but is not obvious.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision (8%)
+**Score: 6/10**
+
+Justification: Basic types are reasonable - `int` for most integers, `uint` for unsigned, `bool` for boolean returns. However, extensive use of `undefined4`, `undefined8`, `undefined` for ambiguous types. Function pointer types are generic `code *` instead of proper function signatures. The source had specific types like `volatile int *` which are lost.
+
+### 10. Composite Type Recovery (7%)
+**Score: 2/10**
+
+Justification: Critical failure in array recovery. The `loop_break` function originally searches an array `{10, 20, 30, 40, 50}` but the decompiler hardcodes comparisons: `if (param_1 == 10) return 0;` etc. Similarly, `loop_multi_exit` hardcodes the 3x4 matrix values instead of recovering the array. No struct recovery is evident. This is a severe semantic loss.
+
+### 11. Type Safety (5%)
+**Score: 6/10**
+
+Justification: Pointer usage appears mostly correct. However, extensive use of `undefined4*`, `undefined8` types creates potential safety issues. The hardcoded values in `loop_break` and `loop_multi_exit` bypass type safety entirely. Some function pointer casts may be unsafe. No `restrict` or `_Atomic` annotations present.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence (5%)
+**Score: 2/10**
+
+Justification: Almost no comments present in the decompiled code. The only comment-like annotation is `// ANOMALY: Indirect call could not be resolved` for `call_func_ptr` and `conditional_func_ptr`. No explanation of algorithms, no recovery confidence indicators, no API contracts. The source had extensive comments explaining each control flow pattern which are completely lost.
+
+### 13. Idiom Recognition (3%)
+**Score: 3/10**
+
+Justification: Some patterns are implicitly present but not named. The `switch` statements are partially recognized (though `switch_fallthrough` is incorrectly implemented). Duff's device is recovered but not identified as such. State machines are present but not named. No design pattern recognition is evident.
+
+### 14. Anomaly Indication (3%)
+**Score: 4/10**
+
+Justification: The `UNRECOVERED_JUMPTABLE` marker appears for function pointer calls that couldn't be resolved, which is helpful. However, no warnings about the hardcoded array values in `loop_break` and `loop_multi_exit`. No indication of the aggressive loop unrolling in `recursion_factorial`. The anomaly detection is inconsistent.
+
+### 15. Assertion & Contract Recovery (4%)
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The source had explicit parameter requirements (e.g., "n must be > 0" for duffs_device) that are completely lost. No error condition documentation. The decompiler doesn't attempt to recover any contracts.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity (4%)
+**Score: 4/10**
+
+Justification: Function call relationships are partially visible - `main` calls `test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`. Function pointers in `call_func_ptr_array` and `large_jump_table` are correctly identified. However, no documentation of who calls whom, no global variable usage transparency. The test infrastructure relationships are not clearly mapped.
+
+### 17. Module Organization (3%)
+**Score: 6/10**
+
+Justification: Functions are roughly grouped - test functions together, state handler functions together, operator functions together. Static functions like `state_idle`, `state_processing` are properly scoped. However, the organization doesn't match the source's clear separation into CF-L1, CF-L2, CF-L3 sections. The logical grouping from the source is lost.
+
+### 18. Build System Compatibility (3%)
+**Score: 2/10**
+
+Justification: The code would not compile as-is. Missing type definitions for `undefined4`, `undefined8`, `bool`, `code`. Missing external declarations for `__stack_chk_guard`, library functions. The `NEON_*` and `CONCAT*` intrinsics are not standard C. Significant patching would be required to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 5 + 3) / 4 = 4.25
+L2_avg = (5 + 4 + 5 + 5) / 4 = 4.75
+L3_avg = (6 + 2 + 6) / 3 = 4.67
+L4_avg = (2 + 3 + 4 + 2) / 4 = 2.75
+L5_avg = (4 + 6 + 2) / 3 = 4.00
+
+Overall = (4.25 × 0.30) + (4.75 × 0.25) + (4.67 × 0.20) + 
+          (2.75 × 0.15) + (4.00 × 0.10)
+        = 1.275 + 1.1875 + 0.934 + 0.4125 + 0.4
+        = 4.21/10
+```
+
+**Overall Readability Score: 4.2/10**
+
+### Critical Defects
+
+- **Array recovery failure**: `loop_break` and `loop_multi_exit` hardcode array values instead of recovering the original array structures, losing the semantic intent of the search algorithm
+- **Variable naming**: All local variables use generic names (`iVar1`, `uVar2`, `auVar12`) making code flow extremely difficult to trace
+- **Loop unrolling without explanation**: `recursion_factorial` and `goto_backward` are aggressively unrolled with vector operations, completely obscuring the recursive algorithm
+- **No comments**: Zero meaningful comments explaining algorithms, patterns, or recovery confidence
+- **Test function inlining**: `test_control_flow_l1` is embedded as `FUN_0010141c` with hardcoded print values instead of function calls, losing the test infrastructure structure
+
+### Best Quality Aspect
+**Function Naming Quality (7/10)** - Core algorithmic functions like `sequential_ops`, `loop_for_fixed`, `duffs_device`, `state_machine` are correctly identified and named, preserving the functional intent.
+
+### Most Needs Improvement
+**Comment Quality & Presence (2/10)** - The decompiled code has almost no comments. The source had extensive documentation explaining each control flow pattern, which is completely lost. Without comments, understanding complex functions like the unrolled factorial or Duff's device becomes extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover array/struct literals from constant pools**: Instead of hardcoding `if (param_1 == 10) return 0;`, reconstruct the original array and index-based access pattern
+
+2. **Add algorithm recognition comments**: When detecting recursive patterns that have been unrolled, add comments like "// NOTE: Original was recursive factorial, unrolled by compiler"
+
+3. **Improve variable naming inference**: Use data flow analysis to infer variable purposes - a variable used as a loop counter should be named `i` or `counter`, not `iVar1`
+
+4. **Preserve test infrastructure**: Don't inline test functions; maintain them as separate callable functions to preserve the source's modular structure
+
+5. **Add recovery confidence markers**: Flag areas where the decompiler is uncertain (e.g., "may be loop unrolling") to help analysts focus verification efforts

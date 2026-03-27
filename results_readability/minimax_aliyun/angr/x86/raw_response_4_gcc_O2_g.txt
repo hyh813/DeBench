@@ -1,0 +1,155 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables use extremely generic names like `a0`, `a1`, `a2` for parameters (e.g., `int cdecl_func(unsigned int a0, unsigned int a1)`), and `v0`, `v1`, `v2` for locals. The original source uses meaningful names like `a`, `b`, `count`, `args`. These cryptic names make it nearly impossible to track variable purpose without extensive cross-referencing.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+
+Justification: About 30% of functions have correct names from source (`cdecl_func`, `stdcall_func`, `fastcall_func`, `func_a`, `func_b`, `main`), but the majority use mechanical address-based names like `sub_401030`, `sub_401040`. The wrapper functions that just call other functions have no semantic meaning.
+
+### 3. Literal Clarity
+**Score: 6/10**
+
+Justification: Return values are correctly hardcoded (e.g., `return 15;` for call_cdecl), making the expected output clear. However, string format pointers are referenced as external addresses (`&g_402008`) without recovering the actual strings, and some magic numbers in complex functions lack explanation.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Justification: Severe noise pollution includes numerous compiler/runtime functions: `__x86.get_pc_thunk.bx`, `register_tm_clones`, `deregister_tm_clones`, `frame_dummy`, `__do_global_dtors_aux`. These 20+ functions are irrelevant to the test logic and clutter the output significantly.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Justification: Most functions have natural control flow - simple returns for wrapper functions, appropriate loops in varargs functions. At -O0, the flow closely matches source. Minor issues include some computed jumps in initialization code that are optimization artifacts.
+
+### 6. Function Decomposition
+**Score: 6/10**
+
+Justification: Function granularity is preserved - small test wrapper functions correctly separated from implementation functions. However, many functions are just thin wrappers (e.g., `sub_4012bd` calls `call_cdecl`) that could be inlined. Parameter lists expose implementation details in some cases.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom with minimal forward jumps. The varargs functions use simple do-while loops that are linear. Some complex initialization code has non-linear patterns but these are manageable.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+
+Justification: Some redundant patterns exist - multiple similar wrapper functions that could be consolidated. The struct initialization in `call_struct_byval` shows some repetitive code. However, no severe redundancy that makes code unmaintainable.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+
+Justification: Severe type degradation - all parameters and returns use `unsigned int` regardless of original type. The original uses `int` for most functions, but decompiled uses `unsigned int`. Pointers are correctly identified as pointers but element types are lost. Function pointers use generic signatures.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: Some struct definitions recovered but with meaningless names: `struct struct_0 { char padding_0[36]; unsigned int field_24; }`. Field names are generic (`field_0`, `padding_0`). The original's `LargeStruct` and `SmallStruct` are not recovered. Raw pointer arithmetic predominates.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Some unsafe operations present - function pointer calls use `a0(a1)` syntax without proper type checking. Pointer arithmetic in struct functions (e.g., `cur += 2`) is potentially unsafe. However, no severe violations that would cause immediate undefined behavior.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Almost no comments present in the decompiled output. Only `[D] Unsupported` annotations mark problem areas. No explanation of what functions do, no recovery of original comments from debug symbols. The rich original comments explaining calling conventions are completely lost.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: Some patterns are implicitly present (varargs handling, struct passing) but not explicitly identified or named. The calling convention tests could be recognized as such but aren't labeled. No pattern naming or explanation.
+
+### 14. Anomaly Indication
+**Score: 4/10**
+
+Justification: Some anomalies are flagged with `[D] Unsupported` messages (e.g., `[D] Unsupported_<class 'pyvex.expr.GetI'>()`), but these are generic and don't explain what the original code might have been. Many indirect calls are not flagged as uncertain.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No implicit contracts or preconditions are documented. The original source has no formal assertions, but postconditions like "returns sum of varargs" could be inferred but aren't. Null checks are present in code but not documented as contracts.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function call relationships are partially clear - `call_cdecl()` calls `cdecl_func()`. However, the relationship between test functions and the main test harness (`test_calling_conventions`) is obscured by generic naming. Global variable usage is unclear.
+
+### 17. Module Organization
+**Score: 4/10**
+
+Justification: Functions are grouped by address rather than logically. The original groups functions by calling convention type, parameter pattern, and return value handling - this organization is completely lost. All functions appear in a single flat list.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+Justification: Code has many `extern unsigned int g_40XXXX` declarations for string pointers. Would require significant patching to compile - missing standard library declarations (`printf`, `va_list`), missing struct definitions. The code cannot compile as-is.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 6 + 3) / 4 = 4.00
+L2_avg = (7 + 6 + 7 + 6) / 4 = 6.50
+L3_avg = (4 + 4 + 5) / 3 = 4.33
+L4_avg = (2 + 4 + 4 + 2) / 4 = 3.00
+L5_avg = (5 + 4 + 3) / 3 = 4.00
+
+Overall = (4.00 × 0.30) + (6.50 × 0.25) + (4.33 × 0.20) + 
+          (3.00 × 0.15) + (4.00 × 0.10)
+        = 1.20 + 1.625 + 0.866 + 0.45 + 0.40 = 4.54/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+---
+
+### Critical Defects
+
+1. **Variable naming**: All parameters use generic names (`a0`, `a1`) and locals use (`v0`, `v1`) - completely loses semantic meaning from original source
+2. **Function naming**: 70% of functions use mechanical address-based names (`sub_401030`) instead of recovered names
+3. **Type precision**: All types degraded to `unsigned int`, losing original `int`, `char*`, `double`, `long long` distinctions
+4. **Noise**: 20+ irrelevant compiler/runtime functions (`__x86.get_pc_thunk.bx`, `register_tm_clones`) clutter output
+5. **Comments**: Zero recovery of the rich explanatory comments from original source explaining calling conventions
+
+### Best Quality Aspect
+
+**Control Flow Naturalness (7/10)** - At -O0, the decompiled control flow closely matches the original source. Loops, conditionals, and function calls are structurally correct and easy to follow.
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - The generic `a0`/`v0` naming scheme makes it nearly impossible to understand variable purpose without extensive cross-referencing. This is the most severe readability issue.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `*ptr` for dereferencing, `ptr + 1` for pointer arithmetic) to suggest semantic names like `packet_size` or `next_node`
+
+2. **Recover function names from debug symbols**: The original function names are available in debug info - prioritize extracting and using them rather than generating `sub_XXXX` names
+
+3. **Eliminate compiler/runtime noise**: Filter out standard library initialization functions (`__do_global_ctors_aux`, `register_tm_clones`) and focus on user-defined test functions

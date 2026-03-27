@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Despite compilation with `-g`, parameters are generic (`a1`, `a2` instead of `dst`, `src`) and locals are generic (`v1`, `v3`), indicating a failure to utilize debug symbols.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names like `param_strcpy`, `call_strcpy`, and `param_strcmp` are perfectly recovered from the source symbols.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Negative constants are displayed as large unsigned hex/dec values (e.g., `0xFFFFFFFFLL` for `-1`, `4294967196LL` for `-100`), and syscall numbers like `56` are not resolved to `SYS_open`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Code is mostly clean, but contains compiler-specific artifacts like `__fastcall`, `__int64`, and `LODWORD(result)` which clutter standard C logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow matches the source exactly; `if/else` chains and ternary operator logic are represented clearly without spurious jumps.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Function boundaries are perfectly preserved, matching the source granularity exactly (e.g., `param_strcpy` vs `call_strcpy`).
+
+**7. Code Linearization:** Score: 9/10  
+Justification: The code reads linearly from top to bottom with no confusing forward jumps or computed branches.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or loop unrolling artifacts are present; the logic is concise and matches the `-O0` source structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Pointer types (`char *`, `const char *`) and qualifiers (`const`) are recovered correctly, though the return type is `size_t` instead of the source's `int`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Standard structs like `struct sockaddr` are recognized, but custom structs like `ThreadData` are accessed via array indexing on the struct pointer (e.g., `a1[2]`) rather than field names.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Pointer arithmetic for index calculation uses unsafe casts to `DWORD` (e.g., `(_DWORD)v9 - (_DWORD)a1`), which truncates 64-bit pointers on ARM64.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are no comments explaining the logic; only auto-generated function headers are present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls are recognized, but Thread-Local Storage (TLS) variables like `tls_counter` are not recovered, instead exposing raw register access `_ReadStatusReg(TPIDR_EL0)`.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warnings are provided for the raw TLS register access or the unsafe pointer truncation, presenting these as standard code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or error handling contracts are documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls are clear and use the recovered names, making the call graph easy to follow.
+
+**17. Module Organization:** Score: 9/10  
+Justification: Functions are ordered logically, matching the source file's structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Use of non-standard types like `__int64` and calling conventions like `__fastcall` (irrelevant on ARM64) requires specific headers or defines to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Critical Defects:**
+- Variable names (`a1`, `a2`) not recovered from debug info (`dst`, `src`).
+- TLS variable `tls_counter` not recovered; exposed raw register access `TPIDR_EL0`.
+- Magic numbers used for constants (e.g., `0xFFFFFFFFLL` for -1, `4294967196LL` for -100).
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- Function names are exact matches to the source, providing excellent high-level navigation.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.75/10)  
+- The failure to recover high-level TLS semantics and the lack of any comments or anomaly warnings significantly obscure the code's intent.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Parse and apply DWARF debug information to recover original parameter and local variable names.
+2. Recognize Thread-Local Storage (TLS) patterns (access via `TPIDR_EL0` on ARM64) and map them back to static variable names.
+3. Improve constant propagation to display signed integers as signed (e.g., `-100` instead of `4294967196LL`).

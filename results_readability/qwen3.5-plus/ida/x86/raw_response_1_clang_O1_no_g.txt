@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `a3`, `v1`, `v2`, `result`) with zero semantic meaning. Original source had meaningful names like `temp1`, `temp2`, `sum`, `count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`sequential_ops`, `single_if`, `nested_if_2`, `loop_for_fixed`) due to debug symbols. Only helper functions like `sub_1030`, `sub_1090` are generic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (`10`, `100`, `1000`, `0x12345678`). Test functions show hardcoded expected values instead of actual computation, obscuring logic.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Unexpected optimization artifacts despite `-O0` claim (e.g., `loop_for_fixed` uses formula instead of loop). Redundant temporary variables (`v1`, `v2`, `result`) add noise without value.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic structures preserved (if/else, switch, loops) but some loops converted to formulas (`loop_for_fixed`, `switch_small` uses array lookup). Goto patterns in `duffs_device` partially recovered.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries correctly preserved with appropriate granularity. No inappropriate inlining. However, test functions are constant-folded into print statements losing actual call structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but `loop_multi_exit` has complex label structure (`LABEL_7`, `LABEL_10`). Forward jumps disrupt natural flow in several functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant temporary variables throughout (`v1`, `v2`, `result` pattern). Some dead code from optimization artifacts. No loop unrolling comments to explain transformations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic `int` throughout instead of precise types (`int32_t`, `uint64_t`). Inconsistent use of `_DWORD`, `_BOOL4`. Original `volatile int *` sometimes preserved, sometimes lost.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays become pointer arithmetic (`_DWORD *i`, `*(_DWORD *)(a1 + 4 * v3++)`). No struct recovery visible. Matrix handling in `loop_multi_exit` uses raw pointer operations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible. Function pointer signatures sometimes incorrect (`op_or` takes `__int64` instead of two `int`). Pointer arithmetic without bounds checking throughout.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. No algorithm explanations. Only decompiler metadata header present. Original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Loop idioms sometimes recognized (for vs while) but not named. Switch-case patterns preserved. No design pattern identification (state machine, strategy pattern not indicated).
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Failed decompilations listed at end but not explained inline. No warnings about unresolved indirect calls. `computed_goto` decompiled to function pointer array without noting the transformation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`). No postconditions inferred. Error conditions not documented despite multiple return paths.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variable usage (`jump_buffer`, `funcs_1B55`) not explained. Callback relationships in `process_with_callback` not clarified.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No logical grouping by control flow level. Static functions not properly scoped. Original source organization completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 6 functions failed to decompile (`__libc_start_main`, `printf`, `longjmp`, etc.). External dependencies not documented. Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+7+5+5)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.43
+
+Overall Score: 4.69/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `a2`, `v1`, `result`) losing all semantic meaning from original source
+- **Test functions constant-folded** - print hardcoded expected values instead of calling actual functions, destroying test logic
+- **No comments recovered** despite original source having extensive documentation for each control flow pattern
+- **Type precision degraded** - generic `int` instead of precise types, inconsistent `_DWORD`/`_BOOL4` usage
+- **Optimization artifacts at -O0** - loops converted to formulas (`loop_for_fixed`) shouldn't occur at debug optimization level
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Debug symbols preserved most original function names, making function identification straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of original documentation; no decompiler-generated explanations for complex transformations
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and debug info (e.g., `a1` in `sequential_ops` should recover as `a`, `b`, `c`)
+2. **Preserve test function call structure** instead of constant-folding to print statements - actual function calls are critical for understanding
+3. **Generate semantic comments** for control flow transformations (e.g., "Loop optimized to closed-form formula: n*(n-1)/2")

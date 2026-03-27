@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `uVar1`, `local_10`) with no semantic meaning. Original source used meaningful names like `size`, `counter`, `increment`, `result`, `exec_mem`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). Helper functions unresolved as `FUN_00011110` (likely printf).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x400` (MAX_SIZE=1024), `0x200` (512), `0x40` (64), `0xdef0`. Original had named constants (`MAX_SIZE`, `BUFFER_COUNT`). String literals referenced as `&DAT_000121f4`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks present (`in_GS_OFFSET`, `__stack_chk_fail_local`). Unresolved library calls (`FUN_000110f0` for mmap). At -O0, expect cleaner output but security artifacts remain.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow mostly natural with if-else and for loops. Assembly recovered as C loops (`param_asm_clobber` shows for loop). Some functions constant-folded eliminating original logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity preserved from source. Some functions over-optimized (`call_macro_constants` returns constant `0x40` instead of calling `param_macro_constants(2048)`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Data references (`&DAT_000121f4`) disrupt flow slightly. No excessive gotos observed.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding creates redundancy (`param_stringize` and `call_stringize` both return `0x13`). Test functions repeat `FUN_00011110` calls without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision: `undefined4`, `undefined`, generic `int`. Original had `int32_t`, `size_t`, `const char*`. Pointer types unclear (`undefined *param_1` for memory operations).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays handled reasonably (`local_24 [5]`, `local_50 [5]`). No structs/unions in this code to recover. SIMD vector recovered as `undefined (*param_3) [16]`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present (`(undefined4 *)`, `(undefined *)`). Pointer arithmetic on generic types. Stack canary checks provide some safety but not documented.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original had extensive section headers and inline explanations. No decompiler confidence indicators or uncertainty flags.
+
+**13. Semantic Recovery (Idioms+Anomalies+Contracts):** Score: 4/10  
+Justification: Some idiom recognition (LOCK()/UNLOCK() for atomics, memcpy pattern). No anomaly flags for unresolved calls. No precondition/postcondition documentation. Assembly patterns recovered but not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**14. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but many unresolved (`FUN_00011110`, `FUN_000110f0`). Global `global_var` referenced without definition. Data references as `&DAT_000121f4` without context.
+
+**15. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. No clear module boundaries or namespace structure.
+
+**16. Build System Compatibility:** Score: 4/10  
+Justification: Would not compile without extensive stubbing. Unresolved externals (`FUN_000110f0` for mmap, `FUN_00011100` for mprotect). No dependency documentation.
+
+**17. Optimization Awareness:** Score: 6/10  
+Justification: At -O0, expect near-perfect recovery but constant folding occurred (`call_macro_constants` returns 64 directly). Assembly recovered as C but macro semantics lost completely.
+
+**18. Macro Semantic Recovery:** Score: 2/10  
+Justification: Critical failure - all macro semantics lost. `MAX_SIZE`, `BUFFER_COUNT`, `SQUARE(x)`, `DEBUG_MODE` branches all collapsed to constants. Cannot recover preprocessing decisions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (5+7+5)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (2+4)/2     = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (4+6+4+6+2)/5 = 4.40 × 0.10 = 0.440
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.29/10
+```
+
+**Overall Readability Score: 5.3/10**
+
+### Critical Defects
+- **Macro semantics completely lost**: `MAX_SIZE` (1024), `BUFFER_COUNT` (16), `SQUARE(x)` all collapsed to magic numbers (`0x400`, `0x40`)
+- **Variable names entirely generic**: `param_1`, `iVar1`, `uVar1` provide no semantic information vs. original `size`, `counter`, `result`
+- **Zero comments**: Original had extensive documentation; decompiled has none
+- **Unresolved library calls**: `FUN_00011110` (printf), `FUN_000110f0` (mmap) not identified
+- **Conditional compilation branches lost**: `DEBUG_MODE`, `PLATFORM` branches collapsed to single path
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Original function names mostly preserved, making navigation and identification straightforward
+
+### Most Needs Improvement
+- **Macro Semantic Recovery (2/10)** - Preprocessor information fundamentally lost; cannot recover `#define`, `#ifdef`, macro expansion semantics from binary
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Detect constant patterns and suggest named constants**: When seeing `0x400`, `0x200`, `0x40` in related functions, suggest `MAX_SIZE`, `MAX_SIZE/2`, `BUFFER_COUNT*4`
+2. **Recover string literal references**: Replace `&DAT_000121f4` with actual string content from binary data section
+3. **Add decompiler confidence annotations**: Flag unresolved calls (`FUN_00011110` → `// LIKELY: printf based on signature`) and constant-folded regions (`// OPTIMIZED: original conditional removed`)

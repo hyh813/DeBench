@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Parameters are generic (`ptr`, `a1`) instead of semantic names (`dst`, `src`), and local variables like `v0`, `v1` obscure the stack layout, requiring significant effort to track purpose.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `param_strcpy`, `param_strcmp`, and `call_strcpy` are perfectly recovered from the binary symbols, accurately reflecting the original source's naming scheme.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Error codes are represented as large unsigned integers (e.g., `4294967295` for `-1`, `4294967294` for `-2`) instead of the original signed constants, obscuring the logic's intent.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains compiler artifacts like `v0 = &v1;` (stack cookie/frame setup) and Ghidra-specific macros like `__ROL__` for bit shifts, which adds noise to the reading experience.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: The ternary operator in `param_strcmp` is decompiled into complex bitwise operations (`v4 >> 31 & 4294967294 | ...`), which is semantically correct but significantly harder to read than the original conditional logic.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source (e.g., `param_strcpy` is distinct from `call_strcpy`), maintaining appropriate granularity and cohesion without inlining or outlining artifacts.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom with minimal forward jumps, though the bitwise manipulation in `param_strcmp` disrupts the natural flow of understanding the conditional logic.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: In `param_strcpy`, the result of `strlen` is assigned to `len` and then the function returns `strlen(ptr)` again, appearing redundant in the decompiled view despite the underlying logic being simple.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Return types are often `long long` instead of `int` (e.g., `param_strcpy`), and `const` qualifiers are dropped (e.g., `char *a1` instead of `const char *src`), reducing type safety information.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structs like `ThreadData` in `thread_sum` are flattened into pointer arithmetic (`ptr[0]`, `ptr[1]`, `ptr[2]`), completely losing the semantic structure and field names defined in the source.
+
+**11. Type Safety:** Score: 5/10
+Justification: The decompiled code performs bitwise operations on signed integers (e.g., `v4 >> 31`) and uses macros like `__ROL__`, which can be confusing and potentially unsafe if misinterpreted by a human analyst.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output; the logic of `param_strcpy` or the complex bitwise math in `param_strcmp` is left unexplained.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The ternary operator idiom (`ret > 0 ? 1 : ...`) is not recognized and is instead represented as raw bitwise manipulation, failing to convey the high-level logic.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: There are no explicit warnings about the complex bitwise logic or the flattened struct accesses, treating these non-idiomatic patterns as standard code without flagging them for review.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions (e.g., `dst` should not be NULL) or postconditions are documented, leaving the user to infer the API contract solely from the implementation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls like `strcpy` and `strlen` are clearly visible and standard library usage is evident, making the relationships within the function easy to understand.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled functions appear in a logical order that matches the source file structure, grouping related tests (e.g., `param_strcpy` followed by `call_strcpy`) effectively.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code uses glibc-internal functions like `__printf_chk` and `__isoc99_sscanf` instead of the standard `printf`/`sscanf`, which would require modification or specific headers to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 10 + 4 + 5) / 4 = 5.75
+L2_avg = (6 + 9 + 7 + 6) / 4 = 7.00
+L3_avg = (6 + 3 + 5) / 3 = 4.67
+L4_avg = (1 + 3 + 5 + 1) / 4 = 2.50
+L5_avg = (8 + 9 + 5) / 3 = 7.33
+
+Overall = (5.75 × 0.30) + (7.00 × 0.25) + (4.67 × 0.20) + 
+          (2.50 × 0.15) + (7.33 × 0.10)
+Overall = 1.725 + 1.75 + 0.934 + 0.375 + 0.733
+Overall = 5.517
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects (Bullet List)
+- **Ternary Operator Obfuscation**: In `param_strcmp`, the logic `ret > 0 ? 1 : (ret < 0 ? -1 : 0)` is decompiled into unreadable bitwise math (`v4 >> 31 & 4294967294 | ...`).
+- **Literal Representation**: Signed error codes (-1, -2, -3) are displayed as large unsigned integers (4294967295, 4294967294, 4294967293), confusing the logic flow.
+- **Struct Flattening**: The `ThreadData` struct in `thread_sum` is accessed via raw pointer offsets (`ptr[0]`, `ptr[1]`) instead of field names, destroying semantic context.
+- **Generic Naming**: Parameters use generic names like `ptr` and `a1` instead of the original `dst` and `src`, reducing readability.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (10/10)**
+- **Why?** The decompiler perfectly preserved the original function names (e.g., `param_strcpy`, `call_strcpy`) from the symbol table, making the high-level purpose of each block immediately obvious.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (1/10)**
+- **Why?** The complete absence of comments, especially for complex logic like the bitwise manipulation in `param_strcmp` or the flattened struct accesses, leaves the user to manually reverse-engineer the intent.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover Ternary Operators**: Implement pattern matching to detect conditional move instructions or bitwise sign-extension patterns and reconstruct them into `cond ? true_val : false_val` syntax.
+2. **Signed/Unsigned Literal Heuristics**: Automatically convert large unsigned literals (near `UINT_MAX`) to their signed negative equivalents when used in comparison or return contexts to match source intent.
+3. **Struct Type Recovery**: Analyze pointer arithmetic patterns (e.g., accessing `ptr[0]`, `ptr[1]`, `ptr[2]` with different types/offsets) to suggest or reconstruct composite struct definitions.

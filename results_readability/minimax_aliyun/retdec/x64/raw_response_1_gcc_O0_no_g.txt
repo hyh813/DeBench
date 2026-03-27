@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use numbered scheme (`v1`, `v2`, `v3`, `v4`). No semantic names like `temp1`, `packet_size`, or `sum` are recovered. This is essentially unusable for analysis.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main functions retain original names (`sequential_ops`, `single_if`, `loop_for_fixed`, `recursion_factorial`). However, some helper functions have generic names (`function_1080`, `function_1090`). Overall, function naming is good.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Extensive magic numbers without explanation: `0x100000000` (2^32) used for 32-bit arithmetic, `0x66666667` for division by 3, `0xffffffff` for masking. No named constants or enums recovered. These obscure the actual operations.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: verbose 32-bit arithmetic (`0x100000000 * a1 >> 32`), redundant masking (`& 0xffffffff`), stack canary checks (`__readfsqword(40)`, `__stack_chk_fail`). These obscure the actual logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control structures are natural - loops, conditionals, switch statements are recognizable. However, `switch_fallthrough` uses goto labels (`lab_0x14b1`) instead of proper fall-through semantics, and some complex conditions are convoluted.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Each function has single responsibility. Parameter counts match original. No excessive inlining or outlining artifacts observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps in `switch_fallthrough` and `loop_break` using goto labels, but these don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant 32-bit arithmetic patterns (repeating `0x100000000 * x >> 32`), but no excessive dead code. Loop unrolling is minimal. Overall acceptable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int64_t` appropriately for ARM64, with `int32_t` casts for 32-bit operations. However, function pointers are typed as `int64_t` instead of proper function pointer signatures. No const correctness recovered.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Some structures recovered (`struct __jmp_buf_tag`, `struct _TYPEDEF___sigset_t`) but field names are generic (`e0`, `e1`, `e2`). Arrays accessed via pointer arithmetic. Partial but usable.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Extensive unsafe operations: bit manipulation masking, implicit signed/unsigned conversions, no bounds checking. The 32-bit arithmetic patterns could cause undefined behavior on overflow. Significant risk.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Address ranges provided (`// Address range: 0x11c9 - 0x11fb`) but no algorithmic or semantic comments. No explanation of what functions do or why certain patterns exist. Auto-generated noise only.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like loops and conditionals recognized. State machine in `state_machine` function is somewhat identifiable. No explicit naming of design patterns or algorithms.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. Code presents everything as confident when some operations are questionable.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication of expected input ranges or error conditions. Completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present in code but relationships (who calls whom, global usage, callbacks) not documented. `call_func_ptr` and `process_with_callback` show callback patterns but aren't explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file. Some grouping of related functions (test functions together, operator functions together) but no clear logical organization matching source structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes necessary headers (`<stdio.h>`, `<setjmp.h>`, `<stdint.h>`, `<stdbool.h>`). Should compile with minimal modifications. External dependencies not documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`a1`, `a2`, `v1`, `v2`) - no semantic recovery whatsoever
+- Excessive magic numbers (`0x100000000`, `0x66666667`, `0xffffffff`) without explanation obscure arithmetic operations
+- No comments explaining algorithm intent or non-obvious logic
+- Type safety issues with extensive bit manipulation that could cause undefined behavior
+- Function pointer types not properly recovered (still `int64_t` instead of function pointers)
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions maintain appropriate granularity matching the original source with correct parameter counts and single responsibilities.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+All variables use generic numbered names making it nearly impossible to understand what data flows through the code without extensive manual analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `temp1` used as accumulator should be named `sum` or `result`)
+2. Detect magic numbers and replace with named constants (e.g., `0x100000000` → `INT32_MASK` or explain as 32-bit arithmetic)
+3. Add semantic comments explaining algorithm intent and flagging potential anomalies/undefined behavior

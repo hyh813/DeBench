@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `param_1`, `iVar1`, `piVar1`, and `local_XX`, completely obscuring semantic meaning (e.g., `sum` becomes `iVar2`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `process_char`, `array_2d_stack`, and `test_data_types_l1` are perfectly recovered from symbols, matching the source exactly and providing clear intent.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Heavily relies on magic numbers for array strides (e.g., `0xb`, `0x6e`) and ASCII range checks (e.g., `0xbf`, `0x1a`) without named constants or explanatory comments.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Contains compiler artifacts like `__x86.get_pc_thunk` injections and stack canary checks (`__stack_chk_fail`), though these are mostly isolated or marked with warnings.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Control flow is often optimized (e.g., range checks in `process_char`, aggressive loop unrolling in `array_3d`), making it harder to read than the source, though `enum_switch` is handled well with a jump table.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries are preserved perfectly from the source, with no inappropriate inlining or splitting observed; the granularity matches the original design.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Generally reads top-to-bottom, but complex functions like `binary_tree_sum` and heavily optimized loops disrupt the flow with deep nesting and manual state management.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Aggressive loop unrolling in `array_3d` (e.g., `iVar2 = iVar2 + *piVar4 + piVar4[1] + ...`) and constant propagation in test functions introduce significant redundancy compared to the concise source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Significant type degradation; 2D arrays decay to flat pointers (e.g., `int arr[10][10]` becomes `int *`), structs decay to pointers, and floating point types are often promoted to `longdouble`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Composite types are completely lost; structs like `Point3D` and `Flags` are accessed via raw pointer offsets and bit masking, with no field names or structure definitions recovered.
+
+**11. Type Safety:** Score: 5/10
+Justification: Frequent unsafe casts (e.g., `int*` to `char*` in `ptr_void`) and generic `void*` or `undefined*` usage reduce type safety confidence, though this is partly due to optimization.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to compiler artifact warnings (e.g., `/* WARNING: Function: __x86.get_pc_thunk.bx replaced... */`); there is no explanation of algorithmic logic or variable purpose.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Switch statements are identified via jump tables, but pointer arithmetic idioms for arrays and structs are not explicitly labeled or recognized as such (e.g., diagonal sum logic is flattened).
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Flags indirect jumps and unrecoverable jumptables well (e.g., in `ptr_func_simple`), but fails to flag the massive structural changes in `binary_tree_sum` or the loss of struct types.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No explicit recovery of function contracts, preconditions, or invariants; bounds checks in `array_complex_index` are present but not documented as requirements.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls and global usage are clear (e.g., `main` calling test functions), but data structure relationships (e.g., struct field access) are lost due to type flattening.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, and the separation between test functions and implementation is maintained, matching the source file structure well.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: Code relies on Ghidra-specific types (`undefined`, `code`) and macros (`CONCAT44`), making it non-compilable without significant modification or stubbing.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- **Type Loss:** Structs and 2D arrays are completely flattened to pointers/offsets (e.g., `array_2d_stack` uses `int*` and magic offsets), losing all semantic field information.
+- **Variable Naming:** Generic names (`param_1`, `iVar1`) make tracking data flow difficult without constant reference to the source.
+- **Optimization Artifacts:** Loop unrolling in `array_3d` and range check optimization in `process_char` obscure the original logic significantly.
+- **Recursion Handling:** `binary_tree_sum` is decompiled into a massive, unreadable loop structure, failing to represent the simple recursive logic of the source.
+
+**Best Quality Aspect:** Function Naming (scored 9/10)
+- Symbols were preserved, so function names are exact and clearly indicate the purpose of each unit.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The inability to recover `Point3D`, `Flags`, or array dimensions makes the data structure logic opaque and forces the reader to parse raw pointer arithmetic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Enhanced Type Recovery:** Implement analysis of stack layouts and access patterns to recover struct definitions and array dimensions, especially for standard patterns like 2D arrays passed as parameters.
+2. **Heuristic Variable Renaming:** Use usage patterns to rename generic variables (e.g., `iVar1` used as a sum accumulator -> `sum`, loop counters -> `i`).
+3. **Loop Unrolling Detection:** Detect and optionally re-roll unrolled loops or annotate them clearly to improve readability of code compiled with `-O2` or higher.

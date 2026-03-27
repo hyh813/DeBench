@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `a1`, `a2`, `v1`, `v2`, `v3`, `v4`. In `param_strcpy`, parameters `a1` and `a2` should be `dst` and `src` respectively. The decompiler makes no attempt to infer semantic names from usage patterns.
+
+**2. Function Naming Quality:** Score: 7/10Justification: Core test functions like `param_strcpy`, `call_strcpy`, `param_strcmp` match the original source exactly. However, some utility functions have cryptic names like `sub_10CA8`, `init_proc`, and many import stubs show "FAILED to decompile".
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals like "HelloLib", "abc", "def" are preserved correctly. However, magic numbers like `0x3E8` (1000 for usleep), `0x1F` (31 for strncpy limit), and `0x12` (18 for data length) lack explanatory comments or constant names.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe pollution from 60 "FAILED to decompile" import stubs, numerous atomic sync functions (`__sync_fetch_and_add_4`, etc.) that are compiler intrinsics, and memory barrier patterns. The output includes ~50 lines of atomic operation implementations that obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper loops and conditionals. In `param_malloc_free`, the loop uses pointer arithmetic (`v4 != &v3[v2 - 1]`) which is less readable than a standard for-loop, but this is a minor issue at -O0.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and separated. The original test functions (`call_strcpy`, `param_strcpy`) are correctly decomposed. Thread helper functions like `thread_sum`, `thread_compute` are properly extracted as separate functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in error handling (e.g., `if (!v1) return -1;`). Some complex nested conditions exist but don't severely disrupt flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling artifacts in `param_malloc_free` where the loop manually increments pointers instead of using array indexing. Dead code is minimal. The atomic operation functions are duplicated across many similar implementations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results - `size_t` is correctly used for `strlen` return and string lengths, but most parameters use generic `int`. In `param_strcpy`, return type is `size_t` (correct), but parameters use `char*` and `const char*` without full const-correctness tracking.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The `ThreadData` struct from the original source is not reconstructed - instead the decompiler uses raw arrays (`_DWORD arg[9]`). The `sockaddr` is used but fields are not named. Most composite types are lost to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns exist - raw pointer arithmetic in loops (`v4[1] = v5; ++v4;`), casting issues with `pthread_create` calls requiring void function pointer casts. Buffer sizes are not validated in functions like `call_memcpy`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in the decompiled output. The only comments are decompiler artifacts like "BYREF" for reference parameters. No explanation of algorithm intent, preconditions, or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard library functions (`strcpy`, `strlen`, `strcmp`, `memcpy`, `memset`) are correctly identified. pthread patterns (`pthread_create`, `pthread_join`, `pthread_mutex_lock`) are recognized. However, the atomic operations are shown as raw sync functions rather than C11 atomics.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The "FAILED to decompile" messages for 60 import functions serve as anomaly indicators. However, there's no indication of uncertainty for indirect calls or potential undefined behavior. The decompiler presents potentially incorrect code confidently.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had no explicit assertions, but the decompiler could have inferred some contracts (e.g., "requires: dst != NULL, src != NULL" for strcpy).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible through the code (e.g., `call_strcpy` calls `param_strcpy`). However, there's no explicit documentation of caller/callee relationships or global variable usage. The relationship to the original test framework is not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped reasonably - standard library tests, system call tests, and thread tests are separated. However, the 60 failed import declarations are interspersed, and atomic operation functions are listed separately at the end.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code cannot compile standalone. It has 60 unresolved import references (shown as "FAILED to decompile"). No header includes or dependency documentation. The atomic sync functions would need linking against libatomic.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`a1`, `a2`, `v1`, `v2`) with no semantic inference
+- 60 import functions failed to decompile, leaving significant gaps
+- No comments explaining any logic or intent
+- Composite types (ThreadData) not reconstructed, using raw arrays instead
+- Type precision is poor - most types are generic `int` or `void*`
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+- Core function names like `param_strcpy`, `call_strcmp`, `param_malloc_free` match the original source exactly, making the test structure easily recognizable.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Comment Quality (2/10)  
+- Variables are all generic single letters or numbers with no semantic meaning. Combined with complete lack of comments, the code requires reverse-engineering from scratch to understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Parameters `a1` (used as destination in strcpy) and `a2` (used as source) should be named `dst`/`src` or `dest`/`source`
+2. **Recover struct types from allocation patterns**: The `ThreadData` allocation pattern (`malloc(24)` for 3 threads × 3 fields × 4 bytes) should reconstruct the struct with fields `start`, `end`, `result`
+3. **Add semantic comments for library calls**: Document what each strcpy/strlen/memcpy does, and flag potential issues like the lack of bounds checking in strcpy calls

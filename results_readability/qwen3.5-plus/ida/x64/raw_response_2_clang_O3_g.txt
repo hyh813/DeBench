@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Almost all local variables use generic names (`v0`, `v1`, `v2`, `result`, `v5`, `v6`) with no semantic meaning. Parameter names are preserved (`arr`, `n`, `p`, `x`) but temporaries like `v8` (loop counter) and `v5` (SIMD accumulator) obscure their purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved accurately (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). Some runtime functions are generic (`sub_1020`, `init_proc`) but core logic functions match source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers present without explanation (`32` for char conversion, `65` for 'A', `0x1Au` for range check). Test functions show pre-computed constants (`97`, `98`, `300`) instead of actual function calls, losing semantic meaning.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy SIMD intrinsics throughout (`_mm_add_epi32`, `_mm_loadu_si128`, `_mm_shuffle_epi32`). Register spilling artifacts (`v2`, `v3`, `v5` through `v28`). Frame pointer manipulation visible. Compiler artifacts dominate simple functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple loops transformed into complex SIMD-based implementations with multiple branches. Goto statements used extensively (`LABEL_13`, `LABEL_8`, `LABEL_11`, `LABEL_14`) instead of natural loop constructs. Original `for` loops unrecognizable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. However, test functions are constant-folded (semantic loss) - they print pre-computed values instead of calling actual functions. No inappropriate inlining observed.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple forward jumps disrupt reading flow. Loop cleanup code appears after SIMD blocks with `goto LABEL_13`. Generally readable top-to-bottom but interrupted by optimization artifacts.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling present but not recognized or commented as such. SIMD operations repeated throughout similar functions (`array_1d_stack`, `array_vla`, `array_oob` all have nearly identical SIMD code). No abstraction of common patterns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved well (`int`, `char`, `short`, `long`, `float`, `double`, `long double`). Pointer types mostly correct. Some type erosion with `__int64` instead of platform-specific types. `void*` used appropriately for opaque handles.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Excellent struct recovery - `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Graph`, `Edge`, `Flags`, `UnionData`, `Device` all preserved with field names. Bitfield operations visible but not declared as bitfields (`((*(_WORD *)f >> 3) & 7)`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts visible: `*(char *)p`, `(_DWORD *)p`, `(int)(long)handle`. Pointer arithmetic on `void*` in `ptr_diff`. Union type access without clear type discrimination. No restrict or alignment annotations recovered.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. Function headers have minimal info (just register annotations). No algorithm explanations, no decompilation confidence indicators. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. Linked list traversal (`linked_list`, `doubly_linked_list`) not identified as such. Tree recursion not identified. SIMD optimization not explained as loop vectorization.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some "FAILED to decompile" notices at end for library functions. Stack warning present ("positive sp value has been detected"). No inline anomaly warnings for suspicious patterns. Inconsistent indication quality.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `arr != NULL`, `n > 0`). No postcondition inference. No invariant recognition. Bounds checks present but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but not documented. No call graph information. Global variable usage not documented (`_gmon_start__`, `_bss_start`). Callback relationships not indicated.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No logical grouping visible (data types, arrays, pointers, composites all mixed). No header file separation. Original source organization lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions marked as "FAILED to decompile" (`puts`, `printf`, `__libc_start_main`). Would require stubs for 5 failed functions. Some type definitions missing. Moderate patching needed to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+3)/4 = 5.00
+Level 2 (Structural):  (4+6+5+4)/4 = 4.75
+Level 3 (Type):        (7+8+5)/3   = 6.67
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75
+Level 5 (Contextual):  (5+4+5)/3   = 4.67
+
+Overall = (5.00 × 0.30) + (4.75 × 0.25) + (6.67 × 0.20) + (2.75 × 0.15) + (4.67 × 0.10)
+        = 1.50 + 1.19 + 1.33 + 0.41 + 0.47
+        = 4.90/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Test functions constant-folded**: `test_data_types_l1()` prints pre-computed values (`97`, `300`, `10000`) instead of calling actual functions, losing all semantic meaning
+- **SIMD intrinsics obscure simple logic**: Basic operations like `array_1d_stack` (simple sum loop) transformed into 80+ lines of `_mm_*` intrinsics
+- **Variable names completely generic**: `v0` through `v28` provide no semantic information about purpose
+- **No comments recovered**: Original source had extensive documentation; decompiled code has zero explanatory comments
+- **Goto statements replace loops**: Natural `for`/`while` constructs replaced with `goto LABEL_13` patterns
+
+### Best Quality Aspect:
+- **Composite Type Recovery (8/10)** - Struct definitions like `Point3D`, `Widget`, `TreeNode`, `Graph` recovered with accurate field names and nesting preserved
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding algorithm intent nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and annotate SIMD loop unrolling** - When simple loops become SIMD blocks, add comments like "// Vectorized: processes 8 elements per iteration"
+2. **Preserve test function semantics** - Avoid constant-folding test harnesses; maintain actual function calls to preserve verification capability
+3. **Infer variable names from usage patterns** - Variables used as loop counters should be named `i`, `j`, `k`; accumulators should be named `sum`, `total`, `count`

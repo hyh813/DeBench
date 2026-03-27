@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `arg_0`. For example, in `test_cpp_rtti`, `ptr` is used for a `RTTIBase` object, and `v5` is used for a type name, completely obscuring the semantic meaning found in the original source (`obj1`, `obj2`, `name`).
+
+**2. Function Naming Quality:** Score: 4/10
+Justification: While some functions retain their mangled C++ names (e.g., `_Z20test_cpp_member_funcv`), they are not demangled to human-readable names (e.g., `test_cpp_member_func`). Many functions are reduced to generic addresses like `sub_401020` or `sub_4014c5`, making it impossible to determine their purpose without cross-referencing.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers representing struct offsets and vtable indices (e.g., `24`, `32`, `40`, `8`) without context. While string literals like `"Test"` are recovered, constants like `0x1234` from the source are missing or obscured by pointer arithmetic.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: There is significant noise from compiler-generated thunks (e.g., `non-virtual thunk to MultiDerived::funcB()`) and wrapper functions (e.g., `sub_401020` calling `g_403f48`) that add no value and clutter the output. Many functions are empty (`return;`), which acts as confusing noise rather than clean code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is highly unnatural. Virtual function calls are represented as raw indirect jumps: `goto *((long long *)*((long long *)&arg_0));`. Exception handling is reduced to confusing `if (v3 == 1)` blocks checking unwind state, completely losing the `try/catch` structure.
+
+**6. Function Decomposition:** Score: 2/10
+Justification: The decompiler failed to recover the bodies of most test functions (e.g., `test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_smart_ptr` are all just `return;`). This represents a catastrophic failure in decomposition, rendering the logic invisible.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code is difficult to read linearly due to the prevalence of `goto` statements for control flow and the abrupt termination of empty functions. The logic that does exist (e.g., in `test_cpp_rtti`) jumps around without clear structure.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: While some redundancy is expected, the presence of multiple "thunk" functions that simply adjust `this` pointers and jump could be better abstracted or annotated. The empty functions act as redundant placeholders that provide no information.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded. Class objects are treated as generic `void*` or `unsigned long long`. For example, `Base *arg_0` is present, but member access is done via raw pointer arithmetic (e.g., `*(int *)(8 + (char *)v1 + ...)`) rather than field names.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs and classes are not recovered. `SimpleClass`, `Container`, and `Point` are absent. Instead, the decompiler uses raw offsets like `ptr[40]` or `ptr[80]` to access members, completely losing the object-oriented structure.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts and pointer arithmetic. For instance, casting `char*` to `long long*` to access vtables or data members is prevalent. There is no distinction between `int` and `size_t` where it matters (e.g., array indices).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, the C++ constructs used (like vtables or RTTI), or the purpose of the magic numbers. The decompiler provides no semantic context.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms are not recognized. Virtual dispatch is a `goto *ptr`. RAII/smart pointers are invisible. Templates are just function instances. The code looks like generic assembly rather than C++.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents empty functions and raw pointer arithmetic with high confidence, offering no warning that the logic might be missing or that the types are unknown. It fails to flag the `goto *((long long *)...)` as a specific virtual call pattern.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions (e.g., array bounds checks in `Container::get` are reduced to `if (arg_0 < 0) return;` without explanation) or invariants.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While mangled names allow tracing symbols, the lack of demangled names and the failure to recover class hierarchies make understanding relationships (like inheritance between `Base` and `Derived`) very difficult.
+
+**17. Module Organization:** Score: 4/10
+Justification: The output is a flat list of functions. There is no logical grouping by class or functionality (e.g., all `Container` methods are scattered). The separation between implementation and thunks is not handled gracefully.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code would not compile. It relies on undefined types (`struct_0`), missing headers, and uses compiler-specific intrinsics (`__cxa_*`) without proper declarations or context.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.6/10
+
+**Critical Defects:**
+- **Logic Loss**: The majority of test functions (`test_cpp_constructor`, `test_cpp_virtual_func`, etc.) are decompiled as empty `return;` statements, completely erasing the source logic.
+- **Missing Type Recovery**: Class definitions (`SimpleClass`, `Container`, `Point`) are entirely absent, replaced by raw pointer arithmetic on `void*`.
+- **Control Flow Obfuscation**: Virtual function calls are represented as dangerous indirect jumps (`goto *((long long *)...)`) rather than method calls.
+- **Naming Failure**: Function names remain mangled (e.g., `_Z20test_cpp_member_funcv`) or are generic addresses (`sub_401020`), significantly hindering navigation.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 4/10)
+- **Why?** While poor, the presence of mangled names allows a determined analyst to deduce the original function names using `c++filt`, whereas other aspects like type recovery and logic are completely absent.
+
+**Most Needs Improvement:** Function Decomposition (Score: 2/10)
+- **Why?** The failure to recover the body of the functions is the most critical issue; without the function logic, the decompilation is effectively useless for understanding the program's behavior.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve CFG Recovery**: Investigate why function bodies are being reduced to `return;` and fix the control flow graph reconstruction to capture the actual instructions.
+2.  **Implement C++ Class Recovery**: Develop heuristics to reconstruct class definitions from vtable usage and constructor/destructor patterns, replacing raw offsets with struct fields.
+3.  **Demangle Symbols**: Automatically demangle C++ symbols in the decompilation view to provide human-readable function and variable names.
+4.  **Pattern Matching for Virtual Calls**: Detect the `vtable[offset]` pattern and replace the indirect `goto` with a pseudo-function call syntax (e.g., `this->vfunc(arg)`).

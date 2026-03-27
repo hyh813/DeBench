@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `a1`, `result`), obscuring data flow. While `obj` is correctly named in `test_cpp_member_func`, parameters like `a2` and `a3` in `_ZN11SimpleClassC2EiPKc` give no hint that they represent `value` and `name`.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: The code uses mangled C++ symbols (e.g., `_ZN11SimpleClassC2EiPKc`), which are unreadable. However, the decompiler provides demangled names in comments (e.g., `// Demangled: SimpleClass::SimpleClass(int, char const*)`), which salvages some readability, though the code itself remains noisy.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Struct member offsets appear as magic numbers (e.g., `a2 + 4`, `a2 + 35` in `SimpleClass` constructor) instead of field names. While constants like `0x1234` are recognizable, the lack of named constants for buffer sizes or member offsets forces manual calculation.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output is cluttered with low-level implementation details of C++ standard library templates (e.g., `_ZNSt15__uniq_ptr_impl...`, `_ZNSt5tuple...`). This expansion of `std::unique_ptr` and `std::tuple` internals creates significant noise that buries the high-level logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally natural and linear, consistent with `-O0` compilation. Loops (e.g., in `LifecycleClass` constructor) and conditionals are recognizable, though some `if` blocks checking for null pointers are verbose.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While user-defined functions are distinct, the decompiler fails to abstract template instantiations. The result is a fragmented list of low-level functions (e.g., multiple `_Tuple_impl` and `_Head_base` functions) rather than a cohesive representation of the `unique_ptr` logic.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads top-to-bottom with minimal jumps or spaghetti logic, which is expected for unoptimized code. Execution paths are easy to trace within individual functions.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: There is no loop unrolling or optimization redundancy, but the lack of struct recovery leads to repetitive pointer arithmetic. Accessing multiple members of a class results in repeated casts and offset additions (e.g., `*(int32_t *)(a2 + 4)`), which is logically redundant.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are heavily degraded; most data is `int32_t` or `int32_t *`. Specific types like `size_t` or `unsigned int` are lost. Notably, the code uses 32-bit pointers (`int32_t *`), contradicting the metadata which claims "ARM64" (64-bit), indicating a failure to correctly recover the target architecture's type widths.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: There is a complete failure to recover composite types. Classes like `SimpleClass` or `Container` are not defined; instead, their members are accessed via raw pointer arithmetic (e.g., `*(int32_t *)(result + 40)` for `size` in `Container`), destroying the object-oriented structure.
+
+**11. Type Safety:** Score: 5/10
+Justification: The reliance on `int32_t` for pointers and the absence of struct types result in code that looks unsafe, with frequent casts and pointer math. While this accurately reflects the binary's low-level operations, it fails to convey the type safety inherent in the original C++ source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 9/10
+Justification: The inclusion of demangled function names and source line ranges (e.g., `// Line range: 41 - 49`) is excellent. These comments are the primary key to understanding the code, effectively bridging the gap between the mangled binary symbols and the original source.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level C++ idioms are obscured. RAII is visible only as explicit constructor/destructor calls, and Smart Pointers are lost in a sea of internal implementation details (`__uniq_ptr_impl`, `tuple`). The code reads like C rather than C++.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: No explicit anomalies or "uncertain" markers are present in the code. The decompiler presents the low-level expansion of templates confidently, even though this representation is functionally opaque to a human reader.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented. Logic that checks for null pointers or array bounds is present as raw `if` statements but is not abstracted into logical contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear, but virtual function calls are represented as indirect calls through vtables (e.g., `*(int32_t *)a2`), requiring manual tracing to identify the actual target function. The relationship between a class and its methods is lost without struct recovery.
+
+**17. Module Organization:** Score: 4/10
+Justification: The output is a flat list of functions ordered by address, mixing user code, standard library internals, and compiler runtime support. There is no logical grouping or namespace structure to reflect the original source organization.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: While the code includes necessary headers and prototypes, the complete absence of struct definitions and the use of generic `int32_t` types make it impossible to compile as a standalone replacement for the original source without significant manual reconstruction.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 6 + 5 + 4) / 4 = 4.5
+L2_avg: (7 + 5 + 8 + 6) / 4 = 6.5
+L3_avg: (4 + 2 + 5) / 3 = 3.67
+L4_avg: (9 + 3 + 5 + 2) / 4 = 4.75
+L5_avg: (6 + 4 + 3) / 3 = 4.33
+
+Overall = (4.5 × 0.30) + (6.5 × 0.25) + (3.67 × 0.20) + 
+          (4.75 × 0.15) + (4.33 × 0.10)
+Overall = 1.35 + 1.625 + 0.734 + 0.7125 + 0.433
+Overall ≈ 4.85
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.9/10
+
+### Critical Defects (Bullet Points)
+- **Composite Type Recovery Failure**: Classes and structs are completely missing; members are accessed via raw pointer offsets (e.g., `a2 + 4`), destroying the object-oriented context.
+- **Standard Library Expansion**: Templates like `std::unique_ptr` and `std::tuple` are fully expanded into hundreds of lines of internal implementation functions, creating massive noise.
+- **Architecture Mismatch**: Metadata claims ARM64, but the decompiled code uses 32-bit pointers (`int32_t *`) and x86-specific thunks (`__x86_get_pc_thunk_bx`), leading to incorrect type precision.
+- **Generic Variable Naming**: Parameters and locals are named `v1`, `a1`, `result`, etc., making it nearly impossible to track data flow without cross-referencing the original source.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Comment Quality & Presence (9/10)
+- **Why?** The demangled function names and source line number comments are the only features that reliably map the low-level binary back to the high-level C++ source.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Composite Type Recovery (2/10)
+- **Why?** The inability to reconstruct `struct` or `class` definitions reduces complex C++ objects to raw memory offsets, making the code significantly harder to read than necessary.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Implement C++ Class/Struct Recovery**: Reconstruct class definitions with field names and types instead of emitting raw pointer arithmetic (e.g., `obj.value` instead of `*(int32_t *)(obj + 0)`).
+2.  **Recognize and Collapse Standard Library Patterns**: Identify common STL implementations (like `std::unique_ptr` or `std::vector`) and represent them as high-level objects rather than expanding their internal template machinery.
+3.  **Improve Variable Naming Inference**: Use type information and context to infer parameter names (e.g., naming a pointer `this` or naming a size argument `size`) rather than defaulting to `a1`, `a2`.

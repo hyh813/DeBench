@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Most variables use generic names like `v1`, `v2`, `v3`, or `a1` (e.g., in `heap_basic` and `local_array`). While `ptr` and `result` appear occasionally, the lack of semantic names like `arr`, `i`, or `n` significantly hinders understanding.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: High-level logic functions like `double_value`, `local_vars`, and `heap_basic` retain their names, likely due to symbol preservation. However, many functions are reduced to generic names like `sub_1030` (PLT thunks) or `sub_1140`, and the logic inside `test_stack_memory` is heavily obfuscated by inlining.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers are prevalent; for example, `vla_stack` uses `0x3E7` (999) instead of the clearer `1000 - 1` or `MAX_SIZE`. While some constants like `0x14` (20) are recognizable, the preference for hex over decimal obscures the logic in many places.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: The code is polluted with compiler artifacts, specifically stack canary checks using `__readgsdword(0x14u)` in almost every function with local arrays. Additionally, macros like `LODWORD` and `HIDWORD` (e.g., in `large_stack_frame`) add unnecessary complexity to the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally readable, using `do-while` loops for array iterations (e.g., `local_array`) and standard `if/else` blocks. However, the `do-while` implementation with pointer arithmetic (`v1 != (int *)&v5`) is less idiomatic than the original `for` loop.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Due to compiler optimizations (constant propagation), functions like `test_stack_memory` contain hardcoded results (e.g., `20`, `15`) instead of calls to logic functions, breaking the modular structure of the original source. The decompiler presents the optimized binary's monolithic flow rather than the source's logical separation.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code reads mostly top-to-bottom with clear execution paths. There are no confusing `goto` chains or computed jumps interrupting the flow within the user-defined functions.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: The decompiler accurately reflects the optimized binary, removing dead stores and redundant assignments present in unoptimized builds. The logic is concise, even if it differs from the source structure.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are often imprecise or platform-specific. The decompiler uses Windows-specific types like `_DWORD` and `__int64` instead of standard C types (`int`, `int64_t`). For instance, `large_stack_frame` returns `__int64` while the source specifies `int`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Complex types like `Node` and `TreeNode` are successfully recovered and used. However, simpler structs like `Point` are completely lost; `local_struct` is decompiled to `return 3 * x`, and `heap_struct` loses the struct fields, treating the memory as raw bytes.
+
+**11. Type Safety:** Score: 4/10  
+Justification: The code contains numerous unsafe casts and pointer arithmetic. Examples include `*(_DWORD *)&v5[v1]` in `vla_stack` and `*(_DWORD *)bcopy_src = 67305985` in `test_memory_op_functions`, which bypass type safety and obscure the original data layout.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are virtually absent. The only comment is a warning about stack pointer detection (`// positive sp value has been detected...`). There are no comments explaining the logic, parameters, or the purpose of complex operations like the stack canary checks.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library calls (`malloc`, `free`, `fork`) are recognized. However, specific memory idioms like VLA (Variable Length Array) allocation are represented as messy `alloca` arithmetic with alignment checks rather than the clean C syntax `int vla[n]`.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Aside from the stack pointer warning, the decompiler presents potentially unsafe or optimized code (like the hardcoded values in `test_stack_memory`) without flagging them as anomalies or optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: Preconditions (e.g., `if (!ptr) return -1`) are visible in the code, but they are not explicitly documented as contracts. The semantic intent (e.g., "requires non-null pointer") is lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls to other defined functions (e.g., `local_array` called from `test_stack_memory`) are clear. However, calls to `sub_1030` (PLT thunk) obscure the actual target of external library calls.
+
+**17. Module Organization:** Score: 5/10  
+Justification: The output is a flat list of functions. While the order roughly follows the binary, there is no logical grouping or indication of which functions belong to which "test" module (e.g., Stack vs. Heap memory tests) as seen in the source.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code relies heavily on non-standard compiler intrinsics and macros (`__readgsdword`, `LODWORD`, `HIDWORD`, `_UNKNOWN`). It would not compile on a standard Linux/GCC environment without significant modification to replace these with standard C equivalents.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 5 + 5 + 3) / 4 = 4.0
+L2_avg: (7 + 4 + 8 + 8) / 4 = 6.75
+L3_avg: (5 + 5 + 4) / 3 = 4.67
+L4_avg: (2 + 6 + 3 + 4) / 4 = 3.75
+L5_avg: (7 + 5 + 2) / 3 = 4.67
+
+Overall = (4.0 × 0.30) + (6.75 × 0.25) + (4.67 × 0.20) + 
+          (3.75 × 0.15) + (4.67 × 0.10)
+Overall = 1.2 + 1.6875 + 0.934 + 0.5625 + 0.467
+Overall = 4.85
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.9/10
+
+### Critical Defects (Bullet List)
+- Variable naming is predominantly generic (`v1`, `v2`), obscuring the semantic meaning of parameters and locals.
+- Stack canary checks (`__readgsdword(0x14u)`) are inlined in every function, creating significant noise.
+- Composite types like `Point` are lost/inlined, reducing the code to raw arithmetic (`3 * x`).
+- Non-standard types (`_DWORD`, `__int64`) and intrinsics (`LODWORD`) make the code non-portable.
+- Magic numbers are used in hex format (e.g., `0x3E7`), making boundary checks harder to read.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Code Linearization (8/10)**
+- **Why?** Despite the noise, the execution flow within functions is straightforward, reading top-to-bottom without confusing jumps or spaghetti logic.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Comment Quality & Presence (2/10)**
+- **Why?** The lack of semantic comments or annotations explaining compiler artifacts (like stack canaries) makes it very difficult to distinguish between actual program logic and binary noise.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Abstract Stack Canaries**: Automatically detect and hide stack canary checks (e.g., `__readgsdword`) or move them into a collapsed inline comment to clean up the function body.
+2. **Improve Variable Naming**: Heuristically infer variable names from usage context (e.g., loop counters should be `i`, pointers `ptr`) rather than defaulting to `v1`, `v2`.
+3. **Recover Small Structs**: Attempt to recover small struct types (like `Point`) even if they are optimized out, or at least annotate the arithmetic as "struct access" to preserve semantic intent.

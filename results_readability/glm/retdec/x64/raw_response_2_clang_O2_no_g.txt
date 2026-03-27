@@ -1,0 +1,108 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `v1`, `v2`, `a1`, and `result`, providing no semantic context about their role (e.g., `v1` used for a float value in `process_float`).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Function names like `process_char`, `array_1d_stack`, and `test_data_types_l1` are preserved accurately from the source symbols, making the high-level purpose clear despite the internal mess.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Floating-point constants are represented as raw hex integers (e.g., `0x3fc00000` for 1.5) and used in intrinsics, while string literals are global pointers with UTF-8 hex escapes, obscuring their original meaning.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is heavily polluted with low-level assembly intrinsics like `__asm_paddd`, `__asm_pxor`, and `__asm_movdqu`, which represent machine instructions rather than high-level logic, severely degrading readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Simple loops are transformed into complex vectorized blocks using SIMD intrinsics (e.g., `array_1d_stack` uses `__asm_paddd` for a simple sum), making the control flow unrecognizable compared to the source's `for` loop.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Function boundaries match the source well, likely due to debug symbols, maintaining the original granularity (e.g., `process_int` is a separate function).
+
+**7. Code Linearization:** Score: 4/10
+Justification: The presence of massive blocks of SIMD intrinsics and pointer arithmetic interrupts the top-to-bottom reading flow, requiring the reader to mentally parse assembly-level operations.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: The decompiler appears to have hallucinated or failed to simplify loop unrolling/vectorization, resulting in excessive repetitive intrinsic calls (e.g., 16 lines of `__asm_movdqu` in `array_3d`) where a simple loop existed.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Types are aggressively genericized; `float` and `double` become `int128_t`, `char` becomes `int64_t`, and pointers become `int64_t` or `void*`, losing all type safety and semantic information.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: No struct or union definitions are recovered; access to struct fields is replaced by raw pointer arithmetic (e.g., `*(int32_t *)(a1 + 8)` instead of `p->y`), and bitfields are manually reconstructed using division/modulo.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies on unsafe casts and pointer arithmetic (e.g., casting `int64_t` to `int32_t*`), and the use of `int128_t` for floating-point return values is inherently type-unsafe in C.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or the purpose of the obscure intrinsic operations, leaving the user to guess the intent.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level idioms like bitfields or struct access are completely missed, replaced by low-level bit manipulation and offset calculations that obscure the original design patterns.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the bizarre SIMD intrinsics and architecture mismatches (x86 intrinsics on ARM64 code) with absolute confidence, offering no warnings about potential decompilation errors.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the non-null requirement for pointers in `ptr_single` is not indicated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: While function calls are visible, the severe type corruption (e.g., passing `int64_t` instead of `char*`) makes understanding the data flow between functions difficult.
+
+**17. Module Organization:** Score: 6/10
+Justification: The order of functions roughly follows the source file, and related test functions are grouped together, providing a basic sense of organization.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code uses non-standard `__asm_...` intrinsics that are not valid standard C and likely won't compile without a specific, non-existent runtime library or compiler extension.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 8 + 3 + 1) / 4 = 3.5
+L2_avg: (3 + 7 + 4 + 2) / 4 = 4.0
+L3_avg: (2 + 1 + 3) / 3 = 2.0
+L4_avg: (1 + 2 + 1 + 1) / 4 = 1.25
+L5_avg: (5 + 6 + 1) / 3 = 4.0
+
+Overall = (3.5 × 0.30) + (4.0 × 0.25) + (2.0 × 0.20) + (1.25 × 0.15) + (4.0 × 0.10)
+Overall = 1.05 + 1.00 + 0.40 + 0.1875 + 0.40
+Overall = 3.04 / 10
+```
+
+### Overall Readability Score: **3.0/10**
+
+### Critical Defects
+- **Intrinsic Pollution**: The code is littered with x86 SIMD intrinsics (e.g., `__asm_paddd`) despite the target architecture being ARM64 and the source being simple scalar C.
+- **Type Erasure**: All specific types (`float`, `struct`, `char`) are replaced by generic `int64_t` or `int128_t`, destroying semantic meaning.
+- **Lost Composite Types**: Structs and unions are not defined; fields are accessed via raw pointer offsets (e.g., `a1 + 8`), making data structures unreadable.
+- **Literal Obfuscation**: Floating-point constants are represented as raw hex integers (e.g., `0x3fc00000`), hiding their mathematical value.
+
+### Best Quality Aspect
+- **Function Naming (Score: 8/10)**: The decompiler successfully preserved the original function names from the debug symbols, allowing the reader to identify the high-level purpose of each block despite the poor internal code quality.
+
+### Most Needs Improvement
+- **Noise Reduction (Score: 1/10)**: The failure to abstract low-level assembly instructions into high-level C operators is the single biggest barrier to readability, turning simple arithmetic into unintelligible intrinsic calls.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Intrinsic-to-Scalar Translation**: Implement a pass to convert scalar SIMD operations (like adding a single value) back into standard C arithmetic operators (`+`, `-`, `*`) instead of emitting `__asm_...` intrinsics.
+2.  **Struct Recovery Heuristics**: Analyze stack access patterns (e.g., consistent offsets like `+0`, `+4`, `+8`) to reconstruct `struct` definitions with named fields rather than emitting raw pointer arithmetic.
+3.  **Type Inference for Literals**: Improve constant propagation to recognize floating-point hex literals and convert them back to standard decimal floating-point notation (e.g., `1.5f`) for better readability.

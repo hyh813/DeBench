@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v1`, `v2`, `v3`, `v4` with no semantic meaning. In `cdecl_func`, variable `v1` should be named `a` or `b` based on the source `int a, int b`. The decompiler provides no meaningful variable names throughout.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions like `cdecl_func`, `call_cdecl`, `varargs_func` are correctly named matching source. However, utility functions use mechanical names like `function_149c`, `function_1a54`, `function_6f0` (which is memcpy). Mixed result between semantic and address-based naming.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals contain unreadable UTF-8 escape sequences (e.g., `\xe6\xb5\x8b\xe8\xaf\x95` = "测试"). Global variable addresses like `0x12fd0`, `0x40091eb851eb851f` appear as magic numbers. Some constants like `42` are clear, but most lack explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution includes: address comments on every line (`// 0x894`), excessive redundant casts (`(int64_t)`, `(int32_t)` everywhere), and repeated masking operations (`& 0xffffffff`). The code is cluttered with compiler artifacts that obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow generally matches source. Loops and conditionals are recognizable. However, `varargs_func` and `param_varargs` use goto-based state machines instead of clean while loops with va_list, which is an artifact of decompilation difficulty with ARM64 varargs.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries closely match source. Functions like `test_calling_conventions` (130+ lines) are large but cohesive. No over-fragmentation or outline artifacts. Good recovery of the original function structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but varargs functions use complex goto-based state machines with multiple labels (`lab_0xc74`, `lab_0xcc4`, `lab_0xcd8`) that disrupt linear flow. Forward jumps interrupt readability significantly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant expressions present (e.g., repeated `& 0xffffffff` masks). Loop constructs are reasonably clean. Not severe, but moderate redundancy from optimization recovery.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses fixed-width types (`int64_t`, `int32_t`) appropriately, but all functions return `int64_t` when source uses `int`. Pointers are represented as `int64_t` instead of proper pointer types (e.g., `int*`). Type precision is degraded.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. All structures accessed via raw pointer arithmetic: `*(int32_t *)(v2 + 4)` instead of `p->y`, `*(int32_t *)(4 * i + v1)` instead of `s.data[i]`. The 128-byte LargeStruct is passed by value but never recovered as a type.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts throughout: `(int32_t*)v2`, `(char*)str`, `(void*)&g4`. Pointer arithmetic without bounds checking (e.g., `8 * i + v1`). Function pointers treated as integers. Significant type safety violations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address comments present (`// 0x894`, `// 0x8b4`). No algorithm explanations, no decompilation confidence indicators, no API contracts. Auto-generated noise dominates; no useful content.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The calling convention tests (cdecl, stdcall, fastcall) are not recognized as such. The varargs pattern is not identified as stdarg usage. No pattern naming.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. Indirect calls not resolved. No warnings about potential undefined behavior (e.g., the `param_order_dep` with undefined behavior). Silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition documentation. No invariant recognition. The `func_struct_byptr` null check (`if (!p) return -1`) is not documented. No contract information recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes at top show relationships. Global variables declared. But no comments about call graphs, callback relationships, or usage patterns. Some structure but limited context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (calling conventions, parameter passing, return values). Standard library functions identified separately. However, arbitrary ordering and some misplacements.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has includes (`<stdio.h>`, `<string.h>`) but many functions lack proper prototypes. Uses `int64_t` for all return types making compilation questionable. Some stubs needed for full compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming: All variables use generic `v1`, `v2`, `v3` with no semantic meaning - should infer names from usage like `a`, `b`, `count`, `sum`
+- No struct recovery: All composite types lost; `LargeStruct`, `SmallStruct` accessed via raw pointer arithmetic instead of struct field access
+- Excessive noise: Address comments on every line, redundant casts, and masking operations clutter code
+- No type safety: Unsafe casts everywhere, pointers as integers, no bounds checking
+- No comments: Only address annotations, no algorithm explanation or decompilation confidence
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+- Function boundaries closely match original source; good cohesion and appropriate granularity
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- All variables use generic numbered names with no semantic meaning, making code nearly impossible to follow
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns: `v1` used in `a + b` should be `a`/`b`, loop counter `v1 < 16` should be `i`, accumulator `result +=` should be `sum`
+2. Recover struct types from memory access patterns: `*(int32_t*)(ptr + 4)` strongly suggests struct field access; group into struct definition
+3. Remove noise artifacts: Eliminate per-line address comments, reduce redundant casts, add `// DECOMPILER: varargs handling` comments for complex state machines

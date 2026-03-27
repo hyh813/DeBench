@@ -1,0 +1,91 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` instead of semantic names like `a`, `b`. Local variables are `v0`, `v1`, `v2` etc. For example, `cdecl_func(unsigned int a0, unsigned int a1)` should be `cdecl_func(int a, int b)` based on source. The naming provides no semantic context.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions like `cdecl_func`, `stdcall_func`, `varargs_func`, `test_calling_conventions` correctly match source names. However, many utility functions use mechanical names like `sub_401030`, `sub_401040`. Mixed result - core test functions well-named but infrastructure functions are opaque.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (representing -1 as unsigned) appear without explanation. String format specifiers like `"CALL-L1-01: %d\n"` are preserved through external references. However, numeric constants like the `100` seed in `ret_large_struct` lack semantic naming.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe pollution from: (1) `__x86.get_pc_thunk.ax()` calls in nearly every function, (2) stack canary checks using `_ccall()` pattern, (3) VEX IR artifacts like `[D] unsupported_<class 'pyvex.expr.GetI'>()` scattered throughout, (4) `__stack_chk_fail_local()` boilerplate. These artifacts dominate the code readability.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is natural - loops use `for` constructs, conditionals use `if`. However, some issues: `param_double_ptr` uses `*(ptr)->field_0` instead of `(**ptr).field_0`, and `ret_multi_branch` uses confusing chained conditionals instead of switch. At -O0, more natural flow expected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-50 lines typical). Core test functions like `test_calling_conventions` properly call sub-functions. No monolithic functions observed. Minor issue: some static helper functions could be better grouped.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Early returns present in functions like `func_struct_byptr`. Some forward jumps in complex functions like `func_mixed_args` but manageable. No severe flow disruption.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling in `test_calling_conventions` for LargeStruct initialization but it's the compiler's -O0 behavior. Overall clean.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Parameters typed as `unsigned int` when source uses `int`. Function pointers like `param_func_ptr` use `unsigned int *a0` instead of proper function pointer type. `call_string_param` passes string literal but type shows as `char *`. Significant type erosion compared to source.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery attempted (e.g., `struct_0` with `field_0`, `field_c`, `field_10` etc.) but field names are generic. LargeStruct and SmallStruct from source not recovered - shown as raw arrays. The `param_double_ptr` shows typedef but field is generic `field_0`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: (1) `param_func_ptr` calls `a0(a1)` treating unsigned int* as function pointer, (2) `call_ptr_array` uses `*((char *)*((int *)(a0 + i * 4)))` with unsafe casts, (3) `ret_pointer` returns `a0 + 4` treating pointer as int. These could cause undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated function signatures present. No explanation of algorithm intent, no decompilation confidence indicators, no @param/@return documentation. The source had extensive comments explaining calling conventions that are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The calling convention tests (cdecl, stdcall, fastcall) are not labeled as such. Varargs usage not recognized as stdarg pattern. The test structure (calling convention verification) not documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers do indicate decompilation problems, but they're cryptic VEX IR notation rather than human-readable explanations. No indication of why certain constructs couldn't be resolved or confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `func_struct_byptr` that have implicit NULL checks don't indicate this. The source's error handling patterns not recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships visible through direct calls. However, no documentation of who calls whom, no callback relationships explained. The `callback_func` → `param_func_ptr` → `call_func_ptr_param` chain not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Some logical grouping by test category (calling conventions, parameter passing, return values) but not explicitly marked. Static functions not properly scoped with comment.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has `extern` declarations for global variables (`g_403008`, etc.) but these aren't defined. Stack protection functions like `__stack_chk_fail_local` need linking. Would require moderate patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming uses generic `a0`, `a1`, `v0`, `v1` instead of semantic names from source (`a`, `b`, `count`, `sum`)
+- Severe noise from `__x86.get_pc_thunk.ax()` calls and VEX IR artifacts (`[D] unsupported_<class 'pyvex.expr.GetI'>()`)
+- Type precision lost - all parameters as `unsigned int` instead of proper types (`int`, `char*`, `double`)
+- No comments explaining calling convention tests, parameter passing patterns, or algorithm intent
+- Function pointer calls use unsafe patterns like `a0(a1)` without proper type recovery
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Functions are appropriately sized with good separation between test functions and core logic. Core test functions like `test_calling_conventions` properly invoke sub-functions.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Generic parameter names (`a0-a7`) and local variables (`v0-v17`) provide no semantic context. At -O0, the decompiler should be able to infer meaningful names from usage patterns.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage: `a0 + a1` in `cdecl_func` suggests parameters should be named `a` and `b`
+2. Remove or abstract `__x86.get_pc_thunk.ax()` calls - these are compiler boilerplate, not user code
+3. Recover proper function pointer types instead of treating them as `unsigned int*` - `param_func_ptr` should show `int (*callback)(int)`
+4. Add comments explaining calling convention tests - the source explicitly tests cdecl/stdcall/fastcall which is lost
+5. Replace magic numbers like `4294967295` with named constants or comments explaining they represent -1

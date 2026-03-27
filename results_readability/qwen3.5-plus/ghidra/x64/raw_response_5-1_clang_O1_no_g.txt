@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`local_24`, `puVar1`, `iVar1`, `uVar2`, `lVar7`) with no semantic meaning. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names preserved well (`test_cpp_member_func`, `test_cpp_constructor`), and class methods recovered (`Base::virtual_func`, `Container<int>::push`). However, helper functions use generic names (`FUN_00102020`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x125c`, `0x15`, `0x27`, `0x2bf`). String literals referenced as `DAT_001031e1` instead of inline. Original constants like `0x1234` for class ID lost.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler initialization artifacts present (`_init`, `_start`, `deregister_tm_clones`, `__do_global_dtors_aux`). Warning comments about unreachable blocks add noise. 83 functions decompiled for ~15 original test functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most test functions have linear flow, but `test_cpp_exception` doesn't return properly (WARNING: Subroutine does not return). Some functions constant-folded to single returns losing original logic structure.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Class methods properly separated, but `test_cpp_oo_features` is monolithic (200+ lines) duplicating individual test logic. Template instantiations recovered as separate functions (good), but lambda closures not recovered.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but unusual stack variable patterns disrupt flow (`uStack_44`, `auStack_40[0]`, `local_48` used inconsistently). Some functions have forward references to data sections.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `test_cpp_oo_features` duplicates all individual test function logic instead of calling them. Constant-folded functions (`test_cpp_operator_overload` returns `0x16`) coexist with full implementations, creating confusion.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined4`, `undefined8`, `void*` replace proper C++ types. `test_cpp_operator_overload` returns `undefined8` instead of `int`. Const-correctness lost (`const` methods not marked).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Class structures NOT reconstructed as structs. Object access via pointer arithmetic (`this + 8`, `this + 0x28`, `this + 0x50`). Original `char name[32]`, `int* data`, `size_t size` fields lost entirely.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(undefined4*)`, `(undefined**)`, `(long*)`). Virtual calls use raw pointer dereferencing (`(*(code *)**(undefined8 **)param_1)()`). No type safety annotations recovered.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Auto-generated Ghidra comments only (function signatures, warnings). No semantic explanations. Original source had extensive comments explaining C++ features, test expectations, and scene context—all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ idioms not recognized: vtable calls appear as raw pointer dereferences, RAII patterns invisible, template instantiations not labeled as templates. Lambda closures completely absent from output.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Unknown calling convention", "Removing unreachable block", "Subroutine does not return"). However, critical issues like exception handling breakdown and missing lambda recovery not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts (`throw`, `catch`) not recovered properly. Original test expectations (e.g., "期望: 4704") completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible, but virtual dispatch relationships unclear. Inheritance hierarchies not documented (no indication that `Derived` extends `Base`). Static member `instance_count` referenced but not declared.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 83 functions in single output without logical grouping. Runtime initialization functions mixed with test functions. No namespace or class grouping in output structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone—missing type definitions, external dependencies (`operator_new__`, `__cxa_throw`, `std::ios_base::Init`), and header includes. Requires significant manual reconstruction.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.666
+Level 4 (Semantic):    (4+3+5+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.39/10
+```
+
+### Overall Readability Score: **4.4/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`local_24`, `puVar1`, `iVar1`) losing all semantic meaning from original source
+- **Class structures not recovered**—object fields accessed via pointer arithmetic (`this + 0x28`) instead of named struct fields
+- **Exception handling broken**—`test_cpp_exception` doesn't return properly, catch blocks not recovered
+- **Lambda expressions completely missing**—`test_cpp_lambda` constant-folded to `return 0x55` with no closure logic
+- **Type system severely degraded**—`undefined4`, `undefined8` replace proper C++ types, const-correctness lost
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Test function names and class method names were successfully recovered from debug symbols, preserving semantic identity of most functions.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- No preconditions, postconditions, exception contracts, or test expectations documented—critical for understanding C++ behavior and debugging.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover class/struct layouts from vtable and field access patterns**—convert `this + 0x28` to named field access like `this->size`
+2. **Detect and reconstruct C++ exception handling patterns**—identify `__cxa_throw`/`__cxa_begin_catch` sequences and recover try-catch blocks
+3. **Infer variable names from usage context and debug symbols**—map `local_24` to `name` based on `strncpy` usage pattern and available symbol information

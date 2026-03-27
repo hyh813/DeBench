@@ -1,0 +1,105 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+### Overview
+
+The original source implements "fake branches" (永假条件) - always-false conditionals that should execute at -O0 but may be optimized away at higher optimization levels. The critical finding is a **compilation mismatch**: the source was written for `-O0` but the binary appears compiled with `-O3` (note the path `7_gcc_O3_no_g`), causing the fake branches to be completely eliminated.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: The parameter is named `a1`, a generic register-assigned name. While the function has no local variables (they were optimized away), the parameter should be named `x` to match source. The generic name obscures that it represents the original function's input parameter.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function is correctly named `param_fake_branch`, exactly matching the original source. The naming is semantically accurate and uses the appropriate action verb "param" indicating a parameter transformation function.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No literals present in this simplified function - the fake branch literals (0xDEADBEEF, 1000) were optimized away. This is appropriate for the decompiled output.
+
+**4. Noise Reduction:** Score: 10/10  
+Justification: The function is extremely clean - no compiler artifacts, no redundant casts, no debug instrumentation. The `__fastcall` calling convention annotation is appropriate for the architecture.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10  
+Justification: The control flow is trivially natural - a simple return statement. However, this represents a **critical semantic loss**: the original had two fake branches that are now completely absent. At -O0, these should be present.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The function is appropriately granular - a single, focused function with clear single responsibility. No over-fragmentation or inlining issues.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Perfectly linear code - reads top-to-bottom with no jumps, branches, or disruption to flow.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundancy present. The code is a single return statement.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Two type precision issues: (1) parameter is `unsigned int a1` but original was `signed int x`; (2) return type is `__int64` but original was `int`. The unsigned conversion is particularly problematic as it changes the semantics of any arithmetic operations (though none remain here).
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: N/A - no composite types (structs/unions) in this function. Appropriately scored.
+
+**11. Type Safety:** Score: 8/10  
+Justification: The implicit conversion from `unsigned int` to `__int64` is safe but the signed/unsigned mismatch in the parameter type could cause issues if this function were analyzed in context. No unsafe pointer operations present.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the function. The decompiler should have noted: "Fake branches optimized away - original had two always-false conditionals (x*x<0 and strlen(str)<0)". This is a critical semantic loss that requires documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The decompiler did not recognize or indicate that this represents an "opaque predicate" or "fake branch" obfuscation pattern. The function's purpose as an obfuscation test case is completely lost.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication. The decompiler should have flagged: "WARNING: Function body simplified - fake branches (OBF-L4-02) not present in binary. Binary may have been compiled with optimization higher than source metadata indicates (-O0)."
+
+**15. Assertion & Contract Recovery:** Score: 10/10  
+Justification: N/A - no explicit contracts or assertions in original source to recover.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 10/10  
+Justification: The function is correctly identified as being called by `call_fake_branch()`. The call relationship is clear.
+
+**17. Module Organization:** Score: 10/10  
+Justification: Functions are appropriately grouped in the decompiled output with related functions near each other.
+
+**18. Build System Compatibility:** Score: 10/10  
+Justification: The function would compile cleanly as standalone C code with minimal stubs for external dependencies.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.2/10
+
+**Critical Defects:**
+- **Fake branches eliminated**: The two fake branches (`x*x < 0` and `strlen(str) < 0`) are completely absent - this is the core semantic loss. The binary was compiled with -O3 (evident from path) not -O0 as stated in metadata.
+- **Type mismatch**: Parameter is `unsigned int` but original was `signed int` - changes semantics
+- **No anomaly flagging**: Decompiler should have indicated that function body was simplified/optimized
+- **No pattern recognition**: The "fake branch" obfuscation pattern (OBF-L4-02) is not identified
+- **Parameter naming**: Generic `a1` instead of semantic `x`
+
+**Best Quality Aspect:** Structural Intelligibility (scored 10/10)  
+The control flow is perfectly natural and linear - the decompiled code reads cleanly top-to-bottom with no goto abuse or confusing jumps.
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.5/10)  
+The decompiler failed to communicate that the fake branches were optimized away. This is a critical semantic loss - the function's purpose as an obfuscation test case is completely obscured. Without comments or anomaly indicators, an analyst would have no idea this was meant to contain fake branches.
+
+**Top 3 Recommendations:**
+1. **Detect optimization artifacts**: When function body is trivially simplified, flag "ANOMALY: Function body may have been optimized - compare with source compiled at -O0"
+2. **Recover parameter names**: Use call site analysis to infer parameter names (e.g., `call_fake_branch` passes literal 10, suggesting parameter is "x")
+3. **Pattern recognition**: Identify obfuscation patterns like fake branches, opaque predicates, and flag them with the source classification (OBF-L4-02)

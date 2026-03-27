@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`iVar1`, `param_1`, `piVar2`) despite debug symbols being present (indicated by "Unresolved local var" comments). The decompiler failed to map meaningful names like `sum`, `count`, or `i` to the optimized register usage.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are recovered perfectly from symbols (e.g., `sequential_ops`, `duffs_device`, `state_machine`). The names accurately reflect the source's intent and use appropriate verbs.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are often presented in hex (e.g., `0x14` for 20, `0x3e9` for 1000) which reduces immediate readability compared to the source's decimal literals. While some constants like `100` are preserved, the mix of hex/decimal without explanation is a hindrance.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The output includes significant noise from runtime library functions (e.g., `__aeabi_idiv`, `__aeabi_idivmod`) and compiler artifacts like `/* WARNING: Removing unreachable block */`. While the user code is clean, the inclusion of ~1000 lines of runtime code dilutes the focus.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While simple flows are readable (e.g., `sequential_ops` is a clean one-liner), complex patterns suffer. `duffs_device` is decompiled into a spaghetti of `goto` labels (`switchD_00010e24_default`), and `recursion_factorial` is transformed into a `do-while` loop, losing the original recursive structure.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: User functions are well-separated and maintain appropriate granularity. However, the inclusion of low-level runtime division functions within the same listing disrupts the logical module boundary of the source file.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code is heavily non-linear due to optimization. `indirect_recursion_a` contains complex `goto` jumps and `do-while` loops that obscure the original simple recursive logic. `duffs_device` is particularly difficult to read linearly.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler accurately reflects the compiler's optimizations. There is no dead code or redundancy in the user logic; expressions like `(a + b) * 2 - c` are concise and efficient.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally correct (`int`, `uint`), but function pointers are sometimes abstracted to `code *` or generic `_func_int_int *` without specific context. The use of `undefined4` in `_start` is standard but imprecise.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Arrays and matrices are recovered well (e.g., `int matrix [3] [4]`, `int arr [5]`). The stack layouts for these structures are accurate, allowing for easy understanding of data access patterns.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic and casts are mostly safe and accurate to the binary. The jump table access `*(int *)(&CSWTCH_56 + op * 4)` is technically a type-punning cast but accurately represents the optimized switch implementation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost entirely auto-generated warnings (e.g., "WARNING: Unknown calling convention"). There are no semantic comments explaining algorithms, preconditions, or the logic behind complex optimizations like Duff's device.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Common idioms like `for` loops are converted to `do-while`, which is standard for optimized code but loses the specific idiom. Duff's device, a specific optimization idiom, is completely obscured rather than recognized or reconstructed.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags issues it cannot resolve, such as "WARNING: Could not recover jumptable" for indirect calls. However, it does not flag the semantic loss of the recursive structure in `recursion_factorial`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No contracts, invariants, or preconditions are recovered. For example, the requirement `n > 0` in `duffs_device` is present as a check, but not explicitly documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls to other user functions (e.g., `double_value`, `triple_value`) are clear. However, calls to runtime support functions like `__aeabi_idiv` are mixed in without distinction, making it hard to separate user logic from system glue.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are generally listed in a logical order, roughly matching the source flow. The separation of helper functions (like `op_add`, `op_sub`) is maintained.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on implicit declarations and specific compiler built-ins (e.g., `LZCOUNT`, `SBORROW4`). It would not compile standalone without significant patching and header inclusion.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- Variable naming is generic (`iVar1`, `param_1`) despite debug info being available in the source, obscuring the logic of loops and accumulators.
+- Duff's device (`duffs_device`) is decompiled into unreadable spaghetti code with `goto` labels, failing to preserve the clever structured fall-through intent.
+- Indirect recursion (`indirect_recursion_a`) is optimized into a complex loop with `goto`, completely losing the semantic clarity of the original recursive algorithm.
+- The output is polluted with runtime library code (`__aeabi_idiv`), making the file unnecessarily large and noisy.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- Ghidra successfully recovered the exact function names from the binary symbols, making it easy to locate specific test cases from the source.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)
+- The lack of semantic comments is critical; complex optimizations like the transformation of recursion to iteration or the structure of jump tables are left unexplained, forcing the user to reverse-engineer the compiler's output.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Heuristic Variable Naming**: Implement type-based and usage-based heuristics to rename generic variables (e.g., `iVar1` used as a counter in a loop should be named `i` or `counter`).
+2.  **Idiom Reconstruction**: Detect and reconstruct specific compiler optimizations or idioms (like Duff's device or tail recursion) back into their canonical source forms or at least annotate them heavily.
+3.  **Runtime Function Filtering**: Provide an option to filter or hide standard library/runtime functions (like `__aeabi_*`) to focus the output strictly on the user's source code.

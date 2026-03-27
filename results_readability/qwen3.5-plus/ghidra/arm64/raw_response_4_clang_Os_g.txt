@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are mostly generic (`iVar1`, `iVar2`, `uVar1`, `local_8`) with frequent "Unresolved local var" annotations. Original source had meaningful names like `count`, `sum`, `args`, `val`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Some internal functions use generic names (`FUN_00100680`, `FUN_001007fc`) but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Hexadecimal magic numbers throughout (`0xf`, `0x32`, `0x2a`, `0x12345678`) instead of decimal. String literals referenced as `DAT_0010157a` instead of inline text, requiring external lookup.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Repeated "WARNING: Unknown calling convention -- yet parameter storage is locked" warnings clutter output. Runtime functions (`_init`, `_start`, `__do_global_dtors_aux`) add noise but don't impede core logic understanding.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures recovered as do-while patterns. Caller functions constant-folded to direct returns (e.g., `call_cdecl()` returns `0xf` instead of calling `cdecl_func(5, 10)`), losing call structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but caller functions lose their calling semantics through constant folding. `test_calling_conventions()` remains monolithic at 100+ lines without sub-function extraction.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Some do-while loops could be cleaner as for loops but no excessive goto usage observed.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding creates redundancy where caller functions just return pre-computed constants. `ret_large_struct()` shows loop unrolling with multiple `iVar` temporaries that could be simplified.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `long`, `longlong`) but some degradation (`size_t` becomes `ulong`). Function pointer type partially recovered as `_func_int_int` instead of proper typedef.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types preserved (`LargeStruct`, `SmallStruct`, `BigStruct`, `LargeData`, `SmallPoint`) with field names intact (`data`, `x`, `y`). Some struct access shows pointer arithmetic (`(long *)((long)s->data + lVar2)`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`void*` to `int*`, `double*` cast from `int*`). Pointer arithmetic visible in struct field access. Null checks preserved but no bounds checking recovery.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated comments present ("WARNING:", "Unresolved local var", DWARF debug info). No semantic comments explaining algorithm purpose or test intentions from original source.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard C idioms preserved (va_list handling, struct access) but no pattern identification. Varargs implementation shows low-level stack manipulation instead of recognizing `va_start/va_arg/va_end` pattern.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly detection with "WARNING: Unknown calling convention" and "Unresolved local var" markers. Some blocks marked as unreachable. Clearly indicates decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No precondition/postcondition documentation recovered. Null checks preserved in code (`if (p != NULL)`) but no explicit contract recovery or parameter validation comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code but no call graph documentation. Global variable references present (`DAT_0010157a`) without clear meaning. Callback relationships not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source but all in single output. Static functions not clearly scoped. No header file separation or API declaration recovery.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies present (`printf`, `strlen`, `memcpy`, `puts`) without declarations. Struct type definitions missing from output. Would require moderate patching and stub creation to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+6+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.266
+Level 4 (Semantic):    (4+5+7+4)/4 = 5.00 × 0.15 = 0.750
+Level 5 (Contextual):  (6+5+5)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.90/10
+```
+
+### Overall Readability Score: **5.9/10**
+
+### Critical Defects:
+- **Variable names completely lost**: `iVar1`, `iVar2`, `local_8` instead of `sum`, `count`, `args` from varargs functions
+- **Constant folding destroys call semantics**: `call_cdecl()` returns `0xf` directly instead of showing `cdecl_func(5, 10)` call
+- **String literals externalized**: `DAT_0010157a` references instead of inline "=== 测试基础调用约定 ===" strings
+- **Varargs implementation opaque**: Complex stack manipulation instead of recognizable `va_start/va_arg/va_end` pattern
+- **No semantic comments**: Original test purpose comments (CALL-L1-01, PARAM-L2-03, etc.) completely absent
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Core function names preserved accurately from source, maintaining semantic identity across decompilation
+
+### Most Needs Improvement: **Variable Naming Quality (4/10)**
+- Generic variable names (`iVar1`, `local_8`) combined with "Unresolved local var" annotations make tracking data flow extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable naming**: Analyze variable usage patterns to infer semantic names (e.g., loop counter variables used with `< count` should be named `i` or `index`)
+2. **Preserve call sites despite constant folding**: Show original call structure even when result is computable, with optional constant annotation
+3. **Recognize standard library patterns**: Detect `va_list` manipulation patterns and recover `va_start/va_arg/va_end` idioms instead of raw stack operations

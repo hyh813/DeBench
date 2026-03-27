@@ -1,0 +1,96 @@
+# Decompilation Readability Assessment
+
+## Metadata Analysis
+
+- **Original Source**: 830 LOC with comprehensive C data type tests
+- **Compiler**: gcc 12.0 for ARM64
+- **Optimization**: Source specifies `-O0`, but binary path indicates `O3` (significant discrepancy)
+- **Decompiler**: Ghidra 12.0
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use highly generic names like `iVar1`, `uVar5`, `piVar2`, `puVar3` throughout. The comment "Unresolved local var: int sum@[???]" appears repeatedly, indicating the decompiler failed to recover semantic variable names like `sum`, `i`, `len` from the original source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match original source exactly (e.g., `process_char`, `array_1d_stack`, `ptr_double`, `struct_simple`). Some internal functions like `FUN_00100620` and `call_weak_fn` are generic but appropriate for runtime boilerplate.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions use literal values like `0xb` (11), `0xf` (15), `0x14` (20) without named constants. However, the logic remains understandable and the patterns are consistent with compile-time evaluation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Moderate noise present including "WARNING: Removing unreachable block" annotations and "Unknown calling convention" notes. However, the core logic is readable without excessive compiler artifacts or spurious casts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: The `array_3d` function (lines 00100a94-00100b8c) shows massive loop unrolling with 60+ manual element accesses, completely obscuring the original triple-nested loop structure. This is characteristic of `-O3` optimization, not `-O0` as stated in metadata, severely impacting readability.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. The `binary_tree` and `binary_tree_sum` are properly separated. Parameter lists are reasonable and don't expose implementation details.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `array_1d_stack`. Some forward jumps exist in the complex array functions but are manageable.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy in `array_3d`, `array_1d_stack`, and `array_vla` functions. The 125-element manual expansion in `array_3d` makes the code practically unusable. Similar issues in `struct_array` and `union_array`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are generally precise - `int`, `char`, `short`, `float`, `double`, `long long` all correctly identified. Function pointers have proper signatures like `_func_int_int *` and `_func_int_int_ptr_char_ptr_ptr *`. Minor generic `void*` usage in places like `opaque_handle_op`.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery - `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`, `Graph`, `Edge`, `Flags` all recovered with correct field names. Nested structures like `(w->style).fill.r` properly handle access chains. Bitfields handled with manual bit manipulation in `struct_bitfields`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with minimal unsafe casts. Some manual type punning in `ptr_cast` and bitfield extraction, but these are legitimate low-level operations. No major buffer overflow risks visible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Mixed comment quality. Useful annotations like "WARNING: Could not recover jumptable" and "Unresolved local var" present. However, no algorithmic explanations or contract documentation. Many auto-generated warnings rather than helpful analysis.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Basic patterns recognized but not named. Linked list traversal in `linked_list` and `doubly_linked_list` shows proper while loops. Tree recursion identified. No explicit pattern naming like "Strategy pattern" or "Visitor pattern."
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Reasonable anomaly detection - "Unknown calling convention" warnings, "Unresolved local var" annotations. However, doesn't explicitly flag the `-O3` vs `-O0` discrepancy or explain the massive loop unrolling as an optimization artifact.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Minimal contract information. No preconditions, postconditions, or invariant documentation. The volatile semantics in `volatile_access` are lost (decompiled to simple `*p + *p`).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear. The main function properly calls `test_data_types_l1()`, `test_array_types()`, etc. However, no explicit documentation of call relationships or global variable usage.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped by type (data types, arrays, pointers, composites). Runtime functions (_init, _start, _fini) appropriately separated. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Several undefined types (`EVP_PKEY_CTX` in _init, `undefined8`, `undefined1`). External dependencies like `puts`, `printf`, `__libc_start_main` are declared. Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- **Severe loop unrolling**: `array_3d` expanded to 60+ lines of manual element access, losing the triple-nested loop structure entirely
+- **Generic variable names**: Variables like `iVar1`, `uVar5`, `piVar3` provide no semantic meaning
+- **Missing variable recovery**: Multiple "Unresolved local var: int sum@[???]" annotations indicate decompiler failed to recover local variables
+- **Optimization mismatch**: Code shows `-O3` characteristics (loop unrolling) but metadata claims `-O0`
+- **No contract documentation**: Preconditions, postconditions, and invariants not recovered
+
+### Best Quality Aspect: Type System Fidelity (8.0/10)
+The decompiler excellently recovered composite types - structs like `Point3D`, `Rect`, `Node`, `Graph` have proper field names and nested access patterns work correctly.
+
+### Most Needs Improvement: Lexical Clarity (5.5/10)
+Variable naming is severely degraded with generic names like `iVar1`, `uVar2` obscuring semantic meaning. Combined with redundancy issues, the code is difficult to follow.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: Analyze how variables are used (arithmetic, indexing, bounds checking) to suggest names like `sum`, `index`, `length`
+2. **Collapse loop unrolling**: Detect when expanded loops represent original loop structures and reconstruct with loops + comments explaining the optimization
+3. **Detect optimization level from binary**: The decompiler should auto-detect optimization level and annotate accordingly (e.g., "// Loop unrolled by compiler")

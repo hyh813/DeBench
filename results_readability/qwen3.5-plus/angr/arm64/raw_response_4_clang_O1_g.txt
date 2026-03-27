@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`a0`, `a1`, `v0`, `v1`, `v21`, `v22`) with no semantic meaning. Only occasional names like `idx`, `ptr`, `result`, `len` provide minimal context. Original source had meaningful names like `count`, `sum`, `args` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions retain original names (`cdecl_func`, `call_cdecl`, `varargs_func`, `test_calling_conventions`). However, helper functions use mechanical names (`sub_400654`, `sub_400730`, `frame_dummy`) and some runtime functions are unclear (`$x`, `call_weak_fn`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Pervasive magic numbers obscure logic: `4294967295` (UINT_MAX), `18446743528248704968` (stack canary), `0x100000000`. Constant-folded results (15, 50, 6) hide the actual computation. No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack frame setup (`v16 = &v17`), register spilling variables (`v0` through `v7` as `uint128_t`), redundant assignments (`v0 = v2; v1 = v3;`). Function `sub_400654` has `len = strlen(v0); return strlen(v0);` - obvious dead code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as do-while constructs which is reasonable. However, `register_tm_clones` uses confusing `goto g_412fe0` and complex bit operations (`__ROL__`). Some functions use unnecessary `goto` patterns instead of structured control flow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical issue: caller functions are constant-folded (`call_cdecl()` returns 15 directly instead of calling `cdecl_func(5, 10)`). This destroys the call relationship. Function sizes are reasonable but semantic relationships are lost through aggressive optimization recovery.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with recognizable loop structures. However, `varargs_func` has 40+ local variables declared upfront, and forward references to globals (`g_401214`) disrupt flow. Some functions have deep nesting of variable declarations.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple redundant patterns: `sub_400654` calls `strlen` twice with same argument, `call_weak_fn` calls `__gmon_start__` twice, `frame_dummy` calls `register_tm_clones` twice. Constant folding in test functions creates artificial redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: original `int` becomes `unsigned int` or `unsigned long long` inconsistently. `varargs_func` loses variadic signature entirely (becomes 8 explicit parameters). `func_mixed_args` loses `double` and `long long` parameters (only shows `a0`, `a1`, `a2`). Pointer types often generic (`unsigned long long *`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs largely lost: `LargeStruct` becomes `unsigned long a0` with pointer arithmetic (`*((long long *)(a0 + i))`). `SmallStruct` becomes `unsigned int *a0` accessing `a0[0]` and `a0[1]`. Generic struct definitions exist (`struct_0 { char field_0; }`) but with no semantic field names.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: `param_func_ptr` takes `unsigned long long *a0` but calls it as function (`a0(a1)`). `func_struct_byval` uses raw pointer arithmetic on struct. `ret_opaque_handle` returns `"d"` (string literal) in one branch but `&handle2` in another - type mismatch not flagged.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only auto-generated function headers with addresses. No algorithm explanations, no API contracts, no decompilation confidence indicators. Original source had extensive comments explaining each test case - all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justuration: No patterns recognized: variadic function pattern completely missed (becomes explicit parameters), struct-by-value pattern lost (becomes pointer arithmetic), calling convention differences not documented. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Silent failures throughout: variadic functions handled incorrectly without warning, type mismatches not flagged, `ret_opaque_handle` has inconsistent return types with no indication. No uncertainty markers for indirect calls or unresolved references.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should note `a0 != NULL`). No postconditions inferred. Error conditions (return -1, 4294967295) not explained. Original source had clear test expectations - all lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Global variables have opaque names (`g_401214`, `g_40123c` - likely format strings). Callback relationships not documented (`param_func_ptr` doesn't indicate callback semantics). String references not resolved.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime functions (`_init`, `_start`, `_fini`) mixed with test code. No header file structure. Static functions not properly scoped. Original source had clear section organization - lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires significant patching: undefined globals (`g_412ff8`, `g_412fd0`), external dependencies (`__libc_start_main`, `printf`, `strlen`), architecture-specific code. Type mismatches would cause compilation errors. Not standalone compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50  × 0.25 = 1.375
+Level 3 (Type):        (4+3+3)/3   = 3.33  × 0.20 = 0.667
+Level 4 (Semantic):    (2+2+2+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):  (4+4+4)/3   = 4.00  × 0.10 = 0.40
+─────────────────────────────────────────────────────
+Overall Score:                                  4.09/10
+```
+
+**Overall Readability Score: 4.1/10**
+
+### Critical Defects
+- **Variable names completely generic** (`a0`, `a1`, `v0`-`v30`) - no semantic meaning recoverable
+- **Variadic functions incorrectly decompiled** - `varargs_func` has 8 explicit parameters instead of `...`
+- **Constant folding destroys call relationships** - `call_cdecl()` returns 15 directly instead of showing `cdecl_func(5, 10)`
+- **Struct types lost to pointer arithmetic** - `LargeStruct` becomes `unsigned long` with manual offset calculations
+- **Zero comments or documentation** - no explanation of complex logic, anomalies, or API contracts
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Core test functions retained original meaningful names (`cdecl_func`, `varargs_func`, `test_calling_conventions`), making basic identification possible.
+
+### Most Needs Improvement
+- **Semantic Transparency (2/10 average)** - Complete absence of comments, no idiom recognition, no anomaly indication, and no contract recovery makes understanding the code's purpose extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover variadic function signatures** - Detect `va_list` patterns and restore `...` parameter syntax instead of expanding to explicit parameters
+2. **Preserve call relationships over constant folding** - Show actual function calls even when arguments are constants, optionally with constant-folded result comments
+3. **Add decompilation confidence annotations** - Flag uncertain type recoveries, unresolved indirect calls, and potential type mismatches with comments like `// DECOMPILER: type uncertain`

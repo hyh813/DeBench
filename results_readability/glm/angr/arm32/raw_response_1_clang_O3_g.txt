@@ -1,0 +1,103 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Despite `-g` compilation flags, the decompiler failed to recover the original parameter names `a`, `b`, `c`, defaulting to generic `a0`, `a1`, `a2`. It also eliminated the intermediate variables `temp1`, `temp2`, and `temp3`, obscuring the original step-by-step logic structure.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: The function name `sequential_ops` was successfully recovered, likely from the symbol table, matching the original source exactly.
+
+**3. Literal Clarity:** Score: 10/10
+Justification: The only literal present is the integer `2`, which is used in a clear arithmetic context. There are no confusing magic numbers.
+
+**4. Noise Reduction:** Score: 10/10
+Justification: The decompiled output is extremely clean, containing no compiler artifacts, redundant casts, or stack frame manipulations.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: The code is reduced to a single return expression, which is idiomatic C but structurally deviates from the original three-step assignment sequence. While readable, it loses the explicit intermediate state tracking present in the source.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: The function is appropriately scoped and sized, matching the original source's granularity perfectly.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code is perfectly linear, consisting of a single statement that reads naturally from left to right.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler successfully eliminated the redundant intermediate variables (`temp1`, `temp2`, `temp3`) by combining the arithmetic operations into a single expression. While this changes the source structure, it improves conciseness.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 1/10
+Justification: The decompiler incorrectly inferred `unsigned int` for all parameters, whereas the source specifies `int`. This is a critical semantic error that changes the behavior of the function for negative inputs (e.g., underflow vs. signed subtraction).
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: No composite types (structs/unions) are used in this function, so there is nothing to recover or fail.
+
+**11. Type Safety:** Score: 10/10
+Justification: The arithmetic operations performed are safe for integer types, assuming the user corrects the signedness error.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output, failing to explain the logic or the deviation from the source structure.
+
+**13. Idiom Recognition:** Score: 10/10
+Justification: The arithmetic expression is a standard calculation pattern, correctly identified and represented.
+
+**14. Anomaly Indication:** Score: 10/10
+Justification: There are no anomalies in the logic itself, so no flags are necessary.
+
+**15. Assertion & Contract Recovery:** Score: 10/10
+Justification: No specific contracts or assertions exist in the source to recover.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 10/10
+Justification: The function does not reference external code or globals, so cross-reference clarity is inherently maintained.
+
+**17. Module Organization:** Score: 10/10
+Justification: The function is standalone and correctly placed within the file structure.
+
+**18. Build System Compatibility:** Score: 10/10
+Justification: The decompiled code is syntactically valid C and would compile successfully.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 10 + 10 + 10) / 4 = 8.0
+L2_avg = (8 + 10 + 10 + 9) / 4 = 9.25
+L3_avg = (1 + 10 + 10) / 3 = 7.0
+L4_avg = (1 + 10 + 10 + 10) / 4 = 7.75
+L5_avg = (10 + 10 + 10) / 3 = 10.0
+
+Overall = (8.0 × 0.30) + (9.25 × 0.25) + (7.0 × 0.20) + 
+          (7.75 × 0.15) + (10.0 × 0.10)
+Overall = 2.4 + 2.3125 + 1.4 + 1.1625 + 1.0 = 8.27
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 8.3/10
+
+### Critical Defects (Bullet List)
+- **Type Mismatch**: Parameters are inferred as `unsigned int` instead of `int`, causing incorrect behavior for negative numbers.
+- **Symbol Recovery Failure**: Despite `-g` flags, original parameter names (`a`, `b`, `c`) were not recovered, replaced by generic `a0`, `a1`, `a2`.
+- **Structural Deviation**: Intermediate variables (`temp1`, `temp2`, `temp3`) were eliminated, collapsing the logic into a single expression and losing the explicit step-by-step flow of the original source.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Module Organization (10/10)
+- **Why?** The function is correctly isolated and presented without structural artifacts from surrounding code.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Type Precision (1/10)
+- **Why?** The incorrect inference of `unsigned int` fundamentally alters the function's semantics and is a dangerous error for a decompiler.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Signedness Heuristics**: Prioritize `int` over `unsigned int` when arithmetic operations like subtraction are present, or utilize debug info more effectively to determine signedness.
+2.  **Enhance Symbol Loading**: Ensure that parameter names from DWARF debug information (available via `-g`) are mapped to the decompiled variables instead of falling back to generic `a0` names.
+3.  **Preserve Intermediate Variables at -O0**: When the optimization level is detected as `-O0`, attempt to preserve stack-based intermediate variables to maintain structural fidelity with the source code.

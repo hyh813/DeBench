@@ -1,0 +1,158 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Parameters use generic names (`a0`, `a1`, `a2`) instead of original names (`a`, `b`, `c`). Local variables are `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11` - completely uninformative. For example, in `sequential_ops`, the original has `temp1`, `temp2`, `temp3` but decompiled uses `a0`, `a1`, `a2` with no meaningful intermediate variable names.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+
+Justification: Core test functions are correctly named (`sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `loop_while`, `recursion_factorial`, `double_value`, `triple_value`, `op_add`, `op_sub`, `state_machine`). However, many wrapper/thunk functions use generic names like `sub_400a20`, `sub_400b54`, `sub_400cc8`. The main functions match source, but helper stubs are cryptic.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF) and `4294967294` (0xFFFFFFFE) appear frequently without explanation. The bit manipulation `& 4294967294` in `double_value` is unexplained - it's actually masking for signed multiplication overflow. Constants like `100` in `multi_return` and `1000` in `infinite_loop` are not named. Some literals are clear (e.g., array indices in switch tables), but most lack semantic meaning.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+Justification: Minimal compiler artifacts - no debug traces or frame pointer manipulations. However, there are unusual constructs like `[D] unsupported_Iop_SliceV128()` and `[D] unsupported_Iop_ZeroHI96ofV128()` indicating failed VLA/vector analysis. Some redundant patterns exist in complex functions like `loop_for_fixed` with multiple similar conditional blocks. Overall relatively clean but not pristine.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Justification: Basic control flow is preserved - if-else chains, for/while loops, switch statements are recognizable. However, conditions are inverted or transformed: original `x > 0` becomes `0 >= a0` in `single_if`. Some conditions use cryptic intrinsics like `arm64g_calculate_condition(10, v0 & 3, 0, 0)` instead of simple comparisons. Loop structures are correct but lack the idiomatic clarity of source.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Each function from source is correctly separated. Functions are appropriately sized - no 500-line monoliths. The test wrapper functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) are properly extracted. Parameter counts match original. Minor issue: some thunk functions exist that just call other functions (e.g., `sub_400a20` calls `_start`), but overall decomposition is good.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns are preserved. Some complex functions like `loop_complex_cond` have deep nesting (10+ levels of if-else) that disrupts linear flow. The `goto_backward` function has many sequential if-else chains that could be cleaner. Overall acceptable but not optimal.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: No obvious dead code. Loop unrolling in `loop_for_fixed` and `loop_continue` is present but not commented - the decompiler expanded loops into sequential if statements. Some common subexpression patterns exist but not severe. The redundancy is manageable but adds noise compared to original clean loop structures.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**
+
+Justification: Significant type degradation. Original uses `int` but decompiled uses `unsigned int`, `unsigned long`, `unsigned long long` inconsistently. For example, `sequential_ops` should return `int` but returns `unsigned int`. Function parameters lose signedness: `int x` becomes `unsigned int a0`. Pointer types are imprecise: `int *ptr` becomes ambiguous. The `volatile` qualifier is lost in `infinite_loop` and `loop_external_state`.
+
+### 10. Composite Type Recovery
+**Score: 8/10**
+
+Justification: No struct recovery is needed since source uses minimal structs (only in `loop_multi_exit` which uses hardcoded array). The decompiled version uses switch on values directly rather than reconstructing the matrix access pattern. For the given source code (which is mostly primitive types), this is acceptable. Would score higher if complex structs were present in source.
+
+### 11. Type Safety
+**Score: 6/10**
+
+Justification: Some unsafe operations present. The bit manipulation `& 4294967294` in multiple functions is actually a sign-extension workaround that could cause issues. Function pointer calls use `goto` instead of proper function pointer syntax in `call_func_ptr`. The `call_func_ptr_array` uses computed goto which is unusual. Overall manageable but not perfectly type-safe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Almost no useful comments. Only annotations like `/* do not return */` on functions like `_start`, `sub_400a20`, `__stack_chk_fail`. No explanation of algorithm logic, no pre/post conditions, no uncertainty indicators. The source code has extensive Chinese comments explaining each function's purpose and test cases - none of this is recovered. This is a major readability gap.
+
+### 13. Idiom Recognition
+**Score: 6/10**
+
+Justification: Some patterns are implicitly recognized but not named. The state machine pattern in `state_machine` and `fsm_func_table` is preserved structurally but not explicitly labeled. Jump tables in `switch_small`, `switch_large`, `large_jump_table` are recognized. Duff's device in `duffs_device` is partially reconstructed but looks convoluted. The ternary operator in `ternary_op` is correctly recovered. Pattern hints exist but aren't named or explained.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+
+Justification: Some anomalies are flagged: `[D] unsupported_Iop_SliceV128()` and `[D] unsupported_Iop_ZeroHI96ofV128()` indicate failed vector operations. The `call_func_ptr` uses `goto a0` to handle indirect calls - this is unusual but functional. However, no warnings about type precision loss, no flags for unsigned vs signed confusion, no indicators of potential undefined behavior with the bit-masking operations. Mixed result - some anomalies noted, others silent.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No contract information recovered. Original source has no explicit assertions but the function semantics imply contracts (e.g., `loop_for_fixed` requires `n >= 0`, `op_div` requires `b != 0`). These preconditions are not documented in decompiled output. No `@param`, `@return`, or `requires` annotations. Completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 7/10**
+
+Justification: Function call relationships are clear from code structure. `test_control_flow_l1` calls all L1 functions, `test_control_flow_l2` calls L2 functions, etc. Global variables like `jump_buffer`, `$d`, `__stack_chk_guard` are declared as extern. However, no explicit comments about who calls whom or the purpose of callback relationships. The call graph is inferable but not documented.
+
+### 17. Module Organization
+**Score: 8/10**
+
+Justification: Functions are grouped logically - initialization functions first, then test functions, then the actual test implementations. The three test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) are properly separated. Static functions like `double_value`, `triple_value` are placed near their usage. Overall good organization matching the source structure.
+
+### 18. Build System Compatibility
+**Score: 9/10**
+
+Justification: The code compiles successfully (as indicated by "Compilation Result: Yes" in metadata). Standard library functions (`puts`, `__printf_chk`, `_setjmp`, `__longjmp_chk`) are properly declared or extern. Minimal dependencies. The only issue is some unusual constructs that might warn but should compile. Excellent compilation readiness.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 5 + 7) / 4 = 5.25
+L2_avg = (6 + 8 + 7 + 7) / 4 = 7.00
+L3_avg = (4 + 8 + 6) / 3 = 6.00
+L4_avg = (2 + 6 + 5 + 1) / 4 = 3.50
+L5_avg = (7 + 8 + 9) / 3 = 8.00
+
+Overall = (5.25 × 0.30) + (7.00 × 0.25) + (6.00 × 0.20) + (3.50 × 0.15) + (8.00 × 0.10)
+        = 1.575 + 1.75 + 1.2 + 0.525 + 0.8
+        = 5.85/10
+```
+
+**Overall Readability Score:** 5.85/10
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming**: Parameters use `a0`, `a1`, `a2` and locals use `v0`-`v11` instead of semantic names like `temp1`, `sum`, `i`, losing all semantic meaning from source
+
+2. **Type precision loss**: All `int` types converted to `unsigned int`/`unsigned long`, losing signedness. The `volatile` qualifier is lost on pointer parameters in `infinite_loop` and `loop_external_state`
+
+3. **No comments**: Zero algorithm explanations, no test case documentation, no pre/post conditions. Source had extensive Chinese comments explaining each function - completely lost
+
+4. **Cryptic conditions**: Uses `arm64g_calculate_condition(10, v0 & 3, 0, 0)` instead of simple comparison operators, and inverted conditions like `0 >= a0` instead of `a0 > 0`
+
+5. **Magic numbers unexplained**: Bit manipulation constants like `4294967295` (0xFFFFFFFF) and `4294967294` appear without explanation of their purpose (sign-extension workarounds)
+
+### Best Quality Aspect: Build System Compatibility (Score: 9/10)
+The decompiled code compiles successfully with minimal dependencies. Function names are mostly preserved correctly, making the code structurally sound and usable as a starting point for analysis.
+
+### Most Needs Improvement: Assertion & Contract Recovery (Score: 1/10)
+No contract information was recovered at all. Combined with poor comment quality (2/10), the decompiled code provides no documentation of function semantics, preconditions, or expected behavior - severely limiting its utility for analysis.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a parameter is used as a loop bound, name it `n` or `count`. When it's used in arithmetic, use `a`, `b` or descriptive names based on semantic role. The current `a0`, `a1`, `a2` provides no information.
+
+2. **Recover comments from debug symbols**: Since this was compiled with `-g`, debug information contains variable names and possibly inline comments. The decompiler should leverage this to restore original variable names.
+
+3. **Add semantic annotations**: Include comments explaining:
+   - Why bit-masking operations are used (e.g., `& 4294967294` for signed overflow handling)
+   - What conditions mean (e.g., "checks if x > 0" not "0 >= a0")
+   - Function contracts where inferable (e.g., "requires: n >= 0" for loop functions)

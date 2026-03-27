@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost exclusively generic (`iVar1`, `iVar2`, `uVar2`, `piVar3`) with no semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved from source (`sequential_ops`, `nested_if_deep`, `duffs_device`, `state_machine`). Names accurately reflect functionality and maintain original intent.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Mixed quality - some literals are clear (`100`, `10`), but others use hex without explanation (`0x14` instead of `20`, `0x3e9` instead of `1001`). Pattern-based literals like `(x + 1) * 100` in `if_elseif_long` are recoverable.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "Unresolved local var" comments clutter functions. Warnings like "WARNING: Could not recover jumptable" appear frequently. The `__aeabi_idiv` function has 35+ boolean variables from compiler expansion.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (`sequential_ops`, `single_if`) recover well, but complex patterns fail badly. `duffs_device` becomes convoluted switch-case with gotos. `loop_complex_cond` transforms a simple while loop into 10+ nested if statements.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are preserved correctly with reasonable granularity. No inappropriate inlining or fragmentation. However, some functions like `indirect_recursion_a` become monolithic due to optimization artifacts.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. However, `duffs_device` and `loop_multi_exit` use disruptive goto labels (`LAB_00010c90`, `switchD_00010d90_caseD_7`) that break linear reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy in `__aeabi_idiv` with 35+ nearly identical boolean checks. `loop_complex_cond` has repetitive nested conditionals that could be a simple loop. No loop unrolling abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic `int` types preserved correctly. However, function pointers degrade to generic `code *` or `_func_int_int *`. Array types lose dimension information (`int[5]` becomes unresolved).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct/union recovery visible. Arrays declared inline (`int src[8]`, `int funcs[3]`) but no named composite types. Original source had no complex structs, limiting this dimension's applicability.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple "WARNING: Treating indirect jump as call" warnings indicate unsafe function pointer handling. `conditional_func_ptr` shows `(*UNRECOVERED_JUMPTABLE)()` with missing parameters.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are auto-generated warnings ("Unresolved local var", "Could not recover jumptable") with no semantic explanation. No algorithm documentation or purpose comments recovered from source.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Duff's device not recognized as an optimization idiom. State machine pattern in `state_machine` not identified. Loop patterns not labeled (for vs while vs do-while sometimes lost).
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warning system for unresolved constructs ("WARNING: Removing unreachable block", "Could not recover jumptable"). However, warnings don't suggest manual analysis steps.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Functions like `duffs_device` require `n > 0` but this isn't documented. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are visible and named correctly. However, no call graph documentation or relationship comments. Callback relationships (`process_with_callback`) not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 77 functions in single output without logical grouping. No separation between L1/L2/L3 test functions. Static functions not clearly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__printf_chk`, `puts`, `__aeabi_idiv`) not declared. Won't compile standalone without stubs. No dependency documentation provided.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+6+5)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (5+7+6+4)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (6+4+5)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (3+3+6+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.20/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Variable names completely generic** - `iVar1`, `iVar2` throughout instead of semantic names like `sum`, `count`, `result`
+- **Duff's device decompilation failure** - Original elegant unrolled loop becomes unreadable switch-case with gotos
+- **`loop_complex_cond` structure loss** - Simple while loop with 3 conditions becomes 10+ nested if statements
+- **`indirect_recursion_a` nearly unreadable** - Recursive logic transformed into incomprehensible goto-laden code
+- **No contract/precondition documentation** - Functions with requirements (e.g., `n > 0`) lack any documentation
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - All original function names preserved perfectly, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - Zero preconditions, postconditions, or parameter constraints documented despite many functions having clear requirements
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (accumulators, counters, indices) to suggest semantic names like `sum`, `count`, `index`
+2. **Add idiom recognition for common optimization patterns** - Detect Duff's device, loop unrolling, and state machines to restore original structure or add explanatory comments
+3. **Recover function contracts from guard conditions** - Extract preconditions from early-return checks (e.g., `if (n <= 0) return -1` → document "requires: n > 0")

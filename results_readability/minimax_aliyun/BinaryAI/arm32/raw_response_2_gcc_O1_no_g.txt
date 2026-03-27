@@ -1,0 +1,123 @@
+# Decompilation Readability Assessment
+
+## Evaluation Summary
+
+This is a comprehensive test binary with 50+ functions covering data types, arrays, pointers, and composite types, compiled at -O0 (debug). The decompiler (Ghidra) produced readable but generic output.
+
+---
+
+### LEVEL 1: LEXICAL CLARITY
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `param_1`, `param_2`, `iVar1`, `piVar2`, `puVar3`. The original source had meaningful names like `x`, `sum`, `arr`, `n` but these are completely lost, replaced with mechanical parameter names that make tracking data flow extremely difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions retain correct names (double_value, process_int, process_char, complex_callback). However, external library functions show as `<EXTERNAL>::puts`, `<EXTERNAL>::__libc_start_main`, losing their namespace context. The main function names are preserved adequately.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple magic numbers without explanation: `0x41` ('A'), `0x20` (' ' - case offset), `0x1a` (26 letters). The original had `'A'`, `'Z'`, `32` with clear semantics. Float constants like `0x3fc00000` replace `1.5f` with no explanation. Some constants like `0xb` (11 in array_2d_stack loop) are unexplained.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts; no obvious register spilling code, no debug instrumentation. Float/double operations correctly delegate to runtime library functions. The output is clean without excessive casting or frame pointer manipulation.
+
+---
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops correctly use do-while constructs (e.g., array_1d_stack). Conditionals are clear. At -O0, control flow should be close to source and it is. One minor issue: array_2d_stack uses confusing loop with `iVar2 + 0xb` and `0x6e` bounds instead of cleaner 0-9 loop.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. No excessive inlining or outlining. The test wrapper functions are properly separated. Parameter counts match original function signatures (e.g., array_string takes 1 param, matches source).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Early returns used appropriately (e.g., array_1d_stack returns 0 if n <= 0). However, array_2d_stack has confusing loop: `iVar2 = 0; do { ... iVar2 = iVar2 + 0xb; } while (iVar2 != 0x6e);` - the `0xb` (11) and `0x6e` (110) are unclear without context that it's iterating a 10x10 matrix with padding.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Some loop unrolling present but not excessive. The primary issue is repeated expressions (e.g., in struct_array: recalculating `param_1 + param_2 * 3` each iteration). Overall acceptable for -O0.
+
+---
+
+### LEVEL 3: TYPE SYSTEM FIDELITY
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used throughout instead of `int32_t` or platform-appropriate types. `uint` used for unsigned without explicit width. `undefined4`, `undefined8` appear for uncertain types (e.g., process_float parameters). Pointers correctly preserved. The original had precise types (short, long, long long) but these are mostly lost to generic int.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs completely lost - accessed as raw pointer arithmetic: `*param_1 + param_1[1] + param_1[2]` instead of `p->x + p->y + p->z`. Union type distinction lost (union_type function accesses memory generically). Nested structures become offset calculations: `*(int *)(param_1 + 8) + *(int *)(param_1 + 0x14)`. Bitfields partially recovered but layout is unclear.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Pointer arithmetic is mostly correct (e.g., `param_1 + param_2 * 4` for int arrays). No obviously dangerous casts. One issue: `ptr_triple` has questionable type signature `undefined4 *param_1` when it should be `int ***`. Some unsafe byte-level access in struct_bitfields and union_type but these are necessary for the operations.
+
+---
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality:** Score: 1/10  
+Justification: No comments present in decompiled output at all. Original source had extensive documentation (e.g., "// DT-L1-01: 字符类型", "// ARR-L1-01: 一维int数组"). Zero recovery of explanatory comments. Decompiler could add notes about inferred types or algorithms.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms explicitly identified. Linked list traversal is recognizable but not named. Binary tree recursion is clear structurally but has no comment indicating "recursive tree traversal". The test framework calls could be grouped but aren't.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of suspicious code. The array_oob function (intentionally out-of-bounds in source) shows no warning. Indirect function calls (e.g., function pointers) have no uncertainty markers. The complex float/double runtime functions have no indication they are compiler intrinsics.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had null checks (e.g., `if (root == NULL) return 0;` in binary_tree_sum) that could be documented as "requires: root may be NULL" but this is not recovered.
+
+---
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are resolved but relationships unclear. Test functions call the test targets but no documentation of this hierarchy. `complex_callback` is defined but no indication it's used by `ptr_func_complex`. Global/static relationships unclear (double_value is static in source but this isn't indicated).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by type (data type functions, array functions, pointer functions, composite functions) but this seems coincidental based on address ordering. No clear separation of test framework from tested functions. Static functions not marked as such in output.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The output appears to compile. External dependencies (puts, printf, memset) are properly declared as external. No obvious syntax errors. Minor type mismatches might cause warnings but structurally valid C code.
+
+---
+
+## FINAL SUMMARY
+
+### Weighted Score Calculation:
+
+```
+L1 Average = (2+7+4+8)/4 = 5.25
+L2 Average = (8+8+7+7)/4 = 7.50  
+L3 Average = (5+3+6)/3 = 4.67
+L4 Average = (1+2+1+1)/4 = 1.25
+L5 Average = (3+6+9)/3 = 6.00
+
+Overall = (5.25 × 0.30) + (7.50 × 0.25) + (4.67 × 0.20) + (1.25 × 0.15) + (6.00 × 0.10)
+        = 1.575 + 1.875 + 0.934 + 0.188 + 0.600
+        = 5.17/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+---
+
+### Critical Defects:
+1. **Variable naming completely generic** - All parameters renamed to `param_1`, `param_2`, losing original semantic names like `x`, `arr`, `n`
+2. **Struct/union types completely lost** - All composite types accessed as pointer arithmetic (`param_1[1]`, `param_1[2]`) instead of named fields (`p->x`, `p->y`)
+3. **Zero comment recovery** - No documentation from original source was preserved
+4. **Magic numbers everywhere** - ASCII values like `0x41`, `0x20` not replaced with character literals
+5. **No anomaly indication** - Suspicious code (like array_oob with intentional buffer overflow) not flagged
+
+---
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions are properly separated with appropriate granularity matching the source. Control flow is natural with correct loop constructs. This is the strongest area of the decompilation.
+
+### Most Needs Improvement: Semantic Transparency (1.25/10)
+Zero comments, no pattern recognition, no anomaly indication, and no contract documentation. This dimension is severely lacking and makes understanding the code's purpose much harder than necessary.
+
+---
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage** - If a parameter is used as array index, name it `index` or `i`; if doubled, name it `doubled_value`
+2. **Recover struct layouts** - Detect consecutive field access patterns and reconstruct struct definitions with field names where possible
+3. **Add semantic comments** - At minimum, explain magic numbers (0x41 = 'A'), flag suspicious code patterns, and document function purposes

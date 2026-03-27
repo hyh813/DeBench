@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Stack variables are generic (`local_30`, `local_2c`, `local_14`) and do not reflect the original semantic types like `SimpleClass obj` or `capture_by_ref`. Parameters are generic (`param_1`), obscuring meaning.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery of mangled C++ function names (e.g., `Base::virtual_func`, `Container<int>::push`, `test_cpp_member_func`), which accurately reflects the source structure.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals are obfuscated as hex integers (e.g., `0x74736554` for "Test"), and return values are in hex (`0x125c` instead of 4704), significantly hindering readability.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise from compiler artifacts like stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) and Position Independent Code thunks (`__x86.get_pc_thunk.bx`).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Standard functions are linear, but `test_cpp_exception` uses `goto` jumps (`LAB_00011750`) instead of structured try/catch blocks, making exception handling logic difficult to follow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Class methods and template instantiations are correctly separated into distinct functions (e.g., `Container<int>::push` vs `Container<double>::push`), maintaining good granularity.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally, but the exception handling routine and some initialization sequences involve non-linear jumps that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Multiple redundant thunk functions (`__x86.get_pc_thunk.bx`, `__i686.get_pc_thunk.bx`) are listed explicitly, cluttering the output without adding semantic value.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: While function signatures often recover types (e.g., `Base *`), local objects on the stack lose their specific class types and are represented as arrays of `undefined4` or `undefined2`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Template types are recovered as distinct symbols (`Container_int_`, `Container_double_`), but these types are not consistently applied to stack variables, which remain raw memory blobs.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Heavy reliance on `undefined` types and `code*` casts for virtual function calls (e.g., `(**(code ***)param_1)`) removes type safety guarantees present in the original C++.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: The output lacks any comments explaining logic, algorithms, or data structures; it is purely raw code representation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Virtual function calls are represented as raw indirect calls through vtable pointers rather than being explicitly labeled as virtual dispatch or polymorphism.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Potentially suspicious code like `(*(code *)(undefined *)0x0)();` is presented without warning or explanation of potential null dereferences or compiler artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented or inferred from the code logic.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The accurate recovery of function names allows for easy cross-referencing of calls (e.g., identifying calls to `test_cpp_rtti`), preserving the call graph structure.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are organized by address in a flat list rather than grouped logically by class or module, requiring manual effort to find related members.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code uses Ghidra-specific types (`undefined4`, `code *`) and calling conventions (`__thiscall`) that will not compile with a standard C/C++ compiler without significant modification.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- String literals are obfuscated as hex integers (e.g., `0x74736554` for "Test").
+- Stack variables lose class type information, appearing as generic `local_xx` arrays.
+- Exception handling logic is reduced to spaghetti code with `goto` labels.
+- Compiler artifacts (stack canaries, PIC thunks) are not abstracted away.
+- No semantic comments or high-level C++ construct annotations (try/catch, virtual).
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+- The decompiler successfully demangled C++ symbols, preserving the original function and method names which is crucial for navigation.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+- The exclusive use of stack offset names (`local_30`, `param_1`) instead of semantic names (`obj`, `capture_by_ref`) makes understanding data flow nearly impossible.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Recover String Literals**: Detect hex integers that correspond to ASCII strings and replace them with string literals (e.g., convert `0x74736554` to `"Test"`).
+2.  **Improve Stack Variable Typing**: Utilize constructor calls and member access patterns to apply recovered composite types (structs/classes) to stack variables instead of leaving them as `undefined` arrays.
+3.  **Abstract Exception Handling**: Implement specific analysis to recognize compiler-generated exception landing pads and reconstruct `try/catch/throw` blocks instead of emitting `goto`-heavy control flow.

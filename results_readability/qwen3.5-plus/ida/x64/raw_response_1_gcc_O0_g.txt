@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Parameter names preserved well (a, b, c, x, op) but temporaries are generic (`result`, `count`, `v0-v26` in test functions). Stack variables like `xa` in `single_if` obscure the original `x` variable purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Excellent preservation of original function names (`sequential_ops`, `nested_if_deep`, `duffs_device`). Only startup/runtime functions use generic names (`sub_1020`, `init_proc`).
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Magic numbers like `0x28u` (stack canary offset) and `0x12345678` (opaque predicate) lack explanation. Loop bounds and array sizes are contextually clear.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary code (`__readfsqword(0x28u)`, `v4`, `v5`) appears in many functions. Redundant variable assignments like `result = count; return result` in `loop_while` add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most constructs recovered well (if/else, for, while). `switch_fallthrough` uses goto labels (`LABEL_7`) instead of clean fall-through. `goto_forward`/`goto_backward` correctly recovered as if/for.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source exactly. No inappropriate inlining or fragmentation. Each test function corresponds to original source function.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. `switch_fallthrough` has disruptive goto jumps. Test functions have many sequential temporary variables (v0-v26) but flow remains clear.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `switch_small` has odd nested switch structure. `loop_while` has redundant `result = count` before return. `switch_default` has duplicate `return 0` branches.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, void*). Function pointer types recovered correctly. Uses generic `int` instead of `int32_t`. Some unnecessary casts like `(int (*)(int))double_value`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Arrays recovered correctly (`arr[6]`, `matrix[3][4]`, `funcs[3]`). Function pointer arrays properly typed. No complex structs in this codebase to evaluate.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Function pointer casts are technically unsafe but necessary for decompilation. Stack canary code present but doesn't affect safety. No buffer overflow patterns introduced.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **CRITICAL**: Zero comments in decompiled output despite extensive original documentation explaining each function's purpose, test cases, and difficulty levels. Complete semantic loss.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic control flow patterns recognized. Duff's device partially recovered but messy. State machine patterns not explicitly identified. No algorithm naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `computed_goto` shows inline assembly (`__asm { jmp rax }`) without explanation. Stack canary code present but not flagged. No warnings for opaque predicates.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. Original had test validation comments (e.g., "输入5,7,3应返回21"). No error condition documentation recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear from code. No call graph documentation. Relationships between test functions and target functions inferable but not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat output. No header file separation. Original had clear L1/L2/L3 test organization lost in decompilation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: 8 external functions marked "FAILED to decompile" (printf, puts, longjmp, etc.). Would need stubs for library functions. Generally compilable with modifications.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+8+7+6)/4 = 6.75 × 0.30 = 2.03
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.75
+Level 3 (Type):        (7+8+7)/3   = 7.33 × 0.20 = 1.47
+Level 4 (Semantic):    (2+5+5+3)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Context):     (6+5+6)/3   = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────
+Overall Score:                                  6.38/10
+```
+
+### Overall Readability Score: **6.4/10**
+
+### Critical Defects:
+- **Zero comments recovered** despite extensive original documentation explaining function purposes and test cases
+- **`switch_fallthrough`** uses goto labels (`LABEL_7`) instead of clean fall-through semantics
+- **Test function variables** named `v0-v26` instead of descriptive names reflecting test purpose
+- **Redundant assignments** like `result = count; return result` in `loop_while`
+- **`switch_small`** has bizarre nested switch structure not matching original simple switch
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making code navigation straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation destroys semantic understanding that was explicit in source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Extract debug info (-g flag) to restore function documentation and test case explanations
+2. **Improve switch fall-through detection** - Recognize intentional fall-through patterns and emit cleaner code without goto labels
+3. **Infer variable semantics from usage** - Rename `v0-v26` temporaries based on function call context (e.g., `sequential_ops_result`, `single_if_positive`)

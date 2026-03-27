@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All local variables use generic auto-generated names like `iVar1`, `iVar2`, `uVar1`, `uVar2`, `bVar5`, `lVar1`. Parameters are named `param_1`, `param_2`, `param_3`. No semantic names like `a`, `b`, `c`, `temp1`, `temp2` from the original source are recovered.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names exactly match the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `nested_if_deep`, `if_elseif_chain`, `loop_for_fixed`, `loop_while`, `recursion_factorial`, etc. External library functions (`printf`, `puts`, `longjmp`, `_setjmp`) are correctly identified.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Test functions contain hardcoded magic numbers like `0x15` (21), `0x14` (20), `0xfffffffb` (-5) instead of computed values. Constants like `0x3e9` (1001), `0x65` (101) appear without explanation. The sequential_ops function correctly computes `(param_2 + param_1) * 2 - param_3` but test output uses literal `0x15`.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Some unusual constructs like `switchD_00010d28_caseD_X` labels in Duff's device are present but represent the fall-through structure. No redundant casts or debug instrumentation observed. The code is relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow structures are well-preserved. Sequential operations use direct arithmetic expressions. Loops are properly recognized (for/while/do-while). Switch statements are appropriately used. Duff's device (`duffs_device`) correctly shows the switch-case fall-through pattern with labeled cases. Recursion is properly identified.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the original. Each function has a clear single responsibility. Test functions are properly separated from logic functions. Parameter counts match original (e.g., `sequential_ops` has 3 params, `loop_for_fixed` has 1 param).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately. The `goto_forward` and `goto_backward` functions are correctly linearized with the goto becoming arithmetic expressions. Switch statements have intentional fall-through.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code observed. Common subexpression elimination is reasonable - the compiler has optimized `loop_for_fixed` into a formula but this is appropriate for -O0. Loop unrolling is minimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most types are generic `int` or `uint`. Function pointers are typed as `code *` without proper signature information. Some size-specific types like `longlong` appear in `loop_for_fixed`. Signed/unsigned mixing occurs (e.g., `param_1` as int vs. some uses as uint). No `const` correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union recovery. Arrays like `arr[]` in `loop_break` are accessed through `(&DAT_00011974)[iVar1]` with raw pointer arithmetic. The matrix in `loop_multi_exit` uses similar raw access patterns. All composite types are lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations present. Pointer arithmetic without bounds checking (e.g., `puVar5[iVar3]`). Function pointer calls use `code *` type without type safety. Some implicit conversions between signed/unsigned. The `op_div` and `op_mod` functions have unusual return patterns suggesting incomplete type handling.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in the decompiled output beyond the standard BinaryAI header. No explanation of algorithms, preconditions, or non-obvious logic. The source code had extensive comments (961 lines) but none are recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Duff's device is partially recognized with labeled switch cases (`switchD_00010d28_caseD_7`), but not explicitly named as such. State machines are recognized as switch statements but not identified as state machine pattern. Some patterns like recursion are correctly identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings or indicators for suspicious code. Indirect calls in `call_func_ptr_array` and `fsm_func_table` are not flagged as uncertain. The `non_local_jump` function has complex conditionals but no indication of potential issues. All code presented with equal confidence.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had parameter validation (e.g., `if (x < 0) return -1`) but these are not highlighted as contract elements. No documentation of error handling patterns.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships are not documented. The test functions call the target functions but there's no indication of the call graph. Callback relationships in `process_with_callback` and `call_func_ptr_array` are not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are listed in address order rather than logical grouping. The original had clear sections (Control Flow Level 1, Level 2, Level 3, test functions) but this organization is lost. Static functions like `double_value`, `triple_value` are placed near their usage but not clearly grouped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would require significant patching to compile. External functions like `printf`, `puts` need declarations. Data references like `&DAT_00011974`, `&UNK_00011f7c` are undefined. The `code *` type is non-standard. No dependency documentation present.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`iVar1`, `param_1`, `bVar5`) with no semantic recovery
+- No comments or documentation despite 961-line commented source
+- Composite types (arrays, matrices) lost to raw pointer arithmetic
+- No type safety - function pointers use generic `code *` without signatures
+- Test functions use hardcoded magic numbers instead of computed values
+- No anomaly indication for indirect calls or complex conditionals
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+Function names exactly match the original source, providing perfect identification of each function's purpose.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+All variables use generic auto-generated names that completely obscure their semantic purpose. Combined with the lack of comments, this makes the code extremely difficult to understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparisons) to suggest semantic names like `temp1`, `packet_size`, `index`
+2. **Recover comments from debug symbols**: Since this was compiled with `-g`, attempt to extract variable names and comments from DWARF debugging information
+3. **Add uncertainty markers for indirect calls**: Flag functions like `call_func_ptr_array` where the call target cannot be statically determined, with possible targets listed

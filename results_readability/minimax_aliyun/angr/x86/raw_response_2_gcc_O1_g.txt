@@ -1,0 +1,161 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: All parameters use cryptic names like `a0`, `a1`, `a2` instead of meaningful names like `x`, `arr`, `n` from the source. Local variables are equally poor: `v0`, `v1`, `v2`, `ptr`, `idx` provide no semantic meaning. For example, in `array_1d_stack(unsigned int *a0, unsigned int a1)`, the parameters should be `arr` and `n` respectively.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+
+Justification: Nearly all function names match the original source exactly: `double_value`, `process_int`, `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. The decompiler correctly recovered the semantic intent through action verbs. Minor deduction for some internal wrapper functions.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Justification: Magic numbers like `65` and `32` in `process_char` (should be 'A' and 32 for case conversion) are unexplained. However, format strings in test functions like `"DT-L1-01 (process_char): %c\n"` are preserved. Error return `4294967295` (0xFFFFFFFF) is used consistently but not documented.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Justification: Severe noise pollution includes: internal CRT functions (`sub_4010b0`, `sub_4010c0`), `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers for float operations, `__x86.get_pc_thunk.ax` artifacts, `__stack_chk_fail_local`, and garbage struct definitions with large padding arrays. These make the code nearly unreadable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Justification: Control flow is mostly natural - loops render as do-while constructs (e.g., `array_1d_stack`), conditionals use if-else chains. At -O0, switch statements correctly appear as if-else chains. No spurious goto statements. Minor awkwardness in some array traversals due to pointer arithmetic.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Function granularity matches source - each small function (10-30 lines) is separate. Functions are cohesive with single responsibility. Parameter lists are reasonable. The decompiler correctly separated the many small test functions rather than inlining them.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom. Early returns present in boundary checks (e.g., `if (a1 <= 0) return 0;`). Some forward jumps in complex functions like `enum_switch` but manageable. No deep nesting (>4 levels) observed.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: Some loop unrolling visible in `array_3d` with manual 5-element batches, but this is expected at any optimization level. No significant dead code. Redundancy is manageable and doesn't obscure logic significantly.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**
+
+Justification: Severe type degradation - all integers become `unsigned int` regardless of original signedness. Pointers are `unsigned int` instead of proper pointer types (e.g., `unsigned int *a0` should be `int *arr`). Function pointers incorrectly typed as `unsigned int*` (see `ptr_func_simple`). `short` parameters become `unsigned short` with broken logic (`return a1 & 0xffff0000 | a1 + a0;`).
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+Justification: Some structs recovered but with generic names (`struct_0`, `struct_1`) and generic field names (`field_0`, `field_1`, `field_4`). Nested structures partially handled (e.g., `struct_with_ptr` has self-referential struct). Bitfields handled via bit operations rather than declared bitfields. Compare to source: `Point3D` should have fields `x, y, z` not `field_0, field_1, field_2`.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Multiple unsafe patterns: pointer arithmetic using raw integers (`ptr += 1`, `ptr + idx * 4`), function pointers called through `unsigned int*` (`a0(a1)`), incorrect pointer arithmetic in `ptr_diff` (`a0 - a1 >> 2` should be `(a0 - a1) / 4`). Frequent unsafe casts between int and pointer types.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: No comments present in the decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contracts. The code provides zero guidance to the analyst about what it does or uncertainties in the recovery.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+Justification: No design patterns or algorithms identified or named. The source contains clear patterns (linked list traversal, binary tree recursion, state machine via enum switch) but decompiler provides no recognition. Basic data structure operations are readable but not labeled.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+
+Justification: Some anomaly indication via `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers for float operations, but these are generic and don't explain what operation failed or its impact. No flags for potential undefined behavior in `array_oob` (intentional out-of-bounds access). Mixed results.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants documented. No indication that `array_oob` has undefined behavior. No error condition documentation. The decompiler provides zero contract information.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Justification: Function calls are present but relationships not documented. No indication that `double_value` is used as callback in `ptr_func_simple`. No call graph information. External dependencies (printf, etc.) not clearly marked as external library functions.
+
+### 17. Module Organization
+**Score: 3/10**
+
+Justification: Single monolithic output with all functions listed sequentially. No logical grouping of related functions (data types, array functions, pointer functions, composite types). No indication of source file structure. The test functions are interspersed with the functions they test.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+Justification: Code does not compile. Missing: standard library declarations (printf, strncpy), internal function definitions (frame_dummy, register_tm_clones), correct function signatures. Would require extensive patching to compile. The `[D]` markers and internal CRT functions would cause compilation failures.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 5 + 3) / 4 = 4.75
+L2_avg = (7 + 8 + 7 + 7) / 4 = 7.25
+L3_avg = (4 + 5 + 4) / 3 = 4.33
+L4_avg = (2 + 3 + 5 + 2) / 4 = 3.00
+L5_avg = (4 + 3 + 3) / 3 = 3.33
+
+Overall = (4.75 × 0.30) + (7.25 × 0.25) + (4.33 × 0.20) + (3.00 × 0.15) + (3.33 × 0.10)
+        = 1.425 + 1.8125 + 0.866 + 0.45 + 0.333
+        = 4.89/10
+```
+
+### Overall Readability Score: 4.89/10
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming**: All parameters use cryptic names (`a0`, `a1`, `a2`) and locals are (`v0`, `v1`, `ptr`) - completely obscuring semantic purpose
+2. **Type precision**: All types degraded to `unsigned int` - loses signedness, pointer distinction, and type safety
+3. **No comments**: Zero documentation or explanation of algorithms, making analysis extremely difficult
+4. **Noise artifacts**: Internal CRT functions, `[D] unsupported_` markers, and garbage struct definitions pollute output
+5. **Function pointer types**: Incorrectly typed as `unsigned int*` causing unsafe calls (e.g., `ptr_func_simple`)
+
+---
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (9/10)**
+- **Why?** The decompiler correctly recovered all function names from the original source, using appropriate action verbs that clearly indicate purpose.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)**
+- **Why?** Every parameter and local variable uses cryptic generic names that provide zero semantic information. This single issue severely impacts the ability to understand the code.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, pointer dereferencing, arithmetic) to suggest meaningful names like `array`, `length`, `index`, `sum` instead of `a0`, `a1`, `v0`
+
+2. **Preserve type information**: Don't degrade all integers to `unsigned int` - recover signedness from operations and preserve pointer types rather than converting to integers
+
+3. **Add semantic comments**: Include basic comments explaining what functions do, especially for non-obvious logic. Add markers for uncertain decompilations rather than just failed operations

@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `i`, `result` instead of semantic names (e.g., `counter`, `page_size`, `exec_mem`). Some functions preserve parameter names (`size`, `x`, `y`) but locals are consistently generic.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_macro_constants`, `call_asm_basic`, `param_atomic_c11`). However, startup functions use mechanical names (`sub_1020`, `sub_1030`) and some have type prefixes (`__fastcall`) that add noise.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `57072` (should be `0xDEF0`), `282` (line+counter sum), `30` (sysconf constant), `7`/`34` (mmap flags). Only obvious constants like `1024`, `64`, `16` remain recognizable.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__readfsqword(0x28u)`) appear in many functions unnecessarily. Type casts like `(__int64)` and `(_DWORD *)` add visual clutter. However, no dead code from register spilling observed.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions use natural C constructs (for loops, if statements). `param_memory_protection` has nested conditionals that could be flattened. Assembly loops correctly recovered as for-loops in `param_asm_clobber`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well—each function has single responsibility. No monolithic functions or over-fragmentation. Parameter lists are reasonable and don't expose implementation details.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately (e.g., `param_macro_constants`). No disruptive forward jumps or goto statements in recovered code.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Aggressive constant folding creates redundancy—`call_macro_constants()` returns `64` directly instead of calling `param_macro_constants(2048)`. Both caller and callee show same constant, losing call relationship clarity.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good recovery of `int`, `size_t`, `void*`, `__m128i` for SIMD. However, some use generic `__int64` instead of `intptr_t`. Pointer vs. array distinction mostly preserved. Signed/unsigned generally correct.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays correctly typed (`int arr[6]`, `char src[10]`). SIMD vectors recovered as `__m128i` structs with field access (`m128i_i64[0]`). No complex structs in source to evaluate, but available types well-recovered.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(__m128i *)`, `(_DWORD *)`, `(func_t)`. These reflect original source patterns but decompiler doesn't annotate risk. No buffer overflow patterns introduced by decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments beyond function headers from IDA. No explanation of magic numbers, algorithm intent, or decompilation confidence. Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Atomic operations recovered as `_InterlockedExchangeAdd` (Windows intrinsic). SIMD patterns recognized as `_mm_add_epi32`. However, patterns not explicitly named or explained (no "atomic increment" comments).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (`FAILED to decompile: mmap`). However, suspicious code like dynamic code generation in `param_dynamic_code` not flagged. No confidence indicators on uncertain recoveries.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`). No postconditions or error condition documentation. Return values like `-1`, `-2`, `-3` in `param_memory_protection` unexplained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. No call graph comments. Global variable `global_var` usage clear but no indication of thread-safety concerns.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source order roughly. No file-level organization or grouping comments. Static functions not clearly scoped. Related functions (test/call pairs) adjacent but not explicitly grouped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 9 external functions failed to decompile (`mmap`, `munmap`, `printf`, etc.). Uses Windows intrinsics (`_InterlockedExchangeAdd`) for cross-platform code. Cannot compile standalone without significant stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 (Lexical):     (5+8+4+6)/4 = 5.75
+L2 (Structural):  (7+8+8+6)/4 = 7.25
+L3 (Type):        (7+7+6)/3   = 6.67
+L4 (Semantic):    (2+5+4+2)/4 = 3.25
+L5 (Contextual):  (6+6+4)/3   = 5.33
+
+Overall = (5.75 × 0.30) + (7.25 × 0.25) + (6.67 × 0.20) + (3.25 × 0.15) + (5.33 × 0.10)
+        = 1.725 + 1.8125 + 1.334 + 0.4875 + 0.533
+        = 5.89/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- **Magic numbers unexplained**: `57072`, `282`, `30`, `7`, `34` appear without constant names or comments
+- **Zero semantic comments**: Original source had extensive documentation; decompiled code has none
+- **Constant folding obscures logic**: `call_macro_constants()` returns `64` directly, hiding the call relationship
+- **Stack canary noise**: `__readfsqword(0x28u)` appears in simple functions unnecessarily
+- **9 external functions failed**: Critical syscalls (`mmap`, `printf`, `sysconf`) not decompiled
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Source function names preserved accurately, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation loses all semantic context from original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Extract debug info (`-g` flag) to restore original documentation and macro definitions
+2. **Annotate magic numbers** - Detect constants that correspond to system calls, flags, or computed values and suggest named constants
+3. **Indicate optimization artifacts** - Flag when constant folding or inlining has occurred so analysts understand call relationships are obscured

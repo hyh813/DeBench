@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `ptr`, `a0`, `a1`) with no semantic meaning. For example, `param_strcpy` uses `a0` and `a1` instead of `dst` and `src`, obscuring the copy direction.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`param_strcpy`, `call_strcpy`, `param_strlen`), but many wrapper functions have meaningless names (`sub_401030`, `sub_4013e0`). About 50% of functions are properly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `4294967295` (UINT_MAX/-1), `42`, `127` appear without explanation. Error codes like `4294967294`, `4294967293` are not documented as specific error conditions.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: redundant wrapper functions (`sub_401561` just calls `param_strcpy`), unnecessary stack variables (`v0`, `v1` for parameter passing), and frame pointer manipulation code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural if-else structures, but some have awkward patterns (e.g., `param_strcmp` has convoluted ternary logic). At `-O0`, control flow should be cleaner.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries preserved, but many unnecessary single-line wrapper functions created (`sub_4015a3`, `sub_4015e6`). Function granularity is inconsistent.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with reasonable structure. Some functions have awkward branching but no severe goto spaghetti patterns in main logic.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate wrapper functions for each original function. Some redundant variable assignments (`v0 = v1; v1 = v2`) from register spilling not eliminated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `param_printf` uses `unsigned int` for parameters that should be `int` and `const char*`. `param_strchr_strstr` returns `int` but uses `unsigned int ptr` twice (variable shadowing bug).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs defined with generic field names (`field_0`, `padding_0`, `field_5b87`). `FILE` struct is empty. `sockaddr` partially recovered but `sa_data` array loses semantic meaning.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: `call_strcpy` reads from uninitialized `v0` instead of `v1`. Pointer arithmetic without proper typing. Function returns wrong types in several places.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. Only one anomaly note (`[D] Unsupported jumpkind Ijk_SigTRAP`). No algorithm explanations or API contract documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `memcpy`, `pthread_create`). No design pattern recognition or algorithm naming beyond basic libc identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged (`Ijk_SigTRAP`). Critical bugs like `call_strcpy` reading wrong variable not indicated. Type mismatches silently accepted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `dst != NULL` for strcpy). No postconditions. Error return values not explained. No invariant recognition.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`signal_received`, `shared_counter`) referenced without context. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in somewhat logical order matching source. No header files or namespace structure. Related functions not grouped with documentation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies not declared. Type mismatches would cause compilation errors. Would require significant patching (fixing types, adding includes, resolving globals).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (3+4+3)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 4.31/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **`call_strcpy` reads uninitialized variable**: Writes to `v1` but returns `strlen(&v0)` - fundamental logic error
+- **`param_printf` missing format arguments**: Only passes format string, not `a0` and `a1` values
+- **Variable shadowing bug**: `param_strchr_strstr` declares `ptr` twice, losing first assignment
+- **Type erosion**: `unsigned int` used for pointers and signed integers throughout
+- **No error code documentation**: Magic numbers like `4294967294`, `4294967293` unexplained
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions preserved original semantic names (`param_strcpy`, `call_strlen`, `param_mutex_lock`), making basic identification possible
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation; decompiler provides zero insight into algorithm intent, error conditions, or confidence levels
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming**: Analyze usage patterns to infer names (e.g., variables passed to `strlen` should be named `string` or `buffer`)
+2. **Add decompilation confidence annotations**: Flag uncertain reconstructions (e.g., `// DECOMPILER_UNCERTAIN: indirect call target`)
+3. **Recover error code semantics**: Map magic return values to named constants with explanations (e.g., `#define ERR_FILE_NOT_FOUND 4294967295`)

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `v1`, `v2`, `v3`, `a1`, `a2`, `result`, `str`. These convey no semantic meaning - e.g., `v1` in `_Z18test_cpp_exceptionv` is an exception pointer with no indication of its purpose. Compare to original source's meaningful names like `capture_by_value`, `capture_by_ref`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions use mangled C++ names partially demangled (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func()`), but many remain cryptic like `_Z17call_virtual_funcP4Basei`. The demangling is inconsistent - some functions have clear names while others retain address-based identifiers.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `42` thrown as exception, `4` for exception size, `31` for strncpy length). Chinese strings are displayed as hex escape sequences (`\xe6\xb5\x8b\xe8\xaf\x95`). No named constants recovered for values like `0x1234` (getClassID).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifact pollution - numerous `__cxa_*` exception runtime functions, empty stub functions (e.g., `_ZN4Base12virtual_funcEi` just returns), and thunk functions clutter the output. Many functions are completely empty bodies that return immediately.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Exception handling code uses goto with labels (`lab_0x10e0`, `lab_0x10e4`) creating spaghetti flow. The `_Z18test_cpp_exceptionv` function has deeply nested conditionals and jumps that make execution nearly impossible to trace. Compare to original's clean try-catch blocks.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Many functions are empty stubs (e.g., `_Z21test_cpp_virtual_funcv`, `_Z26test_cpp_operator_overloadv` just return). The exception function is 80+ lines of convoluted logic that should be decomposed. Template instantiation functions are present but lack semantic grouping.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Excessive forward jumps in exception handling code disrupt linear reading. Multiple goto labels create non-linear flow. The code requires constant jumping between labels to understand execution path.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some dead code present (e.g., unused variables in template functions). Exception handling has repeated patterns of `__cxa_begin_catch`/`__cxa_end_catch` that could be abstracted. Overall moderate redundancy from compiler optimizations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int64_t` and `int32_t` consistently, but loses const correctness (no `const` qualifiers on methods like `getName()`). Function parameters often use `int64_t*` for objects when more specific types exist. Generic `void` pointers prevalent.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Only two vtable structs recovered (`vtable_12c28_type`, `vtable_12c50_type`). No class struct recovery - all class members accessed via raw pointer arithmetic (e.g., `*(int64_t *)((int64_t)result + 40)` for Container<int>::size). Compare to original's clear `class Container { T data[10]; int size; }`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout (e.g., `*(int32_t *)v1 = 42`, `(int64_t)(int64_t)v2`). Pointer arithmetic without bounds checking (e.g., `v3 + 8 + v4` in virtual thunk functions). Function pointers treated as generic `int64_t`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments - only address ranges and line numbers. No explanation of algorithm logic, C++ idioms, or recovered semantics. The comment "From module: /work/5-1.cpp" provides source location but no functional documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No recognition of C++ idioms. RAII patterns (constructors/destructors) not identified. Virtual dispatch mechanism not explained. Exception handling shown as raw runtime calls without try-catch semantics. Template instantiation shown as separate functions without grouping.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about indirect calls that couldn't be resolved. Empty functions presented without explanation of why they're empty. No indication of potential undefined behavior from uninitialized variables (e.g., `int64_t v1;` used uninitialized).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that certain functions require non-null pointers. No recovery of class invariants (e.g., Container's size <= 10).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function prototypes listed but relationships unclear. No documentation of which functions call which others. Virtual function relationships not explicitly stated. Global variable usage scattered without clear ownership.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with arbitrary ordering. No logical grouping by feature (member functions, virtual functions, templates). Static functions not distinguished from public API. Mix of runtime support functions and user code.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code compiles (as stated in metadata). All necessary runtime functions declared. Minimal external dependencies beyond standard C library. However, requires significant patching to integrate into actual project.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- Variable names are completely generic (`v1`, `v2`, `a1`, `result`) with no semantic meaning
+- Control flow uses goto labels creating spaghetti code in exception handling
+- No class struct recovery - all member access is raw pointer arithmetic
+- Empty stub functions presented without explanation
+- No C++ idiom recognition (RAII, virtual dispatch, exceptions shown as raw runtime calls)
+
+**Best Quality Aspect:** Build System Compatibility (7/10)  
+The code compiles successfully with minimal dependencies, demonstrating the decompiler can produce syntactically valid C code.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Variables use completely generic single-letter names that make tracking data flow nearly impossible. The original source's meaningful names like `capture_by_value`, `instance_count`, `multiplier` are lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - Analyze how variables are used (array indices, size fields, pointers to specific types) to generate semantic names like `size` instead of `v2`
+2. **Recover class structures** - Instead of raw pointer arithmetic like `*(int32_t *)((int64_t)result + 40)`, reconstruct the class layout with named fields
+3. **Map exception runtime calls back to try-catch semantics** - Convert `__cxa_allocate_exception`/`__cxa_throw`/`__cxa_begin_catch` sequences back to readable try-catch blocks

@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+### Analysis Overview
+
+The original source code implements false branch obfuscation with two always-false conditions:
+1. `x * x < 0` (always false for real integers)
+2. `strlen(str) < 0` (always false since strlen returns unsigned size_t)
+
+The decompiled version shows a **critical failure**: the function is completely gutted - return type is `void` instead of `int`, parameter is missing, and the entire logic is eliminated.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: No variables exist in the decompiled function. The original had `result`, `x`, and `str` - all completely lost. The decompilation produced an empty function with no variables to name.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Function name `param_fake_branch` matches the source, but the signature is catastrophically wrong: return type is `void` instead of `int`, and the parameter `x` is completely missing. The function takes no arguments.
+
+**3. Literal Clarity:** Score: 1/10  
+Justification: No literals present. The original contained magic numbers `0xDEADBEEF` and `1000` that are completely lost. The decompiled function has no code to contain any literals.
+
+**4. Noise Reduction:** Score: 1/10  
+Justification: Not applicable - there is no real code to evaluate. The empty function body is not "clean" code, it's a complete failure to decompile.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 1/10  
+Justification: No control flow exists. The original had two if-statements with always-false conditions, but the decompiled version has only `return;` - completely losing both conditional branches and the return value computation.
+
+**6. Function Decomposition:** Score: 1/10  
+Justification: The function is not decomposed - it's been eliminated entirely. The original 8-line function with meaningful logic is reduced to a no-op stub.
+
+**7. Code Linearization:** Score: 1/10  
+Justification: The code is trivially linear (single return statement) but this is meaningless since all logic is gone. Linearization of nothing is not a positive attribute.
+
+**8. Redundancy Elimination:** Score: 1/10  
+Justification: No code exists to have redundancy. The decompilation didn't "eliminate redundancy" - it eliminated the entire function.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 1/10  
+Justification: Severe type degradation. Return type is `void` instead of `int`. Parameter `x` (int) is completely missing. The original function signature `int param_fake_branch(int x)` is not recovered at all.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Not applicable to this function - no structs/unions in original. However, the failure to recover basic types makes this N/A effectively.
+
+**11. Type Safety:** Score: 1/10  
+Justification: The function signature is fundamentally broken (void return with no parameters). This makes any attempted usage dangerous. The original `int` return type is critical for the function's purpose.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments explaining the function's purpose. The original had comments explaining the obfuscation technique (永假条件). No indication that this is an obfuscation test function.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The false branch idiom (always-false conditions) is completely lost. The original explicitly tested obfuscation patterns - this is not recognized at all.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that the decompilation failed or that the function body is missing. The empty function is presented as if it were correct.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contracts recovered. The original had implicit preconditions (x can be any int) and postconditions (returns x). None of this is documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: The function is called by `call_fake_branch()` which is correctly decompiled to return 10. However, the relationship is not documented, and the empty param_fake_branch makes the call site nonsensical (why call a function that returns nothing?).
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped together in the output, but this is standard decompiler behavior. The module organization is not particularly better or worse than other functions.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The function would not compile as written - `void param_fake_branch(void)` vs the expected `int param_fake_branch(int x)`. This would cause linker errors or incorrect behavior when called.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 1.4/10
+
+**Critical Defects:**
+- **Return type is `void` instead of `int`** - The function should return `int` but declares `void`, completely breaking the API
+- **Parameter `x` is missing** - The function takes no arguments but should take `int x`
+- **Function body is empty** - All logic (two false branches, result computation) is completely eliminated
+- **No indication of failure** - The decompiler presents this empty function as if it were correct
+- **Magic numbers lost** - The original contained `0xDEADBEEF` and `1000` which are completely gone
+
+**Best Quality Aspect:** Module Organization (scored 5/10)  
+- Functions are grouped together in the output, though this is standard decompiler behavior and not particularly noteworthy.
+
+**Most Needs Improvement:** Type System Fidelity (scored 2.3/10)  
+- The function signature is completely wrong: wrong return type, missing parameter, no type information recovered. This is a fundamental failure that makes the decompiled code unusable.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover function signatures accurately** - The return type and parameters must match the original. This is the most basic requirement for useful decompilation.
+2. **Detect and flag incomplete decompilation** - When function body is optimized away or cannot be recovered, add a comment like `// WARNING: Function body could not be decompiled` instead of presenting empty code as correct.
+3. **Preserve constant values** - Even if branches are optimized out, the constants like `0xDEADBEEF` should be preserved in the output as they may be significant for analysis.

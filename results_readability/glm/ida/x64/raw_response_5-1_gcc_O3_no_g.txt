@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `v2`, `a1`, and `s`, providing no semantic context (e.g., `v0` in `test_cpp_rtti` represents a `RTTIDerivedA` object but is not named as such).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: C++ name demangling is excellent, recovering readable names like `test_cpp_member_func`, `Base::virtual_func`, and `Container<int>::push`, which accurately reflect the source.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers obscure meaning; e.g., `1953719636` in `test_cpp_member_func` is the packed integer representation of the string "Test", and `4700` is a pre-calculated constant, neither of which are explained.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Stack canary checks (`__readfsqword(0x28u)`) and redundant casts (`(unsigned int)`) are present, and stub functions like `sub_1020` containing `JUMPOUT(0)` add noise, though the main logic is relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: The control flow is linear and easy to follow, but this is largely due to aggressive compiler optimization (constant folding) reducing complex logic to simple `return` statements, hiding the original source structure.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Class methods are correctly separated into individual functions (e.g., `Base::virtual_func`), and complex C++ mechanisms like thunks (`non-virtual thunk to`) are correctly isolated, preserving the binary's modular structure.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal jumps or `goto` statements; even the complex `test_cpp_rtti` function is presented in a linear sequence of operations.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully presents the optimized code without obvious redundancy, though the "redundancy" here is actually the removal of source logic by the compiler (e.g., `test_cpp_virtual_func` just returns `42`).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate, correctly identifying `Base*`, `Derived*`, `type_info*`, and template instantiations like `Container<int>`, though `__int64` is used for pointers (Windows-ism on a likely Linux target).
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Struct definitions are not applied in the function view; access is done via raw pointer arithmetic (e.g., `*(_DWORD *)(a1 + 40)` in `Container<int>::push`), losing the semantic field names like `size` or `data`.
+
+**11. Type Safety:** Score: 7/10
+Justification: Explicit casts are used for pointer arithmetic and type conversions (e.g., `(_DWORD *)this`), which is safe but verbose; `dynamic_cast` usage is correctly identified.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of complex C++ runtime constructs (like vtable thunks), severely impacting understanding.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: C++ idioms are recognizable: virtual calls (`(**(...))a1)(a1)`), RTTI checks (`typeid`), and exception handling (`__cxa_throw`) are structurally visible, even if not explicitly labeled as "Virtual Call" or "RTTI Check".
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler lists functions that "FAILED to decompile" at the end, but there are no inline warnings about uncertain logic or the aggressive optimization that removed source code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement for `test_cpp_exception` to always throw is marked `__noreturn` but not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear (e.g., `test_cpp_oo_features` calls specific test functions), and virtual dispatch targets are resolved where possible, providing good context for execution flow.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically by class and functionality (e.g., all `Container` methods are together), and the separation of thunks helps organize the complex inheritance logic.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The use of `__int64` and specific compiler intrinsics (`__readfsqword`) makes the code non-portable and potentially difficult to recompile without modification on a standard Linux/GCC environment.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`v0`, `v1`), obscuring the data flow (e.g., in `test_cpp_rtti`).
+- Composite types are not recovered; class member access is shown as raw pointer arithmetic offsets (e.g., `a1 + 40`).
+- Magic numbers like `1953719636` (packed string "Test") are not explained or converted back to string literals.
+- Lack of comments for complex C++ mechanisms (thunks, RTTI) makes understanding the "why" difficult.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully demangled C++ symbols, providing clear, semantic names for methods and templates that match the source exactly.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)
+- The reliance on generic variable names (`v0`-`v12`) makes tracking data and objects nearly impossible without manual mapping.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Enhanced Variable Type Inference:** Utilize constructor usage and parameter passing to infer and apply meaningful names to variables (e.g., inferring `obj` or `ptr` instead of `v0`).
+2. **Automatic Struct Application:** Automatically detect and apply recovered structure definitions to function views to replace raw offsets like `*(int*)(this+0x28)` with field names like `this->size`.
+3. **String Constant Recovery:** Detect packed integer constants representing strings (like `1953719636`) and display them as string literals or add a comment explaining the conversion.

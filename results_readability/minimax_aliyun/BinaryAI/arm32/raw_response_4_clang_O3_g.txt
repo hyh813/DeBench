@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+The original source is a comprehensive test suite for C calling conventions, compiled with `-O0 -g` (no optimization, debug symbols). The decompiled code is from Ghidra. I will evaluate the decompilation quality focusing on the core test functions and their recovery.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names like `param_1`, `param_2`, `param_3` instead of meaningful names like `a`, `b`. For example, `cdecl_func(int param_1, int param_2)` should preserve `a` and `b`. The original source uses clear variable names that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names like `cdecl_func`, `stdcall_func`, `varargs_func` are correctly preserved from the source. Minor deduction for some internal functions that could be more descriptive (e.g., helper functions).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Return values are shown as hex literals (e.g., `0xf` for 15, `0x2a` for 42) which obscures their meaning. While some are inferable, constants like `0x12345678` lack explanation. The literal `0x15` for 21 is not immediately clear.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. The use of `undefined4` instead of `int` is a minor noise issue, but there are no spurious casts, dead code, or register spilling artifacts. The code is relatively clean.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural and matches source exactly. Simple functions like `cdecl_func` return `param_1 + param_2` directly. Loops in `varargs_func` use proper do-while constructs. At `-O0`, the flow should be nearly identical to source, and it is.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each function is appropriately sized with clear single responsibility. The test wrapper functions (e.g., `call_cdecl`) are correctly separated from implementation functions. Parameter lists are reasonable and don't expose implementation details.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom without forward jumps or goto statements. Functions like `varargs_func` have clear loop structure that flows naturally. No deep nesting or computed jumps disrupt readability.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. The `varargs_func` shows proper loop structure without manual unrolling that would be seen at higher optimization levels. Common subexpressions are not artificially introduced.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation observed. The decompiler uses `undefined4` instead of `int`, `undefined8` instead of `long` or `double`, and `byte*` instead of `char*`. Function pointers use `code *` instead of proper function signatures. At `-O0`, types should be more precisely recoverable.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Small structs like `SmallPoint` are partially recovered in `ret_small_struct` but with raw pointer arithmetic (`*param_1 = param_2`). Large struct handling in `func_struct_byval` shows all parameters flattened (21 parameters for a 128-byte struct), losing the struct abstraction entirely.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No obviously unsafe casts observed. Pointer arithmetic is used correctly in functions like `ret_pointer`. However, the `param_string` function uses `byte *` instead of `char *`, which could lead to signedness issues.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in the decompiled code. The original source has extensive comments explaining each test case (e.g., "CALL-L1-01: cdecl调用约定"). This semantic information is completely lost in the decompilation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some idioms are recognizable (ternary operator in `ret_complex_expr`, switch-like logic in `ret_multi_branch`), but they're not explicitly identified or named. The calling convention tests don't highlight the specific convention being tested.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies are flagged. The `param_double_ptr` function has complex pointer manipulation that could be flagged as potentially problematic. The varargs handling in `varargs_func` uses a local stack array which could warrant a note about stack layout assumptions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. For example, `func_struct_byptr` should indicate "requires: p != NULL" based on the null check inside. This contract information is completely absent.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are not documented. The test functions call multiple helper functions, but there's no indication of the call graph or which functions are called by which. External dependencies (printf, strlen) are marked as `<EXTERNAL>` but not clearly organized.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped reasonably - calling convention tests together, parameter passing tests together, return value tests together. However, all functions are in a single flat namespace without any logical section markers that the original source has.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code would not compile as-is due to `undefined4`, `undefined8`, `code *` types. External functions like `printf` are declared but with incorrect signatures (variadic handling is poor). Requires moderate patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming uses generic `param_1`, `param_2` instead of source names `a`, `b`
+- Type precision severely degraded: `undefined4` instead of `int`, losing signedness information
+- No comments recovered from source, losing all semantic context about test scenarios
+- Composite types completely flattened (e.g., `func_struct_byval` has 21 separate parameters)
+- No contract/precondition documentation (e.g., null checks should indicate preconditions)
+
+**Best Quality Aspect:** Control Flow Naturalness (9/10)  
+The decompiled code preserves the original control flow structure almost perfectly. At `-O0`, this is expected and Ghidra delivers well with natural loops and conditionals matching the source.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+The original source has extensive documentation explaining each test case's purpose, calling convention being tested, and expected results. This semantic information is completely lost in the decompilation, making it difficult to understand the purpose of each function without cross-referencing the source.
+
+**Top 3 Recommendations:**
+1. **Recover variable names from debug symbols**: The source was compiled with `-g`, so parameter names `a`, `b` should be extractable from DWARF information
+2. **Replace `undefined4`/`undefined8` with proper types**: Use `int`, `long`, `unsigned` based on usage patterns and debug info
+3. **Add semantic comments from source**: Recover the test case descriptions (e.g., "CALL-L1-01: cdecl calling convention test") to explain function purpose

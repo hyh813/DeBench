@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `local_e0`, `local_dc` with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `x`, `y` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Some helper functions have generic names (`FUN_00101020`) but core functionality is identifiable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers present (`0x10`, `0x30`, `0x28`) without explanation. String literals replaced with `&DAT_00103008` references. Some hex values used inconsistently (`0x14` vs `20`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail`) repeated in nearly every function. Many `undefined4`, `undefined8` type declarations add visual clutter without semantic value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops recovered as for-loops correctly. Switch statements converted to if-else chains (e.g., `ret_multi_branch`). Generally follows natural C patterns despite optimization artifacts.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes are reasonable but several functions incorrectly marked as `void` when they should return values (e.g., `call_cdecl`, `call_stdcall`). Original structure mostly preserved.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with clear execution flow. Forward references to data (`&DAT_00103008`) slightly disrupt readability but don't impede understanding.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary code duplicated across 20+ functions. Redundant type casts throughout. No dead code removal from compiler optimization artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Extensive use of `undefined4`, `undefined8` instead of proper types. `func_mixed_args` has wrong parameter order (double, int, char*, long vs original int, char*, double, long long). Pointer types degraded to `long` or `int*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct types completely lost (`LargeStruct`, `SmallStruct` not recovered). `func_struct_byval` takes no parameters in decompiled version (should take LargeStruct). `func_struct_byptr` takes `int*` instead of `SmallStruct*`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present (`(int *)`, `(long *)`, `(undefined4 *)`). `param_double_ptr` uses `long*` instead of `int**`. Pointer arithmetic on generic types creates undefined behavior risk.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. No explanation of complex varargs handling logic. No decompilation confidence indicators for uncertain reconstructions.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs handling not identified as standard C variadic pattern. No algorithm or design pattern recognition. Calling convention differences not documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Varargs functions appear normal but are highly uncertain. Struct passing issues not flagged despite complete type loss.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., null checks). No postconditions or return value guarantees. Error conditions not documented despite stack canary presence.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. Global variable references shown as `&DAT_00103008` without symbolic names. No call graph documentation provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping comments separating test sections. Original test organization (calling conventions, parameter passing, return values) lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions declared but some incorrectly (e.g., `printf` with wrong signature). Would require significant patching to compile. Missing type definitions for all structs.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+6+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.666
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.71/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Struct types completely lost**: `LargeStruct` and `SmallStruct` not recovered; `func_struct_byval` shows no parameters instead of struct parameter
+- **Varargs functions severely degraded**: `varargs_func` has 14+ `undefined4/8` parameters instead of proper `va_list` handling
+- **Function return types incorrect**: Multiple functions marked `void` that should return `int` (e.g., `call_cdecl`, `call_stdcall`)
+- **Parameter type/order errors**: `func_mixed_args` has parameters in wrong order and wrong types
+- **Zero semantic documentation**: No comments explaining complex logic, varargs handling, or decompilation uncertainty
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making core functionality immediately identifiable despite other issues
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union types, making half the test cases essentially unreadable and semantically incorrect
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** from stack access patterns and field offset analysis to recover `LargeStruct`, `SmallStruct` definitions
+2. **Add varargs pattern detection** to recognize `va_start`/`va_arg`/`va_end` sequences and generate proper `...` function signatures
+3. **Insert decompilation confidence annotations** for uncertain reconstructions (e.g., "// UNCERTAIN: struct parameter may be incorrect")

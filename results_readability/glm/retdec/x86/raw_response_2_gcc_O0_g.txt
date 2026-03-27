@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`, `v4`), obscuring the semantic meaning found in the source (e.g., `sum`, `i`, `len`). While parameters like `arr`, `n`, and `p` are preserved, local variables lose all descriptive context.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the source symbols (e.g., `process_char`, `linked_list`, `binary_tree_sum`), accurately reflecting the original functionality and making the API surface clear.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers are prevalent for memory offsets (e.g., `44`, `100`, `4`) instead of struct field access or array indexing. String literals are accessed via PC-relative offsets (e.g., `v1 + 0x1bde`), making the string content invisible in the code.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is polluted with compiler artifacts, specifically `__x86_get_pc_thunk_ax` calls in almost every function to access global data, which significantly disrupts the reading flow and obscures the actual logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Critical control flow failures occur in `ptr_func_simple` and `ptr_func_complex`, where function calls are replaced by returning the function pointer cast to an integer. Additionally, `linked_list` incorrectly implements traversal as a linear array scan (`v2 += 4`) instead of following the `next` pointer.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are mapped 1:1 with the source, maintaining appropriate granularity and cohesion. The decompiler did not fragment functions or merge them inappropriately, preserving the original modular structure.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but the frequent insertion of `__x86_get_pc_thunk_ax` calls at the beginning of functions interrupts the linear flow. Complex boolean expressions (e.g., in `pointer_array`) also reduce readability.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: In `volatile_access`, the decompiler output `return 2 * *p;` incorrectly eliminates the redundant read required by the `volatile` keyword present in the source, changing the semantic meaning of the operation.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While basic types like `int32_t` and `char` are used, the decompiler fails to recover `long double` correctly (using `float64_t` or `float80_t` inconsistently) and produces confusing logic for `process_ll` (`0x100000000 * x ...`). Pointers are often cast to `int32_t` for arithmetic.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct and union types are completely lost; all accesses are flattened to pointer arithmetic and offsets (e.g., `*(int32_t *)(v1 + 4)` instead of `p->y`). Bitfields in `struct_bitfields` are recovered as complex division/modulo operations rather than named fields.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts, such as casting function pointers to `int32_t` (e.g., `return (int32_t)f`) and casting `char*` to `int32_t*` for memory access, which erases type safety and makes the code fragile.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10
+Justification: The decompiler provides useful metadata comments mapping addresses to source lines (e.g., `Line range: 16 - 21`), but there are no comments explaining the *logic* or algorithms, leaving complex expressions like `v2 / 2 % 4` unexplained.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level patterns are missed. The linked list traversal is treated as an array iteration. Function pointer callbacks are not recognized as calls. The "State Machine" pattern in `enum_switch` is flattened into nested `if` statements without recognizing the switch intent.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents incorrect code confidently without flags. For example, `ptr_func_simple` returns a cast pointer instead of calling it, yet there is no warning or "UNCERTAIN" marker to alert the analyst to this failure.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For instance, the null check in `array_complex_index` is buried in a complex boolean expression without explicit documentation of the bounds check contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are generally clear where they succeed (e.g., `process_char(65)`), and the use of original names helps. However, the failure to resolve indirect calls in `ptr_func_simple` breaks the call graph visibility for those paths.
+
+**17. Module Organization:** Score: 8/10
+Justification: The output is well-organized, preserving the order of functions from the source file and grouping related logic (e.g., all array tests together). The separation of prototypes and implementations is clean.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code includes non-standard intrinsics like `__readgsdword` and `__asm_hlt`, and the `__x86_get_pc_thunk` functions are stubs that would require implementation or specific compiler flags to compile successfully.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Function Pointer Failure**: In `ptr_func_simple`, the decompiler output `return (int32_t)f;` completely drops the function call `f(x)`, rendering the logic incorrect.
+- **Linked List Traversal Error**: `linked_list` uses `v2 += 4` (array iteration) instead of following the `next` pointer (`current = current->next`), fundamentally misrepresenting the data structure.
+- **Struct Erasure**: Structured types like `Point3D` and `Flags` are flattened to raw pointer arithmetic (e.g., `*(int32_t *)(v1 + 4)`), losing all semantic field information.
+- **Volatile Semantics Lost**: `volatile_access` is decompiled to `return 2 * *p;`, optimizing away a read that the source explicitly required to be distinct due to the `volatile` qualifier.
+- **Logic Inversion**: `process_char` logic is decompiled as `c > 90 ? c : c + 32;`, which incorrectly converts non-uppercase characters below 'Z' (like '0') to lowercase, unlike the source logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved all original function names from the binary symbols, making the high-level API easy to navigate despite the poor internal code quality.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The complete failure to recover structs, unions, and bitfields, replacing them with opaque pointer arithmetic and magic number offsets, is the single biggest barrier to understanding the code's purpose.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Recover Struct Layouts**: Implement analysis to identify pointer arithmetic patterns that map to structure fields and emit `struct` definitions with named members instead of raw offsets.
+2.  **Fix Function Pointer Handling**: Correctly identify and decompile indirect calls via function pointers rather than casting them to integers and returning the address.
+3.  **Improve Control Flow for Data Structures**: Recognize standard traversal patterns (like `current = current->next`) to avoid misinterpreting linked lists as contiguous arrays.

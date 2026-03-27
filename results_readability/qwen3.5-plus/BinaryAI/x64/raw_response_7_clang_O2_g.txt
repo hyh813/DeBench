@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are entirely generic (`param_1`, `iVar1`, `uVar2`, `local_28`, `pbVar4`) with no semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary`, `buffer` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`param_fake_branch`, `decrypt_string`, `param_opaque_predicate`), but some internal functions use generic names (`FUN_00101020`) and external wrappers add noise.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x14`, `0x23`, `0xe1`, `0x7a314` appear without explanation. String literals replaced with `&DAT_001021d5` references. Original constants like `0xDEADBEEF` eliminated through constant folding.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant runtime artifacts present: `_init`, `_fini`, `_start`, `deregister_tm_clones`, `register_tm_clones`, `__do_global_dtors_aux`. External function stubs (`strncpy`, `puts`) add unnecessary wrapper code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Mixed quality—`param_fake_branch` oversimplified to `return param_1` (dead code eliminated), while `param_vectorized_loop` has extremely complex manual loop unrolling. Do-while patterns used instead of natural for loops.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but `call_string_encryption` duplicates `param_string_encryption` code entirely instead of calling it. `test_obf_opt_edge` has inlined decryption logic that should be function calls.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `param_vectorized_loop` has deeply nested loops with complex indexing disrupting flow. Multiple forward jumps and do-while constructs make top-to-bottom reading difficult.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant code duplication—`call_string_encryption` duplicates ~30 lines from `param_string_encryption`. `test_obf_opt_edge` duplicates decryption logic. Loop unrolling in `param_vectorized_loop` not recognized or abstracted.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `undefined4`, `undefined8` used throughout. `int*` became `ulong` in `param_vectorized_loop`. `param_division_by_zero` returns `ulong` instead of `int`. Original `int`, `char*`, `size_t` types lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct definitions recovered. `jmp_buf` used as opaque `__jmp_buf_tag *`. Bit fields in `param_implementation_defined` completely eliminated (constant folded to `return 0x2f`). Array types decay to pointers.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(int *)(param_1 + lVar16 * 4)`, `(undefined4 *)`, `(long)&uStack_18 + 4`. Pointer arithmetic on `ulong` types throughout. Signal handler casts `(__sighandler_t)0x0` are dangerous.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API documentation. Original source had extensive comments explaining obfuscation techniques.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Opaque predicates not identified as such. Dead code elimination in `param_fake_branch` not noted. Loop unrolling not recognized. String encryption/XOR pattern not documented. Signal handling pattern not identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about constant folding eliminating dead branches. No indication that `param_fake_branch` logic was removed. No warnings about type degradation or potential undefined behavior in signal handling.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). No postconditions. No error condition documentation. Signal handler contracts completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved and global variables referenced (`div_zero_caught`, `jmp_buffer`), but no call graph documentation. No relationship information between functions. External dependencies not clearly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file with no logical grouping. Runtime initialization functions mixed with application code. No header file separation or namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile without significant modification. External function wrappers conflict with real implementations. Missing includes. Type mismatches (`undefined4` vs `int`) would cause compilation errors.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+7+4+3)/4 = 4.25
+Level 2 Average: (5+6+5+4)/4 = 5.00
+Level 3 Average: (3+2+3)/3 = 2.67
+Level 4 Average: (1+2+2+1)/4 = 1.50
+Level 5 Average: (5+4+3)/3 = 4.00
+
+Overall = (4.25 × 0.30) + (5.00 × 0.25) + (2.67 × 0.20) + (1.50 × 0.15) + (4.00 × 0.10)
+        = 1.275 + 1.25 + 0.534 + 0.225 + 0.400
+        = 3.68/10
+```
+
+**Overall Readability Score: 3.7/10**
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1`, `local_28`** should be named based on semantic usage (e.g., `input_value`, `result`, `decrypted_buffer`)
+- **`param_fake_branch` dead code eliminated** without any indication—the永假 (always-false) branches that were the test purpose are completely gone
+- **`call_string_encryption` duplicates code** instead of calling `param_string_encryption`, wasting ~30 lines
+- **Type degradation to `undefined4/8`** loses all type safety and semantic information
+- **Zero comments** despite complex obfuscation patterns that need explanation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved (`param_fake_branch`, `decrypt_string`, `param_opaque_predicate`), maintaining some semantic connection to source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding the decompiled code's purpose extremely difficult, especially for obfuscation test cases.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in XOR operations should be named `key`, `encrypted`, `decrypted`)
+2. **Add decompilation confidence annotations** - Flag when dead code is eliminated, when types are uncertain, or when optimization transformations are detected
+3. **Recover function call relationships** - Instead of duplicating code in `call_*` functions, preserve the original call structure to maintain code organization

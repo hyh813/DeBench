@@ -1,0 +1,32 @@
+# Lima configuration for BinBench x86 (32-bit) Environment
+# This instance uses a pure 32-bit OS (Ubuntu 18.04 i386) to run on QEMU x86_64 emulation.
+# This ensures kernel-level compatibility for 32-bit Frida injection.
+
+vmType: "qemu"
+arch: "x86_64"  # Host emulation architecture
+images:
+# Ubuntu 18.04 LTS (Bionic Beaver) - Last LTS with official i386 cloud images
+- location: "https://cloud-images.ubuntu.com/releases/bionic/release/ubuntu-18.04-server-cloudimg-i386.img"
+  arch: "x86_64" # Lima expects x86_64 here for the emulator, even if the OS is 32-bit
+firmware:
+  legacyBIOS: true
+cpus: 4
+memory: "2GiB" # Reduced to 2GiB to avoid highmem/MMIO conflicts on 32-bit
+disk: "50GiB"
+
+mounts:
+- location: "~"
+  writable: true
+- location: "/tmp/lima"
+  writable: true
+
+# Keep the x86 guest minimal. Lima 2.0.x does not ship a Linux-386 guestagent,
+# so this instance may report "Broken" even though SSH and mounts are usable.
+# Disabling containerd avoids additional amd64 rootless/containerd bootstrap
+# failures on the 32-bit guest.
+containerd:
+  system: false
+  user: false
+
+upgradePackages: false
+propagateProxyEnv: false

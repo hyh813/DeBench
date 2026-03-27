@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `a0`, `a1`) with occasional semantic hints (`result`, `flag1`, `idx`, `ptr`). Original source had meaningful names like `result`, `str`, `encrypted`, `decrypted` that were not recovered.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main functions preserved well (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`), but helper functions use mechanical names (`sub_4004b8`, `sub_4005a0`, `sub_401608`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers present without explanation: `3735928559` (0xDEADBEEF), `305419896` (0x12345678), `4294967295` (0xFFFFFFFF). String literal `"test"` preserved but no named constants recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise from `armg_calculate_condition` calls, redundant variable assignments (`v0 = v1; v1 = v2`), and goto labels (LABEL_4005c4, LABEL_4005f0) that obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Some natural if-else structures recovered, but inverted logic present (`if (!((char)armg_calculate_condition(...)))` instead of direct comparison). Loop structures recovered in `param_vectorized_loop` but goto usage in helpers.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical redundancy: functions like `call_fake_branch` and `call_opaque_predicate` call their target twice unnecessarily. Helper functions appropriately separated but some are outline artifacts.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but goto labels (LABEL_4005c4, LABEL_400600, LABEL_400680) disrupt flow in initialization functions.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy: `call_fake_branch()` calls `param_fake_branch(10)` twice and returns the second call. Same pattern in `call_opaque_predicate`, `call_string_encryption`, `call_tail_call_optimized`, etc.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Original `int` often became `unsigned int`. Critical type loss: `jmp_buf` became `unsigned int`, `sigaction` handlers use `unsigned int` instead of proper types. Pointer types present but sometimes generic.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct in `param_implementation_defined` not recovered as struct—just bit operations (`v0 |= 7; v0 |= 248;`). Array `char v1[32]` recovered in `param_string_encryption` but no struct definitions visible.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: pointer arithmetic (`*((char *)ptr + v0)`), type-confused operations (treating `jmp_buf` as `unsigned int`), implicit casts throughout. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. Only `/* do not return */` annotations on some functions. Original source had extensive documentation about obfuscation techniques, expected values, and test scenarios—none recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not recognized. XOR decryption pattern in `decrypt_string` not identified. No design pattern or algorithm naming present.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `armg_calculate_condition` calls indicate unresolved conditions but not explained. Some functions marked `/* do not return */` which is helpful. No warnings about potential undefined behavior or type mismatches.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions. Original source had expected return values in comments (e.g., "期望: 10")—none recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables poorly documented (`g_412008`, `g_412048`, `g_4016a5`). No call graph documentation. Callback relationships (signal handlers) not clearly indicated.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Static functions not properly scoped. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies present (`__libc_start_main`, `signal`, `printf`, `malloc`, `free`). Many undefined globals referenced. Would require significant stubs to compile standalone despite metadata claiming "Compilation Result: Yes".
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+7+5+5)/4 = 5.25
+Level 2 (Structural):   (6+5+6+4)/4 = 5.25
+Level 3 (Type System):  (5+3+4)/3   = 4.00
+Level 4 (Semantic):     (2+3+4+2)/4 = 2.75
+Level 5 (Contextual):   (5+4+5)/3   = 4.67
+
+Overall = (5.25×0.30) + (5.25×0.25) + (4.00×0.20) + (2.75×0.15) + (4.67×0.10)
+        = 1.575 + 1.3125 + 0.80 + 0.4125 + 0.467
+        = 4.57/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Redundant function calls**: `call_fake_branch()` calls `param_fake_branch(10)` twice, returning only the second result
+- **Generic variable naming**: `v0`, `v1`, `v2`, `a0`, `a1` obscure semantic meaning (e.g., `v1` in `param_fake_branch` should be `result`)
+- **Magic numbers unexplained**: `3735928559`, `305419896`, `4294967295` without constant names
+- **Type degradation**: `jmp_buf` became `unsigned int`, losing critical type information for setjmp/longjmp
+- **No comments recovered**: Original source had extensive documentation about obfuscation techniques and expected values—completely absent
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Main function names preserved accurately from source (`param_fake_branch`, `decrypt_string`, `param_opaque_predicate`), maintaining semantic intent for core logic.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation recovered despite original source having extensive comments explaining obfuscation techniques, expected values, and test scenarios.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Eliminate redundant function calls** - Detect when a function calls another and immediately returns that result; don't duplicate the call (fix `call_*` wrapper functions)
+2. **Recover semantic variable names from usage patterns** - Analyze variable usage to infer names (e.g., variable used in `strlen` context should be `str` or `string`)
+3. **Preserve and recover source comments** - When debug symbols (`-g`) are available, extract and embed original comments, especially for obfuscation test cases with expected values

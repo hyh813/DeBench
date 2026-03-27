@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `v0`, `v1`, `ptr`, `a0`, `a1` obscuring semantic meaning. Some functions like `param_strcpy` preserve parameter names (`dst`, `src` in source become `a0`, `a1`), but caller functions like `call_strcpy` use meaningless `v0[8]`, `v1[24]` instead of `buffer`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retain original names (`param_strcpy`, `param_strcmp`, `thread_compute`), but many helper functions use mechanical names (`sub_401030`, `sub_4013e0`). Test functions like `call_strcpy` and `test_standard_library_functions` are well-named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive: `4294967295` (unsigned -1), `4294967294` (unsigned -2), `42` (success code) appear without explanation. Socket constants like `2` (AF_INET), `1` (SOCK_STREAM) not recovered as named constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: unnecessary stack variables (`v0`, `v1`, `v2` for register spilling), redundant assignments (`v0 = v1`), and one unsupported jumpkind error. Some functions like `param_strlen` are clean, but initialization code is noisy.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic functions use natural if-else/while constructs, but complex functions like `param_signal_handling` have deeply nested conditionals. Some initialization functions use `goto` instead of structured loops. At -O0, this level of restructuring is unexpected.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized (no monoliths), but some test functions were optimized away entirely (`call_strcmp` returns constant `0`). Thread functions properly separated but some logic merged incorrectly.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom naturally. Some functions like `__do_global_dtors_aux` use unusual jump patterns. Loop constructs generally recovered as while/do-while rather than goto chains.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant variable assignments common (`v0 = v1; v1 = v2`). Some functions like `call_memcpy` and `call_strlen` return constants instead of computing, losing original logic. No dead code removal in initialization routines.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type erosion: `size_t` becomes `unsigned int`, `pid_t` becomes `unsigned int`, `pthread_t` becomes `char` or `unsigned int`. `FILE*` recovered but struct is empty. All return types are `unsigned int` regardless of original semantics.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions exist but use generic names (`struct_0`, `field_0`, `padding_0`). `FILE` struct is empty. `sockaddr` partially recovered but fields misnamed (`sa_data[14]` instead of proper union). TLS variables not recovered as thread-local.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(char *)&v2`, `(int *)&v3`. Pointer arithmetic on void pointers. `param_strchr_strstr` reuses variable name `ptr` twice causing shadowing. Function pointer types degraded to generic integers.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of magic numbers, algorithm intent, or decompilation confidence. Original source had extensive documentation; none recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls (`strcpy`, `memcpy`, `printf`) correctly identified. Threading patterns (`pthread_create`, `mutex_lock`) recognized but not labeled as concurrency idioms. Signal handling pattern not identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged: `[D] Unsupported jumpkind Ijk_SigTRAP`. Critical bugs like `call_strcpy` returning wrong value (`strlen(&v0)` instead of `strlen(v1)`) not flagged. Incorrect logic in `param_fork_exec` not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for malloc results). Error return values (`4294967295`) not explained as -1. No postcondition inference for functions returning allocated memory.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables use opaque names (`g_403074`, `g_40336c`) instead of string content references. No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source-order but no logical grouping. Related functions (e.g., `param_strcpy`/`call_strcpy`) adjacent but not visually grouped. No header file or API boundary indication.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External declarations present (`extern char g_403074`). Code should compile with proper stubs. Some functions have type mismatches that would cause warnings. Architecture mismatch (original arm64, decompiled x86) may cause issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+6+3+5)/4 = 4.50  × 0.30 = 1.350
+Level 2 (Structural):   (5+6+6+5)/4 = 5.50  × 0.25 = 1.375
+Level 3 (Type System):  (4+3+4)/3   = 3.67  × 0.20 = 0.734
+Level 4 (Semantic):     (1+4+3+2)/4 = 2.50  × 0.15 = 0.375
+Level 5 (Contextual):   (5+5+6)/3   = 5.33  × 0.10 = 0.533
+---------------------------------------------------------
+Overall Score:                                  4.367 ≈ 4.4/10
+```
+
+**Overall Readability Score: 4.4/10**
+
+### Critical Defects:
+- **Variable `v0`, `v1` should be named `buffer`, `test_string`** based on usage in `call_strcpy`
+- **`call_strcpy` returns `strlen(&v0)` instead of `strlen(v1)`** - critical semantic error
+- **`call_strcmp` returns constant `0`** instead of computing actual comparison results
+- **All magic numbers (4294967295, 42) lack explanation** as error codes or success values
+- **Zero comments** despite complex logic in signal handling and threading functions
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names like `param_strcpy`, `thread_compute`, and `param_mutex_lock` were preserved from source, maintaining semantic clarity for primary operations.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of comments makes understanding complex logic (signal handling, thread synchronization) extremely difficult; even basic function purpose documentation is missing.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (e.g., passed to `strlen` → `string_length`, used in loop counter → `index`) to generate meaningful names instead of `v0`, `v1`.
+
+2. **Add decompilation confidence annotations** - Flag potentially incorrect recoveries (like `call_strcpy`'s wrong return value) with comments indicating uncertainty or suggesting manual review.
+
+3. **Recover magic numbers as named constants** - Detect repeated values (4294967295 = -1, 42 = success) and generate `#define` constants with semantic names like `ERROR_CODE`, `SUCCESS_VALUE`.

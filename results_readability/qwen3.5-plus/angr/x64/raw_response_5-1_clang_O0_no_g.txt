@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`) with no semantic meaning. Original variables like `value`, `name`, `capture_by_value` are lost to `field_0`, `padding_4`. Occasional better names like `result`, `cur` are rare exceptions.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions recovered well (`test_cpp_member_func`, `test_cpp_virtual_func`). However, helper functions use `sub_*` pattern and C++ mangled names (`_ZN11SimpleClassC2EiPKc`) are present but not human-readable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound: `4294967295` (represents -1), `0x4004000000000000` (double constant), `24` (vtable offset). No constants recovered; array sizes like `31` for strncpy lack explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: redundant casts (`(unsigned long long)`), register spilling variables (`v4`, `v5`, `v6` as rdi/rsi/rdx), and 40+ `sub_*` wrapper functions that add no value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Exception handling uses goto chains instead of try-catch. Lambda expressions fragmented into separate functions. Some loops recovered but virtual dispatch uses raw pointer arithmetic (`(*((long long *)*((long long *)&arg_0)))`).
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Catastrophic expansion from 540 to 4368 lines (8x). Template instantiations and smart pointer operations split into dozens of tiny functions (`std::__uniq_ptr_impl`, `std::_Tuple_impl`, `std::_Head_base`).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps disrupt flow in exception handlers. Exception paths create non-linear reading. Some functions read top-to-bottom but many have confusing jump patterns.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Template instantiation creates massive duplication (separate functions for `Container<int>` and `Container<double>`). Smart pointer operations repeated across multiple nearly-identical functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: C++ classes degraded to `struct_0`, `struct_1` with `field_0`. Template types lost entirely. Smart pointers become `char*` and `void*`. Original types like `int`, `size_t`, `const char*` often become `unsigned long long`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Class structures lose all field names (`value` → `field_0`, `name` → `padding_4`). Inheritance relationships invisible. Vtable layouts unclear. MultiDerived shows `struct_1 **v3` instead of proper `BaseA*`, `BaseB*` pointers.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Pervasive unsafe casts: `(long long)(*(v10))[8]`, `(char *)ptr + 4 * v1`. Pointer arithmetic replaces member access. Virtual calls use raw function pointer dereferencing without type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. One anomaly marker exists (`[D] Unsupported jumpkind Ijk_SigTRAP`) but no algorithm explanations or API contracts.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: RAII patterns from smart pointers not identified. Virtual dispatch mechanism unexplained. Template instantiation patterns opaque. Lambda capture semantics lost.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Single anomaly marker for SigTRAP. Most problematic code (exception handling, virtual calls, this-pointer adjustments) presented confidently without warnings about uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `idx < size` checks not explained). Exception contracts lost. No postcondition or invariant information recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships partially visible through names. Virtual dispatch chains obscured by pointer arithmetic. Inheritance relationships not explicit in code structure.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All code in single output with no logical grouping. Related class methods scattered. No namespace or package structure recovered from C++ code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies undeclared. C++ standard library requirements not specified. Would require extensive manual work to compile (missing headers, type definitions, linkage).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00
+Level 2 (Structural):  (4+3+4+3)/4 = 3.50
+Level 3 (Type):        (3+2+3)/3   = 2.67
+Level 4 (Semantic):    (2+2+3+2)/4 = 2.25
+Level 5 (Contextual):  (4+3+3)/3   = 3.33
+
+Overall = (4.00×0.30) + (3.50×0.25) + (2.67×0.20) + (2.25×0.15) + (3.33×0.10)
+        = 1.20 + 0.875 + 0.534 + 0.338 + 0.333
+        = 3.28/10
+```
+
+**Overall Readability Score: 3.3/10**
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named based on semantic usage (e.g., `result`, `index`, `size`)
+- **Class structures lost** - `SimpleClass` fields `value` and `name` became `field_0` and `padding_4`
+- **Exception handling** represented as goto chains instead of try-catch blocks
+- **Template instantiation** created 8x code bloat with duplicated functions
+- **Virtual function calls** use raw pointer arithmetic obscuring polymorphism
+- **Smart pointer semantics** lost - RAII behavior not recoverable from output
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Test function names were successfully recovered from symbols, maintaining semantic connection to original source.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- C++ class structures completely lost field names and inheritance relationships, making object-oriented code nearly impossible to understand.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class semantics** - Use debug symbols to restore field names, inheritance hierarchies, and vtable structures instead of generic `struct_0` definitions.
+2. **Recognize C++ idioms** - Detect RAII patterns (smart pointers), exception handling (try-catch), and lambda expressions to produce idiomatic output rather than raw pointer operations.
+3. **Consolidate template instantiations** - Group related template specializations and add comments explaining the template relationship rather than producing 8x code expansion.

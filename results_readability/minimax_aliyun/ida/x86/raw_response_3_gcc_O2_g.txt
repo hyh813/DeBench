@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `i`, `ptr` dominate the code. While some globals like `global_counter`, `global_array` are well-named, most local variables use generic single-letter prefixes that obscure their semantic purpose (e.g., `v1` should be `arr` in `local_array`, `v2` should be `result` in `heap_basic`).
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions (`test_stack_memory`, `test_heap_memory`, `double_value`, `local_vars`) match source names well. However, many internal functions use generic `sub_XXXX` naming (sub_1030, sub_1040), and some source functions like `static_helper` are not recovered with correct names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test output literals like `20`, `10`, `15`, `42` are clear. However, unexplained magic numbers persist: `0x14u` (stack canary), `0x28u` (40 bytes), `0xCu` (12 bytes), `0xFFFFF000` (VLA alignment mask). The stack canary check `__readgsdword(0x14u)` appears without explanation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack canary checks (`__readgsdword(0x14u)`), empty assembly stubs (`__x86.get_pc_thunk.bx`), 17 failed decompilations noted at end. The `__asm { jmp dword ptr [ebx+8] }` in `sub_1030` is raw assembly noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with if/else and while loops. The `vla_stack` function has awkward alloca handling with while loops for alignment, but this is expected at -O0. Test functions have straightforward sequential logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized (30-80 lines). Core functions like `heap_basic`, `linked_list_heap` are properly decomposed. Some test wrapper functions could be cleaner but overall decomposition is acceptable.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error handling (e.g., `if (!v1) return -1;`). No excessive forward jumps or goto spaghetti. The `vla_stack` function has some non-linear alloca handling but it's manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No major dead code. Loop unrolling is minimal. Some repeated patterns in test functions but they're call sequences, not code duplication. The `test_heap_memory` function has some redundant variable declarations but nothing severe.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types like `int`, `char`, `void*` are used correctly. However, many generic types appear: `_DWORD*` instead of `int*`, `_WORD*` instead of appropriate types. Function pointers sometimes lose their signature (e.g., `int (*)(int)` becomes generic in `call_global_callback`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Node` and `TreeNode` structs are recovered with correct field names (`data`, `next`, `left`, `right`). However, the `Point` struct is not properly recovered in `heap_struct` - it just returns `3 * x` without struct allocation. Some array declarations lose size information.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations present: `*(_DWORD *)ptr` after free in `dangling_pointer`, pointer arithmetic like `&v8[-2] + v4` in VLA handling, casting `void*` to `_DWORD*` without validation. The `memop_unaligned_access` uses unsafe `*(_DWORD *)(buf + 1)` without alignment checks.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in decompiled functions. The only comments are the header indicating "Decompiled by IDA Pro 9.0" and some function descriptions. No explanation of algorithms, no recovery of source comments like "// MEM-L1-01: 局部变量".
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable: malloc/free pairs, linked list traversal, tree operations. However, no explicit pattern naming (e.g., "Implements linked list with sentinel"). The `stack_alias` function's aliasing pattern is not highlighted.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The decompilation notes 17 failed functions at the end (`__libc_start_main`, `memmove`, `free`, etc.), but these are external library functions, not anomalies in the decompiled code itself. No warnings about potential undefined behavior like the `dangling_pointer` access after free.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. The source had safety checks like `if (n <= 0 || n > 1000) return -1;` in `vla_stack` but these are present in decompiled code. However, no documentation of what those checks mean (e.g., "requires: n > 0").
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear in test functions. Global variable usage is visible (`global_counter`, `global_array`). However, callback relationships like `set_global_callback` → `call_global_callback` → `double_value` could be better documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped somewhat logically (stack functions, heap functions, static functions, memory ops). However, many internal init functions (`sub_1030` through `sub_1140`) are interleaved with user functions, and the organization doesn't match the source's clear section comments.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The metadata states "Compilation Result: Yes", indicating the code compiles. External dependencies (libc functions) are implicit. Some stubs needed for undefined symbols like `extern_global_var` and `extern_function` but these are expected for separate compilation units.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: Generic `v0`-`v5` naming obscures semantic purpose throughout; `arr` in `local_array` should not be lost
+- **Missing struct recovery**: `Point` struct in `heap_struct` is reduced to inline calculation `3 * x`, losing the heap allocation pattern
+- **Noise artifacts**: Stack canary checks (`__readgsdword(0x14u)`) add 15+ lines of noise without explanation
+- **No comments**: Zero recovery of source comments like "// MEM-L1-01: 局部变量" or algorithm explanations
+- **Type safety**: Unsafe pointer dereference after `free()` in `dangling_pointer` is presented without warning
+
+### Best Quality Aspect: Control Flow Naturalness (7/10)
+Control flow structures are mostly preserved - if/else, while loops, function calls are all natural and readable. The decompiler correctly recovered loop constructs rather than using goto patterns.
+
+### Most Needs Improvement: Variable Naming Quality (3/10)
+The pervasive use of `v0`, `v1`, `v2`, `i`, `ptr` makes tracking variable purpose extremely difficult. At -O0 optimization, there's no excuse for not inferring better names from usage patterns (e.g., `v1` used as array index → `index` or `i`).
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: At -O0, track how variables are used (array indexing, size calculation, pointer dereferencing) to generate semantic names like `array_ptr`, `element_count`, `result_val`
+2. **Recover struct types from allocation patterns**: Detect `malloc(sizeof(TypeName))` patterns and reconstruct struct definitions with field names
+3. **Annotate compiler artifacts**: Add comments explaining stack canaries (`// Stack protection`), TLS get_pc thunks, and other compiler-generated code that obscures logic

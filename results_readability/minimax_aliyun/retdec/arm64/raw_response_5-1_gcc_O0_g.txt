@@ -1,0 +1,93 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All local variables use generic names like `v1`, `v2`, `v3`, `result`, `a1`, `a2`, `a3`. For example, in `_Z20test_cpp_member_funcv`, the object `v1` should be named `obj` based on its usage as a `SimpleClass` instance. The decompiler makes no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: C++ name demangling works well - `_ZN11SimpleClass8getValueEv` correctly demangles to `SimpleClass::getValue()`. However, many helper/thunk functions use mechanical names like `function_1860`, `function_1c98`, and the vtable accessor functions are not clearly labeled.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Global constant `g1 = 0x1234` correctly maps to `SimpleClass::getClassID()` return value, and `g30 = 0x3e8` (1000) is used for multiplication. However, many magic numbers like array sizes (31 for strncpy) and offsets are unexplained. The UTF-8 encoded Chinese strings are preserved but not decoded.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Massive noise from STL template implementations - hundreds of lines for `std::unique_ptr`, `std::tuple`, `std::_Tuple_impl`, etc. Vtable structures (`struct vtable_167f8_type`) add clutter. Stack protection checks (`__stack_chk_fail`) are present but not clearly marked as compiler artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Main test functions have natural control flow matching source. However, `test_cpp_exception()` at line 0x2290 shows incomplete exception reconstruction - it throws but doesn't properly model the catch blocks. Virtual function dispatch through vtables is handled but interrupts natural reading flow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Test functions are reasonably decomposed (20-80 lines each). However, STL template instantiations create massive bloated functions - `_ZNSt15__uniq_ptr_implIiZ18test_cpp_smart_ptrvEUlPiE_E` is 50+ lines of boilerplate. Some functions like `test_cpp_multiple_inheritance` return incomplete results (`return &v1;` instead of computed value).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. Exception handling has some forward jumps. The `call_virtual_func` function at 0x1c70 is incorrectly implemented - it just returns the pointer instead of calling the virtual function through vtable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code. Some repeated patterns in template instantiations (Container<int> and Container<double> have similar but not identical code). Loop constructs are recognizable but not optimized.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int64_t`, `int32_t`, `uint32_t`, `uint64_t` appropriately. Function signatures include parameter types. Minor issues: some places use generic `int` where `int32_t` would be precise. The `template_max<double>` uses `float64_t` correctly.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Vtables are reconstructed as named struct types with function pointer fields (`struct vtable_16ae0_type`). However, class data members are accessed via raw offsets (e.g., `*(int32_t *)((int64_t)result + 8)` for `Derived::multiplier`). No struct definitions for user classes like `SimpleClass` or `LifecycleClass`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Few unsafe casts. Pointer arithmetic uses proper calculations (e.g., `v1 + 4 * v2` for array access). Virtual function calls use correct vtable indirection. Minor issue: some pointer-to-integer conversions that could lose precision on 32-bit systems.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Some line range information preserved (e.g., "// Line range: 23 - 26"). Demangled names provided. However, no explanatory comments for algorithms or non-obvious logic. The comment "From class: Base" appears but adds little value.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Virtual function mechanism is visible through vtable structures, but not explicitly named as "polymorphism" or "vtable dispatch". Template instantiation patterns are present but not identified as "template specialization". Exception handling is partially recognized but not documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for suspicious code. The `call_virtual_func` function is fundamentally broken (returns pointer instead of calling virtual function) but no warning is given. Indirect calls through vtables are not flagged as potentially unresolvable.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions recovered. No bounds checking documentation. The `getData` function has implicit bounds checking (returns -1 for out-of-range) but this contract is not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear through direct calls. Global variables like `g27` (instance_count) are used consistently. However, no documentation of who calls whom or callback relationships. The vtable globals (g2-g16) have unclear relationships to classes.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by feature (test functions together, class methods together). However, the file is a single monolithic 2700+ line block. No separation into logical sections or files. STL implementation functions are interleaved with user code.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code uses standard C library functions (puts, printf, strlen, strcmp, etc.). Should compile with minimal stubs. Dependencies are implicit rather than documented. No obvious compilation errors expected.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable naming**: All locals are `v1`, `v2`, `a1`, `result` - completely generic and uninformative
+- **Broken function**: `call_virtual_func` returns the pointer instead of calling through vtable - semantically incorrect
+- **Incomplete return**: `test_cpp_multiple_inheritance` returns `&v1` (address) instead of computed value
+- **Exception handling broken**: `test_cpp_exception` throws but doesn't model catch blocks
+- **No struct recovery**: Class data members accessed via raw offsets with no struct definitions
+
+### Best Quality Aspect: Type System Fidelity (6.0/10)
+- Type precision is good with proper use of int32_t/int64_t
+- Vtable structures are reconstructed with named fields
+- Function signatures include parameter types
+
+### Most Needs Improvement: Lexical Clarity (4.3/10)
+- Variable naming is completely generic
+- Function naming for helper/thunk functions is mechanical
+- Significant noise from STL template implementations
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: If `v1` is passed to `SimpleClass` constructor and its field at offset 0 is accessed as `value`, name it `obj` or `simpleObj`
+2. **Fix broken virtual function call**: `call_virtual_func` should dereference the vtable and call the function, not just return the pointer
+3. **Recover struct definitions**: Instead of `*(int32_t *)((int64_t)result + 8)`, generate `struct SimpleClass { int value; char name[32]; };` and use `result->value`

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `result`) with no semantic meaning. For example, `process_char(int a1)` should have `char_input` or `character`, and `array_1d_stack` parameters should be `array` and `count` instead of `a1` and `a2`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names are preserved (`process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `struct_simple`), accurately reflecting their purpose. However, some helper functions are named generically (`sub_1030`, `sub_1070`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `a1 + 32` in `process_char` should indicate ASCII conversion, `0x1Au` for range check). Test functions show pre-computed constants (97, 98, 300) instead of function calls, obscuring the original logic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: explicit register annotations (`@<eax>`, `@<ebx>`), type casts (`(_DWORD *)`), and optimization artifacts (loop unrolling in `array_1d_stack` despite claimed `-O0` compilation). Stack variable comments (`[esp+4h] [ebp-18h]`) add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loop unrolling creates unnatural code structure (e.g., `array_1d_stack` unrolls 8 iterations explicitly). The original simple `for` loops are transformed into complex do-while structures with bit manipulation (`a2 & 0x7FFFFFF8`), making logic harder to follow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are correctly identified and match source structure. However, test functions like `test_data_types_l1` have been optimized to eliminate actual function calls, reducing cohesion between test and implementation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but contains forward jumps and complex loop exit conditions. The `array_oob` function has particularly convoluted control flow with multiple conditional branches for loop handling.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Excessive redundancy from loop unrolling (e.g., `array_3d` repeats 25 similar memory access patterns). The same unrolling pattern appears across multiple array functions without abstraction, creating maintenance burden.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `char` becomes `int`, `long double` return types for `process_float`/`process_double` are incorrect, structs become `_DWORD *` arrays. `volatile_access` loses volatile semantics entirely (returns `2 * *a1` instead of two separate reads).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover struct/union definitions. `Point3D`, `Rect`, `Widget`, `Node`, `Graph` all become `_DWORD *` with field access via array indexing (`a1[2]`, `a1[3]`). Bitfield struct `Flags` is reduced to `_WORD *` with manual bit extraction.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(_DWORD *)`, `(_WORD *)`). Pointer arithmetic is explicit but type-unsafe (`a1 + 4 * v2`). Function pointer types are partially preserved but with generic parameter types (`int (__cdecl *)(int)` instead of specific signatures).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No source comments recovered. Only decompiler metadata present (register annotations, stack offsets). No algorithm explanations, no parameter documentation, no indication of original intent (e.g., "大写转小写" for `process_char` is lost).
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not identified: ASCII case conversion in `process_char`, diagonal matrix access in `array_2d_stack`, linked list traversal in `linked_list`. The decompiler treats all as generic memory operations without pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies noted (`// positive sp value has been detected, the output may be wrong!` in `_start`), but critical issues unflagged: `volatile_access` optimization, `array_oob` undefined behavior, type mismatches in float functions. Four functions marked as "FAILED to decompile."
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `array_complex_index` requires bounds checking). No postconditions inferred. Null pointer checks exist in code but aren't documented as contracts. Error conditions (return -1) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but test functions don't actually call implementation functions (constant-folded results). Callback relationships partially visible (`ptr_func_simple`, `struct_func_ptr`) but function pointer targets not resolved.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source (data types → arrays → pointers → composites). However, runtime initialization functions (`_start`, `init_proc`, `deregister_tm_clones`) interspersed with application code without clear separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Cannot compile standalone: undefined symbols (`dword_0`, `dword_3640`, `asc_35BF`), missing external declarations (`printf`, `puts`), architecture-specific constructs (`__usercall`, `__cdecl`). Four library functions failed to decompile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3 + 8 + 5 + 4) / 4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5 + 7 + 6 + 4) / 4 = 5.50 × 0.25 = 1.38
+Level 3 (Type System): (4 + 2 + 5) / 3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2 + 3 + 4 + 2) / 4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5 + 6 + 3) / 3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.49/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Complete struct/union type loss**: All composite types (`Point3D`, `Rect`, `Widget`, `Node`, `Graph`, `Flags`, `UnionData`) reduced to `_DWORD *` arrays, losing all field semantics
+- **Test function constant folding**: Test functions print pre-computed results instead of calling actual functions, breaking the relationship between tests and implementations
+- **Volatile semantics lost**: `volatile_access` optimized to `2 * *a1` instead of two separate memory reads, fundamentally changing behavior
+- **No variable name recovery**: All 100+ variables use generic names (`a1`, `a2`, `v1`, `result`) despite clear usage patterns
+- **Architecture mismatch**: Source claims arm64 but decompiled code shows x86 constructs (`__x86.get_pc_thunk.bx`, `[esp+4h]`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, allowing immediate identification of purpose
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to reconstruct any struct/union definitions, forcing all composite access through raw pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct pattern recognition**: Detect repeated field access patterns (e.g., `a1[0]`, `a1[1]`, `a1[2]` accessed together) and propose struct definitions with inferred field names based on usage context
+2. **Preserve test function call relationships**: Avoid constant folding in test functions; maintain actual function calls to preserve the verification relationship between tests and implementations
+3. **Add semantic variable naming**: Use data flow analysis to infer variable purposes (e.g., parameters used in array indexing should be named `index` or `count`, parameters dereferenced should be named `ptr_` prefixed)

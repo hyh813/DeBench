@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names (`a0`, `a1`, `a2`) while local variables use cryptic names (`v0`, `v1`, `v2`, `idx`, `ptr`). The original source used meaningful names like `size`, `x`, `y`, `result` which are completely lost. Only a few variables like `idx` hint at their purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Many test functions were correctly recovered with their original names (e.g., `param_macro_constants`, `call_macro_constants`, `param_asm_basic`). However, wrapper/thunk functions use generic `sub_XXXXX` pattern, and parameters lack semantic naming (e.g., `param_macro_functions(unsigned long a0, unsigned int a1)` should be `param_macro_functions(int x, int y)`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some constants are meaningful (64, 30, 32, 116, 500) matching expected outputs, but magic numbers like `0x400` (1024), `0x200` (512), `57072` (0xDEF0), and `3229874313` (machine code bytes) lack explanation. The decompiler correctly computed `57122` (0xDF22) but didn't explain the hex constant.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Generally clean output with minimal compiler artifacts. However, unusual constructs appear: `int <0x401b30[is_1]|Stack bp-0x68, 1 B>` in `test_asm_features` and some confusing array indexing patterns. No significant dead code or redundant casts observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with standard loops (`for (idx = 0; idx < a1; idx++)`) and conditionals. At `-O0`, the decompiler correctly recovered loop structures. Some unusual patterns in `call_asm_multi_insn` with nested ternary operators, but overall flow is readable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good decomposition - main calls test functions, which call individual param/call function pairs. Functions are appropriately sized (20-50 lines). The original source's function structure is well preserved. Minor issue: some wrapper functions just call other functions without adding value.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error handling (e.g., `param_dynamic_code` returns -1 on mmap failure). No excessive goto or forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy. Loop unrolling is minimal (appropriate for -O0). Dead code is absent. Some duplicated logic in `call_asm_privileged` but it's part of the original test structure.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation. Original `int` became `unsigned int` or `unsigned long long`. Original `size_t` became `unsigned long`. The parameter `param_asm_clobber(unsigned long ptr, unsigned int a1)` should be `param_asm_clobile(int *arr, int n)`. Type precision is lost, especially for pointers.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: The code primarily uses primitives, so struct recovery isn't critical. Where needed (like `param_asm_simd`), the decompiler uses raw pointer arithmetic rather than reconstructing the `int[4]` arrays. No struct types were recovered, but the code remains functional.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some concerning patterns: `ptr(a0)` in `param_dynamic_code` treats function pointer as data, `*((unsigned int *)p)` for machine code写入. No severe type safety violations that would cause undefined behavior in practice.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in decompiled output. The original source had extensive comments explaining macro behavior, assembly constraints, and test expectations. Zero recovery of this documentation. Auto-generated function signatures don't explain what the function does.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No explicit pattern recognition. The decompiler didn't identify the inline assembly patterns, the macro expansion behavior, or the conditional compilation logic. Could have noted "This function implements a macro-expanded constant" or "SIMD vector addition using SSE".
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No explicit flagging of anomalies. The unusual `int <0x401b30[is_1]|Stack...` construct should have been flagged. The x86_64 output despite arm64 metadata (mentioned in decompiler header) wasn't explained. Could have noted "Platform mismatch: source arm64, binary x86_64".
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract recovery. Original source had implicit contracts (e.g., `param_asm_atomic` requires valid pointer, `param_dynamic_code` returns -1 on failure). These aren't documented. Could have added "requires: counter != NULL" or "returns: -1 on mmap failure".
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: External functions properly declared with `extern`. Function call relationships are clear from code structure (test functions call param functions). However, no explicit documentation of call graph or which functions are called by whom.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing tests first, then asm tests. Static functions properly scoped. The original file had clear section comments (5.2, 5.3) which aren't recovered but the grouping is sensible.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code compiles (as noted in metadata). External dependencies (`__printf_chk`, `mmap`, `munmap`, `mprotect`, `sysconf`, `atomic_exchange_add`) are properly declared. Would compile with standard libc.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`a0`, `a1`, `v0`, `v1`) - original names like `size`, `x`, `y`, `result` are lost
+- Type precision severely degraded: `int` → `unsigned long long`, `int*` → `unsigned long`
+- No comments recovered from original source explaining macro behavior, assembly constraints, or test expectations
+- Platform mismatch: source metadata says arm64 but decompiled binary is x86_64 - no explanation provided
+- No anomaly indication for unusual constructs like `int <0x401b30[is_1]|Stack...`
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- At -O0, loops and conditionals are correctly recovered in natural form
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+- Generic single-letter variable names completely obscure the semantic purpose that was clear in the original source
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When a parameter `a0` is compared against `0x400` (1024), infer it as `size` or `max_size`. When `a0 * 10` is computed, infer as `multiplier`.
+2. **Recover type precision**: Use data flow analysis to determine if `unsigned long long` should be `int` or `size_t`. Pointer types should preserve element type information.
+3. **Add semantic comments**: When recovering macro-expanded code, add comments explaining the original macro (e.g., "// Original: MAX_SIZE (1024)"). Flag platform/architecture mismatches explicitly.

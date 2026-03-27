@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (v0, v1, v2, ptr, idx, i). The cryptic notation `vvar_21{r56|8b}` for VLA variables is completely unreadable. Only a few symbols like `global_counter` were recovered from debug info.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Inconsistent naming - some functions recovered correctly (local_vars, heap_basic, double_value, test_stack_memory), but most use auto-generated names like `sub_401020`. The function `call_static_func` was recovered but its helper `static_helper` was not.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Error return values correctly shown as 4294967295 (0xFFFFFFFF). Some test results hardcoded (e.g., "20" for stack_alias). Magic numbers in loops (10, 20) are inferable from context. Minor issues with some arithmetic expressions.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains [D] markers for unsupported operations (Ijk_SigTRAP, MBusEvent-Imbe_Fence). Register annotations like `{r56|8b}` are cryptic artifacts. Some redundant variable declarations (ptr declared twice in heap_realloc). Moderate noise level.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops correctly rendered as do-while constructs. However, `call_global_callback` uses goto instead of proper function pointer invocation. At -O0, control flow should be cleaner. Some conditionals use awkward expressions like `a0 - 1001 < 4294966296` for bounds checking.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized (20-80 lines). The test functions appropriately call sub-functions. Some granularity issues - `test_stack_memory` is 60+ lines mixing test logic with computation. Parameter lists generally appropriate.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. The `call_global_callback` uses goto for indirect call which disrupts flow. Some forward jumps in error handling paths. Moderate nesting in linked_list_heap (3 levels).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Loop unrolling present in several functions (e.g., heap_basic uses idx+=2 instead of i++). This is expected at any optimization level. No major dead code. Some redundant pointer copies but manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results - uses `unsigned int`, `unsigned long`, `unsigned long long` without consistency. Function pointers stored as `unsigned long long` rather than proper function pointer types. Size_t usage inconsistent. Some type erosion from original int/char types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct recovery with generic names (struct_0, struct_1, struct_2). The Node structure in linked_list_heap has field_0/field_8 naming. Point struct recovered but with padding annotations. Partial reconstruction - usable but loses semantic field names.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe patterns: dangling_pointer returns *(ptr) after free. heap_overflow has off-by-one loop (i != 1100 with i+=100). Some pointer arithmetic without bounds checking. Not catastrophic but some undefined behavior present.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments explaining logic. Only auto-generated comments like "do not return" on __libc_start_main. No algorithm documentation. No decompilation confidence indicators. Very sparse.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognizable (linked list traversal, tree operations) but not explicitly named or documented. Memory allocation patterns (malloc/free) identified. No explicit pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some [D] markers present for unsupported operations (Ijk_SigTRAP, MBusEvent-Imbe_Fence). However, critical anomalies like dangling_pointer dereference after free not flagged. Incomplete anomaly detection.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No pre/postcondition documentation. No error condition explanation. The implicit contracts (e.g., "ptr != NULL" for malloc results) not documented. No invariant recognition.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: External functions declared (extern_function, double_value). Global variables referenced. Some call relationships visible in test functions. Not comprehensive - no call graph documentation or usage context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by category (stack, heap, static, memory ops). Static functions properly scoped. However, arbitrary ordering - not matching original source organization. Single file output.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Many extern declarations present. Would need stubs for external functions (printf, malloc, fork, etc.). Some patching required but structure is compilable with moderate effort.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- Variable naming is nearly all generic (v0, v1, v2, ptr, idx) making code flow extremely difficult to trace
+- VLA variables use cryptic notation `vvar_21{r56|8b}` that is completely unreadable
+- No comments explaining algorithms, contracts, or decompilation confidence
+- Function names inconsistent - some recovered (local_vars) but most auto-generated (sub_401020)
+- Type precision lost - function pointers as unsigned long long, inconsistent integer types
+- Anomaly detection incomplete - dangling pointer dereference not flagged
+
+### Best Quality Aspect: Literal Clarity (7/10)
+- Error returns correctly shown as 0xFFFFFFFF
+- Test expected values hardcoded appropriately
+- Magic numbers in loops are inferable from context
+
+### Most Needs Improvement: Variable Naming Quality (3/10)
+- Nearly all variables use generic names that obscure their semantic purpose
+- The cryptic register annotations like `{r56|8b}` are completely unreadable
+- At -O0 debug level, variables should retain debug symbol information
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `ptr` used in malloc/free pairs → `heap_ptr`, `idx` in loop bounds → `loop_index`)
+2. **Recover debug symbols for -O0 binaries**: At debug optimization level, variable names should be recoverable from DWARF debug info
+3. **Add semantic comments**: Document algorithm intent, preconditions, and decompilation confidence for non-trivial logic

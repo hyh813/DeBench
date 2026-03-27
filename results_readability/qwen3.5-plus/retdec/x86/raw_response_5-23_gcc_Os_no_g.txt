@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `a1`, `a2`, `result`). Original source had meaningful names like `size`, `counter`, `exec_mem`, `page_size` that are completely lost. Example: `param_macro_constants(int32_t a1)` should have `size` as parameter name.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main function names are well-preserved (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). However, helper functions use generic names (`function_10b0`, `function_10c0`) and compiler artifacts (`__x86_get_pc_thunk_*`) clutter the namespace.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `282` in `param_builtin_macros`, `3168` for printf offsets, `0xdef0` without context. Original macros like `MAX_SIZE` (1024) and `BUFFER_COUNT` (16) were not recovered as named constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_*` calls, `__readgsdword(20)` stack canary checks, `__stack_chk_fail_local()`. The incorrect `typedef int64_t int128_t` adds confusion. Generic globals `g1` through `g8` obscure purpose.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural, but `param_macro_constants` uses an overly complex ternary: `v1 < 0 == ((v1 ^ a1) & (a1 ^ (int32_t)"loneTable")) < 0 == (v1 != 0) ? 64 : (int32_t)&g2` instead of simple `if (size > MAX_SIZE)`. Loop structures in `param_asm_clobber` are reasonably clear.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match original source well with appropriate granularity. However, aggressive constant folding occurred: `call_macro_constants()` returns `64` directly instead of calling `param_macro_constants(2048)`, losing call relationship visibility.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but complex single-line expressions disrupt flow. `param_macro_constants` condenses entire logic into one return statement. Some functions have forward references to string offsets (`v1 + 3168`).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Constant folding created some redundancy (caller functions return constants instead of calling callees), but this is optimization artifact rather than decompiler error.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`/`uint32_t` consistently which is good. However, `typedef int64_t int128_t` for SIMD is incorrect (should be 128-bit). Original `size_t` for `n` parameter in `param_asm_multi_insn` degraded to `int32_t`. Pointer types generally preserved.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: This code has minimal struct usage, so limited opportunity for evaluation. Array parameters like `int32_t * a1` in `param_asm_clobber` correctly indicate pointer-to-array. No significant composite type loss observed.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int32_t *)`, `(char *)`, `(int128_t *)` throughout memory operations. Pointer arithmetic in `param_asm_multi_insn` (`*(char *)v3`) lacks bounds checking. The incorrect `int128_t` typedef could cause type confusion in SIMD operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation about preprocessing behavior, macro semantics, and assembly purposes. No decompilation confidence indicators or algorithm explanations provided.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition evident. Macro expansion patterns (SQUARE, MAX, ADD_16) were constant-folded without noting the original macro structure. Assembly intrinsics (`__asm_movaps`, `__asm_paddd`) preserved but not explained as SIMD patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged despite several concerning patterns: indirect string offsets, stack canary artifacts, and the incorrect `int128_t` typedef. Assembly intrinsic calls appear without context about their origin or purpose.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error conditions documented. Functions like `param_memory_protection` have multiple error return paths (-1, -2, -3) without explanation of what each means.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships not documented. Global variables `g1`-`g8` used throughout without indicating their purpose (likely string tables or constants). Call graph inferable but not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order rather than logical grouping. Preprocessing tests and assembly tests are intermixed. No separation between test functions and implementation functions.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes necessary headers but has portability issues: `__readgsdword` is x86-specific, `int128_t` typedef is incorrect. External function declarations present but dependencies not documented. Would require modification to compile on non-x86.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (3×0.10 + 8×0.10 + 4×0.05 + 4×0.05) = 1.50
+Level 2 (25%): (6×0.08 + 7×0.07 + 6×0.05 + 7×0.05) = 1.62
+Level 3 (20%): (6×0.08 + 7×0.07 + 5×0.05) = 1.22
+Level 4 (15%): (2×0.05 + 3×0.03 + 3×0.03 + 2×0.04) = 0.36
+Level 5 (10%): (5×0.04 + 5×0.03 + 5×0.03) = 0.50
+
+Overall = 1.50 + 1.62 + 1.22 + 0.36 + 0.50 = 5.20/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects
+- **Variable names completely generic**: `a1`, `v1`, `result` instead of `size`, `counter`, `exec_mem` - requires manual reverse engineering to understand purpose
+- **Zero comments**: No documentation of preprocessing semantics, macro behavior, or assembly purposes that were in original source
+- **Magic numbers unexplained**: `282`, `3168`, `0xdef0` appear without context; original `MAX_SIZE`, `BUFFER_COUNT` macros not recovered
+- **Incorrect type definition**: `typedef int64_t int128_t` is wrong (128-bit should be 128-bit), could cause confusion in SIMD code
+- **Constant folding obscures relationships**: `call_macro_constants()` returns `64` directly instead of showing it calls `param_macro_constants(2048)`
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Main function names like `param_macro_constants`, `param_asm_basic`, `test_preprocessing_features` were preserved from debug symbols, maintaining semantic clarity for entry points.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of comments means all semantic context from original source (macro explanations, assembly purposes, expected values) is lost, requiring external documentation to understand intent.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover variable names from debug symbols**: The `-g` flag was used during compilation; variable names like `size`, `counter`, `exec_mem` should be extractable from DWARF debug info rather than generating `a1`, `v1`.
+
+2. **Detect and document constant-folded macros**: When a function returns a constant (e.g., `call_macro_constants` → `64`), add comments indicating the original call pattern and macro values that were folded (`MAX_SIZE=1024`, `BUFFER_COUNT=16`).
+
+3. **Add semantic comments for assembly intrinsics**: Functions using `__asm_movaps`, `__asm_paddd` should include comments explaining these represent SIMD vector operations, and note the original inline assembly intent from source.

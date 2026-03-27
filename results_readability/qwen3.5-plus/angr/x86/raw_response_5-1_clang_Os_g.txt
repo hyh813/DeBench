@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v0`, `v1`, `ptr`, `temp` with zero semantic meaning (e.g., `capture_by_value` became `v0`, `instance_count` became `_ZN14LifecycleClass14instance_countE`). No variable names reflect their actual purpose from the source.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Some mangled C++ names recovered (`_Z20test_cpp_member_funcv`) but most are generic (`sub_401030`). Critical functions like `test_cpp_virtual_func` are empty stubs despite having meaningful source logic.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers (42, 100, 200) appear without explanation. String literals referenced via opaque globals (`g_402081`, `g_4021d8`) instead of inline strings, obscuring printf content.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Massive padding structs (`padding_0[11715]`, `padding_0[11611]`) pollute the code. Multiple `[D] Unsupported` markers and compiler artifacts throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Uses `goto` patterns instead of loops (e.g., `goto ptr[2]` in `sub_401030`). Many functions that should have loops are empty or use unnatural jump patterns.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: Critical test functions (`test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_lambda`) are empty `return;` stubs. Logic completely lost rather than decomposed.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Some functions read top-to-bottom but many have forward jumps disrupting flow. Exception handling code has confusing label patterns (`LABEL_0x4014fa`).
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Struct definitions contain thousands of bytes of padding redundancy. Same unsupported operation markers repeated across multiple functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Widespread `void*` usage where specific types needed (e.g., `Container<int>::Container(void* ptr)`). `int` used universally instead of `size_t`, `uint32_t`, etc.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: C++ classes (`Base`, `Derived`, `SimpleClass`) not recovered as proper structs. Virtual table mechanisms lost. Structs are mostly padding with generic `field_0` names.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts (`(int)v1[24]`, `(char *)&ptr[2973]`). Pointer arithmetic on void pointers throughout. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only decompiler error markers (`[D] Unsupported jumpkind`). No algorithm explanations or API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No C++ patterns recognized—no virtual table recovery, no RAII pattern identification, no template instantiation clarity. Lambda expressions completely lost.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies marked with `[D]` but descriptions are unhelpful (`unsupported_<class 'pyvex.expr.GetI'>`). Doesn't guide manual analysis.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts completely missing.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls present but virtual dispatch not recovered (e.g., `call_virtual_func` shows raw vtable access). Inheritance relationships lost.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with no logical grouping. Related class methods scattered. No namespace or header structure.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Won't compile—contains `[D] Unsupported` markers, incomplete function bodies, and missing external dependencies. Requires extensive manual repair.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+3+3+2)/4 = 2.50 × 0.30 = 0.75
+Level 2 (Structural):  (3+2+4+2)/4 = 2.75 × 0.25 = 0.69
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (1+2+4+1)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (3+4+2)/3   = 3.00 × 0.10 = 0.30
+─────────────────────────────────────────────────────────
+Overall Score:                              2.57/10
+```
+
+**Overall Readability Score:** 2.6/10
+
+### Critical Defects:
+- **12 test functions are empty stubs** - `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_diamond_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_smart_ptr` all just `return;`
+- **C++ class structures completely lost** - No recovery of `SimpleClass`, `Base`, `Derived`, `Container<T>` as proper types with methods
+- **Massive padding structs** - `padding_0[11715]` and similar obscure actual data layout
+- **Virtual table mechanism not recovered** - Polymorphism calls shown as raw pointer arithmetic
+- **Template instantiations broken** - `Container<double>::push` contains `[D] unsupported` SIMD operations
+
+### Best Quality Aspect:
+- **Anomaly Indication (4/10)** - At least marks unsupported operations with `[D]` flags, alerting analysts to decompilation failures rather than presenting incorrect code confidently.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero explanatory comments; a decompiler at -O0 should recover and document the original source's intent, especially for C++ semantics.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts** - Analyze vtable pointers to reconstruct class hierarchies, virtual methods, and inheritance relationships instead of raw pointer arithmetic.
+2. **Preserve function body logic for test functions** - Empty stubs indicate analysis failures; implement better control flow recovery for functions with exception handling and complex C++ constructs.
+3. **Replace padding arrays with meaningful struct fields** - Analyze actual memory access patterns to recover field names and types instead of generating `padding_0[11715]` placeholders.

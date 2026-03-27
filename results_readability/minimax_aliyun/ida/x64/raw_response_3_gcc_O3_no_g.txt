@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use extremely generic names like `v0`, `v1`, `v2` through `v18` in almost every function (e.g., `large_stack_frame` has `si128`, `v1`-`v18`). While some globals like `global_counter`, `global_array`, `file_scope_static` are correctly recovered, the vast majority of local variables are uninformative. The parameter `a1` is used everywhere without semantic meaning.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Many test functions and core functions are correctly named (`double_value`, `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `test_stack_memory`). However, initialization stubs use generic names like `sub_1020` through `sub_1110` with no semantic value. The mix of good and poor naming makes it a 6/10.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x28u` for stack canary, `0x10u` for struct sizes, `0x14u` for realloc). However, some return values like `20`, `10`, `15` can be inferred from context. The decompiler hardcodes expected outputs in test functions rather than computing them.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe SSE/AVX intrinsic pollution throughout: `_mm_load_si128`, `_mm_add_epi32`, `_mm_slli_epi32`, `_mm_unpacklo_epi16`, `_mm_packus_epi16`, `_mm_and_si128`, `_mm_srli_epi64`, `_mm_shuffle_epi32`, `_mm_mul_epu32`, `_mm_cvtsi128_si32`. Functions like `large_stack_frame` are nearly unreadable due to vectorization. The `__readfsqword(0x28u)` for stack canary adds noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Basic control flow is preserved - loops and conditionals are recognizable. However, at -O0 this should be near-perfect. Some loop constructs use goto-style jumps, and the extensive loop unrolling (visible in `vla_stack`, `alloca_usage`, `heap_basic`) makes the logic harder to follow than necessary.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with good granularity. Each test case (`local_vars`, `local_array`, etc.) is correctly extracted as separate functions. The decomposition matches the source well, with no 500-line monoliths.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but some forward jumps exist (e.g., `goto LABEL_7`, `goto LABEL_10` in `linked_list_heap`). The deep nesting in `test_heap_memory` with multiple label-based jumps disrupts linear flow.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive loop unrolling in `large_stack_frame` (2048 iterations expanded to explicit SIMD operations), `vla_stack`, `alloca_usage`, `heap_basic`, `heap_calloc`, `heap_array`, `memory_leak`. This redundancy makes it nearly impossible to see the original simple loop logic. No comments explaining the unrolling.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `unsigned int`, `void*`, `size_t`). However, many instances use generic `int` where `size_t` would be more appropriate (e.g., array indices). Function pointers like `global_func_ptr` are typed as `__int64` rather than proper function signatures. The `__int64` return type is used everywhere instead of more specific types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct recovery is present - `Node` with `data` and `next` fields is partially visible. However, most structs are accessed via raw pointer arithmetic (e.g., `*(_DWORD *)v3 = 20;` instead of `node->data = 20;`). The `Point` struct is completely lost in `heap_struct` - just returns `3 * a1` directly.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations present: raw pointer arithmetic (`*(_DWORD *)&v16[4 * v10]`), casting to `void*` then accessing as different types, no bounds checking on array accesses. The `dangling_pointer` function correctly shows the bug but the code itself is dangerous. Many `_OWORD` and `_QWORD` casts obscure the actual data types.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. The only comments are auto-generated like "BYREF" for parameters. No explanation of algorithm logic, no indication of decompilation confidence, no documentation of preconditions/postconditions. The "positive sp value has been detected" warning is useful but rare.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns are recognizable - linked list creation/traversal in `linked_list_heap`, tree creation in `tree_heap_traversal`. However, these are not explicitly labeled or documented as design patterns. The decompiler doesn't say "this is a linked list" - you have to infer it from the code.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The "FAILED to decompile" messages for library functions are helpful. The "positive sp value has been detected" warning in `_start` is good. However, no warnings about potential undefined behavior in `dangling_pointer`, `double_free`, or `heap_overflow`. No flags for the intentional bugs in the test code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of error handling expectations. The `if (!v2) return -1;` patterns are preserved but not explained as "requires: non-null input" or "ensures: returns -1 on allocation failure".
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible (`main` calls `test_stack_memory`, etc.). Global variable usage is partially clear (`global_counter`, `global_array`). However, no explicit documentation of call graphs or relationships. The callback pattern in `set_global_callback`/`call_global_callback` works but isn't documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically - stack functions together, heap functions together, static functions together. However, the file is a single monolithic output. Static vs. extern functions aren't clearly distinguished beyond the code itself.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: External functions are declared (`extern int extern_global_var;`, `extern int extern_function(int x);`). The code should compile with standard library linkage. Minor issues like missing `const` on string pointers, but generally compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming is extremely poor - generic `v0`-`v18` throughout, making it nearly impossible to track variable purpose
+- Severe SSE/AVX intrinsic pollution in `large_stack_frame` and others makes code nearly unreadable
+- Massive loop unrolling without comments obscures original simple loop logic
+- No struct recovery - `Point` struct completely lost, accessed via raw pointer arithmetic
+- No comments explaining any algorithm or providing decompilation confidence
+- Type precision is poor - everything is `int` or `__int64`, losing `size_t`, specific struct types
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+Functions are properly separated with good granularity matching the source. Each test case is correctly extracted as a separate function with appropriate boundaries.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10) and Noise Reduction (2/10)  
+The combination of extremely generic variable names and severe compiler intrinsic pollution makes the code nearly unusable for analysis. At -O0, we should see near-original source readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When a variable is used as array index, name it `index` or `i`. When used to store size, name it `size` or `count`. The current `v0`-`v18` pattern is unacceptable.
+2. **Abstract SSE/AVX intrinsics**: Instead of showing `_mm_add_epi32(_mm_slli_epi32(v7, 1u), v9)`, either comment "loop unrolled with SIMD" or provide a cleaner abstraction. Current output is worse than assembly.
+3. **Recover struct types from allocation sizes**: When seeing `malloc(8)` followed by two field assignments, infer it's a 2-field struct. When seeing `malloc(16)` with `data` and `next` pattern, recognize it as a linked list node.

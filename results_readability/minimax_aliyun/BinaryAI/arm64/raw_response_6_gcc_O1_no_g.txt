@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy` and related test functions
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_8`, `local_38`, `uStack_30`. The original parameters `dst` and `src` are completely lost. Even stack-allocated buffers like `auStack_28` provide no semantic meaning about being a "buffer" for string operations.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are well-preserved: `param_strcpy`, `call_strcpy`, `param_strcmp`, etc. match the original source exactly. The naming is action-oriented and semantically accurate.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x2a` (42 decimal) appear without explanation. The string "HelloLib" is correctly embedded but not explained. Constants like `0x1b6` (file permissions) and `0x42` (66 decimal, 'B' character) lack documentation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`) and `__stack_chk_fail` calls add noise. The `local_8 = ___stack_chk_guard` pattern appears in nearly every function, obscuring the actual logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper if-else structures. However, some loops use do-while patterns that could be more idiomatic. The `param_strcpy` function has incorrect flow (missing return statement).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (30-80 lines typical). The test wrapper functions (`call_strcpy`) properly separate from implementation (`param_strcpy`). Good granularity overall.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Early returns used appropriately in error handling. Some forward jumps in complex functions like `param_pthread_join` but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop unrolling is minimal at -O0. Some redundant stack frame setup but acceptable.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: **Critical defect**: `param_strcpy` returns `void` instead of `int`. The `strlen()` result is computed but discarded. Parameter `param_2` should be `const char*` but is `char*`. Many `int` vs `size_t` mismatches. The `param_3` in `param_memcpy` correctly uses `size_t`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Thread data structures like `ThreadData` are partially recovered with fields as array indices (`param_1[2]` for result). Struct field names are lost but offsets are correct. The `pthread_attr_t` is correctly shown as `(pthread_attr_t *)0x0`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations: missing `const` on string parameters, incorrect return types, pointer arithmetic in `param_shmget_shmat` using `(long)__s + 5`. Some casts are unnecessary but not dangerous.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments present** in the entire decompiled output. The original source has extensive comments explaining each test case, but these are completely lost. No documentation of what each function does or the test expectations.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Standard library functions are correctly identified (`strcpy`, `strlen`, `pthread_create`). Threading patterns (mutex lock/unlock) are recognized. The atomic operations show ARM64-specific intrinsics (`__aarch64_ldadd4_acq_rel`).
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: **No anomaly indication** for critical issues. The missing return value in `param_strcpy` is not flagged. The `strlen()` call that should be returned is silently dropped. No warnings about type mismatches or potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The contract that `param_strcpy` should return the string length is completely lost. No error condition documentation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are implicit through code structure but not documented. It's clear that `test_standard_library_functions` calls the test wrappers, but no explicit cross-reference comments exist.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped: standard library functions first, then system calls, then threading. The order matches the original source organization well.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: **Will not compile**: `param_strcpy` returns void but should return int. Missing return statements in several functions. External declarations for library functions are present but some types are incorrect. Requires significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Return type error**: `param_strcpy` declared as `void` instead of `int`, with `strlen()` result silently discarded
+- **Missing const correctness**: All string source parameters lose `const` qualifier
+- **No comments**: Zero documentation explaining function purpose or test expectations
+- **Generic variable names**: `param_1`, `param_2`, `local_x` provide no semantic meaning
+- **No anomaly indication**: Critical semantic errors not flagged to analyst
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Function names match original source exactly and use appropriate action verbs
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+- Zero comments in 1889 lines of decompiled code leaves analyst without any guidance
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover return values**: When a function calls another function and discards the result, check if the original function should return that value. The `strlen()` call in `param_strcpy` is a clear indicator.
+2. **Add const correctness**: Analyze pointer usage to determine if `const` should be applied to source parameters in string/memory functions.
+3. **Generate semantic comments**: Use pattern recognition to add comments explaining what functions do (e.g., "// Tests strcpy: copies string and returns length"). Include test expectations where detectable.

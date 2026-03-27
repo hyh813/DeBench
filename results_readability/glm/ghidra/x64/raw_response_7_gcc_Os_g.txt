@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Local variables are overwhelmingly generic (e.g., `iVar1`, `iVar2`, `lVar1`, `pbVar1`), obscuring the logic in functions like `param_opaque_predicate`. While parameters (`x`, `n`, `acc`) and some stack variables (`encrypted`, `decrypted`) are recovered, the heavy reliance on compiler-generated names significantly hinders understanding.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `param_fake_branch`, `call_opaque_predicate`), likely due to the presence of debug symbols (`-g`). This provides excellent high-level context and navigation.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent without symbolic context; signal numbers `8` (SIGFPE) and `0xb` (SIGSEGV) are used directly, and stack offsets like `0x28` appear inline. While some constants like `0x15` (21) are clear mathematically, they lack the semantic naming found in the source.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, but compiler artifacts like `undefined8 in_RAX` and stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail`) clutter the functions. These are necessary for correctness but reduce the purity of the logic presentation.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is reconstructed into idiomatic C constructs (for-loops, if-else blocks) effectively. For example, the recursive `param_tail_call_optimized` is correctly displayed as a `for` loop, and the GCD logic in `param_opaque_predicate` is a readable `while` loop.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly. There is no inappropriate inlining or outlining visible in the decompiled output; functions like `decrypt_string` are kept separate, maintaining the original modularity.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps. Complex logic like the `setjmp`/`longjmp` error handling in `param_division_by_zero` is presented in a clear, sequential conditional structure.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler accurately reflects the compiler's optimization work. Dead code (like the fake branches) is completely removed, and expressions are simplified (e.g., bit hacks in `param_instruction_substitution` are folded into arithmetic), resulting in clean, non-redundant code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types (`int`, `char *`) are mostly correct, but precision degrades in places; `size_t` is often represented as `long` or `undefined8`, and function return types like `call_undefined_behavior` are `undefined8` instead of `int`. Signedness is generally preserved.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Standard types like `__jmp_buf_tag` are recognized. While the bitfield struct in `param_implementation_defined` was optimized away to a constant return, the decompiler handles the remaining types (like pointers and arrays) accurately.
+
+**11. Type Safety:** Score: 7/10
+Justification: Code includes necessary casts (e.g., `(int)(10 / (long)x)`, `(byte *)strncpy`) that reflect the compiler's type promotions. While verbose, they are technically correct and safe, though `undefined8` usage reduces confidence.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to Ghidra's auto-generated warnings (e.g., "WARNING: Unknown calling convention"). There are no comments explaining the *intent* of the code, such as the opaque predicate logic or the signal handling setup.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: Standard idioms like `setjmp`/`longjmp` for exception handling and `signal` registration are clearly visible. The loop structures are recognizable, though the specific "opaque predicate" mathematical idiom is not explicitly identified.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: Ghidra effectively flags potential issues, such as "WARNING: Subroutine does not return" for `__longjmp_chk` and "WARNING: Unknown calling convention" for various functions, alerting the analyst to irregularities.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or invariants. For example, the contract that `param_division_by_zero` handles a specific signal is implicit in the code structure, not documented as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the recovered names. Global variable references like `jmp_buffer` and `div_zero_caught` are clear, making the data flow easy to trace between the signal handlers and the logic functions.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order (mostly address-based, but grouped). The separation between "param" functions and "call" functions is preserved, aiding in understanding the test structure.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on compiler intrinsics and glibc specifics (`__stack_chk_fail`, `__libc_start_main`). While valid C, it requires a specific environment and headers to compile, lacking standalone portability.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.2/10
+
+**Critical Defects:**
+- Variable names like `iVar1` and `lVar1` in `param_opaque_predicate` obscure the GCD algorithm logic.
+- Magic numbers for signals (`8`, `0xb`) are used instead of named constants (`SIGFPE`, `SIGSEGV`).
+- Stack canary checks (`in_FS_OFFSET`) clutter the function bodies, distracting from business logic.
+- Type precision loss with `undefined8` reduces confidence in data handling.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The presence of debug symbols allowed perfect recovery of all function names, making high-level navigation trivial.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 4/10)
+- The heavy reliance on generic, compiler-generated names for local variables makes tracking state within functions difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Enhance local variable renaming heuristics to infer names from usage patterns (e.g., identifying GCD loop variables).
+2. Map known system call numbers and signal constants to their macro names (e.g., replace `8` with `SIGFPE`).
+3. Abstract stack canary checks into a macro or a collapsible code block to reduce visual noise.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `iVar1`, `uVar2`, `local_10`, `piVar1`). Original names like `arr`, `large_buf`, `vla`, `head`, `current` are completely lost, making it difficult to track variable purposes across functions.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`), but library calls degraded to `FUN_00011xxx` (malloc→`FUN_000111e0`, free→`FUN_00011170`), and helper functions lost semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation (`0x2a` for 42, `0x14` for 20, `0x32` for 50). Original constants and meaningful expressions replaced with hex literals obscuring intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail_local`, `in_GS_OFFSET`) add clutter to every function. Compiler artifacts like `__x86_get_pc_thunk_*` and initialization routines (`_init`, `_fini`) pollute the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops preserved as do-while constructs, but VLA/alloca functions show complex pointer arithmetic instead of clean array indexing. Some functions over-optimized (`local_vars` collapsed to single expression).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved, but test functions heavily transformed (printf→`FUN_00011220`). Some functions constant-folded (`stack_alias` returns `0x14` directly instead of showing alias logic).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with clear execution flow. Stack check conditionals at function exits create minor disruption but don't significantly impede understanding.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Stack canary checks add redundancy but are legitimate security features. Some constant folding present but not excessive.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types (int, char) preserved but mixed with Ghidra-specific types (`undefined4`, `undefined*`). Pointer types sometimes correct but often generic, losing original type information.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Critical failure—struct types completely lost. `Point`, `Node`, `TreeNode` all become generic pointers. `heap_struct` allocates 8 bytes without struct type; `linked_list_heap` uses `int*` instead of `Node*`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Numerous unsafe casts (`(undefined4 *)`, `(int *)`, `(byte *)`). Pointer arithmetic on generic types throughout. No const-correctness preserved from original source.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each test case (MEM-L1-01, HEAP-L2-01, etc.), all lost in decompilation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common C idioms (malloc/free pairs, linked list traversal, tree creation) not explicitly recognized or documented. Pattern structure visible but not named or explained.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about dangerous patterns present in source (dangling pointer in `dangling_pointer`, double-free in `double_free`, memory leak in `memory_leak`). Stack canary present but unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: NULL checks present but not documented as preconditions. No postconditions or invariants recovered. Error return values (-1, -2, -3) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible but library functions named generically. Global variables referenced (`global_counter`, `file_scope_static`) but callback relationships not clearly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in flat output without original section organization (stack/heap/static/memory-ops). No logical grouping or namespace structure preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires extensive stubbing for `FUN_00011xxx` functions. External dependencies (malloc, free, printf) not properly declared. Would need significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+6+7+7)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (6+3+5)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (2+4+3+4)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.97 ≈ 5.0/10
+```
+
+**Overall Readability Score: 5.0/10**
+
+### Critical Defects
+- **Struct types completely lost**: `Point`, `Node`, `TreeNode` all degraded to generic `int*` or `undefined4*` pointers, destroying semantic meaning
+- **Zero documentation**: All original comments explaining test cases (MEM-L1-01, HEAP-L2-01, etc.) completely absent
+- **Library calls anonymized**: `malloc`, `free`, `printf` replaced with `FUN_00011xxx` making code harder to understand
+- **Magic numbers unexplained**: Values like `0x2a` (42), `0x14` (20), `0x32` (50) appear without context
+- **Dangerous patterns unflagged**: Memory leak, dangling pointer, and double-free test cases not marked as anomalous
+
+### Best Quality Aspect
+- **Code Linearization (7/10)**: Despite optimization artifacts, the decompiled code generally reads top-to-bottom with clear execution flow and minimal disruptive jumps.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)**: Complete absence of any documentation or explanations makes understanding the decompiled code's purpose extremely difficult compared to the well-commented original.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover and preserve struct/union type information** from debug symbols or pattern analysis to restore composite type semantics
+2. **Add confidence annotations and warnings** for dangerous patterns (memory leaks, use-after-free, double-free) detected in the binary
+3. **Map library function calls to known signatures** using symbol tables or pattern matching to replace `FUN_00011xxx` with meaningful names like `malloc`, `free`, `printf`

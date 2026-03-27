@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `idx`) with occasional semantic names (`ptr`, `fp`, `count`). Original source had meaningful names like `dst`, `src`, `buffer`, `iterations` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`param_strcpy`, `call_strcpy`, `thread_compute`), but many helpers use mechanical names (`sub_402020`, `sub_4023e5`). Function purpose is partially inferable from preserved names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers dominate: `4294967295` (unsigned -1), `socket(2, 1, 0)` instead of `socket(AF_INET, SOCK_STREAM, 0)`, `signal(10, ...)` instead of `SIGUSR1`. String literals preserved but constants not recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Redundant variable assignments throughout (`v0 = v2; v3 = v5;`), unnecessary stack variable declarations, and compiler artifacts like `v0 = v2` before function calls that obscure actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops generally recovered as do-while constructs, if-else chains are readable. At `-O0` optimization, control flow should match source closely, and most structures are preserved despite some awkward nesting.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical error: `param_strlen()` has no parameters in decompiled version but should have `const char*`. Thread functions properly separated, but parameter loss breaks semantic correctness.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with reasonable flow. Some forward references and deep nesting in signal handling (`param_signal_handling`), but no excessive goto usage disrupting readability.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple redundant variable assignments before function calls, duplicate type casts, and stack variable initialization patterns that add no semantic value but clutter the code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant degradation: `param_strcpy` returns `long long` instead of `int`, `char*` becomes generic `char*` without const, `size_t` becomes `unsigned long`. Return type mismatches throughout.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs have generic field names (`struct_0 { field_0, field_5 }`), `FILE` struct defined but empty, `sockaddr` partially recovered. TLS access shown as pointer arithmetic with magic offset `18446744073709551568`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts visible (`(int)pthread_create(...)`, `(volatile int*)&atomic_counter`), pointer arithmetic without type safety, `param_strlen()` missing parameters creates undefined behavior risk.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled output. One anomaly marker exists (`[D] Unsupported jumpkind Ijk_SigTRAP`), but no explanation of magic numbers, algorithm intent, or decompilation uncertainty.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `memcpy`), thread patterns partially visible. However, no design pattern identification, signal handling pattern visible but not named as such.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but global variables use generic names (`g_4040b7`, `g_4043af`). No call graph documentation, callback relationships not explicit, string references opaque.
+
+**15. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Original sections (6.1 Standard Library, 6.2 System Calls, 6.3 Threads) not preserved. Functions appear mostly in address order.
+
+**16. Build System Compatibility:** Score: 3/10  
+Justification: External functions declared but many missing proper headers. Type mismatches (`param_strlen` missing parameters) would cause compilation errors. Dependencies not documented.
+
+**17. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted (SigTRAP). Critical issues like missing parameters, type mismatches, and uncertain decompilation not flagged. No confidence indicators for recovered code.
+
+**18. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"), no postconditions, no invariants. Error returns shown as magic numbers (`4294967295`) without semantic meaning.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (4+4+3+3+2)/5 = 3.20 × 0.10 = 0.320
+
+Overall = 1.275 + 1.375 + 0.667 + 0.450 + 0.320 = 4.09/10
+```
+
+**Overall Readability Score: 4.1/10**
+
+### Critical Defects:
+- `param_strlen()` missing parameter declaration - function signature broken
+- Magic number `4294967295` used throughout instead of `-1` or `UINT_MAX`
+- Socket/signal constants as raw numbers (`socket(2,1,0)`, `signal(10,...)`)
+- TLS access via pointer arithmetic with magic offset `18446744073709551568`
+- Global variables named `g_4040b7`, `g_4043af` instead of string content references
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions preserved original names (`param_strcpy`, `call_strcpy`, `thread_compute`), making basic navigation possible despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation, no explanation of magic numbers, no decompilation confidence indicators, making semantic understanding extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover parameter information from calling conventions** - Functions like `param_strlen()` must have parameters inferred from register/stack usage patterns at call sites.
+2. **Replace magic numbers with symbolic constants** - Detect common patterns (0xFFFFFFFF → -1, socket domain numbers → AF_INET) and suggest named constants.
+3. **Add decompilation confidence annotations** - Mark uncertain recoveries (e.g., "// DECOMPILER UNCERTAIN: parameter count inferred") to help analysts identify potential errors.

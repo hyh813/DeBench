@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Despite compilation with `-g`, variables are generic (`v1`, `v2`, `v3`) throughout (e.g., in `param_opaque_predicate`), completely losing semantic names like `p1`, `a`, or `b` from the source.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are preserved perfectly from the source (e.g., `param_opaque_predicate`, `decrypt_string`), accurately reflecting their purpose.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `0x7a314` (500500) and `0x106e4` (function address) are used instead of constants or names, though the key `90` in `param_string_encryption` is clear.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The `setjmp` implementation is expanded into a massive, noisy struct literal initialization (e.g., `{ .e0 = {...}, .e1 = 0 ... }`), severely impacting readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: `param_opaque_predicate` returns the "false" branch (`3*x+20`) despite the source logic guaranteeing the "true" branch, and `param_buffer_overflow_heap` is missing its loop entirely.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are mapped correctly to source boundaries with appropriate granularity, maintaining the original modular structure.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Code generally reads top-to-bottom, but `param_vectorized_loop` contains complex pointer arithmetic and nested conditions that disrupt the flow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: `param_non_tail_call` is transformed into a mathematical formula (Gauss summation), which is efficient but obscures the original recursive intent and structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Standard types like `int32_t` are used correctly, but the custom typedef `int33_t` is introduced without justification, and `setjmp` buffers are raw structs.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: The `jmp_buf` type is not recovered; instead, it is represented as a raw, anonymous struct literal with fields `e0`, `e1`, `e2`.
+
+**11. Type Safety:** Score: 6/10
+Justification: Standard casts are present, and pointer arithmetic in `param_vectorized_loop` is syntactically correct, though the `int33_t` usage is questionable.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Only metadata comments (module, address range) are present; there are no comments explaining the complex logic or the decompiler's transformations.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The decompiler failed to recognize the opaque predicate (returning the wrong path) and replaced recursion with a formula, missing standard algorithmic patterns.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No warnings are provided for the suspicious logic in `param_opaque_predicate` or the missing loop in `param_buffer_overflow_heap`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are documented; for example, the requirement for `x` in `param_opaque_predicate` is lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are clear, but cross-references for signal handlers use raw addresses (e.g., `0x106e4`) instead of function names.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically by their source module (`/work/src/7.c`), maintaining good organization.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code likely fails to compile due to the non-standard `int33_t` typedef and the complex struct literal syntax used for `setjmp`.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- `param_opaque_predicate` returns the incorrect branch (`3*x+20` instead of `2*x+10`), inverting the opaque predicate logic.
+- `param_buffer_overflow_heap` completely omits the overflow loop, returning `x` immediately after allocation.
+- `param_tail_call_optimized` replaces the recursive logic with a magic constant `0x7a314`, losing the algorithmic context.
+- `setjmp` is represented as a verbose struct literal instead of the standard library call.
+- Variable names from debug symbols (available via `-g`) are ignored, resulting in generic `v1`, `v2` names.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler perfectly preserved the original function names, making high-level navigation easy.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.0/10)
+- The decompiler failed to recover the correct logic for opaque predicates and silently removed code (loops), making the output semantically untrustworthy.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Utilize Debug Symbols**: Extract and apply variable names from DWARF debug information (available with `-g`) instead of generating generic names.
+2. **Preserve Logic Structure**: Avoid constant folding or aggressive pattern matching that removes loops or inverts logic (e.g., opaque predicates) when the goal is source recovery.
+3. **Standardize Library Calls**: Recognize and emit standard library calls like `setjmp`/`longjmp` rather than expanding them into low-level struct initializations.

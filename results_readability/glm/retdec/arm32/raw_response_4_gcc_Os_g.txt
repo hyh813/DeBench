@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `v3`, and `result`. For example, in `varargs_func`, the accumulator is named `v1` and the loop counter `v4`, completely obscuring the semantic meaning of `sum` and `i`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are recovered accurately from debug symbols (e.g., `test_calling_conventions`, `param_ptr_array`), perfectly matching the source intent and providing clear semantic context.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals are extracted to global variables (`g1`, `g2`) with escaped UTF-8 hex sequences, which is readable but less convenient than inline strings. Magic numbers like `4` (pointer size) and `16` (loop limit) are used without named constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: The code contains significant low-level noise, such as manual stack offset calculations (`bp-12`, `bp-76`) and pointer arithmetic (`4 * v1 + (int32_t)arr`) instead of array indexing, which impedes readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Control flow is often represented as `while(true)` loops with internal `break` conditions (e.g., in `varargs_func`) rather than standard `for` loops. Loop peeling is also present (e.g., in `param_ptr_array`), where the first iteration is split from the main loop, disrupting the natural flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity. There is no unwanted inlining or outlining, which is expected for `-O0` code, making the structure easy to navigate.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: While generally top-to-bottom, the code suffers from "loop peeling" artifacts where initialization or the first iteration is placed before the loop construct (e.g., `param_ptr_array`), requiring the reader to mentally reassemble the loop logic.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: There is no obvious dead code or redundancy, but the verbose pointer arithmetic used to access array elements (e.g., `*(int32_t *)(4 * v1 + (int32_t)arr)`) adds unnecessary complexity compared to standard array subscripting.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types like `int32_t` and `char*` are correctly identified. However, the decompiler fails to recover composite types; structs are treated as raw integers or blobs (e.g., `int32_t s` for a struct), and varargs are treated as raw stack memory access.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct recovery is a critical failure. In `call_struct_byval`, the `BigStruct` is represented merely as `int32_t s`, and in `ret_large_struct`, the return value is treated as a pointer cast to an int. All field information is lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: The code is littered with unsafe casts and pointer arithmetic, such as `*(int32_t *)(4 * v7 + v3)` in `varargs_func`. The decompiler treats memory as a raw byte stream rather than preserving type safety boundaries present in the source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are limited to auto-generated metadata (addresses, line ranges). There are no semantic comments explaining the logic of complex operations like varargs handling or struct manipulation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard C idioms are not recognized. The `va_list` pattern in `varargs_func` is decompiled to manual stack walking, and array indexing is decompiled to pointer arithmetic, failing to convey the original high-level intent.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The decompiler does not flag potential issues. For instance, in `param_func_ptr`, the body is decompiled as `return x + 10;`, which is semantically incorrect compared to the source `callback(x) + 10`, yet no warning or uncertainty is indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are inferred or documented. For example, the requirement that `count` in `varargs_func` matches the number of arguments is not stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls and global variable usage are clear. The relationship between `test_calling_conventions` and the functions it calls is preserved, and string references are correctly mapped to global variables.
+
+**17. Module Organization:** Score: 8/10  
+Justification: The output is well-organized with function prototypes at the top and implementations following. The grouping of functions matches the source file structure logically.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code relies on standard headers (`stdint.h`, `stdio.h`), but the initialization syntax `strs = { "abc", NULL, NULL };` in `call_ptr_array` is non-standard C and likely a decompiler artifact that would fail to compile. Missing struct definitions would also break compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- **Struct Recovery Failure**: In `call_struct_byval`, the `BigStruct` is represented as `int32_t s`, completely losing the 64-byte structure and field semantics.
+- **Varargs Obfuscation**: The `va_list` mechanism in `varargs_func` is decompiled into raw pointer arithmetic (`*(int32_t *)(4 * v7 + v3)`), making the logic hard to follow.
+- **Logic Error in Function Pointer**: In `param_func_ptr`, the decompiled body `return x + 10;` is semantically incorrect; it fails to represent the indirect call `callback(x) + 10`.
+- **Data Initialization Corruption**: In `call_ptr_array`, the array initialization is corrupted to `{"abc", NULL, NULL}` instead of `{"abc", "def", "ghi"}`.
+- **Generic Naming**: Variables are universally named `v1`, `v2`, etc., stripping all semantic meaning (e.g., loop counters, accumulators).
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+- The decompiler successfully preserved the original function names from debug symbols, making the high-level flow easy to trace despite the poor internal variable naming.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+- The complete inability to recover structs (treating them as `int32_t` or raw memory) destroys the data structure context, which is fundamental to understanding the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Enhance Stack Analysis for Structs**: Implement better type propagation to recover structure layouts and field accesses instead of collapsing structs into single integers or raw memory blobs.
+2. **Recognize Standard Varargs Patterns**: Detect `va_start`, `va_arg`, and `va_end` idioms to reconstruct variable argument functions rather than emitting manual stack pointer arithmetic.
+3. **Improve Variable Name Inference**: Utilize data flow analysis to infer semantic names for variables (e.g., identifying loop counters, accumulators, or pointers) instead of defaulting to generic `v1`, `v2`.

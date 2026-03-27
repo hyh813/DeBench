@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Most local variables are marked as "Unresolved local var" with `[???]` markers (e.g., `int sum@[???]`, `int i@[???]`, `va_list args@[???]`). Cryptic auto-generated names like `local_8`, `uVar1`, `iVar2`, `piVar3` obscure variable purpose. Only function parameters retain meaningful names like `a`, `b`, `count`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `cdecl_func`, `stdcall_func`, `call_cdecl`, `test_calling_conventions`, `test_parameter_passing`, `test_return_values`. Minor issues include some internal functions with "FUN_" prefix (e.g., `FUN_00100640`) and the unusual `call_weak_fn` naming.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers are used throughout without explanation (e.g., `0xf` for 15, `0x32` for 50, `0x2a` for 42, `0x15` for 21). String literals are referenced via cryptic addresses like `&DAT_00101752`. No named constants recovered from the source.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise pollution including: numerous "WARNING: Removing unreachable block" comments, "Unknown calling convention" warnings on 15+ functions, "Unresolved local var" markers throughout, and auto-generated variable names like `uVar1`, `iVar2`, `piVar3`, `pbVar2`, `lVar6`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural and readable - simple functions like `cdecl_func` return `b + a` cleanly. The varargs functions have complex loop structures due to ARM64 calling convention handling, which is expected at -O0. Switch statements are sometimes simplified to if-else chains (e.g., `ret_multi_branch`).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Test functions (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) are appropriately sized. Each helper function has single responsibility. No obvious over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately (e.g., in `func_struct_byptr`). Some forward jumps in varargs functions due to loop structure complexity. Deep nesting is minimal (mostly 1-2 levels).
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling visible in `varargs_func` and `param_ptr_array` - the decompiler expanded the loops with multiple iterations visible. No obvious dead code. Some repeated calculations in `func_struct_byval` where each array element is accessed individually.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved: `int`, `char *`, `double`, `long long`, `void *`. Some precision loss: generic `int` instead of `int32_t`, no `size_t` recovery. Function pointer types partially recovered: `_func_int_int *callback`. Const correctness mostly preserved in string parameters.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct names recovered well: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData`. Field names mostly preserved: `data[0]`, `data[15]`, `x`, `y`. Some issues: `TestIntPair` has unresolved local var marker with DWARF debug info shown. The `func_struct_byval` shows individual field access pattern.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some unsafe operations: pointer arithmetic in `ret_pointer` (`p + 1`), void pointer casting in `param_complex_cast`. No obvious type confusion between integers and pointers. Function pointer calls use proper signature types.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly auto-generated WARNING comments about unreachable blocks and unknown calling conventions. No algorithm explanations or decompilation confidence indicators. "Unresolved local var" comments are not helpful for understanding. No documentation of what the functions actually test or their purpose.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic function structures recognized (simple arithmetic, pointer manipulation). No design patterns identified (e.g., no "State machine" or "Strategy pattern" labels). Varargs handling shows recognition of stdarg patterns but not explicitly named. No algorithm pattern recognition.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged: "WARNING: Removing unreachable block" appears 20+ times, "Unknown calling convention" warnings on 15+ functions. However, no indication of indirect call resolution failures, unusual stack layouts, or potential undefined behavior. The "Unresolved local var" markers indicate problems but without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. No invariant documentation. No error condition documentation. Functions like `func_struct_byptr` with NULL checks don't have comments explaining the precondition (p != NULL). No recovery of assertions from source.
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and direct. No documentation of caller/callee relationships. Static functions not explicitly indicated (e.g., `callback_func` should be static). No cross-reference comments explaining relationships between test functions and tested functions.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - test functions together, helper functions grouped by category. Matches source organization approximately. No header file structure recovered. Static functions not explicitly scoped differently from global functions.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code uses standard C library functions (printf, puts, strlen, va_start/va_arg/va_end). External dependencies not documented. Should compile with standard libc. Some type definitions may need stubs (e.g., `EVP_PKEY_CTX` in `_init`). No compiler-specific hacks visible.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming is severely degraded: "Unresolved local var" markers with `[???]` for most local variables, cryptic names like `local_8`, `uVar1`, `iVar2`
+- Magic numbers throughout without explanation: `0xf`, `0x32`, `0x2a`, `0x15` instead of meaningful constants
+- Excessive noise: 20+ "WARNING: Removing unreachable block" comments, 15+ "Unknown calling convention" warnings
+- No contract or assertion recovery: preconditions, postconditions, and invariants not documented
+- Comment quality is poor: mostly auto-generated warnings, no algorithm explanations or decompilation confidence indicators
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Function granularity matches source well, with appropriate single responsibilities and logical grouping of test functions.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+Most local variables are marked as unresolved or use cryptic auto-generated names that completely obscure their semantic purpose.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `local_8` used as loop counter should be named `i` or `index`
+2. Detect magic numbers and suggest named constants - `0xf` appearing in multiple contexts should be recognized as a test value
+3. Add meaningful comments explaining decompilation confidence, algorithm purpose, and unresolved elements rather than auto-generated WARNINGs

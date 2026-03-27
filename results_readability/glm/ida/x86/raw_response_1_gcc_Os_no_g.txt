@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Parameters are generic (`a1`, `a2`, `a3`) and local variables are auto-generated (`v1`, `v2`, `result`), losing the semantic meaning of original names like `temp1`, `sum`, `count`, or `target`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`sequential_ops`, `duffs_device`, `loop_for_fixed`) are perfectly recovered from the debug symbols, matching the source exactly.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Magic numbers like `0x14u` (stack canary offset) and `0x20u` appear without explanation. Jump tables are named generically (e.g., `CSWTCH_56`), and array data is referenced via `unk_3020` rather than literals.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Significant noise from compiler security features: `__readgsdword(0x14u)` appears in almost every function, and `__printf_chk` is used instead of `printf`. `qmemcpy` is used for array initialization instead of C-style initializers.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: The decompiler aggressively simplifies control flow for readability: recursion is converted to loops (`recursion_factorial`), and opaque predicates are eliminated (`obfuscated_cf`). Complex patterns like Duff's device are preserved accurately with `goto` labels.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source. There is no inlining or outlining, maintaining the original modular structure perfectly.
+
+**7. Code Linearization:** Score: 9/10
+Justification: Code reads linearly with minimal jumps. Early returns are used effectively, and the decompiler successfully flattens nested structures where appropriate (e.g., `if_else` became a simple boolean return).
+
+**8. Redundancy Elimination:** Score: 10/10
+Justification: Excellent optimization of expressions; `sequential_ops` is simplified from 3 lines to `2 * (a1 + a2) - a3`, and dead code inside opaque predicates is completely removed, making the logic crystal clear.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Most types are correct (`int`, `unsigned int`), but there is a critical failure in `op_or` where two `int` parameters are incorrectly merged into a single `__int64 a1`, and `HIDWORD(a1)` is used to access the second parameter.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Array initializations are replaced by `qmemcpy` from global data addresses (e.g., `qmemcpy(v2, &unk_3020, 0x14u)`), losing the semantic structure of the array literals defined in the source.
+
+**11. Type Safety:** Score: 9/10
+Justification: Code is generally type-safe. The `__int64` issue in `op_or` is a decompiler error rather than an unsafe cast in the code logic itself. Pointer arithmetic is handled correctly.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no semantic comments explaining the logic (e.g., no mention of "Duff's device" or "State machine"). Only auto-generated headers and warnings like "bad sp value" are present.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: The decompiler recognizes the *logic* of idioms (transforming recursion to loops, removing dead code), but it does not explicitly label them (e.g., it doesn't add a comment saying "Tail recursion optimized to loop").
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: It correctly flags stack issues ("bad sp value at call") and falls back to inline assembly for `computed_goto` when it cannot decompile the indirect jump, which is honest and helpful.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are inferred or documented. For example, the requirement that `n > 0` for `duffs_device` is not commented, though the check `if ( a3 <= 0 )` is visible.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and easy to trace. The relationship between `indirect_recursion_a` and `b` is preserved (though transformed into a loop).
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source file's structure. Helper functions are grouped near their usage.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile standalone due to inline `__asm` blocks, `__readgsdword` intrinsics, undefined `CSWTCH_56` arrays, and references to `unk_` addresses.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.8/10
+
+**Critical Defects:**
+- **Type Recovery Error**: In `op_or`, parameters `int a, int b` are incorrectly decompiled as `__int64 a1`, accessing `b` via `HIDWORD(a1)`.
+- **Loss of Array Semantics**: Array initializations (e.g., in `loop_break`) are replaced by `qmemcpy` from opaque global addresses (`unk_3020`), hiding the data values.
+- **Computed Goto Failure**: The `computed_goto` function falls back to inline assembly (`__asm { jmp ... }`), failing to represent the logic in C.
+- **Excessive Compiler Artifacts**: Stack canary checks (`__readgsdword(0x14u)`) clutter almost every function, reducing readability of simple logic.
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 9/10)
+- The decompiler excels at simplifying complex logic, such as converting recursion to loops and removing opaque predicates, making the code often cleaner than the original source.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 4/10)
+- Despite having debug symbols (`-g`), local variables are reduced to generic names (`a1`, `v1`), stripping away the semantic context provided in the source code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Improve Type Recovery for Registers**: Fix the issue where distinct register parameters are merged into a larger integer type (e.g., `op_or`).
+2. **Recover Array Literals**: Instead of `qmemcpy` from global addresses, attempt to reconstruct static array initializers in the decompiled C code.
+3. **Leverage Debug Info for Locals**: Use the `-g` debug information to recover original local variable names (`temp1`, `sum`) instead of generating generic `v1`, `v2`.

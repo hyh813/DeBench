@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively named `v1` through `v11`, completely obscuring their semantic purpose. For example, in `local_array`, the variable `v4` represents the array base pointer and `v5` is the loop counter, but these meanings are completely opaque. Only occasionally does the decompiler use meaningful names like `mem` for malloc results.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions correctly preserve original names (double_value, local_vars, heap_basic, malloc, free, memcpy, memmove, memset), but the majority use generic names like `function_1140`, `function_1150`, `function_1170`. The test functions are correctly named, but helper functions like `static_helper` should be `helper` to match source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals are partially preserved but accessed through complex address calculations (e.g., `(char *)(v1 + (int32_t)&g18 - 0x2e48)`). Magic numbers like `10`, `5`, `100` appear without explanation. The decompiler does not recover named constants from the source.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe compiler artifact pollution includes `__x86_get_pc_thunk_ax/bx/di/dx`, `__readgsdword`, `__writegsdword`, `__stack_chk_fail_local`, `__asm_hlt`, and `__asm_rep_stosd_memset`. These x86-specific intrinsics appear despite the source being arm64, indicating a fundamental decompilation mismatch. The code also includes unreachable blocks marked "UNREACHABLE".
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: The decompiler uses goto statements extensively (e.g., `goto lab_0x1e02`, `goto lab_0x1e41` in `linked_list_heap`). Loop constructs are sometimes recovered as while loops but with awkward variable management. The `large_stack_frame` function has an infinite-looking while(true) loop that doesn't terminate properly in the decompiled form.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches the original source well. Each test function (test_stack_memory, test_heap_memory, etc.) is properly separated. The main function correctly calls all test functions. No significant inlining or outlining issues at -O0.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: The `linked_list_heap` function has severe linearization issues with multiple goto labels (`lab_0x1e41`, `lab_0x1e02`, `lab_0x1e1b`) creating spaghetti code. Forward jumps interrupt flow in several functions. The code is difficult to read top-to-bottom.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling is present but not excessive for -O0. The `vla_stack` and `alloca_usage` functions have similar patterns that could be abstracted. No major dead code issues, but some redundant calculations exist.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: The decompiler consistently uses `int32_t` which is appropriate for the 32-bit operations. However, function parameters are sometimes mis-typed (e.g., `memop_bcopy` takes `int32_t *` instead of `void *`). The `size_t` type is not recovered, using `int32_t` instead.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The Point struct is completely lost - in `local_struct`, the decompiler computes `3 * a1` directly instead of accessing `p.x` and `p.y`. The Node and TreeNode structures are reduced to raw pointer arithmetic with no field names. In `heap_struct`, fields are accessed as `*mem` and `*(mem+4)` instead of `p->x` and `p->y`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations exist: pointer arithmetic like `*(int32_t *)(4 * v7 + v6)` without bounds checking, casting between int32_t* and char* freely, and accessing freed memory in `dangling_pointer` (the code correctly shows `result = *mem` after `free(mem)`). The `memop_memcmp` has a confusing boolean expression that doesn't match source logic.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments only show address ranges (e.g., "// Address range: 0x13c1 - 0x13d9") and some "UNREACHABLE" markers. No explanation of algorithm logic, no recovery of original comments from source, no documentation of what functions do. The decompiler provides no semantic context.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns are partially visible (linked list traversal in `linked_list_heap`, tree operations in `tree_heap_traversal`), but the decompiler doesn't explicitly identify or name these patterns. The malloc/free pairs are recognized but not annotated as memory management patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The dangling pointer access in `dangling_pointer` (accessing `*mem` after `free(mem)`) is presented without any warning. The double-free in `double_free` is shown but not identified as a bug. No indication of undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions (e.g., "n > 0" for heap functions), postconditions, or invariants. The null checks after malloc are present but not documented as required contracts. Error return values are not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are correctly shown (e.g., `heap_basic(10)`, `malloc(4 * a1)`), but the relationships between functions are not documented. There's no indication of which functions call which others, or the role of callback functions like `set_global_callback` / `call_global_callback`.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are loosely grouped by type (test functions, heap functions, stack functions), but the file is essentially flat with 89 functions in one namespace. Static functions like `static_helper` are not marked as static in the decompiled output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code includes standard headers but has many issues: x86 intrinsics that won't work on arm64, missing `alloca` declaration (uses alloca in source but not in decompiled output), complex string literal access patterns that won't compile, and missing `Point` typedef. The code would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 4 + 5 + 2) / 4 = 3.25
+L2_avg = (4 + 7 + 4 + 6) / 4 = 5.25
+L3_avg = (7 + 2 + 4) / 3 = 4.33
+L4_avg = (2 + 3 + 2 + 2) / 4 = 2.25
+L5_avg = (3 + 5 + 4) / 3 = 4.00
+
+Overall = (3.25 × 0.30) + (5.25 × 0.25) + (4.33 × 0.20) + 
+          (2.25 × 0.15) + (4.00 × 0.10)
+        = 0.975 + 1.3125 + 0.866 + 0.3375 + 0.4
+        = 3.891 / 10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects (Bullet List)
+- **Architecture mismatch**: Decompiled code shows x86-64 artifacts (__x86_get_pc_thunk, __readgsdword, segment registers) despite source being arm64 - fundamental decompilation error
+- **Variable naming**: All variables use generic names (v1-v11) making data flow analysis extremely difficult
+- **Struct recovery failure**: Point, Node, TreeNode structures completely lost; replaced with raw pointer arithmetic losing all semantic meaning
+- **No semantic comments**: Only address range comments present; no algorithm explanation, no anomaly warnings for undefined behavior
+- **Control flow degradation**: linked_list_heap uses goto spaghetti instead of natural while/for loops
+
+### Best Quality Aspect
+- **Function Decomposition (scored 7/10)**: At -O0, function boundaries are correctly preserved and granularity matches source. Test functions properly call their targets.
+
+### Most Needs Improvement
+- **Variable Naming Quality (scored 2/10)**: The decompiler should infer names from usage patterns - `v4` used as array base should be `arr` or `buffer`, loop counters should be `i` or `index`.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Track how variables are used (array indexing, pointer dereferencing, function parameters) to generate semantically meaningful names like `arr`, `i`, `node`, `size`
+2. **Recover composite types**: Detect struct allocation patterns (consecutive malloc, field offsets) and reconstruct struct definitions with field names
+3. **Add semantic comments**: Include algorithm explanations, flag undefined behavior (dangling pointers, double-free), and document preconditions/postconditions

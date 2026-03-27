@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `iVar2`, `iVar3`, `extraout_r1`) with no semantic meaning. Many variables marked as "Unresolved local var" indicating complete recovery failure (e.g., `result`, `str`, `p1`, `p2`, `p3` in original are all lost).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved from source (`param_fake_branch`, `param_opaque_predicate`, `call_tail_call_optimized`). Action-oriented naming clearly indicates purpose and matches original intent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14`, `0xe1`, `0x2c` appear without explanation instead of decimal values. Original constants like `0xDEADBEEF` are lost. Some literals are clear (array initialization values 1-8), but hex constants obscure intent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive "WARNING:" comments throughout ("Unknown calling convention", "Removing unreachable block", "Unresolved local var"). Runtime functions (`__aeabi_idiv`, `__aeabi_idivmod`) with 35+ boolean variables pollute output significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical logic loss - `param_fake_branch` returns just `x` with both fake branches completely eliminated. `param_opaque_predicate` has while loop but p3 (XOR identity) check is missing. Tail recursion correctly converted to iteration in `param_tail_call_optimized`.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Severe decomposition failure - `param_buffer_overflow_stack` is completely empty (just `return;`). `param_fake_branch` reduced from 15 lines to 1 line. Logic that should exist is entirely missing, not just restructured.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with appropriate loop constructs. Some functions use do-while instead of for loops (`param_vectorized_loop`), but flow is traceable. No excessive goto usage observed.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: `__aeabi_idiv` and `_divsi3_skip_div0_test` are nearly identical 200+ line functions with 35 boolean variables each - severe redundancy. This compiler runtime code bloats output without adding value.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char, size_t, uint). Some signed/unsigned distinctions maintained (`unsigned int ux`). However, many types degraded to generic `int` and pointer types lack specificity.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Bitfield struct in `param_implementation_defined` shown as "anon_struct_4_3_4e909822 bitfield@[???]" - completely opaque. Array types preserved in some functions but struct field names entirely lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(byte *)`, `(int *)`, `(__sighandler_t)0x0`). Generally maintains type safety but lacks const-correctness annotations. No buffer overflow warnings despite vulnerable patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are auto-generated warnings ("WARNING:", "Unresolved local var") not semantic explanations. No algorithm documentation, no purpose comments. Original source comments about obfuscation techniques completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Tail call optimization recognized and converted to loop (good). GCD algorithm in `param_opaque_predicate` not identified. No pattern naming for instruction substitution or opaque predicates.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly detection with explicit warnings ("Could not recover jumptable", "Unresolved local var", "Subroutine does not return"). Clearly indicates decompilation confidence issues rather than presenting incorrect information confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation recovered. Original function contracts (e.g., "永假条件", "期望: 10") completely lost. No error condition documentation despite signal handlers present.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clearly shown. Global variables referenced (`div_zero_caught`, `jmp_buffer`, `segv_buffer`). However, relationship between test functions and their expected values not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Runtime functions (`__aeabi_idiv`, `_init`, `_fini`) mixed with user code. No separation between obfuscation tests, optimization tests, and edge case tests.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates "Compilation Result: Yes" but external dependencies not documented. Runtime functions require ARM EABI support. Stack canary checks (`__stack_chk_fail`) present without explanation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+5+4)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (4+3+6+3)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type):        (6+4+6)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (3+4+7+2)/4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):  (6+5+6)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 4.81/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **`param_fake_branch` completely lost fake branch logic** - both `if (x*x < 0)` and `if (strlen(str) < 0)` conditions eliminated, function just returns `x`
+- **`param_buffer_overflow_stack` is empty** - entire function body missing, just `return;`
+- **Generic variable names throughout** - `iVar1`, `iVar2`, `extraout_r1` provide zero semantic information
+- **`__aeabi_idiv` bloat** - 200+ lines with 35 boolean variables for integer division runtime
+- **Bitfield struct unrecoverable** - shown as "anon_struct_4_3_4e909822" with no field information
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - All function names perfectly preserved from source, maintaining semantic clarity about purpose
+
+### Most Needs Improvement:
+- **Function Decomposition (3/10)** - Critical logic loss with entire functions empty or reduced to single return statements
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve dead code paths** - At -O0, fake branches should remain in binary; decompiler should not eliminate semantically intentional dead code
+2. **Recover local variable names from debug symbols** - With `-g` flag, DWARF info should provide original variable names instead of `iVar1`, `iVar2`
+3. **Filter compiler runtime functions** - Separate `__aeabi_*` functions from user code or collapse them to library calls for readability

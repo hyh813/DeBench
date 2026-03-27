@@ -1,0 +1,106 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `cVar1`, `local_4e0`, `piVar2`), obscuring the semantic meaning found in the original source (e.g., `sum`, `len`, `i`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the symbol table, matching the original source exactly (e.g., `process_char`, `array_2d_stack`, `struct_bitfields`).
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Logic is often replaced by magic numbers (e.g., `0x19 < (byte)(c + 0xbfU)` instead of `c >= 'A' && c <= 'Z'`), and test functions contain pre-calculated constants (e.g., `0x61`) instead of function calls, hiding the original logic.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Code contains frequent "WARNING" comments and "Unresolved local var" markers, which, while helpful for debugging, clutter the reading experience.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Control flow is often transformed into awkward patterns; for example, `array_2d_stack` uses pointer arithmetic with a stride of `0x2c` instead of the clear `arr[i][i]` indexing found in the source.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without artificial splitting or merging.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code generally reads top-to-bottom with appropriate loop structures (`do-while`, `for`), though some loop conditions are inverted or complex.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler successfully removes dead code, but aggressive compiler optimizations (constant propagation) have removed the *logic* from test functions, leaving only redundant print statements.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Standard types (`int`, `char`, `float`) and complex composite types (`Point3D`, `Widget`) are recovered accurately, though `process_ld` failed to recover the `long double` logic, returning only a pointer.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs and unions are reconstructed with correct field names and nesting (e.g., `r->position.x`, `w->style.fill.r`), significantly aiding readability.
+
+**11. Type Safety:** Score: 7/10
+Justification: Code mostly respects types, but there are unsafe casts like `(int)p1 - (int)p2 >> 2` in `ptr_diff` and the use of Ghidra-specific types like `undefined4`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to compiler warnings (e.g., "Unknown calling convention") and provide no semantic explanation of the algorithm or variable purpose.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Basic loops and array traversals are recognized, but higher-level patterns like the diagonal sum in `array_2d_stack` are obscured by pointer arithmetic.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler clearly flags issues like "Unresolved local var" and "Removing unreachable block," alerting the user to potential decompilation errors.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants (e.g., the requirement that `arr` be non-NULL is not documented).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the correct recovered names, making the call graph easy to understand despite the generic variable names.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order that matches the source file structure, grouping related tests together.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Ghidra-specific types (`undefined4`, `undefined1`, `code`) and will not compile without significant modification to standard C types.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 10 + 4 + 6) / 4 = 5.75
+L2_avg: (5 + 9 + 8 + 7) / 4 = 7.25
+L3_avg: (8 + 9 + 7) / 3 = 8.00
+L4_avg: (2 + 5 + 7 + 1) / 4 = 3.75
+L5_avg: (8 + 8 + 3) / 3 = 6.33
+
+Overall = (5.75 × 0.30) + (7.25 × 0.25) + (8.00 × 0.20) + 
+          (3.75 × 0.15) + (6.33 × 0.10)
+Overall = 1.725 + 1.8125 + 1.6 + 0.5625 + 0.633
+Overall = 6.33
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 6.3/10
+
+### Critical Defects (Bullet List)
+- **Variable Naming:** Extensive use of generic names (`iVar1`, `local_4e0`) obscures data flow (e.g., in `array_2d_stack`).
+- **Logic Obfuscation:** Simple range checks like `c >= 'A'` are transformed into obscure magic number comparisons (`0x19 < (byte)(c + 0xbfU)`).
+- **Optimized-away Logic:** Test functions like `test_data_types_l1` have their logic replaced by pre-calculated constants (e.g., `0x61`), making the original test intent unreadable.
+- **Pointer Arithmetic:** Array indexing is frequently replaced by raw pointer offsets (e.g., `iVar2 + 0x2c`), destroying the semantic structure of multidimensional array access.
+- **Type Failure:** The `process_ld` function completely fails to recover the `long double` arithmetic logic, returning only a storage pointer.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Composite Type Recovery (9/10)
+- **Why?** Ghidra successfully reconstructed complex nested structures (`Widget`, `Rect`) and unions with accurate field names and access syntax (`w->style.fill.r`), which is often a failure point for decompilers.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Comment Quality & Presence (2/10)
+- **Why?** The output lacks any semantic comments explaining the complex transformations or variable purposes, leaving the user to decipher magic numbers and pointer arithmetic entirely on their own.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhance Variable Naming:** Implement heuristic analysis to infer variable names from usage context (e.g., variables accumulating values in loops should be named `sum` or `accumulator`).
+2.  **Simplify Optimized Logic:** Detect and reverse-engineer compiler range-check optimizations (like the `0x19 < (byte)(c + 0xbfU)` pattern) back to standard comparison operators (`c >= 'A' && c <= 'Z'`).
+3.  **Recover Array Indexing:** Improve pattern recognition to convert pointer arithmetic strides (e.g., `ptr + 0x2c`) back into multidimensional array indexing (e.g., `arr[i][i]`) when the stride matches the type size.

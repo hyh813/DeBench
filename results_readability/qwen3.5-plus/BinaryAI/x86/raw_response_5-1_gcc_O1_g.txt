@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`local_10`, `local_18`, `iVar1`, `uVar1`, `puVar6`) with no semantic meaning. For example, `local_30` holding "Test" string should be named `obj_name`, and `local_10` used for stack canary should be `stack_cookie`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions preserved original names well (`test_cpp_member_func`, `test_cpp_constructor`), and class methods recovered (`Base::virtual_func`, `Derived::getName`). However, runtime helpers are cryptic (`FUN_00011030`, `FUN_00011170`) and template functions mangled (`template_max_int_`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation (`0x125c`, `0x14dc0`, `0x32`). Some constants fold correctly (0x47=71 for multiple inheritance), but `0x1234` class ID becomes `0x125c` offset addition obscuring original value.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack canary checks in every function (`if (local_10 == *(int *)(in_GS_OFFSET + 0x14))`), 20+ runtime helper functions (`__x86_get_pc_thunk_*`, `FUN_00011xxx`), and `__stack_chk_fail_local()` calls that aren't original source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but `test_cpp_exception` devolves into goto-based state machine with `LAB_00011750` labels. At -O0, exception handling should preserve try/catch structure, not raw jump tables.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original test functions preserved as separate units, class methods recovered individually. However, excessive fragmentation with multiple destructor variants per class (`DiamondDerived::_DiamondDerived` appears 3 times with different signatures).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. Exception handling and stack canary checks create disruptive early-exit patterns. No severe forward jumps except in exception unwinding code.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some functions constant-folded to single returns (`test_cpp_multiple_inheritance` returns `0x47` directly). Multiple destructor thunks create redundancy. Runtime support functions duplicated across compilation units.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types recovered (int, double), but many generic types (`undefined4`, `undefined*`, `undefined**`). Class pointers partially typed (`Base*`, `Derived*`), but template instantiations mangled (`Container_int_*`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Critical failure - no struct/class definitions recovered. All object fields accessed via offset arithmetic: `*(int *)(this + 4)`, `*(int *)(this + 0x28)`. Original `SimpleClass { int value; char name[32]; }` completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`undefined4`, `undefined*`), extensive pointer arithmetic for field access, generic function pointer types (`code**`). Virtual calls use `(***(code ***)param_1)` losing type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments except decompiler header with SHA256. No algorithm explanations, no confidence indicators, no documentation of C++ semantics (vtable, RTTI, exception handling).
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ calling conventions partially recognized (`__thiscall`), vtable calls visible but not labeled as such. Template instantiation recognized but mangled. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly warnings for indirect calls, unresolved symbols, or uncertain recovery. Complex exception handling presented confidently despite obvious decompilation challenges.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Stack canary checks present but not explained as safety mechanisms. No error condition documentation for exception paths.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch partially recovered (vtable pointers visible). Global variable usage (`LifecycleClass::instance_count`) recovered but not contextualized.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime support mixed with application code. No separation between test functions, class methods, and compiler helpers.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References 20+ external `FUN_00011xxx` functions requiring stubs. Would need significant modification to compile standalone. Dependencies on runtime (`__gmon_start__`, `__do_global_ctors_aux`) not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3×10 + 6×10 + 5×5 + 4×5) / 30  = 4.50/10
+Level 2 (Structural):  (5×8 + 6×7 + 6×5 + 5×5) / 25    = 5.48/10
+Level 3 (Type):        (5×8 + 3×7 + 4×5) / 20          = 4.05/10
+Level 4 (Semantic):    (2×5 + 4×3 + 3×3 + 2×4) / 15    = 2.60/10
+Level 5 (Contextual):  (5×4 + 4×3 + 3×3) / 10          = 4.10/10
+
+Overall = (4.50 × 0.30) + (5.48 × 0.25) + (4.05 × 0.20) + (2.60 × 0.15) + (4.10 × 0.10)
+        = 1.35 + 1.37 + 0.81 + 0.39 + 0.41
+        = 4.33/10
+```
+
+**Overall Readability Score: 4.3/10**
+
+### Critical Defects
+- **No struct/class definitions recovered** - All composite types accessed via raw offset arithmetic (`*(int *)(this + 4)`)
+- **Variable names completely generic** - `local_10`, `iVar1`, `uVar1` provide zero semantic information
+- **Exception handling decompiled to goto state machine** - Original try/catch structure completely lost
+- **20+ runtime helper functions mixed with application code** - `FUN_00011xxx` functions obscure actual logic
+- **No comments or documentation** - Zero explanation of C++ semantics (vtable, RTTI, exception tables)
+
+### Best Quality Aspect
+- **Function Naming Quality (6/10)** - Test function names preserved accurately (`test_cpp_member_func`, `test_cpp_constructor`) and class method names recovered with `__thiscall` convention
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Virtually no comments explaining C++ semantics, decompilation confidence, or algorithm purpose; only SHA256 header present
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover C++ class/struct definitions** - Analyze vtable layouts and field access patterns to reconstruct `struct SimpleClass { int value; char name[32]; }` instead of raw pointer arithmetic
+2. **Add semantic comments for C++ constructs** - Label vtable calls, RTTI checks, exception handling regions, and template instantifications with explanatory comments
+3. **Filter runtime support functions** - Separate compiler runtime helpers (`__do_global_dtors_aux`, `FUN_00011xxx`) from application code or move to appendix

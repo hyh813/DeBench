@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2`, `a3` and local variables use `v1`, `v2`, `v3`, completely obscuring semantic meaning. For example, `cdecl_func(int64_t a1, int64_t a2)` should clearly be `a` and `b`. No inference from usage patterns is attempted.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions preserve correct names (`cdecl_func`, `call_cdecl`, `test_calling_conventions`). However, internal utility functions use address-based names like `function_1070`, `function_1080` instead of meaningful names like `__cxa_finalize`, `puts`, `strlen`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x1100` (main), `0x1220`/`0x1320` (function pointers), `0x40091eb851eb851f` appear without explanation. Chinese strings are displayed as UTF-8 escape sequences (`\xe6\xb5\x8b\xe8\xaf\x95`) rather than decoded text. Some computed constants like `15`, `50` are results, not inputs.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy presence of compiler artifacts including stack canary checks (`__readfsqword(40)`), SSE intrinsics (`__asm_movapd`, `__asm_movdqu`, `__asm_paddq`), and bit manipulation (`& 0xffffffff`). These obscure the actual logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Core control structures (loops, conditionals, returns) are preserved. However, the decompiler introduces spurious goto statements with labels like `lab_0x14e0` that don't exist in the original source. At -O0, this represents decompilation artifacts rather than optimization.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Main functions are reasonably sized and cohesive. However, the decompiler creates unnecessary fragmentation with helper functions like `varargs_func_cold`, `param_varargs_cold`, `varargs_func_constprop_0` that appear to be outline artifacts from complex basic blocks.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with early returns. The goto statements and some forward jumps (`goto lab_0x14e0`) create minor flow disruptions, but the overall structure is traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code or obvious redundancy. Some loop unrolling in `varargs_func` is present but not commented. The code is relatively clean in this dimension.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses consistent `int64_t` which is appropriate for arm64. However, `func_many_args` shows inconsistent types (`int32_t a7, int32_t a8` mixed with `int64_t`). Function pointers are treated as `int64_t` instead of proper function pointer types. Original used `int`, not `int64_t`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. `LargeStruct` (128 bytes) becomes `int128_t` with raw pointer arithmetic. `SmallStruct` becomes `int64_t` with manual field access (`a1 + 4`). All struct names and field semantics are completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `*(int32_t *)a1` in `param_by_value_ptr`, pointer arithmetic `a1 + 4` in `func_struct_byptr`, function pointers cast to `int64_t`. No bounds checking or validation. Significant risk of undefined behavior interpretation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only mechanical comments like `// Address range: 0x1000 - 0x101b` are present. No algorithm explanations, no decompilation confidence indicators, no API contracts. Comments provide no semantic value beyond addressing.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic constructs (loops, conditionals, switch-like patterns) are recognized. However, no design patterns, algorithms, or idioms are explicitly identified or named. The decompiler sees the "what" not the "why".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. The code presents everything as definitive fact, even where ambiguity exists. The `__asm_hlt()` and `UNREACHABLE` comment are the only indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. Null checks like `if (a1 == 0)` in `func_struct_byptr` are present but not explained as implicit contracts. No contract recovery attempted.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present in the code but relationships are not documented. No information about who calls which functions, global variable usage, or callback relationships. The call graph must be inferred manually.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped somewhat logically (test functions together, calling convention functions together) but in a single monolithic file. No header declarations, no namespace structure, no static vs. external distinction beyond what's in the binary.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile as-is. Missing declarations for external functions (`puts`, `strlen`, `__printf_chk`, `__libc_start_main`). Requires significant patching to compile. No dependency documentation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming uses only generic names (`a1`, `a2`, `v1`, `v2`) with no semantic inference
+- No struct/union recovery - all composite types lost, replaced with raw `int128_t` or `int64_t` with pointer arithmetic
+- Heavy noise from compiler intrinsics (`__asm_*`, `__readfsqword`) obscures logic
+- No comments explaining algorithm intent or decompilation confidence
+- Function pointers treated as `int64_t` instead of proper function pointer types
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+Most test function names match the original source exactly (`cdecl_func`, `call_cdecl`, `test_calling_conventions`), making it easy to locate specific functions.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+All parameters and local variables use cryptic generic names that provide no semantic information. At -O0 debug level, the decompiler should be able to infer meaningful names from usage patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how parameters are used (arithmetic, indexing, dereferencing) to suggest names like `count`, `index`, `ptr`, `result`
+2. **Recover struct/union types**: Detect sequential memory accesses and reconstruct struct layouts with field names based on offset patterns
+3. **Clean up compiler intrinsics**: Replace `__readfsqword(40)` with `__stack_chk_fail` calls, abstract SSE intrinsics into readable operations, remove bit manipulation masks on return values that are artifacts

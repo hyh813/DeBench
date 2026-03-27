@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables use generic names like `iVar1`, `iVar2`, `iVar3`, `sum`, `val`, `ptr` throughout. While `result`, `count`, `n` are slightly better, the vast majority obscure their semantic purpose. For example, in `call_cdecl()`, the variable `iVar1` should be named `result` based on its usage returning `cdecl_func(5,10)`.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+Justification: Core test functions preserve original names: `cdecl_func`, `stdcall_func`, `fastcall_func`, `test_calling_conventions`, `test_parameter_passing`, `test_return_values`. However, some auxiliary functions like `FUN_00011030` and the `__x86.get_pc_thunk.*` variants are auto-generated with no semantic meaning.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Magic numbers like `0x2a` (42) in `func_no_args()`, `0x14` (20), `0x1e` (30), `0x28` (40) in `call_mips()` lack explanations. However, some literals like `param_by_value_int(5)` are shown in decimal. The constant `0x10` (16) for array sizes is used but not named.
+
+### 4. Noise Reduction
+**Score: 6/10**
+Justification: Excessive WARNING comments about "Unknown calling convention" clutter output. Function replacement warnings like `__x86.get_pc_thunk.bx replaced with injection` add noise. However, the actual decompiled code is relatively clean from compiler artifacts like redundant casts or debug instrumentation.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural with idiomatic if/else, for loops, and switch-like if-else chains (e.g., `ret_multi_branch`). At `-O0`, the decompiler correctly recovers the original control structures. Minor awkwardness in `mixed_conventions_test()` where computation is inlined into the call.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are appropriately sized with clear single responsibility. Test functions (`test_calling_conventions`, etc.) appropriately call helper functions. No 500-line monoliths; each function has a focused purpose matching the source decomposition.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately (e.g., `func_struct_byptr`). Some complexity in `test_calling_conventions()` with nested loops for struct initialization, but traceable.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No significant dead code. Some loop unrolling in struct initialization (`for` loop copying `data[0]` to `data[15]`) but this reflects the `-O0` compilation. Overall clean without obvious redundant expressions.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Basic types correct (`int`, `char*`, `double`, `longlong`). However, `longlong` should be `long long` with space. Function pointer type `_func_int_int *callback` is non-standard; should be `int (*callback)(int)`. `va_list` handled reasonably. Some type erosion where `int*` could be more specific.
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+Justification: Struct names preserved: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData`, `TestIntPair`. Field names mostly preserved: `s.data[i]`, `p->x`, `p->y`. However, in `func_struct_byval`, the struct is passed by value with awkward stack manipulation. Some nested struct handling shows degradation.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Several unsafe operations: In `param_complex_cast`, direct `*(int *)p` casts lose type safety. In `ret_small_struct`, returning uninitialized pointer `p->x = x` is undefined behavior - the decompiler missed that this should return a struct by value, not a pointer. Multiple void* casts without validation.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+Justification: Mostly auto-generated WARNING comments about calling conventions. No algorithm explanations or API contracts. The comment "WARNING: Unknown calling convention" appears repeatedly but provides no value. No recovery of original comments from source.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Standard C patterns like varargs (`va_list`, `va_start`), function pointers, and struct operations are recognized. However, no explicit pattern naming (e.g., "This implements builder pattern"). The calling convention tests are not identified as such.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+Justification: WARNING comments flag unknown calling conventions, but don't explain what the convention should be. The `ret_small_struct` bug (returning stack pointer) is not flagged as suspicious. No indication of potential undefined behavior in functions like `call_ret_small_struct()` that use uninitialized memory.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No precondition/postcondition recovery. Functions like `func_struct_byptr` that check for NULL don't have "requires: p != NULL" comments. No documentation of return value expectations or error conditions.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+Justification: Function calls are clear (`cdecl_func(5,10)`). However, no documentation of call relationships (who calls whom). The callback relationship in `param_func_ptr` → `callback_func` is not documented. No global variable usage transparency.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Functions logically grouped by test category (calling conventions, parameter passing, return values). However, all 83 functions in single file with no separation. Static functions not explicitly marked. No header file structure recovered.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+Justification: Code would not compile standalone. Missing `#include <stdio.h>`, `#include <stdarg.h>`, `#include <string.h>`. Type `longlong` is non-standard (should be `long long`). The `ret_small_struct` bug would cause runtime issues. No dependency documentation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+7+5+6)/4 = 5.25
+L2_avg = (8+8+7+7)/4 = 7.50
+L3_avg = (6+7+5)/3 = 6.00
+L4_avg = (4+5+5+2)/4 = 4.00
+L5_avg = (4+6+4)/3 = 4.67
+
+Overall = (5.25 × 0.30) + (7.50 × 0.25) + (6.00 × 0.20) + (4.00 × 0.15) + (4.67 × 0.10)
+        = 1.575 + 1.875 + 1.200 + 0.600 + 0.467
+        = 5.72/10
+```
+
+**Overall Readability Score: 5.7/10**
+
+### Critical Defects
+- **Variable naming**: Generic names like `iVar1`, `iVar2`, `iVar3` throughout obscure semantic purpose
+- **Type safety bug in `ret_small_struct`**: Returns stack pointer `p` instead of struct by value - this is a semantic error that would cause undefined behavior
+- **Missing includes**: No `#include` statements recovered; code cannot compile standalone
+- **No contract recovery**: Preconditions, postconditions, and invariants not documented
+- **Excessive WARNING noise**: "Unknown calling convention" comments add no value
+
+### Best Quality Aspect
+**Control Flow Naturalness (8/10)** - At `-O0`, the decompiler correctly recovers idiomatic if/else, for loops, and switch-like patterns. The control flow closely matches the original source structure.
+
+### Most Needs Improvement
+**Variable Naming Quality (3/10)** - Generic variable names like `iVar1`, `iVar2`, `sum`, `val`, `ptr` make the code extremely difficult to follow. The decompiler should infer names from usage patterns (e.g., `temp_1` used as array index → `index`).
+
+### Top 3 Recommendations
+1. **Infer variable names from usage**: Analyze how variables are used (array indexing, arithmetic, function parameters) to suggest semantically meaningful names like `packet_size`, `array_index`, `result`
+2. **Fix struct return semantics**: The `ret_small_struct` function should return struct by value, not a pointer to stack memory - this is a critical semantic error
+3. **Recover includes and dependencies**: Add necessary `#include` statements and document external dependencies to make code compilable

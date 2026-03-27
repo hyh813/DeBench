@@ -1,0 +1,90 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively named with generic patterns like `v0`, `v1`, `v2`, `v3`, `v4`, `ptr`, `p`, `result`, `cur`. The original source had meaningful names like `value`, `name`, `data`, `size`, `x`, `y`, `capture_by_value`, `capture_by_ref`. The decompilation completely lost all semantic variable naming.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions like `test_cpp_member_func`, `test_cpp_constructor`, `call_virtual_func` are correctly named, but many use mechanical address-based naming like `sub_109bc`, `sub_10b40`. Template functions show mangled names like `_Z12template_maxIiET_S0_S0_` instead of clean `template_max<int>`.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: The code is littered with unexplained magic numbers and addresses: `0x21e70`, `0x1199c`, `71804`, `72060`, `72080`, `0x115e4`, etc. Format strings are shown as hex addresses (`0x11608`) rather than resolved string content. No named constants recovered from the original code.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise present including: unresolved extern references (`extern unsigned int g_22008`), hex address format strings, redundant register variable declarations (`unsigned int v1; // r0`), and verbose stack frame annotations. However, no debug instrumentation or assembly blocks present.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Control flow is obscured by indirect virtual calls like `(*((int *)*((int *)arg_0)))();` instead of clean `obj->virtual_func(x)`. Some goto patterns present. The exception handling code is particularly convoluted with multiple label jumps. At -O0, this level of obfuscation is excessive.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries generally preserved from original. Template instantiations correctly separated (`template_max<int>`, `template_max<double>`). However, some member functions like constructors are split awkwardly with separate `Container<int>::Container` and `Container<int>::push` without clear class grouping.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read reasonably top-to-bottom. The `test_cpp_exception` function has poor linearization with multiple forward jumps and re-throw logic. Most other functions are relatively linear.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. Some register spill artifacts like `v5 = v6; v4 = v7;` which are expected at -O0. No significant redundant expressions that would obscure logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. Original `int` becomes `unsigned int` in many places. Pointers shown as `void*` or `unsigned int` rather than typed pointers. The original `size_t` types lost. Function parameters like `int arg_0` should be more specific. Const correctness not preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Class types minimally recovered as `class Base {
+} Base;` - essentially empty structs with no field information. Original class members like `int value`, `char name[32]`, `int multiplier`, `int dataA`, `int dataB` are completely lost. Only vtable pointers hinted at.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations present: raw pointer arithmetic `*((int *)((char *)ptr + 4 * index))`, unsafe casts `*(p) = *(p)`, indirect function calls without type safety `(*((int *)*((int *)arg_0)))()`. The virtual function call pattern is particularly unsafe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only minimal auto-generated comments present like `/* do not return */` for abort functions. No comments explaining algorithm logic, recovered intent, or decompilation confidence. Original comments about test scenarios completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No C++ idioms recognized. RAII patterns (smart pointers, constructors/destructors) not identified. Virtual dispatch shown as raw indirect calls. Template instantiation not recognized as such. Lambda expressions completely lost (function returns empty). Exception handling shown as raw runtime calls.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The broken virtual function call `(*((int *)*((int *)arg_0)))();` should be flagged as potentially incorrect. Unresolved indirect calls not marked. Format string addresses not flagged as unusual.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original assertions like bounds checking in `Container::get` not documented. No documentation of error conditions or contract expectations.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Some function call relationships visible (e.g., `call_virtual_func` calls shown). However, global variable usage unclear (`extern unsigned int g_22008`). Virtual dispatch relationships not clearly documented. Callback relationships completely lost.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions listed in address order (0x109b0, 0x109bc, etc.) rather than logically grouped. Related class methods scattered. Original file organization (test functions grouped by feature) not recovered. No namespace or class grouping visible.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would not compile. Multiple undefined extern symbols (`g_22008`, `GLIBC_2.4::__stack_chk_guard`). Missing function prototypes. Incorrect function signatures (constructors returning int). Format string issues. Requires extensive patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.2/10
+
+**Critical Defects:**
+- Variable naming completely generic (`v0`, `v1`, `v2`, `ptr`, `p`) - original semantic names like `value`, `size`, `capture_by_ref` completely lost
+- Composite types not recovered - classes shown as empty structs with no fields (`class Base { } Base;`)
+- Virtual function calls rendered as unsafe indirect calls `(*((int *)*((int *)arg_0)))();` instead of clean `obj->virtual_func(x)`
+- Literal values are unexplained magic numbers and hex addresses (e.g., `0x21e70`, `71804`)
+- C++ idioms completely unrecognized - lambdas, RAII, templates shown as low-level operations
+
+**Best Quality Aspect:** Function Decomposition (scored 6/10)  
+- Function boundaries mostly preserved; template instantiations correctly separated into distinct functions
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+- Class structures completely lost; all field names and types missing; only vtable hints present
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/class field names** by analyzing constructor initialization patterns and vtable access - original had `value`, `name`, `multiplier`, `dataA`, `dataB` which should be recoverable
+2. **Infer variable names from usage patterns** - e.g., variables used as array indices should be named `index` or `i`, not `v3`
+3. **Recognize and clean virtual dispatch** - convert `(*((int *)*((int *)arg_0)))()` into proper `obj->virtual_func(arg_1)` with class type information

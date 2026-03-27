@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Most variables use generic names like `v1`, `v2`, `v3`, completely obscuring semantic meaning (e.g., `count` or `sum` in `varargs_func`). While `func_mixed_args` correctly recovers `x`, `s`, `d`, `ll`, the vast majority of functions suffer from severe naming degradation.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source symbol table (e.g., `cdecl_func`, `test_calling_conventions`), accurately reflecting the original intent.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are extracted to global variables (`g8`, `g9`), reducing local context. Magic numbers appear in pointer arithmetic (e.g., `8 * v1 + v3` for struct access) without explanation of the field offsets.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present, including redundant bitwise masking (`& 0xffffffff`) on almost every arithmetic operation and stack canary checks (`__stack_chk_fail`) polluting the logic flow.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Simple `for` loops are frequently converted into `while(true)` loops with manual `break` conditions (e.g., in `varargs_func` and `func_struct_byval`), making the logic harder to follow than the original source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function granularity matches the source well; functions are not inappropriately merged or split, maintaining the original modular structure despite the internal logic issues.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The use of infinite loops and forward jumps for simple iterations disrupts top-to-bottom readability, requiring the reader to mentally simulate the loop exit conditions.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The decompiler exposes low-level implementation details of varargs (stack alignment logic `v5 = v10 + 11 & -8`) instead of abstracting them into high-level `va_arg` operations, adding significant redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: While some functions like `func_mixed_args` recover types correctly, many others default to `int64_t` for all variables and arguments, losing the distinction between `int`, `long`, and pointer types. Function signatures often incorrectly list `void` for parameters (e.g., `cdecl_func(void)`).
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Struct types are completely lost. Access to `LargeStruct` and `SmallStruct` fields is replaced by raw pointer arithmetic and hardcoded offsets (e.g., `*(int32_t *)(v2 + 60)`), rendering the data structure opaque.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts, treating pointers as `int64_t` and casting back to `int32_t*` or `char*` for dereferencing. The incorrect arithmetic recovery in `cdecl_func` (returning `2 * v1` instead of `a + b`) represents a critical logic failure.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to auto-generated metadata like address ranges and line numbers. There are no semantic comments explaining the purpose of complex logic or data structures.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms like `va_list` and `va_arg` are not recognized; instead, the decompiler outputs the raw stack manipulation logic required to implement them, obscuring the "varargs" pattern.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler confidently presents incorrect logic (e.g., `cdecl_func` returning `2 * v1`) without any warning flags or "UNCERTAIN" markers, misleading the analyst.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement for non-NULL pointers in `func_struct_byptr` is not inferred or stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clearly visible, and global variable usage is explicit, though the purpose of globals (like `g1` for stack canaries) is not explained, leaving some context ambiguous.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped by address, which roughly correlates with the source order, but the logical grouping of related test functions is slightly disrupted by runtime support functions.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code includes hardcoded memory addresses (e.g., `*(int64_t *)0x12fe0`) and relies on specific global variable layouts, preventing standalone compilation without significant manual patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 5.0
+L2_avg: 5.0
+L3_avg: 2.67
+L4_avg: 1.5
+L5_avg: 5.67
+
+Overall = (5.0 × 0.30) + (5.0 × 0.25) + (2.67 × 0.20) + 
+          (1.5 × 0.15) + (5.67 × 0.10)
+Overall = 1.5 + 1.25 + 0.534 + 0.225 + 0.567
+Overall = 4.076
+```
+
+### Overall Readability Score: **4.1/10**
+
+### Critical Defects
+- **Incorrect Arithmetic Recovery**: `cdecl_func` returns `2 * v1` instead of `a + b`, indicating a failure to distinguish function arguments.
+- **Total Loss of Structs**: `LargeStruct` and `SmallStruct` are accessed via raw pointer arithmetic (e.g., `v2 + 60`) instead of field names.
+- **Generic Variable Naming**: Critical variables like loop counters and accumulators are named `v1`, `v2`, etc., obscuring logic.
+- **Varargs Implementation Leakage**: The `va_list` abstraction is broken, exposing stack alignment math (`v5 = v10 + 11 & -8`) instead of `va_arg`.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**
+- **Why?** The decompiler successfully preserved all original function names from the symbol table, making it easy to locate specific test cases.
+
+### Most Needs Improvement
+- **Composite Type Recovery (1/10)**
+- **Why?** The complete failure to recover `struct` definitions reduces complex data manipulation to unreadable pointer offset math, which is the single biggest barrier to understanding the code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Argument Recovery**: Fix the logic that detects function parameters to prevent merging distinct arguments (e.g., `a` and `b`) into a single variable (`v1`).
+2.  **Implement Struct Recovery**: Analyze memory access patterns to reconstruct `struct` definitions with field names and types, replacing raw pointer arithmetic.
+3.  **Abstract Standard Idioms**: Recognize standard library patterns like `va_list`/`va_arg` and `memcpy` to generate high-level code instead of low-level implementation details.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `ptr`) obscuring semantic meaning. Original source had descriptive names like `dst`, `src`, `buffer`, `write_data`, `read_buffer` that were not recovered.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`param_strcpy`, `thread_sum`, `signal_handler`), but initialization/cleanup functions use generic labels (`sub_4013b4`, `sub_401804`). Mixed recovery quality.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Numeric constants appear as magic numbers (4294967295 for UINT_MAX/-1, 42, 1000) without named constants. String literals preserved well ("HelloLib", "/etc/passwd", "BinBench Test Data").
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_guard`) appear in nearly every function. Frame pointer setup patterns (`v0 = &v1`) and ARM64 intrinsics (`__aarch64_ldadd4_acq_rel`) create visual noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops mostly recovered as `while` constructs, but `arm64g_calculate_condition` calls obscure conditional logic. Some functions use `goto` (e.g., `register_tm_clones`) instead of structured control flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match source structure well. Thread functions properly separated. However, `call_*` functions have a decompilation bug calling `param_*` twice instead of once.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with manageable nesting. Complex functions like `param_thread_local_storage` have forward jumps disrupting linear flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks repeated in every function. Some functions have duplicate return paths. `call_strlen` returns constant 12 directly instead of calling `param_strlen`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation—`size_t`, `pid_t`, `FILE*`, `pthread_t` all become `unsigned long long` or `unsigned int`. Original type semantics lost.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered (`struct_0`, `FILE`, `sockaddr`) but with generic field names (`field_0`, `padding_1`, `field_8`). TLS struct partially recovered in `thread_tls_test` with `tpidr_el0` reference.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible. Pointer arithmetic in `thread_tls_test` (`ptr->padding_0[0]`). No const-correctness preserved. Bitwise operations on pointers obscure intent.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API contract documentation. Completely bare output.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions recognized (`strcpy`, `strlen`, `memcpy`, `pthread_create`). Thread patterns partially identified. No design pattern identification or naming.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Two functions explicitly marked "Failed to decompile" (`__aarch64_cas4_acq_rel`, `__aarch64_ldadd4_acq_rel`). No warnings about potential issues or uncertain recoveries elsewhere.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions inferred. Error conditions visible through return values (-1, 42, 4294967295) but not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables referenced (`signal_received`, `atomic_counter`) without explanation. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in somewhat logical order matching source sections. No header file structure. No namespace or package organization. All code in single output.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies visible but not documented. Platform-specific ARM64 atomics present. Requires stub implementations for some functions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type):        (5+5+4)/3   = 4.67  × 0.20 = 0.93
+Level 4 (Semantic):    (2+5+4+3)/4 = 3.50  × 0.15 = 0.53
+Level 5 (Contextual):  (5+5+6)/3   = 5.33  × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  5.0/10
+```
+
+**Overall Readability Score: 5.0/10**
+
+### Critical Defects
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (e.g., `dst`, `src`, `buffer_size`)
+- **`call_*` functions call `param_*` twice** instead of once (decompilation bug affecting semantics)
+- **Zero comments** throughout entire decompilation output
+- **Type degradation** loses `size_t`, `pid_t`, `FILE*`, `pthread_t` semantics
+- **Magic numbers** like 4294967295 used instead of `-1` or `UINT_MAX`
+
+### Best Quality Aspect
+- **Function Decomposition (7/10)** - Function boundaries and granularity mostly match source structure with proper separation of thread functions and test functions.
+
+### Most Needs Improvement
+- **Comment Quality (2/10)** - Complete absence of any documentation, explanations, or decompilation confidence indicators makes understanding non-trivial logic extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** from usage patterns and string references (e.g., variables used with `strcpy` should be named `dst`/`src`)
+2. **Add decompilation confidence annotations** for uncertain recoveries, especially for indirect calls and architecture-specific intrinsics
+3. **Recover named constants** from repeated magic numbers (4294967295 → `UINT_MAX` or `-1`, 42 → success code constant)

@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `ptr`, `i`, `idx`, `a0`, `a1`, `a2`. Parameters are named `a0`, `a1` etc. The decompiler uses internal representations like `vvar_22{r64|4b}` which are Ghidra artifacts. No meaningful semantic names like `packet_size` or `user_count` are recovered.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions retain original names: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`. However, some functions have generic names like `sub_103a0`, `sub_10450`, `sub_11718`. The naming is inconsistent - well-named for test functions but mechanical for others.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: String literals appear as raw addresses (e.g., `0x12044`, `0x121c4`) without string content recovery. Magic numbers like `25`, `10`, `110`, `100` appear without explanation. Floating-point constants like `0x3f000000` are not explained. The test functions print hardcoded expected values rather than computed results.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: Ghidra internal annotations (`vvar_22{r64|4b}`, `vvar_26{r64|4b}`), register annotations (`// r0`, `// r1`, `// [bp-0x4]`), spurious struct definitions (dozens of `struct_0`, `struct_1` definitions), and exposure of library functions (`__muldf3`, `__aeabi_dadd`, `__addsf3`). Code is practically unreadable due to artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses goto statements extensively for loop constructs (e.g., `LABEL_10768`, `LABEL_10784`). The control flow is readable but not idiomatic. At -O0, we should see while/for loops, not goto-based structures. Some conditionals are overly complex with nested ternary operators.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are properly decomposed matching the source - each test case is a separate function. However, library functions like `__muldf3`, `__aeabi_dadd` are exposed when they shouldn't be. Some functions are too large (e.g., `binary_tree_sum` is massive with 100+ variables).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but has many forward jumps via goto labels. Deep nesting in complex functions like `binary_tree_sum` disrupts linear flow. The test functions are reasonably linear.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Test functions contain hardcoded expected values (e.g., `__printf_chk(1, "DT-L1-01 (process_char): %c\n", 97)`) instead of computed results. Some duplicate struct definitions. The library functions have significant redundancy from incomplete optimization recovery.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most parameters use generic `unsigned int` when source uses `char`, `short`, `int`, `long`. For example, `process_char(unsigned int a0)` should be `char`. `process_short` takes `unsigned short` but source uses `short`. Function pointers use `unsigned int` instead of proper function signatures. Const/volatile qualifiers lost in many places.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct recovery exists but with generic names: `struct_0 { unsigned int field_0; }`. The decompiler creates many spurious struct definitions. For `struct_with_ptr`, it creates `struct struct_0 { unsigned int field_0; struct struct_1 *field_4; }` which is reasonable but loses original names like `data` and `next`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many unsafe casts present (e.g., `*((int *)&v0)`). Pointer arithmetic is sometimes incorrect (e.g., `ptr + idx * 4` should use proper array indexing). Function pointer type confusion in `ptr_func_simple` uses `goto a0` instead of proper function call. Some buffer overflow-prone patterns in array functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled code. No @param, @return, or algorithm explanations. No documentation of what functions do. The only comments are Ghidra's internal annotations like `// r0`, `// [bp-0x4]`.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are explicitly identified. The decompiler doesn't recognize common patterns like linked list traversal, binary tree recursion, or state machines. No naming of patterns like "circular buffer" or "LRU cache".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of suspicious code or potential issues. No warnings about indirect calls that couldn't be resolved. No flags for unusual stack layouts or potential undefined behavior. The code presents everything with equal confidence.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. No recovery of error handling contracts. No indication of what parameters are valid or what the function guarantees.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships aren't documented. No indication of who calls whom or global variable usage. The `main` function calls test functions but there's no comment explaining the call graph.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped by type: data type functions, array functions, pointer functions, composite type functions. This matches the source organization. Static functions are properly scoped. However, library functions are mixed in.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code has many `extern` declarations and wouldn't compile standalone. Requires extensive patching to compile. Dependencies on `GLIBC_2.4::__stack_chk_guard` and other library functions aren't documented. The test functions have hardcoded values that wouldn't work in real compilation.
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- Variable names are all generic (`v0`, `v1`, `a0`, `a1`, `ptr`, `i`) - no semantic meaning recovered
+- Severe noise from Ghidra internal annotations (`vvar_22{r64|4b}`, register comments)
+- Type precision lost - all parameters are `unsigned int` instead of proper types (`char`, `short`, etc.)
+- No comments explaining function purpose, parameters, or return values
+- Struct field names lost (`field_0`, `field_1` instead of `data`, `next`, `x`, `y`)
+- Control flow uses goto instead of while/for loops at -O0
+- Library functions exposed (`__muldf3`, `__aeabi_dadd`) when they should be inlined/hidden
+
+### Best Quality Aspect: Module Organization (7/10)
+Functions are logically grouped matching source organization - data types, arrays, pointers, composite types are all properly separated.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+Nearly all variables use generic names with no semantic recovery. At -O0, the decompiler should be able to infer meaningful names from usage patterns.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage**: Analyze how variables are used (e.g., `ptr` used in array indexing → `array` or `buffer`; `i` used in loop → `index` or `counter`)
+2. **Recover control flow constructs**: Convert backward jumps to while/for loops instead of using goto labels
+3. **Recover type information**: Use debug symbols and stack analysis to recover precise types (char, short, int) instead of defaulting to unsigned int

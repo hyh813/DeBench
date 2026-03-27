@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `dest`, `v0`, `v1`, `v2`, `v3`, `i`, `result` with no semantic meaning. In `test_cpp_member_func()`, `dest` should be `name_buffer` based on usage with `memcpy(dest, "Test", 0x1Fu)` and `strlen(dest)`.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Most functions use mangled C++ names (e.g., `_Z20test_cpp_member_funcv`, `_ZN9ContainerIiEC2Ev`) which are unreadable. Some helper functions like `call_virtual_func` are readable, but the pattern is inconsistent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Return values like 42, 71, 650 are clear as they're computed constants. However, magic numbers like `0x1Fu` (31), `0x14u` (20), `0x28u` (40) lack explanations. Mixed - some literals clear, others not.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. No excessive register spilling or debug instrumentation visible. Some `__asm` blocks in startup code but not in main logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Many functions reduced to simple return statements, making control flow trivial. The `test_cpp_constructor()` shows a clear do-while loop. Some control flow lost due to constant folding (e.g., `test_cpp_virtual_func()` just returns 42).
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Template functions properly separated (`template_max<int>`, `template_max<double>`, `template_swap<int>`). However, complex functions like `test_cpp_member_func()` are reduced to single return statements, losing internal decomposition. Container class methods properly extracted.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Most functions are simple linear computations. The few complex functions like `test_cpp_constructor()` have clear sequential flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or redundant expressions. Loop unrolling in `test_cpp_constructor()` is explicit (the do-while building array). Minimal duplication observed.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `_DWORD` for integers, losing precision. `void *` used frequently (e.g., `operator new` returns `void *`). Function pointers not properly typed (e.g., `int (__cdecl *)(Base *, int)` is correct but verbose). `size_t` vs `int` distinction often lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery visible. Class member access uses raw pointer arithmetic (e.g., `this->size`, `this->data[idx]`). The `Container` class is partially recovered with `data` and `size` fields, but `Base`, `Derived`, `LifecycleClass` structures not clearly reconstructed.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. In `test_cpp_rtti()`, raw `operator new(4u)` and pointer arithmetic without bounds checking. Virtual function calls through vtable pointers are type-safe but verbose. Mixed - no severe violations but room for improvement.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only header comments indicating decompiler and binary info. No useful comments explaining algorithm logic, vtable mechanism, or template instantiation. The "FAILED to decompile" messages are present but not informative.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Virtual function calls through vtable are visible (`*(int (__cdecl **)(Base *, int))*obj->_vptr$Base`) but not explicitly named as "virtual dispatch". Template instantiation recognized but not explained. Some C++ idioms visible but not documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: "FAILED to decompile" messages for 21 functions but no explanations of why they failed. No flags for suspicious code patterns. The `__noreturn` attributes are correctly applied but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. No error handling contracts. The exception function `test_cpp_exception()` throws but no contracts on what it expects or guarantees.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are visible (e.g., `call_virtual_func` calls `obj->virtual_func`). Virtual dispatch through vtable is visible but relationships not documented. No call graph or usage information provided.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions somewhat grouped by feature (test functions, template functions, container methods). However, no clear organization matching the original source's class definitions. Static vs non-static not distinguished.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many external dependencies unresolved (21 functions failed to decompile). The code references `std::ios_base::Init`, `operator new`, `operator delete` without proper includes. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+3+5+7)/4 = 4.25
+L2_avg = (6+4+8+7)/4 = 6.25
+L3_avg = (4+2+5)/3 = 3.67
+L4_avg = (2+4+2+2)/4 = 2.50
+L5_avg = (3+4+3)/3 = 3.33
+
+Overall = (4.25 × 0.30) + (6.25 × 0.25) + (3.67 × 0.20) + 
+          (2.50 × 0.15) + (3.33 × 0.10)
+        = 1.275 + 1.5625 + 0.734 + 0.375 + 0.333
+        = 4.28/10
+```
+
+**Overall Readability Score:** 4.28/10
+
+### Critical Defects (Bullet List)
+- Variable names are all generic (`dest`, `v0`, `v1`, `v2`, `v3`, `i`, `result`) with no semantic recovery
+- Function names use mangled C++ symbols (`_Z20test_cpp_member_funcv`) making them unreadable
+- Composite types (classes/structs) not recovered - raw pointer arithmetic used instead
+- 21 functions failed to decompile with no explanation provided
+- No comments explaining algorithms, vtable mechanism, or template instantiation
+
+### Best Quality Aspect (Single Dimension)
+- **Code Linearization (8/10)** - Code generally reads top-to-bottom with minimal forward jumps; most functions are simple linear computations
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)** - All variables use generic names with no semantic meaning recovered from usage patterns
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `dest` used with `memcpy("Test")` and `strlen()` should be named `name_buffer` or similar)
+2. **Demangle C++ names automatically**: Convert `_Z20test_cpp_member_funcv` to `test_cpp_member_func()` for readability
+3. **Recover class/struct layouts**: Reconstruct composite types from constructor patterns and member access rather than showing raw pointer arithmetic

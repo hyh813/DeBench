@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3` and local variables are `v7`, `v8`, `v9`, `v10` - completely non-descriptive. For example, in `varargs_func`, variables `v7`, `v8`, `v9` should be `count`, `arg_ptr`, `sum` based on usage patterns. Only `result` and `i` are occasionally meaningful.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Test functions are correctly named: `cdecl_func`, `stdcall_func`, `test_calling_conventions`, `test_parameter_passing`, `test_return_values` all match source. Minor issue: some internal startup functions use generic names like `sub_1020`, but these aren't part of the test code.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Caller functions show computed results directly (e.g., `return 15` for `cdecl_func(5, 10)`), which is acceptable for -O0. However, format strings like `aCallL206` are not human-readable - should be "CALL-L2-06: varargs_func...".
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean code with minimal compiler artifacts. Some unnecessary casts present (e.g., `(unsigned int)` wrappers) but don't significantly impede readability. No debug instrumentation or frame pointer manipulation clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - loops use `do-while` constructs, conditionals are clear `if-else` statements. At -O0, no aggressive unrolling. Example: `varargs_func` uses proper loop structure with `while` and `do-while` nesting.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Each test function is separate (call_cdecl, call_stdcall, etc.). The 978 LOC output vs 665 LOC source is reasonable expansion from type expansion and variable declarations.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns used appropriately (e.g., `if (a1 <= 0) return 0;` in varargs_func). No goto statements or spaghetti code disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Common subexpression elimination is minimal at -O0. Loop unrolling is not present, which is appropriate for debug build.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved - `int`, `unsigned int`, `char*`, `_DWORD*`. However, many specific types lost: `size_t` becomes `unsigned int`, `int*` becomes `_DWORD*`. Function pointer types are imprecise: `unsigned int (__fastcall *a1)(_QWORD)` should be `int (*callback)(int)`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: SmallStruct recovered as `_DWORD *a1` with field access `a1[0]`, `a1[1]` - works but loses field names. LargeStruct passed by value shows as individual parameters (a1-a22) - completely loses structure semantics. Should be `struct BigStruct s`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with correct pointer dereferencing. Minor issues: `param_func_ptr` takes `unsigned int (__fastcall *a1)(_QWORD)` but source uses `int (*callback)(int)` - type mismatch. No obvious buffer overflow patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated header comments ("Decompiled by IDA Pro 9.1"). No useful comments explaining algorithm intent, calling convention details, or parameter purposes. The source had rich comments (e.g., "CALL-L1-01: cdecl调用约定") completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized - varargs uses `va_list` style loop, function pointers passed as callbacks. However, no explicit naming of patterns (e.g., "Implements: Strategy pattern"). The calling convention tests (cdecl, stdcall, fastcall) not flagged as test scenarios.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations noted in header (7 functions failed) but inline anomalies not flagged. No warnings about indirect calls, unusual stack layouts, or potential undefined behavior. The `ret_small_struct` returning `(a2 << 32) | a1` is unusual but not annotated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. Source had clear contracts (e.g., "requires: ptr != NULL") completely absent. The `func_struct_byptr` null-check not documented as contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are explicit and clear. However, no documentation of caller/callee relationships. Static functions like `callback_func` not marked as callback targets. Global variable relationships (handle1_1, handle2_0) not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - calling convention tests together, parameter tests together, return tests together. Matches source organization. Minor: startup code (sub_1020, sub_1030) interleaved with test functions.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code should compile with minimal patching. Standard library functions (puts, printf_chk, strlen) properly declared. External dependencies documented in header. No compiler-specific hacks.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming is extremely poor: `a1`, `a2`, `v7`, `v8`, `v9` provide no semantic meaning
+- Composite type recovery fails for LargeStruct - passed as 22 individual parameters losing all structure semantics
+- No comments explaining test scenarios (calling conventions, parameter passing patterns)
+- Function pointer types imprecise: `unsigned int (__fastcall *a1)(_QWORD)` instead of `int (*callback)(int)`
+- String literals not human-readable: `aCallL206` instead of "CALL-L2-06: varargs_func..."
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- At -O0, loops and conditionals are properly recovered with natural structure
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Generic single-letter names with numbers completely obscure variable purpose; should infer names from usage patterns (e.g., `a1` used as count → `count`)
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a1` used in loop condition as count → name it `count` or `num_args`
+2. Recover composite types from parameter sequences - consecutive parameters of same type with related usage likely form a struct
+3. Preserve or reconstruct comments from debug symbols - source had rich semantic comments explaining test scenarios that are completely lost

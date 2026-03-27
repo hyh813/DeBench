@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: The decompiled code uses generic temporary variable names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `a`, `b` which obscure their semantic purpose. While some names like `obj`, `dest`, `exception` are well-chosen, the majority of variables lack descriptive names that would match the original source intent.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: The decompiler uses mangled C++ names (e.g., `_Z20test_cpp_member_funcv`, `_ZN4Base12virtual_funcEi`) instead of demangled versions. Unknown functions are labeled with addresses (e.g., `sub_1092C`). Some functions like `call_virtual_func` are well-named, but the overall pattern is inconsistent.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x1Fu` (31), `0x10u` (16), `0x18u` (24) appear without explanation. However, some values like `42` are self-evident from context. The decompiler doesn't recover named constants from the source.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The output is relatively clean with appropriate `__noreturn` attributes and thunk function labels. However, there are 25 failed decompilations marked as "FAILED to decompile" for import symbols, and some indirect vtable calls remain unresolved, creating noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with recognizable loops and conditionals. Virtual function calls use indirect vtable dispatch which is expected for C++ polymorphism. The code reads naturally top-to-bottom without goto abuse.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the original source. Template instantiations are properly separated (e.g., `template_max<int>` vs `template_max<double>`). Each function has a clear single responsibility.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately. No excessive nesting or spaghetti code patterns observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or redundant expressions detected. Loop unrolling from optimization is minimal. The code is clean without duplicate computations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: The decompiler uses `_DWORD` for 32-bit integers, `char*` for strings, and proper function signatures. However, there's inconsistency - some places use `size_t` while others use `_DWORD`. The type precision is moderate but not perfect.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class names like `SimpleClass`, `Base`, `Derived`, `Container<int>` are recovered. However, many struct/class fields are lost - the decompiler uses generic field access like `this->data`, `this->size` without full semantic reconstruction of complex layouts.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations present - particularly in virtual thunk functions with complex pointer arithmetic (e.g., `*(_DWORD *)(*(&this[-1].dataB + 1) - 12)`). These are typical of decompiled C++ but represent type safety concerns.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal comments present - mostly just function signatures. No explanation of complex logic, algorithm details, or C++ features. The "non-virtual thunk to" labels are helpful but not comprehensive.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are recognized - virtual function calls via vtable, thunk functions, and RTTI operations are labeled. However, design patterns (RAII, virtual inheritance) are not explicitly named or explained.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The "FAILED to decompile" sections flag unresolved imports, but there's no explanation of what couldn't be resolved or why. Indirect calls are not flagged with uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler doesn't recover any contracts or assertions from the original source code.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible in the code, but relationships between functions (callers/callees) aren't documented. Virtual dispatch relationships are partially shown through vtable usage but not explicitly mapped.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped together in the output but not clearly organized by feature or module. The original source's logical grouping by test function is somewhat preserved but not explicitly organized.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code has 25 unresolved imports marked as "FAILED to decompile" and would require significant patching to compile. External dependencies (libstdc++, libc) are not clearly documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable naming uses generic temporaries (`v0`, `v1`, `a`, `b`) obscuring semantic purpose
+- C++ name mangling not fully resolved (`_Z20test_cpp_member_funcv` instead of `test_cpp_member_func`)
+- 25 import symbols failed to decompile, creating gaps in the output
+- Complex virtual thunk functions have unsafe pointer arithmetic that's hard to read
+- No comments explaining C++ features like virtual inheritance, RTTI, or exception handling
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+The decompiled code maintains natural control flow with recognizable loops and conditionals, reading top-to-bottom without goto abuse or spaghetti code patterns.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 4/10)  
+Generic temporary variable names like `v0`, `v1`, `v2`, `a`, `b` dominate the code, making it difficult to track the purpose of each variable without significant reverse engineering effort.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v0` used as result of `template_max<int>(3,7)` should be named `max_result` or similar
+2. Fully demangle C++ names and recover original function names from debug symbols when available
+3. Add explanatory comments for complex C++ idioms like virtual thunks, RTTI operations, and exception handling patterns

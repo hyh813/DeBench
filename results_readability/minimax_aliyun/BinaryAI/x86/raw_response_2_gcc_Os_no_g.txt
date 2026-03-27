@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `param_1`, `param_2`, `iVar1`, `iVar2`, `puVar3`, `local_20`, `local_44`. The original source uses meaningful names like `x`, `arr`, `n`, `str`, `sum`, `i` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `double_value`, `process_int`, `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. Excellent recovery of function semantics.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are pre-computed (0x400c0000 for float 2.0), but magic numbers like `0x19`, `0xbf` in `process_char` are unexplained. The switch uses auto-generated `CSWTCH_78`. However, string formatting literals are correctly preserved.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Relatively clean output with minimal compiler artifacts. Types like `undefined4` and `undefined` are present but don't significantly impede readability. No redundant casts or debug instrumentation observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops use `for` constructs matching source. The `array_2d_stack` uses pointer arithmetic with do-while that mirrors original iteration. Some optimization artifacts like computed jumps in `array_3d` but generally natural.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Test functions properly separated from implementation functions. Each function maintains single responsibility. The test functions are large but that's expected from source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. Some functions like `array_2d_stack` use pointer arithmetic that requires mental tracing. The `array_3d` has nested loops that are somewhat convoluted.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code observed. Loop unrolling is minimal. Common subexpressions are handled reasonably.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses generic `undefined4` for most integers instead of `int32_t`. Function pointers use `code*` instead of proper signatures. The original uses specific types like `short`, `long`, `long long`, `float`, `double`, `long double` - all lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: All struct/union types completely lost. `struct_simple` uses `param_1[0]`, `param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`, `p->z`. `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode` - all flattened to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns present. The `union_type` function incorrectly treats `float*` as `int*` for type==1 case. Pointer arithmetic is sometimes incorrect (e.g., `ptr_diff` divides by 4 instead of sizeof(int)). Function pointer calls use `code*` without proper type checking.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output whatsoever. The original source has extensive comments explaining each test case - completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns like linked list traversal (`while (param_1 != NULL)`) are recognizable but not explicitly named or documented. No indication of data structure patterns (binary tree, graph, etc.).
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flags for suspicious code. The `array_oob` function has an intentional off-by-one error (`i <= param_2`) which is undefined behavior - not flagged. No warnings about indirect calls or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original has no explicit contracts but the decompilation provides no additional insight.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships not documented. No indication which functions call which, callback relationships, or global variable usage.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by type (data types, arrays, pointers, composites) but no clear logical organization. Static functions not explicitly marked as static.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would not compile as-is. Uses `undefined4`, `undefined`, `undefined2` types. Needs significant patching to compile - types need replacement, function signatures need completion.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- All struct/union types lost - replaced with raw pointer arithmetic (`param_1[0]`, `param_1[1]` instead of `p->x`, `p->y`)
+- Variable names completely generic (`param_1`, `iVar1`, `local_20`) providing zero semantic information
+- No comments explaining any logic - original source's extensive documentation completely lost
+- Type precision severely degraded - `undefined4` instead of specific integer types, `code*` instead of proper function signatures
+- `ptr_diff` has incorrect pointer arithmetic (divides by 4 instead of accounting for int size)
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Nearly all function names match original source exactly, preserving semantic meaning of what each function does
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Comment Quality (1/10)  
+- Variables use completely generic numbered names losing all semantic information
+- Zero comments present to explain any logic, algorithms, or intent
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array index → `i`/`index`, accumulator → `sum`/`total`, pointer dereference → meaningful name based on pointed-to data)
+2. **Recover struct/union layouts**: Use field access patterns to reconstruct composite types with meaningful field names rather than array indexing
+3. **Add semantic comments**: Include basic comments explaining what functions do, especially for non-obvious logic like boundary checks, type conversions, and algorithm steps

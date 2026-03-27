@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar1`, `auVar2`) with zero semantic meaning. Original names like `sum`, `count`, `result`, `target` are completely lost. Complex functions like `loop_continue` have 16+ generic variables making comprehension nearly impossible.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved correctly (`sequential_ops`, `single_if`, `nested_if_deep`). However, 3 functions have decompile errors (`goto_backward`, `recursion_factorial`, `call_func_ptr_array`) and some have incorrect return types (`if_else` returns `bool` instead of `int`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions contain hardcoded expected values (0x15, 0x14, 0x3e9) instead of actual function calls. Magic numbers like `0x12`, `0x65` appear without explanation. Original meaningful constants are lost.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe NEON vectorization artifacts in `loop_continue` and `tail_recursion` (auVar2, NEON_cmeq, NEON_cmhi, NEON_bit). External function stubs call themselves (`_setjmp`, `__libc_start_main`). Three functions have "CCodeMarkUpIsNull" decompile errors.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions (`sequential_ops`, `ternary_op`) decompile well. However, `switch_fallthrough` becomes nested if-statements, `loop_for_fixed` replaced with mathematical formula, `duffs_device` uses goto labels instead of proper switch fallthrough, and `goto_backward` fails completely.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved correctly. Helper functions (`double_value`, `triple_value`) recovered well. However, `loop_continue` is 100+ lines of vectorized code that should be a simple loop, indicating failed decomposition.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `duffs_device` uses goto labels (switchD_0010104c_caseD_1 through caseD_7) disrupting flow. `test_control_flow_l2` has goto jump (LAB_001013c4). Simple functions read linearly but complex ones don't.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `loop_continue` and `tail_recursion` have massive redundancy with repeated bit shift operations (uVar3 through uVar16). `duffs_device` has repeated copy patterns. Test functions have repeated printf calls with hardcoded values.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Inconsistent int/uint types (`param_1` is int in some functions, uint in others). `if_else` returns `bool` instead of `int`. Many `undefined4`, `undefined8` types. Function pointers as generic `code *` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays referenced as `&DAT_0010196c`, `&DAT_00101980` without type information. `jmp_buf` as `__jmp_buf_tag *` (external type). Function pointer arrays as `undefined4 *`. No struct field recovery visible.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts throughout (`(int)((ulong)(param_1 - 1))`, `(ulong)(uint)((int)lVar6 - iVar2)`). Pointer arithmetic without bounds checking. Generic `code *` function pointers lose type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Only a SHA256 hash header exists. Original source had extensive documentation explaining purpose, difficulty, and test cases for each function.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop idioms lost (`loop_for_fixed` becomes formula, `loop_continue` becomes NEON operations). Switch fallthrough not recognized. State machines (`state_machine`, `fsm_func_table`) partially preserved but obfuscated. Recursion patterns completely lost.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies marked ("UNRECOVERED_JUMPTABLE", "CCodeMarkUpIsNull"). However, type mismatches, vectorization artifacts, and broken test functions are not flagged. Silent failures on critical issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Boundary checks exist but unexplained (e.g., `if (param_1 < 1)` without context). Original contracts like "n > 0 for factorial" completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Test functions don't call actual functions—they print hardcoded expected values. Function pointer relationships unclear (`code *UNRECOVERED_JUMPTABLE`). External stubs are self-referential and broken.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Original had clear L1/L2/L3 organization. Test functions at end but not clearly separated from implementation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone. Missing dependencies (`__libc_start_main`, `__cxa_finalize`, `__gmon_start__`). Undefined variables (`completed_0`, `__dso_handle`, `jump_buffer`). Three functions have decompile errors preventing compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+6+5+4)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (4+3+3)/3 = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (1+3+4+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (3+5+3)/3 = 3.67 × 0.10 = 0.37
+
+Overall Score: 3.81/10
+```
+
+### Overall Readability Score: **3.8/10**
+
+### Critical Defects:
+- **Test functions are broken** - They print hardcoded expected values instead of calling actual functions, making verification impossible
+- **NEON vectorization artifacts** - `loop_continue` and `tail_recursion` contain 100+ lines of incomprehensible vector operations instead of simple loops
+- **Three complete decompile failures** - `goto_backward`, `recursion_factorial`, `call_func_ptr_array` return "CCodeMarkUpIsNull: C code is null"
+- **Zero semantic documentation** - No comments explaining purpose, contracts, or non-obvious logic
+- **Generic variable naming** - All variables are `param_N`, `iVarN`, `uVarN` with no semantic meaning
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names were preserved correctly, allowing identification of intended functionality despite other degradation.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding decompiler confidence, algorithm intent, or recovery uncertainty impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level control flow patterns** - Detect loop idioms from backward jumps and switch fallthrough from consecutive case blocks instead of generating goto labels or nested if-statements.
+
+2. **Add decompiler confidence annotations** - Flag uncertain recoveries (e.g., "// DECOMPILER UNCERTAIN: vectorization pattern detected") and document why certain constructs couldn't be recovered.
+
+3. **Preserve test function semantics** - Ensure test functions actually call the decompiled functions rather than printing hardcoded values, enabling verification of decompilation correctness.

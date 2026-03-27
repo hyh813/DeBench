@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiler uses cryptic generic names like `iVar1`, `piVar1`, `piVar2`, `pcVar1`, `cVar2` for most local variables. Comments like "Unresolved local var: int * arr@[???]" indicate complete failure to recover variable names. Only a few variables like `large_buf` retain meaningful names.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source: `double_value`, `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `heap_realloc`, `stack_alias`, `vla_stack`, `alloca_usage`, etc. The decompiler correctly preserved function semantics in naming.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple magic numbers appear without explanation: `0x2a` (42), `0x14` (20), `0xf` (15), `0x32` (50), `0x1e` (30). String literals are replaced with opaque references like `&DAT_000128a0`. No named constants recovered for values like buffer sizes or error codes.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy noise pollution from "Unresolved local var" comments, "WARNING: Removing unreachable block" messages, "WARNING: Unknown calling convention" warnings, and `__stack_chk_fail` references. These artifacts clutter the output significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow generally matches source with proper loops and conditionals. Some awkward pointer arithmetic in loops (e.g., `piVar1 = piVar1 + 1`) but overall structure is readable. At -O0, this is acceptable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Each function has single responsibility (e.g., `heap_basic`, `local_array`). No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some pointer arithmetic creates minor complexity, but no severe forward jumps or goto-like patterns that disrupt flow significantly.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Loop patterns are reasonable. Some minor expression duplication but nothing severe.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` instead of specific types like `int32_t` or `size_t`. Function pointers use `_func_int_int *` which is somewhat descriptive but not precise. Pointers are correctly typed as pointers. Const correctness mostly preserved.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types like `Point`, `Node`, `TreeNode` are properly recovered with field access (e.g., `__ptr->data`, `__ptr->next`). Field names are preserved. Good reconstruction of nested structures.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues: dangling pointer in `dangling_pointer()` function (returns `*__ptr` after `free(__ptr)`), some unsafe pointer arithmetic in loops. The code correctly represents the original's unsafe patterns but doesn't flag them.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are mostly auto-generated noise ("Unresolved local var", "WARNING: Removing unreachable block"). No meaningful algorithm explanations or documentation of non-obvious logic. The source had extensive comments that were not recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some common patterns present (linked list traversal, tree operations) but not explicitly named or documented. The decompiler doesn't identify "this is a linked list" or "this is a binary tree traversal."
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present for "Unknown calling convention" and "Unresolved local var." However, indirect calls and potential issues aren't explicitly flagged with helpful annotations. Mixed results.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. No documentation of error handling expectations. The source had explicit NULL checks that are present but not explained as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and direct. Global variable usage is transparent (`global_counter`, `global_array`). Callback relationships (e.g., `global_func_ptr`) are visible but not explicitly documented.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped matching source organization: stack functions, heap functions, static/global functions, memory operation functions. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Uses standard library functions (malloc, free, memset, memcpy, fork, waitpid). Some compiler-specific functions (`__stack_chk_fail`, `__printf_chk`) may cause issues. Should compile with minor adjustments.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable naming is severely degraded with cryptic names like `iVar1`, `piVar1`, `piVar2` instead of semantic names like `arr`, `i`, `result`
+- Magic numbers everywhere (0x2a, 0x14, 0xf) without explanation or named constants
+- Excessive noise from "Unresolved local var" and "WARNING" comments obscuring logic
+- No comment recovery - source had extensive documentation completely lost
+- Type safety issues not flagged (dangling pointer in `dangling_pointer()`)
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Nearly all function names perfectly match the original source, making it easy to identify each function's purpose
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Cryptic generic variable names completely obscure variable purpose; the decompiler failed to recover any meaningful local variable names despite -O0 compilation
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from DWARF debug info**: At -O0 with debug symbols, the decompiler should recover all local variable names from `DW_AT_name` attributes rather than showing "Unresolved local var"
+2. **Detect and explain magic numbers**: Identify repeated literal values (e.g., buffer sizes, error codes) and suggest or create named constants
+3. **Recover source comments**: Parse DWARF line number info and source file references to recover original comments explaining algorithms and intent

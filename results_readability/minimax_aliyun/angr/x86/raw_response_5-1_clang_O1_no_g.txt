@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `ptr`, `i`, `result`, `flag1`. Semantic names from source like `value`, `name`, `size`, `data` are completely lost. The decompiler made no effort to infer names from usage patterns.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: While some C++ mangled names are preserved (e.g., `_Z20test_cpp_member_funcv`), many functions use generic `sub_XXXXX` format. Compare to source's meaningful names like `getValue`, `setValue`, `compute`, `call_virtual_func` - all replaced with addresses-based names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some magic numbers like `50` in loops and `4` in `strncpy` are present but not explained. String literals are referenced via global variables (`g_403081`) rather than inline strings. Moderate clarity with room for improvement.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe compiler artifact pollution. Examples include: `[D] PutI(72:F64x8)[t3,0] = t6()` VEX expressions, `__x86.get_pc_thunk` functions, complex struct definitions with `padding_0[19907]`, and exception handling machinery. The code is cluttered with unreadable artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Control flow is obscured by computed jumps like `goto ptr[2]` and `goto (int)v1[24]`. Loops use goto patterns instead of while/for constructs. Exception handling creates spaghetti flow with `__cxa_throw`, `__cxa_begin_catch`, `_Unwind_Resume`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions maintain reasonable size (not monolithic), and some parameter information is preserved. However, many small wrapper functions like `sub_4013a3` just call other functions without adding value - potential inlining candidates not recognized.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Code has poor linearization with forward jumps disrupting flow. Exception handling scatters logic across multiple basic blocks. The `test_cpp_oo_features` function has 40+ lines of sequential operations that could be better organized.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Minimal dead code present. Some loop unrolling is visible in `test_cpp_constructor` but it's contained. The main issue is not redundancy but rather the opposite - missing code recovery (many functions just `return;`).
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - most types are generic `void*`, `unsigned int`, `char`. Original types like `int`, `size_t`, `bool`, `int*` are lost. No const correctness preserved. Function pointers become generic `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs are named generically (`struct_0`, `struct_1`, `struct_4`, `struct_5`) with fields like `field_0`, `field_4`, `padding_0`. Compare to source's meaningful classes: `SimpleClass`, `LifecycleClass`, `Base`, `Derived` - all completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations present: pointer arithmetic without bounds (`ptr + 4 * index`), type-confused function pointers (`*(v0))(&v0, 5)`), and raw memory access (`*((int *)&v1) + 1`). The code risks undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The few that exist are auto-generated noise like "do not return". No explanation of algorithms, intent, or recovered semantics. Compare to source's clear Chinese comments explaining each feature.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some C++ patterns are technically visible (virtual function calls via vtable, `__cxa_throw` for exceptions) but not explicitly named or documented. The decompiler doesn't identify "virtual dispatch", "RAII", "lambda", or "template instantiation".
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies are flagged: `[D] unsupported_<class 'pyvex.expr.GetI'>()` appears multiple times, and "Failed to decompile function" is noted. However, flagging is inconsistent - many problematic areas have no warnings.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The source's implicit contracts (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated") are completely lost. No error condition documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Some function call relationships visible through the code, but global variable usage is opaque (e.g., `_ZN14LifecycleClass14instance_countE` used without explanation). Virtual dispatch relationships not clearly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are roughly grouped by address but not by logical functionality. The source organizes by C++ feature (member functions, constructors, virtual functions, templates), but decompiled output is just address-ordered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many external declarations are missing or incorrect. Functions won't compile standalone - require stubs for `operator new`, `__cxa_throw`, etc. No dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.2/10
+
+**Critical Defects:**
+- Variable names are all generic (`v0`, `v1`, `ptr`, `i`) - source's `value`, `name`, `size`, `data` completely lost
+- Struct/class types recovered as `struct_0`, `struct_1` with `field_0`, `field_4` - original class names `SimpleClass`, `LifecycleClass`, `Base` lost
+- Function names use address-based `sub_XXXXX` format instead of semantic names like `getValue`, `call_virtual_func`
+- Severe compiler artifact noise: VEX expressions `[D] PutI(...)`, padding arrays `padding_0[19907]`, thunk functions
+- Control flow uses computed goto (`goto ptr[2]`) instead of natural loop constructs
+
+**Best Quality Aspect:** Redundancy Elimination (scored 6/10)  
+- Minimal dead code present; loop unrolling is contained and not excessive
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic variable names completely obscure semantic meaning; the decompiler should infer names from usage patterns (e.g., `ptr` used as array index → `index`, `result` accumulated in → `result`)
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Track how variables are used (array index → `index`, accumulated result → `result`, string operation → `name`)
+2. **Recover class/struct names from vtable symbols**: Use mangled names like `_ZN4Base12virtual_funcEi` to recover class name `Base` and method `virtual_func`
+3. **Eliminate VEX artifact noise**: Filter out `[D] PutI(...)` expressions and large padding arrays from decompiled output; these are compiler internals not relevant to source recovery

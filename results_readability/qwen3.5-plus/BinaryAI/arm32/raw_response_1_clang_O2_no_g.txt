@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar2` with no semantic meaning. Original source had `temp1`, `temp2`, `temp3` indicating sequence; decompiled code loses all intent (e.g., `sequential_ops` parameters should be `a`, `b`, `c`).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names preserved accurately from original source (`sequential_ops`, `single_if`, `nested_if_2`, etc.). This is excellent recovery, though test functions show hardcoded values instead of actual calls.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation (`0x15`, `0x14`, `0xfffffffb` in test functions). Arithmetic expressions like `param_1 * 10 + 10` obscure the original `x == 0 → 10, x == 1 → 20` pattern.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Redundant type casts present (`(uint)(0 < param_1)`, `(ulonglong)lVar1 >> 0x20`). Test functions contain inline computation loops that obscure the testing purpose.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `single_if` transformed to bit shift `param_1 << (uint)(0 < param_1)` instead of conditional. `loop_for_fixed` uses complex bit manipulation instead of simple for-loop. Switch statements converted to arithmetic in some cases.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable granularity. Helper functions preserved (`double_value`, `triple_value`). No excessive inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom reasonably. `goto_forward` and `goto_backward` successfully recovered as conditionals/loops. Some do-while where original had for/while.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `loop_for_fixed` shows aggressive optimization artifacts (bit operations for sum formula). Test functions have redundant printf patterns with computed expected values.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Inconsistent types (`param_1` sometimes `int`, sometimes `uint`, sometimes `undefined4`). Function pointers use generic `code *` type. `if_else` returns `bool` instead of original `int`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited composite types in this code. Arrays handled reasonably. `__jmp_buf_tag` used for setjmp/longjmp. No major struct recovery issues visible.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present (`undefined4 *`, `code *`). Signed/unsigned confusion throughout (`(int)param_1` vs `param_1`). Function pointer calls use generic types risking type confusion.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining each function's purpose, test cases, and difficulty levels. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (loops, conditionals). Duff's device partially recovered but messy with goto labels. No explicit pattern naming or algorithm identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged (`UNRECOVERED_JUMPTABLE` in `call_func_ptr`). However, incorrect transformations (like `if_else` return type) not flagged. Inconsistent detection.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. Error conditions not documented despite being present in original.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`jump_buffer`, `DAT_00011dbd`) referenced without context. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. No header file structure or API declarations recovered.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies present (`printf`, `setjmp`, `longjmp`). Undefined symbols remain (`DAT_00011dbd`, `UNK_00011e2c`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Sub-dimension Scores | Level Average | Weight | Weighted |
+|-------|---------------------|---------------|--------|----------|
+| L1: Lexical Clarity | 3, 8, 5, 6 | 5.5 | 30% | 1.65 |
+| L2: Structural | 5, 7, 7, 6 | 6.25 | 25% | 1.56 |
+| L3: Type System | 5, 7, 5 | 5.67 | 20% | 1.13 |
+| L4: Semantic | 2, 5, 4, 2 | 3.25 | 15% | 0.49 |
+| L5: Contextual | 5, 6, 6 | 5.67 | 10% | 0.57 |
+
+**Overall Readability Score: 5.4/10**
+
+### Critical Defects:
+- **Variable `param_1`, `param_2`, `param_3`** should be named `a`, `b`, `c` based on original source semantics
+- **`single_if` transformed to bit shift** `param_1 << (uint)(0 < param_1)` obscures the conditional logic
+- **`if_else` return type changed** from `int` to `bool`, breaking semantic equivalence
+- **`loop_for_fixed` uses complex bit manipulation** instead of recognizable for-loop structure
+- **Zero comments** despite original having extensive documentation for each function
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names were preserved accurately, allowing immediate identification of each function's purpose.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding non-trivial transformations extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and debug symbols (e.g., detect `param_1` used in addition should be `a` or `operand1`)
+2. **Preserve original control flow structures** when debug info is available (-O0 -g should yield near-perfect recovery)
+3. **Generate semantic comments** indicating transformation confidence and recovered patterns (e.g., "// Recovered: for-loop from backward jump")

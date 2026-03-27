@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `iVar1`, `uVar2`, `local_800`, `aiStack_24`); original semantic names like `arr`, `p`, `local` are lost, requiring significant effort to infer purpose from usage patterns.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some original names preserved (`local_vars`, `heap_basic`, `double_value`, `main`), but many functions have address-based names (`FUN_00011030`, `FUN_00011f75`); external functions marked as `<EXTERNAL>::` which is helpful.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x2a`=42, `0x14`=20, `0x3c`=60); string references shown as `&DAT_000135c1` instead of actual content; no named constants recovered from original source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present (`__i686.get_pc_thunk.bx`, external function stubs); test functions contain hardcoded return values instead of actual computation; loop unrolling in `large_stack_frame` writes 8 bytes per iteration without explanation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions maintain natural flow (`local_vars`, `double_value`), but complex functions show optimization artifacts (`vla_stack`, `alloca_usage` have complex stack manipulation); some functions completely simplified to constants (`stack_alias` just returns `0x14`).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but helper functions lost (`static_helper` became `FUN_00011fb5`); test functions are monolithic with hardcoded values instead of calling actual functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally, but `vla_stack` and `alloca_usage` have complex stack offset calculations that disrupt flow; loop structures generally preserved but sometimes unrolled.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling present in `large_stack_frame` and `heap_basic` without indication; test functions have redundant hardcoded values; some original logic completely lost to constant folding.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many generic types (`undefined4`, `void*`) instead of specific types; some type information preserved (`size_t`, `__pid_t`); signed/unsigned sometimes incorrect (`uint param_1` vs original `int`); pointer types often `undefined4*` instead of struct pointers.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct types mostly lost (`Point` struct operations simplified to `param_1 * 3`); `Node` struct partially recovered in `heap_nested` but fields accessed as `__ptr[0]`, `__ptr[1]`; no struct definitions visible in output; array types sometimes preserved (`local_800[2048]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present (`(int)`, `(undefined4*)`, `(char*)`); pointer arithmetic without bounds checking visible; some null checks preserved but inconsistent; `dangling_pointer` access after free not flagged as dangerous.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Completely absent—no comments explaining function purpose, no decompilation confidence indicators, no algorithm explanations; original source had extensive comments that are entirely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition (linked list creation in `linked_list_heap`, tree operations in `tree_heap_traversal` not identified); memory allocation patterns not labeled; no algorithm identification despite clear patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about dangerous operations (`dangling_pointer`, `double_free`, `heap_overflow`); simplified functions don't indicate loss of original logic; undefined behavior not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (null checks exist but not as contracts); no postconditions inferred; error conditions not documented; original safety checks lost in simplification.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented; global variables referenced but not clearly identified (`global_counter`, `static_local_counter`); callback relationships partially visible (`global_func_ptr = double_value`).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file; no organization matching source sections (stack/heap/static/memory-op); static functions not clearly marked; no header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External function declarations present but some use undefined types (`undefined4`); would require significant modification to compile; dependencies not documented; Ghidra-specific types need replacement.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────
+Overall Score:                                  4.22/10
+```
+
+**Overall Readability Score: 4.2/10**
+
+### Critical Defects:
+- **Zero comments** - Original source had extensive documentation; decompiled code has none
+- **Struct types lost** - `Point`, `Node`, `TreeNode` structures reduced to pointer arithmetic (`__ptr[0]`, `__ptr[1]`)
+- **Test functions hardcoded** - `test_stack_memory`, `test_heap_memory` return constant values instead of calling actual functions
+- **Dangerous operations unflagged** - `dangling_pointer`, `double_free`, `heap_overflow` not marked as undefined behavior
+- **Generic variable names** - `param_1`, `iVar1`, `uVar2` obscure semantic meaning throughout
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Many original function names preserved (`local_vars`, `heap_basic`, `double_value`, `main`), providing some semantic anchors for navigation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding intent impossible; even basic function purpose comments would dramatically improve usability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (e.g., `param_1` multiplied by 2 in `double_value` should suggest `input` or `value`)
+2. **Reconstruct struct definitions from memory access patterns** - Detect consistent field offsets (`__ptr[0]`, `__ptr[1]` with specific sizes) and propose struct types with field names
+3. **Flag potentially dangerous operations** - Detect use-after-free, double-free, buffer overflow patterns and add warning comments (e.g., `// WARNING: Access after free - undefined behavior`)

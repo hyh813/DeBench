@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**  
+Justification: Variables use extremely generic names like `a1`, `a2`, `v8`, `v9`, `v10`, `v12`, `v13`, `v14`, `v15`, `v16`. The original source uses meaningful names like `a`, `b`, `count`, `args`, `sum` - all lost in decompilation. These single-letter generic names make it nearly impossible to track variable purpose without extensive cross-referencing.
+
+### 2. Function Naming Quality
+**Score: 9/10**  
+Justification: Function names are excellent - `cdecl_func`, `call_cdecl`, `stdcall_func`, `varargs_func`, `func_no_args` all match the original source exactly. The decompiler correctly recovered all function names from symbols. Only minor runtime functions like `sub_640` are generic.
+
+### 3. Literal Clarity
+**Score: 4/10**  
+Justification: The decompiled code shows computed results (15, 50, 6) rather than original constants. Format strings are referenced as cryptic names like `asc_14BE`, `aCallL206`, `aRetL101D`. No recovery of original constant names or meaningful literals - all replaced with computed values or opaque references.
+
+### 4. Noise Reduction
+**Score: 4/10**  
+Justification: Significant compiler artifacts present: `LODWORD`, `_OWORD`, `_QWORD`, `_DWORD` type casts; stack frame manipulations with complex local variable declarations like `_QWORD v12[8]`; register-related comments like `@<X0>`, `@<X8>`; and 7 functions failed to decompile entirely. These artifacts severely impede readability.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**  
+Justification: Control flow is mostly natural - simple arithmetic operations, basic conditionals, and loops are recognizable. At `-O0` optimization, loop constructs are properly recovered. Minor awkwardness in varargs handling where the complex va_list manipulation obscures the simple loop logic.
+
+### 6. Function Decomposition
+**Score: 8/10**  
+Justification: Function granularity is appropriate - each function handles a single responsibility. The original source's helper functions like `call_cdecl()` wrapping `cdecl_func()` are preserved. No over-fragmentation or monoliths observed. Functions average 10-30 lines each.
+
+### 7. Code Linearization
+**Score: 7/10**  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns in functions like `param_double_ptr` are used appropriately. Some complexity in varargs functions but still traceable. No spaghetti code or excessive goto usage.
+
+### 8. Redundancy Elimination
+**Score: 8/10**  
+Justification: No obvious dead code or duplicate expressions. Loop unrolling is minimal (appropriate for `-O0`). Common subexpression elimination artifacts are not significant. The code is clean with no obvious redundancy.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**  
+Justification: Mixed precision - basic types like `int` and `char*` are correct, but no width-specific types (int32_t, uint64_t). Function pointer types are imprecise: `unsigned int (__fastcall *a1)(_QWORD)` should be `int (*)(int)`. Return types use `__int64` for all functions regardless of actual return type.
+
+### 10. Composite Type Recovery
+**Score: 3/10**  
+Justification: Poor struct recovery - `LargeStruct` and `SmallStruct` from source are not recovered. The decompiled code uses raw pointer arithmetic like `a1[15] + *a1` instead of `s.data[0] + s.data[15]`. Struct field names completely lost, replaced with array indexing.
+
+### 11. Type Safety
+**Score: 6/10**  
+Justification: Some type safety issues - frequent unnecessary casts like `(unsigned int)` on return values; function pointer type mismatches (`_QWORD` parameter instead of `int`); pointer arithmetic in struct functions without type safety. However, no dangerous buffer overflow patterns or severe violations observed.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**  
+Justification: Only the file header comment exists. No comments explaining algorithm logic, parameter purposes, or return value semantics. The original source had extensive comments (e.g., "// CALL-L1-01: cdecl调用约定") - completely lost. Zero useful comments for understanding function behavior.
+
+### 13. Idiom Recognition
+**Score: 3/10**  
+Justification: No design patterns or algorithm patterns identified or named. The varargs pattern (va_list, va_start, va_arg, va_end) is present in code but not recognized as a standard idiom. No indication that this is a variadic function pattern.
+
+### 14. Anomaly Indication
+**Score: 5/10**  
+Justification: Failed functions are listed at the end ("FAILED to decompile: strlen, __libc_start_main, etc.") but without explanation of why. No flags for indirect calls or unusual stack layouts. Some uncertainty indicators like `@usercall` but not comprehensive anomaly reporting.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**  
+Justification: No preconditions, postconditions, or invariants documented. The original source had clear expectations (e.g., "// 期望: 15") - completely lost. No recovery of error conditions or contract information from the source.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**  
+Justification: Function call relationships are clear from code structure - `call_cdecl()` calls `cdecl_func()`. However, no explicit documentation of callers/callees. Global variable relationships not documented. Basic clarity through code structure but no explicit cross-reference documentation.
+
+### 17. Module Organization
+**Score: 7/10**  
+Justification: Functions are grouped logically - all calling convention functions together, parameter passing tests together, return value tests together. Matches source organization reasonably well. Static functions properly scoped. Minor issues with runtime functions interspersed.
+
+### 18. Build System Compatibility
+**Score: 6/10**  
+Justification: Code appears structurally compilable with standard library functions (printf, puts). External dependencies not explicitly documented. Some non-standard types (`__int64`, `__fastcall`) may need typedefs. No header declarations provided. Basic compatibility but requires patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 4 + 4) / 4 = 4.75
+L2_avg = (7 + 8 + 7 + 8) / 4 = 7.50
+L3_avg = (5 + 3 + 6) / 3 = 4.67
+L4_avg = (2 + 3 + 5 + 2) / 4 = 3.00
+L5_avg = (6 + 7 + 6) / 3 = 6.33
+
+Overall = (4.75 × 0.30) + (7.50 × 0.25) + (4.67 × 0.20) + 
+          (3.00 × 0.15) + (6.33 × 0.10)
+        = 1.425 + 1.875 + 0.934 + 0.45 + 0.633
+        = 5.32/10
+```
+
+### Overall Readability Score: 5.3/10
+
+### Critical Defects
+- **Variable naming**: All parameters use generic `a1`, `a2`, `a3` and locals use `v8`-`v16`, completely losing semantic meaning from source (`a`, `b`, `count`, `sum`)
+- **Struct recovery failure**: `LargeStruct` and `SmallStruct` not recovered; code uses raw pointer arithmetic `a1[15]` instead of struct field access `s.data[15]`
+- **No comments**: Zero useful comments explaining algorithm logic, parameter purposes, or expected behavior - original source had extensive documentation
+- **Type precision loss**: Function pointers use `_QWORD` instead of proper `int` type; all returns use `__int64` regardless of actual type
+- **Literal obfuscation**: Format strings named `asc_14BE`, `aCallL206`; computed values shown instead of original constants
+
+### Best Quality Aspect
+**Function Naming Quality (9/10)** - The decompiler excellently recovered all function names from debug symbols, matching original source exactly (`cdecl_func`, `call_cdecl`, `varargs_func`, etc.)
+
+### Most Needs Improvement
+**Variable Naming Quality (2/10)** - Generic single-character parameter names (`a1`, `a2`) and cryptic local variables (`v8`-`v16`) make code nearly incomprehensible without constant cross-referencing to understand variable purposes.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `*p *= 2` suggests a multiplier, `strlen(s)` suggests a string) to generate semantically meaningful names like `multiplier` or `string_length` instead of `a1`, `v8`
+2. **Recover struct types from memory access patterns**: Detect sequential array-style accesses at known offsets (e.g., `a1[0]`, `a1[15]`) and reconstruct struct definitions with field names based on usage context
+3. **Add semantic comments for standard patterns**: Automatically recognize and comment common idioms like varargs (va_list), function pointers (callbacks), and common algorithms rather than leaving them as opaque code sequences

@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Most local variables are generic stack offsets like `local_38`, `uStack_2c`, and `puVar1`, providing no semantic context. While `obj` is recovered in `call_virtual_func`, the majority of variables obscure their purpose (e.g., `local_38` holds the integer value `10` and part of a string).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from symbols, matching the original source exactly (e.g., `test_cpp_virtual_func`, `Container<int>::push`). This includes mangled template names which are demangled successfully.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers resulting from compiler optimization, such as `0x125c` (4704), `0x2a` (42), and `0x74736554` ("Test" in hex). Without comments explaining these are folded constants, the logic is completely obscured.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: While there is no dead code from register spilling, the output contains significant noise in the form of `undefined` types (`undefined4`, `undefined8`) and repetitive warnings like `/* WARNING: Unknown calling convention -- yet parameter storage is locked */`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: The control flow is extremely linear (mostly single `return` statements) because the compiler optimized away the logic. Where logic exists (`test_cpp_rtti`), the `if` statements are natural, but the overall flow is unnatural due to the missing implementation steps in test functions.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Template instantiations are correctly decomposed into separate functions (e.g., `template_max<int>` and `template_max<double>`). The granularity is appropriate, though the main test functions are reduced to trivial stubs by optimization.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads strictly top-to-bottom with minimal jumps or complex branching, largely because the complex logic was optimized out. This makes the remaining code easy to scan, even if it lacks depth.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler presents the optimized code cleanly without redundant calculations. For example, `test_cpp_constructor` directly returns the calculated result `instance_count * 0x3e9 + 0x15` rather than showing the intermediate steps that were optimized away.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Function signatures often have correct types (e.g., `Base *obj`), but local variables frequently lose type precision, defaulting to `undefined` types or generic integers. Pointer arithmetic like `(ulong)&local_38 | 4` indicates a loss of precise type tracking for stack objects.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct definitions (e.g., `SimpleClass`, `Base`, `Derived`) are completely absent from the decompiled output. The code accesses data via raw stack offsets (`local_38`) rather than named struct fields, making it impossible to understand the data layout.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies on unsafe casts and pointer manipulation, such as casting stack pointers to `ulong` for bitwise operations. The use of `undefined` types further degrades type safety, making it hard to verify correct memory access.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to DWARF debug info hints (`/* DWARF original prototype... */`) and decompiler warnings. There are no high-level comments explaining the *intent* of the code (e.g., "Testing virtual function dispatch"), which is critical given the optimized-away logic.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: The decompiler correctly identifies C++ runtime idioms like `__cxa_throw` (exceptions), `__dynamic_cast` (RTTI), and `operator_new` (memory allocation). However, it fails to explicitly label higher-level patterns like "Virtual Table Dispatch" in `call_virtual_func`.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler provides useful warnings for uncertain constructs, such as `/* WARNING: Could not recover jumptable... */` for virtual calls and `/* WARNING: Unknown calling convention */`. These alerts help the user identify where the decompilation might be unreliable.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the requirement that `idx` be non-negative in `Container::get` is implicit in the code `(-1 < idx)` but not documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered symbol names. The relationship between `test_cpp_oo_features` and the individual test functions is obvious, and virtual function calls are presented as indirect calls through the vtable.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a flat manner, but the naming conventions (namespaces/classes) provide some logical grouping. However, the lack of struct definitions separates the data organization from the function logic.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code would not compile standalone due to missing struct definitions, `undefined` types, and reliance on compiler-specific intrinsics. Significant manual intervention would be required to make this code buildable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Composite types (structs/classes) are not defined, forcing the use of raw stack offsets.
+- Magic numbers (e.g., `0x125c`, `0x2a`) obscure the logic, which was optimized out.
+- Local variables use generic names (`local_38`, `uStack_2c`) instead of semantic names from the source.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Symbol information was preserved perfectly, allowing immediate identification of the original C++ functions and templates.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The complete absence of struct definitions makes it impossible to understand the data layout or object relationships without manually reverse engineering the stack frames.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Recover struct layouts from DWARF debug information to define composite types instead of using raw stack offsets.
+2. Annotate functions that return constant-folded values with the original expression or a "Calculated constant" comment to preserve semantic intent.
+3. Leverage DWARF variable location lists to recover original local variable names rather than defaulting to `local_XX`.

@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` throughout. Local variables are `v0`, `v1`, `v2`, `v3`, `ptr`, `i`, `idx`. The decompiler makes no attempt to infer semantic meaning (e.g., `packet_size` or `count`) from usage patterns. This is the lowest-scoring aspect.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main test functions preserve original names: `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `func_many_args`, `func_mixed_args`, `func_struct_byval`, `func_struct_byptr`. Internal helpers like `sub_401030` are generic but expected for non-test code.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Function call arguments like `cdecl_func(5, 10)` are literal and clear. Return values like `return 42` in `func_no_args` are explicit. Minor issue: some magic numbers in struct offsets (e.g., `field_24`) lack explanation, but overall literals are understandable.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe pollution from `__x86.get_pc_thunk.ax(&v0)` calls inserted at function entry (every function has this). Stack protection checks (`_ccall`, `__stack_chk_fail_local`) add noise. The `[D] unsupported_<class 'pyvex.expr.GetI'>` markers indicate decompilation failures. These artifacts significantly impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural - loops use `for` constructs, conditionals use `if/else`. At `-O0`, there's minimal optimization distortion. The `goto` statements in some functions (e.g., `sub_401030`) are artifacts but don't dominate. Minor issue: switch statements reconstructed as chained if-else (e.g., `ret_multi_branch`).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. Each test function (e.g., `call_cdecl`, `call_stdcall`) is separate and cohesive. The `main` function properly delegates to test helpers. No 500-line monoliths. Parameter lists are reasonable - not exposing implementation details.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Early returns present (e.g., `if (!a0) return ...`). Some forward jumps in varargs handling but manageable. Nesting depth is reasonable (typically 2-3 levels).
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No significant dead code. Loop unrolling is minimal at `-O0`. Some repeated patterns in struct initialization (e.g., `call_ret_large_struct`) but acceptable. The `memset` in `func_struct_byval` is legitimate.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Parameters uniformly use `unsigned int` losing signedness (source uses `int`). Pointers are correctly typed as `unsigned int*` or `char*`. Function pointers like `unsigned int *a0` in `param_func_ptr` lose the proper function signature. The decompiler defaults to `unsigned int` for almost everything.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct reconstruction exists (e.g., `struct_0` with `field_0`, `field_24`, `padding_0`), but field names are generic. The `LargeStruct` from source (128 bytes with `data[16]`) is not reconstructed - instead appears as individual parameters `a0-a15`. Small struct return uses `unsigned int [2]` which is a raw array, not a named struct.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Pointer arithmetic appears correct in most places. Some unsafe patterns: `*(ptr)` without null check in some paths, cast from `char*` to `int*` in `param_string`. The `param_double_ptr` uses `struct_0 **ptr` which is a workaround. Overall manageable but not fully type-safe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining algorithm or intent. The only comments are decompiler artifacts like `// [D] Unsupported jumpkind`. No documentation of calling convention behavior, parameter semantics, or return value contracts. A decompiler at this level should add explanatory comments.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic C idioms recognized (loops, conditionals). The calling convention tests are not identified as such - they're just functions. Varargs pattern (`va_list`, `va_start`, `va_arg`) is partially recognized as pointer iteration but not named. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers appear but are cryptic. They don't explain what operation failed or why. No flags for suspicious patterns like the undefined behavior in `call_order_dep` (source has `param_order_dep(++i, ++i)`). Unresolved indirect calls not clearly indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL" for `func_struct_byptr`). No postconditions. The source has explicit NULL checks (`if (!p) return -1`) that are preserved but not explained as contracts. Error return values not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear from code structure. External function calls (e.g., `printf` as `sub_4010b0`) are not named. Global variables referenced but not documented (e.g., `g_403008`). Callback relationships (e.g., `callback_func` passed to `param_func_ptr`) are visible in code flow.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - calling convention tests together, parameter passing tests together, return value tests together. Matches source file organization reasonably well. Static functions properly scoped. No header file reconstruction but acceptable for single-file output.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has `extern` declarations for global variables. Many stub functions needed (`__x86.get_pc_thunk.ax`, `__stack_chk_fail_local`). Would require moderate patching to compile. Dependencies on standard library (printf, memset, strlen) not explicitly documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 7 + 3) / 4 = 5.0
+L2_avg = (7 + 8 + 7 + 6) / 4 = 7.0
+L3_avg = (5 + 4 + 6) / 3 = 5.0
+L4_avg = (2 + 5 + 3 + 2) / 4 = 3.0
+L5_avg = (6 + 7 + 6) / 3 = 6.33
+
+Overall = (5.0 × 0.30) + (7.0 × 0.25) + (5.0 × 0.20) + (3.0 × 0.15) + (6.33 × 0.10)
+        = 1.5 + 1.75 + 1.0 + 0.45 + 0.633
+        = 5.33/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use `a0`, `a1`, `a2` etc., losing semantic meaning (should infer names like `count`, `sum`, `ptr` from usage)
+- **Noise pollution**: Every function cluttered with `__x86.get_pc_thunk.ax(&v0)` calls that add no value
+- **Type precision loss**: All parameters typed as `unsigned int` regardless of original signedness
+- **No struct recovery**: `LargeStruct` (128 bytes) not reconstructed; appears as 16 separate parameters
+- **No comments**: Zero explanatory comments for algorithm intent, calling convention behavior, or contracts
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (8/10)**: Functions are well-separated and cohesive, matching source organization. Test functions properly isolated.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming (2/10)**: The generic `a0`, `a1`, `v0`, `v1` naming makes it extremely difficult to track data flow and understand function purpose without constant cross-referencing.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When `a0` is used as loop bound, name it `count` or `num_elements`. When `a1` is dereferenced as string, name it `str` or `pointer`.
+2. **Eliminate or annotate PC-relative thunk calls**: The `__x86.get_pc_thunk.ax` calls are compiler boilerplate - either remove or add comment explaining they're required for position-independent code.
+3. **Recover struct types from parameter patterns**: When 16 consecutive parameters appear with related usage (array access pattern), reconstruct as struct rather than flat parameter list.

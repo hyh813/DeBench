@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Parameters preserve original names (`a`, `b`, `count`, `x`) but local variables are generic (`v1`, `v2`, `v3`, `result`). In `varargs_func`, `v2` and `v3` obscure their roles as va_list pointers.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - function names like `cdecl_func`, `varargs_func`, `test_calling_conventions` match original source exactly. Action-oriented test functions (`call_cdecl`, `call_stdcall`) are preserved.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals stored as hex-encoded globals (`g2`, `g3`) obscuring meaning. Magic numbers like `0x12345678` preserved but `0x51eb851f` (g21) unexplained. Simple constants (5, 10, 42) remain clear.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: ARM helper function `__aeabi_l2d` included unnecessarily. Excessive casts throughout (`(int32_t)`, `(char *)`). Stack frame manipulation visible in `test_calling_conventions` with `bp-4`, `bp-136` offsets.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered as while constructs but `varargs_func` uses manual pointer arithmetic instead of va_list macros. Switch statements recovered in `param_complex_cast` and `ret_multi_branch` appropriately.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries correctly preserved with appropriate granularity. No inappropriate inlining or fragmentation. Each test function remains separate and cohesive.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `test_calling_conventions` has awkward stack manipulation with forward references (`v4`, `v5`, `v6`). Loop bodies interrupt natural flow in several functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant type casts throughout (`(int32_t)(int64_t)`). Some functions have duplicate initialization patterns. No dead code elimination visible from -O0 compilation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe degradation - everything becomes `int32_t`, `int64_t`, or `char*`. Original `LargeStruct`, `SmallStruct` types lost entirely. `float64_t` typedef added but float handling in `func_mixed_args` is awkward with `__aeabi_l2d` calls.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `LargeStruct` (128 bytes) becomes `int32_t s` in `func_struct_byval`. `SmallStruct` becomes `int32_t *p` in `func_struct_byptr`. All struct field access converted to pointer arithmetic (`*(int32_t *)(v1 + 4)`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts throughout. `func_struct_byptr` signature changed from `SmallStruct*` to `int32_t*`. Function pointer casts without verification (`(int32_t (*)(int32_t))0x11358`). Pointer arithmetic on struct data without bounds checking.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code despite extensive original documentation explaining calling conventions. Only meta-information header present. No explanation of complex patterns like varargs handling.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: va_list pattern completely unrecognized - manual pointer arithmetic instead of `va_start`/`va_arg`/`va_end`. Struct access patterns not identified. No recognition of common C idioms.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation despite obvious issues. `varargs_func` logic is incorrect but not flagged. No indication of potential problems with struct type loss.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present but not documented as preconditions. No postcondition inference. Error conditions not documented. Original source comments about expected values completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call graph preserved correctly. Global variables (g1-g21) visible but relationship unclear. No documentation of callback relationships or calling convention differences.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Reasonable organization with prototypes at top, globals grouped, functions in logical order. All code in single file appropriate for decompiled output.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Standard headers included but struct type loss prevents correct compilation. External dependencies (`__aeabi_l2d`, `__stack_chk_fail`) noted. Would require significant patching to compile correctly.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+9+6+5)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (6+8+6+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (2+3+3+3)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (6+7+6)/3   = 6.33 × 0.10 = 0.633
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.15/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct` and `SmallStruct` degraded to `int32_t`, making `func_struct_byval` and `func_struct_byptr` semantically incorrect
+- **va_list pattern unrecognized** - `varargs_func` uses manual pointer arithmetic instead of standard `va_start`/`va_arg`/`va_end` macros
+- **Zero documentation** - All original comments explaining calling conventions and expected values completely absent
+- **Excessive type casting** - Unnecessary casts throughout obscure original type intent (`(int32_t)(int64_t)`, `(char *)`)
+- **String literals obfuscated** - All printf strings stored as hex-encoded globals (g2-g19) instead of readable strings
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names preserved almost perfectly from original source, maintaining semantic clarity for all 60+ functions
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union types, converting all composite data to primitive pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** - Analyze memory access patterns to recover struct layouts and field names from consistent offset usage
+2. **Recognize standard library patterns** - Detect va_list usage patterns and recover `va_start`/`va_arg`/`va_end` macro calls instead of raw pointer arithmetic
+3. **Preserve string literal readability** - Output string constants as readable text rather than hex-encoded global variables, especially for printf format strings

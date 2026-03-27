@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `ptr`, `flag1`) with no semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retained original names (`param_fake_branch`, `call_opaque_predicate`), but many helper functions use mechanical naming (`sub_401020`, `sub_4010d5`). Main test functions are identifiable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295`, `4611686018427387902`, `90` appear without explanation. String literals replaced with opaque globals (`g_402004`, `g_402020`). XOR key `0x5A` becomes `90` without context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: `CONCAT` operations, `_ccall` calls, `AddV` functions, stack frame manipulation (`[bp-0x8]`), and unsupported jumpkind warnings pollute the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses `goto` statements (`goto LABEL_401561`, `goto g_404010`) instead of structured loops. Critical: `param_fake_branch` lost its fake branch logic entirely—just returns `a0` without the always-false conditions.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Many wrapper functions that just call the real function (`sub_401199` calls `param_fake_branch`). Some functions constant-folded to single returns (`call_fake_branch()` returns 10 directly), losing original structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps into loop bodies disrupt flow. `param_vectorized_loop` has deep nesting with multiple labels. Generally traceable but requires effort to follow execution paths.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling visible in `param_vectorized_loop` without explanation. Duplicate expressions in conditionals. Constant folding removed original logic in some cases (e.g., `param_implementation_defined` returns constant 47).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed types (`unsigned long long`, `unsigned int`, `long long`) where original used `int`. Pointer types sometimes lose precision. Excessive casts: `(unsigned int)((v5 >> 31 CONCAT v5) % ...)`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Only one trivial struct defined (`struct_0` with `field_0`). Bitfield struct from `param_implementation_defined` completely lost (constant-folded to return 47). Array types inconsistently preserved.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts visible throughout. Pointer arithmetic without bounds checking. Type-confused `CONCAT` operations mixing types. No const-correctness preserved from original source.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments present. Only auto-generated function headers. No algorithm explanations (GCD in `param_opaque_predicate` unrecognized). No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. GCD algorithm not recognized. Vectorization in `param_vectorized_loop` not explained. Setjmp/longjmp exception handling pattern not documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`). Silent failures elsewhere—constant folding not indicated as optimization. No warnings about lost logic in `param_fake_branch`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x` constraints). No postconditions inferred. Signal handler contracts not documented. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but not documented. Global variable usage opaque (`g_402004`, `g_402020` are format strings). No call graph documentation. Callback relationships unclear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in address order, not logical grouping. Related functions not grouped (e.g., `param_*` and `call_*` scattered). No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies declared (`signal`, `strncpy`, `longjmp`). Would require significant stubs to compile standalone. Platform-specific code (AMD64) limits portability. Some functions marked "do not return".
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Calculation:**
+```
+L1_avg = (4+6+4+3)/4 = 4.25
+L2_avg = (4+5+5+5)/4 = 4.75
+L3_avg = (5+3+4)/3 = 4.00
+L4_avg = (2+3+4+2)/4 = 2.75
+L5_avg = (4+4+5)/3 = 4.33
+
+Overall = (4.25×0.30) + (4.75×0.25) + (4.00×0.20) + (2.75×0.15) + (4.33×0.10)
+        = 1.275 + 1.188 + 0.800 + 0.413 + 0.433 = 4.11 ≈ 4.2/10
+```
+
+**Critical Defects:**
+- `param_fake_branch` lost its fake branch logic entirely—returns `a0` directly without the always-false `if (x*x < 0)` conditions
+- Variable names are generic (`v0`, `v1`, `a0`) obscuring semantic purpose throughout
+- Magic numbers (`4294967295`, `4611686018427387902`) appear without explanation
+- Zero meaningful comments—no algorithm explanations or decompilation confidence indicators
+- Composite types lost—bitfield struct completely constant-folded to return value 47
+
+**Best Quality Aspect:** Function Naming Quality (scored 6/10)  
+- Core test functions retained original names (`param_fake_branch`, `call_opaque_predicate`), making identification possible despite other issues.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Virtually no documentation exists; no algorithm explanations, confidence indicators, or API contracts to aid understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Preserve conditional logic even when statically false**—don't eliminate `if (x*x < 0)` branches; add comments noting they're always-false instead of removing them
+2. **Infer variable names from usage patterns**—`result` variables should be named based on their semantic role (e.g., `gcd_result`, `decrypted_length`)
+3. **Add decompilation confidence annotations**—mark constant-folded regions, indicate when original control flow was simplified, and flag potential logic loss

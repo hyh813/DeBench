@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10
+Justification: Parameter names (`x`, `arr`, `n`) are perfectly recovered from debug symbols, but local variables inside functions are generic (`v1`, `v4`, `v5`), obscuring the roles of loop counters and accumulators.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`process_char`, `array_1d_stack`, `struct_simple`) exactly match the original source, providing excellent semantic context.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Meaningful character literals like `'A'` and `'Z'` in `process_char` are replaced with magic numbers (`65`, `0x1A`), and array indexing logic in `array_2d_stack` is flattened into pointer arithmetic offsets (`v1 += 11`), significantly reducing clarity.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The `test_array_types` function contains unexpected SIMD intrinsics (`vdupq_n_s64`, `vcgtq_u64`) that were not in the source, introducing significant noise and complexity to simple loop logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally preserved, but standard `for` loops are frequently converted into `do-while` loops with pre-checks (e.g., `array_1d_stack`), which is slightly less idiomatic than the source.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries match the source perfectly with no inlining or outlining observed, maintaining the original modularity and cohesion.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly with minimal forward jumps or spaghetti logic, consistent with the `-O0` compilation target.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: While the decompiler removed redundant variable assignments (e.g., in `volatile_access`), it introduced bloat in test functions via SIMD instructions, trading source-level simplicity for low-level representation.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 10/10
+Justification: Types are recovered with high precision, correctly distinguishing `char`, `short`, `int`, `long`, `long double`, and specific pointer types (`int (*)[10]`) exactly as defined in the source.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Struct and union layouts are recovered perfectly with correct field names (e.g., `Point3D`, `Rect`), but bitfields in `struct_bitfields` are degraded into raw bitwise operations (`(*(_WORD *)f & 1)`), losing semantic field names.
+
+**11. Type Safety:** Score: 9/10
+Justification: Pointer types and arithmetic are generally safe and correct, with no dangerous casts observed that deviate from the source's intent.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There is a complete absence of explanatory comments for logic (e.g., diagonal sum calculation), with only a single warning in `opaque_handle_create` regarding variable allocation failure.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Common idioms like `strlen` in `array_string` are recognizable but not explicitly named or simplified, and pointer arithmetic idioms are obscured by compiler optimizations.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler fails to flag significant semantic changes, such as the loss of volatile double-read semantics in `volatile_access` or the flattening of 2D array access.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or recovered from the source logic.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls to standard library (`printf`, `puts`) and internal functions are clear and direct, maintaining the call graph's readability.
+
+**17. Module Organization:** Score: 5/10
+Justification: The logical grouping of functions (Data Types, Arrays, etc.) present in the source comments is lost, resulting in a flat list of functions without contextual categorization.
+
+**18. Build System Compatibility:** Score: 8/10
+Justification: The code uses standard types and would likely compile with minimal header adjustments, though the use of `__int64` is specific to the decompiler's type system rather than standard C.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.8/10
+
+**Critical Defects:**
+- **Bitfield Loss:** `struct_bitfields` is decompiled to raw bitwise shifts and masks (`(*(_WORD *)f >> 1) & 3`), completely losing the named field semantics (`flag2`, `flag3`).
+- **Pointer Arithmetic Exposure:** In `array_2d_stack`, the diagonal access logic `arr[i][i]` is flattened into a pointer increment `v1 += 11`, obscuring the matrix logic.
+- **SIMD Bloat:** The `test_array_types` function contains complex SIMD intrinsics not present in the source, making the simple initialization logic difficult to follow.
+- **Literal Obfuscation:** `process_char` uses magic numbers (`65`, `0x1A`) instead of character literals (`'A'`, `'Z'`), reducing readability.
+- **Volatile Semantic Loss:** `volatile_access` is decompiled as `2 * *p`, merging two distinct volatile reads into a single multiplication, which hides the volatile behavior.
+
+**Best Quality Aspect:** Type System Fidelity (scored 9.0/10)
+- Types, signatures, and struct/union layouts (excluding bitfields) are recovered with high accuracy, matching the source definitions.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.75/10)
+- The lack of comments, failure to recover bitfield semantics, and exposure of low-level optimizations significantly hinder understanding the code's intent.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Bitfield Recovery:** Enhance the type recovery engine to detect and reconstruct bitfield structures from masking/shifting patterns instead of outputting raw bitwise operations.
+2. **Array Indexing Reconstruction:** Improve pattern matching to reverse strength-reduced pointer arithmetic (e.g., `ptr += 11`) back into multi-dimensional array indexing (e.g., `arr[i][i]`).
+3. **Literal Restoration:** Implement logic to reconstitute character literals and simple arithmetic constants from optimized immediate values (e.g., converting `65` back to `'A'`).

@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, and `result`. For example, in `_Z20test_cpp_member_funcv`, the string "Test" is assigned to `str`, but the calculation uses `0x125c` (4700) without semantic naming, obscuring the logic `10 + 34 + 4660`.
+
+**2. Function Naming Quality:** Score: 5/10
+Justification: Function definitions use mangled C++ names (e.g., `_Z20test_cpp_member_funcv`), which are unreadable. However, the decompiler provides demangled names in comments (e.g., `// Demangled: test_cpp_member_func()`), offering some recoverability, though the primary identifiers remain cryptic.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers are prevalent; for instance, `0x125c` (4700) is used directly in calculations instead of the expected constant values. String literals are extracted to global variables like `g14` rather than being embedded in the code, requiring cross-referencing to read the text.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is free of register spilling or debug artifacts, but it is cluttered with low-level C++ runtime calls (e.g., `__cxa_begin_catch`, `__dynamic_cast`) that obscure the high-level logic, especially in `test_cpp_exception` and `test_cpp_rtti`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: High-level C++ constructs are reduced to low-level C implementations. For example, `try/catch` blocks in `test_cpp_exception` are represented as a `switch` statement calling `__cxa_throw` and `__cxa_begin_catch`, which is difficult to map back to the original exception handling flow.
+
+**6. Function Decomposition:** Score: 2/10
+Justification: The object-oriented structure is completely destroyed. Class methods (e.g., `Container<int>::push`) are emitted as standalone global functions (`_ZN9ContainerIiE4pushEi`), losing all encapsulation and cohesion with their parent classes.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom without excessive spaghetti jumps. However, the logic is often condensed; for example, `test_cpp_virtual_func` is reduced to a single `return 42;` statement, which, while linear, hides the execution flow of the original source.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: The decompiler successfully folds constant expressions (e.g., `test_cpp_virtual_func` returns 42), removing redundant arithmetic. However, this aggressive folding sometimes hides the source logic entirely, making it hard to verify the original implementation details.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types are correctly identified (e.g., `int64_t` for pointers on ARM64, `float64_t` for doubles). However, the semantic types are lost; `this` pointers are passed as generic `int64_t` or `void*` (e.g., `int64_t * a1` in `call_virtual_func`), and class types are not reconstructed.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Class structures are not recovered. Instead of accessing struct members, the code uses raw pointer arithmetic (e.g., `*(int32_t *)(result + 40)` in `Container<int>::push` to access the `size` member). Only vtables are partially recovered as generic structs (`vtable_11d58_type`).
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe C-style casts and pointer arithmetic. For instance, `int64_t` values are cast to function pointers or object pointers without type checking (e.g., `*(int64_t *)result = (int64_t)&g5`), violating the type safety of the original C++ source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to metadata (address ranges, demangled function signatures) and do not explain the logic. There are no comments describing the purpose of complex operations like the `__dynamic_cast` usage or the exception handling switch table.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: C++ idioms are completely missed. RAII (Resource Acquisition Is Initialization) patterns in `test_cpp_smart_ptr` and polymorphism in `test_cpp_virtual_func` are reduced to low-level memory allocations and indirect calls, failing to convey the original design patterns.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: The decompiler presents the low-level C++ runtime implementation confidently without flagging that the high-level semantics (like `try/catch` or class structures) were lost. It does not indicate that the switch statement in `test_cpp_exception` is actually an exception handler.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement that `idx` be non-negative in `Container::get` is implicit in the check `if ((int32_t)v1 < 0)` but not explicitly stated as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: Relationships between class methods and their classes are severed. While vtables (`g4`, `g5`) are defined as global variables, the connection between these tables and the class instances (e.g., `RTTIDerivedA`) is only visible through raw pointer assignments, not clear semantic links.
+
+**17. Module Organization:** Score: 3/10
+Justification: The output is a flat list of global functions and variables. There is no logical grouping of class members, namespaces, or separation of interface from implementation, making it difficult to navigate the original modular structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code is presented as C but depends on C++ runtime symbols (`__cxa_`, `_Z...`). It cannot be compiled as C++ without reconstructing the classes, and compiling as C would require significant stubbing of the C++ runtime, making it practically non-compilable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.8/10
+
+**Critical Defects:**
+- **Class Structure Loss**: C++ classes are not reconstructed; methods are global functions, and member access is done via raw offsets (e.g., `result + 40`).
+- **Control Flow Obfuscation**: High-level constructs like `try/catch` blocks are reduced to low-level `switch` statements and runtime calls (`__cxa_throw`), making logic hard to follow.
+- **Cryptic Identifiers**: Primary function names use mangled symbols (e.g., `_Z20test_cpp_member_funcv`), relying on comments for readability.
+
+**Best Quality Aspect:** Type Precision (Score: 6/10)
+- Basic data types (`int64_t`, `float64_t`) are correctly identified for the ARM64 architecture, providing a solid foundation for the primitive operations, even if higher-level types are lost.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 2/10)
+- The failure to recover `struct` or `class` definitions is the most critical issue. Accessing class members via pointer arithmetic (`*(int32_t *)(result + 40)`) instead of named fields (`obj.size`) makes the code extremely difficult to understand and maintain.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Reconstruct C++ Class Hierarchies**: Group global mangled functions into class definitions and recover the `this` pointer parameter to restore the object-oriented structure.
+2.  **Recover Struct Layouts**: Analyze member access patterns (constant offsets like `+40`) to define struct fields with meaningful names, replacing pointer arithmetic with direct member access.
+3.  **Lift C++ Runtime Calls**: Identify patterns of `__cxa_throw` and `__cxa_begin_catch` to reconstruct high-level `try/catch` blocks, and map vtable loads to virtual function calls.

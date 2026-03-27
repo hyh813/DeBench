@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `v0`, `v1`, `v2`, `ptr`, `result`, `i`, `a0`, `a1`, `a2`. The original source has meaningful names like `signal_received`, `shared_counter`, `atomic_counter`, `tls_counter`, but these are completely lost in decompilation. The naming is practically unusable for analysis.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions correctly recovered like `param_strcpy`, `call_strcpy`, `thread_sum`, `thread_compute`, `signal_handler`. However, the majority use mechanical address-based names like `sub_401030`, `sub_401040`, etc. The original function names like `param_strlen`, `param_memcpy`, `param_fork_exec` are not recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF = -1 in unsigned), `20` for stack canary checks, and various numeric constants appear without explanation. Some constants like `42` for success are inferable, but most are unclear.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present including `__x86.get_pc_thunk.*` functions, `__stack_chk_fail_local`, frame pointer manipulation, and various `deregister_tm_clones`, `register_tm_clones` functions. These obscure the actual application logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Control flow is generally readable with recognizable loops and conditionals. Some goto usage for jumps exists but is manageable. The code maintains recognizable if-else patterns, though some forward jumps interrupt flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is preserved from original source - small functions like `param_strcpy`, `call_strcpy` remain separate. However, parameter lists expose implementation details (e.g., passing addresses of local variables). Some functions slightly large but manageable.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with some forward jumps. Early returns and breaks used appropriately in some places. Minor disruption from computed jumps but traceable with effort.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some repeated patterns from optimization but manageable. No severe dead code. Loop unrolling not heavily present (expected at -O0). Overall reasonable cleanliness.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most types are generic `unsigned int` or `int`. Some `char*` for strings. The original uses `size_t`, `ssize_t`, `pid_t`, `pthread_t` but these are lost. Const correctness not preserved. Mixed precision with many generic types.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct definitions present like `struct_0` with `padding_0` arrays and `field_f8`, `field_0` etc. But most are generic with meaningless field names. Original types like `ThreadData`, `signal_handler` params are not recovered. Partial reconstruction but mostly unusable.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe casts present. Pointer arithmetic used but generally type-compatible. No significant dangerous patterns but also no safety annotations. Mixed - not severely unsafe but not safe either.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments in the decompiled code whatsoever. Zero explanation of algorithm logic, no documentation of non-obvious operations, no decompilation confidence indicators. The original source has extensive comments explaining each function's purpose.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized - pthread functions (`pthread_create`, `pthread_join`, `pthread_mutex_*`), standard library calls (`strcpy`, `strcmp`, `strlen`), signal handling. But patterns not explicitly named or documented. Some hints but unclear.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags or warnings. Indirect calls that couldn't be resolved not flagged. No indication of suspicious code patterns. Silent failures possible. Code presents everything as confident when some things are uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No precondition, postcondition, or invariant documentation. No error condition explanation. Original source has error handling logic that is not explained in decompiled version. Zero contract information recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some `extern` declarations show relationships (e.g., `extern unsigned int shared_counter`, `extern unsigned int atomic_counter`). But function call relationships not documented. Global variable usage not transparent. Poor cross-reference clarity overall.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped reasonably - standard library functions together, system calls together, thread functions together. Static functions properly scoped. Some logical grouping matches original but not perfect.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would not compile standalone. Many missing function definitions (e.g., `sub_4015b0`, `sub_401630` are called but not defined in this output). External dependencies on libc functions not clearly documented. Requires extensive patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable naming**: All meaningful names lost - `signal_received`, `shared_counter`, `atomic_counter` become generic `v0`, `v1`, `ptr`
+- **Function naming**: Majority use mechanical address-based names (`sub_401030`) instead of semantic names
+- **No comments**: Zero explanation of algorithm logic or decompilation confidence
+- **Type loss**: Original types like `size_t`, `pid_t`, `pthread_t` all become generic `unsigned int`
+- **Struct field loss**: `ThreadData` struct fields become generic `field_0`, `field_8`
+
+### Best Quality Aspect: Control Flow Naturalness (5/10)  
+Control flow is reasonably readable with recognizable loops and conditionals. The basic program structure can be followed despite other issues.
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)  
+The decompilation has zero comments. This is critical because without comments explaining what functions do, what parameters mean, and what the return values represent, the code is extremely difficult to understand even for simple functions.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns**: Analyze how variables are used (e.g., `v0` used in size check → `buffer_size`, `v1` compared to -1 → `error_code`)
+2. **Add meaningful comments**: Include function purpose, parameter descriptions, and decompilation confidence for uncertain constructs
+3. **Recover struct types and field names**: Use memory access patterns and cross-references to reconstruct meaningful struct layouts with semantic field names

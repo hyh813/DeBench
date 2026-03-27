@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Local variables use generic names (`iVar1`, `iVar2`, `lVar1`, `uVar1`) instead of semantic names like `sum`, `count`, or `result`. Parameter names are sometimes preserved (`a`, `b`, `c`, `x`) but locals lose all meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`sequential_ops`, `single_if`, `nested_if_2`, `loop_for_fixed`). Only a few helpers have generic names (`FUN_00101020`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (`0x14`, `0x1e`, `0x3e9`, `0x65`, `0x3039`). Some are inferable from context (100, 20, 30) but not documented as constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail`, `in_FS_OFFSET`), compiler artifacts, and "WARNING" comments add significant noise throughout the decompiled output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flows recovered well, but `switch_fallthrough` uses goto labels instead of structured fall-through, and `duffs_device` has complex goto-based switch structure. At `-O0`, expect better recovery.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source appropriately. No inappropriate inlining or fragmentation. Each function maintains cohesive single responsibility.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but goto usage in `switch_fallthrough`, `duffs_device`, and `loop_break` disrupts linear flow with labels like `LAB_001013cd`.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack checking code adds redundancy to most functions. Some functions have duplicate comparison patterns that could be simplified.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `long`), but function pointer types partially recovered as `_func_int_int`. Some type information lost in indirect calls.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered correctly (`matrix[3][4]`, `ops[10]`, `funcs[3]`). No complex structs in this codebase to fully evaluate struct recovery capabilities.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Function pointer calls have warnings ("Could not recover jumptable"). Stack canary checks present. No major type safety violations but indirect calls treated cautiously.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no semantic comments. Only WARNING comments about unresolved jumps. No algorithm explanations or parameter documentation recovered from source comments.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns (loops, conditionals) recognized. Complex patterns like Duff's device and state machines not explicitly identified or named in output.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged with WARNING comments ("Could not recover jumptable", "Treating indirect jump as call"). Coverage is inconsistent across functions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Source comments about test validation not recovered. No API contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code. Global variable usage not well documented. Callback relationships partially visible through function pointer arrays.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by control flow level (L1/L2/L3). Source organization not preserved.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies (`__printf_chk`, `__stack_chk_fail`, `__libc_start_main`) require linking but are standard.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (6+8+6+6)/4 = 6.50  × 0.25 = 1.625
+Level 3 (Type):        (6+7+7)/3   = 6.67  × 0.20 = 1.334
+Level 4 (Semantic):    (3+5+6+2)/4 = 4.00  × 0.15 = 0.60
+Level 5 (Contextual):  (6+5+7)/3   = 6.00  × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 5.81/10
+```
+
+**Overall Readability Score: 5.8/10**
+
+### Critical Defects
+- **Variable `iVar1`, `iVar2` should be named semantically** (e.g., `sum`, `count`, `result`) based on usage patterns in loops
+- **Control flow uses goto instead of structured constructs** in `switch_fallthrough` and `duffs_device`
+- **No source comments recovered** - all documentation about test cases and algorithm intent lost
+- **Magic numbers without explanation** (0x3e9=1001, 0x65=101, 0x3039=12345) obscure meaning
+- **Stack canary artifacts add noise** to nearly every function with `in_FS_OFFSET` checks
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most function names preserved accurately from source, making navigation and identification straightforward
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or validation requirements documented despite source having extensive test case documentation
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Analyze variable usage patterns to infer names (accumulators → `sum`, counters → `count`, temporaries → `result`)
+2. **Recover source comments and documentation** - Preserve debug symbol comments and function-level documentation from `-g` flag output
+3. **Improve structured control flow recovery** - Better pattern matching for switch fall-through and Duff's device to avoid goto-based reconstruction

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `local_38`, `aiStack_34`, `uVar1`, and `param_1`, which completely obscure the semantic intent found in the source (e.g., `arr`, `n`, `result`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from debug symbols (e.g., `double_value`, `heap_basic`, `linked_list_heap`), matching the original source exactly and providing clear context.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are replaced with opaque data references like `&DAT_00013734` instead of the actual text, and magic numbers (e.g., `0x2a` for 42) are not replaced with named constants.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains compiler artifacts such as stack canary checks (`__stack_chk_fail`) and pervasive use of `undefined` types, which adds noise but does not completely obscure the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally readable due to `-O0` compilation, but loops are often represented as `while(true)` with internal breaks (e.g., in `linked_list_heap`) rather than standard `for` loops.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source code; there is no inlining or outlining, preserving the original architectural boundaries perfectly.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with minimal forward jumps, making it easy to follow the execution path within each function.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no loop unrolling or dead code, resulting in clean logic that directly corresponds to the source instructions without optimization artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are frequently degraded to generic `undefined4` or `undefined`, and specific types like `size_t` are often mapped to `uint` or `int`, losing semantic precision.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are completely lost; for example, `heap_struct` accesses a `Point` struct via raw pointer arithmetic (`__ptr[1]`) instead of using the struct field names (`p->y`).
+
+**11. Type Safety:** Score: 7/10
+Justification: While the code is verbose with explicit casts (e.g., `(int *)aiStack_30`), these casts ensure the operations are defined, preventing ambiguity despite the type information loss.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments in the decompiled output; complex logic like linked list traversal or tree operations is left undocumented.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library calls like `malloc` and `printf` are recognized, but higher-level patterns like "Linked List" or "Tree Traversal" are not identified or labeled.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler does not flag suspicious behavior such as the memory leak in `memory_leak` or the dangling pointer in `dangling_pointer`, presenting them as standard code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: Preconditions (e.g., checking for `NULL` pointers) are visible in the code but are not explicitly documented as contracts or assertions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls and global variable references (e.g., `global_counter`) are accurate and clearly link to their definitions/usage.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are organized by memory address rather than logical grouping (e.g., `test_stack_memory` is separated from the functions it tests), making navigation difficult.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code would not compile standalone due to `undefined` types and references to global data labels (`DAT_...`) without the corresponding binary data.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Composite types (structs) are not recovered; fields are accessed via array offsets (e.g., `__ptr[1]` instead of `p->y`).
+- String literals are replaced with data references (`&DAT_00013734`), obscuring the actual text content.
+- Variable names are generic (`local_38`, `uVar1`), requiring significant mental effort to track data flow.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly recovered function names from debug symbols, making high-level navigation trivial.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover `struct` definitions turns structured data access into raw pointer arithmetic, severely impacting semantic understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement aggressive struct recovery to apply defined types to stack/heap variables instead of defaulting to raw pointer arithmetic.
+2. Inline string literals directly into the decompiled code view rather than replacing them with global data address references.
+3. Utilize debug information (DWARF) to recover local variable names, not just function names, to improve lexical clarity.

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `puVar2`, `local_10`, `auVar25`) with no semantic meaning. Original source had meaningful names like `arr`, `local`, `head`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`), but some have optimization suffixes (`alloca_usage.constprop.0`) and external stubs are generic (`FUN_00101020`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic hex numbers everywhere (`0x2a`, `0xf`, `0x14`, `0x10`, `0x28`) without explanation. Original values like `42`, `2048`, `10` are obscured as hex constants that require mental conversion.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`local_10 = *(long *)(in_FS_OFFSET + 0x28)`) present in most functions. `large_stack_frame` has excessive vector variable noise (`auVar17` through `auVar57`) from SIMD optimization.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops use do-while with manual increment instead of clean for-loops. `large_stack_frame` has extremely complex control flow from SIMD vectorization. Some functions constant-folded entirely (`stack_alias` returns `0x14`).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable, but `test_stack_memory` inlined many function calls as constants. `alloca_usage.constprop.0` is completely optimized away to a single return statement, losing original structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `large_stack_frame` and `vla_stack` have complex jump patterns. Loop unrolling creates non-linear execution paths that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling present in `heap_basic`, `heap_array`, `memory_leak` (4-element unrolled loops). This is optimization artifact that obscures the original simple for-loop pattern.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used instead of `int32_t`. Many `void*`, `undefined*`, `undefined4*` types. Function return types often wrong (`undefined8` instead of `int`). Original type information significantly degraded.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `Point` struct becomes `malloc(8)`, `Node` struct becomes pointer arithmetic (`*(int **)(__ptr + 2)`), `TreeNode` completely lost. No struct/union definitions recovered despite being in source.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(int *)`, `(undefined4 *)`, `(undefined8 *)`). Pointer arithmetic without bounds checking. `call_global_callback` has wrong signature (no parameters in decompiled version but original takes `int x`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comment ("Decompiled by BinaryAI"). No algorithm explanations, no API contracts, no documentation of non-obvious logic. Original source had extensive comments explaining test scenarios.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Linked list creation in `linked_list_heap` not recognized as such. Tree traversal in `tree_heap_traversal` becomes opaque memory operations. No pattern naming whatsoever.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about optimization artifacts. Stack canary checks present but unexplained. `dangling_pointer` use-after-free not flagged. No indication that `alloca_usage.constprop.0` was constant-folded.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL` checks exist but aren't documented as contracts). No postconditions inferred. Error return values not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but callback relationships not explicit. `set_global_callback` → `call_global_callback` relationship not documented. Global variable usage (`global_counter`, `file_scope_static`) not linked to declarations.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. However, no header file structure and static functions not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions declared but signatures often wrong (`__printf_chk` has no parameters in declaration). Type mismatches throughout. Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+6)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2+2+3+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.51/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Composite type recovery failure**: `Point`, `Node`, `TreeNode` structs completely lost, becoming raw `malloc()` and pointer arithmetic
+- **Variable naming**: All variables generic (`param_1`, `iVar1`, `puVar2`) with zero semantic meaning
+- **No documentation**: Zero comments explaining algorithm intent, API contracts, or optimization artifacts
+- **Constant folding obscures logic**: `alloca_usage.constprop.0` and `stack_alias` reduced to single return statements
+- **Type signature errors**: `call_global_callback` missing parameter, `global_var_access` returns `void` instead of `int`
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately, making it possible to identify which decompiled function corresponds to which source function
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions, forcing all composite type operations into opaque pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from allocation patterns** - Detect `malloc(sizeof(Point))` patterns and reconstruct struct layouts with field access analysis
+2. **Infer variable names from usage context** - Variables used in size checks should be named `size`/`count`, loop indices should be `i`/`j`, pointers should indicate target type
+3. **Add optimization artifact annotations** - Mark constant-folded functions, loop-unrolled code, and SIMD vectorization with comments explaining the transformation

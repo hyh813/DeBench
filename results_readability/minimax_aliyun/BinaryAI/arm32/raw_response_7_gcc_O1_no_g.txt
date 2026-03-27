@@ -1,0 +1,117 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+### Analysis Overview
+
+The original source implements a fake branch obfuscation technique with two always-false conditions:
+1. `x * x < 0` (mathematically impossible for real numbers)
+2. `strlen(str) < 0` (string length cannot be negative)
+
+The decompiled version shows:
+```c
+void param_fake_branch(void)
+{
+  return;
+}
+```
+
+This is a **critical decompilation failure** - the function is completely empty with wrong signature.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: The function has been completely stripped of all variables. The original had `result`, `x`, and `str` - all are missing. This is a complete failure of variable recovery.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Function name `param_fake_branch` is preserved correctly, matching the source. However, the signature is completely wrong (no parameters, void return instead of int), making the name practically useless.
+
+**3. Literal Clarity:** Score: 1/10  
+Justification: The magic number `0xDEADBEEF` and string literal `"test"` are completely missing from the decompiled output. No literals whatsoever in the empty function body.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Not applicable - there's no code to have noise. The function is simply empty, which is worse than having noisy but recoverable code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 1/10  
+Justification: The two if-statements with always-false conditions are completely missing. No control flow structures exist - the function body is just `return;`.
+
+**6. Function Decomposition:** Score: 1/10  
+Justification: The function should contain the fake branch logic but is entirely empty. This is not a decomposition issue - it's a total loss of function content.
+
+**7. Code Linearization:** Score: 1/10  
+Justification: There's no code to linearize. The function is a single return statement with no logic flow to analyze.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Not applicable - there's no code to have redundancy. The absence of code makes this dimension irrelevant.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 1/10  
+Justification: Critical type errors - return type is `void` instead of `int`, and parameter `int x` is completely missing. The function signature is fundamentally wrong.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Not applicable - no structs or unions in this function. However, the lack of any composite type recovery is expected given the empty function.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Not applicable - empty function has no type operations to evaluate. The wrong signature is a type safety issue, but there's no code to analyze.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments explaining the fake branch obfuscation technique. The original had comments explaining the always-false conditions - these are completely lost.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The fake branch idiom (OBF-L4-02) is completely unrecognized. The decompiler should have identified the always-false conditions but instead produced empty code.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that the function is incomplete or that the decompilation failed. The empty function is presented as if it's correct, which is misleading.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions (x could be any int), postconditions (returns x), or invariants are documented. The function contract is completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 1/10  
+Justification: The function should call `strlen()` but has no function calls whatsoever. The relationship with the standard library is completely missing.
+
+**17. Module Organization:** Score: 5/10  
+Justification: The function appears in the correct location among other obfuscation functions (param_opaque_predicate, param_instruction_substitution), so placement is appropriate.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The function will not compile correctly - wrong signature (no parameters, void return). It would fail compilation with type mismatch errors.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 1.9/10
+
+**Critical Defects:**
+- Function body is completely empty - all logic (two fake branches) is missing
+- Function signature is wrong: no parameter `int x`, returns `void` instead of `int`
+- Magic number `0xDEADBEEF` and string literal `"test"` are completely lost
+- No comments explaining the fake branch obfuscation technique
+- No indication of decompilation failure or missing code
+
+**Best Quality Aspect:** Module Organization (scored 5/10)  
+- The function is placed in the correct location among related obfuscation functions in the decompiled output.
+
+**Most Needs Improvement:** Multiple dimensions scored 1/10 - the entire function is a critical failure  
+- Variable naming, function signature, control flow, type precision, comment quality, idiom recognition, and cross-reference clarity all failed completely.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Detect and flag incomplete functions**: The empty function body should trigger a warning that decompilation may have failed or the binary was stripped
+2. **Preserve function signatures accurately**: The parameter `int x` and return type `int` must be recovered from the binary
+3. **Recover always-false branch conditions**: The fake branch obfuscation pattern (x*x < 0, strlen(str) < 0) should be recognized and preserved even if the branches are optimized away

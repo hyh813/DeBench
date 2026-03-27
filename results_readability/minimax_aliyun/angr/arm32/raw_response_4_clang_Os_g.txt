@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `a0`, `a1`, `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, and register names like `r0`, `r1`, `r2`, `r3`, `r4`, `r5`, `lr`. The original source uses meaningful names like `a`, `b`, `count`, `args`, `sum`, `str`, `ptr`, `x`, `y`. This is essentially unusable for analysis.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions like `cdecl_func`, `stdcall_func`, `fastcall_func`, `call_cdecl`, `call_stdcall` are correctly named matching the source. However, many internal functions use address-based names like `sub_4003f0`, `sub_400490`, and library functions have generic patterns. Mixed results - good for test functions, poor for everything else.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Direct numeric values like `15`, `50`, `6`, `10`, `21`, `33` are used without explanation. The original source has meaningful test expectations (e.g., "期望: 15"). Some literals like `4294967295` (0xFFFFFFFF) are self-explanatory as -1 in unsigned, but most lack context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution includes register annotations (`// r0`, `// r1`, `// r2`, `// lr`), stack frame comments (`// [bp-0x4]`, `// [bp-0x10]`), complex condition calculations like `armg_calculate_condition(18, v1, 0, 0)`, and spurious type definitions like `typedef struct struct_0 { char field_0; } struct_0;`. The code is cluttered with compiler artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic arithmetic operations (`a1 + a0`, `a1 * a0`) are correct. Some goto patterns exist but are manageable. The control flow is mostly understandable but could be cleaner. At -O0, more natural constructs should be recoverable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The original source is well-organized into separate functions, and the decompilation preserves this structure. Each function handles a specific test case (calling conventions, parameter passing, return values). Good function granularity matching the source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The code generally reads top-to-bottom without excessive jumping. Some goto statements exist but don't severely disrupt flow. Most functions have clear entry and exit points.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant operations exist - for example, in `call_varargs_param`, `param_varargs(4, 10, 20, 30)` is called twice redundantly. Loop unrolling is present in `varargs_func` but not clearly marked as such. Some dead code patterns visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All parameters use `unsigned int` instead of the original `int`. The original source uses signed `int` for most parameters, but decompilation erases sign information. Pointer types are somewhat preserved (`int*`, `char*`) but parameter types are generic.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct recovery is attempted with `struct_0` containing `field_0`, but field names are generic. The original source defines `SmallStruct`, `LargeStruct`, `TestIntPair` with meaningful field names, but these are lost. Partial recovery with generic names.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Significant type safety issues exist. The floating-point handling in `func_mixed_args` calls `__adddf3`, `__floatsidf`, `__floatdidf`, `__fixdfsi` with incorrect parameter counts and types. Unsafe pointer arithmetic in struct handling. Many implicit conversions without proper casting.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Very few useful comments. The few comments present are primarily register annotations (`// r0`, `// r1`) or stack frame locations (`// [bp-0x4]`), not explaining the logic. No explanation of algorithm intent, preconditions, or postconditions.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms are identified or named. The original source tests specific calling conventions (cdecl, stdcall, fastcall, thiscall, AAPCS, etc.) but these are not labeled as patterns in the decompilation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings or flags for suspicious code. The complex floating-point operations and indirect calls are presented without any indication of uncertainty or potential issues. The decompiler appears confident even when the code is questionable.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source has clear expectations (e.g., "期望: 15", "期望: 50") but these are not recovered as assertions or contracts in the decompiled code.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are somewhat visible through the code structure, but not explicitly documented. No comments indicate which functions call which, or the purpose of callback relationships.
+
+**17. Module Organization:** Score: 3/10  
+Justification: The decompiled code is a single monolithic output. The original source has clear sections (calling conventions, parameter passing, return values) but these logical groupings are not reflected in the decompilation organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code includes `extern` declarations for external references like `g_412008`, `g_412030`, string literals. The metadata shows "Compilation Result: Yes" but the code likely requires moderate patching to compile standalone due to undefined externals.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming is extremely poor: `a0`, `a1`, `v0`, `v1`, `v2` etc. instead of meaningful names like `a`, `b`, `count`, `sum`
+- All parameters use `unsigned int` instead of the original `int`, losing sign information
+- Severe noise from register annotations (`// r0`, `// r1`) and stack frame comments (`// [bp-0x4]`)
+- Floating-point function calls have incorrect parameters (`__adddf3`, `__floatsidf`, `__floatdidf`, `__fixdfsi`)
+- No comments explaining algorithm intent or expected behavior
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+- The decompilation correctly preserves the function boundaries from the original source. Each test function (cdecl_func, stdcall_func, varargs_func, etc.) is properly separated.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- The generic `a0`, `a1`, `v0`, `v1` naming makes the code practically unusable for analysis. At -O0, the decompiler should be able to infer meaningful parameter names from context.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Parameters like `a0`, `a1` in `cdecl_func` should be named `a`, `b` based on the function signature and usage in caller functions
+2. **Preserve sign information**: The original uses `int` but decompilation shows `unsigned int` everywhere, losing critical type information
+3. **Eliminate register/stack annotations from output**: Comments like `// r0`, `// [bp-0x4]` are noise that obscure logic rather than help understanding

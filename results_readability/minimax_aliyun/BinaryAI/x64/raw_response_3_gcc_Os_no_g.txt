@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use cryptic auto-generated names like `uVar1`, `lVar1`, `puVar5`, `local_38`, `param_1`. The original source had meaningful names like `x`, `arr`, `n`, `p1`, `p2`, `leak`, `p` - all completely lost. These generic names make tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly every function name perfectly matches the original source: `double_value`, `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `memory_leak`, `dangling_pointer`, `global_var_access`, `memop_memset`, etc. Excellent verb choice and semantic accuracy.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers throughout: `0x2a` (42), `0x14` (20), `0xf` (15), `0x800` (2048), `0x28` (40), `0x1e` (30), `0xb` (11). No named constants recovered. The original source had clear intent (e.g., `42`, `10`, `2048`) but these are now obscure hex values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: `__stack_chk_fail` calls, `in_FS_OFFSET` references for stack canaries, `in_RAX`/`in_RCX` register spills, `auVar1`/`auVar2` vector register artifacts. These obscure the actual logic but are manageable with experience.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops properly recovered as `for`/`do-while` constructs. However, `stack_alias` function is completely broken - returns constant `0x14` instead of implementing the actual alias logic. VLA/alloca handling shows unusual control flow due to manual stack management. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good decomposition matching original - many small, focused functions preserved. Functions like `local_array` (25 lines), `linked_list_heap` (35 lines) are appropriately sized. Parameter lists are reasonable. Minor issue: some complex functions like `vla_stack` could be cleaner.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom with minimal forward jumps. Functions like `heap_basic`, `local_vars` are highly linear. Some complex functions (`vla_stack`, `alloca_usage`) have more jumps due to VLA/alloca complexity, but still traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal redundancy in decompiled code. Some loop unrolling visible in `large_stack_frame` but it's the compiler's -O0 behavior. No obvious dead code. The code is mostly straightforward without excessive duplication.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation. Generic types everywhere: `undefined4`, `undefined8`, `undefined` for integers/pointers. Original had `int`, `int*`, `char*`, `size_t` - all lost. Function pointers become `undefined8` or `code*`. `int` should be used more consistently instead of `undefined4`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery whatsoever. `Point` struct fields lost - decompiled as `param_1 * 3` instead of `p.x + p.y`. `Node` struct accessed via raw pointer arithmetic: `*(int **)(ptr + 2)` instead of `node->next`. `TreeNode` similarly degraded. All composite type semantics completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: raw pointer arithmetic everywhere (e.g., `(long)__ptr + lVar1 * 4`), function pointer type confusion (`global_func_ptr` as `code*`), many implicit casts between `undefined4`/`undefined8`/`void*`. The `dangling_pointer` function shows clear undefined behavior but no safety warnings.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No useful comments in the decompiled code. Only auto-generated headers like "Function: double_value @ 0x1012f9". No explanation of algorithm logic, no documentation of non-obvious operations, no recovery of original comments from debug symbols.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions recognized: `malloc`, `free`, `calloc`, `realloc`, `memcmp`, `memmove`, `memcpy`, `bzero`, `bcopy`. However, no high-level pattern recognition (e.g., "linked list traversal", "binary tree", "VLA allocation"). Design patterns completely unmentioned.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flagging. `stack_alias` returns wrong value (constant 0x14) but no indication of problem. `dangling_pointer` has clear undefined behavior (use-after-free) but no warning. No indication of indirect calls that couldn't be resolved or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero contract recovery. No preconditions documented (e.g., "requires: n > 0"), no postconditions (e.g., "ensures: return is heap-allocated"), no invariant recognition, no error condition documentation. The original source had clear error handling (e.g., `if (arr == NULL) return -1`) but contracts not recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code but not documented. You can see `heap_nested(&local_18)` but no indication of "Called by: test_heap_memory". Global variable usage is visible but relationships aren't explicit. Some external dependencies noted but incomplete.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single monolithic output file with ~1126 lines. No logical grouping - all functions in one file. Original had clear sections: "3.1 Stack Memory Operations", "3.2 Heap Memory Operations", etc. No static function scoping indicated. Arbitrary ordering based on memory addresses.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would require moderate patching to compile. External functions `extern_global_var` and `extern_function` used but not defined in output. Many standard library declarations present but some signatures incorrect (e.g., `memop_memcmp` returns `undefined[16]`). Not standalone-ready.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All meaningful names replaced with `param_1`, `uVar1`, `local_38` - completely unusable for analysis
+- **Composite type loss**: `Point`, `Node`, `TreeNode` structs completely lost; accessed via raw pointer arithmetic
+- **No comments**: Zero explanatory comments; algorithm intent completely opaque
+- **Magic numbers**: `0x2a`, `0x14`, `0xf` instead of named constants like `42`, `20`, `15`
+- **Broken function**: `stack_alias` returns constant `0x14` instead of implementing actual alias logic
+
+### Best Quality Aspect: Function Naming (10/10)
+- Nearly every function name perfectly matches the original source. This is excellent decompilation work that preserves the most important semantic information.
+
+### Most Needs Improvement: Variable Naming (2/10)
+- Generic auto-generated names (`uVar1`, `lVar1`, `puVar5`, `local_38`) make the code nearly incomprehensible. The original source had clear names like `x`, `arr`, `n`, `p`, `leak` - all completely lost.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1 * 2` suggests `double_value` → could suggest `input` or `x`; `local_38[i] = i * n` suggests `arr` or `buffer`)
+2. **Recover struct/union types**: Use field access patterns and size information to reconstruct composite types with meaningful field names
+3. **Add semantic comments**: Include explanations for magic numbers, flag suspicious operations (dangling pointers, memory leaks), and document algorithm intent derived from control flow patterns

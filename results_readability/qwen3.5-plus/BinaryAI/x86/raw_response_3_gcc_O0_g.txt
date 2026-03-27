@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `local_10`, `iVar1`, `uVar2`). For example, in `heap_basic`, `local_18` should be `i` (loop counter) and `iVar1` should be `arr` (malloc result).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user functions preserved well (`double_value`, `local_vars`, `heap_basic`), but library calls degraded to `FUN_000111f0` (malloc) and `FUN_00011180` (free), obscuring their purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in hex obscure meaning (`0x2a` for 42, `0x14` for 20, `0x1e` for 30). In `address_of_local`, `0x2a` should be `42`. String literals preserved but numeric constants not.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) appear in nearly every function. These compiler artifacts significantly clutter the code without adding semantic value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered as `for`/`while`, but VLA/alloca functions (`vla_stack`, `alloca_usage`) have extremely complex control flow from stack alignment code that obscures the simple original logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions properly separated with reasonable granularity. However, `test_heap_memory` is overly complex (200+ lines) and could benefit from extraction of repeated printf patterns.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but stack check epilogues at function ends (`if (local_10 != *(int *)(in_GS_OFFSET + 0x14))`) disrupt natural flow in every function.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary code duplicated in ~30 functions. VLA alignment loops contain redundant pointer arithmetic that could be abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Extensive use of `undefined4`, `undefined*`, `byte*` instead of proper types. `heap_struct` returns `int` but parameter is `undefined4`. Function pointers typed as `code*` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `Point` struct completely lost - accessed as `piVar1[0]` and `piVar1[1]` instead of `p->x` and `p->y`. `Node` struct fields accessed via array indexing (`local_2c[1]` for `next` pointer).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout (`(undefined4 *)`, `(int *)`, `(char *)`). In `global_struct_access`, struct fields accessed as `DAT_0001604c + global_point` losing type information entirely.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. No explanation of complex VLA stack alignment, no documentation of function purposes, no API contracts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: malloc/free patterns not identified as memory management. Linked list traversal in `linked_list_heap` not recognized as such. No algorithm pattern identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings for suspicious patterns like `dangling_pointer` (use-after-free), `double_free`, or `heap_overflow`. These security-critical issues silently decompile.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 > 0` for allocation functions). Null checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but library functions unnamed (`FUN_000111f0` for malloc). Global variables referenced but types unclear (`global_counter` recovered but `DAT_0001604c` not).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source order roughly, but no logical grouping. Static functions (`static_helper`) properly marked but not grouped with callers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would not compile standalone - missing headers, undefined external functions (`extern_global_var`, `extern_function`), and generic function pointers need manual resolution.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 4.61/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Variable `param_1`** should be named based on context (e.g., `x` in `double_value`, `n` in `heap_basic`)
+- **Struct `Point` completely lost** - fields accessed as array indices `piVar1[0]`, `piVar1[1]` instead of `p->x`, `p->y`
+- **Library functions unnamed** - `FUN_000111f0` (malloc), `FUN_00011180` (free) should be recovered
+- **Stack canary noise** in every function obscures core logic without semantic value
+- **Zero comments** - complex operations like VLA stack alignment have no explanation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most user-defined function names preserved accurately from source, maintaining semantic intent
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes complex operations (VLA, alloca, memory barriers) nearly impossible to understand
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover standard library function names** - Map `FUN_000111f0` → `malloc`, `FUN_00011180` → `free` using signature matching and call pattern analysis
+2. **Reconstruct struct types from access patterns** - Detect consistent field offsets (e.g., `[0]` and `[1]` always accessed together) to recover `Point {x, y}` structure
+3. **Add semantic comments for compiler artifacts** - Annotate stack canary checks as "Stack protection" and VLA alignment as "Variable-length array stack allocation" to distinguish from core logic

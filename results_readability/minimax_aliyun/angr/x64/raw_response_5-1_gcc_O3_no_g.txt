@@ -1,0 +1,95 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic (v0, v1, v2, ptr, p, v3-v13). No meaningful names like `capture_by_value` or `instance_count` from the original source are recovered. Even register names like `rdi`, `rsi` are used as variable names, making the code nearly incomprehensible.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions have proper mangled C++ names like `_Z20test_cpp_member_funcv` and `_Z12template_maxIiET_S0_S0_` which preserve original names, but many functions use generic `sub_XXXXX` patterns. The C++ name demangling is good but inconsistent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals like "Test" are preserved, but many magic numbers lack explanation. The value `0x4004000000000000` appears without context, and computed values like `strlen(&v3) + 4700` are embedded directly. No named constants recovered for values like `0x1234` (getClassID).
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution. Many empty stub functions (sub_401435, sub_401748, etc.) that just return. Excessive goto statements used inappropriately. Register-spill artifacts visible. The decompilation includes 30+ small functions that add noise rather than clarity.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive use of goto statements (e.g., `goto *((long long *)*((long long *)&arg_0));` in call_virtual_func). Many functions have unnatural control flow with computed jumps. The exception handling code is particularly convoluted with multiple goto-based control transfers.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes are generally reasonable (not monolithic). However, many tiny wrapper functions exist (sub_40102d calls sub_401030). Template functions are properly separated. Some over-fragmentation but overall decomposition is acceptable.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but forward jumps exist. The exception handling function has particularly poor linearization with multiple conditional branches that disrupt flow. Some nested conditionals present.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns visible, particularly in the template functions where similar code appears. No dead code elimination visible - many empty functions remain. Loop unrolling not detected or commented.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. Most pointers are `void*` or `unsigned long`. The original `int`, `size_t`, `bool` types are lost. Const correctness is not preserved. Function parameters often use `unsigned long` instead of proper types.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery attempted (struct_0, struct_2, struct_3) but field names are generic (field_0, field_8). The original class members like `value`, `name`, `data`, `size` are not recovered. Pointer arithmetic used instead of proper struct access in many places.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations. Raw pointer arithmetic without bounds checking (e.g., `*((int *)(8 + (char *)v1 + (*(v1))[24]))`). Many void* casts. The virtual function thunks use unsafe pointer manipulation. No bounds checking in Container::get or Container::push.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated function headers present. No explanation of algorithms, vtable mechanics, or complex logic. The comment "Unsupported jumpkind Ijk_SigTRAP" is present but that's an anomaly note rather than code documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ patterns recognized (virtual functions, templates, thunks for multiple inheritance) but not explicitly named or documented. The thunk functions for virtual inheritance are present but their purpose isn't explained. No pattern naming like "virtual dispatch" or "diamond inheritance".
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One significant anomaly is flagged: "Unsupported jumpkind Ijk_SigTRAP at address 4199301()". However, many indirect calls that couldn't be resolved are not flagged. No indication of uncertain decompilation quality.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of error conditions or requirements. The original assertions and contracts from the source are completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some function call relationships are clear (e.g., test_cpp_oo_features calls other test functions). However, virtual dispatch relationships are not documented. Global variable usage (like instance_count) is not clearly linked to its source.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are somewhat grouped by type (test functions together, template functions together), but the organization is arbitrary. No namespace or class structure recovered. The file is a single monolithic output.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile as-is. Many missing declarations (CXXABI_1.3::_ZTIi, _ZTIZ18test_cpp_exceptionvE16DerivedException). External function declarations are incomplete. The code requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects:
+- Variable names are exclusively generic (v0, v1, ptr, rdi, rsi) - no semantic meaning recovered
+- Type information severely degraded - most types are void* or unsigned long
+- No comments explaining algorithms, vtable mechanics, or complex logic
+- Excessive goto statements creating unnatural control flow
+- Many empty stub functions adding noise rather than value
+- No preconditions, postconditions, or contracts recovered
+- Build system compatibility is poor - many missing declarations
+
+### Best Quality Aspect: Function Decomposition (6/10)
+- Template functions are properly separated and instantiated
+- Class methods are grouped by class
+- Function sizes are reasonable (not monolithic)
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Variables should be named based on usage patterns (e.g., `ptr` used for object allocation should be `obj_ptr` or `instance`)
+- Register names (rdi, rsi) should not be used as variable names
+- The original source had meaningful names like `capture_by_value`, `instance_count`, `data` - these should be recovered
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Track how variables are used (e.g., `ptr` used with `new` should become `obj_ptr` or match the class name)
+2. **Recover type information from vtable and RTTI**: Use vtable symbols and typeid names to reconstruct class types and member names
+3. **Add semantic comments for complex patterns**: Document virtual dispatch, multiple inheritance thunks, and exception handling mechanics rather than leaving them as raw goto statements

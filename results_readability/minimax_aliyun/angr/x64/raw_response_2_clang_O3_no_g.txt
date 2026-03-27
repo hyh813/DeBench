@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `a0`, `a1`, `v1`, `v2`, `v3`, `ptr`, `i`, `j`, `k`. These provide no semantic meaning - `a0` could be anything from a size to a pointer. Compare to source where variables like `sum`, `len`, `n` clearly indicate purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are correctly recovered: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. Some wrapper functions have generic names like `sub_401020`, but the core test functions match source exactly.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions show expected values clearly (e.g., `printf("DT-L1-03 (process_int): %d\n", 11)`), but many magic numbers lack explanation: `0x3fc00000`, `0x3fe0000000000000` for floating-point operations, `4294967295` for -1, and complex SIMD constants like `AddV`, `MulV` operations.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe pollution with `[D] unsupported_<class 'pyvex.expr.GetI'>()` expressions, `CONCAT` operations for vector types, `InterleaveLOV` for SIMD, and massive struct definitions with hundreds of fields (see `array_3d` struct with field_0 through field_1e4). Code is buried under decompilation artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions like `process_char` have natural if-else, but complex functions like `array_1d_stack` use goto-based loops with SIMD unrolling that obscures the original for-loop structure. At -O0, this level of transformation is excessive and makes execution flow difficult to trace.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions generally match source granularity - each test function is separate. However, some functions like `array_1d_stack` (80+ lines) are bloated with SIMD loop unrolling that could be abstracted. Parameter lists are reasonable but expose implementation details.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Simple functions read top-to-bottom, but complex functions have multiple jumps, early returns, and computed goto patterns (e.g., `ptr_func_simple` uses `goto a0`). Forward jumps into loop bodies and complex nesting disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy in array processing functions - identical loop unrolling patterns repeated with different offsets. The `array_1d_stack`, `array_vla`, and `array_oob` functions share nearly identical bloated implementations with unnecessary intermediate variables like `v12`, `v13`, `v14`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `unsigned int`, `double`, `char*`), but significant erosion: pointers shown as `unsigned long` instead of typed pointers, `int*` used where source has `short*`, and function pointers become `unsigned long`. The source's `const int *p` becomes `unsigned int *a0` losing const correctness.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered with generic names (`struct_0`, `struct_1`) and numbered fields (`field_0`, `field_8`). Nested structures like `Node` with `next` pointer are partially reconstructed. However, all semantic field names lost - source's `Point3D {x, y, z}` becomes `unsigned int *a0` accessed as `a0[0]`, `a0[1]`, `a0[2]`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns present: pointer arithmetic not properly typed (`ptr + v2 * 4` instead of `ptr[v2]`), function pointer calls via `goto a0` bypass type checking, and void pointer casts in `ptr_void` without safety annotations. Not catastrophic but requires careful analysis.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. Zero explanation of algorithm intent, parameter purposes, return value meanings, or any context that would help understanding. The source had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognizable (loop summing, pointer traversal, linked list walking) but not explicitly identified. The source's clear idioms like "calculate array element sum" or "string length calculation" are lost in convoluted implementations.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The `[D] unsupported_<class 'pyvex.expr.GetI'>()` expressions flag some decompilation failures, but these are generic and don't explain what the original code might have been. No indication of potential undefined behavior from the source's intentional array bounds violation in `array_oob`.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. The source's implicit contracts (e.g., "array_1d_stack: arr pointer valid, n >= 0") are completely lost. No documentation of error conditions or edge cases.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships partially visible (test functions call implementation functions), but no documentation of who calls whom, global variable usage, or callback relationships. The source's `complex_callback` used by `ptr_func_complex` is not clearly linked.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file, grouped somewhat logically by type (data types, arrays, pointers, composites). However, no header declarations, no static vs extern distinction visible, and arbitrary address-based ordering.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Uses `extern` declarations for external references but many are incomplete or wrong (e.g., `extern char g_40366f` without definition). Would require significant patching to compile. No dependency documentation or portability considerations.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable names are universally generic (`a0`, `v1`, `ptr`) providing zero semantic meaning
+- Severe noise pollution with `[D] unsupported_` expressions and SIMD operations obscuring logic
+- No comments explaining any function's purpose, parameters, or return values
+- Composite types lost - structs become raw pointer arithmetic with array indexing
+- Type precision severely degraded - `const int*` becomes `unsigned int*`, losing const correctness
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+The decompiler correctly recovered most function names from the source, making it clear which test case each function implements.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Every variable uses generic single-letter names with numbers, making it nearly impossible to track data flow or understand variable purposes without extensive reverse engineering.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing → `index`/`i`, accumulation → `sum`/`total`, pointer dereferencing → `ptr`/`node`) to generate semantically meaningful names
+2. **Eliminate decompilation noise**: Abstract SIMD operations (`AddV`, `MulV`, `InterleaveLOV`) into comments or helper functions rather than inlining complex vector math
+3. **Recover struct field names**: Use type information and access patterns to reconstruct meaningful field names instead of `field_0`, `field_1` - e.g., three consecutive `int` accesses suggest `{x, y, z}` for a Point-like structure

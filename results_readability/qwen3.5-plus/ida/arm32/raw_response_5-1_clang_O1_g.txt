@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are generically named `v0`, `v1`, `v2`, etc. throughout (e.g., `_WORD v1[4]`, `int v2`, `int v3` in `test_cpp_member_func()`), completely obscuring semantic meaning like `packet_size` or `instance_count`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions retain recognizable names (`test_cpp_member_func`, `test_cpp_constructor`), but internal functions use mangled C++ names (`_Z20test_cpp_member_funcv`) or generic labels (`sub_B90`), and 25 functions failed entirely.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x12CF0`, `0x12D34` (vtable addresses), `0x14u` (allocation size) appear without explanation; some constants like return value `4700` are meaningful but unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Runtime initialization functions (`_start`, `init_proc`, `GLOBAL__sub_I_5_1_cpp`) and 25 "FAILED to decompile" entries clutter the output without adding analytical value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some loops recovered (constructor initialization loop with `i != -5`), but exception handling collapses to direct `_cxa_throw` calls losing try-catch structure; many functions return pre-computed constants.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions maintain reasonable boundaries, but C++ methods are flattened (e.g., `Base::virtual_func` takes explicit `this` pointer), and 85 functions include excessive runtime support code.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but virtual dispatch introduces indirect calls that disrupt flow; some functions like `test_cpp_diamond_inheritance()` have confusing thunk calls.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding creates redundancy (e.g., `test_cpp_operator_overload()` returns `22` directly); vtable setup code repeats across multiple test functions without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical type errors exist—`template_max<double>()` returns `int` instead of `double`; C++ class types degrade to generic pointers; `test_cpp_rtti()` returns `size_t` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some class fields recovered (`multiplier`, `dataA`, `dataB`, `_vptr$Base`), but virtual inheritance layout is unclear; many struct fields remain generic with pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(_DWORD *)`, `(void *)`, `(char *)`); pointer arithmetic on class objects (`(char *)v14 + *(_DWORD *)((char *)v13 + 0xFFFFFFF4)`); type-confused function pointers throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are auto-generated stack layouts (`[sp+8h] [bp-28h] BYREF`) with no algorithmic explanation; C++ semantics (virtual dispatch, object lifetime) completely undocumented.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns (vtable dispatch, RAII, smart pointers, exception handling) not identified; lambda expressions collapsed to constants; template instantiation not explained.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed but not explained; unusual patterns like `i != -5` loop condition lack warning; no indication of O0 vs O1 optimization mismatch.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented; exception handling contracts lost; object lifetime guarantees (constructor/destructor pairs) not indicated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch relationships opaque; inheritance hierarchies not explicit; callback relationships (deleters, lambdas) lost.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions scattered without logical grouping; C++ namespace/class structure lost; runtime support functions mixed with application code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 25 functions failed to decompile including critical runtime functions; external dependencies (`operator new`, `_cxa_throw`) undocumented; code will not compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+4+5)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (3+3+4+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.37/10
+```
+
+### Overall Readability Score: **4.4/10**
+
+### Critical Defects:
+- **Variable names are completely generic** (`v0`, `v1`, `v2`) obscuring all semantic meaning
+- **25 functions failed to decompile** including critical C++ runtime functions (`_cxa_throw`, `operator new`, `__dynamic_cast`)
+- **Type precision errors** - `template_max<double>()` returns `int` instead of `double`, breaking type safety
+- **C++ semantics lost** - exception handling, smart pointers, lambdas collapsed to constants without structure
+- **Metadata inconsistency** - Source claims gcc O0 arm64, but binary is clang O1 arm32, affecting decompilation accuracy
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Test function names were preserved reasonably well (`test_cpp_member_func`, `test_cpp_constructor`), providing some navigational structure.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- No preconditions, postconditions, or C++ object lifetime contracts are documented, making it impossible to understand expected behavior.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ semantic recovery** - Detect and reconstruct try-catch blocks, virtual dispatch, smart pointer patterns, and lambda captures from runtime patterns
+2. **Infer variable names from usage context** - Analyze how variables are used (e.g., passed to `strlen` → `string_length`, used in loop counter → `index`)
+3. **Flag type mismatches and optimization artifacts** - Warn when return types don't match expected signatures (like `template_max<double>` returning `int`) and indicate constant folding

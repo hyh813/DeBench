@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) with zero semantic meaning; local variables are equally opaque (`v1`, `v2`, `result`, `v4`). For example, `sequential_ops(int a1, int a2, int a3)` should be `(int a, int b, int c)` based on source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`sequential_ops`, `single_if`, `nested_if_2`), but some are mangled with optimization suffixes (`computed_goto.constprop.0`, `non_local_jump_constprop_0`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (`0xFFFFFFFFLL`, `1001`, `4294967294LL`); test functions hardcode expected values instead of computing them, obscuring actual logic.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive casting noise (`(unsigned int)`, `(unsigned __int64)`), SIMD intrinsics in simple loops (`_mm_load_si128`, `_mm_add_epi32`), and stack canary code (`__readfsqword(0x28u)`) clutter readable functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions recovered well (`sequential_ops`, `ternary_op`), but complex loops show vectorization artifacts (`loop_for_fixed` has 50+ lines of SIMD code for a simple sum); `loop_multi_exit` uses goto labels instead of structured loops.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions properly separated with reasonable granularity, but test functions (`test_control_flow_l1`) are constant-folded to just print statements, losing actual function call relationships.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally readable top-to-bottom, but `loop_multi_exit` has 8+ goto labels (LABEL_15, LABEL_20, LABEL_22) disrupting flow; `duffs_device` has complex label chains.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe loop unrolling in `loop_for_fixed` and `loop_continue` creates massive redundant code blocks; identical comparison chains repeated 10+ times in `loop_complex_cond`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Return types often wrong (`__int64` vs original `int`); `if_else` returns `_BOOL8` instead of `int`; excessive `(unsigned int)` casts throughout obscure original signed semantics.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Function pointer arrays recovered reasonably (`v4[0] = _mm_unpacklo_epi64(...)`), but no struct definitions visible; array types often degraded to raw pointers.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts (`(__int64 (__fastcall *)(_QWORD))v3.m128i_i64[a1]`); function pointer signatures mismatched (`__int64 (__fastcall *a1)(_QWORD)` vs original `int (*)(int)`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code; no algorithm explanations, no decompilation confidence indicators, no documentation of non-obvious optimization artifacts.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition (state machines, Duff's device, loop patterns not identified); `switch_fallthrough` logic recovered but not annotated as intentional fall-through pattern.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations noted ("FAILED to decompile: __libc_start_main"), but no warnings about optimization artifacts, type mismatches, or potential incorrectness in recovered logic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented; functions like `duffs_device` require `n>0` but this is not indicated in decompiled output.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented; no call graph information; callback relationships (`process_with_callback`) not annotated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output; no logical grouping by control flow level; helper functions (`double_value`, `triple_value`) not distinguished from main test functions.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Claims "Compilation Result: Yes" but has 8 failed decompilations; external dependencies (`_setjmp`, `__printf_chk`) not properly declared; architecture-specific intrinsics limit portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (5+6+5+3)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (4+6+3)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (1+2)/2     = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):  (4+1+5+5+4)/5 = 3.80 × 0.10 = 0.38
+─────────────────────────────────────────────────────────
+Overall Score:                              3.87/10
+```
+
+**Overall Readability Score: 3.9/10**
+
+### Critical Defects:
+- **Variable names completely generic**: All parameters are `a1`, `a2`, `a3` with no semantic recovery despite clear usage patterns (e.g., `sequential_ops` should have `a`, `b`, `c`)
+- **SIMD artifacts in simple loops**: `loop_for_fixed` and `loop_continue` show vectorization code (50+ lines) for trivial arithmetic loops
+- **Test functions constant-folded**: `test_control_flow_l1` just prints hardcoded expected values instead of actually calling functions
+- **Type mismatches**: `if_else` returns `_BOOL8` instead of `int`; return types consistently `__int64` instead of `int`
+- **Zero documentation**: No comments explaining optimization artifacts, algorithm intent, or decompilation confidence
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately (`sequential_ops`, `nested_if_2`, `switch_fallthrough`), enabling quick identification of test cases.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any comments means readers cannot understand optimization artifacts, algorithm intent, or decompilation limitations.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming**: Analyze usage patterns to infer names (e.g., loop counters → `i`, `j`; accumulators → `sum`, `count`; parameters in arithmetic functions → `a`, `b`, `c`)
+2. **Detect and annotate optimization artifacts**: When SIMD/loop unrolling is detected, add comments like `// OPTIMIZATION: Auto-vectorized loop, original was simple for-loop`
+3. **Recover test function semantics**: Instead of constant-folding test outputs, preserve actual function calls with computed results to maintain verifiable behavior

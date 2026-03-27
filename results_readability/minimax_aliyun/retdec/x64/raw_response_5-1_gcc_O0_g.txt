@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `result`, `a1`, `a2`, `a3` throughout. For example, `_Z20test_cpp_member_funcv` uses `int64_t v1 = __readfsqword(40);` and `int64_t v2; // bp-56` - these provide no semantic meaning about what the variables represent (e.g., object instance, stack canary).
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: While some demangling occurs (e.g., `test_cpp_member_func()`), most functions retain mangled names like `_Z17call_virtual_funcP4Basei` instead of `call_virtual_func(Base*, int)`. The naming is inconsistent - some functions are readable, others are cryptic.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers appear throughout: `__readfsqword(40)` (stack canary offset), `0x1fffffffffffffff` (array length check), `0xffff` (priority), `4 * a2` (size calculation). No named constants replace these literals.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifacts include: stack canary checks (`__stack_chk_fail()`), inline assembly (`__asm_movapd`, `__asm_movsd`), extensive template instantiation boilerplate (200+ functions), and virtual function thunks. These obscure the actual logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control structures (if/else, loops) are recognizable. However, `call_virtual_func` is completely wrong - it returns `(int64_t)a1` instead of calling the virtual function through vtable. Some goto patterns in error handling are present but manageable.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: The original 12 test functions exploded into 200+ functions due to template instantiations and standard library code. Function granularity is poor - the decompiler exposes all internal template machinery rather than abstracting it.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Some early returns in error paths, but the overall flow is linear and traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Template instantiation code is highly redundant (many nearly identical functions for `std::unique_ptr`, `std::tuple`, etc.). However, no obvious dead code. The redundancy is inherent to C++ templates but could be better abstracted.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses appropriate types like `int64_t`, `int32_t`, `uint64_t` for arm64. However, parameter types are generic (`int64_t a1`, `int32_t a2`) without meaningful names. Const correctness is partially preserved in some `_ZNK` (const) functions.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Vtable structures are recovered (e.g., `struct vtable_8838_type`) but with generic field names (`e0`, `e1`, `e2`). Class layouts are partially reconstructed but field semantics are lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `(int64_t)a1` casts, pointer arithmetic like `4 * a2 + v1`, and `(int32_t)(int64_t)v4` conversions. The `call_virtual_func` returns the pointer itself instead of dereferencing vtable.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are sparse, mostly auto-generated: "From module: /work/src/typeinfo", "Line range: 41 - 50", "Demangled: test_cpp_member_func()". No explanation of algorithm logic or intent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No explicit pattern recognition. C++ idioms like RAII (smart pointers), virtual dispatch (vtables), exception handling are present in code but not named or explained. The decompiler doesn't identify "this is a virtual function call through vtable."
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about suspicious code. The broken `call_virtual_func` is presented as correct code. No flags for potential undefined behavior or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The code provides no guidance on what conditions must hold before/after function calls.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present but relationships aren't documented. No indication of which functions call which, or global variable usage patterns. The vtable structures hint at inheritance but aren't clearly explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single monolithic file output. Functions are grouped by type (classes, globals, helper functions) rather than matching original source organization. No namespace or class structure in output.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes necessary headers (`<stdbool.h>`, `<stdint.h>`, etc.). Standard library functions are declared. Should compile with minimal stubs, but dependencies aren't documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v1`, `v2`, `a1`, `a2`) providing no semantic meaning
+- `call_virtual_func` is completely broken - returns the pointer instead of calling virtual function
+- 200+ functions from template instantiations create massive noise
+- No comments explaining algorithm intent or C++ idioms
+- Magic numbers like `__readfsqword(40)` unexplained
+
+**Best Quality Aspect:** Code Linearization (scored 7/10)  
+- The code generally reads top-to-bottom without excessive jumps or goto spaghetti
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic single-letter variable names make it impossible to track data flow or understand variable purposes without extensive cross-referencing
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `v2` used as `SimpleClass` instance based on constructor calls)
+2. Fix virtual function call resolution - `call_virtual_func` should call through vtable, not return the pointer
+3. Abstract template instantiation boilerplate - collapse `std::unique_ptr<int>` and `std::unique_ptr<double>` into a single template representation

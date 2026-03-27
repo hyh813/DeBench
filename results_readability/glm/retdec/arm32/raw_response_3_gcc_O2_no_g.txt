@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `v3`, `mem`, and `g1`. Semantic names like `global_counter`, `head`, or `node` are completely lost, making it difficult to understand the purpose of variables without tracing their usage manually.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: High-level test functions (`test_stack_memory`, `test_heap_memory`) and complex functions (`linked_list_heap`, `tree_heap_traversal`) retain their names. However, many helper functions (`local_vars`, `heap_basic`, `global_var_access`) are inlined and their names are lost from the call graph.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals containing Chinese characters are represented as hex escape sequences (e.g., `\xe6\xb5\x8b`), rendering them unreadable. Magic numbers for buffer sizes (e.g., `20`, `40`) are used without context (e.g., `5 * sizeof(int)`), and stack strings appear as hex integers (`0x6c6c6548`).
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant noise from stack protection checks (`__stack_chk_fail`) and manual stack pointer arithmetic for `alloca` (e.g., `v3 = (int32_t)&v2 - (v1 + 7 & -8)`), which obscures the high-level intent of dynamic stack allocation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is often expressed via pointer arithmetic and `goto` labels (e.g., in `linked_list_heap` and `large_stack_frame`) rather than natural loops or array indexing. This makes the code resemble assembly more than C.
+
+**6. Function Decomposition:** Score: 2/10
+Justification: The decompiler aggressively inlined helper functions into their callers. For example, `test_heap_memory` contains the expanded logic of `heap_basic`, `heap_calloc`, and `heap_array`, creating a monolithic 200+ line function that destroys the original modularity.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While the code generally flows top-to-bottom, the aggressive inlining creates massive functions that are hard to navigate. Additionally, the use of `goto` for loop control (e.g., `lab_0x10d14`) disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: The decompiler successfully constant-folded some function calls (e.g., `printf` arguments), but this came at the cost of hiding the function calls themselves. There is no obvious dead code, but the structural redundancy of inlining similar `malloc`/`free` patterns multiple times is high.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `int32_t` are used correctly, but parameter types are sometimes incorrect (e.g., `__sync_synchronize` takes `int32_t` instead of `volatile int*`). Pointer types are generic (`int32_t *`, `char *`) rather than specific struct pointers.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Complete failure to recover structs. Types like `Point`, `Node`, and `TreeNode` are lost. Struct fields are accessed via raw pointer arithmetic and hardcoded offsets (e.g., `*(int32_t *)(v1 + 4)`), completely obscuring the data structure layout.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on casting integers to pointers and accessing memory as raw bytes (e.g., `*(char *)v3`). The loss of struct types means the compiler's type safety checks are effectively bypassed in the representation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex logic like pointer arithmetic for stack frames or hex-encoded strings is left unexplained.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms are not recognized. Linked list traversal is represented as generic pointer chasing, and `alloca` usage is represented as stack pointer manipulation rather than a memory allocation call.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No warnings or flags are provided for the aggressive inlining, the hex-encoded strings, or the unusual stack manipulation. The code is presented confidently despite being difficult to interpret.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: While null checks (`if (mem == NULL)`) are preserved, they are not elevated to explicit contract documentation or preconditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: Standard library calls (`malloc`, `free`) are clear, but user-defined cross-references are obfuscated. Global variables are renamed to `g1`, `g2`, etc., making it impossible to see their relationship to the original `global_counter` or `global_array`.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed, but the logical grouping is lost because helper functions were inlined. The file is essentially a flat list of large test functions and raw global variables.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code includes standard headers and might compile with specific flags (e.g., defining `_FORTIFY_SOURCE`), but reliance on compiler internals like `__printf_chk` and `__stack_chk_fail` without context makes standalone compilation difficult.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.8/10
+
+**Critical Defects:**
+- **Aggressive Inlining:** Helper functions like `heap_basic` and `global_var_access` are inlined into test functions, destroying modularity and inflating function size.
+- **Struct Loss:** Composite types (`Point`, `Node`, `TreeNode`) are completely lost, replaced by raw pointer arithmetic and magic offsets.
+- **Hex-Encoded Strings:** Readable string literals are output as hex escape sequences, making them unintelligible.
+- **Generic Naming:** Variables and globals use generic names (`v1`, `g1`) instead of semantic names (`counter`, `head`).
+
+**Best Quality Aspect:** Type Precision (scored 5/10)
+- Basic integer types (`int32_t`) are generally correct, providing a minimal foundation for understanding data width, even if higher-level types are lost.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The complete inability to recover `struct` types turns logical data operations into obscure pointer math, which is the single biggest barrier to understanding this code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Disable Aggressive Inlining:** Implement heuristics to preserve function boundaries, especially for functions that are called multiple times or have distinct names, to maintain the code's modular structure.
+2. **Struct Recovery:** Enhance type analysis to identify struct layouts by analyzing sequential heap/stack accesses and `malloc` sizes, then reconstruct the `struct` definitions.
+3. **String Decoding:** Automatically detect and decode UTF-8 (and other common encodings) string literals instead of dumping them as hex escape sequences.

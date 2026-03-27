@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11` and parameters `a0`, `a1`, `a2`, etc. Only a few like `ptr`, `idx`, `result`, `i` are descriptive. The original source had meaningful names like `x`, `arr`, `n`, `local` but these were not recovered.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions like `test_stack_memory`, `test_heap_memory`, `test_static_global`, `test_memory_op_functions` are correctly named. Memory operation functions like `local_vars`, `local_array`, `heap_basic`, `heap_calloc` match source. However, many internal functions use auto-generated names like `sub_400568`, `sub_40068c`, and some like `$a.30` are cryptic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) used extensively for error returns without explanation. Constants like `0x800` (2048) for buffer sizes are unclear. String literals referenced via external symbols like `&g_402d56` without context. The original source had clear values like `10`, `42`, `100` that were computed results.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: (1) `armg_calculate_condition` calls inserted for every conditional, (2) spurious goto statements throughout, (3) incomplete return statements with `...`, (4) redundant variable declarations like `unsigned int ptr[10]` appearing twice, (5) type confusion with `Not Conv(32I->1I, ...)` expressions. The code is nearly unreadable due to these artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive use of goto statements instead of natural loops/conditionals. The `armg_calculate_condition` wrapper makes simple if statements convoluted. For example, `vla_stack` has complex goto-based flow instead of clean while/for loops. At -O0, this level of control flow distortion is unacceptable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately decomposed matching the source. Each test function is separate. Memory operation functions are properly split. Minor issues include some outline artifacts in complex functions like `heap_nested` and `linked_list_heap` where control flow is fragmented.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Poor linearization due to excessive goto statements and forward jumps. The `vla_stack` and `alloca_usage` functions have complex nested goto patterns that disrupt top-to-bottom reading. Many functions have early returns that are handled via goto rather than direct return statements.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant code patterns present. The `heap_realloc` function has duplicate initialization code paths. Variable declarations are sometimes duplicated (e.g., `unsigned int ptr[10]` appearing twice in `heap_realloc`). Loop unrolling is minimal at -O0 which is appropriate.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types are generic `unsigned int` instead of specific types like `int32_t`, `size_t`, or `uintptr_t`. Function signatures are partially recovered but incomplete (e.g., `memop_memset` has 4 parameters instead of 3). Pointers often lack proper type information, using `void*` or raw addresses.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs are reconstructed but with generic field names like `field_0`, `field_4`, `padding_0`. The original `Point` struct with `x`, `y` fields was not recovered - instead we see `a0 * 3` directly. The `Node` struct has partial recovery but loses semantic meaning of `data` and `next` fields.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations: (1) Incorrect pointer arithmetic in functions like `vla_stack` with complex index calculations, (2) Function pointer type confusion in `call_global_callback`, (3) Raw memory access without proper casting in `memop_unaligned_access`, (4) Potential buffer overflow in `heap_overflow` which returns 0 instead of actual computation.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The few comments present are auto-generated like "do not return" for `__libc_start_main`. No explanation of algorithm logic, no recovery of original comments from source. The source had extensive comments like "// MEM-L1-01: 局部变量（基础类型）" which were completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The original source contains clear patterns (linked list creation, tree traversal, memory pool patterns) but these are not recognized or labeled. The decompiler doesn't identify the malloc/free pattern, the linked list traversal idiom, or the VLA usage pattern.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `dangling_pointer` function has clear undefined behavior (accessing freed memory) but this is not indicated. The `double_free` function is incorrectly implemented (returns -2 instead of performing double free). Memory leak in `memory_leak` is not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions like "requires: n > 0" for `alloca_usage`, postconditions like "ensures: returns heap-allocated value", and invariants are not documented. Error handling paths are not clearly distinguished from normal paths.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: External functions are declared but relationships are unclear. The `extern_function` and `extern_global_var` are marked but their sources aren't indicated. Callback relationships (like `set_global_callback` setting `global_func_ptr` to `double_value`) are not clearly documented. Function call graph is not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are organized by address rather than logically grouped. The original source had clear sections (Stack Memory, Heap Memory, Static/Global, Memory Operations) but this organization is lost. Static functions like `static_helper` are not properly scoped as static.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would not compile standalone. Missing declarations for standard library functions (puts, printf, malloc, free, etc. are used but not declared). Incomplete functions like `__sync_add_and_fetch_2` with `return ...;`. External symbols like `g_402d56` are undefined. Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable naming**: Generic names like `v0-v11`, `a0-a7` completely obscure variable purpose
+- **Control flow**: Excessive goto statements and `armg_calculate_condition` wrappers make code nearly unreadable
+- **Type recovery**: Struct fields use generic names (`field_0`, `field_4`) losing semantic meaning of original `Point.x`, `Point.y`, `Node.data`, `Node.next`
+- **Noise artifacts**: Severe pollution from decompilation artifacts including `Not Conv(32I->1I, ...)`, incomplete returns with `...`, spurious conditional wrappers
+- **No comments**: Complete loss of source comments that explained test scenarios (MEM-L1-01, HEAP-L2-01, etc.)
+
+### Best Quality Aspect: Function Decomposition (7/10)
+Functions are appropriately separated matching source organization. Test functions are correctly split, memory operations are in separate functions, and the overall structure reflects the original source reasonably well.
+
+### Most Needs Improvement: Noise Reduction (2/10)
+The decompiled code is cluttered with compiler-specific artifacts like `armg_calculate_condition` calls, spurious goto statements, incomplete return statements, and type confusion expressions that make the code nearly unusable for analysis.
+
+### Top 3 Recommendations:
+1. **Eliminate conditional wrappers**: The `armg_calculate_condition` function should be inlined to produce natural if/else statements instead of goto-based conditionals
+2. **Recover variable names from usage**: Analyze how variables are used (e.g., `ptr` used with malloc/free → `heap_ptr`, `idx` used as loop counter → `index`)
+3. **Improve struct field naming**: Use field offset analysis and usage patterns to infer meaningful names (e.g., `field_0` used as `next` pointer in linked list → name it `next`)

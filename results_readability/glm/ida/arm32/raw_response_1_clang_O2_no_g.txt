@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`a1`, `v1`, `v2`) and lack semantic meaning found in the source (e.g., `sum`, `count`, `target`). Even with `-g` flags, local variable names like `temp1` or `result` were not recovered, replaced by compiler register names.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `sequential_ops`, `loop_for_fixed`, and `nested_if_deep` are perfectly preserved from the source symbols, making the high-level purpose immediately clear.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers appear without context, such as `0x12` (18) in `loop_while` representing the loop limit, and `0x7FFFFFFF` in `__divsi3`. While some constants like `100` are clear, others obscure the original logic (e.g., `v1 = 12` in `switch_fallthrough`).
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The code is generally clean of compiler artifacts like stack canaries or register spills. However, some redundant casts like `(__int64)` in `loop_for_fixed` are present to handle 32-bit multiplication safety, adding minor noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While simple flows are natural, aggressive compiler optimizations (likely -O2 despite metadata) transformed loops into mathematical formulas (e.g., `loop_for_fixed`), and `duffs_device` degraded into inline assembly, breaking natural C patterns.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source. The granularity is excellent, with no monolithic functions or artificial outlining observed.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom. Complex logic like `switch_fallthrough` uses a `goto` to handle the fall-through, which is a valid linearization of that specific control flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no dead code or obvious redundancy. The decompiler successfully removed the overhead of the source structure where the compiler optimized it away (e.g., unrolling).
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate (`int`, `unsigned int`, `bool`). The use of `__int64` for intermediate calculations in `loop_for_fixed` is technically correct for the optimized binary's behavior but deviates from the source's `int`.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Arrays used in switches (e.g., `dword_1E2C` in `switch_small`) are recovered as global data references, which is accurate, though the semantic link to the original array initialization is lost.
+
+**11. Type Safety:** Score: 8/10
+Justification: Operations are type-safe. Pointer arithmetic for array accesses is handled correctly via indexed global lookups rather than raw pointer math.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or optimization artifacts (e.g., noting that `loop_for_fixed` is a formula).
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: The decompiler successfully recognized the `switch_fallthrough` pattern and reconstructed it using a `goto`. However, it failed to recognize `duffs_device`, leaving it as raw assembly.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The inline assembly block in `duffs_device` is presented without any warning or explanation that the decompiler failed to recover high-level logic here.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the requirement that `n > 0` in `duffs_device` is not explicit).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear. Indirect calls via jump tables (e.g., `off_12EBC`) are represented as array accesses, which is standard, though the specific targets aren't listed in the comments.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source's separation of `test_control_flow_l1`, `l2`, and `l3`.
+
+**18. Build System Compatibility:** Score: 8/10
+Justification: The code is mostly valid C. The `__asm` block in `duffs_device` might require specific assembler support, but the rest is standard C compatible with common compilers.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 5 + 8) / 4 = 6.25
+L2_avg = (6 + 9 + 8 + 8) / 4 = 7.75
+L3_avg = (8 + 7 + 8) / 3 = 7.67
+L4_avg = (1 + 6 + 1 + 1) / 4 = 2.25
+L5_avg = (7 + 8 + 8) / 3 = 7.67
+
+Overall = (6.25 × 0.30) + (7.75 × 0.25) + (7.67 × 0.20) + 
+          (2.25 × 0.15) + (7.67 × 0.10)
+Overall = 1.875 + 1.9375 + 1.534 + 0.3375 + 0.767
+Overall = 6.45
+```
+
+### Overall Readability Score: **6.5/10**
+
+### Critical Defects
+- **Variable Naming**: Local variables are generic (`v1`, `v2`), losing semantic context like `sum` or `count`.
+- **Optimization Artifacts**: Loops like `loop_for_fixed` are reduced to mathematical formulas, obscuring the iterative logic of the source.
+- **Duff's Device Failure**: The `duffs_device` function is not decompiled into C, remaining as inline assembly (`__asm { ADD PC, LR, R3 }`).
+- **Missing Comments**: Complete absence of comments explaining complex logic or optimization transformations.
+- **Magic Numbers**: Constants like `0x12` appear without explanation of their relation to source logic (e.g., `count < 10`).
+
+### Best Quality Aspect
+- **Function Naming (9/10)**: The decompiler perfectly preserved the original function names (e.g., `sequential_ops`, `nested_if_deep`), making navigation and high-level understanding trivial.
+
+### Most Needs Improvement
+- **Semantic Transparency (2.25/10 avg)**: Specifically **Comment Quality** and **Anomaly Indication**. The lack of comments and failure to warn about the `duffs_device` decompilation failure significantly hampers deep understanding.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Symbol Recovery**: Improve variable name recovery from debug information (DWARF) to map `v1` back to `sum` or `count` when available.
+2.  **Pattern Recognition**: Enhance idiom recognition to handle `duffs_device` and similar computed-goto patterns, reconstructing the `switch`/`do-while` structure instead of falling back to assembly.
+3.  **Annotation of Optimizations**: Automatically insert comments when a loop is transformed into a mathematical formula (e.g., `// Loop optimized to arithmetic series`), bridging the gap between source structure and binary logic.

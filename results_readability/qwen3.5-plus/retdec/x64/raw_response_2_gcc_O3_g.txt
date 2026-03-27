@@ -1,0 +1,95 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v1, v2, v3... v107+) with no semantic meaning. Function parameters are uniformly named a1, a2, a3, a4, a5 regardless of purpose. Original variable intent (like `sum`, `len`, `current`) is completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (process_char, array_1d_stack, ptr_single, struct_simple, binary_tree_sum). However, some helper functions degraded to generic names (function_1060, function_1070, function_1080).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout (0xffffffff, 0x100000000, 0x7fffffff8) without explanation. String literals stored as hex-encoded globals (g1, g2, g3, g4) with no readable content. No named constants recovered.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with inline assembly calls (__asm_movdqu, __asm_paddd, __asm_psrldq, __asm_movdqa). Excessive temporary variables and redundant bit-masking operations (& 0xffffffff) throughout. Debug artifacts like __readfsqword and __stack_chk_fail present.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Some loops recovered (while loops in linked_list, array_string) but binary_tree_sum catastrophically unrolled into hundreds of nearly identical code blocks. Original 10-line recursive function became 2000+ lines of incomprehensible variable tracking.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Original function boundaries mostly preserved, but binary_tree_sum is a decomposition disaster (2000+ lines vs. ~10 lines original). Several functions have incorrect parameter counts (array_1d_stack has 4 params instead of 2, process_float has 0 params instead of 1).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom but excessive variable assignments (v1=v2, v2=v3 patterns) disrupt flow. Forward references to variables before initialization common throughout.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Catastrophic redundancy in binary_tree_sum - same code pattern repeated hundreds of times with different variable names. Loop unrolling gone completely wrong, creating unmaintainable code bloat.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Complete type erosion - original char, short, int, long, long long all degraded to int64_t. Float/double incorrectly represented as int128_t. Pointer types lost (everything is int64_t). No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union/enum definitions recovered. All composite type access reduced to offset arithmetic (a1 + 8, a1 + 16, a1 + 44). Field names completely lost. Original Point3D, Rect, Widget, TreeNode structures invisible.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe pointer arithmetic on int64_t throughout. No type checking on function pointers. Missing null checks that existed in source. Cast operations implicit and unverified.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. No algorithm explanations, no decompilation confidence indicators. Only meta-information at file end about compiler detection. Original Chinese comments completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition - recursive tree traversal, linked list iteration, array summation all appear as raw variable manipulation. No identification of common algorithms or data structure patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. No flags for unresolved indirect calls. No indication of potential issues with the massive binary_tree_sum expansion. Code presents incorrect information confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., ptr != NULL checks). No postconditions inferred. Error conditions not documented. Original null checks in linked_list preserved but not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships not documented. Global variables (g1-g7) referenced without explanation. No call graph information. Callback relationships (ptr_func_simple, ptr_func_complex) not identified.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. No header file structure. Test functions mixed with implementation. Original section organization (Data Types, Arrays, Pointers, Composite) lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has compilation issues (undefined __asm_hlt, __readfsqword, __printf_chk). Missing standard library dependencies not documented. Would require significant patching and stub implementations to compile standalone.
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.1/10
+
+**Calculation:**
+- L1 (Lexical): (2+7+4+2)/4 = 3.75 × 0.30 = 1.125
+- L2 (Structural): (4+4+5+2)/4 = 3.75 × 0.25 = 0.938
+- L3 (Type System): (2+2+3)/3 = 2.33 × 0.20 = 0.466
+- L4 (Semantic): (2+2+2+2)/4 = 2.0 × 0.15 = 0.300
+- L5 (Contextual): (4+4+3)/3 = 3.67 × 0.10 = 0.367
+- **Total: 3.196 ≈ 3.1/10**
+
+**Critical Defects:**
+- `binary_tree_sum` function exploded from ~10 lines to 2000+ lines with catastrophic loop unrolling
+- All type information lost - char/short/int/long/float/double all become int64_t or int128_t
+- Variable names completely generic (v1, v2, v3... v107+) with no semantic meaning
+- No struct/union/enum definitions recovered - all composite access is raw offset arithmetic
+- Function signatures incorrect (array_1d_stack has 4 params instead of 2, process_float has 0 instead of 1)
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)  
+- Most original function names preserved (process_char, array_1d_stack, struct_simple, binary_tree_sum) providing some semantic anchors.
+
+**Most Needs Improvement:** Type System Fidelity (averaged 2.33/10)  
+- Complete type erosion makes code practically unusable - cannot distinguish pointers from integers, floats from integers, or struct fields from arbitrary offsets.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Preserve debug symbol type information** - With `-O0 -g` compilation, full type information exists in DWARF; use it instead of inferring everything as int64_t
+2. **Detect and preserve recursive patterns** - Identify recursive call patterns and reconstruct them instead of catastrophic loop unrolling (binary_tree_sum disaster)
+3. **Infer semantic variable names from usage context** - Variables used in size checks should be named `size`/`count`, accumulators should be `sum`, pointers traversing structures should indicate their target type

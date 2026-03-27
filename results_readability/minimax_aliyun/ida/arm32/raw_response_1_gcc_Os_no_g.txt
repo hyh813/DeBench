@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `a1`, `a2`, `a3` for parameters and `v1`, `v2`, `result`, `i` for locals. For example, `sequential_ops(int a1, int a2, int a3)` should be `(a, b, c)`. The name `result` is used inconsistently for different purposes (loop accumulator, return value). This completely obscures variable semantics.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are correctly recovered: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, etc. match the original source exactly. Minor issues with helper functions like `sub_10454` which is a thunk, but core logic functions are well-named.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some constants are clear (e.g., `100 * a1 + 100` for if-elseif_long), but magic numbers like the switch jump table `CSWTCH_56` are unexplained. The formula `10 * a1` for switch_large is arithmetic optimization but loses the original `case X: return X*10` pattern.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No redundant casts, debug instrumentation, or frame pointer manipulation clutter. Some register-related comments like "cc" (condition code) but these don't impede readability significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - if/else, while, for loops are properly recovered. The `duffs_device` uses goto labels which is expected for that idiom. Some switch statements became if-else chains (e.g., `if_elseif_chain`), but the logic remains traceable. At -Os optimization, some restructuring is acceptable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with appropriate granularity. Each function handles one logical unit (e.g., `loop_for_fixed`, `recursion_factorial`). No obvious over-fragmentation or monolithic functions. Parameter counts match original.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns used appropriately. The `duffs_device` has forward jumps but that's inherent to the pattern. No spaghetti code or confusing goto abuse in regular functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some common subexpression elimination visible (e.g., `2 * a1` computed once and reused). Loop unrolling in `duffs_device` is present but the structure is recognizable. Minor redundancy from optimization doesn't significantly obscure logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most parameters correctly use `int` (32-bit appropriate for ARM). Some `unsigned int` for positive-only values (e.g., `switch_small(unsigned int a1)`). Function pointers have proper signatures like `int (__fastcall *a1)(int)`. Minor type erosion where `char` should be used for shift amounts.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: This code uses mostly primitives, so struct recovery isn't critical. Arrays are handled adequately (e.g., `_DWORD v8[12]` for the 3x4 matrix in `loop_multi_exit`). No complex struct reconstruction needed for this benchmark.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some necessary casts for function pointer arrays. No severe violations like buffer overflows or incorrect pointer arithmetic. The code is reasonably safe to analyze.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in the decompiled output. Only auto-generated annotations like "attributes: thunk" for frame_dummy. No explanation of algorithms, preconditions, or non-obvious logic. The original source had extensive Chinese comments explaining each function's purpose - none of this is recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (loops, conditionals, switch). However, no explicit naming of patterns like "Duff's device" for `duffs_device` or "state machine" for `state_machine`. The decompiler doesn't identify these as known idioms.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The output notes "10" failed functions at the end (imports like `__imp_puts`). However, there's no inline indication of uncertain decompilation, potential undefined behavior, or unusual patterns within functions. The `computed_goto` uses inline assembly which could be flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postconditions, invariants, or contracts recovered. For example, `duffs_device` has implicit requirement that `n > 0` - this is not documented. The original source had test cases documenting expected behavior - none of this semantic information is preserved.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls within test functions are clear (`loop_for_fixed(10)`). However, there's no documentation of which functions call which, callback relationships, or global usage. The `call_func_ptr_array` uses function pointers but their relationships aren't explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in some arbitrary order (by address in binary), not matching the logical grouping of the original source (CF-L1-01 through CF-L3-10). No clear separation between test functions and logic functions. Static functions aren't explicitly marked as such in output.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The decompiled code appears syntactically correct and likely compilable with minimal stubs. External dependencies (libc functions) are noted as failed to decompile. No compiler-specific hacks that would prevent compilation, but some Hex-Rays specific annotations may need cleanup.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming is nearly useless: `a1`, `a2`, `a3`, `v1`, `v2`, `result`, `i` provide no semantic meaning
+- No comments explaining algorithms, contracts, or non-obvious logic
+- No pattern recognition for idioms like Duff's device or state machines
+- Switch jump tables use unexplained array references (`CSWTCH_56`)
+- No recovery of preconditions/postconditions from original test cases
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+The decompiler correctly recovered nearly all function names from the original source, making it easy to identify which logic corresponds to which test case.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The generic single-letter variable names completely obscure the semantic purpose of each variable. At -O0, variables should be easily inferable from usage patterns (e.g., `a1 + a2` → `a + b`, loop accumulator `result += v1++` → `sum += i`).
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Track how variables are used (arithmetic operations, array indices, loop counters) to generate semantically meaningful names like `packet_size`, `sum`, `index` instead of `a1`, `result`, `v1`
+2. **Add algorithm/idiom recognition**: Identify known patterns (Duff's device, state machines, jump tables) and add comments explaining them, similar to how the original source documented each function's purpose
+3. **Recover semantic contracts**: Use test case information and implicit requirements (e.g., `n > 0` for loops, non-null pointers) to document preconditions and postconditions in comments

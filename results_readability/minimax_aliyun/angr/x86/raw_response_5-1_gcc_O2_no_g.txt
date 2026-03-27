@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `v0`, `v1`, `v2`, `ptr`, `a0`, `a1`, `i`. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value`, `capture_by_ref`. These cryptic names make tracking semantic purpose nearly impossible.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some functions correctly preserve mangled C++ names like `_Z20test_cpp_member_funcv`, `test_cpp_exception`, `template_max<int>`, but the majority use mechanical address-based names like `sub_401030`, `sub_401040`. The inconsistency and prevalence of generic names significantly hinder understanding.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Code is littered with unexplained magic numbers (42, 20, 100, 200, 80, 250) and complex memory offsets like `&v7->padding_0[80]`. The original source had clear constants like `0x1234` for `getClassID()` and meaningful string literals. These literals obscure the logic without explanation.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution from decompiler artifacts including `[D] unsupported_<class 'pyvex.expr.GetI'>()` expressions scattered throughout, complex pointer arithmetic like `*((unsigned int *)&ptr[40])`, and VEX IR remnants. This makes the code nearly unreadable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Control flow is severely degraded. Uses computed goto like `goto *((int *)*((int *)arg_0))` for virtual function dispatch instead of recognizable vtable calls. Many functions are empty stubs. The original had clear if-else, loops, and try-catch blocks now transformed into obscure patterns.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are reasonably preserved - each test function remains separate. However, some functions are trivial wrappers (e.g., `sub_40153a` just calls `frame_dummy()`). The original modular structure is partially maintained but with unclear relationships.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom with some forward jumps. The computed goto in virtual function dispatch and complex nested conditions in exception handling create non-linear flow. Not terrible but requires effort to trace.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns exist (multiple similar thunk functions for virtual dispatch), but not severe. The main issue is noise rather than redundancy. Loop unrolling is minimal at -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation. Original had `int`, `size_t`, `char[32]`, `int*`, `std::unique_ptr<int[]>`. Decompiled uses generic `int`, `unsigned int`, `void*`, `char`. The original `size_t` is lost, pointers to arrays become raw integer offsets.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Classes are poorly reconstructed. Original classes like `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `Container<T>` become generic `struct_0`, `struct_1` with fields like `field_0`, `field_4`, `padding_0`. The class hierarchy and member relationships are largely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: raw pointer arithmetic (`(char *)ptr + 4 * index`), unsafe casts (`(int)ptr[40]`), no bounds checking visible. The original had safe container operations with bounds checking, now reduced to potentially unsafe memory access patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. The decompiler provides minimal documentation. Original source had extensive comments explaining each test case's purpose. No explanation of vtable mechanics, this pointer adjustment, or template instantiation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ patterns are partially visible (virtual function dispatch via vtable, thunk functions for multiple inheritance) but not explicitly named or documented. The original's RAII patterns, lambda expressions, and smart pointer usage are not recognized as idioms.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler does flag unsupported operations with `[D] unsupported_<class 'pyvex.expr.GetI'>()` but provides no explanation of what these mean or how to resolve them. Some functions show "Failed to decompile" messages.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original had clear semantics (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated"). These contracts are completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are partially visible through the call graph, but not explicitly documented. Virtual dispatch relationships and inheritance hierarchies are not clearly communicated. External dependencies are mentioned but not well organized.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are grouped by address proximity rather than logical grouping. The original had clear sections (CPP-L3-01, CPP-L3-02, etc.) which are lost. No namespace or class structure organization is apparent.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code does not compile. Contains numerous VEX IR artifacts, unsupported operations, and incomplete function implementations. Would require extensive manual修复 to become compilable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v0`, `v1`, `ptr`, `a0`) - original semantic meaning completely lost
+- Composite types (classes/structs) reconstructed as `struct_0`, `struct_1` with generic fields (`field_0`, `padding_0`)
+- Severe decompiler artifacts: `[D] unsupported_<class 'pyvex.expr.GetI'>()` expressions throughout
+- Control flow uses computed goto instead of recognizable virtual dispatch and exception handling
+- Type precision severely degraded - all classes become generic structs, smart pointers lost
+
+**Best Quality Aspect:** Function Decomposition (scored 6/10)  
+- Function boundaries are reasonably preserved; each test function remains separate and identifiable
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic single-letter variable names make it nearly impossible to understand what data represents; original had meaningful names like `value`, `name`, `capture_by_value`, `capture_by_ref`
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `v3 = *((int *)_ccall(...))` used in comparison → should suggest `stack_canary` or similar)
+2. Recover class/struct definitions with meaningful field names based on offset analysis and usage patterns
+3. Eliminate VEX IR artifacts and replace with clean C++ code; flag unresolved indirect calls with explanatory comments rather than leaving raw decompiler internals

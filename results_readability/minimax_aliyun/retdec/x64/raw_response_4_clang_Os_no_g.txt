@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `a1`, `a2`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11` throughout. For example, `varargs_func` has 11 uninterpreted variables with no semantic meaning, compared to original's descriptive names like `count`, `args`, `sum`, `i`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main test functions are correctly named: `cdecl_func`, `stdcall_func`, `fastcall_func`, `call_cdecl`, `varargs_func`, `func_no_args`. However, internal runtime functions are numbered rather than named (`function_1030` for `puts`, `function_1040` for `strlen`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x100000000` (for struct return encoding), `0xffffffff` (mask), and `41` (varargs threshold) appear without explanation. The original had clear named constants and comments explaining each test case's purpose.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy presence of `__asm_movaps`, `__asm_movdqa`, `__asm_paddq`, `__asm_pshufd` SIMD intrinsics that obscure logic. Unnecessary type casts like `(int32_t)a1`, `(int64_t)&v9` add noise. The original was clean C without assembly hints.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions like `cdecl_func` have natural flow. However, `varargs_func` and `param_varargs` have convoluted goto-like patterns with multiple branches and unclear loop structure. At -O0, this should be much cleaner.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and separated. Each test function (`call_cdecl`, `call_stdcall`, etc.) is correctly extracted as a separate function. No 500-line monoliths present.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom with single returns. Early returns in `func_struct_byptr` and `param_double_ptr` are appropriate. Minor disruption in varargs functions due to complex pointer arithmetic.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns in varargs handling - the same pointer calculation logic appears twice (for `v4 < 41` branch and else branch). Loop unrolling in `func_struct_byval` is present but not commented.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int64_t` for almost everything including 32-bit values. Function pointers like `param_func_ptr(int64_t a1, int64_t a2)` lose the actual function pointer type - should be `int (*callback)(int)`. Original had precise types like `int`, `char*`, `double`, `long long`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct types recovered. Original had `LargeStruct` (128 bytes), `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData` - all lost. Parameters like `func_struct_byval(int64_t a1, int64_t a2, int64_t a3, int64_t a4)` show struct passed as separate values rather than reconstructed type.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int32_t *)a1`, `(char *)v1`, `(int32_t *)(v11 + 8)`. Pointer arithmetic like `a1 + 4` for pointer increment in `ret_pointer`. Function pointer type confusion in `param_func_ptr`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No meaningful comments present. Original had extensive documentation: "// CALL-L1-01: cdecl调用约定 ⭐⭐", "// 场景: [SCENE-ALL] x86平台默认", test expectations. Decompiled code has zero explanatory comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern is present but not recognized as such - just complex pointer manipulation. The `va_list`, `va_start`, `va_arg` pattern is completely lost. No indication this is a variadic function.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The complex varargs handling with `if ((char)v1 != 0)` checking uninitialized variable is anomalous but not flagged. No indication of uncertainty in decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear expectations like "// 期望: 15", "// 测试: 参数从右到左压栈". None of this contract information recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are explicit (`cdecl_func(5, 10)` becomes `call_cdecl()`). However, relationships like "this tests cdecl calling convention" are lost. No documentation of which functions call which.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically but the original's clear section organization (4.1 Calling Conventions, 4.2 Parameter Passing, 4.3 Return Values) is not reflected. All functions in single flat namespace.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would not compile. Missing `#include <stdarg.h>`. Undefined `__asm_movaps`, `__asm_paddq` and other intrinsic functions. Type mismatches throughout. Original compiled successfully with gcc.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable names are completely generic (`a1`, `a2`, `v1-v11`) with no semantic meaning
+- No struct types recovered - `LargeStruct`, `SmallStruct`, `BigStruct` all lost
+- Zero comments explaining test cases, expectations, or calling convention behavior
+- Type precision severely degraded - function pointers become `int64_t`, 32-bit values become 64-bit
+- Heavy SIMD intrinsic noise (`__asm_movaps`, `__asm_paddq`) obscures logic
+- Code would not compile due to missing headers and undefined intrinsics
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions are properly separated with appropriate granularity - each test case correctly extracted as its own function with logical naming.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+The original had extensive documentation explaining each test scenario, expected values, and calling convention details. Zero of this semantic information was recovered.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a1` used in addition should be `a`, `count` used in loop bound should be `count`
+2. Recover struct/union types from parameter patterns and memory accesses rather than decomposing into individual values
+3. Preserve or reconstruct comments from debug symbols (the original had `-g` flag) to recover test case documentation and expectations

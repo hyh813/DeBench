@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic names like `a0`, `v0`, `ptr`, and struct fields like `field_0`, `field_4`, offering no semantic insight into their purpose (e.g., `count`, `sum`, `args`).
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: While key functions like `cdecl_func` and `test_calling_conventions` retain their original names, many helper functions and wrappers are reduced to generic addresses like `sub_401030` or `sub_401201`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals are preserved and readable, but magic numbers like `4294967295` (used for -1) and array offsets are not explained or replaced with named constants.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: The code is heavily polluted with debug artifacts like `[D] unsupported_<class 'pyvex.expr.GetI'>()` and `[D] PutI`, which severely disrupt readability and indicate lifter failures.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is present, but loops like in `varargs_func` are implemented with pointer arithmetic and `do-while` structures that obscure the original `for` loop intent.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Aggressive inlining (e.g., `call_cdecl` reduced to `return 15`) destroys the original call structure, making it hard to trace the program's logical flow or understand the calling conventions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The code generally reads top-to-bottom within functions, though the `varargs` implementation is slightly convoluted with pointer arithmetic.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: The decompiler accurately reflects the compiler's optimizations (constant folding), removing redundant calculations, though this sometimes hides the source logic (e.g., pre-calculated results).
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types are defaulted to `unsigned int` or `void*`. While `double` is detected in `func_mixed_args`, the operations on it fail, and pointer types are generic.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs are either expanded into individual arguments (e.g., `func_struct_byval` taking 31 args `a0`-`a30`) or recovered as generic `struct_0` with unnamed fields.
+
+**11. Type Safety:** Score: 2/10  
+Justification: The presence of `[D] unsupported` blocks indicates the decompiler could not lift instructions safely, leading to gaps in type safety and logic.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are no meaningful comments; only raw debug markers (`[D]`) are present, which do not aid understanding.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard idioms like `varargs` are not recognized; instead, they are decompiled to manual stack walking via a generic struct, losing the semantic meaning of `va_list`.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Anomalies are flagged with `[D] unsupported`, but these are raw error messages rather than helpful explanations of the issue or the context.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Global variables are referenced by address (e.g., `g_4020a8`), and while function names are sometimes preserved, the relationships are not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are listed in memory address order, which provides some structure but does not reflect the logical grouping of the source.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: The code contains syntax errors (`[D] ...`) and missing definitions, making it impossible to compile without significant modification.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`a0`, `v0`, `field_0`), obscuring data flow.
+- Debug artifacts (`[D] unsupported...`) break syntax and readability in `func_mixed_args`.
+- Large structures are expanded into 31+ individual arguments (`a0`...`a30`), destroying the semantic concept of a struct.
+- `printf` function calls are missing their arguments (e.g., `printf("...%d\n")` without the variable), likely due to stack analysis failure.
+- `varargs` logic is decompiled into raw pointer arithmetic on a generic struct rather than `va_list` idioms.
+
+**Best Quality Aspect:** Redundancy Elimination (scored 8/10)  
+- The decompiler successfully represents the optimized state of the binary, removing redundant calculations present in the source but optimized away by the compiler.
+
+**Most Needs Improvement:** Noise Reduction (scored 2/10)  
+- The inclusion of raw lifter debug messages (`[D] ...`) renders significant portions of the code unreadable and syntactically invalid.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a post-processing filter to suppress or translate internal lifter errors (like `pyvex.expr.GetI`) into valid C placeholders or comments.
+2. Improve stack argument recovery for variadic functions (like `printf`) to ensure arguments are correctly associated with the call site.
+3. Enhance composite type recovery to prevent expanding large stack-passed structures into dozens of individual scalar arguments.

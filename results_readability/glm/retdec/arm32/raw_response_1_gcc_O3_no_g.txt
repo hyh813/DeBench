@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `a1`, `a2`, `v1` through `v19` in `duffs_device`, completely obscuring the original `dst`, `src`, and loop counter semantics.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: While complex functions like `duffs_device` and `non_local_jump` retain their names, the presence of compiler artifacts like `non_local_jump_constprop_0` degrades the quality.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers and raw addresses, such as `0x116c8` (a code address returned as an int) and `0x11b58` (string address), with no named constants to explain them.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The `_setjmp` call in `non_local_jump` is expanded into a massive, verbose struct literal initialization with 10+ fields, creating significant visual noise that obscures the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: `duffs_device` is represented as a confusing switch statement with a `goto` for looping, failing to recover the `do-while` structure. `computed_goto` is reduced to a ternary operator returning a raw address, losing the jump table logic entirely.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: Simple functions like `sequential_ops` are missing (inlined/optimized away), leaving `test_control_flow_l1` as a monolithic list of print statements rather than a series of calls.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The `duffs_device` function ends with a `goto` jumping back to a label in the middle of the switch statement, forcing a non-linear read to understand the loop.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: In `duffs_device`, the decompiler generates 19 redundant variables (`v1` to `v19`) that simply hold pointer values, creating an explosion of unnecessary assignments.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While `int32_t` is used correctly, the switch condition in `duffs_device` uses a custom `int3_t` (typedef for `int8_t`), which is likely a misinterpretation of the original `int` modulo operation.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: The `jmp_buf` in `non_local_jump` is not recovered as a type; instead, its raw structure is inlined as a literal, losing the semantic context of a jump buffer.
+
+**11. Type Safety:** Score: 6/10
+Justification: The code generally uses correct types, but the `computed_goto` function returning a code address (`0x116c8`) as an `int32_t` represents a significant type confusion and safety issue.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the complex logic of Duff's Device, the computed goto, or the setjmp/longjmp mechanics.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The decompiler completely failed to recognize Duff's Device (a well-known loop unrolling idiom) and the Computed Goto pattern, presenting them as raw control flow messes.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: There is no warning that `computed_goto` returns a raw memory address (`0x116c8`) instead of a standard integer return value, which is a critical anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions (e.g., `n > 0` for Duff's device) or postconditions are documented or inferred in the output.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: Global variable `g4` is used as the jump buffer for `setjmp`, but there is no annotation indicating it is shared state or a `jmp_buf`.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in a flat structure roughly corresponding to address order, with no logical grouping or separation of concerns (e.g., test functions mixed with implementation).
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on internal glibc functions like `__printf_chk` and `__longjmp_chk` and custom typedefs (`int3_t`), which would require patching to compile standalone.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.3/10
+
+**Critical Defects:**
+- **Variable Naming**: Variables `a1`, `a2`, and `v1`-`v19` in `duffs_device` provide zero semantic context.
+- **Control Flow**: `duffs_device` fails to recover the loop structure, presenting a switch with a goto instead of a do-while loop.
+- **Semantic Failure**: `computed_goto` returns a raw code address (`0x116c8`) instead of the intended integer value, breaking the function's logic.
+- **Noise**: The `setjmp` call in `non_local_jump` is expanded into a massive struct literal, rendering the function unreadable.
+- **Missing Functions**: Basic functions like `sequential_ops` are absent (inlined), leaving only the complex, poorly decompiled remnants.
+
+**Best Quality Aspect:** Function Naming (scored 6/10)
+- The decompiler successfully preserved the original names for complex functions like `duffs_device` and `non_local_jump`, which is the only remaining link to the source intent.
+
+**Most Needs Improvement:** Idiom Recognition (scored 2/10)
+- The failure to recognize standard idioms like Duff's Device and Computed Goto resulted in the most severe readability losses, transforming structured algorithms into spaghetti code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Pattern Matching for Duff's Device**: Implement specific detection for the `switch` + `do-while` fallthrough pattern to reconstruct the loop structure instead of generating a flat switch with gotos.
+2. **Jump Table Analysis**: Improve the analysis of computed gotos (indirect jumps) to reconstruct switch statements or at least map target addresses to the correct return values/cases rather than returning raw addresses.
+3. **Struct Aggregation**: Aggregate large struct initializations (like `jmp_buf`) into typed variables or function calls to reduce visual noise and improve readability.

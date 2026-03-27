@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v1, v2, v3, v4, result, etc.) with no semantic meaning. In `sequential_ops`, variables should be named `a`, `b`, `c` based on parameters, but are all `v1`. This makes tracking variable purpose practically impossible.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions and some target functions have proper names (sequential_ops, single_if, if_else, nested_if_2), but many helper functions use generic names like function_960, function_970, function_980. The main test functions are well-named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Code is littered with unexplained magic numbers and bit masks. Example: `0x66666667 * (0x100000000 * v2 >> 32) / 0x400000000` in loop_while is an obfuscated division by 10. Also constant masks like `& 0xffffffff`, `& 0xfffffffe` appear everywhere without explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution includes: address range comments on every function, excessive mask operations (& 0xffffffff appearing ~50+ times), unnecessary casts, __asm__ blocks for simple operations, and frame pointer manipulations. These compiler artifacts obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some control structures are natural (if-else, switch), but there are problematic patterns: goto used for loop_break instead of proper break, awkward ternary expressions like `v2 << (int64_t)((int32_t)v2 > 0)` in single_if, and confusing switch fall-through handling in if_elseif_chain.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is good - each function from source is preserved as separate function. Functions are reasonably sized (not monolithic). However, some functions like duffs_device have awkward goto-based structure that could be better decomposed.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom but has several disruptions: goto statements in loop_break and loop_multi_exit, deep nesting in nested_if_deep (4 levels of if), and computed jumps in duffs_device using labels like lab_0x14e0.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from repeated mask operations (`& 0xffffffff` appears constantly). Loop unrolling in duffs_device creates repetitive code blocks. Some common subexpressions could be eliminated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - int64_t used for everything even when int32_t would be correct. The constant mask operations (& 0xffffffff) are workarounds for 64-bit type usage on 32-bit values. Function signatures lose parameter names.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct recovery: struct __jmp_buf_tag is properly reconstructed with fields. However, many structures remain unnamed or have generic field names (e.g., e0, e1, e2). The jump_buffer is correctly identified.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: frequent type punning through masks, pointer arithmetic without bounds checking, potential signed/unsigned confusion (v2 < 1 vs (int32_t)v2 < 1). The code has many operations that could cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are almost entirely absent or useless. Only contains address ranges like "// 0xcb0" and "// Address range: 0xcb0 - 0xcc0". No algorithm explanations, no parameter documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized: switch statements, loops, if-else. However, no design patterns identified (state machine, strategy, etc.). No algorithm naming (Duff's device is partially recognized but not named).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly detection. Indirect calls that couldn't be resolved aren't flagged. Unusual stack layouts aren't documented. Code presents incorrect information confidently (e.g., ternary_op is completely wrong).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. No preconditions (e.g., "requires: n > 0"), no postconditions, no invariant documentation. The code provides no guidance on expected input constraints.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls exist but relationships aren't documented. No indication of which functions call which, no callback relationships shown, no global variable usage documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Single monolithic file with 1651 LOC. No logical grouping - all functions (82 of them) dumped together. No header file with API declarations. Source organization (L1/L2/L3 sections) not reflected.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes necessary headers (stdio.h, stdlib.h, stdint.h, setjmp.h). Should compile with standard C library. However, __printf_chk may need glibc, and some inline assembly may cause issues on non-GCC compilers.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable names are entirely generic (v1, v2, v3, result) - completely uninformative about purpose
+- ternary_op function is semantically incorrect - returns wrong values due to convoluted expression
+- Excessive noise from mask operations (& 0xffffffff appears 50+ times) and address comments
+- No comments explaining algorithms, parameters, or decompilation confidence
+- Type precision severely degraded - int64_t used for everything requiring constant masks
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+- Each original function is preserved as a separate function with reasonable granularity
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- All variables use generic names making code practically unusable for analysis
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from parameter usage patterns and semantic context (e.g., v1 in sequential_ops should be a, b, c based on parameters)
+2. Reduce noise by eliminating unnecessary mask operations when types are correctly inferred, and remove address range comments
+3. Add meaningful comments explaining algorithms, especially for complex patterns like Duff's device and state machines

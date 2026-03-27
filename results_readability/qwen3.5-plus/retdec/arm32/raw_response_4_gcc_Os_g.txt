@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, but decompiled code uses `v1 = 0`, `v2 = &large` obscuring purpose completely.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`varargs_func`, `test_calling_conventions`, `param_ptr_array`, `call_struct_byval`). This is the strongest aspect - decompiler retained original semantic function names accurately.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `16`, `4`, `8` appear without explanation in loop bounds. String literals are stored in globals `g1-g18` with UTF-8 encoded Chinese text that's unreadable in decompiled form. Some constants like `0x12345678` are preserved but unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: pointer arithmetic `*(int32_t *)(4 * v7 + v3)`, stack frame references `bp-272`, `bp-12`, unnecessary casts `(int32_t)arr`, and redundant variable assignments `v3 = v6; v1 = *(int32_t *)...`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: While loops are recovered in some functions, but varargs functions use awkward `while(true)` with manual break conditions. Original `for` loops became `while` with manual increment: `v4 = v7 + 1` instead of clean `for(i=0; i<count; i++)`.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable, but many original functions are missing entirely (most calling convention tests, parameter passing tests). `test_calling_conventions` doesn't actually call the original functions - just prints hardcoded expected values.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom, but has awkward patterns like `v2 += 8; while ((v1 || v3 - 16) != 0)` that disrupt natural reading flow. Some forward references to globals are manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant pointer arithmetic patterns repeat: `*(int32_t *)v1 = v2; v2++; v1 += 4;` appears multiple times. Variable reassignment chains (`v5 = result; v6 = v3; v7 = v4`) add noise without value.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degrades to `int32_t` or `uint32_t`. Original `char *`, `double`, `long long`, `va_list` all become `int32_t`. Function pointers lose signature: `(int32_t (*)(int32_t))0x1057c` instead of proper callback type.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - `LargeStruct`, `SmallStruct`, `TestIntPair`, `BigStruct` are completely lost. No struct definitions appear. All struct access becomes raw memory: `*(int32_t *)v1 = v2; v1 += 4;` instead of `s.data[i]`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts: `(int32_t (*)(int32_t))0x1057c` casts address to function pointer without warning. Pointer arithmetic `4 * v7 + v3` assumes int size without type safety. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated metadata comments exist (`// From module`, `// Address range`, `// Line range`). Zero semantic comments explaining what code does. Original source had extensive documentation; all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern (`va_start`, `va_arg`, `va_end`) not recognized - becomes manual pointer arithmetic. Loop idioms not identified. No pattern documentation for common C constructs.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Function pointer cast to hardcoded address `0x1057c` not flagged as potentially incorrect. Missing functions not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `p != NULL` checks). No postconditions. Original null checks like `if (!p) return -1` preserved but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes listed at top, but call relationships not documented. Global variables `g1-g18` used without explaining they're string literals. Callback relationships lost.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single file output with functions grouped, but original logical sections (calling conventions, parameter passing, return values) not preserved in organization. Related functions scattered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes present but uses GCC-specific `__printf_chk`. Many original functions missing so won't link properly. `__stack_chk_fail` declared but not standard. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+5+5)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 4.32/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct`, `TestIntPair` all degraded to raw pointer arithmetic with no type information
+- **Variable names are generic** - `v1`, `v2`, `v3` throughout instead of semantic names like `count`, `sum`, `index`
+- **Varargs pattern not recognized** - `va_start`/`va_arg`/`va_end` became manual stack pointer arithmetic
+- **Function calls replaced with hardcoded values** - `test_calling_conventions` prints expected values instead of actually calling functions
+- **Type erosion to int32_t** - All types (`double`, `long long`, `char*`, `va_list`) became `int32_t`
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names were preserved accurately (`varargs_func`, `test_calling_conventions`, `param_ptr_array`), making it possible to identify function purposes despite other degradation.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions. All composite types became raw memory access patterns, making code nearly impossible to understand without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from memory access patterns** - Detect repeated `*(int32_t *)(base + offset)` patterns and propose struct definitions with field names based on usage context.
+
+2. **Recognize standard library idioms** - Detect `va_list` patterns, `strlen`, `memcpy` calls and restore appropriate function calls with proper types instead of raw memory operations.
+
+3. **Infer variable names from usage context** - Variables used in loop bounds should be named `count`/`limit`, accumulators should be `sum`/`total`, pointers should indicate target type based on dereference patterns.

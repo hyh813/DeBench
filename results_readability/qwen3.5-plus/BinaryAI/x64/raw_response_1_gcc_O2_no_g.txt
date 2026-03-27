@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generically named `param_1`, `param_2`, `iVar1`, `uVar1` instead of semantic names like `temp1`, `sum`, `count` from source. `loop_break` uses meaningless `iStack_28`, `local_24` obscuring the array purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`sequential_ops`, `nested_if_2`, `duffs_device`). Helper functions like `op_add`, `double_value` are clear. Only a few show generic names like `FUN_00101020`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic hex numbers appear without explanation (`0x3e9`=1001, `0x65`=101, `0x1e`=30). Original source had decimal values with comments explaining expected results.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`local_10 = *(long *)(in_FS_OFFSET + 0x28)`) repeated in many functions. External wrappers like `puts` show redundant variable assignments (`iVar1 = puts(__s); return iVar1;`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while instead of for (`loop_for_fixed`). `switch_fallthrough` uses if-else instead of switch. `duffs_device` has complex goto-based structure hard to follow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized with clear boundaries. Helper functions (`op_add`, `op_sub`) properly separated. Test functions (`test_control_flow_l1`) are overly long but cohesive.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom but `loop_multi_exit` uses goto labels (`LAB_00101adc`, `LAB_00101aed`). `duffs_device` has complex jump structure disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Stack canary checks repeated across functions. Some redundant assignments (`iVar1 = param_1 * 2; if (param_1 < 1) { iVar1 = param_1; }`). No obvious dead code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: `op_div` returns `undefined [16]` instead of proper struct. `state_idle` returns `bool` but source returned `int`. `nested_if_deep` returns `char` instead of `int`. Function pointers shown as `code *` without signatures.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays in `loop_break` shown as stack variables with complex addressing (`(&iStack_28)[uVar1]`). No struct definitions visible. Function pointer arrays recovered as local arrays without type clarity.
+
+**11. Type Safety:** Score: 5/10  
+Justification: `UNRECOVERED_JUMPTABLE` marker in `call_func_ptr` indicates unsafe function pointer handling. `call_func_ptr_array` has stack canary but type mismatches. Some parameter type confusion (uint vs int).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: ZERO comments in decompiled output. Original source had extensive comments explaining each function's purpose, test cases, and expected values. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Loop patterns recognized but not named. Switch statements sometimes recovered as if-else chains. State machine pattern in `state_machine` not identified. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `UNRECOVERED_JUMPTABLE` marker present in `call_func_ptr`. `<EXTERNAL>` markers for library functions. No explicit warnings about uncertain decompilation or stack layout issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: n > 0"). No postcondition inference. Error conditions not documented. Original source had test validation comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear but global variable usage (`jump_buffer`) not well documented. Callback relationships visible but not explicitly documented. No call graph information.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No header file separation. Static functions not properly scoped. No namespace or logical grouping visible.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External function declarations present but `op_div` return type issue would cause compilation errors. Would require stubs for `__printf_chk`, `__stack_chk_fail`. Some type mismatches need patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+7+6+7)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.933
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.24/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Zero comments** - Original source had extensive documentation; decompiled output has none
+- **Generic variable names** - `param_1`, `iVar1`, `uVar1` obscure semantic meaning (should be `temp1`, `sum`, `count`)
+- **Type precision loss** - `op_div` returns `undefined [16]` instead of proper return type; `nested_if_deep` returns `char` instead of `int`
+- **Control flow degradation** - Switch statements recovered as if-else chains; loops as do-while instead of for
+- **Stack artifacts pollution** - Repeated `__stack_chk_fail()` checks and frame pointer manipulation in every function
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved (`sequential_ops`, `duffs_device`, `nested_if_deep`), making function purpose immediately clear
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments loses all semantic documentation from original source including test cases, expected values, and algorithm explanations
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how variables are used (e.g., `iVar1` accumulates values → name it `sum`; `iVar1` counts iterations → name it `count`)
+2. **Add decompiler confidence annotations** - Mark uncertain recoveries with comments like `// DECOMPILER UNCERTAIN: indirect call target` or `// RECOVERED: switch statement`
+3. **Recover original type information from debug symbols** - Since compiled with `-g`, leverage DWARF debug info to restore precise types instead of generic `int`/`undefined`

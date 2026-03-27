@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `iVar2`, `uVar2`, `lVar1`) instead of semantic names like `sum`, `count`, `result` from source. "Unresolved local var" comments appear frequently indicating failed recovery.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`sequential_ops`, `recursion_factorial`, `switch_fallthrough`). A few generic names exist (`FUN_00100940`) but core logic functions retain original semantics.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in hex format (`0x14`, `0x1e`, `0x32`) obscure meaning. Test functions show hardcoded expected values instead of actual function calls, making verification impossible.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: DWARF debug comments clutter code (`DW_OP_breg0`, `DW_OP_plus`). Multiple "WARNING: Removing unreachable block" and "Unresolved local var" annotations add visual noise without semantic value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic structures (if/else, for, while) recovered well. However, `if_elseif_long` transformed to formula (`x * 100 + 100`), and `duffs_device` shows severe goto-based degradation with switch labels.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Helper functions properly separated (`double_value`, `op_add`, `state_idle`). Test functions are bloated with hardcoded printf calls rather than actual function invocations.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. `duffs_device` and `computed_goto` have significant non-linearity with goto labels disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant type casts throughout (`(int)`, `(ulong)`, `(uint)`). Test functions have repetitive printf patterns. Duff's device shows code duplication in switch case labels.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` dominates where `int32_t`, `uint32_t` would be precise. Function pointer types partially recovered (`_func_int_int*`). No const-correctness preserved from source.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays recovered (`matrix[3][4]`, `funcs[3]`, `ops[10]`). No struct/union recovery demonstrated in this code sample. Array initialization shows element-by-element assignment pattern.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present. Warnings like "Could not recover jumptable" and "Treating indirect jump as call" indicate unresolved type safety issues in function pointer calls.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("WARNING:", "Unresolved local var"). No algorithm explanations, API contracts, or semantic documentation. DWARF comments are technical noise.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Loop patterns recognized (for/while/do-while). State machine pattern visible in `state_machine` but not explicitly named. Duff's device structure visible but not identified as such.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings present for jumptable recovery failures and unreachable blocks. However, warnings are generic without precise descriptions of what analysis failed or manual review recommendations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: n > 0"). No postcondition inference. Error conditions not documented. Test functions show expected values but not as formal contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code. Callback relationships visible in `process_with_callback`. No call graph documentation or global variable usage transparency.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in somewhat logical order with test functions grouped. Helper functions scattered throughout. No header file structure or namespace organization visible.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Ghidra-specific types (`_func_int_int*`, `undefined8`) require stubbing. External dependencies (`__printf_chk`, `___stack_chk_guard`) need proper declarations. Would require moderate modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (4+5+6+3)/4 = 4.50 × 0.15 = 0.675
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.533
+
+Overall Score: 5.55/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- Variable `iVar1`, `iVar2` should be named `sum`, `count`, `result` based on usage patterns
+- Test functions contain hardcoded expected values instead of actual function calls, breaking verification
+- DWARF debug comments (`DW_OP_breg0`, `DW_OP_plus`) clutter code without semantic value
+- `duffs_device` control flow severely degraded with goto labels instead of recognized loop+switch pattern
+- No contract documentation for functions with preconditions (e.g., `duffs_device` requires `n > 0`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source, enabling immediate semantic understanding of purpose
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - Virtually no precondition, postcondition, or error condition documentation recovered from source comments or inferred from code patterns
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable name inference** - Analyze variable usage patterns to suggest semantic names (e.g., accumulator variables → `sum`, counter variables → `count`)
+2. **Recover test function call structure** - Instead of hardcoding expected values, reconstruct actual function calls with proper arguments for verification
+3. **Filter DWARF debug metadata** - Move low-level debug information to separate annotation layer rather than inline comments that clutter readable code

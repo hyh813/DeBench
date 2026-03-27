@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `local_14`, `uVar1`), providing no semantic hint about their purpose. While stack objects like `aSStack_30` hint at the type (`SimpleClass`), the lack of meaningful names for local variables significantly impedes understanding.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Function names are highly accurate and semantically meaningful, successfully recovering the original C++ names (e.g., `test_cpp_member_func`, `SimpleClass::getValue`). Template instantiations are also clearly demangled (e.g., `template_max_int_`), aiding identification.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals are preserved correctly (e.g., `"Test"`, `"Derived"`), but magic numbers like `0x1234` (ClassID) and `0x1e` (30) are not replaced with named constants. The use of hex for simple decimal values adds unnecessary translation overhead.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is cluttered with verbose standard library internals (e.g., `std::__uniq_ptr_impl`, `std::_Tuple_impl`) and stack canary checks (`__stack_chk_fail`). This low-level noise obscures the high-level logic of the test functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is severely degraded in `test_cpp_exception`, where the `try/catch` block is completely missing, leaving only the `throw` logic. Other functions use `goto` (e.g., `LAB_00011954` in `test_cpp_rtti`) for simple conditionals, deviating from the original structured flow.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: User-defined functions are well-decomposed, but the inclusion of complex standard library logic (like `std::unique_ptr` construction) within test functions makes them bloated. Lambda operators are correctly separated but add verbosity.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While mostly top-to-bottom, the use of `goto` labels for error handling and conditional checks disrupts the linear reading experience. Forward jumps are present but manageable in non-exception code.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: Minimal optimization redundancy is present due to `-O0`, but the verbose expansion of standard library abstractions (like `std::move` and tuple forwarding) creates a form of logical redundancy that clutters the code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are recovered with high precision, correctly identifying classes, templates, and standard library containers. However, Ghidra occasionally uses generic types like `undefined4` instead of specific integer types.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Class structures are correctly recovered with accurate field offsets, though the view relies heavily on pointer arithmetic (e.g., `*(int *)(this + 4)`) rather than clean field access syntax. The struct definitions are implied but not explicitly shown in the decompiled view.
+
+**11. Type Safety:** Score: 6/10
+Justification: Frequent explicit casts (e.g., `(Base *)&local_38`, `(int *)operator_new(4)`) are necessary for the C++ ABI but reduce the perceived type safety of the decompiled C code, making it look potentially unsafe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: The decompiled code lacks meaningful comments entirely. Complex logic like vtable initialization, exception handling mechanisms, or the purpose of specific variables is left unexplained.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: C++ idioms like virtual dispatch are exposed as raw indirect calls (`(***(code ***)param_1)`) rather than being abstracted or annotated as "virtual call". This requires the analyst to manually recognize the pattern.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: Significant anomalies, such as the complete absence of control flow for exception handling in `test_cpp_exception`, are present but not flagged or explained by the decompiler.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No attempt is made to document function contracts, preconditions, or invariants. The logic stands alone without context regarding valid input ranges or expected states.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Cross-references to vtables and external functions are clear (e.g., `PTR_virtual_func_000145f0`), though the relationship between a vtable pointer and its specific class methods requires manual navigation.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order (mostly address-based), and related class methods are grouped, maintaining a reasonable module structure that mirrors the source's organization.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses Ghidra-specific types (`undefined4`, `code`) and relies on implicit definitions, making it non-compilable without significant modification and stub creation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- **Control Flow Failure in Exceptions:** The function `test_cpp_exception` completely fails to recover the `try/catch` control flow, showing only the `throw` path.
+- **Generic Variable Naming:** Variables are overwhelmingly generic (`iVar1`, `local_14`), requiring constant cross-referencing to understand their purpose.
+- **Standard Library Noise:** Complex internals of `std::unique_ptr` and `std::tuple` are inlined, obscuring the high-level logic of `test_cpp_smart_ptr`.
+- **Raw Virtual Calls:** Virtual function calls are presented as raw pointer dereferences (`(***(code ***)param_1)`) without semantic annotation.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 8/10)
+- Ghidra's demangler successfully recovered the original C++ function names and template instantiations, making it easy to locate specific logic.
+
+**Most Needs Improvement:** Comment Quality & Presence (Score: 2/10)
+- The complete lack of comments on complex C++ constructs (like vtable setup or exception handling) makes the code significantly harder to reverse engineer than necessary.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Exception Handling Recovery:** Improve control flow analysis to reconstruct `try/catch` blocks rather than just showing the throw and unwind calls.
+2.  **Variable Renaming Heuristics:** Implement type-based and usage-based renaming (e.g., renaming `this` pointers or return variables) to reduce the prevalence of `iVar1` and `local_XX`.
+3.  **Standard Library Abstraction:** Detect and simplify common standard library patterns (like `std::unique_ptr` construction) to hide implementation details and present a cleaner, higher-level view.

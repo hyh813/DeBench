@@ -1,0 +1,97 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `a1`, `a2`. The original source uses meaningful names like `obj`, `r1`, `r2`, `pb`, `pd`, `data`, `size`. Only a few variables like `str`, `base`, `derived` are descriptive.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Function names are mangled C++ symbols (`_Z20test_cpp_member_funcv`, `_ZN4Base12virtual_funcEi`). While demangled versions appear in comments (e.g., "Demangled: test_cpp_member_func()"), the actual function names remain unreadable. The original uses clear names like `test_cpp_member_func`, `call_virtual_func`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `0x125c` appears without explanation in test_cpp_member_func. String literals are UTF-8 encoded (e.g., `\xe6\xb5\x8b\xe8\xaf\x95`). Some constants like `31` for strncpy length are contextually clear. Mixed clarity overall.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts observed. No redundant casts from type promotions, no debug instrumentation, no __asm__ blocks. The code is relatively clean without obvious dead code from register spilling.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural control flow matching source (simple returns, basic conditionals). However, `test_cpp_exception` has convoluted logic with confusing conditional checks like `(int32_t)&g22 != 1` that obscures the try-catch structure. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. Test functions are appropriately sized. Some virtual function stubs are trivially small (just `return;`), which is acceptable for -O0. Parameter lists are reasonable but expose implementation details (e.g., `int32_t *result` for `this` pointer).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal jumps. Early returns used appropriately. Some forward jumps exist in exception handling but are manageable. No excessive nesting (>4 levels) observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. Loop unrolling is minimal (appropriate for -O0). Common subexpression elimination artifacts are not significant. Clean code overall.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` for most integers, `float64_t`/`float32_t` for floats, `char*` for strings. However, class instances are represented as `int32_t *` pointers (e.g., `int32_t *a1` for Base*), losing the class type. The `this` pointer is awkwardly passed as first parameter.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Vtable structures are recovered (`vtable_1187c_type`, `vtable_11894_type`) with function pointers. However, class member fields are not recovered - the decompiler uses raw pointer arithmetic (e.g., `*(int32_t *)(v2 + 4) = 10;` instead of proper struct access). No meaningful struct field names.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: pointer arithmetic like `*(int32_t *)(v2 + 4)`, casting `int32_t` to pointers. Function pointers in vtables are properly typed. The code has moderate type safety issues but can be reasoned about.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10  
+Justification: Comments provide useful metadata: address ranges, line numbers, demangled names, "From class:" annotations. However, no algorithm explanation, no documentation of non-obvious logic, no decompilation confidence indicators. Sparse but technically useful.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ patterns are implicitly recovered: vtable structures for virtual functions, exception handling via `__cxa_throw`/`__cxa_begin_catch`, template instantiation as separate functions. However, these patterns are not explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly indication in the code. Uncertain calls or indirect dispatches are not flagged. The decompiler presents code confidently even where resolution was incomplete (e.g., virtual function calls through vtables).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. No error condition documentation. The decompiler provides no contract information about what functions expect or guarantee.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes at top show call relationships. Global variables are declared. However, no comments about "Calls:" or "Called by:" relationships. Virtual dispatch relationships through vtables are not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Code is logically grouped: prototypes first, globals, then functions. Matches single-source structure of original. Static vs. global scope not explicitly distinguished in output but functions are in reasonable order.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes necessary headers (`stdint.h`, `stdio.h`, `string.h`). Function prototypes provided. Should compile with minimal patching. External dependencies (C++ runtime functions like `__cxa_throw`) are declared but not defined.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable names are exclusively generic (`v1`, `v2`, `v3`, `a1`, `a2`) making code flow extremely difficult to track
+- Function names remain mangled (`_Z20test_cpp_member_funcv`) instead of using demangled versions
+- Class member fields not recovered - uses raw pointer arithmetic (`*(int32_t *)(v2 + 4)`) instead of struct field access
+- No anomaly indication for uncertain indirect calls through vtables
+- Exception handling logic is convoluted with unclear conditional expressions
+
+**Best Quality Aspect:** Noise Reduction (8/10)  
+- Code is clean from compiler artifacts, no redundant casts or debug instrumentation
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Generic variable names completely obscure semantic purpose; every variable requires mental mapping from usage pattern
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `v2 + 4` accessing offset suggests field access; variables used as loop counters should be named `i`, `j`)
+2. Use demangled function names as actual identifiers, not just comments
+3. Recover class/struct layouts with meaningful field names instead of raw pointer arithmetic
+4. Add anomaly indicators for indirect calls that couldn't be fully resolved
+5. Recover try-catch block structure from exception handling runtime calls

@@ -1,0 +1,134 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Nearly all variables use generic names like `param_1`, `param_2`, `local_c`, `local_10`, `local_14`. For example, in `sequential_ops`, parameters should be `a, b, c` but are `param_1, param_2, param_3`. In `loop_for_fixed`, `local_10` should be `sum` and `local_c` should be `i`. This severely impedes understanding.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Function names are excellently preserved - `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `recursion_factorial`, etc. all match the original source exactly. The decompiler correctly recovered all 40+ function names.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Several magic numbers lack explanation: `0x66666667` (division by 10 optimization), `0x3e9` (=1001), `0x65` (=100), `0xe` (=14). However, some constants like loop bounds are readable. The duffs_device implementation has unexplained `7` and `8` constants.
+
+### 4. Noise Reduction
+**Score: 7/10**
+Justification: Code is relatively clean with minimal compiler artifacts. Some stack frame manipulation visible but not excessive. No debug instrumentation or obvious garbage code. The `CONCAT44` macro in `loop_while` is a minor artifact.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural and idiomatic. Loops are correctly rendered as `for` and `do-while`. Switch statements are properly identified. The `goto_backward` function correctly recovered the loop structure. Minor issue: `goto_forward` doesn't explicitly show the goto label but the logic is clear.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Each function is appropriately sized and maintains single responsibility. The 40+ functions are well-separated. No over-fragmentation or monoliths. Parameter lists are reasonable, though they expose implementation details through generic names.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. Some forward jumps in switch statements but manageable. The `duffs_device` has complex control flow with computed goto patterns that are hard to follow.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No obvious dead code. Loop unrolling in `duffs_device` is present but represents actual compiled code structure. Some common subexpression patterns but nothing severe.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Most types are generic `int` or `undefined4`. The decompiler uses `uint` for unsigned operations in `op_and`, `op_or`, `op_xor`. Function pointers use generic `code*` type. No `int32_t` or `size_t` precision. The `volatile` qualifier is lost in function signatures.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+Justification: Arrays are partially recovered - e.g., `local_20[4]` for the array in `loop_break`. However, field names are generic indices. The matrix in `loop_multi_exit` uses scattered stack variables instead of a proper 2D array structure. No struct recovery visible.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Generally type-safe code. Some unsafe patterns: the `code*` function pointer type is too generic. The `opaque_predicate` uses `SCARRY4` which is unusual. No major buffer overflow risks detected in the recovered code.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: No meaningful comments in the decompiled output. The source had extensive comments explaining each function's purpose and test cases, but these are completely lost. No algorithm explanations, no decompilation confidence indicators, no API contracts.
+
+### 13. Idiom Recognition
+**Score: 6/10**
+Justification: Some patterns recognized: switch statements, loops, recursion. The `duffs_device` is correctly identified as a switch-based construct. However, no explicit naming of patterns like "state machine", "callback pattern", or "Duff's device" in comments.
+
+### 14. Anomaly Indication
+**Score: 4/10**
+Justification: No explicit anomaly flags. The indirect function calls in `call_func_ptr_array` and `fsm_func_table` could not be fully resolved but no warnings are present. The `computed_goto` uses raw addresses without indicating this is a computed jump pattern.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants documented. The source had test cases verifying behavior (e.g., "期望: 21" for sequential_ops), but these are completely lost. No error condition documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function call relationships are implicit in the code (e.g., `test_control_flow_l1` calls all L1 functions). However, no explicit documentation of who calls whom or global variable usage. The callback relationships in `process_with_callback` are clear from the code itself.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically - all L1 functions together, L2 functions together, etc. Static functions like `double_value`, `triple_value` are properly scoped. The overall organization mirrors the source file structure.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+Justification: Code would require significant patching to compile. External dependencies: `printf`, `puts`, `memset`, `abort`, `longjmp`, `_setjmp`, `__stack_chk_fail`, `__aeabi_idiv`, `__aeabi_idivmod`, `__aeabi_idiv0`, `raise`. The `code*` type is non-standard. No header declarations provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 5 + 7) / 4 = 5.75
+L2_avg = (8 + 8 + 7 + 7) / 4 = 7.50
+L3_avg = (6 + 5 + 7) / 3 = 6.00
+L4_avg = (3 + 6 + 4 + 2) / 4 = 3.75
+L5_avg = (5 + 7 + 6) / 3 = 6.00
+
+Overall = (5.75 × 0.30) + (7.50 × 0.25) + (6.00 × 0.20) + 
+          (3.75 × 0.15) + (6.00 × 0.10)
+        = 1.725 + 1.875 + 1.20 + 0.5625 + 0.60
+        = 5.96/10
+```
+
+**Overall Readability Score: 5.96/10**
+
+---
+
+### Critical Defects
+- **Variable naming**: All parameters use `param_N` and locals use `local_X` naming, making it extremely difficult to track variable purposes across functions
+- **No comments**: Complete loss of source code comments explaining algorithms, test cases, and expected behavior
+- **Type precision**: Generic `int`/`undefined4` types throughout, losing `int32_t`, `size_t`, and `volatile` qualifiers
+- **No contracts**: Preconditions, postconditions, and invariants completely absent from decompiled output
+- **Magic numbers**: Unexplained constants like `0x66666667`, `0x3e9`, `0x65` obscure computational logic
+
+### Best Quality Aspect
+**Function Naming Quality (9/10)** - The decompiler excellently preserved all 40+ function names from the original source, making it easy to identify each function's purpose.
+
+### Most Needs Improvement
+**Variable Naming Quality (2/10)** - The generic `param_N` and `local_X` naming scheme severely impedes understanding. Each variable's semantic purpose is obscured, requiring constant cross-referencing to understand even simple operations.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns**: Use data flow analysis to rename `param_1` to `a` in `sequential_ops` based on it being the first argument and used in addition. Rename `local_10` to `sum` in `loop_for_fixed` based on accumulation pattern.
+
+2. **Recover comments from debug symbols**: The source was compiled with `-g` (debug symbols). Extract DWARF information to recover variable names, function prototypes, and potentially source comments.
+
+3. **Add semantic annotations**: Include comments explaining recognized patterns (e.g., "// Duff's device: optimized memory copy"), flag indirect calls that couldn't be resolved, and document magic numbers with their computed values.

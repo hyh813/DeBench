@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `idx`, `ptr`) or positional (`[bp-0x10]`, `[bp-0xc]`). The original variables like `a`, `b`, `c` in `local_vars` are completely lost, replaced with stack offsets. Even meaningful operations like `global_counter` are sometimes shown as cryptic addresses like `g_24008`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`) correctly match source names. However, many CRT/internal functions use generic `sub_XXXXX` naming (e.g., `sub_105b4`, `sub_106d8`). Static helper functions like `static_helper` are correctly identified.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently for error returns without explanation. String literals shown as hex addresses (`0x13734`, `0x13890`) instead of actual strings. The constant `147636` appears without context. No named constants recovered from source.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe pollution from stack canary checks (`GLIBC_2.4::__stack_chk_guard` comparisons and `__stack_chk_fail()` calls) clutter every function. "Other Possible Types" annotations add confusion. The `__aeabi_read_tp()` calls for TLS are noise. Dead code patterns like `if (1)` in `register_tm_clones` are present.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow is nearly source-equivalent. Loops correctly recovered as `for` loops (e.g., `for (idx = 0; idx <= 9; idx += 1)`). Conditionals are straightforward. Minor awkwardness in some error handling paths but overall natural.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Each function performs a single logical operation. No 500-line monoliths. Parameter counts match original (e.g., `heap_basic(unsigned int a0)` correctly has 1 parameter). Static functions properly identified.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Early returns for error conditions (NULL checks) are appropriate. Some forward jumps in error paths but manageable. No excessive nesting (>4 levels) observed.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some loop unrolling visible but minimal. Common subexpressions like `(a0 >> 31) + a0 >> 1` for division appear but are compiler artifacts at -O0. Overall clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `unsigned int` almost universally, losing sign information from original `int`. Function pointers shown as `unsigned int` instead of proper function signatures. `void*` correctly used for malloc/calloc. Size calculations like `a0 * 4` for `int` arrays are correct but verbose.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Partial struct recovery with generic names: `struct_0`, `struct_1` with fields `field_0`, `field_4`. Original `Point` struct completely lost - fields accessed as `ptr[0]`, `ptr[1]` instead of `p->x`, `p->y`. The `Node` structure partially recovered but wrong. The `TreeNode` has incorrect field typing.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: pointer arithmetic like `ptr + idx * 4` without bounds checking. Cast-heavy code: `*((unsigned int *)((char *)ptr + 4 * idx))`. Function pointer type confusion in `call_global_callback`. Some alignment-unsafe accesses in `memop_unaligned_access`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Nearly absent comments. Only auto-generated annotations like "do not return" on abort calls. No explanation of algorithm logic, no recovery confidence indicators, no @param/@return documentation. The decompiled code is bare except for type hints.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns visible: malloc/free pairs, linked list traversal (while loop with `iter->field_4`), tree creation/traversal. But no explicit naming or documentation of these patterns. The "memory leak" pattern in `memory_leak` is correctly not free'd but not flagged.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: "Other Possible Types" annotations appear but are confusing rather than helpful. No warnings about potential undefined behavior (e.g., `dangling_pointer` accessing freed memory). No flags for indirect calls that couldn't be resolved. The `__asm volatile("" ::: "memory")` barrier is completely lost.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No precondition, postcondition, or invariant recovery. Error handling is just `if (!ptr) return -1` with no documentation of what -1 means. No contracts like "requires: n > 0" or "ensures: return is heap-allocated". Completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: `extern` declarations show external dependencies. Function calls are clear. But no call graph documentation, no "called by" / "calls" comments. The relationship between `static_helper` and `call_static_func` is not explicitly documented. Global variable usage is marked but not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in reasonable order matching source file structure. Test functions grouped together. Memory operation functions grouped. Static functions properly marked. However, CRT/crt0 functions interleaved with application code.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Uses standard C library functions (malloc, free, memset, printf). Should compile with minor fixes. Missing includes. Some type mismatches (returning unsigned int vs int). The `__sync_*` intrinsics are compiler-provided. Overall patchable but not standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+7+4+3)/4 = 4.25
+L2_avg = (8+8+7+7)/4 = 7.50
+L3_avg = (5+4+5)/3 = 4.67
+L4_avg = (2+4+3+1)/4 = 2.50
+L5_avg = (5+7+6)/3 = 6.00
+
+Overall = (4.25 × 0.30) + (7.50 × 0.25) + (4.67 × 0.20) + 
+          (2.50 × 0.15) + (6.00 × 0.10)
+        = 1.275 + 1.875 + 0.934 + 0.375 + 0.600
+        = 5.059/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All local variables are generic (`v0`, `v1`, `idx`, `ptr`) or positional (`[bp-0xN]`), completely losing semantic meaning like `arr`, `n`, `local`
+- **Struct recovery failure**: Original `Point` struct fields (`x`, `y`) accessed as `ptr[0]`, `ptr[1]`; `Node` and `TreeNode` partially recovered with wrong field names
+- **Noise pollution**: Stack canary checks (`__stack_chk_guard`, `__stack_chk_fail()`) injected into every function, obscuring logic
+- **No comments**: Zero semantic comments explaining algorithms, contracts, or anomalies
+- **Type degradation**: All `int` converted to `unsigned int`, losing sign semantics; function pointers shown as `unsigned int`
+
+### Best Quality Aspect (Single Dimension)
+- **Control Flow Naturalness (8/10)**: At -O0, loops and conditionals are nearly source-equivalent, making execution flow easy to follow
+
+### Most Needs Improvement (Single Dimension)
+- **Assertion & Contract Recovery (1/10)**: Completely absent - no preconditions, postconditions, or error semantics documented anywhere in the decompiled output
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Use data flow analysis to rename `v0` to `arr` when used as array, `n` when used as loop bound, `ptr` when used as malloc result
+2. **Recover struct layouts with semantic field names**: Analyze allocation sizes and field access patterns to reconstruct `Point {x, y}` instead of `ptr[2]`
+3. **Add semantic comments**: Include algorithm explanations, contract hints (e.g., "requires: n > 0"), and anomaly warnings (e.g., "dangling pointer access after free")

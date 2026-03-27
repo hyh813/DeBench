@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are generic stack offsets like `local_38`, `uStack_2c`, and `puVar1`, completely losing semantic meaning from names like `obj`, `r1`, or `capture_by_value`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Ghidra successfully demangled C++ symbols, preserving exact names like `test_cpp_virtual_func`, `Container<int>::push`, and `template_max<int>`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Logic is often replaced by pre-calculated magic numbers (e.g., `return 0x2a` instead of `6+15+6+15`), though some partial calculations remain (e.g., `strlen(...) + 0x125c`).
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Code contains significant type noise (`undefined4`, `undefined8`) and stack padding assignments (`local_15 = 0;`) that obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: The control flow is linear and readable, but this is largely because the compiler optimized away complex branches and loops, leaving only simple returns or direct calls.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Template instantiations and class methods are correctly separated into distinct functions (e.g., `Container<int>::push` vs `Container<double>::push`), maintaining good granularity.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code reads strictly top-to-bottom with no confusing jumps or goto spaghetti, which is typical for heavily optimized code where control flow has been simplified.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The compiler removed almost all redundancy; the decompiler presents the lean result without dead code or unnecessary variables.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: While function signatures are often correct (due to demangling), local variables and parameters are frequently typed as `undefined8` or `undefined4` instead of `int`, `char*`, or class pointers.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Struct members are completely lost; access is done via raw pointer arithmetic offsets (e.g., `*(int *)(this + 0x28)`) instead of field names like `size` or `data`.
+
+**11. Type Safety:** Score: 2/10
+Justification: Extensive use of `undefined` types and raw pointer arithmetic on `this` pointers makes the code look unsafe and difficult to reason about.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to generic Ghidra warnings (e.g., "Unknown calling convention") and provide no insight into the algorithm's purpose or the meaning of optimized constants.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: C++ idioms like virtual dispatch are visible as raw vtable calls (`(*(code *)**(undefined8 **)param_1)`) but are not explicitly labeled as polymorphism.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Ghidra correctly flags the indirect jump in `call_virtual_func` as a potential jumptable issue, which is helpful for understanding the vtable mechanism.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants; for example, the null check in `Container::get` is present but not semantically documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls to standard library (e.g., `operator_new`, `strlen`) and other test functions are clear, aided by the preserved function names.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are grouped, but C++ namespaces and class hierarchies are flattened; the relationship between `Base` and `Derived` is only visible in vtable offsets, not structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on `undefined` types and would not compile without significant manual type definition and header inclusion.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Composite types (structs/classes) are not recovered; members accessed via raw offsets (e.g., `this + 0x28`).
+- Local variables lack semantic names, using generic `local_XX` or `uStack_XX` instead of `obj` or `result`.
+- High-level logic is often replaced by magic numbers (e.g., `0x2a`) due to compiler optimization, obscuring the original algorithm.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly demangled C++ symbols, making the API surface and test entry points immediately identifiable.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The failure to recover class layouts (fields for `SimpleClass`, `Container`, etc.) forces the reader to interpret raw pointer arithmetic, which is the biggest barrier to understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve type propagation to recover struct field layouts from constructor usage patterns (e.g., `this + offset = value`).
+2. Annotate return constants that are clearly the result of constant folding with the original expression or a comment (e.g., `/* 0x2a (42) */`).
+3. Infer local variable names from context, such as naming `this` pointers or variables passed to known constructors.

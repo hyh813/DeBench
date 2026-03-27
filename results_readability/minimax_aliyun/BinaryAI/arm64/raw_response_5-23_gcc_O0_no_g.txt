@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `param_1`, `param_2`, `param_3` with no semantic meaning. Local variables are named `local_4`, `local_8`, `local_10` etc. These provide no indication of their purpose (e.g., `size`, `count`, `result`). The original source used meaningful names like `size`, `x`, `y`, `result` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions retain their original names (e.g., `param_macro_constants`, `call_asm_basic`, `param_dynamic_code`). However, some internal functions have generic names like `FUN_00100880`. The core functionality functions are well-named, matching the source function names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear throughout without explanation: `0x401` (should be MAX_SIZE=1024), `0x200` (should be 512), `0x40` (should be 64), `0xdef0` (platform constant), `0x10` (ADD_16). The decompiler correctly computed the values but lost the symbolic constant names. String literals like "Hello World" are hardcoded but not explained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Stack canary checks (`___stack_chk_guard`) appear but are expected at -O0 with stack protection. No redundant casts or debug instrumentation. The code is relatively clean except for some internal Ghidra constructs.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with if-else statements properly reconstructed. Loops use standard for constructs. The conditional compilation in source (`#ifdef DEBUG_MODE`) is correctly resolved to the active branch. At -O0, control flow should closely match source, which it does.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are well-separated with appropriate granularity. Each test function (`param_*`, `call_*`) is distinct. The original source's function boundaries are preserved. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without excessive jumps. Early returns are used appropriately (e.g., in `param_dynamic_code` when mmap fails). No forward jumps into loop bodies. Nesting depth is reasonable (typically 2-3 levels).
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. The inline assembly in source is correctly replaced with equivalent C code (since arm64 doesn't use x86 assembly). Loop unrolling is minimal since this is -O0. Code is clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types are heavily generic. Parameters use `int` or `undefined8` instead of specific types like `int32_t`, `size_t`. The decompiler uses `undefined4`, `undefined8` for uninitialized values losing type information. `size_t` is used correctly in some places (e.g., `param_asm_multi_insn`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union types are recovered. The source uses arrays like `int arr[]` which decompiles to pointer arithmetic (`*(int *)(param_1 + (long)local_4 * 4)`). The `header_func` inside `#ifndef MOCK_HEADER_H` is correctly identified as a static function but no struct recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns present. Pointer arithmetic is explicit (`param_1 + (long)local_4 * 4`). Casts like `(void *)0x0` for NULL. No bounds checking visible. However, no obviously dangerous operations like type-confused function pointers.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining each test case (e.g., "// PP-L2-01: 宏定义常量 ⭐"). None of this semantic information is recovered. No explanation of what each function tests.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are recognizable (array summation loop, memory copy via memcpy). However, the macro expansions (SQUARE, MAX, ADD_16) are correctly simplified to their computed values but the original macro semantics are lost. The inline assembly patterns are replaced with C but not documented as such.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of anomalies or uncertainties. The decompiler doesn't flag that inline assembly was replaced with fallback code, or that conditional compilation branches were resolved. No warnings about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The source had error handling (e.g., `if (exec_mem == MAP_FAILED) return -1;`) which is preserved but not explained. No contracts like "requires: ptr != NULL" are added.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (e.g., `param_macro_constants(0x800)`). However, the relationships between functions (which calls which) aren't explicitly documented. The caller functions (`call_*`) calling `param_*` functions are obvious but not annotated.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing tests first, then assembly tests, then main/test functions. External library functions (printf, memcpy, mmap) are clearly marked as `<EXTERNAL>`. Static functions like `header_func` are properly identified.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code has many external dependencies (printf, mmap, sysconf, memcpy) that aren't explicitly declared with headers. The decompiled code would require significant patching to compile (adding includes, defining types like `EVP_PKEY_CTX`). No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic `param_N` and locals use `local_N`, completely losing semantic meaning (e.g., should be `size`, `x`, `y`, `result`)
+- **No comments**: Zero documentation of what each function does or tests, losing all the original source's explanatory comments
+- **Magic numbers**: Constants like `0x401`, `0x200`, `0x40` appear without explanation of what they represent (MAX_SIZE, 512, 64)
+- **Type precision loss**: Uses `undefined4`/`undefined8` and generic `int` instead of specific types like `int32_t`, `size_t`
+- **No struct recovery**: Arrays and structures are reduced to raw pointer arithmetic
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+Control flow is well-reconstructed with natural if-else statements and proper loop constructs. At -O0, the decompiled flow closely matches the original source structure.
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+The decompiled code has zero comments. The original source had extensive documentation explaining each test case, macro purpose, and expected results. This semantic information is completely lost in decompilation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1 > 0x401` suggests `param_1` is a size/limit value) to suggest semantic names
+2. **Recover macro semantics**: When macros are expanded (e.g., `MAX_SIZE` → 1024), add comments showing the original macro name and purpose
+3. **Add semantic comments**: Include basic documentation explaining what each function tests or computes, especially for test/benchmark code

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables like `acStack_2c`, `local_d`, `local_c`, `iVar1`, `pvVar1`, `uVar2` are completely generic. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier` - all lost in decompilation. Cannot infer semantic purpose from these names.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some test functions correctly named (`test_cpp_member_func`, `test_cpp_constructor`), but template functions have odd suffixes like `template_max_int_`, `template_swap_int_`. Many generic names like `FUN_000109bc` exist. External functions properly marked with `<EXTERNAL>::` prefix.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Many magic numbers without explanation: `0x1f` (buffer size), `0x14` (object size), `0xc`, `0x10`, `0x96` (150 decimal), `0xfa` (250 decimal). Offsets like `+4`, `+8`, `+0xc` are unexplained. No named constants for what should be `sizeof(name)`, `instance_count`, etc.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`__stack_chk_fail`) add noise. Many external function stubs that just call themselves recursively. Duplicate function definitions (e.g., `MultiDerived::funcB` appears twice at 0x11214 and 0x1121c, `MiddleA::func` appears twice). Some compiler artifacts present.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Control flow mostly preserved for simple functions. However, `call_virtual_func` uses a bizarre triple-indirect call pattern `(***(code ***)param_1)()` which is incorrect - should be `param_1->virtual_func(param_2)`. At -O0, expect better recovery of virtual dispatch.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but exhibit problems: duplicate definitions for some methods (likely Ghidra artifact), template instantiations have odd mangled names, some destructors have multiple variants (non-virtual and virtual).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Some forward jumps exist in complex functions like `test_cpp_rtti` but are manageable. Early returns used appropriately in some functions.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Significant redundancy - duplicate function definitions (e.g., `MultiDerived::funcB` at 0x11214 and 0x1121c, `MiddleA::func` at 0x11224 and 0x1123c, `DiamondDerived::func` appears three times). This makes code confusing and appears to be decompiler artifacts.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `undefined4`, `undefined8`, `undefined*`, `undefined` extensively instead of proper types. Some correct types like `int`, `char*`, `size_t` present. Template type parameters lost - should be `Container<int>` and `Container<double>` but shown as `Container_int_` and `Container_double_`.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct/class recovery visible. All composite types are raw pointer arithmetic. Original had classes like `SimpleClass` with `value` and `name[32]`, `LifecycleClass` with `data` and `size` - all lost. Access is through raw offsets like `*(undefined4 *)((int)pvVar1 + 4)`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Extensive raw pointer arithmetic throughout (e.g., `(int)pvVar1 + 4`, `this + 4`, `this + *(int *)(*(int *)this + -0xc)`). Unsafe casts prevalent. No bounds checking visible. Virtual inheritance access patterns are particularly unsafe and complex.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Very limited comments - mostly just function signatures. No explanation of complex logic, virtual table mechanisms, or template instantiation. Original source had rich comments explaining each test case - none recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some C++ patterns partially visible but not named or explained. Virtual function mechanism is visible through vtable access but not documented. Template instantiation pattern visible but unclear. Exception throwing pattern visible but not explained.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of anomalies or uncertainties. `call_virtual_func` has incorrect implementation (doesn't pass parameters to virtual function) but no warning. Duplicate function definitions not flagged. Complex virtual inheritance offset calculations not explained.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contracts recovered. Original had clear semantics like "requires: idx < size" for `getData()` - not recovered. Preconditions, postconditions, and invariants not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Some relationships visible through naming (e.g., `test_cpp_member_func` calls `SimpleClass` methods). Virtual dispatch relationships not clearly documented. Static member access (`LifecycleClass::instance_count`) visible but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped somewhat logically by test case. However, duplicate definitions create confusion. External functions scattered throughout. No clear separation between test functions and class implementations.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Multiple issues prevent compilation: duplicate function definitions (multiple `MultiDerived::funcB`, `MiddleA::func`, `DiamondDerived::func`), missing `#include` statements, unresolved external declarations, incorrect function signatures (e.g., `call_virtual_func` returns void but should return int).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects:
+- **No composite type recovery**: All class/struct members accessed via raw pointer arithmetic (e.g., `*(undefined4 *)((int)pvVar1 + 4)` instead of `obj.value`)
+- **Duplicate function definitions**: Multiple identical functions (e.g., `MultiDerived::funcB` at 0x11214 and 0x1121c) create confusion
+- **Incorrect virtual function call**: `call_virtual_func` uses `(***(code ***)param_1)()` which doesn't pass parameters - should be `param_1->virtual_func(param_2)`
+- **No type information**: Uses `undefined4`, `undefined8` instead of proper types like `int`, `size_t`
+- **No comments or documentation**: Original source's explanatory comments completely lost
+
+### Best Quality Aspect: Control Flow Naturalness (6/10)
+- At -O0, basic control flow structures are preserved
+- Loops and conditionals generally readable
+- Early returns used appropriately
+
+### Most Needs Improvement: Composite Type Recovery (1/10)
+- Original C++ classes completely lost
+- All access is raw pointer arithmetic with magic offsets
+- Should reconstruct classes like `SimpleClass`, `LifecycleClass`, `Container<T>` with proper member names
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover class/struct types**: Analyze vtable layouts and constructor patterns to reconstruct C++ classes with meaningful member names instead of raw pointer arithmetic
+2. **Eliminate duplicate function definitions**: Deduplicate functions that appear multiple times due to different code paths reaching same logic
+3. **Fix virtual function call resolution**: Ensure virtual dispatch is correctly decompiled with proper parameter passing, not triple-indirect calls

@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic single-letter names with numbers (v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11). No semantic meaning like "instance_count" or "result" is recovered, making it impossible to track variable purposes without analyzing usage patterns.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: While C++ mangled names like `_Z20test_cpp_member_funcv` are partially decoded to `test_cpp_member_func()`, most utility functions remain as `sub_1030`, `sub_1040` with no semantic meaning. Init functions and runtime thunks lack descriptive naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals like `"Test"` string and simple constants (5, 10, 20) are preserved, but magic numbers like `0x14u` (stack canary offset) and `0x1234` (class ID) appear without explanation. The value `4700` in test_cpp_member_func is a computed constant not explained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe pollution from C++ runtime initialization code (20+ sub_XXXX functions for init), empty assembly stubs like `__x86.get_pc_thunk.bx`, and 22 failed-to-decompile functions. The actual test logic is buried under runtime artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Test functions like `test_cpp_member_func` follow relatively natural top-to-bottom flow. However, virtual function calls use indirect dispatch patterns that obscure control flow. The exception test shows incomplete catch handling.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Member functions are properly separated (Base::virtual_func, Derived::virtual_func). Template instantiations are separate functions. Test functions are reasonably sized (20-50 lines). Minor issue: some thunk functions add fragmentation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom without excessive jumps. Virtual function thunks add some complexity with pointer adjustments. The diamond inheritance test has two sequential calls that could be clearer.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code in test functions. Loop unrolling is minimal. Some repetition in virtual thunks (similar patterns for MiddleA/MiddleB/DiamondDerived) but not severe enough to impede understanding.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `_DWORD` for 32-bit ints, `__int64` for 64-bit, `char*` for strings. However, many pointers are generic `_DWORD*` instead of proper types. The `operator new` returns are typed but not semantically meaningful.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery - all classes are completely lost. Data members accessed via raw pointer arithmetic like `*(_DWORD *)(a1 + 40)` instead of `this->size`. Vtables shown as `off_XXXX` addresses rather than structured vtable types.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns present: casting between int* and _DWORD* freely, pointer arithmetic without bounds (e.g., `*(_DWORD *)(a1 + 4 * v2)`). Virtual thunk pointer adjustments use raw arithmetic. No restrict or alignment annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated comments like "positive sp value has been detected, the output may be wrong!" No useful algorithm explanations, no decompilation confidence indicators, no @param/@return documentation. The comment about "failed to decompile" is useful but minimal.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are implicitly present (virtual dispatch via vtable, template instantiation, exception throw) but not explicitly named or documented. The virtual thunk pattern is not explained. Lambda and smart pointer patterns not recognized as such.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One useful warning about stack pointer anomaly. However, many indirect calls (virtual function calls, callbacks) are not flagged with uncertainty indicators. The "failed to decompile" list is helpful but doesn't explain why.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. No bounds checking documentation. The original source had no explicit assertions but the decompiler provides no inference about expected states.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear within test functions. Class relationships (inheritance) partially visible through vtable names but not documented. No call graph or usage context provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are somewhat grouped (test functions together, member functions together, templates together) but in a single flat list. No namespace or class structure organization. Related functions scattered.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: 22 functions failed to decompile including critical functions like `__printf_chk`, `strlen`, `__cxa_throw`. The code references undefined symbols and won't compile standalone. No dependency documentation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable names are exclusively generic (v0-v11), completely losing semantic meaning like "instance_count" or "result"
+- No struct/class recovery - all data members accessed via raw pointer arithmetic (e.g., `*(_DWORD *)(a1 + 40)`)
+- 22 external functions failed to decompile, leaving gaps in the code
+- No comments explaining algorithms, virtual dispatch, or template instantiation
+- Type system completely lost - no class structures, just raw memory access
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Member functions are properly separated, template instantiations are distinct functions, and test functions have reasonable granularity.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Every variable is a generic v0-v11 name, making it nearly impossible to understand code without tracing all usage. This is the most fundamental readability failure.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: If a variable is incremented in a loop and used as array index, name it "index" or "i". If it's used in strlen() or string operations, name it "string" or "buffer".
+2. **Recover class/struct layouts**: Analyze constructor patterns and vtable access to reconstruct class structures with named fields instead of raw pointer arithmetic.
+3. **Add semantic comments for C++ patterns**: Document virtual function dispatch, template instantiation, and exception handling with explanations of what the original code likely looked like.

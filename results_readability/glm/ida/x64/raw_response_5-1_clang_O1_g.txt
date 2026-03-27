@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (e.g., `v0` through `v9` in `test_cpp_rtti`, `v0`, `v1` in `test_cpp_constructor`). The `SimpleClass` object in `test_cpp_member_func` is reduced to a raw byte array `_BYTE s[31]`, losing all semantic context of the class members.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: C++ symbols are demangled perfectly (e.g., `Base::virtual_func`, `Container<int>::push`). Complex thunks are accurately named (e.g., `virtual thunk to'MiddleA::func()`), providing excellent insight into the class hierarchy and vtable layout.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like `"12RTTIDerivedA"` are preserved, but integer logic is often obscured by constant propagation. For example, `test_cpp_operator_overload` returns `22` directly, hiding the original arithmetic and comparison logic defined in the source.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The output is generally clean, though it retains low-level artifacts like `__fastcall` annotations and `JUMPOUT(0)` in `sub_2020`. The representation of vtables as `int (**)(void)` adds necessary but slightly noisy type syntax.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loop structures like `do-while` in `test_cpp_constructor` are natural, but complex logic in `test_cpp_rtti` results in messy pointer arithmetic and nested `if` statements. The `try-catch` blocks in `test_cpp_exception` are lost, represented only by the `__cxa_throw` call.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Class methods are correctly separated into individual functions with accurate signatures. However, the test functions themselves suffer from aggressive inlining or reduction (e.g., `test_cpp_lambda` is just `return 85`), making the decomposition of the *test logic* poor.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code reads mostly top-to-bottom without confusing backward jumps or spaghetti logic. The flow is easy to follow in the recovered member functions, even if the test drivers are optimized.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: The decompiler accurately reflects the compiler's work. For instance, `test_cpp_template_func` is reduced to `return 39`. While this loses source steps, it is a clean representation of the binary's actual execution.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: User-defined types like `MultiDerived` and `Container<int>` are recovered with high precision. However, standard library types like `std::unique_ptr` are opaque, and local objects like `SimpleClass` are often decayed into byte arrays on the stack.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Complex inheritance layouts are recovered well. `MultiDerived` correctly shows two vptrs (`_vptr$BaseA`, `_vptr$BaseB`) and data members. `DiamondDerived` shows the vtable structure required for virtual inheritance, which is difficult to recover accurately.
+
+**11. Type Safety:** Score: 6/10  
+Justification: The code contains necessary casts for C++ ABI implementation, such as `(_DWORD *)operator new[]` and pointer arithmetic in thunks `(char *)v0 - 16LL`. These are technically "unsafe" C but accurate representations of the compiled code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: There are virtually no comments explaining the logic, algorithms, or C++ runtime mechanisms. The user is left to interpret raw vtable calls and RTTI checks without guidance.
+
+**13. Idiom Recognition:** Score: 9/10  
+Justification: The decompiler excels at identifying C++ idioms. Virtual dispatch is clearly shown as `(*obj->_vptr$Base)(obj, x)`, and RTTI checks reference `typeinfo for'...`. This high-level semantic recognition is a major strength.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Functions like `test_cpp_exception` are marked `__noreturn`, which is helpful. However, the extreme constant propagation (e.g., functions returning only a constant) is not flagged, which might mislead users into thinking the source code was that trivial.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The logic for bounds checking in `Container::get` is visible but not explicitly annotated as a safety contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Vtable pointers reference specific offsets (e.g., `&off_59C8`), and type info names are embedded in the code. While explicit "Calls/Called By" lists aren't in the snippet, the naming conventions allow easy tracing of the class hierarchy.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are listed in address order. While standard for decompilers, it groups unrelated functions together (e.g., destructors of different classes interleaved), requiring manual effort to reconstruct the original file structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code relies on implicit definitions of standard library functions and compiler runtime support (`__cxa_throw`, `operator new`). It would require significant stubbing to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.3/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`v0`, `v1`), making data flow tracking difficult.
+- Constant propagation obscures source logic (e.g., `test_cpp_operator_overload` returns `22` instead of showing the math).
+- Stack objects are often typed as raw byte arrays (e.g., `_BYTE s[31]`) rather than their class types.
+- Lack of comments explaining complex C++ runtime features like vtable thunks or RTTI.
+
+**Best Quality Aspect:** Idiom Recognition (Score 9/10)  
+- The decompiler expertly identifies C++ constructs like virtual calls, multiple inheritance thunks, and RTTI structures, preserving high-level semantic meaning.
+
+**Most Needs Improvement:** Variable Naming Quality (Score 3/10)  
+- The reliance on sequential generic names (`v0`, `v1`, `s`) severely hinders the ability to understand what data is being manipulated.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve stack variable typing to recover class instances (e.g., `SimpleClass obj`) instead of defaulting to byte arrays.
+2. Implement heuristics to rename variables based on context (e.g., loop counters, return values) to reduce generic `v` names.
+3. Add annotations when a function body is heavily optimized to a constant return value to alert the analyst that source logic is missing.

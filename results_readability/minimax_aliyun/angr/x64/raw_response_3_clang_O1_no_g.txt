@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v0, v1, v2, v3, ptr, idx, i) with no semantic meaning. The original source had meaningful names like `a`, `b`, `c`, `arr`, `leak`, but these are completely lost. Even stack variables like `v4`, `v5`, `v6` provide no indication of their purpose.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Every function uses mechanical naming (sub_401020, sub_40102c, sub_401209). The original function names `local_vars`, `heap_basic`, `global_var_access`, `memory_leak`, `double_value` are completely lost. Even `main` is labeled as `sub_402240`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are hardcoded in test functions (e.g., `printf("MEM-L1-01 (local_vars): %d\n", 20)`), but magic numbers like `4294967295` (unsigned -1) appear without explanation. The value `0x800` for 2048 is unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; clean output overall. Some unusual constructs like `[D] MBusEvent-Imbe_Fence()` for memory barriers and duplicate variable declarations (`unsigned int ptr[6];` appearing twice in heap_realloc), but these don't significantly impede reading.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper if/else and while loops. The startup code in sub_401020 uses `goto g_406010` which is unusual, but main logic flows naturally. At -O0, loop constructs are correctly recovered.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. Each test function (test_stack_memory, test_heap_memory) calls individual test cases. No obvious over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. The startup code has some goto usage, but the core functions like local_vars, heap_basic, and memory operations are linear and easy to follow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some loop unrolling present in test functions (e.g., manual unrolled loops in test_stack_memory), but this is expected in test harness code.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - some functions have proper signatures like `unsigned int heap_basic(unsigned int a0)`, while others use generic `unsigned long long`. The original `int` types are often converted to `unsigned int`. Function parameters like `a0`, `a1` don't indicate their types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct types are reconstructed but with generic names (struct_0, struct_1, struct_2). Field names are generic (field_0, field_8, padding_4). The Node structure in linked_list_heap becomes `struct_0 { unsigned int field_0; char padding_4[4]; struct struct_0 *field_8; }` losing the `data` and `next` semantics.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally type-safe code with few unsafe casts. Some pointer arithmetic issues (e.g., in heap_overflow: `ptr += 1` in a loop with `i += 100`). The dangling_pointer function correctly shows the use-after-free pattern.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled output. No explanation of what functions do, no recovery notes, no uncertainty indicators. The original source had extensive comments (MEM-L1-01, HEAP-L2-01, etc.) which are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like malloc/free pairs are visible, but no explicit naming or documentation of patterns. The linked list creation, tree building, and memory leak patterns are present but not identified as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some anomalies marked with `[D]` prefix (e.g., `[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] MBusEvent-Imbe_Fence()`), but this is inconsistent. No indication of indirect call resolution failures or uncertain patterns.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No pre/postcondition documentation. No recovery of assertions like `if (n <= 0 || n > 1000) return -1;` being a input validation contract. Error return values (-1, -2) are not documented as error codes.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Some extern declarations present (e.g., `extern unsigned int global_counter;`), but no clear documentation of call relationships. The test functions call many sub-functions but there's no indication of the call graph.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in address order rather than logical grouping. The original organized code (stack memory, heap memory, static memory, memory operations) is not reflected in the decompiled output structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Many functions have incomplete signatures (missing parameters, wrong return types). The test functions require the main harness to call them properly. Some functions like `double_value` are correctly recovered but others need significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Function names completely lost (all `sub_XXXXXX` instead of `local_vars`, `heap_basic`, etc.)
+- Variable names are generic (v0, v1, ptr, idx) with no semantic meaning
+- No comments explaining what any function does
+- Struct field names lost (field_0, field_8 instead of data, next, left, right)
+- Test functions have hardcoded values instead of showing actual computation
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+- Loop constructs and conditional logic are correctly recovered from -O0 code
+
+**Most Needs Improvement:** Function Naming Quality (2/10)  
+- Every function name is a mechanical address label, completely losing the original semantic names that would immediately convey purpose to a reverse engineer
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover function names from debug symbols**: The source was compiled with `-g`, so debug symbols should contain the original function names like `local_vars`, `heap_basic`, `global_array_access`
+2. **Infer variable names from usage patterns**: Variables used as array indices should be named `idx` or `index`, loop counters should be `i`, `j`, pointers to heap should be `ptr` or `buffer`
+3. **Add semantic comments for test functions**: When decompiling test harnesses, explain what each test case validates rather than hardcoding expected values

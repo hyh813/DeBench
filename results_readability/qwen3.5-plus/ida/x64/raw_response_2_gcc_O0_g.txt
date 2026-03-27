@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Mix of meaningful names (`sum`, `i`, `value`, `vol_value`) and generic decompiler names (`v0`, `v1`, `v16`). Function parameters are well-named (`arr`, `n`, `p`, `x`) but local temporaries obscure intent.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`double_value`, `process_char`, `array_1d_stack`, `struct_simple`). Only startup/runtime helpers use generic names (`sub_1020`, `init_proc`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `65`, `90`, `32` used instead of `'A'`, `'Z'`, character offset. No named constants recovered. Floating point literals preserved well (`1.5`, `2.0`, `0.1`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readfsqword(0x28u)`) present in every test function. Redundant intermediate variables (`v0`, `v1`, `v2`) for return values. Type casts like `(__int64)` add visual noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as `for` constructs correctly. `enum_switch` converted to if-else chain instead of switch statement. Simple conditionals are clear and idiomatic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. No excessive inlining or fragmentation. Each function has single responsibility matching original design.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom. Variable declarations at function start (C-style) rather than at point of use. Some forward references in complex functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant pattern in `pointer_array`: `v2 = n; if (n > 10) v2 = 10;` instead of `min(n, 10)`. Some duplicate variable assignments for return value handling.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char`, `float`, `double`) but `long` becomes `__int64`. `long double` preserved. Function pointer signatures degraded (`ptr_func_complex` has messy 8-parameter call signature).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct types referenced (`Point3D`, `Rect`, `Widget`) but definitions NOT shown in output. Bitfield access converted to manual bit manipulation (`(*(_BYTE *)f >> 3) & 7`). Union field access preserved but type undefined.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `*(_DWORD *)p`, `*(char *)p`, `(void *)size`. `ptr_func_complex` call has 8 parameters when original had 2 - signature corruption. `volatile` semantics lost in `volatile_access` (optimized to `2 * *p`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only decompiler header comments present. Zero logic explanations. No algorithm documentation. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Linked list traversal, tree recursion, and graph traversal patterns not identified. No design pattern labeling. Common C idioms not annotated.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (`FAILED to decompile: __libc_start_main`). `ptr_func_complex` messy call not flagged. No warnings about volatile optimization loss.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`). No postconditions inferred. Array bounds checks not annotated. Error conditions undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear through preserved names. No call graph documentation. Global variable references (`s`, `asc_3180`) use opaque names instead of string content.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source sections. Test functions grouped together. No explicit module boundaries but logical grouping preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Struct definitions missing (won't compile). 6 external functions marked FAILED. Would need significant stubbing and type definitions to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6 + 8 + 5 + 5) / 4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):  (7 + 8 + 7 + 6) / 4 = 7.00  × 0.25 = 1.75
+Level 3 (Type):        (6 + 4 + 5) / 3   = 5.00  × 0.20 = 1.00
+Level 4 (Semantic):    (2 + 3 + 5 + 2) / 4 = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):  (6 + 7 + 4) / 3   = 5.67  × 0.10 = 0.57
+
+Overall Score: 5.57/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Struct/union type definitions missing** - Types referenced but not defined, preventing compilation and understanding
+- **Zero semantic comments** - Original source had extensive comments; all lost in decompilation
+- **Function pointer signature corruption** - `ptr_func_complex` call has 8 parameters instead of 2
+- **Volatile semantics lost** - `volatile_access` optimized to `2 * *p`, losing double-read guarantee
+- **Magic numbers without context** - Character values as integers (65, 90, 32) instead of `'A'`, `'Z'`
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Decompiler successfully preserved original function names for nearly all user-defined functions, maintaining semantic clarity at the function level.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of logic explanations, algorithm documentation, or any semantic guidance beyond function names.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve type definitions** - Output struct/union/enum definitions alongside function code to enable compilation and understanding
+2. **Infer and insert semantic comments** - Analyze function patterns to generate explanatory comments (e.g., "Linked list traversal", "Character case conversion")
+3. **Preserve volatile semantics** - Detect volatile-qualified pointers and maintain double-read patterns instead of optimizing them away

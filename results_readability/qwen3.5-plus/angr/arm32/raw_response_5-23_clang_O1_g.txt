@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `a0`, `a1`, `v0`, `v1`, `ptr` instead of semantic names like `size`, `counter`, `increment`. Only `dst`, `src`, `idx`, `result` provide minimal context.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`param_macro_constants`, `call_asm_basic`), but runtime helpers use mechanical names (`sub_4004ec`, `sub_4005c8`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `57072`, `282`, `0x400`, `0x200` replace original constants (`MAX_SIZE`, `BUFFER_COUNT`). String literals preserved but lack context about their purpose.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Runtime initialization functions (`_init`, `deregister_tm_clones`, `frame_dummy`) add noise. Variable redeclaration bug in `param_memory_protection` (`unsigned int *ptr;` appears twice).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions use natural if-else and loop constructs. However, `call_weak_fn`, `deregister_tm_clones` use goto patterns instead of structured control flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches original source well. However, some functions are over-simplified (`call_macro_constants` just returns 64) losing call relationship clarity.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Goto usage in initialization functions disrupts flow but core logic functions are well-linearized.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `param_asm_multi_insn` calls `memcpy` twice with same arguments. `test_preprocessing_features` has duplicate `printf(&g_40115e, 382)` calls.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `unsigned int` instead of `int32_t`, `size_t`. `param_asm_simd` uses `unsigned int` for pointer parameters instead of `int*`. Lost const-correctness from original.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No structs/unions in this code to recover. Arrays handled correctly (`g_401280[4]`). Limited opportunity to evaluate this dimension.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Critical bug in `param_asm_clobber`: `ptr` used uninitialized in `return *(ptr) + v1;`. Pointer arithmetic in `param_asm_simd` uses unclear cast patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining macros, assembly semantics, and expected values. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Macro expansions folded to constants but not identified (e.g., `ADD_16(x)` → `x + 16` without noting macro origin). Assembly patterns not recognized as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about the `param_asm_clobber` bug. No indication that inline assembly was simplified to C equivalents. Silent failures on architecture-specific code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for mmap results). No postconditions or error handling contracts recovered from original assertions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear but global variables use opaque names (`g_412008`, `g_40103b`). No call graph documentation or callback relationship indicators.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but preprocessing and assembly sections intermixed. No header file structure or logical module separation preserved.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies (`__atomic_fetch_add_4`, `__libc_start_main`) need stubs. Architecture mismatch (ARM vs original x86_64) affects portability.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+8+5+5)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):   (7+7+7+5)/4 = 6.50  × 0.25 = 1.625
+Level 3 (Type System):  (5+7+4)/3   = 5.33  × 0.20 = 1.067
+Level 4 (Semantic):     (2+4+3+2)/4 = 2.75  × 0.15 = 0.413
+Level 5 (Contextual):   (5+5+5)/3   = 5.00  × 0.10 = 0.50
+
+Overall Score: 5.255/10 ≈ 5.3/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable `ptr` in `param_asm_clobber` is used uninitialized** - returns `*(ptr) + v1` without initialization, causing undefined behavior
+- **Zero comments** - original had extensive documentation explaining macro semantics, assembly behavior, and expected values; none recovered
+- **Magic numbers without context** - `57072`, `282`, `0x400` replace named constants like `MAX_SIZE`, `BUFFER_COUNT`
+- **Redundant operations** - `param_asm_multi_insn` calls `memcpy` twice; `test_preprocessing_features` has duplicate printf calls
+- **Generic variable names** - `a0`, `a1`, `v0`, `v1` obscure parameter semantics (should be `size`, `x`, `y`, `result`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names were preserved accurately, maintaining semantic clarity about function purpose
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments loses all original documentation about macro behavior, assembly semantics, and expected values
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics** - Detect constant-folded expressions and annotate with original macro names (e.g., `// Originally: MAX_SIZE / 2`)
+2. **Add decompiler confidence indicators** - Flag simplified assembly code and architecture-specific transformations with warnings
+3. **Infer variable names from usage patterns** - Analyze parameter usage to suggest semantic names (e.g., first param in size comparison → `size`)

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `param_1`, `local_10`, and `iVar1`, providing no semantic hint about their purpose (e.g., `count`, `sum`, `seed`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the symbol table, matching the original source exactly (e.g., `cdecl_func`, `test_calling_conventions`).
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are replaced with opaque addresses like `DAT_00103020`, and magic numbers like `0x2a` (42) or `0x14` (20) are not converted to their decimal or named constant equivalents.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While simple functions are clean, `varargs_func` contains verbose stack pointer arithmetic (`local_20 = (int *)&stack0x00000008`) and compiler warnings about dead code elimination.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally linear and easy to follow; `ret_multi_branch` uses an if-else chain instead of a switch, which is acceptable, and loops are correctly identified.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without artificial splitting or merging.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads naturally from top to bottom with minimal forward jumps or confusing control flow disruptions.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: Dead code is mostly absent; `param_array_decay` correctly simplifies `sizeof(arr)` to `8`, though this hides the source's semantic intent regarding array decay.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Significant type issues exist: `call_cdecl` is decompiled as `void` despite returning `int`, and `func_mixed_args` parameters are reordered by register location (XMM0, RDI...) rather than source order.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structs are poorly handled; `func_struct_byval` loses its `LargeStruct` parameter entirely (becoming `void func_struct_byval(void)`), and `ret_small_struct` returns `undefined8` instead of a struct.
+
+**11. Type Safety:** Score: 5/10
+Justification: The decompiler resorts to direct stack access (e.g., `*(long *)(&stack0x00000008 + ...)`) in `func_struct_byval`, bypassing type safety and treating memory as raw bytes.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Only auto-generated warnings (e.g., "WARNING: Restarted to delay deadcode elimination") are present; there are no comments explaining logic or API contracts.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard idioms are missed; `varargs_func` is decompiled into manual stack walking rather than using `va_list`/`va_arg` constructs.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: While unreachable blocks are flagged, there is no indication of the severe type mismatches (e.g., `call_cdecl` return value discrepancy) or missing struct parameters.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear, but string references are opaque data addresses, making it hard to see what is being printed without looking up the data.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source structure and grouping related tests together.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to references to `stack0x00000008`, `DAT_` addresses, and missing struct definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- **Struct Parameter Loss**: `func_struct_byval` is decompiled as `void func_struct_byval(void)`, completely losing the `LargeStruct` parameter and accessing stack memory via raw offsets.
+- **Varargs Obfuscation**: `varargs_func` is represented as manual stack pointer manipulation (`local_20 = (int *)&stack0x00000008`) instead of the standard `va_list` idiom.
+- **Return Type Mismatch**: `call_cdecl` is decompiled as `void` despite the source and its caller (`test_calling_conventions`) explicitly using an `int` return value.
+- **Parameter Reordering**: In `func_mixed_args`, parameters are listed in register order (XMM0, RDI, RSI...) rather than source semantic order, confusing the mapping of arguments.
+- **Uninitialized Variable Usage**: In `call_ret_large_struct`, the variable `local_c` is used in the return statement but appears uninitialized in the decompiled body, likely due to failed array/struct recovery.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved all original function names from the binary symbols, making high-level navigation trivial.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- The decompiler failed to recover struct parameters and return values, flattening them into `void` functions or raw integers/stack accesses, which destroys the semantic meaning of the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Improve Large Struct Parameter Analysis**: Enhance the analysis of hidden pointer parameters for structs passed by value to recover the correct function signature and struct type instead of defaulting to `void`.
+2. **Recognize Varargs Prologues**: Implement specific pattern matching for `va_start`/`va_end` sequences to reconstruct `va_list` loops rather than emitting raw stack pointer arithmetic.
+3. **Preserve Source Parameter Order**: When decompiling, prioritize the logical source order of parameters (if inferable from debug info or usage) over the physical register assignment order to avoid confusing the user.

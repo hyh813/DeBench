@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy`
+
+The original source shows `param_strcpy` is a simple wrapper that calls `strcpy(dst, src)` and returns `strlen(dst)`. The decompiled version uses `stpcpy(a0, a1) - a0`, which is an accurate recognition of the compiler's optimization (combining strcpy+strlen into stpcpy).
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names `a0`, `a1`, `a2` etc. Local variables are `v0`, `v1`, `v2`, `v3`, `ptr`, `count`, `result`. While some globals like `signal_received`, `signal_number`, `shared_counter` are well-named, the overwhelming majority are generic placeholders that obscure semantic purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: The target function `param_strcpy` is correctly identified and named. Other functions like `signal_handler`, `thread_compute`, `thread_sum`, `param_mutex_lock` are semantically accurate. However, many functions use auto-generated names like `sub_10ca8`, `sub_112cf`, `sub_112d0` with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals are shown as hex addresses (e.g., `0x13e40`, `0x13e64`) without recovery. Magic number `4294967295` appears frequently for -1 without explanation. Some format strings like `"Value: %d, Name: %s\n"` are properly recovered. The literal handling is inconsistent and often opaque.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts like redundant casts or debug instrumentation. Some unusual constructs like `armg_calculate_condition()` appear for conditional logic, but overall the code is relatively clean without excessive noise from register spilling or frame manipulation.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is readable with proper while/do-while loops. However, some goto-style jumps exist (e.g., `goto LABEL_11376`). The `param_strcpy` function has perfectly natural flow. Some complex functions like `param_thread_local_storage` have intricate branching that requires tracing.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized with good separation. The target function `param_strcpy` is a single line - appropriate. Thread-related functions (`thread_compute`, `thread_sum`, `thread_increment`) are properly decomposed. Some complex functions like `param_thread_local_storage` are large but that's expected given their functionality.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. Early returns are used appropriately (e.g., `param_strcpy` returns early). Some forward jumps exist in complex functions like `param_thread_local_storage` with labeled branches. The target function has perfect linearization.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Some duplicate calls (e.g., `param_fread_fwrite` called twice in `call_fread_fwrite`) but these are likely due to the decompiler's handling of return value optimization. Loop constructs are generally clean.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are correct: `int`, `char*`, `void*`, `unsigned int`. However, many parameters use generic `unsigned int` where `size_t` would be more appropriate. The `param_strcpy` correctly uses `char*` for strings. Some type erosion exists with everything being `unsigned int` in many function signatures.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct definitions are partially recovered (e.g., `struct FILE {}` at line 0x11928 is empty). The `ThreadData` struct is not recovered - instead raw pointer arithmetic is used. The sockaddr struct is partially reconstructed with field names like `sin_family`, `sa_data`. Overall, composite type recovery is incomplete.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Basic type safety is maintained - no obviously dangerous casts. Some concerning patterns like `*(int *)&v0` for accessing buffer contents. Pointer arithmetic is generally correct. The code doesn't have severe type safety violations but lacks annotations like `restrict` or `_Atomic` that would improve safety.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no meaningful comments exist. The decompiler provides minimal auto-generated comments like `/* do not return */` for functions like `abort()`. No explanation of algorithm logic, parameter purposes, or return value semantics. The target function has no comments explaining the stpcpy optimization.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some idioms are recognized: pthread patterns (`pthread_create`, `pthread_join`, `pthread_mutex_lock`), atomic operations (`__sync_fetch_and_add_4`), signal handling patterns. However, no explicit naming of patterns (e.g., "producer-consumer pattern" for condition variables). The stpcpy optimization for strcpy+strlen is recognized but not documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies are flagged with comments like `/* do not return */` for aborting functions. However, many uncertain constructs like `armg_calculate_condition(18, v0, 0, 0)` are presented without explanation. No flags for indirect calls that couldn't be resolved or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of error handling expectations. The function `param_strcpy` has no contract information (e.g., "requires: dst has sufficient space"). Error return values like -1 are magic numbers without explanation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (e.g., `pthread_create(v3, 0, thread_increment, &v0)`). Global variable usage is indicated with `extern` declarations. However, no explicit documentation of call graph relationships or callback relationships. The relationship between `param_strcpy` and `call_strcpy` is implicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - standard library functions, system calls, thread functions. Static functions like `signal_handler` are properly scoped. The organization generally matches the source file structure (test_standard_library_functions, test_system_calls, test_thread_concurrency).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code uses standard C constructs that should compile. External dependencies (libpthread, libc) are implicit. Some issues: undefined identifiers like `vvar_6`, `vvar_14`, `vvar_15` suggest decompilation artifacts. The `param_strcpy` function would compile cleanly.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming is overwhelmingly generic (`a0`, `a1`, `v0`, `v1`, `ptr`, `count`) with no semantic meaning
+- String literals shown as hex addresses (e.g., `0x13e40`) without string content recovery
+- No comments explaining any function logic, parameters, or return values
+- Composite types (structs) are poorly recovered - mostly raw pointer arithmetic
+- Magic number `4294967295` used for -1 error returns without explanation
+- Anomaly indication is minimal - uncertain constructs not flagged
+
+**Best Quality Aspect:** Control Flow Naturalness (6/10)  
+The control flow is generally readable with proper loops and conditional structures. The target function `param_strcpy` has perfectly natural, linear flow.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+The pervasive use of generic names like `a0`, `a1`, `v0`, `v1` makes it extremely difficult to track variable purposes. Combined with the lack of comments, understanding any non-trivial function requires significant reverse-engineering effort.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Variables used as loop counters should be named `i`, `j`, `iterations`; pointers to thread data should be named `thread_data` or similar based on the function they pass to
+2. **Recover string literals from data section**: Instead of `0x13e40`, display the actual string content (e.g., `"=== 测试标准库函数调用 ===\n"`)
+3. **Add semantic comments for non-trivial functions**: Document what each parameter represents, what the function returns, and any optimization artifacts (like stpcpy replacing strcpy+strlen)

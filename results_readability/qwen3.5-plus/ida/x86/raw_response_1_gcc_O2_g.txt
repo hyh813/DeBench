@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `result`, `temp`) with no semantic meaning. For example, `sequential_ops` uses no intermediate variables despite the source having `temp1`, `temp2`, `temp3`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions retained original names (`sequential_ops`, `recursion_factorial`, `double_value`), but helper functions are generic (`sub_1030`, `sub_1040`). Good recovery of test function names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers present without explanation (`0x14u` for stack canary, `100 * (x + 1)` patterns). Some literals like array sizes `[5]`, `[8]` are clear from context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__readgsdword(0x14u)` stack canary checks, register comments (`v0; // eax`), calling convention markers (`__cdecl`, `__usercall`), and inline assembly blocks.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control structures recovered well (if-else, loops, switches). However, `recursion_factorial` was transformed from recursive to iterative despite `-O0` compilation, and test functions use `goto` with labels.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with no monolithic structures. Test functions are long due to printf statements but remain cohesive.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Test functions use `goto` with labels (`LABEL_4`, `LABEL_7`) disrupting linear reading. Most other functions read top-to-bottom appropriately.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns from optimization (repeated printf in test functions). No significant dead code, but some duplicated comparison logic in switch cases.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Only generic `int` types used without precision markers (`int32_t`, `uint64_t`). Function pointer types partially recovered but lack full signature detail.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays recovered (`matrix[3][4]`, `funcs[3]`, `ops[10]`) but no struct definitions visible. All composite types represented as raw arrays.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Function pointers work correctly. Some unsafe casts present (`void *obj` to function pointers). No buffer overflow patterns detected.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments except decompiler warnings ("bad sp value", "FAILED to decompile"). No algorithm explanations or API documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns (loops, conditionals, switches) recognized structurally but not explicitly named or documented. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("FAILED to decompile: 7 functions", "bad sp value at call"). However, many potential issues go unmarked.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling contracts documented. No parameter validation comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but relationships not documented. No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single file with no logical grouping. No header files or namespace structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 7 functions failed to decompile (`__libc_start_main`, `_setjmp`, etc.). External dependencies undeclared, requiring stubs for compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (7+7+5+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (5+4+6)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+3+3)/3   = 3.67 × 0.10 = 0.367
+
+Overall Score: 4.84/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `result`) with no semantic meaning recovered
+- **Zero documentation** - no comments explaining algorithm logic or function purpose
+- **7 functions failed to decompile** including critical runtime functions (`__libc_start_main`, `_setjmp`)
+- **Architecture mismatch** - Original ARM64, decompiled shows x86 (`__cdecl`, `ebx`, `eax` registers)
+- **Optimization artifacts at -O0** - `recursion_factorial` converted to iterative despite debug compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `sequential_ops`, `recursion_factorial`, and `double_value` were successfully preserved from the original source, maintaining semantic clarity for the main logic.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation exists; even basic algorithm explanations or parameter descriptions are completely absent, making code understanding entirely dependent on reverse engineering.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer meaningful names (e.g., variables used in size checks should be named `size`, `count`, `length`)
+2. **Add decompilation confidence annotations** - Mark uncertain reconstructions with comments like `// DECOMPILER UNCERTAINTY: loop structure inferred from backward jump`
+3. **Recover function contracts** - Detect parameter validation patterns and document preconditions (e.g., `// REQUIRES: n > 0 for factorial calculation`)

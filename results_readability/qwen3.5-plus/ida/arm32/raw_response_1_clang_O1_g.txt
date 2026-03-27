@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `result`) instead of semantic names from source (`temp1`, `temp2`, `sum`, `count`). For example, `loop_for_fixed` uses `n` but loses `i` and `sum` entirely.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`sequential_ops`, `nested_if_2`, `switch_fallthrough`). A few anonymous functions exist (`sub_4DC`) but core test functions retain original names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (`0x12`, `0x1F7C`, `1001`). Original constants like expected test values are hardcoded in printf statements rather than named constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__fastcall` calling conventions, register annotations (`// r0`, `// r1`), and excessive type casts (`(__int64)`, `(unsigned int)`) clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some loops converted to formulas (`loop_for_fixed` uses arithmetic instead of iteration). `switch_fallthrough` uses goto labels instead of fall-through semantics. `goto_forward` logic is incorrectly transformed.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved reasonably well. No excessive inlining or fragmentation. Helper functions (`double_value`, `triple_value`) remain separate as in source.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps disrupt flow in `switch_fallthrough` (LABEL_5, LABEL_10) and `duffs_device`. Test functions have unusual control flow with pre-computed values.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions contain redundant printf statements with hardcoded expected values. Some expressions repeated (e.g., `v1 = -1` pattern in multiple switch functions).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used throughout instead of specific widths. Architecture mismatch (ARM 32-bit registers vs. ARM64 source). Function pointer types partially preserved but often generic.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays become opaque references (`dword_1974[]`, `dword_1988[]`). No struct recovery visible in this code sample. Matrix in `loop_multi_exit` loses 2D structure.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(__int64)`, `(unsigned int)(v1 + 9) > 0x12`). Function pointer calls use generic casting. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments in decompiled output. Original source had extensive documentation (test cases, expected values, difficulty ratings). Only auto-generated register hints present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not identified (no "loop unrolling", "Duff's device", "state machine" annotations). `opaque_predicate` and `obfuscated_cf` correctly simplified but not flagged as such.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**14. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables use opaque names (`dword_1974`, `off_12EBC`). 9 external functions marked "FAILED to decompile" without resolution hints.
+
+**15. Module Organization:** Score: 5/10  
+Justification: Flat structure with no logical grouping. Test functions mixed with implementation. No header file or API boundary documentation.
+
+**16. Build System Compatibility:** Score: 4/10  
+Justification: 9 functions failed decompilation (`__imp_printf`, `__imp_longjmp`, etc.). Requires stubs for external dependencies. Architecture metadata inconsistent (ARM64 source vs. ARM32 decompilation).
+
+**17. Optimization Consistency:** Score: 3/10  
+Justification: Critical issue: Source compiled with `-O0` (debug, no optimization) but decompiled code shows aggressive optimization (loop-to-formula conversion, switch-to-math). This indicates either wrong binary or decompiler over-optimization.
+
+**18. Semantic Correctness:** Score: 4/10  
+Justification: Several functions have incorrect logic: `goto_forward` computes `2 * x * v1` instead of original branching logic; `nested_if_2` restructures conditions incorrectly; `switch_fallthrough` doesn't preserve fall-through semantics accurately.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+7+5+6)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (5+5+5)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+3)/2     = 2.50 × 0.15 = 0.38
+Level 5 (Context):     (5+5+4+3+4)/5 = 4.20 × 0.10 = 0.42
+
+Overall Score: 4.74/10
+```
+
+**Overall Readability Score: 4.7/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`v1`, `v2`, `result`) losing all semantic meaning from source (`temp1`, `sum`, `count`)
+- **Optimization level mismatch**: Source compiled with `-O0` but decompiled code shows aggressive optimizations (loop-to-formula, switch-to-math)
+- **Zero documentation**: All original comments (test cases, expected values, difficulty ratings) completely lost
+- **Semantic errors in recovered logic**: `goto_forward`, `nested_if_2`, and `switch_fallthrough` have incorrect control flow
+- **Architecture metadata inconsistency**: Source says ARM64, decompilation shows ARM 32-bit registers (r0-r3)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names preserved accurately from source, making it possible to identify which function is which despite other readability issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation, test case information, or decompiler confidence indicators makes understanding intent extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve or infer semantic variable names** - Use data flow analysis to name variables based on usage patterns (e.g., accumulator variables → `sum`, loop counters → `i`, `j`)
+2. **Respect compilation flags in output** - When source is `-O0`, avoid aggressive restructuring; document when optimizations prevent accurate recovery
+3. **Add decompiler confidence annotations** - Flag uncertain recoveries with comments like `// DECOMPILER UNCERTAINTY: fall-through semantics may be incorrect`

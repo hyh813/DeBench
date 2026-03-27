@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v0`, `v1`, `a0`, `a1`, `v23`, `v24`) with zero semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `ptr`, `x`, `y` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test function names preserved (`cdecl_func`, `call_cdecl`, `varargs_func`), but helper functions use mechanical names (`sub_400654`, `sub_400730`). Names match source but implementation quality varies drastically.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers without explanation: `4294967295`, `18446743528248704968`, `316912650112397582603894390785`. Original source used clear expressions like `a + b` now obscured by bit operations.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: stack frame setup (`v0 = &v1`), register assignments, unsupported operations (`[D] unsupported_Iop_ZeroHI64ofV128()`), redundant `strlen` calls in `sub_400654`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions natural, but `varargs_func` has nested conditionals with goto labels (`LABEL_400988`). Many functions constant-folded to literal returns instead of showing actual computation logic.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but many reduced to constant returns (`call_cdecl` returns 15 directly). `varargs_func` is excessively complex (~150 lines) vs. original 12 lines.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read top-to-bottom, but complex functions have forward jumps disrupting flow. `varargs_func` has while(true) with goto that obscures the simple for-loop from source.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate operations present (`strlen(v0)` called twice in `sub_400654`). Register spilling creates redundant assignments (`v0 = v2; v1 = v3;`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Type degradation throughout: `int` becomes `unsigned int`, `long long` becomes `unsigned long long`. Function pointers become `unsigned long long *`. Original `va_list` completely lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered as `struct_0`, `struct_1` with generic `field_0`, `field_1` names. Original `LargeStruct.data[16]`, `SmallStruct.x/y` completely lost. `func_struct_byval` shows `return ...;` indicating incomplete recovery.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer casts throughout without warnings. `param_func_ptr` takes `unsigned long long *a0` but calls it as function `a0(a1)`. Type-confused operations in varargs handling.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Original source had extensive documentation (CALL-L1-01, PARAM-L1-01, etc.) completely absent. Only auto-generated type comments present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not recognized (should show `va_start`/`va_arg`/`va_end`). Calling convention differences not explained. Simple patterns like `return a + b` obscured by bit operations.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged (`[D] unsupported_Iop_ZeroHI64ofV128()`, `/* do not return */`), but most issues silent. Incorrect type conversions not warned about.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions recovered (e.g., `func_struct_byptr` should note `p != NULL`). Original null checks present but no contract documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but globals use opaque names (`g_4014a8`, `g_401752`). String references not resolved. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions in arbitrary order, no logical grouping. Original sections (4.1 Calling Conventions, 4.2 Parameter Passing) completely lost. No header structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies declared but unclear (`call_weak_fn`, `__gmon_start__`). Would require significant stubbing to compile. Architecture mismatch (ARM64 decompilation of x86-oriented source).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+5+5+5)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+2+4+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (4+4+4)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.71/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original (`count`, `sum`, `args`)
+- **Varargs function catastrophically decompiled** - 150+ lines of incomprehensible code vs. 12-line original with clear `va_start`/`va_arg`/`va_end` pattern
+- **Constant folding destroyed logic visibility** - functions like `call_cdecl` return literal `15` instead of showing `cdecl_func(5, 10)` call
+- **Struct field names lost** - `LargeStruct.data[16]` becomes `struct_0.field_0` through `field_3c`
+- **Type system degraded** - `int` → `unsigned int`, function pointers → `unsigned long long *`, `va_list` completely unrecoverable
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Test function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`), providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero documentation recovered despite original source having extensive comments explaining each test case, calling convention, and expected behavior
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement varargs pattern recognition** - Detect `va_list` stack patterns and recover `va_start`/`va_arg`/`va_end` idiom instead of generating 150 lines of register manipulation code
+2. **Preserve constant expressions in caller functions** - Don't constant-fold `call_cdecl()` to `return 15`; show the actual function call to preserve semantic relationships
+3. **Recover struct field semantics from debug info** - With `-g` flag present, field names like `data`, `x`, `y` should be recoverable instead of generic `field_0`, `field_1`

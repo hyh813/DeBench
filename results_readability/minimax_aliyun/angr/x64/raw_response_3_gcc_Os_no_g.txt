@@ -1,0 +1,161 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables use entirely generic names like `a0`, `a1`, `a2` for parameters and `v0`, `v1`, `v2`, `idx`, `ptr` for locals. The original source had meaningful names like `x`, `arr`, `n`, `i`, `leak`, `p`. Stack variables are shown as raw offsets like `[bp-0x8]`, `[bp-0x18]` with no semantic meaning.
+
+### 2. Function Naming Quality
+**Score: 6/10**
+
+Justification: Core functions like `double_value`, `local_vars`, `heap_basic`, `test_stack_memory` correctly match source names. However, many helper functions use mechanical names like `sub_401020`, `sub_40102d` with no semantic value. The test functions are well-named but implementation details lost.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently as error return without explanation. String literals are referenced via external addresses like `&g_403004` with no content visibility. Constants like `10`, `20`, `50` in test output are hardcoded rather than explained.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Justification: Significant compiler artifacts present including redundant variable assignments (`ptr = ptr;`), excessive type casts, and raw stack offset annotations. The VLA/alloca handling shows complex pointer arithmetic with expressions like `vvar_56{r48|8b}` that obscure logic.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Justification: Loops are correctly reconstructed as do-while constructs (e.g., `local_array` uses `do { ... } while (idx != 10)`). Conditionals are clear. Some goto usage in `call_global_callback` (`goto global_func_ptr;`) is awkward but functional. At -O0, control flow should be more transparent.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Functions maintain appropriate granularity matching source. Test functions properly separated from implementations. Core functions like `linked_list_heap` (50+ lines) are cohesive. Minor issue: some static helper functions could be better organized.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error checking. Some forward jumps in VLA handling but manageable. The `heap_realloc` function has nested conditionals that slightly disrupt flow.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: No significant dead code. Some loop unrolling visible in `large_stack_frame` but commented appropriately. The `ptr = ptr;` assignment is redundant but doesn't severely impact readability.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Uses `unsigned int`, `unsigned long`, `unsigned long long` but loses specificity (no `int32_t`, `size_t`). Function pointers declared as `unsigned long long` instead of proper function pointer types. Some signed/unsigned mixing visible in index calculations.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: Structs reconstructed with generic names (`struct_0`, `struct_1`, `struct_2`) and generic fields (`field_0`, `field_8`, `field_10`). Original had meaningful types like `Point`, `Node`, `TreeNode` with fields `x`, `y`, `data`, `next`. The `Node` struct in `linked_list_heap` shows correct size (16 bytes) but wrong naming.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Several unsafe operations: `heap_basic` accesses freed memory (`free(ptr); return *(ptr + ...)`). Pointer arithmetic in VLA handling is complex and error-prone. The `dangling_pointer` function correctly shows the use-after-free pattern but doesn't warn about it.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Almost no useful comments in the decompiled code. No algorithm explanations, no decompilation confidence indicators, no API contracts. Only `[D]` prefix marks some anomalies. The original source had extensive comments explaining test scenarios.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some patterns recognizable: linked list traversal in `linked_list_heap`, tree creation/traversal in `tree_heap_traversal`. However, no explicit naming or documentation of these patterns. Memory allocation/free patterns visible but not named.
+
+### 14. Anomaly Indication
+**Score: 4/10**
+
+Justification: Some anomalies flagged with `[D]` prefix (e.g., `[D] Unsupported jumpkind`, `[D] MBusEvent-Imbe_Fence()`). However, many issues silently handled: the use-after-free in `dangling_pointer`, the double-free in `double_free`, the buffer overflow in `heap_overflow` are not flagged.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No precondition/postcondition documentation. No invariant recognition. Error returns (like `4294967295` for -1) not explained as error codes. The original source had explicit parameter validation (e.g., `if (n <= 0 || n > 1000) return -1;`) but contracts not recovered.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: External functions declared with `extern` keyword. Global variables like `global_counter`, `file_scope_static` correctly identified. However, relationships not documented - no comments showing call graphs or usage patterns.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Justification: Functions logically grouped: stack functions, heap functions, static functions, memory operations. Test functions separated. Static vs extern functions appropriately marked. Minor issue: some helper functions (`sub_401020`, etc.) scattered inappropriately.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+Justification: Code requires significant patching to compile. Missing `#include` statements. External declarations incomplete. Some expressions like `v2 - *((long long *)(40 + v21))` in test functions are nonsensical. The `goto global_func_ptr;` won't compile in standard C.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 4 + 3) / 4 = 3.75
+L2_avg = (7 + 8 + 7 + 7) / 4 = 7.25
+L3_avg = (5 + 4 + 5) / 3 = 4.67
+L4_avg = (2 + 5 + 4 + 2) / 4 = 3.25
+L5_avg = (5 + 7 + 4) / 3 = 5.33
+
+Overall = (3.75 × 0.30) + (7.25 × 0.25) + (4.67 × 0.20) + (3.25 × 0.15) + (5.33 × 0.10)
+        = 1.125 + 1.8125 + 0.934 + 0.4875 + 0.533
+        = 4.89/10
+```
+
+**Overall Readability Score: 4.9/10**
+
+---
+
+### Critical Defects
+
+- **Variable naming**: Parameters `a0`/`a1`/`a2` and locals `v0`/`v1`/`v2` are completely generic; original names like `x`, `n`, `arr`, `ptr` lost
+- **Struct recovery**: All structs use generic names (`struct_0`, `struct_1`) and fields (`field_0`, `field_8`); original `Point`, `Node`, `TreeNode` types lost
+- **Use-after-free not flagged**: `heap_basic` and `heap_overflow` access freed memory without warning
+- **No comments**: Zero algorithm explanations, no decompilation confidence, no API contracts
+- **Magic numbers**: `4294967295` used everywhere as error return without explaining it's -1 cast to unsigned
+
+---
+
+### Best Quality Aspect
+
+**Function Decomposition (8/10)** - Functions maintain appropriate granularity matching source. Core logic properly separated into distinct functions with reasonable sizes.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - The decompiler uses entirely generic names (a0, v0, ptr) that completely obscure the semantic purpose of variables. At -O0, there's no excuse for not inferring meaningful names from usage patterns.
+
+---
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage**: Analyze how variables are used (e.g., `ptr` used in malloc/free = "buffer" or "heap_ptr"; `idx` in loop = "index")
+
+2. **Recover struct types**: Match memory layouts to known patterns (Node has data+next, Point has x+y) and assign meaningful names
+
+3. **Flag undefined behavior**: Mark use-after-free, double-free, and buffer overflow patterns with warnings since these are security-critical

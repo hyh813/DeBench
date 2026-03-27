@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `temp`, `ptr`) with no semantic meaning. Original source had meaningful names like `encrypted`, `decrypted`, `canary`, `div_zero_caught` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`param_fake_branch`, `main`, `test_obf_opt_edge`), but many functions use mechanical `sub_401XXX` naming. Wrapper functions like `sub_4012e5` that just call `param_fake_branch` add confusion.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `4294967295` (UINT_MAX), `90` (XOR key 0x5A), `8589934593` (unexplained constant). Original had `0xDEADBEEF`, `0x5A` with context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive wrapper functions (`sub_4012e5`, `sub_4012f7`, `sub_40130a`, etc.) that simply call the real function. Runtime initialization functions (`_init`, `sub_401020-4010c0`) clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Do-while loops used where simple for/while would suffice. The `param_opaque_predicate` function has convoluted GCD recovery with CONCAT operations obscuring the original clean while loop.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Severe over-fragmentation with wrapper functions for every call site. `call_fake_branch` and `sub_4012f7` both exist when one would suffice. Original had clean caller/callee separation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom within functions, but the proliferation of forward-declared wrapper functions disrupts overall flow. Loop bodies are reasonably linear.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Constant folding eliminated original logic entirely (`call_fake_branch()` returns 10 directly, `call_opaque_predicate()` returns 20). This loses the semantic intent of the obfuscation test.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types degraded to `unsigned long long`, `unsigned int` instead of specific `int32_t`, `size_t`, `char*`. Signal handler returns `long long` instead of `void`. Original type intent is obscured.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The bitfield struct from `param_implementation_defined` is completely lost—function just returns constant 47. Original had explicit `struct { unsigned int a:3; b:5; c:24; }`. Only one struct (`struct_0`) recovered with generic `field_0`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts visible (`(char)v4`, `(unsigned int)a0`). Pointer arithmetic in `param_vectorized_loop` uses `*((int *)(a1 + idx * 4))` instead of proper array indexing. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining obfuscation techniques, expected values, and test scenarios. Only one anomaly marker (`[D] Unsupported jumpkind Ijk_SigTRAP`).
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Opaque predicates not identified as such. GCD algorithm not recognized. String decryption loop not identified as XOR decryption pattern. Original had explicit `⭐⭐⭐⭐` difficulty markers.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (`Ijk_SigTRAP`). Signal handling simplifications not noted. Constant-folded functions that lost original logic not flagged as potentially misleading.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` requires signal handler setup). No postconditions. Original had explicit "期望" (expected) values for each test case.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g_403fe8`, `encrypted.0`, `jmp_buffer`) lack context about their purpose. Original had clear test harness structure.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Original had clear section headers (`7.1 混淆与保护`, `7.2 编译器特有优化`, `7.3 异常与边界情况`). No separation of test functions from implementation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Claims compilation success but has unresolved externals (`__libc_start_main`, `__printf_chk`, `__cxa_finalize`). Architecture mismatch (original arm64, decompiled AMD64) may cause issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+5+5+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+4+6+4)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (5+3+5)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.53
+
+Overall = 1.35 + 1.19 + 0.87 + 0.41 + 0.53 = 4.35/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Constant folding eliminated test logic**: `call_fake_branch()` returns 10 directly, losing the fake branch demonstration entirely
+- **Bitfield struct completely lost**: `param_implementation_defined` returns constant 47 instead of reconstructing the bitfield operations
+- **No comments despite extensive original documentation**: All explanatory comments, expected values, and section headers stripped
+- **Excessive wrapper function fragmentation**: Functions like `sub_4012e5` that just call `param_fake_branch` add noise without value
+- **Architecture mismatch unflagged**: Original arm64, decompiled AMD64—potential correctness issue not indicated
+
+### Best Quality Aspect: **Code Linearization (6/10)**
+- Individual functions generally read top-to-bottom with recognizable loop structures despite optimization artifacts
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of documentation loses all semantic context about obfuscation techniques, test expectations, and code purpose
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve constant expressions when they represent test semantics**: Don't fold `call_fake_branch(10)` to `return 10` when the branch logic is the test purpose
+2. **Recover and annotate composite types**: Bitfield structs should be reconstructed with field names, not eliminated to constant returns
+3. **Generate semantic comments from debug symbols**: With `-g` flag present, recover original comments, section headers, and expected test values

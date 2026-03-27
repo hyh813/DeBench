@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `uVar1`, `lVar2`) with no semantic meaning. For example, `array_1d_stack` uses `param_1` for array pointer and `param_2` for count instead of `arr` and `n`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`process_char`, `double_value`, `struct_simple`), but some are generic (`FUN_001006d0`, `FUN_0010087c`). Test functions correctly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation (`0x61`, `0x62`, `0xb`, `0xf`, `0x14`). Floating point constants shown as hex (`0x3fc00000`, `0x3fe0000000000000`) instead of decimal values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`) in every test function. Compiler runtime functions included (`__do_global_dtors_aux`, `register_tm_clones`). Floating point helpers (`__addtf3`, `__multf3`) are extremely verbose.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but complex functions like `__addtf3` use excessive goto labels (`LAB_00101fe0`, `LAB_0010224c`). Test functions lost original loop structures.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable, but test functions are bloated with local variable declarations (`local_534`, `uStack_530`, etc.). Some functions are stubs.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read linearly, but floating point functions have hundreds of forward jumps. Test functions declare 20+ local variables at top before any logic.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Test functions print expected values directly instead of computing them (e.g., `__printf_chk(1,"DT-L1-01 (process_char): %c\n",0x61)` instead of calling `process_char('A')`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types partially preserved but degraded (`undefined4`, `undefined8` for float/double). Function pointers shown as `code*` instead of proper signatures. Some `long` returned as `ulong`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct/union types lost. `struct_simple` becomes `int *param_1` with array indexing (`param_1[1]`, `param_1[2]`) instead of `p->x`, `p->y`, `p->z`. No field names recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`(int)(long)handle`). Pointer arithmetic replaces struct access. Function pointer calls use `code*` type losing signature safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only decompiler header comment present. No algorithm explanations, no parameter documentation, no logic comments. Original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Linked list traversal in `linked_list` not recognized as such. Tree recursion in `binary_tree_sum` not annotated.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly noted (`UNRECOVERED_JUMPTABLE` in `ptr_func_simple`), but most issues silent. No warnings about type degradation or lost struct information.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions inferred. Array bounds checks not annotated.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph. Callback relationships (`ptr_func_simple` calling `double_value`) not explicitly noted.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output. No logical grouping by category (data types, arrays, pointers, composites). No header file structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies (`__printf_chk`, `puts`, `__stack_chk_fail`) need stubs. Some undefined symbols. Would require moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+5+4)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type System): (5+2+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.29/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Struct/union types completely lost** - All composite types reduced to pointer arithmetic (`param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`)
+- **Variable names are entirely generic** - `param_1`, `iVar1`, `uVar1` provide no semantic information
+- **Test functions print expected values instead of computing** - Loses actual function call relationships
+- **No comments recovered** - Original source had extensive documentation, all lost
+- **Floating point functions extremely verbose** - `__addtf3` and `__multf3` are 500+ lines of unreadable goto-based code
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `process_char`, `double_value`, `struct_simple` were preserved accurately from source
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union definitions; all field access reduced to raw pointer arithmetic losing all semantic meaning
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct/union type inference** - Analyze consistent offset patterns across functions to reconstruct composite type definitions with field names
+2. **Add semantic variable naming** - Use usage patterns and calling conventions to infer meaningful names (e.g., `param_1` used as array → `arr`, `param_2` used as limit → `count`)
+3. **Recover test function logic** - Instead of constant folding to expected values, preserve actual function calls to maintain executable semantics

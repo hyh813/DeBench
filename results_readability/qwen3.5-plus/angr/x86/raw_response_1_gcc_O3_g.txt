@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some original names preserved (`sequential_ops`, `recursion_factorial`, `state_machine`) but many functions remain as `sub_401030`, `sub_401040` with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound: `4294967295` (UINT_MAX/-1), `1717986919` (division optimization constant), `18975`, `10692` with no explanation. No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.*` functions, redundant struct definitions with `padding_0`, `[D] Unsupported jumpkind Ijk_SigTRAP` errors, and excessive wrapper functions (`sub_4012a1` just calls `recursion_factorial()`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Some functions preserved well (`sequential_ops`, `goto_forward`) but others severely degraded: `loop_while` uses multiplication by `1717986919` for division, `switch_small` uses pointer arithmetic instead of switch, `loop_break` transformed into switch statement.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved but excessive wrapper fragmentation (`sub_4012d8`, `sub_4012eb`, etc. just call the real function). Test functions incomplete and mixed with implementation.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: `loop_multi_exit` has 8+ `goto LABEL_*` statements disrupting flow. `computed_goto` and `call_func_ptr_array` use computed jumps. `loop_complex_cond` has 10+ levels of nested if-else.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate struct definitions throughout (multiple `struct_0` with different layouts). Many wrapper functions that do nothing. Loop unrolling not recognized or commented.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most variables degraded to `unsigned int` regardless of original type. Original `int` types often incorrectly converted. No const-correctness preserved. Function pointer types degraded to generic integers.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions present but all generic (`struct_0`, `field_0`, `padding_0[40]`). No meaningful field names recovered. Array types lost to pointer arithmetic.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts present. `goto v1->field_28` and `goto a0` use integers as jump targets. Function pointer calls with incorrect signatures. Stack canary checks present but not helpful.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no useful comments. Only auto-generated function headers. No algorithm explanations, no decompilation confidence indicators, no documentation of non-obvious logic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns partially recognized (factorial converted to loop, state machine structure) but not explicitly named or documented. Duff's device not recognized. Loop patterns sometimes recovered, sometimes broken.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`). Broken logic in `loop_while` and `loop_dowhile` presented confidently without warnings. No uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. No invariants recognized. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships not documented. Global variables (`g_403008`, `jump_buffer`) referenced without explanation. No call graph documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output with no logical grouping. Test functions mixed with implementation. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code has compilation errors (undefined `_ccall`, missing includes, architecture mismatch ARM64→x86). External dependencies not documented. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+5+4+4)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.666
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (4+3+2)/3   = 3.00 × 0.10 = 0.300
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 3.57/10
+```
+
+**Overall Readability Score: 3.6/10**
+
+### Critical Defects:
+- **Variable names completely generic** - `v0`, `v1`, `a0` instead of `sum`, `count`, `result`
+- **Architecture mismatch** - Original ARM64 compiled, decompiled as x86 causing structural issues
+- **Broken loop logic** - `loop_while` and `loop_dowhile` have incorrect division optimization that breaks semantics
+- **No comments or documentation** - Zero explanation of algorithms, magic numbers, or decompilation confidence
+- **Does not compile** - Undefined `_ccall`, missing includes, requires extensive patching
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Some original function names preserved (`sequential_ops`, `recursion_factorial`, `state_machine`) providing minimal semantic anchors
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation, algorithm explanations, or decompilation confidence indicators makes analysis extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and debug symbols (e.g., `v0` in accumulation loop → `sum`)
+2. **Add decompilation confidence annotations** for uncertain reconstructions (e.g., `// UNCERTAIN: division optimization may be incorrect`)
+3. **Recover and preserve debug symbol information** from `-g` flag to restore original variable and function names

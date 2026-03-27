@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `a1`, `a2`, `a3` for parameters and `v1`, `v2`, `result` for locals. The original had meaningful names like `temp1`, `temp2`, `sum`, `count` - completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core functions correctly named (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`). Only runtime support functions have generic names (`function_508`, `function_514`). Main test functions match source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x66666667` (division by 10 approximation), `0x100000000` unexplained. Test functions have hardcoded expected values (`printf("CF-L1-02 (single_if): %d\n", 20);`) instead of calling functions.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler/runtime artifacts: struct definitions for `__jmp_buf_tag`, address range comments, undefined helper functions. Manageable but adds clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `loop_for_fixed` uses incomprehensible expression `((int32_t)(v2 % 0x100000001 != 0) << 32 - (int32_t)v2) + v1`. `loop_while` has bizarre condition `while ((v3 & 0x40000000) != 0 == (v1 != 9))` - completely obscures the simple digit-counting logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized (20-80 lines). Each test function extracted separately. Minor issue: some runtime helpers could be excluded.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Test functions use goto for break emulation. Forward jumps present but manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions hardcode expected values instead of calling the functions being tested - significant redundancy. Some duplicate loop logic in `loop_while` and `loop_dowhile`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently (appropriate for ARM64). Some parameters incorrectly use `uint32_t` where source had `int` (e.g., `if_elseif_chain(uint32_t a1)`). Minor signed/unsigned confusion.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Basic struct recovery for `__jmp_buf_tag` and `_TYPEDEF___sigset_t`. Original source had minimal struct usage, so limited opportunity for recovery.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Complex bit manipulation in loops (`v3 & 0x40000000`) could cause undefined behavior. Unsafe pointer arithmetic in `loop_break`: `*(int32_t *)(4 * v1 + (int32_t)&g13 + (int32_t)&g15)`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments explaining algorithm intent. Original had extensive documentation for each test case. Only address ranges present (`// Address range: 0x6c4 - 0x6d0`).
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized (ternary operator in `ternary_op`, switch in `switch_fallthrough`) but not explicitly named or documented. State machine patterns not identified.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies flagged. Complex expressions presented as certain. Indirect calls not resolved, but no indication given.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear parameter requirements (e.g., "n must be > 0").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are syntactically clear but no documentation of relationships. No indication which functions call which, or global variable usage.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped: runtime helpers, test_l1 functions, test_l2 functions, test_l3 functions. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Requires linking with standard library (puts, printf, longjmp, setjmp). Dependencies are standard C library - clear but not standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable names completely generic (`v1`, `v2`, `a1`, `a2`, `result`) - original names like `temp1`, `sum`, `count` lost
+- Complex loop expressions obscure simple logic: `loop_for_fixed` and `loop_while` are nearly incomprehensible
+- No comments explaining algorithm intent - original had extensive documentation
+- No anomaly indication for uncertain decompilations
+- Test functions hardcode expected values instead of calling actual functions
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Core test functions correctly named matching source, only runtime stubs have generic names
+
+**Most Needs Improvement:** Semantic Transparency (1.75/10)  
+- Zero comments, no idiom recognition, no anomaly flagging, no contract recovery - the decompiled code provides no semantic context
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `v1` accumulating in loop should be named `sum` or `count`)
+2. Recognize simple loop patterns and emit clean for/while constructs instead of complex expressions
+3. Add comments for non-trivial logic explaining what the code computes, especially for division/remainder operations using magic numbers

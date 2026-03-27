@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Parameters are generic (`param_1`, `param_2`) and locals are often mechanical (`iVar1`, `uVar2`), though some meaningful names like `size`, `arr`, and `n` are recovered in simpler functions.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`param_macro_constants`, `call_macro_functions`, etc.) are perfectly recovered from the symbol table, matching the original source exactly.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Macro constants are fully expanded into magic numbers (e.g., `0x401` for `MAX_SIZE+1`, `0x40` for `BUFFER_COUNT*4`), obscuring the semantic intent defined in the source.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but frequent warnings like `/* WARNING: Unknown calling convention -- yet parameter storage is locked */` and `/* Unresolved local var ... */` add significant visual noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is highly idiomatic, using standard `if-else` and `do-while` constructs (e.g., in `param_asm_clobber`) that are easy to follow, accurately reflecting the optimized binary logic.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: The decompiler perfectly preserves the original function boundaries and granularity, with no artificial outlining or merging of functions.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps; loops are correctly identified as `do-while` structures rather than `goto` chains.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately represents the compiler's optimizations (e.g., constant propagation in `call_macro_constants`) without introducing artificial redundancy, though the loss of macro structure makes some math look redundant.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are recovered with high precision, correctly distinguishing `int`, `void*`, `size_t`, and function signatures (e.g., `mmap` parameters).
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: While the source uses mostly primitives, pointer types (`int*`, `void*`) are correctly recovered and used in pointer arithmetic without degradation.
+
+**11. Type Safety:** Score: 9/10
+Justification: Pointer arithmetic is handled safely (e.g., casting to `long` for offset calculation in `param_asm_simd`), and atomic operations are correctly mapped to intrinsic types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to decompiler warnings (e.g., "Removing unreachable block") and provide no semantic explanation of the logic or the lost macro definitions.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: Standard library idioms like `mmap`, `memcpy`, and atomic operations are recognized, but higher-level macro idioms (like `SQUARE(x)` or `MAX(x,y)`) are reduced to raw math.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler clearly flags potential issues like "Unknown calling convention" and "Unresolved local var," which accurately alerts the user to analysis uncertainties.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the requirement for `size` in `param_macro_constants` is implicit in the magic number comparison.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are direct and clear (e.g., `test_preprocessing_features` calling specific test functions), maintaining the original call graph structure.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, roughly following the source order, with clear separation between preprocessing tests and assembly tests.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on compiler intrinsics like `__aarch64_ldadd4_acq_rel` and non-standard types (`undefined8`), requiring significant modification to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.5/10
+
+**Critical Defects:**
+- Macro definitions are completely lost, replaced by magic numbers (e.g., `0x401` instead of `MAX_SIZE`), severely impacting semantic understanding.
+- Variable names are predominantly generic (`param_1`, `iVar1`), forcing the analyst to manually track data flow.
+- Lack of semantic comments means the intent behind specific logic blocks (e.g., the `MAX` macro implementation) must be re-derived.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully recovered all original function names from the binary symbols, making navigation and high-level understanding trivial.
+
+**Most Needs Improvement:** Literal Clarity (scored 4/10)
+- The expansion of named constants into raw hexadecimal literals is the single biggest barrier to readability, as it erases the domain-specific vocabulary defined in the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement constant propagation analysis to suggest named constants for repeated magic numbers (e.g., inferring `MAX_SIZE` from `0x400`).
+2. Enhance variable renaming heuristics to infer names from context (e.g., naming a variable `page_size` if it is the result of `sysconf(_SC_PAGESIZE)`).
+3. Add options to annotate code with "likely macro expansions" or reconstruct high-level arithmetic patterns (like `x*x + (x>y?x:y)`) into pseudo-macro comments.

@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `iVar1`, `piVar1`, `piVar2`, `param_1`, `__addr`, `__len` that obscure semantic meaning. While parameter `size` in `param_macro_constants` is good, most locals are cryptic. The decompiler fails to infer meaningful names from usage patterns (e.g., `x * 0xb + 5` should suggest `result = x * 11 + 5`).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are nearly perfect - `param_macro_constants`, `call_asm_basic`, `test_preprocessing_features` all match the original source exactly. The decompiler preserved the semantic naming from debug symbols.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x401` (1025), `0x200` (512), `0x40` (64), `0xdef0` appear without explanation. While some values like `0x1e` (30 for sysconf _SC_PAGESIZE) are technically correct, the macro origins (MAX_SIZE, BUFFER_COUNT) are lost. String literals are preserved but not linked to their macro sources.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise includes: (1) DWARF annotations like `/* Unresolved local var: int sum@[???] */`, (2) wrapper functions `__printf_chk` instead of `printf`, (3) auto-generated atomic intrinsics (`__sync_fetch_and_add_4` and 40+ others), (4) warnings about unreachable blocks. These artifacts clutter the output significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural - if-else statements, do-while loops are correctly recovered. The `param_asm_clobber` shows proper loop structure. Minor issues include some awkward pointer arithmetic in loop conditions but nothing that impedes understanding significantly.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is excellent - each test function remains separate (11+ functions in test_preprocessing_features, 6+ in test_asm_features). No inlining artifacts; each function maintains its original boundaries. The decomposition matches the source exactly.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in `param_dynamic_code` and `param_memory_protection` are appropriate. Some pointer-heavy loops in `param_asm_simd` are slightly awkward but traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: The atomic operation section contains massive redundancy - 40+ nearly identical sync functions are included. However, the main test functions themselves have minimal redundancy. Loop unrolling is minimal at -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most types are generic `int` or `undefined4`. The decompiler uses `size_t` for `__len` which is correct. However, `int *arr` in `param_asm_clobber` loses the original semantics. No `uint32_t`, `int32_t` specificity. Parameter types like `int param_1` are generic.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: The code doesn't heavily use structs, so this isn't heavily tested. Simple arrays like `int arr[5]` are recovered correctly in `call_asm_clobber`. No struct recovery needed for this particular source.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns exist - pointer arithmetic like `arr + -1` in `param_asm_simd` is error-prone. The atomic functions use proper synchronization. Overall moderate type safety with some concerning pointer manipulations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are mostly auto-generated noise: "/* Unresolved local var: int sum@[???] */", "/* WARNING: Unknown calling convention */". No meaningful explanation of macro semantics, assembly logic, or algorithm intent. The original source comments explaining preprocessing are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No recognition of patterns like macro expansion, token pasting, or stringization. The `param_stringize` function returns hardcoded `0x13` without indicating it computes string length sum. Inline assembly is reduced to C equivalents without noting the original asm semantics.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention". However, critical anomalies like the missing dynamic code execution in `param_dynamic_code` (just returns `x + 5` instead of executing generated code) are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No recovery of preconditions (e.g., "requires: counter != NULL"), postconditions, or invariants. The `param_asm_atomic` function has implicit contracts about atomicity that aren't documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present but relationships aren't documented. No indication that `call_macro_constants` calls `param_macro_constants` or that test functions invoke the param_* functions. Global variable `global_var` usage in `param_memory_clobber_demo` is visible but not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: All functions in single output file, but logically grouped - preprocessing functions first, then asm functions. Static functions like `my_func` are properly scoped. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code would not compile standalone - missing declarations for `__printf_chk`, `__gmon_start__`, `call_weak_fn`, etc. The atomic intrinsics are auto-generated and would need linking. Significant patching required.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable naming is generic (`iVar1`, `piVar1`, `param_1`) losing semantic meaning
+- Macro semantics completely lost - constants like MAX_SIZE become magic numbers (0x401, 0x200)
+- Inline assembly reduced to C without indicating original asm implementation
+- Massive noise from 40+ auto-generated atomic intrinsic functions
+- No comments explaining preprocessing behavior, assembly logic, or algorithm intent
+- `param_dynamic_code` loses the dynamic code generation entirely - just returns `x + 5`
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are nearly perfectly preserved from debug symbols, matching original source exactly.
+
+**Most Needs Improvement:** Variable Naming Quality (4/10)  
+Generic variable names like `iVar1`, `piVar1`, `__addr`, `__len` make it difficult to track variable purpose. The decompiler should infer names from usage patterns (e.g., loop counters from bounds, result variables from return statements).
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `iVar1` accumulating in a loop should be `sum`; `x * 0xb + 5` suggests `result = x * 11 + 5`
+2. Add semantic comments for macro-expanded code - explain that `0x401` is `MAX_SIZE + 1` (1025)
+3. Preserve inline assembly with comments rather than replacing with C equivalents, or at minimum document "Original used inline asm"

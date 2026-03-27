@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiled code uses cryptic generic names like `iVar1`, `iVar2`, `piVar4`, `lVar1`, `lVar2` throughout. Many local variables are marked as "Unresolved local var" with patterns like `int sum@[???]` and `int i@[???]`, making it extremely difficult to track variable purposes.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names from the original source are preserved correctly: `cdecl_func`, `stdcall_func`, `fastcall_func`, `test_calling_conventions`, `test_parameter_passing`, `test_return_values`. Only some internal functions like `FUN_00100750` remain generic.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: String literals are replaced with cryptic references like `&DAT_0010145c`, `&DAT_0010151d` with no meaningful labels. Magic numbers like `0xf`, `0x32`, `0x2a` appear without explanation, though some can be inferred from context (e.g., `0x2a` = 42).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: The output is cluttered with numerous WARNING comments about "Unknown calling convention", "Removing unreachable block", "Unresolved local var", "Variable defined which should be unmapped", and "Globals starting with '_' overlap smaller symbols". These compiler artifacts significantly impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Basic control flow structures (loops, conditionals) are preserved correctly. However, `varargs_func` shows overly complex stack manipulation that obscures the simple loop logic. At -O0, this level of complexity is unexpected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The original small functions (cdecl_func, stdcall_func, etc.) are preserved as separate functions. Function granularity is appropriate - no excessive inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code generally reads top-to-bottom without excessive jumps. Early returns and simple control flow dominate. Some forward references exist but are minimal.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. The element-by-element copying in `test_calling_conventions` appears to reflect compiler layout rather than decompilation redundancy. Loop unrolling is minimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types (`int`, `char*`, `double`, `long long`) are correctly identified. However, `undefined8` is used incorrectly in return types (e.g., `call_thiscall` returns `undefined8` instead of `int`). Function pointers use generated types like `_func_int_int *`.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Struct types are excellently recovered: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData` all have correct field names (`data`, `x`, `y`). This is a strong aspect of the decompilation.
+
+**11. Type Safety:** Score: 6/10  
+Justification: `param_complex_cast` uses unsafe casts: `*(int *)p` and `*(int *)((long)p + 4)` without proper type safety. Some pointer arithmetic could lead to undefined behavior. However, most code is reasonably safe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: The only comments are WARNING messages about decompilation limitations (unknown calling conventions, unreachable blocks, unresolved variables). No explanatory comments about algorithm logic or purpose. Auto-generated noise dominates.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are visible - the varargs handling shows `va_list` usage, though heavily obfuscated. Calling convention tests show expected behavior. No explicit pattern naming or recognition.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: WARNING comments do flag important anomalies: "Unknown calling convention", "Unresolved local var", "Removing unreachable block", "Variable defined which should be unmapped". These help identify decompilation confidence issues.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The code provides no guidance about expected input states or guaranteed output properties.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are visible within test functions (e.g., `test_calling_conventions` calls `call_cdecl()`, etc.). However, there's no documentation of the broader call graph or callback relationships.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are listed in address order rather than logically grouped. The original source's clear sections (calling conventions, parameter passing, return values) are lost. No logical grouping or separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code requires many external declarations (`puts`, `__printf_chk`, `__stack_chk_fail`, `__libc_start_main`, etc.) and cannot compile standalone. No dependency documentation provided.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable naming is severely degraded with cryptic names like `iVar1`, `iVar2`, `int sum@[???]`
+- String literals replaced with cryptic `&DAT_XXXXX` references losing all semantic meaning
+- Excessive WARNING noise obscuring actual code logic
+- Type imprecision with `undefined8` used incorrectly for integer return types
+- No logical module organization - functions listed in address order
+
+**Best Quality Aspect:** Composite Type Recovery (9/10)  
+Struct types like `LargeStruct`, `SmallPoint`, `BigStruct` are excellently recovered with correct field names, preserving the original data structure semantics.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Generic temporary variables (`iVar1`, `piVar4`, `lVar1`) and unresolved local variables (`int sum@[???]`, `int i@[???]`) make it extremely difficult to understand variable purposes and track data flow.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `iVar1` used as loop accumulator should be named `sum` or `i` based on context
+2. Recover string literal references by analyzing cross-references to data sections and matching printf format strings
+3. Implement logical function grouping based on semantic relationships rather than raw address ordering

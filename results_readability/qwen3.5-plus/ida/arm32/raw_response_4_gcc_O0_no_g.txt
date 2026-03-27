@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`a1`, `a2`, `v1`, `v2`, `varg_r1`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `x`, `y` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `call_cdecl`). Only a few helpers like `sub_10408` are generic. Good semantic preservation.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals replaced with opaque references (`s`, `aCallL206`, `asc_125F4`). Numeric literals (5, 10, 15) are clear but lack contextual meaning without original source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack annotations clutter code (`[sp+4h] [bp-8h] BYREF`). Type markers like `__fastcall`, `_DWORD`, `_QWORD` add visual noise. Register comments (`// r0`) are excessive.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops and conditionals mostly recovered correctly. `ret_multi_branch` uses chained if-statements instead of switch (source had switch). Generally follows natural patterns.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved, but struct flattening creates absurd parameter lists (`param_struct_byval` has 16 `int` parameters instead of 1 struct).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom. Some temporary variable chains (`v1 = ...; v2 = v1 + ...`) create minor disruption but flow is generally clear.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant temporaries (`v1`, `v2` chains in `mixed_conventions_test`). No significant dead code. Loop unrolling not present (appropriate for -O0).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate (`int`, `_DWORD`, `__int64`). `const char *` degraded to `unsigned __int8 *`. `va_list` partially recovered but with awkward `va_copy` usage.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: **Critical failure.** `LargeStruct` (128 bytes) flattened to 4 `int` parameters. `SmallStruct` becomes `_DWORD *a1` with array indexing (`a1[1] * *a1`). No struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`*(_DWORD *)`, `*(_QWORD *)`). `ret_void` incorrectly returns `int` instead of `void`. Pointer arithmetic without bounds checking visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments (register info, stack layout). No algorithm explanations, no decompilation confidence indicators. One warning: "positive sp value has been detected, the output may be wrong!"
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard C patterns (varargs, struct passing) not explicitly identified. No design pattern recognition. Reader must infer idioms from code structure.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 9 functions marked "FAILED to decompile" at end. Some warnings present but no detailed explanations of why or how to resolve. Silent on struct flattening issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 != NULL`). No postconditions inferred. Null checks present in code but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph. Global variable usage (`_bss_start`, `handle1_1`) not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source-order grouping. No logical module separation. All output in single file without header/API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 9 external imports failed (`__imp_puts`, `__imp_printf`, etc.). Would require significant stubs. Dependencies not documented. Cannot compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+6+7+7)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (3+4+5+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.17/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects
+- **Struct types completely lost**: `LargeStruct` and `SmallStruct` flattened to raw arrays/parameters, losing all semantic field information
+- **Variable names entirely generic**: `a1`, `a2`, `v1`, `v2` provide zero semantic hints about purpose
+- **String literals obfuscated**: References like `aCallL206`, `asc_125F4` instead of actual string content
+- **9 external functions failed to decompile**: Critical imports (`printf`, `strlen`, `memcpy`) not recovered
+- **Function signature errors**: `ret_void` returns `int` instead of `void`, misleading callers
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most original function names preserved (`cdecl_func`, `varargs_func`, `call_cdecl`), maintaining semantic identity across decompilation.
+
+### Most Needs Improvement
+- **Composite Type Recovery (3/10)** - Complete failure to recover struct definitions; 128-byte `LargeStruct` becomes 4 separate `int` parameters, destroying type semantics and making code nearly unmaintainable.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement struct pattern recognition** - Detect contiguous memory access patterns and recover struct definitions with field names based on access patterns (e.g., `a1[0]`, `a1[1]` → `struct { int x; int y; }`)
+2. **Add semantic variable naming** - Use data-flow analysis to infer variable purposes (e.g., loop counter → `i`, accumulator → `sum`, size parameter → `count`)
+3. **Recover string literals inline** - Instead of `aCallL206`, embed actual string content or provide cross-reference to string table with readable content

@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `param_1`, `param_2` throughout. For example, `param_macro_constants(int param_1)` should be `size` based on source. Temporary variables use cryptic names like `iVar1`, `uVar1` with no semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (e.g., `param_macro_constants`, `param_asm_basic`, `call_asm_atomic`). Some internal utility functions use generic names like `FUN_00011150` (actually `strlen`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x401` (1025 = MAX_SIZE+1), `0x200` (512 = MAX_SIZE/2), `0x40` (64 = BUFFER_COUNT*4) appear without explanation. The decompiler correctly computed the values but didn't recover the original constant names.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. Stack canary checks (`*(int *)(in_GS_OFFSET + 0x14)`) are present but handled reasonably. No redundant casts or debug instrumentation cluttering the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: At -O0, control flow closely matches source. If-else statements are natural, loops use `for` constructs correctly. Example: `param_asm_clobber` correctly shows `for (iVar2 = 0; iVar2 < param_2; iVar2 = iVar2 + 1)`.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions maintain appropriate granularity matching source. Each function has a clear single responsibility (e.g., `param_asm_basic` does one thing). No monolithic functions or over-fragmentation.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal disruption. No goto abuse or confusing forward jumps. Early returns used appropriately in functions like `param_dynamic_code`.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy. Loop unrolling is not excessive. The SIMD function shows proper vectorization recovery without redundant expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` for most variables. Parameters correctly identified as `int` but should be more specific (e.g., `size_t` for size parameters). No `const` correctness recovered. The `undefined4` type for some return values is a Ghidra artifact.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct types were recovered. Arrays are handled via pointer arithmetic (e.g., `*(int *)(param_1 + iVar2 * 4)`). The SIMD function shows manual array element access rather than struct recovery.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No obvious unsafe casts. Pointer arithmetic is correct. Function signatures are reasonable. Minor issues: some `undefined*` types from Ghidra rather than proper types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in decompiled output. The original source had extensive comments explaining macro behavior, assembly semantics, and test expectations - none of this was recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable but not named. Stack canary checks (`__stack_chk_fail_local`) present but not documented. Conditional compilation results (e.g., `param_conditional_compile` returning `x * 3 + 2`) show the #else branch but no indication it was conditional compilation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings for indirect calls or unusual patterns. The `param_stringize` function calls `FUN_00011150` for what should be `strlen` - no indication this was recovered from a macro.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions or invariants documented. The original source had clear expectations (e.g., "期望: 64") not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible (e.g., `test_preprocessing_features` calls all test functions) but not explicitly documented. No indication of which functions are static vs. exported.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped reasonably - preprocessing functions together, asm functions together. However, the file is a single monolithic output rather than matching the original's logical section organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: According to metadata, compilation succeeded. Some external dependencies (printf, strlen, mmap) are called but not declared. Would need header includes to compile standalone.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming uses generic `param_1`, `param_2`, `iVar1` instead of semantic names like `size`, `x`, `result`
+- No comments explaining macro expansion results, assembly semantics, or test expectations
+- Magic numbers like `0x401`, `0x200`, `0x40` not replaced with named constants (MAX_SIZE, BUFFER_COUNT)
+- No indication that conditional compilation was used - results show only the active branch
+- Type precision lost - all `int` instead of specific types like `size_t`, `uint32_t`
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 9/10)  
+At -O0, the decompiler correctly recovered natural if-else and for-loop structures matching the source almost perfectly.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+Generic parameter names like `param_1` throughout make it difficult to understand function purposes without cross-referencing the source. The decompiler could infer names from usage patterns (e.g., `param_1 > 0x401` suggests it's a size parameter).
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `param_1` compared to `0x401` suggests `size` or `max_size`
+2. Recover macro constant names by recognizing literal patterns (0x200 appearing where MAX_SIZE/2 would be)
+3. Add comments indicating conditional compilation branches and macro expansions that occurred

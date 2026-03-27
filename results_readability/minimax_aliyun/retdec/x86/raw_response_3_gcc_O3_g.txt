@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`, `v13`, `v14`, `v15`, `v16`, `v17`. Parameters are named `a1`, `a2`, `a3`. Only heap allocations get marginally better names like `mem`, `mem2`. The original variables like `x`, `arr`, `p`, `n` are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user-defined functions preserve original names: `double_value`, `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `linked_list_heap`, `tree_heap_traversal`, `memory_leak`, `dangling_pointer`, `double_free`. However, many infrastructure functions have generic names like `function_1140`, `function_1150`, `function_1160`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: String literals are completely unresolved - code uses computed offsets like `(char *)(v1 + 0x19be)` instead of actual strings like "=== 测试栈内存操作 ===". Magic numbers everywhere: `0x1000`, `0x1140`, addresses, offset calculations like `+ 132`, `+ 124`, `+ 112`. No named constants recovered.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution: numerous `__x86_get_pc_thunk_bx/dx/di/ax` calls in every function, `__readgsdword(20)` for stack canary checks, `__stack_chk_fail_local()` calls, infrastructure functions like `_init`, `_start`, `frame_dummy`, `register_tm_clones`, `deregister_tm_clones` that aren't part of original source. The decompiled output is nearly double the source LOC (1582 vs 888).
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow structures (if/else, while loops, for loops) are preserved and recognizable. However, some patterns are awkward - e.g., `vla_stack` and `alloca_usage` have complex manual stack allocation logic that obscures the simple VLA/alloca usage. The linked list code has goto-style jumps. At -O0, control flow should be more straightforward.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original functions are preserved as separate entities with reasonable granularity. The main test functions (`test_stack_memory`, `test_heap_memory`, etc.) are appropriately sized. Some infrastructure functions are artifacts. Parameter lists are generally appropriate, though some expose implementation details.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but complex functions like `linked_list_heap`, `tree_heap_traversal`, and `test_heap_memory` have multiple jumps and goto patterns that disrupt linear flow. Early returns are used appropriately in some places.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Some loop unrolling present (e.g., in `heap_realloc` where elements are set individually: `*mem = 1; *(int32_t *)(v2 + 4) = 2; ...`). Duplicate code in test functions. The `test_heap_memory` function has significant code duplication for similar operations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently which is appropriate. However, there's confusion between pointers and integers - parameters like `int32_t a1` are actually pointers in many cases (e.g., `address_of_local` takes `int32_t a1` but uses it as `*(int32_t *)a1 = 42`). `size_t` is not used - instead uses `uint32_t` for sizes. Function pointers not properly typed.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: **Critical failure** - No struct recovery at all. The `Point` struct is completely lost - `heap_struct` uses `malloc(8)` with raw pointer arithmetic instead of `Point*`. The `Node` struct for linked lists is not recovered - `linked_list_heap` uses raw `malloc` with manual field offsets. The `TreeNode` struct is also not recovered. All composite types are lost to raw memory operations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int32_t *)a1`, `(char *)(v1 + 0x19be)`, `(int32_t *)(v2 + 4)`. Pointer arithmetic is done with integer types. The dangling pointer case in `dangling_pointer` is correctly shown but not flagged. No `restrict` or safety annotations. Function pointers cast to `int32_t`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments show address ranges (e.g., `// Address range: 0x1400 - 0x140b`) and line ranges from source (e.g., `// Line range: 881 - 887`). However, no explanatory comments about what the code does. No algorithm documentation. No decompilation confidence indicators. String literals not resolved, so format strings can't be understood.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns are somewhat recognizable (linked list traversal, tree traversal) but not explicitly named or documented. The VLA and alloca patterns are buried in complex manual stack management code. No recognition of common patterns like memory pool, circular buffer, etc.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of suspicious code or potential issues. The dangling pointer access after `free()` in `dangling_pointer` is shown but not flagged. The double-free in `double_free` is shown but not warned about. No indication of uncertain indirect calls or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks are present in code but not explained as contracts. No documentation of what functions expect or guarantee.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are clear - you can see `malloc`, `free`, `memcpy`, etc. Global variable usage is obscure - uses computed offsets like `*(int32_t *)(v1 + (int32_t)&g12 + 132)` instead of named globals. No callback relationships documented. The extern function `extern_function` is called but its definition is in a separate file.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped logically - stack functions together, heap functions together, test functions together. However, the file is monolithic (single 1582-line file). Infrastructure functions are interspersed with user code. No header file or API declarations separated out.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes necessary headers: `<stdbool.h>`, `<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`, `<sys/wait.h>`, `<unistd.h>`. External functions are declared. Should compile with `gcc -c`. However, architecture mismatch noted: source says arm64 but decompiled code is clearly x86/x64 (uses `__x86_get_pc_thunk_*` functions).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 3 + 2) / 4 = 3.75
+L2_avg = (6 + 7 + 5 + 4) / 4 = 5.50
+L3_avg = (6 + 1 + 4) / 3 = 3.67
+L4_avg = (4 + 3 + 2 + 2) / 4 = 2.75
+L5_avg = (4 + 5 + 7) / 3 = 5.33
+
+Overall = (3.75 × 0.30) + (5.50 × 0.25) + (3.67 × 0.20) + 
+          (2.75 × 0.15) + (5.33 × 0.10)
+        = 1.125 + 1.375 + 0.734 + 0.413 + 0.533
+        = 4.18/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects (Bullet List)
+- **Struct/Union Recovery Complete Failure**: All composite types (`Point`, `Node`, `TreeNode`) lost - code uses raw `malloc(size)` with manual pointer arithmetic instead of proper struct types
+- **Variable Naming Severely Degraded**: All meaningful variable names replaced with `v1`-`v17`, `a1`-`a3`, making code nearly impossible to track
+- **String Literals Unresolved**: All format strings and constants shown as computed offsets (e.g., `v1 + 0x19be`) instead of actual strings
+- **Excessive Noise**: Compiler infrastructure functions (`__x86_get_pc_thunk_*`, `frame_dummy`, etc.) and stack canary checks clutter output, nearly doubling code size
+- **Type Safety Issues**: Parameters used as both integers and pointers without proper typing; function pointers cast to `int32_t`
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality** (scored 8/10)  
+- **Why?** Most user-defined functions preserve their original names from the source code, making it easy to identify the purpose of main functions like `double_value`, `local_vars`, `heap_basic`, `linked_list_heap`.
+
+### Most Needs Improvement (Single Dimension)
+- **Composite Type Recovery** (scored 1/10)  
+- **Why?** The decompiler completely failed to recover any struct types. The original code defined `Point`, `Node`, and `TreeNode` structs, but the decompiled code uses raw memory operations with `malloc(8)`, `malloc(12)` and manual field offsets, losing all semantic meaning of the data structures.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct/union types**: Analyze malloc sizes and field access patterns to reconstruct composite types. A `malloc(8)` followed by field assignments at offsets 0 and 4 strongly suggests a 2-field struct.
+2. **Resolve string literals**: Instead of showing computed offsets like `v1 + 0x19be`, attempt to resolve these to actual string constants from the .rodata section.
+3. **Improve variable naming**: Use data flow analysis to infer variable purposes. A variable used as array index should be named `i` or `index`, not `v3`.

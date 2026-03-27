@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are almost exclusively generic names like `iVar1`, `local_38`, and `param_1`, losing the semantic meaning of names like `result`, `obj`, or `capture_by_value` found in the source.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from debug symbols, accurately reflecting the original source (e.g., `test_cpp_virtual_func`, `SimpleClass::getValue`, `Base::virtual_func`).
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals like `"Test"` and `"Derived"` are preserved, but magic numbers like `0x1f` (representing `sizeof(name)-1`) and `0x2a` (decimal 42) appear without context or named constants.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code contains standard compiler artifacts like stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail`) and redundant casts to `undefined*`, which add noise but are expected in decompiled output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While standard loops and conditionals are preserved, the exception handling logic in `test_cpp_exception` is completely lost, showing only the throw mechanism without the `catch` blocks or control flow merging.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are well-decomposed; template instantiations and lambda calls are correctly separated into distinct functions with descriptive names (e.g., `template_max_int_`, `test_cpp_lambda()::{lambda(int)#1}::operator__`).
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom, but object construction and destruction logic is sometimes interleaved or split, requiring the reader to track implicit lifecycles manually.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is little obvious dead code or redundancy; the decompiler presents a clean sequence of operations corresponding to the source logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are often degraded to generic `undefined4` or `undefined8` instead of concrete types like `int` or `void*`, despite debug symbols being available, which reduces type safety clarity.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Class member access is represented via pointer arithmetic offsets (e.g., `*(int *)(this + 8)`) rather than semantic member access (e.g., `this->multiplier`), significantly obscuring the object-oriented structure.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code is littered with unsafe casts like `(undefined ***)param_1` and `(undefined8 *)`, which are technically accurate for the binary representation but make the code look unsafe and difficult to reason about compared to the original C++.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining the logic, algorithms, or the purpose of complex operations like virtual table dispatches or exception handling setup.
+
+**13. Idiom Recognition:** Score: 9/10
+Justification: The decompiler excels at recognizing C++ idioms, correctly naming lambda functions (`test_cpp_lambda()::{lambda(int)#1}::operator__`) and template instantiations (`Container<int>::Container`).
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Indirect calls (virtual functions) are rendered as raw pointer dereferences (e.g., `(***(code ***)param_1)`) without flags or comments indicating that this is a virtual dispatch mechanism.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no indication of preconditions, postconditions, or invariants; for example, the null checks in the source are rendered as standard conditional jumps without semantic context.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: The inheritance hierarchy is visible through constructor calls (e.g., `Base::Base((Base *)this)` inside `Derived::Derived`), and function calls reference the correct class methods.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically, and class methods are generally located near their definitions, though the sheer volume of generated template code makes navigation slightly difficult.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on standard library types (e.g., `std::unique_ptr`) being defined in the environment; it would not compile standalone without significant header inclusion and type definition fixes.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- Class member access uses pointer arithmetic offsets (`*(int *)(this + 8)`) instead of semantic member access (`this->multiplier`).
+- Exception handling logic (`catch` blocks) is completely missing from `test_cpp_exception`, showing only the throw mechanism.
+- Variables use generic names (`iVar1`, `local_38`) instead of the original descriptive names (`result`, `obj`).
+- Types are frequently represented as `undefined4` or `undefined8` instead of concrete types like `int`.
+
+**Best Quality Aspect:** Function Naming (scored 10/10)
+- The presence of debug symbols allowed for perfect recovery of function names, including complex template and lambda signatures.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 4/10)
+- The reliance on raw pointer offsets for member access destroys the readability of the object-oriented structure, making it look like obfuscated C rather than C++.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Apply debug type information more aggressively to replace `undefined` types with concrete types (e.g., `int`, `void*`).
+2. Reconstruct class member access syntax (`obj.field`) by utilizing offset information from type definitions instead of defaulting to pointer arithmetic.
+3. Improve exception handling recovery to merge landing pads and `try/catch` blocks into a coherent control flow structure rather than splitting them into disjointed code segments.

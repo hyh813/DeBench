@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar1`, `local_1c` instead of semantic names like `size`, `counter`, `increment`. Original source had meaningful names (`x`, `y`, `dst`, `src`, `n`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). Some compiler artifacts have generic names (`FUN_00011030`, `FUN_000110b0`) but core logic functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x200` (MAX_SIZE), `0x40` (BUFFER_COUNT*4), `0x1e` (_SC_PAGESIZE), `0xdef0` (platform constant). Original macros like `MAX_SIZE`, `BUFFER_COUNT` completely lost during preprocessing.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains `LOCK()`/`UNLOCK()` pseudo-functions, `ZEXT816` type extensions, `CONCAT22` operations, and external function wrappers that just call the real function. Core logic is relatively clean but artifacts present.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Uses natural C constructs (if/for/while) without goto. However, some functions are constant-folded entirely (`call_macro_constants` returns `0x40` directly), losing the original conditional logic structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries well-preserved with reasonable sizes. Each original function maps to a decompiled function. Test harnesses (`test_preprocessing_features`) remain appropriately large.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with sequential execution. Some complex initialization patterns in `test_asm_features` with interleaved array setup, but no disruptive forward jumps.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: External function wrappers create redundancy (`mprotect`, `printf` wrappers that just call the real function). Some constant-folded functions duplicate logic that's also present in param versions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed types with `undefined4`, `undefined*`, `undefined [16]` instead of `int`, `void*`, `__m128i`. Return types often `undefined4` instead of `int`. SIMD vectors degraded to byte arrays.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays recovered (`local_1c[6]`, `local_2c[16]`), but SIMD types shown as `undefined [16]`. No complex structs in this code to evaluate, but type information is degraded.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts like `(undefined4 *)((int)puVar2 + 1)`, pointer arithmetic on `undefined*` types, `ZEXT816` type extensions. Multiple type safety concerns throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated function headers with addresses (`// Function: param_macro_constants @ 0x11234`). Zero semantic comments recovered. Original source had extensive documentation explaining macros, expected values, and behavior.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns recognized (loops, atomic ops, SIMD) but not named or explained. No indication of macro patterns (SQUARE, MAX), conditional compilation, or token pasting semantics.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about macro expansion, constant folding, or architecture-specific code paths. `LOCK()`/`UNLOCK()` pseudo-functions not explained. Presents transformed code as if original.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero contract information recovered. No preconditions, postconditions, or error condition documentation. Original comments about expected values (e.g., "期望: 64") completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code with preserved names. Test functions clearly call param functions. However, no call graph documentation or indication of test vs. main logic separation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in one file (expected for decompilation). Functions grouped somewhat logically (preprocessing first, then asm). No header file separation or module structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires significant modification to compile. `LOCK()`/`UNLOCK()` need implementation, `undefined4`/`undefined` types need definition, external function signatures need correction.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+4+6)/4 = 5.50
+Level 2 (Structural):  (7+8+7+7)/4 = 7.25
+Level 3 (Type):        (5+6+5)/3   = 5.33
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75
+Level 5 (Contextual):  (6+6+4)/3   = 5.33
+
+Overall = (5.50 × 0.30) + (7.25 × 0.25) + (5.33 × 0.20) + 
+          (2.75 × 0.15) + (5.33 × 0.10)
+        = 1.65 + 1.81 + 1.07 + 0.41 + 0.53
+        = 5.47/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`, `local_1c`) losing all semantic meaning from original (`size`, `counter`, `dst`, `src`)
+- **All macro constants expanded to magic numbers** (`0x200`, `0x40`, `0x1e`) with no recovery of `MAX_SIZE`, `BUFFER_COUNT`, `_SC_PAGESIZE`
+- **Zero semantic comments recovered** - original had extensive documentation explaining each section, expected values, and behavior
+- **No contract/assertion recovery** - expected return values and preconditions completely lost
+- **Type degradation** - `undefined4`, `undefined*` instead of proper `int`, `void*` types throughout
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it easy to identify the purpose of each function despite other readability issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all semantic documentation; decompiler provides only auto-generated headers with addresses, no explanation of logic, macros, or expected behavior.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics from usage patterns** - Detect repeated constants (0x200, 0x40) and suggest named constant recovery based on comparison patterns and arithmetic usage.
+2. **Preserve or infer semantic comments** - Analyze function behavior and generate explanatory comments (e.g., "Returns BUFFER_COUNT * 4 when size exceeds MAX_SIZE") even when original comments are lost.
+3. **Improve type inference for common patterns** - Replace `undefined4` with `int`, detect pointer types from dereference patterns, and recover SIMD vector types from 16-byte aligned operations.

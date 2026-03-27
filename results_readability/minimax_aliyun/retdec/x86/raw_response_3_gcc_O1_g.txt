@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic `v1`, `v2`, `v3`... naming with no semantic meaning. Even in simple functions like `local_vars`, the parameter is `a1` instead of `x`. Only a few exceptions like `mem`, `result`, `n` have meaningful names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions like `double_value`, `local_vars`, `heap_basic`, `linked_list_heap` correctly match source names. However, many internal/utility functions have auto-generated names like `function_1140`, `function_1150`, and compiler intrinsics use cryptic names like `__x86_get_pc_thunk_bx`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Global variables initialized with unexplained magic numbers (e.g., `g1 = 0x4740b0f`). String literals accessed through complex address calculations like `(char *)(v1 + (int32_t)&g14 - 0x2e98)` making them unreadable. Some simple constants like `10`, `20` are clear.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe pollution from compiler artifacts including: `__x86_get_pc_thunk_bx` calls in nearly every function, stack canary checks (`__readgsdword(20)`, `__stack_chk_fail_local()`), and complex address calculations like `(int32_t)&g17` that obscure actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions use natural while/for loops correctly. However, `linked_list_heap` uses goto-style jumps with labels (`lab_0x19ff`, `lab_0x1a08`) making control flow difficult to follow. At -O0, such patterns should be more idiomatic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Most functions are reasonably sized (20-50 lines). However, `linked_list_heap` is ~120 lines and `test_memory_op_functions` is ~100 lines, which is too large. The test wrapper functions bundle multiple test cases together, reducing clarity.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom with minimal forward jumps. The `linked_list_heap` function has multiple goto labels disrupting linear flow. Early returns are used appropriately in some functions like `heap_basic`.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Loop unrolling is present in some array operations but not excessive. Common subexpressions are generally eliminated. Some redundant stack frame setup exists but is manageable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Uses `int32_t` consistently which is appropriate for x86. Some `uint32_t` for sizes. Pointer types are generally correct. Minor issues with occasional `void*` to `int32_t*` casts in memory functions.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery whatsoever. The `Point` struct (used in `local_struct`, `heap_struct`, `global_struct_access`) is completely lost - fields accessed via pointer arithmetic. Similarly, `Node` and `TreeNode` structs in linked list and tree functions are not recovered, losing all semantic meaning of `->data`, `->next`, `->left`, `->right`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (e.g., `(int32_t *)buf` in memset). Pointer arithmetic is sometimes incorrect (e.g., `(int32_t)(n < 0) + n` for index calculation). Memory operations could be safer but are manageable for analysis.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated metadata comments present: "// Line range: 8 - 10", "// Address range: 0x13c1 - 0x13cc", "// From module: /work/3.c". No algorithm explanations, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic C idioms like malloc/free pairs, memset usage are preserved. However, no design patterns (state machine, strategy), algorithms (linked list traversal, tree traversal), or data structure patterns are identified or named.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for suspicious code. The `dangling_pointer` function contains undefined behavior (accessing freed memory) but no warning is given. No indication of potential issues like the double-free in `double_free` or buffer overflow in `heap_overflow`.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Null checks are present in code but not documented as contracts. Error return values (-1, -2) are not explained. No invariant recognition.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are explicit and clear. Global variable access is somewhat visible through the complex address calculations (though hard to read). No callback relationships documented (e.g., `set_global_callback` / `call_global_callback`).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (stack functions together, heap functions together, static functions together). Static functions properly scoped. However, all in single file with no header separation. Compiler runtime functions mixed with user code.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Has necessary includes (`<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`). Function prototypes declared. Should compile with minor issues. No external dependency documentation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`v1`-`v17`) with no semantic meaning - completely obscures variable purpose
+- No struct/union recovery - `Point`, `Node`, `TreeNode` all lost, converted to raw pointer arithmetic
+- Severe compiler artifact noise (`__x86_get_pc_thunk_bx`, stack canaries) pollutes every function
+- No comments explaining algorithms, contracts, or decompilation confidence
+- String literals accessed through unreadable address calculations like `(char *)(v1 + (int32_t)&g14 - 0x2e98)`
+
+**Best Quality Aspect:** Type Precision (scored 8/10)  
+- Uses `int32_t` consistently, appropriate for x86 architecture. Pointer types generally correct.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Every function uses generic `v*` naming making it impossible to track variable purpose without reading all the code. Even simple functions like `local_vars(int32_t a1)` use meaningless names.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `v4 += n` in loop → `i` or `index`; `*mem = value` → `value` or `data`)
+2. Recover struct types from allocation sizes and field access patterns (malloc(8) with two int fields → Point struct)
+3. Add meaningful comments for non-obvious logic, contracts, and decompilation confidence levels

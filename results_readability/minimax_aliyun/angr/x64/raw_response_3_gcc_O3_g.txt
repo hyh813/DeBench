@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `ptr`, `cur`, `idx` throughout. Struct fields are named `field_0`, `field_1`, `field_8`, etc. The original source uses meaningful names like `packet_size`, `buffer`, `counter` but these are completely lost. For example, in `local_vars`, the parameter should be named `x` but is `a0`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions correctly recovered (e.g., `double_value`, `local_vars`, `heap_basic`, `global_var_access`), but many wrapper/thunk functions use address-based names like `sub_401020`, `sub_40102d`. The original source has 30+ test functions with clear names, but only about half are properly named in decompiled output.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (representing -1 as unsigned) appears frequently without explanation. String literals are referenced via external symbols like `&g_403004` without clarity. However, some constants like `20` in `stack_alias` are semantically meaningful. The decompiler doesn't explain why certain values are used.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present including: redundant pointer assignments (`ptr = ptr`), unnecessary goto statements (`goto g_405f58`), dead code branches, and complex bit manipulation expressions like `ShrNV(a0 CONCAT a0 CONCAT a0 CONCAT a0, 32)`. The `large_stack_frame` function contains extremely noisy vector operations that obscure the simple loop logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some control flow is natural (simple if-else, returns), but there are problematic patterns: goto used for what should be loop continuation (`goto g_405f58`), overly complex loop conditions from unrolling, and computed jumps. The `vla_stack` function has deeply nested operations that are hard to follow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized (20-80 lines typically). Some inlining occurred - `alloca_usage.constprop.0` is an inlined constant-propagated version. However, some functions like `test_heap_memory` are 150+ lines mixing multiple test cases. Parameter lists are generally reasonable but expose implementation details.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom with minimal forward jumps. However, some functions like `heap_basic` have complex nested conditions that require tracing. The `large_stack_frame` function has a goto-based loop that's difficult to follow linearly.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from loop unrolling in functions like `heap_basic`, `heap_array`, `vla_stack`. The pattern `*((unsigned int *)((char *)ptr + 4 * idx)) = v11` repeats with variations. Dead code branches exist. No comments explaining that unrolling occurred.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Most types are reasonable - `unsigned int`, `unsigned long`, `unsigned long long`, `void*`. However, there's overuse of `unsigned long` for what should be `size_t`. The original uses `int` for many variables but decompiler often uses `unsigned int`. Function pointer types are sometimes wrong (e.g., `goto global_func_ptr` instead of proper call).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are reconstructed but with generic field names. Example: `struct_3 { unsigned int field_0; char padding_4[4]; struct struct_2 *field_8; }` instead of the original `Node { int data; Node *next; }`. The `Point` struct from source is completely lost, appearing as raw `malloc(8)` with manual field access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: dangling pointer dereference in `dangling_pointer()` (`return *(ptr)` after free), incorrect pointer arithmetic in many heap functions, unsafe casts throughout. The `double_free` function correctly shows the bug but many other functions have similar issues hidden. No `restrict` or `_Atomic` annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments in the decompiled code. Only auto-generated function headers like `// Function: sub_401020 at 0x401020`. No explanation of algorithm intent, no recovery confidence indicators, no @param/@return documentation. The original source has extensive comments explaining test scenarios.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns like linked list traversal are somewhat recognizable in `linked_list_heap`, but no explicit naming. Memory allocation patterns (malloc/free pairs) not identified as idiom. The original source's test categories (MEM-L1, MEM-L2, HEAP-L2, etc.) are completely lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The `dangling_pointer` function shows clear undefined behavior (dereferencing freed pointer) but no warning. Indirect calls like `goto global_func_ptr` not flagged as uncertain. No indication of potential issues in `memory_leak` (intentional).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. The original source has explicit checks like `if (n <= 0 || n > 1000) return -1` but these aren't documented as preconditions. Error return values (-1, -2) not explained. No documentation of what functions assume or guarantee.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some extern declarations present (`extern unsigned int global_counter`), but function call relationships not documented. No comments showing which functions call which. The test harness pattern (test_stack_memory calling individual test functions) not explained. Callback relationships like `set_global_callback` → `call_global_callback` not clearly linked.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are roughly grouped by address but not logically organized. The original groups: stack memory, heap memory, static/global, memory operations are lost. Static functions not distinguished from extern. No header-like separation of interfaces.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has many `extern` declarations for external dependencies. Won't compile standalone due to undefined symbols (puts, malloc, printf, etc.). No documentation of dependencies. Some type mismatches would cause compilation warnings.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`v1`, `v2`, `ptr`, `field_0`) losing all semantic meaning from original source
+- **Struct recovery**: Composite types like `Point`, `Node`, `TreeNode` reconstructed with meaningless field names
+- **No comments**: Zero useful comments explaining algorithm intent, test scenarios, or recovery confidence
+- **Type safety**: Multiple unsafe operations including dangling pointer dereference shown without warning
+- **Control flow noise**: Complex goto patterns and loop unrolling obscure simple logic
+
+### Best Quality Aspect: Type Precision (6/10)
+- Basic types like `unsigned int`, `void*`, `char` are mostly correct
+- Function signatures generally match original parameters
+
+### Most Needs Improvement: Variable Naming & Comment Quality (both 2/10)
+- Variable names completely generic, making code essentially unreadable
+- No comments whatsoever, leaving reader with no guidance
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: If `v1` is used as array index, name it `idx` or `index`. If `a0` is multiplied by 2, name it `x` or `value`.
+2. **Recover struct field names**: Analyze field access patterns - `field_0` accessed as `->data` should be named `data`. `field_8` as `->next` should be `next`.
+3. **Add semantic comments**: Document what each test function validates, flag undefined behavior cases, explain optimization artifacts like loop unrolling.

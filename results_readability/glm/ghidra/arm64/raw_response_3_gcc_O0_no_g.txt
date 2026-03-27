@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Local variables are overwhelmingly generic (e.g., `param_1`, `local_10`, `puVar4`, `aiStack_30`). Struct fields are completely lost, replaced by array indices (e.g., `__ptr[1]` instead of `p->y`), obscuring semantic meaning.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `double_value`, `heap_basic`, `test_stack_memory`), likely due to symbol preservation in the unoptimized binary, providing perfect context.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Constants are frequently represented in hex (e.g., `0x2a` for 42, `0xffffffff` for -1, `0x14` for 20) rather than decimal, requiring mental conversion. Magic offsets like `0x10` for TLS access are unexplained.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is cluttered with verbose stack canary checks (`___stack_chk_guard`) and non-standard types (`undefined4`, `undefined8`). While some dead stores were removed, the generic types add significant noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally natural with proper `for` and `while` loops. However, Variable Length Arrays (VLA) and `alloca` result in complex pointer arithmetic and manual stack alignment logic that disrupts natural reading.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source code. There is no inlining or outlining, maintaining the original granularity and cohesion perfectly, which is excellent for an `-O0` build.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps or gotos. Even complex functions like `linked_list_heap` follow a logical sequence without spaghetti code.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: Ghidra successfully eliminated intermediate dead stores (e.g., in `local_vars`, collapsing `a`, `b`, `c` into a single expression), simplifying the code without losing meaning.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Standard types like `int`, `size_t`, and `uint` are often replaced with `undefined4`, `undefined8`, or `ulong`. Signed/unsigned distinctions are frequently lost or obscured.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs (`Point`, `Node`, `TreeNode`) are not recovered at all. Accesses like `p->y` are decompiled to `__ptr[1]` or `*(int *)(__ptr + 8)`, completely losing the semantic structure and field names.
+
+**11. Type Safety:** Score: 5/10
+Justification: Pointer arithmetic is explicit and manual (e.g., `(long)__ptr + (long)local_10 * 4`). While correct, it relies on the user to ensure safety rather than the compiler, and casts to `undefined*` are prevalent.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are almost no comments explaining logic or algorithms. Only warnings about unreachable blocks or overlapping globals are present, which are compiler artifacts rather than semantic explanations.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Common idioms like Linked Lists or Tree traversals are recognizable but not explicitly labeled. Complex idioms like VLA or TLS are reduced to raw stack/hardware manipulation, obscuring the high-level intent.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Ghidra flags unreachable blocks and overlapping globals, which is helpful. However, it does not flag the loss of struct semantics or the complexity of the VLA implementation as potential readability issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the null checks in `heap_basic` are present but not highlighted as contracts or API requirements.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls and global variable accesses are clear and direct. The relationship between `set_global_callback` and `double_value` is preserved, and global usage is easy to trace.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, matching the source file structure. Static functions are correctly identified, and the separation between stack, heap, and global tests is maintained.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses non-standard types like `undefined4` and `undefined8`, which will not compile without significant modification or a custom header file to define these types.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- **Struct Loss**: Composite types like `Point` and `Node` are completely lost, replaced by raw array indexing (e.g., `__ptr[1]`), destroying semantic context.
+- **VLA/Alloca Obfuscation**: Variable Length Arrays are decompiled into complex pointer arithmetic and stack alignment logic (`puVar4 + ... + lVar2 + 0x10`), making them nearly unreadable.
+- **Generic Types**: Pervasive use of `undefined4`/`undefined8` instead of standard C types (`int`, `unsigned int`) hinders understanding and compilation.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** Ghidra perfectly preserved all original function names from the binary symbols, making the high-level intent of every function immediately obvious.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- **Why?** The failure to recover `struct` definitions turns data manipulation into abstract pointer math, which is the single biggest barrier to understanding the data structures used in the program.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Struct Recovery**: Implement aggressive type propagation to reconstruct `struct` layouts based on access patterns (e.g., consecutive `int` accesses at offset 0 and 4 should suggest a struct).
+2. **Type Mapping**: Replace `undefined` types with standard C types (`int`, `char`, `void*`) based on usage context and register size to improve compilation readiness.
+3. **VLA Simplification**: Detect the prologue/epilogue patterns of Variable Length Arrays and alloca to represent them as pseudo-variables or simplified pointer arithmetic rather than exposing raw stack pointer adjustments.

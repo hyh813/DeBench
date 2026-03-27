@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic decompiler-generated names like `iVar1`, `iVar2`, `uVar1`, `puVar2`, `param_1`, `param_2`. These obscure semantic meaning - for example, in `sequential_ops`, parameters should be named `a`, `b`, `c` matching source, not `param_1`, `param_2`, `param_3`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions preserve original names: `sequential_ops`, `single_if`, `if_else`, `recursion_factorial`, `double_value`, `triple_value`, `loop_for_fixed`, `loop_while`. However, some internal functions use generated names like `FUN_00100940`, `FUN_00100abc`. The core function names are good.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout without explanation: `0x14` (20), `0x1e` (30), `0x3e9` (1001), `0x65` (101), `0xffffffff` (-1). The decompiler doesn't replace these with meaningful constants or add comments explaining their purpose.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: stack canary checks (`___stack_chk_guard`), redundant type casts, and extensive stack frame setup code. Functions like `fsm_func_table` and `computed_goto` have massive blocks of byte-manipulation code for what should be simple array initialization.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is correctly recovered - loops use do-while constructs, if-else chains are readable. However, `duffs_device` has confusing goto labels (`LAB_00101424`, `LAB_00101440`) that obscure the original switch-case fallthrough pattern. `loop_modify_var` has an unusual while condition that's harder to follow than the source for-loop.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity - each test function is separate and cohesive. No obvious over-fragmentation or monoliths. Parameter lists are reasonable, though they expose implementation details through generic names.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom without excessive jumps. However, `duffs_device` has 10+ labels disrupting flow, and `switch_large` has deeply nested if-else chains that are hard to trace. The `fsm_func_table` function has extremely non-linear code with 35+ lines of byte manipulation before the actual logic.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop unrolling is minimal (appropriate for -O0). Some common subexpression patterns exist but don't significantly obscure logic. Overall clean in this dimension.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed type precision - uses `int`, `uint`, `ulong`, `undefined4`, `undefined8`. Function pointers use `code *` which is generic. Some signed/unsigned confusion visible (e.g., comparing signed param_1 with unsigned 0x3e9). The original `int` types are mostly preserved but with added confusion from `undefined` types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union recovery visible. Arrays like the matrix in `loop_multi_exit` are accessed via pointer arithmetic with raw values (`0x200000001`, `0x400000003`). The original `int arr[] = {10, 20, 30, 40, 50}` is completely lost, replaced with inline hex values.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present - pointer arithmetic visible (`puVar2 + 2`, `(long)puVar2 + 4`), function pointer type confusion (`code *` vs proper function signatures). However, no severe violations that would cause immediate undefined behavior. Minor issues with signed/unsigned mixing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining each function's purpose, test scenarios, and expected values. This complete absence makes understanding complex functions like `duffs_device` or `computed_goto` much harder.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some idioms are implicitly recognized - do-while loops, if-else chains, recursive calls. However, no explicit pattern naming (e.g., "Duff's device", "state machine", "function pointer table"). The complex patterns are present but not identified as recognizable design patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No explicit anomaly flags or warnings. Indirect calls through function pointers are marked but not explained. The `fsm_func_table` and `computed_goto` functions have unusual byte-manipulation code that could indicate obfuscation or complex patterns, but there's no indication of this to the analyst.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had clear semantic meaning (e.g., "x > 0 returns doubled value") that is completely lost. Error conditions from the source (e.g., "returns -1 if not found") are not indicated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible through direct calls (e.g., `test_control_flow_l1()` calls `sequential_ops`, `loop_for_fixed`). However, no documentation of who calls whom, global variable usage, or callback relationships. The call graph is inferable but not explicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in address order (0x100b14, 0x100b4c, etc.) rather than logical grouping. The original source organized functions by control flow level (L1, L2, L3) with clear sections. This organization is completely lost in the decompiled output.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses standard C types that should compile with minimal changes. External functions like `__printf_chk`, `__stack_chk_fail` are properly declared as external. Some functions have return type issues (e.g., `loop_break` returns void but should return int). Overall should compile with minor fixes.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming uses generic decompiler names (`iVar1`, `param_1`) instead of semantic names from source (`a`, `b`, `temp1`)
+- No comments explaining complex patterns like Duff's device, computed goto, or state machines
+- Composite types completely lost - arrays like `int arr[] = {10,20,30,40,50}` become raw hex values
+- Magic numbers without explanation (0x3e9, 0x65, 0xffffffff)
+- Excessive compiler noise (stack canaries, byte-manipulation code) obscuring logic
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+Most test functions preserve their original names from the source, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The generic variable names (`iVar1`, `iVar2`, `uVar1`, `puVar2`, `param_1`) make it extremely difficult to track data flow and understand function logic. This is the most impactful readability issue.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - Analyze how variables are used (arithmetic, comparison, array indexing) to suggest semantic names like `counter`, `index`, `result`, `size`
+2. **Add comments for complex patterns** - When detecting Duff's device, state machines, or function pointer tables, add explanatory comments describing the pattern
+3. **Recover composite types** - Detect array initializations and struct layouts from memory patterns, reconstruct them with meaningful field names rather than raw hex values

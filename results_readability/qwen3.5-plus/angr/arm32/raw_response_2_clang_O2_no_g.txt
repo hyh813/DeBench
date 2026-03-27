@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. For example, in `process_char`, parameter `a0` should be `c` or `character`, and in `array_1d_stack`, variables `v0-v5` obscure their roles as `sum`, `index`, and array pointers.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions preserved well (`process_char`, `array_1d_stack`, `struct_simple`), but runtime helpers use mechanical names (`sub_4003d8`, `sub_4015c4`). Core test functions match source names accurately.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x80000000`, `2047`, `255`, `0x100000`, `0x7f000000` in floating-point functions. The character conversion constant `32` and `65` in `process_char` are at least inferable as ASCII offsets.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive `armg_calculate_condition` calls throughout (especially in floating-point functions), redundant temporary variables (`v0-v100+` in `__muldf3`), and compiler artifacts from register spilling obscure actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Heavy `goto` usage instead of structured loops (e.g., `array_1d_stack` uses `do-while` with `goto` pattern). Floating-point functions have deeply nested conditional chains with `armg_calculate_condition` that are practically unreadable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function granularity is reasonable, but some signatures are corrupted (`binary_tree_sum` has 8 parameters instead of 1, `process_float` has no parameters instead of 1). Runtime functions like `__muldf3` are monolithic 500+ line blocks.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Frequent forward jumps disrupt top-to-bottom reading. Functions like `__adddf3` have labels (`LABEL_401809`, `LABEL_4019fa`) scattered throughout, making execution flow difficult to trace.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Duplicate calculations throughout (e.g., `armg_calculate_condition` called multiple times with identical arguments), excessive temporary variables that could be eliminated, and redundant conditional branches.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type degradation: `char` becomes `unsigned int`, `short` becomes `unsigned short` then `unsigned int`, `float`/`double` operations use raw integer manipulation. `process_char` takes `unsigned int` instead of `char`, `volatile_access` loses volatile semantics entirely.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are identified but fields use generic names (`field_0`, `field_1`, `field_4`). Some layouts are incorrect (`struct_0` in `pointer_array` doesn't match `Node` structure). Union types partially recovered but field access is unclear.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts (`(char*)`, `(int*)`), void pointer usage without type information, incorrect pointer arithmetic (`a0 + a1 * 4` instead of proper array indexing). `ptr_void` has type confusion between int and char pointers.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, algorithms, or decompilation confidence. No documentation of non-obvious operations like the floating-point bit manipulation in `__muldf3` or the condition flag calculations.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns not recognized: character case conversion (`c >= 'A' && c <= 'Z'` becomes bit manipulation), array summation loops become goto-based iteration, linked list traversal obscured by field access patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Problematic code like `binary_tree_sum` with 8 parameters presented confidently. Floating-point helper functions with hundreds of lines show no indication they may be incorrectly recovered.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `array_complex_index` should note bounds checking), no postconditions, no error condition documentation. Functions like `ptr_double` don't indicate NULL pointer requirements.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships not documented. Global variables (`g_402483`, `g_413008`) have no context. Callback relationships in `ptr_func_simple` and `struct_func_ptr` use `goto` instead of clear function call syntax.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source-order grouping (data types, arrays, pointers, composites) but mixed with runtime helpers. No header file structure or API declarations. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone—missing external dependencies (`__libc_start_main`, `__mulsf3`, `armg_calculate_condition`), undefined globals (`g_402483`, `g_413028`), and architecture-specific constructs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+3+3)/4 = 3.75
+Level 2 (Structural):  (2+5+3+3)/4 = 3.25
+Level 3 (Type):        (2+4+3)/3   = 3.00
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50
+Level 5 (Contextual):  (4+5+3)/3   = 4.00
+
+Overall = (3.75×0.30) + (3.25×0.25) + (3.00×0.20) + (1.50×0.15) + (4.00×0.10)
+        = 1.125 + 0.8125 + 0.60 + 0.225 + 0.40
+        = 3.16/10
+```
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects:
+- **Variable `a0`, `v0-v100+`** should have semantic names based on usage (e.g., `character`, `sum`, `index`, `float_bits`)
+- **Control flow uses goto** for simple loops instead of `for`/`while` constructs throughout
+- **Floating-point functions** (`__muldf3`, `__adddf3`) are completely unreadable with 500+ lines of `armg_calculate_condition` calls
+- **Type information lost**: `char`→`unsigned int`, `volatile` semantics removed, function signatures corrupted
+- **Zero comments** explaining any logic, algorithms, or decompilation uncertainty
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- User-defined function names preserved accurately from source (`process_char`, `array_1d_stack`, `struct_simple`), maintaining semantic intent for core test functions.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation, confidence indicators, or explanations for complex recovered logic makes the code practically unusable for analysis.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop counters should be named `i`, `index`; accumulators should be `sum`, `total`)
+2. **Recover high-level control structures** from jump patterns—convert `do-while` with `goto` back to `for`/`while` loops, especially for array iteration patterns
+3. **Add decompilation confidence annotations** for uncertain recoveries (e.g., `// UNCERTAIN: floating-point operation may be incorrect`, `// ANOMALY: indirect call target unresolved`)

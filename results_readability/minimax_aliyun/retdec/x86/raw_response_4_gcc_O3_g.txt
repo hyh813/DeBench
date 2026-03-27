@@ -1,0 +1,88 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3` throughout (e.g., `cdecl_func(int32_t a1, int32_t a2)` should be `a, b`). Local variables are `v1`, `v2`, `result` - no semantic meaning. The original source uses meaningful names like `count`, `sum`, `args` in varargs functions.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions preserve original names: `cdecl_func`, `stdcall_func`, `fastcall_func`, `test_calling_conventions`. However, some utility functions have generic names like `function_1080`, `function_1090`, `function_10a0` (which is `puts`). The core functions under test are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Global variables use unexplained hex values: `g1 = -0x113c00`, `g2 = -0x10bc00`. String literals are reconstructed via pointer arithmetic (e.g., `v1 + (int32_t)&g5 - 0x1fc8`). Magic numbers like `4` in `param_array_decay` and `2 * a1` lack context. The constant `42` in `func_no_args` is correctly preserved.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_bx`, `__x86_get_pc_thunk_dx`, `__x86_get_pc_thunk_di`, `__x86_get_pc_thunk_ax` appear throughout. Multiple auto-generated functions like `frame_dummy`, `register_tm_clones`, `deregister_tm_clones` add noise. Redundant casts like `(int32_t *)a1` in pointer contexts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural - loops use `while` constructs, conditionals are clear. However, `ret_complex_expr` has an overly complex ternary expression: `v1 < 0 == ((v1 ^ a1) & (a2 ^ a1)) < 0 == (v1 != 0) ? 2 * a3 : a3 + 10`. The `ret_multi_branch` uses confusing arithmetic instead of a switch. At -O0, this level of complexity is unexpected.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries are preserved correctly. However, `func_struct_byval` exposes 16 individual parameters instead of a struct (original has `LargeStruct s`). The `test_calling_conventions` function is 200+ lines, which is too large. Some parameter lists expose implementation details unnecessarily.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in functions like `varargs_func`. Some pointer arithmetic in varargs handling (`4 * v1 + (int32_t)&v2`) requires mental tracing but is manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some optimization artifacts present - `varargs_func` is inlined into `call_varargs_param` as `param_varargs_constprop_0`. The `ret_large_struct` has slightly awkward ordering of assignments (lines appear out of sequence). No major dead code, but minor redundancy in global variable access patterns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently which is appropriate. However, `char*` parameters become `int32_t` (e.g., `param_string(int32_t a1)` should be `const char*`). Function pointers lose their signature (e.g., `param_func_ptr(int32_t a1)` should be `int (*callback)(int)`). `double` correctly identified as `float64_t`. Const correctness is lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Major struct recovery failure. `func_struct_byval` receives 16 separate `int32_t` parameters instead of `LargeStruct`. Small structs like `SmallPoint` are handled via hidden pointer `result` parameter but field names lost. No struct definitions recovered - all flattened to primitives.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int32_t *)a1` in `param_by_value_ptr`, `(char *)str` in `func_mixed_args`. Function pointers treated as `int32_t` causing type confusion. Double pointer logic in `param_double_ptr` is correct but uses raw integer arithmetic. No buffer overflow patterns, but significant type safety concerns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal comments present - mostly address ranges and source file references (e.g., `// From module: /work/4.c // Line range: 660 - 665`). No explanation of algorithm logic, parameter purposes, or return value semantics. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms explicitly identified. Varargs handling is not labeled as such. The calling convention tests are not identified as a test suite. No recognition of common patterns like AAPCS, cdecl, or stdcall conventions.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code or potential issues. The complex bit manipulation in `ret_complex_expr` and unusual arithmetic in `ret_multi_branch` are not flagged. No indication of indirect call resolution failures or undefined behavior risks.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `func_struct_byptr` that check for NULL don't have "requires: p != NULL" documented. No contract information recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible in the code (e.g., `test_calling_conventions` calls various functions). However, no documentation of call graphs, global variable usage, or callback relationships. Each function is isolated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Related functions are grouped together (test functions, calling convention functions, parameter passing functions). However, it's a single monolithic file with no logical module separation. Static vs. global scope not distinguished.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes standard headers (`<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`). Would compile with libc linking. External dependencies like `__libc_start_main`, `__printf_chk`, `__cxa_finalize` are declared but not defined - standard for decompiled code.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `v1`, `v2` instead of semantic names like `count`, `sum`, `args`
+- Composite types completely lost - `LargeStruct` flattened to 16 separate parameters, struct fields not recovered
+- No comments explaining algorithm logic, parameter purposes, or return value semantics
+- Excessive compiler artifacts (`__x86_get_pc_thunk_*` functions) cluttering output
+- Type safety issues: function pointers as integers, unsafe casts throughout
+- No anomaly indication for complex/unusual code patterns
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)  
+- Core test function names match original source exactly (`cdecl_func`, `stdcall_func`, `test_calling_conventions`)
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.75/10)  
+- No comments, pattern recognition, anomaly indication, or contract recovery - the decompiled code provides no semantic context to help analysts understand the code's purpose
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a1` used as count in loops should be named `count`; `v1` accumulating values should be `sum`
+2. **Recover composite types**: Detect when multiple consecutive parameters form a struct (16 int32_t params → struct with 16 int fields); recover struct field names from access patterns
+3. **Add semantic comments**: Include parameter purpose ("// a1: number of variadic arguments"), return value meaning, and flag complex expressions ("// Complex conditional expression - verify logic")

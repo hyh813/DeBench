@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Parameters are correctly named (e.g., `arr`, `n`, `x`), but local variables are generic (`local_10`, `local_14`). While comments like `/* Unresolved local var: int sum@[???] */` indicate the decompiler is aware of the original names from debug symbols, it failed to map them to the stack locations, leaving cryptic names in the code body.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names match the original source perfectly (e.g., `process_char`, `array_1d_stack`, `struct_bitfields`), likely due to the presence of debug symbols (`-g`). The names are action-oriented and semantically accurate.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: ASCII comparisons are often represented as hex constants (e.g., `0x40 < (byte)c` instead of `c >= 'A'`, and `(byte)c < 0x5b` instead of `c <= 'Z'`), which obscures the intent of character range checks. However, the constant `' '` (space) was correctly recovered in `process_char`.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is cluttered with "Unresolved local var" comments and warnings like "Unknown calling convention" or "Type propagation algorithm not settling". While the logic itself is clean (no register spills), these diagnostic comments significantly distract from the code's readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent, matching the source closely. Loops are correctly identified as `for` loops, `switch` statements are preserved (e.g., in `enum_switch`), and `if/else` logic is natural. This is expected for `-O0` code, but the decompiler handles it perfectly.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries correspond exactly to the source. There is no inlining or outlining; every function in the source (e.g., `process_int`, `test_data_types_l1`) is recovered as a separate, cohesive unit.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom. There are no confusing forward jumps or spaghetti logic. The structure of nested loops in functions like `array_3d` is preserved clearly.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no loop unrolling or dead code present in the user-defined functions. The code is concise, reflecting the unoptimized source structure without unnecessary artifacts.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types (`int`, `char`, `float`) are correct, but `long double` is represented as `undefined1 [16]` arrays and split `undefined8` variables, obscuring the math. Additionally, type qualifiers like `const` and `volatile` are stripped from function signatures (e.g., `volatile_access` takes `int *p` instead of `volatile int *p`).
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Structs and unions are defined and used correctly with field access (e.g., `p->x`, `node->next`). However, bitfield access in `struct_bitfields` is degraded into manual bitwise operations (`*(ushort *)f >> 1 & 3`) rather than accessing the named fields (`flag1`, `flag2`), losing semantic meaning.
+
+**11. Type Safety:** Score: 9/10
+Justification: Pointer arithmetic and casts are generally safe and match the source. The decompiler correctly handles `void*` casting in `ptr_void` and function pointer signatures in `ptr_func_simple`.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are primarily diagnostic warnings about unresolved variables or type propagation issues. There are no high-level comments explaining the logic (e.g., "Calculates diagonal sum of matrix"), relying entirely on the code structure for understanding.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: Standard idioms like array traversal and pointer arithmetic are clear, but specific patterns like the "linked list traversal" or "binary tree recursion" are not explicitly labeled or highlighted; they are just presented as standard loops/recursion.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler effectively flags issues it encounters, such as "Unresolved local var" or "Type propagation algorithm not settling". This alerts the user to potential inaccuracies in the variable mapping or type analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the requirement that `arr` is not null in `ptr_single` is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear, and the relationship between caller and callee is obvious. The use of standard library functions like `printf` is correctly identified.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are presented in a logical order (roughly matching the source file order). Related test functions are grouped together, though there are no explicit module separators or headers in the decompiled view.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses Ghidra-specific types like `undefined1`, `undefined8`, and `undefined4`, which would require significant modification to compile with a standard C compiler.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (5 + 10 + 6 + 5) / 4 = 6.5
+L2_avg: (9 + 10 + 9 + 9) / 4 = 9.25
+L3_avg: (6 + 7 + 9) / 3 = 7.33
+L4_avg: (3 + 6 + 7 + 2) / 4 = 4.5
+L5_avg: (8 + 7 + 4) / 3 = 6.33
+
+Overall = (6.5 * 0.30) + (9.25 * 0.25) + (7.33 * 0.20) + 
+          (4.5 * 0.15) + (6.33 * 0.10)
+Overall = 1.95 + 2.31 + 1.47 + 0.68 + 0.63
+Overall = 7.04
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 7.0/10
+
+### Critical Defects (Bullet List)
+- **Variable Naming Failure**: Local variables use generic names (`local_10`, `local_14`) despite debug info indicating original names (`sum`, `i`) exist but couldn't be mapped.
+- **Bitfield Obfuscation**: Bitfield struct access is decompiled to raw bitwise shifts and masks (`*(ushort *)f >> 1 & 3`), destroying the semantic field names (`flag1`, `flag2`).
+- **Long Double Opacity**: `long double` arithmetic is obscured by soft-float library calls (`__multf3`, `__addtf3`) and raw array types (`undefined1 [16]`), making simple math unreadable.
+- **Literal Clarity**: ASCII character comparisons are represented as hex constants (e.g., `0x40` instead of `'A'`), reducing readability.
+- **Type Qualifier Loss**: `const` and `volatile` qualifiers are stripped from function signatures, removing important semantic constraints.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (10/10)**
+- **Why?** The `-g` flag allowed Ghidra to perfectly recover the original function names, making the high-level purpose of every unit immediately obvious.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Semantic Transparency (4.5/10)**
+- **Why?** The code lacks high-level comments, contracts, and idiom recognition, reducing it to a syntactic translation rather than a semantic explanation of the logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Debug Symbol Mapping**: Enhance the stack variable analysis to successfully map DWARF debug symbols to stack locations, replacing `local_XX` with the actual variable names found in the "Unresolved local var" comments.
+2.  **Preserve Bitfield Semantics**: Instead of lowering bitfield accesses to bitwise arithmetic, attempt to reconstruct the bitfield definition and access the fields by name in the decompiled view.
+3.  **Abstract Soft-Float Intrinsics**: For architectures using software floating-point emulation (like `long double` on ARM64), detect patterns of library calls (`__multf3`, etc.) and represent them as standard arithmetic operators (`*`, `+`) for better readability.

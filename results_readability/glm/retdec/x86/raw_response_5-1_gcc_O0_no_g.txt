@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `v1`, `v2`, `a1`, `result`, and `this`. No semantic names like `obj`, `value`, or `data` are recovered, making it difficult to track the purpose of variables without cross-referencing the original source.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: The decompiler uses mangled C++ names (e.g., `_Z20test_cpp_member_funcv`) in the signatures, which are unreadable. However, it provides demangled names in comments (e.g., `// Demangled: test_cpp_member_func()`), which significantly aids identification, though the code itself remains syntactically noisy.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are preserved (e.g., `"Test"`), but member access relies on magic numbers for offsets (e.g., `result + 4`, `result + 35`) instead of struct field names, obscuring the data layout of classes like `SimpleClass`.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant compiler artifacts, specifically `__x86_get_pc_thunk_ax` calls for Position Independent Code (PIC) and stack canary checks (`__readgsdword(20)`), which clutter the function logic despite the `-O0` optimization level.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: The control flow is generally linear and readable, reflecting the `-O0` compilation. However, exception handling and complex logic sometimes result in `goto` statements or obscure jumps that break the natural top-to-bottom reading flow expected in high-level code.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are decomposed well, with constructors, destructors, and template instantiations correctly separated into distinct functions (e.g., `_ZN11SimpleClassC1EiPKc` for the constructor). The granularity is appropriate, avoiding monolithic blocks.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with minimal forward jumps. The structure is coherent, allowing a reader to follow the execution path of the test functions (e.g., `test_cpp_member_func`) with relative ease.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little artificial redundancy added by the decompiler. The redundancy present stems from the unoptimized source code (e.g., repeated variable loads), which is accurately represented rather than abstracted away.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: C++ class types are completely erased; objects are represented as generic `int32_t*` pointers. The architecture mismatch (metadata says ARM64, code is x86) results in 32-bit integers being used for pointers and sizes, losing the precision of the original 64-bit types.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: This is a critical failure. No C++ classes or structs are recovered. Member access is performed via raw pointer arithmetic (e.g., `*(int32_t *)((int32_t)result + 4)`), completely losing the semantic structure of classes like `SimpleClass` or `Point`.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts, treating `int32_t` as pointers (`int32_t *`) and vice versa. While this accurately reflects the low-level implementation of the C++ ABI, it results in type-unsafe C code that is prone to misinterpretation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10
+Justification: The inclusion of demangled function names in comments is the primary saving grace, providing essential context. However, there are no comments explaining the logic, algorithms, or the purpose of the complex pointer arithmetic used to implement C++ features.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms like RAII, smart pointers, and virtual dispatch are not recognized. Instead, they are represented as verbose calls to standard library helpers (e.g., `std::_Tuple_impl`, `std::__uniq_ptr_impl`) or vtable lookups, obscuring the original design patterns.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler does not explicitly flag anomalies, such as the architecture mismatch or the indirect calls via vtables. The code is presented confidently as standard C, leaving the user to identify the complexity of the underlying C++ mechanisms manually.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the requirements for `std::unique_ptr` ownership or the validity of `this` pointers are not documented, leaving the contracts of the functions opaque.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are explicit, and the demangled names help identify relationships. However, virtual function calls are represented as indirect memory accesses (e.g., `*(int32_t *)*a1`), which obscures the polymorphic relationship between base and derived classes.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a single large file with functions ordered roughly by address. While related functions (like constructors and destructors) are often close, there is no logical grouping by class or module, making it hard to navigate the codebase.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on compiler-specific intrinsics (`__x86_get_pc_thunk_ax`) and specific standard library implementations that are not included as headers. It would require significant patching to compile, primarily due to the missing struct definitions and inline assembly.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Composite Type Recovery Failure:** C++ classes are not reconstructed; all member access is manual pointer arithmetic (e.g., `*(int32_t *)(result + 4)`), making data layout obscure.
+- **Generic Variable Naming:** Variables are named `v1`, `v2`, `a1`, etc., stripping all semantic meaning and forcing constant cross-referencing with the original source.
+- **Architecture Mismatch:** The metadata specifies ARM64, but the decompiled code contains x86-specific artifacts (`__x86_get_pc_thunk`) and uses 32-bit integers for pointers, leading to incorrect type precision.
+- **Loss of High-Level Abstractions:** C++ features like smart pointers and exceptions are reduced to verbose, low-level library calls without retaining the original semantic intent.
+
+**Best Quality Aspect:** Function Decomposition (Score: 8/10)
+- The decompiler successfully separates distinct logical units (constructors, destructors, template instances) into individual functions, maintaining a manageable granularity despite the low-level representation.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 1/10)
+- The complete absence of struct/class definitions is the single biggest barrier to readability. Recovering `SimpleClass` or `Point` as C structs with named fields would instantly elevate the code's comprehensibility.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Implement C++ Class Recovery:** Analyze constructor/destructor patterns and member access offsets to reconstruct C++ classes as C structs with named fields.
+2.  **Use Demangled Names in Signatures:** Replace mangled names in function definitions (e.g., `_Z20test_cpp_member_funcv`) with their demangled equivalents (`test_cpp_member_func`) to improve syntactic readability.
+3.  **Infer Semantic Variable Names:** Utilize context, such as the `this` pointer in member functions or common parameter names in standard library calls, to assign meaningful names instead of generic `v1`, `v2`.

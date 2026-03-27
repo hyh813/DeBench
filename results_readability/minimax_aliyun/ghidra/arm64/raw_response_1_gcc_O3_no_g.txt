@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiler uses generic parameter names (`param_1`, `param_2`, `param_3`) and local variables (`iVar1`, `iVar2`, `uVar1`, `iVar3`, `iVar4`) throughout. These obscure semantic purpose - for example, in `sequential_ops`, parameters should be named `a`, `b`, `c` based on the source, not `param_1/2/3`. The original source had simple but meaningful names like `temp1`, `temp2` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Many functions preserve original names exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `recursion_factorial`, `double_value`, `triple_value`, `op_add`, `op_sub`, etc. However, some internal functions use generic names like `FUN_00100940`, `FUN_0010141c`, and the test functions are auto-generated. The core logic functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3e9` (1001), `0x14` (20), `0xffffffff` (-1) appear without explanation. The switch statement in `switch_small` uses `&CSWTCH_55` with indexed access, which is unclear. Some constants like `100` in `switch_default` are used directly. The decompiler doesn't infer that `0x3e9` is a loop iteration limit.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise pollution from compiler/runtime artifacts: "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call", "WARNING: Subroutine does not return". Stack guard references (`___stack_chk_guard`) appear in many functions. These 50+ warning comments severely clutter the output and obscure actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures are well-recovered - `while`, `do-while`, `for` loops are present. The `switch` statements are partially recovered as if-else chains (e.g., `switch_small` uses array indexing). However, `duffs_device` uses goto-based control flow that obscures the original switch-do pattern. At -O0, this is more aggressive than necessary.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - each function handles a single control flow pattern. The test functions are properly separated from implementation. No monolithic functions observed. Parameter lists are reasonable and don't expose excessive implementation details.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with manageable nesting (2-4 levels). Some forward jumps exist in complex functions like `loop_multi_exit` with its multiple `goto` labels. The `duffs_device` function has particularly poor linearization with multiple jump targets.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling is present in `loop_for_fixed`, `loop_continue`, `recursion_factorial`, and `goto_backward` - these are uncommented and appear as explicit repeated code. For example, `recursion_factorial` has 14+ sequential multiplications for small inputs that should be recognized as loop unrolling. This is expected at higher optimization but at -O0 this is aggressive.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types are generic - uses `int`, `uint`, `undefined4`, `undefined8` rather than specific types like `int32_t`, `uint64_t`. Function pointers use generic `code *` type. The original source used `int` consistently, so this is partially acceptable, but `bool` return types should be `bool` not `undefined4` or `bool`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union recovery visible. All parameters are flat types. The original source had no structs either, but any potential struct-like patterns (like the matrix in `loop_multi_exit`) are completely lost - the array is not reconstructed and the function becomes a flat conditional chain.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally safe code without obvious buffer overflows. Some minor issues: function pointer calls use generic `code *` type, some implicit conversions between signed/unsigned. No severe type safety violations that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: File-level header comment identifies Ghidra version and binary path. Some function comments exist but are minimal. No source code comments preserved. The decompiler doesn't explain what each function does or its algorithm. Auto-generated warnings dominate the comment space.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are explicitly identified. Duff's device is recovered but not labeled as such. The state machine pattern in `state_machine` and `fsm_func_table` isn't identified. The complex loop patterns (loop unrolling) aren't recognized or explained.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The decompiler appropriately flags unrecoverable jump tables with "WARNING: Could not recover jumptable at 0x00101c48. Too many branches". Indirect calls that couldn't be resolved are marked. However, some anomalies like the stack guard checks could be better explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had no formal contracts either, but the decompiler could infer things like "param_1 > 0" for factorial or "param_2 != 0" for division operations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are traceable through direct calls. No explicit caller/callee documentation. The relationship between `test_control_flow_l1` and the functions it tests is implicit. Callback relationships in `process_with_callback` aren't documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - control flow L1, L2, L3 functions separated, test functions grouped together. Static functions like `state_idle`, `state_processing` are properly scoped. Matches the source file's logical organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code uses standard C constructs that should compile. No obvious compiler-specific hacks. External dependencies (libc functions like `printf`, `puts`, `setjmp`) are called correctly. Should compile with minimal stubs for undefined symbols.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming uses generic patterns (`param_1`, `iVar1`, `uVar2`) that completely obscure semantic purpose
+- Excessive compiler/runtime noise (50+ warning comments) clutters the output
+- No struct/array recovery - `loop_multi_exit` becomes a flat conditional chain instead of array iteration
+- Loop unrolling in many functions is uncommented, appearing as redundant code
+- No idiom recognition - Duff's device, state machines, and patterns aren't identified
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+Functions maintain appropriate granularity and single responsibility. Core logic functions preserve original names.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Generic variable names throughout make code extremely difficult to follow. Parameters like `param_1/2/3` should be inferred from usage patterns.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `param_1` in `sequential_ops` should be `a`, `b`, `c` based on the arithmetic operations
+2. Add comments explaining loop unrolling in `loop_for_fixed`, `loop_continue`, `recursion_factorial` - these are optimization artifacts that should be documented
+3. Recover array access patterns - `loop_multi_exit` should show the 2D array iteration rather than flattened conditionals
+4. Suppress or consolidate compiler warnings - the 50+ "WARNING" comments severely impact readability
+5. Add pattern recognition comments for Duff's device, state machines, and other complex idioms

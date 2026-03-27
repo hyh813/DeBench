@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: Parameter names are excellent (e.g., `dst`, `src`, `s1`, `s2`) due to debug symbols, but local variables are generic (`local_18`, `local_c`, `iVar1`), obscuring the logic of intermediate calculations like the ternary operator result in `param_strcmp`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `param_strcpy`, `param_fork_exec`), providing perfect semantic context for the operations performed.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers; for example, `0x80000000` is used for negative checks instead of `< 0`, `0x2a` represents the return value 42, and `0x1b6` represents file permissions `0666`, making the code hard to read without constant definitions.
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The code is generally clean with no dead code or register spilling artifacts, though the "WARNING: Unknown calling convention" comment appears on almost every function, which is visual noise rather than code noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is mostly natural and linear, matching the `-O0` compilation, though ternary operators are expanded into `if/else` blocks (e.g., in `param_strcmp`), and signed comparisons are sometimes implemented as unsigned checks against `0x80000000`.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly; there is no inlining or outlining, and the granularity is appropriate, with each function maintaining a single responsibility.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps; loops are correctly identified as `for` or `while` constructs, and early returns are preserved.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: In `param_socket_create`, the `memset` call was likely inlined or unrolled into a series of individual assignments to `local_24.sa_data` indices, creating a block of redundant code that clutters the function.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While basic types like `int` and `char*` are correct, specific types are lost; `sockaddr_in` is recovered as the generic `sockaddr`, and `pid_t` is recovered as `uint` or `int`, losing semantic specificity.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct recovery is poor; `ThreadData` in `thread_sum` is completely lost, accessed via raw pointer arithmetic like `*(int *)((int)arg + 8)` instead of `data->result`, and `sockaddr_in` fields are accessed via generic array offsets.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is generally safe, but the use of `0x80000000` for signedness checks implies a loss of signed/unsigned distinction in the decompiler's type analysis, which could be confusing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are almost no meaningful comments explaining logic; the only comments are repetitive warnings about "Unknown calling convention" and "Subroutine does not return," offering no insight into the algorithm's purpose.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library calls like `strcpy` and `malloc` are recognized, but complex idioms like Thread Local Storage (TLS) access via `__aeabi_read_tp` in `thread_tls_test` are presented as raw pointer arithmetic rather than variable access.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The "Unknown calling convention" warning is ubiquitous but likely inaccurate for standard functions, while actual anomalies like the raw TLS access or the `memset` unrolling are not flagged or explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or postconditions; for example, the requirement that `fp != NULL` in `param_fopen_fclose` is implicit in the control flow but not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the correct recovered names, making the call graph easy to follow; global variables like `shared_counter` are accessed correctly by name.
+
+**17. Module Organization:** Score: 9/10
+Justification: The functions are ordered logically, matching the source file's structure, with related test cases grouped together (e.g., standard library tests vs. system call tests).
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on standard headers and types, but the use of generic types like `undefined4` and `sockaddr` instead of the specific `sockaddr_in` would require manual fixing to compile successfully.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Critical Defects:**
+- Struct `ThreadData` is completely lost in `thread_sum`, replaced by pointer arithmetic `*(int *)((int)arg + 8)`.
+- `sockaddr_in` is recovered as generic `sockaddr`, with fields accessed via array offsets (`sa_data[0]`) instead of named members (`sin_port`).
+- Magic numbers like `0x80000000` (negative check) and `0x2a` (return value) obscure the original logic.
+- Thread Local Storage access is presented as raw hardware calls (`__aeabi_read_tp`) rather than variable access.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The presence of debug symbols (`-g`) allowed perfect recovery of function names and parameter names, making the high-level intent of every function immediately obvious.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- The failure to recover `ThreadData` and `sockaddr_in` structures forces the reader to interpret raw pointer arithmetic and array offsets, which is the single biggest barrier to understanding the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve stack variable structure recovery to identify `ThreadData` usage patterns instead of defaulting to raw pointer offsets.
+2. Map magic numbers used in comparisons (like `0x80000000`) back to signed comparison operators or named constants.
+3. Recognize ARM TLS access patterns (`__aeabi_read_tp` + offset) and map them to the original global variable symbols.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1` throughout (e.g., `param_macro_constants(int param_1)` should be `int size`). No semantic meaning is recovered from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are preserved from source (e.g., `param_macro_constants`, `call_asm_basic`), accurately reflecting original intent. This is a strength of the decompilation.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (e.g., `0x401`, `0x200`, `0xdef0` instead of `MAX_SIZE`, `MAX_SIZE/2`, platform constants). String literals are preserved but numeric constants lose semantic meaning.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts visible; however, many `__sync_fetch_and_add_*` helper functions are expanded unnecessarily. No frame pointer manipulation or register spilling noise observed.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple conditionals recovered well (e.g., `if (param_1 < 0x401)`), but aggressive constant folding eliminates original branching logic. Loop in `param_asm_clobber` recovered as do-while correctly.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly; however, many caller functions are constant-folded (e.g., `call_macro_constants` returns `0x40` directly instead of calling `param_macro_constants(2048)`).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally with minimal forward jumps. Early returns used appropriately. No spaghetti control flow observed.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive optimization creates redundancy issues - `test_asm_features` duplicates `param_memory_protection()` calls that weren't in source. Many `__sync_*` functions are duplicated for different sizes.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Widespread use of `undefined4` instead of `int` (e.g., `undefined4 param_macro_constants(int param_1)`). Pointer types sometimes correct (`int *param_1`) but inconsistent. Lost `size_t`, `void*` distinctions.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: No structs in this code sample, but pointer arithmetic recovered reasonably (e.g., `param_3[1] = param_1[1] + param_2[1]` for SIMD). Array indexing preserved correctly.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: `__sync_fetch_and_add_4()` called without proper arguments in `call_asm_atomic`. Cast to `(int *)(param_1 + -4)` in `param_asm_clobber` is suspicious pointer arithmetic.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated Ghidra header comments present. No algorithm explanations, no recovery of original source comments about preprocessing behavior. Critical warnings like "WARNING: Subroutine does not return" are generic.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Atomic operations recognized as `__sync_fetch_and_add` patterns but not documented as such. SIMD vector operations recovered as scalar loops without noting the pattern.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged ("WARNING: Removing unreachable block", "WARNING: Subroutine does not return"). However, critical issues like `call_asm_atomic` stack check failure not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL` for pointer params). No postconditions or error condition documentation. Original comments about expected values completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. `test_preprocessing_features` calls many functions but no call graph documentation. Global variable `global_var` referenced without context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order (preprocessing tests, then asm tests). However, 40+ `__sync_*` helper functions clutter the output without clear grouping.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code references undefined symbols (`__printf_chk`, `__stack_chk_fail`, `SUB_ffff0fc0`). External dependencies not documented. Would require significant stubbing to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+7)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+8+5)/4 = 6.50 × 0.25 = 1.63
+Level 3 (Type):        (4+6+5)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+3+6+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 5.27/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable `param_1` should be named `size`** based on comparison pattern `if (param_1 < 0x401)` matching source `if (size > MAX_SIZE)`
+- **Magic numbers `0x401`, `0x200`, `0x40`** should be recovered as `MAX_SIZE+1`, `MAX_SIZE/2`, `BUFFER_COUNT*4`
+- **`undefined4` return types** should be `int` based on usage context
+- **`call_asm_atomic` has broken logic** - stack check failure path doesn't match source semantics
+- **No comments recovered** from original 709 LOC of documentation about preprocessing behavior
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making navigation and identification straightforward despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero semantic documentation recovered; all 709 lines of original comments about preprocessing, expected values, and test purposes completely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement constant-to-symbol recovery** - Detect patterns like `0x401` compared against parameters and suggest named constants based on common thresholds (1024+1 = MAX_SIZE+1)
+2. **Add semantic comment generation** - When recovering assembly patterns (atomic ops, SIMD), insert explanatory comments describing the original intent
+3. **Improve type inference from usage** - Functions returning values used in arithmetic should be `int` not `undefined4`; pointer parameters used in array indexing should be typed arrays

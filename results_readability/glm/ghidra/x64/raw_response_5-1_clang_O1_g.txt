@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `local_24`, `iVar1`, `puVar1`), completely obscuring the original intent like `obj`, `result`, or `data`. In `test_cpp_rtti`, `plVar3` represents `obj1` but offers no semantic clue.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: User-defined functions and class methods retain their original names (e.g., `test_cpp_member_func`, `Base::virtual_func`), which is excellent. However, compiler-generated thunks for multiple inheritance use mangled names (e.g., `_ZThn16_N12MultiDerived5funcBEv`), reducing readability for complex hierarchies.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers resulting from constant propagation (e.g., `0x125c` instead of `4704`, `0x2bf` instead of `703`). While string literals like `"Test"` are preserved, the logic behind the numeric constants is completely lost.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output is cluttered with Ghidra internal warnings such as `/* WARNING: Unknown calling convention -- yet parameter storage is locked */` and `/* Unresolved local var: ... */`, which significantly distract from the actual code logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Aggressive optimization has destroyed the original control flow in many functions. For example, `test_cpp_operator_overload` and `test_cpp_lambda` are reduced to simple `return constant;` statements, eliminating the loops, arithmetic, and object interactions present in the source.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Functions are well-separated, with virtual methods and constructors correctly identified as distinct units. The granularity is appropriate, though the loss of inlined logic makes some functions feel empty.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Where logic remains (e.g., `test_cpp_rtti`), the code reads linearly. However, complex pointer arithmetic for virtual inheritance (e.g., `*(int *)((long)&this->dataA + (long)this->_vptr_MiddleA[-3])`) disrupts the natural reading flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately reflects the compiler's elimination of redundant code. While this makes the code concise, it contributes to the loss of semantic context by removing intermediate calculation steps.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types and class pointers (e.g., `Base *`, `Derived *`) are recovered well. However, complex STL types like `std::unique_ptr` are lost, appearing as raw `undefined` types or generic memory buffers, and `undefined4` is overused for integers.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Class structures like `Base` and `Container` are partially recovered with correct vtable pointers (`_vptr_Base`) and data members (`data`, `size`). However, `SimpleClass` is treated as a raw byte array (`local_24`), and inheritance layouts are exposed as raw memory offsets rather than clean hierarchies.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts and pointer arithmetic, particularly when accessing virtual base class members (e.g., casting `long` offsets to `int*`). This reflects the compiler's implementation but results in type-unsafe looking C code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are primarily limited to DWARF debug info prototypes (`/* DWARF original prototype: ... */`) and Ghidra warnings. There are no high-level comments explaining the purpose of the test functions or the complex inheritance mechanics.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Low-level C++ idioms like vtable dispatches (`(**obj->_vptr_Base)()`) and RTTI checks are visible. However, high-level patterns like RAII (Resource Acquisition Is Initialization) in `LifecycleClass` or the logic of the test harness are obscured by optimization.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Ghidra flags technical issues like "Unknown calling convention" but fails to indicate the semantic anomaly that the logic has been optimized away (e.g., `test_cpp_exception` ending in a throw without showing the catch handler logic).
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or invariants are documented. Logic checks that might represent assertions (e.g., bounds checks in `Container::get`) are embedded in the code without explicit semantic labeling.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls and vtable references are clear, allowing navigation. However, the relationship between the high-level test logic and the low-level implementation is broken by the optimization, making it hard to map source intent to decompiled output.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are organized logically by address, which roughly groups related class methods together. The separation of constructors, destructors, and virtual functions is maintained well.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code is not standalone compilable due to the use of `undefined` types, missing struct definitions for STL classes, and reliance on compiler-specific intrinsics without proper headers.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- **Optimization Artifacts**: Most test functions (e.g., `test_cpp_operator_overload`) are reduced to `return constant;`, completely erasing the source logic and making the code useless for understanding the original algorithms.
+- **Variable Naming**: Generic names like `local_24` and `iVar1` make it impossible to track object state or data flow without manual stack frame analysis.
+- **STL Type Loss**: Standard library types like `std::unique_ptr` are not recovered, appearing as `undefined` or raw memory, which obscures the memory management semantics of the original code.
+- **Noise Pollution**: Excessive warnings about "Unknown calling convention" and "Unresolved local var" clutter the output and distract from the actual code.
+
+**Best Quality Aspect:** Function Naming (Score: 7/10)
+- Despite the optimization, the decompiler successfully preserved the names of user-defined functions and methods, providing the primary link back to the original source code.
+
+**Most Needs Improvement:** Semantic Transparency (Score: 3.5/10)
+- The high-level meaning of the code is lost because the decompiler presents the optimized result (constants) rather than the source logic, failing to convey *what* the code is actually doing (testing C++ features).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Optimization Reversal Hints**: Detect when a function returns a compile-time constant and annotate it with a comment like "Result likely optimized from source calculation" to alert the analyst.
+2.  **STL Type Recovery**: Improve type libraries to recognize and instantiate common STL container templates (like `std::unique_ptr` or `std::vector`) even at higher optimization levels.
+3.  **Noise Filtering**: Provide a mode to suppress "Unknown calling convention" and "Unresolved local var" warnings, or collapse them into a single summary at the top of the function.

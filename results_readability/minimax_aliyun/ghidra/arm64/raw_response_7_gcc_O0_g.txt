@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+I'll evaluate the decompilation of this specific function, which demonstrates "fake branch" obfuscation techniques with always-false conditions.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiler creates unused local variables `x_local`, `result`, and `str` that are never referenced. These should either be eliminated (if truly dead) or properly named to reflect their semantic purpose. The original had `result` as a meaningful variable, but here it's just a placeholder.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function name `param_fake_branch` perfectly matches the original source, preserving the semantic meaning and purpose of the function.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No literals present in the simplified output. The original had `0xDEADBEEF` and `1000` which are now eliminated along with the dead code.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: The decompiled function declares three unused local variables (`x_local`, `result`, `str`) that create noise and confusion. These appear to be register spill artifacts or incomplete dead code elimination, making the code misleading.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 1/10  
+Justification: The decompiler has completely eliminated both fake branch `if` statements that were the core obfuscation technique. At `-O0`, these should be preserved. The control flow is trivially simple (just `return x`) but this represents a critical loss of the original logic structure.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The function is appropriately small and focused. No decomposition issues.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: The simplified code reads linearly from declaration to return with no jumps or branches.
+
+**8. Redundancy Elimination:** Score: 1/10  
+Justification: The decompiler has over-aggressively eliminated "dead code" - but these fake branches are intentional obfuscation that should be preserved. The original code's fake branches are semantically significant even though they never execute.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Parameter `x` is correctly typed as `int`. The unused locals are also correctly typed as `int` and `char*`.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types used in this function, so nothing to recover.
+
+**11. Type Safety:** Score: 9/10  
+Justification: The simplified code is type-safe. The unused variable declarations don't create safety issues.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments explaining the fake branch obfuscation technique. The decompiler should note that dead code elimination occurred or that these are intentional fake branches. The original source clearly documented the obfuscation intent.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The "fake branch" (永假条件) obfuscation idiom is completely lost. This is a well-known obfuscation pattern that the decompiler should recognize and preserve.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that significant code was eliminated. The decompiler should flag that two conditional blocks were removed, as this is suspicious at `-O0` optimization level.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No pre/postcondition information recovered. Could document that input `x` can be any integer.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The function calls `call_fake_branch` are visible and the relationship is clear. The function is called with constant `10`.
+
+**17. Module Organization:** Score: 10/10  
+Justification: The function is properly placed in the decompiled output among related obfuscation test functions.
+
+**18. Build System Compatibility:** Score: 10/10  
+Justification: The simplified function would compile cleanly as valid C code.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Fake branches eliminated**: Both `if (x * x < 0)` and `if (strlen(str) < 0)` are completely removed, destroying the obfuscation technique being tested
+- **Unused local variables**: `x_local`, `result`, `str` declared but never used - creates noise and confusion
+- **No obfuscation recognition**: The decompiler should recognize and preserve "always false" condition patterns as intentional obfuscation, not dead code
+- **Missing documentation**: No comments explaining why code was eliminated or that this implements fake branch obfuscation
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- The function name is perfectly preserved from the original source
+
+**Most Needs Improvement:** Control Flow Naturalness (scored 1/10)  
+- At `-O0` optimization level, the decompiler should preserve all code paths including fake branches. The elimination of both conditional blocks represents a fundamental failure to recover the original code structure
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Preserve fake branches**: At `-O0`, detect always-false conditions (like `x*x < 0` for integers) and preserve them as intentional obfuscation rather than eliminating as dead code
+2. **Clean up unused variables**: Remove local variable declarations that are never read or written, or mark them as "potentially used for register allocation"
+3. **Add anomaly warnings**: Flag significant code elimination with comments like "NOTE: 2 conditional branches removed - verify if intentional obfuscation"

@@ -1,0 +1,128 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `param_1`, `param_2`, `param_3` instead of semantic names like `a`, `b`, `c`. Local variables are `iVar1`, `iVar2`, `uVar1` - completely obscuring their roles as `temp1`, `temp2`, `sum`, etc. Only a few functions like `double_value` have meaningful names matching source.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Many functions correctly recovered: `sequential_ops`, `single_if`, `if_else`, `recursion_factorial`, `double_value`, `triple_value`. However, some have cryptic names like `FUN_00011030`, and the constprop.0 suffix on `computed_goto_constprop.0` indicates optimization artifacts. The function names are a mixed bag - about 60% accurate.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout: `0x14` (20), `0x1e` (30), `0x3e9` (1001), `0xffffffff` (-1). The test functions embed hardcoded values like `0x15` (21) directly in printf instead of showing the computation. No named constants recovered. The literal `0x65` (101) in `multi_return` threshold check is unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple WARNING comments about unrecovered jumptables, inlined functions, and unreachable blocks. Stack protection functions (`__stack_chk_fail_local`) add noise. However, no debug instrumentation or frame pointer manipulation clutter. The noise is moderate and manageable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical issue - `recursion_factorial` at -O0 was compiled to iterative loop (should be recursive). The `loop_for_fixed` uses do-while instead of for. The `loop_continue` is transformed into complex nested while loops. At -O0, these transformations should NOT occur - the decompiler is showing optimization artifacts that contradict the stated compilation flags.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity - none are monolithic. Parameter counts are reasonable. Static helper functions like `op_add`, `op_sub` are properly extracted. Minor issue: some small functions could be inlined back for clarity at -O0.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. The `duffs_device` has complex control flow with labels and switches that disrupt linearity. Some goto statements in `loop_multi_exit` create minor discontinuities. Most other functions are reasonably linear.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: The `recursion_factorial` shows tail-call optimization (converted to loop) which shouldn't exist at -O0. Some loop unrolling visible. Dead code warnings suggest some elimination occurred. The optimization level mismatch is a critical defect.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most integers are generic `int` or `uint`. Some improvement with `bool`, `char`, `byte` types. Function pointers use imprecise `code *` type. The `param_2 & 0x1f` in shift operations shows some type awareness. Overall generic types dominate.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery visible anywhere. Arrays like `local_1c[3]` and `local_38[10]` are raw pointer-based without struct wrapping. The matrix in `loop_multi_exit` is completely flattened to conditional chains. All composite types lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations: pointer arithmetic in array access `*(undefined4 *)(param_1 + iVar1)`. Function pointer type confusion with `code *`. The `undefined4` type is concerning. However, no obvious buffer overflow patterns. Mixed safety.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Many WARNING comments about decompilation issues (unrecovered jumptables, inlined functions). Some header comments identifying the binary and decompiler. But no algorithm explanations, no API contracts (@param, @return), no semantic documentation of what functions do. Auto-generated noise dominates.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are somewhat recognizable: state machines in `state_machine`, switch-case in `switch_small`. But no explicit pattern naming (no "State Machine Pattern" comment). The Duff's device is partially recognized but poorly presented. Most patterns are not explicitly identified.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: WARNING comments flag unrecovered jumptables: "Could not recover jumptable at 0x00011ef1. Too many branches". Some "Subroutine does not return" warnings. However, inconsistent - some anomalies silently fail. The optimization level mismatch (recursion→iteration) is not flagged as anomalous.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition detection (e.g., "requires: param_1 > 0"). No postcondition inference. No invariant recognition. No error condition documentation beyond implicit returns. The decompiler provides zero contract information.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in the code. But no documentation of who calls whom, no call graph information. The test functions show what they test but don't document relationships. Global `jump_buffer` usage is visible but not explained. Relationships are implicit, not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are somewhat grouped by type (math ops, state handlers, test functions). Static functions properly scoped. But no clear logical grouping matching the original source's control flow level organization. Single flat file output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Multiple issues prevent compilation: undefined `puts`, `__printf_chk`, `__stack_chk_fail`. The `__stack_chk_fail_local` never returns. Missing standard library declarations. Would require significant patching to compile. The "WARNING: Subroutine does not return" annotations are accurate but code won't compile as-is.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 6 + 4 + 5) / 4 = 4.50
+L2_avg = (4 + 7 + 6 + 4) / 4 = 5.25
+L3_avg = (5 + 2 + 5) / 3 = 4.00
+L4_avg = (5 + 4 + 6 + 2) / 4 = 4.25
+L5_avg = (4 + 5 + 3) / 3 = 4.00
+
+Overall = (4.50 × 0.30) + (5.25 × 0.25) + (4.00 × 0.20) + (4.25 × 0.15) + (4.00 × 0.10)
+        = 1.35 + 1.3125 + 0.8 + 0.6375 + 0.4 = 4.50/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Optimization Level Mismatch**: `recursion_factorial` decompiled as iterative loop, but source was compiled with -O0 (no optimization). This is a fundamental correctness issue - the decompiled code doesn't match the stated compilation.
+
+2. **Variable Naming**: All parameters are `param_1`, `param_2`, etc.; all locals are `iVar1`, `iVar2`, `uVar1`. The original source had meaningful names like `a`, `b`, `c`, `temp1`, `sum`, `count` - completely lost.
+
+3. **No Composite Type Recovery**: The 2D matrix in `loop_multi_exit` was decompiled to a chain of conditionals instead of recovering `int matrix[3][4]`. All struct/union types lost.
+
+4. **Magic Numbers**: Literals like `0x14`, `0x1e`, `0x3e9`, `0xffffffff` appear without explanation. The original source had no magic numbers - all were computed values.
+
+5. **No Contract Recovery**: Zero precondition/postcondition/invariant documentation. The decompiler provides no semantic guidance about what functions expect or guarantee.
+
+---
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (L2-6)** scored highest at 7/10
+- **Why?** Functions maintain reasonable size and granularity. Parameter counts are appropriate. Static helper functions are properly extracted. The decomposition is mostly faithful to the original source structure.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (L1-1)** scored lowest at 3/10
+- **Why?** Every parameter is `param_N` and every local is `iVarN` - completely generic and meaningless. This makes it nearly impossible to understand what any function does without reading the entire implementation. At -O0, variable names should be perfectly preserved.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer Variable Names from Usage**: At -O0, variable names are in debug symbols. Even without debug info, analyze usage patterns: `param_1 + param_2` suggests addition operands; `param_1 * 2` suggests doubling; `count++` suggests a counter. Map these to likely source names.
+
+2. **Recover Control Flow Constructs Faithfully**: The `recursion_factorial` should show recursive calls at -O0, not an iterative loop. The decompiler must detect when control flow has been optimized and either (a) flag it as anomalous or (b) recover the original structure. The mismatch between stated -O0 and actual optimized output is a critical failure.
+
+3. **Detect and Recover Composite Types**: Arrays like `int matrix[3][4]` should be recognized, not flattened to conditionals. Struct layouts should be reconstructed with field names where possible. The decompiled code loses significant semantic meaning by treating all data as raw memory.

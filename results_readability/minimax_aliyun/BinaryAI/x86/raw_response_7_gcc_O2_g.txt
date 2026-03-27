@@ -1,0 +1,144 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+**Primary Focus**: `param_fake_branch` (lines 464-479 in source)
+
+The original function implements "永假条件" (always-false conditions) as an obfuscation technique:
+- `x * x < 0` is always false for real numbers
+- `strlen(str) < 0` is always false (string length cannot be negative)
+
+The decompiled version simply returns the input:```c
+undefined4 param_fake_branch(undefined4 param_1)
+{
+  return param_1;
+}
+```
+
+This is semantically correct but **completely loses the obfuscation intent** - the fake branches are optimized away.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Uses generic names like `param_1`, `param_2`, `iVar1`, `uVar2`, `pbVar2`. The original parameter `x` becomes `param_1`, losing semantic meaning. Variables like `local_30`, `local_10` provide no indication of purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions like `param_fake_branch`, `main`, `div_zero_handler` are correctly named, but many are generic like `FUN_00011030`, `FUN_00011180`. The naming is inconsistent between preserved and auto-generated names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers throughout: `0xDEADBEEF` becomes invisible, `0x14` (20), `0x1e` (30), `0xe1` (225), `0x7a314` (500500). No constants or enum recovery. The obfuscation constant `0xDEADBEEF` is completely lost.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from compiler/runtime: `__stack_chk_fail_local`, `FUN_00011180` (unresolved function calls), `in_GS_OFFSET` stack canary checks. Many internal CRT functions (`__do_global_dtors_aux`, `__x86_get_pc_thunk_bx`) clutter the output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural - loops use `while` constructs, conditionals use `if`. However, some artifacts like computed array indexing in `call_vectorized_loop` are awkward. The tail recursion in `param_tail_call_optimized` is correctly converted to a loop.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately separated. However, some are too large (e.g., `test_obf_opt_edge` at ~60 lines). The `call_*` wrapper functions are correctly separated from their `param_*` implementations.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Early returns present but appropriate. No excessive goto usage. The code flows reasonably well despite some complex nested conditions in `param_opaque_predicate`.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. The fake branches in `param_fake_branch` are correctly eliminated (semantic optimization), but this loses the obfuscation intent. Loop unrolling in `call_vectorized_loop` is minimal.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `undefined4` extensively instead of `int32_t` or `int`. No `uint32_t` vs `int` distinction. Pointers are often `undefined4 *`. The original `unsigned int` in `param_instruction_substitution` becomes `uint` but others remain generic.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct recovery. The bitfield in `param_implementation_defined` is completely lost - original had `struct { unsigned int a:3; unsigned int b:5; ... }` but decompiled version just returns a constant. No union recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns present. The `param_string_encryption` has `byte *` to `char` conversion issues. Pointer arithmetic like `pbVar2 + 1` is manual. Mixed signed/unsigned in `param_integer_overflow` but handled reasonably.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled output. Original had extensive comments explaining obfuscation techniques ("永假条件", "不透明谓词") but these are completely lost. No indication of what the fake branches were testing.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns recognized (loops, conditionals). The opaque predicate pattern in `param_opaque_predicate` is partially visible (gcd computation), but the semantic meaning as "不透明谓词" is not identified. No pattern naming.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious code. The `param_fake_branch` function looks completely normal despite having fake branches in the original. No indication that `0xDEADBEEF` was an obfuscation constant. No flags for potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No pre/post conditions recovered. The original had no formal contracts, but the decompiler provides no hints about expected input ranges or return value semantics.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible in `test_obf_opt_edge` but not explicitly documented. No comments indicating which functions call which. Global variables like `jmp_buffer`, `segv_buffer` are visible but relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are in a single file with no clear grouping. Original had logical sections (OBF-L4, OPT-L4, EDGE-L3) but these are lost. All functions dumped together without organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code would not compile standalone - requires stubs for `FUN_*` functions, `__stack_chk_fail_local`, etc. External dependencies (signal.h, setjmp.h) not declared. Some functions return `undefined4` which is not a standard type.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Calculation:**
+- L1 Average: (3+5+3+4)/4 = 3.75
+- L2 Average: (6+6+7+7)/4 = 6.5
+- L3 Average: (4+1+5)/3 = 3.33
+- L4 Average: (2+4+2+1)/4 = 2.25
+- L5 Average: (4+5+6)/3 = 5.0
+
+Overall = (3.75 × 0.30) + (6.5 × 0.25) + (3.33 × 0.20) + (2.25 × 0.15) + (5.0 × 0.10) = 1.125 + 1.625 + 0.666 + 0.3375 + 0.5 = **4.25/10**
+
+---
+
+### Critical Defects:
+
+1. **Fake branch obfuscation completely eliminated**: `param_fake_branch` returns input directly, losing the "永假条件" obfuscation technique entirely. The constant `0xDEADBEEF` is invisible.
+
+2. **No struct/bitfield recovery**: The bitfield in `param_implementation_defined` is completely lost - original had explicit bit-field structure but decompiled version just returns a constant.
+
+3. **Generic variable naming**: `param_1`, `param_2`, `iVar1`, `local_30` provide no semantic meaning. Original `x`, `result`, `str` are lost.
+
+4. **No comment preservation**: Extensive original comments explaining obfuscation techniques ("不透明谓词", "指令替换") are completely absent.
+
+5. **Type precision severely degraded**: Uses `undefined4` instead of proper int types. No `size_t`, `uint32_t`, or other specific types recovered.
+
+---
+
+### Best Quality Aspect: Control Flow Naturalness (6/10)
+- Loops are correctly recognized as while/for constructs
+- Tail recursion converted to iterative loops appropriately
+- Basic control flow structure is readable
+
+### Most Needs Improvement: Semantic Transparency (2.25/10)
+- No comments explaining obfuscation intent
+- No pattern recognition for the obfuscation techniques
+- No anomaly warnings for suspicious code
+- No contract or precondition recovery
+
+---
+
+### Top 3 Recommendations:
+
+1. **Preserve dead code branches as comments**: When decompiler eliminates always-false conditions, add a comment like `// Dead code: if (x * x < 0) { ... } // Always false`. This preserves obfuscation intent.
+
+2. **Recover struct layouts from stack access patterns**: The bitfield in `param_implementation_defined` and other composite types can be inferred from memory access patterns. Add struct recovery with field names.
+
+3. **Add semantic annotations for known patterns**: Recognize obfuscation patterns (opaque predicates, fake branches, instruction substitution) and add comments explaining the technique, not just the resulting code.

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all parameters use generic names like `param_1`, `param_2`, `param_3`. The original source uses meaningful names like `a`, `b`, `count`, but these are lost. Even `varargs_func` uses `param_1` instead of `count`. Only a few cases like `param_1_00` in `fastcall_func` show any attempt at disambiguation.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions correctly recovered: `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `func_many_args`. However, some internal functions remain as `FUN_00011030`, `FUN_00011ba5`. The critical issue is `ret_opaque_handle` is not recovered as a function - it's referenced as `ret_opaque_handle_handle1` (a static variable), completely losing the function's purpose.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The decompiled code is saturated with magic numbers: `0xf` (15), `0x32` (50), `6`, `0x2a` (42), `0xad` (173), `0x12345678`. The original source has clear expected values in comments (e.g., "期望: 15"), but the decompiled version provides no mapping. Constants like `0xfffffffc` for bitmasking are unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Artifacts include `undefined4` and `undefined` types throughout, stack references like `&stack0x00000008`, and strange constructs like `code *` for function pointers. The `__regparm3` attribute on `fastcall_func` is correctly preserved but appears as noise. Some functions like `call_cdecl` are completely optimized to return constants.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Simple functions like `cdecl_func` have natural flow: parameters → computation → return. The `varargs_func` shows loop constructs from `va_arg` handling that are reasonably recognizable. At `-O0`, control flow should be nearly 1:1 with source, and mostly it is, though some complexity in `param_ptr_array` makes tracing difficult.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity - most are under 20 lines. The `test_calling_conventions` and `test_parameter_passing` wrapper functions are correctly separated. However, `func_struct_byval` has exploded to 21 parameters (the struct was passed by value and expanded onto the stack), losing the original clean interface.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without forward jumps. The `varargs_func` has some backward jumps for loops which is natural. Minor issues include complex indexing in `param_ptr_array` with expressions like `param_1 + 0xc + uVar2 * 4`.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Many "call_" wrapper functions are completely inlined to return constants (e.g., `call_cdecl` returns `0xf` directly). This is expected at `-O0` but loses the call relationship. Some loop unrolling in varargs handling creates redundancy but is manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4` instead of `int`, `undefined` instead of proper types. Function parameters correctly typed as `int`, `char *`, but mixed with `undefined4`. The `param_4` and `param_5` in `func_mixed_args` should be `double` but appear as `double param_3, undefined4 param_4, undefined4 param_5` - the double is split incorrectly.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The `LargeStruct` (128 bytes) in `func_struct_byval` was expanded into 21 separate parameters, completely losing the struct concept. The `SmallStruct` in `func_struct_byptr` is reduced to `int *param_1` with manual indexing (`param_1[1]`, `*param_1`). No struct type definitions are recovered anywhere.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns: `param_double_ptr` uses `undefined4` for `new_val` instead of `int`. The `param_complex_cast` loses the `void*` to `int*` cast semantics. Function pointer typed as `code *` is unsafe. However, basic pointer dereferences are correct.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Only the file header comment exists. No function-level comments explaining purpose, parameters, or return values. The original source has extensive comments (e.g., "CALL-L1-01: cdecl调用约定 ⭐⭐"), but these are completely lost. No indication of what each test case validates.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: The varargs handling pattern (`va_list`, `va_start`, `va_arg`, `va_end`) is recognizable in the loop structure of `varargs_func`, but not explicitly named or commented. The struct-by-value expansion is a known ABI pattern but not indicated. No design patterns or algorithms identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies are flagged. The `ret_opaque_handle` function is completely missing - only its static variable `ret_opaque_handle_handle1` appears. The `call_ret_opaque` function returns this static variable's address, but there's no indication this is a missing function. The `FUN__*` functions have no explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source has implicit contracts (e.g., `func_struct_byptr` requires non-null pointer, returns -1 on null) but these are not recovered. The null check in `func_struct_byptr` is present but not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible in the code (e.g., `test_calling_conventions` calls `puts`, `printf`, `varargs_func`). However, the critical relationship between `call_ret_opaque` and `ret_opaque_handle` is broken - the function is missing. No documentation of which functions call which others or the test flow.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are roughly grouped by category (calling conventions, parameter passing, return values) based on address proximity. However, all 786 lines are in a single file with no logical section headers. The original source has clear section comments that are lost.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code will NOT compile as-is. Uses `undefined4`, `undefined`, `code *` types which are Ghidra-specific and not valid C. References to `EVP_PKEY_CTX` and other external declarations are missing. The `ret_opaque_handle_handle1` is used but the function `ret_opaque_handle` doesn't exist.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Missing function `ret_opaque_handle`**: The function is completely absent from decompiled output, only its static variable `ret_opaque_handle_handle1` appears, breaking semantic understanding
+- **Struct type loss**: `LargeStruct` and `SmallStruct` are not recovered; `func_struct_byval` has 21 parameters instead of a struct parameter
+- **No comments**: Zero function-level documentation despite 665 lines of well-commented source
+- **Generic variable names**: All parameters use `param_N` naming, losing semantic meaning like `count`, `a`, `b`, `str`
+- **Magic numbers everywhere**: Values like `0x12345678`, `0xad`, `0x2a` appear without explanation or constant names
+
+### Best Quality Aspect: Function Naming (7/10)
+Main test functions are correctly named (cdecl_func, stdcall_func, varargs_func), preserving the semantic purpose of the code's primary interfaces.
+
+### Most Needs Improvement: Comment Quality (1/10)
+The original source has extensive documentation explaining each test case's purpose, expected values, and calling convention semantics. This is completely lost in decompilation, making it impossible to understand what each function tests without cross-referencing the source.
+
+### Top 3 Recommendations:
+1. **Recover struct types**: Instead of expanding `func_struct_byval` to 21 parameters, reconstruct the struct definition and pass by value properly
+2. **Add function comments**: Include the test case identifiers (CALL-L1-01, PARAM-L2-06) and expected values from the original source comments
+3. **Resolve missing functions**: The `ret_opaque_handle` function must be recovered - it's a critical semantic gap where a function exists in the binary but wasn't decompiled

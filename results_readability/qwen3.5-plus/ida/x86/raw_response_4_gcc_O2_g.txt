@@ -1,0 +1,108 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables are mostly generic (`v0`, `v1`, `v2`, `a1`, `a2`) losing semantic meaning from source (`count`, `sum`, `args`, `large`). Some preservation like `va` for va_list and `i` for loop counter provides minimal help.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions retain original names (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but internal helpers use generic `sub_XXXX` naming (e.g., `sub_1030`, `sub_1040`). Good preservation of public API names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals shown as `asc_XXXX`/`unk_XXXX` references instead of actual content (e.g., `asc_2008` instead of `"=== 测试基础调用约定 ==="`). Magic numbers like `0x14u` for stack canary lack explanation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary code (`__readgsdword(0x14u)`) and `LODWORD`/`HIDWORD` macros add noise. Assembly blocks in helper functions (`sub_1030`) and 6 failed decompilations reduce clarity.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is natural, but heavy constant folding in test functions obscures original logic (e.g., `call_cdecl()` returns 15 directly instead of calling `cdecl_func(5, 10)`). Do-while loops and conditionals are generally clear.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is good, but constant folding makes some functions trivial (`call_cdecl` is 3 lines returning constant). Clear separation between test harness and implementation functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads linearly with clear loop and conditional structures. Minor issues with forward references in optimized test functions but no excessive goto usage.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding creates some redundancy (same computed values appear multiple times). Test functions have repetitive `__printf_chk` patterns. No dead code but optimization artifacts present.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, void*) but some degradation to `__int64` instead of specific types. Function pointers work but struct definitions incomplete in decompiled output.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct types referenced (`LargeStruct`, `SmallStruct`, `BigStruct`) but definitions incomplete. Field access works (`p->x`, `s.data[0]`) but full struct layouts not recovered in output.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts visible (`(_DWORD *)`, `(_QWORD *)`, `(LargeStruct *)((char *)p_s + 8)`). Pointer arithmetic generally safe. Function pointers preserved correctly.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Virtually no comments explaining logic or purpose. Header has inconsistency (metadata says Ghidra but comment says "Decompiled by IDA Pro 9.1"). Only failed decompilation notices provide any context.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard C idioms preserved (va_list, struct access) but not identified. No design pattern recognition. Basic patterns visible without explicit labeling or algorithm naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations noted (6 functions: `__libc_start_main`, `puts`, etc.). Stack canary warnings present ("positive sp value has been detected"). No uncertainty indicators for ambiguous indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No contract documentation. NULL checks exist in code (`if (!p) return -1`) but aren't documented as preconditions. No error condition documentation or @param/@return annotations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no call graph documentation. Global variable usage unclear (`handle1_1`, `handle2_0`). Callback relationships present (`param_func_ptr`) but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single file output with no logical grouping. Test and implementation functions mixed together. No module separation, header files, or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 6 failed decompilations need stubs (`__libc_start_main`, `puts`, `strlen`, etc.). Compiler-specific constructs present (`__readgsdword`, `__printf_chk`). Requires significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5 + 7 + 5 + 6) / 4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6 + 7 + 7 + 6) / 4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (6 + 5 + 6) / 3 = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (3 + 4 + 5 + 3) / 4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (5 + 4 + 4) / 3 = 4.33 × 0.10 = 0.433
+
+Overall Score: 5.48/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- **Constant folding obscures test logic**: Functions like `call_cdecl()` return pre-computed value 15 instead of showing `cdecl_func(5, 10)` call, losing educational value
+- **String literals not recovered**: All strings shown as `asc_XXXX`/`unk_XXXX` references instead of actual content
+- **Variable names are generic**: `v0`, `v1`, `v2` instead of semantic names like `count`, `sum`, `large`
+- **No documentation**: Zero comments explaining function purpose, algorithm, or test intent
+- **Struct definitions incomplete**: `LargeStruct`, `SmallStruct` referenced but field layouts not fully recovered
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core test functions retain original meaningful names (`cdecl_func`, `varargs_func`, `test_calling_conventions`), preserving API clarity
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Virtually no comments explaining logic, purpose, or test intent; even header has tool inconsistency (Ghidra vs IDA Pro)
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover string literals inline** - Display actual string content instead of `asc_XXXX` references to improve immediate readability
+2. **Preserve semantic variable names** - Use data flow analysis to infer variable purposes (e.g., `count` for loop bounds, `sum` for accumulators)
+3. **Add decompilation confidence annotations** - Mark optimized/constant-folded code with comments indicating original structure was transformed by compiler optimization
+
+---
+
+### Additional Observations:
+- **Optimization level mismatch**: Source claims `-O0` but binary path shows `O2_g`, explaining aggressive constant folding
+- **Tool inconsistency**: Metadata says Ghidra but decompiled header says "IDA Pro 9.1 with Hex-Rays"
+- **Architecture mismatch**: Source targets ARM64 but decompiled code shows x86 constructs (`__readgsdword`, `ebx`, `eax`)

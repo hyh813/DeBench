@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively named `v1`, `v2`, `v3`, etc. (e.g., `int32_t v1; // 0x1430` in `local_array`), losing all semantic meaning. Original variables like `arr`, `local`, `p` are not recovered.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names preserved (`double_value`, `local_vars`, `heap_basic`), but helper functions use generic names (`function_1140`, `function_1150`). Test functions retain names (`test_stack_memory`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1000`, `2048`, `4080` appear without explanation. Some values inferable from context (e.g., `4 * a1` suggests int array), but no named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Compiler artifacts pollute code: `__x86_get_pc_thunk_bx`, `__readgsdword(20)` stack canary checks, and `__asm_hlt()` appear throughout. Redundant casts like `(int32_t)mem` are pervasive.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `for` loops converted to `while` loops with manual increment (e.g., `vla_stack`). Goto labels appear (`lab_0x1a60` in `linked_list_heap`), disrupting natural flow despite -O0 compilation.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but helper functions like `function_1160` (just `memmove` wrapper) add fragmentation. Function sizes are reasonable.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps disrupt reading (e.g., `goto lab_0x1a60`). Deep nesting in `test_heap_memory` with multiple conditional branches makes tracing difficult.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks repeated in every function (`if (v1 != __readgsdword(20))`). Loop patterns duplicated across similar functions without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `int32_t` - no `size_t`, `uint32_t`, or proper pointer types. Original `Point` struct operations become `3 * a1` arithmetic. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - `Point`, `Node`, and `TreeNode` structs completely lost. `heap_struct` becomes `malloc(8)` with no field names. `linked_list_heap` uses raw pointer arithmetic instead of `node->next`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts pervasive (`(int32_t *)a1`, `(char *)(v1 + 0x198e)`). Pointer arithmetic without bounds checking. `double_free` and `dangling_pointer` unsafe patterns not flagged.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled output. Original source had extensive documentation (`// MEM-L1-01: 局部变量（基础类型）⭐`). No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No patterns identified. Linked list creation, tree traversal, and memory allocation patterns not recognized or named. `alloca_usage` dynamic allocation not explained.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Stack canary checks present but unexplained. Dangerous functions (`dangling_pointer`, `double_free`, `heap_overflow`) not flagged as potentially undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` checks in `vla_stack` not explained). No postconditions or error condition documentation recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Global variables named `g1`, `g2`...`g17` with no semantic meaning. Function call graph visible but relationships undocumented. Callback (`set_global_callback`) not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Original section organization (Stack/Heap/Static/Memory Ops) lost. Static functions not properly scoped with visibility indicators.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Standard headers included (`stdio.h`, `stdlib.h`). External functions declared (`extern_function`). May require stub implementations for `__x86_get_pc_thunk_*` helpers to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+5+5)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (4+5+6)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.06/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects
+- **Struct types completely lost**: `Point`, `Node`, `TreeNode` definitions not recovered; all become raw pointer arithmetic
+- **Variable names all generic**: `v1`, `v2`, `v3` throughout despite -O0 debug compilation that should preserve symbols
+- **Zero documentation**: No comments explaining logic, algorithms, or decompilation confidence
+- **Compiler artifacts pollute code**: `__x86_get_pc_thunk_bx`, `__readgsdword(20)` appear in every function
+- **Global variables unnamed**: `g1` through `g17` with hex addresses instead of semantic names like `global_counter`
+
+### Best Quality Aspect
+- **Function Naming Quality (6/10)** - Core function names like `double_value`, `local_vars`, `heap_basic` were preserved from debug symbols, providing some semantic anchors.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding non-trivial logic extremely difficult; original source had extensive comments.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover debug symbol information** - At -O0 with `-g` flags, variable names and struct definitions should be extractable from DWARF debug info
+2. **Implement struct type reconstruction** - Analyze memory access patterns to recover `Point {x, y}`, `Node {data, next}` structures with field names
+3. **Add semantic annotation pass** - Generate comments for common patterns (linked list traversal, memory allocation) and flag potentially dangerous code (double-free, use-after-free)

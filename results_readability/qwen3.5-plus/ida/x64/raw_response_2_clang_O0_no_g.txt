@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v0`, `v1`, `i`, `v4`) with no semantic meaning. Original source had meaningful names like `sum`, `c`, `arr`, `n` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). Only a few like `sub_1020` lack semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `65`, `90`, `32` (ASCII values) and struct offsets (`12LL`, `40LL`, `100LL`) appear without explanation. String literals preserved but numeric constants lack context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive compiler artifacts: stack annotations (`[rsp+0h] [rbp-14h]`), redundant casts (`(unsigned int)`, `(__int64)`), and decompiler metadata comments clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops correctly recovered as `for`/`while` constructs. Switch statement in `enum_switch` properly reconstructed. Some conditionals slightly awkward but logically clear.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match original source exactly. Appropriate granularity with no monolithic functions or over-fragmentation. Each function has single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom naturally. Minimal forward jumps. Nesting depth reasonable (max 3-4 levels in array functions).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some redundant type casts from compiler promotions but not excessive. No loop unrolling artifacts at -O0.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `long`/`long long` both become `__int64`, `int *` becomes `_DWORD *`, `char` becomes `__int64` parameter. Signed/unsigned distinctions often lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**: All struct/union definitions lost (`Point3D`, `Rect`, `Widget`, `Node`, `UnionData`). Field access reduced to pointer arithmetic (`a1[2] + a1[1] + *a1` instead of `p->x + p->y + p->z`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(unsigned int)`, `(__int64)`). Pointer arithmetic replaces type-safe field access. Function pointer signatures degraded to generic `__int64 (__fastcall *)(_QWORD)`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: All source comments lost. Only decompiler metadata present (function addresses, register annotations). No algorithm explanations or API documentation recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns not identified: linked list traversal (`linked_list`), binary tree recursion (`binary_tree_sum`), switch-on-enum (`enum_switch`) all appear as raw code without pattern hints.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("FAILED to decompile", "positive sp value has been detected"). However, suspicious patterns like potential OOB access in `array_oob` not highlighted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions recovered (e.g., `arr != NULL`, `n > 0`). No postconditions or error condition documentation. Bounds checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved correctly. Callback relationships visible but not documented (e.g., `ptr_func_simple` calls `double_value`). Global variable usage unclear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source order but no logical grouping. Related functions (data types, arrays, pointers, composites) not visually separated. No header file recovery.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions undeclared (`printf`, `memset`, `memcpy`, `strcpy`). 6 functions failed decompilation. Would require significant stubbing and type definitions to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Weighted |
+|-------|-----------|---------|--------|----------|
+| L1: Lexical Clarity | 4 dims | 5.25 | 30% | 1.575 |
+| L2: Structural Intelligibility | 4 dims | 7.25 | 25% | 1.813 |
+| L3: Type System Fidelity | 3 dims | 3.33 | 20% | 0.667 |
+| L4: Semantic Transparency | 4 dims | 3.25 | 15% | 0.488 |
+| L5: Contextual Coherence | 3 dims | 5.33 | 10% | 0.533 |
+
+**Overall Readability Score: 5.08/10**
+
+### Critical Defects:
+- **All struct/union type definitions lost** - `Point3D`, `Rect`, `Widget`, `Node`, `UnionData` reduced to raw pointer arithmetic
+- **Variable names completely generic** - `a1`, `a2`, `v0`, `v1` provide no semantic information about purpose
+- **All source comments lost** - No documentation of test purposes, expected values, or algorithm explanations
+- **Type precision severely degraded** - `long`/`long long` both become `__int64`, pointer types become `_DWORD *`
+- **External dependencies undeclared** - `printf`, `memset`, `memcpy`, `strcpy` lack declarations, 6 functions failed decompilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it easy to identify function purposes despite other degradation
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions, forcing all composite type access into unreadable pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union definitions from access patterns** - Analyze consistent offset patterns (e.g., `a1[0]`, `a1[1]`, `a1[2]` always accessed together) to reconstruct `Point3D { x, y, z }`
+2. **Infer variable names from usage context** - Variables used in loop bounds should be named `n`, `count`, `size`; accumulators should be `sum`, `total`
+3. **Preserve or recover source comments from debug symbols** - With `-g` flag, comment strings may be recoverable from DWARF debug information

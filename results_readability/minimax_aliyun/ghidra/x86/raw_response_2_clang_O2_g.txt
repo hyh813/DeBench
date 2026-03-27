@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled code contains extensive "Unresolved local var" annotations (e.g., `int sum@[???]`, `int i@[???]`, `int a@[???]`). Generic names like `iVar1`, `uVar2`, `piVar3` provide no semantic meaning about variable purpose. This is the worst-scoring dimension.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are correctly recovered from debug symbols: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. match the original source exactly. Minor issues with internal runtime functions like `FUN_00011030`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (character codes like `0x61` = 'a'), but magic numbers like `0xfffffff8` (for loop unrolling alignment) and `0x28` (array element size) appear without explanation. Test functions show hardcoded expected values rather than computed expressions.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise includes: "WARNING: Unknown calling convention", "Unresolved local var" annotations, "Removing unreachable block" comments, and injected functions like `get_pc_thunk_bx`. These artifacts clutter the code significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (if/else, while loops), but loop unrolling in functions like `array_1d_stack`, `array_vla`, and `ptr_increment` creates unnatural 8-element chunk processing. The `array_3d` function uses complex pointer arithmetic instead of nested loops.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The decompiler preserved the original function granularity - each small test function (`process_char`, `process_short`, etc.) remains separate. Functions are cohesive with clear single responsibilities, matching the source structure well.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in functions like `array_1d_stack` and `ptr_increment`. Minor forward jumps exist in `array_3d` but don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Extensive loop unrolling in array functions creates significant redundancy. For example, `array_1d_stack` manually processes 8 elements per iteration instead of using a simple loop. No comments explain this optimization artifact.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are accurate: `char`, `short`, `int`, `long`, `long long`, `float`, `double`, `_Bool` all correctly recovered. Issues: `process_ld` has incorrect signature with return pointer parameter, and some function pointers use generic `_func_int_int *` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct/union recovery. All types correctly reconstructed: `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Flags` (bitfields), `UnionData`, `Edge`, `Graph`. Field names preserved: `position.x`, `size.width`, `next->data`, etc.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Critical bug in `ptr_diff`: `(int)p1 - (int)p2 >> 2` has incorrect operator precedence (should be `(int)(p1 - p2)`). Some necessary void* casts present. The bitfield extraction in `struct_bitfields` uses raw ushort manipulation.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments present: Ghidra headers, "WARNING: Unknown calling convention", "Unresolved local var". No meaningful comments explaining algorithm logic, preconditions, or intent. The original source had extensive Chinese comments that were not recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard C idioms are present (pointer traversal, struct access, array indexing) but not explicitly identified as patterns. No recognition of common patterns like "pointer chase", "linked list traversal", or "array sum pattern".
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged: "Unresolved local var", "WARNING: Unknown calling convention", "Removing unreachable block". However, critical issues missed: the operator precedence bug in `ptr_diff`, the incorrect `process_ld` signature, and the loop unrolling artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had no formal contracts either, but the decompiled code doesn't infer implicit contracts (e.g., "requires: n > 0" for array functions).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: No explicit function call graphs or relationship documentation. The `main` function clearly calls the test functions, but callback relationships (e.g., `ptr_func_simple` calling `double_value`) are not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are loosely grouped by type (data type functions, array functions, pointer functions, composite functions) but in a single monolithic file. No header file structure or namespace organization recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile standalone. Missing: `#include` statements, undefined symbols like `EVP_PKEY_CTX` in `_init`, `puts`/`printf` declarations, and type definitions for `undefined1`, `undefined4`. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: Extensive "Unresolved local var" annotations with generic names like `iVar1`, `uVar2` providing no semantic meaning
+- **Operator precedence bug**: `ptr_diff` has `(int)p1 - (int)p2 >> 2` which is incorrectly parsed (should be `(int)(p1 - p2)`)
+- **Loop unrolling**: Array functions (`array_1d_stack`, `array_vla`, `ptr_increment`) have unrolled loops with no explanatory comments
+- **Missing includes**: No `#include` statements recovered; code won't compile
+- **No comments**: Only auto-generated warnings; no meaningful documentation about algorithm intent
+
+### Best Quality Aspect (Single Dimension)
+- **Composite Type Recovery (Score: 9/10)**  
+- Excellent struct/union reconstruction with accurate field names. All complex types (`Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`, `Graph`, `UnionData`, `Flags`) correctly recovered with proper field access patterns.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (Score: 2/10)**  
+- Nearly all local variables are either "Unresolved" or use cryptic generic names (`iVar1`, `uVar2`, `piVar3`). This makes tracking data flow extremely difficult and is the primary readability barrier.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, arithmetic, function parameters) to suggest semantic names like `sum`, `index`, `count` instead of `iVar1`, `uVar2`
+2. **Detect and annotate loop unrolling**: When 8-element chunk processing is detected, add a comment like "Loop unrolled by compiler" to restore readability
+3. **Recover include statements**: Use imported function analysis to reconstruct necessary headers (`#include <stdio.h>` for `printf`, `#include <stdlib.h>` for `malloc`)

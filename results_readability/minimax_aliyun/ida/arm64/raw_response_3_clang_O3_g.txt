@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16). For example, in `heap_basic`, the pointer `v2` should be named `arr` based on usage pattern `malloc(4LL * n)` and array indexing. In `large_stack_frame`, `v0` is clearly a loop index but remains unnamed.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (local_vars, local_array, heap_basic, heap_calloc, global_var_access, static_local). Minor issue: some internal functions like `sub_8E0` and `init_proc` are not meaningful, but main test functions are well-named.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Many computed values are constant-folded (e.g., `printf("MEM-L1-01 (local_vars): %d\n", 20)` instead of calling local_vars). However, SIMD constants like `0x1010101010101010` in vector initialization are unexplained magic numbers. The test functions printing literal expected values is actually helpful for verification.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from SIMD intrinsics (int8x16_t, int32x4_t with vaddq_s8, vshlq_n_s32). Many unused register variables clutter the code. For -O0, this noise level is higher than expected. The vectorization in functions like `large_stack_frame` and `vla_stack` introduces substantial artifact noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow (if/else, while loops) is preserved. However, many functions are completely constant-folded - test functions print hardcoded values instead of calling actual functions. The SIMD loops in `large_stack_frame` use complex vector operations that obscure the original for-loop structure.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Many small functions are inlined or eliminated entirely. Functions like `local_vars`, `local_array`, `local_struct` are reduced to single return statements like `return 2 * x + 10`. The test functions don't call the actual implementation functions at all - they print pre-computed results, losing the decomposition structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive jumps. The `vla_stack` and `alloca_usage` functions have some forward jumps to error handling, but overall flow is manageable. Complex SIMD loops are the main source of non-linearity.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Dead code is mostly eliminated. However, loop unrolling in SIMD functions creates repetitive code patterns (e.g., the vector initialization in `large_stack_frame`). The constant folding in test functions eliminates redundancy but also eliminates the actual function calls.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char, void*). However, many pointers are generic `_DWORD*` or `char*` instead of specific types. Function pointer types like `int (*f)(int)` are properly preserved. Integer types are mostly `int` rather than specific sizes (int32_t).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types are well recovered with field names: `Node` has `data` and `next`, `TreeNode` has `data`, `left`, `right`, `Point` has `x`, `y`. The decompiler correctly identifies nested structure allocations. This is a strong point.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Most casts are reasonable. Some unsafe patterns exist: in `memop_unaligned_access`, direct casting `buf + 1` to `int*` could cause alignment issues. The dangling_pointer function correctly shows the undefined behavior pattern. Overall acceptable but not perfect.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. Zero explanation of algorithm intent, no indication of decompilation confidence, no documentation of pre/post conditions. This is a severe deficiency.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are implicitly present (malloc/free pairs, linked list traversal with while loops) but not named or explicitly documented. The memory leak pattern in `memory_leak` is recognizable but not flagged. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The decompiler correctly marks failed functions ("FAILED to decompile: memcpy @ 0x13128"). However, no warnings for potential undefined behavior (dangling_pointer accessing freed memory, double_free). The anomaly indication is limited to decompilation failures only.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The implicit contracts (e.g., "requires: n > 0" for vla_stack) are not recovered. Error return values (-1, -2) are present but not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are clear within each function. However, there's no documentation of call relationships (which functions call which). The callback pattern in `set_global_callback`/`call_global_callback` is visible but not explained. External function dependencies are not listed.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are logically grouped (stack functions, heap functions, static functions, memory operations). However, everything is in a single flat namespace. Static vs. extern functions are not distinguished in the output. Related test functions are grouped together.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code structure is compilable with minimal stubs. External functions (malloc, free, printf, etc.) are correctly identified as external. However, many SIMD intrinsics may require specific headers. The code would compile with appropriate library linkage.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable names are entirely generic (v0-v16), making it impossible to track variable purpose without analyzing every usage
+- Test functions print hardcoded literal values instead of calling actual implementation functions, losing the function decomposition structure
+- Zero comments - no explanation of algorithm intent, decompilation confidence, or contracts
+- Excessive SIMD noise from vectorization intrinsics (int8x16_t, int32x4_t) obscuring simple loop logic
+- Many functions constant-folded to trivial returns, eliminating the actual implementation logic
+
+**Best Quality Aspect:** Composite Type Recovery (8/10)  
+Struct types like Node, TreeNode, and Point are correctly recovered with proper field names (data, next, left, right, x, y), preserving the semantic structure of the original code.
+
+**Most Needs Improvement:** Comment Quality (1/10)  
+The complete absence of comments severely impacts readability. Even basic documentation explaining what each function does, the algorithm approach, or decompilation confidence would dramatically improve usability.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `malloc(4*n)` → `arr`, loop index `v0` with `< 10` → `i` or `index`)
+2. **Recover comments from debug symbols**: Since -g flag was used, extract variable names, function prototypes, and basic documentation from DWARF debug info
+3. **Preserve function calls in test functions**: Instead of constant-folding test functions to print literals, preserve the actual function calls to maintain the code structure and decomposition

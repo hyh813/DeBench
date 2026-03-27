@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `iVar1`, `puVar1`, `local_24`, `uStack_20` with no semantic meaning. Original variables like `value`, `name`, `data`, `size` are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions retain original names (`test_cpp_member_func`, `test_cpp_constructor`), but helper functions use generic names (`FUN_00101020`). Template functions are partially recovered (`template_max_int_`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `0x125c`, `0x2a`, `0x47`, `0x28a` returned directly instead of computed. String literals replaced with `&DAT_001021d4` references.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack variables like `uStack_14`, `uStack_11`, `uStack_d` represent compiler artifacts. External function stubs (`operator_new__`, `printf`) add noise without value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Many functions return pre-computed constants (`return 0x2a`) instead of showing actual logic. `test_cpp_exception` shows throw logic but loses try-catch structure.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Template instantiations properly separated (`template_max_int_`, `Container<int>::push`), but class methods lose cohesion with pointer arithmetic instead of member access.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but stack initialization sequences (`uStack_14 = 0; uStack_11 = 0;...`) disrupt flow unnecessarily.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or duplicate expressions. However, constant folding eliminated actual computation logic that should be visible at -O0.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy use of `undefined4`, `undefined8`, `void*` instead of proper types. `int`, `size_t`, `double` distinctions lost. Return types often `undefined8` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Classes not recovered as structs. `SimpleClass` fields accessed via `local_24` stack variables. `Container<int>` uses `(this + 0x28)` pointer arithmetic instead of named fields.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(undefined4 *)operator_new__(0x14)`, `(long *)operator_new(8)`. No const-correctness preserved from original `const` methods.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. No algorithm explanations, no decompilation confidence indicators, no API contracts. Only auto-generated function headers.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns completely lost: no RAII visible, no vtable calls recognized (just `(***(code ***)param_1)()`), no exception handling structure recovered.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about unresolved calls, type uncertainty, or potential issues. `call_virtual_func` shows indirect call without noting vtable uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original bounds checks (`idx < size`) present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch not indicated. Static members (`LifecycleClass::instance_count`) referenced but not declared.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but no logical organization matching source sections (CPP-L3-01 through CPP-L4-03). External stubs mixed with actual code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References undefined symbols (`&DAT_001021d4`, `&PTR__RTTIBase_00103d78`). External function stubs call themselves recursively. Won't compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+5)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+5+6+7)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (3+2+4)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                              = 3.81/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Constant folding eliminated actual logic**: Functions like `test_cpp_virtual_func` return `0x2a` (42) directly instead of showing the computation, losing all educational value
+- **No class/struct recovery**: C++ classes reduced to pointer arithmetic (`this + 0x28`) instead of named field access
+- **Generic variable naming**: All locals use `iVar1`, `uStack_20`, `local_24` pattern with zero semantic meaning
+- **Missing comments**: Zero documentation for complex C++ features (vtables, virtual inheritance, templates)
+- **Type erosion**: `undefined4`, `undefined8` used throughout instead of recovered C++ types
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Test function names were preserved from debug symbols, maintaining some connection to original source intent.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any explanatory comments makes understanding C++ semantics (vtables, virtual inheritance, templates) nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover class structures from vtable layouts**: Analyze vtable pointers to reconstruct class hierarchies with named fields instead of pointer arithmetic offsets.
+2. **Preserve computation logic over constant folding**: Even when compiler optimizes to constants, show the original computation path for educational/reverse engineering purposes.
+3. **Add semantic annotations for C++ features**: Mark vtable calls, exception handling regions, template instantiations, and virtual dispatch sites with explanatory comments.

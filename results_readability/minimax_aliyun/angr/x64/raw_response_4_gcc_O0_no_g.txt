@@ -1,0 +1,152 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names throughout. Parameters are named `a0`, `a1`, `a2` etc. (e.g., `cdecl_func(unsigned int a0, unsigned int a1)` should be `a` and `b`). Local variables use patterns like `v0`, `v1`, `v2`, `v3` with no semantic meaning. The `varargs_func` has particularly egregious examples: `v23`, `v24`, `ptr`, `v4`, `v5` - all meaningless. Even stack variables are named after register locations (`[bp-0x8]`, `[bp+0x0]`) rather than purpose. This makes tracking data flow nearly impossible.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+
+Many test functions ARE correctly named: `cdecl_func`, `call_cdecl`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `func_many_args`, `func_mixed_args`, `param_by_value_int`, `param_string`, `ret_basic_type`, `ret_pointer`, `ret_small_struct`, `ret_large_struct`, `ret_func_ptr`, `ret_opaque_handle`, `ret_complex_expr`, `ret_multi_branch`, `ret_void`, `main`. However, startup/initialization functions use generic names like `sub_401020`, `sub_40102d`, `sub_401030`, `_init`, `_start`, `_fini`. The core test functions are well-named, but infrastructure functions are not.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+The code is littered with unexplained magic numbers. The constant `4294967295` (0xFFFFFFFF) appears repeatedly for error returns without explanation. Array sizes like `8` in `param_array_decay` returning `8` are unexplained (should be pointer size). The value `40` in `*((long long *)(40 + p))` is completely opaque - this is the stack canary offset. String literals are accessed via external symbols (`&g_403008`) with no indication of their content. The `& 4294967295` mask applied to every printf result is unexplained noise. Only the literal `42` in `func_no_args` is clear.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Severe noise pollution throughout. The `varargs_func` and `param_varargs` functions contain massive amounts of dead/stack-checking code: `uint128_t v23`, `v24`, `v25`, `v26`, `v27`, `v28`, `v29`, `v30` (XMM registers) that are never meaningfully used. The stack canary check `*((long long *)(40 + p))` and `__stack_chk_fail()` are compiler artifacts that obscure logic. Unused variables like `v21` at `[bp+0x8]` pollute every function. The `param_struct_byval` function is completely empty (just `return;`) - a severe decompilation failure. Redundant casts and type confusion (e.g., `unsigned int *ptr` with "Other Possible Types: unsigned long long") add noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Most control flow is reasonably natural - loops use `for` constructs (`for (i = 0; i <= 15; i += 1)`), conditionals use `if/else`. However, `ret_multi_branch` uses a confusing chain of if-statements instead of a switch, and the logic is inverted (`a0 == 2` returns 30, but `a0 > 2` returns -1). The `call_order_dep` expands `++i, ++i` into sequential statements which is correct but loses the original UB intent. The `param_array_decay` function returns constant `8` instead of `sizeof(arr)` - this is semantically wrong (should be pointer size at runtime). At -O0, control flow should be nearly 1:1 with source.
+
+### 6. Function Decomposition
+**Score: 5/10**
+
+The test wrapper functions (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) are appropriately large (they orchestrate multiple tests). However, `param_struct_byval` is completely broken - it returns nothing and takes no parameters, when the original takes a struct by value. The `call_struct_byval` passes a struct on the stack but the function doesn't receive it. Some functions like `varargs_func` are 50+ lines with excessive local variables. The decomposition is inconsistent - some functions are well-separated, others are broken.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately in functions like `func_struct_byptr` and `param_double_ptr`. The `mixed_conventions_test` function is linear: initializes `v0 = 0`, then three sequential additions. No goto statements or computed jumps. Minor issues: the `ret_multi_branch` function has nested if-else that requires tracing, and `test_calling_conventions` has some variable shuffling before the struct byval call.
+
+### 8. Redundancy Elimination
+**Score: 4/10**
+
+Significant redundancy in `varargs_func` and `param_varargs` - the massive declaration of unused XMM register variables (`v23`-`v30`) is dead code that should be eliminated. The `& 4294967295` mask is applied to every function return in printf statements - this is redundant type narrowing. In `test_calling_conventions`, there's excessive stack variable manipulation before calling `func_struct_byval` - the struct is built on the stack but the function doesn't receive it. Loop unrolling is not present (expected at -O0).
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+
+Types are mixed - parameters correctly use `unsigned int` for integers, but the original used `int`. Pointers are generally correct (`char *a1` in `func_mixed_args`). However, `func_no_args` returns `unsigned long long` when it should return `int`. The `ret_pointer` returns `long long` instead of `int*`. Function pointers are treated as `unsigned long long` rather than proper function pointer types (e.g., `param_func_ptr(unsigned long long *a0, unsigned int a1)` should be `int (*callback)(int)`). The `ret_opaque_handle` returns `long long` instead of `void*`. Many return types are `unsigned long long` when they should be `int`.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+Struct recovery is severely deficient. The `LargeStruct` (128 bytes) is completely lost - `func_struct_byval` takes no parameters and returns nothing. The `SmallStruct` is partially recovered in `func_struct_byptr` but with wrong types (`unsigned int *a0` instead of `SmallStruct *p`). The `TestIntPair` struct used in `param_complex_cast` is not recovered - instead we see `unsigned int v0[2]`, `v1[2]`, `v2[2]`, `v3[2]` with manual pointer casting. The `BigStruct` in `param_struct_byval` is completely lost. Only the anonymous struct in `param_double_ptr` has a partial recovery (`struct_0 { unsigned int field_0; }`).
+
+### 11. Type Safety
+**Score: 4/10**
+
+Multiple unsafe operations exist. In `param_complex_cast`, there are unsafe pointer casts: `*((unsigned int **)&v1[0]) = a0;` followed by `*((unsigned int *[2])&v2[0]) = v1;` - this type punning is dangerous. The `ret_pointer` function returns `a0 + 4` as `long long` when it should return `int*` - pointer arithmetic is obscured. In `call_ret_pointer`, the array `{10, 20, 30}` is laid out as three separate variables (`v1=10, v2=20, v3=30`) rather than a proper array, then `ret_pointer(&v1)` is called - this works but loses array semantics. The `param_func_ptr` treats the callback as `unsigned long long *` and calls it via `a0(a1)` - unsafe function pointer invocation.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Almost no useful comments exist. The only comments are auto-generated: "do not return" for `__libc_start_main` and `__stack_chk_fail`. No explanation of what functions do, no parameter documentation, no algorithm descriptions. The comment `// ANOMALY: Indirect call could not be resolved` appears nowhere. No indication that `call_thiscall` returns constant 15 because C++ class is not compiled. No documentation of calling convention differences. The decompilation provides zero semantic context.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+No design patterns or algorithms are identified. The varargs handling is not recognized as stdarg usage - it's decompiled as raw stack manipulation with cryptic variables. The callback pattern in `param_func_ptr` is not identified as a function pointer callback idiom. The `param_double_ptr` pattern for modifying caller's pointer is not identified as an output-parameter idiom. No recognition of the calling convention test patterns. The code presents as raw operations without higher-level pattern context.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+No anomalies are flagged. The broken `param_struct_byval` function (empty body, no parameters) is presented as valid code with no indication it's incorrect. The `call_thiscall` returning constant 15 with no C++ class involved is not flagged. The `param_array_decay` returning constant 8 instead of computing sizeof is not flagged as suspicious. The `ret_opaque_handle` returning `"d"` (a string literal!) instead of a pointer is not flagged. The decompiler presents all code as equally confident with no uncertainty indicators.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No preconditions, postconditions, or invariants are documented. The `func_struct_byptr` has an implicit null-check (`if (!p) return -1;`) but this is not documented as a precondition. The `param_double_ptr` null-check is inline but not documented. No contracts for functions that return pointers (who owns the memory?). No documentation of which functions are pure vs. side-effecting. The varargs functions have no indication they require proper va_start/va_arg/va_end usage.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Function call relationships are somewhat clear through direct calls (e.g., `call_cdecl()` calls `cdecl_func(5, 10)`). However, the relationships between test functions and their tested functions are not documented. The callback relationship between `param_func_ptr` and `callback_func` is not documented. No indication that `call_thiscall` is a stub for C++ code. Global variables are declared as `extern` but their purposes are unknown (`g_405fa8`, `g_405fb0`). No call graph or usage documentation.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Functions are roughly grouped by purpose: startup functions first (`_init`, `_start`, `_fini`), then test functions, then parameter passing functions, then return value functions. However, the organization is arbitrary - functions are ordered by address, not by logical grouping. Static functions like `callback_func`, `func_a`, `func_b` are not marked static. No header file or API boundary separation. The organization is better than random but doesn't match the source's clear section comments.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+The code would not compile as-is. Many functions have missing or incorrect prototypes. The `param_struct_byval` is completely broken. External symbols like `g_405fa8`, `g_405fb0`, `handle2.0` are undefined. The `AddV` function is called but never defined. The `__stack_chk_fail` prototype is missing. The `uint128_t` type may not exist. The code requires significant patching to compile - missing includes, missing function definitions, incorrect signatures. The decompiler provides no build instructions or dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 4 + 3) / 4 = 4.0
+L2_avg = (6 + 5 + 7 + 4) / 4 = 5.5
+L3_avg = (5 + 2 + 4) / 3 = 3.67
+L4_avg = (2 + 3 + 1 + 2) / 4 = 2.0
+L5_avg = (3 + 5 + 3) / 3 = 3.67
+
+Overall = (4.0 × 0.30) + (5.5 × 0.25) + (3.67 × 0.20) + 
+          (2.0 × 0.15) + (3.67 × 0.10)
+        = 1.20 + 1.375 + 0.734 + 0.30 + 0.367
+        = 3.996 ≈ 4.0/10
+```
+
+**Overall Readability Score: 4.0/10**
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming is unusable**: Parameters `a0-a7`, locals `v0-v50` provide zero semantic information - cannot track data flow
+2. **`param_struct_byval` is completely broken**: Takes no parameters, returns nothing - original struct by-value semantics completely lost
+3. **Composite types not recovered**: `LargeStruct`, `SmallStruct`, `BigStruct`, `TestIntPair` all lost or reduced to raw pointer arithmetic
+4. **No anomaly detection**: Broken functions presented without any indication of decompilation failure
+5. **Type precision poor**: Function pointers as `unsigned long long`, wrong return types (`int*` → `long long`), no const correctness
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (7/10)** - Core test functions like `cdecl_func`, `varargs_func`, `param_by_value_int`, `ret_pointer` are correctly named and match source
+
+### Most Needs Improvement (Single Dimension)
+- **Anomaly Indication (1/10)** - The decompiler presents broken code (empty `param_struct_byval`, wrong `param_array_decay` return, incorrect `call_thiscall`) as valid without any flags or uncertainty markers
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When `a0` is used in `a0 * 2` and returned, name it `multiplier` or similar. When `v0` accumulates results in a loop, name it `sum` or `total`.
+
+2. **Recover struct types from stack layout**: When a function accesses `(&v2)[i]` for `i=0..15`, recognize this as array access and reconstruct the struct with meaningful field names.
+
+3. **Flag decompilation failures**: When a function has no parameters but caller passes arguments, or return type doesn't match call site, emit `// WARNING: Parameter mismatch - possible decompilation error` rather than silently producing broken code.

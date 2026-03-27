@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, `result`, completely losing semantic meaning from the original source (e.g., `capture_by_value`, `obj`, `ptr1`).
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: The decompiler successfully demangles C++ symbols in the prototypes (e.g., `SimpleClass::SimpleClass(int, char const*)`), which is helpful, but internal helper functions retain mangled names or generic labels like `function_19c0`.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are preserved (e.g., `"Test"`, `"Base"`), but magic numbers like `0x1234` (ClassID) and array offsets (e.g., `31`, `35`) appear without explanation or named constants.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The output is heavily polluted by the expansion of C++ Standard Template Library (STL) internals; high-level logic is buried under hundreds of lines of `std::_Tuple_impl`, `std::_Head_base`, and exception handling frames.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Control flow is generally straightforward due to `-O0` (no aggressive optimizations), but it is frequently interrupted by calls to low-level STL implementation functions that obscure the actual program logic.
+
+**6. Function Decomposition:** Score: 2/10
+Justification: The decompiler fails to abstract high-level C++ constructs; a simple `unique_ptr` usage is exploded into dozens of internal function calls (`_ZNSt10unique_ptr...`), destroying the logical cohesion of the original functions.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads linearly within functions as expected for unoptimized code, but the sheer volume of boilerplate calls makes it difficult to follow the top-to-bottom intent of the original source.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little code redundancy or loop unrolling (typical of `-O0`), but the "redundancy" here is the unavoidable verbosity of the C++ ABI which the decompiler does not simplify.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Rich C++ types like `std::unique_ptr`, `std::string`, and class instances are flattened into primitive types (`int64_t`, `int32_t`) and raw pointers, losing all type safety and semantic information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Class member access is performed via raw pointer arithmetic and offsets (e.g., `*(int32_t *)(v1 + 4)`) rather than reconstructed struct member access (e.g., `obj.value`), making data layout recovery manual.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code is littered with unsafe casts, such as casting `int64_t` (representing a pointer) to `int32_t*` and frequent `void*` usage, reflecting the loss of the original type system.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10
+Justification: The only comments are demangled function signatures (e.g., `// Demangled: SimpleClass::SimpleClass...`); there are no comments explaining the logic, algorithms, or the purpose of complex STL manipulations.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: High-level C++ idioms like RAII, smart pointers, lambdas, and operator overloading are completely unrecognizable; they appear only as complex sequences of internal library calls.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: There are no explicit flags for anomalies, but the sheer complexity of the decompiled STL code implicitly signals that the decompiler struggled to abstract the high-level constructs.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are recovered; the logic of the original code (e.g., "expect: 4704") is lost in the implementation details.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: While the list of prototypes provides a global view, the relationships between high-level logic and low-level implementation are obscured by the volume of generated code.
+
+**17. Module Organization:** Score: 4/10
+Justification: The output is a single monolithic file; while functions are grouped by class naming conventions, the lack of namespace or class structure recovery makes organization poor.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code includes necessary headers and type definitions, but the reliance on global variables for vtables (e.g., `g5`, `g6`) and the flattened types would make recompilation into a functional C++ program difficult.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- **STL Expansion Failure:** High-level constructs like `std::unique_ptr` and `std::tuple` are fully expanded into internal implementation details (`std::_Tuple_impl`, `std::_Head_base`), burying the logic.
+- **Loss of Member Access:** Class members are accessed via pointer offsets (e.g., `v1 + 4`) rather than semantic names (e.g., `obj.value`), destroying data structure readability.
+- **Generic Variable Naming:** All local variables are generic (`v1`, `a1`), making it impossible to track the flow of specific logical entities like `capture_by_ref` or `multiplier`.
+
+**Best Quality Aspect:** Function Naming (Score: 6/10)
+- The decompiler successfully demangles C++ mangled names in the function list, allowing the analyst to map the low-level addresses back to the original class methods, even if the bodies are unreadable.
+
+**Most Needs Improvement:** Idiom Recognition (Score: 1/10)
+- The decompiler completely fails to recognize C++ patterns. A simple lambda or smart pointer usage should be abstracted, not expanded into hundreds of lines of standard library internals.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Implement C++ STL Pattern Matching:** Detect and abstract standard library implementations (like `unique_ptr`, `tuple`, `string`) back into their high-level types rather than emitting their internal `__impl` structures.
+2. **Recover Class Member Access:** Use RTTI and vtable information to reconstruct struct definitions and replace pointer arithmetic offsets (e.g., `this + 8`) with member access (e.g., `this->data`).
+3. **Aggregate Boilerplate Calls:** Collapse chains of constructor/destructor calls and internal STL helpers into single semantic statements where possible, especially for `-O0` builds where this boilerplate dominates.

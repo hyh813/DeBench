@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `result` instead of semantic names (e.g., `page_size`, `exec_mem` in `param_dynamic_code`). Some better names exist (`len`, `dst`, `src`, `n`) but most are opaque.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`param_macro_constants`, `param_asm_simd`). Helper functions use generic names (`sub_1030`, `sub_10B0`) but core test functions are clear.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (`57072`, `282`, `30` for sysconf `_SC_PAGESIZE`). String literals referenced as variables (`asc_22C9`, `aPpL201D`) obscuring their content.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Register annotations (`@<eax>`, `@<ebx>`) present but not intrusive. Some unnecessary complexity in `test_asm_features` with explicit variable tracking that could be simplified.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural (if/else, for loops). However, aggressive constant folding in caller functions (`call_macro_constants` returns `64` directly) loses original conditional logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions appropriately sized, but many caller functions collapsed to single return statements due to constant folding, losing the call relationship semantics from source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom reasonably well. Some functions like `test_asm_features` have complex variable tracking that disrupts linear reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. However, `test_preprocessing_features` repeats printf patterns that could be abstracted, and SIMD operations in `call_asm_simd` are overly verbose.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types mostly accurate (`int`, `void*`, `size_t`, `__m128i`). Some generic `int` usage where `int32_t` or `ssize_t` would be more precise. SIMD types recovered well.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited structs in this code. SIMD vector types (`__m128i`, `__int128`) recovered but array structures sometimes shown as raw pointer arithmetic (`*((_DWORD *)&v2 + i)`).
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (`(int *)mmap(...)`, `(func_t)exec_mem`). Generally type-safe but lacks const-correctness annotations that were in source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in decompiled output. Original source had extensive documentation about macro behavior, preprocessing, and assembly semantics - all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Macro expansion patterns (SQUARE, MAX, ADD_16) collapsed to arithmetic without indicating original macro structure.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External functions marked as "FAILED to decompile" (8 functions). However, no warnings about constant folding losing original logic or macro information loss.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling contracts documented. Original source had clear expected values in comments - none recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible through code, but constant-folded callers (`call_macro_constants` returns 64 directly) hide the actual call relationship to `param_macro_constants`.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file. Original source had clear section organization (5.2 preprocessing, 5.3 assembly) - this structure is lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 8 external functions failed to decompile requiring stubs. String references (`asc_22C9`) need resolution. Would require moderate patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+4+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+6+7+7)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (7+6+7)/3   = 6.67 × 0.20 = 1.334
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (6+6+5)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 5.76/10
+```
+
+### Overall Readability Score: **5.8/10**
+
+### Critical Defects:
+- **Constant folding destroyed semantic logic**: `call_macro_constants` returns `64` directly instead of calling `param_macro_constants(2048)`, hiding the test relationship
+- **No comments recovered**: Original source had extensive documentation about macro behavior, preprocessing challenges, and expected values - all lost
+- **Magic numbers without context**: Values like `57072`, `282`, `30` appear without explaining they represent `0xDF22`, line numbers, or `_SC_PAGESIZE`
+- **String literals obfuscated**: Format strings referenced as `aPpL201D`, `asc_22C9` instead of showing actual content
+- **Macro semantics completely lost**: No indication that functions originally used macros (SQUARE, MAX, ADD_16) - all collapsed to arithmetic
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Core function names preserved accurately from source, maintaining semantic clarity about what each function tests
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero comments recovered despite original source having extensive documentation about preprocessing behavior, expected values, and decompilation challenges
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and annotate constant folding**: When a function is reduced to a constant return, add a comment showing the original call pattern (e.g., `// Originally: return param_macro_constants(2048)`)
+2. **Recover string literal content inline**: Instead of `aPpL201D`, show `"PP-L2-01: %d (期望：64)\n"` directly in the code or as adjacent comments
+3. **Add semantic annotations for macro-derived code**: When arithmetic patterns match common macros (x*x, x+16), add comments like `// Possibly: SQUARE(x)` or `// Possibly: ADD_16(x)`

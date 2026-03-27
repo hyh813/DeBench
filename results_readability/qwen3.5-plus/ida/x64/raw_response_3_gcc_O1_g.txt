@@ -1,0 +1,104 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Nearly all local variables use generic names (`v0`, `v1`, `v2`, `i`) instead of semantic names from source (e.g., `arr`, `large_buf`, `head`). In `local_array`, the source variable `arr[10]` becomes `arr` but loop counter loses the `i` semantic meaning.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions retained original names (`double_value`, `local_vars`, `heap_basic`), but 15+ compiler stubs use meaningless `sub_XXXX` names. Core test functions are well-named and match source intent.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers appear without explanation (e.g., `0x10u`, `0x28u` for malloc sizes in `heap_nested`). Some constants are clear (`42`, `10`, `20`) but buffer sizes like `0x14u` should be `5 * sizeof(int)`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readfsqword(0x28u)`) appear in most functions despite -O0 claim. Redundant type casts (`(_DWORD *)`, `(_QWORD *)`) clutter code. Compiler initialization stubs (`deregister_tm_clones`, `frame_dummy`) add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops recovered as natural `for`/`while` constructs. However, `vla_stack` and `alloca_usage` show awkward stack alignment loops that obscure the simple VLA allocation intent from source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well - no unexpected inlining or fragmentation. Each test function remains separate. However, `static_helper` was folded into `call_static_func` (returns `2 * x + 1` directly).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Some functions like `linked_list_heap` have nested loops that could be clearer, but no excessive goto usage.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding removed intermediate variables (e.g., `local_vars` shows `2 * x + 10` instead of `a`, `b`, `c` chain). `static_complex_init` returns constant `15` instead of showing array access, losing source semantics.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`), but signedness issues appear (`unsigned __int64` for loop counters). Pointer types often degraded to `_DWORD *` instead of specific types like `int *` or `Node *`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `Node` struct referenced but definition not shown in output. `Point` struct completely lost - `local_struct` returns `3 * x` instead of showing `p.x + p.y`. `TreeNode` partially recovered with field names.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (`(_QWORD *)v6[1]` in `linked_list_heap`). Pointer arithmetic generally correct but verbose. No obvious buffer overflow patterns introduced by decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Only function headers with addresses. Source comments explaining test purposes (e.g., "MEM-L1-01: 局部变量（基础类型）") completely lost. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns (malloc/free pairs, linked list traversal) not identified or named. Memory operation functions (`memset`, `memcpy`) recognized but not annotated as standard library calls.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `dangling_pointer` shows dangerous `*v1` after `free(v1)` without warning. No indication that `double_free` contains undefined behavior. Stack canary warnings present but not security-relevant anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks preserved but not documented as preconditions. No postcondition comments (e.g., "returns heap-allocated memory"). Error return values (-1, -2) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear within file. External functions (`extern_function`, `extern_global_var`) referenced but definitions not shown. Callback relationship (`set_global_callback` → `double_value`) visible in `test_static_global`.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source sections (stack → heap → static → memop). Test functions grouped with their corresponding implementation functions. No header file separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 18 external functions failed to decompile (listed at end). Would need stubs for `malloc`, `free`, `printf`, `fork`, etc. Some platform-specific code (`__readfsqword`) needs handling.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4 + 7 + 6 + 5) / 4 = 5.50
+Level 2 (Structural):  (7 + 8 + 7 + 6) / 4 = 7.00
+Level 3 (Type):        (6 + 5 + 7) / 3 = 6.00
+Level 4 (Semantic):    (2 + 4 + 3 + 3) / 4 = 3.00
+Level 5 (Contextual):  (6 + 7 + 4) / 3 = 5.67
+
+Overall = (5.50 × 0.30) + (7.00 × 0.25) + (6.00 × 0.20) + 
+          (3.00 × 0.15) + (5.67 × 0.10)
+        = 1.65 + 1.75 + 1.20 + 0.45 + 0.57
+        = 5.62/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named semantically (e.g., `arr`, `result`, `sum`) based on usage patterns
+- **Zero comments** - source test documentation completely lost, making purpose unclear
+- **Struct definitions missing** - `Point`, `Node`, `TreeNode` field layouts not shown in output
+- **Constant folding obscures logic** - `local_vars` shows `2 * x + 10` instead of intermediate `a`, `b`, `c` variables
+- **18 external functions failed** - requires manual stub creation for compilation
+
+### Best Quality Aspect:
+- **Function Decomposition (8/10)** - Function boundaries preserved well with appropriate granularity matching source organization
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding test purposes difficult without source reference
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from debug symbols** - With `-g` flag, original variable names (`arr`, `large_buf`, `head`) should be preserved instead of `v0`, `v1`
+2. **Add semantic comments for test functions** - Include source comments like "MEM-L1-01: 局部变量（基础类型）" to explain test purposes
+3. **Display struct/union definitions inline** - Show `typedef struct { int x, y; } Point` before first usage instead of implicit field access

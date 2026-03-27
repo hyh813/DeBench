@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Despite the presence of debug symbols (`-g`), parameters are renamed to generic names like `a1`, `a2`, and `v1` instead of preserving the original semantic names `a`, `b`, `sum`, or `args`. While `result` is used for return values, the loss of original parameter names significantly hinders readability.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names such as `cdecl_func`, `test_calling_conventions`, and `param_by_value_int` are perfectly recovered from the binary symbols, matching the original source exactly and providing clear semantic context.
+
+**3. Literal Clarity:** Score: 8/10
+Justification: String literals like `"CALL-L1-01: %d\n"` and `"test"` are accurately preserved and clearly displayed. Magic numbers (e.g., `15`, `50`) remain as literals, which is acceptable for this test context, though they lack the named constants found in the source comments.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains redundant casts such as `(unsigned int)` and `(void *)` that clutter the logic. Additionally, the implementation of `varargs_func` exposes low-level `gcc_va_list` structure manipulation (`__gr_offs`, `__stack`) instead of abstracting it, adding significant noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is highly natural and linear, matching the `-O0` compilation expectation. Loops are correctly identified (e.g., `do-while` in `varargs_func`), and conditional logic is clear without excessive `goto` statements.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source code; there is no inlining or outlining. The granularity is perfect, with each test function (e.g., `call_cdecl`) remaining distinct and cohesive.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom. There are no confusing forward jumps or computed branches that disrupt the reading flow within the functions analyzed.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: While there is no dead code, the decompiler frequently inserts explicit casts (e.g., `(unsigned int)(a1 + a2)`) that were not in the source, slightly cluttering the arithmetic expressions.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Parameter types are generally correct (e.g., `int a1`), but return types are often widened to `__int64` (e.g., `cdecl_func` returns `__int64` instead of `int`), reflecting the ARM64 register width rather than the semantic C type.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Large structures passed by value (e.g., `LargeStruct` in `func_struct_byval`) are decompiled as pointers (`__int64 *a1`). While this reflects the ABI's hidden pointer implementation, it loses the "pass-by-value" semantic of the original source, forcing the analyst to infer the struct usage.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic and casts are generally correct and safe. The decompiler correctly identifies `gcc_va_list` types, though the manual manipulation of its internals in `varargs_func` looks unsafe compared to the high-level `va_arg` macro.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments in the decompiled output. The rich documentation explaining calling conventions and test scenarios present in the source is completely absent.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard idioms like `strlen` and `printf` are recognized, but the `varargs` idiom is not abstracted back into `va_arg`/`va_start`, instead exposing the complex ABI-level implementation of the va_list.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler does not explicitly flag anomalies, but it also doesn't hide them. The unusual stack manipulation in `varargs_func` is presented plainly without warning, which is neutral but not helpful.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: There is no recovery of preconditions or postconditions. For example, the null check in `func_struct_byptr` is visible as code (`if ( a1 )`), but it is not documented as a contract requirement.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are resolved to their correct targets (e.g., `cdecl_func(5, 10)` is clear). Global variable references (like string literals) are correctly linked.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are presented in a logical order that roughly follows the source flow, and helper functions (like `callback_func`) are grouped near their usage.
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code is syntactically valid C and would likely compile with minimal stubbing, though the reliance on `gcc_va_list` internals might require specific headers or definitions to compile standalone.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.0/10
+
+**Critical Defects:**
+- Parameter names are generic (`a1`, `a2`) instead of semantic names (`a`, `b`) despite debug info being available.
+- Return types are imprecise, using `__int64` for `int` returns (e.g., in `cdecl_func`).
+- Large structs passed by value are represented as pointers, obscuring the original function signature.
+- Varargs logic is expanded into low-level struct manipulation rather than high-level `va_arg` macros.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly recovered all function symbols, making the high-level flow of the test suite immediately understandable.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)
+- The complete lack of comments removes the context of *why* specific calling conventions are being tested, reducing the code to a collection of arithmetic operations rather than a coherent test suite.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Leverage Debug Info for Parameters**: Prioritize using DWARF/debug symbol information for parameter names instead of defaulting to `a1`, `a2` when available.
+2. **Improve Type Propagation for Returns**: Refine the heuristic for return types to distinguish between register width (`__int64`) and semantic type (`int`), especially when the source type is clearly 32-bit.
+3. **Abstract Varargs Implementation**: Detect the standard `va_list` manipulation patterns and re-synthesize them into `va_start`/`va_arg` idioms to match the source code's abstraction level.

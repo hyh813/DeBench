@@ -1,0 +1,95 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `ptr`, `iter` with no semantic meaning. Original variables like `arr`, `local`, `p` are completely lost, making it impossible to track data flow without deep analysis.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), but many runtime functions use generic names (`sub_4008f4`, `sub_400a70`). The test functions retain meaningful names which helps navigation.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers like `4294967295`, `4294967294`, `18446744073709551612` replace simple constants. Simple expression `x * 2` becomes `((a0 * 2 | a0 >> 31) & 4294967294)` obscuring intent.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: frame pointer manipulation (`v0 = &v1`), register spilling variables, unnecessary `CONCAT` operations, and `[D] MBusEvent-Imbe_Fence()` annotations that clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple loops transformed into complex `do-while` with manual index management. Uses `goto` for function calls (`goto g_412ff8`). Original `for` loops with clear bounds replaced with bit-manipulation-heavy conditionals.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but some are over-simplified (e.g., `tree_heap_traversal` just returns `60`). Helper functions like `call_weak_fn` and `deregister_tm_clones` appear as runtime artifacts rather than logical decomposition.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but disrupted by complex nested conditionals and manual loop unrolling. Deep nesting in functions like `linked_list_heap` with multiple allocation failure paths.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Excessive redundant bit operations for simple arithmetic. Expression `((0 <= a0 ? a0 : a0 + 1) >> 31 & 0x80000000 | ...)` appears repeatedly for simple array indexing. Loop unrolling not recognized as such.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic `unsigned long long`, `void*`, `char*` instead of precise types. Original `int`, `Point*`, `Node*` lost. Signed/unsigned distinctions often incorrect (e.g., `unsigned int` for values that should be signed).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: All structs named generically (`struct_0`, `struct_1`, `struct_2`) with fields like `field_0`, `field_8`, `padding_4`. Original `Point`, `Node`, `TreeNode` structures completely lost. Padding fields exposed unnecessarily.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(char *)`, `(unsigned int *)`). Pointer arithmetic on void pointers. Some type-confused operations like treating struct fields as raw integers. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only auto-generated annotations like `/* do not return */` and `[D]` markers. No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. Memory allocation patterns, linked list traversal, and tree operations not identified. Simple idioms like `x * 2` transformed into complex bit operations instead of recognized.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for suspicious code. Dangerous patterns like `dangling_pointer` (use-after-free) not highlighted. `[D]` markers present but don't explain what's uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not explained). No postconditions or invariants. Error return values like `4294967295` not documented as error codes.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships unclear. `global_func_ptr` usage not explained. External dependencies (`extern_global_var`, `extern_function`) declared but relationships not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order (runtime init functions mixed with test functions). No logical grouping by memory type (stack/heap/static). Test functions separated from implementation but organization is flat.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple external dependencies (`malloc`, `printf`, `fork`, `waitpid`) not fully declared. Custom annotations (`[D] MBusEvent-Imbe_Fence()`) won't compile. Some functions reference undefined globals (`g_412ff8`, `g_402229`).
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Calculation:**
+- L1 (Lexical): (2+6+3+3)/4 = 3.5 × 0.30 = 1.05
+- L2 (Structural): (4+5+5+4)/4 = 4.5 × 0.25 = 1.125
+- L3 (Type): (4+3+5)/3 = 4.0 × 0.20 = 0.80
+- L4 (Semantic): (2+3+3+2)/4 = 2.5 × 0.15 = 0.375
+- L5 (Contextual): (5+5+4)/3 = 4.67 × 0.10 = 0.467
+- **Total: 3.82 ≈ 3.7/10**
+
+**Critical Defects:**
+- Variable `v0`, `v1`, `v2` should be named based on semantic usage (e.g., `local`, `result`, `counter`)
+- Simple arithmetic `x * 2` transformed into `((a0 * 2 | a0 >> 31) & 4294967294)` obscuring intent
+- All struct types named `struct_0`, `struct_1` losing original `Point`, `Node`, `TreeNode` semantics
+- Functions like `tree_heap_traversal` constant-folded to `return 60` losing all logic
+- No comments explaining complex bit manipulation expressions or error return values
+
+**Best Quality Aspect:** Function Naming Quality (scored 6/10)  
+- Original test function names preserved (`test_stack_memory`, `test_heap_memory`, `local_vars`) enabling basic navigation despite other degradation.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Complete absence of explanatory comments makes complex expressions and error handling impossible to understand without cross-referencing original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Implement semantic variable naming**: Analyze variable usage patterns to infer names (e.g., variables used in loop bounds → `count`, `size`; variables passed to `malloc` → `buffer`, `array`)
+2. **Recognize and simplify arithmetic patterns**: Detect common bit-manipulation idioms that represent simple operations (signed overflow handling, array indexing) and restore original expressions
+3. **Add decompilation confidence annotations**: Mark uncertain reconstructions with comments explaining what couldn't be recovered and suggesting manual review areas

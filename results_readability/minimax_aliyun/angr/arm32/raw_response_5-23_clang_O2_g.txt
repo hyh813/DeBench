@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `a0`, `a1`, `v0`, `v1`, `v2`, `ptr`. No semantic names like `size`, `result`, or `counter` are used, making it impossible to track variable purpose without analyzing usage.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names perfectly match the original source: `param_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, etc. The decompiler correctly recovered all original function names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (e.g., `a0 * a0` for SQUARE), but magic numbers like `0x400` (1024), `0x200` (512), `57072` (0xDEF0), and `a0 * 11 + 5` lack explanation. The semantic meaning of these constants is lost.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean with minimal compiler artifacts. No redundant casts or debug instrumentation. Some goto in initialization code but that's expected from the binary.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - ternary operators used for simple conditions, do-while loops for iteration, early returns for edge cases. At -O0, the flow closely matches source patterns.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (10-40 lines), each with single responsibility. Test functions are larger as expected. Good separation between param_* and call_* function pairs.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads mostly top-to-bottom with minimal forward jumps. Early returns and breaks used appropriately. No excessive nesting disrupting flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Found critical bug in `param_asm_clobber`: `return *(ptr) + v1;` where `ptr` is never properly initialized. Also redundant `printf` call in `test_preprocessing_features`: `v0 = printf(...); return printf(...);`
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are reasonable for ARM64 (`unsigned int` for parameters). However, `size_t` should be used for memory sizes (sysconf, mmap), and `int*` for array parameters instead of generic `unsigned int*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery. Arrays like `int arr[]` are treated as raw pointer arithmetic (`a0 + 1`). The original `int arr[4]` for SIMD becomes `unsigned int*` with manual index calculations.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Pointer arithmetic without bounds checking (e.g., `a0 + 1` in loop). The bug with uninitialized `ptr` in `param_asm_clobber` is a type safety issue. No const correctness.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled code. No explanation of macro expansion results, inline assembly behavior, or algorithm logic. The rich comments from source are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The inline assembly patterns, atomic operations, and memory protection patterns are not labeled or explained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The bug in `param_asm_clobber` (uninitialized `ptr` usage) is presented as normal code. No indication of indirect calls or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. No documentation of error handling expectations or invariants. The contracts from source (e.g., "requires: ptr != NULL") are lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some `extern` declarations show dependencies (e.g., `extern unsigned int global_var`), but no clear call graph or relationship documentation between functions.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions together, asm functions together. Static functions properly distinguished. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Many `extern` declarations needed for library functions. Would require moderate patching to compile standalone. Dependencies on libc functions are implicit, not documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming is uniformly generic (`a0`, `v0`, `ptr`) - impossible to track purpose without analyzing every usage
+- Bug in `param_asm_clobber`: `ptr` is used uninitialized in return statement
+- Redundant `printf` call in `test_preprocessing_features`: `v0 = printf(...); return printf(...);`
+- No struct recovery - arrays like `int arr[4]` become pointer arithmetic, losing semantic meaning
+- Complete loss of source comments explaining macro behavior and inline assembly
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- Every function name perfectly matches the original source, demonstrating excellent symbol recovery
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.25/10)  
+- Zero comments, no pattern recognition, no anomaly flagging, no contract recovery - the decompiled code provides no semantic context to help analysts understand the code's purpose
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `a0` compared to `0x400` should suggest `size` or `MAX_SIZE`)
+2. Detect and flag anomalies like the uninitialized `ptr` in `param_asm_clobber`
+3. Recover struct types from pointer arithmetic patterns - `a0[i]` on arrays should create struct types rather than raw pointer + index calculations

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic (`v1`, `v2`, `result`, `temp`) with no semantic meaning. For example, in `_Z20test_cpp_member_funcv`, the `SimpleClass` object is stored in `v1` with no indication it's an object instance.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Function names are C++ mangled symbols (`_Z20test_cpp_member_funcv`) with demangled names only in comments. Some functions have meaningless names like `function_1860`, `function_1870` with no semantic indication.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals preserved (test messages in `g29-g41`), but magic numbers like `g1 = 0x1234` (class ID) and `g28 = 0x3e8` (1000 multiplier) have no explanatory constants or comments.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Massive noise from STL internals exposed (100+ `std::unique_ptr`, `std::tuple`, `std::default_delete` functions). Output is 2735 LOC vs 540 LOC original (5x expansion). Stack check artifacts (`__stack_chk_fail`) present throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses explicit `goto` labels (`lab_0x2ed4`, `lab_0x2f18`) in `_ZN14LifecycleClassC1Em` instead of natural for-loop. At `-O0`, this restructuring is unexpected and reduces readability.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: STL template instantiations exploded into 100+ separate functions that should be inlined. `_ZSt3get`, `_ZSt12__get_helper`, `_ZNSt11_Tuple_impl` variants create extreme fragmentation obscuring the actual logic.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Moderate non-linearity with forward jumps and label-based control flow. Functions like `_ZN14LifecycleClassC1Em` use goto chains instead of sequential loop structure.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from template instantiation explosion. Multiple nearly-identical functions for `unique_ptr<int>`, `unique_ptr<int[]>`, `unique_ptr<int, deleter>` with minimal variation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int32_t`, `int64_t`, `float64_t`) but semantic types lost. `this` pointers often become `int64_t *` instead of class-specific types. Const-correctness partially preserved in mangled names (`_ZNK` prefix) but not in signatures.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Vtable structures recovered (`vtable_167f8_type`, etc.) but with generic field names (`e0`, `e1`, `e2`). Class structures mentioned in comments but not defined as proper structs with field names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(int64_t)(int32_t)&g28`, `(int32_t *)*v2`, `(int64_t *)v1`. Pointer arithmetic on typed objects loses type information (e.g., `result + 4`, `result + 8` for object fields).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Demangled function names in comments are helpful, but no algorithm explanations, no parameter documentation, no logic descriptions. Comments like `// 0x1b14` (address markers) add noise without value.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns visible (vtables, smart pointers, RTTI) but not explicitly identified. Virtual function calls through vtable not marked as such. Lambda closures not recognized as lambda pattern.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No uncertainty indicators, no anomaly flags. Code presents potentially incorrect decompilation confidently (e.g., `_Z17call_virtual_funcP4Basei` returns `result` uninitialized).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling logic in `_Z18test_cpp_exceptionv` has no contract information about throw/catch behavior.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch obscured. Inheritance relationships mentioned in comments (`RTTIDerivedA (base classes: RTTIBase)`) but not structurally represented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with no logical grouping. Related class methods scattered by address rather than class. No header file separation between API and implementation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes standard headers but requires C++ runtime (`__cxa_*` functions). Many external dependencies undocumented. Would need significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+5+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (5+3+5+4)/4 = 4.25 × 0.25 = 1.06
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (4+5+2+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 3.94/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v1`, `v2`, `result`) losing all semantic meaning from original source
+- **STL template explosion** creates 100+ helper functions that obscure actual program logic
+- **Vtable structures use generic field names** (`e0`, `e1`, `e2`) instead of meaningful names like `virtual_func`, `getName`, `destructor`
+- **Control flow uses goto labels** instead of natural loop/conditional constructs even at `-O0`
+- **No anomaly indicators** despite clear decompilation uncertainties (uninitialized returns, ambiguous casts)
+
+### Best Quality Aspect: **Type Precision (5/10)**
+- Basic integer types (`int32_t`, `int64_t`, `float64_t`) are preserved correctly, and the decompiler distinguishes signed/unsigned appropriately in most cases.
+
+### Most Needs Improvement: **Variable Naming Quality (2/10)**
+- Complete failure to infer semantic names from usage patterns; a variable holding a `SimpleClass` instance should be named `obj` or `simple_obj`, not `v1`.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** by analyzing usage patterns (e.g., variables passed to `strlen` should be named `string` or `name`, variables used in loop bounds should be named `count` or `size`)
+2. **Collapse STL template instantiations** into inline code or library calls with clear documentation rather than emitting 100+ nearly-identical helper functions
+3. **Add uncertainty annotations** for ambiguous decompilation results (uninitialized variables, unresolved indirect calls, potential type mismatches) to guide manual review

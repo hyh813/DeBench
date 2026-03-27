@@ -1,0 +1,105 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. For example, `v4` holds the stack canary guard but isn't named `stack_guard`, and `a0`/`a1` in `varargs_func` should be `count` and `args`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but runtime helpers use generic names (`sub_103e8`, `sub_104ac`). Action verbs are implicit rather than explicit.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (4294967295 for -1, 0x100000, 0x80000000). String literals referenced by address (`0x114cc`) instead of shown inline. Constant folding hides actual computation (functions return pre-computed values like 15, 50, 6).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from stack canary checks repeated in every function. ARM condition calculations (`armg_calculate_condition`, `armg_calculate_flag_c`, `armg_calculate_flag_v`) create hundreds of lines of verbose code in `__aeabi_dadd`. Register spill variables (`v0` through `v120+`) clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` statements replace natural loops and conditionals. `armg_calculate_condition` calls obscure simple comparisons. Switch statements degraded to complex if-else chains (e.g., `ret_multi_branch` with LABEL_10f15/10f16/10f19).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but some have incorrect signatures (`func_struct_byptr` takes 4 params instead of 1, `arm_aapcs_func` takes 4 params instead of 5). Runtime functions properly separated but application logic mixed with compiler artifacts.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps disrupt reading flow with multiple label targets (LABEL_104ec, LABEL_104f8, LABEL_11035, etc.). Deep nesting in condition flag calculations (100+ lines of nested `armg_calculate_condition` calls). Cannot read top-to-bottom.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Stack canary checks duplicated in nearly every function. `armg_calculate_condition` patterns repeated hundreds of times in floating-point functions. Constant folding creates redundancy (same computed value returned multiple times in `test_calling_conventions`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned int` or `int` regardless of original type. Function pointer types lost (`param_func_ptr` takes `unsigned int *` instead of `int (*)(int)`). No const-correctness. Pointer vs. array distinction lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions mostly generic (`struct_0` with `field_0`). `LargeStruct` and `SmallStruct` not properly recovered with field names. `func_struct_byval` takes 4 `unsigned int` params instead of proper struct. Array types become pointers.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many implicit unsafe casts in pointer arithmetic. Function pointer calls through integer types. Stack canary XOR operations without proper typing. `ret_small_struct` returns `unsigned int [2]` which is non-standard C syntax.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Only auto-generated function headers with register annotations (`// r0`, `// [bp-0x4]`). No algorithm explanations, API contracts, or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not clearly indicated (uses manual pointer iteration). Calling convention differences not explained. No design patterns identified. Floating-point operations completely opaque.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite incorrect function signatures. Type mismatches not indicated. `param_complex_cast` has nonsensical code (`if ((vvar_1 != 0x1<32>)) { Goto None }`) without warning. Silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should require non-NULL pointer). Null checks present but not documented as contracts. No postconditions inferred. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced by opaque addresses (`g_114cc`, `g_11590`, `g_22008`). No call graph documentation. External dependencies (`GLIBC_2.4::__stack_chk_guard`) not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file with no logical grouping. Runtime functions (`_init`, `_start`, `_fini`) mixed with application code. No namespace or package structure. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external symbols requiring stubs (`__printf_chk`, `__aeabi_dadd`, `strlen`). Architecture-specific ARM code won't compile on x86. Non-standard return types (`unsigned int [2]`, `unsigned int [4]`). Would require extensive modification to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3 + 7 + 4 + 3) / 4 = 4.25
+Level 2 Average: (4 + 6 + 4 + 3) / 4 = 4.25
+Level 3 Average: (4 + 3 + 4) / 3 = 3.67
+Level 4 Average: (2 + 3 + 2 + 3) / 4 = 2.50
+Level 5 Average: (5 + 5 + 4) / 3 = 4.67
+
+Overall = (4.25 × 0.30) + (4.25 × 0.25) + (3.67 × 0.20) + (2.50 × 0.15) + (4.67 × 0.10)
+        = 1.275 + 1.0625 + 0.734 + 0.375 + 0.467
+        = 3.91 ≈ 3.9/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- Variable `v4` should be named `stack_guard` based on usage with `__stack_chk_guard`
+- Control flow uses `goto` and `LABEL_*` instead of natural loop/conditional constructs
+- Struct fields all generic (`field_0`) losing semantic meaning for `LargeStruct` and `SmallStruct`
+- Function `func_struct_byptr` has incorrect signature (4 params instead of 1 pointer)
+- Floating-point function `__aeabi_dadd` is 400+ lines of unreadable condition flag calculations
+- Constant folding hides actual computation (test functions return pre-computed constants)
+- No comments explaining magic numbers (4294967295, 0x100000, 0x80000000)
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately, making it possible to identify test purposes despite other degradation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Completely absent meaningful documentation; no algorithm explanations, confidence indicators, or API contracts to aid understanding
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns** - Analyze how variables are used (e.g., `v4` XORed with `__stack_chk_guard` should be named `stack_guard`)
+2. **Reconstruct natural control flow from jump patterns** - Convert `goto`/`LABEL` patterns back to while/for/switch constructs, especially for simple loops
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (incorrect signatures, unresolved calls) with comments like `// DECOMPILER_UNCERTAIN: signature may be incorrect`

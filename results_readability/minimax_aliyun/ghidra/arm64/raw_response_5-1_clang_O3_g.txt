@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic: `local_38`, `local_34`, `uStack_2c`, `puVar1`, `plVar2`, `lVar3`, `iVar4`, `sVar1`. The decompiler uses "Unresolved local var" comments for most stack variables, indicating complete failure to recover meaningful names like `obj`, `r1`, `r2`, `result`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Test functions are perfectly named: `test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`, etc. Template instantiations correctly show `template_max<int>`, `template_max<double>`. Only minor issues with some internal functions.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `0x125c` (4704), `0x3e9` (1001), `0x2a` (42), `0x47` (71), `0x28a` (650). The decompiler returns pre-computed expected values rather than reconstructing the computation, leaving unexplained constants like `0x74736554` (part of "Test" string).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate noise from compiler warnings: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable". However, the actual decompiled code is relatively clean without excessive casts or debug artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is natural for the simplified code. Most functions are simple returns. Template functions like `template_swap` show proper swap logic. The `call_virtual_func` correctly shows vtable indirect call. Some optimization artifacts but manageable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good function granularity. Template functions properly separated (`template_max<int>`, `template_max<double>`, `template_swap<int>`). Container member functions correctly decomposed (`push`, `get`, `getSize`). Test functions appropriately small.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Most functions read top-to-bottom with minimal jumps. Template functions are highly linear. Container methods have simple if-checks but no complex nesting. Good linearization overall.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: The decompiler returns pre-computed values (e.g., `return 0x125c`) rather than reconstructing the computation, making it impossible to assess redundancy in the original logic. This is a major semantic loss.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision. Return types are mostly correct (`int`, `double`). However, extensive use of `undefined4`, `undefined8`, `undefined7`, `undefined1` for local variables indicates type uncertainty. `size_t` correctly used for `strlen` result.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery. Variables like `SimpleClass obj` show as scattered stack variables (`local_38`, `local_34`, `uStack_2c`) without struct reconstruction. No field names recovered - just raw offsets.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Several type safety issues: `(*(code *)(undefined *)0x0)()` is an unsafe function pointer call. Extensive use of undefined types creates potential undefined behavior. Pointer arithmetic on undefined types.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly decompiler warnings, not explanatory comments: "WARNING: Unknown calling convention", "Unresolved local var", "DWARF original prototype". No helpful comments explaining algorithms or recovered intent. The DWARF prototype comments are auto-generated metadata.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or C++ idioms explicitly identified. Virtual function calls show as indirect vtable calls but aren't labeled as polymorphism. Template instantiation pattern not recognized as such. Exception handling shows `__cxa_throw` but not identified as try-catch.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged via warnings: "Could not recover jumptable", "Unknown calling convention", "Unresolved local var". However, the code confidently presents incorrect information (returning constants instead of reconstructed logic) without flagging this as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No bounds checking documentation for Container::get despite the code containing bounds checks. No contract information recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No cross-reference information. No documentation of who calls these functions or what they call. Virtual dispatch relationships not clearly documented. Static member access (`LifecycleClass::instance_count`) shown but relationships not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Reasonable organization - test functions grouped together, template functions together, Container methods together. Functions from same class are grouped. Minor issues with ordering but overall logical.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code uses `operator_new`, `operator_delete`, `std::ios_base::Init` requiring standard library stubs. Some functions like `__cxa_throw`, `__cxa_allocate_exception` need libc++abi. Not standalone compilable without significant stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Variable naming completely failed - all locals are generic (`local_38`, `puVar1`) with "Unresolved local var" comments
+- Logic collapsed to constants - functions return expected values (`0x125c`, `0x2a`) instead of reconstructed computation
+- Composite types not recovered - `SimpleClass`, `LifecycleClass` objects appear as scattered stack variables without struct layout
+- Type precision poor - extensive use of `undefined4`, `undefined8` for untyped variables
+- No semantic annotations - no comments explaining C++ idioms (virtual functions, templates, exceptions)
+
+**Best Quality Aspect:** Function Naming (scored 9/10)  
+Test function names perfectly match source (`test_cpp_member_func`, `test_cpp_virtual_func`), and template instantiations correctly show type parameters.
+
+**Most Needs Improvement:** Variable Naming (scored 2/10)  
+Nearly all local variables use cryptic generic names. The decompiler should infer names from usage patterns (e.g., `local_38 = 10` → `initial_value`).
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `local_38` assigned 10 and used as `value` should be named accordingly
+2. Reconstruct computation logic instead of returning constants - the decompiler optimized away the computation; need to recover the original algorithm
+3. Recover struct layouts from stack frame analysis - combine related stack variables into reconstructed structs with field names

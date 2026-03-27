@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `a1`, `a2`, `result`) with no semantic meaning. For example, `array_1d_stack` uses `v2`, `v5`, `result` instead of `index`, `element`, `sum` which would match the source's `i`, `sum` pattern.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user functions recovered with original names (`process_char`, `array_1d_stack`, `struct_simple`), but helper functions use generic names (`sub_103E8`, `sub_115A8`) and some are misidentified (`opaque_handle_create` shows empty body).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `65`, `32`, `0x19`, `0x7FF`, `2047` appear without explanation. String literals referenced indirectly (`s`, `asc_1203F`) instead of showing actual content. Test functions print pre-computed values (e.g., `97` instead of calling `process_char('A')`).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Register comments (`// r0`, `// r3`), stack frame annotations (`[sp-4h] [bp-4h]`), and BYREF markers clutter the code. Float helper functions (`__muldf3`, `__subdf3`) add 500+ lines of compiler runtime noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered as `while`/`do-while` but float helpers have extremely complex nested conditionals. `enum_switch` uses array lookup instead of switch statement. Some `JUMPOUT` markers indicate unresolved control flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is reasonable (most under 50 lines). Thunk functions properly identified (`frame_dummy`, `binary_tree`). However, test functions are consolidated incorrectly—printing expected values instead of computing them.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom but complex functions like `graph_traverse` have deeply nested loops with awkward `while(1)` patterns. Float helpers have severe non-linearity with multiple early returns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions show significant redundancy—printing hardcoded expected values instead of actual computation. Float helpers contain duplicated bit-manipulation patterns from software floating-point implementation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types recovered but with erosion: `long long` becomes `int`, `long double` becomes `double`, `volatile` qualifier lost entirely. Pointer types use `_DWORD *` instead of semantic types. `const` qualifiers not preserved (`const_param` shows `_DWORD *a1`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**—no struct/union definitions recovered. All struct access via pointer arithmetic (`a1[0]`, `a1[1]`, `a1[2]` for Point3D). Bitfields manually expanded to shift/mask operations. `struct_with_ptr` returns `char *` instead of `int`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(_DWORD *)`, `(int *)`, `COERCE_FLOAT`). Function pointer signatures partially recovered but with mismatches (`ptr_func_complex` shows 4 parameters vs. source's 2). Pointer arithmetic without bounds checking throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments present (register assignments, stack layout). No algorithm explanations. One useful warning: `"positive sp value has been detected, the output may be wrong!"` but no semantic documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns not identified—linked list traversal, array summation, tree recursion all appear as raw loops without pattern naming. No design pattern recognition for struct-with-function-pointer (vtable pattern).
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged: `"FAILED to decompile"` for 8 import functions, `JUMPOUT` markers for unresolved code. However, critical issues like test function constant-folding not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `array_complex_index` bounds checking not explained). No postconditions. Error returns (`-1`, `-99`) not documented. NULL pointer checks present but not annotated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Callback relationships partially visible (`ptr_func_simple` shows function pointer parameter). No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Related functions (data types, arrays, pointers, composites) not organized. Static functions not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 8 functions failed to decompile (external imports like `__imp_puts`, `__imp_memcpy`). Would require stubs for all library functions. Type mismatches (`long double` → `double`) would cause compilation errors.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (3+4+6+2)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.80/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Struct/union types completely lost**—all composite types accessed via raw pointer arithmetic (`a1[0]`, `a1[1]`) instead of named fields
+- **Test functions print hardcoded values** instead of actual computation, obscuring program behavior
+- **Variable names entirely generic** (`v1`, `v2`, `result`) with no semantic meaning
+- **Type qualifiers lost**—`const`, `volatile`, `long long`, `long double` all degraded
+- **8 functions failed to decompile** including standard library imports
+
+### Best Quality Aspect: Function Naming Quality (scored 7/10)
+- Most user-defined functions recovered with original semantic names matching source code
+
+### Most Needs Improvement: Composite Type Recovery (scored 2/10)
+- Complete failure to recover struct/union definitions forces all access through error-prone pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** by analyzing consistent field access patterns across functions (e.g., `a1[0]+a1[1]+a1[2]` suggests 3-field struct)
+2. **Preserve type qualifiers** from debug symbols when available (`-g` flag should retain `const`/`volatile` information)
+3. **Avoid constant-folding test code**—recognize printf patterns and preserve actual function calls instead of pre-computed values

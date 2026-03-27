@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `local_30` instead of semantic names like `result`, `x`, `str` from original. The `param_fake_branch` function loses the `result` variable entirely due to optimization.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`), but many runtime functions use generic `FUN_00011xxx` naming. Original function names mostly recovered correctly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x2b`, `0xe1` appear without explanation. Original had comments explaining `0xDEADBEEF` and encryption keys. Some constants like `0x14` (20) are recoverable but not documented.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise from 20+ runtime functions (`_init`, `deregister_tm_clones`, `__do_global_dtors_aux`, `__i686.get_pc_thunk.bx`) not in original source. Stack canary checks (`__stack_chk_fail_local`) add clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: `param_opaque_predicate` uses awkward do-while for GCD instead of clean while loop. `param_fake_branch` control flow completely eliminated (correct optimization but loses semantic intent). Most loops use natural patterns.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original 464 LOC expanded to 617 LOC with runtime bloat. Core functions appropriately sized, but `test_obf_opt_edge` becomes unreadable with `FUN_00011190` printf calls instead of clean `printf()` statements.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `param_vectorized_loop` has pointer arithmetic (`param_3 = param_3 + 1`) instead of array indexing. Stack overflow checks create non-linear exit paths.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary code repeated in every function (`local_10 = *(int *)(in_GS_OFFSET + 0x14)`). `call_fake_branch` returns constant `10` instead of calling `param_fake_branch(10)` - correct optimization but loses call relationship.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `undefined4` instead of `int`, `byte *` instead of `char *`. Original `int param_fake_branch(int x)` becomes `undefined4 param_fake_branch(undefined4 param_1)`. Signed/unsigned distinctions sometimes lost (`uint param_1` vs `int`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The bitfield struct in `param_implementation_defined` completely optimized away - returns constant `0x2b`. Original struct with `a:3`, `b:5`, `c:24` fields not recoverable from binary.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present: `(longlong)param_1` in division, `(undefined4 *)` pointer casts. `param_null_pointer_deref` takes `undefined4 *` instead of `int *`, losing type safety semantics.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments recovered despite original having extensive documentation explaining obfuscation techniques, expected values, and test scenarios. Critical semantic information completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition for GCD algorithm, XOR decryption, or tail recursion. `param_opaque_predicate`'s mathematical identities not identified as "always true" predicates.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication that `param_fake_branch` was optimized (fake branches eliminated). No warning about `FUN_00011xxx` unresolved external calls. Silent failures on semantic loss.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` requires signal handler setup). Return value contracts not specified. Original's "期望: 10" expectations completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. `call_fake_branch()` returns `10` directly instead of showing it calls `param_fake_branch(10)`. Global variables (`jmp_buffer`, `encrypted_0`) not clearly linked.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 40+ functions in single output with no logical grouping. Runtime functions mixed with application logic. Original's section comments (7.1, 7.2, 7.3) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Contains 20+ `FUN_00011xxx` unresolved external functions. Would require significant stubbing to compile standalone. Dependencies on runtime (`__gmon_start__`, `frame_dummy`) not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+3)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (5+3+5)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+
+Overall Score: 4.36/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **`param_fake_branch` completely simplified** - Returns `param_1` directly, losing both fake branch conditions that were the function's entire purpose
+- **Zero comments recovered** - Original had 100+ lines of documentation explaining obfuscation techniques, test expectations, and scenarios
+- **20+ runtime functions pollute output** - `_init`, `deregister_tm_clones`, `FUN_00011xxx` functions add 150+ lines of noise
+- **Bitfield struct lost** - `param_implementation_defined` returns constant `0x2b` instead of showing struct field operations
+- **Type degradation** - `undefined4` instead of `int`, losing semantic type information throughout
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core function names like `param_fake_branch`, `param_opaque_predicate`, `decrypt_string` were correctly recovered from symbols
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of documentation despite original having extensive comments explaining obfuscation intent and test expectations
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** from debug symbols (`-g` flag) when available, especially for obfuscation test cases
+2. **Annotate optimized-away code** with warnings like `// OPTIMIZED: Dead branch eliminated by compiler` to preserve semantic intent
+3. **Filter runtime boilerplate** - Provide option to exclude standard C runtime functions (`_init`, `__do_global_*`, `get_pc_thunk`) from main output

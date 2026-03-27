@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables like `iVar1`, `iVar2`, `lVar1`, `lVar2` dominate the code, obscuring their semantic roles. For example, in `loop_for_fixed`, `iVar1` is the loop counter and `iVar2` is the sum, but these should be `i` and `sum`. The decompiler uses generic indexed variable names throughout, making it difficult to track purpose across functions.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names perfectly match the original source - `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `goto_forward`, `goto_backward`, etc. All 20+ test functions retain their original semantic names with excellent verb choice and clarity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3039` (12345), `0x2694` (9876), `0x3e9` (1001), `0x65` (101) appear without explanation. However, array initializations in `loop_break` correctly show values 10, 20, 30, 40, 50 matching the source `arr[] = {10, 20, 30, 40, 50}`. Mixed results - some literals clear, others unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy pollution from auto-generated warnings including "WARNING: Unknown calling convention", "WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call", "Unresolved local var: int i@[???]". These artifacts clutter every function and significantly impede readability.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow mostly natural - loops use `for`/`while` constructs, conditionals are clear. The `goto_forward` correctly collapses to simple conditional logic. Minor issues: `duffs_device` has awkward switch-case goto structure, some indirect jumps couldn't be recovered. At -O0, this is expected quality.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function remains separate with appropriate granularity. No inlining artifacts or monolithic functions. Functions like `recursion_factorial`, `double_value`, `state_idle` are properly extracted with clear single responsibilities. Parameter lists match original signatures.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Early returns in `single_if`, `if_else` used appropriately. Some disruption in `duffs_device` due to switch-case fall-through pattern. Forward jumps present but manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code. Loop unrolling not present at -O0. Common subexpressions not duplicated. The code is clean without redundant computations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are `int` matching original. Function pointer types shown as `_func_int_int *` which is reasonable. Parameters retain their types (`int a, int b, int c`). Some loss of specificity (no `uint32_t` vs `int` distinction), but core types preserved.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered well - `int arr[5]` in `loop_break`, `int matrix[3][4]` in `loop_multi_exit`. Struct recovery not heavily tested in this source. Some pointer arithmetic present but manageable.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No obvious unsafe casts. Pointer arithmetic in array access is safe (`arr[lVar1]`). Function pointer calls use proper signatures. Stack canary checks present (`__stack_chk_fail`). Minor issues with indirect calls that couldn't be resolved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments - only auto-generated warnings like "WARNING: Unknown calling convention". No explanation of algorithms, no recovery confidence indicators, no API contracts. The decompiler provides file-level headers but no function-level documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized but not named. Duff's device (`duffs_device`) is present but not identified as such. State machine patterns in `state_machine` and `fsm_func_table` could be explicitly labeled. Tail recursion in `tail_recursion` correctly converted to loop but not annotated.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Decompiler does flag issues with warnings: "Could not recover jumptable", "Treating indirect jump as call", "Subroutine does not return". However, these are generic warnings without specific guidance on what the original code might have been.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The `non_local_jump` function uses `_setjmp`/`_longjmp` but no contract about jump buffer usage is provided. Error conditions not explicitly documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships not explicitly documented. No comments showing "Calls:" or "Called by:". However, static functions like `double_value`, `triple_value` are properly scoped and can be traced through usage in test functions.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in binary order rather than logical grouping. Test functions (`test_control_flow_l1`, `l2`, `l3`) grouped together which is reasonable. Static helper functions (`op_add`, `op_sub`, etc.) grouped logically. Some organization present but not matching original source structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates "Compilation Result: Yes". However, there's a processor mismatch (source says arm64, decompiled shows x86). External dependencies like `__printf_chk`, `__stack_chk_fail` are standard libc. Some patching needed for standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- Variable naming uses generic indexed names (`iVar1`, `lVar1`, `iVar2`) throughout, obscuring semantic purpose
+- Comments almost entirely absent - only auto-generated warnings clutter the output
+- Magic numbers like `0x3039`, `0x2694`, `0x3e9` appear without explanation
+- Processor architecture mismatch (arm64 source vs x86 decompiled) indicates potential analysis error
+- No function-level documentation explaining algorithms or recovery confidence
+
+### Best Quality Aspect: Function Naming Quality (10/10)
+Function names perfectly match the original source - every test function (`sequential_ops`, `loop_for_fixed`, `goto_backward`, etc.) retains its semantic name with excellent clarity.
+
+### Most Needs Improvement: Variable Naming Quality (3/10)
+Generic variable names like `iVar1`, `iVar2`, `lVar1`, `lVar2`, `lVar3` dominate the code. The decompiler should infer names from usage patterns (e.g., loop counters → `i`, accumulators → `sum`, results → `result`).
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: Track how variables are used (loop counters, accumulators, array indices) and assign semantic names like `i`, `sum`, `count`, `result` instead of generic `iVar1`, `iVar2`
+2. **Add algorithm documentation**: For complex patterns like Duff's device, state machines, and tail recursion, add comments explaining what the pattern is and how it maps to source
+3. **Replace magic numbers with constants**: Detect repeated numeric literals and suggest meaningful constant names based on context (e.g., `0x3e9` → `MAX_COUNT` or `TIMEOUT`)

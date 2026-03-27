@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are consistently generic (`param_1`, `local_10`, `piVar1`) rather than semantic names (`a`, `b`, `sum`, `args`), requiring the reader to track usage manually to infer purpose.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `param_by_value_int` are preserved exactly from the source, making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Integer constants are often represented in hex (e.g., `0xf` instead of `15`, `0x32` instead of `50`), and string literals are replaced with pointers to data segments (e.g., `&DAT_0001178b`), obscuring the original text.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While the control flow is clean, the code is cluttered with low-level type noise like `undefined4` and `undefined8`, and software floating-point helper calls (`__adddf3`, `__floatsidf`) are exposed instead of abstracted operators.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Loops and conditionals are recovered naturally (e.g., `do-while` loops in `varargs_func` and `func_struct_byval`), matching the source structure closely despite the `-O0` compilation.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler perfectly matches the source's function boundaries and granularity; there is no artificial inlining or outlining of logic, maintaining the original modular design.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal jumps; early returns and loop structures are placed logically, facilitating easy tracing of execution paths.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little dead code, but some redundancy exists in the handling of composite types (e.g., manually copying struct fields into local arrays in `func_struct_byval`) which could be abstracted.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: High-level types are significantly degraded; `double` and `long long` parameters in `func_mixed_args` are split into multiple `undefined4` parameters, and function return types are often incorrect (e.g., `void` for `ret_small_struct`).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are almost entirely lost; `LargeStruct` and `SmallStruct` parameters are replaced by scattered integers or pointers (e.g., `func_struct_byval` takes `int` params instead of a struct), and member access is replaced by array indexing.
+
+**11. Type Safety:** Score: 5/10
+Justification: The prevalence of `undefined` types and the splitting of 64-bit floats into 32-bit chunks (`undefined4`) creates an unsafe view of the data, making it difficult to reason about memory layout or type correctness.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output; algorithmic intent, preconditions, and complex logic explanations are completely absent.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard idioms are missed; the `varargs` pattern is not recognized (replaced by raw stack array access), and struct passing is not identified, treating standard ABIs as generic pointer arithmetic.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the code confidently without flagging the loss of type information (e.g., `undefined4` for a `double`) or the unusual stack access patterns for varargs as potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the null check in `func_struct_byptr` is present but not explicitly highlighted as a contract requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and use the correct names, but data references are opaque (pointing to `DAT_` addresses), making it hard to see what data is being passed without inspecting the binary view.
+
+**17. Module Organization:** Score: 8/10
+Justification: The order of functions matches the source file well, and related test functions are grouped together, preserving the original logical organization of the translation unit.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code would not compile as-is due to `undefined4` types, missing `DAT_` definitions, and incorrect function signatures (e.g., missing `...` for varargs), requiring significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Composite types (structs) are completely lost; `func_struct_byval` takes scattered integers instead of a `LargeStruct`.
+- Varargs functions are not recovered; `va_list` logic is replaced by raw stack array access (`local_c`).
+- Floating-point types are degraded; `double` parameters are split into `undefined4` chunks with software float calls exposed.
+- Variable names are generic (`param_1`) despite the presence of debug symbols in the build metadata.
+
+**Best Quality Aspect:** Function Naming (scored 9/10)
+- The decompiler successfully preserved the original function names, making the high-level flow of the test suite easy to follow.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover `LargeStruct` and `SmallStruct` definitions, replacing them with raw integers/pointers, is the single biggest barrier to understanding the data manipulation logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Enhance type recovery algorithms to reconstruct structures passed by value by analyzing hidden pointer parameters and stack layouts.
+2. Implement specific pattern matching for `varargs` functions to restore `...` signatures and abstract `va_list` usage.
+3. Improve handling of 64-bit floating-point types on 32-bit architectures (or register-splitting scenarios) to merge `undefined4` pairs back into `double`.

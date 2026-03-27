@@ -1,0 +1,101 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `piVar2`, `puVar3`, `__ptr`), losing semantic meaning like `arr`, `i`, or `sum`. While `global_counter` is preserved, local variables in functions like `local_array` and `heap_basic` are reduced to type-prefixed generics.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Almost all user-defined function names (`double_value`, `local_vars`, `heap_basic`) are recovered perfectly from the debug symbols. Only a few runtime stubs are named `FUN_...`, which is acceptable.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers and hex literals where the source used clear logic. For example, `42` becomes `0x2a`, `20` becomes `0x14`, and array initialization `p[i] = i + 1` becomes obscure packed writes like `*__ptr = 0x200000001`.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: While there is no dead code, the decompiler inserts "Unresolved local var" comments frequently. More critically, it aggressively inlined function calls inside `test_...` functions, replacing logic with hardcoded constants (e.g., `__printf_chk(..., 0x14)`), which acts as semantic noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Natural `for` loops are consistently converted into `do-while` loops utilizing pointer arithmetic (e.g., `piVar2 = piVar3; while (piVar3 != local_8)`). While logically correct, this obscures the original iteration logic and array bounds checking found in the source.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: User functions are distinct, but the `test_...` functions suffer from aggressive inlining where the logic of called functions is absorbed and replaced by constant results, destroying the modular structure of the test harness.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but the pointer-heavy loop constructs (`piVar2 = piVar2 + 1`) require more cognitive effort to trace than the original array indexing syntax.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: Dead code is removed, but the "redundancy" elimination in test functions (replacing calls with constants) is misleading. In `heap_realloc`, loop unrolling is presented as raw memory writes rather than a commented optimization.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `int` and `void*` are used, but specific types are often lost. In `linked_list_heap`, the `Node*` type is demoted to `int*`, and `size_t` parameters are sometimes rendered as `ulong` or `undefined8`.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Struct recovery is inconsistent. While `heap_nested` correctly uses `__ptr->data`, the function `linked_list_heap` accesses the same struct using array offsets (`piVar2[2]`) on a generic `int*`, completely losing the semantic field names.
+
+**11. Type Safety:** Score: 6/10
+Justification: Pointer arithmetic is explicit and manual (e.g., `(long)__ptr + lVar1 * 4`), shifting the burden of type safety and bounds checking from the compiler to the reader, though this is common in decompilation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to decompiler warnings (e.g., "Removing unreachable block", "Unknown calling convention"). There are no comments explaining the *intent* of the code, such as "Allocates a linked list of 5 nodes."
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common patterns are obscured. The linked list traversal in `linked_list_heap` is unrecognizable as such due to pointer casting and offset access, looking more like raw memory manipulation than a data structure algorithm.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler flags "Unresolved local var" and calling convention issues, which is helpful. However, it fails to flag the suspicious packed integer writes (`0x200000001`) as potential optimizations or anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: Preconditions (e.g., `n > 0` checks) are present in the code but not documented or highlighted. The reader must manually infer the contracts from the control flow.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are generally clear where not inlined. Global variable accesses (`global_counter`) are explicit. The inlining in test functions, however, hides the cross-references to the functions being tested.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled output maintains the order of functions from the source code, and related functions (e.g., heap operations) are grouped together logically.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code uses Ghidra-specific types like `undefined8` and `undefined4`, which would require definition or replacement to compile with a standard C compiler.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 4.75
+L2_avg: 6.00
+L3_avg: 5.00
+L4_avg: 3.25
+L5_avg: 7.33
+
+Overall = (4.75 × 0.30) + (6.00 × 0.25) + (5.00 × 0.20) + 
+          (3.25 × 0.15) + (7.33 × 0.10)
+Overall = 1.425 + 1.50 + 1.00 + 0.4875 + 0.733
+Overall = 5.15
+```
+
+### Overall Readability Score: **5.2/10**
+
+### Critical Defects
+- **Aggressive Inlining in Test Functions**: Functions like `test_stack_memory` are reduced to printing hardcoded constants (e.g., `0x14`), completely erasing the logic of calling `local_vars(5)` and making the program flow incomprehensible.
+- **Loss of Struct Semantics**: In `linked_list_heap`, the `Node` struct is accessed via array offsets (`piVar2[2]`) on an `int*` instead of using the recovered `Node` type and field names (`next`), despite `Node` being defined elsewhere.
+- **Magic Numbers**: Simple decimal values and array initializations are replaced by obscure hex literals (e.g., `0x2a` for 42) and packed integers (`0x200000001`), severely impacting readability.
+- **Pointer Arithmetic for Arrays**: Standard array loops (`arr[i] = ...`) are consistently converted into complex `do-while` loops with manual pointer incrementing, obscuring the original intent.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: Ghidra successfully recovered the original function names for almost all user-defined functions from the debug symbols, making high-level navigation and identification of purpose straightforward.
+
+### Most Needs Improvement
+- **Literal Clarity (2/10)**: The pervasive use of hex literals and packed integer representations for simple data initialization makes the code look like obfuscated assembly rather than high-level C, requiring constant mental translation.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Preserve Call Structure in Test Harnesses**: Add a heuristic to disable aggressive constant propagation/inlining for functions that appear to be "test" or "main" drivers, so the program's control flow remains visible.
+2.  **Apply Struct Types to Pointer Arithmetic**: When a pointer of type `int*` is used to access offsets that match a known struct (like `Node`), automatically cast the variable or display the access as `ptr->field` instead of `ptr[offset]`.
+3.  **Decimal vs. Hex Heuristics**: Default to displaying small integers (< 1000) in decimal format, as they are significantly more readable in C source code than hex, unless they are clearly bitmasks or addresses.

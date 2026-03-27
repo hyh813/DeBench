@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generically named (`iVar1`, `iVar2`, `uVar2`) instead of original names (`temp1`, `sum`, `count`). Many show "Unresolved local var" comments indicating failed recovery.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names perfectly preserved from source (`sequential_ops`, `single_if`, `nested_if_deep`). This is excellent recovery matching original intent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3e9` (1001), `0x65` (101), `0x12` appear without explanation. Test functions show pre-computed constants instead of function calls.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: "Unresolved local var" and "WARNING: Removing unreachable block" comments appear frequently. Some compiler artifacts remain but don't completely obscure logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions recover well (`sequential_ops`), but `loop_for_fixed` uses bit manipulation instead of a loop. `switch_fallthrough` partially recovered with nested if statements.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable sizes and cohesion. However, test functions are constant-folded losing actual function call structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. Duff's device uses goto labels (expected), but `loop_multi_exit` has awkward goto for return value.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Optimization artifacts visible (`loop_for_fixed` uses complex bit ops for simple sum). No obvious dead code but some expressions are over-complicated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Most variables use generic `int`. Some `uint` and `longlong` used appropriately. Function pointer types partially recovered (`_func_int_int *`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays shown as pointer arithmetic (`(&DAT_00011848)[iVar1]`). 2D matrix loses structure in `loop_multi_exit`. No struct recovery visible.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts visible (`(uint)x`, `(ulonglong)`). Function pointer calls have "Could not recover jumptable" warnings but generally safe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Only decompiler-generated comments ("Unresolved local var", WARNING messages). No algorithm explanations or semantic documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Simple patterns recognized (if-else, basic loops). Complex patterns like Duff's device partially recovered. No design pattern naming.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning messages ("WARNING: Could not recover jumptable", "Subroutine does not return" for longjmp). Helps identify problem areas.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. No contract information recovered despite -O0 debug symbols being available.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`jump_buffer`, `DAT_00011848`) without explanation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping - test functions mixed with implementation functions.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies visible (`__libc_start_main`, `__divsi3`) but some unresolved references remain.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+LEVEL 1 (30%): (4+9+5+6)/4 = 6.00 × 0.30 = 1.80
+LEVEL 2 (25%): (5+7+6+6)/4 = 6.00 × 0.25 = 1.50
+LEVEL 3 (20%): (6+4+6)/3  = 5.33 × 0.20 = 1.07
+LEVEL 4 (15%): (5+4+7+3)/4 = 4.75 × 0.15 = 0.71
+LEVEL 5 (10%): (5+5+6)/3  = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                              5.61/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Variable names lost**: `temp1`, `sum`, `count` became `iVar1`, `iVar2` - semantic meaning destroyed
+- **Loop optimization not reversed**: `loop_for_fixed` uses bit manipulation instead of recognizable for-loop
+- **Test functions constant-folded**: printf calls show computed values instead of actual function invocations
+- **Array/struct types degraded**: 2D matrix access becomes pointer arithmetic losing dimensional semantics
+- **No contract documentation**: Despite -O0 debug symbols, no preconditions/postconditions recovered
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Original function names perfectly preserved, making identification trivial
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - Zero contract information despite debug symbols being available at -O0
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols at -O0**: Variable names from DWARF debug info should be recovered instead of generic `iVar1` naming
+2. **Pattern-match optimized loops**: Recognize bit-manipulation patterns that represent simple arithmetic loops and restore original loop constructs
+3. **Preserve test function call structure**: Avoid constant-folding test harness code to maintain actual function invocation relationships for analysis

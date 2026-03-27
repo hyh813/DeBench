@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of source names (`a`, `b`, `c`). Local variables are uniformly `v1`, `v2`, `v3`, `i`, `result` - completely devoid of semantic meaning. For example, in `sequential_ops`, the decompiled version uses `a1`, `a2`, `a3` when the source clearly shows `a`, `b`, `c`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (`sequential_ops`, `single_if`, `loop_while`, `recursion_factorial`). However, some compiler-inserted functions have generic names like `sub_4DC`, `init_proc`. The core logic functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `1001` in `infinite_loop`, `0xA` (10) in `switch_large`, and `0x65` (101) in `multi_return` lack explanation. Array references like `dword_1E70` are addressed by memory location rather than meaningful constant. Some literals are clear but many are opaque.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: inline assembly in `duffs_device` (`__asm { ADD PC, LR, R3 }`), register annotations throughout (`// r1`, `// r2`, `// r3`), `JUMPOUT(0)` in `sub_4DC`, and warning comment about "positive sp value" in `_start`. These obscure the actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural - if-else, switch-case, and loops are recognizable. However, `goto_forward` is rendered as conditional assignment (`if (a1 <= 1) v1 = 1; return 2 * a1 * v1;`) losing the goto structure. `goto_backward` uses a for-loop that doesn't match the source's goto-based loop.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately separated with good granularity. Each source function is preserved as a separate decompiled function. Minor issue: some compiler-inserted functions (like `call_weak_fn`) are included but not clearly distinguished from source functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in functions like `single_if`. Some minor disruption in `goto_forward` due to the goto reconstruction issue, but overall flow is manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some optimization artifacts present. `loop_for_fixed` shows formulaic loop unrolling: `((a1-1) * (a1-2) >> 1) + a1 - 1` which obscures the original summation. `loop_complex_cond` has some redundant condition checks. These are manageable but require effort to understand.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are `int` which matches the source. However, some type mismatches exist: `if_elseif_chain` uses `unsigned int a1` when source uses `int x`. Function pointer types are properly preserved with signatures. Minor signed/unsigned confusion in boundary checks.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery - all composite types are raw memory. The array in `loop_break` is `dword_1848[]`, the matrix in `loop_multi_exit` is `unk_185C` accessed via pointer arithmetic. The source's `int arr[] = {10, 20, 30, 40, 50}` becomes an opaque memory reference.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. In `call_func_ptr_array`: `((int (__fastcall *)(int))off_12EBC[a1])(a2)` involves unsafe function pointer casting. The `loop_for_fixed` uses complex shift operations that could overflow. However, most basic operations are type-safe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The only comments are register annotations (`// r1`, `// r2`) which are noise, not helpful. No explanation of algorithm intent, preconditions, or non-obvious logic. The decompilation provides no guidance on what the code does or why.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are technically recognizable but not explicitly named or documented. The state machine in `state_machine` is identifiable as a switch-based implementation. Duff's device in `duffs_device` is partially visible but obscured by inline assembly. No explicit pattern naming or documentation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some awareness of problems exists - `_start` has warning about "positive sp value", and several functions are marked "FAILED to decompile". However, no uncertainty indicators on potentially incorrect reconstructions, and no flags for suspicious code patterns or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions, postconditions, or invariants. The code provides no documentation of expected input constraints (e.g., "requires: n >= 0"), output guarantees, or error conditions. Completely absent from the decompilation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are technically visible within each function, but there's no documentation of relationships. No indication of which functions call `process_with_callback` as a callback, or the relationship between `indirect_recursion_a` and `indirect_recursion_b`. Call graph must be inferred manually.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in memory address order rather than logical grouping. Related functions (like all the test functions) are scattered. No clear separation between source functions and compiler-inserted functions. Poor organization makes navigation difficult.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code would not compile as-is. Multiple undefined symbols: `asc_1DE1`, `off_598`, `dword_1E70`, `off_12EBC`, `off_12EC8`, `unk_185C`, `jump_buffer`, and all `__imp_*` functions. No external declarations or dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable naming**: All parameters and locals use generic names (`a1`, `v1`, `i`) losing all semantic meaning from source
+- **No comments**: Zero useful comments explaining algorithm intent, preconditions, or non-obvious logic
+- **No struct recovery**: All composite types reduced to raw memory references (`dword_1848`, `unk_185C`)
+- **Type confusion**: Some signed/unsigned mismatches and unsafe function pointer casts
+- **Missing contracts**: No recovery of preconditions, postconditions, or invariants
+
+### Best Quality Aspect: Function Naming (scored 8/10)
+Function names largely match the original source exactly, making it easy to locate specific functions from the source.
+
+### Most Needs Improvement: Variable Naming & Comments (both 2/10)
+The combination of meaningless variable names and complete absence of helpful comments makes the code extremely difficult to understand and analyze, even for simple functions.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `a1` in `sequential_ops` should be `a`, `a2` should be `b` based on parameter position and arithmetic operations
+2. **Add algorithm explanation comments**: Document what each function computes (e.g., "Computes sum of 0 to n-1")
+3. **Recover struct types**: The array `int arr[] = {10,20,30,40,50}` should be reconstructed as an initialized array, not `dword_1848[]`

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`a1`, `a2`, `v1`, `v2`, `v3`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `pair` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved original names (`cdecl_func`, `call_cdecl`, `varargs_func`), but runtime helpers use generic labels (`sub_1030`, `sub_1040`, `_x86_get_pc_thunk_bx`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic number `0x14u` (stack canary offset) appears repeatedly without explanation. String literals referenced via opaque variables (`asc_3008`, `aCallL206`) instead of inline strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readgsdword(0x14u)`) repeated in nearly every function. BYREF annotations and frame pointer variables (`[esp+0h] [ebp+0h]`) add visual clutter from -O0 compilation artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as natural `for` constructs. However, `ret_multi_branch` uses chained if-else instead of switch statement that was in original source.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved, but `param_struct_byval` expanded from 1 struct parameter to 16 int parameters, destroying the original abstraction.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. String constant references (`asc_3008`) create minor disruption but don't impede understanding.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary prologue/epilogue code duplicated across 40+ functions. Some redundant assignments like `v2 = v3; v3 = a1;` in `_start` function.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (int, char*, double), but `va_list` degraded to `char*`. Varargs functions show `char a2` instead of proper variadic signature. Function pointer types partially recovered.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Critical failure - `LargeStruct` (128 bytes) becomes single `int a1` parameter with pointer arithmetic (`*(&a1 + 2 * i)`). `SmallStruct` becomes `_DWORD *a1` with array access. No struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(_DWORD *)`, `(__int64)`, `(int)(long double)`). Pointer arithmetic on void-like types throughout. Stack canary operations introduce type confusion.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Original source had extensive documentation (CALL-L1-01, PARAM-L2-01, etc.) explaining each test case. Only decompiler header comments present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern partially recognized but incorrectly typed as `char a2`. Struct-by-value passing not recognized (becomes multiple params). No design pattern identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some annotations present (`__usercall`, `__userpurge`, `__noreturn`). External functions marked "FAILED to decompile" but no warnings about uncertain decompilation in body code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks preserved (`if (!p) return -1`) but not documented as preconditions. No postcondition inference. Original's explicit contracts completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call graph preserved correctly. However, string references use opaque variable names (`asc_3008`, `aCallL206`, `aRetL101D`) instead of inline literals, obscuring test output messages.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 92 functions in single flat output. Original had clear section organization (4.1 Calling Conventions, 4.2 Parameter Passing, 4.3 Return Values) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Six external functions marked "FAILED to decompile" (printf, strlen, puts, etc.). Type mismatches (struct→int) would prevent compilation without significant manual修复.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (4+7+6+5)/4 = 5.5  → 5.5 × 0.30 = 1.65
+Level 2 Average: (7+6+7+6)/4 = 6.5  → 6.5 × 0.25 = 1.625
+Level 3 Average: (5+3+4)/3 = 4.0    → 4.0 × 0.20 = 0.80
+Level 4 Average: (2+4+5+3)/4 = 3.5  → 3.5 × 0.15 = 0.525
+Level 5 Average: (6+5+4)/3 = 5.0    → 5.0 × 0.10 = 0.50
+
+Overall Score: 1.65 + 1.625 + 0.80 + 0.525 + 0.50 = 5.10/10
+```
+
+**Overall Readability Score: 5.1/10**
+
+### Critical Defects
+- **Struct types completely lost**: `LargeStruct` and `SmallStruct` degraded to `_DWORD*` with pointer arithmetic, destroying semantic meaning
+- **Variable names universally generic**: `a1`, `a2`, `v1`, `v2` provide zero semantic information compared to original `count`, `sum`, `large`, `pair`
+- **Zero documentation recovery**: All 50+ original comments explaining test cases (CALL-L1-01, PARAM-L2-01, etc.) completely absent
+- **Varargs signature corrupted**: `va_list` parameters become `char a2` with manual pointer arithmetic instead of proper variadic handling
+- **String literals obfuscated**: Test output strings referenced via `asc_3008`, `aCallL206` instead of inline, making test verification difficult
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Core test function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`), maintaining semantic connection to original source.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation recovery; original's extensive test case explanations entirely lost, making reverse engineering purpose extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct definitions from stack layouts** - Analyze consistent field access patterns (`a1[0]`, `a1[1]`) to reconstruct `SmallStruct { int x; int y; }` instead of `_DWORD*`
+2. **Preserve original string literals inline** - Replace `asc_3008`, `aCallL206` references with actual string content for immediate test case identification
+3. **Infer variable names from usage context** - Variables used in loop bounds should be named `count`/`limit`; accumulator variables should be named `sum`/`total`

@@ -1,0 +1,107 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+### Analysis Overview
+
+The original source code implements a fake branch obfuscation technique with two always-false conditions. The decompiled version shows a critical failure: the function body has been completely eliminated, leaving only an empty return statement. This is a severe decompilation failure where the compiler's dead code elimination was not properly recovered.
+
+---
+
+### LEVEL 1: LEXICAL CLARITY
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: The decompiled function has no variables at all - the entire body was eliminated. The original had `result`, `x`, and `str` variables that are completely missing.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Function name `param_fake_branch` is preserved from source, but the signature is completely wrong - it should be `int param_fake_branch(int x)` but decompiles to `void param_fake_branch(void)`.
+
+**3. Literal Clarity:** Score: 1/10  
+Justification: No literals present - the function is empty. The original contained `0xDEADBEEF` and string `"test"` which are completely lost.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: While there's no compiler noise (no redundant casts), this is because there's no code at all. The absence of noise is not a positive here.
+
+---
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+**5. Control Flow Naturalness:** Score: 1/10  
+Justification: The original had two if-statements with false conditions - these are completely missing. No control flow structures to analyze.
+
+**6. Function Decomposition:** Score: 1/10  
+Justification: The function is trivially small (empty), but completely incorrect. The original 12-line function with meaningful logic is reduced to nothing.
+
+**7. Code Linearization:** Score: 1/10  
+Justification: The code is trivially linear (just `return;`), but this is because all logic was eliminated.
+
+**8. Redundancy Elimination:** Score: 1/10  
+Justification: The decompiler appears to have over-eliminated - removing not just dead code but the entire function body including the return statement logic.
+
+---
+
+### LEVEL 3: TYPE SYSTEM FIDELITY
+
+**9. Type Precision:** Score: 1/10  
+Justification: Severe type degradation - return type is `void` instead of `int`, parameter list is empty instead of `(int x)`. This is a fundamental type error.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Not applicable - no composite types in this simple function. Neutral score.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Not applicable to empty function. Neutral score.
+
+---
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments in the function body. The original had explanatory comments about "永假条件" (always-false conditions) that are completely lost.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The fake branch obfuscation pattern is completely unrecognized - the decompiler should have identified the always-false condition pattern.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: The decompiler should have flagged this as a critical anomaly - the function signature doesn't match expected pattern, and the empty body is suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions or postconditions recovered. The original implied `x` could be any integer.
+
+---
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: The function is called by `call_fake_branch()` which correctly passes argument 10, but the decompiled `call_fake_branch` returns 10 directly without calling `param_fake_branch`, hiding the call relationship.
+
+**17. Module Organization:** Score: 5/10  
+Justification: The function appears in the correct location among other obfuscation test functions. Neutral.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The function signature mismatch (`void` vs `int`) would cause compilation errors if the caller expects a return value. The caller's return value is hardcoded rather than calling the function.
+
+---
+
+### FINAL SUMMARY
+
+**Overall Readability Score:** 1.7/10
+
+**Critical Defects:**
+- Function body completely eliminated - only `return;` remains
+- Return type wrong: `void` instead of `int`
+- Parameter list wrong: `void` instead of `(int x)`
+- All variables (`result`, `x`, `str`) completely lost
+- All literals (`0xDEADBEEF`, `"test"`) missing
+- Control flow (two if-statements) completely absent
+- No indication that this is a fake/always-false branch pattern
+
+**Best Quality Aspect:** Module Organization (5/10)  
+The function appears in the correct location among related test functions, but this is a neutral score.
+
+**Most Needs Improvement:** Type System Fidelity (2.3/10)  
+The function signature is completely wrong - no parameters, wrong return type. This fundamental type error makes the decompiled code unusable.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Recover function signatures from call sites - `call_fake_branch` passes 10 to `param_fake_branch`, indicating it takes an int parameter
+2. Detect and preserve dead code branches - the false conditions should be recovered as comments or preserved structure
+3. Flag anomalies for empty function bodies - when a function has no meaningful code, warn the user rather than silently producing empty output

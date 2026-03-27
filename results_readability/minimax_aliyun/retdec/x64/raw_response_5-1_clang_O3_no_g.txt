@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic: `v1`, `v2`, `v3`, `v4`, `v5`, `result`, `result2`, `a1`, `a2`, `a3`, `a4`. Global variables use meaningless names like `g1`, `g2`, `g3` for string constants. The original semantic meaning (e.g., `capture_by_value`, `capture_by_ref` in lambda) is completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Functions have mangled C++ names (e.g., `_Z20test_cpp_member_funcv`) with demangled versions in comments. Some utility functions use purely numeric names like `function_1030`, `function_1040`. While demangled names are accurate, the primary presentation uses cryptic mangled forms.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `40` and `80` (struct offsets) appear without explanation. String literals have encoding issues (Chinese chars as hex: `\xe6\x9c\x9f\xe6\x9c\x9b`). However, computed return values (42, 703, etc.) correctly match expected outputs, and some size constants are inferable.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with extensive `__asm__` blocks (`__asm_movups_5`, `__asm_maxsd`, `__asm_xorps`, `__asm_movsd_6`). Weird constructs like `0xffffffffffffffff * v1 >> 64` for string handling. Uninitialized variable returns (e.g., `int64_t result2; return result2;`). Multiple unreachable code paths present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if/else and return structures are preserved. However, the `test_cpp_exception` function has broken control flow with `_Unwind_Resume` after throw - the catch block logic is not recovered. Some loop constructs in Container templates are recognizable but obscured by pointer arithmetic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and separated. Template instantiations are properly split (`_ZN9ContainerIiE4pushEi`, `_ZN9ContainerIdE4pushEd`). The demangled names correctly identify class methods. Minor issue: some small functions could be inlined but are kept separate.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom without excessive forward jumps. The `test_cpp_oo_features` function is linear with sequential printf calls. However, the exception handling code has disrupted linear flow with unreachable returns.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No significant dead code. Template functions are instantiated separately as expected. Some redundant calculations in Container get() methods but manageable. The main issue is the weird string handling in `test_cpp_member_func` using assembly that could be simplified.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t`, `int64_t`, `float64_t`, `int128_t` appropriately. However, significant confusion exists: `int64_t * v2 = (int64_t *)v1` where `v1` is a value not a pointer. Function parameters often use `int64_t` instead of proper pointer types. Const correctness is lost on member functions.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: VTables are reconstructed as `struct vtable_3d78_type` with generic field names (e0, e1, e2). RTTI classes (RTTIBase, RTTIDerivedA, RTTIDerivedB) are mentioned in comments but not properly reconstructed as C++ classes. Container template uses raw pointer arithmetic instead of recovered struct with `data[10]` and `size` fields.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations: incorrect pointer arithmetic in Container (`4 * result2 + v1` should be array access), casting values to pointers (`int64_t * v2 = (int64_t *)v1` where v1 is malloc result), uninitialized variable returns. The Container<double>::push has particularly broken pointer math: `int32_t * v1 = (int32_t *)((int64_t)a1 + 80)` treats float64 parameter as pointer.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Demangled function names provided in comments (e.g., `// Demangled: test_cpp_member_func()`). No algorithm explanations, no recovery confidence indicators, no API contracts. Comments are minimal and purely mechanical.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Virtual function dispatch is not recognized as such (just indirect vtable calls). Exception handling patterns not identified. Template instantiation not recognized as such - just separate functions. Lambda expressions completely lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged. The broken exception handling in `test_cpp_exception` (unreachable code after throw) is presented as normal code. The weird assembly constructs are not flagged as unusual. No warnings about uninitialized variable returns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. No bounds checking documentation for Container arrays. No exception specifications. The code presents as if everything is straightforward when significant complexity exists.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function prototypes show parameter types but not purpose. No documentation of which functions call which. Virtual dispatch relationships not clear. Global variable usage not documented (g15, g16, g17 for RTTI).
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single file output. Functions are roughly grouped (init, test functions, template functions, class methods). However, no namespace structure, no class definitions, no header declarations. Arbitrary ordering based on address, not logical grouping.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes necessary headers (`stdint.h`, `stdio.h`, `stdlib.h`, `string.h`). Function prototypes provided. Should compile with minimal stubs for runtime functions (`__cxa_*`, `_Znwm`, `_ZdlPv`). However, the weird assembly constructs may cause issues on non-x86.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming is universally generic (`v1`, `v2`, `a1`, `g1`) - original semantics completely lost
+- Severe noise from `__asm__` blocks (movups, maxsd, xorps, movsd) obscuring logic
+- Type safety violations: incorrect pointer arithmetic in Container templates, value-to-pointer casts
+- Exception handling not recovered - catch blocks missing, code after throw is unreachable
+- Composite types not properly reconstructed - Container uses raw offsets instead of struct fields
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Functions are reasonably sized and separated. Template instantiations are properly split into separate functions with correct demangled names identifying class methods.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Every variable uses generic names (v1-v5, a1-a4, result, g1-g26). The original source had meaningful names like `capture_by_value`, `capture_by_ref`, `instance_count`, `multiplier` - all completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Track how variables are used (array index → `idx`, counter → `count`, pointer to object → `obj`) to generate semantic names instead of v1, v2
+2. **Recover C++ class definitions**: Instead of raw functions and pointer arithmetic, reconstruct class structs with proper field names (Container should have `data[10]` and `size` fields)
+3. **Eliminate assembly blocks or simplify**: The `__asm__` constructs are unreadable; either remove them with comments explaining what they do, or use intrinsic functions that are clearer

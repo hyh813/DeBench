@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic patterns like `iVar1`, `iVar2`, `piVar2`, `piVar3` throughout. Parameters like `a`, `b`, `c` are preserved but local variables often show "Unresolved local var: int sum@[???]" indicating the decompiler couldn't recover meaningful names. Only `arr`, `target`, `n` match source semantics.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `recursion_factorial`, `loop_for_fixed`, etc. Minor issues with internal functions like `FUN_00100940` and `FUN_0010167c` which have no source equivalent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14` (20), `0x1e` (30), `0x28` (40), `0x32` (50) appear in test functions without explanation. The decompiler preserves numeric values but provides no named constants. Some literals like `100`, `200` in if-else chains are clear but others like `0x3e9` (1001) are opaque.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy noise pollution includes: "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable", "Unresolved local var" annotations, stack guard references (`___stack_chk_guard`), and type annotations like `_func_int_int *`. The output is cluttered with decompiler artifacts that impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use `while`/`do-while` constructs, conditionals use `if` statements. At -O0, control flow should closely match source, and Ghidra largely achieves this. Some switch statements become if-else chains which is acceptable. Minor goto usage in test functions is appropriate.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The decompiler maintains the source's function granularity - 20+ small, focused functions are preserved. Each function has clear single responsibility matching the source. No monolithic functions or over-fragmentation observed. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately. Some complex functions like `duffs_device` have intricate flow but that's expected given the source pattern. No severe non-linearity issues.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Loop unrolling in `duffs_device` is present but reflects the original's Duff's device pattern. Some minor redundancy in test function setup but nothing severe.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most parameters use `int` matching source. Function pointer types have proper signatures like `_func_int_int *` and `_func_int_int_int *`. Some `uint` usage for unsigned operations (e.g., `switch_small` uses `(uint)op`). Minor generic types but mostly accurate.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Arrays are well-recognized: `int arr [5]`, `int matrix [3] [4]`, `int src [8]`, `int dst [8]`. The decompiler properly identifies array dimensions. No complex struct recovery needed as source uses primitive types and arrays.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally type-safe code with few unsafe casts. Function pointer calls have warnings about "Treating indirect jump as call" which is appropriate caution. Some potential issues in `op_div` with redundant checks but nothing severe. No buffer-overflow-prone patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Decompiler adds file header with version info but no source comments recovered. "WARNING" comments are present but are decompiler diagnostics, not helpful code explanations. No algorithm documentation or intent explanations. The comments are noise rather than useful context.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized - state machine functions are separated (`state_idle`, `state_processing`, `state_done`, `state_error`). Duff's device is partially recognized but presented as complex goto logic. No explicit pattern naming or documentation of recognized idioms.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Multiple "WARNING" comments flag issues: "Could not recover jumptable", "Unresolved local var", "Removing unreachable block". These appropriately indicate decompilation uncertainty. However, some anomalies like the test function printf issues (missing format arguments) aren't flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation recovered. No invariant recognition. The decompiler provides no contract information despite -O0 debug info being available. This is a significant gap.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear within each function. No explicit documentation of "calls:" or "called by:" relationships. The test functions call the target functions but this relationship isn't documented. Basic clarity but no relationship metadata.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are organized by address in memory, not by logical grouping. Test functions are separated from tested functions. No logical grouping matching source's control flow level organization. Arbitrary ordering based on binary layout.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code uses standard C constructs. Requires standard library stubs (`__printf_chk`, `__stack_chk_fail`, `__gmon_start__`). Should compile with glibc. No compiler-specific hacks. Some external dependencies documented in function signatures.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming is predominantly generic (`iVar1`, `piVar2`, `iVar3`) with "Unresolved local var" annotations losing semantic meaning
+- Excessive decompiler noise: "WARNING" comments, unreachable block notices, and unresolved variable annotations clutter output
+- No comment recovery from source - only decompiler-generated diagnostics present
+- Magic numbers like `0x3e9` (1001), `0x14` (20) appear without explanation
+- Test functions have malformed `__printf_chk` calls with missing format arguments (e.g., `__printf_chk(1,"CF-L1-03 (if_else): %d\n");` missing third argument)
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+- The decompiler preserved the source's 20+ small, focused functions with appropriate granularity and clear single responsibilities
+
+**Most Needs Improvement:** Variable Naming Quality (scored 4/10)  
+- Generic variable names like `iVar1`, `piVar2` dominate, with "Unresolved local var" annotations losing all semantic meaning from the original source
+
+**Top 3 Recommendations:**
+1. Infer variable names from DWARF debug info usage patterns - `temp1` used in `(a + b)` should become `sum_ab`
+2. Suppress or consolidate decompiler warnings - group "Unresolved local var" annotations into a single header comment per function
+3. Recover source comments from debug info - the original C file had extensive documentation that could be extracted from DWARF
+4. Add pattern recognition comments - label recognized idioms like "Duff's device" or "State machine pattern"
+5. Fix test function printf calls - these are clearly wrong (missing arguments) and indicate a decompilation issue

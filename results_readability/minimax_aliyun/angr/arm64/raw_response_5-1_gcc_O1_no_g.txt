@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `ptr`, `v3`, `v4` throughout. For example, in `test_cpp_member_func()`, the variable `v1[31]` should be `name[32]` based on the source's `char name[32]`. The decompiler makes no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions preserve original names (e.g., `test_cpp_member_func`, `template_max<int>`), but many use mechanical addresses (e.g., `sub_401484`, `sub_401670`). The mangled C++ symbols like `_ZN14LifecycleClass14instance_countE` are not demangled to `LifecycleClass::instance_count`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals like "Test" are preserved, but magic numbers lack explanation. In `test_cpp_constructor()`, the value `20` for `operator new` (representing `5 * sizeof(int)`) is unexplained. The `31` in `strncpy(&v1, "Test", 31)` should be connected to `sizeof(name)-1`.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: stack canary checks (`__stack_chk_guard`), redundant register saves (`v0 = &v1`), and dead code like `strlen(&v1)` whose result is unused. The `register_tm_clones()` function contains an absurdly complex conditional expression that is clearly a decompilation artifact.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow (if/else) is preserved, but some functions are empty stubs (e.g., `test_cpp_multiple_inheritance`, `test_cpp_operator_overload` return without computing). The `register_tm_clones()` has an unreadable computed conditional that obscures logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are properly separated, but many are empty stubs that don't reflect the original logic. For example, `test_cpp_virtual_func()` calls `call_virtual_func()` but discards the return values, losing the computation `r1 + r2 + r3 + r4`.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. However, some functions like `test_cpp_exception()` have complex control flow with `__cxa_throw` and `_Unwind_Resume` that disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some dead code present, like `strlen(&v1)` in `test_cpp_member_func()` whose result is unused. The `register_tm_clones()` function has redundant expressions that could be simplified.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Significant type degradation. Original `int value` becomes generic `char` or `unsigned int`. The `char name[32]` becomes `char v1[31]`. The `size_t` parameter in `LifecycleClass` becomes `unsigned int ptr[5]`. No `const` correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Class names are partially recovered (e.g., `class Base`), but struct fields are not. The `LifecycleClass` data members (`data`, `size`, `instance_count`) are completely lost, replaced with raw pointer arithmetic on `ptr`. The `struct_2` and `struct_3` typedefs in RTTI code are generic and incorrect.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: pointer arithmetic like `ptr[40]` for accessing `size` field, casting through `char*` for field access, and indirect virtual calls without type safety. In `test_cpp_rtti()`, the code uses raw pointer arithmetic `*(p)[8]` which is error-prone.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal useful comments. Some functions have class names noted (e.g., `class Base {} Base;`), but no explanation of logic. The comment `/* do not return */` appears frequently but adds little value. No documentation of what each function computes.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ idioms are not recognized. Virtual function calls appear as indirect calls without noting vtable usage. Exception handling shows `__cxa_throw` but doesn't explain the try-catch structure. Template instantiation is recognized but not explained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The empty stub functions (e.g., `test_cpp_multiple_inheritance` returns without computation) are presented as correct. Indirect virtual calls are not marked as uncertain. The complex conditional in `register_tm_clones()` is not flagged as likely decompilation artifact.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had implicit contracts (e.g., `getData(idx)` requires `idx < size`) that are not recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are present but relationships unclear. The `test_cpp_oo_features()` function calls all test functions, but this relationship isn't documented. Virtual dispatch relationships (Base→Derived) are not clearly indicated.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are grouped by address rather than logically. Related test functions (`test_cpp_member_func`, `test_cpp_constructor`, etc.) are scattered. Class methods are separated from their test functions.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile. Missing declarations for `operator new`, `__cxa_throw`, `__stack_chk_fail`, etc. The `extern` declarations are incomplete. No headers or dependencies documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.3/10
+
+**Critical Defects:**
+- Variable naming uses generic `v0`, `v1`, `v2` instead of semantic names like `value`, `name`, `size`
+- Multiple functions are empty stubs (`test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, `test_cpp_lambda`) that return without computing results
+- Composite types completely lost - `LifecycleClass` data members accessed via raw pointer arithmetic instead of struct fields
+- Type precision severely degraded - original `int value` becomes `char`, `size_t` becomes `unsigned int`
+- No comments explaining what functions compute or what magic numbers represent
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 5/10)  
+- Basic if/else and loop structures are preserved, making the general execution flow traceable despite issues
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic single-letter variable names with numbers (`v0`, `v1`, `ptr`) make it nearly impossible to track data flow or understand what each variable represents
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When a variable is used as array index, name it `idx` or `index`; when used for size, use `size` or `count`; when storing a string, use the field name from the class
+2. **Recover struct/class field layouts**: Instead of raw pointer arithmetic like `ptr[40]`, reconstruct the struct and use `ptr->size` with proper field names
+3. **Demangle C++ symbols completely**: Convert `_ZN14LifecycleClass14instance_countE` to `LifecycleClass::instance_count` and preserve class member access semantics

@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `local_8`, `piVar3`), and critical architecture-specific variables like `register0x00000008` (used in `varargs_func`) are cryptic and obscure the `va_list` abstraction.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user-defined function names (`cdecl_func`, `stdcall_func`, `test_calling_conventions`) are preserved accurately from the source, likely due to debug symbols, though a few internal functions remain as `FUN_00100640`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: While simple hex constants like `0xf` are acceptable, magic numbers used for stack offsets (e.g., `0xffffffc8`) and array indexing (e.g., `param_1[0x1e]`) appear without explanation, obscuring the memory layout logic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: The code is polluted with compiler/decompiler artifacts such as `undefined8`, `CONCAT44` (a Ghidra macro for register packing), and `code *` types, which significantly impede readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: The control flow in `varargs_func` and `param_ptr_array` is highly unnatural, featuring complex nested `do-while` loops and manual pointer arithmetic (`piVar3 = piVar3 + 2`) that obscure the simple iteration logic present in the source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions map 1:1 with the source code granularity; there is no inappropriate inlining or outlining of logic, maintaining the original modular structure effectively.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: While generally linear, the reconstruction of loops in `varargs_func` involves confusing forward/backward jumps and nested conditionals that disrupt the top-to-bottom reading flow expected for a simple accumulator loop.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: The compiler performed constant propagation (e.g., `call_cdecl` returns `0xf` instead of calling the function), which the decompiler accurately reflects, though this removes the "testing" intent of the original source code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Critical type information is lost or incorrect; `func_mixed_args` has the wrong parameter order/types due to ABI confusion, and `ret_small_struct` returns a flattened `ulong` instead of a `struct SmallPoint`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct types are completely lost; `LargeStruct` and `SmallStruct` are degraded into raw pointers (`int *param_1`) or flattened integers, forcing the reader to interpret raw pointer arithmetic like `param_1[0x1e]` instead of struct field access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: The code relies on unsafe type punning, evidenced by the `CONCAT44` macro used in `ret_large_struct` to manually pack registers, which bypasses standard type safety mechanisms.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments in the decompiled output to explain the complex logic, such as the varargs implementation or the struct packing, leaving the reader to decipher raw assembly logic.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Standard C idioms are not recognized; the `va_list` pattern in `varargs_func` is represented as raw stack/register access (`register0x00000008`) rather than a variable argument list abstraction.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: The decompiler presents the confusing `register0x00000008` access and `CONCAT44` macros without any warnings or annotations indicating that these are low-level artifacts or potential reconstruction issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented; for example, the hidden pointer requirement for `ret_large_struct` is not exposed in the function signature.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls are generally clear and easy to trace, and the relationships between the test functions and their targets are preserved, despite the loss of semantic meaning due to constant propagation.
+
+**17. Module Organization:** Score: 8/10  
+Justification: The functions are organized in a logical sequence that closely mirrors the source file's structure, grouping related calling convention tests together effectively.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code uses Ghidra-specific types (`undefined8`, `code *`) and macros (`CONCAT44`) that will not compile with a standard C compiler without significant modification.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable `register0x00000008` in `varargs_func` obscures the `va_list` mechanism.
+- Function `func_mixed_args` has incorrect parameter order/types due to floating-point/integer register confusion.
+- Struct types `LargeStruct` and `SmallStruct` are completely lost, replaced by raw pointer arithmetic.
+- `CONCAT44` macro usage in `ret_large_struct` makes the code unreadable and non-portable.
+- `ret_large_struct` signature is incorrect (missing the return value pointer parameter).
+
+**Best Quality Aspect:** Function Decomposition (scored 9/10)  
+- The decompiler successfully maintained the original function boundaries and granularity, avoiding the creation of monolithic functions or excessive fragmentation.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+- The failure to recover `struct` definitions, turning them into raw pointers or flattened integers, is the single biggest barrier to understanding the data structures in the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement robust struct recovery for ARM64 ABI, specifically identifying hidden pointer parameters for large return values and register packing for small structs.
+2. Improve varargs analysis to recognize the `va_list` abstraction on ARM64, mapping stack/register offsets to logical `va_arg` operations.
+3. Replace architecture-specific packing macros (like `CONCAT44`) with standard C struct assignments or bit-fields to enhance portability and readability.

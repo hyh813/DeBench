@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `a1`, `a2`, `result`) with no semantic meaning. Original source had meaningful names like `size`, `counter`, `exec_mem`, `page_size` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions preserved correctly (`test_preprocessing_features`, `param_memory_protection`), but critical functions like `param_macro_constants`, `param_asm_basic` are missing entirely. Unknown functions like `unknown_ffff0fc0` have no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound (`3`, `34`, `7`, `1` in mmap/mprotect calls) without named constants. String literals stored as globals (`g1`-`g20`) with hex-encoded Chinese characters lose all readability. Original had `MAX_SIZE`, `BUFFER_COUNT`, `PROT_READ`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Address comments (`0x104c4`, `0x107c4`) add noise. `__stack_chk_fail()` call at end of `test_asm_features` is compiler artifact. Otherwise relatively clean without excessive casts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if-else structures preserved in `param_memory_protection`, but `__sync_fetch_and_add_4` uses awkward while-loop pattern for atomic operation. Original conditional compilation branches completely lost.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: **Critical failure**: Only 6 functions detected vs. 30+ in original source. Major functions (`param_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`) completely missing from decompilation output.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code reads mostly top-to-bottom with reasonable function ordering. Some forward references in `test_asm_features` but generally acceptable linearity for decompiled code.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Repeated `__printf_chk` calls are necessary for original functionality. No obvious dead code, but missing functions create apparent redundancy in test harness.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently but loses original type variety (`size_t`, `void*`, `char*`). Pointer types partially preserved (`int32_t*`, `char*`) but const-correctness completely lost.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No structs/unions in either original or decompiled code for this test case. Limited opportunity, but array handling (`int arr[]`) degraded to pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe cast `(int32_t*)&v1` in `__sync_fetch_and_add_4`. Pointer arithmetic without bounds checking. Original had clearer type boundaries with atomic operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled code. Original had extensive Chinese documentation explaining each section, macro behavior, and expected values. Complete semantic loss.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Atomic operations, memory protection, SIMD patterns not identified or named. `__sync_fetch_and_add_4` should be documented as atomic operation wrapper.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `unknown_ffff0fc0` function unexplained. `__stack_chk_fail()` not documented as compiler artifact. No warnings about missing functions or incomplete recovery.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `v2 != MAP_FAILED`). No postconditions. Error return values (`-1`, `-2`, `-3`) not explained. Original had clear expected values in comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Global variables (`g1`-`g20`) not explained. Missing function calls not indicated. No call graph documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions grouped but 80%+ of original functions missing. No header file structure. Original had clear section organization (5.2 preprocessing, 5.3 assembly) completely lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: `__printf_chk` is non-standard GCC internal. `unknown_ffff0fc0` undefined. Would require significant stubbing to compile. Missing includes (`stdio.h`, `string.h`).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+6)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (5+2+6+6)/4 = 4.75  × 0.25 = 1.19
+Level 3 (Type):        (5+5+5)/3   = 5.00  × 0.20 = 1.00
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):  (4+3+3)/3   = 3.33  × 0.10 = 0.33
+─────────────────────────────────────────────────────
+Overall Score:                                  4.17/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **80%+ function loss**: Only 6 of 30+ original functions recovered (`param_macro_constants`, `param_asm_basic`, `param_dynamic_code` all missing)
+- **Zero documentation**: Original had extensive Chinese comments explaining macros, expected values, and test purposes—completely absent
+- **Generic variable naming**: All variables are `v1`, `v2`, `a1`, `a2` with no semantic meaning
+- **Magic numbers everywhere**: `3`, `34`, `7` in mmap/mprotect calls should be `PROT_READ|PROT_WRITE`, `MAP_ANONYMOUS`, etc.
+- **Unexplained artifacts**: `unknown_ffff0fc0`, `__stack_chk_fail()`, `__printf_chk` not documented as compiler/decompiler artifacts
+
+### Best Quality Aspect: **Type System Fidelity (5.0/10)**
+- Consistent `int32_t` usage and basic pointer types preserved, though this is the "least bad" dimension rather than genuinely good
+
+### Most Needs Improvement: **Semantic Transparency (2.0/10)**
+- Complete absence of comments, no pattern recognition, no anomaly indication—decompiler provides zero semantic context
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover all functions**: Implement better function boundary detection to recover the 24+ missing functions from the binary
+2. **Restore original naming**: Use string references and usage patterns to recover original variable names (`size`, `counter`, `page_size` instead of `v1`, `v2`)
+3. **Add semantic annotations**: Flag compiler artifacts (`__stack_chk_fail`), document unknown functions, and recover constant names from string references and usage context

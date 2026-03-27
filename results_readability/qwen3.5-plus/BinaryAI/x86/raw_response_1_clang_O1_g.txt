@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar2` instead of semantic names like `sum`, `count`, `result`. For example, `loop_for_fixed` uses `lVar1` instead of `sum`, completely obscuring the accumulation purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retain original names (`sequential_ops`, `single_if`, `nested_if_deep`), but helper functions are generic (`FUN_000112f5`, `FUN_00011455`). Test functions keep names but lose actual functionality.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3e9` (1001), `0x65` (101), `0x12` appear without explanation. Test functions print hardcoded expected values instead of computing results, obscuring the relationship between input and output.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (`__x86_get_pc_thunk_*`, `deregister_tm_clones`, `register_tm_clones`) but don't obscure main logic. External function stubs (`printf`, `longjmp`) add noise but are clearly marked.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control structures recovered (if-else, loops), but `loop_for_fixed` uses mathematical formula instead of loop. `switch_fallthrough` becomes nested if-else instead of preserving fall-through semantics. `duffs_device` uses goto labels which is acceptable for this pattern.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable, but test functions (`test_control_flow_l1`, `test_control_flow_l2`) are transformed to print constants instead of calling actual functions, losing their verification purpose entirely.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Switch cases in `duffs_device` use goto labels appropriately. Most functions avoid deep nesting and maintain readable structure.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some optimization artifacts present (`loop_for_fixed` formula instead of iteration), but no significant dead code. Variable assignments show minor redundancy from compiler transformations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `byte` instead of `int`. Generic `int` used instead of `int32_t`. Function pointers often degrade to `code *` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays like `int arr[]` in `loop_break` become pointer arithmetic. `jmp_buf` typed as `__jmp_buf_tag *` but field structure lost. No struct recovery visible in this code sample.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present: `(undefined *)0x0`, `(undefined4 *)`, `(int *)(unaff_retaddr + 0x1be3)`. No const-correctness preserved. Pointer arithmetic common without type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining each function's purpose, test cases, and expected behavior. All semantic information lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. State machine in `state_machine` not labeled. Duff's device recovered but not identified as known optimization. Recursion patterns not annotated.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No suspicious code flagged. `computed_goto` uses GCC extensions without warning. Indirect calls not marked as potentially unresolved. No confidence indicators present.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original test cases showing expected behavior not recovered as contracts. Error conditions undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Test functions don't show which functions they test (print constants). Global variable `jump_buffer` visible but unexplained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Static functions (`double_value`, `triple_value`) recovered. No header file structure. Functions grouped somewhat logically but not by feature.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External function declarations present but references undefined symbols (`DAT_000135d1`, `PTR_double_value_00015ec8`). Test functions don't actually call functions they're testing. Requires significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3 + 6 + 5 + 6) / 4 = 5.0
+Level 2 Average: (6 + 6 + 7 + 7) / 4 = 6.5
+Level 3 Average: (5 + 4 + 4) / 3 = 4.33
+Level 4 Average: (2 + 3 + 3 + 2) / 4 = 2.5
+Level 5 Average: (5 + 5 + 4) / 3 = 4.67
+
+Overall = (5.0 × 0.30) + (6.5 × 0.25) + (4.33 × 0.20) + (2.5 × 0.15) + (4.67 × 0.10)
+        = 1.50 + 1.625 + 0.866 + 0.375 + 0.467
+        = 4.833
+```
+
+**Overall Readability Score: 4.8/10**
+
+### Critical Defects
+- **Variable names completely generic**: `param_1`, `iVar1`, `uVar2` obscure all semantic meaning (e.g., `sum` in `loop_for_fixed` becomes `lVar1`)
+- **Test functions non-functional**: `test_control_flow_l1` prints hardcoded constants instead of calling actual functions, losing verification capability
+- **Type signature corruption**: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `byte` instead of `int`
+- **Zero documentation**: No comments recovered despite extensive original source documentation explaining purpose and test cases
+- **Unsafe casts pervasive**: `(undefined *)0x0`, `(undefined4 *)` throughout code without safety annotations
+
+### Best Quality Aspect
+- **Code Linearization (7/10)** - Code generally reads top-to-bottom with minimal forward jumps; switch cases use goto labels appropriately for the pattern
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation loses all semantic context that original source provided through extensive comments
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** from usage patterns (e.g., variables used in accumulation should be named `sum`, counter variables should be `count`/`i`)
+2. **Preserve test function semantics** by maintaining actual function calls instead of replacing with hardcoded expected values
+3. **Recover and preserve source comments** when debug symbols (`-g`) are available, or generate semantic annotations based on pattern recognition

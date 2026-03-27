@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+The original source is a comprehensive C program (830 LOC) testing various data types, arrays, pointers, and composite types in C. The decompiled output is from Angr (not Ghidra as stated - evidenced by VEX IR annotations like `[D] unsupported_<class 'pyvex.expr.GetI'>()`). The source was compiled with `-O0 -g` for arm64, but the decompiled output shows x86 architecture, suggesting possible cross-compilation or binary translation.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a0`, `a1`, `a2`), local variables use `v0`, `v1`, `v2`, `idx`, `ptr`, and struct fields are `field_0`, `field_1`, `field_2`. The original source had meaningful names like `c`, `arr`, `n`, `p`, `head` - all completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names are perfectly recovered: `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `ptr_double`, `linked_list`, `binary_tree_sum`, etc. Only minor issues with some internal functions. Excellent recovery matching source exactly.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `65` (for 'A'), `32` (case offset), `26` (alphabet), `0xffffff00` (mask), and array strides like `44` (10×4 + padding) appear without explanation. The original source had clear comments explaining these values.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe VEX IR artifacts pollute floating-point functions: `[D] unsupported_<class 'pyvex.expr.GetI'>()`, `[D] PutI(72:F64x8)[t3,0] = t6()`. Functions `process_float`, `process_double`, `process_ld` are essentially unreadable due to IR dump. Also contains `[D] x86g_dirtyhelper_storeF80le` calls.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops properly recognized as do-while constructs. Conditionals are clear. Minor quirk: `array_2d_stack` uses `i += 44` stride (due to struct padding) instead of intuitive 40, but this is accurate to memory layout.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions match source granularity exactly: separate functions for each test case (`test_data_types_l1`, `test_array_types`, `test_pointer_types`, `test_composite_types`). Each test function calls individual test helpers. Cohesive and well-separated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in `array_1d_stack` and `array_vla` (`if (i <= 0) return 0;`) are appropriate. Some forward jumps exist but are manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop unrolling is minimal. Some repeated calculations in test functions (setting up test data) but this matches source structure.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - almost everything is `unsigned int`. Lost distinctions: `char`→`unsigned int`, `short`→`unsigned int`, `float`/`double`/`long double` are broken, `_Bool`→`unsigned int`. Original had precise types: `char`, `short`, `int`, `long`, `long long`, `float`, `double`, `long double`, `_Bool`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Partial struct recovery with generic names. Linked list: `struct struct_0 { unsigned int field_0; struct struct_0 *field_4; }`. Binary tree: `struct struct_0 { unsigned int field_0; unsigned int field_4; struct struct_0 *field_8; }`. Original had meaningful names like `Node`, `TreeNode`, `Point3D`, `Widget`. Bitfield extraction works correctly.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Extensive raw pointer arithmetic (`*((int *)(ptr + idx * 4))`). No const correctness preserved (`ptr_const` returns `*(a0) * 2` instead of read-only semantics). Function pointers called unsafely: `a0(a1)`. Some bounds checking in `array_complex_index` but not consistent.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in decompiled output. Original source had extensive comments explaining each test case (e.g., "// DT-L1-01: 字符类型（char）⭐", "// 场景: [SCENE-ALL]"). Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Recognizable patterns: linked list traversal (`while (i) { v0 += i->field_0; i = i->field_4; }`), binary tree recursion, graph adjacency list traversal. However, no explicit naming or documentation of these patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: VEX IR anomalies are flagged (`[D] unsupported_<class 'pyvex.expr.GetI'>()`), but these are technical artifacts not user-friendly. No indication of why float/double functions failed or confidence levels. The anomaly output itself is often more confusing than helpful.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had no formal contracts either, but the decompiler could infer some (e.g., "requires: n > 0" for array functions).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are implicit through code (`main` calls `test_data_types_l1()`, etc.). External dependencies declared (`extern char g_4025bf;`, `extern puts(char*);`). No explicit call graph documentation.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Logical grouping matches source: data type functions first, then array functions, pointer functions, composite type functions. Static functions properly scoped. Test functions grouped by category.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has `extern` declarations for external symbols. Struct typedefs provided. Would need stubs for `puts`, `printf`, `memset`. Should compile with minor patching. No compiler-specific hacks visible.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable names completely generic (`a0`, `v0`, `field_0`) - loses all semantic meaning
+- Floating-point functions (`process_float`, `process_double`, `process_ld`) are unreadable due to VEX IR artifacts
+- No type precision - all integers become `unsigned int`, losing `char`, `short`, `long`, `float`, `double`, `_Bool` distinctions
+- Zero comments recovered from source despite extensive documentation
+- No contract/precondition documentation for functions requiring specific inputs
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The decompiler recovered nearly all function names exactly as they appeared in the source code (`process_char`, `array_1d_stack`, `ptr_double`, `linked_list`, etc.). This is the standout success.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Comment Quality (1/10)  
+The combination of completely generic variable names and zero comments makes the decompiled code extremely difficult to understand despite good function names.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: `a0` used in character comparison should become `c`; `ptr` used in array indexing should become `arr` or `array`; `field_0` in Node struct should become `data` based on usage `i->field_0`
+2. **Handle floating-point decompilation gracefully**: Instead of dumping VEX IR, either skip the function with a clear message or attempt higher-level reconstruction
+3. **Recover type information from debug symbols**: Since `-g` was used, extract type information from DWARF data to restore `char`, `short`, `float`, `_Bool` types rather than defaulting to `unsigned int`

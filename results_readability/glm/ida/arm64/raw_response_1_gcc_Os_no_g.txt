@@ -1,0 +1,107 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Despite `-g` compilation flags, local variables are generic (`a1`, `v1`, `result`) rather than semantic names (`x`, `sum`, `count`), severely obscuring logic.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `sequential_ops` and `loop_break` are perfectly recovered from debug symbols, accurately reflecting the original source intent.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Array initializations are represented as obscure packed hex literals (e.g., `0x140000000ALL` for `{10, 20}`) instead of readable integer lists, and `-1` appears as `0xFFFFFFFFLL`.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: Code is generally clean, but contains redundant casts like `(unsigned int)` and ARM64-irrelevant macros like `__fastcall` and `LODWORD` that add visual noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Recursive functions like `recursion_factorial` are incorrectly transformed into iterative loops, and `computed_goto` degrades to inline assembly, breaking source fidelity.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source perfectly; no inlining or outlining artifacts were introduced, maintaining the original modular structure.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Most functions read top-to-bottom, but `duffs_device` relies on `goto` labels and `switch_fallthrough` uses jumps, disrupting linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully simplified expressions (e.g., `sequential_ops`), removing intermediate temporary variables present in the source without losing meaning.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Standard `int` types are frequently promoted to `__int64`, and signed/unsigned distinctions are blurred by aggressive casting (e.g., `return (unsigned int)(...)`).
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Stack arrays like `int arr[]` are not recovered; instead, they are represented as packed `_QWORD` or `_OWORD` variables initialized with hex values (e.g., in `loop_break`).
+
+**11. Type Safety:** Score: 6/10
+Justification: While generally safe, the code relies heavily on explicit casts between `__int64`, `int`, and `unsigned int` to manage truncation, which mimics compiler behavior but looks unsafe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining logic, algorithms, or decompiler confidence; only auto-generated headers exist.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Failed to recognize recursion (transformed to loops), computed gotos (left as asm), and state machines (switch-case logic is flattened or obscured).
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The `computed_goto` function contains inline assembly `__asm { BR X0 }` without any warning or explanation that this represents a computed jump.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred from the code logic.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the recovered names, making the call graph easy to understand despite the lack of explicit cross-reference comments.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source file structure, with helper functions grouped near their usage.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses non-standard types (`__int64`), calling convention macros (`__fastcall`), and inline assembly, preventing standard C compilation without modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Overall = (5.75 × 0.30) + (7.00 × 0.25) + (4.66 × 0.20) + 
+          (1.75 × 0.15) + (6.66 × 0.10)
+Overall = 1.725 + 1.75 + 0.932 + 0.2625 + 0.666
+Overall = 5.34 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.3/10
+
+### Critical Defects (Bullet Points)
+- **Variable Naming Failure**: Debug symbols for local variables were ignored, resulting in generic names (`a1`, `v1`) instead of semantic names (`x`, `sum`).
+- **Array Representation Loss**: Stack arrays (e.g., in `loop_break`) are represented as packed hex integers (`0x140000000ALL`) rather than readable integer arrays.
+- **Structural Deviation**: Recursive algorithms (e.g., `recursion_factorial`) are decompiled as iterative loops, fundamentally altering the source logic's nature.
+- **Computed Goto Failure**: The `computed_goto` function decompiles to inline assembly (`__asm { BR X0 }`), failing to recover the C control flow.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (9/10)
+- **Why?** The decompiler successfully utilized debug symbols to recover exact function names like `sequential_ops` and `duffs_device`, providing excellent high-level context.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Comment Quality & Presence (1/10)
+- **Why?** The complete absence of comments, especially for complex transformations like recursion-to-loop or inline assembly blocks, leaves the user to guess the decompiler's intent or confidence.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Debug Symbol Mapping**: Prioritize mapping debug information to local variables to restore semantic names like `count` or `index` instead of `v1`.
+2. **Stack Array Recovery**: Improve pattern recognition for stack-allocated arrays initialized with constants to output C-style array syntax rather than packed hex literals.
+3. **Recursion Preservation**: Add an option or heuristic to preserve recursive function structures when detected, rather than aggressively simplifying them to loops, to maintain source fidelity.

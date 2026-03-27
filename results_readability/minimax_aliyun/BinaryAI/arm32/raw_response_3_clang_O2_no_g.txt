@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `param_1`, `iVar1`, `uVar2`, `puVar1`. For example, in `local_vars`, parameter `param_1` should be `x`, and loop variable `iVar1` should be `i`. The naming provides no semantic meaning about variable purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source well: `local_vars`, `heap_basic`, `malloc`, `printf`. The decompiler preserved meaningful function names like `double_value`, `global_var_access`. Minor issues with some internal symbols but overall good.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers used throughout without explanation: `0x2a` (42), `0x14` (20), `0xf` (15), `0x800` (2048). String literals referenced as `&DAT_00012d56` with no meaningful content. No named constants recovered from source.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise includes: non-standard types (`undefined4`, `undefined2`, `byte`), redundant casts like `(undefined4 *)`, dead code in test functions with hardcoded values instead of actual function calls, and compiler-specific intrinsics like `__sync_synchronize()` exposed directly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Control flow is mostly preserved - loops use do-while constructs, conditionals are clear. However, some awkwardness exists like complex index calculations in VLA handling: `((param_1 - (param_1 >> 0x1f)) * 2 & 0xfffffffdU)`. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are properly separated, matching source granularity. However, test functions like `test_stack_memory` contain hardcoded literal values (e.g., `printf("MEM-L1-01 (local_vars): %d\n",0x14);`) instead of calling the actual functions, losing the decomposition benefit.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in error handling (e.g., `if (__ptr == (void *)0x0) { uVar3 = 0xffffffff; }`). Some complex index calculations slightly disrupt linearity.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Main logic has minimal redundancy. However, test functions duplicate logic with hardcoded values rather than calling functions. Loop unrolling present in `large_stack_frame` and `test_stack_memory` but not excessive for -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - integers become `undefined4` or `int` inconsistently. Pointers vary between `undefined4 *`, `void *`, and `int *`. No `size_t` recovery, no `uint32_t` vs `int` distinction. Function pointers use non-standard `(code *)` type.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The `Point` struct is completely lost - `local_struct` becomes `param_1 * 3` with no struct. The `Node` struct for linked lists is reduced to raw pointer arithmetic with no type definition. The `TreeNode` struct similarly lost - `tree_heap_traversal` returns hardcoded `0x3c`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: raw pointer arithmetic throughout (e.g., `*(int *)((int)__ptr + iVar1 * 2)`), function pointer type confusion `(code *)0x0`, no bounds checking on array access. The dangling_pointer function exposes freed memory without warning.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments present. No explanation of algorithm logic, no decompilation confidence indicators, no documentation of preconditions/postconditions. Only function names provide minimal context.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns present in code (linked list traversal, tree operations) but not explicitly identified or named. The decompiler doesn't label these as "linked list" or "binary tree" patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `dangling_pointer` function contains clear undefined behavior (accessing freed memory) but is presented without warning. No indication of indirect call resolution failures.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions, postconditions, or invariants. No documentation of error conditions or expected input ranges. Functions like `vla_stack` with input validation show no recovered contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some relationships visible through naming (e.g., `global_func_ptr` used as callback, `extern_function` called). However, no explicit documentation of call graphs or caller/callee relationships.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order roughly matching source file structure (stack functions first, then heap, then static/global). Static functions properly scoped. No explicit module or file organization documentation.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile - uses non-standard types (`undefined4`, `undefined2`, `byte`) that don't exist in standard C. External function declarations incomplete or missing. Would require extensive patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable naming extremely poor (`param_1`, `iVar1`, `uVar2` provide no semantic meaning)
+- Composite types completely lost (Point, Node, TreeNode structs not recovered)
+- Type precision severely degraded (undefined4, undefined, byte types instead of standard C types)
+- No comments or documentation explaining code logic
+- Test functions use hardcoded values instead of actual function calls, losing decomposition benefit
+- Non-standard types prevent compilation (undefined4, undefined2)
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names largely match the original source and accurately describe purpose (e.g., `local_vars`, `heap_basic`, `double_value`).
+
+**Most Needs Improvement:** Type System Fidelity (3.0/10)  
+Composite types completely lost, type precision severely degraded, and type safety issues throughout. The decompiler failed to recover struct definitions and uses non-standard types throughout.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Recover struct/union definitions from allocation sizes and field access patterns - the original has Point, Node, TreeNode structs that should be reconstructed
+2. Replace generic variable names (param_1, iVar1) with semantically meaningful names inferred from usage patterns and source variable names where available
+3. Replace non-standard types (undefined4, undefined2, byte) with standard C types (int, uint32_t, char) to enable compilation

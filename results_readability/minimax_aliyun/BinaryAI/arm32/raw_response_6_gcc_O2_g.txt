@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Parameters like `param_1`, `param_2` and locals like `local_14`, `local_38`, `auStack_34` are generic stack-based names. However, globals like `signal_received`, `signal_number`, `shared_counter`, `atomic_counter` are well-named. The mix is mostly generic, making tracking purpose difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Functions like `param_strcpy`, `call_strcpy`, `param_strcmp`, `thread_compute`, `thread_sum`, `signal_handler` accurately match source names. Thread helper functions are properly named. Minor issues with internal functions like `call_weak_fn`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like "Value: %d, Name: %s\n" are preserved, but magic numbers like `0x2a` (42), `0x1000` (4096), `0x42` appear without explanation. Error codes like `-1`, `-2` returned but not named as constants.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack check functions (`__stack_chk_fail`) appear as calls but are minimal. Some type casts present but not excessive. Overall clean decompilation without severe compiler artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops properly recognized as while/do-while constructs. Conditionals use clear if-else patterns. No excessive goto usage. At -O0, control flow closely matches source patterns.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with good granularity. Thread helper functions (`thread_compute`, `thread_sum`) are properly separated. No obvious over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. No excessive forward jumps. Good flow with minimal disruption.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling in atomic operations is expected. Common subexpression elimination artifacts are minimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are reasonably precise - `int` for integers, `char*` for strings, `void*` for generic pointers, `size_t` for sizes, `pthread_t` for thread handles. Minor generic types but mostly accurate.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery visible. ThreadData accessed via pointer arithmetic (`param_1[2]` for result). All composite types lost - would need manual reconstruction.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (e.g., `(pthread_mutex_t *)counter_mutex`). Pointer arithmetic used but necessary. Generally manageable but has type safety concerns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in the decompiled code. Only auto-generated function signatures. No algorithm explanation, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library calls (`strcpy`, `strcmp`, `pthread_create`) are recognized. Threading patterns (mutex lock/unlock, condition variables) are identified. Some patterns like producer-consumer are clear.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of uncertain or anomalous code. All calls resolved without flags. No warnings about indirect calls or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition documentation. No invariant recovery. Error conditions not documented. No contract information recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. No documentation of caller/callee relationships. Global variable usage is visible but not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are in a single file but logically grouped - standard library functions, system calls, thread functions. Related functions like `param_strcpy` and `call_strcpy` are adjacent.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses external declarations for standard library functions. Should compile with proper libc headers. Dependencies are standard - no unusual requirements.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable naming is mostly generic (`param_1`, `local_14`, `auStack_34`) obscuring semantic purpose
+- No struct recovery - ThreadData accessed via raw pointer arithmetic losing field semantics
+- No comments explaining algorithm logic or decompilation confidence
+- No anomaly indication for potentially problematic code patterns
+- Magic numbers like `0x2a` (42) appear without named constant explanations
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- At -O0, the decompiler correctly recovered loop and conditional structures matching source patterns closely
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Zero useful comments - no algorithm explanation, no decompilation confidence indicators, no API contracts
+
+**Top 3 Recommendations:**
+1. Add variable name inference from usage patterns (e.g., `param_1` used as destination in strcpy → `dst`)
+2. Recover struct layouts from allocation patterns and field access (ThreadData has start, end, result fields)
+3. Add comments for magic numbers and decompilation confidence (e.g., "0x2a = 42 (success code)")
+4. Flag anomalous or uncertain code patterns (indirect calls, unusual stack layouts)
+5. Recover pre/postconditions for functions (e.g., "requires: dst != NULL, src != NULL")

@@ -1,0 +1,148 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables use extremely generic names like `v0`, `v1`, `v2`, `v3`, `ptr`, `a0`, `a1` throughout. For example, in `test_cpp_member_func()`, the variable `v0` holds what should be `value` (10), and `v1[15]` should be `name[32]`. The original source had meaningful names like `value`, `name`, `data`, `size`, `instance_count` - all completely lost.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+
+Justification: Mixed results - some functions correctly demangled like `template_max<int>` and `template_swap<int>`, but many use mechanical addresses like `sub_400d74`, `sub_401008`. The mangled C++ names like `_Z20test_cpp_member_funcv` are technically accurate but not human-friendly. The original had clear names like `test_cpp_member_func`, `call_virtual_func`, `test_cpp_exception`.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: Multiple unexplained magic numbers and addresses. In `test_cpp_oo_features()`, it uses `_ZN14LifecycleClass14instance_countE * 1001 + 21` without explaining the calculation. String literals like `&g_401680` are referenced by address rather than content. The original source had clear constants like `0x1234` for `getClassID()`.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Justification: Significant compiler artifacts present. Functions like `register_tm_clones()` contain complex bit manipulation expressions: `((__ROL__(0, 1) & 1) >> 63 & 0x8000000000000000)`. The `goto *((long long *)*((long long *)&arg_0))` in `call_virtual_func` is raw indirect dispatch. However, some functions like `main()` are relatively clean.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 3/10**
+
+Justification: Several functions use problematic goto patterns. The `call_virtual_func` uses `goto *((long long *)*((long long *)&arg_0))` for vtable dispatch - should be `obj->virtual_func(x)`. Many functions like `test_cpp_constructor()`, `test_cpp_virtual_func()` are empty stubs returning immediately. The original had clear object-oriented flow with method calls.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Function boundaries generally match original source. Template functions `template_max<int>`, `template_max<double>`, `template_swap<int>` are properly separated. Container class methods correctly split into constructor, `push`, `get`, `getSize`. Minor issues with some small functions that could be inlined.
+
+### 7. Code Linearization
+**Score: 5/10**
+
+Justification: Most functions read reasonably top-to-bottom. However, `register_tm_clones()` has confusing nested ternary operators that disrupt linear reading. The `call_virtual_func` goto makes control flow non-linear. The `test_cpp_exception` function has complex exception handling flow.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+
+Justification: Some duplicate return expressions present, e.g., `frame_dummy()` returns `register_tm_clones()` twice. The `register_tm_clones()` has redundant conditional checks. However, overall redundancy is manageable.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+
+Justification: Significant type degradation. Many parameters use `unsigned long` or `unsigned long long` where original had `int`, `size_t`, or pointers. The `call_virtual_func` uses `class Base *arg_0` but `int arg_1` instead of proper parameter types. Function parameters like `int &ptr, int &p` in `template_swap<int>` are shown as raw pointers.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+
+Justification: Partial struct recovery in RTTI function with generic names: `struct struct_0 { char padding_0[8]; struct struct_1 *field_8; }`. Original had proper classes like `RTTIBase`, `RTTIDerivedA`, `RTTIDerivedB` with virtual functions. The `Container<int>` and `Container<double>` are handled via void pointers with manual offset calculations rather than proper struct recovery.
+
+### 11. Type Safety
+**Score: 3/10**
+
+Justification: Multiple unsafe operations. In `Container<int>::push`: `*((int *)((char *)ptr + 4 * index)) = arg_0` - manual pointer arithmetic without bounds. The `template_swap<int>` uses raw pointer casting: `*((int *)ptr)`. The RTTI function uses `void*` extensively with manual vtable manipulation. Many implicit casts between pointer types.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Justification: Minimal useful comments. Most comments just identify the function name (e.g., `// Function: test_cpp_member_func at 0x401014`). No explanation of what the code does, no recovery of original comments from source. The original had extensive Chinese comments explaining each test case.
+
+### 13. Idiom Recognition
+**Score: 2/10**
+
+Justification: C++ idioms are not recognized. Virtual function calls appear as raw indirect jumps (`goto *((long long *)*((long long *)&arg_0))`). Exception handling shows as `__cxa_throw`, `__cxa_begin_catch` without the try-catch structure. Smart pointers not recognized - shown as raw `operator new`/`operator delete`. Template instantiation shown but not clearly as templates.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+Justification: No anomaly flags. The indirect vtable call in `call_virtual_func` is presented as normal code without warning. The complex register_tm_clones logic has no indication it may be compiler-generated. Empty stub functions like `test_cpp_constructor()` return without explanation.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No contract information recovered. Preconditions like "ptr != null" not documented. Postconditions not indicated. The original had clear expectations like `obj.getData(2)` returning 20, `LifecycleClass::getInstanceCount()` tracking object count.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Justification: Function calls present but relationships unclear. `test_cpp_oo_features()` calls other test functions but no documentation of call graph. Virtual function calls through vtable not clearly linked to class definitions. The original showed clear relationships like `Base *pb = &obj; int r3 = call_virtual_func(pb, 5);`.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Justification: Functions grouped by address but not logically organized. The original had clear sections: CPP-L3-01 through CPP-L4-03 with related classes and test functions grouped. Decompiled output mixes startup code (`_init`, `_start`, `frame_dummy`) with test functions arbitrarily.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+Justification: Many extern declarations present but incomplete. Functions like `call_virtual_func` have class definition inline but incomplete. Template instantiations have proper signatures. However, the complex expressions like `register_tm_clones()` may not compile. The metadata shows "Compilation Result: Yes" but actual compilation not verified.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 3 + 4) / 4 = 3.5
+L2_avg = (3 + 7 + 5 + 6) / 4 = 5.25
+L3_avg = (4 + 3 + 3) / 3 = 3.33
+L4_avg = (3 + 2 + 2 + 1) / 4 = 2.0
+L5_avg = (3 + 5 + 4) / 3 = 4.0
+
+Overall = (3.5 × 0.30) + (5.25 × 0.25) + (3.33 × 0.20) + 
+          (2.0 × 0.15) + (4.0 × 0.10)
+        = 1.05 + 1.3125 + 0.666 + 0.3 + 0.4
+        = 3.73/10
+```
+
+### Overall Readability Score: 3.73/10
+
+### Critical Defects
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `ptr`, `a0`) losing semantic meaning like `value`, `name`, `data`, `size`
+- **Type safety**: Extensive unsafe pointer arithmetic (e.g., `Container<int>::push` uses manual offset calculations instead of proper struct access)
+- **Idiom recognition**: Virtual function calls rendered as raw indirect jumps (`goto *((long long *)*((long long *)&arg_0))`) instead of `obj->virtual_func(x)`
+- **Function stubs**: Multiple test functions (`test_cpp_constructor`, `test_cpp_virtual_func`, etc.) are empty stubs returning immediately, losing all logic
+- **Comment absence**: No recovery of original Chinese comments explaining each test case's purpose and expected values
+
+### Best Quality Aspect
+- **Function Decomposition (7/10)**: Template functions properly separated into `template_max<int>`, `template_max<double>`, `template_swap<int>`, and Container methods correctly split
+
+### Most Needs Improvement
+- **Variable Naming Quality (2/10)**: Every meaningful variable name from the original source is lost - `value`, `name`, `data`, `size`, `instance_count`, `multiplier` all become `v0`, `v1`, `ptr`
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Track how variables are used (e.g., `v0 = 10` followed by `strncpy(&v1, "Test", 4)` suggests `v0` is `value` and `v1` is `name`)
+2. **Recover C++ idioms**: Recognize vtable indirect calls and render as `obj->method()`, detect exception try-catch blocks, identify smart pointer patterns
+3. **Recover class structures**: Instead of void pointers with manual offsets, reconstruct proper struct/class layouts with field names from constructor initialization patterns

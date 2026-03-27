@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic stack offsets like `local_38`, `uStack_2c`, and `param_1`. For example, in `test_cpp_member_func`, the `SimpleClass` object is flattened into `local_38` (value) and `local_34` (name array) without semantic names.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Global test functions and template instantiations are recovered well (e.g., `test_cpp_member_func`, `Container<int>::push`). However, some runtime/internal functions remain generic (e.g., `FUN_00100d60`), and inlined class methods like `SimpleClass::getValue` are lost as separate entities.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Logic is often replaced by magic numbers (e.g., `return 0x2a` in `test_cpp_virtual_func` instead of the calculation `6+15+6+15`). While `0x2a` (42) is the correct result, it obscures the implementation logic. Constants like `0x125c` (4700) appear without context.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise from struct padding is exposed as variables (e.g., `undefined7 uStack_2c`, `undefined uStack_25`). These artifacts represent alignment bytes within the `SimpleClass` object and clutter the variable list.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: High-level control flow is lost in several places. `test_cpp_exception` ends at `__cxa_throw` with no representation of the `catch` blocks. `test_cpp_virtual_func` is reduced to a constant return, hiding the virtual dispatch mechanism entirely.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler successfully separates template instantiations and class methods into distinct functions (e.g., `Container<int>::push`, `RTTIBase::~RTTIBase`). The granularity matches the source structure for non-inlined code.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps or `goto` statements. The flow is easy to trace within the individual function bodies provided.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The compiler's constant propagation (or decompiler's presentation of it) has eliminated the logic of the test functions, replacing them with hardcoded results (e.g., `return 0x47`). This "over-elimination" makes the code unreadable as an implementation guide.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are inconsistent. While some are precise (`Base *`, `int`), many are generic (`undefined8`, `undefined4`). The use of `undefined8` for pointers and integers reduces clarity regarding data size and signedness.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Stack-allocated objects are not reconstructed as structs. In `test_cpp_member_func`, the `SimpleClass` instance is flattened into a series of primitive stack variables (`local_38`, `local_34`, `uStack_2c`) rather than a single object variable.
+
+**11. Type Safety:** Score: 5/10
+Justification: Pointer arithmetic on stack variables is exposed, such as `(char *)((ulong)&local_38 | 4)`. While technically correct for the compiler's layout, it represents unsafe type manipulation that obscures the original `char name[32]` array access.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or the purpose of the magic numbers. The code is presented raw without any semantic annotation.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms are not recognized. Exception handling is presented as low-level `__cxa_allocate_exception` and `__cxa_throw` calls without the `try/catch` structure. RTTI checks are shown as `__dynamic_cast` calls rather than `typeid` comparisons.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged. The decompiler confidently presents the flattened stack variables and constant returns without indicating that the original logic might have been optimized away or that the struct layout is inferred.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants. For example, the bounds check in `Container::get` is visible as an `if` statement but not annotated as a safety contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls to standard library and runtime functions (e.g., `strlen`, `operator_new`) are clear and named correctly. The relationships between the test functions and the helper classes are visible via the calls.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a generally logical order, roughly corresponding to the source flow. However, the separation between class definitions (which are missing as headers) and their implementations is not clearly organized.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on implicit definitions of standard types and runtime symbols (e.g., `typeinfo`, `__cxa_throw`). It would require significant patching and header inclusion to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Composite Type Recovery Failure:** Stack-allocated objects (like `SimpleClass`) are flattened into generic variables (`local_38`, `uStack_2c`), destroying the object-oriented structure.
+- **Missing Control Flow Structures:** Exception handling (`try/catch`) is completely missing, represented only by low-level runtime calls (`__cxa_throw`).
+- **Logic Obscured by Constants:** The logic of test functions is replaced by hardcoded return values (e.g., `return 0x2a`), making it impossible to understand the original implementation flow.
+
+**Best Quality Aspect:** Function Decomposition (Score: 8/10)
+- The decompiler successfully identified and separated template instantiations and class methods into distinct, named functions, preserving the modular structure where it wasn't inlined.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 2/10)
+- The failure to group stack variables into their original struct/class definitions is the single biggest barrier to understanding the data structures and logic of the program.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Stack Object Coalescence:** Implement analysis to group adjacent stack variables accessed together into composite types (structs/classes) based on access patterns and type information.
+2.  **Exception Handling Recovery:** Enhance the analysis of LSDA (Language-Specific Data Area) and personality routines to reconstruct high-level `try/catch` blocks instead of just showing the throw calls.
+3.  **Variable Naming Inference:** Utilize type information and usage context (e.g., `strlen` argument) to infer better names for stack variables than `local_XX`.

@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic `a0`, `a1`, `a2` instead of meaningful names like `size`, `x`, `y`. Local variables are `v0`, `v1`, `v2` - completely opaque. The original source used clear names like `MAX_SIZE`, `BUFFER_COUNT`, `result` but these are lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some functions correctly recovered (e.g., `param_macro_constants`, `call_asm_basic`, `param_asm_atomic`), but many remain as address-based names like `sub_400824`, `sub_40091c`. Mixed result - about 50% of functions have meaningful names.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Magic numbers like `0x400` (1024=MAX_SIZE), `0x200` (512=MAX_SIZE/2), `64` (BUFFER_COUNT*4) are correctly computed but macro names lost. The decompiler correctly computed the values but didn't recover the original constant names.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Some redundant code exists (e.g., duplicate `return memcpy(v0, v1, v2)` in `sub_400824`). Stack frame setup code present but minimal. Overall relatively clean for ARM64.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural - if/else statements, while loops recovered correctly. The `param_asm_clobber` shows a proper do-while loop. Minor issues with some computed conditions but acceptable for -O0.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. The original source's functions are preserved as separate functions. Good granularity - no 500-line monoliths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. Some forward jumps in complex functions like `param_asm_clobber` but manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant return statements (e.g., `param_asm_multi_insn` returns memcpy twice). Loop unrolling present in `call_asm_clobber` but not explicitly marked. Some dead code from register spilling.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed type precision - uses `unsigned int`, `unsigned long`, `long long` but loses specific types. Original `int` parameters become `unsigned int`. No `int32_t`/`uint64_t` specificity. Parameter types don't indicate signedness correctly (original `int` becomes `unsigned int`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct/union recovery visible. All structures accessed via raw pointer arithmetic (e.g., `*((int *)(ptr + v0 * 4))`). Original source had no complex structs but the decompiler doesn't indicate this clearly.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. Pointer arithmetic without bounds checks (e.g., `ptr + v0 * 4`). Cast from pointer to int in `param_memory_protection`. No `restrict` or `_Atomic` annotations despite atomic operations being present.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in decompiled code whatsoever. Original source had extensive comments explaining macro behavior, assembly constraints, and test scenarios. Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized (printf_chk for printf, memcpy for memory copy). Atomic operations identified via `__aarch64_ldadd4_acq_rel`. However, no explicit pattern naming or algorithm identification (e.g., "This implements atomic fetch-add").
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One function failed to decompile (`__aarch64_ldadd4_acq_rel` at 0x401480) but only noted as "Failed to decompile". No flags for suspicious code patterns, indirect calls, or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. Original source had implicit contracts (e.g., "ptr != NULL" for mmap results) not documented. No detection of error return paths as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear (e.g., `test_asm_features(test_preprocessing_features())`). External functions noted (e.g., `extern char __aarch64_have_lse_atomics`). However, no documentation of call graph or caller/callee relationships.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped by address rather than logical purpose. Original source had clear sections: preprocessing tests, asm tests. Decompiled code mixes all functions together without logical grouping.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has some compilation issues - missing function prototypes, some incorrect parameter counts (e.g., `__aarch64_ldadd4_acq_rel` called with wrong args in `call_asm_atomic`). External declarations present but incomplete.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+6+7+7)/4 = 5.75
+L2_avg = (7+8+7+6)/4 = 7.00
+L3_avg = (5+4+6)/3 = 5.00
+L4_avg = (2+5+4+2)/4 = 3.25
+L5_avg = (6+4+5)/3 = 5.00
+
+Overall = (5.75 × 0.30) + (7.00 × 0.25) + (5.00 × 0.20) + 
+          (3.25 × 0.15) + (5.00 × 0.10)
+Overall = 1.725 + 1.75 + 1.0 + 0.4875 + 0.5 = 5.4625
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects (Bullet List)
+- Variable naming uses generic `a0`/`a1`/`v0`/`v1` patterns instead of semantic names like `size`, `x`, `result`
+- No comments recovered - original source had extensive documentation about macro behavior and test scenarios
+- Type precision lost - original `int` parameters become `unsigned int`, losing sign information
+- Module organization arbitrary - functions grouped by address rather than logical purpose
+- No struct recovery - all composite types accessed via raw pointer arithmetic
+
+### Best Quality Aspect: Function Decomposition (8/10)
+- Functions are appropriately sized with clear single responsibilities matching original source granularity
+
+### Most Needs Improvement: Comment Quality & Presence (2/10)
+- Zero comments recovered from original source which had extensive documentation explaining preprocessing behavior, assembly constraints, and test scenarios
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Parameters like `a0` used in comparisons with `0x400` should be named `size` based on context (comparing against MAX_SIZE=1024)
+2. **Recover macro constant names**: When literals match compile-time constants (e.g., 1024, 16, 64), attempt to recover original macro names from debug symbols or common patterns
+3. **Add semantic comments**: Document recognized patterns (atomic operations, SIMD, memory operations) and flag anomalies like failed decompilation with specific reasons

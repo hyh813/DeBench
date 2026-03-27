@@ -1,0 +1,111 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `local_8`, `aiStack_8c`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `test_str` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some original names preserved (`cdecl_func`, `varargs_func`, `main`, `test_calling_conventions`), but many functions degraded to `FUN_00011030`, `FUN_00011ad5`, `FUN_00011b15` with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout (`0xf`, `0x32`, `0x2a`, `0x12345678`, `0x74`) with no named constants. Original source used function calls with clear arguments; decompiled code shows constant-folded values obscuring intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__i686.get_pc_thunk.bx`, `__x86.get_pc_thunk.dx`, multiple WARNING comments about inlined functions and unreachable blocks. Stack manipulation visible (`stack0x00000008`, `stack0x00000004`).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops generally recovered as do-while constructs which is acceptable. However, many functions are constant-folded entirely (e.g., `call_cdecl` returns `0xf` instead of calling `cdecl_func(5, 10)`), obscuring the original control flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but some collapsed due to constant folding optimization. Inlined functions noted in warnings but not properly recovered as separate entities.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but uses do-while loops where for-loops would be more natural. Stack access patterns (`&stack0x00000004 + iVar2 * 8`) disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding creates redundancy where both caller and callee show constant values. Some duplicate initialization patterns visible in test functions that could be abstracted.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (int, char*, double) but `undefined4` used frequently for return types and parameters. `va_list` not properly recovered in varargs functions (uses raw stack pointer arithmetic instead).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Critical failure - struct types largely lost. `LargeStruct` and `SmallStruct` not recovered as named types. `func_struct_byptr` takes `int *` instead of `SmallStruct *`. `func_struct_byval` takes `void` with no struct parameter visible, accessing stack directly.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`(int *)`, `(char **)`, `(undefined4 *)`). `func_mixed_args` has `undefined4 param_4, undefined4 param_5` for what should be a double (split across registers). Function pointer types degraded to `code *`.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only WARNING comments about inlined functions and unreachable blocks. No semantic documentation explaining what functions do. Original source had extensive comments; decompiled has almost none.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common C idioms (varargs, struct passing, calling conventions) not recognized as such. No design patterns identified. Varargs implemented as raw stack iteration without va_list abstraction.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged with WARNING comments (inlined functions, unreachable blocks). Stack access patterns noted. However, many critical issues not flagged (type mismatches, calling convention issues, struct recovery failures).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. NULL checks present in code (e.g., `func_struct_byptr`) but not documented as contracts. No error condition documentation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Global variable usage not clearly indicated. Test functions call implementation functions but relationships aren't explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping beyond what was in binary. Static functions not properly scoped. Original source had clear section organization with comments.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has compilation issues (`undefined4` types, missing includes, undefined globals like `completed_1`, `__dso_handle`). Would require significant modification to compile standalone. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+6+4+5)/4 = 4.50
+L2 Average: (6+6+6+6)/4 = 6.00
+L3 Average: (5+3+4)/3 = 4.00
+L4 Average: (3+4+5+3)/4 = 3.75
+L5 Average: (5+5+4)/3 = 4.67
+
+Overall = (4.50 × 0.30) + (6.00 × 0.25) + (4.00 × 0.20) + (3.75 × 0.15) + (4.67 × 0.10)
+Overall = 1.35 + 1.50 + 0.80 + 0.56 + 0.47
+Overall = 4.68/10
+```
+
+**Overall Readability Score: 4.7/10**
+
+### Critical Defects:
+- **Variable names completely generic** - `param_1`, `iVar1`, `local_8` provide zero semantic information compared to original `count`, `sum`, `args`
+- **Struct type recovery failed** - `LargeStruct` and `SmallStruct` lost; `func_struct_byval` shows `void` parameter instead of struct
+- **Constant folding obscures logic** - `call_cdecl` returns `0xf` directly instead of showing `cdecl_func(5, 10)` call
+- **Varargs implementation degraded** - Uses raw stack pointer arithmetic instead of `va_list`, `va_start`, `va_arg`, `va_end`
+- **No semantic documentation** - Original 665 LOC had extensive comments; decompiled code has only compiler WARNING comments
+
+### Best Quality Aspect:
+- **Structural Intelligibility (6.0/10)** - Function boundaries mostly preserved and control flow generally recoverable as natural loop constructs despite optimization artifacts
+
+### Most Needs Improvement:
+- **Semantic Transparency (3.75/10)** - Almost complete loss of documentation, idiom recognition, and contract information that made the original source understandable
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., loop counter variables, accumulator variables, pointer parameters)
+2. **Recover composite type structures** - Detect struct access patterns and reconstruct named types with field names based on access semantics
+3. **Preserve call relationships** - Avoid aggressive constant folding that removes function call information; show original call sites even when results are computable

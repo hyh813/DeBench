@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `a1`, `w19`, `x8`, `x29`, `x30`). The original source used meaningful names like `x`, `n`, `arr`, `p`, `head`, `root`, `counter`. Only `result` provides any semantic value.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names closely match the original source (`local_vars`, `heap_basic`, `global_var_access`, `memop_memset`). The decompiler correctly recovered all 40+ function names from the source. Minor扣分 for some internal labels like `sub_8E0`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many SIMD constants are unexplained magic numbers (e.g., `0x1010101010101010`, `0x800000008LL`). However, simple constants like `42`, `100`, `20` are preserved. The vector initialization constants are optimization artifacts not present in source.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy SIMD noise from auto-vectorization (`vaddq_s8`, `vshlq_n_s32`, `vmulq_s32`, `int8x16_t`, `int32x4_t`). Register names (`x0`, `w19`, `x8`) visible throughout. Frame pointer manipulation visible. This level of noise is excessive for -O0.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses goto statements for loop constructs (`goto LABEL_8`, `goto LABEL_10`). At -O0, loops should be recognizable as for/while. Some control flow is natural (simple conditionals), but the goto-based loops disrupt readability significantly.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and cohesive. The decompiler kept `linked_list_heap`, `tree_heap_traversal`, and other complex functions as single units. Parameter counts are reasonable. Minor issue: some static helper functions could be better organized.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple forward jumps (goto LABEL_8, LABEL_10, LABEL_12) disrupt top-to-bottom reading. The `vla_stack` function has particularly poor linearization with jumps in and out of loops. Moderate nesting present.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant loop unrolling visible in `large_stack_frame`, `vla_stack`, `alloca_usage`, `heap_basic`, `heap_array`. The unrolling is not commented or abstracted. At -O0, this level of unrolling is unexpected and obscures the original loop logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types like `int`, `__int64`, `_DWORD *`, `_QWORD *`. Some improvement with `size_t`, `unsigned __int32`. The original used `int`, `char`, `Point*`, `Node*`, `TreeNode*` - these are lost. Integer signedness sometimes incorrect (e.g., `unsigned int` for loop counters).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct recovery is severely degraded. The `Point` struct is completely lost - `local_struct` returns `(unsigned int)(3 * a1)` instead of `p.x + p.y`. The `Node` struct is not recovered - uses raw `_QWORD *` with pointer arithmetic. The `TreeNode` struct is also lost. This is a critical failure.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations present. Raw pointer arithmetic in `heap_nested`: `v3[1] = v4`. Cast from `void*` to `_DWORD *` without validation. The `linked_list_heap` uses unsafe pointer casting throughout. Some buffer overflow potential in `memop_memcpy` with manual offset calculation.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only decompiler header comments present. No useful inline comments explaining algorithm, purpose, or non-obvious logic. The original source had extensive comments (MEM-L1-01, HEAP-L2-01, etc.) which are completely lost. Zero algorithm documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns visible but not named or documented. The linked list creation pattern is recognizable but not identified as such. No mention of "linked list", "binary tree", "VLA", or "alloca" in comments. The memory leak pattern in `memory_leak` is not flagged.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The decompiler lists 18 failed functions at the end (memcpy, memmove, exit, malloc, etc.), but these are just library functions. No indication of potential issues like the memory leak in `memory_leak`, the dangling pointer in `dangling_pointer`, or the double-free scenario in `double_free`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. The original had explicit checks like `if (arr == NULL) return -1;` which are preserved as code but not documented as contracts. No "requires: ptr != NULL" or "ensures: return is heap-allocated" annotations.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls are clear (`malloc`, `free`, `printf`). Global variable usage is transparent (`global_counter`, `global_array`, `file_scope_static`). Callback relationships visible in `set_global_callback` and `call_global_callback`. Could be improved with explicit call graphs in comments.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - stack functions together, heap functions together, static functions together. Matches source organization reasonably well. Static functions properly scoped. Some internal functions like `sub_8E0` are noise.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with minimal patching. Uses standard C library functions. External declarations needed for `extern_global_var` and `extern_function`. No compiler-specific hacks visible. The code is mostly self-contained.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Struct recovery failure**: `Point`, `Node`, `TreeNode` structs completely lost; replaced with raw pointer arithmetic losing all semantic meaning
+- **Variable naming**: Generic single-letter variants (`v0`, `v1`, `a1`) make code tracking extremely difficult
+- **Excessive SIMD noise**: Vector intrinsics (`int8x16_t`, `vaddq_s8`) obscure logic despite -O0 compilation
+- **Loop unrolling**: Uncommented loop unrolling in `vla_stack`, `alloca_usage`, `heap_basic` at -O0 level
+- **No comments**: Zero algorithm or intent documentation; original source comments completely lost
+
+### Best Quality Aspect: Function Naming (8/10)
+Function names accurately reflect source intent - `local_vars`, `heap_basic`, `global_array_access`, `memop_memset` all match original. This is the strongest area of the decompilation.
+
+### Most Needs Improvement: Composite Type Recovery (2/10)
+Struct recovery is nearly absent. The original used meaningful structs (`Point`, `Node`, `TreeNode`) which are completely lost, replaced with opaque pointer types. This fundamentally degrades semantic understanding.
+
+### Top 3 Recommendations:
+1. **Recover struct types**: Infer struct layouts from allocation sizes and field access patterns. `malloc(0x10)` for Node should yield `struct Node { int data; struct Node *next; }`
+2. **Name variables from usage**: `v3` used as array index → `array_idx`; `a1` used as count → `count` or `n`
+3. **Comment optimization artifacts**: Add "// Loop unrolled by compiler" or "// SIMD vectorization" to explain noise rather than leaving it unexplained

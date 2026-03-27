@@ -1,0 +1,144 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names throughout. Parameters are named `a0`, `a1`, `a2`, `a3` with no semantic meaning. Local variables use names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `ptr`, `idx`, `i`. While `ptr` and `idx` are somewhat descriptive, the vast majority of variables are meaningless placeholders. For example, in `heap_basic`, the variable `ptr` should be named `arr` based on its usage as an array, and `idx` should be `i` to match the source.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Most functions are correctly named matching the original source: `double_value`, `local_vars`, `local_array`, `local_struct`, `address_of_local`, `heap_basic`, `heap_calloc`, `global_var_access`, `static_local`, `memop_memset`, `memop_memcpy`, etc. Some helper functions like `sub_10598`, `call_weak_fn` remain unnamed, but the core test functions are well-named.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+The code contains many unexplained magic numbers: `4294967295` (0xFFFFFFFF for -1), `0x800` (2048 for large_stack_frame), `1000` (VLA boundary check), `42` (hardcoded in address_of_local). String literals are shown as raw addresses like `0x12784`, `0x128cd` with no recovery of actual string content. The constant `20` appears frequently without explanation.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Significant decompiler artifacts pollute the code: `GLIBC_2.4::__stack_chk_guard` references, `armg_calculate_condition()` function calls throughout (replacing simple comparisons), redundant variable declarations from register spilling, and goto-based control flow. The `armg_calculate_condition(18, ptr, 0, 0)` pattern replaces straightforward NULL checks, making code harder to read.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+The code uses goto statements extensively (e.g., `goto LABEL_106fc`, `goto LABEL_108c4`) instead of natural loop/conditional constructs. The `armg_calculate_condition` function obscures simple comparisons. Loop structures in `local_array` and `large_stack_frame` are recognizable but verbose. At -O0, this level of goto usage is excessive and indicates poor control flow recovery.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Functions are well-separated and each handles a specific task. The original source's function boundaries are preserved. No monolithic functions exist - each function is focused on a single operation (heap allocation, list traversal, etc.). Parameter counts match original signatures.
+
+### 7. Code Linearization
+**Score: 5/10**
+
+The code generally reads top-to-bottom but contains multiple forward jumps disrupting flow. In functions like `heap_calloc` and `memop_memcpy`, complex goto-based state machines make linear reading difficult. Early returns are used appropriately in some places but goto-based jumps create non-linear paths.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+Loop unrolling is present in `local_array` and `large_stack_frame` (explicit do-while loops instead of for-loops). Some duplicate expressions exist. The code doesn't have severe redundancy but optimization artifacts like unrolled loops could be better abstracted or commented.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+Most parameters are `unsigned int` when the original used `int`. The decompiler lost signed/unsigned distinction in many places. Pointers are correctly identified as pointers. Function signatures generally match but use generic types. For example, `local_array(unsigned int a0)` should be `int` not `unsigned int`.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Structures are partially recovered with generic names: `struct_0`, `struct_1`, `struct_2`, `struct_3`. Field names are generic: `field_0`, `field_4`, `field_8`. The Node structure is recovered but fields are not named (data, next). The TreeNode structure has three fields but with meaningless names. No typedef recovery - all structs are anonymous.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Multiple unsafe operations: raw pointer arithmetic throughout (e.g., `ptr + 4 * idx`), casting through void* without safety checks, no bounds checking on array accesses. The code in `heap_overflow` shows the original bug (writing beyond allocation) but doesn't flag it as dangerous. Memory operations use raw arithmetic without safety wrappers.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+No comments whatsoever in the decompiled output. The only annotations are decompiler-generated labels like "do not return" for functions like `abort()` and `__stack_chk_fail()`. No explanation of algorithm logic, no documentation of preconditions/postconditions, no indication of uncertain decompilation.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Some patterns are implicitly present (malloc/free pairs, linked list traversal) but not explicitly named or documented. The memory leak pattern in `memory_leak` is recognizable but not flagged. The double-free bug in `double_free` is present but not annotated as problematic.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+No indication of suspicious code. The dangling pointer access in `dangling_pointer` (returning `*(ptr)` after free) is presented as normal code. The double-free is not flagged. No warnings about potential undefined behavior or security issues.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No preconditions, postconditions, or invariants documented. No error handling contracts. The implicit contracts from the original (e.g., "requires: n > 0" for heap functions) are completely lost. No documentation of what functions return on error.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+External functions are marked with `extern` keyword. Function call relationships are traceable through the code. However, there's no documentation of which functions call which, no callback relationships documented, and no indication of the test harness structure.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Functions are logically grouped - stack functions together, heap functions together, static/global functions together, memory operations together. The single-file output is reasonable for decompilation. Static functions are not explicitly marked as file-scoped.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+
+The code uses standard library functions (malloc, free, memset, memcpy, memcmp, memmove) and should compile with libc. However, it relies on external declarations that would need headers. The `armg_calculate_condition` is a decompiler artifact that wouldn't compile. Some syntax issues exist (e.g., `unsigned int [5] heap_realloc()` is invalid C).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 4 + 3) / 4 = 4.25
+L2_avg = (4 + 8 + 5 + 5) / 4 = 5.50
+L3_avg = (5 + 4 + 4) / 3 = 4.33
+L4_avg = (1 + 4 + 1 + 1) / 4 = 1.75
+L5_avg = (5 + 7 + 6) / 3 = 6.00
+
+Overall = (4.25 × 0.30) + (5.50 × 0.25) + (4.33 × 0.20) + 
+          (1.75 × 0.15) + (6.00 × 0.10)
+        = 1.275 + 1.375 + 0.866 + 0.263 + 0.600
+        = 4.38/10
+```
+
+### Overall Readability Score: 4.38/10
+
+### Critical Defects
+
+1. **Variable naming is unusable**: Parameters `a0-a3` and locals `v0-v5` provide no semantic information about purpose
+2. **No comments or documentation**: Zero explanation of algorithms, contracts, or intent
+3. **armg_calculate_condition() pollution**: Replaces simple comparisons, making code unreadable
+4. **Struct field names lost**: All fields are generic `field_0`, `field_4`, etc.
+5. **No anomaly indication**: Dangerous patterns (dangling pointer, double-free, heap overflow) presented as normal code
+
+### Best Quality Aspect: Function Naming (8/10)
+Function names accurately reflect the original source - most test functions are correctly named matching their semantic purpose.
+
+### Most Needs Improvement: Semantic Transparency (1.75/10)
+The decompiled code has zero comments, no pattern recognition, no anomaly flagging, and no contract recovery. It's semantically opaque.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: `a0` used in `a0 * 2` should be `x` or `n`; `ptr` used in array indexing should be `arr` or `buffer`
+
+2. **Replace armg_calculate_condition with natural conditionals**: Convert `armg_calculate_condition(18, ptr, 0, 0)` back to `ptr != NULL` or `ptr == 0`
+
+3. **Add structural comments**: Document function purpose, recovered structs with field meanings, and flag suspicious patterns like memory safety issues

@@ -1,0 +1,103 @@
+## EVALUATION: C++ Object-Oriented Features Decompilation
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `ptr`, `arg_0`) with no semantic meaning. Original variables like `capture_by_value`, `instance_count`, `multiplier` are completely lost. In `test_cpp_member_func`, `v0=10` and `v1[15]` obscure the actual `value` and `name` members.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some retain mangled names (`_Z20test_cpp_member_funcv`) while others are cryptic (`sub_400d74`, `$x`, `$x.18`). Template functions show good recovery (`template_max<int>`) but most test functions lack descriptive names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers dominate (`4700`, `1001`, `4294967295`) without explanation. In `test_cpp_oo_features`, expected results are hardcoded (4704, 21, 42, 71) rather than computed, hiding actual logic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: frame pointer setup (`v4 = &v5`), startup code (`_init`, `_start`, `call_weak_fn`), and redundant assignments (`v0 = v2; v1 = v3;`) throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Catastrophic failure - `call_virtual_func` uses `goto *((long long *)*((long long *)&arg_0))` instead of proper vtable dispatch. Most test functions just `return` without implementing any logic, losing all control flow.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Most test functions are empty shells (`test_cpp_constructor`, `test_cpp_virtual_func`, etc. all just `return`). Template functions partially recovered but class methods like `Container<int>::get` return void instead of proper types.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Excessive `goto` statements disrupt flow. Some functions read linearly but lack implementation. The `register_tm_clones` function has nested gotos that obscure logic.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate function calls present (`v0 = frame_dummy(); return frame_dummy();`). Some redundancy from compiler prologue/epilogue but not severe compared to other issues.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - heavy use of `void*`, `char*`, `unsigned long long`. `Container<int>::get` returns `void` instead of `int`. C++ class types reduced to generic pointers throughout.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Class definitions mostly lost (`class Base {}` is empty). Generic structs (`struct_0`, `struct_1`) with `field_0`, `field_8` naming. No proper C++ class structure, inheritance, or vtable recovery.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts and void pointer arithmetic. `operatornew(8)` returns `void*` cast incorrectly. Function pointer calls use raw pointer dereferencing without type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Essentially no meaningful comments. Only auto-generated function headers. No explanation of C++ features (vtable, inheritance, exceptions, templates) that were completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No C++ idioms recognized - RAII, virtual dispatch, templates, lambdas all lost. Exception handling shown as raw `__cxa_throw` calls without try/catch structure recovery.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about incomplete decompilation. Functions appear complete but contain no logic. Silent failures throughout - no indication that 80% of test functions are empty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Exception contracts lost. No null checks or bounds checking documented despite being present in original source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls present but relationships unclear. Virtual dispatch not properly shown. Inheritance relationships completely lost (no Base→Derived connection visible).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in one file with no logical grouping. Startup code (`_init`, `_start`) mixed with application code. No namespace or class organization preserved.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References external symbols (`operatornew`, `__cxa_throw`, `__gmon_start__`) without declarations. Would not compile without significant stubs and header files.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (2+4+3+4)/4 = 3.25
+L2 Average: (2+3+4+5)/4 = 3.50
+L3 Average: (3+2+3)/3 = 2.67
+L4 Average: (1+2+2+2)/4 = 1.75
+L5 Average: (3+4+3)/3 = 3.33
+
+Overall = (3.25×0.30) + (3.50×0.25) + (2.67×0.20) + (1.75×0.15) + (3.33×0.10)
+        = 0.975 + 0.875 + 0.534 + 0.263 + 0.333
+        = 2.98 ≈ 3.0/10
+```
+
+**Overall Readability Score:** 3.0/10
+
+### Critical Defects:
+- **80% of test functions are empty shells** - `test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_lambda`, etc. all just `return` with no logic
+- **Variable names completely generic** - `v0`, `v1`, `ptr` instead of `value`, `name`, `instance_count`
+- **C++ class structure lost** - `class Base {}` is empty, no member functions or data members recovered
+- **Control flow uses raw goto** - `call_virtual_func` uses `goto *((long long *)*((long long *)&arg_0))` instead of vtable dispatch
+- **No exception handling structure** - try/catch blocks reduced to raw `__cxa_throw` calls
+
+### Best Quality Aspect:
+- **Function Naming Quality (4/10)** - Some template functions retained readable names like `template_max<int>` and `template_swap<int>`, showing partial C++ name demangling capability
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero meaningful comments explaining C++ features, lost logic, or decompilation confidence - completely silent on catastrophic failures
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ class structure recovery** - Detect vtable pointers, recover member functions and data members, preserve inheritance relationships
+2. **Add decompilation confidence indicators** - Flag functions where logic could not be recovered (empty returns should show "LOGIC NOT RECOVERED" warnings)
+3. **Improve variable name inference from debug symbols** - At -O0 with `-g` flag, DWARF debug info should provide original variable names that are currently ignored

@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Local variables are overwhelmingly generic (e.g., `iVar1`, `local_14`, `puVar2`), obscuring the logic of operations like `capture_by_ref` in the lambda test. While class member names like `dataA` are recovered, the stack variable naming provides little semantic context.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Class methods are recovered accurately (e.g., `SimpleClass::getValue`, `Base::virtual_func`), and lambda names are surprisingly precise (`test_cpp_lambda()::{lambda(int)#1}::operator__`). However, operator overloads are reduced to generic `operator_` symbols, losing the specific operation context (e.g., `operator+` vs `operator++`).
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals are preserved perfectly (e.g., "Test", "Derived"), and constants like `0x1234` are visible. However, decimal values like `50` are represented as hex `0x32` in `test_cpp_diamond_inheritance`, requiring mental conversion to match the source logic.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The decompilation is heavily polluted by the expansion of C++ standard library templates. Functions like `test_cpp_smart_ptr` are buried in calls to internal STL mechanics like `std::_Tuple_impl<...>::_Tuple_impl` and `std::__uniq_ptr_impl<...>::_M_ptr`, which act as significant noise compared to the clean RAII semantics of the original source.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: The `-O0` optimization preserves natural loop structures and conditional checks effectively. However, the exception handling logic in `test_cpp_exception` is decompiled into a simple throw function, failing to reconstruct the `try-catch` block structure present in the source, which disrupts the high-level flow understanding.
+
+**6. Function Decomposition:** Score: 3/10
+Justification: The code suffers from severe over-fragmentation due to template expansion. A simple `unique_ptr` construction in the source results in a chain of calls to multiple internal constructor/destructor functions (`__uniq_ptr_data`, `__uniq_ptr_impl`, `_Head_base`), destroying the cohesion of the original logic.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with minimal forward jumps or spaghetti logic, which is expected for unoptimized code. The flow is easy to trace within individual functions, ignoring the complexity introduced by deep STL call stacks.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is no obvious dead code or loop unrolling artifacts. However, the verbosity of the STL internals acts as a form of logical redundancy, where the user must parse multiple lines of low-level setup to understand a single high-level intent.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: User-defined types (`SimpleClass`, `Base`, `Derived`) are recovered with high precision. Template instantiations are identified (e.g., `Container_int_`, `unique_ptr_int_std__default_delete_int__`), though the mangled names are cumbersome. The distinction between pointers and values is maintained well.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Class structures are reconstructed with correct field offsets (e.g., `Point` has `x` and `y`). However, complex standard library objects like `unique_ptr` are broken down into their raw implementation details (tuples and head bases) rather than being presented as a cohesive composite type, losing the abstraction.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code generally respects type boundaries, though `undefined4` appears in some return values where specific types might be stricter. Pointer arithmetic for array access (e.g., `this + 8` for multiple inheritance base adjustment) is explicit and correct, if low-level.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic, algorithms, or the purpose of complex template metaprogramming constructs. The user is left to deduce the intent of `std::forward` or `std::move` calls entirely from the function names.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: Virtual function calls are correctly identified via vtable dereferencing (`(***(code ***)param_1)`). However, high-level idioms like RAII (Resource Acquisition Is Initialization) are completely obscured by the exposure of destructor and constructor mechanics, failing to convey the "smart pointer" idiom.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler presents the code confidently without flagging the complexity of the template expansions or the potential confusion in the exception handling flow. There are no warnings about the "this" pointer adjustments visible in the multiple inheritance tests.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., non-null pointers), postconditions, or invariants. The logic of `test_cpp_rtti` relies on specific type checks, but the contract that `obj1` must be a valid `RTTIBase` pointer is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: The relationship between classes and their methods is clear (e.g., `Derived::virtual_func` overrides `Base`). The calls to external library functions (`printf`, `strlen`) are standard and recognizable.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are organized by address, which roughly groups class methods together, but they are intermixed with standard library template instantiations. The logical separation between "test functions" and "implementation details" is blurred.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on numerous complex standard library types (`std::ios_base::Init`, `std::tuple`) that are defined in headers but not provided. It would require significant patching and inclusion of C++ standard library headers to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- **STL Template Explosion**: The `test_cpp_smart_ptr` function is unreadable due to the exposure of internal template mechanics (`__uniq_ptr_impl`, `_Tuple_impl`) instead of abstracting the `unique_ptr` logic.
+- **Missing Exception Structure**: The `try-catch` block in `test_cpp_exception` is not reconstructed; the decompilation only shows the throw path, losing the control flow context.
+- **Generic Local Variables**: Critical logic variables are named `local_14`, `iVar1`, etc., forcing the reader to reverse-engineer variable roles (e.g., distinguishing `capture_by_value` from `capture_by_ref` in the lambda test).
+
+**Best Quality Aspect:** Function Naming Quality (Score: 8/10)
+- The decompiler successfully recovers class method names and even generates descriptive names for lambda functors (`test_cpp_lambda()::{lambda(int)#1}::operator__`), which significantly aids in understanding the object-oriented structure.
+
+**Most Needs Improvement:** Noise Reduction (Score: 2/10)
+- The overwhelming verbosity of standard library template expansions acts as noise, obscuring the high-level logic of the original C++ code. Abstracting common STL patterns (like smart pointer internals) is crucial for readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Pattern-Based STL Abstraction**: Implement recognition patterns for standard library containers (like `std::unique_ptr`, `std::vector`) to collapse their internal template mechanics into high-level types and operations.
+2. **Exception Handling Recovery**: Improve the analysis of landing pads and personality routines to reconstruct `try-catch` blocks structurally rather than splitting them into disjointed functions or flow segments.
+3. **Variable Semantic Inference**: Utilize data flow analysis to infer variable names based on usage context (e.g., variables involved in a `strlen` call could be named `str_length` or `size`).

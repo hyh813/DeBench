@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Overview
+
+This is a comprehensive evaluation of Ghidra's decompilation output for a C++ object-oriented features test binary compiled with `-O0 -g` on ARM64. The original source contains 12 test functions covering classes, inheritance, templates, lambdas, exceptions, smart pointers, and RTTI.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all local variables use cryptic names like `local_38`, `uStack_2c`, `sVar1`, `puVar1`, `plVar4`. The decompiler marks most variables as "Unresolved" with `???` annotations. For example, in `test_cpp_member_func`, the variables `r1`, `r2`, `r3` should be recoverable from usage patterns but are marked as `@[???]`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions retain their original names (`test_cpp_member_func`, `test_cpp_virtual_func`, `main`). Template functions like `template_max<int>` are correctly named. However, some internal functions use generic names like `FUN_00100d60`. The class member functions are properly named with `::` notation (e.g., `Container<int>::Container`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x125c`, `0x3e9`, `0x2a`). The string "Test" is partially visible as `0x74736554` (little-endian ASCII). However, some constants like `0x3e9` (=1000) and `0x2a` (=42) are used in context where intent could be inferred. The decompiler does show some DWARF original prototypes which helps.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate noise from "WARNING" comments about unreachable blocks and unknown calling conventions. The "Unresolved local var" annotations create visual clutter. However, no register spilling artifacts or debug instrumentation remains. The warnings are informative rather than obstructive.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At `-O0`, control flow is well preserved. Loops use proper `for`/`while` constructs. The exception handling in `test_cpp_exception` shows `__cxa_throw` clearly. Virtual function calls show indirect dispatch via vtable. No spurious goto statements. The control flow matches the original source structure closely.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each test function is properly separated. Template instantiations are correctly extracted as separate functions (`template_max<int>`, `template_max<double>`). Template class methods are properly decomposed (`Container<int>::push`, `Container<int>::get`). The granularity is appropriate and matches source organization.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in functions like `Container<int>::get`. No deep nesting issues. The linear flow makes the code easy to follow despite some decompilation artifacts.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No obvious dead code or redundant expressions. At `-O0`, there's minimal optimization, so little redundancy to eliminate. The code is clean without loop unrolling artifacts that would appear at higher optimization levels.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results - some types are precise (`int`, `double`, `size_t`) while others are generic (`undefined4`, `undefined8`, `undefined1`). The decompiler correctly identifies `int` parameters in template functions but uses `undefined*` for stack variables. Function signatures like `int test_cpp_member_func(void)` are accurate. Pointer types are generally correct (`Base *obj`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The decompiler shows "Unresolved local var" for most class instances (e.g., `SimpleClass obj@[???]`, `LifecycleClass obj@[???]`). However, it does recover some class method signatures with `this` pointers (e.g., `void __thiscall Container<int>::push(Container<int> *this,int value)`). The `this` pointer handling shows some DWARF recovery. But struct field names are lost - no `value`, `name`, `size`, `data` field names in the decompiled output.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally safe code with correct pointer types for virtual calls (`(**obj->_vptr_Base)(obj,(ulong)(uint)x)`). Some potentially unsafe operations like `(char *)((ulong)&local_38 | 4)` for string access. The casts are necessary for the decompiled representation but could be cleaner. No obvious buffer overflow patterns.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Mixed - some useful comments like "/* Unresolved local var: */" and "/* WARNING: Unknown calling convention */" but these are decompiler-generated rather than semantic. The DWARF original prototypes are helpful (e.g., `/* DWARF original prototype: void Container(Container<int> * this) */`). No recovered source comments. The "WARNING" comments about indirect jumps are useful for indicating uncertainty.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized - virtual function dispatch is identified as vtable calls, exception throwing shows `__cxa_throw`. Template instantiation is recognized. However, no explicit naming of patterns (e.g., "RAII", "virtual dispatch", "exception handling"). The code shows the mechanisms but doesn't identify the idioms.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system - "WARNING: Unknown calling convention", "WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call". The "Unresolved local var" annotations clearly mark areas of uncertainty. However, some anomalies are silently handled (e.g., the string "Test" appearing as raw hex). The confidence indicators could be more specific about what exactly couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The decompiler doesn't document expected states (e.g., "requires: obj != NULL"). No error condition documentation beyond the raw function calls. This is a significant gap in semantic recovery.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible (e.g., `main` calls `test_cpp_oo_features`). Virtual dispatch shows `_vptr_Base`. However, no explicit "Calls:" or "Called by:" comments. The relationship between `call_virtual_func` and the virtual methods is clear from the code but not documented. Global variable `LifecycleClass::instance_count` is referenced but its static nature isn't emphasized.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically - test functions together, template instantiations together, class methods together. However, the output is a flat list rather than organized by class or header. The original source's section comments (e.g., "CPP-L3-01: 类成员函数") are lost. Static vs. non-static distinction is maintained in function names.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code shows it was compiled successfully ("Compilation Result: Yes"). External dependencies like `std::ios_base::Init`, `operator_new`, `operator_delete` are visible. The code would require C++ standard library stubs to compile standalone. The metadata shows "Compiler Spec: default" indicating some build context was recovered.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+1. **Variable naming completely unresolved** - All local variables in test functions marked as `@[???]`, losing all semantic names like `r1`, `r2`, `obj`, `result`
+2. **Composite type recovery failure** - Class instances show as "Unresolved" with no field names recovered (should show `value`, `name`, `size`, `data`)
+3. **No contract/precondition recovery** - Zero documentation of function expectations or error conditions
+4. **Magic numbers unexplained** - Constants like `0x125c`, `0x3e9`, `0x2a` appear without named constant equivalents
+5. **String literal corruption** - "Test" appears as `0x74736554` raw hex instead of proper string
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+The decompiler preserves the original control flow structure well at `-O0`, with proper loops, conditionals, and exception handling patterns visible. Virtual dispatch and template instantiation are correctly identified.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The decompiler fails to recover any meaningful variable names from debug symbols, leaving most locals as "Unresolved" despite `-g` compilation. This is the most impactful degradation since it makes understanding local logic nearly impossible.
+
+**Top 3 Recommendations:**
+1. **Leverage DWARF debug info** - The source was compiled with `-g`, so variable names like `r1`, `r2`, `obj`, `result` should be recoverable from `.debug_info` sections; prioritize debug symbol parsing
+2. **Recover class member names** - Use vtable analysis and constructor patterns to infer field names like `value`, `name`, `size`, `data` from member access patterns
+3. **Add semantic annotations** - Include "Calls:", "Called by:", and contract hints (e.g., "requires: ptr != NULL") to improve contextual understanding beyond raw code recovery

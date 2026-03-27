@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `a0`, `a1`, `v0`, `v1`, `v2`, `ptr`, `i`, `index`, `cur`. The parameter `a0` is used for everything from chars to pointers to structs, making it impossible to track semantic purpose without analyzing each usage.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test functions and core logic functions retain their original names: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, `main`. However, some internal functions like `sub_401020`, `sub_40102c` remain generic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout: `0x3fc00000`, `0x3f000000` for float operations, `4294967295` for -1, `65` and `97` for ASCII without explanation. The test functions hardcode expected values (e.g., `printf("DT-L1-01 (process_char): %c\n", 97);`) rather than calling the functions.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe IR artifacts: `[D] unsupported_<class 'pyvex.expr.GetI'>()` appears repeatedly in `process_ld` and `test_data_types_l1`. The `process_ld` function is essentially non-functional with IR dump. Weird constructs like `goto a0` for function pointer calls pollute the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops use do-while with goto patterns (e.g., `array_1d_stack`). The `ptr_func_simple` uses `goto a0` which is a function pointer call - confusing but functional. Some control flow is readable but unusual patterns exist.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match original source well. Each test function properly calls its test cases. At -O0, no inlining occurred, so decomposition is clean. Functions like `binary_tree_sum` and `binary_tree` are properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. The `array_string` function has an unusual pattern: `v1 = 4294967295; do { v3 = v1 + 1; v1 = v3; a0 += 1; } while (*(a0));` - this is a while loop but expressed confusingly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions compute values inline rather than calling the functions being tested (e.g., `printf("DT-L1-03 (process_int): %d\n", 11);` instead of calling `process_int(5)`). Some redundant patterns in array initialization loops.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type erosion - `int` parameters become `unsigned int` (e.g., `process_char(unsigned int a0)`), `short` becomes `unsigned int`, `long` becomes `unsigned long long`. The source uses signed types but decompilation consistently uses unsigned. Function return types also show degradation.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct recovery with generic names: `struct_0`, `struct_1`. Linked list nodes have fields `field_0`, `field_8` (data, next). Nested structs use array indexing (e.g., `a0[3] + *(a0)` for `struct_nested`). Bitfields handled with shifts/masks. Union recovery is partial.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Critical bug in `ptr_diff`: `return a0 - a1 >> 2;` has operator precedence issues - should be `(a0 - a1) >> 2`. Many unsafe pointer casts: `*((int *)(ptr + i * 4))`. Function pointer handling uses `goto` which bypasses type safety.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The `[D]` markers in IR artifacts are not helpful comments - they're decompilation noise. No explanation of algorithm intent, parameter purposes, or return value meanings.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are somewhat recognizable: linked list traversal (`while (cur) { sum += cur->field_0; cur = cur->field_8; }`), binary tree recursion. But no explicit naming or highlighting of these patterns as design idioms.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers do indicate decompilation problems, but they're not informative about what the actual issue is or what the correct interpretation should be. No confidence levels or "uncertain" markers for ambiguous code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication of expected input constraints (e.g., "requires: ptr != NULL"). The source had no assertions to recover, but semantic contracts are completely missing.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible in the code. Some `extern` declarations show external dependencies (e.g., `extern char g_40266f;`). But no documentation of which functions call which, or the purpose of global variables.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file. Related functions grouped together (test functions, array functions, pointer functions). But no clear module boundaries, no namespace-like organization, no indication of source file structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has `extern` declarations for external functions. Type definitions for structs. Would require significant stubs for library functions (`puts`, `printf`, `memset`). Basic compilation possible but needs work.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic names (`a0`, `a1`, `ptr`) making semantic purpose unclear
+- **Type precision**: Signed types converted to unsigned (`int` → `unsigned int`), losing sign semantics
+- **Operator precedence bug**: `ptr_diff` has `a0 - a1 >> 2` which is parsed as `a0 - (a1 >> 2)` instead of `(a0 - a1) >> 2`
+- **No comments**: Zero explanatory comments for algorithms, parameters, or return values
+- **IR artifacts**: `[D] unsupported_<class 'pyvex.expr.GetI'>()` makes `process_ld` essentially unreadable
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+- Most test functions and core logic functions retain their original descriptive names from the source code, making it easy to identify the purpose of each function.
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+- Zero comments throughout the entire decompiled output. Combined with poor variable naming, this makes understanding the code's intent extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, pointer dereferencing, arithmetic) to suggest semantic names like `array_ptr`, `element_count`, `checksum` instead of `a0`, `v1`, `ptr`
+2. **Preserve signed types**: Track sign extension operations in the binary to recover `int`, `short`, `char` from what appears as `unsigned int` in the output
+3. **Add explanatory comments**: Include algorithm descriptions, parameter purposes, and mark uncertain decompilations with confidence levels rather than raw IR artifacts

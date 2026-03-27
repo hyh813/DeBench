@@ -1,0 +1,109 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`a1`, `a2`, `v0`, `v1`, `result`) with no semantic meaning. For example, `param_macro_constants` uses `a1` instead of `size`, and `param_asm_clobber` uses `a1`/`a2` instead of `arr`/`n`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test function names are preserved accurately (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). However, helper functions use mechanical names (`sub_1030`, `sub_1040`) and some runtime functions are unnamed.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `57072` (should be `0xDEF0`), `282` (line number + counters), `19` (string length sum). Pre-computed macro values lose their original semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__readgsdword(0x14u)`) appear throughout, `__printf_chk` instead of `printf`, and compiler helper functions (`_x86_get_pc_thunk_*`) clutter the output without adding value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures are well-recovered: `if`/`while`/`for` constructs match source logic. `param_asm_clobber` correctly shows a `for` loop instead of assembly jumps. Constant folding simplifies some branches appropriately.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source exactly—each `param_*` and `call_*` function is separate. No inappropriate inlining or fragmentation. Function sizes are reasonable (5-30 lines each).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. No spurious `goto` statements. Early returns are used appropriately (e.g., `param_macro_constants` returns early on condition).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding eliminates some redundancy (e.g., `call_macro_constants` returns `64` directly). However, some stack setup code repeats across functions without abstraction.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are accurate (`int`, `char*`, `size_t`, `__m128i`). However, `param_memory_clobber_demo` returns `char*` instead of `int`, and some pointers are generic `void*` where specific types would help.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: SIMD types (`__m128i`) are preserved with field access (`m128i_i32[0]`). Array types are recovered (`_BYTE v1[20]`). No complex structs in this code to evaluate fully.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe casts present: `(int *)mmap(...)`, `(func_t)exec_mem`, `(_BYTE *)` conversions. These match source but aren't flagged as potentially unsafe operations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. Source had extensive documentation explaining macro behavior, expected values, and test purposes. Only auto-generated type annotations present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition. Assembly-to-C conversions are done (`param_asm_clobber` loop recovered), but no identification of "this is a macro expansion" or "this is constant-folded preprocessing."
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged: "FAILED to decompile" for 8 external functions, "positive sp value has been detected" warning. However, silent constant folding (e.g., `param_stringize` returns `19` without showing string operations) is not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `a1 != NULL` for pointer params). No postconditions or expected return values. Source comments like "期望：64" are completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are visible in code, but no call graph documentation. Relationships between `param_*` and `call_*` functions aren't explicitly noted. Global variable `global_var` usage is clear but not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source file structure. However, no logical grouping comments (e.g., "=== Preprocessing Tests ==="). Helper functions scattered throughout.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 8 external functions marked "FAILED to decompile" require stubs. `__printf_chk`, `mmap`, `sysconf` need proper declarations. Would require moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (8+8+8+7)/4 = 7.75 × 0.25 = 1.94
+Level 3 (Type):        (7+7+6)/3   = 6.67 × 0.20 = 1.33
+Level 4 (Semantic):    (2+4+6+3)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (6+6+5)/3   = 5.67 × 0.10 = 0.57
+
+Overall Score: 6.05/10
+```
+
+**Overall Readability Score:** 6.0/10
+
+### Critical Defects:
+- **Variable `a1`, `a2` should be named `size`, `arr`, `n`** based on usage patterns and source comparison
+- **Magic numbers `57072`, `282`, `19` lack explanation** - these are pre-computed macro values that should be annotated
+- **Zero comments in decompiled output** - source had extensive documentation explaining test purposes and expected values
+- **`param_stringize` returns constant `19`** without showing the string operations, losing semantic transparency
+- **8 external functions failed to decompile** requiring manual stub creation for compilation
+
+### Best Quality Aspect:
+- **Structural Intelligibility (7.75/10)** - Function decomposition and control flow recovery are excellent; loops and conditionals match source structure accurately despite optimization.
+
+### Most Needs Improvement:
+- **Semantic Transparency (3.75/10)** - Complete absence of comments, no macro expansion indication, and silent constant folding obscures the original preprocessing semantics that this code specifically tests.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and annotate constant-folded macro expansions** - When a function returns a pre-computed constant (e.g., `return 64`), add comment indicating original computation (`// MAX_SIZE/2 = 1024/2 = 512`)
+2. **Infer variable names from usage patterns and call sites** - `param_macro_constants(int a1)` called with `2048` should suggest `size` parameter name
+3. **Preserve source comments in debug builds** - When `-g` flag is present, extract and embed original comments where decompilation confidence is high

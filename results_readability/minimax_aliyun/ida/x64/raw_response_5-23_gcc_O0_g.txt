@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10Justification: Most parameters like `size`, `x`, `y`, `arr`, `n`, `counter`, `increment` match source exactly. However, loop indices like `i` and temporary variables `v1`, `v2` in `param_stringize` are generic. The decompiler preserved meaningful names for function parameters but used generic names for compiler-introduced temporaries.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names like `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_dynamic_code` match the original source almost perfectly. The decompiler correctly identified all test functions and their semantic purposes. Minor deduction for some internal compiler-generated functions with generic names like `sub_1020`.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most magic numbers are properly resolved (e.g., `1024`, `512`, `64` in macro constants). However, `sysconf(30)` uses unexplained magic number (should be `_SC_PAGESIZE`), and `mmap` parameters like `7` (PROT_READ|PROT_WRITE|PROT_EXEC) and `34` (MAP_PRIVATE|MAP_ANONYMOUS) are not converted to symbolic constants.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: Very clean decompilation with minimal compiler artifacts. No register spilling noise, redundant casts, or debug instrumentation visible. The code reads naturally without obvious decompilation artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural with clear if-else structures and simple for loops. The `param_asm_clobber` function correctly shows a for loop instead of assembly, and conditional compilation branches are properly resolved to single code paths. At -O0, the control flow closely matches source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. Each test function (`param_*`, `call_*`) is properly separated. The decompiler correctly kept inlined assembly as intrinsic calls rather than creating artificial outline functions. Minor deduction for some over-fragmentation in `param_simd_intrinsics` with unnecessary local variables.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal jumps. Early returns are used appropriately in error handling (e.g., `param_dynamic_code`, `param_memory_protection`). No forward jumps into loop bodies or excessive nesting.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy. Loop unrolling is not present (as expected at -O0). Common subexpression elimination artifacts are minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types like `int`, `unsigned int`, `size_t` are correctly used. However, type precision is lost - original `int32_t`, `uint64_t` become generic `int`. Pointer types are correct (`int*`, `void*`). The `size_t` for `n` parameter in memory functions is appropriate. Some type erosion from original `int` vs `unsigned` distinctions.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: No complex structs were in the original source code (only simple arrays and pointers), so there's nothing to recover. The decompiler correctly handles simple array parameters like `int arr[]` as `int*`. The `__m128i` type for SIMD is properly recognized.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts or type-confused function pointers. The `_InterlockedExchangeAdd` intrinsic is properly typed. Pointer arithmetic is correct in memory functions. Some minor issues: the `exec_mem` in `param_dynamic_code` is typed as `_WORD*` but used as function pointer, which could be safer.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No useful comments in the decompiled code. The original source had extensive comments explaining macro behavior, assembly constraints, and test expectations - all lost in decompilation. The decompiler provides no guidance on what the preprocessing tests were designed to verify.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard C idioms are recognized (loops, conditionals, function calls). The atomic operations use proper intrinsics (`_InterlockedExchangeAdd`). SIMD operations use intrinsics. However, the decompiler doesn't identify the specific patterns being tested (macro expansion, conditional compilation, inline assembly constraints).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: No anomalies are flagged. The decompilation reports "FAILED to decompile" for some library functions but doesn't explain why or provide workarounds. The indirect function call in `param_dynamic_code` via `((__int64 (__fastcall *)(_QWORD))exec_mem)` could be flagged as unusual.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had implicit contracts (e.g., `mmap` returns valid memory or -1, `counter` must be valid pointer for atomic operations) that are not recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - `test_preprocessing_features` calls all the `call_*` functions. Global variable `global_var` is properly referenced in `param_memory_clobber_demo`. However, no documentation of call graph or usage patterns.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped - preprocessing test functions together, asm test functions together, helper functions near their callers. Static functions like `my_func`, `header_func` are properly scoped. The organization matches the original source structure reasonably well.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The metadata indicates "Compilation Result: Yes" - the code compiles. External dependencies (printf, mmap, sysconf, etc.) are properly declared. No obvious compilation errors. Minor deduction for some x86-specific code that may not port to arm64.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (7 + 9 + 7 + 9) / 4 = 8.0
+L2_avg = (9 + 8 + 9 + 9) / 4 = 8.75
+L3_avg = (7 + 8 + 8) / 3 = 7.67
+L4_avg = (3 + 7 + 5 + 3) / 4 = 4.5
+L5_avg = (7 + 8 + 9) / 3 = 8.0
+
+Overall = (8.0 × 0.30) + (8.75 × 0.25) + (7.67 × 0.20) + 
+          (4.5 × 0.15) + (8.0 × 0.10)
+        = 2.4 + 2.1875 + 1.534 + 0.675 + 0.8
+        = 7.5965 ≈ 7.6/10
+```
+
+**Overall Readability Score:** 7.6/10
+
+### Critical Defects (Bullet List)
+- **No comments recovered**: All original source comments explaining macro semantics, assembly constraints, and test purposes are completely lost
+- **Magic numbers unexplained**: `sysconf(30)` should be `sysconf(_SC_PAGESIZE)`, mmap protection flags `7` and `34` should be symbolic
+- **No anomaly indication**: Indirect function call in `param_dynamic_code` not flagged as potentially dangerous
+- **No contract documentation**: Preconditions/postconditions for functions like `param_asm_atomic` (valid pointer required) not documented
+- **Type precision loss**: Original `int32_t`/`uint64_t` degraded to generic `int`
+
+### Best Quality Aspect: Structural Intelligibility (Score: 8.75/10)
+The decompiled code has excellent control flow that closely matches the original source. At -O0, loops, conditionals, and function calls are all natural and readable. Function decomposition is appropriate, and there's minimal noise from compiler artifacts.
+
+### Most Needs Improvement: Semantic Transparency (Score: 4.5/10)
+The decompiled code lacks any meaningful comments, pattern identification, anomaly warnings, or contract documentation. While the code is structurally sound, a reader has no guidance on what the code is testing, why certain patterns exist, or what could go wrong.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover symbolic constants**: Detect magic numbers like `30` (sysconf), `7` (mmap PROT flags), `34` (MAP flags) and convert to named constants using known system definitions
+2. **Add semantic annotations**: When decompiling test functions, add comments explaining what feature is being tested (e.g., "Tests macro constant expansion", "Tests inline assembly clobber list")
+3. **Flag unusual patterns**: Mark indirect function calls, self-modifying code, and other anomalous patterns with warnings explaining potential issues

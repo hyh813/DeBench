@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Generic names like `local_c`, `iVar1`, `uVar1`, `pNVar1` dominate; some original names preserved (`arr`, `head`, `sum`) but parameter shadowing with `_local` suffix (`x_local`, `n_local`) adds confusion.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`local_vars`, `heap_basic`, `linked_list_heap`); runtime functions like `FUN_00101020` are generic but core logic functions are clear.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic hex numbers everywhere (`0x2a` for 42, `0x14` for 20, `0x800` for 2048); string literals replaced with `&DAT_00103004` references losing readability.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive type casts (`(long)n << 2`, `(ulong)uVar1`), undefined types (`undefined4 local_c`), and stack artifacts (`aiStack_38`, `local_28`) clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as for/while constructs; however `stack_alias` function is severely broken with incorrect conditional logic that doesn't match source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity preserved well; static helpers like `static_helper` remain separate; no excessive inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but VLA/alloca functions (`vla_stack`, `alloca_usage`) have complex pointer arithmetic disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant parameter shadows (`x_local` when `x` exists); multiple unnecessary casts; `stack_alias` shows dead code elimination artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved but erosion visible (`size_t` becomes `ulong` in printf); function pointer types partially recovered as `_func_int_int`; explicit casts everywhere.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs `Point`, `Node`, `TreeNode` recovered with field names (x, y, data, next, left, right); however VLA not properly recovered showing as pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many unsafe casts (`(long)__ptr`, `(ulong)uVar1`); pointer arithmetic without bounds checking visible; no const-correctness preserved in output.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings ("Unknown calling convention", "Unresolved local var"); no semantic documentation explaining function purpose or algorithm.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified; linked list creation, tree traversal, and memory allocation patterns visible but not labeled or explained.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warning system flags problems (`stack_alias` shows "Heritage AFTER dead removal", VLA shows "Unresolved local var") but doesn't explain WHY these are anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation; NULL checks visible but not documented as contracts; error return values unexplained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls and global variable usage visible but not documented; no call graph; callback relationships (`global_func_ptr`) visible but not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order with test functions grouped; static functions properly marked; but single output file loses source file organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References undefined data symbols (`&DAT_00103004`); external functions need stubs; would require moderate patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+4+4)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (4+3+6+3)/4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.375 ≈ 5.4/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **`stack_alias` function is severely broken** - logic doesn't match source, returns incorrect values due to dead code elimination issues
+- **Variable `local_c` used ubiquitously** as return value holder across all functions, obscuring semantic meaning
+- **String literals not recovered** - all printf format strings show as `&DAT_00103xxx` references
+- **Magic hex numbers throughout** - `0x2a`, `0x14`, `0x800` instead of decimal or named constants
+- **VLA/alloca functions show complex pointer arithmetic** instead of clean array access patterns
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Idiom Recognition (3/10)** - No design patterns, data structures, or algorithmic patterns identified despite clear linked list, tree, and memory management patterns present
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover string literals from .rodata section** - Replace `&DAT_00103xxx` references with actual string content for printf and other string operations
+2. **Implement semantic variable naming** - Use usage pattern analysis to name `local_c` as `result` or `return_value`, and eliminate redundant `_local` parameter shadows
+3. **Add pattern recognition for common structures** - Identify and annotate linked list creation, tree traversal, and memory allocation patterns with explanatory comments

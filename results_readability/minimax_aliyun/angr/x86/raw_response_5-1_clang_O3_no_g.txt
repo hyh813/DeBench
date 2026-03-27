@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: Almost all variables use generic names (v0, v1, v2, v3, ptr, result, flag1). The original source had meaningful names like `value`, `name`, `size`, `data`, `multiplier` - all completely lost. Cannot infer any variable's purpose from names.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Most functions use cryptic `sub_XXXXX` format (sub_401030, sub_401130). Some mangled C++ names survived (_Z20test_cpp_member_funcv) but the majority provide no semantic meaning about functionality.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: String literals are referenced via external symbols (g_402081, g_40209f) rather than inlined. Magic numbers like 4, 10, 20 appear without explanation. The original source had clear constants like 0x1234 for getClassID().
+
+**4. Noise Reduction:** Score: 1/10  
+Justification: Severe VEX IR artifacts ([D] PutI, GetI expressions) pollute the output. Multiple "Failed to decompile" messages for functions like _Z12template_maxIdET_S0_S0_. The code is essentially unreadable due to these artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Many functions are empty stubs with just "return;". The function sub_401030 uses goto with computed pointer (goto ptr[2]) which is completely unnatural. Control flow is broken and non-existent in most functions.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Functions are either trivial stubs (just calling another function) or incomplete. The original class methods (getValue, setValue, compute) are not properly decomposed - most show no logic at all.
+
+**7. Code Linearization:** Score: 2/10  
+Justification: Code doesn't read top-to-bottom. Many functions just return immediately. The goto statements and computed jumps make linear reading impossible.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some duplicate struct definitions exist (struct_0, struct_1 repeated), but the bigger issue is missing code rather than redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Most variables declared as "unsigned int" or "int". Original C++ types (int, char[32], size_t, std::unique_ptr) completely lost. No const correctness. All class instances are just "void*".
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Generic struct definitions with padding arrays (struct_0 { char padding_0[4]; struct struct_1 *field_4; }). Original class members (value, name[32], data, size) completely lost - replaced with generic field names.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts from void* to typed pointers (*((int *)ptr)). Pointer arithmetic without bounds checking (ptr[40], ptr[80]). The Container template class shows raw memory manipulation with no type safety.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No useful comments explaining functionality. Only VEX IR comments like "[D] PutI(72:F64x8)[t3,0] = t6()" which are decompilation artifacts, not helpful explanations.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No design patterns or C++ idioms recognized. Virtual function calls appear as raw indirect calls (*((int *)*((int *)arg_0)))(arg_0, arg_1) without recognizing vtable dispatch. No RAII, smart pointers, or exception handling patterns identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some "Failed to decompile" messages present, but no explanation of what went wrong or what the anomaly is. The "[D]" markers indicate VEX IR but aren't explained.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear contracts (e.g., "requires: ptr != NULL") that are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: Function calls exist but relationships aren't documented. The call graph between test functions and helper functions is unclear. No indication of which functions are methods of which class.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are grouped by address but not logically organized. The original had clear sections (CPP-L3-01, CPP-L3-02, etc.) which are completely lost.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Many external symbols unresolved (_ZNSt8ios_base4InitD1Ev, __dso_handle). Won't compile as-is. Template instantiations failed to decompile properly.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.1/10
+
+### Critical Defects:
+- **Variable names**: All meaningful names lost - v0, v1, v2, ptr, result are meaningless
+- **Function logic**: Most functions are empty stubs with just "return;" - actual computation missing
+- **Type system**: All C++ class types lost, replaced with void* and generic structs
+- **VEX IR pollution**: [D] PutI/GetI expressions make code unreadable
+- **Failed decompilation**: Multiple functions completely failed to decompile (_Z12template_maxIdET_S0_S0_)
+
+### Best Quality Aspect: Literal Clarity (3/10)  
+Even this scored very low, but string literals at least reference external symbols that could be resolved.
+
+### Most Needs Improvement: Variable Naming Quality (1/10)  
+This is the most fundamental failure - without meaningful variable names, the code is essentially incomprehensible regardless of other factors.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: If a variable is used as array index, name it "index" or "i". If used in strlen(), name it appropriately.
+2. **Recover function logic**: Many functions show only "return;" - the actual computation is missing. Fix the decompilation engine.
+3. **Remove VEX IR artifacts**: The [D] PutI/GetI expressions should not appear in final output - they are internal decompilation noise.

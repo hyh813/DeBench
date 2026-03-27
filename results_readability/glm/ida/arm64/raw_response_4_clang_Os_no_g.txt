@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are generic (`a1`, `a2`, `v8`, `v9`) and do not reflect the original semantic meaning (e.g., `count`, `args`, `sum`). In `varargs_func`, `v13`, `v14`, `v15` obscure the `va_list` implementation.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the source (e.g., `cdecl_func`, `test_calling_conventions`, `param_array_decay`), accurately reflecting their purpose.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals are preserved intact. However, integer literals like `15`, `50`, and `33` in `test_calling_conventions` are magic numbers resulting from constant propagation, obscuring the original calculation logic (e.g., `5 + 10`).
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant noise from compiler optimizations, such as redundant casts to `(unsigned int)` and the use of SIMD intrinsics (`vaddq_s64`, `vaddvq_s64`) in `func_struct_byval` which obscure the simple loop logic present in the source.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The decompilation of `varargs_func` is highly unnatural, using `goto LABEL_7` and `LABEL_8` with manual pointer arithmetic instead of a standard `for` loop or `va_list` macros. While `test_calling_conventions` is linear, it relies on constant propagation rather than showing the control flow of the calls.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-separated and match the source granularity. The decompiler correctly identified distinct functions like `cdecl_func` and `call_cdecl` without merging them inappropriately.
+
+**7. Code Linearization:** Score: 4/10
+Justification: `varargs_func` and `param_varargs` suffer from poor linearization due to the complex stack pointer manipulation and backward jumps required to emulate variadic arguments, making top-to-bottom reading difficult.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully removed dead code and redundant assignments present in the binary. The logic is concise, though this is largely due to compiler optimizations (constant folding) rather than decompiler analysis.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Basic types are often widened (`int` becomes `__int64`), and composite types are lost. For example, `SmallStruct` is returned as a packed `unsigned __int64` in `ret_small_struct`, and `LargeStruct` is passed as a raw `__int64` pointer in `func_struct_byval`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery failed significantly. `SmallStruct` and `LargeStruct` are not reconstructed; instead, the decompiler uses raw integers and pointers. Accesses like `s.data[i]` are replaced by raw pointer arithmetic or SIMD operations on a void pointer.
+
+**11. Type Safety:** Score: 7/10
+Justification: While types are imprecise, the operations are generally safe. The casts present (e.g., `(unsigned int)(a2 + a1)`) are mostly artifacts of register width handling in ARM64 and do not introduce dangerous undefined behavior, though they clutter the code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex logic like the SIMD summation or the variadic argument handling lacks any explanatory notes.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The decompiler failed to recognize the `va_list` idiom in `varargs_func`, presenting it as raw stack access. It also failed to recognize the struct-return idiom, packing `SmallStruct` into a register instead of showing a struct return.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged. The decompiler confidently presents the optimized, constant-propagated code (e.g., `return 15`) and the messy `varargs` implementation without indicating that these might differ from the source structure.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., non-null checks) or postconditions. For instance, `param_double_ptr` checks for NULL but this is just code logic, not a documented contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are generally clear where not inlined. The relationship between `cdecl_func` and `call_cdecl` is visible, and standard library calls like `printf` and `strlen` are correctly identified.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled output maintains the logical grouping of functions found in the source, with calling convention tests, parameter tests, and return value tests appearing in distinct blocks.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code uses non-standard types like `__int64` and `__fastcall` (which is irrelevant for ARM64 but present in the output). It would require modification (e.g., replacing `__int64` with `long long` or `int64_t`) to compile on a standard strict C compiler without the decompiler's specific headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 6.5
+L2_avg: 6.0
+L3_avg: 4.3
+L4_avg: 1.25
+L5_avg: 7.6
+
+Overall = (6.5 × 0.30) + (6.0 × 0.25) + (4.3 × 0.20) + 
+          (1.25 × 0.15) + (7.6 × 0.10)
+Overall = 1.95 + 1.5 + 0.86 + 0.1875 + 0.76
+Overall = 5.26
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects
+- **Variable Naming**: Variables like `v13`, `v14`, and `v15` in `varargs_func` obscure the `va_list` semantics, making the logic hard to follow.
+- **Composite Type Loss**: Struct types (`SmallStruct`, `LargeStruct`) are completely lost; `func_struct_byval` takes a raw `__int64` instead of a struct, and `ret_small_struct` returns a packed integer.
+- **Control Flow Obfuscation**: The `varargs_func` implementation uses `goto` labels (`LABEL_7`, `LABEL_8`) and manual pointer arithmetic instead of a standard loop, significantly degrading readability.
+- **Constant Propagation**: Functions like `call_cdecl` are reduced to `return 15`, hiding the actual logic `cdecl_func(5, 10)` and the calling convention demonstration.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**
+- **Why?**: The decompiler perfectly preserved all original function names, allowing immediate identification of the code's purpose and structure.
+
+### Most Needs Improvement
+- **Semantic Transparency (1.25/10)**
+- **Why?**: The complete lack of comments, failure to recognize standard idioms like `va_list`, and absence of anomaly flags make understanding the *intent* behind the code very difficult.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Variadic Argument Recovery**: Implement specific analysis to detect `va_start`/`va_arg` patterns and reconstruct them into `va_list` usage or at least a cleaner loop structure instead of raw stack walking.
+2.  **Struct Return/Pass Recovery**: Improve analysis of ARM64 ABI rules for passing/returning structs to reconstruct composite types rather than defaulting to raw integers or pointers.
+3.  **Annotation of Optimized Code**: When constant propagation removes function calls (e.g., `return 15`), add a comment indicating the original call (e.g., `/* optimized from cdecl_func(5, 10) */`) to preserve semantic context.

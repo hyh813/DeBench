@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v14`, `v15`, etc. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `instance_count` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Most functions retain mangled C++ names (e.g., `_Z20test_cpp_member_funcv`, `_ZN4Base12virtual_funcEi`) instead of demangled versions. Some helper functions like `call_virtual_func` are clear, but the majority use cryptic address-based or mangled names that obscure purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14u` (20 bytes for LifecycleClass), `42` (exception value), `100`, `200` (data values), and return values like `4700`, `21`, `42` appear without explanation. Some values like `0x1234` (class ID) can be inferred from context, but most literals lack semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present including thunk functions (`` `virtual thunk to'DiamondDerived::func() ``, `` `non-virtual thunk to'MultiDerived::funcB() ``), `JUMPOUT(0)` in `sub_B90`, empty destructor bodies with just `;`, and many import function failures listed at the end. These artifacts clutter the output significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have readable control flow, but the constructor loop uses an unusual backwards iteration pattern (`for (i = 0; i != -5; --i)`) which is obfuscated. The exception function properly shows `__noreturn`. Overall flow is understandable but some patterns require mental translation.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Excellent function granularity - member functions, template instantiations, virtual functions, and thunks are all properly separated. Each function has a clear single responsibility. Template functions like `template_max<int>` and `template_max<double>` are correctly distinguished.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive jumps. The `test_cpp_oo_features` function is linear despite being large. Minor forward jumps exist in complex functions like `test_cpp_rtti` but don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. The backwards loop in constructor is a compiler artifact but not true redundancy - it's loop unrolling. Template instantiations are clean without duplication. Overall code is relatively redundancy-free.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed type precision - uses `_DWORD`, `int`, `size_t` appropriately in some places, but many generic types like `void*`, `char*` appear. The `__fastcall` calling convention is correctly identified. Some type erosion exists but it's manageable.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Partial struct recovery - vtable pointers are correctly identified (`_vptr$Base`, `_vptr$BaseA`, `_vptr$BaseB`), and some field names are recovered (`dataA`, `dataB`, `multiplier`). However, many fields are accessed via raw offsets without meaningful names, losing semantic information from the original classes.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present - virtual calls through vtable pointers (`*(int (**)(void))*obj->_vptr$Base`), pointer arithmetic in diamond inheritance (`(char *)&this->dataA + *((_DWORD *)this->_vptr$MiddleA - 3)`). These are necessary for correct decompilation but indicate type safety concerns. No severe violations that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Sparse comments - only auto-generated notes like "positive sp value has been detected" and thunk function labels. No explanation of algorithms, vtable mechanics, or template instantiation. The "FAILED to decompile" messages for imports are useful but limited.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ patterns recognized - virtual function calls through vtable, template instantiation, exception throwing. However, no explicit naming of patterns (e.g., "vtable dispatch", "RAII pattern"). The thunk functions indicate some pattern awareness but aren't explained.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The "FAILED to decompile" section lists 25 unresolved import functions, which is helpful. However, indirect calls and uncertain resolutions aren't explicitly flagged with warnings. Some anomalies are silently handled rather than highlighted.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source had no explicit contracts either, but the decompiled code offers no additional semantic documentation about expected states or error conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible through direct calls, and virtual dispatch is shown through vtable access. However, relationships to external code (like `main` calling `test_cpp_oo_features`) aren't explicitly documented. The call graph is inferable but not stated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are present but not logically grouped by feature (member functions, virtual functions, templates, etc.). The output is essentially a flat list of functions in address order, not organized by class or feature as the original source was.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will not compile - 25 import functions failed to decompile, many mangled names remain, and there's no header information or dependency documentation. Significant patching would be required to make this compilable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Variable naming is nearly unusable - all meaningful names replaced with `v0`-`v22` generics
+- Function names remain mangled (`_Z20test_cpp_member_funcv`) instead of demangled (`test_cpp_member_func`)
+- 25 import functions failed to decompile, leaving significant gaps
+- No struct field names recovered for many composite types - just raw offset access
+- Virtually no comments explaining algorithms, vtable mechanics, or C++ patterns
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+- Functions are properly separated with good granularity - member functions, template instantiations, virtual functions, and thunks are all correctly isolated into separate functions with appropriate signatures.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- The decompiler uses generic single-letter variable names throughout, completely losing the semantic meaning from the original source (e.g., `value`, `name`, `data`, `size`, `multiplier`).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Demangle C++ names** - Transform `_Z20test_cpp_member_funcv` to `test_cpp_member_func()` and `_ZN4Base12virtual_funcEi` to `Base::virtual_func(int)`
+2. **Infer variable names from usage** - Analyze how variables are used (e.g., `v0[2]` accessing array element suggests `data`, `++v0` suggests `counter`) to generate semantically meaningful names
+3. **Recover struct field names** - Use vtable analysis and memory layout to reconstruct field names like `dataA`, `dataB`, `multiplier` that already exist in some places, and apply consistently

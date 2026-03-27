@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are predominantly generic names like `param_1`, `local_50`, and `uStack_80`. In `test_calling_conventions`, the `LargeStruct` initialization is decompiled into a mess of untyped stack variables (`alStack_110`, `uStack_80`, `local_88`), completely losing the semantic context of a struct array.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are excellent and match the source exactly (e.g., `cdecl_func`, `test_calling_conventions`, `param_by_value_int`). This is likely due to the presence of debug symbols (`-g`), which significantly aids navigation.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: The code is littered with "magic numbers" resulting from constant propagation, such as `0xf` (15) and `0x32` (50), without context. While these are the results of the function calls, their appearance as raw hex literals in `test_calling_conventions` obscures the logic (e.g., `5 + 10`).
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Stack canary checks (`___stack_chk_guard`) are inlined in almost every function, cluttering the logic. Additionally, functions returning `int` are often typed as `undefined8` (e.g., `call_cdecl`), adding unnecessary type noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally clean and linear. However, the `varargs_func` implementation is decompiled into raw pointer arithmetic (`local_50 = local_50 + 8`) inside a loop, which is significantly harder to read than the standard `va_arg` idiom.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are mapped 1:1 with the source. There is no monolithic code; boundaries are preserved well. The decompiler successfully identified individual test functions and helper functions.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads top-to-bottom with minimal jumps. The initialization of the large struct in `test_calling_conventions` involves a loop followed by a series of assignments, which is slightly disjointed but follows the execution order.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The compiler optimized simple functions (e.g., `call_cdecl` just returns `0xf`), which the decompiler represents accurately. While this removes the "redundant" call to `cdecl_func`, it hides the original logic, which is a trade-off of optimization recovery.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: There is a critical failure in `func_mixed_args`. The source order is `(int, char*, double, long long)`, but the decompiled signature is `(double, int, char*, long)`. This reflects the compiler's register reordering (AAPCS) but makes the function signature incorrect relative to the source. Additionally, `int` returns are often widened to `undefined8`.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct recovery is poor. `LargeStruct` is completely lost in `test_calling_conventions`, represented only by scattered stack variables. `SmallStruct` in `func_struct_byptr` is treated as a raw `int*` pointer (`param_1[1]`), losing the struct field semantics (`y`).
+
+**11. Type Safety:** Score: 6/10
+Justification: The code is generally safe, but the pointer arithmetic in `varargs_func` (incrementing `local_50` by 8 bytes) is presented without type safety checks, relying on the user to understand the underlying memory layout.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost entirely auto-generated warnings (e.g., "WARNING: Removing unreachable block"). There are no comments explaining the logic of complex functions like `varargs_func` or the struct manipulations.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard idioms are missed. The `va_list` pattern in `varargs_func` is not recognized; it is shown as manual stack walking. The struct passing by value (hidden pointer) is technically correct but not abstracted as a "struct pass" idiom.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Ghidra flags unreachable blocks and overlapping globals, which is good. However, it does not flag the parameter reordering in `func_mixed_args` as a potential anomaly or mismatch with standard C calling conventions, presenting it confidently.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement that `param_1` in `func_struct_byptr` is non-NULL is checked in code but not stated as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are resolved to their correct names (e.g., `callback_func` is correctly identified in `param_func_ptr`). The relationships between the test functions and their implementation are clear.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are listed in a logical order that roughly follows the source file structure. Related functions (e.g., `cdecl_func` and `call_cdecl`) are grouped together.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code would not compile without significant modification. The use of `undefined8` for return types, the incorrect parameter order in `func_mixed_args`, and the reliance on compiler intrinsics like `__printf_chk` hinder recompilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 9 + 5 + 6) / 4 = 6.0
+L2_avg = (7 + 9 + 8 + 7) / 4 = 7.75
+L3_avg = (4 + 3 + 6) / 3 = 4.33
+L4_avg = (2 + 4 + 5 + 1) / 4 = 3.0
+L5_avg = (8 + 8 + 4) / 3 = 6.66
+
+Overall = (6.0 * 0.30) + (7.75 * 0.25) + (4.33 * 0.20) + 
+          (3.0 * 0.15) + (6.66 * 0.10)
+Overall = 1.8 + 1.9375 + 0.866 + 0.45 + 0.666
+Overall = 5.72
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.7/10
+
+### Critical Defects (Bullet List)
+- **Type Precision Failure**: In `func_mixed_args`, parameters are reordered to `(double, int, char*, long)` instead of the source `(int, char*, double, long long)`, breaking the function's logical interface.
+- **Composite Type Loss**: The `LargeStruct` variable in `test_calling_conventions` is decompiled into a set of unrelated stack variables (`uStack_XX`, `local_XX`), completely destroying the struct abstraction.
+- **Return Type Erosion**: Functions returning `int` are frequently typed as `undefined8` (e.g., `call_cdecl`), obscuring the actual data type.
+- **Idiom Missed**: The `varargs_func` implementation is shown as raw pointer arithmetic on the stack rather than the standard `va_list`/`va_arg` idiom, reducing readability.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (9/10)
+- **Why?** The debug symbols (`-g`) were successfully imported, preserving the original function names like `cdecl_func` and `test_calling_conventions`, which makes navigating the code trivial.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Composite Type Recovery (3/10)
+- **Why?** Structs are either completely dissolved into stack variables or treated as raw pointers, losing the semantic meaning of the data structures defined in the source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhanced Struct Recovery**: Improve algorithms to detect stack variable access patterns (e.g., sequential access, array indexing) and reconstruct them as local structs or arrays, particularly for initialization loops.
+2.  **Debug Info Type Application**: Prioritize applying debug information (DWARF) for parameter ordering and types over register-based analysis, especially when the binary contains debug symbols, to prevent signature mismatches like in `func_mixed_args`.
+3.  **Idiom Pattern Matching**: Implement specific pattern matching for standard C idioms like `varargs` (va_start/va_arg) to reconstruct high-level logic instead of showing low-level stack pointer manipulation.

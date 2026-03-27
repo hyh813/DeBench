@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v3`, `v4`) with zero semantic meaning. Original source had meaningful names like `size`, `counter`, `increment`, `exec_mem` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). Only a few helpers like `sub_810` remain generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (57072, 282, 57122). Original `MAX_SIZE`, `BUFFER_COUNT` constants folded into literals. Some values inferable from context (1024, 64, 512).
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean output with minimal compiler artifacts. Some ARM64-specific casts (`(unsigned int)`, `(unsigned __int64)`) present but don't significantly impede reading.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Natural if-else and loop structures recovered. Some functions constant-folded entirely (`call_macro_constants` returns 64 directly) which is expected at -O3 optimization.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries well-preserved with clear single responsibility. No monolithic functions; granularity matches original source structure appropriately.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately. No excessive goto usage disrupting flow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: Excellent optimization recovery. Constant folding eliminated redundant calculations (`BUFFER_COUNT * 4` → 64). No dead code observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate (`__int64`, `unsigned int`, `int`) instead of specific types (`int32_t`, `size_t`). Some SIMD types recovered (`int32x4_t`) but inconsistently applied.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited composite types in source code. Array parameters sometimes shown as pointers (`int32x4_t *a1`). No struct reconstruction needed for this code.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(char *)`, `(_DWORD *)`, `(unsigned int)`). Pointer arithmetic visible in SIMD functions without safety annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. No algorithm explanations, no parameter documentation. Only function signatures have minimal type hints.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic C idioms preserved (if-else, loops, function calls). No higher-level pattern recognition (macro expansion patterns, atomic operation semantics not explained).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (`FAILED to decompile: memcpy`). No warnings about potential issues, optimization artifacts, or confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling contracts documented. Original source comments about expected values completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and traceable. Global variable usage visible (`global_var`, `_aarch64_have_lse_atomics`). No callback relationship documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source. Related test functions grouped together. No clear module boundary indicators.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 12 external functions marked "FAILED to decompile" requiring stubs. Dependencies (printf_chk, mmap, sysconf) not documented. Won't compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+8)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):  (7+8+8+9)/4 = 8.00  × 0.25 = 2.00
+Level 3 (Type):        (5+6+5)/3   = 5.33  × 0.20 = 1.07
+Level 4 (Semantic):    (2+5+4+2)/4 = 3.25  × 0.15 = 0.49
+Level 5 (Contextual):  (6+6+3)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.86/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `a2`, `v3`) losing all semantic meaning from original (`size`, `counter`, `increment`)
+- **No comments recovered** despite extensive source documentation explaining macro behavior and expected values
+- **Magic numbers unexplained** (57072, 282, 57122) where source used named constants (MAX_SIZE, line numbers)
+- **12 external functions failed to decompile** requiring manual stub creation for compilation
+- **Type precision degraded** (`__int64` instead of `int32_t`, `size_t`) losing type safety information
+
+### Best Quality Aspect:
+- **Redundancy Elimination (9/10)** - Constant folding and optimization artifacts handled excellently; computed values like `BUFFER_COUNT * 4` correctly simplified to 64
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic documentation; original source had extensive comments explaining macro expansion, expected values, and test purposes that are entirely lost
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and string references (e.g., `a1` in size comparison should be `size`, `a1` in atomic operation should be `counter`)
+2. **Recover and preserve source comments** by correlating debug symbols with decompiled output, especially for test functions with expected value documentation
+3. **Annotate magic numbers** by detecting constant-folded expressions and suggesting original constant names based on value patterns (1024→MAX_SIZE, 64→BUFFER_COUNT*4)

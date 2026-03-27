@@ -1,0 +1,120 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: All variables use generic names (`a1`, `a2`, `v0`, `v1`, `result`, `len`) with no semantic meaning recovered. For example, `param_macro_constants(int a1)` should have `a1` named `size` based on source usage pattern.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery—function names like `param_macro_constants`, `call_macro_functions`, `param_asm_simd` are preserved exactly from source, clearly indicating purpose and parameter semantics.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Macro expansions became concrete values (1024, 512, 64) which aids understanding, but magic numbers like `57072` (should be `0xDEF0`) and `-1065092983` (machine code bytes) lack explanation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Some compiler artifacts present (`LODWORD`, `__readfsqword(0x28u)` stack canary, explicit casts), but inline assembly was successfully converted to equivalent C without excessive noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures well-recovered with natural `if-else` and `for` loops. The `param_asm_clobber` loop correctly reconstructed from assembly jump patterns.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries perfectly preserved matching original source. Each test function remains separate with appropriate granularity and single responsibility.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally with minimal forward jumps. Early returns used appropriately (e.g., `param_memory_protection` error handling).
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Macro expansion redundancy consolidated well (e.g., `ADD_16(x)` simplified to `a1 + 16`). No dead code from register spilling observed.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic `int` and `__int64` used instead of precise types (`int32_t`, `size_t`). Pointer types partially recovered (`volatile signed __int32 *` for atomics is good).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: SIMD types (`__m128i`) correctly recovered for `param_asm_simd`. No complex structs in this code to evaluate, but array handling is correct.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts observed. Pointer arithmetic in `param_asm_clobber` is type-safe (`*(_DWORD *)(a1 + 4 * i)`). Atomic operations use proper volatile types.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of macro expansions, assembly conversions, or build-time constants like `"Jan 15 2026"` compile date.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Macro expansion patterns not identified (e.g., `ADD_16` recursion not noted). Assembly-to-C conversions not flagged as recovered patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Dynamic code generation in `param_dynamic_code` not flagged as suspicious. Machine code bytes (`-1065092983`) presented without warning about self-modifying code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_asm_clobber` requires valid array pointer). Error return values (`0xFFFFFFFFLL`) not explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function call graph clear through preserved names. `test_preprocessing_features` clearly calls all PP test functions. External library calls listed as "FAILED to decompile."
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions grouped logically matching source structure. PP tests and ASM tests remain in separate test functions. `main()` correctly orchestrates both.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code compiles with declared dependencies. External functions (`printf`, `mmap`, `strlen`) properly declared. Some show "FAILED to decompile" but signatures present.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+6+7)/4 = 6.50 × 0.30 = 1.95
+Level 2 (Structural):  (8+9+8+8)/4 = 8.25 × 0.25 = 2.06
+Level 3 (Type):        (6+7+8)/3   = 7.00 × 0.20 = 1.40
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (8+8+8)/3   = 8.00 × 0.10 = 0.80
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.51/10
+```
+
+### Overall Readability Score: **6.5/10**
+
+---
+
+### Critical Defects
+- **Variable `a1`, `a2` should be named `size`, `x`, `y`** based on source parameter semantics and usage patterns
+- **Zero comments** explaining macro expansions, assembly recovery, or build-time constants
+- **Magic number `57072`** should be shown as `0xDEF0` with comment explaining PLATFORM default branch
+- **Machine code bytes `-1065092983`** in `param_dynamic_code` not flagged as self-modifying code anomaly
+- **No contract documentation** for error return values (`0xFFFFFFFFLL`, `4294967294LL`)
+
+---
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** — Original function names perfectly preserved, making code immediately navigable and semantically clear.
+
+---
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** — Complete absence of comments loses critical context about macro expansions, assembly recovery, and build-time constants that cannot be inferred from code alone.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover parameter names from debug symbols** — With `-g` flag present, variable names like `size`, `x`, `y`, `result` should be recovered instead of `a1`, `a2`, `v0`.
+
+2. **Add semantic comments for macro expansions** — When constants replace macros (e.g., `1024` from `MAX_SIZE`), add comments like `// MAX_SIZE expanded` to preserve original intent.
+
+3. **Flag anomalous patterns explicitly** — Dynamic code generation, self-modifying code, and machine code byte arrays should be marked with warnings like `// ANOMALY: Self-modifying code detected`.

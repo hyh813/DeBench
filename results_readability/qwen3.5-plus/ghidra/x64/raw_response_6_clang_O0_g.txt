@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10  
+Justification: Parameter names are well-preserved (`dst`, `src`, `str`, `filename`) from debug symbols, but local variables use generic Ghidra patterns (`iVar1`, `sVar1`, `local_c`, `local_20`) that obscure semantic meaning.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery of original function names (`param_strcpy`, `thread_compute`, `param_pthread_create`) matching source exactly, likely from `-g` debug symbols.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation: `0x2a` (42), `0x7f` (127), `0x1000` (4096), signal numbers `10`/`0xe`, socket constants `2,1,0` instead of `AF_INET, SOCK_STREAM`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minor noise from parameter shadow copies (`dst_local`, `src_local`) and redundant casts `(ulong)(uint)x`, but no significant dead code or debug instrumentation at -O0.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as natural `for` constructs, but signal handling uses awkward `while(true)` with manual breaks instead of cleaner loop conditions.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity matches original source perfectly; each function has single responsibility with appropriate size and no over-fragmentation.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally with appropriate early returns; minimal forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Repeated calculations like `strlen("BinBench Test Data")` computed twice in `param_fread_fwrite`; parameter copies create unnecessary local variables.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Core types preserved (`size_t`, `FILE*`, `pthread_t`), but Ghidra artifacts like `undefined4`, `undefined8` appear, and some pointer arithmetic loses type information.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `ThreadData` struct recovered with field names (`start`, `end`, `result`), but `thread_sum` uses raw pointer arithmetic `*(int *)((long)arg + 8)` instead of struct field access.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(int)pcVar1 - (int)str` for pointer difference, `(pthread_mutex_t *)&counter_mutex`, atomic operations use `LOCK()/UNLOCK()` macros instead of proper `__atomic_*` intrinsics.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no useful comments; only decompiler metadata headers present, no algorithm explanations, API contracts, or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls (`strcpy`, `pthread_create`) recognizable but not explicitly identified as patterns; producer-consumer pattern in condition variable code not named.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present ("Unknown calling convention", "Subroutine does not return", "Removing unreachable block") but inconsistent coverage and no uncertainty markers for indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented; error return values (`-1`, `-2`, `-3`) lack explanation of failure conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls and global variable usage (`shared_counter`, `atomic_counter`) visible through code, but no call graph documentation or callback relationship annotations.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions follow original source order with test functions grouped logically; static variables properly scoped, but everything in single file without header separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone; missing includes, Ghidra-specific macros (`LOCK()/UNLOCK()`), external function declarations absent, requires significant stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (7+9+5+7)/4 = 7.00  × 0.30 = 2.10
+Level 2 (Structural):     (7+9+8+6)/4 = 7.50  × 0.25 = 1.88
+Level 3 (Type System):    (7+6+5)/3   = 6.00  × 0.20 = 1.20
+Level 4 (Semantic):       (2+5+6+2)/4 = 3.75  × 0.15 = 0.56
+Level 5 (Contextual):     (7+7+4)/3   = 6.00  × 0.10 = 0.60
+─────────────────────────────────────────────────────────────
+Overall Readability Score:                    6.34/10
+```
+
+### Overall Readability Score: **6.3/10**
+
+### Critical Defects:
+- **Magic numbers everywhere**: `0x2a`, `0x7f`, `10`, `0xe`, `2,1,0` for socket constants need symbolic names
+- **No comments**: Zero semantic documentation for non-trivial logic like signal handling loops or atomic operations
+- **Unsafe pointer arithmetic**: `thread_sum` uses `*(int *)((long)arg + 8)` instead of struct field access
+- **Atomic operations degraded**: `__atomic_fetch_add` replaced with `LOCK()/UNLOCK()` macros losing semantic clarity
+- **Build incompatibility**: Ghidra-specific macros and missing includes prevent standalone compilation
+
+### Best Quality Aspect: **Function Naming Quality (9/10)**
+- Debug symbols (`-g` flag) enabled perfect recovery of all original function names matching source exactly
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of semantic documentation makes understanding complex patterns (signal handling, condition variables) significantly harder
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover symbolic constants**: Detect magic numbers matching common API constants (signal numbers, socket flags, error codes) and replace with named constants
+2. **Add semantic comments**: Generate comments for recognized patterns (producer-consumer, mutex protection, signal handlers) and document error return value meanings
+3. **Preserve atomic intrinsics**: Recognize `__atomic_*` compiler builtins and emit proper C11 atomic operations instead of generic `LOCK()/UNLOCK()` macros

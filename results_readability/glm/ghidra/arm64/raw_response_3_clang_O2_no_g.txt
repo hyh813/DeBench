@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are reduced to generic names like `param_1`, `lVar1`, `uVar2`, and `cVar4`, completely losing semantic context such as loop counters or buffer pointers.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names from the source (e.g., `local_vars`, `heap_basic`, `test_stack_memory`) are preserved accurately, making it easy to map decompiled code to source logic.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Semantic constants like `42` and `20` appear as hex values `0x2a` and `0x14`, and optimized packed integers like `0x400000003` are presented without explanation of their structure.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is cluttered with Ghidra-specific macro artifacts like `CONCAT44` and `CONCAT17` used to represent register packing, which significantly obscures the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Simple loops are often unrolled into massive `do-while` blocks (e.g., in `large_stack_frame`), and function calls are inlined with constant folding, destroying the original high-level flow structure.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: Compiler inlining (e.g., `large_stack_frame` logic inlined into `test_stack_memory`) creates monolithic functions that mix setup, calculation, and teardown logic, violating single responsibility.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While the code generally executes top-to-bottom, the extensive unrolling creates very long blocks of repetitive code that are tedious to scroll through and mentally parse.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The decompiler presents the redundancy introduced by loop unrolling (e.g., 16 identical blocks of `CONCAT` operations) rather than abstracting it back into a loop, making the code appear repetitive.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are frequently degraded to generic `undefined4` or `undefined8`, and pointers are often cast to `long` for arithmetic, losing the distinction between integers and memory addresses.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structured types like `Point` and `Node` are completely lost; struct member access is replaced by raw pointer arithmetic (e.g., `__ptr + 2`) with no field names.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains numerous unsafe casts, such as casting `void*` to `undefined8*` and accessing memory via `undefined4**`, which requires careful manual tracking to ensure correctness.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost entirely absent, with only a few automated warnings like "WARNING: Subroutine does not return" providing no insight into the algorithm's purpose.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: While some idioms like `DataMemoryBarrier` are recognized, common patterns like linked list traversal are obscured by unrolling and pointer arithmetic, making them hard to identify.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Ghidra provides useful warnings for unreachable blocks and indirect jumps it cannot resolve, which helps identify areas where the decompilation might be unreliable.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the check `if (n <= 0 || n > 1000)` in `vla_stack` is present but not highlighted as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls and global variable accesses are clearly visible, and the relationship between `malloc` and `free` is traceable, despite the low-level representation.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order that roughly matches the source file structure, and related test functions are grouped together.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on Ghidra-specific types (`undefined`, `CONCAT` macros) and would not compile without significant modification to standard C types.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.0/10
+
+**Critical Defects:**
+- **Loop Unrolling Obscuration**: The decompiler fails to abstract heavily unrolled loops (e.g., in `large_stack_frame`), resulting in hundreds of lines of `CONCAT` macros instead of a simple `for` loop.
+- **Composite Type Loss**: Structured types like `Point` and `Node` are completely lost, replaced by raw pointer arithmetic (e.g., `__ptr + 2`) and undefined types.
+- **Literal Opacity**: Semantic constants (e.g., `42`, `20`) are represented as hex values (`0x2a`, `0x14`), and packed integers (`0x400000003`) are not explained.
+- **Variable Naming**: Variables are reduced to generic names (`param_1`, `lVar1`), losing all semantic context from the original source.
+- **Noise Artifacts**: Heavy use of Ghidra-specific macros (`CONCAT44`, `CONCAT17`) and `undefined` types makes the code noisy and non-compilable.
+
+**Best Quality Aspect:** Function Naming (scored 9/10)
+- **Why?** The symbol names from the source code were preserved in the binary and successfully recovered by Ghidra, making it easy to locate specific functions.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- **Why?** The complete absence of struct definitions and the reliance on raw pointer offsets make understanding data structures extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching to detect and re-roll unrolled loops into high-level `for` or `while` constructs to improve structural readability.
+2. Enhance type recovery algorithms to identify and reconstruct struct layouts from pointer offsets and access patterns, rather than defaulting to raw arithmetic.
+3. Replace hex magic numbers with their decimal equivalents or inferred named constants where context suggests a specific value (e.g., ASCII codes), and annotate packed integers.

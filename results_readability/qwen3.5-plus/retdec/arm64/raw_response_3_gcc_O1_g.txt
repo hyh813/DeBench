@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `v3`, `temp`, `result`) instead of semantic names like `arr`, `counter`, `local`. Only `large_buf` in `large_stack_frame` preserves original naming.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names recovered (`double_value`, `local_array`, `heap_basic`), but many helper functions use mechanical names (`function_9d0`, `function_9e0`). Several signatures are incorrect (e.g., `local_vars(void)` should be `local_vars(int x)`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout (`4`, `8`, `16`, `20`, `24`, `40` for struct offsets). String literals stored as hex-encoded globals (`g10`, `g11`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) appear in most functions. Generic globals (`g1`, `g2`, `g4`...`g21`) clutter the namespace. Inline assembly calls (`__asm_sbfiz`, `__asm_dmb`) lack context.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Original `for` loops converted to awkward `while` loops with manual pointer arithmetic. `linked_list_heap` uses multiple `goto` labels (`lab_0x12bc`, `lab_0x12cc`) instead of structured loops.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function granularity is reasonable, but many signatures are wrong (missing parameters). Library wrappers separated unnecessarily (`function_9d0` for `memcpy`).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Frequent forward jumps and `goto` statements disrupt reading flow. `linked_list_heap` has particularly poor linearization with 3+ labels. Simpler functions like `double_value` read cleanly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant type casts present throughout. Stack canary checks add repetition. No obvious dead code but repeated pointer arithmetic patterns obscure intent.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t`/`int64_t` appropriately in some places, but many function signatures wrong (`local_vars(void)` vs `local_vars(int x)`). Pointer types often degraded to generic `int64_t*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - `Point`, `Node`, `TreeNode` structs completely lost. All accessed via raw offset arithmetic (`v1 + 8`, `v1 + 16`). No field names recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`int64_t*` to `int32_t*`). Pointer arithmetic on generic types. Function pointer `global_func_ptr` signature preserved but callback mechanism broken (`call_global_callback` returns `x` directly instead of calling pointer).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated metadata comments present ("From module: /work/3.c", line ranges). No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Linked list creation/traversal in `linked_list_heap` not recognized. Tree structure in `tree_heap_traversal` not identified as binary tree.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings for suspicious patterns. `dangling_pointer` use-after-free not flagged. `double_free` double-free vulnerability not indicated. Stack canary failures unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` checks). No postconditions inferred. Error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships not documented. Global variable usage opaque (`g1`, `g2`...). Callback mechanism (`set_global_callback`/`call_global_callback`) broken.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Static functions not properly scoped. Helper functions (`function_9d0`...) mixed with application logic.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Standard library includes present. External function declarations exist but many signatures wrong. Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+5)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+5+5+6)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (4+2+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.14/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Struct types completely lost** - `Point`, `Node`, `TreeNode` accessed via raw pointer arithmetic (`v1 + 8`, `v1 + 16`)
+- **Function signatures incorrect** - `local_vars(void)`, `local_struct(void)`, `address_of_local(void)` missing parameters
+- **Variable names all generic** - `v1`, `v2`, `v3` instead of `arr`, `counter`, `local`, `p`
+- **Control flow degraded** - `for` loops converted to manual `while` with pointer arithmetic; `goto` labels in `linked_list_heap`
+- **Callback mechanism broken** - `call_global_callback` returns `x` directly instead of calling `global_func_ptr(x)`
+
+### Best Quality Aspect:
+- **Redundancy Elimination (6/10)** - No obvious dead code; loop structures mostly preserved even if awkward
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct definitions; all composite types reduced to pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct layouts from access patterns** - Detect consistent offset patterns (`+8`, `+16`) and propose struct definitions with field names
+2. **Preserve function signatures from debug info** - When `-g` flag present, extract parameter types and counts from DWARF information
+3. **Recognize common data structure idioms** - Identify linked list traversal patterns and tree structures, adding explanatory comments

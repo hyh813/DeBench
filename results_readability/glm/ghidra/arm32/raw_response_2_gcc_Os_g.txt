@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: Parameters like `x`, `arr`, and `n` are preserved, but local variables are generic (`iVar1`, `uVar1`, `bVar1`). In `test_data_types_l1`, meaningful locals like `value` are marked as "Unresolved local var", forcing the reader to infer usage from context.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`double_value`, `process_int`, `array_1d_stack`) exactly match the original source, likely recovered from debug symbols (`-g` flag). No mechanical or address-based names are present.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Character checks use magic hex values (`0x41` for 'A', `0x1a` for 26) instead of character literals. Floating-point constants are raw hex representations (`0x3fc00000` for 1.5f) rather than readable floats, significantly obscuring the logic in `process_float` and `process_double`.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is cluttered with compiler runtime calls (`__mulsf3`, `__addsf3`, `__muldf3`) that abstract floating-point operations, and "Unresolved local var" comments appear frequently. Types like `undefined4` and `undefined8` are used in floating-point functions, adding confusion.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While loops are generally recovered, logic is often obfuscated. `process_bool` uses bitwise operations (`1 - ((byte)x & 1)`) instead of the source's logical operators (`x > 0 && x % 2 == 0`). `array_2d_stack` uses pointer arithmetic with a magic increment (`0xb`) instead of the clear nested loop structure.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source. There is no monolithic code; boundaries are well-preserved. The only deviation is in the `test_...` functions where calls to `process_...` were likely inlined by the compiler, but the decompiler handles the resulting blocks reasonably.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Most functions read linearly from top to bottom. However, `array_3d` contains complex pointer casting and nested loops that are harder to follow than the source's straightforward triple loop.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: `process_ll` splits a simple `x * x` operation into multiple 32-bit multiplications and bit shifts (`CONCAT44`), exposing low-level implementation details that obscure the high-level intent.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types (`int`, `char`, `void*`) are correct. However, `long double` in `process_ld` is treated as `double` (calling `__muldf3`), and floating-point parameters are often typed as `undefined4` or passed implicitly via global registers (`in_r0`), losing type safety.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Structs like `Point3D` and `Node` are recovered with correct field access (`p->x`, `node->next`). However, bitfields in `struct_bitfields` are degraded to raw memory access (`*(byte *)f`, `*(ushort *)f`), losing the semantic field names (`flag1`, `flag2`).
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer types are generally respected. The casts present in the decompiled code (e.g., `void*` to `int*`) accurately reflect the source's intent, even if they look unsafe without the original context.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost entirely auto-generated warnings (e.g., "WARNING: Removing unreachable block", "Unresolved local var"). There are no semantic comments explaining the purpose of functions or complex logic like the bitfield extraction.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard loops and list traversals (`linked_list`) are recognized. However, specific idioms like the "positive even number" check in `process_bool` or the "diagonal sum" in `array_2d_stack` are not identified, leaving the reader to decipher the math.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Standard Ghidra warnings for calling conventions and unreachable blocks are present. However, the odd floating-point implementation (software emulation calls) is not flagged as an anomaly or explained, which might confuse a reader expecting hardware FPU instructions.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, `array_complex_index` checks bounds but does not explicitly state the contract that `x` must be within `w`.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the correct names. The relationships between the test functions and the implementation functions are preserved, even if some calls were inlined.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, roughly following the source order. Helper functions and main logic are distinct.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on external compiler runtime functions (`__mulsf3`, etc.) and uses undefined types (`undefined4`), making it non-compilable without significant patching or a specific runtime environment.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Floating-point logic is obscured by software emulation calls (`__mulsf3`) and hex literals (`0x3fc00000`) instead of standard operators.
+- Boolean logic in `process_bool` is transformed into bitwise operations (`1 - ((byte)x & 1)`), losing the semantic clarity of `x > 0 && x % 2 == 0`.
+- Bitfield access in `struct_bitfields` is degraded to raw byte/ushort pointer casts, losing the named field semantics (`flag1`, `flag2`).
+- Array access in `array_2d_stack` uses pointer arithmetic with a magic offset (`0xb`) instead of the readable `arr[i][i]` syntax.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** The decompiler perfectly recovered all function names from the debug symbols, making the API surface identical to the source.
+
+**Most Needs Improvement:** Literal Clarity (scored 4/10)
+- **Why?** The pervasive use of magic numbers (hex for floats and chars) makes understanding the data values extremely difficult without constant reference to the ASCII table and IEEE 754 formats.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Floating Point Abstraction**: Detect patterns of software floating-point library calls and replace them with high-level arithmetic operators (e.g., replace `__mulsf3(a, 0x3fc00000)` with `a * 1.5f`).
+2. **Bitfield Recovery**: Improve analysis of structs to identify and reconstruct bitfield definitions based on access patterns (shifts and masks) rather than defaulting to raw integer casts.
+3. **Constant Propagation for Literals**: Convert hex constants back to their character or enum equivalents when the context clearly implies it (e.g., `0x41` -> `'A'` in comparison checks).

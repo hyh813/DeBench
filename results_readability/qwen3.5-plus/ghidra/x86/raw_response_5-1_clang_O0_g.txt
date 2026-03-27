@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`iVar1`, `iVar2`, `local_3c`, `ppiVar1`) with no semantic meaning. Even when debug symbols exist (e.g., `capture_by_value` in lambda), most class fields become `field_0x10` or `super_BaseA.dataA`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions retain original names (`test_cpp_member_func`, `test_cpp_constructor`), but compiler-generated functions use mangled names (`_ZThn8_N12MultiDerived5funcBEv`) or generic labels (`FUN_00011030`). Lambda operators become `anon_class_8_2_336b0e7f::operator()`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers persist without explanation (`0x1234`, `0x1f`, `0x32`, `0x96`, `0xfa`). Some match source (0x1234 = getClassID), but array bounds and offsets lack named constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant C++ ABI noise: vtable setup code, exception handling infrastructure (`__cxa_throw`, `__cxa_allocate_exception`), and thunk functions (`__x86.get_pc_thunk.bx`) clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: At -O0, basic control flow is preserved (if/else, loops recognizable), but exception handling introduces awkward `try { // try from 00011c25 to 00011c3d has its CatchHandler @ 00011c43` comments that disrupt reading.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Severe over-fragmentation from C++ templates and smart pointers. `unique_ptr` operations spawn 20+ helper functions (`__uniq_ptr_impl`, `_Tuple_impl`, `_Head_base`, `get<0U,...>`), obscuring the simple source logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but virtual dispatch and exception handling introduce non-linear patterns. Diamond inheritance code has confusing pointer adjustments (`in_stack_00000004 + -8`).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Template instantiations create massive code duplication (separate `Container<int>` and `Container<double>` versions). Smart pointer destructor patterns repeat identically across multiple functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (int, double, char*), but C++ types degrade severely. `unique_ptr<int, decltype(deleter)>` becomes `unique_ptr<int,_(lambda_at_src/5-1.cpp:445:20)>`. Many pointers become generic `type*` or `pointer`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class structures partially recovered with `super_BaseA`, `super_BaseB` prefixes, but diamond inheritance triggers warnings ("ignoring overlapping field super_MiddleB"). Many fields are `field_0x10`, `field_0x8` instead of semantic names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts for vtable access (`(_func_int **)&PTR_virtual_func_00018c3c`). Pointer arithmetic for virtual base offsets (`_vptr_MiddleA[-3]`). Multiple `undefined4`, `undefined1` types indicate type loss.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are almost entirely auto-generated warnings ("WARNING: Unknown calling convention", "WARNING: Struct ignoring overlapping field"). No algorithm explanations or semantic documentation recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns visible but not identified. RAII (smart pointers), virtual dispatch, and lambda closures are decompiled as raw mechanics without pattern naming. No "this implements virtual dispatch via vtable" explanations.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra does flag issues with WARNING comments (overlapping fields, unknown calling conventions, unreachable blocks). However, these are generic warnings without specific guidance for resolution.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Exception handling shows try/catch blocks but without contract documentation (e.g., "throws int" not indicated).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch relationships unclear. Inheritance shown through `super_` prefixes, but vtable connections require manual analysis. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 219 functions in single output with no logical grouping. Related class methods scattered. No header file structure or namespace organization recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone. Missing standard library implementations (`std::ios_base::Init`, `operator_new`), compiler runtime (`__cxa_atexit`, `__do_global_dtors_aux`), and typeinfo structures.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (3+4+6+2)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+---------------------------------------------------------
+Overall Score:                                  = 4.63/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Variable names completely generic**: `iVar1`, `local_3c`, `ppiVar1` obscure all semantic meaning (e.g., `capture_by_ref` becomes `this->capture_by_ref` only in lambda, lost elsewhere)
+- **C++ template explosion**: Simple `template_max<int>` spawns 10+ helper functions with mangled names like `__get_helper<0U,_int_*,_(lambda_at_src/5-1.cpp:445:20)>`
+- **Struct field names lost**: Diamond inheritance fields become `field_0x10`, `field_0x8` instead of `shared_data`, `dataA`, `dataB`
+- **Smart pointer internals fully exposed**: RAII semantics buried under `__uniq_ptr_impl`, `_Tuple_impl`, `_Head_base` implementation details
+- **No compilation viability**: Missing standard library symbols, typeinfo structures, and exception runtime make code unusable without massive stubbing
+
+### Best Quality Aspect:
+- **Anomaly Indication (6/10)** - Ghidra consistently flags problematic areas with WARNING comments about overlapping fields, unknown calling conventions, and unreachable blocks, providing honest uncertainty indicators.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - Zero recovery of preconditions, postconditions, exception specifications, or API contracts that were implicit in the original C++ source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage DWARF debug symbols more aggressively** - At -O0 -g, variable names and type information exist in binary; current output ignores most of this metadata for local variables.
+2. **Collapse C++ template instantiation chains** - Recognize patterns like `__uniq_ptr_impl` → `_Tuple_impl` → `_Head_base` and present as single high-level `unique_ptr` operations with inline comments.
+3. **Recover C++ semantic annotations** - Add comments indicating "virtual dispatch via vtable", "RAII destructor will be called", "lambda capture by reference" to restore high-level intent lost in ABI exposure.

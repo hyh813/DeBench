@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v1`, `v2`, `a1`, `a2`, `result` with no semantic meaning. For example, `loop_for_fixed` uses `v1` instead of `i` for loop counter, and `loop_nested` uses `a1`, `a2` instead of `m`, `n`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Most function names are preserved from source (e.g., `loop_for_fixed`, `recursion_factorial`), but several critical functions are missing entirely (`sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `nested_if_deep`, etc.).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear without explanation (e.g., `0x2694` in `test_control_flow_l1`, `10`, `5` in array bounds). Test functions hardcode expected values instead of computing them, obscuring actual function behavior.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: redundant casts (`(int32_t)`, `(int33_t)`), unnecessary type definitions (`int3_t`, `int33_t`), and complex pointer arithmetic replacing simple array access in `loop_break` and `loop_multi_exit`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Severe degradation - `loop_dowhile` becomes infinite `while(true)` with no exit, `loop_multi_exit` uses convoluted labels and gotos instead of nested loops, `duffs_device` has empty switch statement. Original structured control flow is largely lost.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Function boundaries mostly preserved, but many functions missing entirely. `test_control_flow_l3` has 4 parameters instead of 0, indicating parameter leakage. Some functions like `call_func_ptr_array` have 4 parameters instead of 2.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Excessive use of labels (`lab_0x10c78`, `lab_0x10c80`, `lab_0x10c94`) and goto statements in `loop_multi_exit`. Forward jumps disrupt natural top-to-bottom reading flow significantly.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Redundant variable assignments throughout (e.g., `v4 = v2; v6 = v2; v9 = v3;` in `loop_multi_exit`). Loop unrolling not recognized, creating verbose repeated patterns instead of compact loop constructs.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Inconsistent type usage - `int32_t` used everywhere instead of appropriate `int`. Custom typedefs like `int3_t`, `int33_t` add confusion. `loop_while` has no parameters but should have `int x`. Signed/unsigned mixing is problematic.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Array structures lost - `loop_break` uses pointer arithmetic `*(int32_t *)v3` instead of `arr[i]`. `jmp_buf` structure in `non_local_jump` is expanded inline with anonymous struct instead of proper type. No struct recovery visible.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts throughout (`(int32_t)argv`, `(int33_t)v1`). Function pointer calls in `call_func_ptr` and `call_func_ptr_array` have wrong signatures. `computed_goto` returns address `0x114dc` instead of executing jump.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API documentation. Only auto-generated file header present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns not recognized - factorial recursion converted to iteration without comment, Duff's device not recovered (empty switch), state machines not identified. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly warnings despite severe issues. `loop_dowhile` has infinite loop with no indication, `loop_while` uses uninitialized variable `v1` without warning, missing functions not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `duffs_device` require `n > 0` but this isn't indicated. Error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships obscured - `test_control_flow_l1` hardcodes expected values instead of showing actual function calls. Global variables `g1`, `g2`, `g3` have no semantic names. Callback relationships in `process_with_callback` not clear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped in single file, but organization is arbitrary (alphabetical by decompiler output order). Missing functions create gaps. Global variables scattered without logical grouping.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes necessary headers and compiles (per metadata), but has issues: `loop_while` missing parameter, `test_control_flow_l3` has wrong signature, function pointer calls have mismatched types requiring patches.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (2+4+3+4)/4 = 3.25 × 0.25 = 0.81
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (1+2+1+1)/4 = 1.25 × 0.15 = 0.19
+Level 5 (Contextual):  (3+5+6)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 3.19/10
+```
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects:
+- **10+ functions missing entirely** from decompilation (`sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `nested_if_deep`, `if_elseif_chain`, `if_elseif_long`, `switch_small`, `switch_large`, `switch_default`, `switch_fallthrough`, `goto_forward`, `goto_backward`, `ternary_op`, `multi_return`, `conditional_return`, `tail_recursion`, `indirect_recursion_b`, `state_machine`, `obfuscated_cf`, `opaque_predicate`, `overlapped_code`)
+- **`loop_dowhile` produces infinite loop** - `while(true)` with no exit condition instead of proper do-while
+- **`loop_while` uses uninitialized variable** `v1` as function parameter, causing undefined behavior
+- **Test functions hardcode expected values** instead of calling actual functions, hiding real behavior
+- **Function signatures corrupted** - `test_control_flow_l3` has 4 parameters instead of 0, `call_func_ptr_array` has 4 instead of 2
+
+### Best Quality Aspect:
+- **Build System Compatibility (6/10)** - Code includes necessary headers and reportedly compiles, providing a foundation for manual repair despite semantic issues.
+
+### Most Needs Improvement:
+- **Semantic Transparency (1.25/10 average)** - Zero comments, no anomaly warnings, no contract documentation, and no idiom recognition makes understanding the decompiler's confidence and limitations impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover missing functions** - At -O0 optimization, all 40+ source functions should be recoverable; implement better function boundary detection and symbol recovery.
+2. **Restore structured control flow** - Replace label/goto patterns with proper loop constructs (for/while/do-while) and conditional structures (if-else/switch) using pattern matching on CFG.
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (infinite loops, uninitialized variables, missing functions) with comments to guide manual review.

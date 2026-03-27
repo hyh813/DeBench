@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar2` with no semantic meaning. Original source had `temp1`, `temp2`, `sum`, `count` which were at least contextually meaningful.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved correctly (`sequential_ops`, `nested_if_2`, `recursion_factorial`), but helper functions use generic names (`FUN_00100940`) and some test infrastructure functions are unclear.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear in hex format (`0x14`, `0x1e`, `0x32`) without explanation. Test functions hardcode expected values instead of computing them, obscuring the relationship between inputs and outputs.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant stack canary noise (`___stack_chk_guard`, `local_8`), redundant local variables for stack management, and excessive type casts throughout. Functions like `fsm_func_table` have ~50 lines of variable copying noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered as do-while patterns, but `switch_fallthrough` still uses goto labels (`LAB_00100e40`). Switch statements often degraded to nested if-else chains (`switch_large` has 6 levels of nesting).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved correctly, but test functions are bloated with hardcoded printf values. Helper functions like `op_add`, `double_value` properly separated.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Several functions use goto labels disrupting flow (`switch_fallthrough`, `duffs_device`). Deep nesting in `switch_large` and `nested_if_deep` makes top-to-bottom reading difficult.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Test functions hardcode expected values instead of calling functions (e.g., `__printf_chk(1,"CF-L1-01...: %d\n",0x15)` instead of `sequential_ops(5,7,3)`). Stack canary checks repeated in every function.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Widespread type degradation: `undefined4`, `undefined8`, `ulong` used inconsistently. `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `char` instead of `int`. Function pointers use generic `code *` type.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays not recovered properly—`loop_break` shows stack variables (`local_20`, `uStack_18`) instead of `int arr[] = {10,20,30,40,50}`. Function pointer arrays exist but with external symbol references (`PTR_double_value_00114010`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout (`(ulong)`, `(int)`, `(ulong)(param_2 & 0x1f)`). `state_done` has wrong signature (no parameters vs. original `int event`). Function pointer calls use generic signatures losing type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic. Original source had extensive documentation for each function (purpose, test cases, difficulty level). Only decompiler header comment present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Duff's device (`duffs_device`) decompiled to complex goto mess without pattern recognition. State machines not identified. Switch fall-through not annotated as intentional pattern.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly marker found (`UNRECOVERED_JUMPTABLE` in `computed_goto`). Incorrect return types and logic errors not flagged as uncertain. Type mismatches silently present.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No error condition documentation. Original test validation comments completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. External symbol references (`PTR_op_add_00114028`) obscure call graph. No indication of which functions are test helpers vs. core logic.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source, but no file separation or header structure. Test functions mixed with implementation functions in single output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile as-is. Undefined symbols (`tmp_ldXn` in `fsm_func_table`), external references need stubs, stack canary infrastructure required. Test functions have wrong signatures (void return vs. expected values).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+6+5+4)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+3+3+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.24/10
+```
+
+**Overall Readability Score: 4.2/10**
+
+### Critical Defects:
+- **Test functions completely broken**: Hardcoded expected values instead of actual function calls (e.g., `test_control_flow_l1` prints `0x15` instead of calling `sequential_ops(5,7,3)`)
+- **Variable names universally generic**: `param_1`, `iVar1`, `uVar2` provide zero semantic information
+- **Type system severely degraded**: `undefined4`, `undefined8`, wrong return types (`bool` vs `int`, `char` vs `int`)
+- **Zero documentation**: No comments explaining logic, algorithms, or intent
+- **Compilation failures**: Undefined symbols (`tmp_ldXn`), external references need stubs, won't build standalone
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core algorithm function names preserved from source (`sequential_ops`, `recursion_factorial`, `nested_if_2`), making it possible to identify what each function should do.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any explanatory comments; original source had extensive documentation for every function including test cases and difficulty ratings.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover test function semantics**: Instead of hardcoding expected values, preserve actual function calls with their arguments to maintain executable test coverage.
+2. **Implement semantic variable naming**: Use data flow analysis to infer variable purposes (e.g., variables used in loop bounds → `count`, `index`; variables accumulating values → `sum`, `total`).
+3. **Add decompilation confidence annotations**: Flag uncertain recoveries (wrong types, unresolved jumps, potential logic errors) with comments like `// DECOMPILER_UNCERTAIN: return type may be int not char`.

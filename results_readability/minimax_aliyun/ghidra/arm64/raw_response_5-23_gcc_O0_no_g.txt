@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters are named `param_1`, `param_2`, etc., and local variables use cryptic names like `local_8`, `local_4`, `uVar1`, `iVar1`, `sVar1`. The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: About half the functions retain good names from the source (e.g., `param_macro_constants`, `call_asm_basic`, `my_func`), but many are generic like `FUN_00100880`, `FUN_00100a7c`. The naming is inconsistent - some semantic meaning preserved but not uniformly.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most magic numbers are meaningful - `0x401` (1025) for MAX_SIZE comparison, `0x200` (512) for MAX_SIZE/2, `0x40` (64) for BUFFER_COUNT*4. However, `0xdef0` in `param_multi_branch_compile` and `0x22` in mmap calls lack explanation. String literals like "Hello World" are correctly preserved.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`if (local_8 - ___stack_chk_guard != 0) { __stack_chk_fail(...) }`) appear in 6+ functions, adding noise. These compiler insertions obscure the actual logic but are expected at -O0. Some "WARNING: Removing unreachable block" comments add clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - uses standard if/else, for loops, and return statements. At -O0, the decompiled flow closely matches source. Example: `param_asm_clobber` correctly shows a for loop iterating over array elements.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity (5-30 lines each). The decomposition matches the original source - test wrapper functions (`call_*`) separate from implementation functions (`param_*`). No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately (e.g., `param_dynamic_code` returns -1 on mmap failure). No excessive goto or computed jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or significant redundancy. Loop unrolling is minimal (only in SIMD functions where it's appropriate). The code is clean without duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate - `int` for integers, `size_t` for sizes, `uint` for unsigned. However, `undefined8` and `undefined4` appear frequently (should be `int`/`long`). The original source used `int` consistently, which is correctly inferred in most places.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: No complex struct recovery was needed for this source code - it primarily uses primitive types and arrays. Where arrays are used (e.g., `arr` in `param_asm_clobber`), pointer arithmetic is correctly shown.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Minor issues include some unnecessary casts and `undefined8` used for pointers. No severe type safety violations like incorrect pointer arithmetic or buffer overflow patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Ghidra provides file/function headers but no useful logic comments. The original source had extensive comments explaining macro expansion, conditional compilation branches, and assembly semantics - all lost. No explanation of what `param_stringize` does or why `param_variadic_macro` returns `param_1 + 0x32`.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The inline assembly patterns (SIMD, atomic operations, memory protection) are reduced to C code without recognition. The macro expansion patterns are not documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Removing unreachable block", "WARNING: Subroutine does not return"). However, no flags for indirect calls that couldn't be resolved, or for the conditional compilation branches that were selected at compile time.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had clear expectations (e.g., "期望: 64", "期望: 30") that are completely lost. No documentation of error conditions or return value meanings.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are syntactically clear (e.g., `call_macro_constants()` calls `param_macro_constants(0x800)`), but no documentation of who calls whom or global variable usage. The relationship between `test_preprocessing_features` and its called functions is not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are reasonably grouped - preprocessing test functions together, asm test functions together, main at end. However, all in single file with no logical section markers. Static functions (`my_func`, `header_func`) correctly identified.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with minor warnings. External dependencies (printf, memcpy, mmap, sysconf) are correctly referenced. No header declarations provided, but standard library functions are assumed available.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming is severely degraded: `param_1`, `param_2`, `local_8`, `uVar1`, `iVar1` provide no semantic meaning
+- All macro semantics lost - `SQUARE(x)`, `MAX(a,b)`, `ADD_16(x)` expanded but not documented
+- No comments explaining the original preprocessing and assembly features
+- Conditional compilation branches (`#ifdef DEBUG_MODE`, `#if PLATFORM==1`) selected at compile time with no indication
+- Stack canary noise (`___stack_chk_guard`) clutters 6+ functions
+
+**Best Quality Aspect:** Structural Intelligibility (scored 8.25/10)  
+Control flow is natural, functions are well-decomposed, and code reads linearly without excessive jumps or redundancy.
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.5/10)  
+The decompiled code lacks any meaningful comments, pattern recognition, or indication of anomalies. The rich semantic information from the original source (macro purposes, conditional branches, expected values) is completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `param_1` compared against `0x401` should be named `size`; `local_8` accumulating array elements should be `sum`
+2. **Recover macro semantics**: Detect repeated patterns like `param_1 * param_1` and suggest it represents `SQUARE(x)`; recognize `param_1 + 0x10` as `ADD_16(x)`
+3. **Add semantic annotations**: Document which conditional branches were taken (e.g., "DEBUG_MODE not defined"), flag inline assembly replacement with C equivalents, and preserve expected return values from call sites

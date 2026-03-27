@@ -1,0 +1,120 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 5/10**
+Justification: Mixed results - some variables like `obj`, `pb`, `pd`, `capture_by_value`, `capture_by_ref` are well-named matching source intent. However, most locals use generic patterns like `iVar1`, `iVar2`, `iVar3`, `lVar1`, `r1`, `r2`, `r3` which obscure their semantic roles (e.g., `iVar2` should be `getValue_result`).
+
+### 2. Function Naming Quality
+**Score: 7/10**
+Justification: Core test functions (`test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`) and member functions (`SimpleClass::getValue`, `Base::virtual_func`) are accurately named. However, internal functions like `FUN_00102020` and excessive `__thiscall` annotations add noise. Template functions like `template_max<int>` are correctly identified.
+
+### 3. Literal Clarity
+**Score: 6/10**
+Justification: String literals like "Test" and numeric constants like `5`, `10`, `3` are clear from context. However, magic number `0x1234` (getClassID return value) lacks explanation, and hex values like `0x1f` (31 = sizeof(name)-1) are unexplained. Some literals like `0x14` (20) are used without comments.
+
+### 4. Noise Reduction
+**Score: 4/10**
+Justification: Significant compiler artifacts present - numerous "WARNING: Unknown calling convention" comments, stack canary checks (`__stack_chk_fail`), "WARNING: Removing unreachable block" annotations, and thunk function markers ("non-virtual thunk to..."). Exception try/catch annotations add clutter. These artifacts significantly impede readability.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Standard if/else structures are natural. Loop constructs in template functions are clear. Exception handling shows try/catch annotations. Stack protection adds extra branches but is expected at -O0. Some forward jumps exist but are manageable. Overall logic is followable.
+
+### 6. Function Decomposition
+**Score: 7/10**
+Justification: Good granularity - member functions extracted correctly, template instantiations are separate functions. Functions are reasonably sized (not monolithic). Some thunk functions exist for virtual dispatch which is necessary. Minor issue: some destructors have multiple variants (virtual thunk, non-virtual thunk, complete object) which fragments the concept.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom. Early returns present in some functions. Exception handling adds some non-linearity but is expected. No severe goto abuse. The code flows reasonably well despite some forward jumps in complex functions.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No obvious dead code. Loop unrolling is minimal. Common subexpression elimination is not excessive. Some duplicate destructor variants exist but that's compiler-generated and unavoidable. Template instantiations are separate but that's correct behavior.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Types are mostly accurate - `int`, `char*`, `bool` used correctly. Function pointers have specific signatures like `_func_int_varargs **`. However, generic `int` is used where `int32_t` or `size_t` would be more precise. Some `undefined4`, `undefined8` types present. Const correctness is partially preserved.
+
+### 10. Composite Type Recovery
+**Score: 8/10**
+Justification: Structs like `SimpleClass`, `Base`, `Derived`, `MultiDerived` are properly reconstructed with correct field names (`value`, `name`, `multiplier`, `dataA`, `dataB`). Inheritance represented with `super_` prefixes. Minor issues: some fields like `field_0x20`, `field_0x40` are generic, and there's a warning about "ignoring overlapping field" for DiamondDerived.
+
+### 11. Type Safety
+**Score: 8/10**
+Justification: No obvious unsafe casts. Pointer arithmetic is correct for array access. Function pointer types are specific. Some void pointer usage in generic structures but minimal. Buffer access patterns are safe with bounds checking in Container::get.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+Justification: Sparse useful comments. Function prototypes have "DWARF original prototype" annotations which are auto-generated. "WARNING" comments about calling conventions add noise but not insight. No algorithm explanations or non-obvious logic documentation. No decompilation confidence indicators. Comments are mostly metadata, not semantic guidance.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Virtual function calls through vtable are recognized. RAII pattern visible through destructor calls. Exception handling partially recognized with try/catch annotations. However, no explicit pattern naming (e.g., "State machine pattern", "RAII resource management"). Some C++ idioms are present but not highlighted.
+
+### 14. Anomaly Indication
+**Score: 4/10**
+Justification: "WARNING" comments exist for unknown calling conventions and struct overlapping, but these are generic. No clear flags for indirect calls that couldn't be resolved. No indication of unusual stack layouts or potential undefined behavior. The "WARNING" messages don't explain the impact or provide guidance for manual analysis.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: No pre/postcondition recovery. No invariant detection. Parameter documentation in function prototypes is minimal (just types). No error condition documentation. The decompiled code presents no information about what conditions must hold before/after function calls.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 7/10**
+Justification: Function call relationships are clear - you can see `SimpleClass::getValue(&obj)` being called. Virtual dispatch shown through vtable access (`obj->_vptr_Base`). Static member access via `SimpleClass::getClassID()` is clear. However, no explicit "called by" or "calls" documentation. Relationships are inferable but not explicitly documented.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically - test functions together, member functions by class, template instantiations separate. Related functions (constructors/destructors) are near each other. Standard library support functions are grouped. However, no namespace structure recovered, and all functions in single output rather than logical sections.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+Justification: Code uses standard C++ constructs that should compile. However, types like `undefined4`, `undefined8`, `pointer`, `type` need definitions. Some undefined functions like `operator_new`, `operator_delete` need stubs. The code requires moderate patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (5 + 7 + 6 + 4) / 4 = 5.50
+L2_avg = (7 + 7 + 7 + 7) / 4 = 7.00
+L3_avg = (7 + 8 + 8) / 3 = 7.67
+L4_avg = (4 + 5 + 4 + 3) / 4 = 4.00
+L5_avg = (7 + 7 + 5) / 3 = 6.33
+
+Overall = (5.50 × 0.30) + (7.00 × 0.25) + (7.67 × 0.20) + (4.00 × 0.15) + (6.33 × 0.10)
+        = 1.65 + 1.75 + 1.53 + 0.60 + 0.63 = 6.16/10
+```
+
+**Overall Readability Score: 6.2/10**
+
+### Critical Defects
+- Variable naming uses generic patterns (`iVar1`, `iVar2`, `lVar1`, `r1`, `r2`) obscuring semantic purpose
+- Excessive compiler noise ("WARNING: Unknown calling convention", stack canary checks, thunk annotations)
+- No comment quality - only auto-generated metadata without semantic guidance
+- No contract/precondition/postcondition recovery
+- Anomaly indication is generic without actionable guidance
+
+### Best Quality Aspect: Type System Fidelity (7.67/10)
+Structures are well-reconstructed with correct field names and inheritance relationships. Types are mostly accurate and type safety is good.
+
+### Most Needs Improvement: Semantic Transparency (4.0/10)
+Comments are auto-generated metadata without useful semantic guidance. No pattern recognition, contract recovery, or anomaly indication that helps analysts understand the code.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns** - `iVar2` used as `SimpleClass::getValue` result should be named `value` or `getValue_result`
+2. **Reduce compiler artifact noise** - Filter out "WARNING: Unknown calling convention" and stack canary annotations from main output
+3. **Add semantic comments** - Include algorithm explanations, pattern identification (e.g., "RAII pattern", "Virtual dispatch via vtable"), and decompilation confidence indicators

@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic stack offsets like `local_30`, `local_11`, and `param_1`, completely losing semantic names like `value`, `name`, or `capture_by_value` found in the source.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are excellently recovered from symbols (e.g., `test_cpp_member_func`, `Base::virtual_func`, `Derived::virtual_func`), accurately reflecting the original C++ methods.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals like `"Test"` are preserved, but numeric constants appear as magic numbers in hex (e.g., `0x125c` for 4704, `0x32` for 50) without the original named constants or clear decimal representation.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean of register spilling artifacts, though standard stack canary checks (`__stack_chk_fail`) and casts to `undefined*` are present, which is typical for modern binaries.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally linear and natural with `if` statements, but complex C++ exception handling (`try/catch` blocks) is not reconstructed into high-level flow control, reducing clarity in `test_cpp_exception`.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-separated and match the source granularity; template instantiations are correctly identified as separate functions (e.g., `template_max_int_`).
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal jumps or `goto` statements, making execution paths easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is little dead code; however, some functions appear optimized by the compiler (e.g., `test_cpp_lambda` returning constant `0x55`), which is accurate but abstracts away the logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: C++ types are largely degraded to generic C types like `undefined4`, `undefined8`, and `int`; specific types like `std::unique_ptr` or `SimpleClass` are not preserved in the stack frames.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Class objects on the stack are flattened into raw variables (e.g., `SimpleClass obj` becomes `char local_30[31]` and `undefined local_11`), completely losing the class structure and member encapsulation.
+
+**11. Type Safety:** Score: 4/10
+Justification: Heavy use of `undefined` types and explicit pointer casts (e.g., `*(undefined8 *)this = 0x105920`) obscures type safety and makes the code look unsafe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are no comments explaining the logic, algorithms, or C++ specific constructs; the output is purely raw pseudocode.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: Low-level C++ idioms like vtable calls (`(***(code ***)param_1)()`), `operator_new`, and `__cxa_throw` are clearly visible, though not abstracted into high-level concepts like "virtual call" or "exception throw".
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Standard decompiler output without specific flags for anomalies, though the presence of `undefined` types implicitly signals type recovery uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred from the code.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to understand (e.g., `test_cpp_oo_features` calling specific test functions).
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically by class and functionality, though the flattened order is address-based rather than source-based.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code is C-centric pseudocode (e.g., `Base::virtual_func(Base *this, ...)`) and will not compile as valid C++ due to syntax and type mismatches.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- C++ class objects on the stack are flattened into raw arrays and primitives (e.g., `SimpleClass` -> `local_30`), destroying object-oriented context.
+- Exception handling logic (`try/catch` blocks) is not reconstructed; only the low-level `__cxa_throw` mechanism is visible.
+- Types are generic (`undefined4`, `undefined8`) rather than specific C++ types (`int`, `std::unique_ptr`), requiring manual type tracking.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully recovered symbol names for functions and methods, providing a crucial anchor for understanding the code.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- The failure to reconstruct class structures on the stack is the most significant barrier to readability, turning object-oriented code into a flat list of variables.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement C++-specific stack variable analysis to reconstruct class objects from stack slots rather than flattening them into arrays/primitives.
+2. Enhance exception handling recovery to map `__cxa` calls back into `try/catch` block structures.
+3. Improve type propagation to replace generic `undefined` types with specific integer/pointer types based on usage context.

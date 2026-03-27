@@ -1,0 +1,147 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+Justification: Variables are almost exclusively named with single letters (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`) or generic names like `result`, `result2`, `str`, `len`. The original source uses meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value`, `capture_by_ref`. The decompilation completely loses this semantic information.
+
+### 2. Function Naming Quality
+**Score: 4/10**
+
+Justification: While demangled names appear in comments (e.g., "// Demangled: test_cpp_member_func()"), the actual function definitions use mangled C++ names (`_Z20test_cpp_member_funcv`) or generic addresses (`function_1030`, `function_1040`). Standard library functions like `printf`, `strlen`, `malloc` are also wrapped in generic function wrappers.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Multiple unexplained magic numbers appear throughout (e.g., `0x3fe8`, `0x3fc8`, `0x40a0`, `0x3d78`, `0x3da0`). The values `4`, `8`, `20`, `40` used for sizes/offsets have no explanation. String literals are present but encoded with escape sequences. No named constants replace magic numbers.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Justification: Significant noise includes: `__asm_movups_5`, `__asm_hlt`, `__asm_xorps`, `__asm_maxsd`, `__asm_movsd` inline assembly blocks; unnecessary casts like `(int64_t *)`, `(int32_t *)` throughout; unreachable code marked "UNREACHABLE"; auto-generated struct definitions for vtables; and placeholder comments like "Address range: 0x1000 - 0x101b".
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Justification: At -O0 optimization, control flow is relatively natural. Loops use while constructs, conditionals are readable. Minor issues include some awkward expressions in template functions (e.g., the complex ternary in `template_max`). The exception handling code uses `_Unwind_Resume` which is low-level but expected for C++ exceptions.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Functions are reasonably decomposed - each test function (`test_cpp_member_func`, `test_cpp_constructor`, etc.) is separate. Template functions are properly instantiated. Some functions like `test_cpp_oo_features` are larger but correspond to the original `test_cpp_oo_features()` function. Minor issue: standard library calls wrapped in generic function wrappers.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately. No excessive goto statements or confusing jumps. The main disruption is in `test_cpp_exception` where the control flow involves exception machinery but still follows logical structure.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: No significant dead code observed. Some repetitive patterns in template instantiations (Container<int> and Container<double> have similar code) but this is expected from separate instantiation. Loop unrolling is minimal at -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Uses `int32_t` and `int64_t` consistently, which is good. However, almost all pointers are represented as `int64_t *` or `void *` rather than proper types. The original `SimpleClass`, `Base`, `Derived`, etc. are not recovered as types - just `int64_t` pointers. Const correctness is lost.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: Two vtable structures are recovered (`vtable_3d78_type`, `vtable_3da0_type`) with generic field names `e0`, `e1`, `e2`. No class structures (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`, etc.) are reconstructed. The original source has meaningful struct/class definitions that are completely lost.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Multiple unsafe patterns observed: `(int64_t *)a1` casts throughout; pointer arithmetic like `v2 += 4`, `v1 + 40` without bounds checking; `(int64_t *)(int64_t)size` type punning; uninitialized variables returned (e.g., `int64_t result; return result;`). The code has potential undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 5/10**
+
+Justification: Comments provide demangled function names and occasional "From class:" / "Type:" metadata. However, no explanation of algorithm logic, no @param/@return documentation, no indication of uncertainty. The comment "UNREACHABLE" is useful but rare. Most code has no explanatory comments.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+Justification: No design patterns or algorithms are identified or named. The original source uses RAII (smart pointers), virtual dispatch (vtable), exceptions, templates, lambda expressions - none of these are explicitly recognized or documented as patterns.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+Justification: No flagging of suspicious code or uncertainties. The complex expression in `template_max` (`v1 < 0 == ((v1 ^ a1) & (a2 ^ a1)) < 0 == (v1 != 0)`) is presented without comment that this is a branchless max implementation. No indication of indirect call resolution failures or unusual stack layouts.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The original source has implicit contracts (e.g., `Container::get` should have idx < size, `template_swap` requires valid references) that are not recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Justification: Function call relationships can be inferred from the code (e.g., `test_cpp_oo_features` calls other test functions). However, no explicit documentation of call graph, no indication of which functions call `call_virtual_func`, no global variable usage documentation. Virtual dispatch relationships (vtable usage) are not clearly documented.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Justification: Functions are grouped in a single file which is reasonable for decompilation output. Related functions (template instantiations, class methods) are near each other. However, the original source's clear separation into classes and test functions is not reflected - everything is flat.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+
+Justification: Code includes necessary headers (`stdint.h`, `stdio.h`, `stdlib.h`, `string.h`). Function prototypes are declared. However, the code uses non-standard `__asm_` intrinsics which may not compile on all platforms. The code would require significant patching to compile (replacing intrinsics, fixing type issues).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 4 + 4 + 3) / 4 = 3.50
+L2_avg = (7 + 7 + 7 + 7) / 4 = 7.00
+L3_avg = (5 + 4 + 4) / 3 = 4.33
+L4_avg = (5 + 3 + 2 + 2) / 4 = 3.00
+L5_avg = (4 + 6 + 6) / 3 = 5.33
+
+Overall = (3.50 × 0.30) + (7.00 × 0.25) + (4.33 × 0.20) + (3.00 × 0.15) + (5.33 × 0.10)
+        = 1.050 + 1.750 + 0.866 + 0.450 + 0.533
+        = 4.65/10
+```
+
+### Overall Readability Score: 4.65/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All meaningful variable names lost - `value`, `name`, `data`, `size`, `multiplier` become `v1`, `v2`, `result`
+- **Class/struct recovery**: No class structures recovered - `SimpleClass`, `Base`, `Derived` completely absent; only raw `int64_t` pointers
+- **Type safety**: Multiple unsafe casts and pointer arithmetic without bounds checking; uninitialized variables returned
+- **Noise**: Excessive `__asm_` intrinsics, unreachable code blocks, auto-generated struct definitions cluttering output
+- **No semantic annotations**: No pattern recognition, no contract recovery, no anomaly flagging
+
+### Best Quality Aspect: Structural Intelligibility (7.0/10)
+Control flow is natural and readable at -O0, functions are reasonably decomposed, and code linearization is good. The decompiler correctly recovers loop and conditional structures.
+
+### Most Needs Improvement: Lexical Clarity (3.5/10)
+Variable naming is nearly unusable with single-letter names throughout. Function names are mangled or generic. Magic numbers are unexplained. Significant noise from assembly intrinsics.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `v3` compared against 9 in size check → should be named `size` or `count`)
+2. **Recover class/struct definitions**: Reconstruct C++ classes with proper field names rather than raw pointer arithmetic; the vtable structures show this is partially possible
+3. **Add semantic annotations**: Flag complex idioms (branchless max), document preconditions/postconditions, indicate uncertainties in decompilation

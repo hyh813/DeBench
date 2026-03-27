@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10
+Justification: Variables are exclusively generic names like `v0`, `v1`, `ptr`, and `arg_0`. Struct fields are named `padding_0` and `field_X`, offering no semantic insight into the original C++ class members like `value` or `name`.
+
+**2. Function Naming Quality:** Score: 3/10
+Justification: While some C++ mangled names are successfully demangled (e.g., `Base::virtual_func`, `test_cpp_exception`), the vast majority of functions are generic addresses (`sub_401030`, `sub_401040`). Even where names are recovered, the content is often indecipherable.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: String literals like `"Test"` are preserved, but numeric logic is obscured. The code is littered with debug artifacts like `nan` resulting from failed lifting, and magic numbers (e.g., `42`, `4`) lack the context provided by the original source's constants or variable names.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The decompilation is extremely noisy, containing extensive debug markers such as `[D] Unsupported jumpkind`, `[D] PutI`, and `[D] unsupported_<class 'pyvex.expr.GetI'>`. These artifacts render the code syntactically invalid and visually chaotic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is heavily disrupted by `goto` statements and failed decompilation blocks. Virtual function calls are represented as computed gotos (e.g., `goto v1->field_54`), completely obscuring the object-oriented polymorphism present in the source.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: The original functions are mapped to specific addresses, so the high-level decomposition exists. However, the bodies are often reduced to calls to opaque stubs like `sub_401030` (likely `operator new`), making the internal logic invisible.
+
+**7. Code Linearization:** Score: 2/10
+Justification: The code does not read linearly. It is interrupted by `if ([D] unsupported...)` blocks and computed jumps. The flow of execution is impossible to follow without mentally simulating the low-level assembly.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: There is no apparent simplification of the logic. The repetitive calls to `sub_401030` suggest a failure to inline or recognize standard allocation patterns, and the debug artifacts add significant redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Types are severely degraded. C++ class instances are treated as generic `struct_0` or `void*`. Pointers are frequently cast to `unsigned int` (indicating 32-bit architecture), and the rich type system of the original source (templates, smart pointers) is lost.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Class definitions are not recovered. `class Base` is defined as an empty struct, and `SimpleClass` members are not reconstructed. The decompiler relies on generic `struct_0` definitions with `padding` and numbered fields, failing to capture the object layout.
+
+**11. Type Safety:** Score: 1/10
+Justification: The code exhibits severe type safety violations. Pointers are treated as integers, and computed gotos (`goto v1->field_54`) are used to simulate function calls, bypassing any type checking or function signature safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic. The only text present are raw decompiler error messages (`[D] ...`), which indicate failure rather than explaining the code's intent.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: High-level C++ idioms are completely missed. RAII, smart pointers, exception handling (`try/catch`), and template instantiations are not recognized; they appear only as low-level memory operations and indirect jumps.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler explicitly marks where it failed with `[D] Unsupported ...` tags. While this is not "user-friendly" documentation, it accurately signals that the decompilation is unreliable at those points, preventing silent misinterpretation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are recovered. The logic of the original functions (e.g., checking bounds in `Container::get`) is lost in the noise of failed lifting.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: Mangled symbol names provide some hint of the class hierarchy (e.g., `_ZN7Derived12virtual_funcEi`), but the call graph is broken. Calls to standard library functions or member functions are often obscured by generic `sub_` addresses.
+
+**17. Module Organization:** Score: 4/10
+Justification: Functions are listed in address order. While the demangled names hint at the original module structure (grouping by class), the flat listing and lack of namespace recovery make it difficult to navigate the original logical organization.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not compilable. It contains invalid syntax like `[D] ...` tags and `goto` statements targeting non-label expressions (computed gotos), which are not standard C.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.0/10
+
+**Critical Defects:**
+- **Decompiler Failure Artifacts:** The code is filled with `[D] Unsupported ...` and `[D] PutI` markers, indicating the lifting engine (likely Angr/VEX) failed to process the instructions.
+- **Loss of Object-Oriented Semantics:** C++ classes, inheritance, and virtual tables are not recovered; instead, the code uses raw pointer arithmetic and computed gotos.
+- **Type System Collapse:** All user-defined types are reduced to generic `struct_0` or `void*`, losing all semantic information about the program's data structures.
+- **Architecture Mismatch:** The source metadata specifies `arm64`, but the decompiled code is clearly 32-bit x86 (evidenced by `get_pc_thunk`, `ebp` frames, and pointer sizes), leading to a fundamental disconnect in the evaluation.
+
+**Best Quality Aspect:** Anomaly Indication (Score: 5/10)
+- **Why?** The decompiler explicitly flags its own failures with debug markers, which, while ugly, prevents the user from blindly trusting incorrect code.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 1/10)
+- **Why?** The failure to reconstruct `class` definitions with their correct members and inheritance relationships renders the C++ code completely unintelligible as an object-oriented program.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Fix Instruction Lifting:** Address the VEX IR lifting errors that result in `[D] Unsupported ...` output, particularly for floating-point and SIMD operations used in the template functions.
+2.  **Implement C++ ABI Recovery:** Add logic to detect and reconstruct C++ class layouts, vtables, and inheritance hierarchies instead of emitting computed gotos.
+3.  **Standard Library Recognition:** Improve signature matching to recognize common C++ standard library functions (like `operator new`, `strlen`, `printf`) to replace generic `sub_` addresses with meaningful names.

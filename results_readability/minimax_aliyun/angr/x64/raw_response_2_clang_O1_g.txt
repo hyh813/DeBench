@@ -1,0 +1,168 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: All parameters use generic names (`a0`, `a1`, `a2`, `ptr`) and local variables are numbered (`v0`, `v1`, `v2`, `i`, `idx`). The decompiler makes no attempt to infer semantic meaning from usage patterns. For example, in `array_1d_stack`, the parameter `ptr` should be named `arr` and `a1` should be `n` based on the original source.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: The decompiler successfully recovered most function names from debug symbols, including `process_char`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. Some helper/thunk functions remain as `sub_401020`, but the core test functions are correctly named.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: The decompiler replaced expressions with computed literal values (e.g., `printf("DT-L1-01 (process_char): %c\n", 97)` instead of `process_char('A')`). Magic numbers like `4294967295` (0xFFFFFFFF) appear without explanation. Float constants like `0x3fc00000` are unexplained. The original expressions are completely lost.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+Justification: Severe Angr-specific artifacts pollute the output. Examples include `[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] PutI(904:F64x8)[t4,0] = t7()`, and `amd64g_dirtyhelper_storeF80le`. The `process_ld` function is almost entirely VEX IR instructions. These internal decompiler constructs make the code nearly unusable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Justification: The decompiler uses do-while loops instead of for loops (e.g., `array_1d_stack` uses `do { ... } while (a1 != i)`). This is a common decompilation pattern but less readable than the original for-loops. At -O0, this transformation is unnecessary. Some functions like `process_char` use complex ternary expressions that are harder to read.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Functions maintain appropriate granularity matching the original source. Each test function (`test_data_types_l1`, `test_array_types`, etc.) is properly separated. Parameter counts match the original (e.g., `ptr_func_complex` correctly has 2 parameters). No over-fragmentation or monoliths observed.
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Justification: Most functions read top-to-bottom without excessive jumps. The `array_2d_stack` uses a do-while with `i += 44` stride which is readable. Some test functions have complex initialization code before the main logic, but the overall flow is traceable.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+Justification: Test functions contain significant redundancy - they pre-compute all expected values and print them directly rather than calling the functions being tested. For example, `test_data_types_l1` prints `printf("DT-L1-01 (process_char): %c\n", 97)` without actually calling `process_char('A')`. This loses the ability to verify the functions work.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Mixed results. `process_char` returns `long long` instead of `char`. `process_bool` returns `char` instead of `_Bool`. `volatile_access` returns `unsigned int` instead of `int`. However, pointer types are generally correct (`unsigned int *a0` for `const int *p`). The decompiler often uses wider types than necessary.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+Justification: The decompiler creates struct definitions with generic names (`struct_0`, `struct_1`) and generic field names (`field_0`, `field_8`). For `linked_list`, it creates `struct_0 { unsigned int field_0; char padding_4[4]; struct struct_0 *field_8; }` which correctly captures the layout but loses the semantic names (`data`, `next`). Union types are partially recovered but field access is generic.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Several unsafe patterns exist. In `ptr_diff`: `return a0 - a1 >> 2;` has operator precedence issues (should be `(a0 - a1) >> 2`). The `ptr_func_simple` treats function pointer as `unsigned long long` and calls it directly: `a0(a1)`. In `array_string`, the return value calculation is confusing: `return v2 + 1;` where `v2` is uninitialized. Multiple unsafe casts between pointer types.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+Justification: No meaningful comments exist in the output. The only "comments" are Angr internal markers like `[D] Unsupported jumpkind` which are noise, not helpful documentation. No explanation of algorithms, no @param/@return documentation, no indication of what the functions do.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: The decompiler does not explicitly identify or name patterns. However, the code structure does reveal some patterns - linked lists use self-referential structs, binary trees use recursive calls. But these are not highlighted or named (e.g., "Implements: singly linked list traversal").
+
+### 14. Anomaly Indication
+**Score: 4/10**
+
+Justification: Anomalies are indicated with `[D]` markers, but the messages are not actionable. For example: `[D] Unsupported jumpkind Ijk_SigTRAP at address 4198533()` provides no useful context. The `process_ld` function shows "unsupported_<class 'pyvex.expr.GetI'>" but doesn't explain what the function should do or what type it returns.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. For example, `array_complex_index` has implicit bounds checking that could be documented as "requires: x >= 0 && x < width && y >= 0 && y < height". No such documentation exists.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Justification: Function calls are present but relationships are not documented. For example, `ptr_func_simple` calls the function pointer passed as parameter, but there's no comment indicating it's a callback pattern. No indication of which functions call which, or global variable usage.
+
+### 17. Module Organization
+**Score: 4/10**
+
+Justification: Functions are organized by address rather than logically grouped. The original groups (data types, arrays, pointers, composite types) are not reflected in the decompiled output. All functions appear in a flat list sorted by address.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+
+Justification: The code has `extern` declarations for external symbols (`g_403fe0`, `g_404008`, etc.) but these globals are not defined. The code would not compile standalone without stub definitions. Some functions like `process_float` and `process_double` have incorrect implementations that wouldn't produce correct results.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 3 + 2) / 4 = 3.75
+L2_avg = (5 + 8 + 6 + 5) / 4 = 6.00
+L3_avg = (5 + 5 + 4) / 3 = 4.67
+L4_avg = (1 + 4 + 4 + 1) / 4 = 2.50
+L5_avg = (3 + 4 + 5) / 3 = 4.00
+
+Overall = (3.75 × 0.30) + (6.00 × 0.25) + (4.67 × 0.20) + 
+          (2.50 × 0.15) + (4.00 × 0.10)
+        = 1.125 + 1.5 + 0.934 + 0.375 + 0.4
+        = 4.33/10
+```
+
+**Overall Readability Score: 4.33/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming is completely generic**: All parameters are `a0`, `a1`, `a2` and locals are `v0`, `v1`, `v2`, making it impossible to track purpose without reading the entire function.
+
+2. **Expressions replaced with computed literals**: Test functions print hardcoded expected values (e.g., `printf("...: %d\n", 15)`) instead of calling the actual functions, losing the ability to verify correctness.
+
+3. **Severe Angr artifact pollution**: Functions like `process_ld` and `test_data_types_l1` contain VEX IR instructions (`[D] PutI`, `amd64g_dirtyhelper_storeF80le`) that make the code unreadable.
+
+4. **No comments or documentation**: Zero meaningful comments explaining what functions do, their parameters, return values, or any algorithmic context.
+
+5. **Type precision issues**: `process_char` returns `long long` instead of `char`, `process_bool` returns `char` instead of `_Bool`, losing type fidelity from the original source.
+
+---
+
+### Best Quality Aspect (Single Dimension)
+
+**Function Naming Quality (8/10)**  
+The decompiler successfully recovered most function names from debug symbols, including all the test functions and core logic functions like `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`. This is the strongest area.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+
+**Comment Quality & Presence (1/10)**  
+The complete absence of meaningful comments is a severe readability issue. Even basic documentation explaining what each function does, its parameters, or the algorithm would dramatically improve usability. Combined with Angr's internal `[D]` markers being treated as "comments," this dimension is essentially failed.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, pointer dereferencing, arithmetic) to suggest semantic names. For example, `ptr + i * 4` suggests an `int` array named `arr` or similar.
+
+2. **Recover original expressions instead of computing literals**: Instead of printing `printf("...: %d\n", 15)`, the decompiler should emit `printf("...: %d\n", process_int(5))` to preserve the function call and enable verification.
+
+3. **Filter internal decompiler artifacts**: Remove or hide VEX IR instructions (`[D] PutI`, `amd64g_dirtyhelper_*`) and unsupported operation markers from the output. These are useful for debugging the decompiler but harmful to code readability.

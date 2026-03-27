@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `local_14`, `local_1c`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `thread_count`, `iterations_per_thread` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved (`param_strcpy`, `call_strcpy`, `param_mutex_lock`) but optimization artifacts added confusing suffixes (`param_fork_exec.part.0`, `param_thread_local_storage.constprop.0`). External functions marked `<EXTERNAL>::` which is helpful.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers in hex obscure meaning: `0x2a` (42), `0x5a` (90), `0xc` (12), `0xf` (15). Signal numbers as raw values (10 for SIGUSR1, 0xe for SIGALRM) without explanation. Some string literals preserved ("BinBench Test Data", "Thread-%d").
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`local_14`, `__stack_chk_fail()`) appear in nearly every function as boilerplate. Atomic operations expanded into verbose `__sync_synchronize()` sequences. External function stubs add 50+ lines of noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as do-while constructs, but error handling uses goto labels (`LAB_00011458`, `LAB_00012010`). Fork/exec logic in `param_fork_exec` is fragmented across multiple functions making flow hard to trace.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but compiler created fragmented variants (`param_fork_exec.part.0` for child process code). Thread helper functions (`thread_sum`, `thread_compute`) correctly separated but parameter types degraded.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps to error labels disrupt top-to-bottom reading. Deep nesting in `param_thread_local_storage` with multiple do-while loops. Some functions like `call_strcpy` are overly simplified (returns constant 8 directly).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary pattern repeated identically in 20+ functions. `__sync_synchronize()` called multiple times consecutively in atomic functions. `call_*` functions often duplicate logic from `param_*` functions with constant folding.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All integers are generic `int` instead of `int32_t`, `size_t`, `ssize_t`. Pointer types degraded (`void*` instead of `char*`, `int*`). Thread types partially preserved (`pthread_t`, `pthread_mutex_t`) but function pointers often `undefined4`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct definitions recovered. `ThreadData` struct accessed via array indexing (`param_1[0]`, `param_1[1]`, `param_1[2]`). `sockaddr` fields accessed directly (`local_1c.sa_data[2]`, `local_1c.sa_family`) without struct definition.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(pthread_mutex_t *)counter_mutex`, `(int *)malloc(4)`, `(undefined4 *)`. Thread-local storage accessed via raw offset (`*(int *)(iVar1 + 8)`). Pointer arithmetic on void pointers throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test scenarios, and expected values. No decompilation confidence indicators or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `memcpy`, `pthread_create`). Threading patterns (mutex, condition variable, atomic) visible but not named. Producer-consumer pattern in `consumer_thread`/`producer_thread` not identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about decompilation uncertainty. Stack canary checks present without explanation of why. Indirect calls and function pointers not flagged. `halt_baddata()` appears without context in `test_system_calls`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). Return value semantics not explained. Error codes (-1, -2, -3, 0xfffffffd) appear without meaning. Original comments about expected values completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships unclear. Global variables (`signal_received`, `atomic_counter`, `shared_counter`) referenced without declaration context. Thread entry points not linked to creation sites clearly.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output. No grouping by test category (standard library vs. system calls vs. threading). External functions listed separately but mixed with application code. No header file or API boundary.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External function declarations present but type signatures often wrong (`__isoc99_sscanf` returns `void`). Would need significant stubbing for pthread, socket, and syscall functions. Some type mismatches would cause compilation errors.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+6+5+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.733
+Level 4 (Semantic):    (1+4+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 4.34/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable names completely generic**: `param_1`, `iVar1`, `local_14` provide zero semantic information compared to original `dst`, `src`, `buffer`, `thread_count`
+- **Zero comments**: Original 200+ lines of documentation completely lost; no explanation of function purpose or expected behavior
+- **Magic numbers in hex**: `0x2a`, `0x5a`, `0xc`, `0xf` instead of meaningful constants (42, 90, 12, 15)
+- **No struct recovery**: `ThreadData` and `sockaddr` accessed via array indexing instead of named fields
+- **Stack canary noise**: Every function has `local_14/1c` and `__stack_chk_fail()` boilerplate obscuring real logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `param_strcpy`, `param_mutex_lock`, `thread_compute` were preserved from debug symbols, maintaining semantic connection to original source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation; original source had extensive comments explaining test scenarios, expected values, and API contracts that are entirely missing.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from debug symbols** - The `-g` flag was used during compilation; Ghidra should extract and apply DWARF variable names instead of generating `param_1`, `iVar1`
+2. **Add semantic comments for recognized patterns** - Detect standard library calls (strcpy, pthread_create) and add explanatory comments about their purpose and return values
+3. **Recover struct definitions from type information** - Use DWARF type info to reconstruct `ThreadData`, `sockaddr_in`, and other composite types with named fields instead of array access

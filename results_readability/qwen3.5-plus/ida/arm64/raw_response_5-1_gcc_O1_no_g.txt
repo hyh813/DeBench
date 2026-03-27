@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `dest`, `result`, `a1`, `a2`) with no semantic meaning recovered. Original variables like `capture_by_value`, `instance_count`, `shared_data` are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Functions use C++ mangled names (`_Z20test_cpp_member_funcv`) that can be demangled to original names, but helper functions like `sub_1470` remain cryptic. No action-oriented naming recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many test functions return pre-computed constants (71, 22, 85, 703) losing original logic. Magic numbers in pointer arithmetic (`-24LL`, `-32LL`, `-8`) are unexplained and obscure object layout.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Register annotations (`// x0`, `// w19`) and stack frame comments present. 25 functions marked "FAILED to decompile" at end. Some redundant type casts (`(unsigned int)`, `(__int64)`) clutter code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical loss: test functions return constant values instead of showing actual logic (e.g., `test_cpp_lambda` returns 85 directly). Exception handling completely lost—`test_cpp_exception` only throws, no catch blocks recovered.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Virtual thunks properly separated (`virtual thunk to'DiamondDerived::func`). Template instantiations correctly split (`template_max<int>`, `template_max<double>`). C++ ABI decomposition is reasonable.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. However, complex pointer arithmetic expressions span multiple lines disrupting flow (e.g., `*(_DWORD *)((char *)this + *(_QWORD *)(*(_QWORD *)this - 24LL) + 8)`).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding removed semantic information (original computation logic lost). No dead code observed, but optimization artifacts replaced meaningful code with constants.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types (`__int64`, `_DWORD`) instead of proper C++ types (`int`, `size_t`). Some type distinction preserved (`double` vs `int` in template_max), but pointer types often generic (`__int64 *`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**: No class/struct recovery. `SimpleClass`, `LifecycleClass`, `Container` all accessed via raw pointer arithmetic. Field names (`value`, `name`, `data`, `size`) completely lost to offsets like `+40`, `+80`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(__int64 *)`, `(char *)this - 16`). Pointer arithmetic on object pointers without bounds checking. No const-correctness visible. Virtual thunk adjustments (`-16`, `+32`) are error-prone.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated register/stack comments present (`// [xsp+24h] [xbp+24h]`). No algorithm explanations, no API contracts, no decompilation confidence indicators for uncertain code.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ ABI patterns recognized (virtual thunks, vtable calls marked). However, higher-level patterns (RAII, polymorphism, lambda captures, smart pointer semantics) not identified or explained.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: "FAILED to decompile" notices at end are helpful. However, no warnings about semantic loss from constant folding—functions returning constants should be flagged as "logic optimized away."
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `idx < size` checks in Container not explained). No postconditions or invariants recovered. Exception contracts completely missing.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code. Virtual dispatch shown through vtable pointers (`off_13958`, `off_13988`). However, inheritance relationships not clear from code alone—requires manual vtable analysis.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat listing. No namespace/file organization. Static initialization functions (`GLOBAL__sub_I_*`) present but not grouped logically with their targets.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: **Will not compile**: 25 external functions failed to decompile (`operator new`, `__cxa_throw`, `strlen`, etc.). C++ ABI dependencies not documented. Would require extensive stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+5)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+7+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (5+2+3)/3   = 3.33 × 0.20 = 0.666
+Level 4 (Semantic):    (3+4+4+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+4+2)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.17/10
+```
+
+### Overall Readability Score: **4.2/10**
+
+### Critical Defects:
+- **Composite types completely lost**: All C++ classes (`SimpleClass`, `Container`, `Base`, `Derived`) accessed via raw pointer arithmetic instead of struct fields
+- **Semantic logic eliminated**: Test functions return pre-computed constants (85, 703, 22) instead of showing actual computation logic
+- **Exception handling broken**: `test_cpp_exception` only shows throw, no catch blocks recovered—critical for understanding control flow
+- **25 external functions failed**: Essential C++ runtime functions (`operator new`, `__cxa_throw`, `strlen`) not decompiled
+- **Variable names meaningless**: All variables are `v0`, `v1`, `v2`, `result` with no semantic connection to original (`capture_by_value`, `instance_count`, `shared_data`)
+
+### Best Quality Aspect: **Function Decomposition (7/10)**
+- Virtual thunks and template instantiations are properly separated following C++ ABI conventions, showing the decompiler understands C++ calling conventions.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover class/struct definitions—all object access is raw pointer arithmetic losing field names, types, and semantic meaning.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class layouts from vtable analysis**: Use vtable structure to infer class fields and reconstruct struct definitions with meaningful field names based on access patterns.
+
+2. **Flag constant-folded functions as "logic optimized"**: When a function returns a pre-computed constant, add comments indicating original computation was lost and suggest manual recovery from binary.
+
+3. **Improve exception handling recovery**: Detect `__cxa_begin_catch`/`__cxa_end_catch` patterns and reconstruct try-catch blocks instead of showing raw exception allocation calls.

@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `v0`, `v1`, `v2`, `ptr`, `i`, `j`. The original source has meaningful names like `sum`, `len`, `current`, but the decompiled code uses only positional identifiers with no semantic meaning.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some function names are preserved from source (`process_char`, `process_short`, `array_1d_stack`), but many are generic address-based names like `sub_400634`, `sub_4007c8`. The test functions are mostly preserved but internal helper functions lost their names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF), `255`, `97` (ASCII 'a') appear without explanation. The code shows computed values like `v0 * 0x100000000 >> 63` for simple operations. Some external string references like `&g_40303f` are preserved but not explained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant decompilation artifacts present, including `unsupported_Iop_ZeroHI96ofV128()` calls, excessive bit manipulation with `__ROL__`, and unusual constructs like `goto g_413ff8`. Frame pointer manipulation and register spilling create noise throughout.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some control flow is natural (loops, conditionals), but there are goto statements used inappropriately (e.g., `goto a0` for function pointer calls). The `process_int` function uses `__ROL__` for what should be simple multiplication by 2. At -O0, this level of transformation is excessive.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions largely match source granularity. The test functions call individual test cases appropriately. Some functions like `array_1d_stack` are properly separated. Minor issues with inlining in test functions where results are pre-computed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with few forward jumps. Early returns used appropriately in some functions. However, some computed jumps and unusual control flow in functions like `ptr_diff` using `__ROL__` for subtraction disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some loop unrolling present in array functions (processing 8 elements at a time). The test functions pre-compute all results rather than calling the functions, which is a form of constant propagation but loses the connection to actual function behavior.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types like `unsigned int`, `unsigned long long` instead of specific types. Original `char`, `short`, `float`, `double` are often promoted to `unsigned int` or `unsigned long long`. Function pointers are `unsigned long` instead of proper function signatures. Const correctness mostly lost.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs are reconstructed but with generic names (`struct_0`, `struct_1`) and generic field names (`field_0`, `field_8`). The original `Point3D`, `Node`, `TreeNode` structures are lost. Padding is shown (`char padding_4[4]`) which is helpful but loses semantic field names like `x`, `y`, `next`, `data`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. Pointer arithmetic is used correctly in most places. The `ptr_diff` function uses `__ROL__` which is incorrect for pointer subtraction - it should be simple subtraction. Some casts between int and pointer types present but justified.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in the decompiled code. The original source has extensive comments explaining each test case (e.g., "DT-L1-01: 字符类型", "ARR-L1-01: 一维int数组"). None of this semantic information is recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are recognizable (linked list traversal, array iteration) but not explicitly named or documented. The original source's test categories (data types, arrays, pointers, composite types) are not reflected in the decompiled output.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The `unsupported_Iop_ZeroHI96ofV128()` calls indicate decompilation failures but without explanation of what operation failed. No warnings about potential undefined behavior (e.g., the intentional out-of-bounds access in `array_oob`).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source has clear expectations (e.g., "期望: 15", "期望: 'a'") but these are not recovered. No null-check documentation for pointer parameters.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: External function calls are declared with `extern` (e.g., `puts`, `printf`, `__libc_start_main`). Function call relationships are clear within test functions. However, the callback relationships (e.g., `complex_callback` used by `ptr_func_complex`) are not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - data type functions together, array functions together, etc. Matches source organization reasonably well. Static functions properly scoped. The main function correctly calls the four test functions.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has many `extern` declarations for standard library functions. However, the `unsupported_Iop_ZeroHI96ofV128()` calls will not compile. Some unusual constructs like `goto a0` for function pointers won't compile as-is. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v0`, `v1`, `ptr`, `i`) with no semantic meaning
+- No comments explaining algorithm intent or test case purposes
+- Struct/union field names lost (`field_0`, `field_8` instead of `x`, `y`, `next`)
+- Type precision severely degraded (all chars become unsigned int, floats/doubles have placeholder implementations)
+- `unsupported_Iop_ZeroHI96ofV128()` indicates failed decompilation but no explanation
+- `ptr_diff` uses `__ROL__` for pointer subtraction which is semantically incorrect
+
+**Best Quality Aspect:** Function Decomposition (7/10)  
+Functions are appropriately sized and grouped matching the source organization. Test functions call individual test cases correctly.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+The original source has extensive documentation explaining each test case's purpose, expected values, and semantic intent. None of this was recovered, making it impossible to understand what each function tests without comparing to source.
+
+**Top 3 Recommendations:**
+1. **Recover variable names from usage patterns**: Variables used as array indices should be named `i`, `j`, `k`; sum accumulators should be `sum`, `total`; pointers to nodes should be `node`, `current`.
+2. **Add semantic comments**: Document what each test case verifies (e.g., "// Tests: uppercase to lowercase conversion"), expected return values, and edge cases.
+3. **Fix type precision**: Restore original types - `char` not `unsigned int`, `float`/`double` with proper implementations, preserve `const` qualifiers on pointers.

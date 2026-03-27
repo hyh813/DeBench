@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `a2` throughout. While some like `ptr`, `idx`, `result` appear, the overwhelming majority are single letters or v-prefixed names that obscure semantic purpose. For example, in `local_array`, the loop variable should be `i` not `idx` in the decompiled version, and the array is accessed through complex pointer arithmetic rather than named access.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions correctly recovered (`double_value`, `local_vars`, `local_array`, `heap_basic`, `test_stack_memory`) while others retain generic addresses (`sub_401030`, `sub_4011c0`). The test functions are well-named, but many helper and library functions remain as `sub_XXXXX` format with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently for error returns without explanation. String literals in test output are preserved correctly. However, constants like array sizes (10, 2048) and calculation values (multipliers like 2, 3) appear as raw numbers without named constants explaining their purpose.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: `_ccall` constructs throughout, `vvar_39{r24|4b}` style register references, `__stack_chk_fail_local` calls, `__x86.get_pc_thunk.ax` thunks, struct padding arrays like `padding_0[72]`, and computed goto patterns. These artifacts dominate many functions and make reading the actual logic difficult.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions maintain natural control flow with recognizable loops and conditionals. However, some functions like `register_tm_clones` use complex computed expressions that obscure the logic. At `-O0` (debug), more natural flow should be recoverable. The `local_array` function shows a do-while loop that could be more clearly rendered as a for-loop.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and cohesive. The original source's function boundaries are largely preserved. Test functions call sub-functions appropriately. Minor issues with some functions being slightly large (e.g., `test_memory_op_functions` at ~100 lines) but decomposition is generally sound.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns are used appropriately in error-checking code (e.g., `if (!ptr) return 4294967295;`). Some complex expressions in initialization code create non-linearity but it's manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling present (e.g., in `heap_realloc` where elements are initialized one-by-one rather than in a loop). Dead code is minimal. The redundancy is manageable but could be better optimized in the decompilation output.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most parameters and variables use generic `unsigned int` when original was `int`. Pointers are correctly identified as pointers. The original `int x` parameter becomes `unsigned int a0` in many functions, losing sign information. Size_t and other precise types are not recovered.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs are reconstructed but with generic names (`struct_0`, `struct_1`) and generic field names (`field_0`, `field_4`, `padding_0`). The Node structure in linked list code shows field names but loses the `next` semantic - it's just `field_4`. The Point struct is not recovered at all in `local_struct`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally safe code with correct pointer usage. Some unsafe patterns exist like the dangling pointer access in `dangling_pointer` function (returns `*(result)` after free). No explicit casts that would be dangerous. Minor issues with pointer arithmetic but nothing severe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output whatsoever. The original source had extensive comments explaining each test case (MEM-L1-01, HEAP-L2-01, etc.) but none of this semantic information was recovered. No algorithm explanations, no uncertainty indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard patterns like malloc/free are recognizable but not explicitly named or documented. The linked list creation and traversal patterns are present in the code structure but not identified as a "linked list" pattern. Memory allocation patterns are visible but lack semantic labeling.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of any anomalies or uncertainties. The decompiled code presents everything as definitive fact, including potentially incorrect interpretations. No flags for indirect calls that couldn't be resolved, no warnings about unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had implicit contracts (e.g., "requires: n > 0" for heap functions) but these are completely lost. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear within test functions (e.g., `test_stack_memory` calls `local_array`, `large_stack_frame`, etc.). However, relationships with external code (like `extern_function`) are not well-documented. No indication of who calls each function or the broader call graph.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped reasonably in the output, roughly matching the original source organization (stack functions, heap functions, static functions, memory ops). However, the arbitrary address-based ordering (`sub_401030`, `sub_401040`, etc.) at the start disrupts the logical flow.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code would require significant patching to compile. Missing definitions for `frame_dummy`, `deregister_tm_clones`, `register_tm_clones`, `__do_global_dtors_aux`. External references like `g_405ff4` are declared but not defined. Many thunk functions are stubs. The test functions would need substantial work to compile as standalone code.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **No comments whatsoever** - All semantic documentation from source lost
+- **Generic variable names** - `v0`, `v1`, `a0`, `a1` obscure purpose throughout
+- **Struct field names lost** - `struct_0`, `field_0`, `field_4` lose semantic meaning
+- **Severe noise artifacts** - `_ccall`, `vvar_XX{r24|...}`, thunk functions clutter code
+- **No anomaly indication** - Uncertainties and potential issues not flagged
+
+### Best Quality Aspect: Function Decomposition (7/10)
+Functions maintain reasonable boundaries and cohesion. The original function purposes are largely preserved in the decomposition, with test functions properly calling their subordinate functions.
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+The complete absence of comments is the most glaring issue. At -O0 (debug) compilation, the decompiler should be able to recover significantly more semantic information including test case descriptions, parameter meanings, and algorithm explanations.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and emit comments** - Extract debug symbols and source annotations to provide semantic context (e.g., "MEM-L1-02: Tests stack array allocation")
+2. **Improve variable naming inference** - Use usage patterns, debug info, and type information to generate meaningful names instead of `v0`, `v1`, `a0`
+3. **Add uncertainty indicators** - Flag indirect calls, unusual patterns, and potential issues rather than presenting everything as definitive fact

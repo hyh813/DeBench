@@ -1,0 +1,119 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy`
+
+The original source shows a simple string copy function that returns the length:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+The decompiled version shows significant issues:
+```c
+void param_strcpy(char *param_1, char *param_2)
+{
+  strcpy(param_1, param_2);
+  strlen(param_1);  // Return value discarded!
+  return;
+}
+```
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`param_1`, `param_2`, `param_3`) instead of semantic names like `dst`/`src`. Local variables are `auStack_2c`, `local_c` - meaningless. The original `dst` and `src` are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names match original source exactly (`param_strcpy`, `call_strcpy`, `param_strcmp`). However, `call_strcpy` has incorrect signature showing 3 parameters when it should have none.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like "HelloLib" are correctly preserved, but magic numbers like `0x2a` (42) appear without explanation. The constant `0xc` for strlen result is not labeled.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Extensive compiler artifacts present: "WARNING: Removing unreachable block" comments, `undefined4`/`undefined1` types everywhere, spurious `__stack_chk_fail()` calls. The decompilation is cluttered with 100+ lines of atomic sync functions that obscure the main logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Basic control flow is preserved - if/else, loops, function calls are recognizable. At -O0, the structure should be cleaner, but the fundamental flow is intact.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are separated but `call_strcpy` has wrong parameter count (takes 3 undefined4 params). Some functions like `param_pthread_join` are 80+ lines, slightly large but cohesive.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error handling. Minor forward jumps but manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: The discarded `strlen()` return value in `param_strcpy` is a clear bug - the original returns this value. Some redundant stack canary checks present.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - `param_strcpy` returns `void` instead of `int`. Uses `undefined4` (generic 4-byte type) extensively. The original `const char *src` became `char *param_2` (lost const correctness).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Basic types like `FILE*`, `pthread_t` are recognized. However, `ThreadData` struct is not recovered - accessed as `param_1[2]` instead of `data->result`. Stack buffers use generic `auStack_2c`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns: discarded `strlen()` return value, incorrect function signatures (e.g., `call_strcpy` passes 4 args to 2-param function), cast from `int*` to `void*` in malloc. No `const` correctness preserved.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated comments present ("WARNING: Removing unreachable block", "WARNING: Subroutine does not return"). No semantic comments explaining what functions do. The comment "Decompiled by Ghidra 12.0" is present but useless.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Standard library functions correctly identified: `strcpy`, `strlen`, `strcmp`, `memcmp`, `fopen`, `pthread_create`, etc. Threading idioms recognized. However, no explicit pattern naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Removing unreachable block") but these are not actionable. The critical bug where `strlen` return is discarded is not flagged. No indication of the incorrect function signature.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original's return value semantics (returning string length) is completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships unclear. `call_strcpy` calling `param_strcpy` is visible but the parameter mismatch is confusing. No documentation of who calls what.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically (standard lib, system calls, threads). Static functions properly scoped. Order roughly matches source structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard libc/pthread. External functions (strcpy, malloc, pthread_create) properly declared. Minor issues with function signatures but generally compilable.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- `param_strcpy` returns `void` instead of `int` - the return value of `strlen()` is completely discarded
+- Parameter names are generic (`param_1`, `param_2`) losing original `dst`/`src` semantics
+- `const` correctness lost (`const char *src` → `char *param_2`)
+- `call_strcpy` has incorrect function signature (takes 3 undefined4 params)
+- Extensive noise: 100+ lines of atomic sync functions, undefined types, unreachable block warnings
+
+**Best Quality Aspect:** Idiom Recognition (8/10)  
+Standard library functions like `strcpy`, `strlen`, `pthread_create` are correctly identified and named, preserving the semantic meaning of library calls.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10) and Type Precision (3/10)  
+The combination of generic variable names and severe type degradation (wrong return types, lost const, generic undefined4) makes the code nearly incomprehensible without reference to the source.
+
+**Top 3 Recommendations:**
+1. **Recover return values**: The decompiler must track return value usage - `strlen(param_1)` result being discarded is a critical semantic loss
+2. **Infer parameter names from usage**: Parameters used as destination/source in strcpy should be named `dst`/`src`
+3. **Preserve type information**: Return types must match (int not void), const correctness must be preserved, avoid `undefined4` when types can be inferred

@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `ptr`, `i` with no semantic meaning. For example, in `test_cpp_member_func`, `v0` holds the value `10` but isn't named `value`, and `v1` holds the string "Test" but isn't named `name`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions retain mangled C++ names (`_Z20test_cpp_member_funcv`) but most are generic `sub_401XXX` labels. The test functions that are recovered have recognizable names, but helper functions like `sub_401030`, `sub_401160` provide no semantic information.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `42` in exception handling, `100`/`200` in RTTI). String literals are replaced with external globals (`g_402081`, `g_40209f`) losing all readability.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts remain: `[D]` markers for unsupported operations, `__x86.get_pc_thunk.*` functions, large padding arrays (`padding_0[11715]`), and redundant struct definitions scattered throughout.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Uses explicit `goto` statements instead of structured constructs (e.g., `goto ptr[2]`, `goto (int)v1[24]`). Many functions have unnatural early returns or jump to labels, making execution flow difficult to trace.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Critical test functions (`test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_diamond_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_smart_ptr`) are empty stubs returning immediately with no implementation.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Some functions read linearly but many contain forward jumps and computed gotos that disrupt flow. The `register_tm_clones` function has deeply nested conditionals with arithmetic expressions obscuring logic.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Repeated struct definitions (`struct_0`, `struct_1`) appear multiple times with different layouts. Padding arrays of varying sizes (`padding_0[11715]`, `padding_0[11611]`, `padding_0[9747]`) suggest failed redundancy elimination.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: C++ class types degraded to `void*` pointers everywhere (e.g., `Container<int>::Container(void* ptr)`). All integers are generic `unsigned int` without size specification. Template type distinctions (`int` vs `double`) are lost in most functions.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: C++ classes reduced to generic `struct_0`, `struct_1` with meaningless field names (`field_0`, `padding_0`). No class inheritance relationships recovered. The `Base`, `Derived`, `LifecycleClass` structures are completely lost.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Pervasive unsafe casts throughout: `(int)v1[24]`, `(char **)&ptr`, `void*` arithmetic. The `call_virtual_func` uses `(*((int *)*((int *)arg_0)))(arg_0, arg_1)` which is extremely unsafe and obscures the vtable dispatch mechanism.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in the decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. The original source had extensive comments that are completely absent.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms not recognized: virtual dispatch appears as raw pointer arithmetic, exception handling as `__cxa_*` calls without context, RAII patterns (smart pointers) completely lost. Template instantiation not identified.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `[D]` markers indicate some decompilation failures (e.g., `Unsupported jumpkind Ijk_SigTRAP`, `unsupported_<class 'pyvex.expr.GetI'>`). However, many silent failures exist where functions are empty without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts not recovered. The original code's expected return values (e.g., "期望: 4704") are completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls exist but relationships are unclear. Virtual dispatch not properly recovered. Global variables use generic names (`g_403ff4`, `g_402081`). The `test_cpp_oo_features` function calls other tests but their implementations are missing.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions appear in arbitrary order without logical grouping. No namespace or class structure preserved. Related functions (e.g., `Container<int>` methods) are scattered. Static initialization functions mixed with test code.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile due to `[D]` markers, undefined externs (`_ZNSt8ios_base4InitD1Ev`), and missing dependencies. The `Container<double>::push` function contains invalid syntax with `[D]` markers embedded in code.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+4+3+3)/4 = 3.00  × 0.30 = 0.90
+Level 2 (Structural):   (3+3+4+4)/4 = 3.50  × 0.25 = 0.875
+Level 3 (Type System):  (2+2+2)/3   = 2.00  × 0.20 = 0.40
+Level 4 (Semantic):     (1+2+4+1)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):   (3+3+2)/3   = 2.67  × 0.10 = 0.267
+─────────────────────────────────────────────────────────────
+Overall Score:                                  = 2.74/10
+```
+
+**Overall Readability Score: 2.7/10**
+
+### Critical Defects:
+- **8 test functions are empty stubs** - `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_diamond_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_smart_ptr` return immediately with no implementation
+- **Platform mismatch** - Original compiled for ARM64 but decompiled as X86, indicating wrong binary or configuration error
+- **C++ class structures completely lost** - All classes reduced to `void*` pointers with no field recovery
+- **Decompilation failures embedded in code** - `[D]` markers appear inside function bodies (e.g., `Container<double>::push`)
+- **Zero semantic comments** - Original source had extensive documentation; decompiled code has none
+
+### Best Quality Aspect:
+- **Anomaly Indication (4/10)** - The `[D]` markers at least indicate where decompilation failed, providing some transparency about limitations
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, explanations, or decompilation confidence indicators makes the code nearly unusable for analysis
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures** - Implement vtable analysis to reconstruct class hierarchies, field names, and inheritance relationships instead of reducing everything to `void*`
+2. **Implement C++ idiom recognition** - Add pattern matching for virtual dispatch, exception handling, RAII, and template instantiation to produce semantically meaningful output
+3. **Add decompilation confidence annotations** - Insert comments indicating uncertainty levels, unresolved references, and suggested manual review areas (e.g., "// UNCERTAIN: vtable call at offset 0x24")

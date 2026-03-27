@@ -1,0 +1,125 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`iVar1`, `local_10`, `local_38`, `piVar2`) with no semantic meaning. Register names like `in_RCX`, `in_RDX` leak into decompiled output, obscuring intent.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match original source exactly (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Only startup functions use generic names (`FUN_00101020`, `_init`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in hex (`0xf`, `0x32`, `0x2a`, `0x12345678`) replace readable decimal constants. No recovery of original constant expressions like `5 + 10 = 15`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail()`), frame offset references (`in_FS_OFFSET`), and repeated "WARNING: Unknown calling convention" messages clutter output without adding value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops use `do-while` with manual counters instead of `for` loops (e.g., `test_calling_conventions` struct initialization). Varargs handling shows low-level pointer arithmetic instead of clean `va_arg` iteration.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity matching source. However, constant folding collapses caller functions (`call_cdecl` returns `0xf` directly instead of calling `cdecl_func`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but varargs functions have complex branching for register vs. stack argument handling that disrupts flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `test_calling_conventions` has 16 repetitive assignments for `local_98[0]` through `local_98[0xf]` instead of a loop. Stack canary checks duplicated in every function.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types mostly correct (`int`, `char*`, `longlong`). However, `double` parameters show implicit conversions (`(double)(iVar1 + x)`) and some types use generic `undefined8`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structs `LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData` recovered with field names (`data`, `x`, `y`). Field access uses proper syntax (`p->x * p->y`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts in `param_complex_cast` (`*(int *)p`, `(long)p + 4`). Pointer arithmetic on struct pointers (`pLVar1 = (LargeData *)((long)pLVar1 + 4)`) is error-prone.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("WARNING: Unknown calling convention", "Unresolved local var"). No semantic explanations of algorithm intent or purpose.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not recognized as standard `va_start/va_arg/va_end` idiom. Struct passing conventions not documented despite being a key test purpose.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Calling convention mismatches flagged appropriately. Unresolved variables noted ("Unresolved local var: int i@[???]"). However, constant folding issues not warned.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `p != NULL` for `func_struct_byptr`). Null checks present in code but not as explicit contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but constant folding obscures relationships (`call_cdecl` doesn't show it calls `cdecl_func`). Callback relationships (`callback_func` → `param_func_ptr`) preserved.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order but no logical grouping (calling conventions, parameter passing, return values mixed). No header file or API documentation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Requires external symbols (`__printf_chk`, `__stack_chk_fail`, `__libc_start_main`, `strlen`, `puts`). Static variables (`handle1_1`, `handle2_0`) referenced but not defined in output.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (7+8+6)/3   = 7.00 × 0.20 = 1.40
+Level 4 (Semantic):    (4+3+6+2)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (6+6+5)/3   = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.68/10
+```
+
+### Overall Readability Score: **5.7/10**
+
+---
+
+### Critical Defects
+
+- **Constant folding obscures call relationships**: `call_cdecl()` returns `0xf` directly instead of showing `cdecl_func(5, 10)` call, losing semantic information about function interactions
+- **Generic variable naming**: All locals named `iVar1`, `local_10`, `local_38` with no semantic meaning, requiring manual inference of purpose
+- **Hex literals instead of decimal**: Values like `0xf`, `0x32`, `0x2a` instead of `15`, `50`, `42` reduce immediate readability
+- **Low-level register exposure**: `in_RCX`, `in_RDX`, `in_FS_OFFSET` leak implementation details into high-level code
+- **Missing contract documentation**: Null pointer checks exist in code but no explicit preconditions documented for functions like `func_struct_byptr`
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (8/10)**
+- Function names match original source almost perfectly (`cdecl_func`, `varargs_func`, `test_calling_conventions`), preserving semantic intent at the function level
+
+---
+
+### Most Needs Improvement
+
+- **Assertion & Contract Recovery (2/10)**
+- No preconditions, postconditions, or invariants documented despite null checks and validation logic present in code
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Disable aggressive constant folding for caller functions**: Preserve function call relationships even when arguments are constants, as this reveals program structure and data flow
+
+2. **Implement semantic variable naming inference**: Analyze variable usage patterns to suggest names (e.g., loop counters → `i`, sum accumulators → `sum`, pointer parameters → `ptr`)
+
+3. **Recover and document function contracts**: Detect null checks, bounds validation, and error returns to generate precondition/postcondition comments (e.g., `// requires: p != NULL`)

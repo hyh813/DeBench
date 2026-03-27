@@ -1,0 +1,124 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables overwhelmingly use generic names like `iVar1`, `iVar2`, `iVar3`, `uVar1`, `piVar2`, `piVar3`. Loop variables show as "Unresolved local var: int i@[???]". Only array variables like `arr`, `matrix`, `dst`, `src` are descriptive. This makes tracking variable purpose extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Most function names match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `loop_while`, `recursion_factorial`, `duffs_device`. Only internal functions like `FUN_00011030` are generic. Test functions properly named `test_control_flow_l1/2/3`.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Some constants are recognizable (0x3e9 = 1001, 0x65 = 101), but many magic numbers appear without explanation (0x14, 0x1e, 0x3039, 0x2694). String literals show as `&DAT_00013064` without meaningful labels. Mixed results - some inference possible but not clear.
+
+### 4. Noise Reduction
+**Score: 3/10**
+Justification: Severe noise pollution includes: numerous "WARNING: Unknown calling convention" comments, "Unresolved local var" messages, injected `__x86.get_pc_thunk.bx` functions, stack canary checks (`__stack_chk_fail_local`), and "Removing unreachable block" warnings. These artifacts significantly impede readability.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+Justification: Most control flow is natural - loops converted to do-while/while forms, if-else preserved. However, some goto statements remain (e.g., `goto LAB_000116d7` in `loop_break`), and switch statements sometimes become awkward if-else chains (e.g., `switch_small`). At -O0, more natural structures expected.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are appropriately sized with good cohesion. Helper functions like `double_value`, `triple_value`, `op_add`, `op_sub` are properly extracted as static functions. No obvious over-fragmentation or monoliths. Parameter lists reasonable.
+
+### 7. Code Linearization
+**Score: 6/10**
+Justification: Generally reads top-to-bottom with early returns used appropriately. However, goto statements create forward jumps disrupting flow (e.g., `goto LAB_00011a68` in `loop_multi_exit`). Some deep nesting in nested_if functions. Moderate non-linearity.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+Justification: Loop unrolling present in `loop_for_fixed` and `loop_nested` but not commented. No obvious dead code. Some duplicate expressions possible but not severe. At -O0, less optimization artifacts expected, but what's present is manageable.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Most parameters use generic `int` type. Function pointers use `_func_int_int` or `_func_int_int_int` which is reasonably precise. No `int32_t`, `uint64_t`, or `size_t` usage. Pointer types generally correct but basic. Significant type erasure to generic int.
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+Justification: Arrays properly recovered: `int arr [5]`, `int matrix [3] [4]`, `int dst [8]`, `int src [8]`. Function pointer arrays correctly typed: `_func_int_int *funcs [3]`. No struct recovery needed as source had minimal structs. Good array recovery.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Some unsafe patterns present: `*(int *)(in_GS_OFFSET + 0x14)` - manual pointer arithmetic with stack canary. Function pointer calls use proper signatures. No obvious type confusion between pointers and integers. Moderate type safety concerns.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Mostly auto-generated warnings ("WARNING: Unknown calling convention", "Unresolved local var") rather than helpful comments. No algorithm explanations or API contracts. Decompilation confidence indicators present but not semantic documentation. Comments hinder rather than help.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Basic patterns recognized: switch statements, loops, recursion. Duff's device partially recognized with labeled goto sections but not identified by name. No explicit pattern naming (e.g., "State machine", "Duff's device"). Some recognition but not communicated.
+
+### 14. Anomaly Indication
+**Score: 7/10**
+Justification: Good anomaly detection with warnings: "WARNING: Unknown calling convention", "Unresolved local var", "WARNING: Could not recover jumptable at 0x00012310. Too many branches". However, some anomalies silently handled without indication. Better than average anomaly communication.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No precondition, postcondition, or invariant documentation. No error condition explanations. Function contracts completely absent. Decompiler provides no semantic contract information.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+Justification: Function calls within functions are clear. However, no documentation of "calls:" or "called by:" relationships. Callback relationships in `call_func_ptr_array`, `process_with_callback` not explained. External dependencies not documented. Poor relationship clarity.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions logically grouped: test functions together (`test_control_flow_l1/2/3`), helper functions grouped (`double_value`, `triple_value`, `op_*`), state handlers together (`state_idle`, `state_processing`, etc.). Static functions properly scoped. Reasonable organization.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+Justification: Code should compile with libc. External dependencies: `puts`, `__printf_chk`, `__libc_start_main`, `__stack_chk_fail`, `__longjmp_chk`. These are not documented. No header declarations provided. Moderate patching needed.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+8+5+3)/4 = 4.75
+L2_avg = (6+8+6+6)/4 = 6.50
+L3_avg = (5+7+5)/3 = 5.67
+L4_avg = (3+5+7+2)/4 = 4.25
+L5_avg = (4+7+5)/3 = 5.33
+
+Overall = (4.75 × 0.30) + (6.50 × 0.25) + (5.67 × 0.20) + 
+          (4.25 × 0.15) + (5.33 × 0.10)
+        = 1.425 + 1.625 + 1.134 + 0.638 + 0.533
+        = 5.36/10
+```
+
+**Overall Readability Score: 5.4/10**
+
+### Critical Defects (Bullet List)
+- Variable naming uses generic `iVar1`, `iVar2`, `iVar3` making tracking impossible; should infer names from usage like `temp`, `sum`, `count`
+- Severe noise pollution with "WARNING: Unknown calling convention" and "Unresolved local var" comments throughout
+- No contract/precondition/postcondition recovery - functions have no semantic documentation
+- Cross-reference relationships not documented - no "calls:" or "called by:" annotations
+- Magic numbers like `0x14`, `0x1e`, `0x3039` appear without explanation; should identify as decimal values
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (8/10)**
+- Why? Most function names match original source exactly (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`), making it easy to identify decompiled functions against source.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (3/10)**
+- Why? Generic iterator names (`iVar1`, `iVar2`) and unresolved variables ("int i@[???]") make code comprehension extremely difficult. At -O0, decompiler should infer meaningful names from usage patterns.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: At -O0, track how variables are used (arithmetic, indexing, bounds checking) to generate names like `sum`, `index`, `count`, `temp` instead of generic `iVar1`
+2. **Eliminate auto-generated warning noise**: Move "WARNING: Unknown calling convention" to separate metadata section, not inline comments that pollute code
+3. **Recover semantic contracts**: Add basic preconditions (e.g., "requires: n >= 0") and postconditions based on return value analysis; document callback relationships

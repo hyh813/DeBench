@@ -1,0 +1,142 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variable naming is extremely poor. Parameters are named `a0`, `a1`, `a2` (register-based), local variables are `v0`, `v1`, `v2` etc. Compare to original: `param_strcpy(char *dst, const char *src)` where decompiler shows `char *a0, char *a1`. No semantic meaning recovered - cannot infer `dst`/`src` from decompiled names.
+
+### 2. Function Naming Quality  
+**Score: 5/10**
+
+Justification: Mixed results. Standard library functions correctly identified: `strcpy`, `strlen`, `pthread_create`, `fork`, `pipe`. However, original user functions like `param_strcpy`, `param_strcmp` are preserved in some cases but original functions like `call_strcpy` show as `call_strcpy` (correct). Internal functions use address-based naming: `sub_10ca8`, `sub_112b4`, etc.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: Massive magic number pollution. `4294967295` (0xFFFFFFFF) appears constantly without explanation. String literal addresses like `0x13e40`, `0x13e64` shown instead of the actual strings. Error codes like `-1` return values not explained. At -O0 source, these should be minimal. Only trivial constants like `42` used as return values are clear.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+Justification: Severe noise. Stack frame markers everywhere: `// [bp-0x4]`, `// [bp-0x8]`. Condition calculation artifacts: `armg_calculate_condition(18, v4, v5, v6) ? addr : v4`. Redundant expressions like `v0 = v4; v2 = v5; v1 = v6; v0 = v7` appearing repeatedly. Comments like `/* do not return */` add no value. Function signature comments like `unsigned int v0;  // r2` pollute readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+Justification: Excessive use of goto labels fragmenting logic: `LABEL_11004`, `LABEL_11020`, `LABEL_11088`, etc. Control flow reconstruction relies on `armg_calculate_condition()` to reverse-engineer branches. While loops and conditionals exist, the goto-heavy structure makes tracing difficult. The source has straightforward if/else - decompiled output is spaghetti.
+
+### 6. Function Decomposition
+**Score: 6/10**
+
+Justification: Function boundaries roughly match original (~30 functions). However, some are inlined that shouldn't be: `call_strcpy()` returns constant `8` directly (inlined). Some functions are fragmented: `param_fork_exec.part.0` appears as separate function. Parameter lists sometimes expose implementation (passing addresses of local variables).
+
+### 7. Code Linearization
+**Score: 5/10**
+
+Justification: Functions generally read top-to-bottom with some early returns. However, goto-heavy structures in complex functions like `param_thread_local_storage` disrupt linear flow. Forward jumps present: `goto LABEL_11376`, `goto LABEL_114a4`. Not terrible but requires jumping around.
+
+### 8. Redundancy Elimination
+**Score: 4/10**
+
+Justification: Notable redundancy. `param_strlen` calls `strlen(v0)` twice in sequence: `len = strlen(v0); return strlen(v0);`. Call site duplication: `call_fread_fwrite()` calls `param_fread_fwrite(...)` twice. Variables like `v0` reassigned without need. Some dead code likely present.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Mixed precision. Integer types often `unsigned int` but sometimes generic. Parameters typed as `char *a0` for string functions (correct). However `void*` used broadly. Function pointers typed but with generic void*. Stack pointer types: `unsigned int *ptr` for pthread handles. Const correctness largely lost - original `const char *src` becomes `char *a1`.
+
+### 10. Composite Type Recovery  
+**Score: 3/10**
+
+Justification: Almost no struct recovery. Generic placeholder names: `typedef struct struct_0 { char padding_0[116]; unsigned int field_74; } struct_0;`. The `FILE` struct is empty: `typedef struct FILE {} FILE;`. `sockaddr` partially reconstructed but fields unnamed. Original had meaningful `ThreadData` struct - decompiled shows separate variables `result`, `flag1`, `v4`, `v5` scattered.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Some unsafe patterns. Integer truncation visible: comparing signed/unsigned. Pointer arithmetic not always clear. In `param_malloc_free`: `ptr = ptr + 1; do { ptr[1] = v2;...` - confusing pointer arithmetic. No `restrict` or `_Atomic` annotations. Some casts implicit. Not dangerous but not safe either.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Justification: Minimal useful comments. Auto-generated noise: `// r0`, `// r2`, `// [bp-0x4]`. `/* do not return */` on every exit path. No algorithm explanations. No indication of decompilation confidence. The source had Chinese comments like `// 测试: 标准字符串拷贝` completely lost. Zero documentation of what functions do.
+
+### 13. Idiom Recognition
+**Score: 7/10**
+
+Justification: Standard library functions correctly identified: `strcpy`, `strcmp`, `strlen`, `memcpy`, `memcmp`, `fopen`, `fread`, `pthread_create`, `pthread_join`, `fork`, `pipe`, `socket`, `signal`. Basic patterns recognized. However, higher-level idioms like "producer-consumer pattern" or "memory pool" not named.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+Justification: No anomaly indication. Indirect calls not flagged. Unresolved references not noted. Failed analyses silent. For example, `call_linux_syscall` uses `syscall(5)` and `syscall(6)` - no indication these are open/close syscalls that couldn't be resolved to symbols. Code presents wrong without acknowledging uncertainty.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: Zero contract recovery. No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions (e.g., "ensures: return value is string length"). No invariant recognition. Error handling paths exist but not explained (why return -1 vs -2 vs -3). Original source has clear error handling semantics completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function call relationships clear from code (e.g., `call_strcpy()` calls `param_strcpy()`). However, not documented - reader must trace manually. No indication of who calls this function. Callback relationships (thread entry points) recognized by name but not explicitly linked. Global variable usage visible but not documented.
+
+### 17. Module Organization
+**Score: 4/10**
+
+Justification: Functions ordered by address, not logically grouped. Original organized into test sections: `test_standard_library_functions()`, `test_system_calls()`, `test_thread_concurrency()`. Decompiled order is arbitrary memory layout. Static functions not distinguished from extern. No file/section organization visible.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+Justification: Code references many external symbols but no headers/declarations provided. `extern unsigned int GLIBC_2.4::__stack_chk_guard;` requires glibc. Multiple undefined types: `FILE`, `sockaddr`. Won't compile standalone without significant stubs. Dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: `a0`, `a1`, `v0`, `v1`, `v2` etc. are uninformative; original `dst`, `src` lost
+- **Literal clarity**: Magic numbers like `4294967295` everywhere; string addresses like `0x13e40` shown instead of strings  
+- **Noise pollution**: Stack frame markers, register comments, condition calculation artifacts litter code
+- **No struct recovery**: All composite types lost, represented as generic `struct_0` or raw pointer arithmetic
+- **No contracts**: Preconditions, postconditions, invariants completely undocumented
+
+### Best Quality Aspect
+- **Idiom Recognition** (7/10)
+- Standard library functions like `strcpy`, `pthread_create`, `fork` correctly identified by name
+
+### Most Needs Improvement
+- **Lexical Clarity** (3.0/10 average)
+- Variable/function names are meaningless, literals are unclear, massive noise from decompilation artifacts
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When `a0` is passed to `strlen()` and returned, infer as "string" or "input_str" rather than leaving as register name. When `v0` is used as loop counter, call it "i" or "index".
+
+2. **Eliminate noise artifacts**: Remove stack frame annotations like `// [bp-0x4]` unless user explicitly requests them. Don't show condition calculation internals.
+
+3. **Recover string literals from address references**: Instead of `__printf_chk(1, 0x13e64, 8)`, resolve `0x13e64` to actual string "LIB-L1-01: %d (期望: 8)" and display as `__printf_chk(1, "LIB-L1-01: %d (期望: 8)", 8)`.
+
+4. **Recover struct types**: When seeing sequential fields accessed (e.g., `ptr[0]`, `ptr[1]`, `ptr[2]`), reconstruct as struct with field names like `ThreadData.start`, `ThreadData.end`.
+
+5. **Add confidence indicators**: Flag uncertain decompilations, indirect calls, and unresolved references rather than presenting code as definitive.

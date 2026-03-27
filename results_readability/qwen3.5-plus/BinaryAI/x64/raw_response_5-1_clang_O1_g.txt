@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Object-Oriented Code
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic stack-based names (`local_24`, `uStack_20`, `puVar1`, `iVar1`) with zero semantic meaning. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test function names preserved correctly (`test_cpp_member_func`, `test_cpp_constructor`), and class methods retain names (`Base::virtual_func`). However, external stubs have incorrect recursive self-calls (`operator_new__` calling itself).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation (`0x125c`, `0x2bf`, `0x14`, `0x32`). String literals referenced as `DAT_001031e1` instead of showing actual content like `"Test"` or `"Base"`.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: External function stubs contain nonsensical recursive self-calls (e.g., `operator_new__` calling `operator_new__`). Verbose stack variable initialization (`uStack_14 = 0; uStack_11 = 0;`) clutters code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some loops use readable do-while patterns, but many test functions collapsed to constant returns (`test_cpp_operator_overload` returns `0x16` directly). Virtual calls use indirect pointer dereferencing that obscures intent.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Test functions properly separated, class methods individually recovered. However, some functions over-optimized to single return statements losing all original logic structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom within functions. Stack-based variable access (`(long)&local_48 + 4`) creates some non-linear reading but not severe.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: External stub functions all follow identical recursive pattern (wasteful). Multiple destructor variants for same class (`MultiDerived::~MultiDerived` appears 4 times with slight variations).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types (`undefined4`, `undefined8`, `void*`). Some class pointers recovered (`Base*`, `Derived*`) but many operations use raw pointer arithmetic losing type safety.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/class definitions recovered. Object field access uses pointer arithmetic (`this + 8`, `this + 0x28`) instead of named fields. Original `SimpleClass { int value; char name[32]; }` completely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(undefined4 *)`, `(long *)`). Pointer arithmetic on class objects without bounds checking. Virtual table access through raw pointer dereferencing (`(***(code ***)param_1)()`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, algorithms, or decompilation confidence. Original source had extensive comments explaining expected values and test purposes—all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns (virtual dispatch, inheritance) present but not identified. Template instantiation not recognized (functions named `template_max_int_` instead of showing generic origin). Lambda expressions completely optimized away.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite obvious issues (recursive external stubs, collapsed functions). No warnings about indirect calls or unresolved symbols that would help analyst.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear expected return values in comments (e.g., "期望: 10 + 34 + 4660 = 4704")—all lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch not clearly documented. Static member access shown (`LifecycleClass::instance_count`) but relationship to class unclear without struct definitions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output. No logical grouping beyond binary layout. Original source had clear section headers (`CPP-L3-01`, `CPP-L3-02`) organizing related tests—lost.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Will not compile—missing type definitions, incorrect external function signatures, undefined symbols (`PTR_virtual_func_001059c8`). Requires extensive manual reconstruction.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (1+3+2+1)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+5+2)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────
+Overall Score:                              3.62/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **External function stubs contain recursive self-calls** (e.g., `operator_new__` calling itself) — fundamentally broken
+- **Zero struct/class type recovery** — all object access via pointer arithmetic (`this + 0x28`)
+- **No comments or documentation** — original source had extensive explanatory comments, all lost
+- **Magic numbers without explanation** — `0x125c`, `0x2bf` appear without context
+- **Many functions collapsed to constant returns** — `test_cpp_lambda` returns `0x55` directly, losing all lambda logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** — Test function names preserved correctly from source, allowing identification of test purposes despite other degradation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** — Complete absence of any explanatory comments, confidence indicators, or documentation that would help analysts understand recovered code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Fix external function stub generation** — Do not create recursive self-calls; properly declare external symbols with correct signatures
+2. **Recover composite type structures** — Analyze object access patterns to reconstruct struct/class definitions with named fields instead of pointer arithmetic
+3. **Add decompilation confidence annotations** — Flag uncertain reconstructions, indirect calls, and optimized-away logic to guide manual analysis

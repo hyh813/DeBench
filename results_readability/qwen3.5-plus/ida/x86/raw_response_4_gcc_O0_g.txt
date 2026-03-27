@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables predominantly use generic names (`v0`, `v1`, `v2`, `v23`) in complex functions like `test_calling_conventions`, though simpler functions preserve semantic names (`count`, `sum`, `args`, `test_str`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`cdecl_func`, `varargs_func`, `param_by_value_int`), but critical failures exist (`call_fastcall` marked "FAILED to decompile") and runtime functions use generic names (`sub_1030`, `sub_1040`).
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literals preserved clearly ("CALL-L1-01: %d\n", "Hello"), but magic numbers like `0x14u` (stack canary offset) and `305419896` (hex value) lack explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: stack canary checks (`__readgsdword(0x14u)`) repeated in most functions, redundant temp variables (`v0`, `v1`), and inline assembly blocks (`sub_1030` with `jmp dword ptr [ebx+8]`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as natural `for` constructs in most cases, but `ret_multi_branch` uses chained if-else instead of switch statement, and some functions have awkward stack frame setup interrupting flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches original source well, but some functions like `call_by_value_ptr` return `__int64` with embedded stack canary logic that obscures the simple original intent.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate loop/conditional structures, though stack canary setup (`v23 = __readgsdword(0x14u)`) at function start disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary code duplicated across nearly every function, redundant variable assignments present (`sum` and `suma` in `mixed_conventions_test`), and `LODWORD`/`HIDWORD` splits add verbosity.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved but degradation evident: `__int64` used for return values where `int` suffices, `__usercall`/`__userpurge` annotations indicate calling convention uncertainty, and some parameters lose original type specificity.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structs well recovered with field names preserved (`LargeStruct`, `SmallStruct`, `BigStruct`, `TestIntPair` with `a`/`b` fields), though some struct access uses `LODWORD` macros obscuring direct field access.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present without warnings: `*(_DWORD *)p`, `*(_DWORD *)ret_opaque_handle(0)`, and void pointer conversions in `param_complex_cast` that could cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Virtually no comments explaining logic; only decompilation failure notices ("FAILED to decompile") and one stack warning ("positive sp value has been detected"), no algorithm or intent documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard C idioms preserved (varargs with `va_start`/`va_arg`/`va_end`, struct access patterns) but not identified or labeled as recognizable patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some failures noted explicitly ("FAILED to decompile: call_fastcall", external functions), stack canary warning present, but no detailed explanation of why decompilation failed or how to interpret ambiguous code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation; null checks exist in code (`if (!p) return -1`) but not documented as contracts; no error condition explanations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear through preserved names, but no call graph documentation, global variable usage not explained, and callback relationships not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 91+ functions in single output file with no logical grouping; original source organization (calling conventions, parameter passing, return values sections) not preserved.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions (`printf`, `puts`, `strlen`, `__libc_start_main`) declared but not defined; 7 functions failed decompilation; would require significant stubbing and type fixes to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+7+7+5)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75  × 0.25 = 1.69
+Level 3 (Type):        (6+8+5)/3   = 6.33  × 0.20 = 1.27
+Level 4 (Semantic):    (3+5+5+3)/4 = 4.00  × 0.15 = 0.60
+Level 5 (Contextual):  (6+5+5)/3   = 5.33  × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  5.89/10
+```
+
+**Overall Readability Score: 5.9/10**
+
+### Critical Defects
+- **Variable naming**: Generic names (`v0`-`v23`) dominate complex functions, obscuring semantic meaning (e.g., `v12` should be `large`, `v23` is stack canary)
+- **Failed decompilation**: `call_fastcall` completely failed with no recovered code, and 7 external functions remain unresolved
+- **No documentation**: Zero comments explaining algorithm intent, calling conventions, or decompilation confidence levels
+- **Unsafe casts**: Multiple `*(_DWORD *)` casts without type safety warnings or justification
+- **Stack canary noise**: `__readgsdword(0x14u)` repeated in nearly every function, cluttering readable code
+
+### Best Quality Aspect
+- **Composite Type Recovery (8/10)** - Struct definitions (`LargeStruct`, `SmallStruct`, `TestIntPair`) recovered with accurate field names and layouts, enabling clear understanding of data structures.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (3/10)** - Virtually no explanatory comments; decompiler should add confidence indicators, algorithm descriptions, and flag uncertain reconstructions.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming**: Analyze variable usage patterns to infer names (e.g., loop counters → `i`, accumulators → `sum`, pointers → `ptr`)
+2. **Add decompilation confidence annotations**: Mark uncertain reconstructions with comments like `// DECOMPILER UNCERTAINTY: calling convention inferred`
+3. **Suppress or comment compiler artifacts**: Either eliminate stack canary code from output or add explanatory comments (`// Stack canary check - compiler inserted`)

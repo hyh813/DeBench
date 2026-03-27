@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Mixed quality—`dest`, `src`, `ptr` are descriptive in `param_strcpy` and `param_malloc_free`, but generic `v1`, `v2`, `v3` dominate in `call_memcpy` and `param_signal_handling`, obscuring semantic roles like `stack_canary` or `signal_number`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core function names preserved accurately (`param_strcpy`, `thread_compute`, `signal_handler`), but 40+ helper functions remain as `sub_XXXX` addresses, and runtime helpers like `_x86_get_pc_thunk_bx` retain compiler-generated names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Critical magic numbers unexplained: signal numbers as `10`/`14` instead of `SIGUSR1`/`SIGALRM`, socket constants as `2`/`1` instead of `AF_INET`/`SOCK_STREAM`, and file flags as `66`/`438`/`950` instead of symbolic constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Every function contains `__readgsdword(0x14u)` stack canary checks, `LODWORD`/`HIDWORD` split returns in 64-bit functions, and 40+ compiler runtime functions (`deregister_tm_clones`, `frame_dummy`) clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most `if-else` and `for` loops recovered naturally (e.g., `param_malloc_free` loop), but `param_signal_handling` uses awkward `while(!signal_received)` with manual decrement instead of cleaner timeout pattern.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source well—thread handlers (`thread_compute`, `consumer_thread`) properly separated, no inappropriate inlining, and parameter lists remain reasonable without exposing implementation details.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns for error handling, though some functions like `param_socket_create` have deeply nested conditionals (4+ levels) that could be flattened.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary code duplicated in every function without abstraction, and `param_fork_exec`/`param_pipe_communication` share similar fork-wait patterns that aren't consolidated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`), but `pthread_t` becomes `_DWORD`, `atomic_int` loses atomic qualifier becoming `signed __int32*`, and function pointers degrade to `(void *(*)(void *))` casts.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `ThreadData` struct not recovered—accessed as `v5[3 * i]` array indexing in `param_pthread_join`; `sockaddr` partially recovered with `s.sa_family` but other fields use `*(_WORD *)s.sa_data` raw memory access.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout: `(_DWORD *)thread_return`, `(unsigned __int8 *)s`, and `(void *(*)(void *))` function pointer casts without safety annotations; no `const` correctness preserved on string parameters.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output—all original documentation about function purpose, signal handling semantics, and thread synchronization lost; only "FAILED to decompile" markers for 60 library functions.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls (`strcpy`, `memcpy`, `pthread_create`) identified by name, but design patterns like producer-consumer (`consumer_thread`/`producer_thread`) and mutex-protected critical sections not explicitly recognized or documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 60 functions marked "FAILED to decompile" at end, but no inline warnings about uncertain indirect calls, stack layout anomalies, or potentially incorrect type recovery in complex functions like `param_thread_local_storage`.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null checks exist (`if (!ptr) return -1`) but not documented as preconditions; error return values (-1, -2, -3) lack explanation of what each code means; no postcondition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible (`call_strcpy` → `param_strcpy` → `strcpy`), global variables (`signal_received`, `shared_counter`, `atomic_counter`) referenced consistently, but no call graph documentation or callback relationship explanation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 138 functions in single flat output; original source's logical sections (standard library, system calls, threads) not preserved; no header file separation or static function scoping documentation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 60 external library functions need stubs to compile; uses compiler-specific intrinsics (`__readgsdword`, `_InterlockedAdd`) limiting portability; would require significant patching to build standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (6 + 8 + 4 + 5) / 4 = 5.75
+Level 2 (Structural):     (7 + 8 + 7 + 6) / 4 = 7.00
+Level 3 (Type System):    (6 + 4 + 5) / 3   = 5.00
+Level 4 (Semantic):       (2 + 4 + 5 + 3) / 4 = 3.50
+Level 5 (Contextual):     (6 + 5 + 5) / 3   = 5.33
+
+Overall = (5.75 × 0.30) + (7.00 × 0.25) + (5.00 × 0.20) + 
+          (3.50 × 0.15) + (5.33 × 0.10)
+        = 1.725 + 1.75 + 1.00 + 0.525 + 0.533
+        = 5.53/10
+```
+
+**Overall Readability Score: 5.5/10**
+
+### Critical Defects:
+- **Magic numbers everywhere**: Signal constants (10, 14), socket constants (2, 1), and file flags (66, 438, 950) not recovered as named constants
+- **Zero documentation**: All original comments explaining function purpose, thread synchronization patterns, and error codes completely lost
+- **Type degradation**: `pthread_t` → `_DWORD`, `atomic_int` → `signed __int32*`, losing critical concurrency semantics
+- **Struct recovery failure**: `ThreadData` struct accessed as raw array indexing `v5[3 * i]` instead of named field access
+- **Stack canary noise**: `__readgsdword(0x14u)` appears in every function, adding 2-3 lines of boilerplate per function
+
+### Best Quality Aspect:
+- **Function Decomposition (8/10)** — Function boundaries preserved accurately with appropriate granularity; thread handlers and worker functions properly separated without inappropriate inlining or fragmentation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** — Complete absence of documentation means readers must infer all semantic meaning from code alone; original explanations of signal handling, thread synchronization, and error conditions entirely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover symbolic constants from system headers** — Map magic numbers (10→SIGUSR1, 2→AF_INET, 66→O_CREAT|O_RDWR) using platform-specific constant databases
+2. **Preserve or infer semantic comments** — At minimum, add auto-generated comments indicating function purpose based on call patterns and string literals (e.g., "// Signal handler for SIGUSR1/SIGALRM")
+3. **Improve struct recovery for thread data** — Analyze consistent field access patterns across `thread_sum`, `param_pthread_join` to reconstruct `ThreadData { start, end, result }` structure

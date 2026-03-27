@@ -1,0 +1,102 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Overwhelming use of generic names like `iVar1`, `lVar4`, `piVar3`, `uVar2` obscures semantic meaning. "Unresolved local var" comments show original names (`sum`, `args`, `large`) were lost during decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Only runtime functions like `FUN_00100640` lack meaningful names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Hex constants (`0xf`, `0x32`, `0x12345678`) used without decimal equivalents or explanations. String literals shown as `&DAT_001014be` instead of actual content.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Repeated "WARNING: Unknown calling convention" and "Unresolved local var" comments clutter output. Runtime artifacts (`_init`, `__do_global_dtors_aux`) mixed with application code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions maintain natural flow, but `varargs_func` uses complex do-while with pointer arithmetic instead of clean va_list iteration. Constant folding in caller functions obscures original call structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Caller functions like `call_cdecl` return constants (`0xf`) instead of showing actual function calls, losing the test structure. Function granularity is appropriate but semantic purpose obscured.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate loop structures. Some functions like `test_calling_conventions` have explicit array initialization loops that are clear.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding creates redundancy where both the computation and result appear. `test_calling_conventions` shows both constant returns AND explicit struct initialization loops.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, longlong) but some degradation visible. `ret_opaque_handle` shows questionable cast to `(double *)piVar1`. Function pointer type `_func_int_int *` partially recovered.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct types referenced (`LargeStruct *s`, `SmallStruct *p`) but definitions not included in output. `func_struct_byval` shows pointer parameter instead of by-value (ABI transformation not explained).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present but no obvious buffer overflow patterns. Null checks preserved in code (`if (p != (SmallStruct *)0x0)`) but not documented as contracts.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are auto-generated warnings ("WARNING:", "Unresolved local var") rather than semantic explanations. No algorithm documentation or API contract information.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard C idioms (va_list, struct access) preserved but not explicitly identified. No pattern recognition for calling convention tests or parameter passing patterns.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly detection with "Unknown calling convention" warnings and "Unresolved local var" indicators. Clearly marks what couldn't be recovered.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Null checks exist in code but not documented as contracts (e.g., `func_struct_byptr` requires non-NULL).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but call graph not documented. No indication of which functions are test drivers vs. implementation functions.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime initialization functions mixed with application test code without separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions (`printf`, `strlen`, `puts`) without declarations. Struct type definitions missing, would require significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+8+5+5)/4 = 5.25
+L2 Average: (6+6+7+6)/4 = 6.25
+L3 Average: (6+5+6)/3 = 5.67
+L4 Average: (4+5+7+3)/4 = 4.75
+L5 Average: (5+4+4)/3 = 4.33
+
+Overall = (5.25 × 0.30) + (6.25 × 0.25) + (5.67 × 0.20) + (4.75 × 0.15) + (4.33 × 0.10)
+Overall = 1.575 + 1.5625 + 1.134 + 0.7125 + 0.433 = 5.42
+```
+
+**Overall Readability Score: 5.4/10**
+
+### Critical Defects:
+- Variable names like `iVar1`, `lVar4` should be inferred from usage (e.g., `sum`, `index`, `args_ptr`)
+- Caller functions constant-folded (`call_cdecl` returns `0xf`) losing test structure visibility
+- Struct type definitions missing from output, making `LargeStruct`, `SmallStruct` usage unclear
+- String literals shown as `&DAT_001014be` instead of actual content
+- Calling convention warnings repeated without resolution guidance
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making navigation and identification straightforward.
+
+### Most Needs Improvement:
+- **Variable Naming Quality (3/10)** - Generic names dominate local variables, requiring significant mental effort to track data flow and purpose.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable name inference** - Analyze how variables are used (accumulators, indices, pointers) to suggest semantic names like `sum`, `index`, `buffer_ptr`
+2. **Preserve caller function structure** - Avoid aggressive constant folding in test/driver functions; show actual function calls even when computable
+3. **Include type definitions in output** - Emit struct/typedef definitions alongside function signatures to make composite type usage self-documenting

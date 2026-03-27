@@ -1,0 +1,116 @@
+Looking at this decompilation task, I need to carefully compare the original C source code with the Ghidra decompiled output. Let me analyze each dimension systematically.
+
+Key observations:
+1. The original source is a comprehensive test suite with well-named functions testing stack, heap, and static memory operations
+2. The decompiled code is from Ghidra 12.0, targeting ARM (though original says arm64)
+3. Many function names are preserved, but variable names are generic (param_1, iVar1, etc.)
+4. Several functions have incorrect return types (void instead of int)
+5. Struct types are not recovered - all become pointer arithmetic
+6. Magic numbers appear in hex format (0x2a, 0x14, etc.)
+7. Stack canary checks add noise
+8. Some functions are over-optimized (stack_alias just returns constant)
+
+Let me score each dimension with specific evidence.
+</think>
+
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `uVar2`, `local_c`, `aiStack_34`), losing all semantic meaning from original names like `arr`, `head`, `current`, `sum`. No variable indicates its purpose (e.g., `local_10` in `vla_stack` should indicate VLA base pointer).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`). Runtime functions have generic names (`call_weak_fn`, `deregister_tm_clones`) but this is expected for compiler-generated code.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear in hex without explanation: `0x2a` (42), `0x14` (20), `0x1e` (30), `0x41` (65/'A'). Original source had clear decimal literals. No named constants recovered (e.g., `MAX_VLA_SIZE` for 1000).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks add noise (`__stack_chk_fail` calls, `local_c` tracking). Compiler runtime functions included (`__libc_start_main`, `__do_global_dtors_aux`). Multiple "WARNING: Removing unreachable block" annotations clutter output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as do-while with manual counters instead of for-loops. `vla_stack` and `alloca_usage` have unnatural parameter passing (`param_2` used as return value storage). Stack checking adds artificial conditionals at function ends.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Several functions have incorrect signatures (`local_array` returns void instead of int, `global_var_access` returns void instead of int). `stack_alias` over-optimized to constant return (0x14), losing all original logic. Test functions have extra stack-checking parameters.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with clear loop structures. Some forward references for stack checking disrupt flow slightly. No excessive goto usage; backward jumps properly converted to loops.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some constant folding occurred (`local_vars` simplified to `param_1 * 2 + 10`). However, `test_stack_memory` hardcodes expected values instead of calling functions, losing verification logic. No obvious dead code but some logic eliminated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Extensive use of `undefined4`, `undefined1` instead of proper C types. `size_t` becomes `uint` or `undefined4`. Pointer types often generic (`void *`, `undefined4 *`). Integer sizes unclear (int vs int32_t distinction lost).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover structs (`Point`, `Node`, `TreeNode` all become generic pointers). Heap structures accessed via offset arithmetic (`__ptr[1]`, `__ptr[2]`). No struct field names recovered. Original `Node { data, next }` becomes `int[2]` array access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(int *)((int)__ptr + iVar1 * 4)`). Pointer arithmetic on void pointers throughout. Function pointer treated as `code *` without proper signature. Buffer operations lack bounds checking visibility.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining logic. Only auto-generated warnings ("WARNING: Subroutine does not return", "WARNING: Could not recover jumptable"). No algorithm explanations or API documentation. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Linked list operations not recognized as such. Memory allocation patterns not labeled. Tree traversal logic not identified. Original test case labels (MEM-L1-01, HEAP-L2-01) preserved only in printf strings.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Removing unreachable block", "WARNING: Could not recover jumptable at 0x000111e4"). Stack check failures noted. However, many potential issues not flagged (e.g., `dangling_pointer` UB not warned).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (NULL checks present but not labeled as contracts). No postconditions inferred. Error return values (-1, -2, -3) not explained. Original safety checks (e.g., `n <= 0 || n > 1000`) preserved but not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`global_counter`, `file_scope_static`) but usage patterns unclear. Callback relationship (`set_global_callback` → `call_global_callback`) not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Static functions not clearly marked. No header file structure. Original organization (stack/heap/static/memory-op sections) lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions (`malloc`, `free`, `printf`, `fork`) without declarations. Platform-specific code (`#ifdef _WIN32`) not recovered. Would need significant stubs and type definitions to compile. Dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+5+7+6)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (2+3+5+3)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.53/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1`, `local_c`** should be named based on semantic usage (e.g., `input_value`, `loop_index`, `stack_canary`)
+- **Struct types completely lost** - `Point`, `Node`, `TreeNode` all degraded to pointer arithmetic (`__ptr[1]`, `__ptr[2]`)
+- **Function return types incorrect** - `local_array`, `global_var_access` return void instead of int
+- **Magic numbers in hex** - `0x2a`, `0x14`, `0x1e` obscure original decimal values (42, 20, 30)
+- **`stack_alias` over-optimized** - Returns constant 0x14, losing all alias detection logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names preserved from source, making high-level navigation possible
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union types, forcing all composite data into pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct layouts from access patterns** - Detect consistent offset access (`__ptr[0]`, `__ptr[1]`) and propose struct definitions with field names based on usage context
+2. **Preserve original return types** - Analyze return value usage at call sites to infer correct return types instead of defaulting to void
+3. **Convert hex literals to decimal with comments** - When magic numbers are detected, show both hex and decimal with inferred meaning (e.g., `0x2a /* 42 */`)

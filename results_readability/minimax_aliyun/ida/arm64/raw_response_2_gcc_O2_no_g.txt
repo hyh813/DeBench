@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2`, `a3` and local variables use `v1`, `v2`, `v3`, `result`. Compare to source which uses meaningful names like `x`, `c`, `a`, `b`, `p`, `n`. The decompiled code is nearly unusable for understanding variable purposes without cross-referencing the source.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are well-preserved: `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. All match the original source function names exactly. Minor deduction for some helper functions with generic names.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Test functions show resolved constants (300, 11, 200, 10000, 15, 20) but many arithmetic values remain as magic numbers. In `process_char`, the values 65, 32, 19 are unexplained ASCII arithmetic. Some literals like `0x19u` in bounds checking are opaque.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts. The code is clean without redundant casts from type promotions or debug instrumentation. Some minor noise from register allocation (LODWORD, HIDWORD macros) but manageable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops and conditionals are correctly recovered. The `binary_tree_sum` function shows extreme decompilation issues with goto-heavy code (over 100 labels), but simpler functions like `array_1d_stack` use proper do-while constructs. At -O0, this level of control flow distortion is unexpected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each test case function (`test_data_types_l1`, `test_array_types`, etc.) is properly separated. The original source's modular structure is well preserved. Function sizes are reasonable (not monolithic).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. The `binary_tree_sum` function is a severe exception with extensive forward/backward jumps. Other functions like `array_3d` have nested loops but remain readable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code. Some loop unrolling present in `array_3d` but it's handled reasonably. The test functions compute values inline rather than calling the functions being tested, which is a decompilation artifact but not harmful.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types preserved: `int`, `short`, `char`, `float`, `double`, `long double`. Function pointer types are mostly correct (`__int64 (__fastcall *)(_QWORD)`). Some loss of const correctness (e.g., `const_param` receives `_DWORD *` instead of `const int *`). Integer types are generic `int` rather than `int32_t`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct fields are accessed via array indexing (`a1[0]`, `a1[1]`, `a1[2]`) rather than named fields. The source defines `Point3D` with `x, y, z` but decompiled code uses `*a1 + a1[1] + a1[2]`. Nested structs like `Rect` and `Widget` lose field names. Bitfields are handled with manual bit manipulation which is acceptable.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present. In `ptr_diff`, the code does `(unsigned __int64)(a1 - a2) >> 2` which assumes 4-byte ints. Pointer arithmetic is exposed in many places (e.g., `a1 + 4 * v3`). Function pointer casting is mostly correct but callback signatures are generic.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The original source has extensive comments explaining each test case (e.g., "DT-L1-01: 字符类型", "场景: [SCENE-ALL]"). Zero recovery of this documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are implicit but not named. The linked list traversal in `linked_list` is recognizable as a while-loop pattern but not labeled. The state machine in `enum_switch` uses a jump table but isn't identified as such. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The `binary_tree_sum` function has severe decompilation issues (goto spaghetti) but no indication that this is abnormal or that the original was recursive. No warnings about indirect calls or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The source has implicit contracts (e.g., array bounds, non-null pointers) that are not recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are syntactically clear but relationships aren't documented. The callback relationship between `ptr_func_simple` and `double_value` is present but not explained. No indication of who calls whom or global state usage.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically by type (data types, arrays, pointers, composites). Static functions like `double_value` are properly scoped. The overall organization mirrors the source file structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code has several compilation issues: undefined references to `asc_2D48`, `asc_2ED8`, `asc_3010`, `asc_31E8` (string literals); external function declarations needed (`puts`, `__printf_chk`); some type mismatches in function signatures. Would require moderate patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic `a1`, `a2`, `a3` making code nearly incomprehensible without source
+- **No comments**: Zero recovery of extensive source documentation
+- **Struct field loss**: All struct fields accessed as array indices (`a1[0]`, `a1[1]`) losing semantic meaning
+- **Anomaly silence**: `binary_tree_sum` has 100+ goto labels but no indication of decompilation failure
+- **No contract recovery**: Preconditions, postconditions, and invariants completely absent
+
+### Best Quality Aspect: Function Naming (9/10)
+Function names are nearly perfect matches to source (`process_char`, `array_1d_stack`, `ptr_double`, etc.), making it easy to identify which function is being analyzed.
+
+### Most Needs Improvement: Semantic Transparency (2/0/10)
+The combination of no comments, no pattern recognition, no anomaly indication, and no contract recovery makes the code semantically opaque. A reader cannot understand the intent behind the code.
+
+### Top 3 Recommendations:
+1. **Recover struct field names** by analyzing memory layout patterns and field access sequences
+2. **Add decompilation confidence comments** for complex functions like `binary_tree_sum` indicating potential issues
+3. **Infer variable names from usage** - e.g., `a1` used as array index should be named `index` or `i`

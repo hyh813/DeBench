@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `v0`, `v1`, `temp_0`, `temp_1` in `test_heap_memory` obscure their purpose as function return values; however, some variables like `arr`, `head`, `sum`, `result` in `heap_basic` are descriptive and match source intent.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions preserved original names (`double_value`, `local_vars`, `heap_basic`), but 18+ compiler/runtime functions use generic names (`sub_1030`, `sub_1040`) with no semantic meaning.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x14u` (20), `0x28u` (40), `65` (for 'A') appear without explanation; `4 * n` used instead of `sizeof(int) * n` obscures intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary code (`__readgsdword(0x14u)`) appears in nearly every function; 17 library functions failed to decompile; compiler thunks (`__x86.get_pc_thunk.*`) clutter output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: For/while loops recovered correctly in most functions; `vla_stack` has awkward alignment loop that obscures original simple VLA allocation logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Original function boundaries preserved accurately; `static_helper` kept separate; no inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally; `linked_list_heap` has complex nested loops but remains traceable; some mid-function variable declarations disrupt flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code in user functions; stack canary checks are repetitive but necessary; no loop unrolling artifacts visible at -O0.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char, void*); `__int64` used for `large_stack_frame` return where original used int; `unsigned int` sometimes replaces signed `int`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structs `Point`, `Node`, `TreeNode` recovered with accurate field names (x, y, data, next, left, right); array types correctly identified throughout.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present: `(_DWORD *)p_vla`, `(int *)malloc(4 * n)`; pointer arithmetic visible in `memop_memcpy`; no critical type confusion introduced.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic; only decompiler header comments; no algorithm explanations or decompilation confidence indicators anywhere.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (malloc/free pairs, linked list traversal, tree creation) not identified or labeled; stack canary pattern visible but unexplained.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 17 failed decompilations listed at end; no warnings about dangerous patterns (`dangling_pointer`, `double_free`, `heap_overflow`); stack canary not flagged as security feature.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks preserved in code but not documented as preconditions; error return values (-1, -2, -3) not explained; no postcondition inference.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls and global variable usage visible in code; no explicit call graph documentation; callback relationship (`set_global_callback` → `call_global_callback`) visible but not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat output; no file organization matching source sections (stack/heap/static/memory-op); static functions marked but not grouped logically.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 17 library functions failed to decompile requiring stubs; compiler-specific intrinsics (`__readgsdword`, `_InterlockedOr`) need handling; not immediately compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (5+7+6+5)/4 = 5.75
+Level 2 Average: (7+8+7+7)/4 = 7.25
+Level 3 Average: (7+8+6)/3 = 7.00
+Level 4 Average: (2+3+4+3)/4 = 3.00
+Level 5 Average: (6+5+4)/3 = 5.00
+
+Overall = (5.75 × 0.30) + (7.25 × 0.25) + (7.00 × 0.20) + (3.00 × 0.15) + (5.00 × 0.10)
+        = 1.725 + 1.8125 + 1.400 + 0.450 + 0.500
+        = 5.8875 ≈ 5.9/10
+```
+
+**Overall Readability Score: 5.9/10**
+
+### Critical Defects:
+- **Variable `v0`-`v19`** in test functions should be named after their purpose (e.g., `local_vars_result`, `heap_basic_result`)
+- **No comments** explaining any non-trivial logic, algorithms, or decompilation confidence
+- **Magic numbers** like `0x14u`, `0x28u`, `65` appear without named constant recovery
+- **17 library functions** failed to decompile, creating gaps in the output
+- **Stack canary code** (`__readgsdword(0x14u)`) clutters every function without explanation
+
+### Best Quality Aspect:
+- **Function Decomposition (8/10)** - Original function boundaries preserved accurately with appropriate granularity; static functions like `static_helper` correctly kept separate.
+
+### Most Needs Improvement:
+- **Comment Quality (2/10)** - Virtually no semantic documentation; decompiler provides zero explanation of algorithm intent, patterns, or confidence levels.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables storing function returns (`v0`, `v1`) should be named `{function}_result`; loop counters should be `{type}_index`
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions, failed indirect calls, and potential undefined behavior patterns (dangling pointers, double-free)
+3. **Recover named constants from literals** - Detect repeated values (0x14=20, 0x28=40, 65='A') and suggest named constants or character literals

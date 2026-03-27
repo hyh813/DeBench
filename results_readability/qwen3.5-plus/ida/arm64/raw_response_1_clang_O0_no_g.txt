@@ -1,0 +1,123 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (a1, a2, a3 for parameters; v2, v3, v4, v5 for locals) with zero semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `i`, `j` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (sequential_ops, single_if, nested_if_2, loop_for_fixed). Helper functions like `sub_880` and `call_weak_fn` are generic but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `305419896` in `opaque_predicate` has no explanation. Return values (0, 1, 2, etc.) are clear from context, but no named constants were recovered from the original source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive `(unsigned int)(...)` casts throughout code. Stack variable annotations like `[xsp+8h] [xbp-8h]` add visual clutter. Some redundant variable assignments (v2 = a1) that could be eliminated.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow recovered well (if/else, for, while, switch). However, `switch_fallthrough` converted to nested if statements losing fallthrough semantics, and `duffs_device` has complex goto labels (LABEL_4, LABEL_6) instead of clean loop structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Each function handles single responsibility. No excessive inlining or fragmentation observed. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. `goto_forward` and `goto_backward` successfully recovered as if/for structures. `duffs_device` has disruptive forward jumps that break linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant type casts appear throughout (every return statement). No dead code observed, but the casting pattern creates visual noise that obscures the actual logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Parameters use generic `int` instead of specific types. Pervasive `unsigned int` casts suggest type confusion. Function pointers degraded to `__int64 (__fastcall *)(_QWORD)` losing signature information.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays recovered as raw memory operations (`memcpy`, `_OWORD`). No struct definitions recovered. Function pointer arrays shown as `memcpy(v4, off_13D48, sizeof(v4))` instead of proper array initialization.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout (`(unsigned int)(...)`, `(_QWORD)`). Pointer arithmetic visible in array access (`*(unsigned int *)(a1 + 4LL * i)`). No buffer overflow protections indicated.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output despite original source having extensive documentation explaining each function's purpose, test cases, and difficulty levels. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Duff's device not recognized as such (appears as complex goto structure). State machine pattern in `state_machine` not identified. Loop patterns recognized but not named.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 8 functions marked "FAILED to decompile" at end. However, no warnings about potential issues within successfully decompiled code. `computed_goto` has inline assembly without explanation of what it does.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: n > 0" for factorial). No postconditions inferred. Error conditions not documented despite being present in original source comments.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage (`jump_buffer`, `off_13D30`) not explained. Callback relationships in `process_with_callback` not clarified.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file with no logical grouping. Static functions not properly scoped. No header file structure or API declarations recovered.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates "Compilation Result: Yes" but 8 external functions failed to decompile (memcpy, printf, longjmp, etc.). Would require stubs for library functions to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+5)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00  × 0.25 = 1.750
+Level 3 (Type):        (4+3+5)/3   = 4.00  × 0.20 = 0.800
+Level 4 (Semantic):    (1+3+4+2)/4 = 2.50  × 0.15 = 0.375
+Level 5 (Contextual):  (5+5+6)/3   = 5.33  × 0.10 = 0.533
+─────────────────────────────────────────────────────
+Overall Score:                                  5.03/10
+```
+
+**Overall Readability Score: 5.0/10**
+
+---
+
+### Critical Defects
+
+- **Variable names completely generic** (`a1`, `a2`, `v2`, `v3`) losing all semantic meaning from original source (`temp1`, `sum`, `count`, `i`, `j`)
+- **Zero comments** despite original source having extensive documentation explaining purpose, test cases, and difficulty levels
+- **Type degradation** with pervasive `(unsigned int)` casts and function pointers reduced to `_QWORD`
+- **Duff's device not recognized** - appears as complex goto structure instead of known optimization pattern
+- **Composite types lost** - arrays and structs recovered as raw memory operations (`memcpy`, `_OWORD`)
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (8/10)** - Most function names preserved from source (sequential_ops, single_if, nested_if_2, loop_for_fixed), making it easy to identify which decompiled function corresponds to which source function.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (1/10)** - Complete absence of comments is the most severe issue. The original source had extensive documentation for each function including test cases, difficulty levels, and purpose explanations. None of this semantic information was recovered.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (loop counters, accumulators, temporary calculations) to suggest meaningful names like `i`, `sum`, `temp` instead of `v2`, `v3`.
+
+2. **Add decompilation confidence annotations** - Insert comments indicating uncertainty levels, especially for complex patterns like Duff's device, fallthrough switches, and computed gotos.
+
+3. **Recover and preserve original comments from debug symbols** - When `-g` flag is present (as in this -O0 build), extract and embed source comments into decompiled output to preserve semantic documentation.

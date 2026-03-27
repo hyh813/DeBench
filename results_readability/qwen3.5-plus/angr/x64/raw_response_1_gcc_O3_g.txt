@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, a0, a1, i) with no semantic meaning. Even simple functions like `sequential_ops` lose the original `temp1`, `temp2`, `temp3` naming, making data flow tracking difficult.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Approximately 50% of functions retain original names (`sequential_ops`, `recursion_factorial`, `state_machine`), but many are labeled `sub_XXXXXX` with no semantic meaning. Test functions preserved names but functionality is broken.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers abound without explanation: `4294967295` (UINT_MAX), `1717986919` (division optimization constant), `316912650130844326686193876996` (SIMD constant). No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `InterleaveLOV`, `AddV`, `CmpEQV` operations, numerous `sub_XXXXXX` wrapper functions that just call real functions, and redundant variable declarations throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Simple loops transformed into complex unrolled SIMD-like code (`loop_for_fixed`, `loop_continue`). Functions use `goto` with computed addresses instead of proper function pointer arrays. `loop_while`/`loop_dowhile` have undefined variables (`i`, `v4` never initialized).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but many unnecessary wrapper functions (`sub_4013a4` just calls `sequential_ops`). Test functions bloated with hardcoded values instead of actual function calls.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Multiple `goto` statements for function pointer calls disrupt flow. `loop_complex_cond` has deeply nested conditionals (10+ levels). Forward jumps in several functions break top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe loop unrolling in `loop_for_fixed` (100+ lines for simple sum). Test functions print hardcoded expected values instead of computing results. Many `sub_XXXXXX` wrappers are pure redundancy.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Inconsistent types throughout: `unsigned int` vs `int`, functions returning `unsigned long long` when original returned `int`. Function pointer types degraded to `unsigned long`. Some signedness errors present.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Only one trivial struct recovered (`struct_0` with `field_0`). Function pointer arrays became `InterleaveLOV` operations. `jmp_buf` treated as `unsigned long long`. No meaningful struct/union recovery.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: function pointers cast to `unsigned long` then used in `goto`, uninitialized variables used in `loop_while`/`loop_dowhile`, implicit casts throughout, computed goto through pointer arithmetic.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining any logic. No algorithm descriptions, no decompilation confidence indicators, no API documentation. Only one anomaly marker: `[D] Unsupported jumpkind Ijk_SigTRAP`.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns structurally present (factorial, state machine) but not identified or named. Duff's device completely lost. No design pattern recognition or algorithm naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged (`Unsupported jumpkind`). Broken logic in `loop_while`/`loop_dowhile` not marked. Architecture mismatch (ARM64→AMD64) not noted. Most issues silently present.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition documentation. No parameter validation hints recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g_405fe8`, `jump_buffer`) lack context. Callback relationships unclear due to type degradation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Test functions mixed with implementation. No header file structure. No namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile as-is: undefined functions (`InterleaveLOV`, `AddV`, `CmpEQV`), missing external declarations, architecture mismatch. Requires extensive modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (2+5+3+4)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):     (3+5+4+3)/4 = 3.75 × 0.25 = 0.94
+Level 3 (Type System):    (5+2+3)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):       (1+3+3+1)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):     (4+4+3)/3   = 3.67 × 0.10 = 0.37
+─────────────────────────────────────────────────────────
+Overall Score:                                    3.33/10
+```
+
+**Overall Readability Score: 3.3/10**
+
+### Critical Defects:
+- **Test functions completely broken**: `test_control_flow_l1/2/3` print hardcoded expected values instead of actually calling functions
+- **Loop decompilation failure**: `loop_for_fixed` transformed from 10-line loop to 100+ line SIMD-like code; `loop_while`/`loop_dowhile` have uninitialized variable usage
+- **Duff's device lost**: Complex unrolling logic completely replaced with trivial switch statement
+- **Function pointer arrays degraded**: `InterleaveLOV` and computed `goto` instead of proper array indexing
+- **Zero documentation**: No comments explaining any non-trivial logic or decompilation uncertainty
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- Approximately half the functions retained original semantic names, allowing some function purpose identification despite other issues.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any explanatory comments makes understanding decompiler decisions and code intent impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover test function semantics**: Detect printf patterns with function call results and restore actual function invocations instead of hardcoded values
+2. **Improve loop pattern recognition**: Detect compiler optimization patterns (division by multiplication, loop unrolling) and restore original loop constructs with confidence annotations
+3. **Add decompilation uncertainty markers**: Flag regions where type recovery is uncertain, where control flow reconstruction is heuristic, and where optimization artifacts may obscure original intent

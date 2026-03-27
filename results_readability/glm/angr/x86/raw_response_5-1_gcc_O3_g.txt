@@ -1,0 +1,103 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `arg_0`. For example, in `test_cpp_exception`, variables `v6`, `v7`, and `v8` provide no semantic hint about their role in exception handling.
+
+**2. Function Naming Quality:** Score: 4/10
+Justification: While some C++ mangled names are present (e.g., `_Z18test_cpp_exceptionv`), the vast majority of functions are reduced to generic addresses like `sub_401030` or `sub_40104e`. The few demangled names (e.g., `test_cpp_exception`) are accurate but lost in a sea of `sub_` names.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals like `"Test"` are preserved, but numeric logic is obscured. In `test_cpp_oo_features`, magic numbers like `4700`, `1001`, and `21` are passed directly to print functions without context, and `nan` appears as a literal value in `test_cpp_template_func`.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is heavily polluted with decompiler artifacts and failed liftings, such as `[D] unsupported_<class 'pyvex.expr.GetI'>()`, `[D] PutI(...)`, and `__x86.get_pc_thunk` calls, making it extremely difficult to read.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is heavily reliant on `goto` statements, including computed jumps like `goto v1->field_54` and `goto ptr[2]`. Natural loops and conditionals are absent, replaced by low-level branching.
+
+**6. Function Decomposition:** Score: 3/10
+Justification: The code is fragmented into tiny, often single-line stub functions (e.g., `sub_40104e` simply calls `sub_401050`). This destroys the cohesion of the original high-level functions like `SimpleClass` methods.
+
+**7. Code Linearization:** Score: 2/10
+Justification: Execution flow is non-linear and difficult to trace due to frequent jumps into the middle of blocks and indirect calls. The `test_cpp_exception` function is a prime example of spaghetti control flow.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: There are repetitive patterns of `sub_401030` calls with incrementing arguments, suggesting a loop or array initialization that was not abstracted, but the rest of the code lacks obvious redundancy due to the overall lack of recovered logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are largely generic (`unsigned int`, `void*`). Complex C++ objects are flattened into generic structs like `struct_0` with `padding_0` and numbered fields (`field_54`), losing all class type information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: No C++ classes (e.g., `SimpleClass`, `Base`, `Derived`) are reconstructed. Object-oriented structures are represented as raw memory layouts (`struct_0` with padding), and member access is done via pointer arithmetic on `void*`.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code contains numerous unsafe casts and pointer arithmetic, such as `(char *)a0 + (*(a0))[12]` and casting `void*` to function pointers directly, which obscures the original type-safe C++ semantics.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no explanatory comments. The only text present are decompiler error messages like `[D] Unsupported...`, which indicate failure rather than explaining logic.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler successfully identifies specific C++ low-level idioms like "non-virtual thunk" (e.g., `non-virtual thunk to MultiDerived::funcB()`), but fails to recognize higher-level patterns like RAII, smart pointers, or exception handling blocks.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler explicitly marks failures with `[D] Unsupported...` tags, which is honest about where the decompilation failed. However, it does not explain *why* or provide a fallback interpretation for the logic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are recovered. The logic of the original functions (e.g., ensuring indices are within bounds) is lost in the low-level pointer manipulation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: While function calls are visible, the semantic relationship is lost due to generic naming. It is impossible to tell that `sub_401160` is actually `printf` without analyzing the arguments deeply.
+
+**17. Module Organization:** Score: 2/10
+Justification: The output is a flat list of functions ordered by address. There is no logical grouping of classes or related functionality, unlike the original source which was organized by feature.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code contains pseudo-code artifacts (`[D] ...`, `nan`) and non-standard syntax that will not compile. It requires significant manual intervention to even resemble valid C.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 4 + 3 + 1) / 4 = 2.50
+L2_avg: (2 + 3 + 2 + 4) / 4 = 2.75
+L3_avg: (3 + 2 + 2) / 3 = 2.33
+L4_avg: (1 + 3 + 5 + 1) / 4 = 2.50
+L5_avg: (3 + 2 + 1) / 3 = 2.00
+
+Overall = (2.50 × 0.30) + (2.75 × 0.25) + (2.33 × 0.20) + 
+          (2.50 × 0.15) + (2.00 × 0.10) = 2.44
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 2.4/10
+
+### Critical Defects (Bullet Points)
+- **Decompiler Artifacts:** The code is littered with `[D] unsupported_<class 'pyvex.expr.GetI'>()` and `[D] PutI(...)` errors, rendering large sections unreadable.
+- **Loss of C++ Semantics:** All high-level C++ constructs (classes, inheritance, templates, exceptions) are flattened into generic structs and `void*` pointers, completely obscuring the object-oriented logic.
+- **Generic Naming:** Variables and functions are almost exclusively named `v0`, `sub_XXXX`, or `ptr`, making it impossible to understand the purpose of the code without cross-referverting the binary manually.
+- **Spurious Control Flow:** Extensive use of `goto` and computed jumps (`goto v1->field_54`) replaces natural loops and conditionals, destroying the structural logic.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Anomaly Indication (Score: 5/10)
+- **Why?** The decompiler explicitly flags where it failed to lift instructions with `[D] Unsupported...` tags, preventing the user from mistakenly trusting broken code, even though it doesn't fix it.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Build System Compatibility (Score: 1/10)
+- **Why?** The output is not valid C code due to the inclusion of pseudo-code markers and `nan` literals, making it impossible to compile or verify without heavy editing.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Fix Instruction Lifting:** Address the VEX/IR lifting errors causing `[D] unsupported_<class 'pyvex.expr.GetI'>()` to ensure basic arithmetic and memory operations are recovered.
+2.  **Implement C++ Type Recovery:** Utilize RTTI and vtable analysis to reconstruct class hierarchies (Base, Derived) rather than flattening them into generic `struct_0` with padding.
+3.  **Improve Control Flow Reconstruction:** Replace computed jumps and `goto` chains with high-level constructs like `switch` statements, `for` loops, and `virtual` function calls to reflect the original source structure.

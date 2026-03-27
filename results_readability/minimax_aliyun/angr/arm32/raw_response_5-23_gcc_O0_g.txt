@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2`; local variables are `v0`, `v1`, `v2`, `idx`, `ptr`. The original source used meaningful names like `size`, `x`, `y`, `result` which are completely lost. Only in a few places like `param_asm_clobber` is `idx` somewhat descriptive.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Main test functions like `param_macro_constants`, `call_macro_constants`, `param_conditional_compile` are correctly preserved. However, many runtime/crt functions use generic names like `sub_10480`, `frame_dummy`, `register_tm_clones`. The naming is inconsistent between user functions (good) and system functions (poor).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x400` (1024), `0x200` (512), `64` appear without explanation. The original `#define MAX_SIZE 1024` and `#define BUFFER_COUNT 16` are lost - only the computed values remain. Some literals like `0x800` (2048) are inferable from context. The decompiler correctly preserved string literals like "Hello World", "1.2.3".
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Significant noise present including: stack protection checks (`__stack_chk_guard`), redundant function calls (each `call_*` function calls the underlying function twice), and CRT initialization code. However, the core logic is relatively clean. The `__sync_fetch_and_add_*` functions are particularly noisy with complex-looking but meaningless code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - loops are properly recognized as `for` loops with clear initialization, condition, and increment. Conditionals use idiomatic `if` statements. At `-O0` (debug), there's no loop unrolling or goto conversion, which is appropriate. The code reads naturally top-to-bottom.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - each function does one thing. The original source's function boundaries are preserved (e.g., `param_macro_constants` separate from `call_macro_constants`). No over-fragmentation or monoliths observed. Parameter counts match original signatures.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in error handling (e.g., `param_dynamic_code`). Some nested conditionals in `param_memory_protection` create moderate depth but remain traceable.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy - every `call_*` wrapper function calls the underlying function twice (e.g., `call_macro_constants` calls `param_macro_constants(0x800)` twice, returning the result of the second call). This is a major readability issue. The original source only called once.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `unsigned int` consistently for parameters and returns, which is appropriate for ARM64. However, all pointers are represented as `unsigned int` (address representation) rather than proper pointer types. The original used `int`, `unsigned int`, `int*`, `void*` - the decompiler homogenizes to `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or array recovery visible. The original had arrays like `int arr[] = {1, 2, 3, 4, 5}` and `int a[] = {1, 2, 3, 4}` which are completely lost. All access is through pointer arithmetic like `*((int *)(ptr + idx * 4))`. No struct field recovery.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present - extensive pointer arithmetic like `*((int *)(ptr + idx * 4))` and `*((int *)(a0 + idx * 4))`. Function pointers are not properly typed (all use `unsigned int`). However, no obvious buffer overflows or undefined behavior in the main logic. The atomic operations use `__sync_fetch_and_add_4` which is a compiler builtin, properly handled.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled output. Only annotations like `/* do not return */` appear for functions like `abort()`, `__stack_chk_fail()`. No explanation of macro semantics, algorithm intent, or preprocessor behavior. The original source had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic idioms recognized - loops, conditionals, function calls. However, no recognition of higher-level patterns like "macro expansion", "conditional compilation branch", "atomic operation", or "SIMD operation". The inline assembly in original is replaced with C equivalents but not labeled as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Minimal anomaly indication. Only `/* do not return */` annotations for abort-like functions. No flags for: the redundant double function calls, the complex `__sync_*` functions that look like decompilation failures, or the fact that inline assembly was converted to C.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original had clear expectations (e.g., "期望: 64", "期望: 30") which are completely lost. No documentation of what each function is supposed to return or validate.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear within each `call_*` / `param_*` pair. External dependencies like `printf`, `strlen`, `mmap`, `munmap`, `mprotect`, `sysconf` are properly identified as extern. However, no documentation of which functions call which, or the overall call graph.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically - preprocessing test functions together, asm test functions together, CRT initialization at the beginning. However, the massive block of `__sync_*` functions (40+ functions) at the end is overwhelming and poorly organized. These should be in a separate section or marked as compiler builtins.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code has some compilation issues - missing includes, some extern declarations needed. The `__sync_*` functions have complex bodies that may not compile. The redundant double-calls mean the behavior differs from original (though functionally equivalent due to purity). Some functions like `param_asm_multi_insn` return `memcpy` result which is `void*` but declared as `unsigned int`.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+1. **Redundant function calls**: Every `call_*` function calls the underlying function twice (e.g., `call_macro_constants` calls `param_macro_constants(0x800)` twice), creating massive code bloat and confusion
+2. **No variable name recovery**: Parameters are `a0`, `a1`, local variables are `v0`, `v1`, `v2` - completely generic
+3. **No struct/array recovery**: Original arrays like `int arr[] = {1,2,3,4,5}` are lost, replaced with pointer arithmetic
+4. **No macro semantic recovery**: The original preprocessor macros (MAX_SIZE, BUFFER_COUNT, SQUARE, MAX) are not recognized - only their computed values appear
+5. **No comments or documentation**: Zero explanation of what each function does or the test expectations
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- Loops and conditionals are properly recognized and formatted idiomatically. At -O0, the decompiler correctly recovers for-loops, if-statements, and function call structure without spurious goto conversion.
+
+**Most Needs Improvement:** Assertion & Contract Recovery (scored 1/10)  
+- The decompiler provides zero information about what each function is supposed to do, validate, or return. The original source had explicit expected values ("期望: 64", "期望: 30") that are completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Eliminate redundant function calls**: The decompiler should recognize when a function is called purely for its return value and only emit a single call, not duplicate the entire call expression
+2. **Recover macro semantics**: Detect constant expressions that likely originated from macros (e.g., `0x400` → suggest `MAX_SIZE` or `1024`) and add comments explaining the macro origin
+3. **Add meaningful variable names**: Use usage pattern analysis - if `a0` is compared to `0x400` and used in size calculations, name it `size` or `buffer_size`; if `v0` is used as loop index, name it `idx` or `i`

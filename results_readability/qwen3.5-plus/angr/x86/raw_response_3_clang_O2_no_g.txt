@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `ptr`, `addr`, `result`) with no semantic meaning. Original names like `large_buf`, `global_counter`, `head`, `current` are completely lost. Loop counters sometimes use `i` but most are `index`/`idx` without context.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved (`local_vars`, `heap_basic`, `linked_list_heap`, `double_value`), but many helpers are `sub_XXXXXX` (e.g., `sub_401030`, `sub_401130`). Test functions named correctly but wrapper functions add noise.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic number `4294967295` (should be `-1`) appears throughout as error return. Alignment constants (`0xfffffff0`, `0xfffffffc`) unexplained. String literals referenced via globals (`g_4035c1`) instead of inline, obscuring meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86.get_pc_thunk.*` functions, huge padding arrays (`padding_0[20023]`), redundant struct redefinitions. Wrapper functions like `sub_4012b1` just call the real function.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (`local_vars`, `double_value`) have natural flow. Complex functions (`vla_stack`, `alloca_usage`) use heavily unrolled do-while loops that obscure original for-loop intent. Some goto patterns in error handling.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries mostly preserved. Unnecessary wrapper functions created (`sub_4012ca` calls `local_array`). Function sizes reasonable; no monolithic functions observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom. Complex functions have forward jumps disrupting flow. Loop structures generally recoverable but unrolling creates non-linear appearance.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive loop unrolling in `heap_basic`, `vla_stack`, `alloca_usage` creates 8-iteration unrolled blocks that obscure original simple loops. No dead code but optimization artifacts dominate.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `unsigned int` or `void*`. Original `int`, `char`, `size_t`, `bool` lost. No const-correctness. Function pointers treated as `unsigned int` (e.g., `global_func_ptr`). Signed/unsigned often wrong.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs partially recovered but field names generic (`field_0`, `field_4` instead of `data`, `next`, `left`, `right`). Some struct definitions completely wrong with huge padding arrays (`padding_0[20023]`). `Node` and `TreeNode` structures recognizable but semantically impoverished.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout. Pointer arithmetic without proper typing (`(char *)ptr + 2 * index`). Function pointers as integers. No const correctness. `dangling_pointer` returns `*(ptr)` after free without warning.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. Original had extensive comments explaining each test case (e.g., "// MEM-L1-01: 局部变量（基础类型）"). No algorithm explanations, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Memory allocation patterns not recognized. Linked list creation/traversal in `linked_list_heap` not identified as such. Tree operations in `tree_heap_traversal` completely opaque.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly noted: `[D] Unsupported jumpkind Ijk_SigTRAP`. Dangerous code (`dangling_pointer`, `double_free`, `heap_overflow`) not flagged. No warnings about uncertain decompilation in complex functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented. NULL checks present but not documented as contracts. Error returns (`4294967295`) not explained. No postcondition inference for allocation functions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced via `extern` but usage patterns unclear. Callback relationship (`set_global_callback` → `call_global_callback`) not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Original had clear sections (stack, heap, static, memop) now lost. Test functions mixed with implementation. No header file structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies declared (`extern` statements). Platform-specific code lost (bzero/bcopy conditionals). Would need stubs for some runtime functions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+3+5)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (5+7+6+5)/4 = 5.75  × 0.25 = 1.44
+Level 3 (Type):        (4+4+3)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):  (5+4+6)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                                  4.47/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Magic number `4294967295`** used throughout instead of `-1` for error returns, obscuring error handling semantics
+- **All struct field names lost** (`field_0`, `field_4` instead of `data`, `next`, `x`, `y`), destroying data structure clarity
+- **Type system collapsed** to `unsigned int` everywhere, losing `int`, `char`, `size_t`, const-correctness distinctions
+- **Zero comments** despite original having extensive documentation explaining each test case's purpose
+- **Loop unrolling artifacts** in `vla_stack`, `alloca_usage`, `heap_basic` obscure simple original for-loop logic
+
+### Best Quality Aspect:
+- **Function Decomposition (7/10)** - Original function boundaries mostly preserved with reasonable granularity; no monolithic functions created
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation recovered despite original having comprehensive test case explanations
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., variables used in size checks should be named `size`/`count`, pointer iteration variables should be `ptr`/`node`)
+2. **Detect and annotate magic numbers** - recognize `4294967295` as `-1` error code, alignment constants as such, and suggest named constants
+3. **Preserve original comments** from debug symbols when available (`-g` flag was used) and add decompilation confidence annotations for uncertain reconstructions

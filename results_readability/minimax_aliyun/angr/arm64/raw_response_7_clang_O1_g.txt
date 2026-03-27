@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: The decompiled function uses only generic register-derived names (`v0`, `x0`). The original parameter `x` and local variable `result` are completely lost. This makes it impossible to understand the function's semantics without external context.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: The function name `param_fake_branch` exactly matches the original source, which is excellent. However, the parameter information is completely lost - the function signature shows no parameters at all.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No literals or magic numbers appear in this minimal function. The original source had no literals in `param_fake_branch` itself.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: The function is extremely clean with no compiler artifacts, redundant casts, or debug instrumentation. The only minor issue is the unnecessary `unsigned long` cast on `v0`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10  
+Justification: The control flow is perfectly natural - a simple return statement. The original fake branch logic was eliminated by the compiler (expected at -O0 for always-false conditions), so the decompiled flow is appropriate.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The function maintains appropriate granularity - it's a single, focused operation. No over-fragmentation or monolith issues.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: The code reads perfectly top-to-bottom with no jumps, branches, or disruption to flow.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundant code exists. The function is minimal and clean.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Two critical type issues: (1) Return type is `long long` instead of `int` - this is a significant type widening that could cause issues; (2) The parameter is completely missing from the function signature. The original was `int param_fake_branch(int x)`.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types (structs/unions) are used in this function, so none need recovery.
+
+**11. Type Safety:** Score: 7/10  
+Justification: The type mismatch between declared `long long` return and actual `int` value could cause issues. However, no unsafe pointer casts or arithmetic are present.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments explain the function's purpose. More critically, there's no indication that the original fake branch logic was eliminated - the decompiler should flag that the two always-false conditions (`x*x < 0` and `strlen(str) < 0`) were optimized away.
+
+**13. Idiom Recognition:** Score: 10/10  
+Justification: No specific design patterns or complex algorithms are present in this simple function.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: The decompiler completely fails to indicate that significant code was eliminated. The original function had two fake branch blocks that are now missing. This is a critical anomaly that should be flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information recovered. The original had implicit preconditions (none) and postconditions (returns input value).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: The function is called by `call_fake_branch()` which passes the literal `10`. This relationship is visible in the code but not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped together in the output, but there's no clear logical organization or grouping comments indicating this is part of the obfuscation test suite.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The function would compile as-is (with stubs for externs), but the missing parameter declaration would cause linking issues if called from another compilation unit.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable naming is completely absent - `v0` and `x0` provide no semantic meaning (should be `x` and `result`)
+- Function parameter is completely missing from signature - original was `int param_fake_branch(int x)` but decompiled shows no parameters
+- Return type is wrong - shows `long long` instead of `int`
+- No anomaly indication that the fake branch logic was eliminated - two code blocks are completely missing without any warning
+- No comments explaining the function's purpose or the obfuscation technique
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 10/10)  
+The control flow is perfectly linear and readable - a simple return statement that reads top-to-bottom without any jumps or complexity.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 1/10)  
+The decompiler failed to recover any meaningful variable names. The original had clear names (`x`, `result`, `str`) that are completely lost, replaced with generic register names that provide no semantic value.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover parameter names from calling conventions**: Analyze call sites to infer parameter names (e.g., `call_fake_branch` passes `10`, indicating an `int` parameter)
+2. **Flag eliminated dead code**: When conditions are always-false (like `x*x < 0` for integers), add a comment indicating the eliminated branch to preserve semantic understanding
+3. **Infer types from context**: Use the calling convention and call sites to determine correct parameter and return types rather than defaulting to register-sized types

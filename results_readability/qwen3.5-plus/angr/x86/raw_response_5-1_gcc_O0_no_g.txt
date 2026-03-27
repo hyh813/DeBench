@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`) with no semantic meaning. Original variables like `capture_by_value`, `result`, and `instance_count` are completely lost. Even in recovered functions like `test_cpp_lambda`, meaningful names become `v1`, `v0`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some C++ mangled names were recovered (`test_cpp_member_func`, `SimpleClass::getValue`, `Container<int>::push`), but many functions remain as `sub_401030`, `sub_401040`. The decompiler partially succeeded at name recovery but failed consistency.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear without explanation: `4294967295` (UINT_MAX), `65535`, `25648`, `31899`. Original constants and enum values are not recovered as named constants.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe compiler artifacts: `__x86.get_pc_thunk.ax`, `__x86.get_pc_thunk.si`, repeated struct definitions with `padding_0[31899]`. Many `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers pollute the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Excessive `goto` statements replace natural loops and conditionals. Exception handling uses `goto LABEL_401fcf` instead of try-catch. Original `for` loops become manual increment with goto.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: Catastrophic fragmentation: 540 LOC original became 4527 LOC decompiled. Smart pointer operations split into 40+ tiny functions (`std::__uniq_ptr_impl`, `std::_Tuple_impl`, `std::_Head_base`).
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Forward jumps disrupt flow (`goto LABEL_401fcf`, `goto LABEL_401ffd`). Stack check failures use `__stack_chk_fail_local()` with return patterns that break linear reading.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Identical struct definitions repeated with different offsets (`struct_0` with `padding_0[31899]`, `padding_0[31843]`, `padding_0[31767]`). Template instantiations create massive code duplication.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Everything degrades to `int`, `char*`, `void*`, `unsigned int`. Template types completely lost (`Container<int>` becomes generic struct). No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs have generic field names (`field_0`, `field_4`, `padding_0`). Class layouts partially recovered but with incorrect offsets. `SimpleClass` fields not properly named (`value`, `name` lost).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe pointer arithmetic throughout (`ptr[40]`, `ptr[80]`). Casts like `(unsigned int)call_virtual_func(v3, 5)` without type verification. Virtual calls use raw pointer dereference.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Only auto-generated struct definitions. No algorithm explanations or decompilation confidence indicators beyond `[D]` markers.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns completely unrecognized: RAII (smart pointers), virtual dispatch, template instantiation, lambda captures all appear as raw operations without pattern identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged with `[D] unsupported_` markers and `Failed to decompile function` comments. However, many semantic errors (wrong types, broken logic) go unflagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original assertions and expected values (e.g., "期望: 4704") completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some function call relationships visible through mangled names. Virtual dispatch partially recovered with vtable pointers. But callback relationships and inheritance hierarchies unclear.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All code in single output with no logical grouping. Related class methods scattered. No header file separation or namespace organization.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Will not compile: undefined symbols (`_ccall`, `g_408ff4`), unsupported expressions, missing standard library implementations. Requires extensive manual patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+3+2)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (2+2+3+2)/4 = 2.25 × 0.25 = 0.563
+Level 3 (Type System): (2+3+3)/3 = 2.67 × 0.20 = 0.533
+Level 4 (Semantic):    (2+2+4+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (4+3+2)/3 = 3.00 × 0.10 = 0.300
+
+Overall Score: 2.75/10
+```
+
+**Overall Readability Score:** 2.75/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named based on semantic usage (e.g., `result`, `capture_by_value`, `instance_count`)
+- **Control flow uses `goto`** instead of natural loop/conditional constructs, breaking readability
+- **4527 LOC output from 540 LOC source** indicates catastrophic function fragmentation
+- **Template instantiation completely broken** with `[D] unsupported_` expressions replacing actual logic
+- **Exception handling destroyed** - try-catch blocks converted to goto labels with no semantic meaning
+
+### Best Quality Aspect: **Anomaly Indication (4/10)**
+- The decompiler does flag unsupported expressions with `[D]` markers, providing some transparency about decompilation failures.
+
+### Most Needs Improvement: **Function Decomposition (2/10)**
+- Smart pointer operations exploded into 40+ helper functions, making the code 8x larger than original and practically unmaintainable.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ semantic patterns**: Implement RAII, virtual dispatch, and template instantiation recognition to collapse fragmented helper functions back into coherent operations.
+2. **Infer variable names from usage context**: Analyze variable roles (loop counters, accumulators, pointers) to generate meaningful names instead of `v0`, `v1`, `v2`.
+3. **Reconstruct high-level control flow**: Replace `goto` patterns with proper loop/conditional constructs, especially for exception handling and iterator patterns.

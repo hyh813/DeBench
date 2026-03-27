@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use cryptic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6` throughout. In `array_1d_stack`, variables `v4`, `v5`, `v6` obscure their roles as loop counter, pointer, and array element. The `binary_tree_sum` function has dozens of single-letter variables making it nearly incomprehensible.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test functions retain their original names: `process_char`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`. However, some internal functions use generic names like `sub_103A0`, `sub_11718`, and compiler intrinsics like `__muldf3` are exposed.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions have hardcoded expected values (e.g., `300`, `11`, `200`) without explanation. Magic numbers like `65` and `32` in character conversion are not documented. The `process_char` function uses `(c - 65) <= 0x19` which obscures the `'A'` to `'Z'` range check.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Massive compiler artifact pollution includes: `__muldf3`, `__mulsf3`, `__aeabi_drsub`, `__subdf3`, `__aeabi_dadd`, `__floatunsidf`, `__floatsidf`, `__extendsfdf2`, and many more. The `binary_tree_sum` function shows severe register spilling with 40+ local variables. Failed decompilations for `__imp_puts`, `__imp___printf_chk`, etc.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops are rendered as do-while constructs (e.g., `do { ... } while (v4 != v5)`) instead of for-loops, which is common but less readable. The `array_complex_index` has a complex compound condition. At -O0, control flow should be more natural.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. Each test function focuses on a single responsibility. The `binary_tree` wrapper correctly separates traversal logic from sum calculation. No 500-line monoliths observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. Early returns present in `array_complex_index` and `linked_list`. The `binary_tree_sum` has deep nesting (6+ levels) making linear reading difficult.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: The `binary_tree_sum` function shows significant code duplication from unrolled recursion. The `test_array_types` function has redundant array initialization code. Some common subexpressions could be cached.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good type recovery - `char`, `__int16`, `__int64`, `bool`, `float`, `double` all correctly identified. However, `int` is used for `long` (should be `long` or `int64_t`), and some pointers use `_DWORD` instead of proper types. Const correctness preserved in `const_param`.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery - `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Graph`, `Edge`, `Device`, `Flags`, `UnionData`, `State` all correctly reconstructed with accurate field names. Union/struct distinction maintained. Bitfield handling in `struct_bitfields` is impressive.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `*(_DWORD *)p`, `*(unsigned __int8 *)p`, `*(_WORD *)f`. The `ptr_void` function uses type punning. However, most function signatures are type-safe. Some pointer arithmetic could overflow.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only a header comment identifying the decompiler and binary. No inline comments explaining algorithm logic, parameter purposes, or return value semantics. The "FAILED to decompile" messages are present but not informative.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Recognizable patterns: linked list traversal (while loop with NULL check), tree traversal (recursive), array summation. However, these are not explicitly labeled or documented as common data structure patterns.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: "FAILED to decompile" messages present for 6 functions but without explanation of why. No flags for suspicious code patterns, potential undefined behavior, or indirect call resolution failures.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The `array_complex_index` has bounds checking but no contract explaining the validation logic. No documentation of error return semantics.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are syntactically clear but relationships not documented. No indication of which functions call `double_value`, callback relationships, or global variable usage. The `complex_callback` is used but not linked to `ptr_func_complex`.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions logically grouped by category (data types, arrays, pointers, composites). Static functions properly scoped. However, all in single file with no header/API separation. Compiler runtime functions mixed with application code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code references undefined functions like `_printf_chk`, `puts`, `abort`. No extern declarations or stub implementations provided. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 4 + 2) / 4 = 4.0
+L2_avg = (5 + 8 + 6 + 4) / 4 = 5.75
+L3_avg = (7 + 9 + 6) / 3 = 7.33
+L4_avg = (3 + 5 + 4 + 2) / 4 = 3.5
+L5_avg = (4 + 6 + 4) / 3 = 4.67
+
+Overall = (4.0 × 0.30) + (5.75 × 0.25) + (7.33 × 0.20) + 
+          (3.5 × 0.15) + (4.67 × 0.10)
+        = 1.20 + 1.44 + 1.47 + 0.53 + 0.47
+        = 5.11/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects (Bullet List)
+- Variable naming is severely degraded: `v1`, `v2`, `v3` etc. throughout, making `binary_tree_sum` nearly incomprehensible with 40+ cryptic variables
+- Massive compiler artifact pollution: 20+ compiler intrinsics (`__muldf3`, `__mulsf3`, etc.) clutter the output
+- No comments explaining algorithm logic, parameter purposes, or return value semantics
+- Type safety issues: multiple unsafe casts like `*(_DWORD *)p`, `*(unsigned __int8 *)p`
+- No contract/precondition documentation - bounds checking in `array_complex_index` has no explanation
+
+### Best Quality Aspect (Single Dimension)
+- **Composite Type Recovery (score: 9/10)**  
+- Excellent struct/union reconstruction with accurate field names. All data structures (`Point3D`, `Node`, `TreeNode`, `Graph`, `UnionData`, `State`) correctly recovered with proper member names.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (score: 2/10)**  
+- Cryptic single-letter variable names (`v1`-`v60`) completely obscure variable purpose. The binary tree functions are particularly affected, making algorithmic understanding nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Track how variables are used (array indexing, size calculation, pointer traversal) to suggest meaningful names like `sum`, `index`, `current`, `next`
+2. **Filter compiler intrinsics**: Move `__muldf3`, `__mulsf3`, and similar runtime functions to a separate "Compiler Runtime" section or collapse them
+3. **Add semantic comments**: Automatically generate comments explaining common patterns (e.g., "// Linked list traversal", "// Binary tree recursive sum") and document function contracts

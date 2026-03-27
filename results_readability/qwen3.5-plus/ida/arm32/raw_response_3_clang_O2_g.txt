@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3` throughout (e.g., `heap_basic` uses `v2`, `v3`, `v4`, `v5`), obscuring their semantic roles. Only function parameters retain meaningful names like `x`, `n`, `buf`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user functions retained original names (`local_vars`, `heap_basic`, `test_stack_memory`), but some are generic (`sub_568`, `init_proc`). 18 functions failed to decompile entirely.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xFFFFFFF8`, `0xFFFFFFFD`, `0xFFFFFC18` appear without explanation in VLA/allocation code. Simple constants (42, 10, 20) are clear but bit-masking constants obscure intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack annotations like `[sp-4h] [bp-4h] BYREF` clutter output. Type markers (`_DWORD`, `_BYTE`) and register hints (`// r0`, `// r1`) add noise without semantic value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but complex ones like `vla_stack` use do-while with manual counters instead of for-loops. `linked_list_heap` has deeply nested conditionals that could be flattened.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. However, test functions were constant-folded (e.g., `test_stack_memory` has hardcoded printf values instead of actual function calls).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `linked_list_heap` has multiple nested cleanup loops disrupting flow. Forward jumps in VLA code break linear reading.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code, but sync functions (`__sync_fetch_and_*`) show repetitive patterns. Main logic functions are relatively clean without excessive duplication.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Critical type errors: `file_scope_static` declared as `int *` instead of `int`, `get_file_static` returns `int *` instead of `int`. Generic types (`_DWORD`, `__int64`) used throughout.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `Node` struct partially recovered with `data` and `next` fields visible. `TreeNode` and `Point` structs not consistently recognized—some accesses use raw pointer arithmetic (`v2[1]` instead of `v2->next`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts pervasive: `(char *)&v5 - ((4 * n + 7) & 0xFFFFFFF8)`, `(_DWORD *)`. Pointer arithmetic without bounds checking. `dangling_pointer` returns dereferenced freed memory without warning.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments beyond function signatures. One warning exists ("positive sp value has been detected") but no algorithm explanations or intent documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Linked list traversal pattern in `linked_list_heap` not identified. Tree operations in `tree_heap_traversal` constant-folded to `return 60` without pattern recognition.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Stack warnings present, 18 failed decompilations listed. However, undefined behavior (dangling pointer, double-free) not flagged despite being present in code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Null checks exist in code but not expressed as contracts (e.g., `if (buf == NULL) return -1` not documented as requirement).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variable usage (`global_counter`, `static_local_counter`) not explained. Callback relationships unclear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable sequence matching source order. However, sync functions grouped separately from main logic, and failed decompilations listed at end.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 18 functions failed to decompile (library imports like `malloc`, `printf`, `free`). Code requires stubs for all external functions. Architecture mismatch (ARM64 source → ARM32 binary) creates portability issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+6+7)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+5+4)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (3+4+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 5.197 ≈ 5.2/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Variable `v0`-`v6` naming** obscures semantic roles throughout all complex functions
+- **Type errors**: `file_scope_static` incorrectly typed as `int *` instead of `int`
+- **Architecture mismatch**: Source claims ARM64 but decompiled binary is ARM32
+- **18 failed decompilations** for standard library functions without stubs
+- **No anomaly warnings** for undefined behavior (dangling pointer, double-free patterns)
+- **Constant folding** in test functions hides actual function call relationships
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most user-defined functions retained original semantic names matching source code
+
+### Most Needs Improvement: **Comment Quality & Presence (3/10)**
+- Virtually no documentation explaining algorithm intent, non-obvious logic, or decompiler confidence
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables used in size checks should be named `size`, `count`, `length` based on context
+2. **Add anomaly warnings for undefined behavior** - Flag dangling pointer access, double-free, and buffer overflow patterns explicitly
+3. **Recover type information from struct field access patterns** - When `v2[1]` is consistently used as a pointer, recognize it as `next` field in linked list structures

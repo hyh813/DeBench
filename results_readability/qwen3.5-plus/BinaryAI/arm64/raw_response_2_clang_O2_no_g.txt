@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `uVar2`, `puVar3`) with no semantic meaning. Original source had meaningful names like `arr`, `n`, `sum`, `i`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user-defined functions preserved original names (`process_char`, `array_1d_stack`, `struct_simple`, `test_data_types_l1`). However, some functions are generic (`FUN_00100620`, `FUN_0010175c`) and helper functions lost names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `0x20` (should be `32` for char conversion), `0x41` (should be `'A'`), `0x19` (should be `25`). Test functions show pre-computed results (`0x61`, `0x62`) instead of actual function calls.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate compiler artifacts present. Redundant accumulator variables (`iVar10` through `iVar17`) for vectorization. Some redundant casts but no severe dead code pollution.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions maintain natural flow (`process_char`, `process_int`), but complex functions have unnatural loop unrolling with 8+ accumulators. Original simple `for` loops transformed into complex do-while with manual unrolling.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is reasonable; no monolithic 500+ line functions. However, `array_3d` is 100+ lines of unrolled accesses that should be a simple triple-nested loop.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but complex functions have forward jumps disrupting flow. Loop unrolling creates non-linear access patterns that are hard to follow.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy from loop unrolling. `array_3d` has 100+ lines of repeated array access patterns. `array_1d_stack` and `array_vla` have nearly identical 80-line unrolled loops that should be 5-line original loops.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types partially preserved but degraded. `process_ll` returns `long` in decompiled but should be `long long`. Float operations use `undefined4`/`undefined8`. Pointer types often wrong (`int*` instead of `struct*`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct/union types completely lost. `struct_simple` accesses `param_1[0]`, `param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`, `p->z`. No struct definitions recovered. `union_type` uses `float*` instead of `UnionData*`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present. Function pointers degraded to `code*` with `UNRECOVERED_JUMPTABLE`. Pointer arithmetic on generic `int*` instead of typed pointers. `ptr_triple` uses `undefined8*` then casts to `int**`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Original source had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list traversal (`linked_list`, `doubly_linked_list`) not identified as such. Tree recursion (`binary_tree_sum`) not named. Loop patterns not recognized.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Minimal anomaly indication. `UNRECOVERED_JUMPTABLE` appears in `ptr_func_simple` but not explained. No warnings about uncertain decompilation or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear test expectations (e.g., "期望: 300") that are lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships not documented. No call graph information. Test functions show constant results instead of actual calls, breaking traceability.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. No header file structure. Related functions (e.g., all array tests) not grouped together.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External function references present (`printf`, `puts`, `__libc_start_main`) but would need stubs. Type mismatches (`undefined4`, `undefined8`) would prevent compilation without modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+6)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+7+6+3)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+2+3+1)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.27/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Struct/union types completely lost** - All composite types accessed as raw `int*` arrays with index arithmetic instead of field names
+- **Zero comments** - No documentation for any non-trivial logic despite complex floating-point operations
+- **Aggressive loop unrolling** - Simple 5-line loops transformed into 80-100 line unrolled code with 8+ accumulators
+- **Test functions show constants** - `test_data_types_l1` prints pre-computed results (`0x61`, `300`, `0xb`) instead of actual function calls
+- **Generic variable names** - `param_1`, `iVar1`, `uVar2` provide no semantic information about purpose
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most user-defined functions preserved original meaningful names like `process_char`, `array_1d_stack`, `struct_simple`
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any comments, documentation, or decompilation confidence indicators makes understanding complex code extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** from access patterns - detect struct field access sequences and generate proper `struct` definitions with inferred field names
+2. **Preserve loop constructs** instead of aggressive unrolling - recognize back-edge jump patterns and emit `for`/`while` loops with comments noting optimization level
+3. **Add decompilation confidence annotations** - flag uncertain reconstructions (function pointers, indirect calls) and add explanatory comments for complex operations like NEON floating-point intrinsics

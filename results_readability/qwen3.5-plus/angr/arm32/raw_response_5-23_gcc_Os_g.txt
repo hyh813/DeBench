@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `a0`, `a1` with no semantic meaning. For example, `param_macro_constants` uses `a0` instead of `size`, and `param_asm_clobber` uses `ptr` and `idx` but most are `v0-v12`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (e.g., `param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). However, some helper functions are named generically (`sub_1045c`, `sub_10540`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0x400` (should be `MAX_SIZE`), `0x200` (should be `MAX_SIZE/2`), `57072` (should be `0xDEF0`). String literals in printf are replaced with hex addresses (`0x11cfa`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts like `armg_calculate_condition` calls, stack canary checks (`GLIBC_2.4::__stack_chk_guard`), and redundant variable assignments (`v0 = v1; v1 = v0`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive use of `armg_calculate_condition` obscures simple conditionals. `param_macro_constants` has convoluted if-else logic instead of clean `if (size > MAX_SIZE)`. Many functions use `goto LABEL_XXXX` patterns.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are correctly recovered with appropriate granularity. Each source function maps to one decompiled function. However, `call_variadic_macro` incorrectly calls `param_variadic_macro` twice.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps to labels (`LABEL_10564`, `LABEL_10c2a`) disrupt reading flow. `call_asm_multi_insn` has deeply nested conditionals with multiple goto targets that could be simplified.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `call_builtin_macros` and `call_variadic_macro` call their underlying functions twice unnecessarily. `test_preprocessing_features` has duplicate `__printf_chk` calls at the end.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: All types degraded to `unsigned int` or `int`. Original `size_t`, `void*`, `const char*` distinctions lost. `param_asm_multi_insn` shows `void*` but parameters `v0`, `v1`, `v2` are untyped.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery visible. Array accesses use pointer arithmetic (`ptr + idx * 4`) instead of array notation. No type information for complex data structures.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple implicit casts between pointer and integer types. `param_dynamic_code` compares `ptr == 0xffffffff` instead of `MAP_FAILED`. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled output. No explanation of `armg_calculate_condition` parameters, magic numbers, or recovered semantics. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Macro expansions not identified (e.g., `ADD_16(x)` became `x + 16` without noting macro origin). Atomic operations recognized but implementations are broken (infinite loops with `4294905792()`).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious patterns. `__sync_fetch_and_add_4` shows infinite `do{}while(4294905792())` loop without flagging as problematic. Architecture mismatch (ARM64 source vs ARMEL decompilation) not noted.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or error handling documentation. Functions like `param_memory_protection` have multiple error return paths (-1, -2, -3) without explanation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible but external dependencies unclear. Global variables named `g_11cfa`, `g_23008` without semantic meaning. `__printf_chk` usage suggests libc dependency but not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source file. Related functions grouped (macro tests together, asm tests together). However, atomic helper functions (`__sync_*`) are interspersed at the end.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References undefined symbols (`GLIBC_2.4::__stack_chk_guard`, `armg_calculate_condition`). Many `__sync_*` functions have incomplete implementations with `...` truncation. Will not compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (4+7+5+4)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (3+2+5)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.12/10
+```
+
+### Overall Readability Score: **4.1/10**
+
+### Critical Defects:
+- **Architecture mismatch**: Source compiled for ARM64 but decompiled as ARMEL (32-bit), causing incorrect code recovery
+- **`armg_calculate_condition` pollution**: Simple conditionals obscured by ARM condition code emulation calls
+- **Zero comments**: All semantic information from original source comments completely lost
+- **Broken atomic implementations**: `__sync_fetch_and_add_4` and related functions contain infinite loops with magic number `4294905792()`
+- **Constant folding over-aggression**: Functions like `call_macro_constants` return hardcoded `64` instead of showing the call to `param_macro_constants(2048)`
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most original function names preserved accurately, making it easy to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any explanatory comments means users must reverse-engineer the semantics that were originally documented in the source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments**: Extract debug information (`-g` flag) to restore original comments and macro definitions that explain intent.
+2. **Simplify ARM condition code handling**: Replace `armg_calculate_condition` calls with native C conditionals when the condition pattern is recognizable.
+3. **Flag suspicious patterns**: Add warnings for infinite loops, architecture mismatches, and incomplete function implementations rather than presenting broken code confidently.

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar2`, `local_c` with no semantic meaning. For example, `func_mixed_args` parameters should be `x`, `str`, `d`, `ll` but are `param_1` through `param_6`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Original function names preserved (`cdecl_func`, `call_cdecl`, `varargs_func`), which is excellent. However, compiler helper functions have cryptic names (`__adddf3`, `__floatsidf`) that obscure their purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic hex numbers everywhere (`0xf`, `0x32`, `0x2a`, `0x12345678`) without explanation. String literals replaced with `&DAT_0001170a` references instead of actual text content.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Massive floating-point helper functions (`__adddf3`, `__subdf3` at 200+ lines each) dominate output. These compiler runtime artifacts obscure the actual application logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but floating-point helpers use excessive nested conditionals and bit manipulation that obscures the simple arithmetic intent.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Constant folding collapsed caller functions to single returns (`call_cdecl` returns `0xf` instead of calling `cdecl_func`). `func_struct_byval` exploded into 30+ parameters instead of accepting a struct.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally, but floating-point helpers have deep nesting (>10 levels) and forward jumps that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Similar bit manipulation patterns repeat across `__adddf3`, `__subdf3`, `__floatsidf` without consolidation. No dead code removal for optimized-away functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic `int` used instead of `int32_t`. Floating-point uses `undefined4`, `undefined8` instead of `float`/`double`. `func_mixed_args` return type changed from `int` to `void`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - `LargeStruct` completely lost; `func_struct_byval` has 30+ `int`/`undefined4` parameters instead of one struct. `SmallStruct*` became `int*` in `func_struct_byptr`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe implicit casts (`undefined4` to `int`, `byte` to `uint`). Pointer arithmetic lacks proper typing. `func_mixed_args` signature fundamentally broken.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in entire decompilation. No algorithm explanations, no decompiler confidence indicators, no API documentation whatsoever.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not recognized (uses `local_c` array instead of `va_list`). Struct passing conventions not identified. Floating-point helpers not marked as compiler runtime.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about `func_mixed_args` having wrong parameter count (6 vs 4). No indication that `func_struct_byval` signature is suspicious with 30+ parameters.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions. No error handling contracts recovered from null checks.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. External functions (`printf`, `strlen`) declared but relationship to main code unclear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order. No logical grouping (calling convention tests mixed with parameter passing tests). No header file structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions declared but undefined. Floating-point helpers would need special linking. Some functions return `undefined4` instead of proper types.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+3)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (6+4+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.666
+Level 4 (Semantic):    (1+3+2+1)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.98/10
+```
+
+### Overall Readability Score: **4.0/10**
+
+### Critical Defects:
+- **Struct type completely lost**: `func_struct_byval` has 30+ parameters instead of accepting `LargeStruct` - makes code practically unusable
+- **Zero documentation**: No comments explaining any logic, algorithms, or decompiler confidence
+- **Variable names meaningless**: `param_1`, `iVar1`, `uVar2` convey no semantic information about purpose
+- **Function signature corruption**: `func_mixed_args` has 6 parameters instead of 4, return type changed to `void`
+- **Compiler artifacts dominate**: 500+ lines of floating-point helper code obscures actual application logic
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Original function names were preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), making basic navigation possible.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding intent impossible without cross-referencing original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack layouts**: Analyze parameter access patterns to reconstruct struct definitions instead of exploding into individual parameters.
+2. **Add decompiler confidence annotations**: Mark uncertain reconstructions (e.g., `// DECOMPILER UNCERTAIN: varargs handling`) to guide manual review.
+3. **Filter compiler runtime helpers**: Recognize and collapse standard library functions (`__adddf3`, `__floatsidf`) into readable expressions or mark as external.

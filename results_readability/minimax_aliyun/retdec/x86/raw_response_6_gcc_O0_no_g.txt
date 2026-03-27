@@ -1,0 +1,158 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names like `v1`, `v2`, `v3`, `v4` throughout all functions. Parameters are named `a1`, `a2`, `str`, `str2` - barely better than numbered placeholders. Compare to the original source which used meaningful names like `dst`, `src`, `buffer`, `len`, `sock_fd`, `pathname`. The decompiler made no attempt to infer semantic meaning from usage patterns.
+
+### 2. Function Naming Quality  
+**Score: 4/10**
+
+Standard library functions are correctly named (strcpy, strlen, memcpy, pthread_create), but user-defined functions use generic patterns like `param_strcpy`, `call_strcpy` (which is acceptable), yet many internal functions are named `function_13f0`, `function_1400` with no semantic meaning. The original had descriptive names like `param_signal_handling`, `param_pipe_communication` which were partially preserved but inconsistently applied.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Global variables contain unexplained magic numbers: `g3 = -0x451a7979`, `g4 = 0x203a3131`, etc. These appear to be string data embedded as integers. Some constants like `SIGUSR1` (10), `SIGALARM` (14) are correctly resolved, but many numeric values lack explanation. The decompiler did not recognize these as embedded string constants.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Significant compiler artifacts pollute the code: numerous `__x86_get_pc_thunk_bx` calls, stack canary checks (`__readgsdword(20)`), `__stack_chk_fail_local` calls, and `__asm_hlt()` in unreachable code. The decompiled output is 2241 LOC vs 1174 source LOC - nearly double the size due to these artifacts. No attempt to inline or eliminate these patterns.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Most control flow is readable with proper if/else and while loops. However, some awkward patterns exist like the complex conditional in `param_strcmp`: `strcmp_rc >= 0 == (strcmp_rc != 0) ? 1 : (int32_t)(strcmp_rc < 0)` which is an obfuscated ternary. The original had clean: `ret > 0 ? 1 : (ret < 0 ? -1 : 0)`.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Functions are reasonably sized and the original decomposition is preserved. Functions like `param_fork_exec` (150+ lines) are large but match the source. The decompiler correctly separated standard library wrappers from main logic. Some internal thunks (like `__x86_get_pc_thunk_bx`) shouldn't be exposed as separate functions.
+
+### 7. Code Linearization
+**Score: 5/10**
+
+Code generally reads top-to-bottom but contains goto-style jumps in error handling paths. The `param_fread_fwrite` function has multiple labeled goto points (`lab_0x1f54`) which disrupt readability. Forward jumps exist but are manageable. Deep nesting in some functions (like `param_signal_handling`) reaches 4-5 levels.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+Some loop unrolling is present in `param_malloc_free` with manual loop expansion. The `call_memset` function has a for loop that could be cleaner. Dead code paths exist (unreachable after `_exit`). Overall moderate redundancy from optimization artifacts.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+The decompiler uses `int32_t` consistently which is good for x86-64, but loses the distinction between `size_t` (used in strlen, memcpy) and `int`. Function parameters often use `int32_t` where `char*` would be more accurate (e.g., `param_strcpy(int32_t * str, int32_t str2)` should be `char* dst, const char* src`). Const correctness is lost - all pointers are mutable.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+The decompiler created placeholder structs (`struct _IO_FILE`, `struct shmid_ds`, `struct sockaddr`) with generic field names like `e0`, `e1`, `e2`. The original source used standard library types directly (FILE*, struct stat, struct sockaddr_in). These reconstructed structs are barely usable and lose all semantic field meaning.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Numerous unsafe casts throughout: `(char *)str`, `(int32_t *)a1`, `(void (*)(int32_t))` for function pointers. Pointer arithmetic like `*(int32_t *)(4 * v3 + v2)` is error-prone. The original used clean array indexing `ptr[i]` which the decompiler converted to pointer arithmetic. No `restrict` or alignment annotations.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Almost no comments in the decompiled output. The only comments are address ranges like `// Address range: 0x1921 - 0x195b` which are metadata, not semantic explanations. No explanation of what functions do, no recovery of original comments from debug symbols. The source had extensive comments explaining each test case which were completely lost.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Some patterns are recognizable (fork/exec pattern in `param_fork_exec`, producer-consumer in condition variable code), but they're not explicitly identified or named. The decompiler doesn't annotate "This implements a producer-consumer pattern" or "This is a thread pool pattern". Standard library calls are recognized but not documented as API usage.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+No anomaly indication. The code confidently presents potentially incorrect interpretations, like the signal handler registration using `SIGBUS` instead of `SIGUSR1` (line: `if (signal(SIGBUS, v2) == (void (*)(int32_t))-1)`). The original used SIGUSR1. No warnings about uncertain decompilation decisions.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No recovery of preconditions, postconditions, or invariants. The original source had implicit contracts (e.g., "ptr != NULL after malloc") that are completely lost. No documentation of error conditions or return value meanings beyond what's in the code flow.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Function call relationships are somewhat visible through the code flow, but there's no explicit documentation of "called by X" or "calls Y". Global variables like `g2`, `g3` etc. have no indication of their purpose or which functions access them. The original had clear function groupings and comments.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Functions are roughly grouped by type (string functions, thread functions, system calls) but the massive list of function prototypes at the top (lines 40-130+) is overwhelming. The original had clean sections: "6.1 Standard Library Functions", "6.2 System Calls", "6.3 Threads & Concurrency". This organization is not reflected in the decompiled output.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+The code includes necessary headers and appears structurally compilable. However, it relies on x86_64 conventions (stack canaries, get_pc_thunk) on what was compiled as arm64 - there's a mismatch. The metadata says "arm64" but the decompiled code shows x86_64 artifacts, suggesting possible cross-compilation or binary mismatch.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 4 + 4 + 3) / 4 = 3.25
+L2_avg = (6 + 7 + 5 + 5) / 4 = 5.75
+L3_avg = (5 + 4 + 4) / 3 = 4.33
+L4_avg = (2 + 4 + 2 + 1) / 4 = 2.25
+L5_avg = (5 + 6 + 7) / 3 = 6.0
+
+Overall = (3.25 × 0.30) + (5.75 × 0.25) + (4.33 × 0.20) + 
+          (2.25 × 0.15) + (6.0 × 0.10)
+        = 0.975 + 1.4375 + 0.866 + 0.3375 + 0.6
+        = 4.22/10
+```
+
+### Overall Readability Score: 4.2/10
+
+### Critical Defects
+
+1. **Variable naming**: All variables use generic names (v1, v2, a1, a2) making it impossible to track purpose without reading entire function
+2. **Signal handler wrong**: Uses `SIGBUS` instead of `SIGUSR1` - semantically incorrect decompilation
+3. **No comments**: Zero semantic comments explaining functionality; all debug metadata only
+4. **Type safety**: Extensive unsafe pointer casts `(int32_t *)` throughout, losing const correctness
+5. **Struct field loss**: All struct fields named `e0`, `e1`, etc. losing all semantic meaning
+
+### Best Quality Aspect
+
+**Module Organization (6/10)** - Functions are roughly grouped by category and the code is structurally compilable with proper headers. The decompiler maintained the basic function separation from the original source.
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (2/10)** - The decompiler provides zero semantic information about what functions do. Original source had extensive documentation explaining each test case, API usage, and expected behavior - all completely lost. Adding just basic descriptions of function purpose would dramatically improve usability.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: If a variable is used as array index, name it `index` or `i`. If it's passed to strlen, name it `str` or `len`. Current `v1`, `v2` pattern is unusable.
+
+2. **Recover and preserve comments**: Extract comments from debug symbols (DWARF) and include them in output. At minimum, document what each function does and its parameters.
+
+3. **Fix signal number mapping**: The decompilation shows `SIGBUS` (signal 10) when source uses `SIGUSR1` (also signal 10 on some systems but semantically different). Ensure signal numbers map correctly to symbolic names.
+
+4. **Eliminate compiler noise**: The `__x86_get_pc_thunk_*` functions and stack canary checks should be inlined or eliminated, not exposed as user code.
+
+5. **Recover struct field names**: Use debug symbols to recover meaningful struct field names instead of `e0`, `e1`, `e2`.

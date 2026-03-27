@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generically named (`param_1`, `param_2`, `iVar1`, `iVar2`) instead of semantic names like `temp1`, `sum`, `count` from source. For example, `sequential_ops` uses `param_1/2/3` instead of `a/b/c`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`sequential_ops`, `nested_if_2`, `loop_for_fixed`). This is a significant strength, though some helpers have generic names (`FUN_00100940`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions contain magic numbers (`0x14`, `0x15`, `0x32`) without explanation. Original source had comments explaining expected values (e.g., "期望: 21").
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack canary checks (`___stack_chk_guard`) present but don't severely impede reading. Some redundant type casts visible but manageable.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered well, but `switch_fallthrough` uses awkward goto labels (`LAB_00100d7c`). `duffs_device` is extremely messy with switch-case-goto pattern instead of clean loop unrolling.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and cohesive. Helper functions properly separated (`double_value`, `triple_value`). Test functions are large but expected.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Goto usage limited to `switch_fallthrough` and `duffs_device`. Early returns used appropriately in most functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some optimization artifacts visible (`if_elseif_long` converted to arithmetic `param_1 * 100 + 100`). No obvious dead code, but some redundant type casts present.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many types are generic (`int`, `ulong`, `undefined4`, `undefined8`). Critical mismatches: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `char` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Stack arrays shown as individual variables (`local_20`, `uStack_18`, `local_10`). No struct recovery visible. Function pointer arrays partially recovered but with generic element names.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Function pointer calls marked with `UNRECOVERED_JUMPTABLE`. Some unsafe casts visible. Stack canary checks provide some safety indication.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining each function's purpose, test cases, and expected behavior. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (loops, conditionals). Duff's device not properly recognized (extremely messy output). State machine patterns partially recovered in `state_machine`.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `UNRECOVERED_JUMPTABLE` markers present for function pointers. Some functions marked with `undefined` types. No explicit anomaly warnings for suspicious patterns.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`). No postconditions inferred. No invariant recognition for loop bounds.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but callback relationships not explicit. Global variables referenced (`jump_buffer`, `completed_0`) without context. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in somewhat arbitrary order. Test functions mixed with implementation. No clear grouping by control flow level (L1/L2/L3).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External function declarations present but undefined symbols remain (`___stack_chk_guard`, `__dso_handle`, `__printf_chk`). Would require stubs to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (4+8+5+7)/4 = 6.00  → 6.00 × 0.30 = 1.80
+Level 2 (25%): (6+7+7+7)/4 = 6.75  → 6.75 × 0.25 = 1.69
+Level 3 (20%): (5+4+6)/3 = 5.00    → 5.00 × 0.20 = 1.00
+Level 4 (15%): (2+5+5+3)/4 = 3.75  → 3.75 × 0.15 = 0.56
+Level 5 (10%): (6+5+6)/3 = 5.67    → 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                     = 5.62/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Variable `param_1/2/3`** should be named `a/b/c` or semantic names based on usage context
+- **Return type mismatches**: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `char` instead of `int`
+- **Zero comments** despite original source having extensive documentation for each function
+- **`duffs_device` decompilation** is extremely messy with switch-case-goto pattern instead of recognizable loop unrolling
+- **Test functions** print hardcoded expected values instead of showing actual function call results
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names preserved from source code, making it easy to identify which decompiled function corresponds to which original function.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments loses all semantic documentation from original source, including test case explanations and expected behavior.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how variables are used (e.g., loop counters, accumulators) to suggest semantic names like `sum`, `count`, `index`
+2. **Recover and preserve source comments** - When debug symbols (-g) are available, extract and embed original comments in decompiled output
+3. **Improve complex pattern recognition** - Better handle Duff's device, switch fall-through, and computed goto patterns with clearer structural recovery and explanatory comments

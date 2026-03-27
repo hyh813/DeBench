@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `ptr`, `temp` with no semantic meaning. Original variables like `capture_by_value`, `instance_count`, `multiplier` are completely lost.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions retain mangled names (`_Z20test_cpp_member_funcv`) that can be demangled, but many helpers are `sub_402020` with no meaning. C++ methods partially recovered as `Base::virtual_func`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `32` (name buffer), `10` (array size), `0x1234` (class ID) appear without explanation. String literals preserved but not contextualized.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `_init`, `deregister_tm_clones`, multiple thunk functions. One `[D] Unsupported jumpkind Ijk_SigTRAP` error appears in output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Exception handling uses raw `__cxa_*` calls instead of try-catch. Some `goto` patterns in initialization code. Loop structures not properly reconstructed.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Critical functions are empty stubs (`test_cpp_operator_overload`, `test_cpp_lambda`, `test_cpp_smart_ptr` all just `return;`). Excessive thunk fragmentation for virtual dispatch.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but exception handling creates non-linear flow. Initialization code has awkward jump patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple thunk functions for same virtual method (`_ZThn16_`, `_ZTv0_n24_`). Repeated `__cxa_begin_catch`/`__cxa_end_catch` patterns without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Many variables use generic `unsigned long long`, `void*`. Template types not recovered (`template_max<double>` shows 6 parameters instead of 2). Class types partially present but incomplete.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Generic structs (`struct_0`, `struct_2`, `struct_3`) with `field_0`, `padding_0` names. Class member layouts not recovered (no `value`, `name`, `data` fields visible).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(long long*)`, `(char *)`, `(void**)`. Pointer arithmetic without bounds checking. `template_swap<int>` shows wrong signature (single pointer param instead of two references).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining C++ semantics. Only auto-generated function headers. No explanation of virtual dispatch, exception handling, or template instantiation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely lost: RAII (smart pointers), lambda captures, virtual inheritance, operator overloading not recognized. All presented as raw function calls.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged (`[D] Unsupported jumpkind`). Many incorrect reconstructions presented confidently (empty function bodies for complex logic).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Exception contracts not recovered. No null checks or bounds validation comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch shown through thunks but not explained. Global variables (`g_405fe8`, `g_4059a0`) referenced without context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output file. Initialization code mixed with application logic. No logical grouping of related classes/functions.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References external symbols (`__cxa_*`, `operator new/delete`) without declarations. Type mismatches would prevent compilation. Would need extensive stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+5+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+3+5+5)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (2+2+3+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                              3.56/10 ≈ 3.6/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Empty function bodies**: `test_cpp_operator_overload`, `test_cpp_lambda`, `test_cpp_smart_ptr` return immediately with no logic recovered
+- **Generic variable names**: All variables are `v0`, `v1`, `ptr` with zero semantic meaning
+- **C++ semantics lost**: try-catch blocks, lambdas, templates, smart pointers not reconstructed
+- **Type degradation**: Template functions show wrong signatures (6 params instead of 2 for `template_max<double>`)
+- **No struct field recovery**: Class members like `value`, `name`, `data`, `multiplier` completely lost
+
+### Best Quality Aspect:
+- **Function Naming Quality (4/10)** - Some function names recoverable from symbol table mangling (`_Z20test_cpp_member_funcv`), though still poor overall
+
+### Most Needs Improvement:
+- **Idiom Recognition (2/10)** - C++ patterns (RAII, virtual dispatch, lambdas, templates) completely obscured; decompiler treats C++ as C with function calls
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ exception handling semantics** - Transform `__cxa_*` calls back to try-catch blocks with proper scope handling
+2. **Infer variable names from usage context** - Analyze how variables are used (e.g., passed to `strlen` → `string_var`, used in loop bound → `count`)
+3. **Reconstruct class layouts with field names** - Use vtable analysis and member access patterns to recover struct definitions with semantic field names

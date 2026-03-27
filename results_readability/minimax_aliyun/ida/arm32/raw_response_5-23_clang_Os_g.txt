@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `i`, `result` throughout. For example, in `param_macro_constants`, the variable `v1` holds the value 512 (which should be named `default_return` or `half_max_size`). The decompiler makes no effort to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_memory_protection`. These match the original source function names almost exactly, with appropriate action verbs indicating purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (1024 matches MAX_SIZE, 64 matches BUFFER_COUNT*4), but many are unexplained magic numbers: `30` (sysconf _SC_PAGESIZE), `7` (PROT_READ|PROT_WRITE|PROT_EXEC), `34` (MAP_PRIVATE|MAP_ANONYMOUS), `57072` (0xDEF0). The decompiler doesn't recognize these as system constants.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: The decompiled code is clean with no visible compiler artifacts, redundant casts, or debug instrumentation. The output reads as pure C code without assembly remnants or frame pointer manipulation artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural with standard if/else constructs and while/do-while loops. For example, `param_asm_clobber` correctly shows a do-while loop: `do { v4 = *arr++; --n; result += v4; } while (n);`. No spurious goto statements or confusing conditionals.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - each handles a single logical responsibility. The original source's separate functions (param_macro_constants, call_macro_constants, etc.) are preserved as separate functions. Minor issue: some small wrapper functions could be inlined.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately (e.g., in `param_dynamic_code` when mmap fails). No deep nesting (>4 levels) observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Loop unrolling is not excessive. Some common subexpression elimination is visible but doesn't obscure logic significantly.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most variables use generic `int` type. The decompiler does use `size_t` for sysconf/mmap parameters and `unsigned int` for some, but lacks precise types like `int32_t`, `uint64_t`. For example, `param_asm_atomic` uses `int *counter` instead of `atomic_int*` or `_Atomic(int)*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery is visible. The code operates entirely on primitive types and pointers. For example, `param_asm_clobber` receives `int *arr` as a raw pointer rather than recognizing it as an array type.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present but not severe. Pointer arithmetic is used correctly in `param_asm_clobber` (`*arr++`). No obvious buffer overflow patterns. Minor issue: casting between int and pointer types in some places (e.g., `param_memory_protection`).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are almost entirely absent. The decompiler provides only function signatures and basic structure. No explanation of algorithm intent, preconditions, or non-obvious logic. For example, `param_builtin_macros` has hardcoded string values but no comment explaining these come from __FILE__, __LINE__, __DATE__, __TIME__ macros.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithm patterns are recognized or named. The decompiler doesn't identify the include guard pattern, token pasting, or stringization operations. Each function is treated in isolation without pattern context.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations are marked (e.g., "FAILED to decompile: __imp___libc_start_main"), but without explanation of why or what the original might have been. Some indirect calls could have been flagged as uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. For example, `param_asm_clobber` has implicit requirements (arr != NULL, n > 0) that aren't documented. Error return values (-1, -2, -3 in param_memory_protection) aren't explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible through direct calls (e.g., `test_preprocessing_features` calls `printf`, `call_macro_constants`). However, global variable usage (like `global_var` in `param_memory_clobber_demo`) isn't clearly documented as to where it's defined or used.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions together, asm functions together, test functions at the end. Static functions like `my_func` are properly scoped. Minor issue: the organization doesn't reflect the original source's section comments.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code requires standard library functions (printf, mmap, sysconf, etc.) but these aren't declared. Some external references failed to decompile. Would require adding `#include` statements and potentially stub functions to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 5 + 9) / 4 = 6.5
+L2_avg = (9 + 8 + 8 + 8) / 4 = 8.25
+L3_avg = (5 + 2 + 6) / 3 = 4.33
+L4_avg = (2 + 2 + 5 + 2) / 4 = 2.75
+L5_avg = (5 + 7 + 5) / 3 = 5.67
+
+Overall = (6.5 × 0.30) + (8.25 × 0.25) + (4.33 × 0.20) + 
+          (2.75 × 0.15) + (5.67 × 0.10)
+        = 1.95 + 2.0625 + 0.866 + 0.4125 + 0.567
+        = 5.85/10
+```
+
+**Overall Readability Score:** 5.85/10
+
+### Critical Defects (Bullet List)
+- Variable naming uses generic names (`v1`, `v2`, `v3`, `i`) throughout, obscuring semantic purpose (e.g., `v1` in `param_macro_constants` should be `half_max_size`)
+- No comments explaining macro expansion results (e.g., `param_builtin_macros` shows hardcoded strings without indicating they come from `__FILE__`, `__LINE__`, `__DATE__`, `__TIME__`)
+- Magic numbers like `30` (sysconf page size), `7` (mmap protection flags), `34` (mmap flags) are unexplained
+- No struct/union recovery - all composite types lost to raw pointer arithmetic
+- No pattern recognition for preprocessing idioms (stringization, token pasting, include guards)
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (Level 2)** scored highest at 8/10
+- **Why?** Function names and boundaries match the original source almost perfectly. Each function has clear single responsibility and appropriate granularity.
+
+### Most Needs Improvement (Single Dimension)
+- **Semantic Transparency (Level 4)** scored lowest at 2.75/10
+- **Why?** Complete absence of comments, no pattern recognition, and no contract/precondition documentation make the code semantically opaque despite correct functional behavior.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When a variable is initialized to 512 and used as a return value in a function named `param_macro_constants`, infer it as `half_max_size` or similar semantic name
+2. **Recognize and annotate macro expansion results**: Detect patterns like `__FILE__`, `__LINE__`, `__DATE__`, `__TIME__` and add comments explaining these are compiler built-in macros
+3. **Identify and label magic numbers**: Recognize common system constants (sysconf values, mmap/mprotect flags) and replace with named constants or add explanatory comments

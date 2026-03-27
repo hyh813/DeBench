@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `v25`, `v34`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `ptr` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but many unnecessary wrapper functions created with generic names (`sub_401159`, `sub_401172`, `sub_401969`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `4294967295` (0xFFFFFFFF mask), `42949672965`, `305419896` appear without explanation. String literals replaced with global references (`g_403020`) losing readability.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Unnecessary wrapper functions for every call site, redundant variable assignments (`v0 = a0; v0 *= 2;`), and visible stack frame manipulation (`[bp-0x100]` arrays) create significant noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `for` loops correctly, but `sub_401020` uses `goto g_406010` unnecessarily. Varargs functions have confusing `if (result)` with uninitialized `result` variable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Severe over-fragmentation with wrapper functions (`sub_401159` just calls `cdecl_func`). Original cohesive functions split into caller/callee pairs unnecessarily doubling function count.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with clear sequential flow. Loop structures are properly linearized. Some forward references to globals disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate wrapper functions for every call site, repeated `& 4294967295` masks on every printf, and varargs logic duplicated between `varargs_func` and `param_varargs`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type erosion: `int` becomes `unsigned int`, `char*` becomes `unsigned long`, function pointers become `unsigned long long*`. Original `double`, `long long` distinctions lost in `func_mixed_args`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs partially recovered but with generic field names (`field_0`, `field_1`). `LargeStruct` shown as `char*` pointer arithmetic. `SmallStruct` becomes `unsigned int*` losing x/y semantics.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `param_func_ptr` takes `unsigned long long *a0` but calls it as function `a0(a1)`. `ret_opaque_handle` returns `"d"` (string) as pointer. Varargs uses uninitialized `result` variable.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments except one anomaly marker `[D] Unsupported jumpkind Ijk_SigTRAP`. No algorithm explanations, no parameter documentation, no return value semantics.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not recognized (shown as complex stack manipulation). Function pointer callback pattern obscured. No design pattern identification despite clear test harness structure.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (`Ijk_SigTRAP`). Uninitialized variable usage in varargs not warned. Type mismatches in function pointer calls not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` null check not explained). No postconditions. Error return values (`4294967295` = -1) not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g_403020`, `g_405fe8`) referenced without explanation. No call graph or dependency information.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions ordered by address not logical grouping. Test functions scattered among implementation. Related functions (`cdecl_func`/`call_cdecl`) separated by wrappers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Missing includes (`stdio.h`, `stdarg.h`, `string.h`). External declarations incomplete. Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+5+7+5)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (4+4+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.43/10
+```
+
+### Overall Readability Score: **4.4/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original (`count`, `sum`, `ptr`)
+- **Unnecessary wrapper functions** doubling code size (`sub_401159` just calls `cdecl_func`)
+- **Varargs decompilation broken** with uninitialized `result` variable used in conditional
+- **Type information severely degraded** (function pointers as `unsigned long long*`, structs as pointer arithmetic)
+- **Magic numbers unexplained** (`4294967295` mask on every printf, `42949672965` for struct initialization)
+
+### Best Quality Aspect: **Code Linearization (7/10)**
+- Loop structures and sequential flow mostly preserved, making execution path traceable despite other issues.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no documentation; a single anomaly marker is the only comment in 1696 lines of code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (loop counters → `i`, accumulators → `sum`, pointers → `ptr`)
+2. **Eliminate redundant wrapper functions** by inlining trivial call-site wrappers that add no semantic value
+3. **Add decompilation confidence annotations** for uncertain reconstructions (varargs handling, function pointer calls, type ambiguities)

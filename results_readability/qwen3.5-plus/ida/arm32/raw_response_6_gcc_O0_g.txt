@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Core functions have reasonable names (`buffer`, `fd`, `fp`, `pid`, `sock`), but test functions use excessive generic names (`v0`, `v1`, `v2`...`v11`). Variable suffixes like `thread_counta` and `iterations_per_threada` indicate decompiler renaming conflicts.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source (`param_strcpy`, `call_strcpy`, `thread_compute`, `consumer_thread`, `producer_thread`). Action-oriented naming clearly reflects purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Numerous magic numbers without explanation: `0x14u` (20), `0xCu` (12), `0x28u` (40), signal numbers `10`/`14` instead of `SIGUSR1`/`SIGALRM`, socket constants `2`/`1` instead of `AF_INET`/`SOCK_STREAM`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Clean for -O0 compilation. Minor noise from stack annotations (`[sp+4h] [bp-10h]`) and unnecessary casts (`(unsigned __int8)ch`, `(__sighandler_t)`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures correctly recovered as while/for/if-else. Signal polling loops maintain original structure. No spurious goto usage.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries perfectly preserved. Thread helper functions (`thread_compute`, `thread_sum`, `consumer_thread`) properly separated with appropriate granularity.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately. No forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Minor redundancy from variable renaming (`thread_count`/`thread_counta`). No loop unrolling artifacts at -O0.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved but degradation evident: `size_t` sometimes becomes `int`, pointer casts like `(_DWORD *)arg` lose specificity. Debug symbols (-g) should have preserved better type info.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `ThreadData` struct recovered with field names (`start`, `end`, `result`). `sockaddr_in` properly reconstructed. TLS variables degraded to `unk_251A0`, `byte_251A4`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(_DWORD *)arg`, `(int *)malloc(8u)`, `*(_DWORD *)thread_ret`. Pointer arithmetic without proper type checking throughout threading code.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero semantic comments recovered. Only function signatures and stack layout annotations present. No algorithm explanations or API contract documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `pthread_create`). Atomic operations mapped to generic `_sync_*` functions without pattern naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 61 functions clearly marked "FAILED to decompile" (good). No warnings about unsafe casts, potential undefined behavior, or unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error paths exist but lack explanation of failure conditions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls properly linked. Global variables (`signal_received`, `atomic_counter`, `shared_counter`) correctly referenced. Callback relationships in threading not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single output file. Functions grouped logically but no header separation or namespace structure. Related test functions adjacent to implementations.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: 61 functions failed to decompile (import stubs). Cannot compile standalone without extensive stubbing. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (5+9+4+7)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):     (8+9+8+8)/4 = 8.25 × 0.25 = 2.063
+Level 3 (Type System):    (5+6+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):       (1+5+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):     (7+5+2)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                    5.96/10
+```
+
+**Overall Readability Score: 6.0/10**
+
+### Critical Defects:
+- **61 functions failed to decompile** - Import stubs (`__imp_malloc`, `__imp_pthread_create`, etc.) prevent standalone compilation
+- **Zero semantic comments** - No documentation recovered despite `-g` debug symbols being available
+- **Magic numbers throughout** - Signal numbers (10, 14), socket constants (2, 1), byte sizes (0x14u, 0xCu) unexplained
+- **Generic variable names in test functions** - `v0` through `v11` obscure data flow in `test_standard_library_functions`
+- **TLS variables degraded** - `tls_counter` became `unk_251A0`, losing thread-local storage semantics
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from source, maintaining semantic clarity and action-oriented naming conventions.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of semantic documentation despite debug symbols; decompiler should recover or generate explanatory comments for non-trivial logic.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for variable naming** - With `-g` flag present, recover original variable names from DWARF debug info instead of generating `v0`, `v1`, etc.
+2. **Recover constant definitions from debug info** - Map magic numbers to named constants (SIGUSR1, AF_INET, SOCK_STREAM) using debug symbol information.
+3. **Generate semantic comments for library call patterns** - Auto-document recognized patterns (e.g., "// String copy operation", "// Thread synchronization with mutex") based on function call sequences.

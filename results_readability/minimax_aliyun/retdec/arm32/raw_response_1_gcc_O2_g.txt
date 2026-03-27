@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v1, v2, v3, v4, v5, v6, v7, v8, v9, etc.) with no semantic meaning. In `loop_multi_exit`, variables like `v1`, `v2`, `v3` obscure their roles as matrix pointer, row index, and column index. This makes tracking purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions like `recursion_factorial`, `double_value`, `op_add`, `duffs_device`, `non_local_jump`, `computed_goto` are correctly named. However, test functions are missing or inlined with hardcoded values instead of actual function calls, losing the original function names like `test_control_flow_l1`, `test_control_flow_l2`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Test functions print hardcoded expected values (21, 20, -5, 1, 0) instead of calling actual functions. Magic numbers like `1001` (infinite_loop result), `101` (loop_external_state result) appear without explanation. The literal `int3_t` typedef is incorrect (should be int8_t).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: The `_setjmp` initialization in `non_local_jump` contains an excessively complex anonymous struct literal that adds noise. However, most functions are relatively clean without excessive compiler artifacts. The unusual `int3_t` typedef creates noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use while constructs, conditionals use if/else. The `duffs_device` uses goto appropriately for that pattern. At -O0, control flow should be nearly perfect, and mostly it is, though some forward jumps exist in complex functions.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Only 12 functions detected out of 30+ in the original source. Many functions are completely missing (e.g., `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, all the loop functions except `loop_multi_exit`). Test functions are inlined with hardcoded values rather than calling actual functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The `duffs_device` has fall-through cases that disrupt linear flow but are appropriate for that idiom. Some forward jumps in `loop_multi_exit` but manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: The `duffs_device` function has redundant variable assignments (v1 through v19 all initialized to same values) that create noise. Otherwise, no major redundancy. Loop unrolling is not present (as expected at -O0).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently, which is good. However, the typedef `int3_t` (which doesn't exist in standard C) is incorrect - should be `int8_t`. Some pointer types are generic `int32_t*` without more specific typing.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. The 3x4 matrix in `loop_multi_exit` is accessed via raw pointer arithmetic (`*(int32_t *)v3`) with no struct definition. Array initialization shows `{{1, 0, 0, 0}, {0}, {0}}` losing the full matrix structure.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe pointer arithmetic operations in matrix traversal (`v3 += 4`, `v1 += 16`). The `_setjmp` uses a complex anonymous struct that may have alignment issues. No bounds checking on array access.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Some source line mapping comments present (e.g., "// Line range: 349 - 112"). However, test functions have no comments explaining what they test. No algorithm documentation or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns like Duff's device are recognized and partially reconstructed. However, the pattern isn't explicitly named or documented. Many idioms (goto-based loops, switch fall-through) not clearly identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The decompiler silently produces wrong code for test functions (hardcoded values instead of function calls). Missing functions aren't flagged as "not recovered." The incorrect `int3_t` typedef isn't flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. No documentation of expected input constraints (e.g., "requires: n > 0" for duffs_device). Error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls within recovered functions are clear. However, the missing functions (most of the source) mean the call graph is incomplete. No documentation of which functions call which.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped logically (test functions separate from utility functions). However, the organization is incomplete due to missing functions. No header file or API declarations recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile as-is - `int3_t` is not a valid type. Many function declarations missing. The test functions produce no output (they just call puts/printf with hardcoded values, not actual function results).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- Variable names are all generic (v1-v19), making code comprehension extremely difficult
+- Most functions missing from decompilation (only 12 of 30+ recovered)
+- Test functions use hardcoded expected values instead of calling actual functions
+- Incorrect type `int3_t` typedef will cause compilation failure
+- No struct recovery - matrix accessed via raw pointer arithmetic losing semantic meaning
+- No anomaly indication for missing functions or wrong implementations
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+- At -O0, control flow structures (loops, conditionals) are mostly correctly recovered using idiomatic constructs
+
+**Most Needs Improvement:** Function Decomposition (scored 3/10)  
+- Only 12 of 30+ functions recovered; test functions inlined with hardcoded values instead of actual function calls; core functions like `sequential_ops`, `single_if`, all loop variants except one are completely missing
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover function calls in test code** - Instead of hardcoding printf values, actually call the functions and print their results to verify decompilation correctness
+2. **Improve variable naming inference** - Use usage patterns (array indexing → i/j, accumulation → sum/total, pointer traversal → ptr/cursor) to generate meaningful names
+3. **Add anomaly flags** - Explicitly mark functions that couldn't be recovered or had resolution failures, rather than silently producing incomplete output

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `v1`, `v2`, `v3` dominate the code obscuring their semantic roles (e.g., `int64_t v1` in `param_fread_fwrite` should be `items_written`). Some parameters retain good names (`dst`, `src`, `filename`), but locals are generic.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main functions preserved well (`param_strcpy`, `call_strcpy`, `thread_compute`), but helper wrappers use mechanical names (`function_13f0`, `function_1400`) losing semantic meaning for library call wrappers.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals stored in opaque globals (`g9`, `g10`...) without context. Magic numbers like `0x140000000a`, `0x6ffe400ebffffdb` appear unexplained. Constants like `42`, `100` lack semantic naming.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`*(int64_t *)g2 != *(int64_t *)g2`) repeated in nearly every function. Architecture-specific intrinsics (`__aarch64_cas4_acq_rel`) present but expected for atomics.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Extensive goto usage (`lab_0x1f88`, `lab_0x2e64`) replaces natural loop constructs. Awkward conditionals like `signal_received == 0 == (int32_t)&g30 > 0` obscure logic intent.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Main functions appropriately sized and cohesive. Library wrappers separated (`function_13f0` for memcpy). Thread functions properly extracted. Some monolithic functions could be split.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps and labels disrupt top-to-bottom reading. Multiple exit points via goto in `param_fread_fwrite` and `param_thread_local_storage` create non-linear flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks duplicated across 40+ functions. Some redundant type casts (`(int64_t *)dst` where `dst` is already typed). No dead code removal observed.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `int64_t` appropriately but degrades some types (e.g., `char *` for thread function return instead of `void *`). Pointer arithmetic on `int64_t *` loses original intent.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs defined (`struct _IO_FILE`, `struct ipc_perm`) but fields named generically (`e0`, `e1`, `e2`...). Original field semantics completely lost (e.g., `sin_family`, `sin_port` become `e0`, `e1`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Numerous unsafe casts: `(char *)0xffffffff`, `(int64_t *)mem`. Pointer arithmetic on void pointers. Thread function signatures use `char *` instead of `void *` causing type confusion.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comments present. Zero algorithm explanations, no API contracts, no decompilation confidence indicators. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`). pthread patterns partially identified. No design pattern naming or algorithm identification present.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `UNREACHABLE` markers present after `_exit()`. No warnings for suspicious indirect calls or unresolved symbols. Stack canary checks present but unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `dst != NULL` for strcpy). Error return values not explained. No postcondition or invariant documentation anywhere.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variable usage (`g1`, `g2`...) not explained. No call graph or callback relationship documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by section (standard library, system calls, threads) matching source structure. All code in single file with no header separation. Reasonable but monolithic.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Standard includes present. Some architecture-specific functions need stubs (`__aarch64_cas4_acq_rel`). Would compile with minor modifications and platform-specific adjustments.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (5+7+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):     (5+7+5+6)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type System):    (6+4+5)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):       (2+5+4+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):     (5+6+6)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────────
+Overall Score:                                    5.22/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on usage (e.g., `items_written`, `file_descriptor`, `thread_id`)
+- **Struct fields all generic** (`e0`, `e1`, `e2`...) losing all semantic meaning for `sockaddr`, `stat`, `shmid_ds`
+- **Control flow uses goto** instead of natural loop/conditional constructs in 15+ functions
+- **Zero meaningful comments** - original source documentation completely lost
+- **Magic numbers unexplained** - `0x140000000a`, `42`, `100` appear without context
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Main function names preserved accurately (`param_strcpy`, `thread_compute`, `signal_handler`) matching original source intent
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic documentation; no algorithm explanations, contracts, or decompilation confidence indicators
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how variables are used (size checks, pointer arithmetic, loop counters) to suggest semantic names like `buffer_size`, `file_descriptor`, `iteration_count`
+2. **Recover struct field names from type information** - Use debug symbols or type libraries to restore field names for standard structures (`sockaddr_in`, `stat`, `pthread_mutex_t`)
+3. **Generate semantic comments for recognized patterns** - Add comments for standard library calls, pthread patterns, and signal handling with confidence indicators for uncertain decompilation

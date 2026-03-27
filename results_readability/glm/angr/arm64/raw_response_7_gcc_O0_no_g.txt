@@ -1,0 +1,104 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `ptr`), providing no semantic context (e.g., `flag1`, `flag2` in `param_opaque_predicate` instead of `p1`, `p2`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names (`param_fake_branch`, `call_opaque_predicate`) are perfectly recovered from the debug symbols, matching the source exactly.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: While some constants like `90` (0x5A) are preserved, meaningful constants like `0xDEADBEEF` and `0xAAAAAAAA` are lost or simplified away, and magic numbers like `4294967294` (0xFFFFFFFE) appear without explanation.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant noise is present, specifically the redundant stack pointer initialization `v0 = &v1;` appearing in almost every function, and verbose stack canary checks.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is obscured by the decompiler's choice to represent simple arithmetic shifts as complex bitwise operations (e.g., `__ROL__(i, 2)` for array indexing), making loops hard to read.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are mapped 1:1 with the source; no inlining or outlining occurred, preserving the original structure perfectly.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with standard loop constructs, though stack canary checks at the end of functions slightly interrupt the flow.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: High redundancy in stack frame setup code (`v0 = &v1;`) and verbose type emulation casts (e.g., `(a0 * 2 | a0 >> 31) & 4294967294`) clutter the logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types are generally correct, but signedness is often lost (e.g., `int` becomes `unsigned int`), and `size_t` is represented as `unsigned long long` which is technically correct for ARM64 but verbose.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: The bitfield struct in `param_implementation_defined` is completely lost, replaced by raw bitwise operations (`v0 |= 7;`, `v0 |= 248;`).
+
+**11. Type Safety:** Score: 4/10
+Justification: The code is littered with aggressive bitwise casts intended to emulate signed multiplication (e.g., `& 4294967295`), which makes the code look unsafe and confusing compared to the simple source math.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no semantic comments explaining the logic, algorithms, or the purpose of the complex bitwise manipulations; only function headers are present.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard idioms are missed; array indexing `i*4` is decompiled to `__ROL__(i, 2) & ...`, and simple shifts are expanded into complex rotation/mask patterns.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the confusing `__ROL__` arithmetic and removed dead code (in `param_fake_branch`) without any warning or annotation that these are artifacts or simplifications.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making the call graph easy to follow despite the internal obfuscation.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are ordered logically (mostly by address), and related test functions are grouped, maintaining the source's organizational structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on external symbols like `g_412f50` and `__stack_chk_guard` and uses non-standard macros (`__ROL__`), requiring significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 5 + 3) / 4 = 5.25
+L2_avg = (4 + 9 + 8 + 3) / 4 = 6.00
+L3_avg = (6 + 2 + 4) / 3 = 4.00
+L4_avg = (1 + 2 + 2 + 1) / 4 = 1.50
+L5_avg = (8 + 7 + 3) / 3 = 6.00
+
+Overall = (5.25 × 0.30) + (6.00 × 0.25) + (4.00 × 0.20) + 
+          (1.50 × 0.15) + (6.00 × 0.10)
+        = 1.575 + 1.5 + 0.8 + 0.225 + 0.6
+        = 4.7
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects (Bullet List)
+- **Variable Naming**: Variables like `v0`, `v1`, `flag1` provide no semantic context, forcing manual tracking of data flow.
+- **Idiom Recognition**: Array indexing is represented as `__ROL__(i, 2) & ...` instead of `i * 4`, severely obfuscating memory access patterns.
+- **Arithmetic Expansion**: Simple operations like `x * 2` or `x << 1` are expanded into verbose bitwise masks (e.g., `(a0 * 2 | a0 >> 31) & 4294967294`), destroying readability.
+- **Struct Recovery**: The bitfield struct in `param_implementation_defined` is completely lost, replaced by raw bit manipulation.
+- **Noise Pollution**: Redundant stack frame setup code (`v0 = &v1;`) appears in nearly every function, adding clutter.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (10/10)
+- **Why?** The debug symbols (`-g`) were perfectly preserved, allowing the decompiler to recover the exact original function names, which anchors the entire analysis.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Semantic Transparency (1.5/10)
+- **Why?** The lack of comments, failure to recognize standard idioms (like array scaling), and silent use of confusing macros make the code's true meaning very difficult to discern.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Simplify Arithmetic Idioms**: Detect and simplify patterns like `(x << 1) | (x >> 31) & mask` back to standard shifts or multiplications when the context allows.
+2. **Recover Array Indexing**: Replace `__ROL__(index, scale)` patterns with standard pointer arithmetic (`base + index * size`) to improve readability of loops.
+3. **Filter Stack Artifacts**: Identify and hide redundant stack pointer initialization code (e.g., `v0 = &v1;`) that is purely compiler boilerplate for `-O0` builds.

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic patterns like `iVar1`, `iVar2`, `x_local`, `y_local`, `result_local` which obscure semantic meaning. For example, in `param_macro_constants`, the parameter is named `size_local` instead of the original `size`, and the return variable `iVar1` doesn't indicate it's computing either 512 or 64 based on the condition.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names match the original source exactly (e.g., `param_macro_constants`, `param_conditional_compile`, `param_asm_basic`). However, some anomalies exist like `FUN_00101020` for what appears to be a startup function, and `_start` has unusual syntax `void processEntry _start`.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some magic numbers are preserved correctly (e.g., `0x401` for 1025 = MAX_SIZE+1, `0x200` for 512 = MAX_SIZE/2, `0x40` for 64 = BUFFER_COUNT*4). However, the decompiler hardcodes string literals like `"Hello World"` and `"1.2.3"` without indicating these came from macro stringification (STRINGIZE, TO_STRING), losing the original macro semantics.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise present including `__stack_chk_fail` calls, `in_FS_OFFSET` references for stack canaries, and numerous "WARNING" messages about unknown calling conventions and unreachable blocks. These compiler artifacts obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow structures (if-else, for loops) are correctly recovered. However, the decompiler cannot recover conditional compilation branches - `param_conditional_compile` shows only the `#else` branch (x*3+2) since DEBUG_MODE wasn't defined, and `param_multi_branch_compile` shows only the default branch. This is expected behavior but loses the original preprocessor semantics.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries are well preserved. Each original function (e.g., `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `call_asm_basic`) is decompiled as a separate function with appropriate granularity. No over-fragmentation or inlining issues.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads mostly top-to-bottom without goto statements or confusing jumps. Early returns are used appropriately. The only minor issue is some forward jumps in error handling paths that are still readable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. Loop unrolling in `param_asm_clobber` was correctly recognized as a for loop rather than expanded code. Dead code from optimization is minimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types like `int`, `void*`, `char*`, `size_t` are used correctly. However, the decompiler uses generic `int` instead of more specific types like `int32_t` or `uint32_t`. Function pointers like `func_t` in `param_dynamic_code` are reasonably typed.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct types were reconstructed. Arrays are handled as pointer arithmetic (e.g., `arr[uVar2]`). The decompiler uses raw arrays and pointers rather than reconstructing composite types, which is typical for -O0 code.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No obvious unsafe casts or type-confused operations. Pointer arithmetic is used correctly for array access. The atomic operations in `param_asm_atomic` use LOCK/UNLOCK macros appropriately. Minor issues with some void* casts but nothing dangerous.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are mostly compiler warnings ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block") rather than useful analysis. No explanation of macro expansion, inline assembly semantics, or conditional compilation decisions. The decompiler doesn't indicate that `param_stringize` involves stringification macros.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are explicitly identified. The decompiler doesn't recognize or label: macro function expansion patterns, inline assembly blocks (which are correctly decompiled to C but lose the asm origin), conditional compilation structures, or token pasting operations.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings are present ("WARNING: Unknown calling convention", "WARNING: Subroutine does not return" for __stack_chk_fail). However, these are generic compiler warnings, not specific decompilation anomalies. The decompiler doesn't flag the loss of macro semantics or conditional compilation branches.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler doesn't indicate that `param_asm_atomic` requires the pointer to point to valid memory, or that `param_dynamic_code` allocates executable memory.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No explicit call graph or relationship documentation. While function names indicate some relationships (call_* functions call param_* functions), there's no comment explaining the call hierarchy or global variable dependencies.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in the order they exist in the binary, which roughly corresponds to source organization. Static functions like `header_func` are properly scoped. However, the organization is arbitrary rather than logically grouped by functionality.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code uses OpenSSL types (EVP_PKEY_CTX) without includes, and relies on standard library functions (printf, strlen, mmap, etc.) that would require headers. Some function signatures may need adjustment. The code would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+1. Variable naming uses generic patterns (`iVar1`, `x_local`, `size_local`) that completely obscure semantic purpose
+2. Macro semantics lost - stringification (`STRINGIZE`, `TO_STRING`), token pasting (`CONCAT`, `MAKE_FUNC_NAME`), and macro function expansion are not indicated
+3. Conditional compilation branches cannot be recovered, but the decompiler doesn't document which branches were compiled
+4. Inline assembly is correctly decompiled to C but loses the indication that it was originally assembly
+5. No comments explaining the decompilation challenges or algorithm intent
+
+**Best Quality Aspect:** Function Decomposition (scored 9/10)  
+Function boundaries are well preserved with appropriate granularity - each original function remains separate with clear parameter passing.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+Generic variable names like `iVar1`, `iVar2`, `x_local`, `y_local` make it extremely difficult to understand code purpose without referring back to the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., `iVar1` used in size comparison should be named `size_check_result` or similar
+2. Add comments indicating preprocessor transformations - note when code involved macro expansion, conditional compilation, or token pasting
+3. Preserve inline assembly indicators - either comment that code was originally asm or provide both the asm and decompiled C for comparison

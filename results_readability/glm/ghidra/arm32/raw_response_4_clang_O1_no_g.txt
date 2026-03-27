@@ -1,0 +1,104 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Variables are generic (`param_1`, `local_10`, `uVar1`) and lack semantic meaning found in the source (e.g., `a`, `b`, `sum`, `args`), requiring manual tracking of purpose.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names (`cdecl_func`, `varargs_func`, `main`) are perfectly preserved from the source symbols, providing immediate context for the code's purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are used extensively (e.g., `0xf` for 15, `0x2a` for 42) instead of the original decimal constants, and hex values like `0x80` (128) appear without explanation in loops.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output is cluttered with soft-float library functions (`__adddf3`, `__aeabi_drsub`) and compiler-generated artifacts (`undefined4` types), significantly obscuring the user's logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally readable with standard `do-while` and `if` structures, but the logic in `func_mixed_args` is convoluted due to software floating-point emulation calls.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: User-defined functions are distinct and match the source granularity, though the inclusion of large runtime library functions (like `__subdf3`) disrupts the module's logical boundaries.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with minimal forward jumps or spaghetti logic, making execution paths easy to trace in the user functions.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: While dead code is removed, constant propagation (e.g., `call_cdecl` returning `0xf`) has eliminated the function calls that were the primary subject of the test, hindering the analysis of calling conventions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded; `double` parameters are split into `undefined4` pairs, `long long` becomes `undefined8`, and specific integer types are lost to generic `int` or `undefined4`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely flattened; `LargeStruct` in `func_struct_byval` is passed as four separate `undefined4` parameters rather than a single structure argument.
+
+**11. Type Safety:** Score: 4/10
+Justification: Code contains unsafe casts and pointer arithmetic, such as `*(int *)((int)local_10 + iVar2)` and bit-shifting on `undefined4` types to reconstruct floating-point values.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10
+Justification: Comments are limited to compiler warnings (e.g., "Removing unreachable block") and provide no insight into the algorithmic intent or the purpose of complex pointer arithmetic.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard idioms are missed; `varargs_func` is not recognized as a variadic function (signature shows `int` instead of `...`) and the `va_list` logic is rendered as raw pointer arithmetic.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Basic compiler warnings are present, but there is no indication of the significant type mismatches (e.g., `undefined4` representing parts of a double) or the ABI-specific struct passing details.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement for `va_start` before accessing varargs is not indicated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are visible where not optimized out, but the constant folding of `call_cdecl` and similar functions hides the cross-references to the calling convention implementations.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are presented in a logical order roughly matching the source, but the interleaving of large runtime support functions breaks the cohesion of the test suite.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on Ghidra-specific types (`undefined4`, `undefined8`, `code *`) and would not compile without significant modification or a custom header.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (5 + 10 + 5 + 4) / 4 = 6.0
+L2_avg = (7 + 8 + 8 + 6) / 4 = 7.25
+L3_avg = (3 + 2 + 4) / 3 = 3.0
+L4_avg = (5 + 2 + 6 + 1) / 4 = 3.5
+L5_avg = (7 + 7 + 3) / 3 = 5.67
+
+Overall = (6.0 * 0.30) + (7.25 * 0.25) + (3.0 * 0.20) + (3.5 * 0.15) + (5.67 * 0.10)
+Overall = 1.8 + 1.8125 + 0.6 + 0.525 + 0.567
+Overall = 5.30 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.3/10
+
+### Critical Defects (Bullet List)
+- **Type Loss**: `double` and `long long` types are split into generic `undefined4` parameters, destroying the semantic meaning of `func_mixed_args`.
+- **Struct Flattening**: The `LargeStruct` parameter in `func_struct_byval` is decompiled as four separate integers, completely losing the structure abstraction.
+- **Idiom Failure**: The variadic function `varargs_func` is not identified; the `va_list` mechanism is decompiled to raw pointer arithmetic on a stack array.
+- **Optimization Artifacts**: Constant propagation (likely from `-O1` despite metadata) removed the function calls in `call_cdecl`, making the calling convention test logic invisible.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (10/10)**
+- **Why?** The decompiler successfully preserved all original function symbols from the binary, making the high-level purpose of each block immediately obvious.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Composite Type Recovery (2/10)**
+- **Why?** The failure to reconstruct `LargeStruct` and `SmallStruct`, instead flattening them into raw integers or arrays, makes data handling logic extremely difficult to understand.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Floating-Point Type Recovery**: Detect pairs of registers/stack slots used in soft-float ABIs (like ARM) and recombine them into `double` or `float` types rather than leaving them as `undefined4`.
+2.  **Enhance Struct Reconstruction**: Analyze function signatures to identify contiguous parameters that represent passed-by-value structs and reconstruct the original struct definition.
+3.  **Recognize Variadic Idioms**: Detect the standard stack-walking pattern used for `va_list` (e.g., loading from stack offsets and incrementing a pointer) and annotate the function as variadic with `...`.

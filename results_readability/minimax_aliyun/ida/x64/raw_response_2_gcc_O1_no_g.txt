@@ -1,0 +1,165 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use cryptic identifiers (`v1`, `v2`, `v3`, `result`). The original source uses meaningful names like `x`, `c`, `p`, `n`, `arr`. For example, in `process_char`, parameter `a1` should be `c`, and in `array_1d_stack`, parameters `a1` and `a2` should be `arr` and `n` respectively.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: Most function names are correctly preserved from the source: `double_value`, `process_int`, `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. Minor issue: some internal functions like `sub_1020` lack semantic names, but the core test functions are well-named.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Justification: Magic numbers like `65` (should be `'A'`), `32` (case conversion offset), and array sizes like `11` (for 10x10 matrix with row stride) are not explained. Test functions hardcode expected values (e.g., `300`, `11`, `200`) instead of showing actual function calls, losing the connection to the computation.
+
+### 4. Noise Reduction
+**Score: 5/10**
+
+Justification: Moderate noise present including `LODWORD()` macros, excessive type casts like `(unsigned int)`, `(int)`, `(float *)`, and awkward pointer arithmetic patterns. The test functions contain hardcoded values rather than actual function invocations, creating noise that obscures the real logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Justification: Most control flow is natural with while/do-while loops and if statements. However, `array_2d_stack` uses `a1 += 11` (weird stride) instead of proper 2D indexing, and some loops use pointer comparisons rather than idiomatic index-based iteration. At -O0, these awkward patterns are unnecessary.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Function granularity matches the original source well. Each test function (`test_data_types_l1`, `test_array_types`, `test_pointer_types`, `test_composite_types`) and helper function (`double_value`, `complex_callback`) is properly separated. No monolithic functions observed.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in functions like `array_1d_stack` and `ptr_increment`. Some nested loops in `array_3d` and `graph_traverse` create depth but remain traceable.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+Justification: Main logic functions are clean, but test functions contain significant redundancy - they compute expected values at compile time and hardcode them rather than calling the actual functions. This creates duplicate logic that doesn't reflect the source behavior.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**
+
+Justification: Significant type degradation observed. The decompiler uses generic types like `__int64` for functions returning `int`, `_DWORD` instead of `int`/`short`, and `unsigned int` for signed parameters. For example, `process_short` should return `short` but shows `__int64`. Float and double types are correctly identified.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+Justification: Critical failure - no struct/union type definitions are recovered. Instead of `Point3D p; return p.x + p.y + p.z;`, the decompiler shows `a1[2] + *a1 + a1[1]` with no struct definition. Nested structures like `Rect`, `Widget`, `Node`, `TreeNode` are completely lost, replaced with raw pointer arithmetic and magic offsets like `a1 + 8`, `a1 + 16`, `a1 + 20`.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Several unsafe operations present: excessive pointer type casts (e.g., `(char *)a1`, `(float *)a1`), pointer arithmetic without bounds checking, and imprecise function pointer types like `__int64 (__fastcall *)(_QWORD)`. The bitfield handling in `struct_bitfields` shows manual bit manipulation rather than proper field access.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+Justification: No comments present in the decompiled output whatsoever. The original source contains extensive comments explaining each test case (e.g., "// DT-L1-01: 字符类型（char）⭐"), but the decompiler provides zero documentation. This is a severe deficiency for understandability.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some patterns are implicitly recognizable (linked list traversal in `linked_list`, binary tree recursion in `binary_tree_sum`, graph adjacency list traversal in `graph_traverse`), but they are not explicitly labeled or documented. A reader must infer these patterns from the code structure.
+
+### 14. Anomaly Indication
+**Score: 4/10**
+
+Justification: The decompiler indicates 7 functions failed to decompile (including `main`, `__libc_start_main`, `puts`, `__printf_chk`, etc.) with "FAILED to decompile" messages. However, no explanation is provided for why these failed or what they should contain. The failure to decompile `main` is particularly critical.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The original source has no explicit assertions, but semantic contracts (e.g., "array_1d_stack requires non-null arr and n >= 0") are not inferred or documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Justification: No cross-references documented. The relationship between functions (e.g., `ptr_func_simple` calls `double_value`, `struct_func_ptr` uses `process_int` as function pointer) is not explained. No indication of which functions call which or the callback relationships.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Justification: Functions appear in roughly the order they were defined in the source, but there's no logical grouping or separation. All functions are in a single flat list without any structural organization matching the source's section comments (e.g., "// ============================================================================").
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+Justification: The code cannot compile as-is. Issues include: undefined types (`_DWORD`, `_QWORD`, `_BOOL8`, `_WORD`), missing struct/union definitions, missing standard library declarations (`puts`, `printf`, `memset`), and test functions with hardcoded values instead of actual function calls. The "FAILED to decompile: main" means the entry point is completely missing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 5 + 5) / 4 = 5.0
+L2_avg = (6 + 8 + 7 + 5) / 4 = 6.5
+L3_avg = (4 + 2 + 5) / 3 = 3.67
+L4_avg = (1 + 5 + 4 + 2) / 4 = 3.0
+L5_avg = (3 + 5 + 2) / 3 = 3.33
+
+Overall = (5.0 × 0.30) + (6.5 × 0.25) + (3.67 × 0.20) + (3.0 × 0.15) + (3.33 × 0.10)
+        = 1.5 + 1.625 + 0.734 + 0.45 + 0.333
+        = 4.64/10
+```
+
+**Overall Readability Score: 4.64/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **No struct/union type recovery**: All composite types are lost - `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`, `UnionData` are never defined. Code uses raw pointer arithmetic with magic offsets like `a1[2]`, `a1 + 8`, `a1 + 16`.
+
+2. **Completely generic variable names**: Parameters use `a1`, `a2`, `a3` and locals use `v1`, `v2`, `v3`, `result` - making it nearly impossible to track data flow without extensive reverse engineering.
+
+3. **No comments or documentation**: Zero explanatory text despite the original source having extensive comments for each test case. This is especially damaging for complex patterns like bitfields, linked lists, and graph traversal.
+
+4. **Main function failed to decompile**: The entry point `main` is marked as "FAILED to decompile", making the program flow impossible to understand from the decompiled output alone.
+
+5. **Test functions hardcode values instead of calling functions**: `test_data_types_l1` prints hardcoded expected values (`300`, `11`, `200`) rather than showing actual function calls, losing the connection to the logic being tested.
+
+---
+
+### Best Quality Aspect (Single Dimension)
+
+**Function Naming Quality (8/10)** - Most function names are correctly preserved from the source (`double_value`, `process_int`, `array_1d_stack`, `ptr_single`, `linked_list`, etc.), making it easy to identify which part of the code corresponds to which source function.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+
+**Composite Type Recovery (2/10)** - The decompiler completely failed to recover any struct or union definitions. Instead of showing `Point3D p; return p.x + p.y + p.z;`, it shows `a1[2] + *a1 + a1[1]` with no type definition. This is the single biggest barrier to understanding the code, as all the complex data structures (linked lists, binary trees, graphs, nested structs) are reduced to incomprehensible pointer arithmetic.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover struct and union type definitions**: Analyze memory access patterns to infer struct layouts, field names, and sizes. The decompiler should output `typedef struct { int x; int y; int z; } Point3D;` instead of forcing analysts to manually reconstruct these from array indices.
+
+2. **Add meaningful variable names through data flow analysis**: Use usage patterns to infer names - a parameter used as array index should be named `index` or `i`, a pointer dereferenced for size should be named `size` or `length`. Even simple heuristics would dramatically improve readability.
+
+3. **Include comments explaining complex patterns**: Add annotations for recognized patterns (linked list traversal, binary tree recursion, graph algorithms), explain magic offsets (e.g., `// offset 8 = Node.next field`), and document any uncertainty in the decompilation.

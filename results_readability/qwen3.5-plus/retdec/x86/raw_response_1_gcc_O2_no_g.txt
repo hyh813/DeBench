@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost exclusively generic (`v1`, `v2`, `v3`, `a1`, `a2`, `result`) with no semantic meaning. Original source used descriptive names like `temp1`, `sum`, `count`, `i`, `j` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core function names are well-preserved (`sequential_ops`, `single_if`, `nested_if_2`, `loop_for_fixed`). However, helper functions use generic names (`function_10a0`, `function_10b0`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (e.g., `0x100000000`, `0x80000000` in `op_div`). Some constants are recoverable (10, 20, 30 in `if_elseif_chain`) but lack context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_*`, `__readgsdword(20)`, `__stack_chk_fail_local()`. Redundant stack checking code appears in nearly every function.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple loops recovered well (`loop_for_fixed`, `loop_while`), but complex patterns fail: `switch_fallthrough` loses fall-through semantics, `indirect_recursion_a` becomes a while loop instead of recursion.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Individual functions have reasonable granularity, but spurious helper functions (`__x86_get_pc_thunk_*`) are included. `duffs_device` is essentially broken (returns pointer instead of copying).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but awkward label patterns exist (`lab_0x1ba5` in `loop_multi_exit`). Some break statements appear in unusual contexts.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated expressions throughout (e.g., `a2 >= 0 == (a2 != 0)` in `nested_if_2`, `loop_nested`). Stack checking code duplicated across functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`/`uint32_t` consistently, but sign mismatches exist (`nested_if_2` takes `uint32_t a1` but original used `int`). Function pointer types degrade to `int32_t`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Struct definitions exist but use generic field names (`e0`, `e1`, `e2`). `__jmp_buf_tag` recovered but not meaningfully named. No complex struct recovery needed for this code.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (e.g., `int32_t` to pointer in `loop_break`). Stack checking introduces potential issues. Function pointer calls lose type information.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Zero comments** in decompiled code. Original source had extensive documentation explaining purpose, test cases, and difficulty levels. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition evident. Duff's device not identified, fall-through switch not flagged, recursion patterns not annotated. State machine logic not recognized.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about problematic code. Broken functions (`duffs_device`) not flagged. Stack checking artifacts not explained. Code presents incorrect logic confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`). No postconditions inferred. Error conditions not documented despite original having clear test expectations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g1`-`g8`) have no semantic meaning. No call graph or callback relationship information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Helper functions mixed with test functions. No header file separation or namespace structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes standard headers (`stdio.h`, `setjmp.h`, `stdint.h`). Has external function declarations. Metadata indicates compilation succeeds, though some stubs may be needed.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+4)/4 = 5.25  × 0.30 = 1.58
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50  × 0.25 = 1.38
+Level 3 (Type):        (6+6+5)/3   = 5.67  × 0.20 = 1.13
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):  (5+5+7)/3   = 5.67  × 0.10 = 0.57
+─────────────────────────────────────────────────────
+Overall Score:                                  5.04/10
+```
+
+**Overall Readability Score: 5.0/10**
+
+### Critical Defects
+- **Zero comments** despite original having extensive documentation explaining purpose and test cases
+- **Variable names completely generic** (`v1`, `v2`, `a1`, `result`) losing all semantic meaning
+- **`duffs_device` function broken** - returns pointer instead of performing memory copy operation
+- **`switch_fallthrough` semantics lost** - fall-through behavior not preserved in decompiled output
+- **Compiler noise pollution** - `__readgsdword(20)`, `__stack_chk_fail_local`, `__x86_get_pc_thunk_*` in every function
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Core function names preserved accurately (`sequential_ops`, `nested_if_deep`, `loop_for_fixed`), making it easy to identify which function is which.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding algorithm intent nearly impossible without comparing to original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., loop counters → `i`, `j`; accumulators → `sum`, `count`; temporaries → `temp1`, `temp2`)
+2. **Add decompiler confidence annotations** - Flag uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: fall-through behavior may be incorrect`
+3. **Strip compiler instrumentation** - Remove or comment out stack canary checks (`__readgsdword(20)`, `__stack_chk_fail_local`) that obscure actual logic

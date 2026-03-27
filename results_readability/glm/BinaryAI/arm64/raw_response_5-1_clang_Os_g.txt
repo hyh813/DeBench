@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are generic and meaningless (e.g., `local_38`, `param_1`, `puVar1`). In `test_cpp_member_func`, `local_38` holds the integer value and `local_34` holds the string "Test", but these semantic meanings are lost.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: High-level test functions like `test_cpp_member_func` and `test_cpp_rtti` retain their original names. Template functions are demangled reasonably well (e.g., `template_max_int_`), though some utility functions remain generic (e.g., `FUN_00100d60`).
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers that obscure logic. For example, `test_cpp_constructor` returns `instance_count * 0x3e9 + 0x15` (where 0x3e9 is 1000 and 0x15 is 21) instead of using the original arithmetic or named constants.
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The code is relatively clean of register spilling or excessive compiler artifacts. However, types like `undefined` and `undefined4` appear frequently, which acts as a form of noise that impedes understanding.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Critical control flow is missing or flattened. `test_cpp_virtual_func` is reduced to a single `return 0x2a;`, completely hiding the object creation and virtual dispatch logic. `test_cpp_exception` shows only the throw, omitting the `try/catch` structure entirely.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: Class methods like `Container<int>::push` and destructors are correctly separated into their own functions. However, the logic within test functions is often inlined or optimized away to the point of being unrecognizable as the original algorithm.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Where logic exists (e.g., in `Container<int>::push`), the code reads linearly. There are no confusing `goto` chains or spaghetti structures within the recovered function bodies.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While some redundancy is removed, the decompiler has over-aggressively eliminated logic in functions like `test_cpp_virtual_func`, replacing the entire implementation with a constant return value, which destroys readability.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are frequently generic. `int` is often represented as `undefined4`, and `size_t`/pointers as `undefined8`. While `Base *` is recovered in `call_virtual_func`, specific class types like `SimpleClass` are lost in `test_cpp_member_func`, replaced by stack variables.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct/Class layouts are not recovered in the code view. Access to class members uses raw offsets (e.g., `*(int *)(this + 0x28)` in `Container<int>::push` for the `size` member) rather than field names.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on pointer arithmetic and casts (e.g., `(undefined4 *)__cxa_allocate_exception(4)`). While this reflects the underlying binary, it presents an unsafe view compared to the original type-safe C++ source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, the C++ constructs used (like vtables or exceptions), or the meaning of the magic numbers.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms are not recognized. Virtual function calls are shown as raw vtable dereferences (`(***(code ***)param_1)`), and exception handling is reduced to runtime calls (`__cxa_throw`) without the structural context of `try/catch`.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler confidently presents `return 0x2a;` for `test_cpp_virtual_func` without flagging that the logic has been constant-folded away, which is a severe anomaly for a `-O0` build.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the bounds check in `Container::get` is present as code but not annotated as a safety contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: Calls to standard library functions (e.g., `strlen`, `operator_new`) are clear. However, the relationship between the test functions and the classes they test is obscured by the lack of type recovery.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in address order. While related class methods (like `Container<int>::push` and `get`) are close, they are intermixed with other functions, and no logical grouping by class is apparent.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses `undefined` types and relies on specific external symbols that would require significant manual type definition and stubbing to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Logic in `test_cpp_virtual_func` and `test_cpp_constructor` is replaced by constant return values (`0x2a`, `0x47`), making the algorithms unreadable.
+- Class member access is represented as raw pointer arithmetic offsets (e.g., `this + 0x28`) instead of named member access.
+- C++ Exception handling (`try/catch` blocks) is completely stripped, leaving only the low-level `__cxa_throw` call.
+- Variable names are generic (`local_38`, `param_1`), losing all semantic context from the original source.
+
+**Best Quality Aspect:** Noise Reduction (Score: 8/10)
+- The decompiled code is free of register spilling artifacts and excessive casting clutter, making the remaining instructions easy to read individually, even if the overall logic is obscured.
+
+**Most Needs Improvement:** Semantic Transparency (Score: 1.25/10)
+- The decompiler fails to communicate *what* the code is doing. It replaces high-level logic with constants and raw runtime calls without comments or idiom recovery, rendering the code semantically opaque.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Disable Aggressive Constant Propagation for -O0**: When debug symbols or optimization level indicates unoptimized code, preserve the intermediate calculation steps rather than replacing functions with constant return values.
+2. **Recover C++ Class Layouts**: Utilize RTTI and constructor/destructor analysis to reconstruct struct field names and offsets, replacing `*(int *)(this + 0x28)` with `this->size`.
+3. **Reconstruct High-Level Exception Control Flow**: Identify `__cxa_throw` and landing pad patterns to rebuild `try/catch` blocks rather than just emitting the runtime library calls.

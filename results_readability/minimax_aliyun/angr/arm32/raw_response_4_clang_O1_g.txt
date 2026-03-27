@@ -1,0 +1,239 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names like `a0`, `a1`, `a2`, `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`, `v13`, `v14`, `v15`, `v16`, `v17`, `v18`, `v19`, `v20`, `v21`, `v22`, `v28`, `v29`, `v30`, `v31`, `v32`, `v33`, `v34`, `v35`, `v36`, `v37`, `v38`, `v39`, `v40`, `v41`, `v42`, `v44`, `v45`, `v46`, `v47`, `v49`, `v50`, `v52`, `v53`, `v54`, `v55`, `v57`, `v58`, `v59`, `v60`, `v61`, `v62`, `v63`, `v64`, `v65`, `v66`, `v67`, `v68`, `v69`, `v70`, `v71`, `v72`, `v76`, `v77`, `v78`, `v79`, `v80`, `v81`, `v83`, `v84`, `v86`, `v87`, `v88`, `v89`, `v90`, `v91`, `v92`, `v93`, `v95`, `v96`, `v97`, `v98`, `v99`, `v100`, etc. These are completely uninformative. The original source has clear variable names like `a`, `b`, `count`, `args`, `sum`, `i`, `ptr`, `p`, `x`, `y`, `str`, `arr`, etc. The decompiled code uses completely generic names like `a0`, `a1`, `v0`, `v1`, etc. This is extremely poor. The decompiler should be able to infer better names from usage patterns. For example, in `cdecl_func`, parameters `a0` and `a1` are clearly `a` and `b` from the source. The decompiler could have inferred this from the calling context.
+
+### 2. Function Naming Quality
+**Score: 3/10**
+
+The decompiler correctly identified some function names like `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `func_many_args`, `func_mixed_args`, `func_struct_byval`, `func_struct_byptr`, `param_by_value_int`, `param_by_value_ptr`, `param_array_decay`, `param_string`, `param_ptr_array`, `param_varargs`, `param_func_ptr`, `param_double_ptr`, `param_complex_cast`, `param_struct_byval`, `param_order_dep`, `ret_basic_type`, `ret_pointer`, `ret_small_struct`, `ret_large_struct`, `ret_func_ptr`, `ret_opaque_handle`, `ret_complex_expr`, `ret_multi_branch`, `ret_void`, `test_calling_conventions`, `test_parameter_passing`, `test_return_values`, `main`.
+
+However, many functions are named with generic patterns like `sub_4003f0`, `sub_400490`, `call_weak_fn`, `deregister_tm_clones`, `register_tm_clones`, `frame_dummy`, `__do_global_dtors_aux`, `_init`, `_start`, `_fini`. These are standard library/crt functions that could be recognized.
+
+Also, some functions like `arm_aapcs_func`, `mips_func`, `amd64_sysv_func`, `ms_x64_func`, `vectorcall_func` are named after calling conventions but the original source has more specific names.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Some literals are clear like `15`, `50`, `6`, `10`, `21`, `33`, `42`, `36`, `117`, `173`, `300`, `20`, `40`, `60`, `7`, `305419896` (0x12345678). These are the expected return values from the test functions.
+
+However, there are many magic numbers without explanation like `0x80000000`, `0x100000`, `1048575`, `0x200000`, `0x800`, `0x12`, `18`, `21`, `32`, `54`, `128`, `210`, `83`, `162`, `193`, `209`, `210`, etc. These are used in the floating-point emulation functions and condition code calculations.
+
+Also, the string literals are referenced as `&g_40175e`, `&g_4014b4`, etc. without showing the actual strings.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+The code has massive noise from:
+- `armg_calculate_condition` calls everywhere in floating-point emulation
+- `armg_calculate_flag_c`, `armg_calculate_flag_v` calls
+- Huge amounts of register-related variables: `cc_dep1`, `cc_dep2`, `cc_ndep`, `cc_op`, `r0`, `r1`, `r2`, `r3`, `r4`, `r5`, `r12`, `lr`
+- Unnecessary casts and type punning
+- The entire `__adddf3` function is 600+ lines of incomprehensible register manipulation
+- Variables like `vvar_4{r64|4b}`, `vvar_286{r64|1b}` which are clearly decompiler artifacts
+- The `Not Conv(32I->1I, ...)` constructs are completely unreadable
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+Most simple functions have natural control flow (e.g., `cdecl_func` is just `return a1 + a0;`). However:
+- The `varargs_func` and `param_varargs` use weird pointer arithmetic with `*((char *[4])&v0[0]) = ptr + 1;` which is confusing
+- The `func_struct_byval` uses a do-while loop with `i += 8` which is odd (should be `i++` and `i != 16`)
+- The `param_ptr_array` has confusing loop structure
+- The `param_double_ptr` has goto statements and condition calculations that are hard to follow
+- The floating-point functions have deeply nested conditionals with goto statements
+
+### 6. Function Decomposition
+**Score: 6/10**
+
+The main test functions are appropriately sized. However:
+- The `__adddf3` function is 600+ lines of unreadable code - it should be recognized as a library function
+- Some functions like `test_calling_conventions` are 100+ lines but that's expected for a test function
+- The function boundaries are mostly correct
+
+### 7. Code Linearization
+**Score: 4/10**
+
+Most functions read reasonably well top-to-bottom, but:
+- The `varargs_func` has confusing pointer manipulation that disrupts flow
+- The `param_double_ptr` has multiple goto statements
+- The floating-point functions have deeply nested conditionals that make reading difficult
+- Forward jumps in some places
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+Some redundancy observed:
+- In `call_varargs_param`: `v1 = param_varargs(4, 10, 20, 30); return param_varargs(4, 10, 20, 30);` - the function is called twice unnecessarily
+- In `test_calling_conventions`: `v8 = printf(...); return printf(...);` - called twice
+- In `test_return_values`: `v3 = printf(...); return printf(...);` - called twice
+- Some common subexpression elimination artifacts in floating-point code
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 3/10**
+
+- All parameters are `unsigned int` instead of `int` - loses sign information
+- `char*` is used correctly in `param_string`
+- Function pointers are not properly typed (e.g., `param_func_ptr` takes `unsigned int *a0` instead of function pointer type)
+- The `ret_small_struct` returns `unsigned int [2]` which is wrong - should be a struct pointer
+- The `ret_opaque_handle` returns `int` instead of `void*`
+- Many places use `unsigned int` when `int` would be more appropriate
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+- No struct types are recovered - everything is flat
+- The `SmallStruct` and `LargeStruct` are not recovered at all
+- The `TestIntPair` is not recovered
+- The `BigStruct` is not recovered
+- Everything is passed as individual parameters or as raw memory access
+- The `param_ptr_array` uses a weird `struct_0` typedef that is auto-generated
+
+### 11. Type Safety
+**Score: 3/10**
+
+- Many unsafe pointer casts
+- The `func_struct_byval` accesses memory with `*((int *)((char *)&v0 + v7))` which is dangerous
+- The `param_double_ptr` has complex pointer manipulation that could be unsafe
+- The `varargs_func` uses `*((char *[4])&v0[0]) = ptr + 1;` which is type punning
+- Function pointer type confusion in `param_func_ptr`
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+- No comments at all in the decompiled code
+- The only comments are the function headers that were part of the original source but not preserved
+- No explanation of what functions do
+- No indication of what the parameters represent
+- No documentation of return values
+
+### 13. Idiom Recognition
+**Score: 2/10**
+
+- The varargs pattern is not recognized - it's implemented with raw pointer manipulation
+- The calling convention tests are not identified as such
+- The test functions are not labeled as test functions (though they are named `test_*`)
+- No recognition of common patterns like "cdecl calling convention test"
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+- No indication of any anomalies
+- The code presents everything as if it's correct
+- No warnings about indirect calls that couldn't be resolved
+- No flags for potential undefined behavior
+- The weird constructs like `Not Conv(32I->1I, ...)` are presented without explanation
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+- No preconditions documented
+- No postconditions documented
+- No invariants documented
+- No error conditions documented
+- The code is presented without any contract information
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 2/10**
+
+- Function calls are present but not documented
+- No comments about who calls what
+- No documentation of global variable usage
+- The `extern` declarations are present but not organized
+- No call graph information
+
+### 17. Module Organization
+**Score: 4/10**
+
+- Functions are roughly grouped by functionality (calling conventions, parameter passing, return values, tests)
+- But the organization is not explicit
+- No header file structure
+- The standard library functions are mixed in with user functions
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+- The code has many issues that would prevent compilation:
+  - `unsigned int [2]` is not valid C syntax for return type
+  - `typedef struct struct_0 { char field_0; } struct_0;` is defined inside functions
+  - The `Not Conv(32I->1I, ...)` constructs are not valid C
+  - The `vvar_*` variables are not valid
+  - Many other syntax issues
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 3 + 5 + 2) / 4 = 3.0
+L2_avg = (4 + 6 + 4 + 5) / 4 = 4.75
+L3_avg = (3 + 2 + 3) / 3 = 2.67
+L4_avg = (1 + 2 + 1 + 1) / 4 = 1.25
+L5_avg = (2 + 4 + 2) / 3 = 2.67
+
+Overall = (3.0 × 0.30) + (4.75 × 0.25) + (2.67 × 0.20) + (1.25 × 0.15) + (2.67 × 0.10)
+Overall = 0.9 + 1.1875 + 0.534 + 0.1875 + 0.267 = 3.076
+
+Actually, let me recalculate:
+- L1: (2+3+5+2)/4 = 12/4 = 3.0
+- L2: (4+6+4+5)/4 = 19/4 = 4.75
+- L3: (3+2+3)/3 = 8/3 = 2.67
+- L4: (1+2+1+1)/4 = 5/4 = 1.25
+- L5: (2+4+2)/3 = 8/3 = 2.67
+
+Overall = (3.0 * 0.30) + (4.75 * 0.25) + (2.67 * 0.20) + (1.25 * 0.15) + (2.67 * 0.10)
+Overall = 0.9 + 1.1875 + 0.534 + 0.1875 + 0.267 = 3.076
+
+So overall score is approximately 3.1/10
+
+**Overall Readability Score:** 3.1/10
+
+### Critical Defects
+
+1. **Variable naming is completely generic**: All variables use names like `a0`, `a1`, `v0`, `v1`, `v2` with no semantic meaning. The original source has meaningful names like `count`, `sum`, `args`, `ptr`, `x`, `y`, `str` that are completely lost.
+
+2. **No comments or documentation**: The decompiled code has zero comments explaining what functions do, what parameters mean, or what the return values represent.
+
+3. **Floating-point emulation functions are unreadable**: The `__adddf3` function is 600+ lines of `armg_calculate_condition`, `armg_calculate_flag_c`, `armg_calculate_flag_v` calls with no structure or meaning.
+
+4. **Type information is lost**: All structs are lost, function pointers are not properly typed, signed/unsigned is often wrong.
+
+5. **Syntax errors prevent compilation**: The code has invalid C constructs like `unsigned int [2]` return type, `Not Conv(32I->1I, ...)` expressions, and `vvar_*` variables.
+
+### Best Quality Aspect
+
+**Function Decomposition (6/10)** - The function boundaries are mostly correct, and the main test functions are appropriately sized. The decompiler correctly identified the individual functions from the source.
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (1/10)** - The decompiled code has absolutely no comments. This is critical because without comments, it's impossible to understand what parameters mean, what functions do, or what the return values represent.
+
+### Top 3 Recommendations
+
+1. **Add meaningful variable names**: Infer variable names from usage patterns. For example, parameters that are used as loop counters should be named `i` or `index`, parameters used for counting should be named `count`, etc.
+
+2. **Recognize and label standard library functions**: The floating-point emulation functions (`__adddf3`, `__subdf3`, `__floatsidf`, etc.) should be labeled as library functions with comments explaining they are compiler-generated.
+
+3. **Add comments explaining function purpose**: Every function should have a brief comment explaining what it does, what its parameters mean, and what it returns. This is especially important for test functions and complex logic.

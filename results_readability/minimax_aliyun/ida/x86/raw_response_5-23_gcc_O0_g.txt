@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Most variables use generic single-letter names (`x`, `y`, `z`, `value`) or indexed temporaries (`v1`, `v2`, `v3`, `v4`). The decompiler failed to infer semantic meaning from usage patterns - for example, `x` in `param_macro_constants` should indicate it's a `size` parameter based on the comparison `size <= 1024`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - nearly all function names match the original source exactly (`param_macro_constants`, `param_conditional_compile`, `param_asm_basic`, etc.). The decompiler correctly preserved the semantic naming from the source, which is critical for understanding the code's purpose.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are clear - constants like `1024`, `512`, `64` are properly recovered. However, `57072` in `param_multi_branch_compile` should be shown as `0xDEF0` to match the original source's hex notation, and `155` in `param_stringize` for `__LINE__` lacks explanation.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Some stack canary checks appear (`__readgsdword(0x14u)` in `call_asm_clobber`, `call_asm_simd`), and `LODWORD`/`HIDWORD` operations in `call_asm_simd` are x86-specific artifacts, but these don't significantly impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural and idiomatic. The if-else in `param_macro_constants`, conditional expression in `param_macro_functions`, and loops in `param_asm_clobber` all match expected C patterns. At `-O0`, no loop unrolling or goto transformations are present.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity matches the original source well. The decompiler preserved the separation between wrapper functions (`call_*`) and implementation functions (`param_*`), maintaining appropriate cohesion and single responsibility.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom without forward jumps or goto statements. Early returns in `param_dynamic_code` and `param_memory_protection` are used appropriately. No computed jumps or deep nesting disrupting flow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or significant redundancy observed. The decompiler correctly eliminated redundant computations that would have been optimized by the compiler.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are mostly accurate - `int` for integers, `int*` for pointers, `void*` for generic pointers, `size_t` for `n` in memory operations. Minor issue: `page_size` in `param_dynamic_code` should be `size_t` rather than `int`. The use of `unsigned int` for stack canary is appropriate.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: Not applicable to this code - no complex structs or unions are used in the original source. Simple types only.
+
+**11. Type Safety:** Score: 9/10  
+Justification: The code is type-safe with no obvious unsafe casts. The `_mm_` intrinsics in `param_asm_simd` are used correctly with proper casting. One minor note: the `__m128i` variables in `param_simd_intrinsics` show redundant loads that suggest over-conservative decompilation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only the decompiler header comment is present. No explanation of macro semantics, inline assembly behavior, or algorithm intent. The original source had extensive comments explaining preprocessing behavior that are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No specific design patterns to recognize in this code - it's straightforward functional code with test functions. The decompiler doesn't identify the macro expansion patterns or the inline assembly idioms.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The decompiler correctly marks 10 external functions as "FAILED to decompile" (`__libc_start_main`, `mprotect`, `printf`, `sysconf`, etc.), which is appropriate. However, no warnings about potential issues in the recovered code (like the redundant SIMD loads) are provided.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had no explicit assertions, but the decompiler could have inferred some contracts (e.g., `param_asm_clobber` requires `n >= 0`).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear through direct invocation - `test_preprocessing_features` calls all the `call_*` functions. However, no documentation of which functions are internal vs. external, or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - all preprocessing functions together, all ASM functions together, test functions at the end. However, the ordering is by address rather than logical grouping, and static vs. exported functions aren't distinguished.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code should compile as standard C with minimal issues. It uses standard library functions (`printf`, `mmap`, `mprotect`, etc.) that would need libc linkage. The `__m128i` type requires `<emmintrin.h>` or similar.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.0/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`x`, `y`, `z`, `v1`, `v2`) - the decompiler made no effort to infer semantic names from usage patterns
+- Complete absence of explanatory comments - all macro semantics, inline assembly explanations, and algorithm descriptions from the original source are lost
+- Magic number `57072` should be displayed as `0xDEF0` to match source; `155` for `__LINE__` lacks context
+
+**Best Quality Aspect:** Function Naming (scored 9/10)  
+The decompiler preserved nearly all function names exactly as they appeared in the original source, which is critical for understanding the code's purpose and is the most important readability factor.
+
+**Most Needs Improvement:** Variable Naming (scored 3/10)  
+Generic single-letter variable names dominate the decompiled output, making it difficult to track the purpose of parameters and local variables without significant manual analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - For example, `param_macro_constants(int x)` compares `x <= 1024`, suggesting `size` or `max_size` as a better name than `x`
+2. **Add semantic comments for preprocessor macros** - Explain that `57072` is `0xDEF0` (the default platform value), and that `155` represents `__LINE__` at the point of expansion
+3. **Recover inline assembly semantics** - The original source had detailed comments about `lock xadd`, `movaps`, `paddd` instructions that are completely lost; at minimum, indicate what operations the assembly performs

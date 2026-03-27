@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `a1`, `a2`, `result`) with no semantic meaning. Original names like `temp1`, `sum`, `count`, `i`, `j` are completely lost, making it difficult to track variable purpose across functions.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some function names preserved correctly (`recursion_factorial`, `loop_for_fixed`), but 15+ original functions are completely missing (`sequential_ops`, `single_if`, `if_else`, `switch_small`, `goto_forward`, `ternary_op`, etc.). Preserved names are accurate but coverage is poor.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout (`0x3039`, `0x2694`, `10`, `8`) with no explanation. String literals stored as hex-encoded globals (`g1`, `g2`, `g3`) instead of readable strings. No named constants recovered.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate noise from type casts (`(int33_t)`, `(int32_t)`) and global variables (`g4`, `g5`). No severe compiler artifacts but redundant operations present in several functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: CRITICAL FAILURES: `loop_while` and `loop_dowhile` contain infinite `while(true)` loops with no exit condition. `duffs_device` switch only has default case. `computed_goto` returns an address instead of executing. These are not optimization artifacts—they are decompilation errors.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Many original functions missing entirely. Test functions print hardcoded expected values instead of calling actual functions (e.g., `test_control_flow_l1` prints `21` instead of calling `sequential_ops(5,7,3)`). Function granularity is inconsistent.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Some functions read linearly but `loop_multi_exit` has unreachable label (`lab_0x10e04`). `non_local_jump` has confusing multiple return paths. Forward jumps disrupt flow in several functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions contain redundant hardcoded values. Some calculations duplicated across functions. No dead code removal for unreachable labels.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t`, `uint32_t` but with inconsistencies (`loop_for_fixed` takes `uint32_t` but original takes `int`). Custom type `int33_t` is unusual. Pointer types often generic (`int32_t *`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No structs/unions in original to recover. `jmp_buf` shown as inline struct initialization which is reasonable. Limited opportunity for this dimension.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout. `call_func_ptr` ignores function pointer parameter entirely (returns `result` without calling). Pointer arithmetic without bounds checking in `loop_break`, `loop_multi_exit`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments in decompiled code. Original had extensive Chinese comments explaining each function's purpose, test cases, and difficulty level. Complete loss of documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop idioms completely broken (infinite loops). Recursion preserved in `recursion_factorial` and `tail_recursion` but other patterns (switch fallthrough, Duff's device) not recognized.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warnings about broken functions, infinite loops, or missing code. Decompiler presents incorrect code confidently without flagging critical failures.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or error condition documentation. Original had test verification comments for each function—all lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but many to hardcoded values. Global variables `g1-g5` used without explanation. Callback relationships broken (`call_func_ptr` doesn't call the function).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in one file with no header. Functions grouped but poorly organized. Missing functions create gaps in logical grouping.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has includes but uses compiler-specific `_setjmp` with inline struct initialization. May not compile standalone due to missing dependencies and broken function implementations.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+6)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (2+4+5+5)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type):        (5+7+4)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (1+3+1+1)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):  (4+5+5)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.12/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Infinite loops**: `loop_while` and `loop_dowhile` contain `while(true)` with no exit—completely broken semantics
+- **Missing functions**: 15+ original functions not decompiled (`sequential_ops`, `single_if`, `if_else`, `switch_small`, `goto_forward`, `ternary_op`, etc.)
+- **Test functions broken**: Print hardcoded expected values instead of calling actual functions
+- **Zero comments**: All original documentation (Chinese comments explaining purpose, test cases, difficulty) completely lost
+- **Function pointer calls broken**: `call_func_ptr` returns parameter without calling the function pointer
+
+### Best Quality Aspect:
+- **Composite Type Recovery (7/10)** — Limited opportunity in this codebase, but `jmp_buf` handling is reasonable with inline struct initialization
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** — Complete absence of any documentation despite extensive original comments explaining each function's purpose and test cases
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag infinite loops** — Add anomaly detection for loops without exit conditions and warn users instead of generating broken code
+2. **Preserve function coverage** — Ensure all discovered functions are decompiled rather than silently omitting 15+ functions from output
+3. **Recover test call patterns** — Recognize test harness patterns and preserve actual function calls instead of replacing with hardcoded expected values

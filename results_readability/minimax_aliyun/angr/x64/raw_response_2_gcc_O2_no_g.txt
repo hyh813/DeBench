@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (a0, a1, v0, v1, v2, ptr) that completely obscure their semantic purpose. For example, `ptr` in array functions should be named based on what it traverses (e.g., `element` or `current`). The only exceptions are some test function variables that happen to work.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions like `process_char`, `process_int`, `array_1d_stack` are correctly named matching source. However, many internal functions use generic `sub_XXXXX` pattern (sub_401020, sub_40102d) that provide no semantic value. The wrapper functions that just call other functions add noise without benefit.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3fc00000` (float 1.5), `0x3fe0000000000000` (double 0.5), and `4294967295` (0xFFFFFFFF) appear without explanation. The floating-point operations in `process_float` and `process_double` show raw hex constants instead of meaningful float/double literals. Some constants like `10` in loops are inferable but not named.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution includes: (1) Many wrapper functions that just call other functions (sub_4011d1 calls process_short), (2) VEX IR artifacts like `[D] PutI(904:F64x8)[t4,0] = t7()`, (3) "[D] Unsupported jumpkind" markers, (4) "Other Possible Types" annotations scattered throughout. This makes the code nearly unreadable.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops are recognizable (do-while constructs). However, `ptr_func_simple` uses `goto a0` which is an indirect jump that doesn't map to clean function call semantics. The `enum_switch` uses array indexing which is clever but obscures the switch semantics. Some control flow is acceptable at -O0 but the indirect goto is problematic.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Extremely poor decomposition - there are numerous tiny wrapper functions (sub_4011d1, sub_4011e8, sub_4011f9, etc.) that serve no purpose except to call the actual functions. The `binary_tree_sum` function is excessively complex with 40+ local variables, suggesting poor extraction. This fragmentation makes the code harder to read, not easier.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom without excessive forward jumps. The main disruption is the indirect goto in `ptr_func_simple` and some complex nested loops in `array_3d` and `binary_tree_sum`. Most functions can be followed linearly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some loop unrolling present in `array_3d` (manually unrolled 5 iterations). The `struct_array` function has redundant calculations (ptr[1] added twice). Some dead code from register spills visible. Not severe but noticeable.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: (1) `process_char` returns `long long` instead of `char`, (2) All pointers use `unsigned int*` or `unsigned long` instead of proper types, (3) Float operations use `int v1` in xmm0 register which is wrong, (4) `process_bool` returns `unsigned long long` instead of `_Bool`. The decompiler frequently uses `unsigned int` or `unsigned long long` as generic types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct recovery with generic field names (field_0, field_1, field_8). The `struct_with_ptr` correctly identifies self-referential structure. However, `union_type` has incorrect logic (returns int for type==1 which should be float). Bitfield handling in `struct_bitfields` is convoluted. Many structures use `char padding_X` which indicates alignment issues.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety concerns: (1) `ptr_diff` has operator precedence issue: `a0 - a1 >> 2` should be `(a0 - a1) >> 2`, (2) Function pointer `ptr_func_simple` uses `goto a0` which is dangerous, (3) Some pointer arithmetic appears correct but uses generic types. The indirect function call pattern is unsafe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no meaningful comments. Only decompilation artifacts like "[D] Unsupported jumpkind" and "Other Possible Types" appear. No explanation of algorithms, no @param/@return documentation, no indication of what the code is supposed to do. The test output strings provide some context but no actual code comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns like linked list traversal (while(ptr) { sum += ptr->field_0; ptr = ptr->field_8; }) are recognizable. However, no explicit naming of patterns (e.g., "// Linked list traversal" or "// Binary tree recursive sum"). The graph traversal and tree traversal are present but not identified as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies are flagged: "[D] Unsupported jumpkind Ijk_SigTRAP", "[D] unsupported_<class 'pyvex.expr.GetI'>()", and "Other Possible Types" annotations in binary_tree_sum. However, many issues are not flagged (e.g., the incorrect return type of process_char, the operator precedence bug in ptr_diff). Coverage is inconsistent.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication of what parameters require (e.g., "requires: n > 0" or "ensures: return >= 0"). The contracts from the original source are completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some external function declarations present (extern char g_403008, extern unsigned long long g_405fb0). However, no clear documentation of which functions call which, no call graph, no indication of global variable usage patterns. The relationships between functions are not explicitly documented.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are organized by address (0x401000, 0x401020, etc.) rather than by logical grouping. The original source had clear sections (data types, arrays, pointers, composite types) but the decompiled code mixes them all together. No static function grouping or logical ordering.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has some extern declarations for library functions (puts, __printf_chk, __cxa_finalize). However, many dependencies are implicit. The code would require significant stubs to compile (replacing indirect calls, handling unsupported operations). No clear dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 5 + 3) / 4 = 3.75
+L2_avg = (5 + 3 + 6 + 5) / 4 = 4.75
+L3_avg = (4 + 5 + 5) / 3 = 4.67
+L4_avg = (2 + 4 + 5 + 2) / 4 = 3.25
+L5_avg = (4 + 3 + 5) / 3 = 4.00
+
+Overall = (3.75 × 0.30) + (4.75 × 0.25) + (4.67 × 0.20) + (3.25 × 0.15) + (4.00 × 0.10)
+        = 1.125 + 1.1875 + 0.934 + 0.4875 + 0.4
+        = 4.134 / 10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic names (a0, a1, a2) and local variables use v0-v6 pattern, completely obscuring semantic purpose
+- **Function decomposition**: Excessive wrapper functions (sub_XXXXX) that just call other functions add noise without value
+- **Type precision**: process_char returns long long instead of char; process_bool returns unsigned long long instead of _Bool; all pointers use generic unsigned int*
+- **Noise**: VEX IR artifacts ([D] PutI, GetI), unsupported operation markers, and "Other Possible Types" annotations pollute the code
+- **Comments**: Nearly absent - no algorithm explanations, no @param/@return, no contract documentation
+
+### Best Quality Aspect: Control Flow Naturalness (5/10)
+- Basic loop constructs (do-while) are recognizable
+- Most functions read top-to-bottom without excessive goto
+- Switch recovery as array indexing (enum_switch) is clever
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Every parameter and local variable uses generic names
+- Cannot determine what any variable does without analyzing its usage
+- This is the most fundamental readability issue
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, pointer dereferencing, arithmetic) to suggest semantic names like `index`, `count`, `sum`, `element`
+2. **Eliminate wrapper function noise**: Collapse functions that just call another function into direct calls, or at least mark them as "thunk" functions
+3. **Recover type information more precisely**: Use debug symbols and common patterns to recover exact types (char, short, _Bool) rather than defaulting to unsigned int
+4. **Add semantic comments**: Include basic documentation explaining what each function does, parameter purposes, and any recovered contracts
+5. **Clean up VEX artifacts**: Remove or abstract low-level IR representations that pollute the decompiled output

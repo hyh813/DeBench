@@ -1,0 +1,106 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `v3`, `ptr`, `a0`), providing no semantic context about their role (e.g., `v0` used for loop counters or stack storage).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most user-defined functions retain their original names (e.g., `double_value`, `local_vars`, `heap_basic`), which accurately reflects their purpose, though runtime functions like `sub_10598` are generic.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Code is littered with magic numbers and hex values (e.g., `0xfffffff8` for alignment, `4294967295` for -1) without named constants, obscuring the intent of calculations like stack alignment or error codes.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The decompilation is heavily polluted with artifacts like `armg_calculate_condition`, which exposes low-level ARM condition flag logic instead of translating it to high-level C `if` statements, severely impacting readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is unnatural, relying heavily on `goto` labels (e.g., `LABEL_108c4`) and `armg_calculate_condition` calls to simulate branching, rather than using standard `if-else` or `while` constructs.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Function boundaries generally match the source, and there is no excessive inlining or outlining, maintaining a reasonable granularity that mirrors the original structure.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code requires frequent jumping to labels (e.g., `goto LABEL_10b7a`) to handle logic that should be linear `if-else` chains, disrupting the top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: There is significant redundancy in the form of repeated `armg_calculate_condition` calls and verbose pointer arithmetic (e.g., `&(&v0)[-1 * (i * 4 + 7 & 0xfffffff8)]`) for stack allocation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types are often generic (`unsigned int` used for `int` parameters), and the decompiler produces invalid syntax like `unsigned int [5]` as a return type in `heap_realloc`.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structs are recovered generically (e.g., `struct struct_0 { char padding_0[8]; unsigned int field_8; };`) with meaningless field names, and the `Point` struct usage was completely optimized away into arithmetic (`a0 * 3`).
+
+**11. Type Safety:** Score: 6/10
+Justification: Pointer arithmetic is explicit and verbose (e.g., `(char *)ptr + 4 * idx`), which is safe but lacks the elegance of array indexing; however, there are no obviously dangerous incorrect casts.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost entirely absent, with the exception of standard `/* do not return */` markers, leaving complex logic like VLA stack allocation or fork handling unexplained.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common idioms like Variable Length Arrays (VLA) are obscured by complex stack pointer math (`&(&v0)[-1 * ...]`) rather than being presented as array declarations.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler silently presents confusing logic (e.g., the inverted `if (ptr)` check in `heap_basic`) without flagging it as a potential reconstruction error or anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the null check for `malloc` is present but not explicitly documented as a contract requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: External functions and global variables are declared with `extern`, providing basic visibility, but there is no higher-level documentation of relationships (e.g., call graphs).
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions without logical grouping or separation of concerns (e.g., heap vs. stack operations), making it hard to navigate the large file.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile due to the use of non-standard helper functions like `armg_calculate_condition` and invalid syntax (array return types), requiring significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 8 + 4 + 2) / 4 = 4.25
+L2_avg = (3 + 7 + 4 + 3) / 4 = 4.25
+L3_avg = (5 + 3 + 6) / 3 = 4.67
+L4_avg = (2 + 3 + 3 + 1) / 4 = 2.25
+L5_avg = (6 + 5 + 1) / 3 = 4.00
+
+Overall = (4.25 × 0.30) + (4.25 × 0.25) + (4.67 × 0.20) + 
+          (2.25 × 0.15) + (4.00 × 0.10)
+Overall = 1.275 + 1.0625 + 0.934 + 0.3375 + 0.4
+Overall = 4.01 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.0/10
+
+### Critical Defects (Bullet Points)
+- **Semantic Error in `global_var_access`**: The decompiled code returns `global_counter + 1` *after* incrementing it, whereas the source returns the incremented value. The decompiler adds an extra `+1`, resulting in incorrect logic.
+- **Obscured Control Flow**: The use of `armg_calculate_condition` (e.g., in `vla_stack` and `memop_memset`) exposes low-level ARM condition flags instead of generating readable C `if` statements, making logic nearly impossible to follow.
+- **Invalid Syntax**: The function `heap_realloc` is declared with a return type of `unsigned int [5]`, which is not valid standard C syntax for returning arrays.
+- **Lost Struct Semantics**: The `local_struct` function logic `return a0 * 3` is mathematically correct but completely loses the semantic context of the `Point` struct (`p.x + p.y` where `y=x*2`).
+- **Inverted Logic in `heap_basic`**: The null check for `malloc` is represented as `if (ptr) { idx = 0; } else if (...)`, which is confusing and structurally inverted compared to the standard `if (!ptr) return -1` pattern.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (8/10)
+- **Why?** The decompiler successfully preserved the original function names for almost all user-defined functions, making it easy to locate specific logic blocks despite the poor internal code quality.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Assertion & Contract Recovery (1/10)
+- **Why?** There is a complete absence of semantic information regarding function contracts, preconditions, or invariants, leaving the reader to guess the requirements for functions like `vla_stack` or `alloca_usage`.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Lift Condition Codes Properly**: Replace `armg_calculate_condition` calls and explicit flag manipulation with standard C control flow constructs (`if`, `while`, `for`) to significantly improve readability.
+2.  **Recover Struct Semantics**: Instead of optimizing struct operations into pure arithmetic (e.g., `a0 * 3`), preserve the struct field access syntax or at least comment on the semantic operation being performed.
+3.  **Fix Semantic Logic Errors**: Review the lifting of increment and return operations to ensure off-by-one errors (like in `global_var_access`) are not introduced during the decompilation process.

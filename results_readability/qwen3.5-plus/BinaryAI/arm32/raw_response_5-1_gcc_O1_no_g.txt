@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`iVar1`, `pvVar1`, `local_c`, `local_d`, `uVar2`) with no semantic meaning recovered from original names like `value`, `name`, `data`, `result`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions retain original names (`test_cpp_member_func`, `test_cpp_constructor`) but helper functions are generic (`FUN_000109bc`) and many external wrappers add noise.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0x125c`, `0x14`, `0x1f`, `0x2a`, `0x47`, `0x55`, `0x2bf`) with no constants recovered; original values like `4704`, `21`, `42` are obscured.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts including `__stack_chk_fail()` calls, redundant external function wrappers, and `undefined` type declarations throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Awkward `if (local_c == 0) { return; } __stack_chk_fail()` patterns interrupt natural flow; virtual calls obscured as `(***(code ***)param_1)()`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Test functions properly separated but class methods not recovered as methods; multiple destructor versions for same class create confusion.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but stack check failures create forward jumps; some functions have confusing return patterns with error paths.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple destructor implementations for same class (`DiamondDerived::~DiamondDerived` appears 5+ times); redundant external function wrappers throughout.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy use of `undefined`, `undefined4`, `undefined8` instead of precise types; original `int`, `size_t`, `char*` degraded to generic types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Classes completely lost - shown as pointer arithmetic (`*(int *)(this + 0x28)`); no struct definitions recovered; `SimpleClass`, `LifecycleClass` structures invisible.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts (`(undefined4 *)`, `(int *)`); pointer arithmetic without type safety; function pointers degraded to `void*` and `code*`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only decompiler header with SHA256; no algorithm explanations, no API contracts, no uncertainty indicators for ambiguous recoveries.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns (vtables, constructors, templates) not recognized as such; template instantiations shown as separate functions but not identified as templates.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for indirect calls; stack check failures not explained; virtual dispatch ambiguity not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `idx < size`); no postconditions inferred; exception handling contracts lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented; virtual dispatch not clearly shown; no call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions listed but not logically grouped by class; external functions mixed with internal; no namespace structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many `undefined` types would prevent compilation; external function declarations incomplete; dependencies not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+4)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+5+5+5)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.37
+─────────────────────────────────────────────────────────
+Overall Score:                              = 3.52/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects
+- **Variable names completely generic** - `iVar1`, `pvVar1`, `local_c` instead of `value`, `result`, `instance_count`
+- **Class structures lost** - All composite types shown as pointer arithmetic (`*(int *)(this + 0x28)`)
+- **Magic numbers everywhere** - `0x125c`, `0x47`, `0x2bf` instead of computed values `4704`, `71`, `703`
+- **Type system degraded** - Heavy use of `undefined`, `undefined4`, `undefined8` instead of precise C++ types
+- **No semantic recovery** - C++ idioms (vtables, templates, exceptions) not recognized or documented
+
+### Best Quality Aspect
+- **Function Naming Quality (5/10)** - Test function names were preserved from original source (`test_cpp_member_func`, `test_cpp_constructor`, etc.), providing some anchor points for understanding.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)** - Complete failure to recover class structures; all object access shown as raw pointer arithmetic, making OOP semantics invisible.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover class/struct layouts from vtable patterns** - Analyze vtable references to reconstruct class hierarchies and field offsets with meaningful names.
+2. **Infer variable names from usage context** - Variables used in size comparisons should be named `size`/`length`; variables holding return values should reflect their semantic purpose.
+3. **Recognize C++ idioms explicitly** - Mark virtual calls, template instantiations, exception handling, and smart pointer patterns with comments indicating the high-level construct.

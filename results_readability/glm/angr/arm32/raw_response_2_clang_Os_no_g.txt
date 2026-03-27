@@ -1,0 +1,97 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `a0`, `v0`, `v1`, `ptr`, and `result`. For example, in `array_1d_stack`, the accumulator is named `v0` and the index `i` is manipulated manually, obscuring the original `sum` and `i` intent.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: The decompiler successfully recovered the original names for user-defined functions like `process_char`, `test_data_types_l1`, and `struct_simple`. However, helper functions are named generically (e.g., `sub_4003f8`, `sub_400498`).
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers are used extensively without named constants. For instance, `process_char` uses `65` (ASCII 'A') and `32` (space) instead of character literals or constants. Float constants appear as raw hex (e.g., `0x3f000000` in `process_float`).
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is heavily polluted with intermediate representation (IR) artifacts. Expressions like `armg_calculate_condition(66, a3, 0, 0)` and variables like `vvar_36{r64|4b}` are present, which are not valid C and significantly hinder readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Natural `for` loops are converted into complex `do-while` loops with manual pointer arithmetic and index manipulation. For example, `array_1d_stack` uses a `do-while` loop decrementing `i` and incrementing a pointer `a0`, whereas the source uses a standard `for` loop.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While functions are generally separated, some are severely malformed. `process_float` is defined as `void process_float()` with no arguments, completely losing the signature `float process_float(float f)`.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code is difficult to read linearly due to the prevalence of `do-while` loops that simulate `for` loops using pointer increments and decrements, requiring the reader to mentally reconstruct the loop bounds.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The decompiler closely follows the assembly structure, resulting in redundant variable shuffling (e.g., `v1 = v0; v3 = a0 + 1;`) that mimics register moves rather than high-level logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 1/10
+Justification: Type information is largely lost or incorrect. `process_float` loses its return type and arguments. `process_ll` splits a 64-bit `long long` into two `unsigned int` arguments (`a0`, `a1`) but only uses `a0`. Structs are demoted to arrays/pointers.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are not recovered; they are treated as arrays. In `struct_simple`, the decompiler outputs `return a0[1] + *(a0) + a0[2];` instead of accessing fields like `p->x`, `p->y`, `p->z`.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts. For example, `ptr_void` casts `void*` to `int*` and `char*` explicitly. The lack of struct recovery forces raw pointer arithmetic which is inherently type-unsafe in this context.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or the purpose of the IR artifacts like `armg_calculate_condition`.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: Common idioms are missed. The `volatile_access` function is decompiled as `return *(a0) * 2;`, failing to recognize the volatile requirement to read memory twice (`a + b` where `a` and `b` are separate reads).
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents malformed code like `void process_float()` and syntax errors (`vvar_36{r64|4b}`) without any warning or anomaly indication, misleading the user about the code's validity.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For instance, the requirement that `array_string` expects a null-terminated string is not noted.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Because the original function names were recovered, the call graph within `test_...` functions is relatively clear (e.g., calls to `process_char` are obvious), despite the internal implementation being obfuscated.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed, but the inclusion of massive library functions like `__muldf3` and `__adddf3` (soft-float implementations) mixed with user code clutters the output without separation.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The output is not valid C code. Syntax like `vvar_36{r64|4b}` and calls to non-existent functions like `armg_calculate_condition` make it impossible to compile without significant manual modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score: 3.0/10
+
+### Critical Defects (Bullet List)
+- **Type Loss**: `process_float` and `process_double` are decompiled as `void` functions with no arguments, completely losing their signature.
+- **Struct Erasure**: Composite types like `Point3D` are treated as raw arrays (e.g., `a0[1]`), destroying semantic meaning.
+- **Control Flow Obfuscation**: Simple `for` loops are converted into complex `do-while` loops with manual pointer arithmetic (e.g., `array_1d_stack`).
+- **Semantic Failure**: `volatile_access` is incorrectly optimized to `*(a0) * 2`, ignoring the requirement for two distinct memory reads.
+- **Syntax Errors**: The output contains IR artifacts like `vvar_36{r64|4b}` and `armg_calculate_condition`, rendering it invalid C.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (7/10)**
+- **Why?** The decompiler successfully preserved the original names for the high-level test functions (e.g., `process_char`, `test_data_types_l1`), allowing the reader to map the decompiled code back to the source structure despite the poor internal implementation.
+
+### Most Needs Improvement (Single Dimension)
+- **Semantic Transparency (1/10)**
+- **Why?** The code is filled with low-level IR artifacts (`armg_calculate_condition`) and fails to capture basic semantics like volatile access or floating-point operations, making the logic incomprehensible.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Filter IR Artifacts**: Implement a post-processing pass to remove or translate internal representation syntax (like `armg_calculate_condition` and `vvar_...`) into valid standard C.
+2. **Recover High-Level Loops**: Add pattern matching to detect and reconstruct `for` loops from `do-while` structures that use pointer arithmetic and index counters.
+3. **Improve Type Recovery for Floats**: Fix the handling of floating-point arguments and return values, particularly for soft-float ABIs, to ensure signatures like `float process_float(float)` are preserved instead of being reduced to `void func()`.

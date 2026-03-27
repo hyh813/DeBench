@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names (`a1`, `a2`, `v0`, `v1`, `temp`) with no semantic meaning recovered. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names preserved (`param_fake_branch`, `div_zero_handler`) but many helpers use mechanical names (`sub_1030`, `sub_1040`). Runtime functions have descriptive names but application logic naming is inconsistent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers present without explanation (0x5A, 0x14u, signal numbers 8/11). String references shown as `asc_2008`, `unk_212F` instead of actual string content, requiring external lookup.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Contains significant compiler artifacts: stack canary checks (`__readgsdword(0x14u)`), 12+ runtime initialization functions (`deregister_tm_clones`, `frame_dummy`), and 12 failed library function decompilations cluttering output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as do-while constructs, conditionals are clear. However, some functions are over-simplified due to optimization (e.g., `call_fake_branch` constant-folded to return 10), losing original branching logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but some functions constant-folded entirely (`call_opaque_predicate` returns constant 20). Runtime initialization functions mixed with application logic without clear separation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Some forward references exist but don't significantly disrupt flow. Loop structures are recognizable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Dead code from fake branches correctly eliminated (expected at O2), but stack canary checks repeat in every function. No dead code removal for the 12 failed decompilation stubs.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses mixed types (`int`, `unsigned int`, `__int64`, `_DWORD`). Some type degradation present (void* for pointers). Function pointer types shown generically as `void (*)(void)` losing signature information.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays shown as `_DWORD v7[8]` without semantic meaning. The bitfield struct from `param_implementation_defined` is completely lost (function constant-folded to return 43). No struct reconstruction attempted.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(__sighandler_t)`, `(_DWORD *)a1`). Pointer dereference `*(_DWORD *)a1` in `param_null_pointer_deref` loses original `int *p` type safety. No bounds checking annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. No algorithm explanations (GCD not identified), no decompilation confidence indicators. Only metadata header provides context.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption pattern in `decrypt_string` not named. Setjmp/longjmp exception handling pattern not documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end but no inline warnings. Stack canary code present without explanation. No indication that `param_fake_branch` dead branches were eliminated by optimization.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 != 0` for division). No postconditions inferred. Error conditions (signal handlers) not explained in function contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`jmp_buffer`, `encrypted_0`) referenced without context. No call graph or relationship documentation between functions.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output without logical grouping. Runtime initialization functions mixed with application logic. No separation between obfuscation tests, optimization tests, and edge case tests.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 12 external functions failed to decompile requiring stubs. Platform-specific code (`__readgsdword`, `__printf_chk`) limits portability. Would need significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (7+6+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (6+5+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+
+Overall Score: 4.86/10
+```
+
+### Overall Readability Score: **4.9/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `v0`, `temp`) losing all semantic meaning from original source (`result`, `encrypted`, `canary`)
+- **No comments or documentation** explaining algorithm intent, especially for GCD, string decryption, and signal handling patterns
+- **12 failed library function decompilations** requiring external stubs for compilation
+- **String literals replaced with references** (`asc_2008`, `unk_212F`) requiring binary inspection to understand
+- **Optimization artifacts not explained** - dead code elimination from fake branches not documented, making obfuscation intent unclear
+
+### Best Quality Aspect: **Control Flow Naturalness (7/10)**
+- Loop structures and conditionals are recovered in recognizable C constructs despite optimization transformations.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments makes understanding algorithm intent nearly impossible without original source comparison.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in division context should be named `divisor`, `dividend`)
+2. **Add decompilation confidence annotations** - Mark optimized/transformed code regions with comments explaining what was eliminated or simplified
+3. **Recover string literals inline** - Instead of `asc_2008`, display actual string content when recoverable from binary data section

@@ -1,0 +1,140 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Variables use extremely generic names like `param_1`, `param_2`, `local_c`, `iVar1`, `uVar2`, `auStack_2c`. The original source uses meaningful names like `dst`, `src`, `buffer`, `len`, `iterations`, `shared_counter`. These cryptic names make tracking variable purpose extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Most function names match the original source exactly: `param_strcpy`, `call_strcpy`, `param_strcmp`, `thread_compute`, `thread_sum`, `signal_handler`, `param_malloc_free`. This is excellent preservation. Minor deduction for some internal functions without clear naming.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Multiple unexplained magic numbers throughout: `0x2a` (42), `0xffffffff` (-1), `0x1b6` (permissions), `0x1000` (4096), `0x12` (18). String literals like "HelloLib" are embedded directly rather than named constants. The original source has no magic numbers—all are semantic.
+
+### 4. Noise Reduction
+**Score: 3/10**
+Justification: Significant compiler artifacts present: `__stack_chk_fail` calls, `__sync_fetch_and_add_4` and related atomic intrinsics (40+ lines), `__aeabi_read_tp` for TLS, `<EXTERNAL>` function declarations (70+ lines). These dominate the output and obscure the actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+Justification: Basic control flow is preserved—loops, conditionals, and function calls are recognizable. However, some transformations are awkward: `param_strcmp` uses `iVar1 >> 0x1f` instead of ternary operator, and `param_strlen` discards the return value entirely. At -O0, these should be more faithful.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Function boundaries match original source well. Each function has a single responsibility: `param_strcpy` does copy+length, `call_strcpy` sets up buffer and calls it. No over-fragmentation or inlining issues. Minor deduction for some functions being slightly large.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom. Early returns for error conditions (e.g., `if (__stream == (FILE *)0x0) { iVar1 = -1; } else { ... }`) are used appropriately. No excessive forward jumps or goto statements.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+Justification: The main logic has minimal redundancy. However, the atomic operations section contains 40+ nearly identical sync functions (`__sync_fetch_and_add_4`, `__sync_fetch_and_sub_4`, etc.) that are compiler-generated and clutter the output. This is expected but overwhelming.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**
+Justification: Uses generic types throughout: `undefined4`, `undefined8`, `int`, `char*`, `void*`. Original source uses precise types like `size_t`, `ssize_t`, `pthread_t`, `FILE*`. No const-correctness preserved. Parameter types often wrong (e.g., `param_1` as `undefined4` instead of `char*`).
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+Justification: No struct recovery. The original source uses `ThreadData` struct with fields `start`, `end`, `result`, but decompiled code uses raw stack arrays and pointer arithmetic: `param_1[2] = 0`, `ppVar3 + 3`. Similarly, `sockaddr_in` is reconstructed as raw `sockaddr` with manual field assignment.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Some unsafe operations present: raw pointer arithmetic (`(int)param_1 + -1`), casting between incompatible types, no bounds checking. However, no obviously dangerous patterns like buffer overflows. The code is functional but not type-safe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+Justification: No comments whatsoever in the decompiled output. Zero explanation of algorithm intent, parameter purposes, return value meanings, or any semantic context. The original source has extensive comments explaining each function's purpose.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some patterns are recognizable (mutex lock/unlock pairs, pthread create/join patterns, fork/exec pattern) but not explicitly named or documented. The original source clearly labels these as "producer-consumer", "TLS", "atomic operations" but decompiler doesn't recover this semantic labeling.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+Justification: No indication of any anomalies, uncertainties, or suspicious patterns. The decompiler presents all code with equal confidence, even where analysis might be uncertain (e.g., indirect function calls, potential undefined behavior).
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+Justification: No preconditions, postconditions, or invariants documented. The original source has implicit contracts (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated") but these are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 1/10**
+Justification: No cross-reference information. There's no documentation of which functions call which, global variable usage, or callback relationships. The code is completely isolated with no relationship information.
+
+### 17. Module Organization
+**Score: 5/10**
+Justification: Functions are in a single file but grouped somewhat logically: external declarations first, then test functions, then main. However, this organization is basic and doesn't reflect the original's clear sectioning (standard library, system calls, threads).
+
+### 18. Build System Compatibility
+**Score: 5/10**
+Justification: Has `<EXTERNAL>` markers for library functions which helps identify dependencies. However, some function signatures are incorrect (e.g., `signal` handler type), and `__stack_chk_fail` is called with wrong arguments in several places. Would require patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 4 + 3) / 4 = 4.25
+L2_avg = (6 + 8 + 7 + 6) / 4 = 6.75
+L3_avg = (4 + 2 + 5) / 3 = 3.67
+L4_avg = (1 + 5 + 1 + 1) / 4 = 2.00
+L5_avg = (1 + 5 + 5) / 3 = 3.67
+
+Overall = (4.25 × 0.30) + (6.75 × 0.25) + (3.67 × 0.20) + (2.00 × 0.15) + (3.67 × 0.10)
+        = 1.275 + 1.6875 + 0.734 + 0.30 + 0.367
+        = 4.36/10
+```
+
+**Overall Readability Score: 4.36/10**
+
+---
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use `param_1`, `param_2` etc.; all locals use `local_c`, `iVar1` etc.—completely loses semantic meaning from original `dst`, `src`, `buffer`, `len`
+- **No comments**: Zero explanatory text for any function, making algorithmic intent opaque
+- **Type precision loss**: All types are generic (`undefined4`, `int`, `void*`) instead of precise types (`size_t`, `pthread_t`, `FILE*`)
+- **No struct recovery**: `ThreadData` struct completely lost; reconstructed as raw pointer arithmetic
+- **No contract recovery**: Preconditions, postconditions, and invariants completely undocumented
+
+---
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+Function names largely match the original source exactly (`param_strcpy`, `thread_compute`, `signal_handler`), preserving the semantic intent of the API.
+
+---
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+The decompiled code has zero comments, making it impossible to understand algorithmic intent, parameter purposes, or return value meanings without referring back to the original source.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Use data flow analysis to rename `param_1` to `dst` when used as destination in `strcpy`, `param_2` to `src` when used as source, `local_c` to `len` when holding return value of `strlen`.
+
+2. **Recover struct types from allocation patterns**: Detect `malloc(size * sizeof(struct_type))` patterns and reconstruct the struct with field names based on access patterns (e.g., `param_1[2]` accessing what was `result` field).
+
+3. **Add semantic comments**: Include basic documentation explaining what each function does, parameter purposes, and return value meanings. Even minimal comments like `// param_1: destination buffer` would significantly improve readability.

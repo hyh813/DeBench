@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Parameters use generic register names (`a0`, `a1`) while locals use `v0`, `v1`, `v2` etc. Some functions like `param_strcpy` have decent names (`dst`, `len`), but most variables are generic like `v4`, `v5`, `v6` making tracking purpose difficult.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names perfectly match the original source: `param_strcpy`, `call_strcmp`, `param_memcpy`, `param_pthread_create`, `param_mutex_lock`, etc. The decompiler recovered the exact naming scheme used in the source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like "HelloLib" and format strings are clear, but magic numbers abound without explanation: `4294967295` (should be -1 or EOF), `42` (success code), signal numbers `10`/`14` (should be SIGUSR1/SIGALRM), socket constants `2`/`1` (should be AF_INET/SOCK_STREAM).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise includes redundant assignments (`v0 = v1; v1 = v3;`), confusing type conversions (`Not Conv(32I->1I, armg_calculate_condition(...))`), spurious casts (`*((int *)&v0)`), and the pervasive `armg_calculate_condition` function cluttering logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural sequential flow, but `param_fopen_fclose` uses goto statements, and `armg_calculate_condition` obscures simple conditionals. At -O0, goto usage is unnecessary decompilation artifact.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions match source granularity exactly - each test function (`param_strcpy`, `call_strcpy`) is separate with appropriate parameter lists. No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Minor forward jumps exist in error handling paths, but overall flow is mostly linear without excessive nesting.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Major redundancy in `param_strcpy`: `strlen(dst)` called twice. Similarly `call_strcpy` calls `strlen(&v0)` twice. The decompiler failed to eliminate these common subexpressions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Parameters generally correct (`char *a0`, `void*`). However, `size_t` often becomes `unsigned int`, and `param_strlen` is missing its `const char*` parameter entirely. Some functions like `param_scanf` have incorrect signatures.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `FILE` struct is empty `typedef struct FILE { } FILE;`. The `sockaddr` struct is partially recovered but fields are generic (`sa_data[14]`). Thread data structures like `ThreadData` not recovered - accessed via raw pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations: signed/unsigned confusion (`4294967295` for -1), pointer type confusion in `param_fopen_fclose`, and unsafe casts like `*((int *)&v2)` in various functions. No `restrict` or `_Atomic` annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. Zero explanation of algorithm intent, parameter purposes, or return value semantics.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard library functions correctly identified (`strcpy`, `strlen`, `pthread_create`). However, threading patterns (producer-consumer, TLS) not explicitly named or documented as idioms.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flagging of suspicious code. The broken `param_fopen_fclose` with its confusing conditionals, or the missing parameter in `param_strlen`, are not indicated as problematic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions (returns -1, -2, etc.) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships not documented. No indication which functions call `param_strcpy` or what globals `signal_received`/`signal_number` are used by.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions dumped in single file with no logical grouping. Related functions (standard library wrappers) not clustered together.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has `extern` declarations and some type definitions. However, incomplete structs and missing headers would require patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`v0`, `v1`, `a0`, `a1`) making code tracking difficult
+- Redundant `strlen(dst)` call in `param_strcpy` - decompiler failed to optimize common subexpression
+- No comments explaining any functionality - zero documentation
+- Type precision issues: `param_strlen` missing parameter, `size_t` becoming `unsigned int`
+- `armg_calculate_condition` and `Not Conv()` noise obscuring simple logic
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+- Every function name exactly matches the original source - `param_strcpy`, `param_pthread_create`, etc.
+
+**Most Needs Improvement:** Semantic Transparency (2.5/10)  
+- Zero comments, no idiom recognition, no anomaly indication, no contract recovery - the code is a "black box" with no explanatory context
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v0` used as string destination should be named `dst`
+2. Eliminate obvious common subexpressions - `strlen(dst)` called twice in `param_strcpy`
+3. Add basic comments explaining function purpose, parameters, and return values - at minimum document what each test function validates

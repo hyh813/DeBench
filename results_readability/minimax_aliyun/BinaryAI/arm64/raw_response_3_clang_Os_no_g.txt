@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use cryptic names like `param_1`, `local_28`, `iVar1`, `auVar1`, `lVar6`. The original source had meaningful names like `x`, `arr`, `n`, `p1`, `p2` - all completely lost. Stack variables are named by address offset only, making semantic purpose impossible to infer.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names are correctly preserved: `local_vars`, `local_array`, `heap_basic`, `memop_memset`, `double_value`. However, some internal functions got mechanical names like `FUN_001008e0`. Overall, the primary API functions are well-named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear throughout without explanation: `0x2a` (42), `0x14` (20), `0xf` (15), `0x3c` (60), `0xffffffff` (-1). The original source had clear constants like `42`, `10`, `n/2`. No attempt to name these values or explain their purpose.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe NEON vector operation artifacts: `NEON_cmhi`, `NEON_cmhs`, `auVar1`, `CONCAT17`, `CONCAT16` obscure all loop logic. Complex stack frame manipulations with `&stack0xfffffffffffffff4` add noise. At -O0, this level of obfuscation is unacceptable.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Loop structures exist but are buried under NEON comparisons. The `local_array` function uses do-while with vector comparisons instead of clear for-loops. At -O0, the original `for (int i = 0; i < 10; i++)` should be directly recoverable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are kept separate which is good. However, `test_stack_memory` is 200+ lines of inline code with no decomposition into helper functions. The original source had clean separation between test orchestration and implementation.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: The `test_stack_memory` function has extremely poor linearization with deeply nested do-while loops and complex pointer arithmetic. Forward jumps and computed addresses make top-to-bottom reading difficult.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in test functions - the same loop patterns repeat multiple times without abstraction. No dead code elimination visible. Loop unrolling in `local_array` and `heap_basic` is not commented or abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - uses `int`, `uint`, `ulong`, `byte`, `undefined4`, `undefined8`. The original had specific types like `int`, `size_t`, `char*`. Some type erosion but pointers and integers are generally distinguishable.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The `Point` struct is completely lost - `local_struct` returns `param_1 * 3` instead of `p.x + p.y`. The `Node` struct for linked lists is not recovered - uses raw `int*` with manual offset arithmetic. The `TreeNode` struct is also lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: pointer arithmetic like `piVar5 + 2`, `*(undefined4 *)(param_1 + 1)`. However, no severe violations like mixing function pointers with data pointers. Minor issues that don't cause immediate danger.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The original source had extensive comments explaining each test case (e.g., "MEM-L1-01: 局部变量（基础类型）"). Zero effort to document logic or explain non-obvious code.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms are recognized or named. The original has clear patterns: linked list traversal, binary tree operations, memory pool patterns - all completely invisible in decompiled code.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `dangling_pointer` function has clear undefined behavior (use-after-free) but no warning. The `double_free` and `heap_overflow` dangerous patterns are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original had explicit checks like `if (n <= 0 || n > 1000) return -1` but no contract information recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible (`malloc`, `free`, `printf`) but relationships between functions are not documented. No indication that `double_value` is used as a callback in `set_global_callback`.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in address order rather than logical grouping. The original organized by category (stack, heap, static, memory ops) but decompiled output mixes them arbitrarily.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile - uses undefined types like `undefined4`, `undefined8`, `EVP_PKEY_CTX`. Missing struct definitions (`Point`, `Node`, `TreeNode`). External declarations for standard functions are incomplete.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects:
+- **Variable names are completely cryptic**: `param_1`, `local_28`, `iVar1`, `auVar1` - all semantic meaning lost
+- **Composite types not recovered**: `Point` struct completely missing, `Node` and `TreeNode` reduced to raw pointer arithmetic
+- **NEON vector operations obscure all loop logic**: At -O0, simple `for` loops should be directly recoverable
+- **No comments or documentation**: Zero effort to explain logic, contracts, or anomalies
+- **Struct `Point` lost**: `local_struct` returns `param_1 * 3` instead of meaningful struct field access
+
+### Best Quality Aspect: Function Naming (7/10)
+- Primary function names like `local_vars`, `heap_basic`, `memop_memset` are correctly preserved and match source
+
+### Most Needs Improvement: Comment Quality (1/10)
+- Zero comments in entire decompiled output; original had extensive documentation explaining each test case and its purpose
+
+### Top 3 Recommendations:
+1. **Recover struct types from allocation sizes**: `malloc(sizeof(Point))` should reconstruct `Point` struct with fields `x`, `y`
+2. **Replace NEON vector operations with clean loops**: The vector comparisons `NEON_cmhi` should decompile to simple `i < 10` conditions
+3. **Add semantic variable naming**: Infer names from usage - `param_1` used as array index should be `n` or `index`

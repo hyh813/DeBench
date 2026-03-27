@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic: `v0`, `v1`, `v2`, `ptr`, `i`, `a0`, `a1`. Struct fields are `field_0`, `field_1`, `field_2`, etc. The decompiler uses register annotations like `// r0`, `// r3`, `// [bp-0x4]` instead of meaningful names. Compare source's `sum`, `i`, `arr[i]` to decompiled's `v0`, `v1`, `i[1]`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions correctly named (`test_data_types_l1`, `test_array_types`, `test_pointer_types`, `test_composite_types`) and many processing functions recovered (`process_char`, `process_int`, `array_1d_stack`). However, some functions remain as `sub_103a0`, `sub_10450`, and library functions like `__muldf3` are not human-readable.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Magic numbers everywhere without explanation. `65`, `32`, `25` in `process_char` should be `'A'`, `'a' - 'A'`, `26`. `65535` mask for short, `4294967295` for -1. String literals are just addresses like `0x12344`. No enum values recovered (STATE_IDLE, STATE_RUNNING, etc.).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy register annotation noise: `// r0`, `// r3`, `// [bp-0x4]`, `// [bp-0x8]`, `// lr`. Many unused variable declarations. Some spurious goto statements. The `armg_calculate_condition` calls are artifacts of ARM condition code handling.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: `array_1d_stack` uses a confusing do-while with pointer arithmetic instead of a simple for loop. `process_bool` has convoluted conditional logic with multiple goto labels. `array_complex_index` has deeply nested conditionals. At -O0, this should be much more readable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and cohesive. Test functions appropriately call sub-functions. No obvious inlining issues. The main functions like `binary_tree_sum` are complex but that's due to the algorithm, not poor decomposition.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Many forward jumps and goto statements disrupt flow. The `array_1d_stack` loop is particularly non-linear with its `do { ... } while (&v1[a1] != i)` pattern. Multiple label-based control flow makes reading top-to-bottom difficult.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some dead code present. The `ptr` variable in `array_1d_stack` is used incorrectly in the return statement. Loop unrolling is minimal. Overall moderate noise level.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Almost all types are `unsigned int` or `unsigned int*`. No distinction between `char`, `short`, `int`, `long`, `long long`. No `float`/`double` recovery - functions return `void`. Function pointers are `unsigned int`. No `const`, `volatile`, or `restrict` qualifiers.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered but with generic names: `struct_0`, `struct_1`, `field_0`, `field_1`. The `pointer_array` function has an absurd 10-level nested struct definition that should be `int* arr[10]`. Unions not properly distinguished from structs. Nested structures flattened to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Extensive unsafe casts throughout. Pointer arithmetic without bounds checking. The `array_oob` function has obvious buffer overflow but no warning. Type-confused operations everywhere: mixing `int*` and `char*` without casts. No safety annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No meaningful comments. Only register location annotations like `// r0`, `// [bp-0x4]`. No explanation of algorithm, purpose, or preconditions. The comment `// ANGR: ...` at the top is the only metadata.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Data structures like linked lists, binary trees, graphs are not named. The `enum_switch` uses a jump table but it's not labeled as such. No algorithm names (Dijkstra, KMP, etc.).
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warnings about suspicious code. The `array_oob` function has undefined behavior (out-of-bounds access) but is presented as normal code. No indication of indirect calls that couldn't be resolved. No confidence indicators.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition explanations. The `const_param` function doesn't indicate that the pointer must be valid. No contract information whatsoever.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are present but relationships unclear. No documentation of who calls what. The `complex_callback` function is used but not shown. Global variable usage not transparent.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by type (data types, arrays, pointers, composite). Static functions properly scoped. Single file output is expected from decompilers. Some logical grouping present.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Many `extern` declarations for library functions. Would require linking against libc. Some stub functions needed. The code structure is compilable with moderate patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.9/10
+
+### Critical Defects:
+- **Variable naming**: All variables are generic (`v0`, `v1`, `a0`, `field_0`) - completely loses semantic meaning
+- **Type precision**: Everything is `unsigned int` - no distinction between char, short, int, long, pointer types
+- **No comments**: Zero meaningful comments explaining logic, algorithms, or contracts
+- **Struct/union recovery**: Generic struct names (`struct_0`) and flattened pointer arithmetic lose data structure semantics
+- **Control flow**: Uses goto and confusing loops instead of natural for/while constructs
+
+### Best Quality Aspect: Function Decomposition (7/10)
+Functions are reasonably sized and cohesive. Test functions properly call sub-functions. The decomposition is not the problem - it's the naming and types within functions.
+
+### Most Needs Improvement: Semantic Transparency (1.25/10 average)
+Zero comments, no pattern recognition, no anomaly warnings, no contract recovery. The decompiled code provides no guidance to the analyst about what's uncertain, what's been optimized, or what the original intent was.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: If a variable is used as `arr[i]` in a loop, name it `array` or `index`, not `v1` or `ptr`
+2. **Recover type information**: Distinguish char/short/int/long, add const/volatile, recover struct field names from offsets
+3. **Add semantic annotations**: Comments explaining algorithms, flags for uncertain decompilations, preconditions/postconditions where inferable

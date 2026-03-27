@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic auto-generated names like `pvVar1`, `iVar2`, `local_c`, `param_1`, `acStack_2c`. The original source had meaningful names like `value`, `name`, `data`, `size` which are completely lost. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions like `test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func` are correctly named. Template instantiations like `template_max_int_` and `Container_double_` are reasonably named. However, some internal functions like `FUN_000109bc` remain generic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers appear throughout: `0x125c` (should be 4704), `0x14`, `0xc`, `0x10` (struct offsets), `0x2a` (42), `0x2bf` (703). The decompiler does not explain these constants or provide named equivalents.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise from 30+ `<EXTERNAL>` function declarations that clutter the output. Duplicate function definitions exist (e.g., `MultiDerived::funcB` appears twice, `MiddleA::func` appears twice). However, no debug instrumentation or register spilling artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural control flow, but several test functions like `test_cpp_multiple_inheritance` and `test_cpp_operator_overload` are reduced to single return statements with constant values, losing all original logic. This appears to be decompiler limitation rather than optimization artifact.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Test functions remain properly separated as in source. Member functions are correctly extracted. Template instantiations are appropriately separate functions. Some minor granularity issues but overall decomposition is acceptable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in functions like `Container<int>::get`. No severe non-linearity issues observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Loop unrolling is not excessive. The code is relatively clean with no duplicate expression evaluation artifacts.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses imprecise types like `undefined4`, `undefined8`, `undefined1` instead of proper types. Does use `int` for integers and `char*` for strings. Lacks `size_t`, `uint32_t` precision. Const correctness is not preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct definitions are recovered. The decompiler uses raw pointer arithmetic throughout: `*(undefined4 *)((int)pvVar1 + 4) = 10;` instead of `obj->value = 10;`. Class member access is completely lost, replaced with offset calculations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Significant unsafe operations: numerous `(int)` casts on pointers, raw pointer arithmetic like `this + 4`, `this + 0x28`. No bounds checking visible. Function pointer types are generic `code *` instead of proper signatures.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. Original source had extensive comments explaining each test case and C++ feature being demonstrated. Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are implicitly present (vtable indirect calls like `***(code ***)param_1`, virtual function dispatch) but not explicitly named or documented as patterns. Template instantiation pattern is somewhat recognizable.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indicators. Functions returning constant values (e.g., `test_cpp_multiple_inheritance` returning `0x47`) are presented without any indication that the decompilation may be incomplete or that original logic was lost.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of expected input constraints or return value guarantees. Original assertions and contracts completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible in the code (e.g., `call_virtual_func`, `template_max_int_`). However, relationships to external code, caller/callee graphs, and virtual dispatch targets are not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are loosely grouped by class (Base, Derived, Container, etc.) but the massive list of external functions at the beginning creates confusion. Some duplicate function definitions suggest organization issues.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has `<EXTERNAL>` markers for unresolved functions. Main test functions should compile with appropriate C++ standard library headers. However, the use of `undefined` types and raw pointer arithmetic would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable naming**: All semantic variable names lost (`value`, `name`, `data` → `pvVar1`, `local_c`, `acStack_2c`)
+- **Struct recovery**: Zero struct/class recovery; all member access replaced with raw pointer arithmetic
+- **No comments**: Complete absence of documentation that was extensive in original source
+- **Magic numbers**: Multiple unexplained constants (`0x125c`, `0x14`, `0x2bf`) without named equivalents
+- **Anomaly silence**: Functions returning constant values presented without indicating decompilation issues
+
+### Best Quality Aspect: Function Decomposition (7/10)
+- Test functions properly separated
+- Member functions correctly extracted as separate functions
+- Template instantiations appropriately distinguished
+
+### Most Needs Improvement: Semantic Transparency (2/10)
+- Zero comments recovered from original source
+- No pattern recognition or idiom identification
+- No anomaly indication for incomplete decompilation
+- No contract or assertion recovery
+
+### Top 3 Recommendations:
+1. **Recover struct/class definitions**: Instead of raw pointer arithmetic like `*(undefined4 *)((int)pvVar1 + 4)`, infer struct layouts from field usage patterns and generate `obj->value = 10;`
+2. **Add semantic variable naming**: Use usage pattern analysis to rename `pvVar1` to `obj` when it's used as `obj->setValue()`, rename `local_c` to `result` when it's accumulated and returned
+3. **Flag anomalies**: When a function body is just `return 0x47;`, add a comment like `// WARNING: Possible incomplete decompilation - function body appears to return constant`

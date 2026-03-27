@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic numbered names (v1, v2, v3, v4, v5, v6, v7, v8, v9, v0, exception). No semantic names like `obj`, `result`, or `name` are recovered despite being clearly present in source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions are correctly named matching source (test_cpp_member_func, test_cpp_constructor, etc.). However, internal functions like `sub_854`, `sub_BF0` remain unnamed, and template functions show mangled names without demangling.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like 4700, 1001, 42, 71 appear without explanation. The formula `1001 * LifecycleClass::instance_count + 21` suggests some constant recovery but most values remain unexplained (e.g., 17830 in _start).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifacts present: JUMPOUT, LODWORD, HIDWORD, HIBYTE, __noreturn, __fastcall, BYREF. 22 functions failed to decompile (shown at end). Significant noise obscures actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most test functions reduced to simple return statements (e.g., `return 42;`), losing original logic. Control flow in template functions like `template_max<int>` is natural (if/return). Some goto patterns present.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Excellent decomposition - each test function is separate, template instantiations are properly separated (template_max<int>, template_max<double>), and Container class methods are individual functions. Matches source structure well.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive forward jumps disrupting flow. Template functions are linear.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or redundant expressions. Computations like `strlen((const char *)v1) + 4700` are inlined directly. Loop unrolling in Container<int>::push is handled naturally.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - uses generic types (_DWORD, int, char*, void*) but also some specific types (size_t, __int16, __int64). Function pointer types like `int (__fastcall ***a1)(_DWORD)` are imprecise. Const correctness largely lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. Uses raw arrays like `_WORD v1[4]` and pointer arithmetic like `*(_DWORD *)(result + 40)` for what should be Container<T>::size field. Class member access is completely de-structured.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe casts present: `(void (*)(void *))&std::ios_base::Init::~Init`, `*(_DWORD *)v1`, `(int (*)(int, char **, char **))*(&off_9D0 + 17830)`. Some type-confused function pointers but not severe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments - only the decompiler header with binary path and processor. No explanation of algorithms, vtable mechanisms, or template instantiation. No "UNCERTAIN" indicators for indirect calls.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns could be inferred (virtual function call via vtable in call_virtual_func, RAII in smart_ptr test) but not explicitly named or documented. Template instantiation recognized but not explained.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good - shows "FAILED to decompile" for 22 functions with specific import names. However, doesn't flag suspicious patterns in successfully decompiled code (e.g., the unusual formula in test_cpp_constructor).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of what functions require or guarantee. Exception handling semantics not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No function call relationships documented. No indication of who calls whom. Virtual dispatch relationships not explained. Global variable usage unclear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Reasonable grouping - test functions together, template functions together, Container methods grouped. However, arbitrary ordering and no namespace recovery (all global).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile - many unresolved externals (__imp_*), failed decompilations, missing includes. No dependency documentation. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming is uniformly generic (v1-v9, v0) losing all semantic meaning from source
+- No struct/class recovery - all composite types replaced with raw pointer arithmetic
+- 22 functions failed to decompile, showing significant decompilation gaps
+- No comments explaining C++ idioms (vtable, RAII, templates, exceptions)
+- Type precision severely degraded (_DWORD, void* instead of proper types)
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+Functions are well-separated matching source organization - each test function is distinct, template instantiations properly isolated, and class methods in separate functions.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+All meaningful variable names lost - original names like `obj`, `data`, `size`, `name` replaced with generic v1-v9. This is the most impactful degradation for readability.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `v1` used with strcpy("Test") should be named `name` or `obj`
+2. Recover struct types from allocation patterns - `operator new(4u)` followed by field writes indicates struct allocation
+3. Add comments explaining C++ mechanisms - document vtable calls, RAII patterns, template instantiation in the decompiled output

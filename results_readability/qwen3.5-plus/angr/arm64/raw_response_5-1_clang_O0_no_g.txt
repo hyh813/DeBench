@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `ptr`, `idx`) with no semantic meaning. For example, in `test_cpp_member_func()`, variables `v0-v5` should be named `obj`, `r1`, `r2`, `r3` based on source usage patterns.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Test functions retain mangled names (`_Z20test_cpp_member_funcv`) which are recoverable, but helper functions use cryptic names (`sub_4019b4`, `$x`, `$x.0`). C++ methods partially recovered (`SimpleClass::getValue`) but many are generic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX/-1), `0x4004000000000000` (double 2.5), and `18446744073709551615` appear without explanation. String literals recovered but numeric constants lack semantic names.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler runtime pollution including `_init`, `_start`, `__do_global_dtors_aux`, `register_tm_clones`, and 20+ `sub_XXXX` helper functions that aren't part of original source logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions use `goto` instead of structured loops (e.g., `register_tm_clones` has complex goto chains). At `-O0`, natural control flow should be fully recoverable but decompiler introduces unnecessary jumps.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Severe over-fragmentation from C++ templates and stdlib - `unique_ptr` operations split into 30+ tiny functions (`_ZNSt10unique_ptr...`, `__get_helper`, `_Tuple_impl`). Original 540 LOC becomes 3387 LOC.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well, but forward jumps into loop bodies and exception handling paths disrupt flow. Lambda closures create non-linear call patterns.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Template instantiations create massive redundancy - `template_max<int>` and `template_max<double>` duplicated, `unique_ptr` destructor patterns repeated 10+ times with nearly identical code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion - most pointers become `void*` or `char*`, integers become `unsigned long long`. Original `int`, `size_t`, `double` distinctions lost. Function signatures show `void* this` instead of proper class types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: C++ classes partially recovered as generic structs (`struct_0`, `struct_1`) with field names like `field_0`, `field_8`, `padding_4`. `SimpleClass` struct shows `field_0`, `padding_4[31]`, `field_23` instead of `value`, `name[32]`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout - `(unsigned long long)(v4 & 1)`, `(char)arm64g_calculate_condition(...)`, pointer arithmetic on `void*`. Virtual calls become `(*((long long *)*((long long *)*((long long *)&v0))))` - completely opaque.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contracts. Only auto-generated variable type annotations present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justuration: C++ idioms completely obscured - virtual dispatch becomes raw vtable pointer dereference, smart pointers expand to tuple operations, lambdas become anonymous struct operators (`$_1::operator()`). No pattern recognition evident.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one explicit failure noted ("Failed to decompile function _ZNKSt14default_deleteIA_iEclIiE..."). No warnings about suspicious casts, unresolved indirect calls, or potential undefined behavior elsewhere.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks exist in code but aren't annotated as contracts. Exception handling contracts completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear without source. Virtual dispatch chains not documented. Global variables referenced as `g_417ff8` without semantic meaning. No call graph documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All 150+ functions dumped in single output file with no logical grouping. Runtime functions mixed with application logic. No namespace or class-based organization preserved.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Will not compile standalone - missing external declarations (`operatornew`, `__cxa_throw`), undefined globals (`g_417ff8`), architecture-specific intrinsics (`arm64g_calculate_condition`, `__ROL__`). Requires extensive stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+4+3)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (5+4+6+4)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (3+3+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+3+1)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (4+3+2)/3   = 3.00 × 0.10 = 0.300
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.33/10
+```
+
+### Overall Readability Score: **3.3/10**
+
+### Critical Defects:
+- **Variable names completely generic** - `v0`, `v1`, `ptr` instead of `obj`, `result`, `capture_by_value`
+- **Virtual function calls opaque** - `(*((long long *)*((long long *)*((long long *)&v0))))` instead of `obj->virtual_func(x)`
+- **Class fields unnamed** - `field_0`, `padding_4[31]` instead of `value`, `name[32]`
+- **Zero semantic comments** - No explanation of C++ mechanisms (vtable, RAII, lambda captures)
+- **Template bloat** - 30+ functions for `unique_ptr` operations that should be 3-4 readable functions
+
+### Best Quality Aspect: **Code Linearization (6/10)**
+- Most functions maintain reasonable top-to-bottom flow despite C++ complexity
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of explanatory comments makes C++ semantics impossible to understand without source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class semantics** - Map vtable calls to `obj->method()` syntax, restore member variable names from debug info
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions (indirect calls, type erasure) with comments
+3. **Consolidate template instantiations** - Group related template functions and add comments explaining the generic pattern being instantiated

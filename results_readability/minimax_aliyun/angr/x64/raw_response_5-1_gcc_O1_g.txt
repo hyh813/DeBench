@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named `v0`, `v1`, `v2`, `ptr`, `arg_0`, `arg_1` - completely generic numbered variables. The original source used meaningful names like `value`, `name`, `size`, `data`, `multiplier`. The decompiler made no effort to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some mangled C++ names correctly demangled (`_Z20test_cpp_member_funcv` → `test_cpp_member_func`, `template_max<int>`), but most functions use address-based generic names like `sub_402020`, `sub_40202d`. The original had descriptive names like `getValue`, `compute`, `call_virtual_func`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers throughout: `50`, `100`, `150`, `200`, `250` in diamond inheritance functions, `4` for exception size, `8`, `16`, `20`, `32`, `48` for object sizes. The original source had meaningful constants like `0x1234` for class ID but these are not explained in decompiled output.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution - dozens of empty stub functions (`sub_40202d`, `sub_40203f`, etc.) that do nothing but call other functions. Many functions contain only `return;` statements. The 1244 LOC output vs 540 LOC source indicates massive artifact inflation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control structures (if/else) are somewhat recognizable. However, some patterns are awkward - exception handling uses raw `__cxa_throw`, `__cxa_begin_catch` calls with goto-like control flow. Virtual function calls are indirect through vtable pointers. At -O0, more natural C++ constructs should be recoverable.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Many functions are either empty stubs or overly fragmented. The original `test_cpp_member_func` is decompiled to just string operations without recovering the actual computation logic. Template functions are partially recovered but lack proper implementation details. Some functions like `template_swap<int>` have incorrect logic (reads from uninitialized `p`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with reasonable flow. Some forward jumps exist in exception handling code. Not terrible but not optimal either.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns present (repeated `__cxa_end_catch` calls with same parameters). Loop unrolling is minimal since -O0. Overall manageable but not clean.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - uses `unsigned long`, `unsigned int`, `void*` generically. The original had specific types like `int`, `size_t`, `char*`, `bool`. Some type information preserved (e.g., `int` for template functions) but much is erased. Const correctness is mostly lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Partial struct recovery - `struct struct_0`, `struct_2`, `struct_3` with generic names and unclear field purposes. Class structures partially recovered but field names lost (`field_0`, `field_8`). Original had `value`, `name[32]`, `data`, `size` - all meaningful.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations - raw pointer arithmetic in template functions (`(char *)ptr + 4 * v1`), indirect vtable calls without type safety (`*((long long *)*((long long *)&arg_0)))()`), uninitialized variable usage in `template_swap<int>` where `p` is used uninitialized. Some casts are unchecked.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only minimal function headers like `// Function: sub_402020 at 0x402020`. No explanation of algorithm logic, no recovery confidence indicators, no @param/@return documentation. Original had extensive Chinese comments explaining each feature.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ patterns partially recognized - virtual function calls show vtable indirection, template instantiation shows type parameters, exception handling shows try/catch runtime functions. However, no explicit naming or documentation of these patterns (e.g., "vtable dispatch", "RAII", "template instantiation").
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No clear flags for uncertain or anomalous code. The indirect virtual function call in `call_virtual_func` is presented as confident code when it should be flagged. The `template_swap<int>` has obvious bugs (uninitialized `p`) but no warnings. Many empty functions presented without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. No documentation of expected states. The original had clear semantics (e.g., "requires: ptr != NULL", "ensures: return value in range") but none recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Some relationships visible through `extern` declarations and function calls. `test_cpp_oo_features` calls all test functions. Virtual function relationships partially visible through vtable usage. But no clear documentation of call graph or caller/callee relationships.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are somewhat grouped by address but not logically organized. Test functions, class methods, runtime support functions all mixed together. No clear separation matching original source organization (test functions, class definitions, template instantiations).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has many `extern` declarations for undefined symbols (`g_405fe8`, `g_405f30`, etc.). Template functions have incorrect implementations. Would require significant patching to compile. The decompiler output explicitly states "Compilation Result: Yes" but inspection shows it would fail.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `ptr`, `arg_0`) losing all semantic meaning from original (`value`, `name`, `size`, `multiplier`)
+- **Function naming**: Most functions use address-based names (`sub_402020`) instead of recovering original names (`getValue`, `compute`, `call_virtual_func`)
+- **Template implementation bug**: `template_swap<int>` has uninitialized variable `p` being dereferenced - the swap logic is completely broken
+- **Missing computation recovery**: `test_cpp_member_func` only shows string operations, missing the actual computation of `r1 + r2 + r3`
+- **Noise pollution**: 40+ empty stub functions (`sub_40202d` through `sub_40214f`) that serve no purpose
+
+### Best Quality Aspect: Function Naming Quality (4/10)
+- The decompiler correctly demangled some C++ mangled names (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func`, `template_max<int>`) showing it can handle name mangling when symbols are preserved.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Variable names are completely generic and uninformative. At -O0 debug level, the decompiler should be able to track variable lifetimes and usage patterns to infer semantic meaning (e.g., a variable used as array index should be named `index` or `idx`, not `v0`).
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage**: Track how variables are used (array indexing → `index`, string operations → `length`, comparison → `result`, etc.) to generate semantically meaningful names instead of generic `v0`, `v1`
+2. **Recover function implementations**: The `test_cpp_member_func` is missing the core computation logic. Ensure all statements in the original function are recovered, not just memory operations
+3. **Eliminate noise artifacts**: Filter out empty stub functions that just call other functions with no real logic. The 40+ `sub_4020XX` functions with only `return;` statements add no value and obscure real code

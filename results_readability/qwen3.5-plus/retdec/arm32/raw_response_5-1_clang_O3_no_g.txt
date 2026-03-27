@@ -1,0 +1,101 @@
+## EVALUATION: C++ Object-Oriented Features Decompiled Code
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `result`, `a1`, `a2`) with no semantic meaning. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Functions use C++ mangled names (`_Z20test_cpp_member_funcv`) requiring demangling to understand. Some have demangled comments but the actual identifiers remain opaque.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Magic numbers everywhere (`0x74736554`, `0x1000`, `3472`) with no explanation. String literals are obfuscated via pointer arithmetic: `(char *)((int32_t)"X_3.4" + 3472)`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant runtime artifacts present (`__do_global_dtors_aux`, `register_tm_clones`, `g1` through `g22` globals). At `-O0` this level of noise is excessive and obscures application logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Many test functions reduced to constant returns (`return 42;`, `return 71;`) instead of actual computation. Exception handling uses raw `__cxa_*` calls instead of try/catch blocks.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Test functions are oversimplified (returning constants), while Container methods exist but with incorrect field offsets (40, 80). Class methods not properly grouped by class.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Functions read top-to-bottom but exception handling (`_Z18test_cpp_exceptionv`) has confusing conditional chains that don't match original try/catch structure.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Runtime initialization code repeated across functions. Some redundancy appears to be decompiler artifacts rather than optimization recovery.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Everything degraded to `int32_t`, `int32_t *`, `float64_t`. C++ class types completely lost. No const-correctness, no distinction between `size_t` and `int`.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: **Critical failure** - No class structures recovered (SimpleClass, LifecycleClass, Base, Derived all missing). Container template partially recovered but as raw pointer arithmetic with magic offsets.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Numerous unsafe casts: `(int32_t)this`, `(int32_t)result`, `(int32_t)&g17`. Pointer arithmetic on class objects without type safety. Virtual calls reduced to raw pointer dereferences.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only demangled function names in comments. No algorithm explanations, no logic documentation, no decompilation confidence indicators for uncertain recoveries.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: **Complete failure** - C++ idioms (RAII, virtual dispatch, templates, lambdas, exceptions) not recognized. Smart pointers, operator overloading, RTTI all lost as semantic patterns.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: **Critical issue** - Incorrect code presented confidently (functions returning constants instead of computing). No warnings about uncertain decompilation or lost semantics.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts completely lost. No indication of null checks or bounds validation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls visible but class relationships lost. Virtual dispatch not properly shown (e.g., `_Z17call_virtual_funcP4Basei` just returns `a1`). Inheritance hierarchy invisible.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in one file with no logical grouping by class or feature. Runtime functions mixed with application code. No namespace structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Has C includes but missing C++ runtime support. Would require extensive modification to compile (class definitions, vtables, exception handling infrastructure missing).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+3+2+4)/4 = 2.75 × 0.30 = 0.825
+Level 2 (Structural):  (3+4+5+5)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (2+1+2)/3   = 1.67 × 0.20 = 0.334
+Level 4 (Semantic):    (3+1+1+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (3+4+3)/3   = 3.33 × 0.10 = 0.333
+
+Overall Score: 2.78/10
+```
+
+**Overall Readability Score:** 2.8/10
+
+### Critical Defects:
+- **Class structures completely lost** - No SimpleClass, LifecycleClass, Base, Derived, or other C++ class definitions recovered
+- **Test functions return constants** - Functions like `test_cpp_virtual_func` return `42` directly instead of computing the value
+- **Variable names entirely generic** - `v1`, `v2`, `result` provide no semantic information about purpose
+- **C++ semantics not recognized** - Virtual dispatch, exceptions, templates, lambdas all reduced to raw C calls
+- **No anomaly warnings** - Incorrect decompilation presented confidently without uncertainty indicators
+
+### Best Quality Aspect: **Level 2: Structural Intelligibility (4.25/10)**
+- Some function boundaries preserved and Container template methods partially recovered with recognizable logic
+
+### Most Needs Improvement: **Level 4: Semantic Transparency (1.5/10)**
+- C++ idioms completely unrecognized; no pattern detection for RAII, virtual dispatch, exceptions, or templates
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures** - Analyze vtable layouts and object memory patterns to reconstruct class definitions with field names
+2. **Add uncertainty annotations** - Flag regions where decompilation confidence is low (e.g., "UNCERTAIN: virtual call target not resolved")
+3. **Recognize C++ standard library patterns** - Detect `__cxa_*` calls as exception handling and recover try/catch blocks; identify smart pointer patterns from destructor calls

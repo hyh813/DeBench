@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 8/10
+Justification: Debug symbols (`-g`) allowed excellent recovery of names like `result`, `str`, `a`, `b`, `div2`, and `mul15`. However, generic names like `iVar1`, `local_8`, and `lVar2` appear for return values and stack guard variables, slightly reducing clarity.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names, including `param_fake_branch`, `param_opaque_predicate`, and `call_vectorized_loop`, match the original source exactly due to preserved symbol table information.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: Magic numbers like `0x15` (21) and `0x20` (32) are used instead of the original expressions or `sizeof` operator, though `'Z'` is correctly used instead of `0x5A`. The constant folding in `param_instruction_substitution` obscures the original bit-shift logic.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Stack canary checks (`___stack_chk_guard`) are inserted into functions like `param_string_encryption`, and array initializers in `call_vectorized_loop` are expanded into verbose individual assignment statements (e.g., `a[2] = 3;`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While most loops and conditionals are natural, `param_buffer_overflow_stack` incorrectly returns `x` directly, missing the ternary operator check `(canary == 0x12345678) ? x : -1`. Additionally, `param_division_by_zero` shows an added `if (x != 0)` guard not present in the source.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source code. No inlining or outlining occurred, maintaining the original granularity perfectly (e.g., `decrypt_string` remains a separate function).
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal jumps. The GCD calculation in `param_opaque_predicate` is linearized cleanly into a `while` loop, and recursive calls in `param_tail_call_optimized` are clear.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: Dead code like the fake branch in `param_fake_branch` (`x*x < 0`) was correctly eliminated, improving readability. However, `param_implementation_defined` was reduced to a single `return 0x30;`, which, while concise, hides the source logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are highly accurate; `uint` is used for `unsigned int`, and `undefined1` correctly represents `char` in buffer operations. The bit-field structure in `param_implementation_defined` is recovered with correct bit-widths (`:3`, `:5`, `:24`).
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: The anonymous bit-field struct inside `param_implementation_defined` is reconstructed as `anon_struct_4_3_4e909822` with fields `a`, `b`, and `c`, matching the source layout perfectly.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic in `param_buffer_overflow_heap` uses explicit casts to `undefined1`, which is safe but verbose. The use of `__sighandler_t` in `call_division_by_zero` is accurate, though raw signal numbers like `0xb` (SIGSEGV) are used instead of enums.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10
+Justification: Comments are limited to decompiler warnings (e.g., "Removing unreachable block", "Unknown calling convention"). There are no comments explaining the *purpose* of the code (e.g., "Calculates GCD" or "Simulates stack overflow").
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The GCD algorithm in `param_opaque_predicate` is present but not explicitly identified as such. The tail recursion in `param_tail_call_optimized` is not flagged as a specific idiom.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The "Unknown calling convention" warning appears on almost every function, which is repetitive and noisy. However, the warning about overlapping globals is useful.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: No preconditions or postconditions are documented. For example, the requirement that `x` be non-zero in `param_division_by_zero` (to avoid the signal handler) is not stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are direct and clear. The global variable `param_string_encryption::encrypted` is correctly scoped and referenced, showing clear data flow.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are listed in memory address order rather than logical source order (e.g., `test_obf_opt_edge` is at the end). While standard for decompilers, it differs from the source's section-based organization.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on Ghidra-specific types like `undefined8`, `code`, and `uint` without standard includes. It would require significant patching (typedefs) to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.5/10
+
+**Critical Defects:**
+- **Logic Error in `param_buffer_overflow_stack`**: The decompiler returns `x` directly, completely missing the canary check `(canary == 0x12345678) ? x : -1` present in the source.
+- **Over-optimization in `param_implementation_defined`**: The function is reduced to `return 0x30;`, hiding the implementation details of char sign, bit-shifting, and bit-fields.
+- **Missing Logic in `param_opaque_predicate`**: The tautology check `p3` (XOR identity) is eliminated from the `if` condition, altering the structural representation of the source.
+- **Verbose Array Initialization**: `call_vectorized_loop` expands `int a[] = {1, 2...}` into 8 separate assignment lines, cluttering the code.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** The debug symbols allowed the decompiler to recover the exact function names from the source, making the high-level structure immediately recognizable.
+
+**Most Needs Improvement:** Semantic Transparency (scored 4.5/10)
+- **Why?** The decompiler fails to explain *what* the code does (no semantic comments) and actively hides logic (constant folding, dead code removal) that was explicitly written in the source for testing/obfuscation purposes.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Preserve "Fake" Logic**: Add an option to disable aggressive dead-code elimination for conditions that look like intentional obfuscation (e.g., `x*x < 0`) or clearly mark where code was removed.
+2. **Recover Array Initializers**: Detect sequences of assignments to consecutive array indices and collapse them back into C-style initializer lists (e.g., `int a[] = {1, 2, 3};`).
+3. **Improve Stack Analysis**: In `param_buffer_overflow_stack`, the analysis failed to link the buffer overflow to the adjacent `canary` variable, resulting in incorrect return logic. Enhanced stack variable tracking is needed.

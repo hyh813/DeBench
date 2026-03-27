@@ -1,0 +1,122 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: All variables use generic names (v1, v2, v3, v4, v5, v6, v7) throughout all 80+ functions. No semantic naming like `packet_size` or `user_count` was recovered. This makes tracking variable purpose across complex functions like `duffs_device` (with v1-v30) extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Nearly all function names match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `nested_if_deep`, `if_elseif_chain`, `switch_small`, `switch_large`, `loop_for_fixed`, `loop_while`, `goto_forward`, `goto_backward`, `recursion_factorial`, `tail_recursion`. Excellent recovery of function semantics.
+
+### 3. Literal Clarity
+**Score: 3/10**
+Justification: Code is littered with unexplained magic numbers: `0x66666667` (division constant), `0x400000000`, `0xffffffff` (32-bit mask appearing 50+ times), `0xfffffffe` (even check), `0x13fe8`, `0x13ff0` (global addresses). No named constants like MAX_BUFFER or meaningful explanations for these values.
+
+### 4. Noise Reduction
+**Score: 3/10**
+Justification: Severe noise pollution includes: 15+ unrelated helper functions (call_weak_fn, deregister_tm_clones, frame_dummy, etc.), pervasive bitwise masks (`& 0xffffffff` appears constantly), redundant casts, and address range comments that add no value. The actual logic is buried in artifacts.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+Justification: Basic control structures preserved (switch, while, for, if-else), but some are mangled: `loop_for_fixed` uses weird backward jumps instead of for-loop; `loop_while` has complex division-by-10 logic instead of clean while(x!=0); `duffs_device` uses goto labels instead of switch-do-while pattern. At -O0, this should be cleaner.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Function granularity matches original well. Each test function (test_control_flow_l1, l2, l3) is separate. No over-fragmentation or monolithic functions. Parameter counts preserved. Good decomposition overall.
+
+### 7. Code Linearization
+**Score: 5/10**
+Justification: Most functions read top-to-bottom, but `loop_multi_exit` uses goto labels (lab_0x1348), `duffs_device` has 10+ goto labels disrupting flow, and `fsm_func_table` uses inline assembly. Forward jumps interrupt linear reading in several places.
+
+### 8. Redundancy Elimination
+**Score: 4/10**
+Justification: Excessive redundant bit masking: `v2 + 1 & 0xffffffff` repeated constantly; `(int32_t)v1` cast repeated 3-4 times per variable; same expression `v1 & 0xffffffff` computed multiple times. Dead code not eliminated.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+Justification: Uses `int64_t` for everything instead of original `int`. No distinction between signed/unsigned (all are int64_t). Function pointers declared as `int64_t (*)()` instead of proper signatures. Original used `int` for most, `int*` for arrays, but decompiler lost this precision.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+Justification: No struct recovery. The original has `int arr[] = {10, 20, 30, 40, 50}` in loop_break, but decompiler uses raw pointer arithmetic with `g1` and encoded values like `0x140000000a`. Arrays like `matrix[3][4]` in loop_multi_exit are completely lost.
+
+### 11. Type Safety
+**Score: 4/10**
+Justification: Multiple unsafe patterns: `(int32_t)v1` casts everywhere creating truncation risks; pointer arithmetic like `v4 += 4` without bounds; mixing int32/int64 freely; `*(int32_t *)v3 = 1` direct memory writes. No const correctness, no restrict keywords.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: Only address range comments like "// Address range: 0xc04 - 0xc14" which are useless for understanding logic. No algorithm explanations, no parameter documentation, no decompilation confidence indicators. Zero useful comments for understanding the code.
+
+### 13. Idiom Recognition
+**Score: 2/10**
+Justification: No pattern recognition. State machines (`state_machine`, `fsm_func_table`) not labeled as such. Jump tables (`large_jump_table`, `switch_large`) not identified. Duff's device (`duffs_device`) not recognized. Original source had clear patterns that are now obfuscated.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No warnings about indirect calls that couldn't be resolved, unusual stack layouts, or potential undefined behavior. The inline assembly in `fsm_func_table` and `computed_goto` (`__asm_ld1`, `__asm_st1`) has no explanation. Code presents everything as confident when it shouldn't.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+Justification: Zero contract information. No preconditions (e.g., "requires: n > 0" for factorial), no postconditions, no invariant documentation. Error conditions from original (like "if x < 0 return -1") are not explained or documented.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+Justification: No explicit documentation of function call relationships. Global variables (g1-g12) used without explaining their purpose or which functions read/write them. Callback relationships (process_with_callback calling function pointer) not documented.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Functions grouped reasonably (test functions together, helper functions at top), but all in single file. Static functions properly marked. No header file with API declarations. Organization is functional but not optimal.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+Justification: Includes necessary headers (stdio.h, stdlib.h, stdint.h, setjmp.h). Function prototypes declared. Code appears compilable with minimal patching. External dependencies (libc functions) properly declared. Some type mismatches may cause warnings.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+9+3+3)/4 = 4.25
+L2_avg = (5+8+5+4)/4 = 5.50
+L3_avg = (4+2+4)/3 = 3.33
+L4_avg = (2+2+2+1)/4 = 1.75
+L5_avg = (3+6+7)/3 = 5.33
+
+Overall = (4.25 × 0.30) + (5.50 × 0.25) + (3.33 × 0.20) + 
+          (1.75 × 0.15) + (5.33 × 0.10)
+        = 1.275 + 1.375 + 0.666 + 0.263 + 0.533
+        = 4.11/10
+```
+
+**Overall Readability Score: 4.1/10**
+
+### Critical Defects
+- **Variable naming**: All variables are generic (v1-v30) making it impossible to track purpose in complex functions like `duffs_device` with 30+ variables
+- **Type precision**: Everything is int64_t, losing original int/unsigned distinction and function pointer signatures
+- **No struct recovery**: Arrays like `matrix[3][4]` and `arr[5]` converted to raw pointer arithmetic with encoded values
+- **Magic numbers**: 0x66666667, 0xffffffff, 0x400000000 appear everywhere without explanation
+- **No comments**: Zero useful comments explaining algorithms, contracts, or anomalies
+
+### Best Quality Aspect
+**Function Naming Quality (9/10)** - Nearly all function names match original source exactly, making it easy to locate specific functions.
+
+### Most Needs Improvement
+**Semantic Transparency (1.75/10)** - Complete failure to add comments, recognize patterns, flag anomalies, or recover contracts. The code is technically readable but provides zero guidance for understanding.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage**: When `v1` is used as loop counter from 0 to n, name it `i` or `index`. When `v2` holds array base, name it `arr` or `buffer`.
+2. **Recover composite types**: Detect array initialization patterns and reconstruct `int arr[5] = {10,20,30,40,50}` instead of `0x140000000a` encoded value.
+3. **Add semantic comments**: Explain algorithms (e.g., "Duff's device: unrolled loop with switch-case fall-through"), flag uncertain decompilations, document preconditions from return value patterns.

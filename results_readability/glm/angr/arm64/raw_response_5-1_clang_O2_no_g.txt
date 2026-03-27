@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `arg_0`. For example, in `test_cpp_member_func`, `v0` holds the integer value and `v1` holds the name buffer, providing no semantic context.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: Ghidra successfully demangled C++ symbols (e.g., `_Z20test_cpp_member_funcv` to `test_cpp_member_func`), which is helpful. However, library wrappers and internal helpers are left as generic names like `sub_400d74` or `$x`.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers and pointer addresses. In `test_cpp_oo_features`, results are hardcoded (e.g., `4700`, `21`, `42`) inside `printf` calls, and string literals are represented as pointers to global addresses (e.g., `&g_4015ef`) rather than the string content.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant compiler artifacts and pseudo-code noise are present. Examples include `__ROL__` macro invocations, `arm64g_calculate_condition` intrinsics, and spurious `goto g_411ff8` statements that obscure the program logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is highly unnatural. Virtual function calls are represented as raw indirect jumps: `goto *((long long *)*((long long *)&arg_0));`. Furthermore, most complex logic is missing, replaced by simple `return;` statements or hardcoded print statements.
+
+**6. Function Decomposition:** Score: 2/10
+Justification: The decomposition is poor. The logic of individual test functions (e.g., `test_cpp_constructor`, `test_cpp_virtual_func`) has been inlined or optimized away, leaving empty function bodies. The main logic is collapsed into a monolithic `test_cpp_oo_features` function consisting mostly of `printf` calls.
+
+**7. Code Linearization:** Score: 4/10
+Justification: While the remaining code in `test_cpp_oo_features` reads linearly, the overall structure is fragmented. The lack of bodies in the called functions forces the reader to jump around to find non-existent logic, breaking the top-down reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is little redundancy to eliminate because the logic itself is missing. However, the presence of multiple `__cxa_begin_catch` and `__cxa_end_catch` calls in `sub_4010f4` without the surrounding try-catch structure makes the exception handling logic appear redundant and disjointed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded. Class instances are treated as generic `void*` or `unsigned long long`. For instance, `test_cpp_rtti` uses `void* ptr` and `struct_0 **p` instead of the expected `RTTIBase*` and `RTTIDerivedA*` pointers.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: C++ class structures are completely lost. No classes like `SimpleClass`, `Base`, or `Container` are defined. Instead, generic structs like `struct_0` and `struct_1` with fields named `padding_0` and `field_8` are used, which conveys zero semantic information about the object-oriented design.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains unsafe casts and type confusion. For example, in `test_cpp_oo_features`, there is a cast `(unsigned long long)test_cpp_exception()`, and pointer arithmetic is performed on `void*` types without indicating the underlying object size or type.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are sparse and unhelpful. The only comments are auto-generated placeholders like `/* do not return */`. There are no comments explaining the C++ idioms used (e.g., vtable lookups, RTTI, or exception handling).
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: High-level C++ idioms are not recognized. Virtual functions are raw jumps, smart pointers are invisible (replaced by raw `new`/`delete` or optimized out), and RAII patterns are lost. The code looks like generic C rather than C++.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag the fact that function bodies are empty or that logic has been aggressively optimized away. It presents the empty functions as valid source code without warning the user that the logic is missing.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No contracts, preconditions, or invariants are recovered. The logic of the original functions (e.g., ensuring `idx < size` in `Container::get`) is completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While mangled names allow identification of function calls, the relationships are broken. Calls to member functions (e.g., `obj.getValue()`) are missing because the object logic is inlined or lost. The `printf` calls reference global string pointers, but the connection to the specific test being run is opaque.
+
+**17. Module Organization:** Score: 3/10
+Justification: The output is a flat list of functions. There is no reconstruction of the class hierarchy or namespaces. The logical grouping of methods under their respective classes (e.g., all `Container` methods together) is weak or non-existent.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code would not compile. It relies on undefined types (`struct_0`), missing headers, and external symbols that are not declared in the snippet. The use of compiler intrinsics like `__ROL__` also prevents standard compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.8/10
+
+**Critical Defects:**
+- **Empty Function Bodies**: Functions like `test_cpp_constructor` and `test_cpp_virtual_func` are reduced to `return;`, completely hiding the implementation logic.
+- **Lost Class Structures**: C++ classes are replaced with generic `struct_0`/`struct_1`, destroying the object-oriented context.
+- **Raw Vtable Jumps**: Virtual function calls are decompiled as `goto *((long long *)...)`, failing to abstract the low-level dispatch mechanism.
+- **Hardcoded Results**: Test logic is replaced by `printf` calls with pre-calculated integers (e.g., `4700`), making the algorithmic flow invisible.
+
+**Best Quality Aspect:** Function Naming (Score: 6/10)
+- **Why?** Ghidra successfully demangled the C++ mangled names (e.g., `_Z20test_cpp_member_funcv`), allowing the reader to identify the original function names despite the poor body recovery.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 1/10)
+- **Why?** The complete failure to recover class definitions (fields, methods, inheritance hierarchy) renders the decompiled code useless for understanding the data structures, which is the core of the C++ source provided.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Recover C++ Class Hierarchies**: Utilize RTTI and vtable analysis to reconstruct class definitions, inheritance relationships, and member field types instead of outputting generic `struct_0`.
+2.  **Lift Virtual Calls**: Detect the vtable load-and-call pattern and replace the raw `goto` or indirect call with the specific virtual function signature or a placeholder like `Base::virtual_func()`.
+3.  **Flag Optimized-Away Logic**: When a function body is empty or reduced to a constant return due to compiler optimization, insert a comment or warning indicating that the logic was likely inlined or constant-folded, rather than presenting an empty function as the complete source.

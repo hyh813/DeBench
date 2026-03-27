@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a1`, `v2`, `retaddr`) with no semantic meaning. Original source had meaningful names like `local`, `arr`, `head`, `current`, `new_node` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`) likely due to debug symbols. Only startup/helper functions use generic names (`sub_1020`, `sub_1030`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound (`0x28u`, `0x10u`, `0xFFFFFFFFLL`) without explanation. Some constants are pre-computed (`static_complex_init` returns `15` directly instead of showing array access).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: stack canary checks (`__readfsqword(0x28u)`), redundant casts (`(unsigned int)`, `(unsigned __int64)`), and frame pointer manipulation throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions heavily optimized (`local_vars` returns `(2 * a1 + 10)` directly, `stack_alias` returns constant `20`). Loop structures recovered but `vla_stack` shows confusing stack alignment logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved with appropriate granularity. No inappropriate inlining observed, though some functions are over-simplified due to constant folding.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Stack canary prologues add minor disruption but don't significantly impede flow understanding.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Type cast redundancy present but not excessive. Loop structures preserved without aggressive unrolling.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `__int64`, `_DWORD`, `_QWORD` replace specific types. Original `int`, `Point*`, `Node*`, `TreeNode*` all lost. Signed/unsigned often incorrect.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All structs (`Point`, `Node`, `TreeNode`) completely lost. Accessed via pointer arithmetic (`v1[1]`, `*(_DWORD *)v1`) instead of field names (`p->x`, `node->next`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(_QWORD *)`, `(_DWORD *)`). Pointer arithmetic on generic types. No const-correctness preserved. Function pointers degraded to `__int64`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. No algorithm explanations, no decompilation confidence indicators. Only function headers with addresses present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Memory allocation patterns (malloc/free) visible but not labeled. Linked list and tree traversal not recognized as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("positive sp value has been detected, the output may be wrong!"). Failed decompilations listed at end. No specific warnings about optimized-away logic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 > 0` checks not explained). No postconditions. Error return values (`-1`, `0xFFFFFFFFLL`) not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables referenced (`global_counter`, `file_scope_static`) but relationships not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. Original section organization (stack/heap/static/memory ops) lost. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 18 external functions listed as "FAILED to decompile". Would require significant stubs to compile. Dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Weighted |
+|-------|--------------|--------|----------|
+| L1: Lexical Clarity | 5.25 | 30% | 1.575 |
+| L2: Structural Intelligibility | 6.50 | 25% | 1.625 |
+| L3: Type System Fidelity | 3.33 | 20% | 0.667 |
+| L4: Semantic Transparency | 3.00 | 15% | 0.450 |
+| L5: Contextual Coherence | 4.00 | 10% | 0.400 |
+| **TOTAL** | | **100%** | **4.72/10** |
+
+**Overall Readability Score: 4.7/10**
+
+### Critical Defects:
+- **All struct types lost** - `Point`, `Node`, `TreeNode` accessed via raw pointer arithmetic instead of field names
+- **Variable names completely generic** - `v0`, `v1`, `a1` provide no semantic information about purpose
+- **Aggressive constant folding** - Functions like `stack_alias` return constant `20` instead of showing alias detection logic
+- **Zero documentation** - No comments explaining algorithm intent, error conditions, or decompilation confidence
+- **Type system degraded** - Everything becomes `__int64`, `_DWORD`, `_QWORD` losing original type semantics
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Debug symbols preserved most original function names, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions, forcing readers to reverse-engineer data layouts from pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from access patterns** - Analyze consistent field offsets across functions to reconstruct `Point {x, y}`, `Node {data, next}`, etc.
+2. **Infer variable names from usage context** - Variables used in size checks should be named `size`/`count`, pointers to malloc results should be named `buffer`/`array`
+3. **Preserve original logic over constant folding** - When debug symbols exist, avoid optimizing away intermediate variables that convey semantic meaning (e.g., show `local = 42` instead of direct constant)

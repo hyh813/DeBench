@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `v3`, `mem`, or `a1`. For example, in `linked_list_heap`, the list nodes and pointers are named `v3`, `v4`, `v5`, providing no semantic context about the linked list structure.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most function names match the original source exactly (e.g., `double_value`, `heap_basic`, `local_vars`), indicating good symbol recovery. However, library wrappers are named generically (e.g., `function_1140` for `__cxa_finalize`).
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers and confusing literals. For instance, `malloc((int32_t)&g15)` uses the address of a global variable as a size argument, and `0x1000` appears in `vla_stack` without explanation (page size for stack probing).
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant compiler artifacts pollute the code, such as `__x86_get_pc_thunk_bx(v1)` calls in almost every function to access globals and `__readgsdword(20)` for stack canaries, which severely hinders readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is often unnatural, relying on `while(true)` loops with manual breaks and `goto` statements (e.g., `lab_0x1a73` in `linked_list_heap`) instead of standard `for` or `while` loops, making execution paths difficult to follow.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: While small functions are preserved, larger test functions like `test_heap_memory` are monolithic and contain inlined logic or complex control flow that should have been separated into clearer blocks.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code frequently uses forward jumps (`goto`) to handle error conditions or loop exits, disrupting the top-to-bottom reading flow. For example, `heap_realloc` uses a `goto` to jump to a return block.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is moderate redundancy, such as repeated `__x86_get_pc_thunk` calls and redundant variable assignments (e.g., `v1` assigned and immediately used for PIC base), though some dead code from `-O0` is present.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: The decompiler defaults to `int32_t` for most variables and pointers, which is technically correct for the apparent 32-bit x86 binary but loses semantic distinction between pointers and integers. `size_t` arguments are often demoted to `int32_t` or `uint32_t`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are completely lost. Accesses like `*(int32_t *)(v2 + 4)` in `heap_nested` or `linked_list_heap` represent struct field accesses (e.g., `node->next`), but the `Node` or `Point` struct definitions are nowhere to be found.
+
+**11. Type Safety:** Score: 2/10
+Justification: Critical type safety errors are present. The code frequently passes addresses of global variables as sizes to `malloc` (e.g., `malloc((int32_t)&g15)`) and attempts to `free(&g15)`, which is semantically incorrect and dangerous.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are sparse and limited to metadata like "Address range" and "Line range". There are no comments explaining the logic of complex functions like `vla_stack` or the purpose of the PIC thunks.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms are not recognized. The linked list traversal in `linked_list_heap` is represented as raw pointer arithmetic and `while(true)` loops rather than a clear traversal pattern. VLA allocation is shown as raw stack pointer manipulation.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag suspicious behavior. For example, the use of `&g15` as a malloc size or the `free(&g15)` calls are presented confidently as valid code without any warning or "UNCERTAIN" markers.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. Checks like `if (arr == NULL)` are preserved but not documented as contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While function calls are visible, global variable accesses are obscured by complex PIC arithmetic (e.g., `v1 + (int32_t)&g12 + 132`), making it hard to determine which global variable is actually being accessed.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a somewhat logical order, and prototypes are provided at the top. However, it is a flat file without clear separation between the test harness and the actual logic functions.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code is unlikely to compile successfully due to the use of compiler intrinsics like `__x86_get_pc_thunk_bx` without proper headers or definitions, and the semantic errors involving `g15`.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 4.0
+L2_avg: 4.0
+L3_avg: 3.0
+L4_avg: 1.75
+L5_avg: 4.0
+
+Overall = (4.0 × 0.30) + (4.0 × 0.25) + (3.0 × 0.20) + 
+          (1.75 × 0.15) + (4.0 × 0.10)
+        = 1.2 + 1.0 + 0.6 + 0.2625 + 0.4
+        = 3.46
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.5/10
+
+### Critical Defects (Bullet Points)
+- **Semantic Hallucination**: The decompiler consistently uses the address of global variable `g15` (e.g., `malloc((int32_t)&g15)`) instead of the intended size constant (e.g., `8`), leading to nonsensical code.
+- **Lost Struct Information**: Composite types like `Point` and `Node` are completely unrecovered, reducing complex data structures to raw pointer arithmetic (e.g., `*(int32_t *)(v2 + 4)`).
+- **Excessive Compiler Noise**: Position-independent code (PIC) artifacts like `__x86_get_pc_thunk_bx` are inlined into every function, cluttering the logic and obscuring the actual intent.
+- **Unsafe Type Conversions**: Pointers are frequently cast to `int32_t` and used in arithmetic, losing type safety and semantic meaning.
+- **Control Flow Obfuscation**: Simple loops are often converted into `while(true)` blocks with `goto` jumps, making the code harder to read than the original source.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (8/10)
+- **Why?** The decompiler successfully preserved the original function names from the symbol table, making it easy to locate specific logic blocks despite the poor internal variable naming.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Assertion & Contract Recovery (1/10)
+- **Why?** There is a complete absence of semantic information regarding preconditions, postconditions, or invariants, and the code confidently presents incorrect operations (like freeing a global address) without warning.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Fix Constant Pool Recovery**: Distinguish between loading the value of a global constant and loading its address; passing an address to `malloc` is a critical failure.
+2.  **Abstract PIC Artifacts**: Automatically detect and hide or simplify `__x86_get_pc_thunk` patterns, replacing them with direct global variable references or helper functions to improve readability.
+3.  **Recover Composite Types**: Implement heuristic analysis to identify struct layouts based on access patterns (e.g., `malloc(8)` followed by `ptr+0` and `ptr+4` writes) and reconstruct struct definitions.

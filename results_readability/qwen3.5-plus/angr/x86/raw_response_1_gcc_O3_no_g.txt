@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some original names recovered (`sequential_ops`, `single_if`, `nested_if_2`, `double_value`), but many remain as `sub_401XXX` addresses. Test functions partially recovered but helper wrappers proliferate.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound: `4294967295` (UINT_MAX/-1), `1717986919` (division optimization constant), `18975`, `10692`. No named constants recovered; string literals preserved but unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.*` functions, redundant struct definitions with `padding_0` fields, empty stub functions (`sub_40115c`, `sub_4011a3`), and `[D] Unsupported jumpkind` warnings.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions recovered well (`sequential_ops`, `single_if`), but complex ones use goto patterns (`loop_multi_exit` has `goto LABEL_*`). `switch_small` uses array indexing instead of switch; `duffs_device` has broken `goto &(&_GLOBAL_OFFSET_TABLE_)`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original functions mostly preserved but wrapped in unnecessary stubs (`sub_40146f` calls `sequential_ops`). Fragmentation creates noise without adding clarity.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps disrupt flow (`loop_multi_exit` has 8+ label jumps). Some functions read naturally but complex control flow becomes spaghetti with `goto` chains.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate struct_0 definitions throughout code, many empty stub functions, redundant variable assignments. Test functions have repeated printf patterns without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most variables use generic `unsigned int` instead of specific types. Original `int` types often converted to `unsigned int` (potential sign issues). Function pointers degraded to integers in `call_func_ptr` (`goto a0`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered with generic field names (`field_0`, `padding_0`, `field_28`). Large padding arrays (`char padding_0[20087]`) obscure real structure. No semantic field naming.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts (`(int)`, `(char)`, `(unsigned int *)`), function pointer calls through integer conversion (`goto a0`), pointer arithmetic without proper typing, stack check failures not handled.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Only auto-generated function headers with addresses. Original source's extensive documentation (test cases, difficulty ratings, scene labels) completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns (loops, conditionals) recovered but not explicitly identified. State machine pattern in `state_machine` not named. No design pattern documentation or algorithm explanations.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`). Incorrect logic presented confidently (e.g., `loop_break` completely wrong as switch statement). No decompilation confidence indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error condition documentation. Original test validation comments and expected values completely lost from function bodies.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`g_403008`, `g_403110`) without explanation. Callback relationships unclear; no call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Test functions mixed with implementation. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has compilation issues (GOT references, undefined `_ccall` function). External dependencies not documented. Stack check functions referenced but not implemented properly.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+5+4+5)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.367
+
+Overall Score: 3.91/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `a0` should be named semantically** (e.g., `sum`, `count`, `result`) based on usage patterns
+- **`loop_break` function completely misidentified** as switch statement instead of array search loop
+- **`duffs_device` has broken control flow** with `goto &(&_GLOBAL_OFFSET_TABLE_)` that won't execute correctly
+- **Architecture mismatch**: Original ARM64 compiled code decompiled as x86 with incompatible constructs
+- **No comments recovered** from original source's extensive documentation (test cases, expected values, difficulty ratings)
+
+### Best Quality Aspect: Function Naming Quality (scored 6/10)
+- Some original function names successfully recovered (`sequential_ops`, `single_if`, `nested_if_2`, `double_value`, `triple_value`)
+
+### Most Needs Improvement: Comment Quality & Presence (scored 2/10)
+- Original source had comprehensive documentation (test cases, expected values, scene labels, difficulty ratings) that is completely absent in decompiled output
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in accumulation should be named `sum`, counter variables as `count`/`i`)
+2. **Recover and preserve source comments** by correlating debug symbols with original source when available (-g flag was used)
+3. **Add confidence annotations** for uncertain recoveries (indirect calls, complex control flow) instead of presenting incorrect logic confidently

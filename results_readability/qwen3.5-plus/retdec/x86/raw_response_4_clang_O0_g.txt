@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `result`) obscuring semantic purpose. For example, `fastcall_func` uses `v1` instead of recovering parameter `b`, and `test_calling_conventions` has `format`, `format2`...`format17` instead of meaningful string descriptors.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`cdecl_func`, `call_cdecl`, `varargs_func`), but helper functions are generic (`function_1040`, `function_1050`, `function_1060` for printf/strlen/memset wrappers).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive (`0x1c04`, `0x4f54`, `0x4ecb`) without explanation. Some literals clear (`5`, `10`, `42`, `16`), but string literals referenced through pointer arithmetic (`v1 + 0x1827`) instead of direct strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86_get_pc_thunk_*` functions, `__asm_hlt()`, `__asm_rep_movsd_memcpy`, and uninitialized variables (`int32_t v1; // 0x1000` never assigned before use).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops use while constructs appropriately, but `ret_multi_branch` has unusual switch case ordering (case 1 before case 0). Varargs functions use manual pointer arithmetic instead of va_list idioms.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions appropriately sized but library calls extracted as separate functions (`function_1050` for printf). Some fragmentation with unnecessary intermediate variables in test functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with reasonable flow. Some forward references disrupt understanding (`v1` used before declaration in multiple functions).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code in main logic. Some redundant variable assignments in test functions (`v2 = format; v2 = format2;` pattern repeated).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `int64_t`, `float64_t` consistently, but `func_mixed_args` has bizarre float conversions (`(float32_t)d`, `(float80_t)(float64_t)ll`). Pointer types generally preserved but with confusion.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - Structs completely lost. `LargeStruct` and `SmallStruct` not recovered; `func_struct_byval` takes `int32_t s` instead of struct, `func_struct_byptr` takes `int32_t * p` instead of `SmallStruct *`. `ret_small_struct` returns `int32_t` instead of struct.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present. `func_mixed_args` has type-confused float/integer operations. `ret_func_ptr` returns through complex arithmetic (`v2 + v1`) instead of clean function pointer. Pointer arithmetic on struct fields loses type information.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated line range comments (`// Line range: 15 - 15`). No semantic comments explaining logic, algorithms, or decompilation confidence. No API contract documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Varargs pattern not recognized (manual pointer arithmetic instead of va_list). Standard C idioms completely obscured.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: **Critical issue** - Incorrect code presented confidently. `fastcall_func` has wrong logic (`v1 + a + v1` instead of `a + b + c`). `call_fastcall` passes wrong arguments (`3, v1, &g8` instead of `1, 2, 3`). No warnings about uncertain decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `p != NULL` checks not explained). No postconditions inferred. Error conditions not documented despite null checks present.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g1`-`g8`) used without explanation. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but not logically organized. No header file structure. All code in single file without namespace separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has standard library includes but won't compile standalone. Undefined symbols: `__asm_hlt()`, `__asm_rep_movsd_memcpy()`. Library wrappers need proper linking.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4 + 7 + 5 + 5) / 4 = 5.25
+Level 2 (Structural):  (6 + 6 + 7 + 7) / 4 = 6.50
+Level 3 (Type):        (6 + 2 + 4) / 3 = 4.00
+Level 4 (Semantic):    (3 + 3 + 2 + 2) / 4 = 2.50
+Level 5 (Contextual):  (5 + 5 + 4) / 3 = 4.67
+
+Overall = (5.25 × 0.30) + (6.50 × 0.25) + (4.00 × 0.20) + (2.50 × 0.15) + (4.67 × 0.10)
+        = 1.575 + 1.625 + 0.800 + 0.375 + 0.467
+        = 4.84/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct` not recovered; all struct operations reduced to pointer arithmetic
+- **Incorrect decompilation presented confidently** - `fastcall_func` logic wrong (`v1 + a + v1`), `call_fastcall` arguments incorrect
+- **Variable names generic** - `v1`, `v2`, `v3` throughout obscuring semantic purpose
+- **No anomaly warnings** - Decompilation errors not flagged for manual review
+- **Magic numbers unexplained** - Global variables `g1`-`g8` with hex addresses, string offsets like `v1 + 0x1827`
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`), maintaining semantic connection to original code.
+
+### Most Needs Improvement: **Anomaly Indication (2/10)**
+- Incorrect code presented with full confidence; no warnings about uncertain decompilation regions that need manual verification.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack access patterns** - Detect struct field access patterns (e.g., `*(p + 4) * *p`) and reconstruct struct definitions with field names.
+2. **Add confidence annotations for uncertain regions** - Flag indirect calls, complex type conversions, and varargs handling with `// DECOMPILER_UNCERTAIN` comments.
+3. **Infer variable names from usage context** - Variables used in loop counters should be `i`, `count`; variables in size checks should be `size`, `len`; string pointers should be `format`, `message`.

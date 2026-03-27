@@ -1,0 +1,109 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 8/10
+Justification: Parameter names (`a`, `b`, `c`, `target`, `n`) are perfectly recovered from debug symbols, providing high semantic clarity. However, local variables are generic (`v1`, `v2`, `v4`), requiring the reader to trace usage to understand their role (e.g., `v2` in `loop_break` acts as an array pointer).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Every function name matches the original source exactly (e.g., `sequential_ops`, `duffs_device`, `opaque_predicate`). The presence of debug information (`-g`) allowed the decompiler to preserve the full semantic intent of the function identifiers.
+
+**3. Literal Clarity:** Score: 8/10
+Justification: Magic numbers used in the source (e.g., `10`, `20`, `30` in `switch_small`) are preserved clearly. However, references to compiler-generated jump tables like `CSWTCH_56` introduce noise, and the constant folding in `switch_fallthrough` (e.g., `v2 = 12`) obscures the original bit-shift logic (`op << 2`).
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is largely clean, but contains Hex-Rays specific artifacts such as `__fastcall` annotations, `JUMPOUT(0)` macros, and `CSWTCH` references. While these don't make the code unreadable, they are distinct compiler/decompiler noise that deviates from standard C.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: While simple flows like `sequential_ops` are optimized into clean expressions (`return 2 * (a + b) - c`), complex patterns suffer. `recursion_factorial` is decompiled as a `do-while` loop instead of recursion, and `duffs_device` is flattened into a `goto`-laden switch, destroying the visual structure of the original fallthrough logic.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler maintains a 1:1 mapping with the source functions. There is no inlining of helper functions (e.g., `double_value` remains a separate function called by `call_func_ptr`), preserving the original architectural boundaries perfectly.
+
+**7. Code Linearization:** Score: 8/10
+Justification: Most functions read linearly from top to bottom. Early returns are preserved effectively (e.g., `nested_if_2`). The primary disruption comes from `duffs_device`, where the control flow jumps backward and forward via labels, making linear reading difficult.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully removes intermediate variables where they add no value (e.g., `temp1`, `temp2` in `sequential_ops` are folded into the return expression). Dead code paths, like the opaque predicate in `obfuscated_cf`, are correctly eliminated, simplifying the logic to just the executable path.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are accurately recovered, including `int`, `volatile int*`, and function pointers (e.g., `int (__fastcall *v2)(int)`). The signedness and basic types match the source exactly, with no degradation to `void*` or generic integers observed.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Arrays and multidimensional arrays are recovered with precise dimensions. For example, `int matrix[3][4]` in `loop_multi_exit` and `int arr[5]` in `loop_break` are correctly identified, allowing for direct indexing logic rather than pointer arithmetic.
+
+**11. Type Safety:** Score: 9/10
+Justification: The decompiled code exhibits no unsafe casts or pointer arithmetic errors. Function pointer signatures match their usage (e.g., `int (*f)(int)`), and the `volatile` qualifier is preserved where necessary (e.g., `infinite_loop`).
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining the logic. Complex functions like `duffs_device` or `computed_goto` lack any explanatory text (e.g., "Duff's Device implementation" or "Computed goto via jump table"), leaving the reader to decipher the control flow purely from structure.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Common idioms like `switch` statements are recognized, but specific patterns are missed. `recursion_factorial` is presented as a loop, losing the recursive idiom. `duffs_device` is not identified as such, appearing instead as a spaghetti switch. `opaque_predicate` is simplified to a return statement, losing the context of the obfuscation idiom.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler provides a list of "FAILED to decompile" functions at the end, which is good transparency. However, inline assembly blocks like `__asm { LDR PC, [R1,#-0x14] }` in `computed_goto` are presented without warning about the non-standard control flow or potential architecture specifics.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: There is no recovery of preconditions or postconditions. For example, `duffs_device` in the source has a check `if (n <= 0) return -1;`, which is preserved, but it is not explicitly documented as a precondition contract (e.g., "requires n > 0").
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the recovered names. The relationship between `state_machine` and its handlers is clear. The array of function pointers in `large_jump_table` is correctly populated with function names, making the dispatch logic easy to follow.
+
+**17. Module Organization:** Score: 9/10
+Justification: The functions are presented in a logical order that closely mirrors the source file structure. Helper functions (like `op_add`, `op_sub`) are grouped near their usage in `large_jump_table`, maintaining contextual coherence.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code uses Hex-Rays specific macros (`JUMPOUT`) and non-standard calling convention attributes (`__fastcall`) that would prevent immediate compilation with a standard C compiler without modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (8 + 10 + 8 + 7) / 4 = 8.25
+L2_avg = (7 + 9 + 8 + 8) / 4 = 8.00
+L3_avg = (9 + 9 + 9) / 3 = 9.00
+L4_avg = (2 + 5 + 6 + 3) / 4 = 4.00
+L5_avg = (8 + 9 + 6) / 3 = 7.67
+
+Overall = (8.25 × 0.30) + (8.00 × 0.25) + (9.00 × 0.20) + 
+          (4.00 × 0.15) + (7.67 × 0.10)
+Overall = 2.475 + 2.00 + 1.80 + 0.60 + 0.767 = 7.64
+```
+
+### Overall Readability Score: **7.6/10**
+
+### Critical Defects
+- **Recursion Lost:** `recursion_factorial` is decompiled as a `do-while` loop, completely obscuring the recursive algorithm present in the source.
+- **Duff's Device Obscured:** The structured switch-fallthrough in `duffs_device` is flattened into a complex `goto` chain, making the famous idiom unrecognizable.
+- **Missing Semantic Context:** Complex optimizations like `opaque_predicate` (where dead code was removed) are presented as simple math without any indication that obfuscation was removed or that the source was more complex.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**
+- **Why?** The debug symbols (`-g`) allowed the decompiler to recover the exact original function names, making the high-level purpose of every code block immediately obvious.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)**
+- **Why?** The lack of comments for complex logic (like `duffs_device` or `computed_goto`) forces the user to reverse-engineer the control flow from scratch, significantly hindering understanding of non-trivial sections.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Preserve Recursive Structure:** When a loop is detected that matches a recursive pattern (or if the binary contains a call), offer an option or heuristic to present it as a recursive function to match source intent.
+2.  **Idiom Annotation:** Detect specific patterns like "Duff's Device" or "State Machines" and insert comments or structure the output to highlight these idioms rather than flattening them into generic gotos.
+3.  **Optimization Annotation:** When code is simplified (e.g., `opaque_predicate` reduced to `return 2*a1`), insert a comment indicating that dead code or opaque predicates were likely optimized away.

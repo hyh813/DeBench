@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source used descriptive names like `temp1`, `sum`, `count`, `result` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions recovered original names (`sequential_ops`, `single_if`, `ternary_op`) but many wrappers use mechanical names (`sub_401030`, `sub_40122f`). Some signatures are wrong (`call_func_ptr_array` missing parameters).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX/-1) and `1717986919` (division optimization constant) appear without explanation. Original source had clear test values with comments explaining expected results.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present (`__x86.get_pc_thunk.*` functions), unnecessary wrapper functions (`sub_40122f` just calls `single_if`), and struct padding fields (`padding_0[20183]`) create significant noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple loops transformed into complex bit manipulation (`loop_for_fixed` uses `>> 32 CONCAT` instead of for loop). Switch statements sometimes recovered (`computed_goto`) but often become if-else chains or GOT table access.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Over-fragmented with wrapper functions that just call the real function. Core functions are appropriately sized but the wrapper pattern creates unnecessary indirection throughout the codebase.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom but some functions have disruptive labels (`LABEL_401832`, `LABEL_401c7f`). `loop_multi_exit` has complex jump patterns that break linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Optimization artifacts create redundancy (division by multiplication with shifts). Wrapper functions duplicate call patterns. No dead code removal evident in test functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most variables are `unsigned int` instead of original `int`. Function signatures sometimes wrong (`call_func_ptr` takes `unsigned int *a0` instead of function pointer). Some pointer types correct but many generic.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs have generic names (`struct_0`, `struct_1`) with meaningless fields (`padding_0[20183]`, `field_4ed7`). These appear to be compiler artifacts rather than source structs, losing all semantic meaning.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(char)*`, `(int)*`), pointer arithmetic without bounds, and function pointer calls with potentially wrong signatures (`v4()` with no parameters when it should have arguments).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled output. Only auto-generated function headers present. No algorithm explanations, confidence indicators, or documentation of non-obvious logic.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop patterns not recognized (converted to complex math). Switch statements sometimes recognized but often lost. No design pattern identification despite state machine and callback patterns in source.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`). Broken functions like `call_func_ptr_array` (returns constant -1) presented confidently without warning of decompilation failure.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not explained. Original source had clear test validation comments that are completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`_GLOBAL_OFFSET_TABLE_`, `g_403050`) without explanation. No call graph or callback relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Test functions mixed with implementation. No namespace or package structure. Original source had clear section organization with comments.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`_GLOBAL_OFFSET_TABLE_`, `puts`, `printf`, `_setjmp`) require stubs. Some functions reference undefined symbols. Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+5)/4 = 4.25
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25
+Level 3 (Type):        (5+3+4)/3   = 4.00
+Level 4 (Semantic):    (1+3+3+1)/4 = 2.00
+Level 5 (Contextual):  (4+4+4)/3   = 4.00
+
+Overall = (4.25 × 0.30) + (5.25 × 0.25) + (4.00 × 0.20) + 
+          (2.00 × 0.15) + (4.00 × 0.10)
+        = 1.275 + 1.3125 + 0.80 + 0.30 + 0.40
+        = 4.09/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Loop recovery failure**: `loop_for_fixed` transformed from simple for-loop to incomprehensible bit manipulation (`>> 32 CONCAT` expression)
+- **Function signature corruption**: `call_func_ptr_array` missing parameters, returns constant -1 instead of calling function pointer array
+- **Recursive function broken**: `indirect_recursion_a` calls itself instead of `indirect_recursion_b`, completely changing semantics
+- **Zero documentation**: No comments explaining any logic, magic numbers, or decompilation confidence
+- **Switch degradation**: `switch_small` accesses GOT table directly instead of clean switch-case structure
+
+### Best Quality Aspect: **Structural Intelligibility (5.25/10)**
+- Core function bodies are mostly intact and some control flow (like `sequential_ops`, `ternary_op`) recovered cleanly as simple expressions
+
+### Most Needs Improvement: **Semantic Transparency (2.00/10)**
+- Complete absence of comments, no idiom recognition, no anomaly warnings for broken functions, and zero contract recovery makes the code practically unusable for analysis
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level loop constructs**: Detect division-by-multiplication patterns and shift-based counters to restore original for/while loops instead of emitting complex arithmetic
+2. **Add decompilation confidence annotations**: Flag functions with unresolved calls, incorrect signatures, or suspicious patterns (like `call_func_ptr_array` returning constant)
+3. **Infer semantic variable names**: Use data flow analysis to name variables based on usage patterns (e.g., loop counters, accumulators, return values) instead of generic `v0`, `v1`

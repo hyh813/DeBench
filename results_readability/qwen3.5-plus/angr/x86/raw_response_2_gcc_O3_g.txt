@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `ptr`, `a0`, `a1`) with no semantic meaning. For example, `process_char(unsigned int a0)` should have parameter named `c`, and `array_1d_stack` uses `ptr` instead of `array` or `arr`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions like `process_char`, `process_int`, `array_1d_stack` were recovered correctly, but many wrapper functions remain as `sub_401271`, `sub_401295`, etc. The test functions (`test_data_types_l1`, `test_array_types`) were recovered well.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `65`, `255`, `32` in `process_char`; hex values like `0x400c0000`, `3435973837` in test output. No named constants were recovered from the original source.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution: `__x86.get_pc_thunk.*` compiler artifacts, numerous `sub_XXXXXX` wrapper functions that don't exist in source, and `[D]` decompilation failure markers throughout floating-point functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Some loops recovered as do-while patterns, but `ptr_func_simple` and `struct_func_ptr` use `goto` for function pointer calls. The `binary_tree_sum` function has deeply nested loops instead of the original recursive structure.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Poor decomposition with unnecessary wrapper functions (e.g., `sub_401271` just calls `process_char()`). The `binary_tree_sum` function is excessively complex with 40+ local variables instead of clean recursion.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom in simple functions, but forward jumps and goto statements disrupt flow in function pointer handling and the binary tree traversal code.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Wrapper function redundancy throughout. The `binary_tree_sum` function contains duplicated loop patterns across multiple nesting levels that should be a single recursive call.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `char` became `unsigned int`, `short` became `unsigned short`, `long long` became `unsigned int`. Floating-point functions (`process_float`, `process_double`, `process_ld`) are completely broken with unsupported expressions.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs use generic names (`struct_0`, `struct_1`) with fields like `field_0`, `field_4`. Original types like `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode` were not recovered—only raw pointer arithmetic remains.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (e.g., `ptr_void` casts `void*` to `int*`/`char*`). Function pointers stored as `unsigned int`. Pointer arithmetic lacks proper typing, risking undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments exist. Only `[D]` markers indicate decompilation failures (e.g., `[D] unsupported_<class 'pyvex.expr.GetI'>()`). No algorithm explanations or API documentation recovered.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Critical patterns not recognized: linked list traversal became generic loops, binary tree recursion became incomprehensible nested iteration. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `[D]` markers show some anomaly detection for floating-point operations, but most type mismatches, architecture issues, and semantic losses go unflagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions (e.g., `ptr != NULL`), postconditions, or invariants recovered. Null checks exist but aren't documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls exist but lack documentation. Global variables use generic names (`g_403008`, `g_4033bd`). No call graph or callback relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file without logical grouping. No separation between test functions, utility functions, and core logic as in original source.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will NOT compile due to `[D]` markers, unsupported expressions in floating-point functions, and missing external dependencies. Requires extensive manual patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+4+5+4)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (3+3+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (2+2+4+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (4+5+2)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.53/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects:
+- **Floating-point functions completely broken**: `process_float`, `process_double`, `process_ld` contain `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers and return garbage values
+- **Severe type degradation**: All integer types collapsed to `unsigned int`; `char`, `short`, `long long` distinctions lost
+- **Struct names not recovered**: Original `Point3D`, `Rect`, `Widget`, `TreeNode` became `struct_0`, `struct_1` with `field_0`, `field_4`
+- **Architecture mismatch**: Original ARM64 code decompiled as X86, causing fundamental incompatibilities
+- **Binary tree recursion lost**: Original clean recursive `binary_tree_sum` became 200+ line nested loop nightmare with 40+ local variables
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- Core function names like `process_char`, `array_1d_stack`, `test_data_types_l1` were successfully recovered from debug symbols
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero meaningful comments; only decompilation failure markers present, providing no semantic guidance to analysts
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Improve floating-point IR handling**: The `[D] unsupported_<class 'pyvex.expr.GetI'>()` errors indicate fundamental VEX IR translation failures that must be resolved for any floating-point code
+2. **Recover debug symbol type information**: With `-g` flag present, the decompiler should preserve original type names (`char`, `short`, `Point3D`) instead of generic `unsigned int` and `struct_0`
+3. **Recognize recursive patterns**: The binary tree function should be identified as recursive traversal and reconstructed as such, not expanded into incomprehensible nested loops

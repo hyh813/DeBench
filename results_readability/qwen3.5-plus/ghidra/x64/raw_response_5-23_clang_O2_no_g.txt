@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar1`, `local_18` instead of semantic names like `size`, `counter`, `result`. Original source had meaningful names (`x`, `y`, `increment`, `counter`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved (`param_macro_constants`, `call_asm_basic`, `param_builtin_macros`) matching original source. Some internal functions like `FUN_00101020` remain generic, but core functionality names are recovered.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `0x200`, `0x400`, `0x40`, `0xdef0`, `0x117`, `0x11a` replace named constants (`MAX_SIZE`, `BUFFER_COUNT`, `MAP_ANONYMOUS`). Original macros like `MAX_SIZE 1024` are completely lost.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean with minimal compiler artifacts. Some constant folding in call functions (e.g., `call_macro_constants` returns `0x40` directly) is optimization noise but doesn't severely impede reading.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control structures are natural (if-else, for loops). `param_asm_clobber` correctly recovers loop from assembly. However, some functions are over-simplified through constant folding.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. No monolithic functions; each function has single responsibility matching source structure.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately. No excessive goto usage disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundancy from optimization (call functions return constants instead of calling param functions). No obvious dead code, but semantic redundancy exists.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Ghidra-specific types (`undefined8`, `undefined4`, `ulong`) reduce clarity. Original `int32_t`, `size_t`, `const char*` degraded to generic `int`, `long`. `param_stringize` loses its `int value` parameter entirely.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays handled reasonably (`local_18[6]`, `local_28[40]`). No complex structs in this code to recover, but stack arrays are properly typed.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(ulong)param_1`, `(code *)0xffffffffffffffff`). Pointer arithmetic in `param_asm_clobber` is correct but uses generic types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments except WARNING about unreachable blocks. Original source had extensive section headers and explanations. No function purpose documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Assembly patterns converted to C loops but not labeled as recovered assembly. No recognition of macro expansion patterns or preprocessing semantics.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some WARNING comments about unreachable blocks in `deregister_tm_clones`. No indication that assembly was recovered or decompilation uncertainty for complex patterns.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or error documentation. Original source had expected return values documented; decompiled code has none.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and visible. Global variables (`global_var`, `completed_0`) are referenced but not explained. No callback relationship documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Related functions somewhat grouped but no header structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Ghidra-specific types (`undefined8`, `LOCK()`, `UNLOCK()`) require significant modification to compile. External dependencies (printf, mmap) not clearly documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+LEVEL 1 (30%): (3+8+3+7)/4 = 5.25 × 0.30 = 1.575
+LEVEL 2 (25%): (7+8+8+7)/4 = 7.50 × 0.25 = 1.875
+LEVEL 3 (20%): (5+7+6)/3   = 6.00 × 0.20 = 1.200
+LEVEL 4 (15%): (2+4+5+3)/4 = 3.50 × 0.15 = 0.525
+LEVEL 5 (10%): (6+6+4)/3   = 5.33 × 0.10 = 0.533
+────────────────────────────────────────────────────
+Overall Score:                              5.71/10
+```
+
+### Overall Readability Score: **5.7/10**
+
+### Critical Defects:
+- **Variable names completely generic**: `param_1`, `iVar1`, `uVar1` obscure semantic meaning (should be `size`, `result`, `counter`)
+- **All macro constants lost**: `MAX_SIZE`, `BUFFER_COUNT` replaced with magic numbers `0x400`, `0x40`
+- **No comments recovered**: Original 200+ lines of documentation completely absent
+- **Function signature errors**: `param_stringize(int value)` becomes `param_stringize(void)` losing parameter
+- **Ghidra-specific types**: `undefined8`, `undefined4`, `LOCK()/UNLOCK()` prevent standalone compilation
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names are accurately preserved from source, making it easy to identify purpose of each function despite other readability issues.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of documentation means readers cannot understand the preprocessing/assembly semantics that were intentionally tested in original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics**: Detect constant-folded values and suggest original macro names based on usage patterns (e.g., `0x400` → `MAX_SIZE`)
+2. **Preserve function signatures**: Ensure parameter types and counts match original, especially for functions with unused parameters
+3. **Add decompilation confidence annotations**: Mark recovered assembly code, indicate optimization transformations, and flag uncertain reconstructions

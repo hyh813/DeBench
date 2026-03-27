@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`iVar1`, `iVar2`, `local_10`, `local_20`, `param_1`) with no semantic meaning. Only global variables like `signal_received`, `shared_counter`, and `atomic_counter` retain original names.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`param_strcpy`, `call_strcpy`, `thread_sum`, `signal_handler`), but library calls degraded to `FUN_000115b0`, `FUN_00011630` format losing all semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive (`0x2a` for 42, `0x1f`, `0x14`, `0x28`) without explanation. String literals preserved ("HelloLib", "/etc/passwd") but numeric constants like return codes lack named equivalents.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack canary checks (`__stack_chk_fail_local`) in every function, x86 thunk functions (`__x86.get_pc_thunk.bx`), and initialization routines (`_init`, `_fini`, `__do_global_dtors_aux`) clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as do-while constructs but conditionals often awkward (e.g., `iVar1 >> 0x1f` for sign extension instead of ternary). At -O0, control flow should match source more closely.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved with reasonable granularity, but library calls not inlined and appear as opaque `FUN_` references. Thread functions properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns, but stack canary checks at function ends disrupt flow. Some functions have goto labels (`LAB_000124f1`) that break linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary pattern repeated identically in ~40 functions. No dead code removal evident. Similar error-handling patterns not abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined4` used extensively instead of `int`, `char*`, `size_t`. Parameters lose const-correctness (`const char*` becomes `undefined4`). Pointer types often generic.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `ThreadData` struct not recovered—accessed via array indexing (`param_1[2]`, `piVar3[1]`). TLS variables accessed via raw offset (`in_GS_OFFSET[-9]`) instead of proper struct fields.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(int *)`, `(undefined4 *)`, `(char *)`. Pointer arithmetic on generic types. No const-correctness preserved from original source.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no API contract documentation, no decompilation confidence indicators. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library patterns not recognized (`FUN_000115b0` should be `strcpy`, `FUN_00011630` should be `strlen`). Thread synchronization patterns (mutex, condition variable) not identified by name.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings for unresolved indirect calls, architecture mismatches (ARM64 source vs x86 decompilation), or suspicious patterns. Code presented confidently despite issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: param_1 != NULL"). Error return values not explained. No postcondition inference for memory allocation functions.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible through code, but global variable usage not documented. Callback relationships (thread entry points) not explicitly marked.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat namespace. No grouping by category (library tests, system calls, threading). Original section comments lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone—`FUN_000115b0` and 50+ similar functions undefined. Architecture-specific code (`in_GS_OFFSET`) requires platform-specific headers. Missing external declarations.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.23/10
+```
+
+**Overall Readability Score: 4.2/10**
+
+### Critical Defects:
+- **Variable `iVar1`, `local_10` should be named semantically** (e.g., `fd`, `buffer`, `result`) based on usage context
+- **50+ library functions degraded to `FUN_00011XXX`** losing all standard library recognition (strcpy, strlen, malloc, etc.)
+- **Architecture mismatch**: Source compiled for ARM64 but decompilation shows x86 thunk functions (`__x86.get_pc_thunk.bx`)
+- **Zero comments** despite complex threading and signal handling logic requiring explanation
+- **Type system collapsed**: `undefined4` used universally instead of recovering `int`, `char*`, `size_t`, `FILE*`
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions (`param_strcpy`, `thread_sum`, `signal_handler`) retained original semantic names, providing anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes complex concurrency and signal handling code extremely difficult to understand without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement standard library function signature database** to recognize and name `FUN_000115b0` as `strcpy`, `FUN_00011630` as `strlen`, etc.
+2. **Add variable name inference from usage patterns** - variables used in size contexts should be named `size`, `len`, `count`; pointer variables should indicate target type
+3. **Generate decompilation confidence annotations** for unresolved calls, architecture mismatches, and type ambiguities to guide manual review

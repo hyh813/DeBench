@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `param_1`, `local_10`, `uVar1`, and `iVar1`, providing no semantic context about their usage (e.g., `sum`, `count`, `ptr`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `param_by_value_int` are perfectly preserved from the source, likely due to debug symbols, making the high-level flow easy to track.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are replaced with global data pointers (e.g., `&DAT_00011594`), and numeric constants are often in hex (e.g., `0xf` instead of `15`), requiring manual lookup to understand the printed values.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, but contains stack canary checks (`__stack_chk_fail`) and exposes low-level library calls (`__aeabi_dadd`, `__aeabi_l2d`) which clutter the high-level logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is natural for `-O0` code; loops are represented as `do-while` constructs (standard for decompiled `for` loops), and `if/else` blocks are clear and easy to follow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source exactly; there is no inlining or outlining of code blocks, maintaining the original modularity and granularity.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps or confusing branches, making it easy to trace execution paths.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little dead code, but some redundancy exists in the form of explicit stack checks and the expansion of complex operations into multiple library calls.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are heavily degraded; specific types like `double` and `long long` are split into `undefined4` (32-bit) components, and `int` is often replaced with `undefined4`, losing signedness and size information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs passed by value (e.g., `LargeStruct` in `func_struct_byval`) are completely flattened into individual scalar parameters, and structs returned by value (e.g., `ret_small_struct`) are converted to hidden pointer parameters, erasing the type abstraction entirely.
+
+**11. Type Safety:** Score: 5/10
+Justification: The use of generic `undefined4` types and the splitting of 64-bit values into two 32-bit parts necessitates unsafe casts and bit-shifting to reconstruct the original data types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code; complex logic like varargs handling or floating-point emulation is left unexplained.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler failed to recognize the varargs idiom in `varargs_func`, representing it as a void function with a simple counter loop, and missed the struct passing idiom, flattening structures into registers.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler silently presents the low-level implementation (e.g., `__aeabi` calls) without flagging that this represents a deviation from standard C operators or that the varargs logic was lost.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., non-null pointers) or postconditions; for example, the null check in `func_struct_byptr` is visible but not explicitly documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear, but data references are opaque pointers to global addresses (e.g., `&DAT_00011594`), requiring the user to manually navigate to the data section to see the string content.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source file's structure, with related test functions grouped together.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code would not compile as-is due to `undefined4` types, missing global data definitions (the `DAT_` symbols), and the presence of compiler intrinsic functions (`__aeabi_*`) that may not be available in a standard user environment.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable `param_1` in `varargs_func` should be named `count`, and the function logic is completely lost (returns void instead of sum).
+- Struct `LargeStruct` in `func_struct_byval` is flattened into 4 separate `undefined4` parameters, destroying the data structure abstraction.
+- Double and long long parameters in `func_mixed_args` are split into pairs of `undefined4`, obscuring the original types and arithmetic.
+- String literals are replaced with pointers to global data labels (e.g., `&DAT_00011594`), making the output text unreadable without cross-referencing.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The debug symbols allowed the decompiler to recover the exact function names from the source, making the high-level call graph easy to understand.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The complete failure to recover struct definitions (flattening them to scalars) and the loss of the varargs mechanism are the biggest barriers to understanding the code's logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic analysis to re-aggregate adjacent register/stack parameters into struct types based on size and usage patterns.
+2. Improve varargs recovery by identifying standard prologue patterns (e.g., `va_start` usage) and modeling the stack pointer manipulation to access variable arguments.
+3. Map 64-bit register pairs (e.g., R0/R1 on ARM32) back into `long long` or `double` types when they are used together in arithmetic or library calls.

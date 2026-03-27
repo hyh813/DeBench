@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`) with no semantic meaning. Original source had meaningful names like `local`, `arr`, `head`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`double_value`, `local_vars`, `heap_basic`), but runtime functions use generic names (`sub_10598`, `sub_106d8`). Mixed recovery quality.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (unsigned -1), `4294967294` (unsigned -2), and `0xfffffff8` (alignment mask) appear without explanation. String literals reduced to addresses.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `armg_calculate_condition` calls, stack canary checks (`__stack_chk_guard`), redundant assignments (`v0 = v1`), and goto labels throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Loops expressed as do-while with goto instead of for/while. `armg_calculate_condition` replaces natural if-else. Some functions like `double_value` are clean, but `test_heap_memory` is convoluted.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: `main()` incorrectly calls test functions with wrong parameters. `test_heap_memory` is monolithic. Runtime functions (`deregister_tm_clones`) incorrectly included as source code.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt flow. Deep nesting in `linked_list_heap`. Goto labels (`LABEL_106fc`, `LABEL_11869`) interrupt natural reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Stack canary checks repeated in every function. Test functions constant-folded (e.g., `test_stack_memory` prints hardcoded values instead of calling functions). `armg_calculate_condition` duplicates logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `unsigned int`. `main()` returns `unsigned int` instead of `int`. Function signatures have wrong parameter counts (e.g., `static_local` has 4 params instead of 1).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_4`). `Node` and `TreeNode` structures partially recognized. `heap_realloc` incorrectly returns `unsigned int [5]`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: `call_global_callback` uses `goto global_func_ptr` instead of function pointer call. Pointer arithmetic often incorrect. `heap_realloc` return type is invalid C syntax.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only auto-generated function headers. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Memory allocation patterns (malloc/free pairs) not identified. Linked list and tree traversal patterns not recognized or named. Loop patterns remain opaque.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical errors unflagged: `stack_alias` returns constant 20 (logic lost), `heap_realloc` has invalid return type, `armg_calculate_condition` calls unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (NULL checks not annotated). No postcondition inference. Error conditions undocumented despite being present in code.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`global_counter`, `file_scope_static`) declared extern but usage not explained. Callback relationships unclear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions in arbitrary order. No logical grouping by test category (stack/heap/static). Runtime functions mixed with source code. No header file structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone—`armg_calculate_condition` undefined, missing includes, invalid syntax (`unsigned int [5]` return type). Requires extensive patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (4+5+4+4)/4 = 4.25  × 0.25 = 1.06
+Level 3 (Type):        (4+5+3)/3   = 4.00  × 0.20 = 0.80
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25  × 0.15 = 0.34
+Level 5 (Contextual):  (5+4+3)/3   = 4.00  × 0.10 = 0.40
+─────────────────────────────────────────────────────
+Overall Score:                                  3.80/10
+```
+
+### Overall Readability Score: **3.8/10**
+
+### Critical Defects:
+- **`stack_alias` completely broken**: Returns constant `20` instead of implementing pointer aliasing logic—semantic content entirely lost
+- **`main()` signature and calls wrong**: Returns `unsigned int`, calls test functions with incorrect parameters (`test_static_global` called with 6 arguments)
+- **`heap_realloc` invalid C**: Return type `unsigned int [5]` is syntactically invalid and semantically wrong
+- **Pervasive `armg_calculate_condition`**: Symbolic execution artifacts throughout obscure all conditional logic
+- **Test functions constant-folded**: `test_stack_memory` prints hardcoded values instead of actually calling test functions, defeating test purpose
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core test function names preserved from source (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`), providing some semantic anchors
+
+### Most Needs Improvement: **Semantic Transparency (2.25/10 average)**
+- Zero comments, no anomaly flagging for broken functions, no contract documentation—decompiler presents incorrect code with false confidence
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag semantic loss**: When function logic collapses to constants (like `stack_alias` → `return 20`), add explicit warnings that original logic could not be recovered
+2. **Eliminate symbolic execution artifacts**: Replace `armg_calculate_condition` calls with natural C conditionals, or at minimum add comments explaining these are decompiler artifacts
+3. **Recover test function semantics**: Recognize printf patterns with format strings and restore actual function calls instead of constant-folding test results

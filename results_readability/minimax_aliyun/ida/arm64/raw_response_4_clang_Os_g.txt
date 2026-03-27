@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most local variables use generic names like `v2`, `v3`, `v4`, `v5`, `v7`, `v8`, `v9`, `v10`, `v11` in functions such as `varargs_func` and `param_varargs`. While function parameters are well-named (`a`, `b`, `count`, `p`), internal variables lack semantic meaning. For example, in `func_mixed_args`, variable `v7` should be named `len` based on its usage with `strlen()`.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names perfectly match the original source: `cdecl_func`, `call_cdecl`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_many_args`, `func_mixed_args`, `test_calling_conventions`, `test_parameter_passing`, `test_return_values`. The decompiler accurately recovered all 79 functions with their original names.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most numeric literals are correctly extracted (e.g., `15`, `50`, `6`, `42`, `36`, `173`, `300`). However, some magic numbers remain unexplained: `0xFFFFFF80FFFFFFC8` in `varargs_func`, `0x400000004` in `ret_large_struct`. String format strings like `"CALL-L1-01: %d\n"` are perfectly preserved.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean with minimal compiler artifacts. Some noise exists: `LODWORD(v11)` for type casting, SIMD intrinsics (`int64x2_t`, `vaddq_s64`, `vdupq_n_s32`) which are expected for ARM64, and `__fastcall`/`__cdecl` annotations. No debug instrumentation or redundant casts observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural control flow matching the source. However, `varargs_func` and `param_varargs` use goto-based jumps with labels `LABEL_7` and `LABEL_8` instead of cleaner loop constructs. The `ret_large_struct` function has a complex do-while loop with SIMD operations that is harder to follow. At -O0, such goto patterns are decompilation artifacts rather than optimization results.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions are appropriately sized with good separation. The largest function `test_calling_conventions` (~100 lines) contains printf statements but remains manageable. All source functions are correctly separated - no over-fragmentation or inlining artifacts. Parameter lists are reasonable and don't expose implementation details.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive jumps. The `varargs_func` has goto-based jumps that disrupt linear reading, but the overall flow is traceable. No deep nesting (>4 levels) observed. Early returns are used appropriately in functions like `func_struct_byptr`.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy. Loop unrolling is minimal - the `test_calling_conventions` function uses explicit loops for initialization rather than unrolled code. Common subexpression elimination is not prominently visible, suggesting clean decompilation.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct: `int`, `char*`, `double`, `__int64`, `int *`. However, the decompiler uses non-standard type aliases: `_DWORD` (should be `int32_t`), `_QWORD` (should be `int64_t`), `_BYTE`. The `gcc_va_list` is used instead of standard `va_list`. Function pointer types are properly preserved (e.g., `int (*callback)(int)`).
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: Excellent struct recovery. The decompiler correctly identifies: `LargeStruct` with `long long data[16]`, `SmallStruct` with `int x, y`, `SmallPoint` with `int x, y`, `BigStruct` with `int data[16]`. All field names are preserved exactly from the source. This is a major strength of the decompilation.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with appropriate pointer usage. Issues include: in `param_complex_cast`, unsafe casts from `void* p` to `_DWORD*` without validation; in `ret_small_struct`, bitwise manipulation `(unsigned int)y << 32` to pack struct in register. No buffer-overflow-prone patterns detected. The code is mostly safe to reason about.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal useful comments. The decompiler provides only auto-generated headers ("Decompiled by IDA Pro 9.1") and function boundary markers. No explanation of algorithm logic, no recovery of source code comments explaining calling conventions, no documentation of non-obvious transformations. The comment `// attributes: thunk` in `frame_dummy` is helpful but rare.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some idioms are recognized: calling conventions (`__fastcall`, `__cdecl`) are correctly annotated, varargs handling with `va_start`/`va_end` is identified. However, design patterns (state machine, strategy) are not named. The AAPCS, System V AMD64, and Microsoft x64 calling conventions could be explicitly documented as idioms.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The decompiler correctly flags failed decompilations: "FAILED to decompile: memcpy", "FAILED to decompile: strlen", etc. However, it doesn't flag suspicious patterns in the recovered code. The complex goto logic in `varargs_func` could have been flagged as "complex control flow - verify semantics".
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No explicit preconditions or postconditions are documented. However, the code is clear enough that contracts are mostly inferable: `func_struct_byptr` checks `if (!p) return -1` showing a NULL check precondition; `param_double_ptr` has clear postconditions (`*pp = 0`). The decompiler doesn't recover these as explicit contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear from the code structure. Test functions like `call_cdecl()` calling `cdecl_func()` are obvious. However, there's no explicit documentation of call graphs or callback relationships. Static functions like `callback_func` are correctly scoped.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions are in a single flat file with no logical grouping. The original source had clear sections (Calling Conventions, Parameter Passing, Return Values) which are not reflected in the decompiled output. Functions appear in address order rather than semantic grouping.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code should compile with minimal modifications. It uses standard C constructs and only requires standard library headers (`<stdio.h>`, `<stdarg.h>`, `<string.h>`). The decompiled code includes external function references that would link against libc. No compiler-specific hacks observed.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.7/10
+
+**Critical Defects:**
+- Variable naming is poor: generic names like `v2`, `v3`, `v4` in `varargs_func` and `param_varargs` obscure their roles as loop counters and accumulators
+- Control flow uses goto with labels (`LABEL_7`, `LABEL_8`) instead of cleaner loop constructs in varargs functions
+- Comment quality is severely lacking - no recovery of source code comments explaining calling convention tests
+- Type aliases (`_DWORD`, `_QWORD`, `_BYTE`) are non-standard and reduce portability
+- Module organization is flat with no logical grouping reflecting the original source sections
+
+**Best Quality Aspect:** Composite Type Recovery (10/10)  
+The decompiler perfectly recovers all struct types with accurate field names: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct` all match the original source exactly.
+
+**Most Needs Improvement:** Variable Naming Quality (4/10)  
+Despite -O0 compilation producing debug information, the decompiler uses generic variable names (`v2`-`v11`) instead of inferring semantic names from usage patterns and debug symbols.
+
+**Top 3 Recommendations:**
+1. Infer variable names from debug symbols and usage patterns - `v2` in varargs functions should be `sum` based on `v2 += *v5`
+2. Recover loop constructs from goto patterns - the `LABEL_7`/`LABEL_8` goto chain in varargs functions represents a while/for loop
+3. Preserve source code comments - the original had extensive comments explaining calling convention tests (CALL-L1-01 through CALL-L2-11) that were lost

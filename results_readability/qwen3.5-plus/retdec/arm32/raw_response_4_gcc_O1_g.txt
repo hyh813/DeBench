@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are mostly generic (`v1`, `v2`, `v3`, `large`) with no semantic meaning; original had descriptive names like `count`, `sum`, `args`, `strs` that are lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names preserved well from source (`varargs_func`, `test_calling_conventions`, `call_by_value_ptr`); action-oriented and semantically accurate.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `128`, `16`, `0x12345678` appear without explanation; test expectation values (15, 50, 6) are clear but string literals stored as opaque globals (`g1`, `g2`).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary artifacts present (`__stack_chk_fail()` unreachable returns); redundant pointer arithmetic (`v2 += 4`) instead of array indexing clutters code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as while-loops with awkward pointer arithmetic (`v2 += 4; while (v3 != count)`); original for-loops completely lost, requiring effort to trace.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved appropriately; some functions collapsed to constants due to optimization (`call_by_value_ptr` returns just `11`), but granularity is reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom; stack canary checks at function ends create minor non-linearity but no excessive goto usage.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Duplicate pointer arithmetic patterns in varargs handling; dead code from stack protection (`return &g20` after `__stack_chk_fail()`) not eliminated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently instead of `int`; function pointer types preserved (`int32_t (*callback)(int32_t)`); but const-correctness lost and everything eroded to `int32_t`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct definitions lost (`LargeStruct`, `SmallStruct`, `TestIntPair`); struct access converted to raw pointer arithmetic (`*(int32_t *)v2 = v3` instead of `s.data[i]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`(int32_t *)v2`, `(int32_t (*)(int32_t))0x10554`); pointer arithmetic on void-like pointers; no buffer overflow protection visible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **No comments whatsoever** in decompiled code; no algorithm explanations, no decompilation confidence indicators, only meta-information headers.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not recognized as such; no design patterns identified; array initialization loops not identified as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about indirect calls (`(int32_t (*)(int32_t))0x10554`); no indication of struct recovery failures; code presents confidently where incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `pp != NULL`); no postconditions inferred; error conditions not documented despite null checks present.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented; global variable usage (`g1`-`g20`) not explained; no callback relationships documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping comments; static functions not properly scoped (all appear global); no header structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes standard headers; function prototypes present; external functions declared (`__printf_chk`); should compile with minor stub modifications.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Weighted Contribution |
+|-------|--------------|--------|----------------------|
+| L1: Lexical Clarity | 5.75/10 | 30% | 1.725 |
+| L2: Structural Intelligibility | 6.25/10 | 25% | 1.563 |
+| L3: Type System Fidelity | 4.00/10 | 20% | 0.800 |
+| L4: Semantic Transparency | 2.50/10 | 15% | 0.375 |
+| L5: Contextual Coherence | 5.67/10 | 10% | 0.567 |
+
+**Overall Readability Score: 5.03/10**
+
+### Critical Defects
+- **Struct definitions completely lost** - `LargeStruct`, `SmallStruct`, `TestIntPair` all converted to raw pointer arithmetic (`*(int32_t *)v2`)
+- **Zero comments** - No documentation for any non-trivial logic, algorithms, or decompilation uncertainty
+- **Generic variable names** - `v1`, `v2`, `v3` obscure semantic purpose (should be `sum`, `index`, `ptr`)
+- **String literals as opaque globals** - `g1`, `g2`...`g20` instead of meaningful names like `test_header`, `varargs_format`
+- **Unsafe casts without warnings** - Function pointer cast `(int32_t (*)(int32_t))0x10554` presented without anomaly indication
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Original function names preserved accurately (`varargs_func`, `test_calling_conventions`, `param_ptr_array`), maintaining semantic clarity.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions; all composite type access degraded to pointer arithmetic, severely impacting readability.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct definitions from stack layout patterns** - Analyze consistent offset access patterns (`v2`, `v2+4`, `v2+8`) to reconstruct struct field definitions with inferred names.
+2. **Add semantic variable naming from usage context** - Variables used in accumulation should be named `sum`, loop counters as `i`, pointers as `ptr_*` based on dereference patterns.
+3. **Insert decompilation confidence comments** - Flag uncertain reconstructions (e.g., `// DECOMPILER: struct access inferred from offset pattern`) and unresolved indirect calls.

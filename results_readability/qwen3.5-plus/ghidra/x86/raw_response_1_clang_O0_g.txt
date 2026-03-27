@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Original names like `temp1`, `temp2`, `temp3` preserved in `sequential_ops`, but most functions use generic `local_8`, `local_c`, `iVar1` obscuring semantic meaning (e.g., `local_8` used for return values across multiple functions).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: All original function names preserved perfectly (`sequential_ops`, `single_if`, `nested_if_deep`, `duffs_device`), making function purpose immediately clear and matching source intent.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Decimal constants converted to hex inconsistently (0x14=20, 0x1e=30, 0x65=101) reducing readability; magic numbers like `0x3039` (12345) in test calls lack decimal equivalents.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Runtime artifacts present (_init, _start, __do_global_dtors_aux, get_pc_thunk functions); warning comments ("WARNING: Unknown calling convention") add visual noise to core logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control structures recovered well (if-else, for, while), but `switch_fallthrough` uses nested if instead of switch, and `duffs_device` requires goto labels disrupting natural flow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with appropriate granularity; helper functions (`double_value`, `op_add`) remain separate; no inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally, but `duffs_device` uses goto labels (switchD_000120c9_caseD_1) and `loop_multi_exit` uses while(true) with break instead of for loop.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code; some redundant local variable assignments for return values (`local_8 = x; return local_8`); no significant loop unrolling artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic int types preserved but `undefined4` used inconsistently instead of int; function pointer types generic (`_func_int_int *`); some signed/unsigned confusion (`uint local_8` in `if_else`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered well (`int arr[5]`, `int matrix[3][4]`, `int funcs[3]`); no complex structs in test code to evaluate; jmp_buf treated as opaque pointer type.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns (`undefined4`, void* casts); function pointer array indexing lacks bounds checking comments; no buffer overflow warnings despite array usage.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Original extensive comments completely lost; only decompiler warnings present ("WARNING: Unknown calling convention"); no algorithm explanations or test case documentation recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic control flow patterns recognized (if-else, switch, loops); Duff's device partially recovered but not identified by name; state machine pattern not explicitly labeled.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged ("WARNING: Could not recover jumptable" for computed_goto, "Removing unreachable block" for opaque_predicate); but not all suspicious patterns identified.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions recovered; original test case expectations not preserved as documentation; no parameter validation comments or error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved correctly; global variables referenced (jump_buffer, DAT_*); callback relationships visible in code but no explicit call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat output; runtime initialization functions mixed with user code; no header file separation or logical grouping by control flow level.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation successful; external dependencies present (printf, memcpy, memset); DAT_* references need resolution; custom type definitions (_func_int_int *) required.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+9+6+6)/4 = 6.50 × 0.30 = 1.95
+Level 2 (Structural):  (7+8+7+7)/4 = 7.25 × 0.25 = 1.81
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.27
+Level 4 (Semantic):    (3+5+6+2)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (6+5+6)/3   = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                              = 6.20/10
+```
+
+**Overall Readability Score: 6.2/10**
+
+### Critical Defects
+- **Variable `local_8`/`local_c`** used generically across 30+ functions, obscuring semantic purpose (should be `result`, `count`, `sum` based on usage)
+- **All original comments lost** - no test case documentation, algorithm explanations, or purpose descriptions recovered
+- **Hex literals** (0x14, 0x1e, 0x65) reduce readability compared to original decimal constants
+- **No contract/assertion recovery** - preconditions like "n must > 0" for duffs_device not documented
+- **Runtime artifacts mixed** with user code (_init, _start, get_pc_thunk functions clutter output)
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - All original function names preserved perfectly, making code immediately navigable and purpose-clear.
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (2/10)** - Complete absence of precondition/postcondition documentation that existed in original source comments.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable renaming** - Analyze usage patterns to rename `local_8` to context-appropriate names (e.g., variables used in accumulation → `sum`, in counting → `count`)
+2. **Recover and preserve source comments** - When debug symbols (-g) are available, extract and embed original comments into decompiled output
+3. **Add contract inference** - Detect parameter validation patterns (e.g., `if (n <= 0) return -1`) and generate precondition documentation automatically

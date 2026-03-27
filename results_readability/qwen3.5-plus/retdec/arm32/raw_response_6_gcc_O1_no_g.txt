@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`, `str`, `file_path`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `thread_count`, `iterations_per_thread` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Function names partially preserved (`param_strcpy`, `call_strcpy`) but many signatures are wrong—`param_strcpy` takes 1 parameter instead of 2, `param_strcmp` takes 0 instead of 2, making names misleading.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound (`42`, `100`, `1000`, `255`, `0x1000`) without explanation. String literals stored as hex-encoded globals (`g7`, `g8`) with Chinese characters unreadable in decompiled form.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Repeated `__stack_chk_fail()` calls, `UNREACHABLE` markers, and generic struct definitions (`e0`, `e1`, `e2` fields) create visual clutter without adding semantic value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Heavy use of `goto` labels (`lab_0x12204`, `lab_0x12514`, `lab_0x12700`) instead of natural loop constructs. `param_pthread_join` and `param_atomic_ops` are particularly convoluted with jump-based logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved but thread helper functions (`thread_compute`, `thread_sum`, `thread_increment`) not recovered as separate functions—embedded as function pointers instead.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. `param_thread_local_storage` has multiple exit paths via goto that make linear comprehension difficult.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack check failure returns repeated throughout (`return &g42`). Some redundant variable assignments present but no severe loop unrolling artifacts at -O0.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `int32_t`—original `size_t`, `pid_t`, `pthread_t`, `ssize_t` all lost. Function pointers use generic `(int32_t * (*)(int32_t *))` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs have generic field names (`e0`, `e1`, `e2`...). `ThreadData` struct completely lost. `sockaddr`, `stat` structures have no meaningful field names. TLS variables not recognized as thread-local.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout: `(char *)str`, `(int32_t *)str`, `(int32_t *)"BinBench Test Data"`. Pointer arithmetic on `int32_t` instead of proper typed pointers creates potential undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only address ranges (`// Address range: 0x11310 - 0x11328`) and `// UNREACHABLE` markers. No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls (`strcpy`, `memcpy`, `pthread_create`) recognized but not annotated. Thread synchronization patterns (mutex, condition variable) not identified as such.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `UNREACHABLE` markers present after `_exit()` calls. However, indirect function pointer calls (`g1`, `g2`, `g4`, `g5`, `g6`) have no resolution warnings despite being unresolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for malloc results). No postconditions or error condition explanations. Return value semantics completely undocumented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Global variables `g1-g42` used without explanation of purpose. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but organization appears arbitrary by address. No header file structure. Test functions (`test_standard_library_functions`, etc.) preserved but not logically grouped with their tested functions.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies declared (`pthread.h`, `sys/socket.h`). However, incorrect function signatures would cause runtime issues if actually called.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+5)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+6+4+6)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (2+4+4+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (4+5+6)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.01/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Function signature corruption**: `param_strcpy(char *dst, const char *src)` became `param_strcpy(int32_t *str)` losing the `src` parameter entirely
+- **Type system collapse**: All types degraded to `int32_t`, losing `size_t`, `pid_t`, `pthread_t`, `FILE*` distinctions
+- **Struct field anonymization**: All struct fields named `e0`, `e1`, `e2` losing semantic meaning (e.g., `ThreadData.start`, `ThreadData.end`, `ThreadData.result`)
+- **Control flow degradation**: Natural loops converted to goto-based patterns (`lab_0x12204`, `lab_0x12514`) making execution flow hard to follow
+- **Zero documentation**: No comments explaining algorithm intent, error conditions, or decompilation confidence
+
+### Best Quality Aspect:
+- **Build System Compatibility (6/10)** - The decompiled code includes necessary headers and the metadata indicates it compiles, showing basic structural integrity despite semantic losses.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover meaningful struct/union definitions; all fields anonymized to `e0`, `e1`, `e2`, making complex data structures incomprehensible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameter semantics from call sites** - Analyze how `param_strcpy` is called in `call_strcpy` to infer it needs 2 parameters, not 1
+2. **Preserve type information from debug symbols** - At `-O0 -g`, DWARF debug info should enable recovery of `size_t`, `pthread_t`, and struct field names
+3. **Recognize standard library patterns and annotate them** - Identify `pthread_create`/`pthread_join` sequences and add comments indicating thread synchronization patterns

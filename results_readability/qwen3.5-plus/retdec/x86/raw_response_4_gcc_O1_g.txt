@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `a1`, `a2`) with no semantic meaning. Some parameters retain original names (`count`, `seed`, `x`, `new_val`, `pp`), but most local variables lose all context (e.g., `v6 = 8 * v4 + (int32_t)&v5` in `test_calling_conventions`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names are preserved well (`cdecl_func`, `varargs_func`, `test_calling_conventions`). However, compiler helper functions are anonymized (`function_1090`, `function_10a0`, `function_10b0`, `function_10c0`, `function_10d0`, `function_10e0`, `function_111c`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Heavy use of unexplained magic numbers (`0x3ef4`, `0x3edf`, `0x3e47`, `0x12345678`). String literals are referenced via offsets (`(char *)(v1 + 2885)`) instead of actual strings, making them completely opaque.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86_get_pc_thunk_*` functions, `__readgsdword(20)` stack canary checks, `__printf_chk` wrappers, `__asm_hlt()`, `__asm_rep_movsd_memcpy`, and UNREACHABLE markers throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops are recoverable but awkward (e.g., `varargs_func` uses manual pointer arithmetic `v2 += 4` instead of `va_arg`). Some functions are constant-folded (`call_cdecl` returns literal `15`). Complex conditionals like `ret_complex_expr` use obscure overflow-checking logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but compiler runtime functions (`__do_global_ctors_aux`, `register_tm_clones`) are mixed with user code. Some functions are oversimplified due to constant folding.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but stack checking code introduces forward jumps. Complex functions like `test_calling_conventions` have disrupted flow due to compiler artifacts and manual loop unrolling.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack checking code repeats in nearly every function. PC-thunk functions appear multiple times. Both original computations and constant-folded results coexist (e.g., `call_cdecl` returns `15` while `cdecl_func` still computes `a1 + a2`).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently, but pointer types often degrade to integers (`int32_t str` instead of `char *`). Function pointers partially recovered (`int32_t (*callback)(int32_t)`). Float types use custom typedefs (`float64_t`, `float80_t`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure.** All struct definitions lost (`LargeStruct`, `SmallStruct`, `SmallPoint`, `LargeData`, `BigStruct`, `TestIntPair`). Structure access becomes raw pointer arithmetic: `*(int32_t *)(a1 + 4) * *(int32_t *)a1` instead of `p->x * p->y`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout: `(char *)str`, `(int32_t *)a1`, `(int32_t (*)(int32_t))(v1 - 1456)`. Pointer arithmetic on integers (`v2 += 4`, `v9 += 8`). Array initialization corrupted (`strs = {(char *)3, NULL, NULL}`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated metadata comments present (`// Address range: 0x1000 - 0x102e`, `// Line range: 365 - 365`, `// From module: /work/4.c`). No semantic explanations of algorithm logic or non-obvious operations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Variable argument patterns not identified as `va_list` usage. Stack canary checks unexplained. PC-thunk patterns for position-independent code unrecognized. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: UNREACHABLE markers present but unexplained. Stack checking failures not contextualized. No warnings about decompilation uncertainty or unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null checks exist (`if (a1 == 0)`, `if (pp == NULL)`) but not documented as preconditions. No postcondition documentation. Error conditions lack explanation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variable `g1` usage unclear. Callback relationships partially visible through function pointer types but not explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Original test sections (CALL-L1, CALL-L2, PARAM-L1, etc.) not preserved. Compiler runtime functions mixed with user code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone—missing definitions for `__readgsdword`, `__asm_hlt`, `__asm_rep_movsd_memcpy`. Custom typedefs added but external dependencies undocumented. Requires significant stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (5×0.10 + 7×0.10 + 4×0.05 + 4×0.05) = 1.60
+Level 2 (25%): (5×0.08 + 6×0.07 + 6×0.05 + 5×0.05) = 1.37
+Level 3 (20%): (5×0.08 + 2×0.07 + 3×0.05)           = 0.69
+Level 4 (15%): (4×0.05 + 3×0.03 + 4×0.03 + 3×0.04)   = 0.53
+Level 5 (10%): (5×0.04 + 4×0.03 + 4×0.03)            = 0.44
+─────────────────────────────────────────────────────────────
+Overall Score:                                          4.63/10
+```
+
+### Overall Readability Score: **4.6/10**
+
+### Critical Defects:
+- **All struct type definitions lost** - `LargeStruct`, `SmallStruct`, `TestIntPair` completely missing; access reduced to pointer arithmetic
+- **String literals replaced with offsets** - `(char *)(v1 + 2885)` instead of actual string content
+- **Excessive compiler noise** - `__x86_get_pc_thunk_*`, `__readgsdword(20)`, `__printf_chk` wrappers obscure logic
+- **Variable names completely generic** - `v1`, `v2`, `v3` dominate with no semantic meaning
+- **Type safety violations** - Unsafe casts throughout, pointer arithmetic on integers, corrupted array initialization
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core user function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`), maintaining semantic connection to original source.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions; all composite types reduced to raw pointer arithmetic, making structure-based code nearly unreadable.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from memory access patterns** - Analyze consistent offset patterns (e.g., `+0`, `+4`, `+8`) to reconstruct struct layouts with field names based on usage context.
+2. **Extract string literals from data sections** - Resolve PC-relative offsets to actual string content instead of showing `(char *)(v1 + offset)`.
+3. **Filter compiler runtime artifacts** - Identify and optionally hide or comment `__x86_get_pc_thunk_*`, stack canary checks, and other compiler-generated boilerplate that obscures user logic.

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `arg_0`, providing zero semantic context (e.g., `v0` used for `value` in `SimpleClass`).
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: While some C++ mangled names are demangled (e.g., `test_cpp_member_func`), many functions remain generic addresses like `sub_401020` or `sub_401167`, obscuring their purpose.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with magic numbers (e.g., `4700`, `20`, `4294967295`) without named constants or comments explaining their derivation from the original logic.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise is present, including artifacts like `/* do not return */`, redundant casts to `unsigned long long`, and raw `goto` statements that clutter the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Control flow is unnatural, relying heavily on `goto` (e.g., `goto g_404010`) and failing to reconstruct high-level constructs like `try/catch` blocks or `for` loops in many places.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: While functions are separated, many are effectively empty stubs (e.g., `test_cpp_virtual_func` just returns), failing to represent the actual logic or granularity of the source.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: The code does not read linearly; it contains abrupt jumps and missing logic blocks that make top-to-bottom comprehension nearly impossible.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: There is little redundancy, but this is largely because the actual logic has been stripped or replaced by constants rather than optimized cleanly.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Types are heavily degraded; complex objects are reduced to generic `void*` or `unsigned long long`, and specific types like `size_t` or class instances are lost.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: C++ class structures (`SimpleClass`, `Base`, `Derived`) are completely unrecovered; only generic `struct_0` and `struct_1` appear, with no member fields or inheritance hierarchy visible.
+
+**11. Type Safety:** Score: 3/10  
+Justification: The code contains unsafe casts and pointer arithmetic (e.g., `goto *((long long *)*((long long *)&arg_0))`) that bypass type safety mechanisms present in the original C++ source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are virtually non-existent, with the exception of low-level annotations like `/* do not return */`, offering no insight into the algorithm's intent.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: High-level C++ idioms like RAII, smart pointers, and virtual dispatch are completely obscured; virtual calls are represented as raw indirect jumps.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The decompiler presents the code confidently despite massive logic loss (e.g., empty functions for complex tests) without flagging these as potential errors or anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented; the logic of the original functions is entirely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Relationships between classes and functions are lost; calls to standard library or runtime functions (e.g., `__cxa_throw`) are visible but lack the context of the C++ constructs they support.
+
+**17. Module Organization:** Score: 5/10  
+Justification: The code is presented as a flat list of functions without logical grouping or namespace recovery, though the order roughly follows the binary layout.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code would not compile; it relies on undefined symbols and incorrect signatures (e.g., `void test_cpp_virtual_func()` instead of returning `int`).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.9/10
+
+**Critical Defects:**
+- **Missing Logic**: Functions like `test_cpp_virtual_func` and `test_cpp_multiple_inheritance` are decompiled as empty `void` functions, completely erasing the implementation.
+- **Lost Class Structure**: C++ classes are not recovered; members are accessed via raw offsets or not at all, reducing complex objects to generic pointers.
+- **Exception Handling Obscured**: `try/catch` blocks are replaced by raw C++ runtime calls (`__cxa_allocate_exception`, `__cxa_throw`), destroying the control flow structure.
+- **Hardcoded Results**: Algorithmic logic is often replaced by pre-calculated constants (e.g., `4700`), making the code unreadable as a functional description.
+- **Architecture Mismatch**: The decompiled code targets AMD64 (x86_64) while the source metadata specifies ARM64, indicating a fundamental analysis error.
+
+**Best Quality Aspect:** Function Naming Quality (scored 4/10)  
+- **Why?** It managed to demangle some C++ symbols (e.g., `_Z20test_cpp_member_funcv`), which is slightly better than the completely generic addresses seen in other dimensions.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)  
+- **Why?** The complete failure to recover C++ class definitions, inheritance hierarchies, and member variables renders the object-oriented nature of the source code indecipherable.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Implement C++ Class Recovery**: Analyze vtables and member access patterns to reconstruct class definitions, inheritance relationships, and member variable names.
+2.  **Reconstruct High-Level Control Flow**: specifically for exception handling, map `__cxa` runtime calls back into `try/catch` blocks to restore the original logic structure.
+3.  **Improve Logic Extraction**: Address the issue where complex functions are reduced to empty stubs or constant returns; ensure the decompiler traces the full execution path rather than optimizing away the logic prematurely.

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Parameters use generic ARM64 convention names (`a0`, `a1`, `a2`, `a3`), and local variables are mostly register-derived names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`). Some contextual names like `i`, `cur`, `result` exist but are rare. The original source used meaningful names like `temp1`, `temp2`, `x`, `a`, `b`, `c` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions correctly recovered: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `recursion_factorial`, `double_value`, `triple_value`, `op_add`, `op_sub`, `op_mul`, etc. However, some utility functions use generic `sub_XXXXX` format, and the complex functions like `if_elseif_long` show structural issues. The main function names match source well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (representing -1 as unsigned), `4294967294` (-2), `4294967291` (-5) appear without explanation. The value `4294967295` is used 15+ times for error returns. Some values like `100`, `10`, `32` are self-evident but not documented. The original source used explicit values in printf which are partially preserved.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: stack canary checks (`GLIBC_2.4::__stack_chk_guard`, `__stack_chk_fail()`), ARM condition code calculations (`armg_calculate_condition`, `armg_calculate_flag_c`, `armg_calculate_flag_v`), redundant register assignments (`v1 = v2; v0 = v3;`), and dead code patterns. These artifacts severely clutter the decompiled output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control structures are recognizable (if-else, loops, switch), but many use goto labels instead of structured constructs. For example, `loop_for_fixed` uses `goto LABEL_10848` instead of a proper while/for loop. The `if_else` function has convoluted logic with `armg_calculate_condition` calls. At -O0, this level of goto usage is unnecessary and indicates decompilation issues.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity closely matches original source. The original has 30+ functions, and decompiled output preserves this decomposition. Functions like `recursion_factorial`, `double_value`, `triple_value` are properly separated. The test functions `test_control_flow_l1/2/3` are correctly extracted. No severe fragmentation or monolith issues.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but forward jumps using goto labels disrupt flow. Functions like `nested_if_deep` have deep nesting (5 levels) making linear reading difficult. The `switch_fallthrough` uses complex goto patterns. Overall moderate non-linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns present. For example, in `loop_complex_cond`, the same condition calculation appears twice in if/else branches. The `conditional_func_ptr` has redundant variable assignments. However, no severe dead code elimination failures observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All functions use `unsigned int` for parameters and returns, while original source uses `signed int`. This is a critical type error - `single_if(-5)` would return `-5` in source but `4294967291` in decompiled. Pointer types are generic `unsigned int` instead of proper pointer types. The original `int` semantics are lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union recovery. Arrays like `int arr[] = {10, 20, 30, 40, 50}` in `loop_break` are decomposed into individual variables (`v0 = 10; v1 = 20; v2 = 30; v3 = 40; v4 = 50;`). The matrix in `loop_multi_exit` becomes separate variables. Original data structures are completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns present. Function pointer calls use `goto` instead of proper function pointer invocation (`goto a0;` in `call_func_ptr`). Pointer arithmetic is raw (`v16 += 4`, `a0 + v2 * 4`). The `opaque_predicate` has complex flag calculations that could cause issues. No alignment or restrict annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining each function's purpose, test scenarios, and difficulty ratings. Zero recovery of documentation. This is a major readability issue for complex functions like `duffs_device` or `fsm_func_table`.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized but not named. Switch statements are partially identified (e.g., `switch_small` uses `CSWTCH.56` jump table). Recursion is recognized (`recursion_factorial`). However, patterns like Duff's device, state machines, and callback patterns are not explicitly identified or named in the output.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No explicit flags for uncertain decompilation. The `call_func_ptr` uses goto which is unusual and could be flagged. Indirect calls in `call_func_ptr_array` and `fsm_func_table` aren't marked as potentially unresolved. No warnings about the type mismatch (signed vs unsigned).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. The original source has implicit contracts (e.g., `loop_break` requires target to be in array, `duffs_device` requires n > 0). Zero contract information recovered. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., `call_func_ptr_array` calls `double_value`, `triple_value`, `recursion_factorial`). However, no explicit documentation of who calls whom or global variable usage. The test functions show what's being called but relationships aren't summarized.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped reasonably. Test functions (`test_control_flow_l1/2/3`) are separate from implementation functions. Helper functions like `op_add`, `op_sub` are grouped together. However, the file is flat with no logical section markers. Original had clear section comments which are lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will not compile standalone. Multiple external dependencies: `puts`, `__printf_chk`, `__libc_start_main`, `__stack_chk_fail`, `__aeabi_idiv`, `__aeabi_idivmod`, `__longjmp_chk`, `memset`. No stub declarations provided. The `goto` for function pointer call won't compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Type system failure**: All `int` types converted to `unsigned int`, breaking signed semantics (e.g., `single_if(-5)` returns `4294967291` instead of `-5`)
+- **No struct/union recovery**: Arrays decomposed into individual variables, losing original data structure semantics
+- **Severe noise pollution**: ARM condition code calculations (`armg_calculate_condition`) and stack canaries clutter every function
+- **No comments**: Zero documentation recovered from 961-line source with extensive comments
+- **Function pointer misuse**: `call_func_ptr` uses `goto a0` instead of proper function pointer invocation
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+The decompiler preserved the original function granularity - all 30+ functions from source are properly separated with correct boundaries.
+
+**Most Needs Improvement:** Type System Fidelity (4/10)  
+The unsigned int vs int mismatch fundamentally breaks semantic correctness. Combined with no struct recovery, the decompiled code produces incorrect results for negative numbers and loses all data structure information.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer signed vs unsigned from usage**: Analyze comparison operations and arithmetic to determine correct integer types. The original uses `x > 0`, `x < 0` which clearly indicate signed semantics.
+2. **Recover arrays from sequential variable patterns**: When variables are initialized as `v0=10; v1=20; v2=30; v3=40; v4=50;` and accessed sequentially, recognize this as an array `int arr[] = {10,20,30,40,50}`.
+3. **Filter compiler artifacts**: The `armg_calculate_condition` and stack canary checks are noise that should be abstracted away or marked as compiler-generated.

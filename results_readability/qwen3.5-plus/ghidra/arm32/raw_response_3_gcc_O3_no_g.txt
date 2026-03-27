@@ -1,0 +1,113 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar2`, `piVar3`) with zero semantic meaning recovered. No variable indicates purpose (e.g., `arr` becomes `__ptr`, loop counters become `iVar4`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`double_value`, `local_vars`, `heap_basic`), but optimization suffixes appear (`alloca_usage.constprop.0`) and some test helpers lost clarity.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x2a` for 42, `0xf` for 15, `0x14` for 20, `0x32` for 50). Hex representation obscures decimal intent from source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail`), unreachable block warnings, and excessive type casting artifacts (`(int *)((int)__ptr + -4)`) clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs, but optimization artifacts create awkward patterns. Some functions show "WARNING: Removing unreachable block" disrupting flow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Test functions heavily inlined/optimized (e.g., `test_stack_memory` prints constants instead of calling functions). Constant-propagated variants created (`alloca_usage.constprop.0`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but test functions have complex nesting with goto-style labels (`LAB_000110fc`). Forward jumps disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Compile-time computations visible in decompiled code (test functions compute constants at runtime that were folded). Some redundant pointer arithmetic patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, generic `int`, and `void*`. Lost `size_t`, `int32_t`, and signed/unsigned distinctions. Function pointers degraded to `code *`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `Point` struct becomes `malloc(8)`, `Node` struct becomes raw pointer arithmetic. No field names recovered (`__ptr[1]` instead of `node->next`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts visible (`(int *)((int)__ptr + -4)`), pointer arithmetic on void pointers, and type-confused operations throughout heap functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated warnings present ("WARNING: Subroutine does not return"). Zero semantic comments explaining algorithm intent or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Memory allocation patterns (malloc/free pairs) visible but not labeled. Linked list traversal not recognized as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings about unreachable blocks and indirect calls ("Could not recover jumptable"). Stack check failures noted but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (NULL checks present but not labeled as contracts). No postconditions or invariants recovered from source assertions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`global_counter`, `file_scope_static`) referenced without usage context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 113 functions in single output with no logical grouping. Static functions not distinguished from public API. No header-like organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would require significant work to compile - missing struct definitions, type declarations, and external symbol declarations. Not standalone compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+4+5)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (6+5+6+6)/4 = 5.75  × 0.25 = 1.44
+Level 3 (Type):        (4+2+4)/3   = 3.33  × 0.20 = 0.67
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+
+Overall Score: 4.38/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Composite types completely lost**: `Point`, `Node`, `TreeNode` structs reduced to `malloc(size)` with raw pointer arithmetic (`__ptr[1]` instead of `node->next`)
+- **Variable names entirely generic**: `param_1`, `iVar1`, `uVar2` provide zero semantic information about purpose
+- **Test functions over-optimized**: Constant propagation replaced function calls with hardcoded values, losing original test structure
+- **Magic numbers in hex**: `0x2a`, `0xf`, `0x14` obscure simple decimal values (42, 15, 20) from source
+- **Function signature corruption**: `static_local` and `global_var_access` lost return types in decompilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved from debug symbols, allowing identification of `double_value`, `heap_basic`, `linked_list_heap`, etc.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct definitions; all composite types shown as raw memory allocations with pointer arithmetic, making data structure intent invisible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct types from allocation patterns**: Detect `malloc(8)` + field access patterns (`__ptr[0]`, `__ptr[1]`) and suggest struct definitions with inferred field names based on usage context.
+
+2. **Convert hex literals to decimal when appropriate**: Detect when hex values represent simple decimal constants (0x2a→42, 0xf→15) and use decimal representation for readability.
+
+3. **Preserve test function call structure**: Avoid constant propagation in test harnesses; maintain original function call relationships even when compiler optimized them, perhaps with comments indicating optimization.
+
+---
+
+### Additional Observations:
+
+**Metadata Discrepancy**: Source claims `-O0 -g` but binary path shows `O3_no_g` and decompiled code exhibits aggressive optimization (constant folding, function inlining). This significantly impacts expected readability scores.
+
+**Function Count Inflation**: 113 functions decompiled vs ~50 in source indicates substantial compiler runtime support code inclusion without clear separation from user code.
+
+**Stack Protection Artifacts**: `__stack_chk_fail` calls and canary variables (`aiStack_14[2]`) add noise that obscures original logic flow.

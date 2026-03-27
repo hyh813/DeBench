@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively named `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6` with no semantic meaning. For example, in `test_cpp_member_func()`, the local buffer is `char v1[31]` instead of a meaningful name like `name_buffer`. This makes tracking variable purpose nearly impossible.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions have proper demangled C++ names like `_Z20test_cpp_member_funcv` and class methods like `Base::virtual_func`. However, many functions remain as `sub_XXXXXX` format (e.g., `sub_4011b0`, `sub_401294`), and the naming doesn't indicate parameter types or count.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `42` in exception throwing and `31` for buffer sizes appear without explanation. Some values like `4700` in printf are clearly computed constants but not documented. The literal `0x1234` from `getClassID()` is not visible in the decompiled test function.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise present including: goto statements for simple control flow (e.g., `goto *((long long *)*((long long *)&arg_0))`), stack check guard references (`*((long long *)&__stack_chk_guard)`), and redundant return statements. The decompilation includes many wrapper functions that just call other functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Control flow is often unnatural with goto statements used for virtual dispatch (`goto *((long long *)*((long long *)&arg_0))`) and complex conditional expressions. The exception handling uses `__cxa_throw` followed by `_Unwind_Resume` which obscures the try-catch structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably decomposed but many are trivial wrappers (e.g., `sub_401294` just calls `test_cpp_member_func()`). Some functions like `test_cpp_oo_features()` are 50+ lines with mixed responsibilities. Parameter lists expose implementation details in some cases.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Poor linearization with frequent forward jumps. The virtual function call uses computed goto. Exception handling disrupts linear flow. Multiple thunk functions for multiple inheritance add non-linear complexity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns present, like duplicate calls in `template_max<double>` where `v0` and `v3` are used redundantly. Dead code not eliminated in some places. Template instantiation shows some redundancy.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - most parameters are `unsigned long` or `char*` instead of specific types. Function parameters like `void* this` lose const-correctness. Integer types are generic `int` or `unsigned long long` rather than specific widths.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Only partial struct recovery - `struct_2` and `struct_3` are defined for RTTI but with generic field names. Most class data members are accessed via raw pointer arithmetic (e.g., `ptr[40]`, `ptr[80]` for Container size fields) rather than named struct members.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations present: pointer arithmetic without bounds (e.g., `ptr + 4 * v0`), unsafe casts in virtual function thunks (`a0 - 16`, `a0 + 8`), and void pointer arithmetic throughout. The virtual dispatch uses raw pointer manipulation.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments present. Only auto-generated function headers like "// Function: sub_4011b0 at 0x4011b0". No explanation of algorithm logic, no recovery confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ idioms partially recognized (virtual function calls via vtable, thunk functions for multiple inheritance) but not explicitly named or documented. The virtual inheritance thunks are present but their purpose isn't explained.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some indirect calls are flagged but without explanation (e.g., the virtual function dispatch). No warnings about unresolved calls or unusual stack layouts. The complex vtable manipulation in diamond inheritance isn't flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of error conditions or expected input ranges. The code presents everything as fact without uncertainty indicators.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are visible through the code but not documented. No comments indicating who calls whom or global variable usage. The test function calls are visible but relationships aren't explicit.
+
+**17. Module Organization:** Score: 2/10  
+Justification: Functions are organized by address rather than logically grouped. Related test functions are scattered. No namespace or class grouping visible in the output. The file is a single monolithic listing.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has extern declarations for standard library functions. Some functions have proper prototypes. However, many missing declarations and the code would require significant patching to compile. The thunk functions have unusual signatures.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable naming is universally generic (`v0`-`v6`), making code flow nearly impossible to trace
+- No comments explaining any algorithm, contract, or anomaly
+- Composite types not recovered - all struct fields accessed via raw pointer arithmetic
+- Type precision severely degraded - most types are generic `void*` or `unsigned long`
+- Control flow uses goto and computed jumps instead of natural C++ constructs
+
+**Best Quality Aspect:** Function Decomposition (scored 6/10)  
+- Functions are reasonably sized and some C++ method relationships are preserved in naming
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10) and Comment Quality (scored 2/10)  
+- The combination of meaningless variable names and complete lack of documentation makes the code practically unusable for analysis
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `v1[31]` used with `strncpy` should be named `name_buffer`)
+2. Add comments explaining C++ idioms (virtual dispatch, vtable layout, thunk functions)
+3. Recover struct layouts from pointer arithmetic patterns (e.g., `ptr[40]` accessing size field should become `ptr->size`)

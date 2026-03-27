@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v1`, `v2`, `v3`, `a1`, `a2`, `result`. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value`. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: The decompiler provides demangled names (e.g., `_Z18test_cpp_exceptionv` → `test_cpp_exception()`) which is helpful. However, many utility functions use generic names like `function_1150`, `function_1160` with no semantic meaning.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: String literals are encoded as integers (e.g., `0x74736554` for "Test"). Magic numbers like `0x2bea`, `-0x2be8` appear without explanation. The original source had clear string literals and meaningful constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_bx`, `__readgsdword(20)` for stack canaries, numerous thunk functions (`_ZThn8_N12MultiDerived5funcBEv`), and internal utility functions that obscure the actual program logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with recognizable if-else structures. Exception handling (`test_cpp_exception`) shows some complexity with goto-like patterns, but overall flow is traceable. At -O0, this is acceptable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and cohesive. The decompiler maintains proper function boundaries. Template instantiations are correctly separated (e.g., `Container<int>::push` vs `Container<double>::push`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Exception handling has some forward jumps but they're manageable. Most functions have clear entry and exit points.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. The decompiled output is relatively clean in this regard.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently which is appropriate for x86. However, loses C++ type distinctions: `bool` becomes `int32_t`, `size_t` becomes `int32_t`, `float`/`double` become `float64_t`/`float80_t`. The original `const` correctness is lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No C++ class structures recovered. Instead uses raw pointer arithmetic: `*(int32_t *)((int32_t)result + 4)` for accessing `multiplier` in Derived class. Original had clear struct fields like `obj.dataA`, `obj.dataB`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(int32_t *)a1`, `(struct _Unwind_Exception *)v4`, `(char *)v4`. Pointer arithmetic like `v8 - 16`, `a1 - 8` without bounds checking. Function pointers cast to `int32_t`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Some useful comments present: "Demangled: test_cpp_exception()" shows original name, address ranges provided. However, no explanation of what the code does, no algorithm documentation, no recovery of original comments from source.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No recognition of C++ idioms. Virtual function dispatch is shown as raw vtable access without labeling. Template instantiation patterns not identified. Exception handling not labeled as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Indirect calls that couldn't be resolved are not flagged. No indication of potential undefined behavior in the code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No recovery of preconditions, postconditions, or invariants. Original source had clear semantics (e.g., "requires: idx < size") that are not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., `_Z20test_cpp_constructorv()` called from `_Z20test_cpp_oo_featuresv()`). However, no explicit documentation of call graphs or relationships.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single monolithic output file with 94 functions. No logical grouping of related functions. Original source had clear separation into test functions and classes.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile standalone. Many undefined references: `__cxa_allocate_exception`, `__cxa_throw`, `_Znwj`, `_ZdlPvj`, etc. No header declarations or dependency documentation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`v1`, `v2`, `a1`, `a2`) making code comprehension extremely difficult
+- No C++ class/struct recovery - all composite types lost to raw pointer arithmetic
+- String literals encoded as integers (e.g., `0x74736554` for "Test") without explanation
+- Heavy compiler artifact noise (thunks, stack canaries, internal functions) obscures logic
+- No type safety - numerous unsafe casts between incompatible pointer types
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+The decompiler preserves natural control flow structures (if-else, loops) reasonably well, making the execution logic traceable despite other issues.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+All variables use generic single-letter names with numbers, completely losing the semantic meaning from the original source (e.g., `value`, `name`, `size`, `multiplier`).
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - e.g., variables used in size checks could be named `size` or `count`
+2. Recover C++ class structures as structs with meaningful field names instead of raw pointer arithmetic
+3. Decode string literals from integer representations and add comments explaining the encoding

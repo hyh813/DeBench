@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Function parameters retain original names (`a`, `b`, `count`, `x`, `p`, `s`), but local variables use generic names (`v0`, `v1`, `v2`, `v4`, `v5`) that obscure purpose. In `func_mixed_args`, `v4` and `v5` hold double components but aren't named accordingly.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`), making purpose immediately clear. A few helper functions use generic names (`sub_3F0`), but core test functions maintain semantic clarity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test outputs are hardcoded constants (15, 50, 6) rather than showing actual function calls, obscuring test logic. Magic numbers like `0x80000000`, `0x100000`, `16` appear without explanation in floating-point helpers.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple decompilation warnings present ("positive sp value has been detected", "local variable allocation has failed"). Register comments (`// r0`, `// r1`) and architecture annotations (`__fastcall`) add clutter without semantic value.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural if/else and loop structures. However, complex functions like `_aeabi_dadd` use excessive gotos and labels. The varargs loop pattern is recoverable but uses do-while instead of idiomatic for-loop.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. However, aggressive O1 optimization caused constant folding—`call_cdecl()` returns 15 directly instead of showing `cdecl_func(5, 10)` call, losing call structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Simple functions read top-to-bottom well with clear early returns. Complex floating-point helpers have poor linearization with many forward jumps and labels (LABEL_30, LABEL_47, LABEL_69) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant variable initializations present (`v1 = 0; v2 = 0;` in `func_struct_byval`). Floating-point runtime helpers show significant redundancy from compiler patterns. Test functions lost call structure through constant folding.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved well (int, char*, double, __int64, size_t). Some precision lost in varargs handling (`_DWORD` instead of `int`). Calling convention annotations (`__fastcall`) may not reflect original source accurately on ARM.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Struct field access recovered correctly (`p->x`, `p->y`, `s.data[i]`, `retstr->data[i]`), showing type information preserved. However, struct definitions aren't included in output, requiring inference from usage patterns.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(_DWORD *)p`, `(int *)v5`, `(unsigned __int8 *)str`). Type coercion macros (`COERCE_DOUBLE`, `__PAIR64__`) indicate type manipulation that obscures safety. Pointer casts for string access are common but potentially unsafe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are mostly auto-generated warnings and metadata. No semantic explanations of algorithm purpose or logic. Failed decompilation notices are helpful but don't explain recovered code semantics.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition or naming. Common patterns (varargs iteration, struct access, pointer arithmetic) are present but not identified or explained. No design pattern documentation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Anomalies are flagged (stack issues, allocation failures, 7 failed decompilations) but without explanation or guidance. Warnings indicate problems ("positive sp value has been detected") but don't help resolve them.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No contract documentation. Null checks exist in code (`if (p)`, `if (pp == 0)`) but aren't documented as preconditions. No error condition or return value semantics explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Internal function calls are clear within decompiled code. External dependencies show as failed decompilations (`__imp_printf`, `__imp_strlen`) without resolution. No call graph or relationship documentation between functions.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (calling conventions, parameter passing, return values, main). Runtime helpers (`_aeabi_*`) mixed in without clear separation. No module or file organization documentation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Cannot compile standalone due to 7 failed external function decompilations, missing struct definitions, architecture-specific annotations, and unresolved runtime library dependencies (`_aeabi_*` functions).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+8+5+5)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (7+6+5)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (4+4+5+3)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.63/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Constant folding obscures test logic**: Functions like `call_cdecl()` return hardcoded `15` instead of showing `cdecl_func(5, 10)` call
+- **7 external functions failed to decompile**: `__imp_printf`, `__imp_strlen`, `__imp_puts`, etc. listed as "FAILED to decompile"
+- **Generic variable names**: Local variables use `v0`, `v1`, `v2` pattern obscuring semantic purpose
+- **No struct definitions included**: Struct types referenced but definitions not recovered in output
+- **Floating-point helpers unreadable**: `_aeabi_dadd` function is 200+ lines of goto-heavy code with no semantic clarity
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Core function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`), making immediate purpose recognition possible
+
+### Most Needs Improvement: **Assertion & Contract Recovery (3/10)**
+- No preconditions, postconditions, or error semantics documented despite null checks existing in code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover constant-folded call sites**: Instead of showing `return 15`, display `return cdecl_func(5, 10)` with a note about optimization
+2. **Add struct definition recovery**: Include recovered struct layouts with field names based on access patterns
+3. **Generate contract documentation**: Auto-detect null checks and document as `// requires: p != NULL` preconditions

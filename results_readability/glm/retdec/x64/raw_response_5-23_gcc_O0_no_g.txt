@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `a1`, `v1`, `v2`, and `v3`, completely losing the semantic meaning of original parameters like `size`, `x`, or `result`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `param_macro_constants` and `call_asm_basic` are perfectly recovered, likely due to the presence of debug symbols (`-g` flag), matching the source exactly.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The constant `1024` is incorrectly recovered as the address of a global variable `&g20` (which happens to be at 0x400), and magic numbers like `64` and `512` remain unexplained, though string literals are recovered well.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is littered with redundant `& 0xffffffff` masks for truncation and stack canary checks (`__readfsqword(40)`), which significantly clutter the logic without adding value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally natural with `while` loops and `if` statements, but the execution of dynamic code in `param_dynamic_code` is missing/obscured, and the `SQUARE` macro expansion results in confusing arithmetic.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are mapped 1:1 with the source, maintaining appropriate granularity and cohesion without unwanted inlining or outlining.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with standard early returns; stack canary checks are the only minor interruption to the flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no dead code or obvious loop unrolling artifacts; the logic is concise aside from the type masking noise.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate (e.g., `int64_t` for pointers/longs, `int32_t` for ints), though the use of `int128_t` for SIMD registers is a specific compiler extension that reduces portability.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Arrays and pointers are correctly distinguished (e.g., `int64_t * a1`), and structure usage is implicit but handled correctly via pointer arithmetic.
+
+**11. Type Safety:** Score: 7/10
+Justification: Frequent casts like `(int32_t)a1` are technically safe but verbose; the use of `__asm_` intrinsics implies type-unsafe operations at the hardware level, which is accurate to the source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of the "magic" arithmetic operations.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The `SQUARE` macro is decompiled into a confusing bit-shift expression `0x100000000 * a1 >> 32` instead of a simple multiplication, and the dynamic code execution pattern is not recognized.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No warnings are provided for suspicious constructs like the self-modifying code in `param_dynamic_code` or the comparison against a global address.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants (e.g., the requirements for `mmap` or `mprotect`).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the correct recovered names, making the call graph easy to follow.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are ordered logically, matching the source file's structure, with helper functions and test functions grouped appropriately.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on non-standard types like `int128_t` and compiler intrinsics (`__asm_movaps`) that may require specific flags or headers to compile successfully.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`a1`, `v1`), obscuring parameter semantics.
+- Constant `1024` is incorrectly represented as the address of global variable `&g20`.
+- The `SQUARE` macro logic is obscured by a nonsensical bit-shift expression (`0x100000000 * a1 >> 32`).
+- Dynamic code execution in `param_dynamic_code` is not represented in the control flow.
+- Excessive noise from `& 0xffffffff` truncation masks.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly recovered all original function names, likely due to debug symbols, making navigation trivial.
+
+**Most Needs Improvement:** Semantic Transparency (Level 4, scored 1.5/10)
+- The lack of comments, failure to recognize simple arithmetic idioms, and absence of anomaly warnings make understanding the *intent* of the code very difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve constant propagation to distinguish between immediate values and memory addresses (e.g., don't replace `1024` with `&global_var`).
+2. Simplify arithmetic identities to avoid confusing expressions like `0x100000000 * x >> 32` when `x` is sufficient.
+3. Add annotations or warnings for self-modifying code or indirect calls where the control flow target is dynamically determined.

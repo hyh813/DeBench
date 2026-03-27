@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v0, v1, v2, ptr, p) with no semantic meaning. For example, `test_cpp_member_func` uses `v1[31]` instead of `name` and `result` instead of capturing the actual return value.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Most functions use mechanical names (`sub_401xxx`) or mangled C++ names (`_Z20test_cpp_member_funcv`). Only a few like `test_cpp_exception` and `template_max<int>` are recoverable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear without explanation (4700, 42, 71, 22, 85, 16). String literals like "Test" are preserved but lack context about their purpose.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: stack canary checks (`__stack_chk_guard`), initialization thunks (`_GLOBAL__sub_I_*`), and duplicate wrapper functions (`sub_401xxx` paired with `_Zxxx`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Multiple `goto` statements instead of structured control flow (e.g., `goto g_412f00` in `$x()`). Most test functions are empty stubs (`return;`) losing all original logic.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Excessive fragmentation with thunk functions (`_ZThn16_*`, `_ZTv0_n24_*`) for virtual dispatch. Many functions are empty wrappers that add no value.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps disrupt reading flow. Stack canary checks at function end create non-linear patterns. Some functions read top-to-bottom but many use goto.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Duplicate function pairs exist throughout (e.g., `sub_401294` calls `test_cpp_member_func`, which is also at `_Z20test_cpp_member_funcv`). Thunk functions duplicate virtual dispatch logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `void* this` instead of proper class pointers, `char*` for strings, `unsigned long long` for everything. Return types often wrong (void instead of int).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Classes reduced to generic structs (`struct_2`, `struct_3` with `field_0`, `field_8`). No field names recovered. `SimpleClass`, `Container`, etc. not reconstructed.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(long long)v4[8]`, `(char *)a0 + (*(a0))[24]`). Pointer arithmetic on void pointers. Function signatures mismatch implementations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of C++ semantics, virtual dispatch, or recovered logic. Only auto-generated function headers.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns (virtual dispatch, inheritance, templates) not identified. Thunk functions present but not explained as vtable adjustments.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Empty functions not flagged as incomplete recovery. Incorrect signatures not warned. No indication of decompilation confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling logic completely lost (`test_cpp_exception` just throws without catch).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships unclear. Virtual dispatch through thunks not documented. Global variables (`g_412c28`, `g_401b10`) unnamed and unexplained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions scattered without logical grouping. Related class methods not co-located. Initialization/cleanup code mixed with application logic.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone. Missing external symbols (`operatornew`, `__cxa_allocate_exception`). Mangled names need demangling. Dependencies undocumented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+3+4+3)/4 = 3.00 × 0.30 = 0.90
+Level 2 (Structural):  (3+4+4+3)/4 = 3.50 × 0.25 = 0.875
+Level 3 (Type System): (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (3+4+3)/3   = 3.33 × 0.10 = 0.333
+
+Overall Score: 2.87/10
+```
+
+**Overall Readability Score:** 2.9/10
+
+### Critical Defects:
+- **12 test functions are empty stubs** (`return;`) losing all original logic (constructors, virtual functions, inheritance, lambdas, smart pointers, RTTI)
+- **Variable names completely generic** (v0, v1, ptr) with no semantic recovery from usage patterns
+- **C++ class structures not recovered** - reduced to void* this pointers and generic structs
+- **Exception handling completely broken** - `test_cpp_exception` only shows throw, no catch blocks
+- **No comments or documentation** explaining recovered semantics or decompilation confidence
+
+### Best Quality Aspect: **Function Naming Quality (3/10)**
+- Some C++ mangled names (`_Z20test_cpp_member_funcv`) can be demangled to recover original function names, providing minimal semantic hints.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero comments exist to explain any recovered logic, C++ semantics, or decompilation uncertainties, making the code practically unusable for analysis.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts** - Analyze vtable pointers to reconstruct class hierarchies with proper field names and inheritance relationships.
+2. **Implement semantic variable naming from usage patterns** - Infer names like `instance_count`, `multiplier`, `capture_by_value` from how variables are used in context.
+3. **Add decompilation confidence annotations** - Mark uncertain recoveries (empty functions, indirect calls) with comments indicating manual review is needed.

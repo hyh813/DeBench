@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `arg`, `result`) obscuring semantic meaning. Only occasional meaningful names appear (`iterations_per_thread`, `thread_ret`), but the overwhelming majority require manual inference from usage context.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions preserved original names (`param_strcpy`, `thread_sum`, `signal_handler`) but many are generic address-based labels (`sub_1030`, `sub_1040`) or have confusing suffixes (`param_thread_local_storage_0` vs original `param_thread_local_storage`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `0x14u` (stack canary), `0x10u` (allocations), syscall numbers `5`/`6` (open/close), signal numbers `10`/`14` instead of `SIGUSR1`/`SIGALRM`. String literals preserved but numeric constants lack semantic meaning.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Compiler artifacts throughout: `__readgsdword(0x14u)` stack canary checks in nearly every function, `__snprintf_chk`/`__printf_chk` instead of standard functions, excessive type casts (`(_DWORD *)`, `(char *)`), and `__asm` blocks in helper functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops and conditionals generally recognizable, but some awkward patterns exist (do-while in `thread_increment` could be for-loop). Signal handling polling loops are verbose but functional. At -O0, this level of restructuring is unexpected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Most original function boundaries preserved with appropriate granularity. Some functions split (`param_thread_local_storage_0`) and helper functions extracted (`param_fork_exec_0`), but overall decomposition quality is reasonable.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom but forward references and some jump patterns disrupt flow. Stack canary setup at function start creates repetitive patterns that interrupt logical reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks repeated across nearly all functions. Some redundant patterns in loop structures, but not excessive. Could benefit from common subexpression elimination at decompiler level.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved but many degrade to `_DWORD`, `void*`, `__int64`. Pointer arithmetic used where structured types should exist. Const-correctness completely lost. Function signatures mostly accurate but parameter types often generic.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `ThreadData` struct recovered with field names (`start`, `end`, `result`), but other structs use array indexing instead of field access. TLS variables not properly identified as thread-local. `sockaddr_in` partially recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Pervasive unsafe casts: `(_DWORD *)arg`, `(char *)buffer`, `(__sighandler_t)-1`. Pointer arithmetic replaces struct access in multiple locations. No const correctness. Buffer overflow-prone patterns not flagged.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic or intent. Original source had extensive documentation (purpose, test scenarios, expected values) completely absent. Only auto-generated decompiler headers present with no semantic value.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (producer-consumer, mutex protection, signal handling) not identified or labeled. Thread synchronization patterns visible but not named. No algorithm pattern recognition evident.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (59 functions) but suspicious patterns within code not flagged. No warnings about potential undefined behavior, stack canary artifacts, or architecture mismatches (source says ARM64, decompiled shows x86).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No function preconditions, postconditions, or error handling contracts documented. Return value meanings not explained. Error codes (-1, -2, -3, 42) lack semantic documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Global variable usage not annotated. Callback relationships (thread functions) not explicitly marked.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in somewhat arbitrary order. Related functions not consistently grouped. No header file structure or API declarations. Original section organization (6.1, 6.2, 6.3) lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile as-is: 59 external functions failed to decompile, missing includes, architecture mismatch (x86 code from ARM64 binary), platform-specific intrinsics (`__readgsdword`) without alternatives.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 (Lexical):     (3+5+4+4)/4 = 4.00
+L2 (Structural):  (6+7+6+6)/4 = 6.25
+L3 (Type):        (5+6+4)/3   = 5.00
+L4 (Semantic):    (2+3+4+3)/4 = 3.00
+L5 (Contextual):  (5+5+3)/3   = 4.33
+
+Overall = (4.00 × 0.30) + (6.25 × 0.25) + (5.00 × 0.20) + (3.00 × 0.15) + (4.33 × 0.10)
+        = 1.20 + 1.56 + 1.00 + 0.45 + 0.43
+        = 4.64/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects
+- **Zero semantic comments** despite original source having extensive documentation explaining purpose, test scenarios, and expected values
+- **Generic variable naming** (`v0`, `v1`, `v2`) throughout obscures variable purpose and requires manual inference
+- **59 failed function decompilations** including all standard library calls, breaking build compatibility
+- **Architecture mismatch** (source claims ARM64, decompiled code shows x86 instructions like `__readgsdword`, `ebx`)
+- **Unsafe type casts pervasive** without any safety annotations or warnings about potential undefined behavior
+
+### Best Quality Aspect
+- **Function Decomposition (7/10)** - Most original function boundaries were preserved with appropriate granularity, and the overall function structure remains recognizable despite other issues.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic documentation is the most severe deficit; original source had extensive comments explaining every function's purpose, test scenarios, and expected values that are entirely lost.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable name inference** - Analyze usage patterns to suggest meaningful names (e.g., variables used in size comparisons should be named `size`, `length`, `count`)
+2. **Recover and preserve source comments** - When debug symbols (-g) are available, extract and embed original comments into decompiled output
+3. **Flag architecture and platform mismatches** - Detect and warn when decompiled instruction set doesn't match declared target architecture, and provide platform-appropriate alternatives for intrinsics

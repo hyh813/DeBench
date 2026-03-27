@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Mix of meaningful names (`obj`, `result`, `ptr1`, `capture_by_value`) and generic temporaries (`v0`, `v1`, `r1`, `r2`). Lambda closures have cryptic hash names like `$44B1EA910F358000232221CCB0AF3F67` instead of descriptive names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Test functions recovered well (`test_cpp_member_func`, `test_cpp_virtual_func`). Class methods use mangled names (`_ZN11SimpleClassC2EiPKc`) but are still identifiable. Some helpers remain generic (`sub_1030`, `sub_1190`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x1Fu` (31 for string length) and `4660` (0x1234 for class ID) are present without explanation. Pointer arithmetic offsets like `*((_DWORD *)obj._vptr$MiddleA - 3)` are opaque.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains runtime initialization code (`_init_proc`, `register_tm_clones`), 24 "FAILED to decompile" markers, and stack annotations (`[esp+18h] [ebp-30h]`). Main test functions are relatively clean but surrounded by boilerplate.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops and conditionals recovered well. Exception handling degraded—`test_cpp_exception()` marked `__noreturn` despite containing try-catch blocks. Virtual dispatch uses explicit vtable calls instead of natural C++ syntax.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good separation of class methods and template instantiations. However, lambda operators become separate functions, and smart pointer internals are overly fragmented (20+ helper functions for `unique_ptr`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Some complex inheritance code has confusing pointer arithmetic that disrupts flow. No excessive goto usage in main test functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Template instantiations create significant duplication (`template_max<int>` vs `template_max<double>`, `Container<int>` vs `Container<double>`). Smart pointer type specializations repeat similar logic across many functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types (`int`, `double`, `size_t`) preserved correctly. Complex types degraded—lambda closures become opaque structs, smart pointer template parameters partially lost (`std::unique_ptr<int,(lambda at src_5-1_cpp:445:20)>`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class structures partially recovered with vtable pointers (`_vptr$Base`) and some members (`dataA`, `multiplier`). Diamond inheritance requires confusing pointer arithmetic. Lambda capture structs lose field semantics entirely.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Extensive unsafe casts throughout: `(__cdecl ***)`, `(char *)&obj.dataA + *((_DWORD *)...)`, `(_DWORD *)obj._vptr$MiddleA`. Virtual function calls use raw function pointer dereferencing instead of safe method calls.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. No algorithm descriptions, no decompilation confidence indicators. Only minimal function header comments with register annotations. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns (RAII, virtual dispatch, template instantiation) not identified or labeled. Lambda expressions become opaque closure structs. Smart pointer semantics obscured by implementation details.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 24 functions marked "FAILED to decompile" which is helpful. However, complex vtable manipulation and inheritance adjustments lack warnings about decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts not expressed. Null checks present but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but virtual dispatch relationships not documented. Inheritance hierarchies inferable from vtable setup but not explicitly stated. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output without logical grouping by class or feature. Related methods scattered. No header file structure or namespace organization recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile as-is. 24 external functions failed to decompile. Mangled names need resolution. Missing standard library declarations. Requires substantial modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+6+5)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (6+7+7+5)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (6+5+4)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (6+4+3)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────
+Overall Score:                                  5.32/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **No semantic comments** - Original source had extensive documentation; decompiled code has virtually none
+- **Unsafe pointer arithmetic** - Virtual dispatch uses raw casts like `(*(int (__cdecl **)(Base *, int))*obj->_vptr$Base)(obj, x)`
+- **Lambda closures opaque** - Named `$44B1EA910F358000232221CCB0AF3F67` instead of meaningful capture struct names
+- **24 failed decompilations** - External functions like `__cxa_throw`, `strlen`, `printf` not recovered
+- **Diamond inheritance confusing** - Pointer arithmetic `*((_DWORD *)obj._vptr$MiddleA - 3)` obscures virtual base offset calculation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Test function names recovered accurately (`test_cpp_member_func`, `test_cpp_virtual_func`), preserving original semantic intent
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding complex C++ features (virtual inheritance, lambdas, smart pointers) extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Extract debug info (`-g` flag) to restore original documentation and add decompilation confidence annotations
+2. **Recognize C++ idioms explicitly** - Label virtual dispatch, RAII patterns, and lambda captures with semantic comments rather than raw pointer arithmetic
+3. **Improve type recovery for closures** - Generate meaningful names for lambda capture structs based on captured variable names instead of hash-based identifiers

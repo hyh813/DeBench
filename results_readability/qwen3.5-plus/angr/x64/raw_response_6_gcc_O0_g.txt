@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source used descriptive names like `dst`, `src`, `buffer`, `write_data`, `read_buffer` which are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`param_strcpy`, `call_strcpy`, `param_strcmp`), but runtime code has meaningless names (`sub_402020`, `sub_402030` through `sub_4023c0` - 50+ functions).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Error codes appear as magic numbers (4294967295 for -1, 4294967294 for -2). Signal numbers are raw integers (10 for SIGUSR1, 14 for SIGALRM) without symbolic names. Socket constants (2, 1, 0) lack AF_INET/SOCK_STREAM labels.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains 50+ runtime initialization stubs (`sub_402020`-`sub_4023c0`), unsupported jumpkind warnings, and duplicate return statements (e.g., `param_fread_fwrite` has two consecutive returns).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as for/while constructs, but `param_signal_handling` uses `while(true)` with break instead of natural loop condition. Fork/exec branches are recognizable but verbose.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved correctly, but runtime code fragmented into 50+ tiny stub functions. Thread functions properly separated but lack cohesion documentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Some nested conditionals in signal handling and threading code create moderate complexity but remain traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Duplicate return statements in `param_fread_fwrite` and `param_thread_local_storage`. Some expressions repeated (e.g., `strlen(v0)` called twice in file operations).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Specific types degraded to generic `unsigned long long`, `char*`. `size_t` becomes `unsigned long`, `ssize_t` becomes `unsigned long long`. Function parameters lose const-correctness (`char *a0` vs `const char *src`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs have generic field names (`field_0`, `field_8`, `field_c`). `sockaddr` partially recovered but `sa_data` array access uses pointer arithmetic. TLS variables not identified as thread-local.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(unsigned int)(ptr - a0)`, `(int)pthread_create(...)`). Pointer arithmetic on void pointers. Some function signatures mismatch actual usage (e.g., `thread_compute` returns `unsigned int*` but used as `void*`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test scenarios, and expected values - all completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls identified (`strcpy`, `memcpy`, `printf`). pthread patterns visible but not labeled as producer-consumer or mutex-protected patterns. No algorithm pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`). No indication of potential issues with signal handling, race conditions, or undefined behavior patterns.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` requirements). Error return values not explained. No postcondition inference for memory allocation functions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables use opaque names (`g_407fe8`, `g_4050b0`). Callback relationships (thread functions) not explicitly documented. String literals externalized to globals.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output file with no logical grouping. Runtime initialization code mixed with application logic. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears compilable with proper declarations. External dependencies (pthread, libc) implicit but not documented. Some type definitions may need adjustment for different compilers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Weighted |
+|-------|-----------|---------|--------|----------|
+| L1: Lexical Clarity | 4 | 4.50 | 30% | 1.35 |
+| L2: Structural Intelligibility | 4 | 6.25 | 25% | 1.56 |
+| L3: Type System Fidelity | 3 | 4.67 | 20% | 0.93 |
+| L4: Semantic Transparency | 4 | 3.50 | 15% | 0.53 |
+| L5: Contextual Coherence | 3 | 5.00 | 10% | 0.50 |
+
+**Overall Readability Score: 4.87/10**
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `a0`, `a1`** should be named based on semantic usage (e.g., `dst`, `src`, `buffer_size`)
+- **Magic number 4294967295** used throughout for -1 without explanation or constant definition
+- **50+ runtime stub functions** (`sub_402020` through `sub_4023c0`) clutter output with no semantic value
+- **Zero comments** in decompiled output despite extensive original documentation
+- **Struct fields** all generic (`field_0`, `field_8`) losing all semantic meaning
+
+### Best Quality Aspect:
+- **Code Linearization (7/10)** - Most functions read top-to-bottom naturally with appropriate control structures, making execution flow traceable despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation makes understanding non-trivial logic extremely difficult, especially for complex threading and signal handling code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in `strcpy` destination should be named `dst` or `buffer`)
+2. **Recover symbolic constants** - Replace magic numbers with named constants (4294967295 → `ERROR_NEGATIVE_ONE`, signal 10 → `SIGUSR1`)
+3. **Filter runtime boilerplate** - Identify and collapse or hide compiler-generated initialization stubs that don't contribute to application logic understanding

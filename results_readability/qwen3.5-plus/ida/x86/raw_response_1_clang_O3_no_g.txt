@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `a3`, `v1`, `v2`, `result`) with zero semantic meaning. Original `temp1`, `temp2`, `temp3`, `sum`, `count` are completely lost. In `loop_for_fixed`, the loop variable `i` and accumulator `sum` are replaced with an opaque formula.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions retain original names (`sequential_ops`, `single_if`, `nested_if_2`), which is good. However, helper functions use mechanical names (`sub_1030`, `sub_10CC`) and calling convention annotations (`__usercall@<eax>`) add noise.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0x12` in `loop_while`, `dword_3700[a1]` external array reference, complex formula `(((a1-2)*(a1-1))>>1)+a1-1` in `loop_for_fixed` obscures the original summation logic.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__usercall`, `__cdecl`, register hints (`@<eax>`, `@<ebx>`), and debug comments like "positive sp value has been detected, the output may be wrong!" clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical failure at -O0: loops transformed to mathematical formulas (`loop_for_fixed`, `goto_backward`), `switch_fallthrough` becomes nested if-statements, `loop_while` uses confusing condition `(v1+9)<=0x12` instead of `x!=0`. At debug level, this is unacceptable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable, but test functions are constant-folded to print hardcoded values instead of actual function calls, losing the verification purpose. `duffs_device` becomes overly complex with goto labels.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but `duffs_device` uses goto labels (`LABEL_3`, `LABEL_5`, etc.) and `goto_backward` has complex jump patterns that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive loop unrolling in `goto_backward` (8x unrolled with remainder handling) and `loop_continue` creates bloated, hard-to-understand code. This is inappropriate for -O0 debug builds.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, unsigned int), but degradation exists: `if_else` returns `_BOOL4` instead of `int`, `op_or` takes `__int64` instead of two `int` parameters, `_DWORD *` used instead of proper typed pointers.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No structs in this code to evaluate, but arrays are referenced opaquely (`dword_3700[a1]`, `funcs_1B6A[a1]`) without type information. Matrix data in `loop_multi_exit` becomes `dword_30D8[a1]+dword_3108[a1]`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Questionable casts like `(unsigned __int64)` in loop formulas, function pointer signatures sometimes degraded. No dangerous pointer arithmetic observed, but type confusion in `op_or` signature is concerning.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost zero comments in decompiled code versus extensive source documentation explaining each function's purpose, test cases, and difficulty levels. Only auto-generated noise comments present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition: loops-to-formulas unexplained, state machines not identified, Duff's device becomes opaque goto chain. Original algorithmic intent completely lost.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("FAILED to decompile" for 6 libc functions, "positive sp value detected"), but no indication of aggressive optimization artifacts or confidence levels for recovered structures.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero preconditions, postconditions, or invariants documented. Original test case documentation (e.g., "输入5,7,3应返回21") completely absent from decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global arrays (`dword_3700`, `funcs_1B6A`) referenced without context. No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 83 functions in single output with no logical grouping. Original source's clear section organization (L1/L2/L3 control flow features) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 6 functions failed to decompile (libc functions: `printf`, `longjmp`, `puts`, etc.). Would require manual stubs. External array references (`dword_3700`) need data section recovery.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+6+6+4)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (6+5+6)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.73/10
+```
+
+**Overall Readability Score: 4.7/10**
+
+### Critical Defects:
+- **Loop-to-formula transformation**: `loop_for_fixed` converts simple for-loop to `(((a1-2)*(a1-1))>>1)+a1-1`, completely obscuring the summation algorithm
+- **Zero semantic variable names**: All variables are `a1`, `v1`, `result` - no inference from usage patterns attempted
+- **No comments recovered**: Original had extensive documentation; decompiled has none
+- **Inappropriate optimization recovery**: At -O0 debug build, loops should NOT be converted to closed-form formulas
+- **Test functions constant-folded**: `test_control_flow_l1` prints hardcoded values instead of calling functions, losing verification capability
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - User-defined function names were preserved correctly (`sequential_ops`, `single_if`, `nested_if_2`), showing the decompiler can recover symbol information when available in debug symbols.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation recovery despite extensive source comments explaining purpose, test cases, and difficulty levels. This is the most glaring omission.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve loop structures at -O0**: When debug symbols indicate no optimization, do NOT convert loops to mathematical formulas - recover the original iterative structure even if less "efficient"
+2. **Infer variable names from usage patterns**: Analyze how variables are used (accumulators, counters, indices) and assign semantic names like `sum`, `count`, `index` instead of `v1`, `v2`
+3. **Recover and preserve source comments**: When debug symbols (-g) are available, extract and embed original source comments into decompiled output for critical functions

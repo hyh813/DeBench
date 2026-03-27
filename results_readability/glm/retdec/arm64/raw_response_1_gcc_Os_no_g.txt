@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `v1`, `v2`, `result`, or `g1`, providing no semantic context (e.g., `v1` in `sequential_ops` instead of `a`, `b`, `c`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the original source (e.g., `sequential_ops`, `loop_for_fixed`), likely due to symbol table presence, making the high-level intent clear.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers are pervasive, such as `0xffffffff` representing `-1` and `0xfffffffe` representing `-2`, which obscures the logic compared to the original source's use of decimal literals.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with redundant bitwise AND operations (e.g., `& 0xffffffff`) on almost every arithmetic operation, significantly degrading readability without adding value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is often unnatural; `recursion_factorial` is decompiled as an iterative loop, and `goto_forward` is reduced to a ternary expression, losing the original structural intent.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source code, maintaining appropriate granularity and cohesion without arbitrary splitting or merging of logic units.
+
+**7. Code Linearization:** Score: 3/10
+Justification: Complex functions like `loop_multi_exit` and `indirect_recursion_a` are littered with arbitrary labels (e.g., `lab_0x11d8`) and goto jumps, making top-to-bottom reading impossible.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While the compiler optimized the test harness (hardcoding results), the decompiler failed to abstract the redundant masking operations (`& 0xffffffff`) that clutter the logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: A critical failure is the loss of function arguments; all user-defined functions are decompiled with `void` parameters (e.g., `int64_t sequential_ops(void)`), completely destroying the interface.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Standard library types like `struct __jmp_buf_tag` and `struct _TYPEDEF___sigset_t` are reconstructed with reasonable accuracy, including field types and sizes.
+
+**11. Type Safety:** Score: 5/10
+Justification: Frequent casting between `int64_t` and `int32_t` combined with the aggressive masking suggests potential type confusion, though no outright dangerous pointer arithmetic is visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures; the output is purely raw code.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Idioms are largely missed; `duffs_device` is unrecognizable as the famous pattern, and recursion is flattened, obscuring the original algorithmic design.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the code confidently despite the obvious loss of function arguments and the presence of `__asm_` intrinsics, without flagging these as uncertainties.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred (e.g., the requirement for `n > 0` in `duffs_device` is lost).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clearly visible, and the call graph within `test_control_flow_l1` is intact, though the lack of arguments makes the data flow opaque.
+
+**17. Module Organization:** Score: 7/10
+Justification: The file organization mirrors the flat structure of the original source, and functions are grouped logically by address range, which is acceptable.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code includes necessary headers and struct definitions, but the missing function arguments would prevent it from compiling or linking correctly against the original headers.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Function arguments are completely missing (all functions decompiled as `void`), breaking the API.
+- Pervasive redundant masking (`& 0xffffffff`) obscures arithmetic logic.
+- Control flow reconstructed with arbitrary labels and `goto` instead of structured loops.
+- Recursive functions (`recursion_factorial`) incorrectly represented as iterative loops.
+- Magic numbers (`0xffffffff`) used instead of semantic constants (`-1`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names from the symbol table, which is the only remaining link to the source semantics.
+
+**Most Needs Improvement:** Type Precision (scored 3/10)
+- The total loss of function parameters makes the decompiled code semantically useless for understanding the data flow or interface contracts.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover Function Arguments:** Implement robust stack/register analysis for the ARM64 ABI to recover function parameters instead of defaulting to `void`.
+2. **Eliminate Redundant Masking:** Add a pass to remove unnecessary `& 0xffffffff` operations on variables that are already constrained to 32-bit widths.
+3. **Preserve Recursive Structures:** Improve control flow analysis to distinguish between recursive calls and loops, avoiding the incorrect flattening of recursive algorithms.

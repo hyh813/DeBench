@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v2`, `v3`, `v4`, `ptr`, `na` throughout. For example, in `local_array`, the array is named `v3[10]` instead of `arr`, and loop variable is just `i`. The decompiler fails to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly: `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `global_var_access`, `memop_memset`. Minor issue: some static helper functions like `static_helper` could be more descriptive, but overall naming is accurate.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers throughout: `0x14u` (20), `0x28u` (40), `0xAu` (10), `0xCu` (12). The code uses raw numeric values like `4 * n` for malloc sizing without explaining the element size. Constants like `0xA` for array bounds are not named.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise includes: 18 failed decompilation messages for import functions (`__imp_calloc`, `__imp_printf`, etc.), spurious casts like `*(_DWORD *)&v2[4 * i]`, and a massive block of 50+ atomic operation functions that are compiler intrinsics, not user code. The decompilation also includes failed function stubs.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper `for` loops and `if-else` constructs. At `-O0`, loops are correctly recovered. Minor awkwardness in `vla_stack` with complex index calculation `(2 * (na + ((unsigned int)na >> 31))) & 0xFFFFFFFD` for middle element access.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source well. Each function has single responsibility (e.g., `heap_basic`, `linked_list_heap`, `tree_heap_traversal`). No over-fragmentation or monoliths. Static helper functions like `static_helper` and `create_tree_node` appropriately extracted.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error handling (e.g., `if (!ptr) return -1;`). Minor non-linearity in `linked_list_heap` with nested cleanup loops, but overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop unrolling is minimal at `-O0`. Some redundant expressions like `(unsigned int)n >> 31` for sign extension appear but are manageable. The code is relatively clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types like `_DWORD`, `_BYTE`, `_WORD` instead of `int32_t`, `uint8_t`. Pointers often typed as `int *` or `_DWORD *` rather than specific types. Function parameters like `int x` lack `int32_t` precision. However, size_t is used for memory allocation sizes.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct `Node` and `TreeNode` are partially recovered with field names (`data`, `next`, `left`, `right`). However, access uses raw pointer arithmetic: `*(_DWORD *)&v2[4 * i]` instead of proper array indexing. The `Point` struct is not recovered in `global_struct_access` - uses `global_point + dword_140A4`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: extensive raw pointer arithmetic (`*(_DWORD *)((char *)ptr + ...)`), incorrect pointer arithmetic in `memop_unaligned_access` using byte shifts instead of proper `memcpy`, and casting issues in `tls_access` where `void *val` is used incorrectly. Many implicit casts between int and pointer types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated comments like "BYREF" for parameters. No explanation of algorithms, preconditions, or intent. The source had detailed comments (MEM-L1-01, HEAP-L2-01, etc.) that are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard patterns like linked list traversal (`while (head)`) and tree operations are present but not explicitly labeled. No recognition of patterns like "VLA allocation", "alloca usage", or "memory leak pattern". The decompiler doesn't identify these as special constructs.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler does indicate 18 failed functions with "FAILED to decompile" messages. However, it doesn't flag suspicious patterns like the intentional bugs (double_free, dangling_pointer, heap_overflow) that exist in the source for testing purposes.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions (e.g., "requires: n > 0"), postconditions, or invariants. Error handling is present (`if (!ptr) return -1`) but no documentation of what conditions these check or what guarantees are provided.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships aren't documented. No indication of which functions call `double_value` (used as callback). Global variable usage (`global_counter`, `global_array`) is visible but not explained. No call graph or usage documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions dumped in single monolithic output. No logical grouping matching source sections (Stack Memory, Heap Memory, Static/Global, Memory Operations). Static functions not distinguished from public API. No header-like declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code cannot compile standalone. Missing definitions for `extern_global_var`, `extern_function`. References to undefined symbols like `asc_35B4`, `asc_36FE` (string literals). Requires significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming uses generic `v1`, `v2`, `v3`, `ptr` instead of semantic names like `arr`, `result`, `node`
+- Type precision lost - uses `_DWORD`, `_BYTE` instead of `int32_t`, `uint8_t`
+- No comments explaining algorithms, preconditions, or intent
+- Struct recovery incomplete - `Point` struct not recovered, uses raw pointer arithmetic
+- Extensive noise: 18 failed decompilations + 50+ atomic intrinsics cluttering output
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names match source exactly (e.g., `local_vars`, `heap_basic`, `memop_memset`), making it easy to locate specific functions.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Generic variable names like `v2`, `v3`, `ptr`, `na` obscure the semantic purpose of variables. The decompiler should infer names from usage patterns (e.g., `arr` for array variables, `count` for loop bounds).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Track how variables are used (array indexing → `arr`, loop bounds → `count`, malloc result → `ptr`) to generate semantic names
+2. **Recover struct types from pointer arithmetic**: Detect patterns like `*(int*)&buf[4*i]` and reconstruct as `buf[i].field`
+3. **Add algorithm/pattern recognition**: Identify and label common patterns like VLA allocation, alloca usage, linked list traversal with comments

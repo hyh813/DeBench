@@ -1,0 +1,125 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Internal variables use generic names like `v1`, `v2`, `v3`, `i`, `result` throughout. While parameters like `a`, `b`, `c`, `x`, `target` are preserved from source, the vast majority of local variables lack semantic meaning (e.g., `v1 = x; if (x <= 1) v1 = 1;` in `goto_forward`).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `recursion_factorial`, etc. Test functions also preserved: `test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0xA` (10), `0x65` (101), `1001` appear without explanation. However, some context helps (e.g., `op <= 3` for 4-case switch). Test functions hardcode expected values which is acceptable for verification code.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Several artifacts present: `JUMPOUT(0)` in `sub_4DC`, inline assembly `__asm { ADD PC, LR, R3 }` in `duffs_device`, goto statements like `goto LABEL_8`. These impede compilation and readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (loops preserved as `while`/`do-while`, conditionals as `if`). However, `loop_for_fixed` uses a complex arithmetic expression instead of loop structure, and `duffs_device` has inline assembly breaking the pattern. At -O0, more loop structures should be recoverable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is excellent - all small functions from source are preserved separately: `sequential_ops` (3 operations), `single_if` (simple branch), `ternary_op` (one-liner). Test functions are appropriately larger as in source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `single_if`, `if_else`. Some forward jumps exist (e.g., `goto LABEL_8` in test functions) but don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `loop_for_fixed` shows optimization artifact: `((__int64)((unsigned int)(n - 1) * (unsigned __int64)(unsigned int)(n - 2)) >> 1) + n - 1` - this is loop unrolling but not commented. Some redundant expressions present.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Most types are accurate - `int` for parameters matches source, `volatile int *flag` preserved correctly. Function pointers properly typed: `int (*f)(int)`, `int (*cb)(int)`. Minor generic `int` usage but acceptable.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays accessed via raw pointers: `dword_1848[result]`, `unk_185C[i]`. The matrix in `loop_multi_exit` is accessed as `unk_185C` without struct recovery. No field names recovered - all generic `unk_*` references.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations: indirect function call casting `((int (__fastcall *)(int))off_12EBC[idx])(x)` in `call_func_ptr_array`, raw pointer arithmetic `v3 += 4` in loops, array access without bounds checking visible.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in any decompiled functions. Only file-level header: "Decompiled by IDA Pro 9.1 with Hex-Rays". No algorithm explanations, no decompilation confidence indicators, no @param/@return documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: switch statements in `state_machine`, `switch_small`, `switch_large`. But no explicit naming of patterns (e.g., "State machine pattern", "Duff's device"). The `duffs_device` function has inline assembly rather than recognized idiom.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Bottom of file shows "FAILED to decompile" for 9 functions including `__imp_raise`, `__imp___libc_start_main`. However, no uncertainty flags on successfully decompiled functions. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. Error conditions not explained. The `non_local_jump` function uses `setjmp`/`longjmp` but no contract about non-local control flow.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear within code (e.g., `f(x)`, `cb(arr[i])`). But no documentation of call relationships - no "Called by:" or "Calls:" comments. External dependencies not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file. Related functions grouped logically (all test functions together, all L1-L3 functions together). Static functions properly scoped. Basic organization present.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will NOT compile as-is. Issues: `JUMPOUT(0)` is not valid C, inline assembly in `duffs_device`, goto statements, undefined symbols like `asc_1DE1`, `off_12EBC`, `dword_1E70`. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 9 + 6 + 5) / 4 = 6.00
+L2_avg = (6 + 8 + 7 + 5) / 4 = 6.50
+L3_avg = (8 + 4 + 5) / 3 = 5.67
+L4_avg = (2 + 5 + 4 + 2) / 4 = 3.25
+L5_avg = (5 + 6 + 3) / 3 = 4.67
+
+Overall = (6.00 × 0.30) + (6.50 × 0.25) + (5.67 × 0.20) + 
+          (3.25 × 0.15) + (4.67 × 0.10)
+        = 1.80 + 1.625 + 1.134 + 0.4875 + 0.467
+        = 5.49/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+---
+
+### Critical Defects (Bullet List)
+- **Variable naming**: Internal variables use generic names (`v1`, `v2`, `i`, `result`) instead of semantic names, making code flow difficult to trace
+- **No comments**: Zero comments in decompiled functions - no algorithm explanations, no @param/@return, no uncertainty indicators
+- **Compilation failure**: Code contains `JUMPOUT()`, inline assembly, undefined symbols - won't compile
+- **No struct recovery**: All composite types are `unk_*` raw memory references with no field names
+- **Type safety issues**: Unsafe function pointer casts like `((int (__fastcall *)(int))off_12EBC[idx])(x)`
+
+---
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (9/10)**  
+- Function names are almost perfectly preserved from source, making it easy to identify which decompiled function corresponds to which original function.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (2/10)**  
+- Zero comments in any function. At -O0 with debug info, the decompiler should be able to recover parameter names, local variable names from debug symbols, and add meaningful comments about algorithm intent.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Enable debug symbol parsing**: At -O0 with -g flag, variable names like `temp1`, `temp2`, `sum`, `count` are available in DWARF info. The decompiler should use them instead of generating `v1`, `v2`.
+
+2. **Add semantic comments**: Include basic comments explaining what each function does, especially for complex patterns like Duff's device, state machines, and recursive functions. Add uncertainty markers for indirect calls.
+
+3. **Improve build compatibility**: Replace `JUMPOUT()` with valid C constructs (or explicit `/* unreachable */` comments), move inline assembly to separate assembly files, and use placeholder values for undefined data references.

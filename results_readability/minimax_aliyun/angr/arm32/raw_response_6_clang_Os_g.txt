@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+The original source contains a test suite with multiple functions. The key function under evaluation is `param_strcpy` (lines 34-39), which calls `strcpy(dst, src)` and returns `strlen(dst)`. The decompiled version shows significant differences from the source.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names `a0`, `a1` instead of descriptive names like `dst`, `src`. Local variable `len` is acceptable but insufficient. The decompiled `call_strcpy` uses `v0`, `result` which are meaningless. Compare to source: `char *dst, const char *src` - completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Function name `param_strcpy` correctly matches the source. However, `call_strcpy` is inlined (direct strncpy instead of calling param_strcpy), losing the function call relationship. Some helper functions like `thread_compute` are well-named, but many use cryptic patterns like `$a.34` for signal handlers.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like `"HelloLib"` are correctly preserved. However, magic numbers like `4294967295` (0xFFFFFFFF for -1) appear without explanation. The decompiled code uses `strncpy(v0, "HelloLib", 8)` but the source uses `param_strcpy(buffer, "HelloLib")` - the length 8 is a magic number that should be explained as string length.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant redundancy in `param_strcpy`: `strlen(strcpy(a0, a1))` is called twice, computing the same result redundantly. Register annotations like `// r0`, `// lr` clutter the code. The `armg_calculate_condition` calls are decompiler artifacts that obscure logic. Multiple instances of duplicate function calls (e.g., `return strlen(&v0);` called twice in call_strcpy).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is readable - sequential statements, simple returns. However, the `armg_calculate_condition(209, v0, 1, 0)` pattern obscures simple comparisons. At -O0, we should see cleaner code. The ternary operators in places like `param_strcmp` are acceptable but could be clearer with if-else.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: The `call_strcpy` function was inlined - it directly contains strncpy/strlen instead of calling `param_strcpy`. This loses the function abstraction. Some functions like `param_pthread_create` properly call separate functions, but the pattern is inconsistent. Function sizes are generally reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive goto statements. Early returns are used appropriately in error handling (e.g., `if (!fp) return -1;`). Some nested conditionals in functions like `param_fork_exec` create depth but are manageable.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy in `param_strcpy` - `strlen(strcpy(a0, a1))` computed twice. Similarly in `call_strcpy`, `strlen(&v0)` called twice. The `param_printf` function also calls `printf` twice with identical arguments. This is a major decompilation quality issue.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (int, char*, void*). However, `const char *src` became `char *a1` losing const correctness. `size_t` parameters often become `unsigned int`. The `pthread_t` types are sometimes `char` or have "Other Possible Types" annotations. Function signatures like `param_fopen_fclose` have incorrect parameter counts (8 parameters instead of 1).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Some struct definitions are partially recovered (e.g., `struct sockaddr` with `sin_family`, `sa_data`). However, many are empty stubs like `typedef struct FILE { } FILE;`. The ThreadData struct in pthread_join is not recovered - instead we see raw pointer arithmetic with offsets.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns exist. In `param_strcmp`, the logic `if (1 > result) return v5;` is confusing and potentially incorrect. The `param_fopen_fclose` has garbled control flow with impossible-to-parse conditionals. Many functions mix signed/unsigned without proper casts. The `call_strcpy` uses `strncpy` but source uses `strcpy` - this is a semantic difference.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No meaningful comments explaining algorithm intent. Register location comments (`// r0`, `// lr`) are noise, not useful documentation. The comment `// ANOMALY: Indirect call could not be resolved` appears nowhere - anomalies are not flagged. No explanation of why `strncpy` appears instead of `strcpy`.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library functions are recognized (strcmp, strlen, memcpy). Threading patterns (pthread_create, pthread_join) are identified. However, the signal handler pattern `$a.34` is not recognized as a signal callback. The normalization pattern in strcmp/strcmp (converting to -1/0/1) is not explained as a semantic intent.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly indicators present. The `param_fopen_fclose` has completely broken control flow with unreachable code paths (`if (!((char)armg_calculate_condition(2, fp, 0, 0))) goto LABEL_401304;` followed by `return 0xffffffff;` - this is confusing and should be flagged. The function signature mismatch (1 param vs 8 params) is not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions or postconditions documented. Error return values (-1, -2, etc.) are not explained. The contract of `param_strcpy` (returns string length) is not documented. No indication that NULL pointers would cause crashes.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible within each function. However, the relationship between `call_strcpy` and `param_strcpy` is broken due to inlining. Global variables like `signal_received`, `signal_number` are declared as `extern` but their purpose is unclear. No documentation of which functions call which.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped by category (standard library, system calls, threading). The test functions (`test_standard_library_functions`, etc.) are properly separated. However, the file is a single monolithic output - no logical grouping into sections matching the source's comments.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many functions have incorrect signatures that would cause compilation failures. The `param_fopen_fclose` has 8 parameters but should have 1. Missing declarations for `__isoc99_sscanf`. The `armg_calculate_condition` is not a real function. Would require significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Redundant computation**: `strlen(strcpy(a0, a1))` called twice in `param_strcpy` - major decompilation artifact
+- **Function inlining**: `call_strcpy` directly contains strncpy/strlen instead of calling `param_strcpy`, losing abstraction
+- **Parameter naming**: Generic `a0`, `a1` instead of `dst`, `src` - loses semantic meaning
+- **Type degradation**: `const char *` became `char *`, losing const correctness
+- **Broken control flow**: `param_fopen_fclose` has incomprehensible conditional logic with `armg_calculate_condition`
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+- Core function names like `param_strcpy`, `param_memcpy`, `pthread_create` correctly match source naming patterns
+
+**Most Needs Improvement:** Redundancy Elimination (3/10)  
+- Multiple functions compute the same value twice (strlen(strcpy...), printf called twice, strlen called twice). This is a fundamental decompilation quality issue that makes code bloated and confusing.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Eliminate redundant expressions**: Detect when the same function call appears multiple times and store result in a temporary variable
+2. **Preserve function call relationships**: Don't inline functions unless the decompiler can verify they're only called once and the call is trivial
+3. **Improve parameter naming**: Use semantic analysis of function purpose and parameter usage to infer meaningful names (e.g., `dst` for first char* parameter, `src` for second)

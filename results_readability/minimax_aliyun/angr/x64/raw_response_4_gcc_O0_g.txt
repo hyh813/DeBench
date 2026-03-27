@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` instead of semantic names (`a`, `b`, `count`). Local variables use cryptic names like `v0`, `v1`, `v2` throughout (e.g., `varargs_func` has 20+ such variables). Even struct field names are generic (`field_0`). Only `result`, `i`, `ptr` show any semantic intent.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions correctly recovered as `cdecl_func`, `call_cdecl`, `stdcall_func`, matching source names. However, many utility functions use auto-generated names like `sub_401020`, `sub_40102d`. Runtime functions (`_init`, `_start`, `_fini`) correctly use standard names.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Numeric literals like `5`, `10`, `42` are clear. String literals accessed via global variables (`g_403008`) lose context. Magic numbers like `4294967295` (0xFFFFFFFF) used for error returns without explanation. Some constants like `&v21` in varargs functions are opaque.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution. `varargs_func` has 30+ stack variables (`v0`-`v21`, `v23`-`v30`) with `uint128_t` types. Unused variables like `v13`-`v20` in varargs. Stack pointer manipulation (`*((long long *)(40 + p))`) creates clutter. Multiple unused register saves pollute function headers.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use `for` constructs, conditionals are clear. However, `sub_401020` uses `goto g_405fb0` which is unusual. Some optimization artifacts like computed jumps in varargs handling. At -O0, control flow should be cleaner.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Excellent decomposition - each test case (`call_cdecl`, `call_stdcall`, etc.) is a separate function matching source. Function sizes are appropriate (10-30 lines). No monolithic functions. Parameter lists reasonable.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately. No excessive forward jumps. `test_calling_conventions` is linear despite 150+ lines. Good flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in `test_calling_conventions` where values copied to stack before passing (`v0 = v24; v1 = v25; ...`). Varargs functions have duplicate code between `varargs_func` and `param_varargs`. No dead code elimination visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Parameters use `unsigned int` instead of `int`, losing sign information. `func_no_args` returns `unsigned long long` instead of `int`. `call_ret_pointer` returns `long long` but should return `int`. Mixed types: `param_string` correctly uses `char*`, but `param_array_decay` uses `unsigned long`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic names: `struct_0` for `param_double_ptr` parameter. `LargeStruct` and `SmallStruct` from source not recovered - `func_struct_byval` operates on raw stack memory. Field names lost (`field_0` instead of meaningful names).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations: `*(ptr)->field_0` in `param_double_ptr` has confusing precedence. Pointer arithmetic in `ret_pointer` returns `a0 + 4` (should be `sizeof(int)`). Function pointer cast `a0(a1)` in `param_func_ptr` bypasses type safety. No alignment annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments. Only auto-generated function location headers ("Function: cdecl_func at 0x4011a9"). No explanation of algorithm, no decompilation confidence indicators, no pre/post conditions. Source had rich comments explaining calling conventions - completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (function calls, loops). Varargs pattern partially identified but not named. Calling convention tests not identified as related test suite. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `sub_4010e5` shows "Unsupported jumpkind Ijk_SigTRAP" - good anomaly flag. However, `goto g_405fb0` in `sub_401020` not flagged as unusual. Indirect calls like `param_func_ptr` not marked as uncertain. Many anomalies silently present.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL" for `func_struct_byptr`). No postconditions. No invariant recognition. Source had explicit NULL checks that are present in code but not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear (`call_cdecl()` calls `cdecl_func()`). External functions declared (`extern`). However, no documentation of call graph or which functions test which scenarios. Callback relationships not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - runtime functions first, then test functions. Static functions properly scoped. Related test functions (`call_cdecl`, `cdecl_func`) placed near each other. However, all in single file with no header separation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has `extern` declarations for external symbols. Requires standard library stubs. Some type mismatches would cause warnings. Not standalone compilable without modifications.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use `a0`, `a1`, `a2` - completely loses semantic meaning of original `a`, `b`, `count`
+- **No comments**: Zero meaningful comments explaining algorithms, calling conventions, or test purposes
+- **Type precision loss**: `unsigned int` everywhere loses signed/unsigned distinction from source (`int` parameters)
+- **Struct recovery failure**: `LargeStruct` and `SmallStruct` from source not recovered - accessed as raw memory
+- **Noise pollution**: `varargs_func` has 30+ meaningless stack variables (`v0`-`v30`, `uint128_t` types) obscuring logic
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions are well-separated matching source organization. Each test case (`call_cdecl`, `call_stdcall`, etc.) correctly extracted as separate functions with appropriate granularity.
+
+### Most Needs Improvement: Variable Naming (2/10)
+Every parameter and local variable uses generic names (`a0`, `v1`, `v2`). At -O0 with debug symbols, the decompiler should infer meaningful names from symbol information and usage patterns.
+
+### Top 3 Recommendations:
+1. **Infer variable names from debug symbols**: At -O0 with -g, parameter names `a`, `b` and local variable names should be recovered from DWARF debug info
+2. **Add semantic comments**: Document calling convention tests, parameter purposes, and expected behaviors
+3. **Recover struct types**: Use debug info to reconstruct `LargeStruct`, `SmallStruct` with meaningful field names instead of raw stack access

@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `local_c`, `local_d`, `iVar1`, `puVar1` with no semantic meaning. Original variables like `capture_by_value`, `instance_count`, `multiplier` are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions retained original names (`test_cpp_member_func`, `test_cpp_virtual_func`), but helper functions use generic names (`FUN_0001092c`). Class methods partially recovered with `Class::method` format.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Critical issue - most functions return constant-folded results (0x2a=42, 0x47=71, 0x28a=650) instead of actual computation logic. Magic numbers like `0x125c`, `0x3e9` replace meaningful expressions.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple warnings present ("Unknown calling convention", "Subroutine does not return", "Removing unreachable block"). Stack check failures (`__stack_chk_fail`) add noise to legitimate code paths.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Most test functions lost all control flow due to constant folding - they just `return` a constant. `test_cpp_rtti` shows complex pointer arithmetic instead of clear if/else structures from source.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Class methods properly separated, but test functions collapsed to single return statements. Original multi-line logic (object construction, method calls, arithmetic) completely lost.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Functions that retain logic read top-to-bottom reasonably well. However, constant-folded functions provide no linear flow to evaluate.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or duplicate expressions. However, this is because the logic was eliminated entirely rather than optimized cleanly.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Extensive use of `undefined4`, `undefined1`, `undefined8` instead of proper types. Original `int`, `size_t`, `double` types partially recovered but mixed with generic types throughout.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class names recovered (Base, Derived, MultiDerived), but fields accessed via pointer arithmetic (`*(int *)(this + 4)`) instead of named fields. No struct definitions visible.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(undefined4 *)`, `(undefined *)0x0`). Function pointers cast to `code *`. Original C++ type safety completely lost.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Auto-generated warnings present ("WARNING: Could not recover jumptable"), but no semantic comments explaining what code does. Original Chinese comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns (virtual dispatch, inheritance, templates) not recognized. `template_max<int>` recovered but lambda expressions, smart pointers, exception handling logic all collapsed to constants.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings properly flag issues ("Unknown calling convention", "Treating indirect jump as call"). However, doesn't explain WHY or suggest manual analysis approaches.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original null checks, bounds checks, and exception guarantees completely lost in constant folding.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch partially recovered (`__thiscall`), but inheritance relationships not explicit in decompiled output.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 69 functions in single output with no logical grouping. Original file structure with section comments (`// CPP-L3-01`, etc.) completely lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile standalone - missing headers, undefined symbols (`__cxa_allocate_exception`, `operator_new`), and architecture-specific calls (`__aeabi_d2iz`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+2+5)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+5+6+7)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type System): (4+5+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (4+3+6+2)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                              = 4.41/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Constant folding eliminated all computation logic** - test functions return pre-computed results (0x2a, 0x47, 0x28a) instead of actual code
+- **All variable names are generic** (`local_c`, `iVar1`, `puVar1`) with zero semantic meaning
+- **Type degradation** - extensive `undefined4`, `undefined8` instead of proper C++ types
+- **Class field access via pointer arithmetic** instead of named member access
+- **No recovery of C++ idioms** - lambdas, smart pointers, exceptions, templates all collapsed
+
+### Best Quality Aspect: **Anomaly Indication (6/10)**
+- Ghidra properly flags uncertain decompilation with warnings about indirect calls and calling conventions, helping analysts identify unreliable code regions.
+
+### Most Needs Improvement: **Literal Clarity (2/10)**
+- Constant folding destroyed the actual computation logic, making it impossible to understand HOW results are computed, only WHAT the results are.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Disable aggressive constant propagation** for decompilation mode - preserve computation logic even when results are statically determinable
+2. **Recover C++ semantic types** from RTTI/debug symbols when `-g` flag is present (this binary was compiled with `-g` but types still degraded)
+3. **Infer variable names from usage patterns** - `local_c` used in stack check should be `canary_value`, `iVar1` in size context should be `length` or `count`

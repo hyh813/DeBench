@@ -1,0 +1,105 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Intermediate variables from the source (e.g., `temp1`, `temp2`, `sum`, `i`) are often eliminated by the compiler's optimization or replaced with generic decompiler names like `iVar1`, `lVar1`, or `puVar2`, obscuring the original semantic intent.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `sequential_ops`, `single_if`, and `loop_for_fixed` are perfectly preserved from the source, likely due to the presence of debug symbols in the binary.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Constants are frequently represented as opaque hex values (e.g., `0x3e9` for 1001, `0x15` for 21) rather than the decimal values used in the source, making it difficult to mentally verify the logic against the original code.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains frequent "Unresolved local var" comments (e.g., `/* Unresolved local var: int temp1@[???] */`) which act as visual noise, though the underlying logic is generally clean of compiler artifacts like stack canaries.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: While the decompiler produces valid C, the optimized binary results in unnatural control flow for the source context, such as `single_if` becoming a bit-shift operation `x << (uint)(0 < x)` and `recursion_factorial` becoming a loop.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries are respected and match the source structure perfectly; there is no unwanted inlining or outlining of functions visible in the decompilation list.
+
+**7. Code Linearization:** Score: 5/10
+Justification: Complex control flows like `duffs_device` are decompiled into a "spaghetti" structure of `goto` labels (e.g., `switchD_00010ca0_caseD_1`), which severely disrupts top-to-bottom readability.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler successfully presents the optimized code without redundancy; for example, `sequential_ops` is cleanly reduced to a single expression `(b + a) * 2 - c` rather than retaining dead stores.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate (e.g., `int`, `uint`), though the use of `undefined4` in `_start` and generic pointer types for arrays indicates some precision loss in complex scenarios.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Array structures are flattened into raw pointers; for instance, `int matrix[3][4]` in `loop_multi_exit` is decompiled as `undefined4 *puVar2` with manual index arithmetic, completely losing the 2D array semantic.
+
+**11. Type Safety:** Score: 7/10
+Justification: Operations are generally type-safe, with explicit casts like `(uint)(0 < x)` used for boolean-to-integer conversions, though the flattened array pointer arithmetic relies on implicit offset calculations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to technical warnings (e.g., "WARNING: Removing unreachable block") and do not provide semantic explanations of the algorithm or logic, offering no help in understanding the "why" behind the code.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: The decompiler successfully identifies and converts tail recursion in `recursion_factorial` into a `do-while` loop, but fails to reconstruct the structured switch-case for `duffs_device`, leaving it as raw gotos.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: Ghidra clearly flags areas where it struggled, such as "WARNING: Could not recover jumptable" in `call_func_ptr`, which accurately alerts the analyst to potential indirect call issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no inference or documentation of preconditions, postconditions, or invariants; for example, the requirement that `n > 0` in `duffs_device` is not explicitly stated in the decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are presented as standard C calls without additional metadata (e.g., "Calls: X" or "Called by: Y"), requiring the user to rely solely on the function names to understand relationships.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in memory address order rather than logical grouping (e.g., all Level 1 tests together), which scatters related logic throughout the decompilation view.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses Ghidra-specific types like `undefined4` and references external symbols (e.g., `__libc_start_main`) without headers, preventing standalone compilation without significant manual patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (5 + 10 + 4 + 6) / 4 = 6.25
+L2_avg: (7 + 9 + 5 + 9) / 4 = 7.50
+L3_avg: (8 + 3 + 7) / 3 = 6.00
+L4_avg: (3 + 7 + 8 + 1) / 4 = 4.75
+L5_avg: (5 + 6 + 4) / 3 = 5.00
+
+Overall = (6.25 × 0.30) + (7.50 × 0.25) + (6.00 × 0.20) + 
+          (4.75 × 0.15) + (5.00 × 0.10)
+Overall = 1.875 + 1.875 + 1.20 + 0.7125 + 0.50
+Overall = 6.16 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 6.2/10
+
+### Critical Defects (Bullet List)
+- **Composite Type Loss**: The 2D array `matrix[3][4]` is flattened to `undefined4 *puVar2`, destroying the semantic structure of the data.
+- **Literal Obfuscation**: Decimal constants from the source (e.g., `1001`) are represented as opaque hex values (e.g., `0x3e9`), hindering readability.
+- **Control Flow Destruction**: The `duffs_device` function is decompiled into a mess of `goto` labels rather than a recognizable switch structure.
+- **Variable Elimination**: Meaningful intermediate variables like `sum` and `i` in loops are optimized away, leaving complex expressions that are hard to map back to the source logic.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (10/10)
+- **Why?** The debug symbols in the binary allowed the decompiler to perfectly preserve the original function names, providing immediate context for every block of code.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Assertion & Contract Recovery (1/10)
+- **Why?** The decompiler provides zero information regarding the preconditions or expected states of the functions, leaving the analyst to guess requirements (e.g., valid pointer ranges) entirely from the code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Enhance Array Type Recovery**: Implement pattern matching to detect multi-dimensional array access patterns (e.g., `base + i*stride + j`) and reconstruct the original array types instead of flattening to raw pointers.
+2. **Improve Constant Representation**: Add logic to prefer decimal notation for literals in contexts where the source likely used decimal (e.g., loop counters, return values) or provide an option to toggle hex/decimal display.
+3. **Refine Duff's Device Pattern Matching**: specifically target the `switch` inside a `do-while` loop structure to reconstruct the original `switch-case` fall-through logic instead of emitting a graph of `goto` labels.

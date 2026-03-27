@@ -1,0 +1,111 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `v0`, `v1`, `gr_offs`, `stack`) with no semantic meaning. For example, `varargs_func` uses `v10`, `gr_offs`, `stack` instead of `count`, `sum`, `va_list`. No variable names reflect their purpose like `packet_size` or `encryption_key`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`cdecl_func`, `stdcall_func`, `varargs_func`, `test_calling_conventions`). However, some helper functions are generic (`sub_750`, `init_proc`). Action verbs are missing but names accurately reflect functionality.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `0xFFFFFFFFFFFFFFF8LL` for alignment, `-56` for gr_offs initialization, `17` for loop bounds. String literals like `asc_1570`, `aCallL206` are obfuscated references instead of actual strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: `LODWORD(result)`, `__fastcall` annotations, `@<X0>`, `@<W0>` calling convention markers, `BYREF` annotations, and type casts like `(unsigned __int64)`. Stack canary references (`&_stack_chk_guard`) appear in return statements.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops use natural `do-while` constructs, but `varargs_func` has complex nested conditionals for va_list handling that obscure the simple source logic. `ret_multi_branch` uses inverted if-chains instead of clean switch statement from source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate (most under 50 lines). However, aggressive constant folding collapsed many caller functions (`call_cdecl`, `call_stdcall`) to single return statements, losing the call relationship visible in source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. Some functions like `varargs_func` have complex branching that disrupts flow, but no excessive goto usage observed.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `test_calling_conventions` shows redundant stack operations for struct initialization (16 individual assignments instead of loop). `call_varargs_param` passes 8 double parameters that aren't used, showing optimization artifacts.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: all integers become `__int64` or `_DWORD`, losing `int`, `long`, `size_t` distinctions. `func_mixed_args` shows `double a4` but `__int64 a3` for what should be `long long`. Function pointers use generic `unsigned int (__fastcall *)(_QWORD)` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `LargeStruct` and `SmallStruct` are completely lost. `func_struct_byval` takes `__int64 *a1` instead of `LargeStruct s`. `func_struct_byptr` takes `_DWORD *a1` instead of `SmallStruct *p`. Field access becomes array indexing (`a1[0]`, `a1[1]`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(unsigned int)(result + *(_DWORD *)stack)`, `(unsigned __int64)va[0].__stack`. Pointer arithmetic on `_DWORD *` and `__int64 *` without bounds checking. However, no obvious buffer overflow patterns.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only auto-generated headers like `/* Function: cdecl_func @ 0x92C */`. No algorithm explanations, no parameter documentation, no decompilation confidence indicators. Source had extensive comments explaining calling conventions.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern is recognizable but shown as low-level va_list mechanics instead of clean `va_start/va_arg/va_end` pattern. Function pointer callback pattern in `param_func_ptr` is preserved but not identified as callback pattern.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed decompilations are clearly marked (`FAILED to decompile: strlen @ 0x13090`). `__usercall` annotation on `ret_large_struct` indicates unusual calling convention. However, no warnings about potential issues in varargs handling.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should note `p != NULL`). No postconditions. Null checks exist in code (`if (a1)`) but aren't documented as contracts. Source had clear expectations documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are visible in code but not documented. `main` clearly calls three test functions. Callback relationship in `call_func_ptr_param` is visible but not annotated. Global variable references (`handle1_1`, `handle2_0`) lack context.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source structure. Related functions grouped together (calling conventions, parameter passing, return values). However, no file/module boundaries visible in single output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 8 external functions failed to decompile (`strlen`, `printf`, `__libc_start_main`, etc.). Would require stubs for all standard library functions. Architecture-specific annotations (`__fastcall`, `__int64`) aren't portable. Cannot compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.63
+Level 3 (Type):        (4+2+5)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (3+4+6+2)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Context):     (6+7+4)/3   = 5.67 × 0.10 = 0.57
+
+Overall Score: 5.14/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Struct types completely lost**: `LargeStruct` and `SmallStruct` degraded to raw pointer arrays (`__int64 *`, `_DWORD *`), losing all field semantics
+- **Variable names are entirely generic**: `a1`, `a2`, `v0`, `v1` provide zero semantic information about purpose
+- **Aggressive constant folding**: Test functions return pre-computed constants (15, 50, 6) instead of showing actual function calls, hiding program flow
+- **No documentation recovered**: Source had 200+ lines of comments explaining calling conventions; decompiled output has virtually none
+- **Type precision severely degraded**: All integers become `__int64`/`_DWORD`, losing `int`, `long long`, `size_t` distinctions critical for understanding ABI behavior
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`), making navigation straightforward despite other issues.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct definitions is the most severe issue, as it fundamentally obscures the calling convention testing purpose of this code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types from stack access patterns** - Detect repeated offset access patterns (`[0]`, `[1]`, `[15]`) and propose struct definitions with field names based on usage context.
+
+2. **Preserve call relationships even with constant folding** - When optimization collapses calls to constants, add comments showing original call sites (e.g., `// Originally: return cdecl_func(5, 10)`).
+
+3. **Infer variable names from usage patterns and string references** - Variables used in printf format strings should inherit names from format specifiers; loop counters should be named `i`, `j`, `count` based on context.

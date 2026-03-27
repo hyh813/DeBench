@@ -1,0 +1,111 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `local_4`, `iVar1`, `uVar2` instead of semantic names like `count`, `sum`, `x`, `y` from source. The varargs function has opaque names like `local_118`, `piVar2`, `piVar3` that reveal nothing about their purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but runtime functions use generic names (`FUN_001006d0`, `FUN_0010083c`). Core test functions match source well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation: `0x40091eb851eb851f` (double constant), `0x2a` (42), `0xa00000005`. Original source used clear values like `3.14`, `42`, `{5, 10}`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Unnecessary casts present (`(ulong)local_24`, `(int)((ulong)uVar1 >> 0x20)`). Verbose stack variable declarations (`undefined1 auStack_148 [128]`) add clutter without value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as for/while constructs, but varargs handling (`varargs_func`) has complex nested conditionals that obscure the simple va_arg iteration pattern from source.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved, but return types degraded (`call_cdecl` returns `void` instead of `int`, `func_no_args` returns `undefined8` instead of `int`). Some functions lose return value semantics.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with clear execution flow. Some forward references to data symbols (`DAT_00101dc0`) but doesn't significantly disrupt readability.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant type casts throughout (`uVar3 & 0xffffffff` repeated in printf calls). Some unnecessary intermediate variables that could be eliminated.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined8`, `undefined4`, `undefined1` replace `int`, `long`, `char`. `func_mixed_args` has parameter order changed (double param_1, int param_2 vs original int x, char* s, double d, long long ll).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete struct loss - `LargeStruct` becomes `long param_1`, `SmallStruct` becomes `int *param_1`. `func_struct_byval` takes raw pointer instead of struct by value. No field names recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int *)register0x00000008`, `(long)local_40 + (long)local_20`. Pointer arithmetic on void-typed data. Type confusion in `func_mixed_args` parameter ordering.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only WARNING markers about unreachable blocks. No algorithm explanations, no parameter documentation, no return value semantics documented.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not identified (complex manual stack walking instead of va_start/va_arg). Function pointer callbacks not labeled as such. No pattern recognition visible.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some WARNING comments about unreachable blocks in runtime functions. However, critical issues unflagged: type mismatches, struct loss, parameter order changes not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL` for pointer functions). No postconditions. Null checks present but not documented as contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Global data references (`DAT_00101dc0`) without explanation of what they contain.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by test category (calling conventions vs parameter passing vs return values). Source organization lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References undefined symbols (`DAT_00101dc0`, `register0x00000008`, `__libc_start_main`). Won't compile standalone without significant stubbing and symbol resolution.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+7+5+6)/4 = 5.25
+L2 Average: (6+6+7+6)/4 = 6.25
+L3 Average: (4+2+4)/3 = 3.33
+L4 Average: (3+3+5+2)/4 = 3.25
+L5 Average: (5+5+3)/3 = 4.33
+
+Overall = (5.25 × 0.30) + (6.25 × 0.25) + (3.33 × 0.20) + (3.25 × 0.15) + (4.33 × 0.10)
+        = 1.575 + 1.5625 + 0.666 + 0.4875 + 0.433
+        = 4.724
+```
+
+**Overall Readability Score: 4.7/10**
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct` become raw pointers with no field names
+- **Variable names are generic** - `param_1`, `local_4`, `iVar1` instead of `count`, `sum`, `x`
+- **Type precision degraded** - `undefined8`, `undefined4` replace specific C types
+- **Parameter order changed** - `func_mixed_args` has different parameter ordering than source
+- **Return types incorrect** - `call_cdecl` returns `void` instead of `int`, losing return value semantics
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most test function names preserved from source, making core functionality identifiable despite other issues
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct definitions, field names, or by-value struct passing semantics, fundamentally breaking code understanding
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from stack layouts** - Analyze memory access patterns to reconstruct `LargeStruct { long long data[16] }` instead of raw pointer arithmetic
+2. **Infer variable names from usage context** - Variables used in loop counters should be named `i`, accumulator variables should be named `sum`, etc.
+3. **Preserve function return type semantics** - Track return value usage to correctly identify `int` returns vs `void`, especially for wrapper functions like `call_cdecl`

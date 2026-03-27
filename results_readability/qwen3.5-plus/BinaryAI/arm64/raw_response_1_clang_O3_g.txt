@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic `param_N`, `iVarN`, `uVarN` naming (e.g., `loop_continue` has `iVar18` through `iVar38`). Original names like `temp1`, `sum`, `count` are completely lost, making semantic tracking extremely difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names are preserved (`sequential_ops`, `single_if`, `nested_if_deep`, `test_control_flow_l1`). This is the strongest aspect - function purpose is immediately identifiable from names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3e9`, `0x65`, `0xfffffff8` appear without explanation. Test functions hardcode expected values (e.g., `printf("CF-L1-01...%d\n",0x15)`) instead of showing actual computation, obscuring the relationship between input and output.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present - NEON vectorization code (`NEON_cmeq`, `NEON_ext`) appears in simple scalar functions like `loop_continue` and `recursion_factorial`. Excessive temporary variables from register spilling inflate function size dramatically.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (`sequential_ops`, `ternary_op`) recover well with natural if/return patterns. However, `loop_continue` and `goto_backward` show massive vectorized unrolling instead of clean for/while loops, requiring significant mental effort to trace execution.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are preserved and helper functions (`double_value`, `triple_value`) are properly separated. However, optimization recovery bloats simple functions - `loop_continue` expands from 15 lines to 200+ lines of vectorized code.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Original `goto_forward` and `goto_backward` are successfully recovered as conditionals/loops. Test functions are extremely linear (just printf sequences).
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from loop unrolling recovery - `recursion_factorial` and `tail_recursion` have duplicated computation paths for vectorization. Same NEON operations repeated multiple times within single functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - `if_else` returns `bool` instead of `int`, `nested_if_2` has `uint param_2` instead of `int b`, `loop_break` returns `undefined8`. Function pointers shown as generic `code*` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited composite types in original code. `jmp_buf` correctly shown as `__jmp_buf_tag*`. Arrays handled as pointer arithmetic in some cases (`loop_break` switch on array values). No major struct losses since original was simple.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present throughout (e.g., `(ulong)(param_1 - 1)`, `(int)((ulong)uVar23 >> 0x20)`). Pointer arithmetic without bounds checking. Function pointer calls with `undefined4` parameters lose type safety guarantees.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Zero comments** in decompiled output. Original had extensive documentation explaining each function's purpose, test cases, and difficulty level. No decompilation confidence indicators or algorithm explanations recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns (if-else, switch, loops) structurally recovered but not identified. NEON vectorization not marked as optimization artifact. Fall-through switch (`switch_fallthrough`) recovered but not documented as intentional pattern.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `UNRECOVERED_JUMPTABLE` appears in `call_func_ptr` - good anomaly flag. However, no warnings about optimization artifacts, test function constant substitution, or type mismatches. Mostly silent about significant issues.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. Original test validation comments completely lost. Error conditions not documented in recovered code.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no call graph documentation. Test functions print constants instead of showing actual function relationships. Global `jump_buffer` referenced but not explained in context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (test functions together, helpers separate). Single-file output appropriate for this task. No header file structure or namespace organization (expected for decompilation output).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: **Will not compile** without significant modification. Ghidra-specific types (`undefined4`, `undefined8`, `code*`) need replacement. NEON intrinsics (`NEON_cmeq`, `NEON_ext`) require proper headers and architecture support.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (5+6+7+4)/4 = 5.50  × 0.25 = 1.38
+Level 3 (Type):        (5+7+5)/3   = 5.67  × 0.20 = 1.13
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50  × 0.15 = 0.53
+Level 5 (Contextual):  (5+6+3)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  5.01/10
+```
+
+**Overall Readability Score: 5.0/10**
+
+### Critical Defects:
+- **Zero comments** - All original documentation (function purposes, test cases, difficulty levels) completely lost
+- **Generic variable naming** - `param_1`, `iVar1`, `uVar17` obscure semantic meaning entirely
+- **NEON vectorization artifacts** - Simple scalar loops (`loop_continue`, `recursion_factorial`) inflated with 100+ lines of vector operations
+- **Test functions print constants** - `test_control_flow_l1` prints hardcoded expected values instead of calling actual functions, breaking semantic relationship
+- **Type inconsistencies** - `if_else` returns `bool` instead of `int`, `loop_break` returns `undefined8`, breaking type expectations
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names (`sequential_ops`, `nested_if_deep`, `switch_fallthrough`) are preserved, making function purpose immediately identifiable despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation loses all semantic context from original source; even basic function purpose comments would dramatically improve readability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** - Analyze usage patterns to suggest semantic names (e.g., loop counters → `i`, accumulators → `sum`, condition results → `is_valid`)
+2. **Filter optimization artifacts** - Detect and collapse NEON/vectorization patterns back to simple scalar loops when original was compiled at `-O0`
+3. **Add decompilation confidence annotations** - Insert comments indicating uncertainty levels, optimization artifacts, and recovered vs. inferred structures (e.g., `// RECOVERED: original for-loop`, `// OPTIMIZATION: vector unrolling detected`)

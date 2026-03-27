@@ -1,0 +1,117 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: All parameters use generic names (a1, a2, a3) and local variables use v-prefixed names (v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11). The original source used meaningful names like `temp1`, `temp2`, `sum`, `count` which are completely lost. Only `result` provides minimal semantic value.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Nearly all function names perfectly match the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `nested_if_deep`, `if_elseif_chain`, `switch_small`, `loop_for_fixed`, `loop_while`, `goto_forward`, `goto_backward`, `duffs_device`, etc. Excellent recovery of function-level semantics.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers like `0xFFFFFFFFLL` (representing -1), `0x32` (50), `0xA` (10) are used without explanation. However, test functions have hardcoded expected values (21, 20, -5, etc.) rather than calling functions, which is a major clarity issue. SSE constants like `xmmword_2010` are unexplained.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Heavy SSE/AVX intrinsics clutter `loop_continue`, `goto_backward`, `tail_recursion`, `call_func_ptr_array` - these are compiler artifacts from auto-vectorization. Test functions print hardcoded values instead of calling actual functions. Failed decompilation messages for `__libc_start_main`, `puts`, `printf`, `_setjmp`, `longjmp` create noise. Undefined symbols like `unk_20D0`, `asc_2699` pollute output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Most control flow is readable - sequential operations, if-else chains, simple loops are clear. However, `loop_continue` and `goto_backward` use heavy SSE intrinsics making control flow obscure. The `duffs_device` uses goto labels (LABEL_3, LABEL_5, etc.) which is less readable than original switch-do-while pattern. At -O0, such heavy vectorization is unexpected.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Each function from original source is preserved as separate function. No inlining or outlining artifacts observed. Function granularity is appropriate - each test case remains distinct. Good decomposition matching source structure.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Most functions read top-to-bottom. Early returns present but used appropriately. The `duffs_device` has goto labels disrupting linear flow. `loop_multi_exit` has nested while/for with complex exit conditions. Generally manageable but some disruption.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: Test functions contain completely redundant hardcoded values (e.g., `printf("CF-L1-01 (sequential_ops): %d\n", 21);` instead of calling `sequential_ops(5,7,3)`). Loop unrolling in `loop_continue` and `goto_backward` creates significant redundancy. Dead code not eliminated in some paths.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Most integers use generic `int` or `unsigned int`. Function pointer types are verbose and imprecise: `__int64 (__fastcall *)(_QWORD)` instead of proper signatures. Return types use `__int64` uniformly. Original `int` return types sometimes preserved as `unsigned int` cast. Mixed precision.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: No struct recovery. Arrays accessed via raw pointer arithmetic: `v1 = &unk_20D0;` then `v1[i]`. The original `int arr[] = {10, 20, 30, 40, 50}` becomes `unk_20D0` with integer indexing. Matrix `int matrix[3][4]` becomes pointer with stride calculations. All composite type information lost.
+
+**11. Type Safety:** Score: 5/10
+Justification: Some unsafe operations present. Pointer arithmetic `v1 += 4` for matrix traversal. Function pointer type mismatches possible due to imprecise signatures. Casts from `int` to `unsigned int` throughout. No bounds checking visible. However, no obviously dangerous patterns like buffer overflows.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Only minimal header comments ("Decompiled by IDA Pro 9.1 with Hex-Rays"). One warning: "positive sp value has been detected, the output may be wrong!" No algorithm explanations, no decompilation confidence indicators, no API contracts. Original comments about test scenarios completely lost.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Some patterns recognized - switch statements in `switch_small`, `switch_large`, `duffs_device`. However, `duffs_device` is shown with goto labels rather than recognized as the classic Duff's device pattern. State machines in `state_machine` and `fsm_func_table` not identified as such. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Failed decompilations are listed at end ("FAILED to decompile: __libc_start_main @ 0x5130"). However, no explanation of why they failed or what they contain. No indication of indirect call resolution issues. No warnings about suspicious code patterns. The sp-value warning is good but isolated.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants documented anywhere. Original parameter validation (e.g., "if x < 0 return -1") is preserved as code but not explained as contract. No documentation of error handling expectations.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10
+Justification: No function call relationship documentation. No indication of which functions call `recursive_factorial`, which are callbacks, etc. Global variables like `jump_buffer` used without explanation of scope. Completely isolated functions without relationship context.
+
+**17. Module Organization:** Score: 3/10
+Justification: Functions listed in memory address order (0x1020, 0x1080, 0x10B0, etc.) rather than logical grouping. Original source had clear sections: "Control Flow Level 1", "Control Flow Level 2", test functions. This organization completely lost. Static functions not distinguished from public API.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: Would NOT compile. Test functions print hardcoded values, not function results. Undefined symbols: `s`, `asc_2699`, `asc_26BD`, `xmmword_2010`, `xmmword_2020`, `xmmword_2030`, `xmmword_2040`, `xmmword_2050`, `xmmword_2060`, `xmmword_2070`, `xmmword_2080`, `dword_2090`, `unk_20D0`, `unk_20F0`. External dependencies (`puts`, `printf`, `_setjmp`, `longjmp`) not declared.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 5 + 3) / 4 = 4.75
+L2_avg = (6 + 8 + 6 + 4) / 4 = 6.00
+L3_avg = (5 + 2 + 5) / 3 = 4.00
+L4_avg = (2 + 4 + 5 + 1) / 4 = 3.00
+L5_avg = (2 + 3 + 2) / 3 = 2.33
+
+Overall = (4.75 × 0.30) + (6.00 × 0.25) + (4.00 × 0.20) + 
+          (3.00 × 0.15) + (2.33 × 0.10)
+        = 1.425 + 1.5 + 0.8 + 0.45 + 0.233
+        = 4.408 / 10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects (Bullet List)
+- **Variable names are completely generic** (a1, a2, v1, v2, v3): Original meaningful names like `temp1`, `temp2`, `sum`, `count`, `target` are lost
+- **Test functions print hardcoded values instead of calling functions**: `printf("CF-L1-01 (sequential_ops): %d\n", 21);` instead of `printf("%d\n", sequential_ops(5,7,3));`
+- **No struct/array type recovery**: Original `int arr[] = {10,20,30,40,50}` becomes opaque `unk_20D0` with raw pointer access
+- **Heavy SSE intrinsics obscure logic**: `loop_continue` and `goto_backward` buried in `_mm_shuffle_epi32`, `_mm_mul_epu32` calls
+- **No compilation capability**: Undefined symbols (xmmword_*, asc_*, unk_*) and missing external declarations prevent building
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (score: 9/10)**
+- **Why?** Nearly every function name perfectly matches the original source - `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `duffs_device`, etc. This is excellent decompilation work at the function level.
+
+### Most Needs Improvement (Single Dimension)
+- **Lexical Clarity - Variable Naming (score: 2/10)**
+- **Why?** Every parameter and local variable uses generic names (a1, a2, a3, v1, v2, v3, v4, v5). The original source had clear names like `temp1`, `temp2`, `sum`, `count`, `target`, `arr`, `n` that convey semantic meaning. This makes the code nearly impossible to understand without constant reference to the source.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic operations, array indexing, comparisons) to suggest semantic names. `v1` used as array base with `v1[i]` should suggest `arr` or `array`. Variables used in addition suggest `sum` or `total`.
+
+2. **Recover composite types from pointer arithmetic**: When seeing `&unk_XXXX` followed by `[i]` access, recognize as array initialization. Reconstruct `int arr[] = {10, 20, 30, 40, 50}` from `unk_20D0` data reference.
+
+3. **Generate compilable code with proper declarations**: Add `#include` statements for standard functions. Replace undefined data symbols with actual arrays or comment as "external data". Generate actual function calls in test code rather than hardcoded values.

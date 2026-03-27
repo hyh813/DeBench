@@ -1,0 +1,115 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are mostly generic (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `result`) instead of semantic names like `capture_by_value`, `multiplier`, or `instance_count` from the original source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions are well-demangled (`test_cpp_member_func`, `test_cpp_virtual_func`), and class methods show proper C++ naming (`Base::virtual_func`, `Container<int>::push`), but helper functions remain generic (`sub_1030`, `sub_1040`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals are clear (`"Test"`, `"Base"`, `"Derived"`), but magic numbers like `0x14u` (20 bytes), `0x10u`, `0x18u` appear without explanation of their semantic meaning (object sizes).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__readgsdword(0x14u)` stack canary checks, `LODWORD`/`HIDWORD` annotations, `BYREF` markers, and inline assembly blocks (`__asm { jmp dword ptr [ebx+8] }`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Many test functions optimized to return constants directly (e.g., `test_cpp_multiple_inheritance` returns 71), losing original control flow; exception handling broken with `__noreturn` marking on `test_cpp_exception`.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Class methods properly separated, but many functions are stubs returning constants; thunk functions for virtual inheritance (`virtual thunk to`, `non-virtual thunk to`) are confusing and fragmented.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but unusual return types (`__int64` with `LODWORD`/`HIDWORD` splitting) disrupt flow; exception handling flow is completely broken.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Aggressive optimization removed actual logic from many functions; thunk function redundancy for virtual inheritance creates multiple similar functions that obscure the actual dispatch mechanism.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `double`, `char*`), but const-correctness partially lost; some type degradation with `__int64` where `int` suffices; function pointer types shown as `int (**)(...)`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Class structures partially recovered with field names (`name`, `value`, `multiplier`, `dataA`, `dataB`), vtable pointers visible (`_vptr_Base`), but virtual inheritance layout is confusing with complex pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts visible: `(int (**)(...))`, `(_DWORD *)`, `(char *)`; explicit pointer arithmetic on class objects; vtable manipulation shown explicitly without safety annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code; only auto-generated function headers; no algorithm explanations, decompilation confidence indicators, or API contract documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns partially recognized (vtables, constructors, destructors), but template instantiation not labeled, lambda functions completely optimized away, exception handling broken, smart pointer logic reduced to constants.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 22 functions marked as "FAILED to decompile" at end, one stack warning ("positive sp value has been detected"), but no specific warnings about uncertain code or optimization effects on individual functions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented, no postconditions inferred, no invariants recognized, exception contracts not shown; original source's expected return values completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible, virtual dispatch shown but confusing with thunks, global variables referenced but not clearly documented, class relationships partially visible through inheritance but not explicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output with no logical grouping, class methods scattered throughout file, no namespace structure recovered, no separation between test functions and class implementations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 22 external runtime functions failed to decompile (`__printf_chk`, `operator new`, `__cxa_throw`, etc.), would require significant stubs to compile, C++ runtime dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average (Lexical):     (4+7+5+4)/4 = 5.00
+Level 2 Average (Structural):  (5+6+6+6)/4 = 5.75
+Level 3 Average (Type):        (6+6+4)/3 = 5.33
+Level 4 Average (Semantic):    (2+4+5+2)/4 = 3.25
+Level 5 Average (Contextual):  (5+4+3)/3 = 4.00
+
+Overall = (5.00 × 0.30) + (5.75 × 0.25) + (5.33 × 0.20) + (3.25 × 0.15) + (4.00 × 0.10)
+        = 1.50 + 1.44 + 1.07 + 0.49 + 0.40
+        = 4.90/10
+```
+
+**Overall Readability Score: 4.9/10**
+
+### Critical Defects:
+- **Variable names are generic** (`v0`, `v1`, `v2`) instead of semantic names like `multiplier`, `instance_count`, `capture_by_value`
+- **22 external functions failed to decompile** including critical C++ runtime (`operator new`, `__cxa_throw`, `__dynamic_cast`)
+- **Exception handling completely broken** - `test_cpp_exception` marked `__noreturn` and only shows throw, not catch blocks
+- **No comments or documentation** explaining decompilation confidence, algorithm intent, or optimization effects
+- **Virtual inheritance thunks confusing** - multiple thunk functions (`virtual thunk to`, `non-virtual thunk to`) obscure actual dispatch logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - C++ symbol demangling successfully recovered meaningful function names like `test_cpp_member_func`, `Base::virtual_func`, `Container<int>::push`
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no comments exist to explain logic, decompilation confidence, or semantic intent; this severely impacts understandability
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables used in size calculations should be named `size`, `count`, `length`; variables holding object pointers should reflect class names
+2. **Add decompilation confidence annotations** - Mark optimized-away code regions, indicate when logic was constant-folded, flag uncertain type recoveries
+3. **Recover high-level C++ constructs** - Recognize and label template instantiations, lambda closures, exception handling blocks, and smart pointer patterns instead of reducing to raw operations
+
+---
+
+## Assessment Notes
+
+**Important Observations:**
+- **Metadata mismatch**: Source claims `arm64` architecture but decompiled code shows `x86` (ebx, eax, esp registers)
+- **Optimization discrepancy**: Source claims `-O0` but decompiled code shows aggressive optimization (functions returning constants)
+- **Decompiler mismatch**: Metadata says `Ghidra` but code header says `IDA Pro 9.1 with Hex-Rays`
+- **Lambda/Exception/Smart Pointer loss**: These C++14 features were completely optimized away or failed to decompile properly
+
+The decompilation quality is significantly impacted by what appears to be higher optimization levels than documented, combined with C++ ABI complexity that the decompiler struggles to recover semantically.

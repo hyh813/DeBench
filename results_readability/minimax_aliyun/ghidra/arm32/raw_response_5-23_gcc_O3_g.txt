@@ -1,0 +1,88 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: While function parameters like `size`, `x`, `y` are correctly named, many local variables remain unresolved or use generic names like `result`, `r1`, `r2`, `count`. For example, `param_macro_override` has "Unresolved local var: int r1" and "int r2" instead of meaningful names like `original_result` and `redefined_result`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source: `param_macro_constants`, `call_macro_constants`, `param_conditional_compile`, `param_asm_basic`, `param_dynamic_code`, etc. The decompiler correctly recovered the semantic intent from the symbol table.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple magic numbers lack explanation: `0x401` (should indicate MAX_SIZE+1), `0x200` (MAX_SIZE/2), `0x40` (BUFFER_COUNT*4), `0x1e` (30 for _SC_PAGESIZE), `0xb` (11 for x*11+5 pattern). The decompiler did not recover the macro constant names from the preprocessor.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise from "WARNING: Unknown calling convention" annotations on 15+ functions and "Unresolved local var" comments scattered throughout. However, the atomic operation library functions (sync_fetch_and_add, etc.) are compiler-generated and unavoidable.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with proper `if-else` structures, `do-while` loops (e.g., `param_asm_clobber`), and early returns. At -O0, the decompiled code closely matches the original source structure with no goto abuse or spaghetti code.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (5-30 lines each) with clear single responsibilities. The decompiler correctly separated the various test functions (`param_*` and `call_*` pairs) matching the source decomposition.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns are used appropriately (e.g., `param_asm_clobber` returns 0 for n<1). No forward jumps into loop bodies or computed goto patterns observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Loop unrolling is minimal (the SIMD functions expand to element-wise operations, which is appropriate for the fallback code). Common subexpression elimination is not problematic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct: `int` for parameters, `int*` for array pointers, `void*` for generic pointers, `size_t` for memory sizes. However, some `undefined4` appears where `int` would be expected, and the unresolved variable annotations suggest incomplete type recovery.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: The source code doesn't heavily use structs, but the decompiler correctly handles the array parameters (e.g., `int *arr`, `int *a`, `int *b`). No struct reconstruction was needed since the source didn't define custom structures.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts observed. Pointer arithmetic is correct (e.g., `arr + -1`, `piVar3 + 1`). Function pointers are properly typed in the sync built-ins. The code is type-safe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: The decompiler provides technical warnings ("WARNING: Unknown calling convention", "Unresolved local var") but lacks semantic comments explaining what functions do. No explanation of macro expansion results, assembly behavior, or algorithm intent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No design patterns or algorithms are explicitly identified. The decompiler doesn't recognize the atomic operation patterns, the conditional compilation branches, or the macro function expansions as distinct idioms.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The "WARNING" and "Unresolved local var" annotations flag decompilation uncertainties, but they're generic. The inline assembly replacement with C fallback code isn't flagged as an anomaly - the source had x86 assembly but the ARM binary uses the fallback path.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. For example, `param_asm_clobber` should indicate "requires: n >= 0" and "ensures: returns sum of first n elements".
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: No function call relationships or global variable usage is documented. The `test_preprocessing_features` and `test_asm_features` functions call many others, but this hierarchy isn't explicitly shown.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the output, roughly matching the source file organization (preprocessing functions first, then asm functions). Static functions like `my_func` are correctly scoped.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The metadata shows "Compilation Result: Yes", indicating the decompiled code compiles. External dependencies (libc functions like `mmap`, `printf`) are correctly resolved to standard library calls.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- Variable naming: Many local variables remain "Unresolved" or use generic names (r1, r2, result) losing semantic meaning from macro expansions
+- Literal clarity: Magic numbers like 0x401, 0x200, 0x40 replace original macro constants (MAX_SIZE, BUFFER_COUNT)
+- Comment quality: Only technical warnings provided; no semantic explanation of what functions do or how they relate to preprocessor/assembly features
+- Anomaly indication: The replacement of inline assembly with C fallback code isn't flagged as a significant deviation from source
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The decompiler almost perfectly recovered function names from debug symbols, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Variable Naming Quality (4/10)  
+The decompiler failed to infer meaningful names for local variables, leaving many as "Unresolved" or generic names, which significantly impedes understanding of macro-expanded code.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Variables like `r1` and `r2` in `param_macro_override` should be named based on their computation (e.g., `before_redefine`, `after_redefine`)
+2. **Recover macro constants**: Detect magic numbers that match preprocessor definitions and replace with constant names (0x401 → MAX_SIZE+1, 0x40 → BUFFER_COUNT*4)
+3. **Add semantic comments**: Explain what each function does in plain English, especially for complex features like inline assembly, atomic operations, and conditional compilation branches

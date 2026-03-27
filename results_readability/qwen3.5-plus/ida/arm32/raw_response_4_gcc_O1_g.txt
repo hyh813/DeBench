@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `result`, `p_large`) with no semantic meaning. Only occasional names like `large`, `strs`, `ptr` provide minimal context, making data flow difficult to track.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation of original function names (`cdecl_func`, `varargs_func`, `test_calling_conventions`, `param_by_value_int`). Names accurately reflect functionality and match source code.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Heavy constant folding replaced computations with magic numbers (`15`, `50`, `6`, `33`, `100`) without explanation. Original expressions like `cdecl_func(5, 10)` became hardcoded `return 15`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present including register variables (`v4`, `v5`, `v6`), type casts (`_DWORD`, `_QWORD`, `__PAIR64__`), and stack manipulation comments ("positive sp value has been detected").
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops and conditionals generally recognizable (e.g., `varargs_func` has clear do-while loop). Some optimization artifacts but execution paths remain traceable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Original function boundaries preserved appropriately. No inappropriate inlining or fragmentation; each function maintains single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps in complex functions like `test_calling_conventions` but not severely disruptive.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `ret_large_struct` has excessive temporary variables (`v3` through `v14`) for struct field copying. Loop unrolling visible without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `char*`, `double`, `__int64`). Some degradation to generic types (`__int64` instead of `long long`, `_DWORD` instead of `uint32_t`).
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery—`LargeStruct`, `SmallStruct`, `BigStruct`, `LargeData`, `SmallPoint` all preserved with correct field access (`s.data[0]`, `p->x`, `p->y`).
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (`(_DWORD *)`, `(__int64)`, `__PAIR64__`) but generally type-consistent. No obvious buffer overflow patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only decompiler warnings present ("local variable allocation has failed", "positive sp value has been detected"). No semantic comments explaining algorithm purpose or logic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition. Variadic argument handling (`va_start`, `va_arg`, `va_end`) visible but not identified as standard printf-style pattern.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present (stack issues, failed decompilations noted). 8 external functions marked "FAILED to decompile" but no explanation of impact.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks exist (`if (!p) return -1`) but not formalized as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code but no call graph documentation. Relationships between `test_calling_conventions` and helper functions implicit only.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure. No explicit module boundaries or namespace organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 8 external functions failed decompilation (`__imp_puts`, `__imp_strlen`, `__imp_memcpy`, etc.). Would require stubs or library linking to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+5+6)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00  × 0.25 = 1.75
+Level 3 (Type):        (7+9+7)/3   = 7.67  × 0.20 = 1.53
+Level 4 (Semantic):    (3+4+5+2)/4 = 3.50  × 0.15 = 0.53
+Level 5 (Contextual):  (6+6+5)/3   = 5.67  × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 6.18/10
+```
+
+**Overall Readability Score:** 6.2/10
+
+### Critical Defects
+- **Constant folding obscures logic**: Functions like `call_cdecl()` return hardcoded `15` instead of showing `cdecl_func(5, 10)` computation
+- **Generic variable names**: `v0`, `v1`, `v2`, `result` throughout make data flow tracking difficult
+- **No semantic comments**: Zero documentation of algorithm purpose or non-obvious logic
+- **8 external functions failed**: `puts`, `strlen`, `printf_chk`, `memcpy` etc. require manual stubs
+- **Optimization level mismatch**: Binary compiled at O1 but metadata claims O0, causing unexpected transformations
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - Original function names perfectly preserved, making code immediately recognizable and navigable
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or parameter validity documentation recovered
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns** - Variables used in size checks should be named `count`/`length`, pointer arithmetic variables should indicate buffer/offset purpose
+2. **Preserve computation over constant folding** - Show actual function calls and expressions rather than pre-computed constants to maintain semantic transparency
+3. **Add semantic comments for standard patterns** - Recognize and document variadic functions, struct operations, and calling convention patterns with explanatory comments

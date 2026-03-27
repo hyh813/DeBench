@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are frequently generic (e.g., `iVar1`, `__ptr`, `local_10`) instead of semantic names like `i`, `arr`, or `result`. While some stack arrays like `large_buf` are recovered, the pervasive use of `iVar1` for loop counters and accumulators requires significant mental mapping to the source.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the source (e.g., `heap_basic`, `local_array`, `test_stack_memory`), likely due to the presence of debug symbols (`-g`). This makes navigating the code trivial.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Magic numbers are often presented in hex (e.g., `0x2a` instead of `42`, `0x14` instead of `20`) and multiplications are converted to bit shifts (`n << 2` instead of `n * 4`). While technically correct, this reduces semantic transparency compared to the source.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output is cluttered with Ghidra-specific artifacts like `/* WARNING: Unknown calling convention -- yet parameter storage is locked */` and `/* Unresolved local var: ... */` comments, which significantly distract from the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is highly natural, matching the source closely due to the `-O0` optimization level. Loops are preserved as loops (though often `do-while` instead of `for`), and conditionals are clear, making execution paths easy to follow.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source code. There is no inlining or outlining, maintaining the original granularity and cohesion perfectly (e.g., `linked_list_heap` remains a distinct function).
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps. The structure is straightforward, lacking the complex branching or spaghetti code often seen in optimized decompilations.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: Trivial intermediate variables from the source (e.g., `int a = x; int b = a * 2;`) are often folded into single expressions (e.g., `return x * 2 + 10;`), which actually improves readability by removing verbosity without losing meaning.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Standard types like `int` and `void*` are generally correct, but specific types like `size_t` are sometimes replaced with `undefined4` or `uint`. Function signatures are mostly accurate, though parameter types can be generic.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs (`Point`, `Node`, `TreeNode`) are recovered with correct field names and types. Access patterns like `p->x` and `__ptr->data` are preserved, maintaining the high-level data structure view.
+
+**11. Type Safety:** Score: 6/10
+Justification: Array accesses are frequently represented as pointer arithmetic on `void*` (e.g., `*(int *)((int)__ptr + iVar2 * 4)` instead of `__ptr[iVar2]`). This is technically correct but loses the safety and clarity of typed array indexing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are almost exclusively decompiler warnings (e.g., "WARNING: Removing unreachable block") rather than semantic explanations of the code logic. There are no comments explaining the *purpose* of functions or algorithms.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: Standard C idioms like `malloc`/`free` pairs and `fork`/`waitpid` patterns are clearly visible in the code structure, even if not explicitly labeled as such.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: Ghidra explicitly flags potential issues, such as "WARNING: Could not recover jumptable" in `call_global_callback` or "Unknown calling convention," which effectively alerts the analyst to uncertain areas.
+
+**15. Assertion & Contract Recovery:** Score: 4/10
+Justification: Preconditions (like `if (arr == NULL)`) are preserved as code, but there is no high-level documentation of contracts or invariants (e.g., "requires: n > 0").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. Global variable accesses (e.g., `global_counter`) are explicit, making the relationships between functions easy to trace.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are ordered by memory address rather than logical grouping. For example, `test_stack_memory` is separated from the functions it tests (`local_vars`, `local_array`), which hinders logical navigation.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Ghidra-specific types like `undefined4`, `undefined`, and `code *`, which will not compile with a standard C compiler without significant modification or a custom header file.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.8/10
+
+**Critical Defects:**
+- Variable names are generic (`iVar1`, `__ptr`) instead of semantic names (`i`, `arr`), obscuring logic.
+- Pointer arithmetic on `void*` (e.g., `*(int *)((int)__ptr + ...)` ) is used instead of safe array indexing.
+- Excessive decompiler noise ("Unresolved local var", "Unknown calling convention") clutters the output.
+- Magic numbers are in hex (e.g., `0x2a`) rather than decimal (`42`), reducing readability.
+- Ghidra-specific types (`undefined4`) prevent the code from compiling out-of-the-box.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Debug symbols allowed perfect recovery of function names, making the high-level structure of the program immediately understandable.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 4/10)
+- The pervasive use of generic names like `iVar1` for loop counters and `__ptr` for data structures forces the reader to manually track variable purposes, significantly slowing down analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhance Variable Name Recovery**: Leverage debug information (DWARF) more aggressively to map local variables back to their original source names (e.g., map `iVar1` to `i`).
+2.  **Improve Pointer Arithmetic Display**: Convert pointer arithmetic on typed pointers into array indexing syntax (e.g., change `*(int *)(ptr + i*4)` to `ptr[i]`) to improve type safety and readability.
+3.  **Reduce Comment Noise**: Provide an option to suppress "Unresolved local var" and "Unknown calling convention" warnings, or resolve them more gracefully to reduce visual clutter.

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `a0`, `a1`, `v0`, `v1`, `ptr`, `result`. The function `param_strcpy` has parameters `a0` and `a1` instead of meaningful names like `dst` and `src`. No semantic meaning can be derived from these names.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some function names are preserved from source (`param_strcpy`, `call_strcpy`, `param_strlen`), but most functions use generic address-based names like `sub_401030`, `sub_4015d0`. Library functions like `strcpy` and `strlen` are not recognized and appear as `sub_4015d0` and `sub_401650`.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF for -1) appear without explanation. String literals are not visible in the decompiled output - they appear as computed addresses. Constants like buffer sizes are not recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant decompilation artifacts present: `unsigned long v5; // ldt`, `unsigned long v6; // gdt`, `unsigned short v7; // gs`, and `Other Possible Types:` annotations. The `_ccall` pattern and `__x86.get_pc_thunk.ax()` calls add substantial noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is preserved - loops and conditionals are recognizable. However, the `goto` pattern in functions like `sub_401030` using `goto ptr[2]` is unnatural. At -O0, control flow should be nearly identical to source.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but many are trivial wrappers (e.g., `sub_40104e` calls `sub_401050`). The library functions are not recognized and remain as separate sub-functions, fragmenting the code unnecessarily.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist but are manageable. The main disruption is the extensive use of helper functions for what should be standard library calls.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns like repeated `__x86.get_pc_thunk.ax()` calls at the start of functions. Stack canary checks (`__stack_chk_fail_local`) add noise but are expected at -O0 with -fstack-protector.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. `param_strcpy` uses `unsigned int` for parameters instead of `char*`. Return type is `void` instead of `int`. No `const` correctness. `size_t` parameters become `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct definitions are recovered (e.g., `struct_0` with `field_0`, `field_4`), but field names are generic. The `ThreadData` struct is not recovered - its fields are accessed as array indices like `ptr[0]`, `ptr[1]`, `ptr[2]`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations: casting between pointer and integer types (`unsigned int` for pointers), pointer arithmetic not type-safe, and no bounds checking. The parameter `a0` is used directly as pointer without casts.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Auto-generated comments like `// ebx`, `// [bp-0x4]` provide register/stack information but don't explain the code's purpose. No documentation of what `sub_4015d0` (strcpy) actually does.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms are identified. The string operations (strcpy, strlen) are not recognized as standard library functions. Threading patterns (pthread_create, mutex operations) are not identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies are flagged. The indirect calls through function pointers (e.g., `sub_401730` for pthread_create) are not marked as uncertain. The architecture mismatch (ARM64 source → X86 output) is not noted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The return value semantics (returning strlen result) are not preserved or documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships are unclear. The connection between `param_strcpy` calling `sub_4015d0` (strcpy) and `sub_401650` (strlen) is not documented. Global variables like `signal_received` are declared as `extern` but their usage is unclear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are grouped in the output but appear in address order rather than logical grouping. The test functions (`test_standard_library_functions`, `test_system_calls`) are at the end rather than near the functions they test.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would not compile as-is. Missing declarations for standard library functions (strcpy, strlen, printf), undefined references to `__stack_chk_fail_local`, and architecture-specific code (X86) that doesn't match source (ARM64).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- Function `param_strcpy` returns `void` instead of `int`, losing the return value (strlen result)
+- Parameters use `unsigned int` instead of `char*`, completely losing pointer semantics
+- Standard library functions (strcpy, strlen, strcmp) not recognized; appear as `sub_4015d0`, `sub_401650`, `sub_401440`
+- All variable names are generic (`a0`, `a1`, `v0`, `v1`, `ptr`), providing no semantic meaning
+- Architecture mismatch: source compiled for ARM64 but decompiled for X86
+
+**Best Quality Aspect:** Control Flow Naturalness (5/10)  
+- Basic control structures (loops, conditionals) are preserved and recognizable, though not perfect
+
+**Most Needs Improvement:** Lexical Clarity (2.75/10)  
+- Variable and function naming is completely generic, making the code nearly incomprehensible. Combined with literal clarity issues (2/10), the code fails to communicate its purpose.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recognize standard library functions** - Identify strcpy, strlen, strcmp, memcpy, printf, etc. by their function signatures and replace generic sub_XXXXX names with actual function names
+2. **Preserve type information** - Use proper pointer types (`char*`, `const char*`) instead of `unsigned int` for string parameters; preserve return types
+3. **Generate meaningful variable names** - Infer names from usage patterns (e.g., if a parameter is used as destination in strcpy, name it `dst` or `destination`)

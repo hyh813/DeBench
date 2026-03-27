@@ -1,0 +1,109 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are generic (`a1`, `a2`, `v1`, `v2`) and lose semantic meaning (e.g., `sum`, `count`, `i` are lost). The array variable in `loop_break` is named `v4`, obscuring its purpose as a lookup table.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`sequential_ops`, `single_if`, `duffs_device`, etc.) are perfectly recovered from the debug symbols, matching the original source exactly.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Array initialization in `loop_break` uses obscure hex constants like `0x280000001ELL` and `*(_QWORD *)"\n"` instead of the readable `{10, 20, 30, 40, 50}`. Magic numbers like `0xFFFFFFFFLL` are used for `-1` without explicit casting context.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Code contains significant noise including `LODWORD`/`HIDWORD` macros, redundant `(unsigned int)` casts, and `__asm` blocks (e.g., in `computed_goto`), which impede readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: `switch` statements (e.g., `switch_large`, `switch_small`) are decompiled into nested `if-else` trees rather than switch constructs. `switch_fallthrough` and `duffs_device` rely on explicit `goto` labels, creating spaghetti code.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source. No inlining or outlining occurred (likely due to `-O0`), preserving the original granularity and cohesion perfectly.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While most code reads linearly, constructs like `switch_fallthrough` use forward jumps (`goto LABEL_7`), and `duffs_device` is heavily non-linear with multiple labels, disrupting the top-to-bottom flow.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: The array initialization in `loop_break` is verbose and redundant compared to the source. However, simple arithmetic expressions like in `sequential_ops` were optimized into single lines, which is good.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Integer types are generally correct, though `__int64` is used for 64-bit returns (standard for ARM64) and `unsigned int` is aggressively applied. Pointer types for function arguments are preserved.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Arrays and structs are not recovered. `int matrix[3][4]` in `loop_multi_exit` becomes `_OWORD v5[3]` accessed via `*((_DWORD *)v1 + i)`. `int arr[]` in `loop_break` becomes raw `_QWORD` assignments.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is type-safe but relies on heavy casting (`(unsigned int)`, `(_DWORD *)`) to manage types, which is verbose but technically correct for the decompiled logic.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex logic like Duff's device or the state machine is presented without explanation.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level idioms are missed. Duff's device is not identified (just shown as gotos), the state machine is just a switch/if-tree, and the computed goto is left as inline assembly.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No warnings are provided for suspicious constructs like the computed goto (`__asm { BR X0 }`) or the opaque predicate optimization in `obfuscated_cf`.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the requirement for `n > 0` in `duffs_device` is lost).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear because function names were recovered. Calls to `double_value`, `recursion_factorial`, etc., are immediately understandable.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order that roughly matches the source flow (L1, L2, L3 tests), making it easy to locate specific test cases.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses non-standard types (`__int64`, `__fastcall`) and macros (`LODWORD`) specific to the decompiler/Windows environment, preventing direct compilation on a standard Linux/GCC environment without modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (4 + 10 + 3 + 5) / 4 = 5.5
+L2_avg: (5 + 9 + 6 + 6) / 4 = 6.5
+L3_avg: (7 + 2 + 7) / 3 = 5.33
+L4_avg: (1 + 2 + 2 + 1) / 4 = 1.5
+L5_avg: (8 + 8 + 4) / 3 = 6.67
+
+Overall = (5.5 × 0.30) + (6.5 × 0.25) + (5.33 × 0.20) + 
+          (1.5 × 0.15) + (6.67 × 0.10)
+Overall = 1.65 + 1.625 + 1.066 + 0.225 + 0.667
+Overall = 5.23
+```
+
+### Overall Readability Score: **5.2/10**
+
+### Critical Defects
+- **Composite Type Loss**: Stack arrays (e.g., `int arr[]`) and 2D arrays are represented as raw memory blocks (`_OWORD`, `_QWORD`) with pointer arithmetic, completely obscuring the data structure.
+- **Switch Structure Degradation**: `switch` statements are decompiled into nested `if-else` trees, losing the semantic clarity of a jump table or dispatch logic.
+- **Obfuscated Literals**: Array initialization is represented as packed hex integers (e.g., `0x280000001ELL`), making data initialization impossible to read at a glance.
+- **Missing Semantic Comments**: Complex algorithms like Duff's device are decompiled into `goto` label soup without any explanatory comments.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**: The presence of debug symbols (`-g`) allowed the decompiler to recover the exact original function names, providing immediate context for every operation.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)**: The failure to recognize stack-allocated arrays and structs, instead treating them as generic byte buffers (`_OWORD`), is the single biggest barrier to understanding the data manipulation in this code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhance Stack Array Recovery**: Implement pattern matching to detect sequential stack stores and reconstruct them as C-style array initializers (e.g., `int arr[] = {10, 20, 30};`).
+2.  **Improve Switch Reconstruction**: Aggressively attempt to restructure binary search trees or jump table patterns back into `switch-case` statements, especially for dense ranges like `0-9`.
+3.  **Add Algorithm Annotations**: Detect known patterns (like Duff's device or specific state machine structures) and inject comments or pseudo-code to explain the high-level intent behind the low-level control flow.

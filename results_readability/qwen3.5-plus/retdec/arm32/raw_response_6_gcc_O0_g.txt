@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`, `temp`, `result`) with no semantic meaning. Global variables named `g1`, `g2`, `g3` through `g33` are completely opaque. In `param_malloc_free`, variables `v1` through `v5` obscure their roles as size, pointer, loop counter, and sum.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions recovered original names (`param_strcpy`, `call_strcpy`, `param_malloc_free`), but 80+ helper functions use address-based names (`function_10cd8`, `function_e59f3010`). Test functions properly named but library call wrappers lost semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals preserved correctly ("HelloLib", "/etc/passwd"), but magic numbers like `42`, `1000`, `0x10000` lack explanation. UTF-8 encoded Chinese characters in format strings preserved but not decoded for readability.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from 60+ ARM instruction stub functions (`function_e1a00003`, `function_e59f3010`) that return uninitialized `result`. Excessive type casts (`(int32_t)dst`, `(char *)x`) throughout. Many functions contain dead code paths.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Complex functions use `goto` with labels (`lab_0x12754_2`, `lab_0x12964_2`) instead of structured loops. `param_pthread_join` and `param_thread_local_storage` have spaghetti-like control flow. Simple functions like `param_strcpy` remain readable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but fragmented by 60+ stub functions for ARM instructions. `param_fread_fwrite` (140 lines) is monolithic. Thread helper functions not extracted from main logic.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. `param_signal_handling` has multiple while loops with awkward condition expressions (`v1 != 0 == signal_received == 0`). Goto labels break natural flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Redundant type casts throughout (`(int32_t)`, `(char *)`). Stub functions create massive redundancy (each returns uninitialized `result`). Array initialization duplicated (`src = {10, 0, 0, 0, 0}`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic `int32_t` used instead of `size_t`, `ssize_t`, `pid_t`. Const-correctness lost (`char * src` instead of `const char *src`). Pointer types degraded to `int32_t *` or `char *`. `param_memcpy` uses `int32_t * src` instead of `const void *`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery - `ThreadData` struct completely lost, accessed via pointer arithmetic. Array initialization syntax incorrect (`src = {10, 0, 0, 0, 0}` is invalid C). `pipefd[2]` arrays not recognized as fixed-size arrays.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(int32_t)dst`, `(char *)x`, `(volatile int*)&atomic_counter`. Pointer arithmetic common without bounds checking. `param_strcpy` has no buffer size parameter, preserving original overflow risk.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated metadata comments present ("From module: /work/src/6.c", "Address range: 0x110a8"). Zero semantic comments explaining algorithm logic, error conditions, or decompilation confidence.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library calls (`strcpy`, `pthread_create`, `socket`) visible but not identified as idioms. No pattern recognition for producer-consumer (`param_condition_variable`), mutex protection, or signal handling patterns.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about unresolved indirect calls, stub functions returning uninitialized values, or potential undefined behavior. Decompiler presents incorrect code confidently without flagging issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"). Error return values (-1, -2, -3) not explained. No postcondition inference for memory allocation functions.
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variable usage (`signal_received`, `atomic_counter`) not traced. Thread callback relationships (`thread_compute`, `thread_sum`) not linked to creation sites.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Single monolithic file with 146 functions. No logical grouping of related functions. Test functions mixed with implementation. No header file separation for API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes present but stub functions would fail at link time. External dependencies (pthread, libc) not documented. Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+3)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+5+4+4)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (2+3)/2     = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (2+2+4+3+4)/5 = 3.00 × 0.10 = 0.300
+
+Overall Score: 3.61/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **60+ ARM instruction stub functions** (`function_e1a00003`, etc.) create massive noise and should be inlined or eliminated
+- **Variable names `v1`, `v2`, `v3`** throughout obscure semantic meaning; should infer from usage (e.g., `buffer_size`, `thread_count`)
+- **Goto-based control flow** in `param_pthread_join`, `param_mutex_lock`, `param_thread_local_storage` instead of structured loops
+- **No struct recovery** - `ThreadData` and other composite types lost to pointer arithmetic
+- **Zero semantic comments** - no explanation of error codes, preconditions, or algorithm intent
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names (`param_strcpy`, `call_malloc_free`, `test_standard_library_functions`) were successfully recovered from debug symbols, preserving the original API structure.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover structs like `ThreadData`; all composite types degraded to raw pointer arithmetic, making concurrent code nearly incomprehensible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Eliminate instruction stub functions** - Detect and inline ARM instruction patterns instead of creating 60+ separate stub functions that add noise without value.
+
+2. **Implement usage-based variable naming** - Analyze variable usage patterns to infer semantic names (e.g., variables used in loop bounds → `count`, `iterations`; variables passed to `malloc` → `size`, `buffer_size`).
+
+3. **Recover structured control flow from gotos** - Implement better pattern matching for loop constructs (counter initialization, increment, comparison) to replace `goto` labels with `for`/`while` loops, especially in thread synchronization code.

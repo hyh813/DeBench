@@ -1,0 +1,96 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10  
+Justification: Variables use the pattern `paramname_local` (e.g., `x_local`, `c_local`), which is somewhat redundant but still descriptive. Some variables like `local_9`, `local_c` in process_char are less clear, but overall the naming allows tracing of semantic purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `ptr_double`, `struct_simple`, `linked_list`, etc. Excellent recovery of function semantics through naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Several issues: `process_char` uses `'@' < c && c < '['` instead of explicit `'A' <= c && c <= 'Z'`; `process_ld` doesn't compute the actual result (returns pointer to storage); `ptr_diff` has incorrect arithmetic `(long)p1 - (long)p2 >> 2` instead of `p1 - p2`; some printf format strings missing arguments.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: At -O0, minimal compiler artifacts. Local variable declarations (`x_local`, `c_local`) are present but don't significantly impede readability. No redundant casts or debug instrumentation observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops use appropriate `for` constructs (`for (i = 0; i < n; i = i + 1)`), switch statements handle enums correctly, conditionals are clear. Minor awkwardness in some loop patterns but overall natural.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each function maintains appropriate granularity - single responsibility (e.g., `array_1d_stack` sums array, `ptr_increment` traverses). No monolithic functions; parameter lists reasonable.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive forward jumps or goto constructs disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling not present at -O0. Code is clean without duplicate expressions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types accurate: `char`, `short`, `int`, `long`, `long long`, `float`, `double`, `_Bool`. Function pointers use `_func_int_int` placeholder but are usable. Critical issue: `process_ld` returns `longdouble *` instead of `longdouble` value.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct/union recovery: `Point3D`, `Rect`, `Widget`, `Node`, `Flags`, `UnionData`, `Device`, `TreeNode`, `Edge`, `Graph`, `DNode` all recovered with correct field names. Nested structures properly handled.
+
+**11. Type Safety:** Score: 6/10  
+Justification: `ptr_diff` has incorrect pointer arithmetic: `(int)((long)p1 - (long)p2 >> 2)` is wrong (should be `p1 - p2` for element count). Some unsafe void* casts in `ptr_void`. The shift operation precedence issue is a semantic error.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Ghidra adds auto-generated warnings ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block") but no substantive comments explaining algorithm intent or recovered semantics.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Data structure patterns recognizable: linked list traversal in `linked_list`, binary tree recursion in `binary_tree_sum`, graph adjacency list traversal in `graph_traverse`. Not explicitly named but identifiable.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Unknown calling convention", "Removing unreachable block") but critical semantic errors not flagged: `process_ld` doesn't compute `d*d+1.0L`, `ptr_diff` has wrong arithmetic.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of expected input constraints (e.g., "requires: n > 0" for array functions).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships clear. Callbacks identified: `ptr_func_simple(double_value, 5)`, `ptr_func_complex(complex_callback, &val11)`. Static function visibility not explicitly marked.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped by type (data types, arrays, pointers, composites). Single file output but logical grouping preserved from source organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code should compile with stdio.h. Some printf format string issues (missing arguments for %lld, %Lf). External dependencies on `printf`, `memcpy`, `builtin_strncpy`, `memset` not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.8/10
+
+### Critical Defects:
+- **`process_ld` function**: Returns `longdouble *` (pointer to return storage) instead of computing `d * d + 1.0L` - completely loses the computation
+- **`ptr_diff` function**: Incorrect pointer arithmetic `(long)p1 - (long)p2 >> 2` produces wrong results due to operator precedence and should be `p1 - p2`
+- **Printf format strings**: Multiple calls missing arguments (e.g., `printf("DT-L1-07 (process_double): %.2f\n");` with no value argument)
+- **`volatile_access` function**: Doesn't actually demonstrate volatile semantics - reads same location twice but compiler could optimize; should show two distinct memory reads
+
+### Best Quality Aspect: Composite Type Recovery (9/10)
+Struct and union types are excellently reconstructed with accurate field names: `Point3D {x, y, z}`, `Rect {position, size}`, `Node {data, next}`, `UnionData {i, f, bytes}`, etc. Nested structures properly handled.
+
+### Most Needs Improvement: Comment Quality & Semantic Transparency (4.3/10 avg)
+No substantive comments explaining algorithm intent. Critical semantic errors (process_ld, ptr_diff) not flagged as anomalies. No contract or assertion recovery.
+
+### Top 3 Recommendations:
+1. **Fix semantic errors**: `process_ld` must compute and return `d * d + 1.0L`, not return a pointer; `ptr_diff` needs correct element-count calculation
+2. **Add anomaly detection**: Flag functions where return value doesn't match expected computation (process_ld), flag suspicious pointer arithmetic (ptr_diff)
+3. **Improve comment generation**: Add semantic comments explaining what each function does, especially for complex patterns like binary trees, graphs, and bitfields

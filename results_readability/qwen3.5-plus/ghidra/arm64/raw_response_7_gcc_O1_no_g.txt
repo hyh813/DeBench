@@ -1,0 +1,102 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `iVar1`, `param_1`, `local_28` instead of semantic names like `result`, `x`, `decrypted`. Original source had meaningful names (`heap_buffer`, `encrypted`, `canary`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved well (`param_fake_branch`, `decrypt_string`, `param_opaque_predicate`), but helper functions use address-based names (`FUN_00100860`, `FUN_00100a3c`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a` (encryption key), `0x20`, `0x21` lack explanation. Signal numbers `8`, `0xb` not named as `SIGFPE`, `SIGSEGV`. Original comments explaining constants are absent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`, `__stack_chk_fail`) add noise. Runtime functions (`_init`, `_fini`, `deregister_tm_clones`) clutter output. Some functions optimized to empty returns.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: `param_opaque_predicate` uses awkward do-while for GCD. `param_vectorized_loop` has clear sequential loops. At -O0, more source-like structure was expected but optimization artifacts remain.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: `param_fake_branch` and `param_buffer_overflow_stack` optimized to just `return;` losing all logic. Caller functions like `call_fake_branch` return hardcoded values instead of calling underlying functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. No excessive goto usage. Early returns are appropriately placed. Loop structures are recognizable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Dead code from fake branches properly eliminated. Constant folding applied correctly (`call_fake_branch` returns 10). No duplicate expressions observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic `undefined8`, `undefined4` types used instead of precise types. `param_instruction_substitution` takes `uint` but source used `int`. Pointer types degraded to `long` or `undefined4*`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `__jmp_buf_tag *` recovered correctly. Bit-field struct in `param_implementation_defined` optimized away to constant return. Stack arrays shown as `undefined8` without structure.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts present: `(undefined *)0x0`, `(__sighandler_t)0x0`. `param_null_pointer_deref` called with `0` but expects `undefined4*`. Multiple type mismatches in function signatures.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Auto-generated warnings present ("WARNING: Subroutine does not return") but no semantic documentation. No algorithm explanations or parameter/return documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String decryption pattern unnamed. Signal handler pattern not recognized. No design pattern detection.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Longjmp non-return warnings present. Unreachable block removal noted. However, optimized-away logic (fake branches) not flagged as suspicious transformations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., `param_1 != 0` for division). No postcondition inference. Expected return values hardcoded in callers without explanation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables (`jmp_buffer`, `encrypted_0`) referenced without context. Signal handler relationships not explicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 43 functions in single output with no logical grouping. Runtime functions mixed with test functions. No file organization or namespace structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Uses undefined types (`undefined8`, `undefined4`). External function dependencies not declared. Would require significant stubbing and type definitions to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3+7+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):   (6+5+7+8)/4 = 6.50  × 0.25 = 1.625
+Level 3 (Type):         (4+5+4)/3   = 4.33  × 0.20 = 0.867
+Level 4 (Semantic):     (5+3+6+3)/4 = 4.25  × 0.15 = 0.638
+Level 5 (Contextual):   (5+4+3)/3   = 4.00  × 0.10 = 0.400
+─────────────────────────────────────────────────────────────
+Overall Score:                                  = 5.03/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- Variables `iVar1`, `param_1`, `local_28` should be named semantically (e.g., `result`, `x`, `decrypted_buffer`)
+- `param_fake_branch` and `param_buffer_overflow_stack` optimized to empty returns, losing all original logic
+- Type `undefined8`/`undefined4` should be recovered as `int64_t`/`int32_t` based on architecture
+- Magic numbers `0x5a`, `0x20`, `0x21` lack constant definitions or comments
+- Signal numbers `8`, `0xb` should be named `SIGFPE`, `SIGSEGV`
+- No documentation explaining the obfuscation test purposes (opaque predicates, fake branches)
+
+### Best Quality Aspect:
+- **Redundancy Elimination (scored 8/10)** - Dead code from fake branches properly eliminated and constant folding applied correctly without introducing confusion.
+
+### Most Needs Improvement:
+- **Variable Naming Quality (scored 3/10)** - Generic names like `iVar1`, `param_1` completely obscure variable purpose, making code analysis significantly harder than the original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze variable usage patterns to infer names (e.g., variables used in size comparisons should be named `*_size`, loop counters as `i`, `index`)
+2. **Preserve optimization metadata** - When functions are optimized away, add comments indicating original logic was eliminated (e.g., `// OPTIMIZED: fake branch condition x*x<0 always false`)
+3. **Recover named constants** - Detect repeated magic numbers and suggest constant definitions with context-aware names (signal numbers, encryption keys, buffer sizes)

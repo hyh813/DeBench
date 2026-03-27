@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are reduced to generic names like `param_1`, `iVar1`, and `uVar1`. Even where the source used descriptive names like `temp1` or `a`, `b`, `c`, the decompiler defaults to parameter indices, requiring manual tracking of semantics.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `sequential_ops`, `duffs_device`, and `loop_break` are perfectly preserved from the source symbols. This provides excellent high-level context, making it easy to locate specific logic blocks.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are frequently presented in hex (e.g., `0x3e9` for 1000, `0x1e` for 30) rather than the decimal values used in the source. While accurate to the binary, this adds a translation burden for the reader.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, but contains Ghidra-specific artifacts like `__x86.get_pc_thunk` injections and `undefined4` types. The test functions (`test_control_flow_l1`) are bloated with inlined `__printf_chk` calls, but this is a compiler optimization effect.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: The decompiler accurately represents the optimized control flow, such as converting `recursion_factorial` into a loop (tail-call optimization). However, speculative execution in `single_if` (calculating `x*2` before the check) and the complete unrolling of `loop_break` into a chain of `if` statements deviate significantly from the source structure, requiring mental adjustment.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-separated and cohesive. While the test harness functions are massive due to constant folding/inlining, the core logic functions (e.g., `nested_if_deep`) maintain reasonable boundaries and parameter lists.
+
+**7. Code Linearization:** Score: 5/10
+Justification: Complex constructs like `duffs_device` result in non-linear code with labels (`_L185`, `_L187`) and `goto` statements. Similarly, `loop_multi_exit` uses explicit labels (`LAB_00011a9e`) for jumps, disrupting the top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler presents the optimized code cleanly without introducing redundancy. For example, `sequential_ops` is simplified to a single expression `(param_2 + param_1) * 2 - param_3`, which is arguably more readable than the original three-step assignment.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types like `int` and `uint` are mostly correct. However, the decompiler defaults to `undefined4` in several places (e.g., `switch_small` return type) where a concrete `int` would be more appropriate, slightly reducing type safety clarity.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: The source code primarily uses scalar types, so there is little opportunity to demonstrate struct recovery. The decompiler does not introduce fake structs, but it also doesn't recover the semantic intent of the `jmp_buf` usage in `non_local_jump`, treating it as a generic pointer cast.
+
+**11. Type Safety:** Score: 8/10
+Justification: The code is generally type-safe. Function pointers are correctly typed as `code *` (Ghidra's internal representation), and pointer arithmetic is handled correctly. There are no obviously dangerous casts that would lead to undefined behavior in the decompiled view.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: Comments are limited to decompiler warnings (e.g., "WARNING: Could not recover jumptable"). There are no comments explaining the *logic* of the code, such as the purpose of the complex state machine or the math behind `opaque_predicate`.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Specific idioms are not explicitly recognized. `duffs_device` is decompiled into a generic switch-with-labels structure rather than being identified as the famous Duff's Device pattern. `computed_goto` is rendered as an array of labels rather than a computed jump.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: Ghidra clearly flags areas where it struggled, such as "WARNING: Could not recover jumptable at 0x00011e80" in `call_func_ptr` or "WARNING: Do nothing block with infinite loop" in `_start`. This effectively alerts the analyst to potential inaccuracies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or postconditions. For example, the requirement that `n > 0` in `duffs_device` is embedded in the logic but not stated as a contract or assertion.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Direct function calls are clear, but indirect calls (function pointers) are opaque. In `call_func_ptr_array`, the array of function pointers is constructed, but the subsequent call is marked as an unrecoverable jumptable, obscuring the relationship between the index and the target function.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are grouped logically, matching the source's separation of Level 1, Level 2, and Level 3 tests. Helper functions like `double_value` are placed near their usage or in a coherent block.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses Ghidra-specific types (`undefined4`, `code *`) and injected functions (`__x86.get_pc_thunk`). It would require significant modification (typedefs, stubs) to compile, as it is not standard C.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- **Variable Naming:** Parameters are generic (`param_1`, `param_2`), losing the semantic context of `a`, `b`, `c` or `x`, `y`.
+- **Control Flow Unrolling:** `loop_break` is decompiled as a chain of `if` statements (checking 10, 20, 30...), completely obscuring the original loop iteration logic.
+- **Indirect Call Resolution:** Function pointer calls (e.g., in `call_func_ptr`) are marked as "UNRECOVERED_JUMPTABLE", leaving the control flow ambiguous.
+- **Duff's Device Structure:** The `duffs_device` function is represented with obscure labels (`_L185`, `_L187`) rather than a clean switch-case fallthrough structure.
+
+**Best Quality Aspect:** Function Naming (Score: 9/10)
+- The decompiler successfully preserved the original function symbols (e.g., `sequential_ops`, `state_machine`), which provides immediate high-level understanding of the code's purpose.
+
+**Most Needs Improvement:** Variable Naming (Score: 3/10)
+- The reliance on generic parameter names (`param_1`) and local variables (`iVar1`) forces the reader to manually reverse-engineer the purpose of every variable, significantly slowing down analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhanced Parameter Recovery:** Utilize debug information (if available, as hinted by `-g` flag) or heuristic analysis to recover meaningful parameter names instead of defaulting to `param_1`.
+2.  **Loop Re-rolling Detection:** Identify sequences of similar conditional checks (like the `if` chain in `loop_break`) and annotate them as potential unrolled loops or offer a "re-roll" refactoring view.
+3.  **Idiom Pattern Matching:** Implement specific pattern recognition for known idioms like Duff's Device to reconstruct the original `switch` inside `do-while` structure rather than falling back to raw labels.

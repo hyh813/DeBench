@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v1`, `v2`, `a1`, `a2`, `result`) with no semantic meaning. For example, `param_macro_constants` uses `v1` and `v2` instead of `size` and `comparison_result`, making it impossible to understand variable purpose without tracing usage.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). Names accurately reflect functionality and maintain original semantic intent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0xdef0`, `0xffffffff`, `0x5341206f6c6c6548` (encoded "Hello AS"). Original constants like `MAX_SIZE` (1024) and `BUFFER_COUNT` (16) are lost to literal values (64, 512).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts: `__readfsqword(40)` for stack canary, excessive `& 0xffffffff` masking, and `int128_t` typedef that doesn't exist in standard C. Stack overflow checks (`__stack_chk_fail()`) clutter simple functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions use natural if-else patterns, but complex functions like `param_asm_multi_insn` use while loops with manual increment instead of for loops. Some functions are constant-folded to single returns, losing original logic structure.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function granularity is inconsistent. `param_dynamic_code` has 6 parameters instead of 1 (original), and `call_asm_clobber` has 4 parameters instead of 0. Some functions are over-fragmented with wrapper functions that just return constants.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but functions like `param_asm_multi_insn` have confusing variable initialization patterns (`v1`, `v2`, `v4`, `v5`, `v6`, `v7` all declared at function start). Loop structures are recoverable but awkward.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated `& 0xffffffff` masking throughout code. Stack canary checks duplicated in every function. `test_preprocessing_features` calls functions that are already constant-folded, creating redundant code paths.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Inconsistent type usage: `param_macro_constants` takes `int64_t` but original uses `int`. `param_asm_clobber` signature has `uint64_t a2` instead of `int* arr`. Custom `int128_t` typedef is non-standard and misleading.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in original source, so limited evaluation possible. Pointer types are generally preserved (`int32_t* counter` in `param_atomic_c11`), but array parameters often become raw pointers losing size information.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int32_t)&g24`, `(int64_t*)-1` comparisons. `param_asm_multi_insn` has uninitialized variable usage (`v1`, `v2`, `v4`, `v5`, `v6`). Pointer arithmetic without bounds checking throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining macro behavior, assembly purpose, and expected values. No decompilation confidence indicators or uncertainty warnings.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Assembly loops recovered as C while-loops but not identified as memcpy/sum patterns. SIMD operations shown as `__asm_movaps`/`__asm_paddd` without explaining vector operation semantics.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of decompilation uncertainty. `param_dynamic_code` shows incorrect behavior (writes to memory then immediately munmaps without executing). Stack canary checks present but not explained as security artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL` for `param_asm_clobber`). No postconditions or return value semantics. Error conditions (MAP_FAILED, mprotect failures) not documented in function contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are visible through code, but no call graph documentation. Global variables (`g1`-`g24`, `global_var`) have no usage context. String literals stored in globals without indicating their printf format purpose.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 57 functions in single file with no logical grouping. Original source had clear section headers (5.2 Preprocessing, 5.3 Assembly). Helper functions (`function_1090`-`function_10f0`) mixed with application logic.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code references non-standard functions (`__printf_chk`, `__asm_hlt`, `__asm_pxor`). Custom `int128_t` typedef will cause compilation issues. Assembly intrinsics (`__asm_movaps`) require specific compiler support not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (5+7+4)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (6+5+5)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                              4.78/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v1`, `v2`, `a1`) losing all semantic meaning from original `size`, `x`, `y` parameters
+- **Zero comments** despite original source having extensive documentation explaining macro behavior and assembly purpose
+- **Function signature corruption** - `param_dynamic_code` has 6 parameters instead of 1, `param_asm_clobber` has 4 instead of 2
+- **Magic numbers everywhere** - original constants (`MAX_SIZE=1024`, `BUFFER_COUNT=16`) replaced with literals (64, 512, 0xdef0)
+- **Non-standard types** - `int128_t` typedef and `__asm_*` intrinsics will not compile without special headers
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names preserved accurately from source, maintaining semantic intent and making function identification straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding macro expansion results, assembly semantics, and expected values impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from debug symbols** - With `-O0 -g` compilation, DWARF debug info contains original variable names that should be extracted and applied
+2. **Add decompilation confidence annotations** - Mark uncertain reconstructions (especially assembly blocks) with comments indicating potential inaccuracies
+3. **Preserve constant semantics** - When constant folding occurs, add comments showing original macro expressions (e.g., `// Original: BUFFER_COUNT * 4 = 64`)

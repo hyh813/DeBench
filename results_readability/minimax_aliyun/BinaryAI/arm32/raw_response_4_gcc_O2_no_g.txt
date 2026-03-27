@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `param_1`, `param_2`, `undefined4`, and local variables use patterns like `iVar1`, `uVar1`, `local_10`, `local_c`. None indicate semantic purpose like the original source's `count`, `args`, `sum`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly (`cdecl_func`, `stdcall_func`, `call_cdecl`, `varargs_func`). Internal helper functions like `func_a`/`func_b` are appropriately derived from symbols. Minor issue: some wrapper functions lose descriptive context.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xf` (15), `0x32` (50), `0x2a` (42), `0x14` (20) appear without explanation. While printf format strings provide context in test functions, the literal values themselves are opaque. The `varargs_func` returns void instead of the computed sum.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts in user code. Library functions like `__aeabi_dadd`, `__subdf3` are correctly identified as external. Some noise in type conversions (undefined4, undefined8) but manageable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - loops use do-while constructs, conditionals are clear. At -O0, the flow closely matches source. Minor awkwardness in some loop bounds but overall readable.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent granularity. Each test case (`call_cdecl`, `call_stdcall`, etc.) is properly separated. The 665-line source is decomposed into appropriately sized functions matching the original structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps in complex functions like `test_calling_conventions` but traceable. Early returns used appropriately in some functions.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy. Dead code is minimal. Some loop unrolling in `test_calling_conventions` but it's the compiler's -O0 behavior, not decompiler artifact.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation. `int` becomes `undefined4`, `char*` becomes `byte*`, function pointers become `code*`. The original `int`, `char*`, `double`, `long long` types are not preserved. Only `int*` is reasonably accurate.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. `LargeStruct` (128 bytes) is passed as raw parameters with manual memory handling. `SmallStruct` becomes `int*`. The original `LargeData`, `SmallPoint`, `TestIntPair` structs are completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. Pointer arithmetic is raw without bounds. Function pointer type `code*` is imprecise. The `param_complex_cast` uses `int*` for void* without safety annotations. Mixed signed/unsigned handling.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments. Only auto-generated function signatures. The rich comments from source (describing calling conventions, test scenarios) are completely lost. No explanation of algorithm logic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized (varargs handling via va_list simulation, struct return via hidden pointer) but not explicitly named or documented. The AAPCS, cdecl, stdcall calling convention differences are not indicated.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The `varargs_func` returns void instead of int (critical semantic loss) with no indication this is unexpected. Stack canary checks (`__stack_chk_fail`) appear but aren't explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contracts recovered. Preconditions like "ptr != NULL" in `func_struct_byptr`, postconditions, and invariants are not documented. The original source's error handling semantics are lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are syntactically clear (direct calls visible). But callback relationships (e.g., `param_func_ptr` calling `callback_func`) aren't documented. Global variable usage (`handle1_1`, `handle2_0`) not explained.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions grouped logically matching source: calling convention tests, parameter passing tests, return value tests. Static functions properly scoped. Matches original file structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile. Uses `undefined4`, `undefined8` types that don't exist. Missing standard library declarations (printf, va_list). External functions like `__aeabi_dadd` not declared. Requires significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `iVar1`, `local_10`) - no semantic meaning recovered
+- `varargs_func` returns `void` instead of `int` (the computed sum), losing the function's entire purpose
+- No struct recovery - `LargeStruct`, `SmallStruct`, `SmallPoint` all lost to raw parameter handling
+- No comments explaining calling convention semantics, algorithm logic, or test purposes
+- Type precision severely degraded - `int`→`undefined4`, `char*`→`byte*`, function pointers→`code*`
+
+**Best Quality Aspect:** Function Decomposition (9/10)  
+The decompiler correctly separated the 665-line source into properly granular functions matching the original structure. Each test case (`call_cdecl`, `param_by_value_int`, etc.) is correctly isolated.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+All variables use generic patterns (`param_N`, `iVarN`, `local_N`) with no semantic inference. At -O0 with debug symbols, the decompiler should infer names like `count`, `sum`, `args` from usage patterns.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage**: At -O0 with debug info, analyze SSA patterns to name `param_1` as `count` when used in loop bounds, `sum` when accumulated, `args` when passed to va_start/va_arg
+2. **Recover varargs return value**: The `varargs_func` loop computes a sum but returns void - detect the accumulation pattern and restore the `int` return type
+3. **Add semantic comments**: Include calling convention notes (cdecl, AAPCS), explain struct return mechanisms, and document test case expectations from format strings

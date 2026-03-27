@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `a1`, `a2`, `a3` throughout. The original source had meaningful names like `arr`, `n`, `i`, `p`, `x`, `counter`, but these are completely lost. Even stack frame variables like `int32_t v1; // bp-4, 0x10804` provide no semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most functions retain their original names: `local_vars`, `heap_basic`, `global_var_access`, `stack_alias`. However, two stub functions have cryptic names: `function_ffff0fa0` and `function_ffff0fe0`. Overall, function naming is good.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `48`, `2048`, `1001` appear without explanation. However, some context is preserved: `malloc(4 * a1)` shows size calculation, and constants like `10`, `20`, `100` are used appropriately. The decompiler doesn't recover named constants from the source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Address annotations (`// 0x107c0`) and stack frame comments (`// bp-4, 0x10804`) add noise. Some redundant patterns exist like `(int32_t)(a1 < 0) + a1` for bounds checking. However, no debug instrumentation or assembly blocks present. Moderate noise level.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: The `linked_list_heap` function uses goto statements (`goto lab_0x1141c`, `goto lab_0x1144c`) creating spaghetti code. Loop constructs are present but awkward. At -O0, this level of control flow distortion is excessive and impedes understanding.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions remain appropriately sized and cohesive. The decompiler preserved function boundaries well. However, `linked_list_heap` at ~100 lines is too large and could benefit from splitting. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but the goto statements in `linked_list_heap` and `tree_heap_traversal` create severe non-linearity. Early returns are used appropriately in some functions but goto patterns disrupt flow in others.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Loop unrolling is minimal. The pattern `(int32_t)(a1 < 0) + a1` appears repeatedly but represents bounds checking logic, not pure redundancy. Overall clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently which is good for ARM64. However, loses precision: original `size_t` becomes `uint32_t`, `int*` becomes `int32_t*`. Const correctness is lost - `const int` becomes regular `int32_t`. Function pointers treated as `int32_t` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Severe degradation. The original `Point` struct (with x, y fields) is completely lost - `heap_struct` uses raw pointer arithmetic: `*mem = a1; *(int32_t *)((int32_t)mem + 4) = v1;`. Similarly, `Node` struct is lost in `heap_nested` and `linked_list_heap`. All composite types reduced to void*/int32_t* with manual offset calculations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int32_t)a1`, `(int32_t)mem`, `(char*)buf + 1`. Pointer arithmetic like `*(int32_t *)(4 * v3 + v2)` is error-prone. The dangling pointer case in `dangling_pointer` is not flagged. Memory barrier function has wrong signature: `__sync_synchronize()` returns int instead of performing barrier.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated address comments present (`// Address range: 0x107c0 - 0x10804`). No algorithm explanations, no decompilation confidence indicators, no API contracts. The original source had extensive comments explaining test scenarios (e.g., `// MEM-L1-01: 局部变量（基础类型）⭐`) which are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Basic malloc/free pairs are recognizable but not named. Memory leak pattern in `memory_leak` is not flagged. The `__thread` TLS pattern is poorly handled with `__aeabi_read_tp()` calls. No recognition of common patterns like VLA, alloca, or linked list traversal.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings for potential issues. The `memory_leak` function allocates but never frees - no comment. The `dangling_pointer` function has undefined behavior - no warning. No indication of indirect call resolution failures. The code presents everything as confident when it should flag uncertainties.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. Original had explicit checks like `if (n <= 0 || n > 1000) return -1;` but no contract documentation. Error return values not explained. The decompiler doesn't document what functions assume or guarantee.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are somewhat clear through naming (e.g., `call_static_func` calls `static_helper`). Global variable usage is visible (`g17`, `g21`). However, callback relationships like `set_global_callback` → `call_global_callback` are not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Original had clear sections: "Stack Memory Operations", "Heap Memory Operations", "Static & Global Memory". The decompiled output mixes all functions together without section headers or grouping.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code compiles (metadata says "Compilation Result: Yes"). Function prototypes declared. Some stubs needed (`__stack_chk_fail`). External dependencies (`malloc`, `free`, `memcpy`) properly declared. Minor issues but generally compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming completely generic (`v1`, `v2`, `a1`) - loses all semantic meaning from original
+- Composite types completely lost - `Point` and `Node` structs reduced to raw pointer arithmetic with manual offsets
+- No comments explaining algorithms, test scenarios, or decompilation confidence
+- Control flow uses goto statements creating spaghetti code in `linked_list_heap`
+- No anomaly indication for memory leaks, dangling pointers, or undefined behavior
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Most function names match the original source accurately, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The decompiler uses generic variable names throughout, making it extremely difficult to track what each variable represents. At -O0, the original had clear names like `arr`, `n`, `i`, `counter`, `p` - all completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing → likely `index` or `i`; multiplication by 2 → likely `doubled_value`; pointer to struct → likely struct name)
+2. **Recover composite types**: Detect patterns like `malloc(sizeof(T))` followed by field assignments and reconstruct struct definitions with field names
+3. **Add semantic comments**: Include original source comments where available, or generate meaningful comments explaining what each function tests (e.g., "// Tests: stack-allocated array with index access")

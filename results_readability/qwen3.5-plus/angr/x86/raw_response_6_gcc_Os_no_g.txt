@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `ptr`, `result`, `flag1`) with no semantic meaning. Original names like `buffer`, `write_data`, `shared_counter` are completely lost, making it difficult to track variable purpose across functions.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mix of preserved names (`param_strcpy`, `thread_sum`, `signal_handler`) and mechanical address-based names (`sub_401030`, `sub_40176d`). Critical test functions retain names but helper functions are opaque.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (unsigned -1), `4294967294`, `4294967293` appear throughout without explanation. String literals ("BinBench Test Data", "HelloPipe") are preserved but error codes are not documented.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.*` functions, repeated `__stack_chk_fail_local()` calls, redundant struct definitions with `padding_0`/`field_X`, and platform mismatch warnings (`[D] Unsupported jumpkind Ijk_SigTRAP`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Mixed patterns—some functions use natural loops (`for`, `while`) but others use awkward `goto` patterns (`goto ptr[2]` in `sub_401030`). Stack canary checks add non-idiomatic branching at function exits.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Severe over-fragmentation with dozens of thin wrapper functions (`sub_40104e`, `sub_40105e`, etc.) that simply call one other function. Original cohesive functions are broken into unnecessary layers.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom in most functions. Some forward jumps disrupt flow, and complex functions like `param_thread_local_storage` have multiple exit points, but execution paths are traceable with effort.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Repeated struct definitions throughout (same `struct_0` pattern with different offsets), many `sub_XXXXXX` wrapper functions that add no value, and stack canary check patterns duplicated in nearly every function.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation—everything becomes `unsigned int` regardless of original type. `char*`, `FILE*`, `pthread_t`, `size_t` all collapse to `unsigned int`. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions are auto-generated with meaningless `padding_0[N]` and `field_X` names. Original `ThreadData { start, end, result }` becomes array indexing. TLS variables (`__thread`) not recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Implicit unsafe casts throughout (pointers as `unsigned int`), pointer arithmetic on integer types, no const correctness, and function pointer calls use generic signatures risking undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. Only one anomaly marker (`[D] Unsupported jumpkind`). Original had extensive documentation explaining each function's purpose, test expectations, and scenarios.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls recognized as `sub_XXXXXX` but not named (e.g., `sub_401580` for `strcpy`). Thread patterns, signal handling, and producer-consumer patterns not identified or named.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly marker for unsupported jumpkind, but no indication of indirect call resolution issues, platform mismatch (ARM64 source → X86 decompilation), or potential undefined behavior patterns.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation, no postcondition inference. Error return values (`4294967295` = -1) not documented. Original had clear expectations in comments (e.g., "期望: 42").
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables referenced as `extern unsigned int` without context. Callback relationships (thread functions) not explicit. Test organization lost.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in one file with no logical grouping. Original had clear sections (6.1 Standard Library, 6.2 System Calls, 6.3 Threads). Test functions mixed with implementation without separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Platform mismatch (X86 decompilation of ARM64 binary) prevents direct compilation. Requires extensive stubs for `__x86.get_pc_thunk.*`, stack canary functions, and external symbols.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+4+4+3)/4 = 3.50
+Level 2 (Structural):  (5+4+6+4)/4 = 4.75
+Level 3 (Type):        (3+3+4)/3   = 3.33
+Level 4 (Semantic):    (2+4+4+3)/4 = 3.25
+Level 5 (Contextual):  (5+4+3)/3   = 4.00
+
+Overall = (3.50×0.30) + (4.75×0.25) + (3.33×0.20) + (3.25×0.15) + (4.00×0.10)
+        = 1.05 + 1.19 + 0.67 + 0.49 + 0.40
+        = 3.80/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Variable names are completely generic** (`v0`, `v1`, `ptr`) losing all semantic meaning from original (`buffer`, `write_data`, `shared_counter`)
+- **Platform mismatch**: ARM64 source decompiled as X86, causing fundamental incompatibilities
+- **Type system collapsed**: All pointers, sizes, and specialized types become `unsigned int`
+- **No documentation recovered**: Original had extensive comments explaining purpose, test expectations, and scenarios
+- **Over-fragmented functions**: Dozens of `sub_XXXXXX` wrapper functions that just call one other function
+
+### Best Quality Aspect:
+- **Code Linearization (6/10)** - Despite other issues, most functions read top-to-bottom with traceable execution paths
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Almost complete absence of documentation makes understanding intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable name inference** - Analyze usage patterns to recover names like `buffer_size` from variables used in size comparisons
+2. **Preserve original function names from debug symbols** - The `-g` flag was used during compilation; function names should be recoverable from DWARF info
+3. **Add type recovery from calling conventions** - Distinguish pointers from integers based on how values are used (dereferenced vs. arithmetic)

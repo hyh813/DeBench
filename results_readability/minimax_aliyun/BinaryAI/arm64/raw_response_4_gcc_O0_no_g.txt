@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and local variables use cryptic names like `local_f0`, `local_ec`, `iVar1`, `piVar2`. The original source uses meaningful names like `a`, `b`, `count`, `sum`. No semantic inference from usage patterns.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most functions correctly match source names (`cdecl_func`, `stdcall_func`, `test_calling_conventions`). However, some internal functions use generic names like `FUN_00100750`, `FUN_001008bc`. The test entry point functions are well-named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear without explanation (e.g., `0x2a` for 42, `0x14` for 20, `0x40091eb851eb851f` for 3.14). String data referenced as `&DAT_00101fb0` without context. The original source has clear constants that are lost.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: stack canary checks (`___stack_chk_guard`), register spill variables (`register0x00000008`), complex va_list handling with `local_d0` offset calculations. These obscure the actual logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow generally matches source - loops use `for` constructs, conditionals are clear. At `-O0` level, the decompilation is faithful. Minor issues in varargs handling where loop logic is obscured by register manipulation.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source - small, focused functions like `cdecl_func`, `call_cdecl`, `func_no_args`. Each function has clear single responsibility. No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present in functions like `func_struct_byptr`. Some forward jumps in varargs handling but manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant stack frame setup visible. The varargs functions show repeated pattern that could be abstracted. No dead code elimination comments, but basic structure is clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results - some correct types (`int param_1`) but also many `undefined4`, `undefined8` types. Function parameters sometimes wrong (e.g., `param_double_ptr` uses `long *param_1` but should be `int **`). Function pointers use generic `code *` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. `LargeStruct` becomes `long param_1` with manual field access via `*(long *)(param_1 + (long)local_c * 8)`. `SmallStruct` becomes `int *param_1` with field access via `*param_1 * param_1[1]`. All semantic struct information lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple type safety issues: incorrect pointer types in arithmetic, potential type confusion in function pointers (`code *` vs proper typedef), unsafe casts in `param_complex_cast`. The varargs handling uses dangerous pointer manipulation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in decompiled output beyond the standard BinaryAI header. Original source has extensive comments explaining each test case (e.g., "CALL-L1-01: cdecl调用约定").
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No pattern recognition. The decompiler doesn't identify calling convention patterns, parameter passing idioms, or the test framework structure. All semantic meaning about what's being tested is lost.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication. The decompiler doesn't flag indirect calls, unusual stack layouts, or potential undefined behavior (like the `param_order_dep` testing sequence points).
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information recovered. Preconditions like "ptr != NULL" in `func_struct_byptr`, postconditions, and invariants are not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships not documented. No indication that `call_cdecl` calls `cdecl_func`, or that these are testing calling conventions. Callback relationships not explicit.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output. No logical grouping matching source sections (calling conventions, parameter passing, return values). Static functions not distinguished from public API.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile. Uses undefined types (`undefined4`, `undefined8`, `undefined`), missing standard library headers, incorrect function signatures. The decompilation is for analysis only, not compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `local_f0`, `iVar1`) - no semantic inference from usage
+- No struct recovery - `LargeStruct` becomes raw `long` with manual field access
+- No comments or documentation - all test case explanations lost
+- Type precision poor - uses `undefined4`/`undefined8` and generic `code *` pointers
+- Won't compile - uses non-standard types and missing declarations
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+- Function granularity is excellent - small, focused functions matching source structure
+
+**Most Needs Improvement:** Semantic Transparency (scored 1/10)  
+- Complete absence of comments, pattern recognition, anomaly indication, and contract recovery makes the code unusable for understanding the test scenarios
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `param_1` used in `*param_1 << 1` should suggest `value` or `multiplier`)
+2. Recover struct types from memory access patterns - detect sequential field accesses and reconstruct struct definitions
+3. Add semantic comments explaining what each test case validates (e.g., "// Tests cdecl calling convention: right-to-left stack push, caller cleanup")

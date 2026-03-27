@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generically named (`local_14`, `local_24`, `local_30`) instead of semantic names like `arr`, `sum`, `result`. Many show "Unresolved local var" comments indicating the decompiler couldn't recover original names despite `-O0 -g` debug flags.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions preserved original names (`local_vars`, `heap_basic`, `double_value`), but runtime functions use generic names (`FUN_00100920`, `FUN_00100b3c`). Good recovery for application code.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex (`0x2a` for 42, `0x14` for 20, `0x1e` for 30) without explanation. Original source used decimal literals; hex conversion obscures intent without clear reason.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive "Unresolved local var" comments and "WARNING: Unknown calling convention" messages throughout. DW_OP debug references (`DW_OP_breg31(sp)`) pollute the output despite debug symbols being available.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops preserved as `for`/`while`, but `linked_list_heap` uses `while(true)` with break instead of clean `for` loop. `stack_alias` function is severely corrupted with nonsensical comparison (`&stack0x00000000 == (undefined1 *)0x1c`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well; no inappropriate inlining or fragmentation. Each test function remains separate and cohesive.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. Some complex functions (`vla_stack`, `alloca_usage`) have awkward pointer arithmetic disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Pointer arithmetic (`*(int *)((long)__ptr + (long)local_24 * 4)`) used instead of clean array access (`arr[i]`). This optimization artifact obscures the simple array indexing pattern from source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type erosion: `Point*` becomes `int*` in `heap_struct`, `size_t` often becomes `long`. Function `memop_memcpy` shows `void *src` instead of `const void *src`, losing const-correctness.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Node` and `TreeNode` structs partially recovered with field names (`data`, `next`, `left`, `right`). However, `Point` struct completely lost (accessed as `__ptr[0]`, `__ptr[1]` instead of `p->x`, `p->y`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(long)n << 2`, `(byte)local_814`). Pointer arithmetic replaces array bounds, increasing risk of misinterpretation. `stack_alias` function has type confusion making it unusable.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: "Unresolved local var" comments indicate problems but don't help understanding. No algorithm explanations or API contracts. WARNING comments about calling conventions add noise without value.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithm patterns identified. Common patterns like linked list traversal, tree creation appear as raw code without semantic labeling.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "Unresolved local var" and "WARNING" messages flag some issues. `stack_alias` shows "Heritage AFTER dead removal" warning indicating corruption. However, many semantic losses go unflagged.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: NULL checks preserved but not documented as preconditions. No postcondition inference (e.g., "returns heap-allocated memory"). Error conditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved correctly. Global variables (`global_counter`, `global_array`) referenced by name. No call graph documentation or callback relationship explanations.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. Static functions preserved (`static_helper`, `file_scope_static`). No header file separation or logical grouping comments.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External references (`extern_global_var`, `extern_function`) declared but undefined. Would need stubs for `__libc_start_main`, `__gmon_start__`. Some type mismatches would prevent clean compilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (5+4+6+4)/4 = 4.75 × 0.15 = 0.713
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.48/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects
+- **`stack_alias` function completely corrupted** - Logic replaced with nonsensical comparison (`&stack0x00000000 == (undefined1 *)0x1c`), original alias detection logic lost entirely
+- **Variable names generic throughout** - `local_14`, `local_24` instead of `sum`, `result`, `arr` despite `-g` debug symbols being available
+- **Pointer arithmetic obscures array access** - `*(int *)((long)__ptr + (long)local_24 * 4)` instead of `arr[i]` makes simple loops hard to read
+- **`Point` struct type lost** - Accessed as `int*` with index arithmetic instead of named fields `x`, `y`
+- **Hex literals without context** - `0x2a`, `0x14`, `0x1e` used instead of decimal values from source, obscuring intent
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - User-defined function names preserved accurately (`local_vars`, `heap_basic`, `double_value`), making navigation and identification straightforward.
+
+### Most Needs Improvement
+- **Variable Naming Quality (4/10)** - Despite `-O0 -g` debug compilation, the decompiler failed to recover meaningful variable names, using generic `local_N` patterns throughout, severely impacting code comprehension.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Leverage debug symbols for variable names** - At `-O0 -g`, DWARF debug info contains original variable names; Ghidra should prioritize extracting these instead of generating `local_N` placeholders.
+
+2. **Recover array access patterns from pointer arithmetic** - Detect `(base + index * sizeof)` patterns and emit `array[index]` syntax instead of raw pointer dereferences.
+
+3. **Preserve struct type information from debug info** - When debug symbols define struct layouts (like `Point { x, y }`), use field names instead of array indexing on typed pointers.

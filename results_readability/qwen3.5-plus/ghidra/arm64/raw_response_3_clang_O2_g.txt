@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic patterns (`iVar1`, `uVar2`, `lVar3`, `cVar4`) with zero semantic meaning. Original names like `arr`, `local`, `sum`, `head` are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Most test functions retained original names (`local_vars`, `heap_basic`, `global_var_access`), but runtime functions use generic names (`FUN_001008e0`, `FUN_00100afc`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic hex numbers everywhere: `0x2a` (42), `0x14` (20), `0xf` (15), `0x3c` (60). Original expressions like `x * 2 + 10` collapsed to constants without explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive "Unresolved local var" comments, "WARNING: Unknown calling convention" messages, and stack manipulation artifacts (`&stack0x00000000`) throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `large_stack_frame` transformed from simple for-loop to complex do-while with CONCAT expressions. Goto labels (`LAB_00100c80`) replace natural loop constructs.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved, but internal logic collapsed—`tree_heap_traversal` returns constant `0x3c` instead of showing tree creation and traversal logic.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions (`double_value`, `global_var_access`) read linearly, but stack/heap operations have forward jumps and complex loop structures disrupting flow.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe loop unrolling in `vla_stack` and `alloca_usage` creates 15+ temporary variables (`cVar4` through `cVar18`) and repeated CONCAT expressions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many `undefined8`, `undefined4` types where specific types should exist. `size_t` becomes `ulong`. Some struct types (`Point`, `Node`) partially preserved.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Node` struct recovered with `data` and `next` fields. `TreeNode` partially recovered. Array types degraded to pointer arithmetic (`int *arr` becomes raw memory access).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(undefined8 *)`, `(ulong)`), pointer arithmetic without bounds, and type-erased function pointers (`_func_int_int *`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated "Unresolved local var" and "WARNING" comments. No algorithm explanations, API contracts, or semantic documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Memory allocation patterns visible but unnamed. Loop unrolling not recognized as optimization artifact.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Unknown calling convention", "Could not recover jumptable"), but anomalies not explained or contextualized.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks exist in code but not as explicit contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`global_counter`, `global_array`) referenced without usage context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 65 functions in flat structure. No logical grouping matching source sections (stack/heap/static/memory operations).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External references (`extern_global_var`, `extern_function`) present but undefined. Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+5+5+3)/4 = 4.25 × 0.25 = 1.06
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (3+2+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.43
+
+Overall Score: 3.99/10 ≈ 4.0/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Variable names completely generic** - `iVar1`, `uVar2`, `lVar3` pattern provides zero semantic information
+- **Constant folding obscures logic** - `local_vars` returns `x * 2 + 10` directly instead of showing `a`, `b`, `c` intermediate variables
+- **Loop unrolling creates unreadable code** - `large_stack_frame` has 20+ temporary variables and CONCAT expressions for a simple 2048-byte fill
+- **Magic numbers without context** - `0x2a`, `0x14`, `0xf`, `0x3c` used instead of original values (42, 20, 15, 60)
+- **Struct field access degraded** - Array and struct operations shown as raw pointer arithmetic in many cases
+
+### Best Quality Aspect:
+- **Composite Type Recovery (6/10)** - `Node` and `TreeNode` structs partially recovered with recognizable field names (`data`, `next`, `left`, `right`)
+
+### Most Needs Improvement:
+- **Idiom Recognition (2/10)** - No patterns identified; loop unrolling, memory allocation patterns, and data structure operations completely unrecognized
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in size checks should be named `size`, `length`, `count`)
+2. **Detect and annotate optimization artifacts** - Mark loop unrolling, constant folding, and inlining with comments explaining the transformation
+3. **Recover semantic literals** - Convert magic numbers back to original expressions where possible (e.g., `0x2a` → `42` with comment "local variable value")
+
+---
+
+## Assessment Notes
+
+**Important Observation:** The binary metadata shows `-O2` optimization despite source claiming `-O0`. This explains the aggressive loop unrolling and constant folding. At `-O2`, a 4.0/10 score reflects significant decompilation challenges, but the decompiler failed to:
+- Recognize common patterns (array initialization loops)
+- Recover intermediate variables from optimized code
+- Provide meaningful comments about transformations
+
+The decompiled code is **semantically correct** (produces same outputs) but **structurally degraded** beyond practical maintainability for complex functions.

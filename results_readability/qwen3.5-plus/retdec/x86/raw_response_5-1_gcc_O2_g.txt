@@ -1,0 +1,101 @@
+## EVALUATION: C++ Object-Oriented Features Decompilation
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `a1`, `a2`, `result`) with no semantic meaning. Original variables like `capture_by_value`, `multiplier`, `instance_count`, `data`, `size` are completely lost. Even simple cases like `obj` become unnamed pointers.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Functions use C++ mangled names (`_Z20test_cpp_member_funcv`, `_ZN4Base12virtual_funcEi`) instead of readable names. While demangled comments exist, the actual function identifiers are unusable. Helper functions are worst (`function_1150`, `function_1160`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation (`0x42180e4e`, `0x2c0000`, `0x63300e48`). Original constants like `0x1234` for `getClassID()` are lost in global variable references. String literals accessed through offset calculations (`v1 + (int32_t)&g3 - 0x1f7c`).
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe compiler artifact pollution: `__x86_get_pc_thunk_*` calls in nearly every function, `__readgsdword(20)` stack canary checks, 14 meaningless global variables (`g1`-`g14`), and numerous stub functions that add no value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Uses explicit `goto` labels (`lab_0x17f8:`) instead of structured control flow in `test_cpp_rtti`. Exception handling in `test_cpp_exception` is convoluted with manual catch/rethrow logic. Many functions are empty stubs returning immediately.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Original test functions preserved but 10+ are empty stubs (`test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, `test_cpp_lambda`, `test_cpp_template_class`). Class methods exist but contain no logic.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Stack check failures create artificial branching (`if (v2 == __readgsdword(20)) { return; } __stack_chk_fail_local();`). Goto labels disrupt reading flow. PC thunk calls at function entry break linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary pattern repeated identically across 10+ functions. `__x86_get_pc_thunk_bx` called at start of most functions. Some redundancy is legitimate (-O0 debug), but decompiler doesn't consolidate patterns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Basic types preserved (`int32_t`, `float64_t`) but all class types erased to `int32_t*`. Original `SimpleClass*`, `Base*`, `Container<int>*` become generic pointers. No const-correctness recovered despite `const` methods in source.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: **Critical failure** - Zero class structures recovered. `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `MultiDerived`, `DiamondDerived`, `Point`, `Container`, `RTTIBase` all missing. Only one struct (`_Unwind_Exception`) appears. No vtable structures, no field names.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Extensive unsafe casts: `(int32_t *)v12`, `(struct _Unwind_Exception *)v4`, `(char *)v4`. Pointer arithmetic on class objects (`*(int32_t *)(*v2 - 4) + 4`). No type boundaries enforced for C++ objects.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Auto-generated metadata comments exist (address ranges, line ranges, demangled names) but zero semantic comments explaining logic. No algorithm explanations, no C++ feature documentation. Comments are structural, not explanatory.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: **Complete failure** on C++ idioms: virtual dispatch not identified, exception handling not labeled as such, template instantiation not recognized, lambda closures not recovered, RAII patterns (smart pointers) lost, inheritance relationships invisible.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about incomplete recovery. Empty stub functions (`return;`) give false confidence. No indication that class structures are missing. User has no way to know decompilation is severely incomplete.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `idx < size` in `Container::get`). Exception contracts not recovered. No postcondition hints. Original comments with expected values (期望：4704) completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch calls (`call_virtual_func`) don't show polymorphic nature. Inheritance chain invisible. Global variable usage opaque (`g1`-`g14` have no semantic meaning).
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single monolithic file with 94 detected functions. No logical grouping by class or feature. Related functions (e.g., `Base::virtual_func`, `Derived::virtual_func`) scattered. No namespace or class scoping recovered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes standard headers but many external symbols unresolved (`__cxa_*`, `_Znwj`, `_ZdlPvj`). Would require significant stubbing to compile. C++ runtime dependencies not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+3+3+2)/4 = 2.50 × 0.30 = 0.75
+Level 2 (Structural):  (3+4+4+5)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type System): (4+1+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (4+2+2+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (4+5+5)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                              = 3.13/10
+```
+
+**Overall Readability Score: 3.1/10**
+
+### Critical Defects:
+- **Zero class structure recovery** - All 10+ C++ classes (`SimpleClass`, `Base`, `Derived`, `Container`, etc.) completely lost, reducing OOP code to pointer arithmetic
+- **10+ functions are empty stubs** - `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, `test_cpp_lambda`, `test_cpp_template_class` return immediately with no logic
+- **Mangled function names** - `_Z20test_cpp_member_funcv` instead of `test_cpp_member_func` makes code navigation impossible
+- **No C++ idiom recognition** - Virtual dispatch, exceptions, templates, lambdas, smart pointers all decompiled as raw C with no semantic markers
+- **14 meaningless global variables** - `g1` through `g14` with hex addresses instead of named constants or string literals
+
+### Best Quality Aspect:
+- **Level 2: Structural Intelligibility (4.0/10)** - At least function boundaries are preserved and some functions (`test_cpp_template_func`, `test_cpp_rtti`, `test_cpp_exception`) have recoverable logic despite the degradation.
+
+### Most Needs Improvement:
+- **Level 3: Type System Fidelity (2.7/10)** - Complete failure to recover any C++ class structures is the most severe defect, fundamentally breaking understanding of object-oriented code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts** - Analyze vtable pointers to reconstruct class definitions with field names and inheritance relationships
+2. **Demangle and rename all C++ symbols** - Apply Itanium C++ ABI demangling to all `_Z*` functions and use original names in output
+3. **Add confidence indicators for incomplete recovery** - Mark stubbed functions with `// DECOMPILATION INCOMPLETE: logic not recovered` warnings so users know what's missing

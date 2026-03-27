@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3` while local variables use `v1`, `v2`, `v3`. The original source had meaningful names like `count`, `args`, `sum`, `str`, `p`, `x`, `y`. Only `result` and `len` are appropriately named.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly: `cdecl_func`, `stdcall_func`, `fastcall_func`, `test_calling_conventions`, etc. Minor issues with some wrapper functions like `call_thiscall` being just stubs, but overall good preservation.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers: `0x51eb851f`, `0x40091eb8`, `0x1ad24ffc`. Format strings contain UTF-8 encoded Chinese characters (e.g., `"\xe6\xb5\x8b\xe8\xaf\x95"`) that are unreadable. Global variable `g1 = -0x1ad24ffc` has no explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive redundant casts: `(int32_t *)`, `(char *)`, `(uint32_t)` appear frequently. Address range comments (`// Address range: 0x10580 - 0x105b0`) add clutter. No debug instrumentation or assembly blocks, but casts create significant noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops and conditionals are natural (for/while/if). However, `test_calling_conventions` has awkward goto-like patterns with forward jumps. At -O0, control flow should be nearly identical to source but some restructuring occurred.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions remain properly separated with appropriate granularity. Each function has single responsibility matching source. Parameter lists are reasonable (not exposing implementation details). No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Some forward jumps in `test_calling_conventions` and `test_parameter_passing` disrupt flow. Moderate nesting (3-4 levels) in complex test functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop unrolling is minimal (appropriate for -O0). Some duplicate expressions in complex functions but manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently, but pointer parameters like `param_by_value_ptr(int32_t a1)` should be `int32_t *a1`. Function pointers lack proper signatures (e.g., `param_func_ptr(int32_t a1, int32_t a2)` instead of `int (*callback)(int)`). Const correctness mostly absent.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover structs. `LargeStruct` and `SmallStruct` from source are lost. Code uses raw pointer arithmetic: `*(int32_t *)(v1 + 4)` instead of `s->b`. No struct field names recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe integer-to-pointer casts: `(int32_t)&v1`, `(int32_t *)a1`. Incorrect pointer arithmetic: `8 * i + (int32_t)&v1`. Type-confused function pointers throughout. Buffer-overflow-prone patterns with raw offsets.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated address range comments present. No algorithm explanations, no decompilation confidence indicators, no API contracts. Comments provide no useful semantic information.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic function patterns recognized (wrapper functions, test functions). No design patterns (State, Strategy, Observer) identified. No algorithm patterns named. Some pattern hints but unclear.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. Indirect calls not resolved are presented without warning. No indication of potential undefined behavior (e.g., `param_order_dep` with undefined evaluation order). Silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition detection (e.g., "requires: ptr != NULL"). No postcondition inference. No invariant recognition. Error conditions not documented. Complete absence of contract information.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Some relationships clear through naming (`call_cdecl` calls `cdecl_func`). However, no explicit call graph documentation. Callback relationships not documented. Global variable usage (`g1`, `g2`, etc.) not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Single file with reasonable function grouping. Related functions (calling convention tests) grouped together. Static functions not explicitly marked. Arbitrary but functional organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Missing standard includes (needs `<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`). Requires stub `void __stack_chk_fail(void)`. Global variables have odd initializations. Moderate patching needed to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Struct type recovery completely failed**: `LargeStruct` and `SmallStruct` reduced to raw pointer arithmetic with offsets, losing all semantic meaning
+- **Variable naming is unusable**: Parameters `a1-a6` and locals `v1-v8` provide no indication of purpose
+- **Pointer types erased**: Parameters like `int32_t a1` should be `int32_t *a1`, causing type safety issues
+- **No comments or contracts**: Code provides zero semantic context about algorithm intent or preconditions
+- **Magic numbers unexplained**: Values like `0x51eb851f`, `0x40091eb8` appear without explanation
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions are properly separated with appropriate granularity matching the source organization. Each function has clear single responsibility.
+
+**Most Needs Improvement:** Type System Fidelity (scored 3.3/10)  
+Complete failure to recover composite types (structs), widespread pointer type erasure, and multiple unsafe casts make the code dangerous to use without extensive manual修复.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct types**: Analyze stack layout and pointer arithmetic to reconstruct struct definitions with field names
+2. **Infer variable names from usage**: `a1` used as pointer should become `ptr`; `v1` used in arithmetic should become `sum` or `index`
+3. **Add semantic comments**: Include decompilation confidence, algorithm purpose, and flag unresolved indirect calls

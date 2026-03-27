@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `local_10`, `uVar1`, `iVar1` with no semantic meaning. Original source had meaningful names like `x`, `c`, `arr`, `n`, `p` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`double_value`, `process_char`, `array_1d_stack`, `struct_simple`). Test functions also retain names. Only a few helpers like `FUN_00101020` are generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x20`, `0x28`, `0xc` for struct offsets lack explanation. String literals referenced as `&DAT_00103010` instead of actual content. Some test values (100, 200) remain clear.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) appear in every function. Redundant casts like `(ulong)(uint)(int)cVar1` clutter expressions. Frame pointer manipulation (`in_FS_OFFSET`) adds noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as for-loops correctly. Some conditionals inverted (e.g., `process_char` checks `< 'A' || 'Z' <` instead of `>= 'A' && <= 'Z'`). Switch statements converted to if-else chains (`enum_switch`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions properly separated with single responsibility. Some return type errors (`ptr_func_simple` returns void instead of int). No monolithic functions observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads mostly top-to-bottom with minimal forward jumps. No excessive goto usage. Test functions have some forward variable references but remain traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Stack canary checks repeated in each function unnecessarily. Some redundant type casts throughout. No significant dead code observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical type degradation: `char`→`byte`/`uint`, `short`→`ushort`/`int`. `process_ld` returns `void` instead of `long double` (critical error). Function pointers become `code *` or `undefined *`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs completely lost—converted to pointer arithmetic. `struct_simple` takes `int *` instead of `Point3D *`. Field access becomes `param_1[2] + *param_1 + param_1[1]`. Unions lost (`union_type` takes `float *`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts: `(ulong)(uint)(int)`, `(undefined4 *)`. Pointer arithmetic without type safety. Function pointer calls with `undefined` types create potential undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive comments explaining each test case. No decompilation confidence indicators or API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Linked list traversal (`linked_list`) not identified. Tree recursion (`binary_tree_sum`) not labeled. Bitfield operations not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite critical issues. `process_ld` returning void not marked suspicious. Type mismatches silently accepted without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions. No error condition documentation. Original source had implicit contracts through comments.
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. No call graph documentation. Global variable usage not documented. Callback relationships not explicitly marked.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__libc_start_main`, `puts`, `printf`) require stubs. Data references (`&DAT_00103010`) need resolution. Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+7+8+7)/4 = 7.25 × 0.25 = 1.81
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (1+3+2+1)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  4.92/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Struct/union types completely lost** - All composite types converted to pointer arithmetic (`param_1[2] + *param_1 + param_1[1]` instead of `p->x + p->y + p->z`)
+- **`process_ld` returns void** - Critical type error; original returns `long double`
+- **Zero comments** - No documentation despite complex test cases requiring explanation
+- **Generic variable names** - `param_1`, `local_10`, `uVar1` provide no semantic information
+- **Magic struct offsets** - `0x28`, `0xc`, `0x50` used without explaining field layout
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names preserved from source, making it easy to identify test purposes
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding test intent difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union type definitions** from field access patterns and alignment analysis instead of raw pointer arithmetic
+2. **Add decompilation confidence annotations** for uncertain type recoveries (e.g., `// UNCERTAIN: long double may be void`)
+3. **Infer variable names from usage context** (e.g., loop counters → `i`, array parameters → `arr`, size parameters → `n`)

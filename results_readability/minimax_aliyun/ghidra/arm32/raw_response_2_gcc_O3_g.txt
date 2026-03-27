@@ -1,0 +1,107 @@
+# Decompilation Readability Assessment
+
+## Analysis Summary
+
+This is a comprehensive test suite with 830 lines of C code testing data types, arrays, pointers, and composite types. The binary was compiled with `-O0 -g` (no optimization, debug symbols), so high-quality decompilation should be achievable. The decompiled output is 3156 lines, indicating significant overhead from unresolved variables and compiler artifacts.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler extensively uses "Unresolved local var" placeholders like `int sum@[???]`, `int i@[???]`, `int len@[???]` throughout the code. The original source had clear variable names (sum, i, len, value) that were completely lost. This is the worst-scoring dimension.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently recovered - `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`, `binary_tree` all match the original source exactly. Minor issue: some internal compiler functions have generic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x41` (should be 'A'), `0x1a` (26), `32` (case conversion offset) appear without explanation. However, some constants like `0x14` (20) are used correctly. The decompiler doesn't convert hex to character constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Extensive "Unresolved local var" comments clutter the output. Multiple "WARNING" comments about unreachable blocks. Function pointer types use generic `_func_int_int *` instead of proper signatures. The code includes many compiler helper functions that could be abstracted.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is generally natural - loops use do-while constructs that are readable. The `array_3d` function shows loop unrolling (125 individual array accesses) which is expected at any optimization level. Minor goto usage in some error paths.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function from the source is properly separated. No inlining artifacts observed (expected at -O0). Function sizes are appropriate - most are under 50 lines. Good single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist in error handling. The `array_3d` function is a long linear expression rather than nested loops, which reduces readability slightly.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: The `array_3d` function shows severe redundancy - 125 individual array element accesses instead of loops. This loop unrolling makes the code ~100 lines longer than necessary. Other functions are relatively clean.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct - `char`, `short`, `int`, `long`, `float`, `double`, `_Bool` all match. Issues: `long long` rendered as `longlong`, function pointers use generic `_func_int_int *` instead of proper signatures. Const correctness mostly preserved.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery - `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Edge`, `Graph` all recovered with correct field names. Union types properly identified. Nested structures handled well.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple serious issues found:
+- `volatile_access`: Returns `*p + *p` instead of two separate reads (loses volatile semantics)
+- `ptr_diff`: Uses `(int)p1 - (int)p2 >> 2` (incorrect - should be pointer subtraction)
+- `ptr_const`: Returns `*p << 1` instead of `*p + *p` (semantic error)
+- `process_ll`: Complex bit manipulation doesn't match simple `x * x`
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly auto-generated comments ("WARNING: Removing unreachable block"). No algorithm explanations. No recovery confidence indicators. The comments don't help understand the actual logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Data structure patterns (linked list, binary tree, graph) are structurally present but not explicitly named or documented as patterns. The decompiler doesn't say "this is a linked list traversal."
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Unknown calling convention", "WARNING: Could not recover jumptable"). However, these are generic and don't explain the actual impact on analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The decompiler doesn't indicate that `array_complex_index` requires bounds checking or that `ptr_diff` assumes same array.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No indication of which functions call which. No documentation of callback relationships. The `main` function calls test functions but this isn't explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Related functions (test_* and implementation functions) not grouped. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will NOT compile standalone. Uses undefined functions: `puts`, `__printf_chk`, `call_weak_fn`, `__gmon_start__`, `__libc_start_main`, and many float/double intrinsics (`__mulsf3`, `__addsf3`, `__muldf3`, etc.). No includes or external declarations.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+1. Variable names completely lost - "Unresolved local var" everywhere (2/10 naming quality)
+2. Type safety violations - `volatile_access`, `ptr_const`, `ptr_diff` have semantic errors
+3. Severe loop unrolling in `array_3d` makes code ~100 lines of redundant array accesses
+4. No compilation readiness - undefined references to libc and compiler builtins
+5. No contract/precondition recovery - bounds checking requirements not documented
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are almost perfectly recovered from the source, making it easy to identify each function's purpose.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The pervasive "Unresolved local var" placeholders make the code nearly unusable for analysis. This is the single biggest readability barrier.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from DWARF debug info** - The binary was compiled with `-g`, so variable names should be recoverable. The decompiler should use `DW_AT_name` attributes.
+2. **Recover loop constructs from backward jumps** - The `array_3d` function has obvious loop patterns that were unrolled; detect and reconstruct loops.
+3. **Add compilation stubs for standard library functions** - Include minimal declarations for `printf`, `puts`, and floating-point intrinsics so code is at least parseable.

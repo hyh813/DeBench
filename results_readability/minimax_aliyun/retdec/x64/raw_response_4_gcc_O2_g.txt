@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use non-descriptive names (`v1`, `v2`, `v3`, `v4`). The original parameters `a` and `b` in `cdecl_func` are completely lost. This is severe degradation - impossible to track variable purpose without analyzing every usage.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserve their original names (`cdecl_func`, `stdcall_func`, `varargs_func`). However, some helper functions have auto-generated addresses as names (`function_1070`, `function_1080`). The naming is mostly correct but lacks semantic action verbs.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `0xffffffff`, `0x100000000`, `0x12345678` appear without explanation. The expression `return a2 + a1 & 0xffffffff;` obscures simple addition. Constants like `0x40091eb851eb851f` are unexplained. The original had clear return values like `15`, `50`, `6`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__readfsqword(40)` for stack canaries, `__asm_movapd`, `__asm_movdqa`, `__asm_pxor` intrinsics, and `__stack_chk_fail` calls. These obscure the actual logic. The original -O0 code should have minimal artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is preserved but `varargs_func` uses goto statements (`goto lab_0x13c0`) instead of proper loop constructs. Some conditional expressions are convoluted, like in `ret_complex_expr` with complex bit manipulation. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-80 lines each) with clear single responsibility. The original test functions are properly separated. Minor issue: some functions like `test_calling_conventions` are large but that's faithful to source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but the varargs functions have confusing nested loops with goto jumps that disrupt flow. The `test_calling_conventions` function has some awkward forward jumps.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns exist, particularly in varargs handling where similar code blocks repeat. The stack canary checks add noise but are expected at -O0. Loop unrolling is minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - all `int` parameters become `int64_t`. Original `int cdecl_func(int a, int b)` becomes `int64_t cdecl_func(int64_t a1, int64_t a2)`. Function pointers lose their signatures (become `int64_t` instead of proper `int (*)(int)`). The original was explicitly testing 32-bit calling conventions.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. `SmallStruct` with fields `x, y` is completely lost - accessed as raw pointer arithmetic: `*(int32_t *)(a1 + 4) * (int32_t)a1`. `LargeStruct` and `BigStruct` similarly lost. The original had clear typedef structs.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts: `(int32_t *)a1`, `(int64_t *)&v9`, `(char *)str`. Pointer arithmetic is error-prone: `a1 + 8`, `v2 + 8`. Function pointer calls are unsafe: `v1 + 10` treats function pointer as integer. No `const` correctness.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated comments showing address ranges and line numbers (e.g., `// Address range: 0x1200 - 0x1208`). No semantic comments explaining what functions do, no decompilation confidence indicators, no algorithm explanations. The original had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The varargs handling, calling convention tests, and parameter passing patterns are not recognized or named. Each function is treated in isolation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged. The indirect function pointer calls, the unusual return value computations, and the complex pointer manipulations are presented as confident decompilations when some are actually uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original had clear expectations (e.g., "期望: 15") which are completely lost. No documentation of what parameters require or what functions guarantee.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are implicit in the code structure but not documented. No indication of which functions call which, no callback relationships documented. The test harness structure is somewhat visible but not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Related functions (calling convention tests) are grouped together but this is basic. No header file structure recovered. Static functions not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would not compile. Many undefined functions: `__printf_chk`, `__asm_movapd`, `__asm_movdqa`, `__asm_pxor`, `__asm_addsd`, `__asm_cvtsi2sd`, `__readfsqword`. The original was designed to compile with gcc, but decompiled code uses intrinsics that don't exist.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 3 + 4) / 4 = 4.0
+L2_avg = (5 + 8 + 6 + 6) / 4 = 6.25
+L3_avg = (4 + 2 + 4) / 3 = 3.33
+L4_avg = (2 + 2 + 2 + 2) / 4 = 2.0
+L5_avg = (4 + 5 + 2) / 3 = 3.67
+
+Overall = (4.0 × 0.30) + (6.25 × 0.25) + (3.33 × 0.20) + 
+          (2.0 × 0.15) + (3.67 × 0.10)
+        = 1.20 + 1.5625 + 0.666 + 0.30 + 0.367
+        = 4.12/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects
+- **Variable naming**: All parameters use `a1`, `a2`, `a3` - completely non-descriptive, original `a`, `b`, `count` lost
+- **Type precision**: All `int` parameters incorrectly upgraded to `int64_t`, losing 32-bit calling convention semantics
+- **Struct recovery**: Zero struct types recovered - all accessed as raw pointer arithmetic
+- **No comments**: Only address range comments, no semantic explanation of what functions do
+- **Compilation failure**: Uses undefined intrinsics like `__asm_movapd`, `__readfsqword` that don't exist
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions are appropriately sized and maintain separation of concerns. The test functions are properly isolated and the overall structure matches the source organization.
+
+### Most Needs Improvement: Semantic Transparency (2/10)
+No comments, no pattern recognition, no anomaly indication, no contract recovery. The decompiler provides zero semantic context about what the code does or confidence levels.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Parameters `a1`, `a2` used in `a2 + a1` should suggest `b + a` or similar. Track how variables are used to generate meaningful names.
+
+2. **Recover struct types from memory access patterns**: `*(int32_t *)(a1 + 4) * (int32_t)a1` clearly accesses struct fields at offsets 0 and 4 - should reconstruct `SmallStruct { int x; int y; }`.
+
+3. **Add semantic comments**: Include function purpose, parameter expectations, and decompilation confidence. The original had extensive test case comments that should be partially recoverable from the test harness structure.

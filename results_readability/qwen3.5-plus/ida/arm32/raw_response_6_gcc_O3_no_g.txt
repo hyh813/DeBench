@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a1`, `a2`, `temp_1`) with no semantic meaning. For example, in `param_strcpy`, parameter `a1` should be `dst` based on usage, and in `thread_sum`, `a1` should be `thread_data`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names are preserved (`param_strcpy`, `param_strcmp`, `thread_compute`) but many have compiler artifacts (`.part.0`, `.constprop.0`) and 60 functions failed entirely. Helper functions like `sub_10CA8` are cryptic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `syscall(5, ...)` instead of `SYS_open`, `signal(10, ...)` instead of `SIGUSR1`, `socket(2, 1, 0)` instead of `AF_INET, SOCK_STREAM, 0`. String literals are preserved but numeric constants are not.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts like `_sync_synchronize()` calls, explicit register comments (`// r0`, `// r4`), and stack frame annotations (`[sp+0h] [bp+0h] BYREF`). The 60 failed decompilations create significant noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `do-while` constructs, but optimization artifacts create awkward patterns. `param_fork_exec.part.0` uses `__noreturn` correctly, but some functions use excessive nested conditionals instead of early returns.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Compiler created artificial splits (`param_fork_exec.part.0`, `.constprop.0` variants) that fragment logical functions. Some `call_*` functions are constant-folded to return literals directly, losing call structure entirely.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but has forward jumps in error handling paths. The `param_signal_handling` function has deeply nested conditionals (6+ levels) that could be flattened.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant propagation created duplicate specialized functions (`param_mutex_lock` vs `param_mutex_lock_constprop_0`). Loop unrolling not present but constant folding removed meaningful computation from test functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `param_strcpy(int a1)` loses `char*` type, `param_strlen` returns `size_t` correctly but `call_strlen` returns `int`. Many `void*` where specific pointer types existed. Signal numbers as `int` instead of `enum`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `ThreadData` struct lost - accessed as `arg[0]`, `arg[1]`, `arg[2]` array. `sockaddr` partially recovered but fields generic. `struct stat` recovered but field names lost (`v10.st_dev` used where `st_size` expected in `call_fork_exec`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(_DWORD *)thread_return`, `(char *)-1` comparisons. `param_shmget_shmat` shows `shmat()` with no parameters in decompilation. Pointer arithmetic on `pthread_t*` arrays without proper typing.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no semantic comments. Only auto-generated type annotations (`// r0`, `// BYREF`). No algorithm explanations, no API contract documentation. The header comment incorrectly states "IDA Pro 9.1" when metadata says "Ghidra".
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `pthread_create`) but not annotated as patterns. Producer-consumer pattern in `param_condition_variable` not identified. Atomic operations shown as `_sync_*` intrinsics without explanation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 60 failed decompilations listed but no explanation why. `param_strcpy` shows incorrect `stpcpy()` instead of `strcpy` with no warning. Stack warnings present ("positive sp value has been detected") but not actionable.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Error returns (-1, -2, -3) not explained. No null pointer check documentation. Return value semantics (e.g., `42` = success) not documented anywhere.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but callback relationships unclear. `thread_compute` called via `pthread_create` but type cast `(void *(*)(void *))` obscures signature. Global variables (`shared_counter`, `atomic_counter`) referenced without declaration context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Test functions mixed with implementation. No header file recovery. Compiler-generated functions (`_do_global_dtors_aux`, `frame_dummy`) mixed with user code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 60 functions marked "FAILED to decompile" including critical imports (`malloc`, `pthread_create`, `open`). Cannot compile standalone. Architecture mismatch (original arm64, decompiled arm32) would prevent linking.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+
+Overall = 1.35 + 1.38 + 0.73 + 0.41 + 0.40 = 4.27/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Metadata inconsistency**: Header claims "IDA Pro 9.1" but metadata says "Ghidra"; architecture shows "arm" but original is "arm64"; optimization shows "O3" but original is "O0"
+- **Variable naming**: All variables generic (`v0`, `v1`, `a1`) with zero semantic recovery despite clear usage patterns
+- **Type degradation**: `param_strcpy(int a1)` loses `char*` type; `ThreadData` struct reduced to array indexing
+- **Magic numbers**: System call numbers (5, 6), signal numbers (10, 14), socket constants (2, 1, 0) not recovered to named constants
+- **60 failed decompilations**: Critical functions (`malloc`, `pthread_create`, `open`) completely missing from output
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names like `param_strcpy`, `thread_compute`, `signal_handler` were preserved from debug symbols, providing some semantic anchor points.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no human-readable documentation; even basic function purpose comments are absent, making the code nearly impossible to understand without the original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover named constants from system headers** - Map syscall numbers (5→SYS_open), signal numbers (10→SIGUSR1), and socket constants to their symbolic names using platform-specific header databases.
+
+2. **Infer variable names from usage context** - When a parameter is passed to `strcpy` as first argument, name it `dst`; when used in `pthread_create` as thread function, name it `thread_func`.
+
+3. **Add decompilation confidence annotations** - Mark uncertain recoveries with comments like `// DECOMPILER UNCERTAINTY: indirect call target not resolved` instead of silently producing potentially incorrect code.

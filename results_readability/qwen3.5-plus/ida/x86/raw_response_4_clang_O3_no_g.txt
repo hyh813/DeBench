@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `v0`, `v2`, `result`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `s` that the decompiler failed to recover or infer from usage patterns.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`cdecl_func`, `varargs_func`, `test_calling_conventions`) from debug symbols, but helper functions are generic (`sub_1030`, `sub_1080`). Partial symbol recovery is acceptable but inconsistent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `16`, `4`, `3` in varargs handling lack explanation. Return values (`15`, `50`, `6`) are correct constant-folded results but provide no insight into original computation logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present (`__usercall`, `__userpurge`, register hints `@<eax>`). However, no excessive dead code. The O3 optimization level explains some complexity but annotations clutter readability.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have straightforward control flow matching O3 expectations. Varargs functions show loop unrolling artifacts with complex structures, but this is legitimate optimization behavior at `-O3`.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical failure: test functions constant-folded to single returns (`call_cdecl()` returns `15` directly). `func_struct_byval` has 31 `int` parameters instead of one struct, destroying original function boundaries.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with clear early returns. No excessive goto usage. Loop structures in varargs handling are complex but follow recognizable patterns.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Varargs handling shows redundant loop patterns (similar code in `varargs_func` and `param_varargs`). Constant folding eliminates computation redundancy but loses semantic information about original operations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `LargeStruct` becomes 31 `int` parameters, `double` becomes `long double` inconsistently, pointer types often `_DWORD *` instead of specific types. Original `char *s` becomes generic `char *a1`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover struct types. `LargeStruct` with 16 `long long` fields becomes 31 `int` parameters. `SmallStruct` becomes `_DWORD *` with array indexing (`a1[0]`, `a1[1]`). No struct definitions in output.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(int **)`, `(_DWORD *)`, `(char **)`). Pointer arithmetic on generic types throughout. Function pointer types partially preserved but with generic signatures.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. Only auto-generated warnings ("positive sp value has been detected"). No explanation of algorithm logic, calling conventions, or test purposes despite being test code.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Varargs handling could be identified as standard `va_list` pattern but isn't. No indication of calling convention patterns despite the entire file testing calling conventions.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged ("FAILED to decompile" for 5 library functions, stack warnings). However, critical issues like struct type loss and constant folding not indicated as decompiler limitations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks present in code (`if (a1)`) but not documented as contracts. No error condition documentation for functions like `func_struct_byptr`.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`ret_opaque_handle_handle1`) but not explained. No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order similar to source. Related functions grouped together. However, no file/module structure information preserved, and test functions mixed with implementation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 5 functions failed to decompile (library functions). Uses compiler-specific annotations (`__cdecl`, `__usercall`, `__userpurge`). Would require significant modification and stubs to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+LEVEL 1 Average: (3 + 6 + 5 + 6) / 4 = 5.00
+LEVEL 2 Average: (7 + 4 + 7 + 6) / 4 = 6.00
+LEVEL 3 Average: (4 + 2 + 5) / 3 = 3.67
+LEVEL 4 Average: (2 + 3 + 4 + 2) / 4 = 2.75
+LEVEL 5 Average: (5 + 6 + 3) / 3 = 4.67
+
+Overall = (5.00 × 0.30) + (6.00 × 0.25) + (3.67 × 0.20) + (2.75 × 0.15) + (4.67 × 0.10)
+        = 1.50 + 1.50 + 0.73 + 0.41 + 0.47
+        = 4.61/10
+```
+
+**Overall Readability Score: 4.6/10**
+
+### Critical Defects:
+- **Struct type recovery completely failed**: `LargeStruct` (16 `long long` fields) became 31 `int` parameters, losing all semantic meaning
+- **Test functions constant-folded**: `call_cdecl()`, `call_stdcall()`, etc. return hardcoded values instead of showing actual function calls
+- **Variable names entirely generic**: No attempt to infer names from usage (`a1`, `a2`, `v0` instead of `count`, `sum`, `args`)
+- **No comments or documentation**: Zero explanation of calling conventions, varargs handling, or test purposes
+- **Metadata mismatch**: Source claims `-O0` but binary header shows `O3` optimization, affecting expectations
+
+### Best Quality Aspect: **Control Flow Naturalness (7/10)**
+- Despite O3 optimization, most functions maintain recognizable control flow patterns without excessive goto or spaghetti code
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments makes understanding test purposes and calling convention behaviors nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack layouts**: Analyze parameter access patterns to reconstruct struct definitions instead of flattening to scalar parameters
+2. **Infer variable names from usage context**: Variables used in loops with counters should be named `i`, `count`; accumulators should be `sum`, `total`
+3. **Add semantic annotations for optimization artifacts**: When constant folding occurs, add comments showing original computation (e.g., `// Originally: cdecl_func(5, 10) = 15`)

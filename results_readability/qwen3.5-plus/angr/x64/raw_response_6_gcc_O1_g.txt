@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `ptr`, `result`) instead of semantic names like `dst`, `src`, `buffer`, `write_data` from the original source.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved names (`param_strcpy`, `thread_compute`) but startup code uses mechanical names (`sub_402020`, `sub_402030`) obscuring purpose.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive: `4294967295` (UINT_MAX/-1), `42` (success code), `18` (string length) appear without explanation or named constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive startup stub functions (`sub_402020` through `sub_4023b0`) create 200+ lines of noise; redundant variable assignments like `ptr = ptr` appear throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops use natural `do-while` constructs, but `param_strcmp` uses awkward bit-shift `(v1 <= 0 ? v1 >> 31 : 1)` instead of clear ternary logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Core functions are appropriately sized, but startup code is over-fragmented into 50+ trivial single-purpose functions that should be consolidated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns; nested conditionals in `param_signal_handling` are deep but traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Error return values (`4294967295`, `4294967294`, etc.) are repetitive but serve distinct purposes; no obvious dead code in main functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy `unsigned long long` usage where `size_t`, `int`, `pid_t` would be appropriate; `atomic_counter` declared as `char` instead of `atomic_int`; `const` correctness lost (`char *a0` vs `const char *src`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_8`, `field_c`); `ThreadData` struct not recovered (uses array indexing `ptr[2]` instead); `FILE` struct empty.
+
+**11. Type Safety:** Score: 3/10  
+Justification: `param_win32_api` missing `filename` parameter entirely; `thread_tls_test` uses obscure pointer arithmetic `p[18446744073709551580]` for TLS access; unsafe casts throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output despite original source having extensive documentation explaining each function's purpose and test expectations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`) but no pattern naming; thread synchronization patterns not identified as producer-consumer or mutex-protected critical sections.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`); no indication of unresolved indirect calls, type mismatches, or potentially incorrect decompilations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`); error codes use magic numbers without explanation; return value semantics not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables use generic names (`g_405099`, `g_407fe8`); no call graph documentation or callback relationship indicators.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output file; startup/runtime code mixed with application logic; no logical grouping by functionality (library calls vs. syscalls vs. threading).
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates successful compilation; external dependencies declared; however, `param_win32_api` signature mismatch and TLS access patterns may cause runtime issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+3+5)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (6+6+7+7)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (4+4+3)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+5+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+4+7)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.58/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `ptr`** should be named semantically (e.g., `dst`, `src`, `buffer_size`) based on usage context
+- **Zero comments** despite original source having extensive documentation explaining each test case
+- **Magic numbers** like `4294967295` (error codes) and `42` (success) appear throughout without explanation
+- **`param_win32_api`** missing `filename` parameter entirely - function signature is incorrect
+- **TLS access** uses obscure pointer arithmetic `p[18446744073709551580]` instead of recognizable `__thread` variable access
+- **Struct fields** all generic (`field_0`, `field_8`) losing semantic meaning of `ThreadData` members
+
+### Best Quality Aspect:
+- **Code Linearization (7/10)** - Code generally reads top-to-bottom with appropriate control structures; loops and conditionals are recognizable despite some awkward patterns.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of comments is unacceptable for a `-O0` debug build where original source had extensive documentation explaining purpose and test expectations.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Infer names from usage patterns (e.g., variables passed to `strcpy` as first argument should be `dst`, second should be `src`)
+2. **Recover and preserve source comments** - When debug symbols (`-g`) are available, extract and embed original comments in decompiled output
+3. **Replace magic numbers with named constants** - Detect repeated literal values (4294967295, 42, etc.) and suggest/create named constants with explanatory comments

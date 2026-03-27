@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `a0`, `a1`, `ptr`, `idx`, `result`). The original source used meaningful names like `size`, `x`, `y`, `arr`, `counter`, `increment` - all lost in decompilation. Only a few like `iter`, `cur` in param_asm_multi_insn are slightly better.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions correctly named like `param_macro_constants`, `param_asm_basic`, `call_asm_basic`, `my_func`, but many use the mechanical `sub_XXXXX` pattern (e.g., `sub_401030`, `sub_401040`). The original function names like `param_variadic_macro`, `param_include_guard` are partially recovered but inconsistently.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are correct (e.g., `64` in param_macro_constants, `30` in call_macro_functions, `116` in call_macro_recursion), but many magic numbers lack explanation (e.g., `0x400`, `0x200`, `57072`, `0xDF22`). The original had named constants like MAX_SIZE, BUFFER_COUNT that are lost.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant artifacts present - incorrect `goto v1->field_2c` statements, artificial struct definitions with padding fields (`struct_0 { char padding_0[44]; }`), and strange constructs like `goto ptr[2]` in sub_401030. These obscure the actual logic considerably.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural with proper if/else and for loops preserved. However, there are spurious goto statements (`goto v1->field_2c`, `goto ptr[2]`) that are clearly decompilation errors, not optimization artifacts. The loop in param_asm_clobber is correctly recovered as a for loop.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with good separation. The original's test functions (`test_preprocessing_features`, `test_asm_features`) and their called functions are properly decomposed. Some unnecessary wrapper functions exist but are manageable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal disruption. Early returns and simple conditionals are used appropriately. The few forward jumps are manageable and don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant redundancy observed. Dead code is minimal. Loop unrolling from optimization is not excessive. The code is relatively clean in this regard.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most types are generic `int` or `unsigned int`. Some improvement with `char*` in param_asm_multi_insn and `uint128_t` in SIMD functions. Original types like `size_t`, `int*`, `unsigned int*` are mostly lost. Const correctness is not preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct definitions exist but are poorly named (`struct_0`, `struct_1`) with artificial padding fields. The original had no complex structs but did have arrays. The struct recovery seems to be misinterpreting data sections rather than actual struct types.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present - pointer arithmetic like `ptr + idx * 4` in param_asm_clobber, but these are somewhat justified by the low-level nature. No major type-confused function pointers. Some casts present but not severe.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. The decompiled code lacks any explanation of what the functions do, the meaning of magic numbers, or the original macro semantics. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable (array summation loop, memcpy pattern, atomic operations using `atomic_exchange_add`), but they're not explicitly identified or named. The inline assembly patterns are partially recognized through the SIMD operations.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The clearly incorrect `goto v1->field_2c` and `goto ptr[2]` statements are not flagged as anomalies. No indication of suspicious code or decompilation confidence issues. The code presents these as if correct.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition, postcondition, or invariant documentation. The original had no explicit assertions but the function semantics (e.g., "returns x+5", "atomic operation") are not recovered.
+
+### LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Some relationships are clear through function names (e.g., `call_xxx` calls `param_xxx`). However, the call graph is not explicitly documented, and global variable usage is not clearly indicated.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are somewhat grouped logically (preprocessing functions together, asm functions together), but the file is essentially a single monolithic output. No clear separation or namespace structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Some extern declarations present for global variables (`g_402041`, etc.), but many are undefined. Would require moderate patching to compile. Dependencies on libc functions (printf, mmap, etc.) are not clearly documented.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`v0`, `v1`, `a0`, `a1`) - original meaningful names like `size`, `counter`, `increment` are lost
+- Spurious goto statements (`goto v1->field_2c`, `goto ptr[2]`) are decompilation errors that make no semantic sense
+- No comments explaining macro semantics, inline assembly behavior, or function purposes
+- Artificial struct definitions with padding fields (`struct_0 { char padding_0[44]; }`) misinterpret actual data
+- Type precision is poor - most types are generic `int`/`unsigned int` instead of specific types like `size_t`, `int*`
+
+**Best Quality Aspect:** Function Decomposition (7/10)  
+Functions are appropriately sized and separated. The test functions and their callees are properly decomposed, matching the original source structure reasonably well.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The decompiler uses generic variable names throughout, making it extremely difficult to track the purpose of each variable. Even at -O0, the original had meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`, `counter`, `increment` that should have been recoverable from usage patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - Variables used as loop indices should be named `i`, `idx`, or `index`; variables used as sizes should be `size`, `n`, `count`; variables used as pointers to arrays should be `arr`, `buffer`, `data`
+2. **Flag decompilation anomalies** - The `goto v1->field_2c` and `goto ptr[2]` constructs are clearly wrong and should be flagged as "DECOMPILATION ERROR: indirect jump target could not be resolved"
+3. **Recover macro semantics** - Since this is -O0, the decompiler should recognize constant expressions like `0x400` as `MAX_SIZE` (1024) and `64` as `BUFFER_COUNT * 4` based on the computed values

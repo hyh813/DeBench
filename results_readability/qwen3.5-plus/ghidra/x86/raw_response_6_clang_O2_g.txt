@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `iVar1`, `local_24`, `uVar2` instead of semantic names like `fd`, `buffer`, `len`. Many "Unresolved local var" comments indicate lost variable information (e.g., `/* Unresolved local var: int fd@[???] */`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions retain original names (`param_strcpy`, `param_strcmp`, `thread_compute`), but internal helpers use generic names (`FUN_00011030`). Main test functions are well-preserved.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `0x2a` (42), `0x5a` (90), `0xc` (12), `0xf` (15) with no explanation. Original source had documented expected values; decompiled code loses this context entirely.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "WARNING: Unknown calling convention" and "Unresolved local var" comments scattered throughout. Compiler artifacts like `get_pc_thunk_bx` injections present but mostly cleaned up.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops generally recovered as do-while constructs, but some are verbose (signal handling polling loops). Fork/exec patterns preserved correctly. At -O0, control flow should be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with good separation (thread functions, test functions, implementation functions). No monolithic functions observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom, but some functions have deep nesting (signal handling with multiple nested conditionals). Early returns used appropriately in most cases.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling visible in `param_malloc_free` with repetitive patterns. Duplicate comparison logic in `param_strcmp`/`param_memcmp`. Optimization artifacts from -O0 compilation shouldn't be this prevalent.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, size_t, FILE*, pthread_t), but some degradation visible (void* where specific types expected, uint vs int confusion). `param_strcpy` shows `char *src` instead of `const char *src`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `stat` struct partially recovered but accessed via `local_5c.st_size`. `ThreadData` struct NOT recovered—accessed via pointer arithmetic (`*(int *)((int)arg + 8)`). `sockaddr` fields accessed via `sa_data[0]` array indexing instead of named fields.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts visible (`(int *)0x0`, `(char *)0xffffffff`). Pointer arithmetic without type safety throughout thread functions. No const-correctness preserved (`char *src` should be `const char *`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated "Unresolved local var" and WARNING comments present. No semantic comments explaining algorithm purpose, API contracts, or expected behavior. Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (strcpy, strlen, printf, pthread_create). Signal handling and producer-consumer patterns visible but not explicitly identified or named.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "WARNING: Unknown calling convention" and "Subroutine does not return" warnings present. "Type propagation algorithm not settling" warning in `param_pthread_join`. Some anomalies flagged but inconsistently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"). No postcondition documentation. Error return values (-1, -2, -3) not explained. Original source had clear expected values documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented with call graphs. Global variable usage visible (`signal_received`, `atomic_counter`) but relationships not explicit. No callback relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No header file separation or API declarations. Test functions grouped but not explicitly organized into sections like original source.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds, but external dependencies (pthread, libc) not documented. Platform-specific syscall numbers hardcoded without explanation. Would need stubs for some system functions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Contribution |
+|-------|-----------|---------|--------|--------------|
+| L1: Lexical Clarity | 4, 7, 3, 5 | 4.75 | 30% | 1.425 |
+| L2: Structural | 6, 7, 6, 5 | 6.00 | 25% | 1.500 |
+| L3: Type System | 6, 3, 4 | 4.33 | 20% | 0.867 |
+| L4: Semantic | 3, 5, 6, 2 | 4.00 | 15% | 0.600 |
+| L5: Contextual | 5, 4, 6 | 5.00 | 10% | 0.500 |
+
+**Overall Readability Score: 4.89/10**
+
+### Critical Defects:
+- **Magic numbers everywhere**: `0x2a`, `0x5a`, `0xc`, `0xf` replace documented expected values (42, 90, 12, 15)
+- **Struct recovery failure**: `ThreadData` accessed via pointer arithmetic (`(int)arg + 8`) instead of named fields
+- **Const-correctness lost**: `param_strcpy(char *dst, char *src)` should be `const char *src`
+- **No semantic comments**: Original source documentation completely absent; only auto-generated warnings remain
+- **Variable name loss**: `local_24`, `iVar1`, `uVar2` instead of `buffer`, `fd`, `len`, `ret`
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved accurately (`param_strcpy`, `thread_compute`, `signal_handler`), maintaining semantic connection to original source.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No precondition/postcondition documentation, error codes unexplained, expected values lost—critical for understanding test function behavior.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover magic numbers to named constants** - Detect repeated values (0x2a=42, 0x5a=90) and suggest symbolic names based on usage context
+2. **Improve struct field recovery** - Use access pattern analysis to reconstruct `ThreadData` and similar structs with named fields instead of pointer arithmetic
+3. **Add semantic comment generation** - Infer function purpose from call patterns and add documentation comments (e.g., "// Returns: string length including null terminator")

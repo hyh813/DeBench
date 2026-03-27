@@ -1,0 +1,90 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: All variables use generic names like `v1`, `v2`, `v3`, `v4`, etc. The binary_tree_sum function alone declares over 50 variables (v1-v58) with no semantic meaning. Compare: `int32_t v2 = *(int32_t *)(v1 + 4);` - completely opaque.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are well-preserved from source: `main`, `test_data_types_l1`, `test_array_types`, `test_pointer_types`, `test_composite_types`, `binary_tree_sum`. Minor issue: some internal helper functions like `complex_callback` not shown.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Mixed results - some constants like `0x2710` (10000) lack explanation, Chinese strings are hex-encoded (`\xe6\xb5\x8b`), but printf format strings and test case values are preserved inline. Magic numbers like `4` for int size are unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise from redundant casts: `*(int32_t *)v3`, `*(int32_t *)(v3 + 4)` appear repeatedly. Stack pointer manipulations (`v1 += 8`) and frame setup code clutter the output. The binary_tree_sum has massive amounts of repetitive pointer arithmetic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: The binary_tree_sum function uses goto-style control flow with extensive while loops that obscure the simple recursive algorithm. The original 10-line recursive function became 2000+ lines of spaghetti code with nested while loops and manual pointer chasing.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: The binary_tree_sum is a 2000+ line monolith that should be a simple recursive function. Other test functions are reasonably sized but the tree traversal is catastrophically decomposed. Parameter lists expose implementation (raw pointers instead of TreeNode*).
+
+**7. Code Linearization:** Score: 2/10  
+Justification: Extremely poor linearity - binary_tree_sum has hundreds of forward jumps, deep nesting (8+ levels), and computed goto patterns. The code is essentially impossible to read linearly. Even simple functions like test_array_types have confusing pointer-based loops.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Massive redundancy in binary_tree_sum - the same pattern of checking left/right children and accumulating sums is repeated hundreds of times with slight variations. Loop unrolling is present but not recognized as such.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses generic `int32_t` throughout but loses precision - original `long`, `short`, `float`, `double` all become `int32_t`. Pointer vs array distinction lost. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Complete failure - all structures are reduced to raw pointer arithmetic. The original `TreeNode` struct with `data`, `left`, `right` fields is completely lost, replaced by manual offset calculations like `*(int32_t *)(v1 + 4)` for "left" child.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Extensive unsafe casts: `*(int32_t *)v3`, `*(int32_t *)(v1 + 4)` appear hundreds of times. Pointer arithmetic is unchecked. No bounds checking. Function pointers treated as generic int32_t. High risk of undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only metadata comments present (module name, address range, line range). No algorithmic comments explaining what functions do. No decompilation confidence indicators. The binary_tree_sum has no explanation that it implements tree traversal.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No patterns recognized. The binary tree traversal algorithm is completely unrecognizable as such - it's just a mass of pointer chasing. No mention that this is a recursive algorithm implemented iteratively.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication. The decompiler presents the convoluted code as if it's correct, with no flags for potential issues, indirect calls that couldn't be resolved, or suspicious patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero contract information. No preconditions (e.g., "requires: root != NULL"), no postconditions, no invariant documentation. The function is presented without any semantic context.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships unclear. The `binary_tree_sum` calls itself recursively but this is obscured. No documentation of which functions call which. Global variable `g5` used without explanation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped by test category (data_types, array_types, etc.). Static vs global scope not clearly distinguished. File organization is reasonable.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Requires unknown function declarations (`__printf_chk`, `__stack_chk_fail`). Won't compile standalone. Missing includes. Needs significant patching to build.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.9/10
+
+**Critical Defects:**
+- Variable names are completely generic (`v1`-`v58`), making code opaque
+- binary_tree_sum function: 2000+ lines of goto-style code instead of 10-line recursive function
+- All composite types (struct TreeNode) lost - replaced with raw pointer arithmetic
+- No struct field recovery - fields are just memory offsets
+- Control flow is spaghetti-level, not linearizable
+- Zero comments explaining algorithms or intent
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names match the original source well (test_data_types_l1, test_array_types, etc.)
+
+**Most Needs Improvement:** Composite Type Recovery (1/10)  
+Structures are completely lost - the TreeNode with data/left/right fields should be reconstructed but instead appears as raw memory offsets with no semantic meaning
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover recursive function patterns** - The binary_tree_sum should be recognized as a recursive tree traversal and decompiled to the simple 10-line original
+2. **Reconstruct struct types** - Use field offset analysis to recover composite types with meaningful field names instead of raw pointer arithmetic
+3. **Add semantic comments** - Document what algorithms are implemented (e.g., "Binary tree inorder traversal") and flag uncertain decompilations

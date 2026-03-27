@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` instead of meaningful names like `count`, `args`, `sum` from the original. Local variables are `v0`, `v1`, `v2` - completely opaque. Only a few like `index`, `len`, `idx` are descriptive.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered (e.g., `cdecl_func`, `stdcall_func`, `func_a`, `func_b`), but many use address-based naming like `sub_4011e1`, `sub_4010de`. The original had meaningful names for all test functions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) used repeatedly without explanation. Hardcoded results like `15`, `50`, `6` appear without context. Original source had no magic numbers - all values were computed or named constants.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some unnecessary masking operations like `& 4294967295` present but don't severely impede readability. No debug instrumentation clutter.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops correctly rendered as `for` or `while` constructs. The `varargs_func` has convoluted pointer manipulation but represents legitimate -O0 code. Some goto in initialization code but overall flow is traceable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized (20-50 lines). Good separation between test harness (`test_calling_conventions`) and implementation functions. Simple functions like `call_cdecl` correctly inlined to return constants.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. The `test_calling_conventions` function has some jumps but is manageable. Early returns used appropriately in functions like `param_double_ptr`.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some repeated patterns in varargs handling but represent actual logic, not compiler redundancy. Loop unrolling not excessive.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Parameters typed as `unsigned int` vs original `int`. Some mixing of `unsigned long`, `unsigned long long`, `unsigned int`. Function return types sometimes `unsigned long long` where original is `int`. Const correctness lost throughout.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Only generic `struct_0` recovered. Original had `LargeStruct` (128 bytes), `SmallStruct`, `TestIntPair` with meaningful field names - all lost. Large struct passed by value shows as raw pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations: pointer arithmetic in `varargs_func` without bounds, weird casts like `*(ptr)->field_0` which is incorrect precedence, mixing pointer types in `param_ptr_array`. Some operations could cause undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in decompiled output. Original source has extensive documentation (e.g., "// CALL-L1-01: cdecl调用约定 ⭐⭐", "// 场景: [SCENE-ALL] x86平台默认"). All test case descriptions and explanations lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like varargs handling recognizable but not named. The calling convention tests (cdecl, stdcall, fastcall) not identified as such. No recognition of AAPCS, System V AMD64 ABI distinctions.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The `param_by_value_ptr` function has incorrect decompilation (`ShlNV` and wrong return type) but no indication of decompilation uncertainty. The `ret_opaque_handle` returning string "d" instead of pointer is wrong but unflagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had explicit comments like "// 测试: 参数从右到左压栈，调用者清理栈" explaining contracts. All lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible (e.g., `call_cdecl` calls `cdecl_func`). But callback relationships (e.g., `callback_func` passed to `param_func_ptr`) not documented. Global variable usage via `extern` but not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped: calling convention functions together, parameter passing tests together, return value tests together. Matches original source organization reasonably well. Static functions not distinguished.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Uses `extern` declarations for external references. Some issues: `handle2.0` and `handle1.1` are invalid C identifiers (contain dots). Would require patching to compile. Dependencies on libc functions documented via imports.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic `a0`, `a1`, etc. instead of semantic names like `count`, `args`, `sum`
+- **No comments**: All original documentation explaining test scenarios, calling conventions, and expected results completely lost
+- **Type degradation**: Struct types lost - `LargeStruct`, `SmallStruct` become generic or raw pointer arithmetic
+- **Incorrect decompilation**: `param_by_value_ptr` uses `ShlNV` (shift left non-destructive) which is wrong; `ret_opaque_handle` returns string "d" instead of pointer
+- **Magic numbers**: `4294967295` used repeatedly without explanation (should be documented as 0xFFFFFFFF or UINT_MAX)
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions are appropriately sized with good separation between test harness and implementation. The decompiler correctly identified function boundaries and kept cohesive units together.
+
+### Most Needs Improvement: Comment Quality (1/10)
+The decompiled output has zero comments. Original source has extensive documentation explaining each test case's purpose, scenario, and expected behavior. This is critical for understanding the calling convention tests.
+
+### Top 3 Recommendations:
+1. **Recover variable names from usage patterns**: `a0` used as loop counter in varargs should be named `i` or `count`. Parameters to `cdecl_func` should be `a` and `b` based on the return expression.
+2. **Add decompilation comments**: Document what each test case verifies (e.g., "// Tests cdecl: right-to-left stack push, caller cleanup"). Flag uncertain decompilations.
+3. **Improve type recovery**: Recognize the struct types from stack layout and field access patterns. `LargeStruct` with 16 `long long` fields should be reconstructed with meaningful field names.

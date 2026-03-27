@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Internal variables use generic names (`v1`, `v2`, `v3`, `result`) instead of semantic names like `temp1`, `temp2`, `sum`, `count`. Original `loop_while` had meaningful `count` variable; decompiled uses `v2` obscuring purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`sequential_ops`, `single_if`, `nested_if_deep`), but helper functions get generic names (`sub_1030`, `sub_1090`). Good preservation of test function names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (`0x12`, `0x12345678` in opaque_predicate, `0x7FFFFFF8`). No named constants recovered despite original having clear semantic values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Redundant variable assignments present (`v1 = x; v2 = v1` patterns in `loop_while`). Type casts like `(unsigned __int64)` add visual noise without semantic value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical failure - `loop_for_fixed` converted from for-loop to mathematical formula `(((n-2)*(n-1))>>1)+n-1`. `switch_fallthrough` logic convoluted with nested ifs instead of clean fall-through. At -O0, this restructuring is unacceptable.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: **CRITICAL**: Test functions (`test_control_flow_l1/2/3`) print hardcoded expected values instead of actually calling functions - complete semantic break. Functions properly separated otherwise.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Label jumps disrupt flow (`LABEL_7`, `LABEL_10` in `loop_multi_exit`). Some functions read linearly but others have confusing goto-style patterns from CFG reconstruction.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant temporary variables (`v1`, `v2`, `result` chain assignments). Loop unrolling in `duffs_device` not abstracted, making 50+ line function hard to follow.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, void*, function pointers). Some signed/unsigned distinctions lost. Function pointer signatures mostly correct (`int (__cdecl *)(int)`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays shown as pointer arithmetic (`_DWORD *i`, `dword_304C[4*v2]`). No struct recovery needed for this code but array semantics degraded.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No egregious unsafe casts. Function pointer calls properly typed. Some implicit conversions present but not dangerous.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **SEVERE**: Original had extensive comments explaining each function's purpose, test cases, and difficulty levels. Decompiled code has ZERO explanatory comments - complete loss of documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition visible. State machines (`state_machine`, `fsm_func_table`) not identified as such. Switch fall-through not annotated.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Only library function failures noted (`FAILED to decompile: __libc_start_main`). No warnings about suspicious transformations like loop-to-formula conversions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `loop_for_fixed`). No postconditions or error condition documentation recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: **CRITICAL**: Test functions don't call actual functions - they print hardcoded values. Breaks verification chain completely. Function relationships not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without original section markers (L1/L2/L3 control flow levels). No logical grouping visible.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata claims "Compilation Result: Yes" but 6 functions failed decompilation. External dependencies (`printf`, `longjmp`) not resolved.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (4+4+5+5)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (7+6+7)/3   = 6.67 × 0.20 = 1.33
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (3+5+6)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.92/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Test functions print hardcoded values** instead of calling actual functions - breaks semantic verification completely
+- **Loop structures lost** - `loop_for_fixed` converted to mathematical formula, losing iterative semantics
+- **Zero comments recovered** - original had extensive documentation explaining purpose, test cases, difficulty levels
+- **Generic variable names** - `v1`, `v2`, `result` replace semantic names like `count`, `sum`, `temp`
+- **Switch fall-through obscured** - `switch_fallthrough` logic convoluted with nested conditionals instead of clear fall-through
+
+### Best Quality Aspect:
+- **Type System Fidelity (6.67/10)** - Basic types and function signatures mostly preserved correctly despite other issues
+
+### Most Needs Improvement:
+- **Semantic Transparency (3.25/10)** - Complete loss of comments, no pattern recognition, no contract documentation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve test function semantics** - Ensure test functions actually call the functions they test rather than printing hardcoded expected values
+2. **Recover loop constructs from -O0 binaries** - At debug optimization level, loops should remain as loops, not converted to closed-form formulas
+3. **Extract and preserve source comments** - Implement comment recovery from debug symbols or implement heuristic comment generation for non-trivial logic

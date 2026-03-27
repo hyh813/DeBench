@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use cryptic generic names (v0, v1, v2... v19, ptr, i, j). The original source uses meaningful names like `x`, `a`, `b`, `c`, `arr`, `n`, `p`, `local` - none of which are recovered. Even loop counters use register names like `w19`, `w20` instead of semantic names.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions are correctly named (`double_value`, `local_vars`, `local_array`, `heap_basic`, `test_stack_memory`). However, many internal functions use address-based naming (e.g., `sub_400c14`, `sub_400b30`) and some helper functions like `call_weak_fn` could be more descriptive.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Extensive use of unexplained magic numbers: `4294967295` (0xFFFFFFFF), `4294967294` (0xFFFFFFFE), `17179869180`, `17179869183`, `0x800`. The bit-masking operations like `& 4294967295` are never explained as 32-bit unsigned integer casts. Constants like array sizes (10, 5, 2048) are not recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifact pollution: `__ROL__` used for multiplication, complex bit manipulation expressions replacing simple arithmetic, `arm64g_calculate_condition` function calls for conditionals, stack check guard references, and register spill variables. These obscure the actual logic significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loop structures (for/while) are preserved and readable. However, some conditionals are obscured by `arm64g_calculate_condition` wrapper calls, and the VLA/alloca handling shows complex goto-based flow. At -O0, control flow should be nearly perfect.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the original source. Each test function is properly separated, and helper functions like `create_tree_node` are correctly extracted. No obvious over-fragmentation or monolith issues.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns in error checking are used appropriately. Some complex nested conditions in VLA code create mild non-linearity but are manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns present - notably the duplicate `memcpy` call in `sub_4009c4` and repeated function calls in `call_extern_func` and `call_global_callback`. Loop unrolling is minimal at -O0, which is appropriate.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `unsigned int`, `unsigned long`, `unsigned long long` but loses sign information. Function parameters like `a0` have no type hints. The original `int` parameters become `unsigned int` in some places. Size_t usage is inconsistent.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Partial struct recovery with generic names: `struct_0`, `struct_1`, `struct_2`, `struct_3`, `struct_4`. Field names are all generic: `field_0`, `field_4`, `field_8`, `field_10`, `padding_0`. Original types `Point`, `Node`, `TreeNode` are completely lost. The `Node` struct shows correct layout but wrong naming.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns: dangling pointer access in `dangling_pointer()` after `free(ptr)` is returned directly, double-free in `double_free` is not flagged, heap overflow in `heap_overflow` not detected. The decompiler correctly shows the code but doesn't warn about these dangerous patterns.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled output. No explanation of complex operations like the VLA allocation logic, the `__ROL__` multiplication replacement, or the stack protection checks. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic memory operations (malloc/free) are recognized. Some patterns like linked list traversal are visible but not explicitly named or documented. No recognition of specific algorithms or design patterns from the original source.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of suspicious code. The dangerous patterns (dangling pointer, double-free, heap overflow) are presented as normal code without any warnings. No flags for undefined behavior or potential bugs that were intentionally included in the source for testing.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. The original source has explicit checks (e.g., `if (n <= 0 || n > 1000) return -1`) but these are not documented as contracts. No invariant recognition.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible through the code. Global variables like `global_counter`, `global_array`, `file_scope_static` are correctly identified as extern. However, relationships are not documented or summarized. Callback usage in `call_global_callback` is visible but not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped: stack memory functions together, heap functions together, static/global functions together, memory operations together. Test functions are properly separated. Matches the original source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies are declared (`extern` keywords present). However, the code would require significant patching to compile: missing includes, undefined `__stack_chk_guard`, `__printf_chk` vs `printf`, and the complex `arm64g_calculate_condition` function would need stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (v0-v19, ptr, i, j) losing all semantic meaning from original source
+- **No comments**: Zero explanatory comments for complex operations, magic numbers, or decompilation confidence
+- **Type loss**: Struct types `Point`, `Node`, `TreeNode` completely lost; replaced with generic `struct_0`, `struct_1`
+- **Anomaly silence**: Dangerous patterns (dangling pointer, double-free, heap overflow) presented without any warnings
+- **Noise pollution**: `__ROL__` for multiplication, `arm64g_calculate_condition` wrappers, stack check guards obscure logic
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions maintain appropriate granularity matching the original source. Test functions are properly separated, and helper functions like `create_tree_node` are correctly extracted as separate functions with reasonable parameter lists.
+
+### Most Needs Improvement: Comment Quality & Presence (2/10)
+The decompiled code has virtually no comments. At -O0, the code should closely mirror the source, yet there's no explanation of what complex operations do, no identification of magic numbers, no decompilation confidence indicators, and no warnings about dangerous patterns that were intentionally included in the source.
+
+### Top 3 Recommendations:
+1. **Add variable name inference**: Analyze usage patterns to recover semantic names (e.g., `v6` used as loop index in `local_array` should be `i` or `index`)
+2. **Recover struct types**: Use field offset analysis and usage patterns to reconstruct `Point`, `Node`, `TreeNode` with meaningful field names instead of `struct_0`, `field_0`
+3. **Add explanatory comments**: Document complex expressions (explain `__ROL__` as multiplication), flag dangerous patterns (dangling pointer, double-free), and indicate decompilation confidence for indirect calls

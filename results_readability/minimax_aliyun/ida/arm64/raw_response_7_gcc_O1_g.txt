@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiled `param_fake_branch` has no local variables at all - the original's `result` variable is completely eliminated. Other functions like `param_opaque_predicate` use cryptic names like `v1`, `v2`, `v3`, `v4` which obscure their semantic roles (e.g., `v1` is actually `x+1` for the gcd computation).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names like `param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution` are preserved exactly from the source. The naming is consistent and action-oriented, clearly reflecting their purposes.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: The decompiled `param_fake_branch` completely eliminates the magic constant `0xDEADBEEF` and the dead code branches. In `param_instruction_substitution`, the decompiler re-expands `(x << 3) - (x << 1)` back to `6 * x`, losing the intentional instruction substitution obfuscation. Many magic numbers lack explanation.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: The code is clean with minimal compiler artifacts. The decompiled output doesn't contain excessive casts, debug instrumentation, or frame pointer manipulation. The `__fastcall` and `__cdecl` annotations are appropriate for the architecture.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: The most critical issue is that `param_fake_branch` has lost ALL control flow - it simply returns `x` directly. The original's two dead if-statements are completely eliminated. Similarly, `param_buffer_overflow_stack` returns `x` directly, losing the intentional buffer overflow logic. At -O0, this aggressive dead code elimination is unexpected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and maintain single responsibility. The decomposition matches the source - each test function (`param_fake_branch`, `param_opaque_predicate`, etc.) remains separate. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Most functions read top-to-bottom without forward jumps. The `param_opaque_predicate` has a simple if-else structure. The `param_vectorized_loop` uses straightforward do-while loops that are easy to follow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant redundancy in the decompiled code. The dead code elimination is overly aggressive (removing the fake branches entirely), but within each recovered path, there's no redundant computation.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types are correct (`int x`, `int return`). However, `param_instruction_substitution` uses `unsigned int` for the right-shift (`(unsigned int)x >> 1`) but the original used `unsigned int ux` explicitly - this is correctly preserved. Some `size_t` parameters could be more specific.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in these test functions, so there's nothing to recover. The `param_implementation_defined` function correctly shows the bitfield structure usage even though field names are generic. Arrays like `int a[8]` in `call_vectorized_loop` are properly recovered.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts observed. The code uses proper pointer types for function parameters (`int *p`, `char *buffer`). The signal handler casts are appropriate for the architecture.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in the decompiled output. The original source had extensive comments explaining the obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.) and their purposes. The decompiler provides no context about what the functions are supposed to demonstrate.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The decompiler completely fails to recognize the "fake branch" (永假条件) obfuscation idiom. It presents the optimized-away version as if it were the original code. The opaque predicate logic is partially recovered but not identified as such. The instruction substitution is reversed back to arithmetic.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The decompiler marks 14 functions as "FAILED to decompile" (strlen, _setjmp, signal, malloc, etc.), which is good for transparency. However, it doesn't flag that `param_fake_branch` has lost its dead code branches - there's no indication that the function's semantics have been altered by optimization.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No explicit preconditions or postconditions are documented. The function signatures are correct but lack contract information. For example, `param_division_by_zero` could have "requires: x != 0" noted.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear - `call_fake_branch()` calls `param_fake_branch(10)`. However, there's no documentation of the relationship between the test functions and what they're testing (obfuscation techniques, edge cases, etc.).
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the output. The test harness functions (`call_*`) are separate from the implementation functions (`param_*`). However, all functions are in a single flat listing without clear sectioning for "obfuscation", "optimization", "edge cases".
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code uses standard C constructs and should compile with minimal stubs for the external functions (marked as "FAILED to decompile"). The function signatures are valid. Dependencies on libc functions are implicit but reasonable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **`param_fake_branch` loses all obfuscation semantics**: The function simply returns `x` instead of showing the dead code branches with `0xDEADBEEF`. At -O0, this dead code should have been preserved.
+- **No idiom recognition for fake branches**: The decompiler doesn't identify or preserve the "永假条件" (always-false condition) obfuscation pattern.
+- **No comments explaining obfuscation techniques**: The original source extensively documents OBF-L4-02, OBF-L4-03, etc. The decompiled code provides zero context.
+- **Magic constant elimination**: The `0xDEADBEEF` constant is completely removed, losing the semantic meaning of the obfuscation.
+- **Variable naming in helper functions**: `v1`, `v2`, `v3`, `v4` in `param_opaque_predicate` are cryptic and don't indicate their roles (x+1, predicate results, etc.).
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+Function names are preserved exactly from the source and clearly indicate purpose. The verb choices are appropriate and consistent across all functions.
+
+### Most Needs Improvement: Idiom Recognition (1/10)
+The decompiler fails to recognize and preserve the core obfuscation patterns. The fake branch technique is completely eliminated rather than identified as intentional dead code. At -O0, this represents a significant semantic loss.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve dead code branches at -O0**: The fake branch obfuscation (OBF-L4-02) should be recovered even if the conditions are always-false. Add a comment like "// DEAD CODE: always-false condition (obfuscation)" rather than eliminating it.
+2. **Add idiom recognition comments**: When detecting patterns like opaque predicates, instruction substitution, or fake branches, add comments identifying the technique and its purpose.
+3. **Recover variable names from usage**: In `param_opaque_predicate`, infer that `v1 = x + 1` is the "b" value for gcd computation, and `v2` is the "p1" opaque predicate result. Use context to name variables semantically.

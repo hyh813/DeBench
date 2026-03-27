@@ -1,0 +1,104 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are predominantly generic names like `v1`, `v2`, `a1`, `a2`, and `result`. While `obj` is recovered in `test_cpp_member_func`, most local variables lose their semantic meaning (e.g., `capture_by_value` becomes `lambda1` or is lost).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler provides accurate demangled names in comments (e.g., `// Demangled: test_cpp_member_func()`), perfectly matching the original source intent. The mangled symbols in the code body are unavoidable but well-annotated.
+
+**3. Literal Clarity:** Score: 9/10
+Justification: String literals (e.g., `"Test"`, `"=== 测试C++面向对象特性 ==="`) and numeric constants are preserved exactly as in the source. There are no obscure magic numbers that hinder understanding.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but floating-point operations in `test_cpp_template_func` are obscured by compiler intrinsics like `__asm_movsd` and `__asm_cvttsd2si`, which adds noise to the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Most functions exhibit natural control flow matching the source due to `-O0`. However, exception handling in `test_cpp_exception` is poorly recovered, showing only the `throw` path and missing the `catch` block structure entirely.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Class methods, constructors, and destructors are correctly separated into individual functions with appropriate signatures. The granularity matches the source structure perfectly.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps. Loops and conditionals are clearly structured, making execution paths easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no obvious dead code or loop unrolling artifacts. The code is concise, though some redundant variable assignments (e.g., `int64_t v1 = (int64_t)result`) are present but manageable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types like `int32_t`, `int64_t`, and `float64_t` are accurate for ARM64. However, class instances are typically represented as generic `int64_t*` (pointers) rather than typed structures.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Class layouts are not reconstructed as structs. Member access is done via raw pointer arithmetic (e.g., `*(int32_t *)(v1 + 4)` for `name` offset), completely obscuring the object-oriented structure.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies heavily on unsafe casts (e.g., `(int64_t *)`, `(int32_t *)`) to access class members, which is typical for C++ decompilation but results in type-unsafe looking C code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 8/10
+Justification: Comments provide valuable metadata, including demangled function names, line number ranges, and class associations (e.g., `// From class: Base`), which significantly aids understanding.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: C++ idioms like vtables are identified and defined as structs (e.g., `struct vtable_8878_type`), and constructors/destructors are labeled, though the high-level OOP patterns are not explicitly summarized.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The code is straightforward with no misleading information. The failure to recover exception handling flow is a limitation rather than a misleading anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 5/10
+Justification: There are no explicit preconditions or postconditions documented in the comments, which is standard for this type of decompilation but misses an opportunity to clarify intent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Virtual table structures are defined globally and referenced correctly, making the polymorphism mechanism visible. Function calls are clear, though the "this" pointer passing is implicit.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, and global variables (vtables, strings) are consolidated at the top. The file structure is easy to navigate.
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code includes standard headers and defines types, but the use of `__asm_...` intrinsics for floating-point operations might require specific compiler flags or stubs to compile successfully.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 9 + 9 + 7) / 4 = 7.25
+L2_avg = (8 + 9 + 9 + 8) / 4 = 8.50
+L3_avg = (7 + 2 + 5) / 3 = 4.67
+L4_avg = (8 + 7 + 8 + 5) / 4 = 7.00
+L5_avg = (8 + 8 + 7) / 3 = 7.67
+
+Overall = (7.25 × 0.30) + (8.50 × 0.25) + (4.67 × 0.20) + 
+          (7.00 × 0.15) + (7.67 × 0.10)
+Overall = 2.175 + 2.125 + 0.934 + 1.05 + 0.767
+Overall = 7.05 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 7.1/10
+
+### Critical Defects (Bullet Points)
+- **Composite Type Recovery Failure**: Class fields are accessed via raw pointer arithmetic (e.g., `*(int32_t *)(v1 + 4)`) instead of struct member access (e.g., `obj.value`), destroying the high-level type information.
+- **Exception Handling Loss**: The `test_cpp_exception` function decompilation only shows the `throw` logic, completely failing to recover the `try/catch` blocks and control flow.
+- **Floating Point Obfuscation**: Simple floating-point template operations are cluttered with `__asm_movsd` intrinsics, reducing readability of `template_max<double>`.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (Score: 9/10)**
+- **Why?** The decompiler accurately demangles all C++ symbols, providing clear, original function names in comments that map perfectly to the source code.
+
+### Most Needs Improvement (Single Dimension)
+- **Composite Type Recovery (Score: 2/10)**
+- **Why?** The inability to reconstruct class structures forces the reader to interpret raw memory offsets, which is the single biggest barrier to understanding the object-oriented logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Reconstruct C++ Class Layouts**: Instead of raw pointer arithmetic, synthesize `struct` definitions for classes based on usage patterns to recover field names and types.
+2. **Improve Exception Handling Recovery**: Implement analysis to identify and reconstruct `try/catch` blocks from personality routines and landing pads, rather than just showing the throw.
+3. **Abstract Compiler Intrinsics**: Replace low-level assembly intrinsics (like `__asm_movsd`) with high-level semantic assignments or standard C casts where possible to improve readability.

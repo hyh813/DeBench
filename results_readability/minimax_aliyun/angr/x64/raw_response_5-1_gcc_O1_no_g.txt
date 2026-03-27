@@ -1,0 +1,178 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names like `v0`, `v1`, `v2`, `v3`, `ptr`, `p` throughout. For example, in `test_cpp_member_func()`, the local buffer is named `v0` when it should be `name` or `buffer`. In `test_cpp_constructor()`, the pointer is named `ptr` but represents the `LifecycleClass` object. The naming provides no semantic meaning about the variable's purpose or type.
+
+### 2. Function Naming Quality
+**Score: 3/10**
+
+While some C++ mangled names are partially recovered (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func`), many functions use generic names like `sub_402020`, `sub_402030`. The virtual function thunks have cryptic names like `_ZTv0_n24_N7MiddleA4funcEv`. Member functions sometimes show the class name but lack verb semantics (e.g., `Base::virtual_func` instead of `Base::calculate` or similar action-oriented name).
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+The code contains many unexplained magic numbers. For example, in `template_swap<int>`: `v1 = *(ptr); *(ptr) = *(p); *(p) = v1;` - the pointer arithmetic is unclear. The value `0x4004000000000000` appears in `test_cpp_template_func` without explanation (it's the double 2.5 in IEEE 754 representation). However, some string literals from the original printf statements are preserved in the data section.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+The decompiled output contains significant noise including:
+- Many empty stub functions from the CRT startup code (sub_40202d through sub_40214f)
+- Redundant goto statements in functions like `sub_402020` that just jump to another function
+- Unnecessary variable declarations that are never used (e.g., `unsigned long v0` in multiple functions)
+- The entire CRT initialization section (lines 1-180) adds noise without value for understanding the actual program logic
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+The control flow is generally readable but has issues. The `sub_402020` function uses a goto to jump to `g_405f38` which is unusual. In `test_cpp_exception()`, the exception handling flow is convoluted with multiple conditional branches checking `v3 == 1`, `v3 == 2`, `v3 == 3` without clear logic. The virtual function call in `call_virtual_func` uses indirect call through vtable: `(*((long long *)*((long long *)&arg_0)))();` - this is harder to read than `obj->virtual_func(x)`.
+
+### 6. Function Decomposition
+**Score: 5/10**
+
+The decompiled code maintains the original function boundaries reasonably well. However, many test functions are empty or nearly empty (`test_cpp_operator_overload`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_smart_ptr` all return immediately), indicating the decompiler failed to recover their logic. The template functions are properly separated, and the virtual function thunks are correctly identified as separate functions.
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Most functions read relatively linearly from top to bottom. The main disruption is in `test_cpp_exception()` where the control flow jumps between catch blocks. The `test_cpp_diamond_inheritance()` function has some forward jumps but is manageable. Overall, the code doesn't have severe spaghetti code issues.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+There's moderate redundancy in the CRT initialization section with many nearly identical stub functions. However, the main test functions don't show obvious redundant code that could be eliminated. The decompiler didn't create obvious duplicate code artifacts.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 3/10**
+
+Type precision is poor. Many integers are `unsigned long` or `unsigned int` without proper sizing. In `test_cpp_member_func()`, the buffer is `char v0[8]` but should be `char name[32]`. The `test_cpp_constructor()` uses `unsigned int ptr[5]` which doesn't correctly represent the LifecycleClass object. Function parameters often use generic types like `unsigned long` instead of proper types. The `this` pointer is sometimes shown as first parameter, sometimes not, inconsistently.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+The decompiler failed to recover most class structures. The `SimpleClass` is not reconstructed - just local char arrays appear. `LifecycleClass` is represented as `unsigned int ptr[5]` which is completely wrong. The `Base` and `Derived` classes are declared but not defined. Only in RTTI code do we see partial struct recovery: `struct_2` and `struct_3` with minimal field information. The virtual inheritance thunks show raw pointer arithmetic instead of proper class layouts.
+
+### 11. Type Safety
+**Score: 4/10**
+
+There are several type safety issues:
+- In `call_virtual_func`: `(*((long long *)*((long long *)&arg_0)))();` - unsafe indirect call
+- In `template_swap<int>`: `v1 = *(ptr); *(ptr) = *(p); *(p) = v1;` - pointer arithmetic without proper bounds
+- In `test_cpp_rtti`: Complex pointer casting `(long long)(*(p))[8](p)` is error-prone
+- The virtual function thunks perform raw pointer adjustments without type safety
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+There are essentially no useful comments in the decompiled code. The only comments are the file header "Angr Decompilation of 5-1_gcc_O1_no_g" and "Platform: AMD64". No explanations of algorithm logic, no uncertainty indicators for indirect calls, no documentation of what each function does. The decompiled code presents itself as definitive when it often misses critical logic.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+Some C++ idioms are partially recognized:
+- Virtual function calls through vtable are identified (though not clearly)
+- Exception handling uses `__cxa_throw`, `__cxa_begin_catch` which are recognized
+- Template instantiation names are partially recovered (e.g., `template_max<int>`)
+- However, many idioms are not recognized or named (RAII patterns, smart pointers, lambda expressions)
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+The decompiler provides almost no anomaly indication. The only anomaly shown is in `sub_4022a5` with "Unsupported jumpkind Ijk_SigTRAP". But many critical issues are silently handled:
+- Empty function bodies are not flagged as suspicious
+- Missing return value computations are not noted
+- The indirect virtual function calls are presented as if they're normal function calls
+- The incorrect type representations are not flagged as uncertain
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No preconditions, postconditions, or invariants are documented. The decompiled code presents the logic without any contract information. For example, in `template_max<int>`, there's no indication that the function requires both arguments to be valid or what the return value guarantees.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Some cross-references are clear - the test functions call each other in `test_cpp_oo_features()`. The virtual function relationships are partially shown through the vtable calls. However, the relationships between classes (inheritance) are not clearly documented. The global variables like `g_4059a0`, `g_4059d0` are not explained.
+
+### 17. Module Organization
+**Score: 4/10**
+
+The functions are grouped somewhat logically - CRT initialization comes first, then test functions, then class member functions. However, the organization is largely address-based rather than semantic. The class member functions are scattered throughout the file rather than grouped by class. The template functions are separated from their test functions.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+The code would not compile as-is. Issues include:
+- Many undefined extern variables (`g_405fe8`, `g_405f30`, etc.)
+- The `class Base {}` forward declaration is incomplete
+- Function definitions are incomplete (e.g., `Base::virtual_func` returns void but should return int)
+- Missing return statements in functions that should return values
+- The code relies on CRT functions that aren't declared
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+3+4+3)/4 = 3.0
+L2_avg = (4+5+6+5)/4 = 5.0
+L3_avg = (3+2+4)/3 = 3.0
+L4_avg = (2+3+1+1)/4 = 1.75
+L5_avg = (3+4+2)/3 = 3.0
+
+Overall = (3.0 × 0.30) + (5.0 × 0.25) + (3.0 × 0.20) + (1.75 × 0.15) + (3.0 × 0.10)
+        = 0.90 + 1.25 + 0.60 + 0.2625 + 0.30
+        = 3.3125/10
+```
+
+**Overall Readability Score: 3.3/10**
+
+### Critical Defects
+
+1. **Missing Return Values**: All test functions fail to compute and return their expected results (e.g., `test_cpp_member_func` should return 4704 but returns nothing)
+
+2. **No Class Structure Recovery**: Classes like `SimpleClass`, `LifecycleClass`, `Base`, `Derived` are not properly reconstructed - only raw memory operations remain
+
+3. **Empty Function Bodies**: Five test functions (`operator_overload`, `template_class`, `lambda`, `smart_ptr`, `multiple_inheritance`) have completely empty bodies
+
+4. **Poor Variable Naming**: All variables use generic names (v0, v1, v2, ptr, p) with no semantic meaning
+
+5. **No Type Recovery**: Integer types are wrong (e.g., `unsigned int ptr[5]` for LifecycleClass), no struct/class field recovery
+
+### Best Quality Aspect
+
+**Function Decomposition (5/10)** - The decompiler correctly separated most functions and identified template instantiations and virtual function thunks as distinct functions. This is the highest-scoring area but still only at 5/10.
+
+### Most Needs Improvement
+
+**Semantic Transparency (1.75/4)** - The combination of no comments, no anomaly indication, no idiom recognition, and no contract recovery makes the code extremely difficult to understand. The decompiler presents incorrect or incomplete code as if it were correct.
+
+### Top 3 Recommendations
+
+1. **Recover Return Values**: Implement analysis to track computed values and ensure functions return appropriate results. The test functions clearly compute values that are discarded.
+
+2. **Reconstruct Class Structures**: Use vtable analysis and constructor patterns to properly recover class layouts with field names and types instead of raw memory operations.
+
+3. **Add Uncertainty Indicators**: Flag incomplete decompilation (empty functions, indirect calls, type uncertainty) with comments so analysts know what may be incorrect.

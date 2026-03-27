@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Loop variables are marked as "Unresolved local var: int i@[???]" throughout, making tracking impossible. Generic names like `iVar1`, `iVar2`, `piVar3` dominate. However, struct field names like `p->x`, `p->y`, `node->data`, `node->next` are correctly preserved from source.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `double_value`, `process_char`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. The decompiler accurately recovered the semantic function names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x61` (should be 'a'), `0xb` (should be 11), `0x14` (should be 20) appear without explanation. The test function prints literal values directly rather than computed results. Some constants like `0x0` for NULL are clear.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Extensive compiler artifacts including "WARNING: Unknown calling convention", "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection", "Unresolved local var" annotations, and "WARNING: Removing unreachable block" clutter the output significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper for/while loops. However, `array_2d_stack` uses confusing pointer arithmetic (`arr = (int (*) [10])(*(int (*) [10])((int)arr + 0x28) + 1)`) instead of readable array indexing. At -O0, this level of complexity is unexpected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the source. Each function has a single responsibility. The test functions properly call the individual test cases. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom. However, `array_2d_stack` and `array_3d` use complex pointer-based loops that disrupt linear reading. The `binary_tree_sum` uses an unusual traversal pattern mixing iteration with recursion.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling in test initialization code is present but expected. The `process_ll` function shows complex 64-bit multiplication that appears to be optimization-related.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct: `int`, `short`, `char`, `float`, `double`, `_Bool`. Function pointer types use `_func_int_int *` notation. However, `long double` is incorrectly recovered as `longdouble *` (pointer type). Some `int *` vs `int []` distinctions are lost.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types are well-recovered with correct field names: `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`, `Edge`, `Graph`. Union types `UnionData` recovered with `i`, `f`, `bytes` fields. Enums `State` recovered. Bitfield handling shows raw byte manipulation.
+
+**11. Type Safety:** Score: 6/10  
+Justification: `ptr_diff` has incorrect pointer arithmetic: `(int)p1 - (int)p2 >> 2` should be `(p1 - p2)` (element count, not byte offset). Some unsafe casts in `process_double` converting double to float. Function pointer types have some inconsistencies.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present (calling convention, unresolved variables, inlined functions). No semantic comments explaining algorithm intent, preconditions, or recovery confidence. The original source comments are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: linked list traversal (`while (current != NULL)`), array summation loops. However, no explicit naming of patterns like "linked list traversal," "binary tree recursion," or "state machine" even though these patterns exist in the code.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra provides warnings for "Unknown calling convention," "Unresolved local var," and "Could not recover jumptable." However, the `process_ld` function returning `in_EAX` directly is clearly wrong but not flagged as an anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The `array_complex_index` function has bounds checking logic but no comments explaining the validation contract. No recovery of assert statements from source.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls within test functions are clear. Callback relationships like `ptr_func_simple(double_value, 5)` are visible. However, no explicit documentation of which functions call which, or the relationship between test functions and tested functions.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped by type (data types, arrays, pointers, composites) in the output. However, the ordering is not ideal - helper functions like `complex_callback` appear in the middle of unrelated functions. Static vs non-static distinction is lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code appears to compile (uses standard library functions like `puts`, `__printf_chk`). External dependencies are minimal. However, some issues: `longdouble *` return type in `process_ld`, missing `const` qualifiers, and some type mismatches would need fixing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+9+4+3)/4 = 4.75
+L2_avg = (7+8+6+7)/4 = 7.00
+L3_avg = (7+8+6)/3 = 7.00
+L4_avg = (3+5+6+3)/4 = 4.25
+L5_avg = (6+6+7)/3 = 6.33
+
+Overall = (4.75 × 0.30) + (7.00 × 0.25) + (7.00 × 0.20) + (4.25 × 0.15) + (6.33 × 0.10)
+        = 1.425 + 1.75 + 1.4 + 0.6375 + 0.633
+        = 5.85/10
+```
+
+**Overall Readability Score:** 5.85/10
+
+### Critical Defects (Bullet List)
+- Loop variables marked as "Unresolved local var: int i@[???]" make code tracking impossible
+- `process_ld` incorrectly returns `longdouble *` (pointer) instead of `long double` (value)
+- `ptr_diff` has incorrect pointer arithmetic: `(int)p1 - (int)p2 >> 2` should be `p1 - p2`
+- Extensive "WARNING" comments and unresolved variable annotations create severe noise pollution
+- No semantic comments explaining algorithms, preconditions, or recovery confidence
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (9/10)** - Nearly all function names match the original source exactly, making it easy to identify the purpose of each function
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (3/10)** - Loop variables are all marked as "Unresolved" with generic names like `iVar1`, making it impossible to track iteration variables
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover loop variable names** from usage patterns (e.g., `i < n` suggests `i` is an index variable)
+2. **Fix type recovery for long double** - the current `longdouble *` return type is incorrect
+3. **Add semantic comments** explaining algorithm intent, not just compiler warnings - document what functions do, not just what the decompiler couldn't resolve

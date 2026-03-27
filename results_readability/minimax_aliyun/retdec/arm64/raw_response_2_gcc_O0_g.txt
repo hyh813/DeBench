@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively named `v1`, `v2`, `v3`, etc., with occasional generic names like `result`. The original source used meaningful names like `x`, `sum`, `i`, `c`, `p`, `arr`, making the decompiled version extremely difficult to follow. For example, in `ptr_increment`, the original had `p`, `n`, `sum`, `i` but decompilation uses `v1`, `v2`, `result`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `double_value`, `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. The decompiler correctly recovered the semantic function names. Minor issue: some helper functions like `function_6f0` for `__libc_start_main` wrapper are generic.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are clear (e.g., `10` for array size, `5` for loop bounds), but magic numbers like `64`, `90`, `32` in `process_char` logic are not explained. The condition `c == 64 || c < 64` is confusing without context that `64` is ASCII '@'. However, most numeric literals in array operations are inferable.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The decompiled code is relatively clean with minimal compiler artifacts. No excessive register spilling code, no debug traces, and no obvious decompilation noise. Some unnecessary casts exist but are manageable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with proper while/for loops. However, `process_char` has an unusual condition `c >= 90 == (c != 90)` that doesn't read naturally. At -O0, this decompilation artifact is unexpected. Most other functions like `array_1d_stack` and `linked_list` have clear loop structures.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The decompiler correctly preserved the many small functions from the original source. Each function maintains appropriate granularity - no 500-line monoliths. Functions like `double_value` (2 lines), `process_char` (6 lines) are properly separated. The test functions are also correctly extracted.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive jumps. Early returns are used appropriately in functions like `array_1d_stack` and `linked_list`. Some forward jumps exist in complex functions like `array_3d` but don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Loop unrolling is minimal. The code is clean with no duplicate expressions that would impede understanding.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are precise: `int32_t`, `int64_t`, `float32_t`, `float64_t`, `float128_t`, `uint32_t`, `bool`. However, some parameters use generic types where more specific types could be used. For example, `process_char` uses `unsigned char` correctly, but some struct field accesses lose type information.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: This is a critical failure. The decompiler did not recover any struct definitions. All struct access is done via raw pointer arithmetic like `*(int32_t *)(v1 + 4)` instead of `p->y`. Original had `Point3D`, `Rect`, `Node`, `TreeNode`, etc. - all lost. Union types also not recovered, accessed as raw integers.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations: extensive raw pointer arithmetic (`*(int32_t *)(4 * (int64_t)v1 + (int64_t)arr)`), unsafe casts throughout, no bounds checking on array accesses. The original had safe struct field access (`p->x`, `node->next`) but decompilation uses dangerous pointer math. Many potential undefined behavior patterns.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Comments include source file path and line range (e.g., "// From module: /work/2.c // Line range: 16 - 21"), which is useful for traceability. However, no explanatory comments about algorithm intent, no decompilation confidence indicators, and no documentation of recovered vs. uncertain constructs.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns like loops, conditionals, and function calls are present but not explicitly identified or named. The decompiler doesn't label patterns like "linked list traversal" or "array summation" even though they're recognizable to a human analyst.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for suspicious code, undefined behavior potential, or decompilation uncertainties. The `process_char` condition anomaly (`c >= 90 == (c != 90)`) is presented without any warning. No indication of potential issues with the volatile handling in `volatile_access`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original had clear semantics (e.g., "requires: ptr != NULL", "returns: sum of array elements") but these are completely lost. Error conditions not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present and can be traced (e.g., `main` calls `test_data_types_l1`, which calls `process_char`). However, no explicit documentation of call relationships, global variable usage, or callback patterns. The function pointer usage in `ptr_func_simple` and `ptr_func_complex` lacks clarity about what functions they call.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (data types, array types, pointer types, composite types sections). However, this is a single monolithic file output. The original had separate test functions that are correctly placed, but there's no header file or API boundary separation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code includes necessary headers (`<stdbool.h>`, `<stdint.h>`, `<stdio.h>`, `<stdlib.h>`) and appears compilable with gcc. Function prototypes are declared. However, it relies on standard library functions and would need linking. No explicit compilation instructions or dependency documentation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable names are exclusively generic (`v1`, `v2`, `result`) making code flow extremely difficult to trace
+- No struct/union type recovery - all composite types lost, replaced with raw pointer arithmetic like `*(int32_t *)(v1 + 4)` instead of `p->y`
+- Type safety is severely compromised with many unsafe pointer operations that could cause undefined behavior
+- No anomaly indication for suspicious code patterns (e.g., the confusing boolean expression in `process_char`)
+- No contract or precondition documentation - original semantics completely lost
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+The decompiler excellently recovered meaningful function names that match the original source almost perfectly.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)  
+Struct and union types were completely lost. The decompiler should reconstruct struct layouts with field names rather than exposing raw memory offsets.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/union definitions**: Instead of `*(int32_t *)(v1 + 4)`, generate `p->y` with proper struct type information
+2. **Infer variable names from usage patterns**: `v1` used as array index should be named `i` or `index`; `result` accumulating sums should be `sum`
+3. **Add anomaly warnings**: Flag suspicious expressions like `c >= 90 == (c != 90)` with comments indicating decompilation uncertainty

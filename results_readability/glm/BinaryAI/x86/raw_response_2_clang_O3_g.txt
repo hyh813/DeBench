@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `param_1`, `uVar1`, `local_1f8`, `piVar1`). No semantic meaning like `arr`, `n`, or `sum` is preserved, making it difficult to track data flow.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Most function names from the source (e.g., `process_char`, `array_1d_stack`, `struct_simple`) are successfully recovered, likely due to debug symbols. A few functions like `FUN_00011275` (likely `process_float`) are unnamed, but the majority are excellent.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Float constants like `1.5f` and `0.5f` are replaced by memory accesses (e.g., `*(float *)(unaff_retaddr + 0x1d93)`). Magic numbers like `0x19` and `0xbf` in `process_char` obscure the original ASCII range checks (`'A'` to `'Z'`).
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant compiler artifacts are present, including `unaff_retaddr` (used for Position Independent Code addressing), `CONCAT44` macros for 64-bit register reconstruction, and `undefined4` types, which clutter the code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Loops are heavily unrolled (e.g., `array_1d_stack` adds 8 items per iteration), and simple function calls in `test_data_types_l1` are replaced with pre-calculated constants (e.g., `0xb` instead of `process_int(5)`), destroying the original flow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries are generally well-preserved and match the source granularity. The decompiler did not merge functions inappropriately, though some small functions were inlined into the test harness.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom without excessive `goto` usage. However, the unrolled loops create long blocks of arithmetic operations that disrupt the visual flow of iteration logic.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: High redundancy due to aggressive loop unrolling. For example, `array_3d` repeats the same addition logic 25 times per loop iteration instead of using a nested loop structure, significantly bloating the code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Critical type information is lost or incorrect. `process_ll` (taking a `long long`) is decompiled with two parameters (`uint param_1, int param_2`) due to calling convention splitting. Structs are flattened to `int*` (e.g., `struct_simple` takes `int*` instead of `Point3D*`).
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Struct and union definitions are completely lost. `struct_bitfields` is reduced to a `ushort*` with manual shift/mask operations. `struct_simple` accesses fields via array indices (`param_1[0]`, `param_1[1]`) rather than field names (`x`, `y`).
+
+**11. Type Safety:** Score: 4/10
+Justification: Extensive use of `undefined4` and `undefined8` types removes safety guarantees. Pointers are cast frequently (e.g., `(int *)param_1[1]`), and the `CONCAT44` macro indicates unsafe manual register reconstruction.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex logic, such as the bit manipulation in `struct_bitfields` or the range check in `process_char`, is left unexplained.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: No design patterns or standard idioms are recognized. The "sum array" idiom is obscured by unrolling, and the "string length" idiom is implemented with a pointer increment loop without noting it as a `strlen` equivalent.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the code confidently without flagging anomalies. For instance, the weird signature of `process_ll` (split 64-bit param) or the access to `unaff_retaddr` for constants are not highlighted as potential issues or compiler artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, `array_complex_index` checks bounds but does not explicitly state the contract that `x` must be within width `w`.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Because function names were recovered, cross-references are clear. Calls like `test_data_types_l1` calling `process_char` are easy to trace, even if the arguments were optimized away in some places.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled code maintains the original file's logical grouping. Functions appear in a similar order to the source, and related test functions are grouped together.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile as-is. It relies on Ghidra-specific types (`undefined4`, `undefined8`), macros (`CONCAT44`), and variables (`unaff_retaddr`) that do not exist in standard C environments.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 9 + 3 + 4) / 4 = 4.5
+L2_avg: (5 + 8 + 7 + 2) / 4 = 5.5
+L3_avg: (3 + 1 + 4) / 3 = 2.67
+L4_avg: (1 + 1 + 1 + 1) / 4 = 1.0
+L5_avg: (8 + 9 + 2) / 3 = 6.33
+
+Overall = (4.5 × 0.30) + (5.5 × 0.25) + (2.67 × 0.20) + 
+          (1.0 × 0.15) + (6.33 × 0.10)
+Overall = 1.35 + 1.375 + 0.534 + 0.15 + 0.633
+Overall = 4.04/10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.0/10
+
+### Critical Defects (Bullet List)
+- **Struct/Union Loss**: Composite types like `Point3D` and `Flags` are completely flattened into raw pointer arithmetic or bit shifts, losing all semantic field names.
+- **Constant Propagation**: Float constants (`1.5f`, `0.5f`) are not recovered; instead, the code performs memory loads from relative addresses (`unaff_retaddr + ...`).
+- **Type Corruption**: The `process_ll` function signature is incorrectly split into two 32-bit parameters (`param_1`, `param_2`) instead of one 64-bit parameter.
+- **Loop Unrolling**: Simple iteration logic (e.g., summing arrays) is replaced by massive blocks of repeated arithmetic, making the code extremely verbose.
+- **Optimization Artifacts**: The code appears heavily optimized (unrolling, inlining) despite the `-O0` metadata, resulting in `test_` functions containing hardcoded results instead of function calls.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (9/10)**
+- **Why?** The decompiler successfully recovered the original function names (e.g., `process_char`, `array_1d_stack`) from debug symbols, which is the strongest link back to the source code's intent.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Semantic Transparency (1/10)**
+- **Why?** The output lacks any comments, idiom recognition, or anomaly flags, leaving the user to manually decipher complex bit manipulations and compiler-generated artifacts without assistance.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover Composite Types**: Utilize debug information (DWARF) or heuristic analysis to reconstruct `struct` and `union` definitions instead of flattening them to arrays/pointers.
+2.  **Symbolic Constant Recovery**: Identify and replace memory loads of read-only data (like float constants) with their actual literal values to improve literal clarity.
+3.  **Loop Pattern Recognition**: Detect and re-roll aggressively unrolled loops (e.g., repeated addition patterns) into concise `for` or `while` loops to improve structural intelligibility.

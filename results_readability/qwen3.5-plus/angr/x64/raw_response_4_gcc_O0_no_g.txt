@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `i`, `large`, `test_str` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`cdecl_func`, `call_cdecl`, `varargs_func`, `test_calling_conventions`). However, helper functions use generic names (`sub_401020`, `sub_401030`) and some names don't match behavior.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears repeatedly for error returns without explanation. String literals referenced via opaque globals (`g_403008`, `g_4030d0`) instead of inline strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail`) appear in varargs functions. Redundant assignments present (`v0 = a0; v0 *= 2;` instead of `return a0 * 2`). Frame pointer manipulation visible throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `for` loops correctly. However, varargs functions have complex stack handling that obscures the simple original logic. One `[D] Unsupported jumpkind` error present.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical failure: `func_struct_byval()` shows no parameters but is called with arguments. `call_varargs_param` has 6 parameters instead of 0. Helper functions (`sub_401020`) are fragmented basic blocks.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with clear loop structures. Some forward references to globals disrupt flow slightly. No excessive goto usage in main test functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated mask operations (`& 4294967295`) on every printf call. Stack canary checks add redundancy. Multiple temporary variables for simple operations (`v0 = a0; return v0;`).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `int` frequently becomes `unsigned int` or `unsigned long long`. `func_no_args()` returns `unsigned long long` instead of `int`. `const` correctness completely lost. Pointer types degraded to `unsigned long`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `LargeStruct` and `SmallStruct` not recovered—`func_struct_byval` has no parameters, `func_struct_byptr` uses `unsigned int*`. Generic `struct_0 { field_0 }` instead of named structures with semantic fields.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Function pointer called as `a0(a1)` with type `unsigned long long *`. Multiple implicit casts visible. `param_func_ptr` signature wrong (takes `unsigned long long *` instead of function pointer type).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of complex varargs handling, struct passing conventions, or calling convention differences. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Variadic function pattern not recognized (shows 6 explicit parameters instead of `...`). Struct-by-value and struct-by-pointer patterns not identified. No algorithm or design pattern naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`). No warnings about uncertain varargs recovery, broken struct signatures, or type mismatches that would alert analysts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: NULL checks present (`if (!a0)`) but not documented as preconditions. No postconditions inferred. Error return values (4294967295) not explained as error codes.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear and traceable. Global variables use opaque names (`g_403008`, `g_405fe8`). No call graph documentation. Callback relationships not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No logical grouping by test category (calling conventions vs. parameter passing vs. return values). No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile without modification—`func_struct_byval()` has no parameters but is called with arguments. Missing includes (`<stdio.h>`, `<string.h>`). External declarations incomplete.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+5+7+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.23/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **`func_struct_byval()` has no parameters** but is called with `LargeStruct` argument—completely broken signature
+- **Variadic functions show explicit parameters** (`a0` through `a5`) instead of `...` syntax, obscuring the variadic nature
+- **Zero comments** despite complex calling convention and ABI handling that requires explanation
+- **Magic number `4294967295`** appears 15+ times without explanation (should be `UINT32_MAX` or `-1`)
+- **Struct types completely lost**—`SmallStruct*` becomes `unsigned int*`, `LargeStruct` by-value becomes no parameters
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `cdecl_func`, `call_cdecl`, `varargs_func`, `test_calling_conventions` were preserved from debug symbols, maintaining semantic connection to original source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any comments means analysts must reverse-engineer the purpose of every complex construct, especially the varargs handling and calling convention differences.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variadic function signatures** - Detect `va_list` patterns and stack-based argument access to restore `...` syntax instead of showing 6 explicit parameters
+2. **Add decompilation confidence annotations** - Flag uncertain recoveries (broken struct signatures, type mismatches) with comments like `// DECOMPILER UNCERTAIN: struct parameter recovery failed`
+3. **Replace magic constants with named values** - Detect repeated values like `4294967295` and suggest `#define ERROR_RETURN 0xFFFFFFFF` or use `-1` for signed contexts

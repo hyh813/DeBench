@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `arg_0`. For example, in `test_cpp_member_func`, `v0` is used for the object instance and the integer value, completely obscuring the logic.
+
+**2. Function Naming Quality:** Score: 4/10
+Justification: Functions are identified by mangled C++ names (e.g., `_Z20test_cpp_member_funcv`) rather than demangled names (e.g., `test_cpp_member_func`). While better than raw addresses, this requires manual demangling to understand the purpose.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers are prevalent and confusing. For instance, the loop condition `i != 4294967291` (which is -5 unsigned) in `test_cpp_constructor` obscures the original `i < 5` logic, and string literals are often referenced indirectly via globals.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code contains significant noise, such as the `armg_calculate_condition` calls in `test_cpp_exception` and redundant variable moves like `v0 = v1`, which impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is unnatural, relying heavily on `goto` statements and inverted loop logic. The `do-while` loop with an underflow check in `test_cpp_constructor` is difficult to map to the original `for` loop.
+
+**6. Function Decomposition:** Score: 3/10
+Justification: Several critical functions like `test_cpp_operator_overload`, `test_cpp_template_func`, and `test_cpp_smart_ptr` are decompiled as empty functions with only a `return` statement, representing a total failure to recover logic.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code flow is disrupted by forward jumps (e.g., `goto LABEL_401192`) and complex exception handling control flow in `test_cpp_exception`, making top-to-bottom reading nearly impossible.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is some redundancy, such as the repeated `__cxa_atexit` calls in `$a.79`, but the lack of loop unrolling or other optimizations suggests the redundancy is mostly structural rather than optimization-related.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Type information is severely degraded. Class `this` pointers are typed as `void*`, and return types are often incorrect (e.g., `Base::virtual_func` returns `void` instead of `int`).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: No C++ class structures are recovered. Complex objects like `SimpleClass` or `Container` are represented by generic structs (`struct_0`) or raw pointer arithmetic, losing all semantic context of members.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies on unsafe casts and pointer arithmetic, such as `*((int *)&ptr[40])` to access class members, which is dangerous and loses the type safety of the original C++ code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures, leaving the user to decipher the low-level assembly-derived code entirely on their own.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms like RAII, smart pointers, and virtual dispatch are not recognized. For example, `std::unique_ptr` usage is reduced to raw `operatornew` calls without indicating the ownership semantics.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents confusing code (like `armg_calculate_condition`) without flagging it as an artifact or uncertainty, leading the user to believe it is part of the original logic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants. For instance, the null checks or size constraints present in the original source are not explicitly documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While global variables and external functions are referenced, their relationships are unclear. Vtable calls are opaque indirect calls, and the connection between a class and its methods is lost.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in a flat structure. While they are grouped by address, the logical grouping of classes and their methods (namespaces) is completely absent.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code would not compile. It uses undefined types (`struct_0`), missing headers, and incorrect signatures (e.g., `void* this`), requiring massive manual intervention to rebuild.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.9/10
+
+**Critical Defects:**
+- Functions like `test_cpp_smart_ptr`, `test_cpp_lambda`, and `test_cpp_operator_overload` are decompiled as empty `void` functions, completely losing the implementation logic.
+- C++ class structures are not recovered; `this` pointers are `void*`, and member access is done via raw offsets (e.g., `ptr[40]`), destroying object orientation.
+- Loop logic is inverted using unsigned underflow (e.g., `i != 4294967291`), making the original `for` loop bounds unrecognizable.
+- Function names are mangled C++ symbols (e.g., `_Z20test_cpp_member_funcv`) rather than human-readable demangled names.
+- Exception handling is reduced to low-level `__cxa_*` calls and `armg_calculate_condition` artifacts, obscuring the `try-catch` structure.
+
+**Best Quality Aspect:** Function Naming Quality (scored 4/10)
+- While mangled, the presence of the original symbol names (e.g., `_Z20test_cpp_member_funcv`) allows a user to at least identify the function's origin using external tools, which is more than can be said for the variable or type recovery.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.5/10)
+- The decompiler fails to communicate *what* the code is doing. Without comments, idiom recognition, or anomaly flags, the output is just a wall of low-level C-like pseudocode that bears little resemblance to the high-level C++ source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Implement C++ Class Recovery:** Reconstruct class definitions, member layouts, and `this` pointer types to replace `void*` and raw pointer arithmetic.
+2.  **Demangle Symbols:** Automatically demangle C++ function and variable names to improve readability (e.g., convert `_Z20test_cpp_member_funcv` to `test_cpp_member_func()`).
+3.  **Fix Control Flow Analysis for Loops:** Correctly identify standard loop constructs and signed comparisons to avoid generating confusing underflow checks (e.g., `4294967291`).

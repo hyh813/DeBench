@@ -1,0 +1,202 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY (30% weight)
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+All parameters use generic names like `a1`, `a2`, `a3` and local variables use `v1`, `v2`, `v3`, etc. For example, in `process_char(int32_t a1)`, the parameter `a1` should be named `c` based on the original source. The decompiler makes no attempt to infer semantic meaning from usage patterns. Even loop indices and accumulators lack meaningful names - `int32_t v1 = 0; // 0x858` in `array_string` should be `len` or `index`.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+
+The test functions (`test_data_types_l1`, `test_array_types`, `test_pointer_types`, `test_composite_types`) are correctly named and match the source. The actual test target functions like `process_char`, `process_int`, `array_1d_stack` are also correctly named. However, many internal/runtime functions have cryptic names like `function_418`, `function_424`, `function_430` which are just address-based placeholders. The core functions being tested are properly recovered.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+The decompiled code is littered with magic numbers without explanation. In `process_char`: `return (uint32_t)((uint32_t)(a1 + 191 & 254) < 26 ? a1 + 32 : a1) % 256;` - the values 191, 254, 26, 32 are unexplained magic numbers that should be `('A' - 1)`, `~1`, `26`, `'a' - 'A'` respectively. The test output functions print hardcoded results like `printf("DT-L1-01 (process_char): %c\n", 97);` instead of showing the actual computation. No enum constants are recovered - `STATE_IDLE`, `STATE_RUNNING` become raw integers.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+The code contains significant noise from decompilation artifacts. Address comments like `// 0x5c8` clutter every function. There are redundant casts everywhere - `(uint32_t)`, `(int32_t*)`, `(char*)` appearing repeatedly. The floating point functions (`__aeabi_dmul`, `__mulsf3`, `__adddf3`, etc.) are massive decompilation artifacts that should be library calls, not inlined code. However, there is no dead code from register spilling visible, which is good for -O0.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Some functions have natural control flow - `array_1d_stack` uses a recognizable while loop pattern. However, `array_3d` has deeply nested while loops that are hard to follow: `while (v1 != 5) { ... while (v2 != 5) { ... while (v5 != -4) { ... }}}`. The condition `v5 != -4` is an artifact of loop unrolling at the assembly level. The `process_char` function uses a complex ternary chain that's harder to read than the original if-else. At -O0, control flow should be nearly 1:1 with source, but some artifacts remain.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+The original source's function decomposition is well preserved. Each test category has its own function, and the individual test target functions are separate. The test functions like `test_array_types` are large (~300 lines) but this matches the source. No obvious inlining or outlining artifacts - functions that were separate in source remain separate in decompiled code.
+
+### 7. Code Linearization
+**Score: 5/10**
+
+Most functions read reasonably top-to-bottom, but some have confusing jumps. The `array_3d` function has multiple nested loops with complex termination conditions that make linear reading difficult. The `test_array_types` function has forward jumps in the matrix initialization code. The `process_char` function's ternary expression is compact but not linear. Some functions like `ptr_increment` have clear linear flow.
+
+### 8. Redundancy Elimination
+**Score: 4/10**
+
+The `array_3d` function shows significant redundancy - the same nested loop pattern is repeated multiple times with slight variations. The test functions contain duplicated initialization code for test data structures. There's no evidence of common subexpression elimination being applied. The floating-point library functions contain massive amounts of redundant code that should be library calls. Loop unrolling is present but not commented or abstracted.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+### 9. Type Precision
+**Score: 2/10**
+
+This is a critical failure area. ALL parameters and return types are `int32_t` regardless of the original type:
+- `process_char(int32_t a1)` should be `char`
+- `process_short(int32_t a1, int32_t a2)` should be `short`  
+- `process_float(int32_t a1)` should be `float`
+- `process_double(int32_t a1)` should be `double`
+- `process_bool(uint32_t a1)` - only function with unsigned
+- `const_param(int32_t a1)` should be `const int*`
+- `volatile_access(int32_t a1)` should be `volatile int*`
+
+No distinction between pointers and arrays. No `size_t` for size parameters. No `uint32_t` vs `int32_t` distinction for most functions. The type system is essentially completely collapsed to 32-bit integers.
+
+### 10. Composite Type Recovery
+**Score: 1/10**
+
+Zero struct definitions were recovered. All struct access uses raw pointer arithmetic:
+- `struct_simple`: `*(int32_t *)(a1 + 4) + a1 + *(int32_t *)(a1 + 8)` instead of `p->x + p->y + p->z`
+- `struct_nested`: `*(int32_t *)(a1 + 12) + a1` instead of `r->position.x + r->size.width`
+- `linked_list`: `*(int32_t *)(a1 + 4)` instead of `node->next`
+
+No union recovery - `union_type` just treats everything as `uint32_t`. No enum recovery - `enum_switch` uses raw integer values. The `Node`, `Point3D`, `Rect`, `Widget`, `TreeNode`, `Graph` structures are completely lost.
+
+### 11. Type Safety
+**Score: 3/10**
+
+Multiple unsafe operations:
+- Countless unnecessary casts: `(int32_t *)`, `(uint32_t)`, `(char *)` everywhere
+- Pointer arithmetic not type-aware: `v1 += 4` assumes 4-byte int
+- In `array_2d_stack`: `v1 += 44` - magic number for 2D array stride
+- In `array_pointer`: `v1 += 40` - assumes 10-element array
+- No bounds checking recovered
+- Function pointers treated as regular integers: `ptr_func_simple(int32_t a1, int32_t result)` - should be `int (*f)(int)`
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Only address range comments like `// Address range: 0x5c8 - 0x5e0` and local variable initialization comments like `int32_t result = 0; // 0x830`. No explanation of algorithm intent, no recovery of original comments from debug info. No indication of uncertainty or decompilation confidence. The Chinese strings in global variables are shown as raw UTF-8 bytes: `"=== \xe6\xb5\x8b\xe8\xaf\x95\xe5\x9f\xba\xe7\xa1\x80\xe6\x95\xb0\xe6\x8d\xae\xe7\xb1\xbb\xe5\x9e\x8b ==="` instead of being decoded.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+No design patterns or algorithms are identified or named. The linked list traversal in `linked_list` is recognizable as a pattern but not labeled. The binary tree recursion is visible but not named. No recognition of common idioms like "pointer to array", "VLA", "bitfield access", "opaque pointer pattern". The decompiler doesn't identify that `opaque_handle_create` and `opaque_handle_op` form a handle/operation pair.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+No anomalies are flagged. The decompiler silently produces incorrect results in many cases:
+- `process_double` returns `(float32_t)0.1` instead of actual double computation
+- `process_float` has wrong return type
+- `process_ld` is completely wrong
+- The test output shows computed values but they're wrong
+
+No warnings about:
+- Unresolved indirect calls
+- Potential undefined behavior (array_oob has intentional out-of-bounds)
+- Unusual stack patterns
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No preconditions, postconditions, or invariants are documented. The `array_complex_index` function has bounds checking logic but it's not documented as such. No recovery of `NULL` checks, no documentation of expected valid ranges. The `volatile_access` function's semantics (two separate reads) are not documented.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Function calls are visible in the test functions (e.g., `test_data_types_l1()` calls `process_char`, `process_short`, etc.), but there's no documentation of call relationships. No indication of which functions call `double_value` (the helper function). No global variable usage documentation. The callback relationships in `ptr_func_simple` and `ptr_func_complex` are not documented.
+
+### 17. Module Organization
+**Score: 6/10**
+
+The decompiled output is a single large file with all functions. Related functions are grouped together (test functions, array functions, pointer functions, etc.) which mirrors the source organization. However, there's no separation into logical sections with comments, no header file recovery. The runtime functions (`_init`, `_start`, `__libc_start_main`) are mixed with application code.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+The code has many issues preventing compilation:
+- All functions declared returning `int32_t` but some should return `float`, `double`, `char`, `short`, etc.
+- Missing struct type definitions
+- Missing enum definitions  
+- Missing `#include <math.h>` for floating point
+- The floating point library functions are inlined but incomplete
+- Type mismatches everywhere
+
+The code would require significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 3 + 4) / 4 = 4.0
+L2_avg = (5 + 8 + 5 + 4) / 4 = 5.5
+L3_avg = (2 + 1 + 3) / 3 = 2.0
+L4_avg = (2 + 3 + 2 + 1) / 4 = 2.0
+L5_avg = (4 + 6 + 3) / 3 = 4.33
+
+Overall = (4.0 × 0.30) + (5.5 × 0.25) + (2.0 × 0.20) + (2.0 × 0.15) + (4.33 × 0.10)
+        = 1.20 + 1.375 + 0.40 + 0.30 + 0.433
+        = 3.708 / 10
+```
+
+**Overall Readability Score: 3.7/10**
+
+---
+
+### Critical Defects
+
+1. **Complete type collapse**: All types are `int32_t` - char, short, float, double, pointers all become integers, making the code semantically incorrect and dangerous to use.
+
+2. **Zero struct/union/enum recovery**: All composite types are lost, replaced with raw pointer arithmetic like `*(int32_t *)(a1 + 4)` which obscures the data structure semantics entirely.
+
+3. **Incorrect floating-point results**: `process_double` returns `(float32_t)0.1` instead of computing `d / 2.0 + 0.1`. The decompiler fundamentally mishandles floating-point types.
+
+4. **Generic variable names**: All parameters are `a1`, `a2`, `a3` and locals are `v1`, `v2`, `v3` - no semantic inference from usage patterns.
+
+5. **No type safety**: Countless unnecessary casts, pointer arithmetic assumes 4-byte ints, function pointers treated as integers.
+
+---
+
+### Best Quality Aspect
+
+**Function Decomposition (8/10)** - The decompiler correctly preserved the function boundaries from the original source. Each test function and test target function remains separate, maintaining the original granularity. This is the highest-scoring dimension.
+
+---
+
+### Most Needs Improvement
+
+**Type System Fidelity (2.0/10)** - This is the most critical failure. The decompiler collapsed all types to `int32_t`, lost all struct/union/enum definitions, and produced type-unsafe code. This makes the decompiled code not just hard to read but actively misleading about the program's semantics.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover type information from debug symbols**: The source was compiled with `-g`, so DWARF debug info should contain type definitions. The decompiler must use this to recover `char`, `short`, `float`, `double`, `struct Point3D`, `enum State`, etc.
+
+2. **Infer struct layouts from field access patterns**: When seeing repeated `*(int32_t *)(base + offset)` patterns with consistent offsets (0, 4, 8, 12...), the decompiler should reconstruct struct definitions with field names.
+
+3. **Generate meaningful variable names from usage**: Parameters like `a1` in `process_char` that are compared to `'A'` and `'Z'` should be named `c` or `character`. Variables used as loop indices should be named `i`, `j`, `k`. Accumulator variables should be named after what they accumulate (sum, len, count).

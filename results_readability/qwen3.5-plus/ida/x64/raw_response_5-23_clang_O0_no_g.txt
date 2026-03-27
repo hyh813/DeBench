@@ -1,0 +1,123 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `result`) with no semantic meaning recovered. For example, `param_macro_constants(int a1)` should have `size` as the parameter name based on source.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery—function names like `param_macro_constants`, `call_macro_functions`, `param_asm_clobber` are preserved exactly from source, clearly indicating purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without macro recovery (e.g., `57072` instead of `0xDEF0`, `1024` instead of `MAX_SIZE`). Some values like `512` and `64` are inferable from context.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Platform-specific artifacts present: `__int64`, `_DWORD`, `_QWORD`, `LODWORD()`, and unnecessary `(unsigned int)` casts throughout.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures well-recovered with proper `if-else` and `for` loops. Example: `param_asm_clobber` correctly shows `for(i = 0; (int)i < a2; i++)` instead of assembly jumps.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries match source exactly—each original function is a separate decompiled function with appropriate granularity.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally with minimal forward jumps. Early returns used appropriately (e.g., `param_dynamic_code`).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundancy in `param_simd_intrinsics` with multiple `_mm_load_si128` calls that could be simplified, but generally clean.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses decompiler-specific types (`__int64`, `_DWORD`, `_QWORD`) instead of standard C types (`int32_t`, `size_t`). Signed/unsigned not always accurate.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `__m128i` SIMD type recovered correctly, but no struct definitions for complex types. Array access shown as pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(_WORD *)`, `(_DWORD *)`, `(unsigned int)`. No const-correctness preserved from source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Critical failure**—all source comments completely lost. No algorithm explanations, no macro semantics, no documentation of any kind.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Macro expansions not identified (e.g., `ADD_16` became `+16`). Atomic operations recognized as `_InterlockedExchangeAdd` but not documented as such.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed decompilations listed at end (`FAILED to decompile: printf`), but no warnings for potentially incorrect recoveries or uncertain patterns.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_asm_clobber` doesn't note `arr` must be valid). No error condition documentation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. No call graph or "called by" information. Global `global_var` usage not highlighted.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in reasonable order matching source sequence, but no logical grouping comments or section headers preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions (`printf`, `mmap`, `strlen`) not declared. Cannot compile standalone without adding headers and stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+5+6)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (8+9+8+7)/4 = 8.00 × 0.25 = 2.00
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (2+4+6+3)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (6+7+4)/3   = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                              6.00/10
+```
+
+**Overall Readability Score:** 6.0/10
+
+---
+
+### Critical Defects
+
+- **All source comments completely lost** - Original had extensive documentation explaining macro behavior, test scenarios, and expected values
+- **Variable names are generic** - `a1`, `a2`, `v1` instead of `size`, `x`, `y`, `result`, `counter`
+- **Magic numbers without macro recovery** - `57072` should be `0xDEF0` or `DEFAULT_VALUE`, `1024` should be `MAX_SIZE`
+- **Platform-specific type pollution** - `__int64`, `_DWORD`, `_QWORD` instead of standard C types
+- **No build declarations** - External functions like `printf`, `mmap`, `strlen` not declared, preventing compilation
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (9/10)** - Function names preserved exactly from source, making navigation and identification straightforward
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (2/10)** - Complete loss of all documentation is unacceptable, especially at `-O0` with debug symbols where this information should be recoverable
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover debug symbol variable names** - At `-O0 -g`, DWARF debug info contains original variable names that should be extracted and applied to `a1`, `v1`, etc.
+
+2. **Preserve or reconstruct source comments** - Implement comment extraction from debug sections or at minimum add auto-generated comments explaining macro expansions and constant values
+
+3. **Use standard C types instead of platform-specific** - Replace `__int64`, `_DWORD` with `int64_t`, `uint32_t` for portability and readability

@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `iVar1`, `local_8`, `pvVar2`, `acStack_2c` with zero semantic meaning. For example, `local_10` in `test_cpp_virtual_func` should be `multiplier` based on source context.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test function names preserved (`test_cpp_member_func`, `test_cpp_constructor`), but helper functions are generic (`FUN_00101470`) and external stubs show recursive self-calls. Class methods partially recovered (`Base::virtual_func`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x125c`, `0x47`, `0x16`, `0x55`, `0x2bf` are returned constants that should be computed values. String `"Test"` preserved but numeric literals unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`___stack_chk_guard`) in every function add noise. External function stubs are recursive artifacts (e.g., `puts` calls `puts`). Duplicate destructor variants for same classes.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Many test functions simplified to constant returns (`test_cpp_multiple_inheritance` returns `0x47` directly). Stack canary if-branches create unnatural control flow patterns.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Multiple duplicate destructor variants per class (3x `DiamondDerived::~DiamondDerived`). Some functions oversimplified to constants losing actual logic structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. Stack canary checks at function end create minor disruption but don't severely impact readability.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate destructor implementations for same class with slight variations. Stack canary pattern repeated identically across all functions without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate (`undefined4`, `undefined8`, `void*`). Some functions return `void` when source returns `int` (e.g., `test_cpp_virtual_func`). Pointer arithmetic replaces proper typing.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/class definitions recovered. Field access via pointer arithmetic (`*(int *)(this + 8)`) instead of named fields. `SimpleClass`, `LifecycleClass` structures completely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout (`(long *)`, `(undefined4 *)`, `(Base *)`). Pointer arithmetic on class objects without bounds checking. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments in decompiled code. No explanation of vtable mechanics, inheritance adjustments, or why some functions return constants. Only decompiler header present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns not identified: vtable calls shown as `(***(code ***)param_1)`, virtual inheritance not explained, RTTI patterns not labeled. Template instantiations partially recognized (`template_max_int_`).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about recursive external stubs, type mismatches (void vs int returns), or simplified constant returns. Code presents incorrect information confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., null checks). No postconditions or invariants. Exception handling logic in `test_cpp_exception` reduced to throw-only without catch blocks.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch through `call_virtual_func` partially recovered. Inheritance relationships not documented in decompiled output.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order. External stubs mixed with actual code. No logical grouping by class or feature category despite source organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External function stubs create infinite recursion (e.g., `operator_new` calls `operator_new`). Missing struct definitions prevent compilation. Requires extensive patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+4)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+5+6+4)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                              3.68/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable `local_8`, `iVar1`, `pvVar2`** should be named based on semantic usage (e.g., `stack_guard`, `result`, `allocated_memory`)
+- **Test functions return constants** (`0x47`, `0x16`, `0x55`) instead of actual computed logic, losing all semantic value
+- **No class/struct definitions recovered** - all object access via pointer arithmetic obscures data layout
+- **External function stubs are recursive** (e.g., `puts` calls `puts`) making code non-compilable
+- **Return type mismatches** - functions like `test_cpp_virtual_func` return `void` instead of `int`
+
+### Best Quality Aspect:
+- **Code Linearization (scored 6/10)** - Most functions read top-to-bottom without excessive jumps; stack canary checks are the main disruption but don't severely impact flow
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (scored 2/10)** - Zero explanatory comments for complex C++ features like vtable dispatch, virtual inheritance, or why some functions are simplified to constants
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover class/struct definitions** from vtable layouts and field access patterns instead of raw pointer arithmetic
+2. **Detect and flag constant-return simplifications** with warnings indicating logic was optimized away or not recovered
+3. **Fix external function stub generation** to declare imports rather than creating recursive self-calls that prevent compilation

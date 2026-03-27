@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables like `v0`, `v1`, `v2`, `v3`, `i`, `result` are generic and don't convey semantic meaning. For example, in `param_asm_clobber`, the loop variable `i` should indicate it's an array index, and in `call_asm_simd`, arrays `a`, `b`, `result` lack context about their purpose (they represent vectors being added).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main test functions like `param_macro_constants`, `param_asm_basic`, `param_asm_clobber` match the original source names exactly. However, infrastructure functions like `sub_1030`, `sub_1040` are generic stubs. The core functionality functions are well-named with action verbs matching source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `512`, `64`, `1024` appear without explanation. The value `57072` (0xDEF0) in `param_multi_branch_compile` is the computed constant but not named. The decompiler correctly computed the constant values but provides no insight into what they represent (e.g., `MAX_SIZE / 2` or `BUFFER_COUNT * 4`).
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean with minimal compiler artifacts. Stack protection (`__readgsdword(0x14u)`) appears but is expected for security features. No redundant casts or debug instrumentation clutter the output significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and matches source structure. Loops are properly reconstructed (e.g., `for (i = 0; i < n; ++i)` in `param_asm_clobber`). Conditionals are straightforward. At -O0, the decompiler correctly recovered the original control flow patterns without goto abuse.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the source. Each function has a single responsibility (e.g., `param_macro_constants` does one thing, `param_asm_basic` does another). Parameter lists are reasonable and don't expose excessive implementation details.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately (e.g., in `param_dynamic_code` when mmap fails). Some nested conditionals in `param_memory_protection` create moderate complexity but remain traceable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. The inline assembly in `param_asm_clobber` was correctly replaced with a simple loop, eliminating the assembly complexity. Common subexpressions are not unnecessarily duplicated.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Integer types are mostly preserved (`int`, `size_t`). Pointer types are correct (`int*`, `void*`, `const void*`). However, `size_t` is used directly without the standard header context, and some `const` correctness may be lost. The SIMD types (`__m128i`) are correctly recognized.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays like `int a[4]`, `int b[4]`, `char dst[32]` are recovered. However, no complex struct recovery is visible. The decompiler uses raw arrays rather than reconstructing the semantic meaning (e.g., "vector" or "buffer").
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. The SIMD operations use proper casting (`*(__m128i *)result`). Some potential issues: the `qmemcpy` in `param_asm_multi_insn` is a non-standard function. No major buffer overflow risks in the recovered code.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No comments are present in the decompiled output. The original source had extensive comments explaining macro behavior, assembly constraints, and test expectations. This semantic information is completely lost. The decompiler provides no guidance on what the code is intended to do.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some idioms are recognized: `__printf_chk` for printf with fortification, `_mm_add_epi32` for SIMD intrinsics, `_InterlockedExchangeAdd` for atomic operations. However, the macro-based code (SQUARE, MAX, SAFE_ADD) is completely flattened to arithmetic without any indication it was originally a macro.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The output shows "FAILED to decompile" for 8 functions including `__libc_start_main`, `mprotect`, `sysconf`, etc. However, these failures aren't explained in context where they appear. No warnings about indirect calls or unusual patterns in the successfully decompiled functions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. For example, `param_dynamic_code` requires `x` to be valid integer input, and `param_memory_protection` requires page-aligned operations - none of this is indicated. The semantic contracts from the source are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (e.g., `main` calls `test_preprocessing_features` and `test_asm_features`). However, there's no documentation of which functions call which, or global variable usage. The relationship between `param_*` and `call_*` functions is implicit but not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions together, asm functions together. The order roughly matches the source file structure. Static functions like `my_func` are properly scoped. However, the file is a single monolithic output without any grouping markers.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code should compile with standard libc. However, it uses Windows-specific functions like `__printf_chk` (fortified printf) and `__readgsdword` for stack canaries. Some stubs may be needed for full compilation. The dependency on x86 intrinsics isn't documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- **Variable naming**: Generic names like `v0`, `v1`, `v2`, `i`, `result` obscure semantic purpose throughout the code
+- **No comments**: Complete loss of the extensive documentation from the original source explaining macro behavior, assembly constraints, and test expectations
+- **Magic numbers unexplained**: Constants like `512`, `64`, `57072` appear without any indication they represent `MAX_SIZE/2`, `BUFFER_COUNT*4`, or platform-specific values
+- **Macro semantics lost**: All macro functions (SQUARE, MAX, SAFE_ADD, etc.) are completely flattened to arithmetic with no indication they were originally parameterized macros
+- **No anomaly context**: Failed decompilations are listed but not explained where they occur in the code flow
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+The decompiler correctly recovered natural loop and conditional structures matching the -O0 source. Functions like `param_asm_clobber` have properly reconstructed for-loops, and conditionals are straightforward.
+
+### Most Needs Improvement: Assertion & Contract Recovery (2/10)
+The decompiler provides zero information about function preconditions, postconditions, or invariants. This is critical for understanding code like `param_dynamic_code` (which requires valid memory mapping) or `param_memory_protection` (which requires page-aligned addresses).
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: When a variable is used as an array index, name it `index` or `i`; when it holds a size, name it `size` or `count`. The current `v0`, `v1` pattern provides no semantic information.
+
+2. **Recover macro semantics**: When arithmetic matches a macro expansion pattern (e.g., `x * x` appearing where `SQUARE(x)` was used), add a comment indicating "macro expansion: SQUARE(x)" to preserve the original abstraction.
+
+3. **Add contextual comments**: Even basic comments explaining what each function does based on its behavior would significantly improve readability. The original had extensive test expectations that could be inferred from return values.

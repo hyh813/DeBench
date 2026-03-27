@@ -1,0 +1,101 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Arguments are reduced to generic names like `a0`, `a1`, and local variables are mostly `v1`, `v2`, or `v4`, which obscures their semantic purpose (e.g., `sum`, `count`, `result`). While `i` is preserved in some loops, the majority of variables lack descriptive identifiers.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the source (e.g., `sequential_ops`, `nested_if_deep`, `duffs_device`), likely due to the presence of debug symbols, making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are used directly (e.g., `4294967295` instead of `-1`, `4294967294` instead of `-2`). While the values are arithmetically correct, the use of unsigned representations for signed constants hampers readability.
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The decompiled code is generally clean with minimal compiler artifacts like redundant stack frame pointers or debug instrumentation, though some register-specific artifacts like `(a0 & 4294967295)` appear as type casts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: The decompiler successfully recovers high-level control flow, converting recursion to loops (e.g., `recursion_factorial`) and simplifying nested loops (e.g., `loop_nested`), which improves semantic clarity. However, switch statements are often represented as array lookups (e.g., `(&CSWTCH.55)[a0]`) or `goto` tables, which is less idiomatic than native `switch` syntax.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are recovered with excellent granularity, matching the source 1:1 without inlining or outlining artifacts. Helper functions like `double_value` and `op_add` remain distinct.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads largely top-to-bottom with appropriate use of `if-else` and `for` loops. Forward jumps are minimal, though some `goto` statements remain for switch fall-throughs and computed jumps.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler presents the optimized logic cleanly; for example, `sequential_ops` is shown as a single expression rather than a series of temporary assignments, reflecting the compiler's optimization without introducing confusion.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: There is significant type degradation regarding signedness. Source `int` types are frequently decompiled as `unsigned int` or `unsigned long long` (e.g., `single_if` returns `long long` but logic treats it as signed). This leads to confusing literals like `4294967295` for `-1`.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Arrays and basic structures are handled reasonably well. For instance, `loop_break` reconstructs the array access pattern `*((int *)((char *)&v0 + 4 * v4))`, which, while verbose, accurately represents the stack-based array layout.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code contains many explicit masking casts like `(a0 & 4294967295)` and `(a0 >> 31 CONCAT a0)`. While these ensure correctness at the binary level, they clutter the code and indicate a loss of high-level type safety information.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex transformations, such as the conversion of recursion to iteration or the reconstruction of Duff's device, are left unexplained.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: Common patterns like loops and conditionals are recognized, but specific idioms like "Duff's Device" are decompiled into a mix of `switch` and `do-while` that loses the specific structural intent of the original idiom.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag potential issues, such as the signed/unsigned mismatch or the aggressive optimization of `loop_nested` (where the inner loop was eliminated), presenting the code confidently despite these deviations from standard C structure.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement that `n > 0` for `duffs_device` is lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the recovered names, making the call graph easy to follow. Global variable references (like `jump_buffer`) are also clear.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are ordered by memory address (e.g., `_init`, `main`, then `recursion_factorial`), which scatters related logic (e.g., `test_control_flow_l1` functions are separated from their implementations).
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on GCC-specific extensions like computed goto (`goto *(&v0)[a1]`) and external symbols like `CSWTCH.55`, making it difficult to compile without the specific binary context or linker script.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 6.75
+L2_avg: 8.25
+L3_avg: 5.67
+L4_avg: 2.50
+L5_avg: 5.67
+
+Overall = (6.75 × 0.30) + (8.25 × 0.25) + (5.67 × 0.20) + 
+          (2.50 × 0.15) + (5.67 × 0.10)
+Overall = 2.025 + 2.0625 + 1.134 + 0.375 + 0.567
+Overall = 6.16
+```
+
+### Overall Readability Score: 6.2/10
+
+### Critical Defects
+- **Signedness Loss**: Variables defined as `int` in the source are consistently decompiled as `unsigned int` or `unsigned long long`, causing return values like `-1` to appear as `4294967295`.
+- **Switch Statement Degradation**: `switch` statements are often converted into array lookups (e.g., `(&CSWTCH.55)[a0]`) or indirect jumps, obscuring the original control flow logic.
+- **Generic Variable Names**: Local variables are overwhelmingly named `v1`, `v2`, etc., making it difficult to track data flow without cross-referencing the original source.
+- **Lack of Comments**: The decompiled output lacks any explanatory comments for complex optimizations or non-obvious logic (e.g., Duff's device).
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**: The decompiler perfectly preserved the original function names, which is the single most important factor for navigating the codebase and understanding high-level intent.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)**: The complete absence of comments, especially regarding the aggressive optimizations applied (like recursion-to-loop conversion), significantly hampers the ability to verify that the decompiled logic matches the source intent.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Signedness Analysis**: Implement better heuristic analysis to recover signed integer types (`int`, `long`) instead of defaulting to `unsigned`, particularly for function arguments and return values involved in comparisons.
+2.  **Reconstruct High-Level Switches**: Enhance pattern matching to reassemble jump tables and array-lookup dispatches back into idiomatic `switch-case` statements rather than leaving them as pointer arithmetic or indirect jumps.
+3.  **Infuse Semantic Comments**: Automatically generate comments explaining significant structural transformations, such as "Recursion optimized to loop" or "Switch statement recovered as jump table," to alert the analyst to compiler optimizations.

@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `a0`, and `flag1`, completely obscuring the semantic intent found in the original source (e.g., `x`, `result`, `str`).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved from the source symbols (e.g., `param_fake_branch`, `call_opaque_predicate`), making the high-level purpose immediately clear.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX) and `90` (XOR key `0x5A`) are used without named constants or comments, forcing manual interpretation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise is present, including repetitive stack pointer setup artifacts (`char *v0; v0 = &v1;`) and non-standard intrinsics (`arm64g_calculate_condition`) in almost every function.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: While loops are generally recovered as `do-while` structures, conditional logic is heavily obscured by `arm64g_calculate_condition` calls, making it difficult to understand the actual boolean logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries and granularity match the source well; there is no inappropriate inlining or outlining, and the separation of concerns is maintained.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The code reads mostly top-to-bottom with standard loop structures, though the pre-checks converted for `for` loops add slight complexity.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Dead code (fake branches) was successfully removed, likely by the compiler or decompiler analysis, which improves readability by focusing on the active logic path.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Integer types are frequently widened or changed (e.g., `int` to `unsigned long` or `long long`), losing the signedness and size information present in the original source.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The bitfield struct in `param_implementation_defined` is completely lost, replaced by a constant return value (`48`), failing to recover the data structure layout.
+
+**11. Type Safety:** Score: 6/10  
+Justification: While pointer arithmetic generally looks correct, the use of `arm64g_calculate_condition` returning a `char` cast to boolean is a type-safety artifact of the lifting process.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments in the decompiled output, leaving complex logic (like the GCD algorithm or opaque predicates) unexplained.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns like the GCD algorithm are present but not explicitly recognized or named; they appear as generic `do-while` loops with math operations.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The presence of `arm64g_calculate_condition` and other lifting artifacts is not flagged, making them appear as valid C function calls rather than decompiler limitations.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented; for example, the non-null requirement for pointers is not stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls are clear and use the correct recovered names, making the call graph easy to follow despite the poor variable naming.
+
+**17. Module Organization:** Score: 8/10  
+Justification: The order of functions and their grouping matches the source file structure perfectly, preserving the original logical organization.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code will not compile standalone due to undefined references to `arm64g_calculate_condition` and external global variables like `g_411ff8`.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 4.5
+L2_avg: 6.75
+L3_avg: 4.33
+L4_avg: 1.75
+L5_avg: 6.0
+
+Overall = (4.5 × 0.30) + (6.75 × 0.25) + (4.33 × 0.20) + 
+          (1.75 × 0.15) + (6.0 × 0.10)
+Overall = 1.35 + 1.6875 + 0.866 + 0.2625 + 0.6
+Overall = 4.766
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects
+- **Lifting Artifacts:** The code is littered with `arm64g_calculate_condition` calls, which obscure the actual control flow logic.
+- **Variable Naming:** Generic names (`v0`, `v1`, `flag1`) make tracking data flow nearly impossible without cross-referencing the source.
+- **Struct Recovery Failure:** The bitfield structure in `param_implementation_defined` was completely lost/constant-folded.
+- **Magic Numbers:** Constants like `4294967295` and `90` are used without semantic context.
+- **Stack Pointer Noise:** Repetitive `v0 = &v1;` patterns clutter the function prologues.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**  
+- The decompiler successfully preserved all original function symbols, allowing for easy high-level navigation and mapping to the source code.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)**  
+- The complete absence of comments, combined with the obfuscated variable names and lifting artifacts, makes understanding the *intent* of the code extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Simplify Lifting Artifacts:** Replace `arm64g_calculate_condition` intrinsics with actual C boolean expressions (e.g., `==`, `<`, `&&`) to restore readable control flow.
+2. **Infer Variable Names:** Implement heuristic-based naming (e.g., renaming `a0` to `x` based on usage context) to improve local variable clarity.
+3. **Preserve Struct Layouts:** Avoid constant-folding complex struct operations (like bitfields) into raw numbers; attempt to reconstruct the struct definition to show the logic.

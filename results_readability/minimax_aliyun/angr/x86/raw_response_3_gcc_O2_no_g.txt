@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v0`, `v1`, `v2`, `ptr`, `i`, `result`, and function parameters are `a0`, `a1`, `a2`. The original source had meaningful names like `x`, `arr`, `n`, `p1`, `p2`, `local`, `head` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: All functions use mechanical address-based names like `sub_401400`, `sub_401410`, `sub_401420`. The original had descriptive names: `double_value`, `local_vars`, `local_array`, `heap_basic`, `linked_list_heap`. No semantic meaning recovered.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (e.g., `42` in `address_of_local`, test output strings like "MEM-L1-01"), but many magic numbers lack explanation. Constants like `4294967295` (representing -1) appear without documentation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant artifacts include: `_ccall` invocations, `vvar_XX{r24|4b}` notations, redundant struct definitions with `padding_0` arrays, computed goto statements (`goto v1->field_50`), and `__x86.get_pc_thunk` functions. These obscure the actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops and conditionals are preserved, but some computed goto statements (e.g., `goto v1->field_50`) and unusual jump patterns exist. At -O0, control flow should be more straightforward - some artifacts remain.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Each original function is preserved as a separate decompiled function. Function granularity is appropriate - no 500-line monoliths. However, some wrapper thunks exist (e.g., `sub_40140b` just calls `local_vars`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with some forward jumps. The `goto` statements in computed jump functions disrupt linear flow but most business logic is traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop constructs are reasonably clean. Some minor redundancy in struct definitions but not severe.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types are generic `unsigned int` or `unsigned int*`. Original had specific types: `int`, `size_t`, `Point*`, `Node*`, `TreeNode*`. Const correctness lost. Function pointers not properly typed.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered with generic names: `struct_0`, `struct_1` with fields like `field_0`, `field_4`, `padding_0`. Original had meaningful structs: `Point {x, y}`, `Node {data, next}`, `TreeNode {data, left, right}`. Field semantics completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate issues: unsafe pointer arithmetic in array access (`ptr + idx * 4`), some casts between pointer types, no bounds checking visible. Not catastrophic but concerning.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. Original source had extensive comments explaining each test case. Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable (linked list traversal, tree operations) but not explicitly named or documented. The algorithm intent is inferable but not highlighted.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of uncertainties, indirect calls, or potential issues. The decompiler presents everything as definitive even where resolution was uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No pre/postcondition documentation. Original had error checking (NULL returns, bounds checks) but contracts not recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships not documented. No indication of who calls whom or global variable usage patterns.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions grouped logically in one file matching original single-file structure. Static functions properly scoped. Reasonable organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code has extern declarations and metadata says "Compilation Result: Yes". Some stubs needed but basic compilation works.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Variable naming**: All meaningful variable names lost - `x`, `arr`, `n`, `p1`, `p2`, `local` become `a0`, `v0`, `ptr`, `i`
+- **Function naming**: All functions use address-based names (`sub_401400`) instead of semantic names (`double_value`)
+- **No comments**: Zero documentation recovered from original source's extensive comments
+- **Struct field loss**: `Point {x, y}`, `Node {data, next}` become `struct_0 {field_0, field_4}`
+- **Type erosion**: Specific types (`Point*`, `TreeNode*`, `size_t`) become generic `unsigned int*`
+
+### Best Quality Aspect: Module Organization (8/10)
+- Functions are logically grouped, matching the original single-file structure. Function decomposition is reasonable.
+
+### Most Needs Improvement: Lexical Clarity (3/10)
+- Variable and function naming is completely generic, losing all semantic meaning from the original source. Combined with zero comment recovery, the code is nearly incomprehensible without cross-referencing the source.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `a0` used in `a0 * 2` should be named `x` or `multiplier`; `ptr` used in loop indexing should indicate it's an array pointer
+2. **Recover function names from symbols/debug info**: The original had debug symbols (`-g` flag) - these should be used to recover `double_value`, `local_vars`, etc.
+3. **Add minimal documentation**: Even auto-generated comments explaining what each function does would significantly improve readability

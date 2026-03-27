@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`, `result`) with no semantic meaning. For example, `param_strcpy` uses `a0` and `a1` instead of `dst` and `src`, making parameter purpose unclear.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions retain original names (`param_strcpy`, `call_strcpy`, `param_mutex_lock`) which is good, but helper functions are cryptic (`sub_400c48`, `$a.34` for signal handler). Mixed quality overall.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `4294967295` (UINT_MAX/-1), `4294967294`, `4294967293` for error codes without explanation. String literals preserved well ("HelloLib", "/etc/passwd") but numeric constants obscure logic.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `armg_calculate_condition()` calls throughout, `vvar_4`/`vvar_24` stack artifacts, and redundant assignments (`v0 = v1`, `v1 = v2`). These compiler/decompiler artifacts significantly clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` labels (`LABEL_401088`, `LABEL_401304`) instead of structured if/else. `armg_calculate_condition` obscures simple boolean checks. At `-O0`, this level of restructuring is unacceptable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Some functions have absurd signatures (`param_signal_handling` has 16 parameters!). Some caller functions are constant-folded incorrectly (`call_strcpy` returns constant, doesn't call `param_strcpy`). Thread functions properly separated.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps disrupt reading flow. Functions like `param_fopen_fclose` have multiple goto targets that break top-to-bottom reading. Some simpler functions (`param_memcpy`) read linearly.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy: `call_printf` calls `printf` twice in return statement, `call_fread_fwrite` calls `param_fread_fwrite` twice. Duplicate variable assignments throughout (`v3 = v4; v2 = v5;`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned int` instead of `size_t`, `pid_t`, `ssize_t`. Function signatures corrupted (`param_fopen_fclose` has 8 parameters instead of 1). `FILE*` recovered in some places but often as `void*`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `struct sockaddr` partially recovered with field names. `struct FILE` declared but empty. `ThreadData` struct not recovered (fields accessed via array indexing `ptr[0]`, `ptr[1]`, `ptr[2]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Implicit unsafe casts throughout. Pointer arithmetic without clear types (`ptr + 1`, `v7 + 4`). Function pointers degraded. No const-correctness preserved from original source.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contract documentation. Completely bare code.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`, `pthread_create`). Signal handling pattern partially visible but `$a.34` handler not identified. Producer-consumer pattern in condition variables not named.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags for corrupted function signatures. `armg_calculate_condition` calls not explained. Incorrect parameter counts not flagged. Silent presentation of potentially incorrect decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"). No postconditions inferred. Error return values (`4294967293`, `4294967294`, `4294967295`) not documented with meanings.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced cryptically (`g_414008`, `g_414118`, `g_402b00`). Signal handler `$a.34` callback relationship unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in somewhat logical order (library tests, syscall tests, thread tests). Test functions grouped together. No header file structure or logical file separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has compilation issues (incorrect function signatures with wrong parameter counts). External dependencies (`pthread`, `syscall`) not documented. Would require significant manual correction to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+5+4+3)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type):        (4+4+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (1+5+2+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────
+Overall Score:                                  3.78/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Function signature corruption**: `param_fopen_fclose` has 8 parameters instead of 1, `param_signal_handling` has 16 parameters instead of 0
+- **Variable naming**: All variables are generic (`v0`, `v1`, `a0`, `a1`) with no semantic meaning
+- **Control flow artifacts**: `armg_calculate_condition()` calls obscure simple boolean logic throughout
+- **Redundant function calls**: `call_printf`, `call_fread_fwrite` call their underlying functions twice in return statements
+- **Zero documentation**: No comments explaining algorithm intent, error codes, or decompilation confidence
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Test functions retained original source names (`param_strcpy`, `call_mutex_lock`, `param_atomic_ops`) providing some semantic anchor points
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any comments makes understanding non-trivial logic extremely difficult; even basic function purpose documentation is missing
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns and function context (e.g., first parameter of `strcpy` wrapper should be `dst`)
+2. **Eliminate armg_calculate_condition artifacts** and replace with native boolean expressions for readability
+3. **Add decompilation confidence annotations** flagging uncertain reconstructions (corrupted signatures, unresolved calls) with suggestions for manual review

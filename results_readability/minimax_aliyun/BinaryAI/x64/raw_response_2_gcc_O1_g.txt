@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `param_1`, `param_2`. Local variables use cryptic patterns like `iVar1`, `piVar1`, `uVar1`, `local_10`, `local_28`. These provide zero semantic information about purpose (e.g., should be `packet_size`, `node_ptr`, `sum`).
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names perfectly match the original source: `double_value`, `process_int`, `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`, `binary_tree_sum`, etc. Excellent recovery.
+
+**3. Literal Clarity:** Score:4/10  
+Justification: Magic numbers like `0x61` (should be `'a'`), `0xb` (should be `11`), `0x14` (should be `20`) appear without explanation. However, format strings preserve test labels like "DT-L1-01". Ghidra-specific types (`undefined4`, `undefined8`) add noise.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts for -O0. Some Ghidra type noise (`undefined`, `undefined4`, `undefined8`) present but manageable. No obvious register spilling or debug instrumentation clutter.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops use do-while constructs that semantically match source for-loops (e.g., `array_1d_stack`). Conditional logic in `process_char` correctly recovers the range check. Some pointer arithmetic in complex functions like `array_3d` is harder to follow.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function maintains single responsibility with appropriate granularity. Parameter lists are clean. Functions like `binary_tree_sum` correctly separated from `binary_tree`. No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Most functions read top-to-bottom. Early returns used appropriately. `array_3d` has nested loops but still traceable. No excessive forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling in `array_3d` is present but minimal. Common subexpression elimination artifacts are rare. Clean overall.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses Ghidra-specific types (`undefined4` instead of `int`, `undefined8` instead of `long`, `undefined` instead of `char`). Function pointers use generic `code *` instead of proper signatures. `bool` used instead of `_Bool`. Mixed precision.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Structs partially recovered with array indexing (`param_1[1] + *param_1 + param_1[2]` for 3-field struct). Stride calculation correct (3 elements for Point3D). However, unions treated as regular arrays, losing type distinction. Bitfields partially reconstructed.
+
+**11. Type Safety:** Score: 5/10  
+Justification: `ptr_triple` uses `undefined8 *` parameter causing type confusion. Multiple unsafe pointer casts present. Pointer arithmetic generally correct but some expressions like `ptr_diff` use confusing bit manipulation (`>> 2 & 0xffffffff`). Some potential undefined behavior patterns.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: No meaningful comments explaining algorithm logic. Function names are self-documenting but no additional context provided. No decompilation confidence indicators or uncertainty flags.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard patterns recognized: loops, conditionals, pointer traversal, linked list traversal via `*(int **)(param_1 + 2)`. However, no explicit naming of patterns like "linked list traversal" or "array sum pattern".
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No flags for suspicious code. `array_oob` (intentional out-of-bounds) not flagged as potential issue. Indirect calls in function pointers not annotated with uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not explained. `array_complex_index` boundary checks could be documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships somewhat inferable from code (e.g., `ptr_func_simple` calls `double_value`). However, no explicit documentation of callers/callees or callback relationships.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file but logically grouped by type (data types, arrays, pointers, composites). Static functions properly scoped. Could benefit from section headers.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code compiles (marked "Yes" in metadata). Uses standard library functions (`puts`, `__printf_chk`). Minimal external dependencies. Could compile standalone with libc.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use `param_N` and locals use `iVar1`, `local_X` patterns - zero semantic meaning
+- **Type precision**: Ghidra types (`undefined4`, `undefined8`, `undefined`) obscure actual C types
+- **No comments**: Complete absence of explanatory comments for algorithms or intent
+- **Union type loss**: Unions treated as regular arrays, losing type distinction
+- **Anomalies unflagged**: Intentional out-of-bounds access (`array_oob`) not marked as suspicious
+
+### Best Quality Aspect: Function Naming (10/10)
+Function names are perfectly recovered from the original source - every single function matches exactly (`double_value`, `process_int`, `linked_list`, etc.). This is exceptional.
+
+### Most Needs Improvement: Variable Naming (2/10)
+Variable naming is essentially unusable - generic patterns like `param_1`, `iVar1`, `local_10` provide no semantic information about variable purpose or type.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `param_1` used in arithmetic with 2 should be `x` or `value`; `local_28` used as array base should be `arr` or `buffer`
+2. **Replace Ghidra types with standard C types**: Map `undefined4` → `int`, `undefined8` → `long`, `undefined` → `char`
+3. **Add semantic comments**: Explain algorithm intent, flag potential undefined behavior, document struct field meanings

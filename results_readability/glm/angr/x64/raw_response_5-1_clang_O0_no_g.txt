@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: The code relies heavily on generic names like `v0`, `v1`, `ptr`, and `arg_0`. For example, in `test_cpp_member_func`, the `SimpleClass` object is named `v2`, and results are stored in `v0` and `v1`, completely obscuring the logic `r1 + r2 + r3`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully demangles C++ symbols, accurately recovering names like `SimpleClass::getValue`, `test_cpp_virtual_func`, and `Point::operator+`, which perfectly matches the source intent.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals like `"Test"` are preserved, but magic numbers are not replaced with constants. For instance, `31` is used in `SimpleClass::SimpleClass` instead of `sizeof(name)-1`, and offsets like `24` in `test_cpp_diamond_inheritance` lack semantic context.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly free of register spilling artifacts (expected for `-O0`), but it exposes significant C++ ABI noise, such as explicit `this` pointer passing and exception handling frames (`_Unwind_Resume`), which clutter the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: High-level control flow is lost; `try/catch` blocks in `test_cpp_exception` are decompiled into a mess of `__cxa_throw` and `__cxa_begin_catch` calls. Virtual function calls are shown as raw indirect vtable calls rather than polymorphic dispatch.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-decomposed into class methods and constructors (e.g., `LifecycleClass::LifecycleClass`). Template instantiations are correctly separated (e.g., `template_max<int>` vs `<double>`), though compiler-generated thunks add clutter.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Code reads linearly within basic blocks, but flow is disrupted by exception handling landing pads and complex constructor chains (e.g., `std::unique_ptr` initialization), requiring jumps to understand the sequence.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no loop unrolling or dead code. However, massive template expansion (e.g., `std::tuple` internals for `unique_ptr`) creates structural redundancy, inflating the code size for simple logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types like `int` and `char*` are accurate. However, `size_t` is often rendered as `unsigned long`, and high-level types like `std::unique_ptr` are represented as raw structs, losing semantic precision.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Struct layouts are correct, but field names are generic. `SimpleClass` is recovered as `struct_0` with `field_0` and `padding_4`, losing the semantic names `value` and `name`.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code contains many unsafe casts reflecting compiler internals. Accessing members in `test_cpp_diamond_inheritance` uses casts like `*((unsigned int *)&(&v8)[ptr[24]])`, which is unsafe compared to the source `obj.shared_data`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining logic. Only auto-generated headers (e.g., `// Function: _init at 0x402000`) exist. Complex C++ mechanisms like vtable offsets or exception frames are undocumented.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The decompiler identifies class structures but fails to recognize high-level idioms. The RAII pattern in `test_cpp_smart_ptr` is lost in `std::__uniq_ptr_impl` boilerplate, and `try/catch` blocks are not identified.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: No explicit warnings are given for complex or potentially confusing code segments. The "Unsupported jumpkind Ijk_SigTRAP" is present but not contextualized for the user.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: Contracts are implicit in the code but not documented. The error handling contract in `test_cpp_exception` is obscured by low-level control transfers, losing the "catch int" semantics.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clearly labeled (e.g., `SimpleClass::getValue`), providing good symbol-level cross-references. However, the link between vtable globals (e.g., `g_408878`) and class definitions is not explicitly documented.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are grouped by address, which roughly clusters class methods together. However, user code is heavily intermixed with expanded `std` library implementations, lacking logical separation.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code is not standalone compilable. It relies on external `std` library symbols and reconstructed types that would conflict with actual headers, requiring significant patching to build.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming is predominantly generic (`v0`, `v1`), obscuring data flow in functions like `test_cpp_smart_ptr`.
+- High-level C++ control flow (`try/catch`, RAII) is lost, replaced by low-level ABI calls (`__cxa_throw`, tuple constructors).
+- Member access is decompiled to unsafe pointer arithmetic (e.g., `ptr[24]`), losing semantic safety.
+- Total absence of comments explaining complex C++ runtime mechanisms (vtables, exception frames).
+
+**Best Quality Aspect:** Function Naming Quality (Score: 9/10)
+- The decompiler excels at demangling C++ symbols, accurately recovering class names, method names, and namespaces, which provides a solid skeleton for understanding the code structure.
+
+**Most Needs Improvement:** Semantic Transparency (Score: 3/10)
+- The decompiler fails to abstract low-level C++ implementation details (ABI, RTTI, Exception handling) back into high-level idioms, resulting in code that is technically correct but semantically opaque.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Reconstruct High-Level Control Flow:** Implement pattern matching to re-abstract `__cxa_throw`/`__cxa_begin_catch` sequences into `try/catch` blocks.
+2. **Improve Variable Naming:** Utilize data flow analysis and type information to infer variable names (e.g., inferring `this` pointer usage to name variables `obj`, `result`).
+3. **Abstract Standard Library Patterns:** Recognize and simplify common STL implementations (like `std::unique_ptr`, `std::tuple`) into their conceptual types or provide options to collapse them.

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `a1`, `v2`) with no semantic meaning. For example, in `heap_basic`, `v1` should be `arr` and `v3` should be `result` based on usage patterns.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`double_value`, `local_vars`, `heap_basic`), but many helper functions use generic names (`sub_1020`, `sub_1030`). Test functions like `test_stack_memory` are preserved correctly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout (e.g., `0x28u`, `0x10u` for malloc sizes) without explanation. Some constants are folded incorrectly (e.g., `test_stack_memory` shows constant `20` instead of calling `stack_alias`).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__readfsqword(0x28u)` stack canaries, excessive type casts (`(unsigned int)`, `(__int64)`), and register variable hints (`// rax`, `// rdx`) clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `do-while` or `for` constructs, but some functions like `vla_stack` have confusing pointer arithmetic loops. At `-O0`, control flow should match source exactly but shows optimization artifacts.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved correctly. However, `stack_alias` is completely wrong (returns constant 20), and `test_stack_memory` has constant-folded printf calls instead of actual function invocations.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but functions like `linked_list_heap` have complex nested loops that are harder to follow than the original source's cleaner structure.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding occurred where it shouldn't at `-O0` (e.g., `local_vars` returns `(2 * a1 + 10)` directly instead of showing intermediate variables `a`, `b`, `c`). This loses semantic clarity.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types degraded significantly: `int` becomes `_DWORD` or `__int64`, pointers become `_QWORD *`. Function `call_global_callback` loses its parameter (`int x`), showing `call_global_callback()` with no parameters.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `Point` struct completely lost (treated as 8 bytes raw memory in `heap_struct`). `Node` linked list struct not recovered - all accesses are raw pointer arithmetic (`v0[1]` instead of `node->next`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout (`(unsigned int)`, `(_DWORD *)`). Function `memop_unaligned_access` takes `__int64` instead of `const char *`, losing type safety for pointer arithmetic.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments except function headers. No explanation of algorithm intent, no recovery of original source comments (e.g., `// MEM-L1-01: 局部变量（基础类型）` completely lost).
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not identified - linked list creation in `linked_list_heap` not recognized as such, tree traversal in `tree_heap_traversal` appears as raw malloc/free without pattern indication.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies noted (`// positive sp value has been detected`), but critical semantic errors not flagged (e.g., `stack_alias` returning constant, `test_stack_memory` with constant-folded calls).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. NULL checks preserved in code but not documented as contracts. Error return values (-1, -2) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls mostly preserved, but `call_global_callback` loses parameter information. Global variables (`global_counter`, `file_scope_static`) referenced but not clearly documented as globals.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source, but no file/module structure recovered. Static functions not clearly distinguished from external functions.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 18 external functions failed to decompile (`malloc`, `free`, `printf`, etc.). Code references undefined symbols (`global_counter`, `const_string`) without declarations. Cannot compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.50/10
+```
+
+### Overall Readability Score: **4.5/10**
+
+### Critical Defects:
+- **`stack_alias` function completely broken** - returns constant 20 instead of implementing pointer aliasing logic
+- **`test_stack_memory` constant-folded** - printf calls show hardcoded values instead of actual function invocations, losing test semantics
+- **Composite types lost** - `Point` and `Node` structs not recovered, all struct access is raw pointer arithmetic
+- **Variable names all generic** - `v0`, `v1`, `a1` provide no semantic information about purpose
+- **18 external functions failed** - `malloc`, `free`, `printf`, etc. not decompiled, code cannot compile standalone
+
+### Best Quality Aspect: **Function Decomposition (7/10)**
+- Function boundaries mostly preserved correctly with original names for core functions
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover struct definitions, making heap/linked list code nearly unreadable
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types from access patterns** - Detect consistent offset patterns (e.g., `[0]` and `[1]` always accessed together) to suggest struct definitions
+2. **Preserve semantic variable names from debug symbols** - When `-g` flag present, extract and use original variable names instead of `v0`, `v1`
+3. **Flag semantic inconsistencies** - When constant folding eliminates function calls in test code, warn that original behavior may be lost

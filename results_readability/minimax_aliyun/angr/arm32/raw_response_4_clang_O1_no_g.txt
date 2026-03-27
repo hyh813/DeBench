@@ -1,0 +1,96 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a0`, `a1`, `a2`) and local variables use cryptic names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`, `v13`, `v14`, `v15`). The original source uses meaningful names like `count`, `args`, `sum`, `x`, `y`, `str`, `ptr`, `i`, `j`. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names perfectly match the original source: `cdecl_func`, `call_cdecl`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `func_many_args`, `func_mixed_args`, `param_by_value_int`, `param_string`, `ret_pointer`, `ret_small_struct`, `ret_large_struct`, `func_a`, `func_b`, `ret_func_ptr`, `ret_opaque_handle`, `ret_complex_expr`, `ret_multi_branch`, `ret_void`, `main`, etc. Excellent verb usage and semantic accuracy.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: Most literals are computed results (15, 50, 6, 21, 33, 42, 36, 117, 173, 300, 20, 10, 40, 60, 21, 7, 215, 100, 305419896) which are correct outputs. No unexplained magic numbers in the main logic. Minor issue: some format string addresses like `&g_4014b4` are not resolved to actual strings.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution from: (1) Register annotations everywhere (`// r0`, `// r1`, `// r2`, `// r3`, `// r4`, `// r5`, `// lr`, `// cc_dep1`, `// cc_dep2`, `// cc_ndep`, `// cc_op`), (2) Stack frame annotations (`// [bp-0x4]`, `// [bp-0x8]`, `// [bp-0xc]`, `// [bp-0x10]`), (3) ARM helper functions like `armg_calculate_condition`, `armg_calculate_flag_c`, `armg_calculate_flag_v`, (4) Constructs like `Not Conv(32I->1I, ...)` and `Goto None`. This makes reading the code extremely difficult.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural control flow (if/else, return statements). However, `varargs_func` and `param_varargs` use confusing pointer manipulation (`*((char *[4])&v0[0]) = ptr + 1`) instead of clear loop constructs. The `func_struct_byptr` has convoluted conditional logic with `armg_calculate_condition` that obscures the original NULL check logic. At -O0, this level of control flow degradation is unexpected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is excellent - all small functions from the original source are preserved separately. Each function has a single responsibility. However, some parameter lists are inflated (e.g., `param_struct_byval` has 16 parameters `a0-a15` when the original passes a struct by value, which the decompiler expanded).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without forward jumps. Early returns are used appropriately. The complex functions like `__adddf3` have many jumps but that's expected for a floating-point library function. Minor issue: some functions have goto labels that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy in most functions. One minor issue: `call_varargs_param` calls `param_varargs` twice (lines showing `v1 = param_varargs(4, 10, 20, 30);` followed by `return param_varargs(4, 10, 20, 30);`), which appears to be a decompilation artifact.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: All integers are typed as `unsigned int` when the original uses `int` (signed). Function pointers lose their signature - `param_func_ptr` has `unsigned int *a0` instead of proper function pointer type `int (*callback)(int)`. Pointers are correctly typed as `char*` or `unsigned int*`. The signed/unsigned loss is significant for semantic accuracy.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Some struct recovery attempted: `param_ptr_array` has `typedef struct struct_0 { char field_0; } struct_0;` and `param_double_ptr` has `typedef struct struct_0 { unsigned int field_0; } struct_0;`. However, field names are generic (`field_0`) instead of meaningful names. The original `SmallStruct` with fields `x`, `y` is not recovered in `func_struct_byptr`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: (1) Excessive pointer arithmetic: `*((int *)((char *)&v0 + v7))` in `func_struct_byval`, (2) Unsafe array access patterns, (3) Function pointer called directly: `a0(a1)` in `param_func_ptr` without type safety. The original code had clear, type-safe operations that are now potentially unsafe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The only comments are the register/stack annotations (e.g., `// r0`, `// [bp-0x4]`) which are noise, not helpful documentation. No explanation of algorithm intent, no recovery of original comments from source, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some idioms are recognizable: varargs handling is identifiable (though poorly named), struct by-value passing is recoverable. However, patterns like the AAPCS calling convention for ARM, the mixed conventions test, and the callback patterns are not explicitly identified or named.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No clear flagging of suspicious code or decompilation uncertainties. The complex `armg_calculate_condition` calls in `func_struct_byptr` represent decompilation difficulties but aren't annotated as such. No indication of indirect calls that couldn't be resolved or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions, postconditions, or invariants. The original source had implicit contracts (e.g., `func_struct_byptr` requires `p != NULL`, `param_double_ptr` modifies caller's pointer) that are not documented in the decompiled code.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible and clear. However, global variable usage (the test functions call many small functions) isn't well-documented in comments. Callback relationships (e.g., `callback_func` used by `param_func_ptr`) aren't explicitly linked.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - all test functions (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) are together, all called functions are separate. However, there's no clear separation between the "library" functions and "test" functions. Static function scoping is preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many `extern` declarations for global variables (`g_412008`, `g_412030`, `__TMC_END__`, etc.) that aren't defined. Format strings are referenced as `extern char g_4014b4` instead of actual string literals. Would require significant patching to compile standalone.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming is extremely poor: all parameters are `a0-aN` and locals are `v0-vN`, making code comprehension very difficult
+- Severe noise pollution from register annotations (`// r0`, `// cc_dep1`) and ARM helper functions (`armg_calculate_condition`)
+- Type precision lost: all `int` become `unsigned int`, function pointers lose their signature
+- No comments explaining algorithm intent or decompilation confidence
+- Struct field names not recovered (generic `field_0` used instead of meaningful names like `x`, `y`)
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+- Nearly every function name perfectly matches the original source, making it easy to locate specific functions
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Comment Quality (2/10)  
+- Generic variable names (`a0`, `v0`, `v1`) completely obscure variable purpose
+- Complete lack of meaningful comments makes understanding algorithm intent impossible
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a0` used in multiplication should be named `multiplier` or `factor`; `v0` accumulating sum should be named `sum` or `total`
+2. **Eliminate register/stack annotations as default**: Make these opt-in rather than always displayed, as they add noise without semantic value
+3. **Recover struct field names from access patterns**: If `field_0` is always accessed as `->x`, infer and name it `x`; if accessed as `->value`, name it `value`

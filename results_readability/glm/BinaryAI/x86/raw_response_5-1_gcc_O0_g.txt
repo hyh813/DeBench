@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are predominantly generic names like `local_34`, `iVar1`, and `puVar2`, which obscure their semantic purpose (e.g., `local_34` is a `SimpleClass` object). While stack canary variables like `in_GS_OFFSET` are identified, user-defined variables lack meaningful names derived from their usage.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully recovered the original function names (e.g., `test_cpp_member_func`, `SimpleClass::getValue`) due to the presence of debug symbols (`-g`). However, some internal runtime functions remain generic (e.g., `FUN_000111d0`).
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals are well preserved (e.g., `"Test"`, `"Derived"`), but magic numbers like `0x32` (decimal 50) and `0x1234` appear without the named constants or context found in the source code.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with compiler artifacts such as stack canary checks (`local_10 = *(int *)(in_GS_OFFSET + 0x14)`) and Position-Independent Code thunks (`__x86.get_pc_thunk.bx`), which significantly impede readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: High-level C++ control flow is lost; for example, the `try-catch` block in `test_cpp_exception` is reduced to low-level calls to `FUN_000111d0` (likely `__cxa_allocate_exception`) and `FUN_000112f0`, completely obscuring the exception handling logic.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: While class methods are correctly decomposed into separate functions (e.g., `SimpleClass::SimpleClass`), the test functions are bloated by the inlined expansion of complex C++ standard library templates (e.g., `std::unique_ptr` internals), making them monolithic.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom, but the flow is disrupted by the verbose setup required for C++ features like RTTI checks and exception handling frames, which introduce jumps and conditional blocks not present in the source.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little obvious code redundancy, but the verbosity of the C++ standard library implementation (e.g., `std::tuple` internals in `test_cpp_smart_ptr`) creates a perception of redundancy compared to the concise source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: User-defined types like `SimpleClass`, `Derived`, and `unique_ptr` are correctly identified and used in variable declarations. However, C++ references are often represented as pointers, and some integers are generic `undefined4`.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: While the types are known, member access is frequently shown as raw pointer arithmetic (e.g., `*(int *)(this + 4)`) rather than field access (e.g., `this->value`), requiring manual offset tracking to understand struct layouts.
+
+**11. Type Safety:** Score: 5/10
+Justification: C++ type safety mechanisms are replaced by C-style casts and indirect calls. For instance, `dynamic_cast` is represented by a function call `FUN_00011270` followed by a null check, losing the type safety guarantees of the original code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic; the output consists solely of auto-generated headers and function signatures, leaving complex C++ semantics unexplained.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level C++ idioms are not recognized. RAII (Resource Acquisition Is Initialization) in `test_cpp_smart_ptr` is invisible, appearing only as scattered constructor and destructor calls rather than a scoped object lifecycle.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: Indirect virtual function calls (e.g., `(***(code ***)param_1)(param_1,param_2)`) are presented without annotation that they represent virtual dispatch, making it hard to distinguish them from arbitrary function pointer calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: Preconditions and invariants are not documented. For example, the null checks in `test_cpp_rtti` are explicit code but not highlighted as contracts for `dynamic_cast`.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Virtual table calls are visible as indirect calls, and standard library calls are named, but the relationship between a class and its virtual methods is not explicitly summarized or grouped.
+
+**17. Module Organization:** Score: 4/10
+Justification: Functions are ordered by address, scattering related class methods (constructors, destructors, and member functions) throughout the file, rather than grouping them logically by class.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The output is C code representing C++ binaries. It relies on C++ runtime symbols and name mangling, making it impossible to recompile without significant manual reconstruction of headers and class definitions.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Exception handling logic (`try-catch`) is completely obfuscated by low-level runtime calls (`__cxa_allocate_exception`), making the control flow unintelligible.
+- C++ idioms like RAII and Smart Pointers are lost; `std::unique_ptr` usage is expanded into verbose internal library calls, hiding the resource management intent.
+- Variable naming is generic (`local_XX`, `iVar1`), failing to convey the semantic meaning of the original source variables.
+- Virtual function calls are raw indirect memory accesses (`(***(code ***)param_1)`) without semantic annotation of polymorphism.
+- Struct member access uses pointer arithmetic offsets (`*(int *)(this + 4)`) instead of field names, obscuring data layout.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The presence of debug symbols (`-g`) allowed the decompiler to recover the exact original function names, which is the strongest link to the source code.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.3/10)
+- The decompiler fails to map the low-level C implementation back to high-level C++ concepts (exceptions, templates, RAII), resulting in code that is technically correct but semantically opaque.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **C++ Exception Recovery:** Detect and pattern-match `__cxa` runtime calls to reconstruct `try-catch-throw` blocks in the control flow.
+2.  **Smart Pointer & RAII Abstraction:** Identify standard library template patterns (like `std::unique_ptr`) and abstract the verbose constructor/destructor calls into a high-level object lifecycle representation.
+3.  **Virtual Call Annotation:** Annotate indirect calls that target vtables with the likely method name (e.g., `/* virtual call */ Base::virtual_func`) to improve readability of polymorphic code.

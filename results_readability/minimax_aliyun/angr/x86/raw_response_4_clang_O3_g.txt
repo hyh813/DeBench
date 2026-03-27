@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `a0`, `a1`, `v0`, `v1`, `v2`, `v3`, `ptr`, `i`, `result`, `cur`, `iter`. No semantic meaning recovered (e.g., should be `packet_size`, `user_count`). The naming provides zero insight into variable purpose.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions correctly named: `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_many_args`. However, many functions use mechanical address-based names like `sub_401030`, `sub_401080`, `sub_401201`. Mixed naming convention creates confusion.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Return values like 15, 50, 42, 300 are correct and meaningful. However, magic number `4294967295` (0xFFFFFFFF) used without explanation for error returns. Some literals unclear (e.g., `nan` in `func_mixed_args`).
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution: `[D] unsupported_<class 'pyvex.expr.GetI'>()` appears repeatedly, weird type syntax `unsigned int [2] ret_small_struct`, many `[D]` annotations. Compiler artifacts not eliminated; code readability severely impacted.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural with if/else and returns. Some goto usage in varargs functions. At -O0, control flow should be cleaner. Minor awkwardness in `register_tm_clones` and `__do_global_dtors_aux`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions reasonably decomposed - each does one thing. No 500-line monoliths. Some wrapper functions (e.g., `sub_401219` calling `call_cdecl`) expected from compilation. Good granularity overall.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive forward jumps. Some complex functions (`__do_global_dtors_aux`) have nested loops but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop unrolling present in varargs functions (`varargs_func`, `param_varargs`) but that's acceptable. Some repeated expressions in struct handling but not severe.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - almost everything is `unsigned int`. Pointers are `unsigned int` instead of proper pointer types. No `int32_t`, `size_t`, `ssize_t`. Function pointers typed as `unsigned int`. Sign information lost throughout.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct definitions exist but with generic names: `struct_0`, `struct_1`. Field names are `field_0`, `field_4`, `padding_0`. Original names `LargeStruct`, `SmallStruct`, `SmallPoint` completely lost. No meaningful field recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe pointer operations present. Pointer arithmetic in `param_ptr_array` uses raw offsets. Function pointer call `a0(a1)` lacks type safety. Not severely dangerous but concerning. Some incorrect type usage.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Almost no useful comments. Only decompilation artifacts like `[D] unsupported_<class 'pyvex.expr.GetI'>()`. No explanation of function purpose, parameters, or return values. Zero documentation recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns recognizable (varargs handling, struct by-value) but not explicitly named. Calling convention differences not documented. No pattern identification or naming (e.g., "Implements varargs via stack").
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Many anomalies indicated with `[D] unsupported` but not explained. Functions with wrong signatures (e.g., `ret_small_struct`) not flagged. No warnings about potential undefined behavior. Silent failures likely.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions. No invariants. No error condition documentation. Zero contract information recovered from original source.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are syntactically clear but no documentation of call relationships. No indication of who calls each function. Global variable usage not documented. Callback relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions somewhat grouped by functionality (calling conventions, parameter passing, return values). But no clear logical organization. Single flat file with 60+ functions. No namespace or module structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many `extern` declarations incomplete. Syntax errors: `unsigned int [2] ret_small_struct` and `unsigned int [16] ret_large_struct` would not compile. Missing dependencies documented. Would require significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`a0`, `v1`, `ptr`) providing zero semantic meaning
+- **Type precision**: Everything is `unsigned int`, losing sign, pointer types, and size information
+- **Struct recovery**: Original struct names (`LargeStruct`, `SmallPoint`) completely lost; replaced with `struct_0`, `struct_1`
+- **Noise**: Severe `[D] unsupported` artifacts and incorrect type syntax throughout
+- **Comments**: Zero useful documentation; no explanation of function purpose or parameters
+
+### Best Quality Aspect: Function Decomposition (7/10)
+Functions are reasonably sized with good granularity. Each function does one thing. No excessive monoliths. This is the highest-scoring dimension.
+
+### Most Needs Improvement: Variable Naming (2/10) and Comment Quality (1/10)
+Variable names provide zero semantic insight - every variable is `a0`, `v1`, `ptr`. Combined with zero comments, the code is essentially unreadable without external reference.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `a0` used as `count` in varargs should be named `count`; `ptr` used in pointer functions should reflect its purpose
+2. **Recover struct names from debug symbols**: Original names `LargeStruct`, `SmallStruct`, `SmallPoint` should be recovered; field names should reflect data (`data[0]`, `data[15]`)
+3. **Eliminate decompilation noise**: Remove `[D] unsupported` artifacts; fix malformed type syntax (`unsigned int [2]`); add proper comments explaining what couldn't be resolved

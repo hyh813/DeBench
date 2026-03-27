@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic Ghidra auto-generated names (`local_28`, `puVar1`, `iVar1`, `sVar1`) with no semantic meaning. Original names like `capture_by_value`, `result`, `obj`, `r1`, `r2` are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names preserved well (`test_cpp_member_func`, `test_cpp_virtual_func`), and template instantiations are clear (`template_max<int>`, `Container<int>::push`). However, helper functions like `FUN_00011385` remain cryptic.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers dominate (`0x125c`, `0x3e9`, `0x2a`, `0x47`, `0x28a`) representing computed results (4704, 1000, 42, 71, 650) without explanation. String literals replaced with `&DAT_000121d8` references.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler runtime artifacts present (`__i686.get_pc_thunk.bx`, `__do_global_dtors_aux`, `deregister_tm_clones`). Multiple "WARNING" comments clutter the output without aiding comprehension.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Most test functions collapsed to single `return` statements with precomputed constants due to aggressive optimization. Original control structures (try-catch, loops, conditionals) largely eliminated.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Test functions appropriately sized but oversimplified. Template and class method implementations (`Container<int>::push`, `template_swap<int>`) retain reasonable structure with proper parameter lists.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Simplified functions read top-to-bottom clearly. Exception handling (`test_cpp_exception`) and RTTI sections (`test_cpp_rtti`) introduce branching that requires effort to trace.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding eliminates computation redundancy effectively. Template instantiations show some duplication (`Container<int>` vs `Container<double>`) but this reflects source structure.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Primitive types mostly preserved (`int`, `double`, `size_t`), but pointer types degraded to `undefined4*`, `void*`. Const-correctness lost (original `const` methods show no const qualification).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class method signatures partially recovered (`Container<int>::Container`, `RTTIDerivedA::getType`), but member variable layouts not shown. Inheritance relationships visible but vtable structure implicit.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts present: `(undefined4 *)`, `(int *)`, `(void**)`. Pointer arithmetic without bounds checking (`this + iVar1 * 4`). Type information lost in many conversions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only technical Ghidra warnings ("WARNING:", "Function:", "Unknown calling convention"). No semantic comments explaining what code does. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns partially recognized (`operator_new`, `__cxa_throw`, `__dynamic_cast`, `__thiscall`). Template instantiation patterns visible but not explicitly documented as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: WARNING comments present for calling conventions and unreachable blocks. However, anomalies not explained (e.g., why functions return constants instead of executing logic).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or exception contracts documented. Original try-catch semantics reduced to `__cxa_allocate_exception`/`__cxa_throw` calls without context.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch shown through vtable calls (`(**(code **)(*piVar2 + 4))`) but not labeled. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped but not logically organized by feature. No namespace structure recovered. Runtime functions (`_init`, `_fini`, `_start`) mixed with application code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References external C++ runtime functions (`operator_new`, `__cxa_throw`, `__dynamic_cast`) without declarations. Would require significant stubbing and C++ runtime linking to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3 + 7 + 3 + 5) / 4 = 4.50
+L2 Average: (4 + 6 + 6 + 7) / 4 = 5.75
+L3 Average: (5 + 4 + 3) / 3 = 4.00
+L4 Average: (2 + 5 + 5 + 2) / 4 = 3.50
+L5 Average: (4 + 4 + 3) / 3 = 3.67
+
+Overall = (4.50 × 0.30) + (5.75 × 0.25) + (4.00 × 0.20) + (3.50 × 0.15) + (3.67 × 0.10)
+        = 1.35 + 1.44 + 0.80 + 0.53 + 0.37
+        = 4.49/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable names completely generic** (`local_28`, `iVar1`, `puVar1`) - should infer semantic names from usage patterns
+- **Magic numbers without explanation** (`0x125c`, `0x3e9`, `0x28a`) - should detect constant-folded results and annotate
+- **Control flow collapsed** - test functions return precomputed constants instead of showing original logic
+- **No semantic comments** - original documentation completely lost, only technical warnings remain
+- **Type degradation** - `undefined4*` and unsafe casts obscure pointer semantics
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Test function names and template instantiation signatures preserved accurately, enabling identification of test purposes
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero semantic documentation; only auto-generated technical warnings that don't explain code purpose or behavior
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in size comparisons should be named `size`, `length`, `count`)
+2. **Detect and annotate constant folding** - when functions return precomputed values, add comments showing original computation (e.g., `// Original: 10 + 34 + 4660 = 4704`)
+3. **Recover C++ semantic structures** - label vtable calls as virtual dispatch, annotate exception handling blocks with try/catch semantics, and preserve const-correctness in method signatures
+
+---
+
+### Additional Observations:
+
+**Metadata Discrepancy:** The source claims `-O0 -g` (debug build) but the decompiled code shows aggressive optimization typical of `-O2`/`-O3` (constant folding, function inlining). Additionally, source metadata says `arm64` but decompiled code shows `x86` processor - this suggests either wrong binary was analyzed or metadata is incorrect.
+
+**Optimization Impact:** At true `-O0`, readability should be 8-10/10. The 4.5/10 score reflects significant optimization artifacts that contradict the stated compilation flags, making this decompilation substantially less readable than expected for a debug build.

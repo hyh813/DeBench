@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (v0, v1, v2, a0, a1, a2) with no semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `i`, `j` that indicated purpose clearly.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core logic functions preserved original names (sequential_ops, single_if, loop_for_fixed), but many wrapper functions use mechanical names (sub_401179, sub_4011ad) that add no value.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number 4294967295 (unsigned -1) appears throughout without explanation. Original code used clear values like -1, 0, 1, 10, 20 that were self-documenting.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Unnecessary wrapper functions (sub_401179 calls sequential_ops) and CONCAT operations for signed/unsigned handling create significant noise without adding clarity.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple constructs recovered well (if-else as ternary, for loops preserved), but switch statements converted to goto with jump tables (switch_small, switch_large) instead of proper switch-case structures.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Poor decomposition with many unnecessary wrapper functions that just call the actual logic functions, creating artificial fragmentation without semantic purpose.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom naturally, but goto usage for switch jump tables (e.g., `goto (long long)(g_403010[a0] + ...)`) disrupts linear reading flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Wrapper functions create redundancy; ternary expressions repeat conditions (e.g., nested_if_deep has 5 levels of nested ternary that could be clearer as if-else chain).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses unsigned int where original had signed int; CONCAT operations indicate type confusion; function pointers degraded to `unsigned long long *` losing signature information.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited composite types in this benchmark; matrix in loop_multi_exit converted to memcpy from global variable rather than proper array declaration.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (long long to function pointers in switch statements); CONCAT operations for division/modulo indicate potential undefined behavior with signed values.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code despite original having extensive documentation explaining purpose, test cases, and difficulty levels for each function.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (loops, conditionals, recursion) but no explicit pattern naming; switch fallthrough partially recovered but not identified as such.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one "[D] Unsupported jumpkind" warning visible in sub_4010b5; most type confusion and potential issues silently presented as confident code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error condition documentation recovered; original had explicit test validation comments for each function.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented; global variable usage (g_403010, g_405fe0) not explained; callback relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source order but interspersed with wrapper functions; no logical grouping by control flow level (L1/L2/L3) as in original.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds; external dependencies declared (printf, memcpy, memset); but requires platform-specific globals to be defined.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+5+6+6)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (4+7+4)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+5+4+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+5+7)/3   = 5.67 × 0.10 = 0.57
+
+Overall Score: 4.85/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable names completely generic** (v0, v1, a0, a1) losing all semantic meaning from original (temp1, sum, count, i, j)
+- **Switch statements converted to goto with jump tables** instead of proper switch-case recovery
+- **Zero comments** despite original having extensive documentation explaining purpose and test cases
+- **Magic number 4294967295** used throughout without explanation (should be -1)
+- **Unnecessary wrapper functions** (sub_401179, sub_4011ad) that just call actual functions, creating artificial fragmentation
+
+### Best Quality Aspect:
+- **Build System Compatibility (7/10)** - Code compiles successfully with external dependencies properly declared, making it at least usable for further analysis.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation despite original having extensive comments explaining purpose, test cases, and difficulty levels for each function.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Infer variable names from usage patterns (e.g., loop counters should be `i`, `j`; accumulators should be `sum`, `count`, `total`)
+2. **Recover high-level control structures** - Detect jump table patterns and recover as switch-case statements instead of raw goto with computed addresses
+3. **Generate documentation from analysis** - Auto-generate comments indicating function purpose, parameter semantics, and confidence levels for recovered constructs

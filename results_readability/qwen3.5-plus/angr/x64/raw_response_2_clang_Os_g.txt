@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Loop counters like `i`, `j`, `k` are present but `sum`, `index`, `count` are never recovered despite obvious usage patterns.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions retained original names (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`), but helper functions use mechanical names (`sub_401020`, `sub_401085`). Function names accurately reflect functionality where preserved.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (`4294967295`, `44`, `440`, `100`, `20`) without explanation. Test functions show constant-folded results (`printf("DT-L1-01...: %c\n", 97)`) instead of actual function calls, obscuring the computation logic.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe decompiler artifacts: `[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] unsupported_<class 'pyvex.expr.GetI'>()`, `[D] PutI(904:F64x8)[t4,0]`. Redundant struct definitions repeated multiple times (`struct_0`, `struct_1` defined 5+ times each).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Loops converted to do-while instead of for constructs. Function pointer calls use `goto a0;` instead of proper call syntax. Float functions (`process_float`, `process_double`) have broken control flow with vector operations that don't match source.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved but internal structure degraded. `process_float` and `process_double` lost their parameters entirely. Test functions constant-folded, losing actual function call relationships.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with nested loops reasonably structured. Some forward jumps disrupt flow (`goto g_405010` in `sub_401020`). Array traversal loops are readable despite being do-while.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions show pre-computed constants instead of actual calls (redundant with computation logic). Multiple identical struct definitions. Redundant type casts like `(unsigned long long)(AddV(MulV(...)))`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `int` becomes `unsigned int` or `unsigned long long`. `char` parameter in `process_char` becomes `unsigned int`. Float/double functions completely broken (no parameters, wrong return types). `volatile` qualifier completely lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered as generic `struct_0`, `struct_1` with `field_0`, `field_8` naming. Point3D (3 ints) approximately correct but field names lost (`x`, `y`, `z` → `field_0`, `field_4`, `field_8`). Bitfields converted to bit operations, losing semantic meaning. Unions not distinguished from structs.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts present (`(unsigned long long)(AddV(...))`). Pointer arithmetic on generic `unsigned long` types. Function pointer calls use `goto` instead of proper call syntax. Void pointer handling degraded (`ptr_void` returns `unsigned long long` instead of `int`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of decompiler uncertainties beyond `[D]` markers. No algorithm or logic documentation. Original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list traversal (`linked_list`, `doubly_linked_list`) not identified as such. Tree recursion not labeled. Switch statements converted to array lookups (`enum_switch` uses `g_4020d0[a0]`).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `[D]` markers present for unsupported operations but no explanation of what they mean or how to resolve. No warnings about potential undefined behavior or type mismatches. Some anomalies silently ignored.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not explained). No postconditions. Null checks present but not documented as contracts. Array bounds checks lost in many functions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but test functions don't call actual functions (constant-folded to results). Global variables referenced (`g_40266f`, `g_404fe0`) but not explained. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by category (data types, arrays, pointers, composites). No header file structure or API declarations. Original source organization completely lost.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code has syntax errors (`[D]` markers are not valid C). Missing includes (`stdio.h`, `setjmp.h`). External dependencies not documented. Would not compile as-is without extensive manual修复.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+3)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+5+6+5)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (3+4+3)/3   = 3.33 × 0.20 = 0.666
+Level 4 (Semantic):    (1+2+4+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (4+5+2)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.90/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `a0`, `a1`** should be named based on usage (e.g., `sum`, `index`, `input_value`)
+- **Float/double functions** (`process_float`, `process_double`, `process_ld`) completely broken with no parameters and invalid vector operations
+- **Test functions constant-folded** showing computed results instead of actual function calls, losing all computation logic
+- **Struct fields** all generic (`field_0`, `field_8`) losing semantic meaning (e.g., `Point3D.x`, `Node.next`)
+- **Decompiler errors** (`[D]` markers) make code non-compilable and obscure actual logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names were preserved from debug symbols (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`), making basic identification possible.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero comments recovered despite original source having extensive documentation. No decompiler confidence indicators or uncertainty explanations.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (loop counters, accumulators, indices) to infer semantic names like `sum`, `index`, `count` instead of `v0`, `v1`.
+
+2. **Fix floating-point decompilation** - The vector operations (`AddV`, `MulV`, `xmm0`) for float/double functions are incorrect; recover proper scalar floating-point operations with correct parameters.
+
+3. **Preserve function call relationships in test functions** - Instead of constant-folding test results, maintain actual function calls to show the computation flow and enable debugging.

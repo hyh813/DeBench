@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Most local variables are marked "Unresolved local var" or use generic names like `iVar1`, `iVar2`, `__ptr`, `local_808`. The original had clear names like `arr`, `i`, `local`, `p1`, `p2`, `leak` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved - `local_vars`, `heap_basic`, `global_var_access`, `memop_memset` all match source exactly. Minor issue: some internal functions like `call_weak_fn` are auto-generated.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are clear (0x2a for 42, 0x14 for 20). However, some array indices like `*(int *)((int)__ptr + ((n - (n >> 0x1f)) * 2 & 0xfffffffdU))` are obscure calculations that obscure the simple `arr[n/2]` pattern.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts. Only "Unresolved local var" comments and occasional "WARNING: Unknown calling convention" - these don't significantly impede reading the core logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops and conditionals are natural. However, VLA functions like `vla_stack` use complex pointer arithmetic instead of recognizable array indexing, and some loops use unusual increment patterns (e.g., `iVar1 = iVar1 + 2` instead of `i++`).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Each function has single responsibility. The test functions (`test_stack_memory`, etc.) are appropriately grouped.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error-checking code. Some complex pointer arithmetic in VLA functions disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling present (e.g., `heap_basic` uses stride of 2 instead of 1). The original `for (int i = 0; i < n; i++)` became `do { ... iVar1 = iVar1 + 2; }` - this is an optimization artifact that should be commented.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation. Original `int` became `undefined4`, `char` became `byte`, pointers lost const correctness. Function parameters like `int *arr` lost array semantics. The original used precise types; decompiled uses generic types throughout.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `Node` and `TreeNode` structs are partially recovered with field names (`data`, `next`, `left`, `right`). However, `Point` struct is not properly recovered - `local_struct` just returns `x * 3` without any struct reference. Many local structs lost entirely.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: extensive void pointer arithmetic (`*(int *)((int)__ptr + offset)`), incorrect array indexing in loops (stride of 2 instead of 4 bytes), and potential buffer access issues in `vla_stack` with complex offset calculations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only "Unresolved local var" comments and "WARNING" messages. No explanation of algorithms, no recovery of original variable intent, no documentation of preconditions/postconditions. The decompiler provides no semantic guidance.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard patterns like malloc/free, linked list traversal are recognizable but not explicitly named or commented. Memory leak pattern in `memory_leak` is visible but not flagged.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Unknown calling convention", "Unresolved local var") but these are generic. No specific flags for concerning patterns like the memory leak in `memory_leak` or potential issues in `dangling_pointer`.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No recovery of preconditions (e.g., "n > 0" in `alloca_usage`), postconditions, or invariants. The original had explicit checks like `if (n <= 0 || n > 1000) return -1` that are partially preserved but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: External functions like `extern_function` and `extern_global_var` are recognized. Callback relationships in `set_global_callback`/`call_global_callback` are visible. However, no explicit documentation of call graphs or relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order (by address). No logical grouping matching source sections (stack memory, heap memory, static memory, memory operations). Static functions not clearly distinguished from public API.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code would not compile standalone. Missing `Node` and `TreeNode` type definitions (only used but not defined in decompiled output). Missing `Point` typedef. External declarations needed. Requires significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming completely lost - "Unresolved local var" throughout, generic names like `iVar1`, `__ptr`, `local_808`
+- Type precision severely degraded - `undefined4`, `void*` everywhere, lost `int` vs `unsigned`, lost const correctness
+- Struct recovery incomplete - `Point` struct not recovered in `local_struct`, fields generic
+- No semantic documentation - no comments explaining algorithms, contracts, or intent
+- Build system incompatible - missing type definitions, requires extensive patching
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are perfectly preserved from source, making it easy to identify the purpose of each routine.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+The decompiler failed to recover any meaningful variable names from debug information, leaving most locals as generic "Unresolved" or cryptic names that severely impede understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When debug info is unavailable, analyze how variables are used (e.g., loop counters, array indices, result variables) to suggest meaningful names like `i`, `index`, `result`
+2. **Recover struct types from allocation sizes**: Use `malloc(sizeof(Point))` patterns to reconstruct struct definitions with field names where possible
+3. **Add semantic comments for complex patterns**: Document VLA handling, memory leak patterns, and optimization artifacts so readers understand why code looks different from source

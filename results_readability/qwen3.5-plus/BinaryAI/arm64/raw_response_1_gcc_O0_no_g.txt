@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `local_4`, `local_8`) despite `-O0 -g` debug symbols being available. Original names like `temp1`, `sum`, `count`, `i`, `j` were not recovered, severely impacting traceability.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved correctly (`sequential_ops`, `single_if`, `nested_if_deep`, `loop_for_fixed`). Some helper functions have generic names (`FUN_00100930`, `FUN_00100abc`), but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Mix of readable decimals (10, 5, 100) and unexplained hex values (`0xffffffff`, `0x3e9`, `0x65`). Magic numbers like `0x12345678` from opaque_predicate not preserved with context.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`___stack_chk_guard`) present in many functions adding noise. Redundant local variable declarations for stack setup (`local_8 = ___stack_chk_guard`) clutter otherwise simple functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops recovered as proper `for`/`while` constructs. Switch statements often converted to if-else chains (`switch_small`, `switch_large`). `switch_fallthrough` correctly uses goto labels for fall-through semantics.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match original source well. Each test function remains separate with appropriate granularity. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Duff's device (`duffs_device`) has excessive goto labels disrupting flow, but this is inherent to the pattern. Most functions have clean linear structure.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `duffs_device` shows significant code duplication from unrolled copy operations. Stack canary checks add redundant boilerplate to simple functions. No dead code removal observed.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Return types degraded (`if_else` returns `bool` instead of `int`, many functions return `undefined8`/`undefined4`). Parameter types often generic (`undefined4`, `undefined8`) instead of `int`. Signed/unsigned distinctions lost in several places.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Stack arrays represented as individual variables (`local_20`, `uStack_18`, `local_10` in `loop_break`). No struct recovery for jmp_buf or matrix data. Pointer arithmetic obscures array access patterns.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(int)local_4`, `(ulong)param_2`, `(long)&local_20`). Function pointers use generic `code *` type instead of proper signatures. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments recovered from original source despite extensive documentation. No decompiler-generated comments explaining uncertain regions or complex patterns like Duff's device.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: State machine patterns (`state_machine`, `fsm_func_table`) not identified. Recursion patterns not explicitly noted. Duff's device not recognized as an optimization idiom.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for `computed_goto` (GCC extension) or `setjmp/longjmp` patterns. Indirect function calls not flagged as potentially unresolved. No confidence indicators provided.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions or error condition documentation. Original test validation comments completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clearly visible in decompiled code. Global variable usage (`jump_buffer`, `completed_0`) not well documented. Callback relationships visible but not explicitly annotated.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions mixed with implementation functions. No header file separation or API documentation recovered.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears structurally compilable. External dependencies (printf, puts, setjmp) declared but not documented. Some platform-specific constructs (ARM64) not abstracted.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+6+6)/4 = 5.75  × 0.30 = 1.725
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00  × 0.25 = 1.750
+Level 3 (Type):        (5+4+5)/3   = 4.67  × 0.20 = 0.933
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75  × 0.15 = 0.413
+Level 5 (Contextual):  (6+6+7)/3   = 6.33  × 0.10 = 0.633
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.45/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `local_4`) despite `-g` debug symbols being available—should recover `a`, `b`, `c`, `sum`, `count`, `i`, `j`
+- **Zero comments recovered** from original source's extensive documentation (test cases, difficulty ratings, scene labels)
+- **Type degradation** with `undefined8`/`undefined4` return types where `int` was explicit in source
+- **Stack arrays fragmented** into individual variables (`local_20`, `uStack_18`, `local_10`) losing array semantics
+- **No anomaly flags** for GCC extensions (`computed_goto`, Duff's device) that require special handling
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source, making function identification straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of recovered documentation despite source having extensive inline comments explaining purpose, test cases, and difficulty levels
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for variable naming** - At `-O0 -g`, DWARF debug info contains original variable names that should be extracted and applied to `param_*` and `local_*` variables
+2. **Recover and preserve source comments** - Implement comment extraction from debug sections or implement pattern-based comment generation for recognized idioms (Duff's device, state machines)
+3. **Improve type recovery from debug info** - Use DWARF type information to restore precise `int` types instead of `undefined4`/`undefined8`, and recover array types from stack layouts

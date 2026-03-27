@@ -1,0 +1,128 @@
+# Decompilation Readability Assessment
+
+## Executive Summary
+
+This assessment evaluates Ghidra's decompilation of a control flow test suite originally compiled with gcc -O0 -g on arm64. **Critical issue**: The decompiled output shows X86 architecture instead of arm64, indicating a fundamental platform mismatch that affects all downstream analysis.
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic `v0`, `v1`, `v2`, `a0`, `a1` naming throughout (e.g., `sequential_ops` uses `v0`, `v1`, `v2` instead of `temp1`, `temp2`, `temp3`); only loop counters `i`, `j` are preserved in some functions.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names recovered well (`sequential_ops`, `single_if`, `nested_if_deep`), but numerous wrapper functions retain generic `sub_401XXX` names that add noise without semantic value.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (unsigned -1) appears repeatedly without explanation; GOT offsets like `12280`, `12264` are opaque; constant `305419896` (0x12345678) in `opaque_predicate` lacks context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts including `__x86.get_pc_thunk.*` stubs, initialization functions (`_init`, `_fini`, `__do_global_ctors_aux`), and confusing struct definitions with `padding_0` fields clutter the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic structures recovered (if/else, for loops in `loop_for_fixed`), but switch statements with jump tables (`switch_small`, `switch_large`, `state_machine`) still use `goto` with computed addresses instead of proper switch constructs.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries preserved with appropriate granularity, but wrapper functions like `sub_401221` that merely call `sequential_ops()` create unnecessary fragmentation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally, but jump table implementations use `goto *((int *)(v0 + a0 * 4 - 12280)) + v0` patterns that disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Unnecessary variable assignments like `v0 = v1` before actual assignment appear frequently; `loop_while` has confusing `CONCAT` operations for simple division that could be simplified.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All types degraded to generic `unsigned int` or `int`; original `int` distinctions lost; `loop_while` shows confusing `(a0 >> 31 CONCAT a0) % 10` instead of clean signed division.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions exist but use generic `field_0`, `padding_0` names; array initializations became `memcpy(&v2, "\n", 20)` calls losing semantic meaning of the original `int arr[] = {10, 20, 30, 40, 50}`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts like `(int)v1[16]` in `sub_4010a0`; function pointers use `void*` instead of proper signatures; pointer arithmetic `(&v2)[4 * i]` used for array access instead of proper indexing.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic; no decompilation confidence indicators; original source comments describing test cases and expected values completely absent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition for state machines (`state_machine`, `fsm_func_table`); `duffs_device` unusual structure not identified; loop patterns not labeled.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`); confusing `CONCAT` operations in arithmetic not explained; platform mismatch (arm64→X86) not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n > 0`); no postconditions; error return values like `4294967295` not explained as error codes.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented; global variables use generic names (`g_406ff4`, `g_4040c8`); callback relationships in `process_with_callback` not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file with no logical grouping; related functions (switch variants, loop variants) not organized together; no header file structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies (`_GLOBAL_OFFSET_TABLE_`, `printf`, `memcpy`) declared but **critical platform mismatch**: original was arm64, decompiled as X86; architecture-specific `__x86.get_pc_thunk.*` functions won't work on target.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Contribution |
+|-------|-----------|---------|--------|--------------|
+| L1: Lexical Clarity | 4 | 5.00 | 30% | 1.50 |
+| L2: Structural Intelligibility | 4 | 6.25 | 25% | 1.56 |
+| L3: Type System Fidelity | 3 | 3.67 | 20% | 0.73 |
+| L4: Semantic Transparency | 4 | 2.75 | 15% | 0.41 |
+| L5: Contextual Coherence | 3 | 4.67 | 10% | 0.47 |
+| **TOTAL** | **18** | - | **100%** | **4.67** |
+
+### Overall Readability Score: **4.67/10**
+
+---
+
+### Critical Defects
+
+- **Platform mismatch**: Original arm64 binary decompiled as X86, introducing architecture-specific artifacts (`__x86.get_pc_thunk.*`)
+- **Variable `v0`, `v1`, `v2` should be named `temp1`, `temp2`, `temp3`** in `sequential_ops` based on original source
+- **Switch statements use goto with jump tables** instead of recovered switch-case constructs (`switch_small`, `switch_large`)
+- **Array initialization lost semantic meaning**: `memcpy(&v2, "\n", 20)` instead of `int arr[] = {10, 20, 30, 40, 50}`
+- **Magic number `4294967295`** appears 20+ times without explanation (should be `-1` or `ERROR`)
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (7/10)** - Core function names like `sequential_ops`, `nested_if_deep`, `loop_for_fixed` were successfully recovered from debug symbols, preserving semantic intent despite the -O0 compilation.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments, decompilation confidence indicators, or recovery of original source documentation makes understanding non-trivial logic extremely difficult.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover switch-case from jump tables**: Detect GOT-based jump table patterns and reconstruct as proper switch-case statements instead of `goto *((int *)(v0 + offset))` patterns.
+
+2. **Infer variable names from debug symbols and usage patterns**: Leverage -g debug information to recover original variable names (`temp1`, `temp2`, `temp3`) instead of generic `v0`, `v1`, `v2`.
+
+3. **Add decompilation confidence annotations**: Flag uncertain reconstructions (e.g., `// DECOMPILER UNCERTAIN: CONCAT operation may represent signed division`) and indicate when platform architecture doesn't match expected target.

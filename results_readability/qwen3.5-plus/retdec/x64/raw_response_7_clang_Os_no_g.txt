@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `v3`, `a1`, `a2`) with no semantic meaning. For example, in `param_opaque_predicate`, variables `v5`, `v6`, `v7` obscure the GCD algorithm's `a`, `b`, `temp` from source.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions retained original names (`param_fake_branch`, `call_opaque_predicate`), but library wrappers use meaningless names (`function_1030` for `strncpy`, `function_1040` for `strlen`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals stored as hex-encoded globals (`g3` = `"OBF-L4-02: %d..."`), magic numbers like `0x100000000` and `0xDEADBEEF` appear without explanation or named constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive type casts (`(int32_t)a1`, `& 0xffffffff`), verbose struct initializations for `jmp_buf`, and assembly intrinsics (`__asm_pxor`, `__asm_movdqa`) clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions show optimization artifacts (e.g., `param_opaque_predicate` has complex conditional logic instead of simple `if (p1 && p2 && p3)`), but basic loops are recognizable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but unnecessary wrapper functions exist (`function_1030` through `function_10a0` just call standard library functions).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but some functions have awkward early returns and while loops that could be for-loops (e.g., `param_vectorized_loop`).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated type masking patterns (`& 0xffffffff`) appear throughout, and the GCD algorithm is duplicated in both `param_opaque_predicate` and `call_opaque_predicate`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything is `int64_t` regardless of original type (lost `int`, `unsigned int`, `char`, `size_t` distinctions). Function `param_fake_branch(int x)` became `param_fake_branch(int64_t a1)`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `__jmp_buf_tag` struct recovered but with generic field names (`e0[8]`, `e1`, `e2`) instead of meaningful names. No recovery of the `bitfield` struct from `param_implementation_defined`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts between `int64_t` and `int32_t`, pointer arithmetic on `int64_t` values (e.g., `*(char *)(v3 - 1)`), and loss of signed/unsigned distinction.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No explanation of obfuscation techniques, optimization artifacts, or algorithm purposes that were clearly documented in source.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified, instruction substitution patterns not recognized, no pattern naming for any of the obfuscation techniques.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for critical issues like `param_fake_branch` being optimized away (returns just `a1 & 0xffffffff` instead of original logic with fake branches).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note `x != 0` for normal path), no postconditions, no error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships not documented. No call graph, no indication of which functions are test harnesses vs. target functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 49 functions in single file with no logical grouping. Related functions (e.g., `param_*` and `call_*` pairs) not organized together.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Has proper includes and function prototypes, should compile standalone. Some assembly intrinsics may need platform-specific headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+5)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50  × 0.25 = 1.375
+Level 3 (Type):        (3+4+4)/3   = 3.67  × 0.20 = 0.734
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75  × 0.15 = 0.263
+Level 5 (Contextual):  (5+5+7)/3   = 5.67  × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.14/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v1`, `v2`, `a1`) losing all semantic meaning from source
+- **Zero comments** despite complex obfuscation techniques that need explanation
+- **Type erosion** - all integers became `int64_t`, losing signed/unsigned and size distinctions
+- **String literals hex-encoded** in globals (`g3`-`g17`) instead of readable strings
+- **Optimization artifacts not flagged** - `param_fake_branch` logic completely eliminated without warning
+
+### Best Quality Aspect: **Build System Compatibility (7/10)**
+- Code includes proper headers and function prototypes, making it compilable with minimal modification
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of comments makes understanding obfuscation techniques and optimization artifacts nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables in GCD loop should be `a`, `b`, `temp`)
+2. **Add decompilation confidence annotations** - Flag when optimization has eliminated source logic (like the fake branches in `param_fake_branch`)
+3. **Recover and preserve string literals** - Decode hex-encoded globals back to readable strings with proper encoding detection

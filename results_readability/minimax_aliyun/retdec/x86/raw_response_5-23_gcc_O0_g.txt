@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are predominantly named `v1`, `v2`, `v3` which obscure their semantic purpose. While some parameter names like `arr`, `n`, `x`, `y`, `z` are preserved from source, most local variables use generic names that require tracing usage to understand (e.g., `v2` used for loop index in `param_asm_clobber`).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Core test functions retain their original names (`param_macro_constants`, `call_asm_basic`, `param_conditional_compile`). Helper functions like `function_10d0` are CRT stubs with generic names, but user-defined functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers like `64` (should be `BUFFER_COUNT * 4`), `0xdef0` (platform default), and `16` (ADD_16 expansion) appear without explanation. The original had `MAX_SIZE` (1024) and `BUFFER_COUNT` (16) as named constants, but these are lost in decompilation.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_ax` calls on every function entry (obscure x86 PIC mechanism), `__readgsdword(20)` stack canary checks, and cryptic string references like `(char *)(v2 + 3015)` for embedded strings.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is natural - `if-else` and `while` loops are correctly recovered. At `-O0` optimization, no goto abuse or confusing conditionals. Minor awkwardness in `param_stringize` where string pointer calculations are complex.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Functions maintain appropriate granularity matching source (5-20 lines typical). `test_preprocessing_features` is 40 lines but acceptable. Static helper functions properly scoped. No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 8/10
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately in `param_dynamic_code` and `param_memory_protection`. No forward jumps into loop bodies.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: No dead code or obvious duplication. Loop unrolling is minimal (appropriate for `-O0`). Common subexpression elimination artifacts not significant.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Uses `int32_t` consistently (appropriate for 32-bit int on x86). Pointers properly typed (`int32_t *arr`, `int32_t *counter`). `uint32_t` used for `n` in `param_asm_clobber`. Minor genericness in string handling.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Original source had minimal struct usage (only `func_t` typedef for dynamic code). No struct recovery needed. The code primarily uses primitives and arrays which are handled correctly.
+
+**11. Type Safety:** Score: 6/10
+Justification: Some unsafe pointer arithmetic: `*(int32_t *)(4 * v2 + (int32_t)arr)` in array access. Integer-to-pointer casts present in `param_asm_simd`. No alignment annotations. Overall manageable but not type-safe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10
+Justification: Source file and line number comments present (e.g., "From module: /work/5-23.c, Line range: 37 - 43"). However, no semantic explanations of what macros do, what assembly blocks accomplish, or why certain calculations are performed.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: No recognition of preprocessing patterns (macro expansion, token pasting, stringification). Inline assembly shown as `__asm` calls but not explained as SIMD/atomic operations. No pattern naming.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: No flags for suspicious code. The complex expression in `call_asm_privileged` (`v2 == 15 == v3 == 42 == param_clobber_importance(3, 7) == 20`) is incorrect C but not flagged. No uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: No preconditions, postconditions, or invariants documented. Error handling (e.g., `mmap` returning `-1`) not explained as contract requirements.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function call relationships are implicit and traceable through direct calls. No explicit documentation of who calls whom or global variable usage. `global_var` in `param_memory_clobber_demo` not identified as external.
+
+**17. Module Organization:** Score: 7/10
+Justification: Single-file output is reasonable for original single-file source. Functions grouped logically (preprocessing functions first, then asm functions). Static functions properly marked.
+
+**18. Build System Compatibility:** Score: 8/10
+Justification: Headers included (`stdint.h`, `stdio.h`, `stdlib.h`, `string.h`, `sys/mman.h`, `unistd.h`). Metadata shows "Compilation Result: Yes". Dependencies are standard library only.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4+8+5+4)/4 = 5.25
+L2_avg = (7+7+8+8)/4 = 7.50
+L3_avg = (8+7+6)/3 = 7.00
+L4_avg = (5+4+3+3)/4 = 3.75
+L5_avg = (6+7+8)/3 = 7.00
+
+Overall = (5.25 × 0.30) + (7.50 × 0.25) + (7.00 × 0.20) + 
+          (3.75 × 0.15) + (7.00 × 0.10)
+        = 1.575 + 1.875 + 1.40 + 0.5625 + 0.70
+        = 6.1125 ≈ 6.1/10
+```
+
+**Overall Readability Score:** 6.1/10
+
+### Critical Defects
+- **Variable naming**: Generic `v1`, `v2`, `v3` throughout obscure semantic purpose; original parameter names like `size`, `result` should be recovered
+- **Magic numbers**: Constants like `64`, `0xdef0`, `16` appear without explanation; original macros `MAX_SIZE`, `BUFFER_COUNT` lost
+- **Noise artifacts**: `__x86_get_pc_thunk_ax` calls on every function entry add 3 lines per function, obscuring logic
+- **No semantic comments**: Source line numbers present but no explanation of macro semantics, assembly purpose, or algorithm intent
+- **Anomaly masking**: Complex boolean expression `v2 == 15 == v3 == 42 == ...` is syntactically valid but semantically wrong C (compares bool to int), not flagged
+
+### Best Quality Aspect: Type System Fidelity (7.0/10)
+Types are precise with `int32_t` used consistently, pointers properly typed, and unsigned/signed distinctions maintained. At `-O0`, type recovery is excellent.
+
+### Most Needs Improvement: Semantic Transparency (3.75/10)
+No pattern recognition, no semantic comments explaining macros/assembly, no anomaly flags, and no contract recovery. The decompiler provides structural accuracy but zero semantic understanding.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover macro semantics**: Detect constant expressions like `64` and suggest they may represent `BUFFER_COUNT * 4` based on value patterns; add comments explaining macro expansion
+2. **Eliminate PC-relative noise**: Recognize `__x86_get_pc_thunk_*` as compiler artifacts and either inline them or add single comment explaining they're PIC setup
+3. **Add semantic comments**: For each function, add brief comment explaining what it does (e.g., "Implements ADD_16 macro expansion: returns x + 16") rather than just source line mapping

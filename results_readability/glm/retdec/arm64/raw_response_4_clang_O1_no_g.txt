@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `v1`, `v2`, `v3`, or `result`. No semantic meaning is preserved (e.g., `a` and `b` in `cdecl_func` become `v1`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are accurately recovered from symbol tables (e.g., `cdecl_func`, `test_calling_conventions`), perfectly matching the original source intent.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are preserved but assigned to generic global names (`g1`, `g2`) instead of their original identifiers. Magic numbers like `8` (pointer size) and `128` (struct size) appear without explanation.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Code contains frequent redundant casts like `& 0xffffffff` and compiler intrinsics like `__asm_bfi` which obscure the simple arithmetic logic of the original source.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Loops are frequently represented as `while(true)` with `goto` labels (e.g., in `varargs_func` and `func_struct_byval`), creating spaghetti code that is difficult to follow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are correctly separated and not inlined, maintaining the original granularity and cohesion of the source code.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The excessive use of `goto` for loop control flow (e.g., `lab_0x958`, `lab_0x93c`) disrupts top-to-bottom reading significantly.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: While there is no obvious dead code, the decompiler introduces redundant masking operations (`& 0xffffffff`) on almost every arithmetic return, cluttering the logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Function parameters are completely lost; functions taking `int` arguments are decompiled as `void` (e.g., `cdecl_func(void)`). Integers are often widened to `int64_t` unnecessarily.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Structs are not recovered at all. Access to `LargeStruct` or `SmallStruct` fields is replaced by raw pointer arithmetic (e.g., `*(int32_t *)(v2 + 4)`), completely losing semantic structure.
+
+**11. Type Safety:** Score: 4/10
+Justification: Heavy reliance on raw pointer arithmetic and `void*` casts (e.g., `(int32_t *)&v3` in `varargs_func`) makes the code look unsafe and difficult to reason about compared to the typed source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of the complex pointer arithmetic used to replace struct access.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard idioms like `va_list` for variadic functions are not recognized; instead, the decompiler outputs manual stack pointer manipulation and pointer arithmetic.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler does not flag the missing function parameters or the failure to recover structs as anomalies; it presents the broken signatures confidently.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement for non-null pointers in `func_struct_byptr` is lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are visible, but because arguments are stripped from the definitions, the data flow between functions is broken and hard to trace.
+
+**17. Module Organization:** Score: 8/10
+Justification: The file maintains a logical ordering of functions, grouping related test functions together similarly to the source structure.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile against the original headers because function signatures are incorrect (missing parameters), and struct definitions are entirely absent.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Function parameters are completely missing (e.g., `cdecl_func(void)` instead of `cdecl_func(int a, int b)`), breaking the API.
+- Composite types (structs) are not recovered; struct field access is replaced by obscure pointer arithmetic.
+- Control flow uses `goto` loops instead of standard `for`/`while` constructs, severely harming readability.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names from the binary symbols, making it easy to identify the purpose of each block.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The failure to recover `struct` definitions turns simple data access into raw pointer math, which is the single biggest barrier to understanding this code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement ARM64 calling convention analysis to recover function arguments from register/stack usage.
+2. Enhance type recovery to identify and reconstruct struct layouts from memory access patterns.
+3. Improve control flow analysis to replace `while(true)` + `goto` patterns with standard `for` or `while` loops.

@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Parameters are reduced to generic names like `a0` and `a1` instead of the original `a` and `b`, and local variables in complex functions (e.g., `varargs_func`) are numbered sequences (`v0`-`v16`), failing to leverage the available debug symbols.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the source (e.g., `cdecl_func`, `test_calling_conventions`), accurately reflecting the original intent and structure.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers such as `4294967240` (stack offset) appear in `varargs_func`, and constant propagation in callers like `call_cdecl` results in literals like `15` that obscure the original arithmetic logic (`5 + 10`).
+
+**4. Noise Reduction:** Score: 7/10
+Justification: While the target function is clean, `varargs_func` includes stack canary checks (`__stack_chk_guard`) and complex pointer arithmetic that, while accurate to the binary, adds significant noise to the readability of the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: The target function `cdecl_func` is perfectly linear. However, `varargs_func` implements the loop using a `do-while` construct with manual pointer arithmetic, which is less readable than the source's `for` loop with `va_arg`.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions are correctly separated into distinct units matching the source; there is no inappropriate inlining or fragmentation of the target function.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code generally reads top-to-bottom with minimal forward jumps or confusing control flow transfers.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no dead code or redundant variable assignments in the target function; the logic is concise.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Parameters are typed as `unsigned int` instead of `int`. Critically, `func_mixed_args` fails to recover `double` and `long long` parameters in the function signature, instead treating them as internal register variables (`v1`, `v7`), which breaks the API contract.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs passed by value (e.g., `LargeStruct` in `func_struct_byval`) are represented as raw pointers (`unsigned long long *`), completely losing the struct definition, field names, and "by-value" semantics.
+
+**11. Type Safety:** Score: 8/10
+Justification: The code is generally safe, but the loss of type distinction (e.g., treating floating-point registers as integers in `func_mixed_args`) makes it harder to verify safety manually.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output, leaving complex logic like the varargs stack walking unexplained.
+
+**13. Idiom Recognition:** Score: 10/10
+Justification: N/A for the simple target function; the logic is too basic to require idiom recognition.
+
+**14. Anomaly Indication:** Score: 10/10
+Justification: N/A for the simple target function; no anomalies are present.
+
+**15. Assertion & Contract Recovery:** Score: 10/10
+Justification: N/A for the simple target function.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function names are preserved, making it easy to identify relationships between the test functions and the implementations.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are listed in a logical order that roughly matches the source file structure.
+
+**18. Build System Compatibility:** Score: 10/10
+Justification: The decompiled C code is syntactically valid and would compile successfully with the necessary headers.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.9/10
+
+**Critical Defects:**
+- Struct arguments passed by value are represented as pointers (`unsigned long long *`), losing the struct semantics and field access.
+- Floating-point and integer parameters in `func_mixed_args` are missing from the function signature and treated as internal register variables.
+- Variable names are generic (`a0`, `a1`) despite the source being compiled with debug symbols (`-g`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved all original function names, making navigation trivial.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover struct types passed by value, reducing them to raw pointers, significantly obscures the data structures used in the program.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve parsing of DWARF debug information to recover original parameter names (e.g., `a`, `b`) instead of generic register names (`a0`, `a1`).
+2. Enhance type recovery for structures passed by value on ARM64 to reconstruct the struct definition rather than defaulting to a hidden pointer.
+3. Fix function signature recovery for mixed-type arguments (integers + floats) to ensure all parameters are listed in the signature rather than hidden as register variables.

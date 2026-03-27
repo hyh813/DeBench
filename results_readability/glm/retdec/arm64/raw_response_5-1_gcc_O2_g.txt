@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `str`, and `result`. For example, in `_Z13test_cpp_rttiv`, `v1` is a pointer to a heap-allocated object, but the name provides no semantic hint about it being an `RTTIDerivedA` instance.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: The decompiler successfully demangles C++ symbols (e.g., `_Z18test_cpp_exceptionv` to `test_cpp_exception()` in comments), preserving the original semantic names. However, the implementation bodies often contradict the implied purpose (e.g., `test_cpp_virtual_func` is empty).
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals like `"Test"` and `"12RTTIDerivedA"` are recovered, but the code is littered with magic numbers used for pointer arithmetic (e.g., `-24`, `+8`, `+40`) without explanation, obscuring the class layout offsets they represent.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code contains significant noise, including stack canary checks (`__stack_chk_fail`), redundant casts, and inline assembly markers (`__asm_fcmpe`) that interrupt the logical flow of the high-level C++ code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is highly unnatural; `test_cpp_exception` uses `goto` labels (`lab_0x10e0`) to simulate exception handling flow, and many functions like `test_cpp_virtual_func` are reduced to empty `void` returns despite having logic in the source.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: While the decompiler identifies function boundaries correctly, the content is missing. Functions like `test_cpp_operator_overload` and `test_cpp_lambda` are stubs, failing to decompose the logic into readable statements.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code does not read linearly. In `test_cpp_exception`, execution jumps backward and forward via labels to handle the `try/catch` blocks, making it nearly impossible to follow the source's top-down structure.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is little redundancy to eliminate because most logic is missing. However, in `test_cpp_rtti`, there are repeated pointer dereference patterns that could be abstracted into struct member access.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Primitive types (`int32_t`, `float64_t`) are used correctly, but C++ objects are consistently degraded to generic `int64_t*` or `void*`, losing the distinction between class instances and raw pointers.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Class structures are not recovered. For example, `SimpleClass` and `Point` are completely absent; the decompiler treats object instances as raw memory accesses (e.g., `*(int64_t *)v1 = (int64_t)&g1` for vtable initialization) rather than struct field assignments.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe pointer arithmetic and casts. In `_ZTv0_n24_N7MiddleA4funcEv`, the code manually adjusts the `this` pointer (`v2 - 24`) without type safety, reflecting the compiler's implementation rather than the source's abstraction.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to metadata (line ranges, demangled names) and do not explain the logic. There are no comments explaining the vtable thunks or the exception handling mechanism, which are critical for understanding the decompiled output.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms are not recognized. RAII (Resource Acquisition Is Initialization) in `test_cpp_smart_ptr` is lost, and the "Virtual Thunk" functions are presented as raw pointer adjustments rather than semantic language features.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents empty functions (e.g., `test_cpp_lambda`) as valid code without flagging them as anomalies or failed decompilations, potentially misleading the user into thinking the function does nothing.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions or postconditions. For instance, the bounds check in `Container::get` is not represented as a logical assertion but is lost in the decompilation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are visible (e.g., calls to `__cxa_throw`), but the relationship between the high-level `throw` keyword and these runtime functions is not explicitly documented, requiring external knowledge of the C++ ABI.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions. While grouped by address, there is no logical separation or namespace reconstruction that mirrors the source's class-based organization.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code includes necessary headers and prototypes, and might technically compile, but it would not function correctly due to the missing logic in empty functions and incorrect type usage.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 4.25
+L2_avg: 3.50
+L3_avg: 3.67
+L4_avg: 2.00
+L5_avg: 5.33
+
+Overall = (4.25 × 0.30) + (3.50 × 0.25) + (3.67 × 0.20) + 
+          (2.00 × 0.15) + (5.33 × 0.10)
+Overall = 1.275 + 0.875 + 0.734 + 0.300 + 0.533
+Overall = 3.72 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.7/10
+
+### Critical Defects (Bullet List)
+- **Logic Loss**: Functions `test_cpp_virtual_func`, `test_cpp_operator_overload`, `test_cpp_lambda`, and `test_cpp_template_class` are decompiled as empty `void` functions, completely erasing the source logic.
+- **Missing Class Recovery**: No C++ class structures (structs) are recovered; objects are manipulated as raw `int64_t*` pointers with manual offset arithmetic.
+- **Control Flow Obfuscation**: Exception handling in `test_cpp_exception` is represented as a spaghetti of `goto` labels and `__cxa_*` calls, obscuring the `try/catch` structure.
+- **Generic Naming**: Variables are universally named `v1`, `v2`, `result`, etc., providing no semantic context (e.g., `v1` used for an object instance).
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (Score: 7/10)**
+- **Why?** The decompiler successfully demangles C++ mangled names (e.g., `_Z18test_cpp_exceptionv`), allowing the user to identify the original function names despite the poor body recovery.
+
+### Most Needs Improvement (Single Dimension)
+- **Semantic Transparency (Score: 2.0/10)**
+- **Why?** The decompiler fails to communicate *what* the code is doing, presenting low-level ABI details (vtable thunks, exception frames) without mapping them back to high-level C++ concepts like polymorphism or exception handling.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve CFG Recovery for ARM64**: Address the issue causing valid `-O0` functions to be decompiled as empty stubs; ensure basic blocks are correctly linked.
+2.  **Implement C++ Class Reconstruction**: Analyze vtable usage and member access patterns to reconstruct `struct` definitions for classes instead of treating them as raw `void*` or `int64_t*`.
+3.  **Pattern Match Exception Handling**: Detect `__cxa_begin_catch`/`__cxa_throw` patterns and restructure them into `try/catch/throw` blocks to improve control flow readability.

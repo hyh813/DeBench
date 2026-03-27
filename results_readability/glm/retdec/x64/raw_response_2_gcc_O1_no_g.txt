@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, and `result`. For example, in `process_int`, the parameter `x` is renamed to `a1`, and in `array_1d_stack`, the loop index and sum are `v2` and `result`, losing the semantic meaning of `i` and `sum`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the symbol table, matching the original source exactly (e.g., `process_char`, `array_2d_stack`, `binary_tree_sum`). This provides excellent high-level navigation.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent and obscure logic. In `process_char`, ASCII values `65` and `32` are used instead of `'A'` and the space offset. In `process_int`, the operation `2 * a1 & 0xfffffffe | 1` is a bitwise reconstruction of `x * 2 + 1` that is harder to read than the original arithmetic.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Significant compiler and runtime noise is present. Stack canary checks (`__readfsqword(40)`) appear in almost every function. Floating-point operations use obscure intrinsics like `__asm_addss` and `__asm_mulss`, and `printf` is replaced with `__printf_chk`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Control flow is recognizable but syntactically awkward. `for` loops are often converted to `while` loops with manual pointer arithmetic (e.g., `v2 += 4` in `array_1d_stack`). Conditional checks like `if (c >= 'A' && c <= 'Z')` are transformed into dense ternary operators involving unsigned casts.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries are preserved perfectly with a 1:1 mapping to the source. There is no inlining or outlining, which is expected for `-O0` code, making the structure easy to follow at a high level.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom. While some loops use `goto`-like logic or complex `while` conditions, the execution flow is generally linear and traceable without excessive jumping.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is little redundant code; the decompiler successfully removes the boilerplate of the `-O0` prologue/epilogue setup, leaving the core logic intact.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are frequently imprecise. `int` (32-bit) parameters are often typed as `int64_t` (e.g., `process_int`). Floating-point functions have incorrect prototypes; `process_float` and `process_double` are listed as taking `void` arguments despite using an undeclared variable `v1` (likely a register arg) in the body.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct and union definitions are completely lost. `struct_simple` takes a raw `int64_t a1` and accesses fields via offsets like `*(int32_t *)(a1 + 8)`. The semantic meaning of `p->z` is obscured by raw pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts and pointer arithmetic. Array accesses are performed via byte-offset pointer increments (e.g., `v2 += 4`) rather than array subscripting, which mimics the assembly but loses C type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to memory addresses (e.g., `// Address range: 0x1189 - 0x1191`). There are no comments explaining the logic, algorithms, or data structures.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard idioms like string length calculation or array summation are recognizable but not explicitly labeled. The decompiler fails to identify the "linked list" or "binary tree" patterns in comments, leaving them as raw pointer traversals.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler does not explicitly flag anomalies, but the incorrect function prototypes for floating-point operations (arguments missing) serve as implicit indicators of decompilation failure.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement that `array_string` expects a null-terminated string is not stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the correct recovered names. The relationship between the test functions (`test_data_types_l1`) and the implementation functions is preserved.
+
+**17. Module Organization:** Score: 7/10
+Justification: The code is organized in a single file, roughly following the source order. Helper functions and main logic are grouped together, but the lack of struct definitions at the top makes the module feel incomplete.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code would not compile without significant modification. The use of `__asm_` intrinsics, missing arguments in float function prototypes, and the reliance on internal types like `int128_t` (which might not map to a standard C type correctly in this context) hinder recompilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Floating-point functions (`process_float`, `process_double`) have incorrect prototypes (missing arguments) and use obscure intrinsics.
+- Composite types (structs/unions) are completely unrecovered, replaced by raw pointer offsets (e.g., `a1 + 8`).
+- Variable names are entirely generic (`v1`, `a1`), ignoring the debug information available in the `-O0 -g` build.
+- Integer types are imprecise, using `int64_t` for 32-bit `int` parameters.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully extracted all function names from the symbol table, making high-level navigation trivial.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct `Point3D`, `Node`, or `Rect` structures turns readable data access into obscure pointer arithmetic, severely impacting understanding of the data-oriented functions.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Utilize Debug Information (DWARF):** Leverage the `-g` debug symbols to recover original local variable names (e.g., `x`, `sum`, `i`) instead of generating generic `v1`, `a1`.
+2. **Structure Recovery:** Implement algorithms to identify stack and heap object layouts to reconstruct `struct` definitions, replacing pointer offsets like `*(int32_t *)(a1 + 8)` with `p->z`.
+3. **Floating-Point Support:** Fix the prototype generation for floating-point functions to correctly list arguments passed in vector registers and map intrinsics to standard C operators (e.g., `*` and `+` instead of `__asm_mulss`).

@@ -1,0 +1,168 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiler failed to recover variable names for most local variables. Every function contains "Unresolved local var" annotations with cryptic addresses like `int a@[???]`, `int[10] arr@[???]`, `int * p1@[???]`. Generic names like `iVar1`, `iVar2`, `local_28`, `local_800` provide no semantic meaning. Compare to source where variables like `arr`, `large_buf`, `vla` are clearly named.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Function names are well-preserved: `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `global_var_access`, `memop_memset`, etc. All match the original source function names exactly. Minor deduction for some internal functions like `FUN_00011030` that have no source equivalent.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Mixed results. Some literals are meaningful: `0x2a` (42) used for "42" in address_of_local, `0x14` (20) for "20" in stack_alias. However, many remain as magic numbers without explanation: `0x800` (2048), `0x3e9` (1001), `0xc` (12). The decompiler didn't infer that `0x800` means `2048` for the buffer size.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Significant noise pollution throughout. The output is cluttered with:
+- "WARNING: Unknown calling convention" repeated 15+ times
+- "Unresolved local var" annotations in every function
+- "WARNING: Removing unreachable block" messages
+- "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection"
+- DWARF debug info fragments like `DW_OP_breg4(ESP): +4`
+
+This makes reading the actual code difficult.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Generally natural control flow for most functions. Loops are properly recognized as `do-while` constructs. However, some awkward patterns exist: in `vla_stack` and `alloca_usage`, the complex stack frame calculations create confusing control flow. The source uses straightforward `for` loops which are mostly preserved.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Functions maintain reasonable granularity. Each test function (`test_stack_memory`, `test_heap_memory`, etc.) is properly separated. The decompiler correctly kept `double_value` as a separate function rather than inlining it, matching the -O0 compilation. No excessive fragmentation observed.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Most code reads top-to-bottom without excessive jumps. Early returns are preserved. The `linked_list_heap` function has a slightly convoluted flow with goto-like patterns, but overall linearity is acceptable for -O0 code.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+No significant redundancy. Loop unrolling is minimal (the source had explicit loops that are preserved). Dead code is not present. Some optimization artifacts exist but are manageable.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+Types are generic. Most integers are `int` rather than `int32_t` or `size_t`. Pointers are `void *` or `int *` without more specific types. The source uses `size_t` for memory sizes but decompiler shows `int`. Function pointer types are approximated as `_func_int_int *` which is not standard C.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+Mixed results. `Node` and `TreeNode` structures are correctly recovered with field names (`data`, `next`, `left`, `right`). However, `Point` struct in `local_struct` shows as unresolved with complex DWARF expression. The decompiler shows raw pointer arithmetic for some struct operations rather than proper field access.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Several type safety issues:
+- In `vla_stack`: `*(int *)(&stack0xfffffff4 + iVar2 * 2 + iVar1 + 0xc)` - unsafe pointer arithmetic
+- In `heap_basic`: `*(int *)((int)__ptr + iVar1 * 2)` uses factor of 2 instead of 4 (should be `iVar1 * 4`)
+- In `local_array`: `local_28[iVar2] = iVar1` with `iVar2` incrementing by 1 but array is `int[10]` - appears correct but confusing
+- Multiple void pointer casts without justification
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+
+Comments are mostly noise. The "Unresolved local var" comments don't help understand the code. No explanation of algorithm intent. No recovery of the test scenario descriptions from the source (e.g., "MEM-L1-01: 局部变量（基础类型）"). The decompiler could annotate what each function tests but doesn't.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Basic memory operations (malloc/free, memset, memcpy) are recognized as library calls. Linked list traversal pattern is somewhat visible in `linked_list_heap`. However, no explicit naming of patterns (e.g., "Implements linked list with malloc"). The source's specific test scenarios (VLA, alloca, TLS) aren't identified as special idioms.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+
+Warnings exist but are generic. "WARNING: Unknown calling convention" appears frequently but doesn't explain what the calling convention should be. The "Unresolved local var" annotations flag problems but don't suggest solutions. No indication of the architectural mismatch (source says arm64, decompiled shows x86).
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+
+No contract information recovered. Preconditions like "n > 0" for `alloca_usage` aren't documented. Postconditions aren't inferred. The source has explicit bounds checking (`if (n <= 0 || n > 1000) return -1`) that could be documented as preconditions but aren't.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Limited cross-reference information. The relationship between `set_global_callback` and `call_global_callback` is clear from names. However, no documentation of which functions call which, or the callback pattern usage. The `extern_function` and `extern_global_var` are flagged as external but not explained where they come from.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Functions are in arbitrary address order (000112c0, 000112d0, 00011300...) rather than logically grouped. The source organizes by category (stack memory, heap memory, static memory, memory operations) but this organization is lost. Static functions aren't clearly distinguished from public ones.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+The code cannot compile standalone. Multiple undefined references: `extern_global_var`, `extern_function`, `double_value` (used in test but not defined in decompiled output). Missing includes. The decompiler doesn't provide stub definitions or document dependencies.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 5 + 3) / 4 = 4.50
+L2_avg = (6 + 7 + 7 + 7) / 4 = 6.75
+L3_avg = (5 + 5 + 4) / 3 = 4.67
+L4_avg = (4 + 5 + 5 + 3) / 4 = 4.25
+L5_avg = (4 + 5 + 4) / 3 = 4.33
+
+Overall = (4.50 × 0.30) + (6.75 × 0.25) + (4.67 × 0.20) + (4.25 × 0.15) + (4.33 × 0.10)
+        = 1.35 + 1.6875 + 0.934 + 0.6375 + 0.433
+        = 5.04/10
+```
+
+### Overall Readability Score: 5.0/10
+
+---
+
+### Critical Defects
+
+1. **Variable names completely unresolved**: Every local variable shows "Unresolved local var" with cryptic address notation, making code nearly unreadable
+2. **Type safety issues**: Pointer arithmetic bugs in `heap_basic` (`iVar1 * 2` instead of `* 4`) and confusing stack frame calculations in VLA/alloca functions
+3. **Excessive noise**: "WARNING" messages and "Unresolved local var" annotations clutter every function, obscuring actual code
+4. **No contract/precondition recovery**: Source has explicit bounds checking that could be documented but isn't
+5. **Cannot compile**: Undefined extern symbols and missing function definitions prevent standalone compilation
+
+### Best Quality Aspect
+
+**Function Naming Quality (8/10)** - Function names are almost perfectly preserved from source, making it easy to identify what each function does.
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - The complete failure to recover local variable names is the single biggest readability issue. Every function is filled with "Unresolved local var" annotations that provide no semantic value.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array index, size parameter, pointer dereference) to suggest meaningful names like `packet_size`, `buffer_ptr`, `loop_index` instead of `iVar1`, `local_28`
+
+2. **Clean up decompiler annotations**: Move "WARNING" and "Unresolved" messages to a separate log file or collapsible section rather than inline in the code
+
+3. **Recover preconditions/postconditions**: Parse bounds checks, NULL checks, and validation logic to document function contracts (e.g., "requires: n > 0" for `alloca_usage`)

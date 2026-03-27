@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3` through `v13` in `test_cpp_rtti`) with zero semantic meaning. No variable indicates its purpose (e.g., `obj_ptr`, `type_info`, `result_accumulator`).
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions use mangled C++ names (`_Z18test_cpp_exceptionv`) with demangled comments, but critical functions like `_Z21test_cpp_virtual_funcv` are empty stubs despite descriptive demangled names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals are hex-encoded in globals (e.g., `g1 = "=== \xe6\xb5\x8b\xe8\xaf\x95..."`), and magic numbers like `42` in exception handling lack contextual explanation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Assembly artifacts (`__asm_movsd`, `__asm_maxsd`, `__asm_cvttsd2si`), stack canary checks (`__readfsqword(40)`), and wrapper functions for standard library calls create significant noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Goto labels like `lab_0x16b0` in `test_cpp_rtti` break natural flow. Many functions are empty stubs that return immediately, obscuring actual logic paths.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Critical test functions (`test_cpp_virtual_func`, `test_cpp_operator_overload`, `test_cpp_lambda`, `test_cpp_template_class`) are empty stubs. Some return hardcoded values (e.g., `test_cpp_diamond_inheritance` returns 650 directly).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but goto labels and stack check branches (`if (v1 != __readfsqword(40))`) disrupt flow with artificial early returns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks repeat identically in every function. Wrapper functions for `__printf_chk`, `strlen`, `strcmp` add unnecessary indirection layers.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Basic integer types (`int32_t`, `int64_t`) present, but C++ class types completely lost. Pointers are generic `int64_t *` instead of proper class pointers like `Base*` or `SimpleClass*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Vtable structures exist but class definitions are comments only. No proper struct recovery for `SimpleClass`, `Container`, `Point`, etc. Vtable fields are generic (`e0`, `e1`, `e2`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts like `(int64_t *)v1` and `(int32_t)v1` throughout. Raw pointer arithmetic (`*(int64_t *)(a1 - 24)`). No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Auto-generated comments show line ranges and demangled names, but zero semantic explanations. No algorithm or logic documentation beyond compiler metadata.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns (virtual dispatch, RTTI, templates, lambda closures) aren't identified. Template instantiation isn't clearly marked. Exception handling pattern is obscured by runtime calls.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about empty functions or hardcoded returns. Stack canary checks lack explanation. No indication of decompilation uncertainty for critical missing logic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts not recovered. No documentation of expected return values vs. actual computation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls exist but relationships aren't documented. Virtual dispatch through vtables is opaque. Inheritance relationships only mentioned in comments, not enforced in types.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in one file with no logical grouping. Functions listed by mangled name order, not by feature category. No separation between test functions and class methods.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many external dependencies (`__cxa_*`, `_Znwm`, `_ZdlPvm`, etc.) need C++ runtime linking. Won't compile standalone without significant stub implementation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+5+4)/4 = 3.75
+Level 2 (Structural):  (4+3+5+5)/4 = 4.25
+Level 3 (Type):        (4+3+4)/3   = 3.67
+Level 4 (Semantic):    (4+3+3+2)/4 = 3.00
+Level 5 (Contextual):  (4+5+4)/3   = 4.33
+
+Overall = (3.75 × 0.30) + (4.25 × 0.25) + (3.67 × 0.20) + 
+          (3.00 × 0.15) + (4.33 × 0.10)
+        = 1.125 + 1.063 + 0.734 + 0.450 + 0.433
+        = 3.80/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Empty function stubs**: 7+ test functions (`test_cpp_virtual_func`, `test_cpp_operator_overload`, `test_cpp_lambda`, `test_cpp_template_class`, etc.) are empty returns losing all logic
+- **Hardcoded return values**: Functions like `test_cpp_diamond_inheritance` and `test_cpp_smart_ptr` return expected values (650, 703) instead of computing them
+- **Generic variable names**: All variables are `v1`, `v2`, `v3` with no semantic meaning whatsoever
+- **Lost C++ class structures**: No recovery of `SimpleClass`, `Container`, `Point` class definitions—only vtable structs remain
+- **Assembly artifacts**: Inline assembly (`__asm_movsd`, `__asm_maxsd`) obscures floating-point template operations
+
+### Best Quality Aspect:
+- **Module Organization (5/10)** - Functions are at least grouped in a single file with consistent formatting and demangled name comments provide some structural hints
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - Zero documentation of preconditions, postconditions, or expected behavior; hardcoded returns mask actual computation contracts
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts** - Infer class definitions from vtable references and member function patterns instead of leaving them as comments
+2. **Detect and flag empty/hardcoded functions** - Add anomaly warnings when functions return constant values or are empty stubs, indicating decompilation failure
+3. **Infer variable semantics from usage patterns** - Variables used in pointer arithmetic with vtables should be named `obj_ptr`, type comparisons should be `type_info`, accumulators should be `result`

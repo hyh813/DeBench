@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `iVar2`, `puVar1`, `__ptr`, `piVar1`) with no semantic meaning. Original source had meaningful names like `arr`, `large_buf`, `head`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`). This is the decompiler's strongest aspect—action-oriented names clearly reflect purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0x14` (20), `0xf` (15), `0x1e` (30). String literals referenced as `&DAT_00013008` instead of showing actual content. Original had clear constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `in_GS_OFFSET` stack canary checks, `__x86.get_pc_thunk.bx` warnings, "Unresolved local var" comments throughout, and Ghidra-specific types (`undefined`, `undefined4`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops decompiled as do-while with pointer arithmetic instead of for loops. VLA/alloca functions show complex pointer math instead of array indexing. Stack canary checks add artificial conditionals at function ends.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved, but optimization obscures original structure (e.g., `local_struct` returns `x * 3` directly instead of showing struct operations). Test functions constant-folded showing expected values.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but stack canary checks create forward references at function ends. Loop structures recognizable but not idiomatic C patterns.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. Optimization has actually removed some redundancy through constant folding. Stack protection code adds some repetition but is necessary.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many types generic (`void*`, `int`, `undefined4`). `size_t` becomes `int`. Pointer types lose specificity (`Node**` becomes `int**` in `linked_list_heap`). Some function pointer types recovered (`_func_int_int`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `Node` and `TreeNode` structs partially recognized, but `Point` struct NOT recovered (`heap_struct` just uses `malloc(8)`). Array types become pointer arithmetic. VLA completely lost in representation.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts: `(int)__ptr`, `(undefined4*)`. Pointer arithmetic on `void*` (undefined behavior in C). Type-confused operations in linked list (`Node*` treated as `int*`). No const correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated Ghidra warnings ("WARNING:", "Unresolved local var"). No semantic comments explaining algorithm purpose, no API contracts, no parameter documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Memory allocation patterns recognizable (malloc/free pairs). Loop patterns for array initialization visible. No design pattern identification or algorithm naming.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good anomaly warnings: "WARNING: Could not recover jumptable at 0x000122b0". Stack canary checks indicated. "Unresolved local var" comments show uncertainty. Some undefined behavior (dangling pointer) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: NULL checks preserved in most functions. No precondition/postcondition documentation. Error return values not explained. Bounds checking visible but not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear. Global variable usage visible (`global_counter`, `file_scope_static`). No call graph documentation. Callback relationships partially visible (`global_func_ptr`).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no file organization matching source. Static functions not clearly marked as file-scoped. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References external functions (`__printf_chk`, `malloc`, `free`). Undefined symbols (`extern_global_var`, `extern_function`). Ghidra-specific types (`undefined`, `undefined4`) require extensive stubs to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+8+4+4)/4 = 4.75
+L2 Average: (5+6+6+7)/4 = 6.00
+L3 Average: (5+4+3)/3 = 4.00
+L4 Average: (3+5+6+4)/4 = 4.50
+L5 Average: (6+4+3)/3 = 4.33
+
+Overall = (4.75 × 0.30) + (6.00 × 0.25) + (4.00 × 0.20) + (4.50 × 0.15) + (4.33 × 0.10)
+        = 1.425 + 1.50 + 0.80 + 0.675 + 0.433
+        = 4.83 ≈ 4.8/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable names completely generic** (`iVar1`, `puVar1`) losing all semantic meaning from original source
+- **Type system severely degraded** - `Node*` treated as `int*`, `size_t` becomes `int`, no const correctness
+- **Magic numbers everywhere** - `0x2a`, `0x14`, `0xf` instead of meaningful constants (42, 20, 15)
+- **String literals not recovered** - referenced as `&DAT_00013008` instead of showing actual content
+- **Struct types not recovered** - `Point` struct becomes `malloc(8)` with no field names
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most original function names preserved (`double_value`, `heap_basic`, `linked_list_heap`) making navigation and identification straightforward.
+
+### Most Needs Improvement: **Variable Naming Quality (3/10)**
+- Generic names like `iVar1`, `puVar1`, `__ptr` make it nearly impossible to understand variable purpose without tracing through entire function logic.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable naming** - Analyze how variables are used (e.g., `iVar2` in loop counting should be `i`, `__ptr` from malloc should be `arr` or `buffer`)
+2. **Recover struct types from access patterns** - When consistent field offsets are accessed (e.g., `+0`, `+4`, `+8`), propose named struct types with field names based on usage context
+3. **Replace magic numbers with symbolic constants** - Detect repeated literal values across functions and suggest named constants (e.g., `0x2a` → `LOCAL_VALUE`, `0x14` → `EXPECTED_RESULT`)

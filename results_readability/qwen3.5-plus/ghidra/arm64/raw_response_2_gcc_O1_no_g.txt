@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generic Ghidra auto-names (`param_1`, `iVar1`, `uVar2`, `lVar2`) with no semantic meaning. For example, `process_int(int param_1)` should use `x` or `value` to match source intent.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User functions preserve original names well (`double_value`, `process_char`, `struct_simple`), but runtime functions get generic names (`FUN_001006d0`, `FUN_0010083c`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions contain unexplained magic numbers (`0x61`, `0x62`, `0x400c000000000000` for float constants). Some literals like `' '` are readable, but floating-point hex representations obscure meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`___stack_chk_guard`) appear in every test function. Runtime initialization code (`deregister_tm_clones`, `register_tm_clones`) adds noise but is clearly marked.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but floating-point functions (`__addtf3`, `__multf3`) explode into hundreds of lines with excessive labels (`LAB_00101b40`, `LAB_00101df4`) and goto patterns.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Basic functions are appropriately sized, but floating-point implementations are monolithic (500+ lines). Test functions lost structure entirely—replaced with printf calls and hardcoded values.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Simple functions read top-to-bottom cleanly. Complex functions suffer from label-heavy jumps disrupting flow, though this is expected for floating-point library code.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Floating-point functions repeat similar bit manipulation patterns extensively. Test functions eliminate redundancy by hardcoding values, losing actual computation logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `char`, `short`), but pointers degrade to `undefined8 *` or `long`. `process_double` returns `undefined1 [16]` instead of `double`. `long double` operations lose type entirely.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: **Critical failure**—all struct definitions lost. `struct_simple(int *param_1)` accesses fields via `param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`. Bitfields reduced to bitwise operations without structure.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int *)*param_1` in `ptr_double`). Generic pointer arithmetic on `undefined8 *`. Function pointers reduced to `code *` without signature information.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated function headers present. No algorithm explanations. Warnings like "WARNING: Subroutine does not return" are helpful but sparse.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not identified—character case conversion, linked list traversal, and array summation patterns appear as raw code without pattern hints.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Removing unreachable block", "Subroutine does not return"). Type mismatches and struct loss not flagged as anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks exist in code but lack explanatory comments about requirements.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Callback connections (e.g., `complex_callback` with `ptr_func_complex`) not explicitly marked.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 70 functions in single output file. No logical grouping by category (data types, arrays, pointers, composites). No header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__printf_chk`, `__libc_start_main`, `__addtf3`) unresolved. Requires significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Avg Score | Weight | Contribution |
+|-------|-----------|--------|--------------|
+| L1: Lexical Clarity | 5.50 | 30% | 1.65 |
+| L2: Structural Intelligibility | 5.25 | 25% | 1.31 |
+| L3: Type System Fidelity | 4.00 | 20% | 0.80 |
+| L4: Semantic Transparency | 3.25 | 15% | 0.49 |
+| L5: Contextual Coherence | 4.33 | 10% | 0.43 |
+
+**Overall Readability Score: 4.68/10**
+
+### Critical Defects:
+- **Struct definitions completely lost**—all composite types reduced to pointer arithmetic (`param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`)
+- **Variable names are generic** (`param_1`, `iVar1`, `uVar2`) with no semantic meaning
+- **Test functions optimized away**—actual computation replaced with hardcoded printf values
+- **Floating-point functions unreadable**—hundreds of lines with excessive labels and bit manipulation
+- **No type recovery for unions/bitfields**—`struct_bitfields` shows raw bitwise ops without structure
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)**—Most user-defined function names preserved accurately from source (`double_value`, `process_char`, `array_1d_stack`)
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)**—No preconditions, postconditions, or parameter requirements documented anywhere
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** from access patterns—detect struct field access sequences and reconstruct named structures
+2. **Infer semantic variable names** from usage context (e.g., loop counters → `i`, accumulators → `sum`, parameters → original names from debug info)
+3. **Preserve test function logic** instead of constant-folding—maintain actual function calls for analysis purposes even when values are computable

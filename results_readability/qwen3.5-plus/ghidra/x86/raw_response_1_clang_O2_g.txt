@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Local variables consistently marked as "Unresolved local var" (e.g., `int temp1@[???]`, `int sum@[???]`). Function parameters retain original names (a, b, c, x) but semantic locals like `sum`, `count`, `result` are never inferred from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core function names preserved accurately (sequential_ops, single_if, nested_if_2, loop_for_fixed). Only helper functions use generic names (FUN_00011030). Action verbs and semantic intent well-maintained.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers unexplained (0x12, 0x3e9=1001, 0x65=101). Test functions print hardcoded expected values instead of computing results, obscuring input-output relationships. Some values contextually clear (100, 10).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present throughout: get_pc_thunk warnings, unreachable block warnings, inlined function markers. The `_start` function contains infinite loop artifact. Unresolved variable comments add visual clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple conditionals recovered well, but loops transformed into mathematical formulas (loop_for_fixed uses bit shifts instead of iteration). `infinite_loop` has bizarre repeated condition checks. Duff's device uses goto labels. At -O0, this transformation level is unexpected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable boundaries with appropriate sizes. Test functions bloated with hardcoded printf statements but remain cohesive. Helper functions (double_value, triple_value) properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom naturally. Duff's device uses goto labels disrupting flow. Some functions have awkward jump patterns from optimization. Generally acceptable but not ideal.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `infinite_loop` and `loop_external_state` contain repeated conditional checks that appear to be decompiler errors (5+ identical `if (*flag == 1)` checks). These redundant patterns significantly obscure actual logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic int types preserved correctly. Function pointers degrade to generic `code *` or `_func_int_int *`. Local variable types show as "Unresolved". Signed/unsigned handling mostly correct with explicit casts like `(uint)`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays appear as "Unresolved local var: int[5] arr@[???]" without proper type recovery. Pointer arithmetic visible in switch_small (`&DAT_00013700 + op * 4`). No structs in this code to evaluate.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (`(uint)`, `(ulonglong)`) but appropriate for operations. No severe type confusion. Function pointer calls typed reasonably well with proper signatures.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments minimal and auto-generated. No algorithm explanations or semantic documentation. Only warnings about unresolved variables and unreachable blocks. Original source comments (test validation, difficulty ratings) completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Loop-to-formula optimizations not explained. Duff's device structure visible but not identified. State machines not recognized. Common patterns (digit counting, factorial) not annotated despite being recognizable.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Warnings flag unresolved variables and unreachable blocks. Doesn't explain why transformations occurred or flag suspicious optimizations. Some anomalies noted but without context about decompiler confidence.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling documentation. Test validation comments from source completely lost. No contract information recovered despite clear input-output relationships in original.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible and traceable. Callback relationships partially clear through function pointer types. Global variable usage (jump_buffer) visible but not well documented. Call graph inferable but not explicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. No logical grouping or namespace structure. Test functions separated from implementation. Acceptable but not organized for comprehension.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (EVP_PKEY_CTX, _setjmp, __libc_start_main) not clearly documented. **Critical: Architecture mismatch** (original ARM64, decompiled x86). Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):     (5+7+6+4)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type System):    (6+5+7)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):       (3+4+5+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):     (6+6+4)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                    5.29/10
+```
+
+**Overall Readability Score: 5.3/10**
+
+### Critical Defects
+- **Architecture mismatch**: Original compiled for ARM64, decompiled output shows x86 - indicates wrong binary was decompiled
+- **Local variable names completely lost**: All locals show as "Unresolved local var" despite -O0 debug build
+- **Test functions broken**: Print hardcoded expected values instead of actually calling functions (e.g., `printf("CF-L1-01: %d\n",0x15)` instead of `sequential_ops(5,7,3)`)
+- **Redundant code artifacts**: `infinite_loop` contains 5+ identical condition checks that appear to be decompiler errors
+- **No semantic comments**: Original documentation (test cases, difficulty ratings, scene labels) completely absent
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source, maintaining semantic intent and action verbs throughout the codebase.
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or test validation information recovered despite clear input-output relationships in original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover local variable names from debug symbols** - At -O0 with -g flag, variable names should be recoverable from DWARF debug info instead of showing "Unresolved local var"
+2. **Preserve test function semantics** - Detect printf calls with function results and maintain actual function calls rather than hardcoding expected values
+3. **Add transformation annotations** - When converting loops to mathematical formulas, add comments explaining the optimization (e.g., "// Optimized: sum of 0..n-1 = n*(n-1)/2")

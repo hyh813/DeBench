@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (a1, a2, a3 for parameters; v1, v2, v3, v4 for locals) with no semantic meaning recovered. Original names like `temp1`, `sum`, `count`, `result` are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names are well-preserved (sequential_ops, single_if, nested_if_2, loop_for_fixed). Helper functions like double_value and triple_value also retained. Minor issue: if_else return type changed.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers throughout without explanation (10, 20, 30 in switch cases; 1000 timeout; array size 5). No constants recovered despite -O0 compilation with debug symbols.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack frame annotations clutter code (`v2; // [sp+4h] [bp-8h]`). Unnecessary `__fastcall` annotations on every function. Some functions show "FAILED to decompile" messages.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if/else/switch/loops recovered well, but switch_fallthrough uses goto labels (LABEL_7) instead of proper fall-through. duffs_device has excessive label-based control flow disrupting readability.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries correctly preserved. Helper functions (double_value, triple_value, op_add, etc.) remain separate. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Early returns used appropriately. switch_fallthrough and duffs_device have goto disruptions but most code is linear.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant assignments present (e.g., `v2 = a1; if (...) return a1; else return v2;`). duffs_device has excessive label duplication. No dead code removal issues.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Critical type error: if_else returns `bool` instead of `int`. _DWORD used instead of int in many places. Function pointer types partially preserved but with generic signatures.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays represented as `_DWORD v5[4]` without proper typing. loop_multi_exit matrix flattened to linear array. No struct recovery needed for this code but array semantics lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Critical bug in loop_break: `v5[i - 1]` when i starts at 0 causes out-of-bounds access. Function pointer casts lack proper signatures. Pointer arithmetic in process_with_callback unsafe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments recovered. Only compiler-generated stack annotations. Original documentation explaining function purpose, test cases, and difficulty levels completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic loop patterns (for/while/do-while) recognized. Switch-case structures recovered. No design pattern identification or algorithm naming despite clear patterns (factorial, digit counting, etc.).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: "FAILED to decompile" messages for 10 functions. computed_goto shows inline assembly without explanation. No warnings for suspicious patterns like the array indexing bug in loop_break.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. No error condition documentation. Original test validation comments completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. Global variable usage visible (jump_buffer). No call graph documentation or callback relationship explanations.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file. Test functions grouped together but no logical section comments. Original three-level organization (L1/L2/L3) not preserved.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Claims compilation success but 10 functions failed to decompile. External dependencies (__imp_* functions) present. Some inline assembly prevents clean compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+8+5+5)/4 = 5.25
+L2 Average: (6+8+7+6)/4 = 6.75
+L3 Average: (5+6+4)/3 = 5.00
+L4 Average: (2+5+4+2)/4 = 3.25
+L5 Average: (6+6+5)/3 = 5.67
+
+Overall = (5.25 × 0.30) + (6.75 × 0.25) + (5.00 × 0.20) + (3.25 × 0.15) + (5.67 × 0.10)
+Overall = 1.575 + 1.6875 + 1.00 + 0.4875 + 0.567
+Overall = 5.32/10
+```
+
+**Overall Readability Score: 5.3/10**
+
+### Critical Defects:
+- **Variable `a1, a2, v1, v2`** should be named semantically (e.g., `operand`, `sum`, `counter`) based on usage patterns
+- **loop_break has array indexing bug**: `v5[i - 1]` when i=0 causes out-of-bounds access (original: `arr[i]`)
+- **if_else returns bool instead of int** - type mismatch with original source
+- **switch_fallthrough uses goto labels** instead of proper fall-through semantics, obscuring intentional behavior
+- **No comments recovered** - all original documentation about function purpose, test cases, and difficulty levels lost
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making it easy to identify each function's purpose despite other readability issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic documentation; even at -O0 with debug symbols, no original comments or purpose explanations were recovered
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for variable naming** - At -O0 with -g, DWARF debug info contains original variable names that should be recovered instead of generic v1, v2, a1, a2
+2. **Detect and preserve intentional fall-through patterns** - Switch statements with missing breaks should be identified and documented as intentional fall-through, not converted to goto chains
+3. **Add semantic analysis for common patterns** - Recognize idioms like factorial recursion, digit counting loops, and array search patterns to add explanatory comments and suggest better variable names

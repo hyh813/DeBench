@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `a1`, `v3`, `v10`, and `v11`, providing no semantic context (e.g., `count` or `args` in `varargs_func` are lost). This is expected given the binary was compiled without debug info (`no_g`), but it significantly hinders readability.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `param_by_value_int` are perfectly preserved from the source, making the high-level purpose of each unit immediately clear.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals (e.g., `"CALL-L1-01: %d\n"`) are preserved intact. However, integer arithmetic is often constant-folded by the compiler (e.g., `return 15` instead of `cdecl_func(5, 10)`), which, while accurate to the optimized binary, obscures the original logic flow.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains Hex-Rays specific artifacts like `LODWORD(result)`, `__int64` casts on ARM64, and irrelevant `__fastcall` calling convention annotations. While not unreadable, this noise clutters the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Most functions are linear and readable, but `varargs_func` exposes complex pointer arithmetic (`v10 = -56`, `v11 = &a9`) instead of abstracting the `va_list` iteration, making the logic hard to follow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source structure. Even trivial functions like `call_cdecl` are preserved as separate units (albeit optimized to `return 15`), maintaining the original modularity.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads top-to-bottom with minimal jumps. The `test_...` functions are linear sequences of prints, matching the source's intent perfectly.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully presents the compiler's optimized output without redundant dead code. The constant propagation (e.g., `return 15`) is clean, even if it differs from the source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types are generally correct (`int` for parameters, `__int64` for pointers/registers on ARM64). However, the decompiler defaults to `__int64` for many return values where `int` or specific pointer types would be more semantically accurate.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct definitions are completely lost. `LargeStruct` and `SmallStruct` are replaced by raw arrays (`_OWORD v9[8]`) or generic pointers (`_DWORD *a1`), destroying the semantic meaning of field access (e.g., `s.data[i]` becomes pointer arithmetic).
+
+**11. Type Safety:** Score: 7/10
+Justification: Pointer arithmetic and casts are mostly accurate to the ARM64 ABI. There are no obviously dangerous misinterpretations, though the lack of struct types forces the reader to interpret raw memory accesses.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining logic. The only comments are artifacts like `// attributes: thunk` or decompilation failure notices, offering no help in understanding complex sections like the varargs handling.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard C idioms are missed. The `va_list` pattern in `varargs_func` is rendered as raw stack walking, and struct returns are shown as hidden pointer parameters without explicit indication of the "struct return" ABI idiom.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler explicitly lists functions it failed to decompile (e.g., `strlen`, `__printf_chk`) at the end, which is excellent for setting expectations about the output's completeness.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: There is no indication of preconditions (e.g., `ptr != NULL`) or function contracts. For example, `param_double_ptr` checks for NULL but this is just code, not documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and use the recovered names. The relationship between `test_calling_conventions` and the specific `call_...` functions is easy to trace.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are ordered logically, matching the source file's structure (calling conventions, then parameters, then returns). Related functions are grouped together.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on Hex-Rays specific types (`__int64`) and macros (`LODWORD`) and lacks the original struct definitions, requiring significant manual patching to recompile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- Composite types (structs) are completely flattened into raw arrays/pointers (`_OWORD`, `_DWORD`), losing all field semantics.
+- Variable names are generic (`a1`, `v1`), offering no insight into their purpose within the logic.
+- The `varargs` implementation is exposed as low-level pointer arithmetic rather than the standard `va_list` idiom, making it very hard to read.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully recovered the original function names from the symbol table, making the high-level flow of the program immediately understandable.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover `LargeStruct` and `SmallStruct` definitions turns data manipulation into obscure memory offset operations, which is the biggest barrier to understanding the data logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic-based struct recovery to group related array accesses (e.g., `v9[0]` to `v9[15]`) back into struct definitions.
+2. Recognize standard varargs ABI patterns (stack walking with specific offsets) and re-abstract them into `va_start`/`va_arg` pseudo-code.
+3. Improve type inference for return values to use `int` or `void*` instead of the generic `__int64` where the register usage implies a smaller type.

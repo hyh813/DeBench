@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4` throughout (e.g., `goto_backward` function). Parameters retain source names (`a`, `b`, `c`, `x`) but local variables lack semantic meaning. No inference of purposes like "temp1" or "packet_size" from usage patterns.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names match original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, etc. Test functions also correctly named: `test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`. Excellent verb usage and semantic accuracy.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xA` (10), `0x65` (101), `0xB` (11) appear without explanation. Computed expressions like `10 * x + 10` replace original case values. Some literals like `100` and `1000` are clear from context. No named constants recovered.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe SIMD noise pollution. Functions like `loop_continue` and `goto_backward` contain extensive `__m128i` intrinsics (`_mm_load_si128`, `_mm_add_epi32`, `_mm_mul_epu32`) that obscure logic. Multiple goto labels (LABEL_3, LABEL_5, LABEL_6, etc.) create spaghetti code. This appears to be -O2 or -O3 output despite source metadata indicating -O0.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Heavy use of goto for loop constructs (e.g., `goto LABEL_12`, `goto LABEL_13` in `goto_backward`). SIMD loop unrolling in `loop_continue` makes control flow nearly incomprehensible. Some switch statements are natural. The optimization level mismatch makes this significantly worse than expected for -O0.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions remain separate as in source. No inlining observed. Function sizes are reasonable (20-80 lines). Good separation between test functions and implementation functions.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but frequent forward jumps via goto disrupt flow. Deep nesting in some functions (e.g., `nested_if_deep` uses chained returns). SIMD code is completely non-linear.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Extensive loop unrolling in `loop_continue` (40+ lines of SIMD for a simple odd-number summation). Similar unrolling in `goto_backward` and `tail_recursion`. No comments explaining these optimizations. Common subexpressions present but not excessive.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Parameters correctly use `int`, `unsigned int`, and `volatile int*`. Function pointers have proper signatures (`int (*f)(int)`). Minor genericness in some local variables but overall accurate. Signed/unsigned handling is correct.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Not much composite type usage in source. Arrays accessed via pointer arithmetic (`arr[v4++]`). No struct recovery needed for this particular codebase. Basic pointer types are correct.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Function pointer calls appear type-safe. No obvious buffer overflow patterns. Some pointer arithmetic but within bounds. No unsafe casts observed. Generally safe code.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: NO comments in decompiled functions. No algorithm explanations. No decompilation confidence indicators. Only the header comment from IDA Pro present. Original source had extensive Chinese comments explaining each function's purpose - none recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: switch statements, basic loops. No explicit naming of patterns like "Duff's device" (though `duffs_device` function is correctly identified). State machine patterns present but not named as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for suspicious code or indirect calls. "FAILED to decompile" messages present for 7 functions (`__libc_start_main`, `puts`, `printf`, `_setjmp`, `longjmp`, `__imp___cxa_finalize`, `__gmon_start__`) - these are external library calls. No warnings about optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postconditions documented. No invariants. No error condition documentation. Original source had test cases with expected values - none of this contract information recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear (`cb(arr[v4++])`, `f(x)`). No documentation of call relationships. External dependencies (printf, puts) referenced but not declared. Test functions call implementation functions but relationships not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically: control flow L1, L2, L3 functions together, test functions together, main at end. Static functions properly scoped. Reasonable file organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code structure suggests it would compile with stubs for external functions. No `#include` statements. No function prototypes for library calls. Would require moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+1. **Severe optimization mismatch**: Source indicates -O0 but decompiled code shows heavy SIMD unrolling and loop transformations typical of -O2/-O3, making code nearly unreadable
+2. **No comments**: Zero comments in 1486 lines of decompiled code; original source had extensive explanatory comments
+3. **SIMD noise pollution**: Functions like `loop_continue` and `goto_backward` contain 40+ lines of `__m128i` intrinsics obscuring simple logic
+4. **Generic variable names**: Variables like `v1`, `v2`, `v3` throughout instead of inferred semantic names
+5. **Magic numbers unexplained**: Values like `0xA`, `0x65`, `0xB` appear without explanation
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+Function names match original source exactly, including test functions. This is excellent and significantly aids understanding.
+
+**Most Needs Improvement:** Comment Quality (2/10) and Noise Reduction (2/10)  
+The combination of zero comments and severe SIMD noise makes many functions practically unusable for analysis. The optimization level mismatch is the root cause of the noise issue.
+
+**Top 3 Recommendations:**
+1. **Detect optimization level mismatch**: Flag when decompiled code shows optimizations far beyond what source metadata indicates; add warnings about transformed code
+2. **Add semantic comments**: Infer and add comments explaining what each function does based on control flow analysis (e.g., "Sums odd numbers from 1 to n")
+3. **Abstract SIMD intrinsics**: When detecting heavy SIMD usage for simple operations, either comment explaining the optimization or provide both the optimized and naive versions

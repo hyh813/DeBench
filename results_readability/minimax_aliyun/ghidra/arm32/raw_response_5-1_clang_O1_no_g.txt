@@ -1,0 +1,148 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables use extremely generic names like `local_28`, `uStack_24`, `iVar1`, `pvVar1`, `ppuVar1` that convey no semantic meaning. For example, in `test_cpp_member_func`, the stack variable `local_28` holds the string "Test" but is named arbitrarily. This makes tracking data flow nearly impossible.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: Test functions are perfectly named (`test_cpp_member_func`, `test_cpp_constructor`, etc.) matching source exactly. Member functions like `Base::virtual_func`, `MultiDerived::funcA` are correctly recovered. Minor issue: `call_virtual_func` has incorrect parameter handling in its signature.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Multiple magic numbers lack explanation: `0x74736554` (string "Test"), `0x14` (size 20), `0x125c` (4704), `0x2a` (42). String literals replaced with `&DAT_00011c71` references. Some constants like `0x1e` (30), `0x28` (40) are correct but uncommented.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Justification: Heavy noise pollution with "WARNING: Unknown calling convention", "WARNING: Removing unreachable block" comments throughout. The metadata claims -O0 but code shows optimized patterns (thunk functions, complex vtable access). Multiple auto-generated warnings clutter the output.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Justification: Generally readable sequential logic with if/else. However, `test_cpp_constructor` uses awkward do-while with negative counter (`iVar3 = iVar3 + -1`) instead of proper forward iteration. The `call_virtual_func` has broken control flow due to parameter loss.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Test functions properly separated (12 test functions). Member functions extracted correctly. However, `call_virtual_func` is incorrectly decompiled (missing parameter), and some template instantiations are duplicated (e.g., multiple `Container` functions for int/double).
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Most functions read top-to-bottom without excessive jumps. Early returns used appropriately in `Container::get`. Minor forward jumps exist but don't severely disrupt flow.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: No obvious dead code. Loop in `test_cpp_constructor` is unoptimized but recognizable. Some redundancy in vtable access patterns across multiple inheritance functions, but manageable.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 3/10**
+
+Justification: Severe type degradation. Most variables use `undefined4`, `undefined1`, `undefined2` instead of proper types. Only `size_t` and some `int*` are correctly typed. Function return types often `undefined4` instead of `int`. No const correctness preserved.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+Justification: No struct/class recovery. Instead of `SimpleClass`, code uses raw pointer arithmetic: `*(undefined4 *)(this + 0x28)`. Instead of `LifecycleClass`, uses `operator_new` with manual offset calculations. All class structure lost.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Multiple unsafe patterns: extensive `undefined4` casting, pointer arithmetic without bounds checking, incorrect function pointer calls. The `call_virtual_func` has completely wrong call syntax: `(*(code *)**(undefined4 **)param_1)();` - drops second parameter and uses dangerous cast chain.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Justification: Only auto-generated warnings present ("WARNING: Unknown calling convention"). No algorithm explanations, no recovered comments from source. The source had detailed Chinese comments explaining each test - none recovered.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some patterns recognized: vtable dispatch indicated by `*(code *)*local_14`, RTTI operations via `__dynamic_cast`. But no explicit naming of patterns (e.g., "vtable dispatch" not mentioned). Template instantiation recognized but not labeled as such.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+
+Justification: Generic warnings present for "Unknown calling convention" and "Removing unreachable block". However, the critical anomaly in `call_virtual_func` (missing parameter) is not flagged. Some thunk functions noted but purpose unclear.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants documented. The source had clear expectations (e.g., "期望: 4704") but these are not recovered. No null-check documentation for pointer operations.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function names allow inferring relationships (e.g., `Base::virtual_func` called from `test_cpp_virtual_func`). However, no explicit call graphs or caller/callee documentation. Virtual dispatch relationships not clearly explained.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Justification: Functions logically grouped - test functions together, member functions by class. However, all 83 functions in single file with no namespace/class grouping. Static functions not distinguished from extern.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+Justification: Code will NOT compile. Multiple issues: `undefined4` return types, missing parameter in `call_virtual_func`, undefined function declarations (`operator_new__` vs `operator_new`), thunk functions with unusual signatures. Requires extensive patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 4 + 3) / 4 = 4.25
+L2_avg = (6 + 7 + 7 + 7) / 4 = 6.75
+L3_avg = (3 + 2 + 4) / 3 = 3.00
+L4_avg = (3 + 5 + 6 + 2) / 4 = 4.00
+L5_avg = (5 + 6 + 2) / 3 = 4.33
+
+Overall = (4.25 × 0.30) + (6.75 × 0.25) + (3.00 × 0.20) + 
+          (4.00 × 0.15) + (4.33 × 0.10)
+        = 1.275 + 1.6875 + 0.6 + 0.6 + 0.433
+        = 4.60/10
+```
+
+### Overall Readability Score: 4.6/10
+
+### Critical Defects
+- **`call_virtual_func` is broken**: Second parameter `x` is completely dropped; call becomes `(*(code *)**param_1)()` instead of `obj->virtual_func(x)`. This is a critical semantic error.
+- **No struct/class recovery**: All class members accessed via raw offsets (`*(int *)(this + 8)`) instead of named fields, losing all semantic meaning of the original class design.
+- **Type precision severely degraded**: Using `undefined4`, `undefined1`, `undefined2` everywhere instead of proper `int`, `char`, `bool` types.
+- **Return types wrong**: Many functions return `undefined4` instead of `int`, making compilation impossible.
+- **Magic numbers unexplained**: `0x74736554` (string "Test"), `0x14` (size), `0x125c` (4704) appear without context.
+
+### Best Quality Aspect: Function Naming (8/10)
+Test function names are perfectly recovered (`test_cpp_member_func`, `test_cpp_constructor`, etc.) matching source exactly. This is the strongest area of the decompilation.
+
+### Most Needs Improvement: Composite Type Recovery (2/10)
+The decompiler completely failed to reconstruct any C++ class structures. Instead of `class SimpleClass { int value; char name[32]; }`, it presents raw memory operations with offsets, making the object-oriented design completely opaque.
+
+### Top 3 Recommendations
+1. **Recover class/struct layouts**: Use vtable analysis and constructor patterns to reconstruct class member layouts with meaningful field names instead of raw offsets.
+2. **Fix parameter recovery for virtual calls**: The `call_virtual_func` bug where the second parameter is lost indicates a fundamental issue with indirect call analysis.
+3. **Replace `undefined4` with inferred types**: Use constant analysis and usage patterns to determine actual types (int, char, bool) rather than leaving everything as undefined.

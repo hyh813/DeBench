@@ -1,0 +1,101 @@
+## EVALUATION: C++ Object-Oriented Features Decompiled Code
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Mix of meaningful names (`capture_by_value`, `capture_by_ref`, `obj`, `base`, `derived`) and generic temporaries (`v1`, `v2`, `v3`, `v4`, `r1`, `r2`). In `test_cpp_diamond_inheritance`, `var18` should be `obj` and `v2` should be `virtual_base_ptr` based on usage pattern.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Debug symbols preserved most original names (`test_cpp_member_func`, `SimpleClass::getValue`, `LifecycleClass::getData`). However, some helpers remain generic (`sub_D38`, `sub_1F40`, `sub_1FD0`) and lambda operators use mangled names (`test_cpp_lambda(void)::$_1::operator()`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers present without explanation: `0x1Fu` (31) for name buffer, `4u` for sizeof(int), `4660` for class ID (should be `0x1234`). String literals preserved but array bounds like `0x14u` (20 bytes for int[5]) lack context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack variable annotations (`// [sp+0h] [bp-40h]`), explicit vtable assignments (`this->_vptr$Base = (int (**)(void))&off_14C48`), 28 `/* FAILED to decompile: */` markers, and verbose template instantiation code throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions read naturally, but complex C++ features produce awkward patterns. Diamond inheritance uses pointer arithmetic (`*((_DWORD *)var18._vptr$MiddleA - 3)`) instead of clean member access. Exception handling uses low-level `_cxa_throw` instead of try-catch syntax.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Each class method properly separated, matching source structure. However, template instantiations create redundant functions (`Container<int>::push` vs `Container<double>::push`), and smart pointer helpers are overly fragmented (20+ functions for unique_ptr operations).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but virtual inheritance code disrupts flow with complex pointer calculations. Exception handling in `test_cpp_exception` is incomplete (only shows throw, not catch blocks), breaking logical flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Template instantiations duplicate nearly identical code (Container<int> and Container<double> methods). Smart pointer implementation shows all internal tuple operations explicitly. Vtable setup repeats across every constructor.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, double, size_t), but C++ specifics degraded: `__int64`, `_DWORD` instead of standard types, `void*` for template parameters, and function pointers shown as generic casts (`int (__fastcall **)(MultiDerived *)`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Class fields recovered with names (`SimpleClass::value`, `SimpleClass::name[32]`, `LifecycleClass::data`, `size`). However, vtable pointers shown as `_vptr$Base` without structure, and virtual inheritance requires pointer arithmetic instead of clean struct access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(MultiDerived *)&obj.BaseB`, `(int (__fastcall **)(MultiDerived *))`, void pointer arithmetic for virtual base access. Smart pointer code uses multiple reinterpret casts through tuple implementations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated stack variable comments (`// [sp+0h] [bp-4h] BYREF`). No explanation of C++ semantics (vtable layout, virtual inheritance, RAII). Failed decompilations marked but not explained why they matter.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Virtual function calls show vtable dereferencing but not labeled as polymorphic dispatch. Smart pointer patterns visible but not identified as RAII. Lambda capture structure recovered but not explained as closure.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations marked (`/* FAILED to decompile: __imp_printf */`). Warning present for stack issues ("positive sp value has been detected"). However, virtual thunks and complex inheritance adjustments not flagged as requiring manual review.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition comments. Null checks exist (`if ( this->data )`) but not documented as safety contracts. Exception safety guarantees not mentioned despite exception handling code.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear with proper names. Class inheritance visible through constructor chaining (`Base::Base(this)` in `Derived::Derived`). However, thunk-to-main-function relationships unclear (`_ZThn8_N12MultiDerived5funcBEv` calls `MultiDerived::funcB` with offset adjustment).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 218 functions in flat output without logical grouping. Related class methods scattered throughout file. No header file separation or namespace organization despite C++ source structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 28 external functions failed to decompile (printf, operator new/delete, _cxa_*). C++ standard library functions marked as imports. Would require extensive stubs and linking against C++ runtime to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+6+4)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (6+6+4)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (3+4+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.35/10
+```
+
+**Overall Readability Score: 5.4/10**
+
+### Critical Defects:
+- **Virtual inheritance access uses pointer arithmetic** (`*((_DWORD *)var18._vptr$MiddleA - 3)`) instead of clean member access, obscuring the single `shared_data` semantics
+- **Exception handling incomplete** - `test_cpp_exception` only shows throw path, catch blocks not recovered despite being in source
+- **28 external functions failed to decompile** including critical C++ runtime functions (_cxa_*, operator new/delete)
+- **Variable naming inconsistent** - `var18`, `v2`, `v3` in diamond inheritance should be `obj`, `virtual_base_ptr`, `result`
+- **No semantic comments** explaining C++ mechanisms (vtable dispatch, RAII, lambda captures)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Debug symbols preserved most original function names, making it easy to map decompiled code back to source structure
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Almost no explanatory comments for complex C++ features; a reader must already understand vtables, virtual inheritance, and smart pointer internals
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add semantic annotations for C++ features** - Label vtable calls as "virtual dispatch", mark RAII patterns, explain lambda capture structures inline
+2. **Recover high-level control flow for exceptions** - Reconstruct try-catch blocks from `_cxa_*` calls instead of showing raw exception allocation
+3. **Infer variable names from C++ context** - Use class field names and usage patterns to name temporaries (e.g., `virtual_base_offset` instead of `v2`)

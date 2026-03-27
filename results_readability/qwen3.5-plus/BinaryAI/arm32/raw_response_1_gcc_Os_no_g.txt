@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generically named `param_1`, `param_2`, `iVar1`, `uVar1` instead of semantic names like `temp1`, `sum`, `count` from source. For example, `sequential_ops` uses `param_1/2/3` instead of `a/b/c`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - original function names preserved (`sequential_ops`, `nested_if_deep`, `duffs_device`). Action-oriented names clearly reflect purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in hex obscure meaning (e.g., `0x14` instead of `20`, `0xffffffff` instead of `-1`). Test function `test_control_flow_l1` hardcodes expected values without explanation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: `__printf_chk` instead of `printf`, `__stack_chk_fail` calls, and unnecessary `undefined4` return types. Stack variables like `local_20[4]` add clutter.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops recovered as `for/while` (e.g., `loop_for_fixed`, `goto_backward`). However, `switch_fallthrough` and `duffs_device` use goto labels instead of clean switch semantics.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. No inappropriate inlining or fragmentation. Each function maintains single responsibility.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: `duffs_device` and `state_machine` use goto labels (`switchD_00010d80_caseD_1`) disrupting top-to-bottom reading. Most other functions flow naturally.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: `recursion_factorial` correctly converted from recursion to iteration. Some redundant variable assignments in `loop_complex_cond` with `SBORROW4` calls.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used instead of specific widths. Mixed `undefined4`, `uint`, `int` creates confusion. `op_div` returns `undefined4` but should be `int`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Stack arrays represented as `local_20[4]` without struct semantics. Function pointer arrays recovered (`apcStack_18[4]`) but with generic `code *` type.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present (`(int)(char)(&CSWTCH_56)[param_1]`). Function pointers use `code *` without proper signatures. Signed/unsigned confusion in `loop_nested`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original had extensive documentation explaining each function's purpose, test cases, and difficulty levels. Complete semantic loss.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (loops, conditionals). Duff's device partially recovered but not identified as such. No algorithm pattern naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged (`UNRECOVERED_JUMPTABLE` in `call_func_ptr`). Inconsistent application - `computed_goto` labels not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n>0`). No postconditions or error condition documentation recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. `test_control_flow_l1/2/3` call targets not explicitly linked to tested functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. No separation between test functions and implementation functions.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates successful compilation. External dependencies (`__printf_chk`, `__aeabi_idiv`) declared but ARM-specific runtime calls present.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+5+6)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (7+8+6+7)/4 = 7.00 × 0.25 = 1.75
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (2+5+5+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (5+5+7)/3   = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                              5.72/10
+```
+
+**Overall Readability Score: 5.7/10**
+
+### Critical Defects
+- **Variable names completely generic**: `param_1/2/3`, `iVar1`, `uVar1` instead of semantic names like `a`, `b`, `c`, `sum`, `count`
+- **Zero documentation**: All original comments explaining function purpose, test cases, and difficulty levels lost
+- **Hex literals obscure meaning**: `0x14`, `0x1e`, `0xffffffff` instead of decimal `20`, `30`, `-1`
+- **Goto labels in switch constructs**: `switchD_00010d80_caseD_1` labels instead of clean switch-case recovery
+- **Type inconsistencies**: Mixed `undefined4`, `int`, `uint` without clear rationale
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - Original symbol names perfectly preserved, making function identification trivial
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation loses all semantic context from original source
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** from usage patterns and debug symbols when available (e.g., `param_1` → `a` based on position)
+2. **Recover and preserve source comments** from debug sections or generate semantic annotations based on code analysis
+3. **Convert hex literals to decimal** when they represent simple integer constants for improved human readability

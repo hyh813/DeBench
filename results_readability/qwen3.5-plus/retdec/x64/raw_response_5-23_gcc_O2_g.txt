@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v1`, `v2`, `a1`, `a2`) instead of semantic names like `size`, `counter`, `increment`. Example: `param_macro_constants(int64_t a1)` loses the original `int size` meaning entirely.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions preserved well (`param_macro_constants`, `call_asm_basic`), but helper functions are generic (`function_1090`, `function_10b0` for mmap wrapper).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `return a1 + 282 & 0xffffffff` (original was line number + counters), `*(int32_t *)v3 = -0x3f7c0777` (opaque machine code bytes). Constants like MAX_SIZE=1024 lost.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`) add noise. Excessive type casts (`& 0xffffffff`) throughout. Some unreachable code paths from security instrumentation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Some loops recovered (param_asm_clobber has while loop), but many functions constant-folded losing original structure. `param_conditional_compile` shows `a1 + 2 + 2 * a1` instead of conditional branches.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved correctly. Helper functions extracted for syscalls (mmap, munmap wrappers). Some functions too small (just return constants like `call_macro_constants`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom reasonably. Stack check epilogues create minor non-linearity at function ends. While loops properly structured.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding eliminated some redundancy (good). Some redundant type conversion operations visible. No obvious dead code from register spilling.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy int64_t usage where original used int. Example: `param_macro_constants(int64_t a1)` vs `int size`. Non-standard typedef `int128_t` for SIMD. Loss of const correctness throughout.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited applicability (few structs in source). Arrays handled as pointer arithmetic. No struct/union recovery issues since source had minimal composite types.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts: `(int32_t)&g20`, `(int64_t *)v3`. Pointer arithmetic without proper typing. Function pointer types degraded to int64_t.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments except decompiler header. Original had extensive comments explaining each test case (PP-L2-01, ASM-L4-01, etc.). No explanation of magic numbers or recovered logic.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No macro expansion patterns identified. Assembly patterns not labeled. No algorithm identification. Original macro semantics (SQUARE, MAX, ADD_16) completely lost.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No warnings about constant folding losing original logic. No indication that preprocessing macro semantics are unrecoverable. Stack check failures noted but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented. No postconditions inferred. Original had clear expected values in comments (期望：64, 期望：30) - all lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (g1-g20) unexplained. No call graph information. Test function to param function relationships not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. No logical grouping comments. Original had clear section markers (5.2 预处理，5.3 内联汇编). Helper functions scattered.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Missing some headers (stdio.h in places). Non-standard typedef (int128_t). External function declarations present. Would require moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+7+7+7)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────
+Overall Score:                                  5.096 ≈ 5.1/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable `a1`, `a2`, `v1` should be named semantically** (e.g., `size`, `counter`, `result`) based on usage patterns
+- **Macro semantics completely lost** - SQUARE(x), MAX(a,b), ADD_16(x) all constant-folded with no indication of original intent
+- **Magic numbers without explanation** - `282`, `0xdef0`, `-0x3f7c0777` appear with no context
+- **Preprocessing information unrecoverable** - #ifdef DEBUG_MODE branches collapsed, no indication of conditional compilation
+- **String literals encoded as hex globals** (g1-g20) with Chinese UTF-8 bytes, not human-readable
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Main test functions preserved original names accurately (param_macro_constants, call_asm_basic, test_preprocessing_features), maintaining semantic connection to source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero recovery of the extensive original documentation explaining each test case, expected values, and preprocessing behavior.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement macro pattern detection** - Recognize common macro expansion patterns (SQUARE, MAX, recursive ADD_N) and annotate recovered code with original macro names
+2. **Add decompilation confidence annotations** - Mark constant-folded regions with comments like "// ORIGINAL: if (size > MAX_SIZE) return BUFFER_COUNT * 4"
+3. **Recover string literal content** - Decode UTF-8 global strings (g1-g20) inline rather than as hex-encoded global variables

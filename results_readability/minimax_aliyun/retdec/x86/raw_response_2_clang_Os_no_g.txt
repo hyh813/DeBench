@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (a1, a2) and internal variables use v1, v2, v3, result. No semantic names like `packet_size` or `buffer_length` are recovered. Even loop indices lack descriptive names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names match source (process_char, process_int, array_1d_stack). However, some signatures are incorrect (process_float takes 2 params instead of 1), and internal functions like function_1040 are generic.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like 44 (array stride), 100, 20 appear without explanation. String literals accessed via computed offsets (v1 + 0x1311) with no named constants. The value 0x1778c399 in global g1 is unexplained.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Minimal compiler artifacts (no __asm blocks). Some redundant operations visible in array_3d with repeated code. Address range comments are auto-generated noise but not obstructive.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops use while constructs correctly. However, process_char has convoluted boolean expression: `(unsigned char)((char)a1 - 65) >= 26 ? a1 : (uint32_t)(a1 + 32) % 256`. The array_3d function has deeply nested loops that are hard to follow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-50 lines typical). Test functions separated from implementation. Some functions like test_array_types are large (300+ lines) but this matches source.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but array_3d has complex nested loops with multiple while statements that disrupt linear flow. Some forward jumps present.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: array_3d shows significant code duplication - the same nested loop pattern repeated three times. This appears to be loop unrolling from compilation but not commented or abstracted.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Mixed results - process_short correctly uses int16_t, but process_float/process_double return float80_t (long double) instead of float/double. process_bool has overly complex expression. Many pointers use int32_t instead of proper types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union types recovered. All composite types converted to raw pointer arithmetic. For example, struct_simple uses `*(int32_t*)a1 + *(int32_t*)(a1+4) + *(int32_t*)(a1+8)` with no field names. Point3D, Rect, Widget all lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts: `(int32_t*)(a1 + 3529)` for float access, `(char*)a1` for void pointer. Pointer arithmetic like `4 * v1 + a1` without bounds checking. No const correctness preserved.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated address range comments present (e.g., "// Address range: 0x120a - 0x1215"). No algorithm explanations, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No design patterns or algorithms identified. Linked list traversal, binary tree traversal, graph traversal all appear as generic while loops without pattern naming.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flagging of suspicious code. process_char has incorrect logic (should be simple if/else, not complex ternary). array_oob has intentional out-of-bounds access but no warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No error condition documentation. The function ptr_func_simple returns uninitialized result.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls visible in code but relationships not documented. No indication of which functions call which, no global variable usage clarity, no callback relationships shown.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped logically but no clear separation into files or modules. Static functions not properly scoped. All in single output file.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has standard includes (stdio.h, stdlib.h, stdint.h, stdbool.h). Some missing declarations (double_value, complex_callback). Requires patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+7+3+6)/4 = 4.5
+L2_avg = (5+7+5+5)/4 = 5.5
+L3_avg = (4+2+4)/3 = 3.33
+L4_avg = (2+1+1+1)/4 = 1.25
+L5_avg = (3+5+5)/3 = 4.33
+
+Overall = (4.5 × 0.30) + (5.5 × 0.25) + (3.33 × 0.20) + 
+          (1.25 × 0.15) + (4.33 × 0.10)
+        = 1.35 + 1.375 + 0.666 + 0.1875 + 0.433
+        = 4.01/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic names (a1, a2, v1, v2) with no semantic recovery - completely unusable for analysis
+- **Composite type loss**: All structs (Point3D, Rect, Widget, Node) reduced to raw pointer arithmetic with no field names
+- **Incorrect logic**: process_char has wrong implementation using complex ternary instead of simple if/else for uppercase check
+- **No comments**: Zero useful comments - only auto-generated address ranges
+- **Type errors**: process_float/process_double return float80_t instead of float/double; function signatures don't match source
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (7/10)**
+- Most function names correctly match source (process_char, array_1d_stack, linked_list). This is the strongest area.
+
+### Most Needs Improvement (Single Dimension)
+- **Semantic Transparency (1.25/4)**
+- Comments, idiom recognition, anomaly indication, and contract recovery all scored 1-2. The decompiled code provides zero semantic context to help analysts understand the code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct/union types**: Use field offset analysis to reconstruct composite types with meaningful field names instead of raw pointer arithmetic
+2. **Add semantic comments**: Include algorithm explanations, pattern identification (e.g., "// Linked list traversal"), and decompilation confidence for indirect calls
+3. **Improve variable naming**: Infer names from usage patterns (e.g., if a parameter is used as array index, name it `array` or `index`; if used in arithmetic, name based on operation)

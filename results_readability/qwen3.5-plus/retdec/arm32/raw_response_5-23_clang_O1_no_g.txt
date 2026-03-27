@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of semantic names like `size`, `x`, `y`. Local variables use `v1`, `v2`, `result` without indicating purpose (e.g., `param_macro_constants` should have `size` not `a1`).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main function names preserved well (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). However, helper functions use address-based names (`function_50c`, `function_518`) losing semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `64`, `512`, `0xdf22`, `282`. Original macros (`MAX_SIZE`, `BUFFER_COUNT`) completely lost. String literals stored as hex-encoded globals (`g1`, `g2`) with UTF-8 bytes unreadable.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Runtime initialization code present (`_start`, `_init`, `_fini`, `__do_global_dtors_aux`). Wrapper functions for library calls add noise (`function_518` just calls `printf`). No excessive debug instrumentation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural if-else and loop structures. `param_asm_clobber` correctly recovered loop from assembly. However, some functions are over-constant-folded (`call_macro_constants` just returns 64).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is mixed. Some functions too small (just return constants), while helper functions are unnecessarily fragmented (`function_524` for `mprotect`). Original structure mostly preserved.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with clear function boundaries. Some forward references to globals disrupt flow. No excessive goto usage in recovered code.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding creates redundancy (same values in caller and callee). `test_preprocessing_features` has repeated printf patterns. Some functions duplicated (`param_asm_simd` and `param_simd_intrinsics` identical).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently which is good. However, pointer types often generic (`int32_t *` instead of `void *` for mmap). No const-correctness recovered. Function pointer types lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Original code had minimal structs. Arrays represented as pointer arithmetic correctly. No struct/union recovery needed for this code sample.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Critical issue: `param_asm_multi_insn` uses uninitialized variable `v1` in memcpy call. Multiple unsafe casts (`(int32_t *)v1`). No bounds checking on pointer arithmetic.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive Chinese documentation explaining each macro test case. No decompilation confidence indicators or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Macro patterns not identified (stringize, token paste, variadic macros all folded to constants). Assembly patterns recovered as C but not labeled as such. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uninitialized variables (`v1` in `param_asm_multi_insn`). Silent about constant folding that loses original logic. No flags for potentially incorrect recovery.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `size` parameter constraints). Error conditions not marked (mmap failure returns). No postcondition inference.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph clear through preserved names. Global variables use cryptic names (`g1`, `g2`, `g13`) losing semantic meaning. No call relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with prototypes at top. No logical grouping comments separating preprocessing vs. assembly tests. Function order somewhat arbitrary.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Standard headers included. Some functions may not compile due to uninitialized variables. External dependencies declared but some internal functions (`__atomic_fetch_add_4`) need linking.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+6)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):  (7+6+7+5)/4 = 6.25  × 0.25 = 1.563
+Level 3 (Type):        (6+7+4)/3   = 5.67  × 0.20 = 1.134
+Level 4 (Semantic):    (2+3+3+3)/4 = 2.75  × 0.15 = 0.413
+Level 5 (Contextual):  (5+5+6)/3   = 5.33  × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.22/10
+```
+
+### Overall Readability Score: **5.2/10**
+
+### Critical Defects:
+- **Uninitialized variable in `param_asm_multi_insn`**: `v1` used in memcpy without initialization - code will crash
+- **All parameter names generic**: `a1`, `a2`, `a3` instead of `size`, `x`, `y` - loses all semantic meaning
+- **Zero comments**: Original had extensive documentation; decompiled has none
+- **Magic numbers everywhere**: `64`, `282`, `0xdf22` without explaining they came from `MAX_SIZE`, line numbers, etc.
+- **Global variables cryptic**: `g1`, `g2`, `g13` instead of descriptive names for string literals and constants
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Main function names preserved accurately from source, making it possible to identify test cases
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding the purpose of each test case extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover parameter names from debug symbols** - With `-g` flag, variable names should be recoverable from DWARF info
+2. **Add decompilation confidence annotations** - Flag constant-folded code, uninitialized variables, and recovered assembly patterns
+3. **Preserve macro semantics in comments** - When macros are folded, add comments showing original macro names and values (e.g., `// MAX_SIZE = 1024`)

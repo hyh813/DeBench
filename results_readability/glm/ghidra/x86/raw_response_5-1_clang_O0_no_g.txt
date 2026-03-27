@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic stack offsets like `local_2c`, `local_14`, and `iVar1`, completely losing semantic meaning (e.g., `obj`, `result`). Even with `-g` debug info, names were not recovered.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Excellent recovery of mangled C++ symbols; functions like `SimpleClass::SimpleClass`, `test_cpp_virtual_func`, and `operator+` match the source exactly.
+
+**3. Literal Clarity:** Score: 8/10
+Justification: String literals like `"Test"` and `"Derived"` are preserved. Magic numbers are present (e.g., `0x1234`), though some are displayed in hex where decimal was used in source.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While there is no optimization noise, the pervasive use of `undefined4`, `undefined1`, and `undefined *` acts as significant noise, obscuring the actual data types.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is very natural and linear due to `-O0` compilation; loops and conditionals (`if`, `for`) are clearly preserved without goto spaghetti.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: User-defined functions are distinct and cohesive, but the output is cluttered with hundreds of lines of expanded standard library template code (e.g., `std::unique_ptr` internals), obscuring the user's logic.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with excellent linearity; exception handling `try` blocks are explicitly marked, preserving the source structure.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: No optimization artifacts like loop unrolling or dead code are present; the code is a clean translation of the debug build.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `int` and `void*` are correct, but complex types are lost; class instances are often typed as arrays of `undefined` (e.g., `SimpleClass local_2c [36]`).
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Class member access is replaced by raw pointer arithmetic (e.g., `*(int *)this = param_1` instead of `this->value = param_1`), failing to reconstruct `SimpleClass` or `Point` structures.
+
+**11. Type Safety:** Score: 6/10
+Justification: Virtual function calls are represented as unsafe raw vtable dereferences (`(*(code *)**(undefined4 **)param_1)`), which is technically accurate but type-unsafe compared to the source syntax.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are no semantic comments explaining logic; only technical warnings like "Unknown calling convention" are present.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: High-level C++ idioms like virtual dispatch are shown as low-level memory indirections rather than being abstracted back to method calls.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Technical anomalies (calling conventions) are flagged, but semantic anomalies (like the complex pointer arithmetic for diamond inheritance) are not explained.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and easy to trace (e.g., `SimpleClass::getValue(local_2c)`), making the call graph clear.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions; there is no logical grouping by class or namespace, making it hard to navigate the OOP structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile due to `undefined` types and missing definitions for standard library structures used in the output.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- Class member access is represented as raw pointer arithmetic (e.g., `*(int *)(this + 4)`) instead of field names (e.g., `this->name`).
+- Variables use generic stack-based names (`local_2c`, `iVar1`) instead of semantic names from the source or debug symbols.
+- Virtual function calls are decompiled into raw vtable lookups (`(*(code *)**(void ***)obj)`) rather than standard C++ method invocation syntax.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- Ghidra's C++ demangler successfully recovered the full mangled names for constructors, destructors, and overloaded operators.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 4/10)
+- The failure to reconstruct class structures forces the reader to interpret pointer arithmetic offsets manually, which is the biggest barrier to understanding the OOP logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement C++ class structure recovery to map pointer arithmetic offsets back to named member variables.
+2. Leverage debug information (`-g`) to recover original variable names instead of using generic stack offsets.
+3. Detect and re-abstract virtual function call patterns (vtable lookups) into standard C++ method call syntax.

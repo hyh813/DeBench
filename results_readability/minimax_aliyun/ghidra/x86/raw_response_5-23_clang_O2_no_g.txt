@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names like `param_1`, `param_2`, `param_3`. Local variables are `iVar1`, `iVar2`, `pcVar2`, `pcVar3` - completely devoid of semantic meaning. Compare to source's meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved - `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, etc. match the original source exactly. Only minor issue is some internal functions like `FUN_00011030` and `FUN_000119e5` which don't correspond to source functions.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Magic numbers like `0x40` (64), `0x200` (512), `0xdf22` (57122) are used directly. While these represent computed macro values, they're somewhat inferable. However, the semantic link to original macros like `MAX_SIZE`, `BUFFER_COUNT` is completely lost.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some warnings about unreachable blocks appear in comments but don't affect the code itself. No redundant casts or debug instrumentation cluttering the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and readable. Loops are properly recognized (`for` loops in `param_asm_clobber`, `call_asm_clobber`). Conditionals are clear. At `-O0`, control flow should closely match source, and it does.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with good granularity. Wrapper functions like `call_macro_constants()` calling `param_macro_constants(2048)` are preserved. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. Some forward jumps exist but are manageable. The `call_asm_multi_insn` function has some complex initialization but still readable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Significant redundancy in `call_asm_multi_insn` - string initialization is verbose with 32 individual byte zeroings. Loop unrolling in `test_asm_features` for string copy is present but not commented. Otherwise relatively clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `undefined4` instead of `int`, `undefined1` instead of `char`, `undefined4*` instead of `int*`. This is a major readability issue - types are imprecise and suggest uncertainty where there is none. At `-O0` with debug info, types should be recoverable.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays are accessed via pointer arithmetic which is acceptable. The `local_1c[6]` in `call_asm_clobber` shows some array recovery. No complex structs to recover in this code, so this is a neutral case.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Pointer arithmetic is present but necessary for the functionality. No obviously unsafe casts. The type system is consistent within each function, even if types are imprecise (`undefined4`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Ghidra adds file-level header comments but function-level comments are minimal. No explanation of preprocessing semantics being lost. No documentation of what macros expanded to. The comment "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection" is useful but not about the actual logic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Preprocessor idioms are completely unrecognized. The decompiler shows the result of macro expansion but doesn't indicate "this was a macro" or explain the original macro semantics. String operations are recognized but not identified as coming from `STRINGIZE` or `CONCAT` macros.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present about indirect calls and inlined functions. However, the warning system is inconsistent - some things flagged, others not. The `FUN_000119e5` function with `unaff_retaddr` is suspicious but not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The source had no explicit contracts either, but the decompiler could infer some (e.g., "param_1 > 0" for array functions). None present.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear from the code itself (`call_macro_constants` calls `param_macro_constants`). However, no explicit documentation of call graphs or relationships. The `test_preprocessing_features` and `test_asm_features` functions show the test structure but aren't documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions together, asm functions together. Static functions like `my_func` are properly scoped. The overall file structure makes sense.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code uses `undefined4`, `undefined1` types which won't compile as-is. Needs replacement with `int`, `char`. External dependencies (printf, sysconf, mmap, munmap, mprotect) are used but not declared. Requires moderate patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable names are completely generic (`param_1`, `iVar1`, `pcVar2`) - loses all semantic meaning
+- Type precision is poor (`undefined4` instead of `int`, `undefined1` instead of `char`)
+- No indication that preprocessing macros were used - original macro semantics completely lost
+- No contract/precondition documentation despite testable invariants
+- Build system compatibility issues with `undefined*` types
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names match the original source exactly, preserving the semantic intent of the code's API.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+All parameters and local variables use generic auto-generated names that provide no insight into their purpose or semantic role in the algorithm.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, size parameters, return values) to suggest meaningful names like `array_ptr`, `element_count`, `return_value`
+2. **Recover type information from debug symbols**: At `-O0 -g`, debug info is available - use it to emit `int` instead of `undefined4`, `char` instead of `undefined1`
+3. **Detect and document preprocessing artifacts**: When constant values match known macro expansions (e.g., 1024 → MAX_SIZE), add comments indicating "likely macro expansion" to preserve semantic context

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `local_c`, `local_1c`, `local_24` with no semantic meaning. Original source had meaningful names like `arr`, `head`, `current`, `sum` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`local_vars`, `heap_basic`, `test_stack_memory`, `double_value`). A few external stubs use generic names like `FUN_00101020`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers throughout without explanation: `0x2a` (42), `0x800` (2048), `0x14` (20 bytes), `0x28` (40 bytes). Original had clear constants and meaningful values.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Redundant casts present (`(long)param_1`, `(undefined4 *)`, `(undefined8)`). Some compiler artifacts visible but no severe dead code or debug instrumentation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops generally recovered as for/while constructs. Some awkward patterns like `while(true)` with break in `linked_list_heap`. At `-O0`, control flow should match source more closely.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized and cohesive. Static functions preserved (`static_helper`). No excessive inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Some nested conditionals but no excessive goto usage disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop structures not excessively unrolled. Some redundant type casts could be eliminated for clarity.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation to `undefined4`, `undefined8`, `void*`. Original had specific types (`int`, `Point*`, `Node*`, `size_t`). Return types often wrong (`undefined4` vs `int`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct types completely lost (Point, Node, TreeNode not recovered). All composite access via pointer arithmetic: `*(undefined8 *)(__ptr + 2)`. No field names preserved.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts throughout (`(undefined4 *)`, `(long)`, `(int *)`). No const-correctness preserved. Pointer arithmetic visible without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining each test case. No decompilation confidence indicators or API contracts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (linked list traversal, tree creation, memory allocation) not identified or named. No design pattern recognition visible.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Unsafe operations (dangling pointer in `dangling_pointer`, double free in `double_free`) not flagged. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions inferred. Error conditions not explained.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage not clearly indicated. Callback relationships implicit only.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Static functions properly scoped. No header file organization or grouping comments.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions declared but some signatures incorrect (e.g., `call_extern_func` returns `void` instead of `int`). Would require stubs and type fixes to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (7+8+7+7)/4 = 7.25  × 0.25 = 1.81
+Level 3 (Type):        (4+3+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):  (5+6+5)/3   = 5.33  × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  5.02/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects
+- **Variable `param_1`, `local_c` should be named semantically** (e.g., `input_value`, `result`, `array_ptr`) based on usage context
+- **Struct types completely lost** - Point, Node, TreeNode accessed via raw pointer arithmetic instead of field access
+- **Zero comments** - No explanation of test purposes, magic numbers, or decompilation confidence
+- **Magic numbers unexplained** - `0x2a`, `0x800`, `0x14`, `0x28` appear without named constant recovery
+- **Unsafe operations not flagged** - `dangling_pointer` and `double_free` contain undefined behavior with no warnings
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making code navigation straightforward despite other issues
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding test purposes and logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable name inference** - Analyze usage patterns to suggest names like `array_ptr` for loop-indexed pointers, `result` for return values
+2. **Recover composite type structures** - Detect consistent memory access patterns to reconstruct struct definitions with field names (e.g., `Node { data, next }`)
+3. **Add anomaly detection and flagging** - Identify and comment on potentially unsafe patterns (use-after-free, double-free, buffer overflows) with confidence indicators

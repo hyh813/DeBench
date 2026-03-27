@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic (`v0`, `v1`, `v2`, `a0`, `a1`) with no semantic meaning. Original source used descriptive names like `temp1`, `sum`, `count`, `result` which are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`sequential_ops`, `single_if`, `recursion_factorial`) but many helper functions are generic (`sub_401020`, `sub_401030`). About 50% of functions have meaningful names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic number `4294967295` (UINT32_MAX) appears constantly throughout code without explanation. Original constants like return values (10, 20, 30) are preserved but type casts obscure their meaning.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive type casts (`& 4294967295`, `(unsigned int)`, `(unsigned long long)`) clutter every expression. Compiler artifacts from type promotions are not cleaned up.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions like `sequential_ops` recovered well, but `loop_while` and `loop_dowhile` use bizarre bit manipulation (`i * 1717986919 >> 34`) instead of clean division. `switch_fallthrough` uses goto labels instead of structured fall-through.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized but many runtime helper functions (`sub_401020`, `sub_401030`) are fragmented unnecessarily. Core logic functions maintain reasonable granularity.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: `duffs_device` uses multiple goto labels (`LABEL_401ab0`, `LABEL_401abc`) creating non-linear flow. `computed_goto` uses computed goto which breaks structured reading entirely.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Repeated type casts on every operation (`& 4294967295` appears 50+ times). Loop variables are unnecessarily duplicated (`v3 = v2; v4 = v1;` patterns).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` parameters become `unsigned int` or `unsigned long long` inconsistently. `sequential_ops` parameters are `unsigned int` but should be `int`. Return types frequently wrong (`char` for `if_else` returning 0/1).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Minimal struct usage. `struct_0` is generic with `field_0`. Array accesses use pointer arithmetic (`(&v0)[a0]`) instead of proper array indexing in some cases.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout. `call_func_ptr` takes `unsigned long long *a0` but calls it as function. `duffs_device` has complex type confusion with pointer arithmetic.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty level - all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: State machine pattern in `state_machine` and `fsm_func_table` not identified. Recursion patterns recovered but not labeled. No algorithm identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`) but most problematic code (bit manipulation in loops) not marked as potentially incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. `test_control_flow_l1` calls functions but no call graph documentation. Callback relationships in `process_with_callback` not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file. No logical grouping of related functions. Helper functions scattered throughout rather than grouped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies declared (`extern char g_403060`) but many undefined. Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+3+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (5+6+4+4)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (4+5+3)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (1+3+4+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Context):     (5+4+5)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.04/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (e.g., `sum`, `count`, `result`) - appears in 80% of functions
+- **Magic number `4294967295`** appears 50+ times without explanation, should be `UINT32_MAX` or removed
+- **Loop division replaced with bit manipulation** in `loop_while`/`loop_dowhile` (`i * 1717986919 >> 34` instead of `i / 10`)
+- **Zero comments** despite original source having extensive documentation for each function
+- **Type mismatches** throughout - `int` becomes `unsigned long long`, `char` return types for integer functions
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core test functions retained original semantic names (`sequential_ops`, `recursion_factorial`, `switch_small`) making identification possible
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of documentation makes understanding function purpose require reverse engineering from code alone
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns - detect accumulator variables (`sum += x`), counters (`i++`), and flags to assign semantic names
+2. **Recognize common arithmetic patterns** - division by 10 should recover as `/ 10` not bit manipulation constants, especially at -O0 optimization
+3. **Add decompilation confidence annotations** - mark reconstructed code vs. uncertain patterns, and preserve original source comments when debug symbols available

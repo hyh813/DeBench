@@ -1,0 +1,115 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar1`, `__addr`, `__len`) with zero semantic recovery. For example, `param_1` in `param_macro_constants` should be `size` based on usage pattern.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved from source (`param_macro_constants`, `call_asm_clobber`, `test_preprocessing_features`). Action-oriented naming clearly reflects purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere with no macro recovery (`0x400` instead of `MAX_SIZE`, `0x40` instead of `BUFFER_COUNT * 4`, `0xdef0` instead of platform constant). Original macro semantics completely lost.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Ghidra warnings about unreachable blocks present but minimal. No excessive compiler artifacts like frame pointer manipulation or register spilling noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is natural with proper if/else and loop constructs. `param_asm_clobber` correctly recovered as a do-while loop from assembly. Constant folding simplifies many functions appropriately for O3.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Excellent granularity with each function properly separated. No monolithic functions; `param_macro_constants` is 8 lines, `param_asm_clobber` is 15 lines - appropriate sizes.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. No excessive gotos or forward jumps disrupting flow. Early returns used appropriately in `param_memory_protection`.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Constant folding at O3 is appropriate (e.g., `call_macro_constants` returns `0x40` directly). No duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: `undefined4` used inconsistently instead of proper types (e.g., `undefined4 param_macro_constants(int param_1)`). Pointer types mostly correct but `int*` used where `size_t*` might be appropriate.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No structs/unions in this code to recover. Pointer arithmetic in `param_asm_clobber` (`param_1 = param_1 + 1`) correctly represents array iteration.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some `undefined4` usage is concerning. `param_asm_atomic` uses `undefined4 param_1` for what should be `int* counter`. No unsafe casts observed but type information degraded.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments except Ghidra's auto-generated unreachable block warnings. Original source had extensive documentation explaining macro behavior, preprocessing, and assembly semantics - all lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Assembly patterns converted to C (e.g., `param_asm_clobber` loop) but not identified as recovered assembly. No pattern naming for atomic operations or SIMD recovery.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra warns about unreachable blocks in `call_weak_fn`, `deregister_tm_clones`, `register_tm_clones`. However, no indication that inline assembly was recovered or that constant folding occurred.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or error handling contracts recovered. `param_memory_protection` error returns (-1, -2, -3) have no documentation about their meaning.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls are clear and traceable. `global_var` referenced in `param_memory_clobber_demo`. However, no call graph documentation or relationship indicators.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions grouped logically matching original structure. Test functions (`test_preprocessing_features`, `test_asm_features`) properly separated from implementation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Would require stubs for `__atomic_fetch_add_4`, `mmap`, `sysconf`. `undefined4` type needs resolution. Generally compilable with moderate patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+9+4+7)/4 = 5.75
+L2 Average: (7+8+8+8)/4 = 7.75
+L3 Average: (5+7+6)/3 = 6.00
+L4 Average: (2+5+6+3)/4 = 4.00
+L5 Average: (7+8+6)/3 = 7.00
+
+Overall = (5.75 × 0.30) + (7.75 × 0.25) + (6.00 × 0.20) + (4.00 × 0.15) + (7.00 × 0.10)
+        = 1.725 + 1.9375 + 1.200 + 0.600 + 0.700
+        = 6.16
+```
+
+**Overall Readability Score:** 6.2/10
+
+### Critical Defects:
+- **Variable `param_1` should be named `size`** in `param_macro_constants` based on comparison usage pattern
+- **Magic numbers `0x400`, `0x200`, `0x40`** should recover original macro names (`MAX_SIZE`, `MAX_SIZE/2`, `BUFFER_COUNT*4`)
+- **Zero semantic comments** - original had extensive documentation about preprocessing behavior, all lost
+- **`undefined4` type used inconsistently** instead of proper return types (`int`, `void`)
+- **No indication that inline assembly was recovered** - `param_asm_clobber` shows C loop but no annotation that this came from assembly
+
+### Best Quality Aspect:
+- **Function Naming Quality (scored 9/10)**
+- Function names are perfectly preserved from source, maintaining semantic clarity about each function's purpose
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (scored 2/10)**
+- Original source had 200+ lines of documentation explaining macro behavior, preprocessing, and assembly semantics - decompiled code has virtually none
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics from constant patterns** - Detect when constants match common macro patterns (e.g., `0x400` = 1024 = `MAX_SIZE`) and suggest named constants
+2. **Add decompilation confidence annotations** - Mark functions where assembly was recovered vs. original C, and indicate constant-folding occurred
+3. **Infer variable names from usage context** - Analyze comparison operations, arithmetic patterns, and function parameters to suggest semantic names (`param_1` compared to constant → `size`)
+
+---
+
+## Analysis Notes
+
+**Optimization Level Discrepancy:** The original source metadata claims `-O0 -g` but the binary path indicates `O3` optimization. The decompiled code clearly shows O3 behavior (constant folding, inlining). This evaluation assumes O3 expectations (5-7 range typical).
+
+**Key Observation:** At O3, the decompiler performed well on structural recovery (control flow, function decomposition) but poorly on semantic recovery (naming, comments, macro information). This is expected - preprocessing information is fundamentally lost at compilation, but the decompiler could do better at suggesting recovered semantics.
+
+**Assembly Recovery Quality:** Inline assembly was successfully converted to equivalent C code (`param_asm_clobber`, `param_asm_simd`), which is impressive. However, no annotation indicates this transformation occurred, which would help analysts understand the recovery confidence.

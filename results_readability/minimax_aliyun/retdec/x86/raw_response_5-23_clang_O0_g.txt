@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiler uses extensively generic names like `v1`, `v2`, `v3` for local variables and `g1`-`g9` for globals. In `param_stringize`, variables `v1` and `v2` obscure the original `str1`, `str2`, `str3` semantics. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions retain their original names (e.g., `param_macro_constants`, `call_asm_basic`, `header_func`). However, CRT startup functions received mechanical names like `function_1040`, `function_1050`. The core business logic functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Critical failure in `param_macro_constants`: `return size > (int32_t)&g8 ? 64 : (int32_t)&g1;` compares size to a pointer address instead of recovering the constant 1024. Magic numbers like `0xdef0`, `0x1bbc` appear without explanation. Some constants like `_SC_PAGESIZE` are properly preserved.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: The decompiler introduces pseudo-`__asm_` functions for SIMD operations (e.g., `__asm_movaps`, `__asm_paddd`) which are non-standard. Some unnecessary casts present, but no major compiler artifacts like debug instrumentation or register spilling debris.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical semantic error in `call_asm_privileged`: `return v1 == 15 == v2 == 42 == param_clobber_importance(3, 7) == 20 ? 77 : v1;` produces incorrect chained comparison logic. Most other control flow is natural (while loops, if statements), but this fundamental semantic break severely impacts understandability.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (mostly under 50 lines) with clear single responsibilities. The decomposition closely matches the original source - preprocessing functions separated from assembly functions. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns used appropriately in functions like `param_asm_multi_insn`. Minor disruption from computed addresses but flow is traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. The SIMD code in `param_simd_intrinsics` has some redundant-looking operations but they're from the original assembly pattern. Loop unrolling is minimal given -O0 optimization level.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently which is appropriate for ARM64. However, pointers are often cast to `int32_t` (e.g., `(int32_t)dst`, `(int32_t)arr`) losing type safety. The `uint32_t` for array length `n` in `param_asm_clobber` is correct.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No complex structs in original source to recover. Global variables remain as simple `int32_t`. The code doesn't demonstrate struct/union reconstruction capability, but also doesn't lose any.
+
+**11. Type Safety:** Score: 4/10  
+Justification: The chained comparison in `call_asm_privileged` is a severe type-safety violation producing undefined behavior. Pointer-to-integer casts throughout (e.g., `(int32_t)arr`) are potentially unsafe. The ternary operator misuse creates semantic incorrectness.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Decompiler provides address ranges (`// Address range: 0x1260 - 0x128f`) and line mappings (`// Line range: 37 - 43`), which are useful for correlation. However, no functional comments explaining what the code does or recovering original macro semantics.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms explicitly identified. The SIMD operations could be recognized as SSE2 vector addition but no such annotation exists. The macro expansion patterns are not documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies are flagged. The broken chained comparison in `call_asm_privileged` is presented as correct code without any warning. Indirect calls or unusual patterns not highlighted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source had no explicit contracts, so this is expected, but the decompiler provides no additional semantic recovery.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes at the top provide call signatures, but no documentation of call relationships (who calls whom). The `param_*` and `call_*` pairing is inferable from naming but not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - preprocessing functions cluster together, assembly functions cluster, CRT functions at the beginning. Static functions properly scoped. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes necessary headers (`<stdio.h>`, `<stdint.h>`, `<string.h>`, `<sys/mman.h>`, `<unistd.h>`). Requires the custom `int128_t` typedef. Should compile with minor adjustments.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- **Broken semantic comparison**: `call_asm_privileged` uses chained equality (`v1 == 15 == v2 == 42`) producing incorrect logic - should be `v1 == 15 && v2 == 42`
+- **Constant recovery failure**: `param_macro_constants` compares `size` to `&g8` (address) instead of recovering MAX_SIZE=1024
+- **Generic variable names**: `v1`, `v2`, `v3` throughout make code nearly impossible to trace semantically
+- **No macro semantic recovery**: Preprocessor macros are expanded but their original semantic meaning (SQUARE, MAX, etc.) is lost
+- **Type safety violations**: Extensive pointer-to-integer casts create potential undefined behavior
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Functions are appropriately sized with clear single responsibilities, matching the original source organization well.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+The pervasive use of `v1`, `v2`, `v3` and `g1`-`g9` makes the code nearly unreadable. The decompiler should infer names from usage patterns (e.g., `str` for string variables, `len` for lengths).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage**: Analyze how variables are used (e.g., passed to `strlen` → name it `str`; used in size comparison → name it `size` or `max_size`)
+2. **Recover macro semantics**: Detect repeated expressions like `x * x` and suggest they represent `SQUARE(x)` macro; recognize `((a) > (b) ? (a) : (b))` as `MAX(a,b)`
+3. **Flag semantic anomalies**: The chained comparison `a == b == c` is almost always a decompilation error - add warning/flag when detected

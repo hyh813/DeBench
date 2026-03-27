@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `v0`, `v1`, `ptr`, `a0`, `a1` obscuring their purpose. Some semantic names exist (`len`, `idx`, `pid`, `sock`, `fp`) but are inconsistent. For example, in `param_malloc_free`, `ptr` should be `int_array` and `idx` should be `i`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`param_strcpy`, `call_strcmp`, `param_signal_handling`). However, helper functions use mechanical names (`sub_10cb8`, `sub_12d1c`, `thread_atomic_increment` loses atomic semantics).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers: `4294967295` (unsigned -1), `42` (success code), `10`/`14` (SIGUSR1/SIGALRM), `2,1,0` (socket constants). No constants recovered despite `-g` debug symbols being available.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`GLIBC_2.4::__stack_chk_guard`) appear in nearly every function. Atomic operation helpers generate 30+ near-identical functions. Redundant calls like `call_strcpy` calling `param_strcpy` twice.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `while`/`for` constructs. Signal handling uses awkward `while(true)` with manual break. Some `goto` patterns in atomic operations (`LABEL_12ca5`, `LABEL_12ca6`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries preserved, but atomic operations exploded into 30+ helper functions (`__sync_fetch_and_add_4`, `__sync_val_compare_and_swap_2`, etc.). TLS functions fragmented (`sub_12f40`, `sub_12f54`, `sub_12f68`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Signal handling has nested conditionals with multiple return paths. Atomic CAS loops create non-linear flow with `goto` labels.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks duplicated in every function. `call_*` functions often call their `param_*` counterpart twice (e.g., `call_strlen` calls `param_strlen` twice). Atomic helpers have near-identical implementations for different sizes.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degrades to `unsigned int` or `char*`. `size_t` becomes `unsigned int`, `pid_t` becomes `unsigned int`, `FILE*` becomes opaque `FILE*`. Lost: `const` correctness, `volatile` for atomics, proper signedness.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `sockaddr` partially recovered with generic `sa_data[14]`. `ThreadData` struct lost (became array access `(&result)[3 * v0]`). `FILE` struct empty. TLS variables not recovered as `__thread`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout (`(volatile int*)&atomic_counter`). Pointer arithmetic on void pointers. `pthread_join` called with wrong parameter count in decompiled code. Array bounds not checked.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no API contracts, no decompilation confidence indicators. Original source had extensive comments that were completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls (`strcpy`, `strcmp`, `printf`) recognized. pthread patterns not explicitly identified. Producer-consumer pattern in `param_condition_variable` not named. Atomic operations not recognized as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings for unresolved indirect calls. Atomic operation failures silently return 0. TLS access via `__aeabi_read_tp()` not flagged as platform-specific. No uncertainty markers.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions (e.g., "returns heap-allocated memory"). Error codes (`4294967295`) not explained as failure conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables (`signal_received`, `atomic_counter`) used without context. Callback relationships (thread functions) not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by category (library/syscall/thread) but no file organization. No header declarations. Static functions not properly scoped. All 100+ functions in single output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies declared but atomic helpers need implementation. `__aeabi_read_tp()` is ARM-specific. Stack canary requires glibc. Would need significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+3+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+4+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.19/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `ptr`** should be named based on usage (e.g., `file_descriptor`, `thread_id`, `shared_memory`)
+- **Magic number `4294967295`** appears 50+ times without explanation (should be `-1` or `ERROR`)
+- **Zero comments** despite original source having extensive documentation and `-g` debug symbols
+- **Stack canary checks** add noise to every function without being filterable
+- **Atomic operations** decompiled into 30+ near-identical helper functions instead of recognized patterns
+- **ThreadData struct** lost, replaced with array arithmetic `(&result)[3 * v0]`
+- **TLS variables** not recovered as `__thread`, accessed via opaque `__aeabi_read_tp()`
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test function names preserved from source (`param_strcpy`, `call_strcmp`, `param_signal_handling`), providing semantic anchors for understanding code structure.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of comments despite `-g` debug flag and extensive original source documentation; this is the most severe degradation affecting all other dimensions.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols from `-g` flag** to recover variable names, type information, and original comments from DWARF debug sections
+2. **Implement stack canary filtering** to recognize and optionally hide `__stack_chk_guard` patterns that add noise without semantic value
+3. **Recognize atomic operation patterns** (`__sync_*`, `__atomic_*`) and recover them as high-level atomic operations rather than expanding into helper functions

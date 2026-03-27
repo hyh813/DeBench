@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Parameters preserved well (`dst`, `src`, `filename`) but locals are generic (`v0`, `v1`, `v2`, `attempts`, `attemptsa`). In `param_signal_handling`, `attempts` and `attemptsa` are clearly the same variable with unnecessary renaming.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names preserved excellently (`param_strcpy`, `call_strcmp`, `test_standard_library_functions`). Only startup/runtime helpers have generic names (`sub_C2C`, `_aeabi_read_tp`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `syscall(5, pathname, 0)` (should be `SYS_open`), `signal(10, ...)` (should be `SIGUSR1`), `socket(2, 1, 0)` (should be `AF_INET, SOCK_STREAM, 0`). String literals preserved well.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Redundant parameter copies throughout (`tmpfilea = tmpfile`, `filenamea = filename`, `proga = prog`). Type casts like `(_DWORD *)` and `(__sighandler_t)` add visual noise. 64 failed decompilations listed at end.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with standard if/else and for/while loops. Signal handling uses awkward `while(1)` with break pattern instead of `while(condition)`. At -O0, this restructuring is unexpected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source exactly. Thread functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`). No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with logical flow. Some functions have early returns that could be consolidated. No excessive goto usage disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Parameter shadowing creates redundancy (`xa = x`, `arg = x` in `param_pthread_create`). No dead code in main functions but redundant variable assignments throughout.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision with `size_t`, `int`, `_DWORD`, `__int64`. Return type mismatch: `param_strcpy` returns `size_t` in decompiled but `int` in source. Pointer types often degraded to `_DWORD *`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `ThreadData` struct completely lost - accessed as raw array `s[0]`, `s[1]`, `s[2]`. `sockaddr` accessed via `sa_data[2]` byte manipulation. No struct definitions visible in output.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(_DWORD *)arg`, `(char *)-1` comparison, `void *(*)(void *)` function pointer casts. No const-correctness preserved. Pointer arithmetic on void* common.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. No algorithm explanations, no decompilation confidence indicators. Only metadata header present. Original source had extensive documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`, `pthread_create`). Thread patterns visible but not named. No design pattern identification (producer-consumer, mutex protection not labeled).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 64 failed decompilations listed at end but no inline warnings. Type mismatches not flagged. The `// positive sp value has been detected` warning in `_start` is good but isolated.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Error returns visible (-1, -2, -3) but meaning not documented. No contract information about null checks or valid ranges.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear within decompiled code. Global variables visible (`signal_received`, `shared_counter`, `atomic_counter`) but no usage documentation. No call graph provided.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source structure. Test functions grouped (`test_standard_library_functions`, `test_system_calls`, `test_thread_concurrency`). Single output file with no module separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 64 library functions failed to decompile requiring stubs. Type mismatches (`size_t` vs `int`) would cause compilation warnings. Would need significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+4+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (2+5+4+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.533
+---------------------------------------------------------
+Overall Score:                                  = 5.33/10
+```
+
+**Overall Readability Score: 5.3/10**
+
+### Critical Defects:
+- **Magic numbers everywhere**: `syscall(5, ...)` should be `SYS_open`, `signal(10, ...)` should be `SIGUSR1`, `socket(2, 1, 0)` should use named constants
+- **Struct recovery failure**: `ThreadData` struct completely lost, accessed as raw array indices `s[0]`, `s[1]`, `s[2]`
+- **No comments recovered**: Original source had extensive documentation; decompiled code has zero comments explaining logic
+- **Type degradation**: `_DWORD *`, `void*` casts throughout; `size_t` returns sometimes changed to `int`
+- **64 failed decompilations**: All library imports failed, requiring manual stub creation for compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved excellently (`param_strcpy`, `call_strcmp`, `test_standard_library_functions`), making navigation and identification straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero comments recovered despite original source having extensive documentation; no algorithm explanations or decompilation confidence indicators.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover named constants from syscall/signal numbers** - Map `5` → `SYS_open`, `10` → `SIGUSR1`, `2,1,0` → `AF_INET,SOCK_STREAM,0` using platform symbol tables
+2. **Reconstruct struct definitions from access patterns** - Detect `s[0]`, `s[1]`, `s[2]` access patterns and propose `struct { int start; int end; int result; }`
+3. **Generate semantic comments from library call patterns** - When `pthread_mutex_lock` is detected, add comment "// Enter critical section" automatically

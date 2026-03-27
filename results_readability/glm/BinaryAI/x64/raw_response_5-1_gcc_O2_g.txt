@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `local_34`, `param_1`, and `puVar1`. In `test_cpp_member_func`, the object `obj` is represented by a series of stack variables (`local_34`, `local_2c`) manually initialized with hex values, completely obscuring the object-oriented nature of the code.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: The decompiler successfully demangled C++ symbols, recovering names like `Base::virtual_func`, `test_cpp_template_func`, and `Derived::getName`. However, some functions remain generic (e.g., `FUN_00101020`), and the logic inside the test functions is often reduced to constants, making the names slightly misleading relative to the complexity of the original source.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are often represented as hex integer assignments to stack variables (e.g., `local_34 = 0x74736554` for "Test") rather than string constants. Magic numbers like `0x125c` (4704) and `0x2a` (42) appear as return values without context, obscuring the original calculation logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code contains significant compiler noise, such as stack canary checks (`*(long *)(in_FS_OFFSET + 0x28)`), `undefined` type padding, and redundant casts. The manual stack manipulation for string construction in `test_cpp_member_func` acts as low-level noise that hides the high-level intent.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While some functions like `test_cpp_template_func` retain natural control flow, others like `test_cpp_member_func` and `test_cpp_virtual_func` are reduced to simple stack setups and constant returns (`return 0x2a`). This flattening destroys the logical structure of the original code (loops, conditionals, object interactions).
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler successfully separates class methods (e.g., `Container<int>::push`, `MiddleA::func`) into individual functions. The granularity is appropriate, though the loss of class structure definitions in the output makes the relationship between these functions less obvious than in the source.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom without excessive jumping. However, the initialization of complex objects (like string setup on the stack) interrupts the linear flow with verbose data movement instructions.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is a mix of redundancy. In `test_cpp_rtti`, the logic is preserved, but in `test_cpp_virtual_func`, the entire logic is replaced by a constant return value, which is technically a form of "redundancy elimination" by the compiler that the decompiler failed to reverse or annotate, making the code look trivial.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While function signatures often recover specific types (e.g., `Base *param_1`, `Derived *this`), local variables frequently default to generic types like `undefined8`, `undefined4`, or `long`. The distinction between `int` and `size_t` is sometimes lost or represented as generic integers.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Class member access is represented as raw pointer arithmetic (e.g., `*(int *)(this + 8)` in `Derived::virtual_func`) rather than field access (e.g., `this->multiplier`). The decompiler failed to reconstruct the class layouts (structs) with field names, forcing the reader to understand memory offsets.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies heavily on casts like `(undefined *)` and `(long *)` to access memory. While this reflects the binary reality, it lacks the type safety of the original C++ source, where member access was strongly typed and bounds-checked via the class interface.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex logic, such as the virtual inheritance resolution in `DiamondDerived::func` or the RTTI checks in `test_cpp_rtti`, is presented without explanation.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The decompiler identifies C++ runtime calls like `__dynamic_cast`, `__cxa_throw`, and `operator_new`, which hints at the underlying idioms. However, it fails to recognize higher-level patterns like the RAII scope in `test_cpp_constructor` or the specific logic of the template instantiations, reducing them to raw function calls.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the code confidently even when it is likely wrong or incomplete. For example, `test_cpp_member_func` returns a constant derived from a hex string setup, but there is no warning that the object logic (`SimpleClass` methods) is missing or that the control flow might be incomplete.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants. For instance, the bounds check in `Container<int>::get` is decompiled as a raw comparison (`(-1 < param_1) && ...`) without indicating it is a safety check for array access.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: The demangled function names provide good cross-references (e.g., knowing `Derived::virtual_func` overrides `Base::virtual_func`). However, the lack of recovered class definitions makes it hard to visualize the full object hierarchy and data flow.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a flat manner, though grouped roughly by functionality (constructors, tests, destructors). The separation of template instantiations (`template_max_int_`) is logical, but the absence of a "Class View" or struct definitions reduces the organizational score.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses `undefined` types and references external symbols like `__gmon_start__` and `__printf_chk` without proper headers or definitions. It would require significant manual intervention to define the missing structs and remove stack canary checks to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Class member access uses raw pointer arithmetic (`*(int *)(this + 8)`) instead of recovering field names (`multiplier`).
+- String literals are constructed via hex integer assignments to stack variables (e.g., `local_34 = 0x74736554`), destroying readability.
+- Logic in several test functions (e.g., `test_cpp_virtual_func`) is reduced to constant return values, completely hiding the algorithmic flow.
+- Variable naming is entirely generic (`local_XX`, `param_1`), providing no semantic context.
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)
+- The decompiler successfully demangled C++ mangled names, accurately recovering class scopes and method names (e.g., `MiddleA::func`, `Container<int>::push`).
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.75/10)
+- The lack of comments, failure to annotate anomalies (like missing logic), and inability to recognize high-level patterns make the code very difficult to understand semantically.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Recover Class Layouts:** Utilize RTTI and vtable analysis to reconstruct struct definitions with field names, replacing raw pointer arithmetic (e.g., `this + 8`) with member access (e.g., `this->multiplier`).
+2.  **Improve Stack Variable Analysis:** Detect patterns of stack initialization that represent string literals or object construction and replace them with high-level assignments or constructor calls.
+3.  **Annotate Constant Propagation:** When a function's logic is reduced to a constant return value by the compiler, add a comment indicating that the logic was optimized away or provide a pseudo-code reconstruction of the likely source flow.

@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `a1`, `v4`). In `param_opaque_predicate`, `v1` represents `x+1` and `v4` represents the GCD result, but these semantic meanings are lost in the names.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: Most high-level function names (`param_fake_branch`, `main`, `test_obf_opt_edge`) are preserved accurately. However, compiler-generated artifacts like `sub_860` and `constprop` suffixes (e.g., `param_division_by_zero.constprop.0`) reduce clarity.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent. The XOR key `0x5A` and signal number `8` (SIGFPE) appear as raw hex/integers. Conversely, the compiler's optimization of `param_instruction_substitution` replaced bit shifts with arithmetic (`6 * a1`), which is actually clearer than the source's obfuscation.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains Hex-Rays specific artifacts like `LOBYTE(result)`, `__int64` casts on 32-bit values, and `JUMPOUT(0)`. While the logic is visible, these low-level intrinsics add syntactic noise that impedes high-level understanding.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Aggressive optimization (`-O3`) has transformed the code significantly. `param_tail_call_optimized` is represented as a chain of nested `if` statements (loop unrolling) rather than a loop, which is extremely difficult to read. The GCD loop in `param_opaque_predicate` is converted to a `do-while`, which is acceptable but less natural than the source `while`.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: Constant propagation split `param_division_by_zero` into two functions (`constprop.0` and `constprop.1`), which fragments the logic. Conversely, `test_obf_opt_edge` became a monolith because all callees were inlined. This mix of fragmentation and inlining hurts modularity.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Despite the complex control flow from optimizations, the code generally reads top-to-bottom. The unrolled loops in `param_tail_call_optimized` are linear chains of conditionals, avoiding spaghetti `goto` structures, even if they are verbose.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately reflects the compiler's removal of dead code. Functions like `param_fake_branch` and `param_buffer_overflow_stack` are correctly shown as empty (or just `;`), which is clean, even if it loses the source's intent.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally accurate for ARM64. The decompiler correctly identifies SIMD types (`int32x4_t`) in the vectorized loops. However, it defaults to `__int64` for many return values and intermediate calculations that were `int` in the source, which is a common Hex-Rays artifact on 64-bit architectures.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: There are no complex user-defined structs active in the decompiled logic (the bitfield struct in `param_implementation_defined` was optimized away to a constant return). The decompiler did not invent incorrect structures, which is a positive outcome.
+
+**11. Type Safety:** Score: 7/10
+Justification: Pointer arithmetic and casts are explicit. The use of `(__sighandler_t)` casts for signal handlers is technically correct but verbose. There are no obvious type-confused errors in the decompilation itself.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code explaining the logic, the heavy optimizations, or the purpose of magic numbers. The code is presented "as-is" without semantic guidance.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: The decompiler recognizes SIMD intrinsics (`vaddq_s32`) and standard library calls (`strncpy`, `signal`). However, it fails to identify higher-level patterns like the "opaque predicate" or the "tail recursion" (which is now a loop), presenting them only as raw math and control flow.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: Critical anomalies are not flagged. `param_fake_branch` is empty, and `param_buffer_overflow_stack` is empty, with no indication that this is due to dead code elimination or optimization. A reader might assume the source code was empty, which is misleading.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions (e.g., buffer sizes) or postconditions. The signal handling logic is present but not documented as a safety contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clearly visible. The relationship between the `constprop` functions and their usage is clear via naming. The inlined code in `test_obf_opt_edge` makes the data flow obvious locally, though it obscures the global call graph.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are listed in a logical order, roughly matching the source flow. The separation of handlers (`div_zero_handler`) from logic is maintained.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on Hex-Rays specific types (`__int64`, `LOBYTE`) and macros (`JUMPOUT`). It would require significant patching (replacing types with `stdint.h` equivalents and removing macros) to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 5.25
+L2_avg: 6.00
+L3_avg: 7.33
+L4_avg: 2.25
+L5_avg: 7.00
+
+Overall = (5.25 × 0.30) + (6.00 × 0.25) + (7.33 × 0.20) + 
+          (2.25 × 0.15) + (7.00 × 0.10)
+Overall = 1.575 + 1.5 + 1.466 + 0.3375 + 0.7
+Overall = 5.58
+```
+
+### Overall Readability Score: **5.6/10**
+
+### Critical Defects
+- **Variable Naming**: Variables like `v1`, `v2`, and `a1` provide no semantic context, making it hard to map the decompiled code back to source concepts like `x` or `result`.
+- **Optimization Artifacts**: The aggressive loop unrolling in `param_tail_call_optimized` results in a long chain of `if` statements that is functionally correct but structurally unreadable.
+- **Missing Anomaly Flags**: Functions like `param_fake_branch` are empty due to optimization, but the decompiler offers no warning or comment, making it look like dead code rather than optimized logic.
+- **Magic Numbers**: Critical values like the XOR key `0x5A` and signal number `8` are left as raw literals without comments or named constants.
+- **Type Noise**: Excessive use of `__int64` casts and `LOBYTE` macros obscures the actual 32-bit integer logic prevalent in the source.
+
+### Best Quality Aspect
+- **Type System Fidelity (Score: 7.3/10)**
+- **Why?** The decompiler accurately recovered complex SIMD types (`int32x4_t`) and maintained correct pointer distinctions, which is often difficult in optimized ARM64 code.
+
+### Most Needs Improvement
+- **Semantic Transparency (Score: 2.25/10)**
+- **Why?** The complete lack of comments, failure to explain aggressive optimizations (like vectorization or constant propagation), and absence of anomaly flags make the code very difficult to understand semantically.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Annotate Optimized-Out Code**: Add comments like "Function body optimized away by compiler (dead code elimination)" for empty functions that likely had source logic.
+2. **Pattern Recognition for Unrolling**: Detect and summarize loop unrolling patterns (e.g., "/* Loop unrolled by compiler */") instead of emitting pages of `if` statements.
+3. **Semantic Variable Naming**: Infer variable names from usage context (e.g., a variable used in `x * x` could be named `x_sq` or `x`) rather than defaulting to `v1`.

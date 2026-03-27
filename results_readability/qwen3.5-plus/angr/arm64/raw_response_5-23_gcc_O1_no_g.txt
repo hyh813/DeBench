@@ -1,0 +1,107 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`) with no semantic meaning; only occasional meaningful names like `dst`, `result`, `ptr`, and `i` appear. Original source had descriptive names like `size`, `counter`, `increment`, `exec_mem` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions retained original names well (`param_macro_constants`, `call_macro_functions`, `test_preprocessing_features`), but runtime/helper functions use generic `sub_XXXXXX` naming. Debug symbols preserved most meaningful function names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `0x400` (should be MAX_SIZE), `0x200` (MAX_SIZE/2), `57072` (0xDEF0 from conditional compilation), `282` (computed line+counter value). String literals preserved well but numeric constants lack semantic context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: repeated `v0 = &v1;` frame setup, `__stack_chk_guard` checks throughout, `__printf_chk` instead of `printf`, and decompiler-specific noise like `arm64g_calculate_condition` calls that obscure logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have clean if-else structures, but complex functions like `call_asm_privileged` use confusing condition code variables (`cc_op`, `cc_dep1`, `cc_dep2`). Some goto usage in `$x` and `register_tm_clones` where structured control flow would be clearer.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (most under 50 lines) with single responsibility. `call_*` wrappers properly separated from `param_*` implementations. Some runtime functions are fragmented but user code decomposition is reasonable.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally, but `call_asm_privileged` has significant non-linearity with condition code handling. Loop structures recovered as do-while in `param_asm_clobber` and `param_asm_simd` which is acceptable.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant decompiler artifacts: `sub_400824` and `param_asm_multi_insn` call `memcpy` twice and return second result; `call_weak_fn` and `frame_dummy` have duplicate function calls. Bit manipulation patterns like `| x >> 31) & 4294967294` appear redundant.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Type degradation evident: original `int size` becomes `unsigned int a0`, return types inflated to `unsigned long long` when original returned `int`. No const-correctness preserved. Pointer types generally preserved but array information lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Original source had minimal struct usage in tested functions, so limited recovery is appropriate. Pointer arithmetic used where needed. No struct definitions lost because few existed in the original code being tested.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe pointer arithmetic visible: `*((int *)(ptr + v0 * 4))` without bounds checking. Multiple implicit casts for truncation (`& 4294967295`). Stack canary checks present but that's compiler protection, not type safety in the decompiled output.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no semantic comments; only technical metadata (register hints like `// x0`, stack offsets like `// [bp-0x10]`). One failure note for `__aarch64_ldadd4_acq_rel`. No algorithm explanations, parameter documentation, or logic descriptions.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Loop patterns recovered but not named. Atomic operations identified as `__aarch64_ldadd4_acq_rel` which is good. Macro expansions visible as computed constants (64, 512, 116) but not identified as macro-derived values.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one explicit failure noted ("Failed to decompile function __aarch64_ldadd4_acq_rel"). `arm64g_calculate_condition` calls indicate unresolved condition handling but not explained. No uncertainty indicators for indirect calls or complex control flow.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values (4294967295, 4294967294, 4294967293) not explained. No parameter validation or null-check documentation present.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. Global variables referenced (`g_411f60`, `g_411fe0`, `global_var`) but not explained. External function declarations present but no call graph documentation or callback relationship information.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in address order, not logical grouping. Runtime functions (`_init`, `_start`, `_fini`) mixed with user code. Original source had clear section comments (5.2 Preprocessing, 5.3 Assembly) completely lost in decompilation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies declared but platform-specific (`__aarch64_ldadd4_acq_rel`, `arm64g_calculate_condition`). Would require significant stubs to compile standalone. `printf_chk` and libc functions need linking. One function failed to decompile entirely.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (5+7+5+4)/4 = 5.25
+Level 2 Average: (6+7+6+4)/4 = 5.75
+Level 3 Average: (5+7+5)/3 = 5.67
+Level 4 Average: (2+4+4+2)/4 = 3.00
+Level 5 Average: (5+4+4)/3 = 4.33
+
+Overall = (5.25 × 0.30) + (5.75 × 0.25) + (5.67 × 0.20) + (3.00 × 0.15) + (4.33 × 0.10)
+Overall = 1.575 + 1.4375 + 1.134 + 0.45 + 0.433
+Overall = 5.03/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- Variable names are entirely generic (`v0`, `v1`, `a0`, `a1`) losing all semantic meaning from original source
+- Magic numbers throughout without explanation (`0x400`, `0x200`, `57072`, `282`, `19`)
+- Decompiler-specific artifacts like `arm64g_calculate_condition` obscure actual logic
+- No comments explaining algorithm purpose, parameter meanings, or return value semantics
+- Redundant function calls in decompiled output (`memcpy` called twice, duplicate returns)
+- Complex condition code handling in `call_asm_privileged` makes control flow nearly unreadable
+- Original section organization and documentation completely lost
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Debug symbols preserved most user-defined function names accurately, allowing immediate identification of function purpose compared to the original source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no semantic comments exist; only technical metadata (register hints, stack offsets) with no explanation of what the code actually does or why.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (size comparisons, loop counters, pointer arithmetic) to suggest semantic names like `packet_size`, `index`, `buffer_ptr` instead of `v0`, `v1`.
+
+2. **Add semantic comment generation for recovered patterns** - When detecting macro expansions (constants like 64, 512), loop patterns, or atomic operations, add comments explaining the original source construct (e.g., "// Expanded from: BUFFER_COUNT * 4").
+
+3. **Eliminate decompiler-specific artifacts** - Replace `arm64g_calculate_condition` and similar platform-specific decompiler helpers with standard C conditionals, and remove redundant duplicate function calls that appear to be decompilation artifacts rather than original code.

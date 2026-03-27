@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Variables are predominantly generic (e.g., `v0` through `v8` in `test_cpp_rtti`), obscuring the semantic meaning of pointers to RTTI objects and accumulators. While `obj` is used correctly in `test_cpp_member_func`, the heavy use of single-letter or indexed variables in complex functions like `test_cpp_rtti` significantly hinders understanding.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Excellent demangling of C++ symbols; functions like `_ZN4Base12virtual_funcEi` are clearly presented as `Base::virtual_func`. Complex thunks are accurately named (e.g., `non-virtual thunk to'MultiDerived::funcB`), providing high-level semantic context that is often lost in decompilation.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Magic numbers resulting from compiler optimization are present without explanation, such as the return value `4700` in `test_cpp_member_func` (derived from constant folding) or `0x1F` (31) for string length limits. While `0x1F` is inferable as `sizeof-1`, the folded constants obscure the original arithmetic logic.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but contains some artifacts like `JUMPOUT(0)` in `sub_EB0` and redundant casts (e.g., `(__int64)off_12C28`). The separation of thunks and constructors is handled well, avoiding the "spaghetti code" often seen in C++ decompilation.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is natural where logic remains (e.g., the `if`-checks in `test_cpp_rtti`). The aggressive optimization (constant folding) reduces many functions to simple `return` statements, which is an accurate representation of the binary's logic, even if it differs from the source structure.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler excellently separates C++ mechanisms; virtual thunks, constructor variants (D0, D1, D2), and template instantiations (`template_max<int>`) are correctly isolated into distinct functions rather than inlined messily.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly top-to-bottom in most functions. Complex pointer arithmetic for RTTI is handled sequentially, making it easier to follow than typical jump-heavy assembly reconstructions.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no dead code or redundant variables introduced by the decompiler; the redundancy seen (e.g., `v0 = ...; return v0`) is minimal. The decompiler successfully presents the compiler's optimized result without adding noise.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are recovered with high precision, distinguishing between `int`, `double`, and specific class types like `Base*` and `Derived*`. The use of `__int64` for pointers is standard for 64-bit decompilation, though specific pointer types are correctly applied where possible.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs are recovered accurately with correct field names (e.g., `SimpleClass` contains `name[32]`, `Container<int>` contains `data` and `size`). Virtual table pointers (`_vptr.Base`) are explicitly identified, which is crucial for understanding C++ objects.
+
+**11. Type Safety:** Score: 7/10
+Justification: While the types are correct, the necessary pointer arithmetic for low-level C++ features (like accessing vtable offsets or RTTI data) results in complex casts (e.g., `*(_QWORD *)(*v1 - 8)`). These are accurate to the binary but represent "unsafe" operations inherent to the C++ ABI implementation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There is a severe lack of comments explaining the logic. The only comments are auto-generated attributes (e.g., `// attributes: thunk`). Complex logic, such as the RTTI name comparison or the constant folding in `test_cpp_member_func`, is left unexplained.
+
+**13. Idiom Recognition:** Score: 9/10
+Justification: The decompiler successfully identifies high-level C++ idioms, explicitly naming `__cxa_throw`, `__dynamic_cast`, `operator new`, and `type_info` structures. This allows the reader to immediately recognize exception handling and RTTI mechanisms.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler provides a clear list of "FAILED to decompile" functions at the end, which is useful for understanding missing dependencies (mostly standard library functions).
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: There is no recovery of preconditions or invariants. For example, the null checks or size constraints implied by the source `Container::get` method are not explicitly documented as contracts in the decompiled view.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Virtual table references (e.g., `off_12C28`) are visible, allowing the reader to trace polymorphism. However, the relationships between the thunks and their target classes, while named well, could benefit from explicit comments indicating the vtable layout.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically by class (e.g., all `Base` methods, all `Derived` methods) and template instantiation, which mirrors the source structure well despite the flat address space listing.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on compiler-specific types (`__int64`) and undefined structures (`type_info`). While the C++ logic is clear, recompiling this output would require significant manual stub creation for the C++ runtime and standard library.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.4/10
+
+**Critical Defects:**
+- **Optimization Mismatch**: The metadata claims `-O0`, but the binary filename (`...O2_g`) and the decompiled code (constant folding, inlining) clearly indicate `-O2`. This discrepancy makes the code look "broken" relative to the source structure if one expects debug builds.
+- **Variable Naming**: Heavy use of generic names (`v0`, `v1`) in complex functions like `test_cpp_rtti` obscures the data flow.
+- **Missing Comments**: Complex constant folding (e.g., `return 42`) and RTTI pointer arithmetic lack explanatory comments, making it hard to map back to the original source logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- **Why?** The demangling of C++ symbols is exceptional, accurately preserving class names, namespaces, and even distinguishing between virtual and non-virtual thunks.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)
+- **Why?** The decompiler provides almost no semantic context for *why* the code looks the way it does (e.g., noting that a function was inlined or constants were folded), leaving the user to reverse-engineer the compiler's optimizations.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Optimization Annotation**: Automatically add comments when functions are reduced to constants (e.g., `// Function body constant-folded by compiler`).
+2. **Variable Naming Heuristics**: Improve SSA variable naming by tracking usage through standard library calls (e.g., naming a variable `type_name` if it is passed to `strlen` after a `typeid` operation).
+3. **Metadata Consistency Check**: Warn the user if the provided optimization metadata contradicts the binary's characteristics (e.g., detecting constant folding when `-O0` is claimed).

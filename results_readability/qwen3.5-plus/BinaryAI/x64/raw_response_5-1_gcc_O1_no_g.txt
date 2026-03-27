@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `local_10`, `local_34`, `iVar1`, `pvVar2` with no semantic meaning. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions retained original names (`test_cpp_member_func`, `test_cpp_constructor`), and class methods show partial recovery (`Base::virtual_func`, `Derived::getName`). However, template instantiations are mangled (`template_max_int_`) and some functions use generic names (`FUN_00102020`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0x125c`, `0x15`, `0x47` (71 for multiple inheritance), `0x2bf` (703 for smart pointer). String literals reference external data (`&DAT_00103018`) instead of showing actual content.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks present in most functions (`local_10 = *(long *)(in_FS_OFFSET + 0x28)`). Unnecessary casts clutter code (`(undefined4 *)`, `(undefined8)`). External function wrappers add no value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control structures recovered in simple functions, but exception handling completely lost (`test_cpp_exception` just throws without catch blocks). Lambda expressions entirely missing. Some functions collapsed to constant returns losing original logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Test functions remain separate and class methods recovered individually. However, several functions optimized to single return statements (`test_cpp_multiple_inheritance` returns `0x47` directly). Template functions properly separated by type instantiation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with logical flow. Stack check conditionals appear at function ends but don't severely disrupt reading. No excessive goto usage observed in recovered code.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding present (functions returning pre-computed values). Multiple duplicate destructor implementations for same classes (`DiamondDerived::~DiamondDerived` appears 6 times). No obvious dead code but optimization artifacts remain.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (int, double, void*) but many generic types dominate: `undefined4`, `undefined8`, `undefined`. Template types mangled (`Container_int_`, `Container_double_`). Class pointers partially recovered (Base*, Derived*).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Class structures NOT properly reconstructed—no struct/class definitions visible. Object access through raw pointer arithmetic: `*(int *)(this + 8)`, `*(int *)(this + 0x28)`. Vtable pointers visible but not structured as proper C++ classes.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(undefined4 *)`, `(long *)`, `(undefined **)`. Pointer arithmetic on class objects without bounds checking. No const-correctness preserved from original source. Multiple type-confused operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Only auto-generated header comment with SHA256 hash. No algorithm explanations, no documentation of C++ feature recovery, no indication of decompilation confidence.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns not identified (RAII, virtual dispatch, vtable mechanism). Template instantiation not explained. Lambda expressions completely lost. Operator overloading reduced to constant returns without showing operator semantics.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Exception handling not flagged as problematic despite incomplete recovery. Virtual calls not marked as potentially incorrect. Code presents incomplete information confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., null checks). No postconditions inferred. No invariants recognized for class members. Error conditions not documented despite exception handling in original.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch partially recovered (vtable pointers visible). No call graph documentation. External library dependencies not clearly organized.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file with no logical grouping. Related class methods scattered. External dependencies (`operator_new`, `__cxa_throw`) mixed with application code. No namespace structure preserved.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code references external functions without proper declarations. Would require significant stubs to compile standalone. Dependencies not documented. Compiler-specific constructs (`__thiscall`) limit portability.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (5+6+7+6)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type):        (5+3+4)/3   = 4.00  × 0.20 = 0.80
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50  × 0.15 = 0.375
+Level 5 (Contextual):  (5+4+3)/3   = 4.00  × 0.10 = 0.40
+
+Overall Score: 4.43/10
+```
+
+### Overall Readability Score: **4.4/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`local_10`, `iVar1`, `pvVar2`) losing all semantic meaning from original source
+- **Class structures not reconstructed**—objects accessed via raw pointer arithmetic instead of proper struct definitions
+- **Lambda expressions completely lost**—`test_cpp_lambda` returns constant `0x55` without showing closure logic
+- **Exception handling incomplete**—`test_cpp_exception` only shows throw, no catch block recovery
+- **Magic numbers unexplained**—`0x125c`, `0x47`, `0x2bf` appear without connection to expected test values
+
+### Best Quality Aspect: **Code Linearization (7/10)**
+- Code generally reads top-to-bottom with logical flow and minimal disruptive jumps despite -O0 compilation.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero meaningful comments explaining C++ feature recovery, decompilation confidence, or algorithm intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts**—analyze vtable pointers to reconstruct proper struct definitions with field names instead of pointer arithmetic
+2. **Infer variable names from usage patterns and debug symbols**—`-g` flag was present; leverage DWARF info to restore `capture_by_value`, `instance_count`, etc.
+3. **Add decompilation confidence annotations**—flag uncertain recoveries (exception handling, lambdas, virtual dispatch) with comments indicating manual review needed

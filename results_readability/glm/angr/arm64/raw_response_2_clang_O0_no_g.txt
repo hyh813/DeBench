@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `a0`, `ptr`, and `cur`. Semantic names from the source like `sum`, `len`, `x`, or `y` are completely lost, forcing the reader to track data flow manually to understand purpose.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `process_char`, `array_1d_stack`, and `main` are perfectly recovered, likely from symbol tables. The names accurately reflect the source's intent, which significantly aids navigation despite the poor variable naming.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Character constants are degraded to ASCII integers (e.g., `65` instead of `'A'`, `90` instead of `'Z'`). Array offsets are calculated as magic numbers (e.g., `40 * i` for `int[10]` stride) rather than using struct or array indexing syntax, obscuring the original logic.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is heavily polluted with lifting artifacts. Intrinsics like `__ROL__` (rotate left) and calls to `arm64g_calculate_condition` (simulating CPU flags) appear frequently (e.g., in `process_int` and `register_tm_clones`), making the code look like an intermediate representation (IR) rather than high-level C.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While loops are generally recovered as `for` loops (e.g., `array_1d_stack`), the logic inside is often convoluted. For example, `process_bool` uses bitwise operations and manual flag calculation instead of the logical AND (`&&`) and modulo (`%`) operators found in the source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source well; there is no inlining or outlining. The granularity is appropriate, with functions like `test_data_types_l1` remaining distinct. However, the massive `__addtf3` function (soft-float add) is a monolithic blob of lifted logic.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom. However, `enum_switch` uses a computed goto (`goto &(&g_401bfc)[$d.3[a0]]`) to implement a jump table, which disrupts the linear flow compared to the standard `switch` statement.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: Arithmetic operations are unnecessarily verbose. For instance, `process_int` contains `((a0 * 2 | a0 >> 31) & 4294967294) + 1` instead of the simple `x * 2 + 1`. This redundancy stems from the decompiler's inability to simplify low-level register operations back into high-level algebraic expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Type information is severely degraded. Floating-point functions like `process_float` and `process_double` are decompiled as taking no arguments and returning `long long` or `unsigned long`, completely losing the `float`/`double` semantics. Signed integers are often treated as unsigned (e.g., `process_int` takes `unsigned int`).
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Structs and unions are not recovered at all. `struct_simple` takes `unsigned int *` instead of `Point3D *`. `struct_nested` takes `unsigned int *` instead of `Rect *`. Accesses like `p->x` are replaced by raw pointer arithmetic (e.g., `a0[0]`, `a0[3]`), destroying the data structure abstraction.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts. Struct accesses are performed by casting pointers to `unsigned int *` and accessing offsets. Function pointers are often cast to `unsigned long long *` (e.g., in `ptr_func_simple`), erasing type safety and making the code dangerous to modify.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures. The reader is left to interpret complex bitwise logic and pointer arithmetic without any guidance.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms are missed. The "uppercase to lowercase" conversion in `process_char` is represented as raw integer addition (`a0 + 32`) rather than character manipulation. String length calculation in `array_string` is a loop, but the intent isn't highlighted.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the noisy `arm64g_calculate_condition` calls and `__ROL__` intrinsics as standard code without flagging them as artifacts or lifting anomalies. This misleads the reader into thinking they are part of the original program logic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., array bounds) or postconditions. For example, `array_complex_index` checks bounds but does not document the contract that `x` must be less than `w`.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are visible and named correctly (e.g., `printf` calls). However, because struct types are lost, the relationship between a data definition and its usage is severed; one cannot easily see that `array_2d_stack` expects a specific matrix layout.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source file's order. Helper functions and test functions are distinct. The organization is one of the stronger aspects of this decompilation.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code would not compile without significant modification. Function signatures are incorrect (e.g., `process_float` missing arguments), struct definitions are missing, and non-standard intrinsics (`__ROL__`, `arm64g_calculate_condition`) are used.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- **Type System Collapse**: Floating-point types (`float`, `double`) are completely lost, represented as integers or void.
+- **Struct Erasure**: All composite types (`Point3D`, `Rect`, `Node`) are degraded to raw pointers (`unsigned int *`), making data layout invisible.
+- **Lifting Artifacts**: The code is cluttered with VEX/Angr backend artifacts like `arm64g_calculate_condition` and `__ROL__`, which are not valid C and obscure logic.
+- **Literal Degradation**: Character constants are replaced by ASCII codes (e.g., `65` for `'A'`), reducing semantic clarity.
+
+**Best Quality Aspect:** Function Naming (Score: 9/10)
+- **Why?** The decompiler successfully recovered symbol names for almost all functions, making it easy to locate specific test cases despite the poor internal code quality.
+
+**Most Needs Improvement:** Type System Fidelity (Score: 2.3/10)
+- **Why?** The failure to recover basic types (floats) and composite types (structs) renders the decompiled code a low-level memory manipulation script rather than a readable C program.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Implement Type Recovery for Floating Point**: Urgently fix the handling of `float`/`double` arguments and return values; they should not be demoted to integers or void.
+2.  **Suppress Lifting Artifacts**: Filter out or hide backend-specific intrinsics like `arm64g_calculate_condition` and `__ROL__`, replacing them with standard C operators or simplified logic.
+3.  **Recover Composite Types**: Utilize stack frame analysis and access patterns to reconstruct `struct` definitions instead of defaulting to raw pointer arithmetic (e.g., `a0[3]` should be `ptr->field`).

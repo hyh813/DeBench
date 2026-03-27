@@ -1,0 +1,184 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+### Analysis Overview
+
+The original source demonstrates **OBF-L4-02: Fake Branch (Always False)** obfuscation technique with two always-false conditions:
+1. `x * x < 0` (impossible for real numbers)
+2. `strlen(str) < 0` (string length cannot be negative)
+
+The decompiled version shows:
+```c
+int32_t param_fake_branch(int32_t result) {
+    // 0x1250
+    return result;
+}
+```
+
+**Critical Finding**: The decompiler has completely eliminated both fake branches, collapsing the function to a simple return. This is a severe semantic loss - the obfuscation technique is entirely removed, making the decompiled code no longer represent the original source's structure or intent.
+
+---
+
+### LEVEL 1: LEXICAL CLARITY
+
+#### 1. Variable Naming Quality
+**Score: 3/10**
+
+Justification: The parameter is named `result` which is semantically incorrect - it should be `x` (the input parameter). The decompiler incorrectly used the variable name from inside the function body as the parameter name, losing the distinction between input parameter and local variable. This creates confusion about the function's interface.
+
+#### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: Function name `param_fake_branch` correctly matches the original source. The naming is action-oriented and semantically accurate, clearly reflecting the function's purpose as a test case for fake branch obfuscation.
+
+#### 3. Literal Clarity
+**Score: 10/10**
+
+Justification: No literals are present in this function (the fake branches were eliminated), so there are no magic numbers to evaluate. The decompiled code is clean of literals.
+
+#### 4. Noise Reduction
+**Score: 9/10**
+
+Justification: The function is extremely clean - just a single return statement with minimal noise. The only artifact is the address comment `// 0x1250` which is standard decompiler output and doesn't impede readability.
+
+---
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+#### 5. Control Flow Naturalness
+**Score: 2/10**
+
+Justification: **Critical defect** - The decompiler has eliminated both fake branch `if` statements entirely. The original source had two always-false conditionals that should be preserved to show the obfuscation technique. The decompiled code shows no control flow complexity whatsoever, losing the semantic structure of the obfuscated code. At `-O0`, these branches should have been preserved.
+
+#### 6. Function Decomposition
+**Score: 10/10**
+
+Justification: The function is appropriately sized (1 line). No decomposition issues - this is a simple function that shouldn't be split further.
+
+#### 7. Code Linearization
+**Score: 10/10**
+
+Justification: The code is perfectly linear - just a single return statement with no jumps, loops, or complex control flow.
+
+#### 8. Redundancy Elimination
+**Score: 10/10**
+
+Justification: No redundant code present. The simplified version has no duplication.
+
+---
+
+### LEVEL 3: TYPE SYSTEM FIDELITY
+
+#### 9. Type Precision
+**Score: 8/10**
+
+Justification: Uses `int32_t` which is appropriate for ARM64 at `-O0`. The type matches the original `int` (which is 32-bit on ARM64). Minor deduction for not preserving the original type exactly.
+
+#### 10. Composite Type Recovery
+**Score: 10/10**
+
+Justification: No composite types (structs/unions) are used in this function, so none need to be recovered.
+
+#### 11. Type Safety
+**Score: 10/10**
+
+Justification: The simple return statement has no type safety issues. No unsafe casts or pointer operations.
+
+---
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+#### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: **Critical defect** - No comments explain the fake branch obfuscation technique. The decompiler should have noted "Fake branch eliminated" or similar to indicate that always-false conditionals were removed. The address comment `// 0x1250` is the only present comment and provides no semantic value.
+
+#### 13. Idiom Recognition
+**Score: 1/10**
+
+Justification: **Critical defect** - The decompiler completely failed to recognize the fake branch (永假分支) obfuscation idiom. The original source explicitly tests for always-false conditions as an obfuscation technique, but this is entirely lost in the decompiled output.
+
+#### 14. Anomaly Indication
+**Score: 1/10**
+
+Justification: **Critical defect** - No indication that fake branches were eliminated. The decompiler should flag this as an anomaly: "WARNING: Always-false conditionals detected and removed" or similar. The code confidently presents incorrect information (missing the obfuscation logic).
+
+#### 15. Assertion & Contract Recovery
+**Score: 10/10**
+
+Justification: No preconditions/postconditions are relevant for this simple function. The original didn't have explicit contracts either.
+
+---
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+#### 16. Cross-Reference Clarity
+**Score: 8/10**
+
+Justification: The function is called by `call_fake_branch()` which is correctly identified. The relationship is clear from the code structure.
+
+#### 17. Module Organization
+**Score: 7/10**
+
+Justification: The function appears in a large file with many other decompiled functions. While grouped with other obfuscation test functions, the organization is somewhat arbitrary (alphabetical by address).
+
+#### 18. Build System Compatibility
+**Score: 9/10**
+
+Justification: The function would compile cleanly as standalone code. Minimal dependencies (just standard library).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 8 + 10 + 9) / 4 = 7.5
+L2_avg = (2 + 10 + 10 + 10) / 4 = 8.0
+L3_avg = (8 + 10 + 10) / 3 = 9.33
+L4_avg = (2 + 1 + 1 + 10) / 4 = 3.5
+L5_avg = (8 + 7 + 9) / 3 = 8.0
+
+Overall = (7.5 × 0.30) + (8.0 × 0.25) + (9.33 × 0.20) + 
+          (3.5 × 0.15) + (8.0 × 0.10)
+        = 2.25 + 2.0 + 1.87 + 0.525 + 0.8
+        = 7.445 ≈ 7.4/10
+```
+
+### Overall Readability Score: 7.4/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Control flow elimination**: Both fake branch `if` statements (`x*x < 0` and `strlen(str) < 0`) were completely removed by the decompiler, losing the obfuscation technique entirely
+- **Variable naming error**: Parameter named `result` instead of `x` - the decompiler used the local variable name for the parameter, confusing input/output roles
+- **No anomaly flagging**: The decompiler should have flagged that always-false conditionals were detected and removed, but provides no warning
+- **Missing idiom recognition**: The fake branch (永假分支) obfuscation pattern is not recognized or documented
+- **No semantic comments**: No explanation of the obfuscation technique or that branches were eliminated
+
+---
+
+### Best Quality Aspect: Type System Fidelity (9.33/10)
+The type precision is good with `int32_t` correctly used. No composite types needed recovery, and type safety is excellent with no unsafe operations.
+
+---
+
+### Most Needs Improvement: Semantic Transparency (3.5/10)
+The decompiler failed to recognize or document the fake branch obfuscation idiom. No comments explain what was removed, no anomaly indicators flag the eliminated branches, and the semantic intent of the original code is lost.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Preserve fake branch conditionals**: When detecting always-false conditions (like `x*x < 0` for integers), the decompiler should preserve the structure but mark it as "DEAD CODE" or "ALWAYS FALSE" rather than eliminating it entirely. This is especially critical at `-O0` where the compiler shouldn't have optimized these away.
+
+2. **Add anomaly indicators for eliminated code**: When the decompiler removes code paths (dead code elimination, branch folding), it should add explicit comments like:
+   ```c
+   // ANOMALY: Always-false condition detected and removed
+   // Original: if (x * x < 0) { ... }
+   ```
+
+3. **Improve parameter naming inference**: The decompiler should distinguish between input parameters and local variables. The parameter `x` was incorrectly named `result` (the local variable name), confusing the function's interface semantics.

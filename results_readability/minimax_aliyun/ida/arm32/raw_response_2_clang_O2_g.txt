@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Most local variables use generic numbered names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`. For example, in `test_array_types()`, variables `v0` through `v12` obscure their roles as loop counters and array indices. Only function parameters retain meaningful names like `arr`, `n`, `p`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. Some internal helper functions have generic names like `sub_3D8`, `init_proc`, but the core test functions are well-named.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Test functions contain hardcoded expected values (e.g., `printf("DT-L1-01 (process_char): %c\n", 97);`) representing computed results. These aren't traditional magic numbers but lack explanatory comments. The enum values like `STATE_IDLE`, `STATE_RUNNING` are properly recovered.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Some `JUMPOUT` statements for unreachable code, `__fastcall` calling conventions, and occasional `_DWORD` type annotations. The `// attributes: thunk` comment appears once. Overall clean output without excessive debug instrumentation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper `if`, `while`, `for` constructs. However, `array_2d_stack` and `array_3d` show significant loop unrolling that makes the code verbose. The `enum_switch` uses a lookup table `dword_2514[s]` instead of explicit switch cases, which is an optimization artifact.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity (5-30 lines each), matching the original source structure well. Each function has a single clear responsibility. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns like `if (n < 1) return 0;` in `array_1d_stack` are used appropriately. No excessive forward jumps or goto statements disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant loop unrolling in `array_2d_stack` (unrolled 10 iterations) and `array_3d` (unrolled 5x5 iterations) creates verbose, repetitive code. Test functions compute values inline rather than calling the functions being tested, which is a decompilation artifact.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correctly recovered: `char`, `short`, `int`, `long`, `float`, `double`, `bool`. However, `process_ld` returns `double` instead of `long double`, losing precision information. Function pointer types are properly typed with signatures like `int (*f)(int)`.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery with accurate field names: `Point3D {x, y, z}`, `Rect {position, size}`, `Widget {bounds, style, id}`, `Node {data, next}`, `DNode {data, next, prev}`, `TreeNode {data, left, right}`, `Edge {dest, next}`, `Graph {adjList, numVertices}`. Unions correctly identified as `UnionData`. Bitfields partially recovered in `Flags`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with appropriate casts. Some unsafe operations: `(unsigned __int8 *)p` in `ptr_void`, `(_DWORD *)p` casts. Pointer arithmetic is correct. Function pointer types are proper, not converted to `void*`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Very sparse comments. Only function headers and occasional markers like `// attributes: thunk` present. No explanations for complex logic, algorithm descriptions, or decompilation confidence indicators. The original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Common patterns like linked list traversal (`while (v2)` with `v2 = v2->next`), binary tree recursion, and graph adjacency list traversal are recognizable. However, no explicit pattern naming or documentation of these idioms.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No explicit anomaly marking. Some `JUMPOUT` statements indicate unreachable code but without explanation. No flags for indirect calls that couldn't be resolved, unusual stack layouts, or potential undefined behavior like the intentional OOB access in `array_oob`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition comments recovered. No documentation of function contracts, parameter requirements, or return value expectations. The original source had no formal contracts either, but the decompiler could have inferred some (e.g., "requires: n > 0" for array functions).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and readable: `test_data_types_l1()` calls `process_char`, `printf`, `puts`. Callback relationships like `ptr_func_simple(f(x))` are evident. However, no explicit call graph documentation or relationship annotations.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped: data type functions (process_*), array functions (array_*), pointer functions (ptr_*), composite functions (struct_*, union_*, enum_*, linked_*, binary_*, graph_*). Static functions properly marked. Matches source organization well.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Uses string label references like `asc_2483`, `asc_24A4`, `asc_24BF`, `asc_24DA` for printf format strings that need resolution. External dependencies (printf, puts) are implicit. Some patching required to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable naming uses generic numbered names (`v0`-`v12`) obscuring semantic purpose
+- Loop unrolling in `array_2d_stack` and `array_3d` creates verbose, repetitive code (10 and 25 iterations unrolled respectively)
+- `process_ld` returns `double` instead of `long double`, losing precision type information
+- No comments explaining algorithm logic or decompilation confidence
+- Test functions compute values inline rather than calling the functions being tested
+
+**Best Quality Aspect:** Composite Type Recovery (9/10)  
+Struct and union types are excellently recovered with accurate field names matching the original source almost perfectly.
+
+**Most Needs Improvement:** Assertion & Contract Recovery (2/10)  
+No function contracts, preconditions, or postconditions are documented. Combined with poor comment quality (4/10), the code lacks semantic context.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `v0` used as loop counter from 0 to 100 in steps of 10 should be named `i` or `row`)
+2. Recognize loop unrolling patterns and reconstruct original loop constructs with comments indicating unrolling
+3. Add decompilation confidence comments for indirect calls, potential undefined behavior, and type precision losses (e.g., "// Note: long double demoted to double")

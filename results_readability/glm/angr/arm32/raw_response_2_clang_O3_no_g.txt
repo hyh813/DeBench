@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `a0`, `a1`, `ptr`), providing no semantic context. While `result` appears occasionally, the lack of descriptive names like `sum` or `index` makes tracking data flow difficult.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: User-defined functions like `process_char`, `process_int`, and `array_2d_stack` retain their original semantic names, which is excellent. However, runtime functions are named generically (e.g., `sub_4003d8`, `frame_dummy`), slightly lowering the score.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: Magic numbers are prevalent and unexplained. For example, `process_double` uses raw integers `2576980378` and `1069128089` instead of floating-point constants `0.1` or `2.0`, and `process_float` uses `0x3f000000` instead of `0.5f`.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is heavily polluted with compiler/lifter artifacts. Expressions like `armg_calculate_condition(66, a3, 0, 0)` and temporary variables like `vvar_26{r64|4b}` obscure the actual logic, making the code look like an IR dump rather than C.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is flattened into `goto` statements and complex conditional checks (e.g., `goto LABEL_400490`). Loops are implemented as `do-while` blocks with manual pointer arithmetic or completely unrolled (e.g., `array_2d_stack`), losing the original structure.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: Functions map 1:1 to the source, which is good, but internal logic is not decomposed. For instance, `test_array_types` contains a massive block of 100+ assignments (`flag1 = 1; ...`) that should be an array initialization, and `__muldf3` is a monolithic software float implementation.
+
+**7. Code Linearization:** Score: 2/10
+Justification: The code is non-linear due to frequent `goto` jumps (e.g., `goto g_413008`, `goto LABEL_4004bc`) and forward jumps into loop bodies, making top-to-bottom reading nearly impossible.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: Significant redundancy is present, likely due to optimization or decompiler failure. `array_2d_stack` is fully unrolled into a single sum expression (`a0[99] + a0[88] + ...`), and `test_array_types` contains repetitive assignment blocks instead of compact array initialization.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 1/10
+Justification: Type information is almost completely lost. Floating-point operations are replaced by software calls (`__mulsf3`, `__adddf3`) with incorrect signatures (e.g., `void process_float()`), and 64-bit integers are split into two `unsigned int` arguments. Structs are treated as `unsigned int*`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structures are not recovered. `struct_simple` accesses fields via array indexing (`a0[1] + *(a0) + a0[2]`), and `struct_bitfields` uses manual bit shifting (`(v0 & 1) + (v0 >> 6)`) instead of accessing named fields. Generic `struct_0` definitions are used but lack semantic field names.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code contains unsafe casts and operations. Examples include `*(int *)&v0` to treat stack memory as an integer, `goto a0` for indirect function calls, and treating `void*` as `unsigned int` for arithmetic, which violates type safety principles.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or data structures. The output consists solely of code, leaving the reader to infer the purpose of complex expressions like `v0 + -(v0) + (v0 <= 0)`.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: High-level patterns are not recognized. The boolean logic in `process_bool` is reduced to bitwise arithmetic and condition flags rather than a clear logical expression, and loop idioms are replaced by `goto` or unrolled sums.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents low-level artifacts (e.g., `armg_calculate_condition`) as standard code without flagging them as anomalies or lifting them to higher-level constructs. There are no warnings about potential uncertainties.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, `array_complex_index` performs bounds checks using raw condition flags without indicating the intended safety contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are readable because the function names are preserved (e.g., `main` calls `test_data_types_l1`). However, data structure relationships are lost because structs are flattened to arrays/pointers.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in a roughly linear order based on memory addresses, which groups some related code but separates `main` to the end. There is no logical grouping by functionality (e.g., all array tests together).
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile as-is. It relies on undefined symbols like `armg_calculate_condition`, `__mulsf3`, and `__adddf3`, and uses syntax like `vvar_26{r64|4b}` which is not valid C.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.7/10
+
+**Critical Defects:**
+- Type information is completely erased; floating-point math is replaced by obscure software library calls (`__mulsf3`).
+- Control flow is flattened into `goto` statements and IR-level condition checks (`armg_calculate_condition`).
+- Composite types (structs) are not recovered; fields are accessed via raw array offsets.
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)
+- The decompiler successfully preserved the original function names for user-defined code, making the high-level call graph understandable.
+
+**Most Needs Improvement:** Type Precision (scored 1/10)
+- The failure to recover basic types (int, float, struct) renders the data manipulation logic incomprehensible.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a robust type recovery engine to map integers back to floating-point types and structure layouts.
+2. Lift intermediate representation (IR) constructs like `armg_calculate_condition` to native C control flow operators (`if`, `while`).
+3. Recover structure definitions from memory access patterns to replace array indexing with field access (e.g., `ptr->x` instead of `ptr[0]`).

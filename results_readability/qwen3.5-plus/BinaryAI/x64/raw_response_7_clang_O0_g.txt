@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `local_10`, `local_1c`, `iVar1`) with no semantic meaning. For example, `local_10` in `param_fake_branch` should be `result` based on source, and `local_1c`/`local_18` in `param_opaque_predicate` obscure the GCD algorithm variables `a` and `b`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`). Action verbs are appropriate and names accurately reflect functionality.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `-0x21524111` (equivalent to `-0xDEADBEEF`), `0x5a`, `0x2f` appear without explanation. The hex constant in `param_fake_branch` is recoverable but not documented, and `param_implementation_defined` returns unexplained `0x2f`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from external function wrappers that call themselves infinitely (e.g., `free`, `strlen`, `printf` all recursively call themselves). Startup code (`_init`, `_start`, `deregister_tm_clones`) clutters the output without being marked as boilerplate.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (if/else, while loops preserved), but the second fake branch in `param_fake_branch` is completely lost—`strlen("test")` is called without the conditional check. At -O0, this structural loss is unacceptable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are properly separated, but `call_*` wrapper functions return `void` instead of `int` (should return the result from `param_*` functions). This breaks the call chain semantics from the source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate loop structures. No excessive goto usage or forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: External function wrappers create massive redundancy (12+ functions that just call themselves). The `param_integer_overflow` logic is restructured confusingly with nested conditionals that obscure the original overflow detection intent.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Type degradation present—`param_instruction_substitution` takes `uint` instead of `int`, `param_string_encryption` returns `long` instead of `int`, `param_division_by_zero` returns `undefined4`. Signal numbers are raw integers (8, 0xb) instead of `SIGFPE`/`SIGSEGV`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure—the bitfield struct in `param_implementation_defined` is completely lost; the function just returns `0x2f` with no struct reconstruction. The `jmp_buf` is cast to `__jmp_buf_tag *` without proper type definition.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present: `(long)param_1`, `(undefined4 *)`, `(undefined4)(10 / (long)param_1)`. Pointer arithmetic in `param_vectorized_loop` uses raw casts `*(int *)(param_3 + (long)local_28 * 4)` without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No explanation of the obfuscation techniques (fake branches, opaque predicates), no algorithm documentation for GCD calculation, no indication of what was lost during decompilation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: The GCD algorithm in `param_opaque_predicate` is present but not identified. The opaque predicate pattern (always-true conditions) is not flagged. String decryption XOR pattern is not documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite significant code loss. The missing second fake branch in `param_fake_branch` should be marked. The collapsed `param_implementation_defined` (returns constant instead of computing) is not indicated as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). No postconditions. The signal handler contracts (`div_zero_handler`, `segv_handler`) have no documentation about their side effects on global state.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear, but global variables (`jmp_buffer`, `div_zero_caught`, `segv_caught`, `param_string_encryption_encrypted`) are referenced without declaration. External library dependencies not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. No separation between obfuscation tests, optimization tests, and edge case tests that existed in source structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile as-is—external function wrappers cause infinite recursion (`free` calls `free`, `strlen` calls `strlen`). Missing global variable declarations. Return type mismatches in `call_*` functions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+6+7+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.43
+
+Overall Score: 4.46/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects
+- **Second fake branch completely lost** in `param_fake_branch`—the `strlen(str) < 0` condition and body are missing, only `strlen("test")` call remains
+- **External function wrappers cause infinite recursion** (`free`, `strlen`, `printf` all call themselves)
+- **Bitfield struct completely collapsed** in `param_implementation_defined`—returns constant `0x2f` instead of computing
+- **All variable names are generic** (`param_1`, `local_10`, `iVar1`) with no semantic meaning
+- **Zero comments** despite complex obfuscation patterns that need explanation
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)**—Function names preserved accurately from source, making it easy to identify which decompiled function corresponds to which source function
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)**—Complete absence of any documentation makes understanding obfuscation intent impossible; decompiler should flag suspicious patterns like always-false conditions
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Detect and flag semantic loss**—When branches disappear during decompilation (like the second fake branch), add warnings like `// WARNING: Conditional branch may have been optimized away`
+2. **Eliminate recursive external wrappers**—Recognize PLT/GOT stubs and mark them as `<EXTERNAL>` without generating self-recursive function bodies
+3. **Recover composite types from access patterns**—The bitfield struct should be reconstructed from the field assignments (`bitfield.a = 7`, `bitfield.b = 31`) visible in the original binary

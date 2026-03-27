@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler failed to recover meaningful variable names. Parameters use generic single letters (`a`, `b`, `c`), while local variables show `/* Unresolved local var: int sum@[???] */` markers. Stack frame references like `local_c`, `local_10`, `local_40` provide no semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (e.g., `cdecl_func`, `stdcall_func`, `call_cdecl`, `param_by_value_int`). The decompiler preserved the intended naming from the source, making function purpose immediately clear.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: The decompiler shows computed results as hex literals (e.g., `0xf` for 15, `0x2a` for 42) rather than the original expressions. Magic numbers like `0x80` (128 for loop bound) appear without explanation. Some literals like loop bounds are meaningful, but the loss of original expressions is significant.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Extensive compiler/runtime artifacts pollute the output: `/* WARNING: Unknown calling convention -- yet parameter storage is locked */`, `/* WARNING: Removing unreachable block */`, `/* Unresolved local var: ... */`. These warnings appear throughout and severely impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow closely matches source. Loops use `do-while` constructs correctly, conditionals are clear. Minor issues include some complex arithmetic in float handling functions, but overall flow is readable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions remain properly separated with appropriate granularity. Each function has a single responsibility matching the original. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately. Some forward jumps exist in complex functions like `func_mixed_args` but don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Loop unrolling is present in `varargs_func` and `param_varargs` (the `local_c` array iteration), but it's manageable. No significant dead code or duplicate expressions observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` instead of more specific types. Pointer types are generally correct but lose const-qualification (e.g., `char *` instead of `const char *`). Function pointer types shown as `_func_int_int *` which is non-standard.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types are recovered with correct names: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`. However, field access patterns like `s.data[0]._4_4_` are confusing. Some nested struct handling shows unusual access patterns.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (e.g., `(int*)p`, `(char*)int_ptr`). Pointer arithmetic is frequent but mostly correct. Function pointer type confusion exists (`_func_int_int *callback`). Some potentially dangerous patterns in struct handling.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Auto-generated comments like `/* WARNING: Unknown calling convention */` and `/* Unresolved local var: ... */` provide no useful semantic information. No algorithm explanations, API contracts, or meaningful documentation recovered from source.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No explicit pattern recognition. Varargs handling shows as manual stack access but isn't identified as such. Calling convention differences aren't highlighted as idiomatic patterns.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings present for unknown calling conventions and unresolved variables, but they're generic. The decompiler doesn't flag suspicious patterns like the undefined behavior in `call_order_dep` (parameter evaluation order).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks like `if (p == (SmallStruct *)0x0)` are recovered but not explained as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present and traceable. However, no documentation of call relationships, global usage, or callback connections. Each function exists in isolation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions dumped into single file with no logical grouping. The original source's clear separation into test sections (calling conventions, parameter passing, return values) is lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code does not compile - multiple undefined identifiers: `EVP_PKEY_CTX`, `puts`, `printf`, `strlen`, `__gmon_start__`, `__libc_start_main`, and various float ABI functions (`__adddf3`, `__floatsidf`, etc.). No dependency documentation provided.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming is severely degraded with `???` unresolved markers and generic `local_X` names
+- Extensive noise from Ghidra warnings (`Unknown calling convention`, `Unresolved local var`) obscures logic
+- Literal values show computed results rather than original expressions, losing semantic meaning
+- No compilation - multiple undefined external symbols prevent standalone use
+- Comments are auto-generated warnings with no useful semantic information
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+- Functions are properly separated with appropriate granularity matching the original source
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- The decompiler failed to recover any meaningful local variable names, using generic stack references and unresolved markers throughout
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `local_c` used as sum accumulator should be named `sum`, loop indices should be `i`
+2. Replace computed hex literals with original expressions where recoverable (e.g., show `5 + 10` instead of `0xf`)
+3. Suppress or consolidate generic warnings; provide only actionable anomaly indicators with specific descriptions

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` instead of semantic names. Local variables are `v0`, `v1`, `v2`, `ptr`, `i` - losing the original names like `x`, `a`, `b`, `c`, `arr`, `n`. The decompiler makes no attempt to infer meaningful names from usage patterns.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions correctly recovered (`double_value`, `local_vars`, `heap_basic`, `malloc`, `free`), but most use address-based naming like `sub_401020`, `sub_40102d`. Static functions like `static_helper` are not marked as static, and many CRT initialization functions have cryptic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) used consistently for error returns, which is reasonable. However, string literals are accessed via address references like `&g_403008` without recovery of actual strings. Some constants like array sizes are unclear.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution includes: stack frame comments `// [bp-0x10]`, complex pointer arithmetic expressions like `((unsigned long long)((0 CONCAT 15 + a0 * 4) % 16) CONCAT...)`, unnecessary casts, and conditional expressions with bit manipulation like `(a0 + (a0 >> 31) & 4294967295) >> 1`. The VLA/alloca code has particularly unreadable constructs.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow (loops, conditionals) is correctly recovered. However, the VLA and alloca functions contain unusual while loops with complex conditions like `while (&v6 != &(&v0)[-1 * (v5 & 0xfffffffffffff000)])` that are hard to follow. Some goto patterns in initialization code.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and maintain single responsibility. Parameter lists are reasonable. Static functions like `static_helper` are properly separated. Minor issue: some CRT initialization functions could be better organized.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in error handling. However, complex expressions in VLA handling and some computed jumps disrupt linear flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No significant dead code. Some redundant expressions in array indexing calculations like `*((unsigned int *)((char *)ptr + 4 * i))` appear throughout but are consistent. Loop unrolling not observed at -O0 which is expected.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - all `int` became `unsigned int`, losing signedness. Pointers often use `void*` instead of specific types. The `tls_access` function has unusual `unsigned long ptr; // fs` declaration. Size calculations use `unsigned long long` inconsistently.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are partially reconstructed with generic field names like `field_0`, `field_1`, `field_8`, `field_10`. The original `Point` struct became `unsigned int ptr[2]` in `heap_struct`. The `Node` struct has correct layout but wrong field names (`field_0` instead of `data`, `field_8` instead of `next`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: extensive pointer arithmetic with casts like `*((unsigned int *)((char *)ptr + 4 * i))`, incorrect array indexing in `heap_overflow` where `ptr[i]` should warn about bounds, and type confusion in `heap_realloc` with `unsigned int ptr[3]` then `unsigned int ptr[6]`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated comments showing stack frame offsets (`// [bp-0x10]`) and register hints. No comments explaining algorithm logic, purpose of functions, or recovery confidence. Zero useful semantic documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns like linked lists (`while (cur) { ... cur = cur->field_8 }`) and trees are structurally recognizable but not explicitly named or documented. Memory management patterns (malloc/free pairs) are present but not highlighted.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies flagged. The dangling pointer access in `dangling_pointer()` is presented as normal code without any warning. The double-free in `double_free` has no indication of the problem. Buffer overflow in `heap_overflow` not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks are present in code but not explained as contracts. Error return values (4294967295) not documented as error codes.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships not documented. No indication of which functions call which. Global variable usage is marked with `extern` but call graphs not clear. Callback relationships (like `set_global_callback` + `call_global_callback`) not documented.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions appear in address order (0x401000, 0x401020, etc.) rather than logical grouping. CRT initialization, test functions, and core logic all mixed together. No logical separation between stack, heap, static, and memory operation sections.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code uses `extern` declarations appropriately. Should compile with standard libc headers. Some functions like `memop_memory_barrier` use `atomic_exchange` which may need `<stdatomic.h>`. Minor patching needed for standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming uses generic `a0`, `v0`, `v1` instead of semantic names like `x`, `arr`, `n`
+- No struct field name recovery - all fields are `field_0`, `field_1`, `field_8` losing original `data`, `next`, `x`, `y`
+- No anomaly indication for dangerous patterns (dangling pointer, double-free, buffer overflow)
+- Severe noise in VLA/alloca code with unreadable pointer arithmetic expressions
+- All `int` types converted to `unsigned int`, losing signedness semantics
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Functions maintain appropriate granularity and single responsibility. Core logic functions like `local_vars`, `heap_basic`, `linked_list_heap` are properly separated with reasonable parameter lists.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The decompiler makes no attempt to infer meaningful variable names from usage patterns. Parameters remain `a0`, `a1`, `a2` throughout, and locals are `v0`, `v1`, `v2`, making it extremely difficult to track data flow and understand function logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., loop index, array access, return value) to suggest names like `i`, `arr`, `result` instead of `v0`, `v1`, `v2`
+2. **Recover struct field names from context**: Use type information and field access patterns to name fields like `data`, `next`, `x`, `y` instead of `field_0`, `field_8`
+3. **Flag dangerous patterns**: Add warnings for dangling pointer access, double-free, buffer overflow, and other undefined behavior that could harm analysis

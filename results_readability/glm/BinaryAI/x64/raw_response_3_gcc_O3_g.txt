@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `uVar1`, `param_1`, `local_10`), providing no semantic hint about their purpose like `x`, `arr`, or `i` in the source.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `double_value`, `local_vars`, and `heap_basic` are perfectly preserved from the source symbols, making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are replaced with opaque references like `&DAT_00103004`, and numeric constants are often in hex (e.g., `0x2a` instead of `42`), requiring manual lookup to understand the values.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The `large_stack_frame` function is cluttered with dozens of meaningless variables (`sVar1` through `sVar16`, `auVar17` through `auVar49`), and stack canary checks (`in_FS_OFFSET`) are inlined throughout, adding significant noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Simple `for` loops are often represented as `do-while` loops or complex unrolled constructs (e.g., `heap_basic` processes 4 integers per iteration), making the flow harder to follow than the source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map well to the source structure, maintaining appropriate granularity and cohesion, though some test functions like `test_stack_memory` have inlined constants instead of calls.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Code generally reads top-to-bottom, but loop unrolling and tail-handling `goto` statements (e.g., in `heap_basic`) disrupt the linear flow.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The aggressive loop unrolling in functions like `heap_basic` and `heap_array` creates redundant code blocks that obscure the simple iteration logic present in the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded; specific types like `size_t` or `int*` are replaced with generic `undefined8`, `undefined4`, or `void *`, losing type safety and semantic information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely lost; `Point` and `Node` structures are accessed via raw pointer arithmetic (e.g., `*(undefined4 **)(__ptr + 2)` instead of `node->next`), rendering the data layout opaque.
+
+**11. Type Safety:** Score: 5/10
+Justification: While the code is functionally correct, the reliance on `undefined` types and frequent casting (e.g., `(int *)malloc(...)`) removes the type safety guarantees present in the original C code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures, leaving the user to decipher the code's purpose solely from implementation details.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common patterns like linked list traversal are obscured by pointer arithmetic and generic variables, failing to highlight the underlying data structure idiom.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: While suspicious code like `(*(code *)(undefined *)0x0)();` is present, it is not explicitly flagged or explained as an anomaly or potential error.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: Preconditions (e.g., `if (arr == NULL)`) are present in the code but are not documented as explicit contracts or assertions.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls and global variable accesses (e.g., `global_counter`) are clear and easy to trace, maintaining good coherence with the rest of the module.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, and related stack/heap/global functions are grouped together, matching the source file's organization well.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile without significant modification due to `undefined` types, missing macro definitions (e.g., `LOCK`), and reliance on specific data addresses.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 9 + 4 + 4) / 4 = 5.00
+L2_avg: (5 + 8 + 6 + 4) / 4 = 5.75
+L3_avg: (3 + 2 + 5) / 3 = 3.33
+L4_avg: (1 + 3 + 5 + 2) / 4 = 2.75
+L5_avg: (7 + 8 + 3) / 3 = 6.00
+
+Overall = (5.00 × 0.30) + (5.75 × 0.25) + (3.33 × 0.20) + 
+          (2.75 × 0.15) + (6.00 × 0.10)
+Overall = 1.50 + 1.44 + 0.67 + 0.41 + 0.60 = 4.62
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.6/10
+
+### Critical Defects (Bullet List)
+- **Struct Loss**: Composite types like `Point` and `Node` are completely lost, replaced by raw pointer arithmetic (e.g., `__ptr + 2`).
+- **Generic Naming**: Variables use generic names like `iVar1` and `param_1` instead of semantic names like `sum` or `index`.
+- **Loop Unrolling**: Simple loops are aggressively unrolled (e.g., processing 4 integers at a time in `heap_basic`), obscuring the logic.
+- **Stack Noise**: Large stack frames result in chaotic variable declarations (`sVar1`...`sVar16`) that obscure the actual buffer usage.
+- **Literal Opacity**: String constants are hidden behind address references (e.g., `&DAT_00103004`), making output strings unreadable.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (9/10)**
+- **Why?** The decompiler successfully preserved the original function symbols (e.g., `double_value`, `local_vars`), which is the strongest link back to the source code's intent.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Composite Type Recovery (2/10)**
+- **Why?** The complete failure to recover `struct` definitions turns readable data structure manipulations into obscure pointer math, which is the single biggest barrier to understanding the code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover Struct Definitions**: Implement analysis to identify struct layouts based on access patterns (e.g., consistent offsets like `+2` or `+8`) and reconstruct `struct` types with field names.
+2.  **Roll Back Loop Unrolling**: Detect aggressively unrolled loops (e.g., processing 4 items per iteration) and re-roll them into standard `for` or `while` loops to improve readability.
+3.  **Inline String Literals**: Replace references to global data addresses (e.g., `&DAT_00103004`) with the actual string literals or character arrays in the decompiled view.

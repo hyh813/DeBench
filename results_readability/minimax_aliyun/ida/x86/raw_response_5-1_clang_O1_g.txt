@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled code uses exclusively generic variable names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`, `v13`, `v14`, `v15`, `v16`, `v17`). These provide zero semantic meaning - for example, `v2` in `test_cpp_constructor` represents the allocated array but is completely uninformative compared to the original `data` member.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some member functions are properly demangled (`Base::virtual_func`, `Derived::virtual_func`, `MultiDerived::funcA`), but test functions retain mangled names like `_Z20test_cpp_member_funcv` instead of `test_cpp_member_func`. The inconsistency between properly named class methods and cryptic test function names creates confusion.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (string "Test" preserved, constants like `100`, `200` for data fields), but magic numbers like `0x14u` (20 bytes for LifecycleClass), `50` (loop limit), and `9` (array size check) appear without explanation. The value `4700` in the return calculation is also unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. No excessive register spilling code or debug instrumentation visible. Some redundant casts present but not overwhelming. The main noise is the "failed to decompile" functions listed at the end.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow structures (if/else, loops, returns) are preserved and readable. The `test_cpp_exception` function shows problematic noreturn behavior where the actual try-catch logic is lost. At O1 optimization, some restructuring is expected but the exception handling decompilation is incomplete.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Several test functions are completely inlined to return constants (`test_cpp_operator_overload` returns 22, `test_cpp_template_func` returns 39, `test_cpp_template_class` returns 16, `test_cpp_lambda` returns 85, `test_cpp_smart_ptr` returns 703), losing all structural information. Template class methods are properly decomposed but lack context.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom without excessive jumps. The `test_cpp_oo_features` function is long but follows sequential logic. Some forward jumps in exception handling but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Loop unrolling in `test_cpp_constructor` (the `do-while` filling array with 0,10,20,30,40) is present but represents actual compiled code, not decompilation redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - basic types like `int`, `double` are correct, but many pointers are generic `void*` or `_DWORD*`. The `test_cpp_rtti` function shows type confusion with `const char *` comparisons. Const correctness is partially preserved in some function signatures but inconsistent.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class structures are partially recovered (`Base`, `Derived`, `MultiDerived`, `DiamondDerived`), but field names are generic (`dataA`, `dataB`, `multiplier` - some recovered, some not). The virtual inheritance layout in `test_cpp_diamond_inheritance` shows raw vtable manipulation rather than clean structure access.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns present - the virtual function call in `call_virtual_func` uses raw function pointer casting: `((int (__cdecl *)(Base *, int))*obj->_vptr$Base)(obj, x)`. The RTTI code has multiple pointer arithmetic operations. Some potential undefined behavior in the exception handling decompilation.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments in the decompiled output. No explanation of algorithms, vtable mechanics, or C++ patterns. The original source had rich comments explaining each test case, but none of this context is recovered. The only comments are decompiler-generated headers.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ patterns are implicitly present (virtual function calls via vtable, `__cxa_throw` for exceptions, `__dynamic_cast` for RTTI) but not explicitly named or documented. The virtual thunk functions are recognized but not explained.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The "FAILED to decompile" section lists 21 functions that couldn't be recovered, but provides no explanation of why or what they contain. The `test_cpp_exception` noreturn issue is not flagged as an anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions, invariants, or contracts recovered. The original source had clear expectations (e.g., "期望: 4704") but this semantic information is completely lost. No documentation of what functions require or guarantee.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some function call relationships are visible (e.g., `Base::virtual_func` called from `test_cpp_virtual_func`), but not explicitly documented. The call graph between test functions and their helper functions is not clearly indicated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are somewhat grouped by class (all `Container<int>` methods together, all `Base` methods together), but the overall organization is a flat list. No namespace structure recovered. The test functions are interspersed with class methods.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many external dependencies not resolved (21 functions failed to decompile). The code would require significant stubs to compile. No header file structure or include directives recovered.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`v0`-`v17`) providing zero semantic meaning
+- **Function naming**: Test functions retain mangled C++ names (`_Z20test_cpp_member_funcv`) instead of demangled names
+- **Inlined functions**: 5 test functions completely inlined to constants, losing all structural information
+- **Exception handling**: `test_cpp_exception` shows as noreturn, losing try-catch logic entirely
+- **No comments**: Zero semantic context from original source comments is preserved
+
+### Best Quality Aspect: Noise Reduction (7/10)
+The decompiled output is relatively clean without excessive compiler artifacts, register spilling, or debug instrumentation cluttering the code.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+The pervasive use of generic single-letter variable names (`v0`, `v1`, etc.) makes the code practically unusable for analysis. At O0 optimization, the decompiler should be able to infer meaningful names from usage patterns.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: Analyze how variables are used (array indexing, string operations, arithmetic) to suggest semantic names like `data`, `size`, `index`, `result`
+2. **Demangle all C++ names**: Apply name demangling to all function names, not just class member functions
+3. **Recover control flow for exceptions**: The try-catch logic in `test_cpp_exception` is completely lost - improve exception handling decompilation to show catch blocks

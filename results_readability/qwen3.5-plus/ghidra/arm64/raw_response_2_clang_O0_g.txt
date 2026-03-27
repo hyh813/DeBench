@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `local_1`, `local_10`, `local_14` instead of semantic names like `sum`, `i`, `len` from source. Many marked as "Unresolved local var: int sum@[???]" losing all meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user functions preserved original names (`process_char`, `array_1d_stack`, `struct_simple`). Only runtime functions use generic names (`FUN_00100680`, `_init`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x12345678`, `0x32` (instead of 50), `0x14` (instead of 20) appear without explanation. String literals in printf preserved but numeric constants not symbolic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Runtime initialization code (`_init`, `register_tm_clones`, `deregister_tm_clones`) included. Long double operations expanded to verbose `__multf3`/`__addtf3` library calls with 200+ lines of bit manipulation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops correctly recovered as `for` constructs. Switch statements preserved (`enum_switch`). Simple functions like `process_int` read naturally. Long double functions show optimization artifacts but are compiler library code.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Appropriate granularity maintained. Helper functions (`complex_callback`, `double_value`) preserved separately. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Some test functions have forward variable initialization before use. No excessive goto usage in user code.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code in user functions. `volatile_access` collapsed `*p + *p` losing the two-read semantics. No loop unrolling artifacts in simple functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types accurate (`char`, `short`, `int`, `long`, `longlong`). Function pointer types degraded to `_func_int_int` instead of proper signatures. `long_double` custom type used correctly.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structs perfectly recovered with field names (`Point3D`, `Rect`, `Widget`, `Node`). Bitfields converted to manual bit operations (`(*(ushort *)f >> 1 & 3)`) losing semantic clarity.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Unsafe casts present but match original source (`(void *)(long)size`, `(int*)p`). Pointer arithmetic correct. No new type safety issues introduced by decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("Unresolved local var", "WARNING: Type propagation algorithm not settling"). No algorithm explanations, API contracts, or semantic documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns (linked list traversal, tree recursion) structurally preserved but not identified or named. No pattern hints like "// Linked list traversal" comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged ("Unresolved local var", "Unknown calling convention"). Inconsistent coverage—`volatile_access` semantics lost without warning about the two-read behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Array bounds checks present in code but not documented as contracts.
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but no call graph documentation. Callback relationships (`ptr_func_simple`, `struct_func_ptr`) not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source order but no logical grouping. No header file with declarations. Runtime functions mixed with user code.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions (`printf`, `memcpy`, `__multf3`) undeclared. Would need stub headers and library linking. Struct definitions present but no forward declarations.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):    (4+8+6+6)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural): (8+8+7+7)/4 = 7.50  × 0.25 = 1.875
+Level 3 (Type):       (7+8+7)/3   = 7.33  × 0.20 = 1.467
+Level 4 (Semantic):   (3+5)/2     = 4.00  × 0.15 = 0.60
+Level 5 (Context):    (6+3+6+5+5)/5 = 5.00 × 0.10 = 0.50
+
+Overall Score: 6.24/10
+```
+
+**Overall Readability Score:** 6.2/10
+
+### Critical Defects
+- Variable names all generic (`local_1`, `local_10`) instead of semantic (`sum`, `i`, `len`)
+- No comments explaining algorithm purpose or non-obvious logic
+- `volatile_access` semantics lost—two memory reads collapsed to `*p + *p`
+- Bitfield struct access converted to manual bit operations losing type clarity
+- External dependencies (`printf`, `memcpy`) undeclared preventing standalone compilation
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most user-defined functions preserved original meaningful names like `process_char`, `array_1d_stack`, `struct_simple`
+
+### Most Needs Improvement
+- **Variable Naming Quality (4/10)** - Generic `local_N` names throughout make tracking variable purpose difficult; original semantic names completely lost
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable name inference** - Analyze usage patterns to suggest names like `sum` for accumulators, `i` for loop counters, `len` for length variables
+2. **Add algorithm pattern detection with comments** - Recognize common patterns (linked list traversal, tree recursion) and add explanatory comments
+3. **Preserve volatile semantics explicitly** - When volatile accesses are detected, maintain separate load operations and add comments explaining the memory ordering requirements

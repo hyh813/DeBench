@@ -1,0 +1,104 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables consistently use generic names like `iVar1`, `iVar2`, `uVar4`, `lVar1` instead of semantic names like `sum`, `count`, `result`. Original source had `temp1`, `temp2`, `temp3` which are lost, replaced with "Unresolved local var" comments.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`sequential_ops`, `recursion_factorial`, `switch_fallthrough`). Only a few helpers use generic names (`FUN_00100940`, `FUN_0010167c`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers throughout test functions (`0x3e9`, `0x65`, `0x14`, `0x2d`, `0x78`) without explanation. Original source used decimal values with comments explaining expected results.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`___stack_chk_guard`, `__stack_chk_fail`) add noise. "Unresolved local var" comments appear frequently. Some "WARNING: Removing unreachable block" annotations present but not overwhelming.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if/else recovered well (`single_if`, `if_else`), but `switch_small` shows jump table reference instead of clean switch. `duffs_device` has complex goto-based structure. Loops often converted to do-while patterns.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity matching source. Helper functions (`double_value`, `triple_value`, `op_add`) preserved as separate functions. No excessive inlining observed.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Test functions contain forward jump labels (`LAB_0010123c`, `LAB_00101288`) disrupting flow. `duffs_device` has multiple goto labels. Most computation functions read top-to-bottom adequately.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Test functions show repeated array initialization patterns. `op_div` and `op_mod` have redundant condition checks. Generally clean but optimization artifacts visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most `int` types match source. Some `uint`/`ulong` casts visible (`(ulong)(uint)op`). Function pointer types partially recovered (`_func_int_int *`). Some type degradation in complex indirect calls.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered well (`int arr[5]`, `int matrix[3][4]`, `int funcs[3]`). No complex structs in this sample. Function pointer arrays partially recovered with warnings about jumptable recovery.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`(ulong)(b & 0x1f)`, `(uint)op`). Function pointer calls show warnings: "Could not recover jumptable at 0x00101678. Too many branches". Pointer arithmetic in array access generally safe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING:", "Unresolved local var"). Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels. Zero semantic comments recovered.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Duff's device not recognized as such. State machine functions (`state_machine`, `fsm_func_table`) not labeled as state machines. Loop patterns recovered but not named.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system for critical issues: "WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call", "Unresolved local var" markers. Helps identify decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. Original test validation comments completely lost. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented with call graph. Global variable usage (`jump_buffer`) not clearly marked. Function relationships inferable from names but not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No header file separation. Static functions not clearly distinguished. Test functions grouped but no logical module structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies visible (`printf`, `puts`, `__printf_chk`). Stack protection functions need runtime support. Some undefined symbols would need linking.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75
+Level 2 (Structural):  (6+7+5+7)/4 = 6.25
+Level 3 (Type):        (7+7+6)/3   = 6.67
+Level 4 (Semantic):    (3+2+7+2)/4 = 3.50
+Level 5 (Contextual):  (5+5+7)/3   = 5.67
+
+Overall = (5.75 × 0.30) + (6.25 × 0.25) + (6.67 × 0.20) + 
+          (3.50 × 0.15) + (5.67 × 0.10)
+        = 1.725 + 1.563 + 1.334 + 0.525 + 0.567
+        = 5.71/10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- Variable `iVar1`, `iVar2` should be named based on usage (e.g., `sum`, `count`, `result`)
+- Zero semantic comments recovered despite extensive original documentation
+- Magic numbers in test functions (`0x3e9`, `0x65`, `0x78`) without explanation
+- Duff's device and state machine patterns not recognized as idioms
+- No precondition/postcondition documentation for functions with constraints
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making code navigation straightforward despite other issues.
+
+### Most Needs Improvement:
+- **Idiom Recognition (2/10)** - No design patterns, algorithms, or common programming idioms identified, missing opportunity to add semantic value.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., accumulator variables in loops should be named `sum`, counter variables named `count` or `i`)
+2. **Add semantic comment recovery** by analyzing function behavior and generating descriptive comments for non-trivial logic
+3. **Implement pattern recognition** for common idioms (Duff's device, state machines, factorial recursion) and label them appropriately in output

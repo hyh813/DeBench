@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8` dominate the decompiled code (e.g., in `test_cpp_rtti` and `test_cpp_template_func`). The original source used semantically meaningful names like `r1`, `r2`, `r3`, `capture_by_value`, but these are lost. Generic names like `obj` are used but don't indicate its type (`SimpleClass`).
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some functions are well-named (e.g., `test_cpp_member_func`, `Base::virtual_func`, `Derived::virtual_func`), but many remain as generic `sub_1020`, `sub_1030` patterns. The C++ name mangling is partially demangled but not consistently (e.g., `_Z20test_cpp_member_funcv` shows as `test_cpp_member_func` but thunk functions have cryptic names like `_ZThn16_N12MultiDerived5funcBEv`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `1953719636` appears in `test_cpp_member_func` (should be "Test" string), `0x28` for stack canary (`__readfsqword(0x28u)`), and `1001` in `test_cpp_constructor`. These are unexplained. However, return values like `42`, `71`, `650`, `22` are correct expected values from the source.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise includes 20+ empty stub functions (`sub_1020` through `sub_1110`) that just call each other, "positive sp value has been detected" warnings, and 21 functions marked as "FAILED to decompile" including critical functions like `__printf_chk`, `strlen`, `__cxa_throw`. This severely impacts readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with straightforward return statements and conditional expressions. For example, `test_cpp_template_func` shows clear sequential logic: `template_max<int>(3, 7)`, then assignment, then `template_swap`. At `-O0`, the flow closely matches source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized. `test_cpp_oo_features` is larger (lines 0x1740-0x18E0) but this is expected as it calls multiple test functions. Member functions like `Container<int>::push`, `Container<int>::get` are properly separated. No over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately (e.g., in `template_max<int>`). No excessive forward jumps or goto statements. The flow is easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. Dead code from register spilling is minimal. The decompiled code is clean without duplicate expressions or obvious optimization artifacts that would confuse the reader.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate: `int`, `double`, `unsigned __int64`, `char`, `size_t`. However, generic `int` is used instead of `int32_t`, and function pointers like `__int64 (**result)(void)` could be more precise. The `this` pointers are correctly typed as `Base *const this`, `Derived *const this`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Classes are recovered: `Base`, `Derived`, `MultiDerived`, `Container<int>`, `Container<double>`. However, field names are often lost - `this->multiplier` is correctly shown in `Derived::virtual_func`, but many fields in complex classes like `DiamondDerived` show as raw pointer arithmetic (e.g., `*((_QWORD *)this->_vptr_MiddleA - 3)`).
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe operations. However, there are some concerning patterns: in `test_cpp_rtti`, the code uses `*v6 != 42` to check for string type comparison (should be character '`'`), and pointer arithmetic like `&this[-1].dataB + 2` in destructor thunks is error-prone. Minor type safety issues present.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. The only comments are "failed to decompile" messages and "positive sp value has been detected, the output may be wrong!" No explanation of algorithms, vtable mechanics, or non-obvious logic. The decompilation provides no semantic guidance to the reader.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are implicitly present: virtual function calls via vtable (`(*obj->_vptr_Base)(obj, x)`), constructor/destructor patterns, exception throw/catch mechanics. However, these are not explicitly labeled or explained. A reader wouldn't know this is the "virtual dispatch" pattern without prior knowledge.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies are flagged: "positive sp value has been detected" and "FAILED to decompile" for 21 functions. However, these are generic warnings without specific explanations. The thunk functions (e.g., "`non-virtual thunk to`") are named but not explained. No guidance on what these mean or how to handle them.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. For example, `Container<int>::push` has implicit requirements (size < 10) that aren't mentioned. The decompiled code provides no contract information to help the reader understand valid usage.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible (e.g., `test_cpp_oo_features` calls `test_cpp_member_func`, `test_cpp_constructor`). Virtual dispatch is shown via vtable pointers. However, there's no documentation of who calls what or the relationships between classes. The call graph is implicit but not explicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: The output is a single monolithic listing with functions in address order (0x1000, 0x1020, etc.) rather than logical grouping. Related functions (like all `Container` methods) are somewhat grouped but the overall organization is arbitrary, not matching the source's logical structure (test functions, class definitions, etc.).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies are visible (`operator new`, `operator delete`, `__cxa_throw`, `strlen`) but not clearly documented. The code references standard library functions but there's no indication of what headers are needed or how to compile it. The "failed to decompile" functions would need stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 6 + 5 + 3) / 4 = 4.25
+L2_avg = (7 + 7 + 7 + 8) / 4 = 7.25
+L3_avg = (7 + 6 + 7) / 3 = 6.67
+L4_avg = (3 + 5 + 4 + 2) / 4 = 3.50
+L5_avg = (5 + 4 + 5) / 3 = 4.67
+
+Overall = (4.25 × 0.30) + (7.25 × 0.25) + (6.67 × 0.20) + 
+          (3.50 × 0.15) + (4.67 × 0.10)
+        = 1.275 + 1.8125 + 1.334 + 0.525 + 0.467
+        = 5.41/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: Generic names like `v0`-`v8` completely obscure variable purpose; original semantic names like `capture_by_value`, `r1`, `r2` are lost
+- **Noise pollution**: 21 functions "FAILED to decompile" including critical functions like `__printf_chk`, `strlen`, `__cxa_throw`; 20+ empty stub functions (`sub_1020`-`sub_1110`)
+- **No comments**: Zero semantic explanation of algorithms, vtable mechanics, or C++ idioms; reader gets no guidance
+- **Magic numbers unexplained**: `1953719636` (should be "Test" string), `0x28` (stack canary), `1001` multiplier - all unexplained
+- **Anomalies not explained**: Thunk functions, vtable pointer arithmetic, and failed decompilations are not documented or flagged with helpful context
+
+### Best Quality Aspect: Structural Intelligibility (L2)
+- **Why?** Control flow is natural and matches source at `-O0`, functions are appropriately decomposed, code reads linearly without goto abuse, and no significant redundancy. The structural quality is solid despite other issues.
+
+### Most Needs Improvement: Semantic Transparency (L4)
+- **Why?** With only 3.5/10, this dimension severely impacts usability. No comments, no idiom recognition, poor anomaly indication, and no contract recovery leave the reader without crucial context to understand the decompiled C++ code's semantics.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Use data flow analysis to rename `v0` to meaningful names like `result`, `instance_count`, or `capture_value` based on how variables are used (e.g., `instance_count` is used in `LifecycleClass::getInstanceCount`)
+2. **Add semantic comments for C++ idioms**: Explain virtual dispatch ("// vtable call to Base::virtual_func"), exception mechanics ("// throws int exception"), and thunk functions ("// this pointer adjustment for multiple inheritance")
+3. **Flag and explain anomalies**: Instead of "FAILED to decompile", provide stubs with comments like "// External function: printf with fortification - requires stdio.h" and explain thunk functions with "// Adjusts this pointer by -16 bytes for BaseB subobject"

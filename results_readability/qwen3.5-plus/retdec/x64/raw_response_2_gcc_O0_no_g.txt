@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `v3`, `result`) with zero semantic meaning. For example, in `array_1d_stack`, the accumulator should be named `sum` and the index `i`, but both are `v1` and `result`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), but helper functions have generic names (`function_1060`, `function_1070`). Good verb choices in preserved names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation (`0xfffffffe`, `0x100000000`, `0x40000000`). String literals stored as hex-encoded globals (`g1 = "=== \xe6\xb5\x8b..."`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Assembly intrinsics pollute code (`__asm_movss`, `__asm_divsd`, `__asm_movq_3`). Excessive stack canary checks (`__readfsqword(40)`) in every test function. Redundant casts throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Original `for` loops converted to `while` loops with manual increment (e.g., `array_1d_stack`). Conditionals often convoluted with bit operations instead of clean comparisons.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but signatures corrupted. Test functions extremely long (e.g., `test_data_types_l1` is 265 lines). No recovery of static helper functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but while-loop patterns disrupt natural flow. Some functions have confusing forward references (e.g., `array_3d` nested loop structure).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated mask operations (`& 0xffffffff`, `& 0xfffffffe`) throughout. Type casts repeated unnecessarily. Stack canary code duplicated in every test function.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Catastrophic type degradation. `process_float(float f)` became `process_float(void)`. `process_double(double d)` became `process_double(void)`. All int types became `int64_t` regardless of original size.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Complete failure. All structs (`Point3D`, `Rect`, `Widget`, `Node`) lost. Unions (`UnionData`) lost. Everything is pointer arithmetic: `*(int32_t *)(v1 + 8)` instead of `p->x`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts everywhere (`(int64_t)a1`, `(int32_t *)v1`). Pointer arithmetic on `int64_t` instead of proper types. Function pointer signatures corrupted (`ptr_func_simple` loses callback type).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No explanation of algorithm intent, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns completely unrecognized. Linked list traversal (`linked_list`), array summation, tree recursion all appear as raw pointer arithmetic with no pattern identification.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical bugs not flagged. `double_value` returns `2 * a1 & 0xfffffffe` (incorrect - should be `x * 2`). Floating point functions completely broken but no warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `arr != NULL`). No postconditions. No error condition documentation. Null checks present but not explained.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships lost. `ptr_func_simple(double_value, 5)` became `ptr_func_simple(0x1189, 5)` - address instead of function name.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed alphabetically/by address rather than by test category. No grouping of related functions (data types, arrays, pointers, composites).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes necessary headers (`stdio.h`, `stdlib.h`, `stdint.h`). Function prototypes declared. However, assembly intrinsics (`__asm_*`) are non-portable and may not compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+7+3+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):   (5+6+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type System):  (2+1+3)/3   = 2.00 × 0.20 = 0.40
+Level 4 (Semantic):     (1+2+2+1)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):   (5+5+6)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.74/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Type system collapse**: `process_float(float f)` and `process_double(double d)` lost all parameters, becoming `void` functions
+- **Complete struct/union loss**: All composite types (`Point3D`, `Rect`, `Widget`, `UnionData`) reduced to raw pointer arithmetic with magic offsets
+- **Incorrect logic in simple functions**: `double_value` returns `2 * a1 & 0xfffffffe` instead of `x * 2`
+- **Zero semantic variable names**: Every variable is `v1`, `v2`, `v3`, `result` with no indication of purpose
+- **Assembly intrinsics pollution**: `__asm_movss`, `__asm_divsd`, `__asm_movq_3` make code non-portable and hard to understand
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved (`process_char`, `array_1d_stack`, `struct_simple`), providing some semantic anchor points for understanding.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (1/10)** - Complete failure to recover any struct, union, or enum definitions; all composite types reduced to opaque pointer arithmetic with hardcoded offsets.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct/union pattern recognition** - Detect repeated offset patterns (e.g., `+0`, `+4`, `+8`) and propose struct definitions with field names based on usage context.
+
+2. **Preserve floating-point function signatures** - Detect SSE/AVX register usage patterns to recover float/double parameters instead of converting to `void` functions with assembly intrinsics.
+
+3. **Add semantic variable naming from usage patterns** - Analyze variable roles (accumulator, index, pointer) and assign meaningful names (`sum`, `i`, `ptr`) instead of generic `v1`, `v2`.

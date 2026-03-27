@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: Class member variables are perfectly recovered (e.g., `value`, `multiplier`, `dataA`), but local variables suffer from generic naming like `iVar1`, `local_10`, and stack-offset names like `SStack_2c`, obscuring their purpose.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are excellent, matching the original source exactly (e.g., `test_cpp_member_func`, `SimpleClass::getValue`), likely due to the presence of debug symbols (`-g`).
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals and constants like `0x1234` are preserved, but magic numbers derived from `sizeof` (e.g., `0x1f` for `sizeof(name)-1`) appear without context, requiring manual calculation to understand the buffer size limit.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but Ghidra-specific artifacts like `WARNING: Unknown calling convention`, `undefined4`, and `extraout_r0` appear frequently, particularly in template and floating-point operations.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: The `-O0` optimization preserves natural control flow well; loops appear as `for` loops and conditionals as `if/else`. However, exception handling logic is flattened into runtime calls (`__cxa_throw`), losing the high-level `try/catch` structure.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: User-defined functions and class methods are correctly separated. However, the complexity of C++ templates (e.g., `std::unique_ptr`) results in a verbose expansion of internal helper functions (`_Head_base`, `_Tuple_impl`), cluttering the view.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps or spaghetti logic, which is expected for unoptimized (`-O0`) code.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no obvious dead code or loop unrolling. The code is concise, though the inlining of standard library internals adds necessary verbosity rather than redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate (`int`, `char*`, `bool`, `size_t`), and class types are correctly applied. However, generic types like `undefined4` and `type` appear in some contexts, and `pointer` is used instead of specific pointer types in smart pointer internals.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs and classes are reconstructed with high fidelity, including correct field names and inheritance hierarchies (e.g., `Derived` inheriting from `Base`, `MultiDerived` showing `super_BaseA` and `super_BaseB`).
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is mostly type-safe, but necessary C++ implementation details like `this` pointer adjustments for multiple inheritance (e.g., `(MultiDerived *)(in_r0 + -8)`) appear as unsafe pointer arithmetic.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to DWARF debug prototypes and Ghidra warnings (e.g., "Removing unreachable block"). There are no high-level comments explaining the logic, algorithms, or the purpose of complex C++ constructs like virtual inheritance.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: Operator overloading is recognized (`operator+`, `operator==`), but higher-level idioms are lost. Lambdas are decompiled to anonymous classes (`anon_class_8_2_336b0e7f`), and exceptions are reduced to C runtime calls, obscuring the original RAII and error handling patterns.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Ghidra flags technical issues like unknown calling conventions, but it does not annotate complex semantic anomalies, such as the pointer arithmetic used for virtual base class offsets, which would be helpful for understanding the layout.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the bounds check in `Container::get` is visible as code but not explicitly documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the recovered class names (e.g., `SimpleClass::setValue`). Virtual function calls are correctly represented as indirect calls via vtables (`(**obj->_vptr_Base)`), which is accurate for the binary level.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically by class, but the file is a mix of user code and heavily inlined standard library template code, making it difficult to distinguish the user's logic from library implementation.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: While types are defined, the code relies on specific compiler intrinsics (`__aeabi_d2iz`), `operator_new` instead of `new`, and undefined types (`undefined4`), requiring significant patching to recompile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.7/10
+
+**Critical Defects:**
+- Exception handling (`try/catch` blocks) is completely flattened into runtime calls (`__cxa_throw`), removing the high-level control flow structure.
+- Lambda expressions are decompiled into anonymous classes with `operator()` methods, losing the concise closure syntax and immediate capture context.
+- Virtual inheritance results in exposed pointer arithmetic (e.g., `local_20._0_4_ + -0xc`), making it extremely difficult to map back to the simple field access in the source code.
+- Local variable naming is poor (e.g., `iVar1`, `local_10`), relying entirely on the user to infer meaning from usage.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 9/10)
+- The presence of debug symbols allowed for near-perfect recovery of function and method names, making the call graph very easy to navigate.
+
+**Most Needs Improvement:** Comment Quality & Presence (Score: 3/10)
+- The output lacks semantic comments, leaving complex C++ mechanisms (like virtual inheritance adjustments or exception landing pads) unexplained, which significantly hampers understanding of the "why" behind the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Reconstruct High-Level Exception Handling**: Identify `__cxa_throw` and corresponding landing pads to reconstruct `try/catch` blocks instead of leaving them as raw runtime calls.
+2.  **Annotate Lambda Closures**: When detecting anonymous classes generated from lambdas, annotate them with their source location (e.g., "Lambda defined at test_cpp_lambda:28") and capture list.
+3.  **Abstract Virtual Inheritance Arithmetic**: Detect the specific pointer adjustment patterns used for virtual inheritance and annotate them or simplify the access to reflect the original field access (e.g., `obj.shared_data`) where possible.

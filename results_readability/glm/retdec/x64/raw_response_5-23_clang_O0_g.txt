@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `v3`), obscuring semantic meaning like `sum`, `i`, or `result`. While `dst` and `src` appear in `param_asm_multi_insn`, the majority of local variables lack descriptive names.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler perfectly preserved the original function names (e.g., `param_macro_constants`, `param_asm_basic`), which is excellent for mapping back to the source intent. Library functions like `strlen` are renamed to `function_1030`, which is standard but less ideal.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Critical magic numbers are obscured; for example, `MAX_SIZE` (1024) is decompiled as `(int32_t)&g21` (an address comparison), and `__LINE__` is hardcoded as `"155"`. While some constants like `64` and `512` remain, the reliance on memory addresses for numeric comparisons significantly harms readability.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant noise, such as the expression `0x100000000 * (int64_t)arr >> 32` used for pointer casting/sign-extension. Additionally, the syntax `code = "\x89";` for array initialization in `param_dynamic_code` is confusing and syntactically ambiguous in C.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally natural, with `while` loops and `if/else` structures correctly identified. The logic in `param_macro_recursion` and `param_conditional_compile` is linear and easy to follow, matching the source structure well.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly. The granularity is appropriate, with complex logic like `test_preprocessing_features` kept intact rather than being inlined or fragmented, preserving the original modularity.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads top-to-bottom with minimal jumps. Early returns are used correctly (e.g., in `param_memory_protection`), and there are no confusing `goto` chains interrupting the flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no obvious dead code or loop unrolling artifacts. The decompiler successfully simplified the macro expansions (e.g., `SQUARE(x) + MAX(x, y)` into `x * x + (x > y ? x : y)`) without leaving redundant intermediate variables.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Standard types like `int32_t` and `int64_t` are used correctly. However, the definition `typedef int64_t int128_t;` is factually incorrect for 128-bit SIMD registers, and `char *` vs `int32_t *` casting in `param_asm_multi_insn` shows some inconsistency with the original `void*` types.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: The source code primarily uses arrays and primitives, which are recovered accurately. There are no complex structs to recover, so the decompiler passes by default without introducing errors.
+
+**11. Type Safety:** Score: 3/10
+Justification: There are significant type safety issues. In `param_dynamic_code`, `char code[1]` is accessed via `*(int32_t *)&code`, implying a 4-byte read from a 1-byte array (buffer overflow). In `param_asm_atomic`, the atomic `lock xadd` instruction is decompiled as a non-atomic `result = v1 + increment; *counter = result;`, losing critical concurrency safety semantics.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are virtually non-existent aside from address ranges (e.g., `// Address range: 0x11a0 - 0x11cc`). There are no explanations for the complex logic in `param_dynamic_code` or the assembly intrinsics used in `param_asm_simd`.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: Standard library calls like `mmap`, `mprotect`, and `printf` are recognized. SIMD operations are mapped to intrinsic-like names (`__asm_movaps`, `__asm_paddd`), which preserves the semantic intent of vector operations even if the exact syntax differs.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler silently presents the non-atomic implementation of `param_asm_atomic` without warning about the lost `lock` prefix. It also fails to flag the suspicious pointer arithmetic in `param_asm_clobber` (`0x100000000 * ... >> 32`).
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions or postconditions. For example, the requirement that `exec_mem` in `param_dynamic_code` must be valid is not documented, nor is the error handling logic clearly explained via comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and easy to trace. The relationship between `call_*` functions and their `param_*` implementations is clear. Global variables `g1` through `g19` are used consistently for string literals.
+
+**17. Module Organization:** Score: 9/10
+Justification: The functions are grouped logically, matching the source file's structure. Helper functions and test functions are distinct, and the overall flow from `main` to `test_*` to `param_*` is preserved.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: While standard headers are included, the custom `__asm_` intrinsic functions (e.g., `__asm_movaps`) are not standard C and would require specific definitions or a compiler that supports these Ghidra/RetDec specific intrinsics to compile successfully.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Variable names `v1`, `v2`, `v3` are generic and obscure semantic meaning (e.g., loop counters, accumulators).
+- Constant `1024` (`MAX_SIZE`) is incorrectly represented as an address comparison `(int32_t)&g21`.
+- Atomic operation in `param_asm_atomic` is decompiled as a simple addition, losing the `lock` semantics and thread safety.
+- Type safety issue in `param_dynamic_code`: reading 4 bytes from a `char code[1]` array.
+- Lack of comments explaining complex logic, particularly for self-modifying code and SIMD intrinsics.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler perfectly preserved the original function names, allowing immediate mapping to the source code's intent.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)
+- The absence of comments for non-trivial logic (like assembly blocks or macro expansions) makes understanding the "why" behind the code difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve constant propagation to prevent replacing numeric constants (like 1024) with addresses of global variables.
+2. Detect and preserve atomic operations (e.g., `lock xadd`) and emit them as atomic intrinsics or explicit warnings rather than simplifying them to unsafe arithmetic.
+3. Infer variable names from context (e.g., naming a variable `i` inside a loop, or `sum` when accumulating) to replace generic `v1`/`v2` identifiers.

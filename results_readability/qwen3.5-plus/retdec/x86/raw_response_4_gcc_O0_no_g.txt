@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables are generic (`v1`, `v2`, `v3`, `a1`, `a2`) with zero semantic meaning. Original had meaningful names like `count`, `sum`, `args`, `large`, `test_str` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but helper functions became `function_1090`, `function_10a0`. Mixed quality.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `v1 + 0x4ef4`, `v1 + 0x1935`, `0x12345678` appear without explanation. Original string literals replaced with address calculations.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Pervasive `__x86_get_pc_thunk_ax(v1)` calls in nearly every function. Stack canary checks (`__readgsdword(20)`, `__stack_chk_fail_local`) clutter logic throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as while/for constructs reasonably well. Stack canary checks create awkward conditional branches at function exits that disrupt natural flow.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical signature errors: `fastcall_func(int32_t a1)` takes 1 param instead of 3, `func_struct_byval(void)` takes no params instead of struct. `param_struct_byval` has 16 int parameters instead of struct.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with reasonable linearity. Some forward references to globals but manageable for comprehension.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks repeated identically in ~30 functions. `__x86_get_pc_thunk_ax` pattern duplicated everywhere without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: All types collapsed to `int32_t`, `int32_t *`, `float80_t`. Original `char *`, `double`, `long long`, `void *` distinctions lost. `func_mixed_args` uses `float80_t` instead of `double`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `LargeStruct`, `SmallStruct`, `TestIntPair` all lost. `func_struct_byval` expanded to 16 int parameters. `func_struct_byptr` takes `int32_t *` instead of `SmallStruct *`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: `ret_func_ptr` returns `int32_t` instead of function pointer type. Extensive implicit casts throughout. Pointer arithmetic on generic int types creates unsafe patterns.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Original had extensive documentation explaining each test case (CALL-L1-01, PARAM-L2-01, etc.). Only auto-generated file headers present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not identified (uses raw stack pointer arithmetic). Struct passing conventions not recognized. No algorithm or pattern documentation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Architecture mismatch (ARM64 source → x86 decompilation) not flagged. Incorrect function signatures presented confidently without warnings. No uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null checks present (`if (a1 == NULL)`) but not documented as preconditions. No postconditions or invariants inferred from code patterns.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no call graph documentation. Global variables (`g1`, `g2`, `g3`, `g4`, `g5`) referenced without purpose explanation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 91 functions in single file with no logical grouping. Original had clear section organization (4.1 Calling Conventions, 4.2 Parameter Passing, 4.3 Return Values).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies declared (`printf`, `strlen`, `puts`). Architecture mismatch may cause runtime issues despite compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (6+4+7+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (2+2+2+3)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.87/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Variable names completely generic** - `v1`, `v2`, `a1`, `a2` provide zero semantic information compared to original `count`, `sum`, `test_str`, `large`
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct` expanded to raw int parameters, destroying type semantics
+- **Function signature corruption** - `fastcall_func` takes 1 parameter instead of 3, `func_struct_byval` takes 0 parameters instead of struct
+- **No documentation recovered** - Original had 100+ lines of explanatory comments; decompiled has zero meaningful comments
+- **Architecture mismatch unflagged** - ARM64 source decompiled as x86 without any warning or anomaly indication
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions retained original names (`cdecl_func`, `varargs_func`, `test_calling_conventions`), providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union types, forcing all composite data into primitive int parameters and destroying semantic meaning
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** - Analyze memory access patterns to recover struct layouts and field names instead of expanding to primitive parameters
+2. **Add uncertainty annotations** - Flag architecture mismatches, signature ambiguities, and low-confidence decompilations with explicit warnings
+3. **Preserve semantic variable names** - Use data flow analysis to infer variable purposes from usage patterns (loop counters, accumulators, pointers) rather than generic `v1`, `v2` naming

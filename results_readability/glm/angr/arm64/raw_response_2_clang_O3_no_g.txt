@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `a0`, `a1`), providing no semantic hint about their purpose (e.g., `v0` used for accumulation in `array_1d_stack` instead of `sum`).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: User-defined functions like `process_char`, `array_1d_stack`, and `main` retain their original names, likely due to symbol preservation. However, runtime/library functions like `sub_400634` and `__addtf3` are generic.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers resulting from compiler optimizations, such as `4294967294` (masking), `65` (ASCII 'A'), and `0xfffffff8` (alignment), with no comments explaining their derivation.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: Significant noise is present, including compiler intrinsics like `__ROL__`, `arm64g_calculate_condition`, and placeholders like `[D] unsupported_Iop_ZeroHI96ofV128()`, which obscure the underlying logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is heavily distorted by optimization; loops are often replaced by unrolled arithmetic (e.g., `array_2d_stack`) or complex `do-while` blocks with manual decrementing counters (e.g., `array_1d_stack`), making the logic hard to follow.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: While user functions are distinct, aggressive inlining has occurred (e.g., `test_data_types_l1` contains hardcoded results instead of function calls), and runtime functions like `__addtf3` are massive monoliths.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code does not read linearly; `array_1d_stack` uses forward jumps and loop unrolling logic that disrupts the top-to-bottom reading flow expected in the original source.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: Optimization introduced redundancy in the form of loop unrolling (e.g., `array_2d_stack` explicitly adds 10 separate array elements) rather than eliminating it, significantly bloating the code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types are often imprecise; `process_int` returns `unsigned int` instead of `int`, and pointers are frequently cast to `unsigned long` or `void*`, losing the specific type intent of the original source.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely flattened; `struct_simple` accesses fields via array indices (`a0[1]`, `a0[2]`) instead of member names (`p->y`, `p->z`), and `struct_nested` uses raw offsets (`a0[3]`).
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies on unsafe bit-level operations for type coercion, such as masking with `& 4294967295` to truncate values and manual pointer arithmetic, which erases type safety boundaries.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic; the only comments are trivial markers like `/* do not return */`, providing no insight into the complex optimized algorithms.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level idioms are obscured; the range check in `process_char` is transformed into `(a0 - 65 & 255) >= 26`, and the loop in `array_2d_stack` is unrolled, losing the "diagonal sum" idiom entirely.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: Some anomalies are flagged with placeholders like `[D] unsupported_Iop_ZeroHI96ofV128()`, but these are not descriptive warnings about logic loss, merely indicators of decompiler failure on SIMD instructions.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement for `array_complex_index` that `x` and `y` be within bounds is implicit in the bit checks rather than explicit contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Standard library calls like `printf` and `puts` are clear, but user-defined cross-references are lost because function calls were inlined and constant-folded (e.g., `process_char` call replaced by `97`).
+
+**17. Module Organization:** Score: 5/10
+Justification: The file is a flat list of functions mixing user code with large, unrelated runtime support functions (like `__addtf3`), making it difficult to discern the original module structure.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile standalone due to the use of non-standard macros like `__ROL__`, `arm64g_calculate_condition`, and undefined symbols like `g_413ff8`.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 8 + 2 + 2) / 4 = 3.75
+L2_avg = (3 + 4 + 4 + 2) / 4 = 3.25
+L3_avg = (5 + 2 + 4) / 3 = 3.67
+L4_avg = (1 + 2 + 4 + 1) / 4 = 2.00
+L5_avg = (6 + 5 + 2) / 3 = 4.33
+
+Overall = (3.75 × 0.30) + (3.25 × 0.25) + (3.67 × 0.20) + 
+          (2.00 × 0.15) + (4.33 × 0.10)
+Overall = 1.125 + 0.8125 + 0.734 + 0.30 + 0.433
+Overall = 3.40 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.4/10
+
+### Critical Defects (Bullet List)
+- **Struct Flattening**: Composite types like `Point3D` are accessed as raw arrays (`a0[1]`), completely losing semantic field names (`y`, `z`).
+- **Loop Unrolling**: The `array_2d_stack` loop is unrolled into a single line adding 10 specific indices (`a0[99] + a0[88]...`), destroying the algorithmic intent.
+- **Bitwise Obfuscation**: Simple arithmetic like `x * 2 + 1` is represented as `1 | __ROL__(a0, 1) & 4294967294`, making the logic impenetrable.
+- **Inlining/Constant Folding**: Function calls in `test_data_types_l1` are replaced by hardcoded constants (e.g., `97`), removing the program's structure.
+- **Intrinsics**: Heavy use of compiler intrinsics (`__ROL__`, `arm64g_calculate_condition`) prevents compilation and understanding.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (8/10)
+- **Why?** The decompiler successfully preserved the names of user-defined functions from the symbol table, making it easy to locate specific logic blocks despite the internal unreadability.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Comment Quality & Presence (1/10)
+- **Why?** The complete absence of comments explaining the aggressive optimizations (like why `__ROL__` is used or what the magic numbers represent) leaves the user to manually reverse-engineer the compiler's output.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Pattern Matching for Optimized Arithmetic**: Implement lifting rules to recognize common compiler optimizations, such as replacing `__ROL__(x, 1) & mask` patterns with `x * 2`.
+2. **Struct Recovery from Access Patterns**: Analyze array access patterns (e.g., `a0[0]`, `a0[4]`, `a0[8]`) to reconstruct struct definitions and replace indices with field names.
+3. **Loop Re-rolling**: Detect unrolled loop bodies (repeated similar operations) and collapse them back into `for` or `while` loops to restore high-level control flow.

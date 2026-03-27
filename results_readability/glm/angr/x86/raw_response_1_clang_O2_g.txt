@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`a0`, `a1`, `v0`, `v1`), providing no semantic hint about their purpose (e.g., `count`, `result`, `index` are lost).
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: High-level test functions like `sequential_ops` and `nested_if_deep` retain their original names, but helper functions are reduced to generic addresses like `sub_401030`.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: Compiler optimizations introduced magic numbers like `1717986919` (for division by 10) and `0x80000000` without comments, completely obscuring the original simple arithmetic logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present, including non-standard artifacts like `_ccall`, `CONCAT`, and compiler intrinsics like `__x86.get_pc_thunk.bx`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: High-level control flow is heavily obscured by optimization; loops are replaced by complex mathematical formulas (e.g., `loop_for_fixed`) and recursion is flattened into iterative loops.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler successfully maps binary functions to separate code units, maintaining a 1:1 correspondence with the source's function structure without excessive inlining in the output.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Code is mostly linear, but constructs like `duffs_device` rely on explicit labels and `goto` statements rather than structured fall-through blocks, disrupting the reading flow.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The code is very compact with no dead code or obvious redundancies, reflecting the compiler's efficiency, though this sometimes harms readability by removing intermediate variables.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types are generally correct (`unsigned int`, `int`), but signedness is sometimes generic (e.g., `unsigned int` used for `a0` in `sequential_ops` where source was `int`), and pointer types are vague.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are not recovered meaningfully; complex types like `jmp_buf` or the matrix in `loop_multi_exit` are represented as raw pointer arithmetic or generic `struct_0` with `padding_0`.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code uses non-standard operators like `CONCAT` and casts that imply unsafe bit-manipulation (e.g., `(a0 >> 31 CONCAT a0)`), which are not valid standard C and obscure type boundaries.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of obscure magic numbers and bit-twiddling operations.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common compiler idioms like division-by-multiplication (`* 1717986919`) are not recognized or simplified back to division; `duffs_device` is structurally visible but not explicitly identified.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents strange constructs like `_ccall` and `CONCAT` without any warning or explanation that these might be artifacts or lifting errors.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the requirement for `n > 0` in `duffs_device` is lost).
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and use the recovered names where available, making the call graph relatively easy to follow despite the low-level implementation details.
+
+**17. Module Organization:** Score: 4/10
+Justification: The output is a flat list of functions ordered by address, losing the logical grouping (Control Flow L1, L2, L3) present in the source.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses non-standard syntax (`CONCAT`, `_ccall`) and relies on specific compiler intrinsics, making it impossible to compile without significant manual modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Magic Number Obfuscation**: Division by 10 is represented as multiplication by `1717986919` and bit shifts, making `loop_while` unreadable.
+- **Non-Standard Syntax**: Usage of the `CONCAT` operator and `_ccall` intrinsics renders the code invalid C and confusing.
+- **Loss of Struct Semantics**: Data structures like `jmp_buf` and matrices are flattened into raw pointer arithmetic and generic structs.
+- **Control Flow Flattening**: Simple loops (e.g., `loop_for_fixed`) are converted into complex mathematical formulas, destroying the original algorithmic intent.
+
+**Best Quality Aspect:** Function Decomposition (Score: 8/10)
+- The decompiler successfully separated the binary into distinct functions that map well to the original source, avoiding the creation of a monolithic blob of code.
+
+**Most Needs Improvement:** Semantic Transparency (Score: 1.75/10)
+- The lack of comments explaining compiler optimizations (like strength reduction) and the failure to simplify bit-twiddling idioms back to high-level arithmetic makes the code extremely difficult to understand semantically.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Idiom Pattern Matching**: Implement recognition of compiler optimization idioms (e.g., multiply-by-inverse for division) and simplify them back to standard arithmetic operations in the output.
+2. **Struct Recovery**: Heuristically analyze array access patterns and standard library usage (like `setjmp`) to reconstruct meaningful struct definitions instead of raw byte offsets.
+3. **Syntax Standardization**: Replace internal IR artifacts (like `CONCAT` or `_ccall`) with standard C equivalents (e.g., `__int128` casts or standard function calls) to ensure valid, compilable output.

@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, and `a2`, completely obscuring the original semantic intent (e.g., `obj`, `result`, `ptr`).
+
+**2. Function Naming Quality:** Score: 4/10
+Justification: The code uses mangled C++ symbols (e.g., `_Z18test_cpp_exceptionv`) in the function definitions, which are unreadable, though demangled names are provided in comments.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: String literals are stored as hex-encoded bytes in global variables (e.g., `\xe6\xb5\x8b...`), making them completely unreadable without external decoding tools.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is cluttered with low-level C++ runtime implementation details like `__cxa_allocate_exception` and vtable pointer assignments (`*v1 = (int32_t)&g17`), which act as significant noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: High-level constructs like `try/catch` blocks are lost, replaced by complex conditional logic and runtime library calls (e.g., `__cxa_begin_catch`), making the flow hard to follow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler successfully separated template instantiations and class methods (constructors/destructors) into distinct functions with appropriate signatures.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but the logic for exception handling and RTTI involves pointer arithmetic and indirect calls that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little dead code or loop unrolling (consistent with `-O0`), but the verbosity of the C++ ABI implementation adds unnecessary bulk.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Object pointers are demoted to generic `int32_t*` (despite the metadata indicating arm64), losing the specific class types like `RTTIDerivedA*` or `Base*`.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: While vtables are recovered as structs (`vtable_116b4_type`), the actual class definitions (fields, inheritance) are missing; objects are treated as raw pointers.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code relies heavily on unsafe casts and pointer arithmetic, such as `*(int32_t *)(*v1 - 4)`, to access vtable pointers and type info.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 7/10
+Justification: Comments provide valuable metadata, including demangled function names, source line ranges, and class hierarchies, which significantly aids in mapping the output to the source.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Vtables are identified as structures, but high-level C++ idioms like RAII, exception handling blocks, or virtual dispatch are not explicitly marked or reconstructed.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: There are no explicit warnings about the complexity of the recovered code or the loss of high-level abstractions; the code is presented confidently despite being low-level.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented; the logic of `try/catch` blocks is flattened into procedural calls without explaining the contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: The relationship between vtables and class methods is clear via global struct initialization, but the usage of these objects in functions is obscured by pointer casts.
+
+**17. Module Organization:** Score: 7/10
+Justification: The output is logically organized into sections (Structures, Classes, Prototypes, Globals, Functions), which helps navigation despite the readability issues.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: While function prototypes are provided, the code relies on specific compiler builtins (`__aeabi_dcmpgt`) and C++ runtime internals (`__cxa_*`) that make standalone recompilation difficult.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- String literals are hex-encoded (e.g., `g1`), rendering text output unreadable.
+- High-level C++ control flow (`try/catch`, `virtual` calls) is replaced by low-level runtime API calls (`__cxa_*`, `__dynamic_cast`).
+- Variable naming is entirely generic (`v1`, `v2`), losing all semantic context of the original objects.
+- Class types are erased; objects are manipulated as `int32_t*` with manual vtable offsetting.
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)
+- The decompiler correctly identified and separated template instantiations and class member functions into distinct, callable units.
+
+**Most Needs Improvement:** Variable Naming (scored 2/10)
+- The reliance on generic names like `v1` and `a1` makes it nearly impossible to understand the data flow without cross-referencing the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Decode hex-encoded string literals back into readable character arrays to restore text output.
+2. Reconstruct C++ class definitions (structs with fields) instead of treating objects as void pointers, and use these types in variable declarations.
+3. Map mangled function names to their demangled identifiers directly in the code body, or at least use the demangled names as the primary definition labels.

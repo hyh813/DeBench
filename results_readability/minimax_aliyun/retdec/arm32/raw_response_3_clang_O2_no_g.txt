@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `a1`, `a2`, `a3` for parameters and `v1`, `v2`, `v3`, `v4` for locals. Compare to source where `arr`, `n`, `i`, `leak`, `head`, `root` clearly convey purpose. The decompiled code loses all semantic meaning - `int32_t a1` tells nothing about whether it's a count, size, or pointer.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions correctly named (`local_vars`, `heap_basic`, `double_value`, `memset`, `memcpy`, `test_stack_memory`) while others use auto-generated patterns like `function_5a0`, `function_5ac`, `function_5b8`. The test functions are well-named but helper functions are cryptic.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some constants preserved correctly (e.g., `2048` in large_stack_frame, `100` for g4, `23` for g5), but many magic numbers lack explanation. The string literals are present but encoded as UTF-8 byte sequences, making them unreadable.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution from compiler artifacts including 40+ `__sync_*` atomic operation functions, startup code (`__libc_start_main`, `__gmon_start__`, `frame_dummy`), and register manipulation. These 100+ functions obscure the actual user code from the original 888-line source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow is well-preserved - loops use while constructs, conditionals are clear, early returns for error handling. Minor awkwardness in some complex functions like `linked_list_heap` but generally readable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original test functions preserved separately, but decompiler added ~40 startup/cleanup functions not in source. Some granularity issues - `test_heap_memory` is 300+ lines mixing test logic with inline heap operations.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate breaks/returns. Some forward jumps in complex functions like `vla_stack` but manageable. Good use of while loops matching source structure.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: At -O0, minimal optimization artifacts. No obvious dead code. Loop unrolling is minimal. The code is clean except for necessary variable manipulations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently (appropriate for arm64), some `uint32_t` for unsigned. However, all pointers are `int32_t*` losing specificity - can't distinguish `int*` from `char*` or function pointers. Function parameters like `int32_t arr[10]` degenerate to `int32_t a1`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover structs. The `Point` struct (used in `local_struct`, `global_struct_access`, `heap_struct`) is lost - accessed via raw pointer arithmetic. Similarly `Node` and `TreeNode` in linked list and tree functions use raw offsets like `*(int32_t*)(v1 + 4)` instead of `node->next`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Significant unsafe casts throughout - `(int32_t*)a1`, `(char*)result`, `(int32_t)mem`. Manual pointer arithmetic without bounds checking. Function pointers stored as `int32_t` then cast. No type-safe abstractions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments whatsoever in decompiled output. No decompilation confidence indicators, no explanation of complex logic, no @param/@return documentation. The original source had extensive comments explaining each test case - none recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions correctly identified (`malloc`, `free`, `memcpy`, `printf`). Some patterns like linked list traversal are visible in code structure but not named or documented. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `dangling_pointer` function contains clear undefined behavior (use after free) but no warning. No indication of indirect calls that couldn't be resolved. Silent about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero contract recovery. No preconditions (e.g., "requires: n > 0"), no postconditions (e.g., "ensures: return is heap-allocated"), no invariant recognition. Error handling is present in code but not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and resolve correctly. Global variables documented with addresses (e.g., `// 0x13054`). However, no comments about call relationships - who calls whom, which functions are callbacks.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 133 functions in single file with no logical grouping. User test functions mixed with compiler-generated startup code and atomic intrinsics. No static function scoping recovered. Arbitrary ordering.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Has proper includes (`<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`, `<sys/wait.h>`, `<unistd.h>`). Function prototypes declared. Should compile with minor fixes - missing `exit()` declaration and some type mismatches.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `v1`, `result` losing all semantic meaning
+- No struct recovery - `Point`, `Node`, `TreeNode` all lost to raw pointer arithmetic
+- 40+ compiler-intrinsic `__sync_*` functions pollute output, obscuring actual user code
+- No comments or documentation explaining test scenarios or expected behavior
+- All composite types accessed via raw offsets like `*(int32_t*)(v1 + 4)` instead of `node->next`
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+At -O0, the decompiler correctly recovers while loops, if-else structures, and early returns. The basic program structure matches the source.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The generic `a1`/`v1` naming makes it nearly impossible to understand code without constant reference to source. Every variable requires mental mapping to understand its purpose.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - e.g., `a1` used in `malloc(4 * a1)` should suggest `element_count` or `num_elements`
+2. **Recover struct layouts** - detect repeated pointer offset patterns and reconstruct struct definitions (e.g., offset +4 = next pointer in linked list)
+3. **Filter compiler intrinsics** - provide option to hide `__sync_*`, startup code, and other non-user functions from decompiled output

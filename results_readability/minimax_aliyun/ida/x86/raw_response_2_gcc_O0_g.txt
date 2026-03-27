@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Core function parameters (x, c, a, b, p, n, arr) correctly preserve source names. However, test helper functions use generic names like `v0` through `v15` for temporaries, making it difficult to track purpose. Loop indices `i`, `j`, `k` are correctly preserved.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all user-defined functions match source exactly: `double_value`, `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `ptr_double`, `struct_simple`, `linked_list`, etc. Compiler/runtime functions use generic names (sub_1030, frame_dummy) which is acceptable. Excellent verb usage and semantic accuracy.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: Most literals are meaningful: character codes 65/'A', 98/'b' are clear; enum values STATE_IDLE, STATE_RUNNING, etc. are preserved. Some magic numbers like `0x14u` (stack canary offset) and `10 * i` lack explanation, but these are minor.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Stack canary checks (`__readgsdword(0x14u)`) appear but are expected. Type casts like `(double)v6` and `*(_QWORD *)&v13` are present but don't significantly impede readability. No redundant debug instrumentation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - loops use `for` constructs, conditionals use `if-else`. The `enum_switch` function correctly converts switch to if-else chain. At -O0, control flow should closely match source, and it does. Minor restructuring in test functions is acceptable.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent decomposition - each small function from source (`double_value`, `process_char`, etc.) is preserved as separate function. Test functions are appropriately large (as in source). No inlining artifacts since -O0. Function granularity matches source exactly.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately (e.g., `array_complex_index`). No goto statements or confusing jumps. Loop bodies are properly structured. Minor forward references in test initialization are acceptable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundancy in test functions where values computed then passed to printf separately (e.g., `v0 = process_char(65); printf(...)`). This is typical decompilation artifact. No significant dead code. Loop unrolling not present (expected at -O0).
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Excellent type precision - `__int16` for short, `__int64` for long long, `bool` for _Bool, `float`, `double`, `long double` all correctly identified. Const-correctness preserved (`const int *p`). Function pointer types accurate. Minor: some `int` used where `long` might be expected on 64-bit, but matches source.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Struct types perfectly recovered: `Point3D {x, y, z}`, `Rect {position, size}`, `Widget {bounds, style, id}`, `Node {data, next}`, `DNode`, `TreeNode`, `Edge`, `Graph`, `Flags` (bitfields), `UnionData`, `Device`. All field names match source. Union/struct distinction preserved.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present: `*(_DWORD *)p` in `ptr_void`, `*(_BYTE *)f` in `struct_bitfields`, `*(_WORD *)f`. These are necessary for low-level operations. No obvious buffer overflow patterns. Function pointer types are correct. Minor type safety issues don't make code dangerous.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal comments present - only function signatures and basic declarations. No algorithm explanations, no documentation of non-obvious logic, no decompilation confidence indicators. The code would benefit from explaining complex bitfield operations or unusual pointer arithmetic.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns recognized: linked list traversal (`while (head) { sum += head->data; head = head->next; }`), tree recursion (`binary_tree_sum`), graph adjacency list traversal. However, no explicit naming or documentation of these patterns. Could label "linked list traversal" or "binary tree sum".
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: No explicit anomaly flags. The decompiler marks some functions as "FAILED to decompile" (printf, __libc_start_main, etc.) which is good. However, no warnings about potential undefined behavior (e.g., `array_oob` has intentional out-of-bounds access). No indicators of indirect call resolution uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Could add "requires: n > 0" for array functions, "ensures: return is sum of elements", or "requires: p != NULL" for pointer functions. Error handling not documented (e.g., `array_complex_index` returns -1 on bounds violation).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships clear within test functions (main calls test_X functions). Callback relationships visible (e.g., `ptr_func_simple(double_value, 5)`). However, no documentation of "called by" or "calls" relationships. Static function scoping preserved.
+
+**17. Module Organization:** Score: 7/10  
+Justification: All functions in single file (typical for decompilation). Related functions grouped logically: data type functions, array functions, pointer functions, struct functions. Static functions properly marked. Could benefit from section comments separating groups.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code references undefined externals: `puts`, `printf`, `__libc_start_main`, `__stack_chk_fail`, `__cxa_finalize`. Five functions "FAILED to decompile" (marked in output). Would require linking with libc and stubs for unresolved functions. Not standalone compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.1/10
+
+### Critical Defects:
+- **Variable naming in test functions**: Generic names like `v0`-`v15` obscure purpose in helper code
+- **No comments**: Absence of algorithm explanations, especially for complex operations like bitfield manipulation
+- **No anomaly warnings**: Potential undefined behavior (array_oob) not flagged
+- **Missing contracts**: No preconditions/postconditions documented for functions
+- **Build dependencies unresolved**: Five functions failed to decompile, externals not stubbed
+
+### Best Quality Aspect: Type System Fidelity (8.3/10)
+Types are precise and composite types are excellently recovered. Struct field names, union/struct distinctions, and bitfield layouts all match source. This is the decompiler's strongest area.
+
+### Most Needs Improvement: Semantic Transparency (4.5/10)
+Comments, pattern recognition, anomaly indication, and contract recovery are all weak. The code is syntactically correct but semantically opaque - reader must infer intent rather than having it documented.
+
+### Top 3 Recommendations:
+1. **Add algorithm comments**: Explain complex patterns like bitfield extraction in `struct_bitfields`, the tree recursion in `binary_tree_sum`
+2. **Flag anomalies**: Mark `array_oob` with warning about intentional out-of-bounds access, note unresolved indirect calls
+3. **Recover variable names in test functions**: Infer `v0` as `char_result`, `v3` as `int_result` based on usage patterns (process_char returns char, process_int returns int)

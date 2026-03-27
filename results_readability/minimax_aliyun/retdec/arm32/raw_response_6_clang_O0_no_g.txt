@@ -1,0 +1,91 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v1`, `v2`, `a1`, `a2`, `str`, `str2`. The parameter `str` in `param_strcpy` should be `dst` based on usage as destination buffer. Local variables like `v1` in `call_strcpy` are completely opaque - it's actually a 32-byte buffer but named generically.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Standard library functions are correctly identified (strcpy, strlen, pthread_create). However, user-defined functions use cryptic hex-based names like `function_c4c`, `function_d90`. The function `param_strcpy` retains its semantic name but most others like `function_ea4` (should be pthread_create wrapper) are uninformative.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like "HelloLib" are preserved correctly. However, magic numbers like `66` (O_CREAT|O_RDWR), `0x1000` (4096 bytes for shmget), and `12` (sizeof array) appear without explanation. The format string "%d,%d" is correctly identified in param_scanf.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise includes: auto-generated struct stubs at top (struct _IO_FILE, struct ipc_perm with generic `e0`, `e1` fields), numerous wrapper functions like `function_d90` that just call strcpy, and strange global initializations like `g1 = -0x1a60ef88`. The code includes 137 functions when far fewer are needed.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is readable with proper if/else and while constructs. However, some functions like `param_pthread_join` have complex goto-based state machines that are hard to follow. The param_strcpy function has natural flow: strcpy then strlen.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized (20-80 lines typical). Some are too large - `param_pthread_join` is ~90 lines with complex loop logic. Function granularity is acceptable but some could be split (e.g., thread creation and joining in param_mutex_lock).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in error handling (e.g., param_fopen_fclose). Some complex nesting in param_signal_handling with nested while loops for signal waiting.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in atomic operations - `__atomic_fetch_add_4()` called without proper arguments in thread_atomic_increment. Loop unrolling not present (expected at -O0). Dead code minimal. Some duplicate patterns in thread creation loops.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses int32_t consistently (appropriate for ARM64). However, parameters lack semantic meaning - `int32_t a1` doesn't indicate it's a size_t for malloc. Pointer types are reasonably precise (int32_t* for buffers). Some unsigned types missing (param_memset uses uint32_t for size correctly).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Auto-generated struct stubs at top have generic field names (e.g., struct stat has fields e0-e19). Some structures partially recovered (struct _IO_FILE recognized but incomplete). Thread data structures like ThreadData not recovered - accessed via pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present: `(int32_t)&g45` used as sleep duration, `(int32_t *)0x25e4` as function pointer. Pointer arithmetic like `*(int32_t *)(4 * v2 + v1)` is error-prone. No restrict keywords or alignment annotations. Some type confusion in signal handling.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. No explanation of algorithm intent, no @param/@return documentation, no decompilation confidence indicators. The original source had extensive comments explaining each function's purpose.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions correctly identified (strcpy, strlen, pthread_create). Some patterns like producer-consumer (param_condition_variable) are recognizable from structure but not explicitly named. No design pattern names or algorithm identification.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of uncertain or anomalous code. The signal handling code has logical errors (comparing g6 != 10 when SIGUSR1=10 but signal registered for SIGBUS) but no warnings. Indirect calls that couldn't be resolved are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Error handling is present (returns -1, -2, etc.) but no explanation of what conditions trigger each error. No documentation of buffer size requirements or ownership semantics.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible through direct calls. Global variables like g7 (mutex), g8 (counter), g9-g12 (condition variable state) are used across functions but not documented. No call graph or usage documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file (monolithic). Some logical grouping visible (string functions, thread functions, syscall functions) but no headers or API declarations. Static functions not distinguished from extern.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes necessary headers. Function declarations present. Should compile with gcc. Some issues: missing pthread.h for pthread types, some function signatures incorrect (e.g., signal_handler should take int not int32_t).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming is completely generic (v1, v2, a1, a2) - cannot determine purpose without analyzing usage
+- No comments or documentation whatsoever - original source had extensive explanations
+- Function names are cryptic hex addresses (function_c4c) instead of semantic names
+- No anomaly indication for potentially incorrect code (signal handling uses SIGBUS instead of SIGUSR1)
+- Struct field names are auto-generated (e0, e1) losing all semantic meaning
+
+**Best Quality Aspect:** Control Flow Naturalness (6/10)  
+Basic control structures (if/else/while) are readable and match source logic. The param_strcpy function correctly shows strcpy followed by strlen.
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+Zero comments in entire 1745-line output. Original source had detailed explanations for each function's purpose, parameters, and return values. Decompiler should add at least basic documentation.
+
+**Top 3 Recommendations:**
+1. **Add variable name inference** - Analyze usage patterns (e.g., `v1` used as buffer size → name it `buffer_size` or `len`)
+2. **Generate meaningful function names** - Use return type + parameter patterns to infer names (e.g., function returning char* that calls strcpy → name it `string_copy_wrapper`)
+3. **Include decompilation comments** - Add basic documentation explaining function purpose, parameters, and any uncertainty in the analysis
+4. **Recover struct field names** - Use field offsets and usage patterns to infer meaningful names (e.g., st_size field at offset 32 in struct stat)
+5. **Flag anomalies** - Mark indirect calls, uncertain logic, and potential errors with comments like "// UNCERTAIN: could not resolve indirect call"

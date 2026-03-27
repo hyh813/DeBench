@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10
+Justification: Most local variables like `dst`, `src`, `fp`, and `fd` retain meaningful names. However, Thread-Local Storage variables like `tls_counter` are lost, replaced by raw register offsets like `*(_DWORD *)(_ReadStatusReg(TPIDR_EL0) + 16)`, significantly harming readability in those sections.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`param_strcpy`, `call_memcpy`, `param_linux_syscall`) are perfectly recovered from the symbol table, accurately reflecting the original source's intent and structure.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers; system call numbers (e.g., `56` for `SYS_open`), flags (e.g., `438` for `O_CREAT|O_RDWR`), and macro expansions (e.g., `0x7F` in `WIFEXITED`) are not resolved to their named constants. Additionally, array initializations in `call_memcpy` are represented as obscure hex assignments (`*(_QWORD *)src = *(_QWORD *)"\n";`) rather than readable lists.
+
+**4. Noise Reduction:** Score: 9/10
+Justification: The code is very clean with minimal compiler artifacts. There is no dead code or redundant casting cluttering the logic, which is expected for `-O0` compilation, but the decompiler handled it well.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow matches the source exactly; loops and conditionals are preserved naturally. The ternary operator in `param_strcmp` is expanded into `if/else` blocks, which is a standard and readable decompilation pattern.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries and granularity are identical to the source. There is no inlining or outlining that obscures the original design, making the modular structure easy to follow.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps. The structure is straightforward, allowing for easy tracing of execution paths without navigating complex spaghetti logic.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no apparent redundancy or loop unrolling artifacts. The logic is concise and directly maps to the source operations without unnecessary repetition.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate, correctly distinguishing between `int`, `char*`, and `size_t` (mapped to `__int64`/`unsigned __int64` on ARM64). Function signatures match the source well, though `const` correctness is occasionally omitted.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Structures like `sockaddr_in`, `stat`, and `ThreadData` are correctly recovered and used, preserving the logical grouping of data. Field names within these structs are mostly preserved or reasonably inferred.
+
+**11. Type Safety:** Score: 9/10
+Justification: The code is type-safe with no dangerous or confusing casts. Pointer arithmetic and array accesses are handled correctly, maintaining the integrity of the original types.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. High-level logic, such as the purpose of the `param_linux_syscall` polyfill or the signal handling logic, is left undocumented, forcing the reader to infer intent solely from code.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library calls are recognized, but higher-level idioms are missed. Thread-Local Storage is exposed as raw register access (`TPIDR_EL0`), and atomic operations are mapped to ARM64-specific intrinsics (`_aarch64_ldadd4_acq_rel`) rather than generic C11 atomics, obscuring the portable intent.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: No specific anomalies are flagged. While the code is generally correct, the lack of warnings for complex behaviors like the raw TLS access or the syscall polyfill logic means the reader isn't alerted to potentially non-standard patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the contract that `param_malloc_free` requires a valid size or returns a heap-allocated pointer is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. The relationship between callers (e.g., `call_strcpy`) and implementations (e.g., `param_strcpy`) is obvious, aiding in navigation.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source file's organization (Standard Lib, System Calls, Threads). The separation of concerns is maintained in the decompiled view.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: While the C syntax is valid, the code relies on standard headers (e.g., `<stdio.h>`, `<pthread.h>`) and specific compiler intrinsics that are not included in the snippet. It would require significant context to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (7 + 10 + 4 + 9) / 4 = 7.5
+L2_avg = (9 + 10 + 9 + 9) / 4 = 9.25
+L3_avg = (8 + 8 + 9) / 3 = 8.33
+L4_avg = (1 + 5 + 5 + 1) / 4 = 3.0
+L5_avg = (8 + 8 + 5) / 3 = 7.0
+
+Overall = (7.5 × 0.30) + (9.25 × 0.25) + (8.33 × 0.20) + 
+          (3.0 × 0.15) + (7.0 × 0.10)
+Overall = 2.25 + 2.3125 + 1.666 + 0.45 + 0.7
+Overall = 7.3785
+```
+
+**Overall Readability Score:** 7.4/10
+
+### Critical Defects
+- **TLS Variable Loss**: The `__thread` variable `tls_counter` is decompiled to raw register access `*(_DWORD *)(_ReadStatusReg(TPIDR_EL0) + 16)`, completely losing the variable name and semantic meaning.
+- **Magic Numbers**: System call numbers (e.g., `56` for `SYS_open`) and flags (e.g., `438` for file permissions) are not replaced with named constants, making `param_linux_syscall` hard to read.
+- **Array Initialization**: In `call_memcpy`, the array initialization `int src[] = {10, 20, ...}` is represented as obscure pointer casts and hex values (`*(_QWORD *)src = *(_QWORD *)"\n";`), destroying readability.
+- **Macro Expansion**: Helper macros like `WIFEXITED` and `WEXITSTATUS` are expanded into bitwise operations (`status & 0x7F`, `BYTE1(status)`), obscuring the high-level logic.
+
+### Best Quality Aspect
+- **Control Flow Naturalness (Score: 9/10)**
+- **Why?** The decompiler perfectly preserved the logical structure of the source code, maintaining natural loops and conditionals that make the execution path easy to follow.
+
+### Most Needs Improvement
+- **Literal Clarity (Score: 4/10)**
+- **Why?** The prevalence of magic numbers (syscalls, flags) and the obfuscation of array initializations into hex dumps significantly impede the ability to understand the data being manipulated.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover Array Initializers**: Detect patterns where static data is copied to stack arrays and represent them as C-style initializer lists (e.g., `int src[] = {10, 20, 30};`) instead of raw memory writes.
+2.  **Annotate System Calls**: Maintain a mapping of system call numbers to their symbolic names (e.g., `SYS_open`, `SYS_close`) and flag constants to replace magic numbers in the decompiled output.
+3.  **Identify Thread-Local Storage**: Detect access patterns relative to the `TPIDR_EL0` register and attempt to recover the original variable names and types, or at least annotate the access as "Thread Local Storage".

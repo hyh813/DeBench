@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`a0`, `a1`, `v0`, `v1`, `ptr`) with no semantic meaning. For example, `func_mixed_args` parameters should be `x`, `str`, `d`, `ll` but are `a0`-`a5`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`cdecl_func`, `call_cdecl`), but helper functions use mechanical names (`sub_4003f0`, `sub_400490`). Some names are accurate but many lack context.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (should be `-1`), `0x100000`, `0x80000000`. String literals replaced with `g_4014b4` references losing readability.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifacts in floating-point helpers (`__adddf3` has 500+ lines of `armg_calculate_condition` calls). Frame pointer manipulation and register spilling visible throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` usage instead of loops/conditionals. `func_struct_byptr` has garbled condition logic with `Goto None` statements. `__adddf3` is essentially unreadable spaghetti code.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Test functions correctly separated, but constant-folding destroyed actual computation (`call_cdecl` returns 15 directly). `__adddf3` is a 500+ line monolith that should be a library call.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps disrupt flow. `varargs_func` has backward loops but uses confusing pointer arithmetic. Many functions have multiple exit points via goto.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Massive redundancy in `__adddf3` with repeated `armg_calculate_condition` patterns. `test_calling_conventions` prints constants instead of calling actual functions (lost computation).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Almost everything is `unsigned int` or `int`. Original `char*`, `double`, `long long` types lost. `func_mixed_args` shows `a2`, `a3` as `unsigned int` instead of `double`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs mostly lost. `func_struct_byval` uses pointer arithmetic (`*((int *)((char *)&v0 + v7))`) instead of `s.data[i]`. `LargeStruct` and `SmallStruct` definitions absent.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout. `param_func_ptr` shows `a0(a1)` where `a0` is `unsigned int*` being called as function. `func_struct_byptr` has type-confused condition logic.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. No algorithm explanations, no decompilation confidence indicators. Only `/* do not return */` annotations present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not recognized (manual pointer chasing in `varargs_func`). Struct passing conventions not identified. No pattern naming whatsoever.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. `func_struct_byptr` has clearly broken logic (`Goto None`) with no anomaly flag. Floating-point helpers show no uncertainty markers.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should note `p != NULL`). No postconditions or error condition documentation anywhere.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced as `g_4014b4` without context. Call graph inferable but not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by address order, not logical organization. Test functions scattered. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone. Missing struct definitions, external dependencies (`__libc_start_main`, `armg_calculate_condition`), and type declarations. Requires extensive patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (3+5+4+2)/4 = 3.50 × 0.25 = 0.875
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.433
+
+Overall Score: 3.19/10
+```
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects:
+- **Constant folding destroyed computation**: `call_cdecl()` returns literal `15` instead of showing `cdecl_func(5, 10)` call
+- **Variable names completely generic**: `a0`, `a1`, `v0`, `v1` throughout with no semantic meaning
+- **`__adddf3` function is 500+ lines of unreadable nested conditions**: Should be a library call reference
+- **Struct types lost**: `func_struct_byval` uses pointer arithmetic instead of `s.data[i]` access
+- **`func_struct_byptr` has broken condition logic**: Contains `Goto None` statements indicating decompilation failure
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions retained original source names (`cdecl_func`, `call_cdecl`, `varargs_func`), providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero meaningful comments explaining logic, algorithms, or decompilation uncertainty; completely absent documentation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve computation over constant-folding**: Don't optimize away function calls in test code; show actual parameter passing and computation flow
+2. **Recover struct types from access patterns**: Detect `*((int *)((char *)&v0 + v7))` patterns and reconstruct as `struct.field[index]` with proper type definitions
+3. **Add decompilation confidence annotations**: Flag uncertain regions (like `func_struct_byptr`'s broken logic) with comments indicating manual review needed

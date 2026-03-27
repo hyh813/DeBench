@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `local_20`, `auStack_128` instead of semantic names (`count`, `sum`, `args`, `large`). Original source had meaningful names that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Only a few helpers like `FUN_00011030` are generic. Debug symbols helped preserve names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers everywhere: `0xf`, `0x32`, `0x2a`, `0x12345678` without explanation. Original source had clear calculations; decompiler shows hex constants that require mental conversion.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: `__x86.get_pc_thunk.bx` warnings, stack canary checks (`in_GS_OFFSET`), initialization functions (`_init`, `_fini`). Expected for decompilation but adds clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Constant folding replaces function calls with direct returns (`call_cdecl` returns `0xf` instead of calling `cdecl_func`). `func_struct_byval` shows incorrect loop structure instead of array iteration.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but some signatures wrong (`func_struct_byval` shows `void` instead of `int`). Inlined helper functions shown separately which is acceptable.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom but test functions have complex stack management (`auStack_128`, `local_a0` arrays) that disrupts flow with manual memory copying loops.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding creates redundancy (callers compute what callees would). Stack canary checks duplicated across functions. Some functions completely optimized to constants losing original logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Types degraded to `undefined4`, `undefined8`, `byte`. `func_mixed_args` shows `double` as `undefined8` with `CONCAT44` and `ROUND` operations. Original had precise `int`, `char*`, `double`, `long long`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All structs lost (`LargeStruct`, `SmallStruct`, `BigStruct`). `func_struct_byval` shows `void` with no struct parameter. `func_struct_byptr` shows `int *` instead of `SmallStruct *`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe stack access patterns: `(&stack0x00000008 + iVar1 * 4)` for varargs. Implicit casts in `func_mixed_args`. Pointer arithmetic without type safety guarantees.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only decompiler warnings present ("WARNING: Function replaced with injection"). No semantic comments explaining function purpose, algorithms, or parameter meanings.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Varargs pattern not identified as such. Struct passing conventions not documented. Standard C idioms completely opaque.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some thunk function warnings present. Stack canary checks visible. But `func_struct_byval` is completely wrong with no warning about decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). Null checks exist in code but not as contracts. No postconditions or invariants recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables referenced (`handle1_1`, `handle2_0`) without context. Callback relationships not explicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 85 functions in single output with no logical grouping. Initialization functions mixed with test functions. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References external functions (`__printf_chk`, `strlen`, `puts`) without declarations. Type mismatches would prevent compilation (`undefined4`, struct losses). Requires significant stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (4+3+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                              4.65/10
+```
+
+### Overall Readability Score: **4.7/10**
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct`, `BigStruct` not recovered; `func_struct_byval` shows wrong signature (`void` instead of `int`)
+- **Variable names generic** - `param_1`, `iVar1`, `local_20` instead of `count`, `sum`, `large`
+- **Type precision degraded** - `undefined4`, `undefined8` instead of `int32_t`, `int64_t`, `double`
+- **Constant folding obscures logic** - `call_cdecl` returns `0xf` directly instead of showing `cdecl_func(5, 10)` call
+- **Varargs implementation unsafe** - Stack access `(&stack0x00000008 + iVar1 * 4)` without type safety
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved from debug symbols, making navigation and identification straightforward.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union types, making functions like `func_struct_byval` and `func_struct_byptr` semantically incorrect and misleading.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** - Analyze memory access patterns to recover struct layouts and field names from pointer arithmetic patterns.
+2. **Preserve semantic variable names** - Use data flow analysis to infer variable purposes (e.g., loop counters, accumulators) and assign meaningful names.
+3. **Add decompilation confidence annotations** - Flag functions with uncertain recovery (like `func_struct_byval`) with warnings about potential inaccuracies.

@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiled code uses extremely generic variable names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6` in functions like `param_opaque_predicate`. The parameter is named `a1` (generic). These names provide no semantic meaning about the variable's purpose (e.g., `x`, `result`, `str` from source).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved from the original source: `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, etc. The naming accurately reflects the original functionality.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: While some constants like `10`, `20`, `225` are returned directly (matching expected outputs), magic numbers like `0x5A` (encryption key for string decryption) appear without explanation. The value `0xDEADBEEF` from the source is completely lost.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The decompiled output is relatively clean with minimal compiler artifacts. No redundant casts, debug instrumentation, or frame pointer manipulation visible. The code reads naturally despite being decompiled.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural control flow - simple returns or straightforward conditionals. However, `param_vectorized_loop` shows complex SIMD manipulation with multiple labels and jumps. The fake branch function itself is completely eliminated (empty body), which is an optimization artifact.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity. The original source had 15+ functions, and the decompiled version preserves this decomposition. Each function has a single responsibility. However, some call wrapper functions (e.g., `call_fake_branch`) could potentially be inlined.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive forward jumps. The complex vectorized loop has some branching but it's manageable. Simple functions like `call_fake_branch` are perfectly linear (single return statement).
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or redundant expressions. The compiler has correctly eliminated the always-false branches in `param_fake_branch`. Loop unrolling in vectorized code is present but represents legitimate optimization.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed results - uses `int`, `unsigned int`, `__int64` appropriately, and even recovers `int32x4_t` for vector types. However, the parameter to `param_fake_branch` is lost (function is empty). Some type erosion exists where specific types become generic `int`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct or union types are reconstructed. The code operates on primitive types. The original source had no complex structs either, so this is partially expected. Bitfield structures from `param_implementation_defined` are not recovered.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with appropriate casts. The use of `unsigned int` for bit operations is correct. Some implicit conversions between signed/unsigned but no severe safety violations that would cause undefined behavior.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.), test scenarios, and expected values. None of this semantic information is preserved.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are visible - the GCD algorithm in `param_opaque_predicate` is recognizable as a Euclidean algorithm. The vectorized loop shows SIMD patterns. However, the fake branch (always-false condition) idiom is completely lost since the code was eliminated.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The decompiler marks 11 functions as "FAILED to decompile" (strlen, _setjmp, __libc_start_main, etc.), which is good. However, there's no indication that `param_fake_branch` was optimized away or that the always-false branches were eliminated - this semantic information is lost.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear expectations (e.g., "期望: 10" for call_fake_branch) that are not recovered. No error handling contracts are indicated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear - `call_fake_branch` calls `param_fake_branch`. Global variables like `jmp_buffer`, `segv_buffer` are visible. However, the relationship to the broader test framework (`test_obf_opt_edge`) could be more explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - initialization functions first, then test functions, then main. Related functions (param_*/call_*) are placed near each other. The organization matches the original source's structure reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The decompiled code appears compilable. It uses standard C constructs and calls library functions (signal, printf, strncpy, etc.). However, external dependencies are not documented, and some functions reference undefined symbols like `param_string_encryption_encrypted`.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score Calculation:**
+```
+L1_avg = (3 + 9 + 5 + 8) / 4 = 6.25
+L2_avg = (6 + 7 + 7 + 8) / 4 = 7.00
+L3_avg = (6 + 4 + 7) / 3 = 5.67
+L4_avg = (2 + 4 + 3 + 2) / 4 = 2.75
+L5_avg = (6 + 7 + 7) / 3 = 6.67
+
+Overall = (6.25 × 0.30) + (7.00 × 0.25) + (5.67 × 0.20) + 
+          (2.75 × 0.15) + (6.67 × 0.10)
+        = 1.875 + 1.75 + 1.134 + 0.4125 + 0.667 = 5.84/10
+```
+
+**Overall Readability Score:** 5.84/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Variable naming is extremely generic**: Variables like `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `a1`, `a2` provide no semantic meaning about their purpose (should be `x`, `result`, `str`, etc.)
+
+- **Fake branch logic completely eliminated**: The core function `param_fake_branch` has an empty body because the compiler recognized always-false conditions. The decompiler doesn't indicate this semantic loss.
+
+- **No comments preserved**: Extensive source code comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03), test scenarios, and expected values are completely lost.
+
+- **Magic numbers unexplained**: Constants like `0x5A` (encryption key), `0xDEADBEEF` (dead beef constant) appear without documentation of their purpose.
+
+- **Anomaly detection missing**: The elimination of always-false branches should be flagged as a semantic transformation, but no such indication exists.
+
+---
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+The decompiler preserved the original function names almost perfectly. Names like `param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution` accurately reflect the source functionality and make the code's purpose immediately clear.
+
+---
+
+### Most Needs Improvement: Semantic Transparency (2.75/10)
+The decompiled code lacks any comments, idiom recognition, anomaly indication, or contract recovery. This dimension scored lowest because the rich semantic information from the source (obfuscation explanations, test expectations, algorithm descriptions) is completely absent in the output.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a1 * a1` suggests squaring operation, `strlen()` suggests string length) to generate semantically meaningful names like `x`, `result`, `str`.
+
+2. **Flag optimized-away code**: When control flow is eliminated due to compiler optimizations (like always-false conditions), add comments indicating what was removed and why (e.g., "// NOTE: always-false condition x*x < 0 was eliminated").
+
+3. **Recover comments from debug symbols**: Since the binary was compiled with `-g`, the decompiler should attempt to recover source comments from DWARF debugging information to preserve semantic context like "OBF-L4-02: 虚假分支（永假）".

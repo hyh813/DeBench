@@ -1,0 +1,106 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+This is a comprehensive evaluation comparing a C source file testing memory operations (stack, heap, static/global, memory functions) against its Ghidra decompilation. Key observations:
+- **Architecture mismatch**: Source compiled for arm64, but decompiled binary is x86
+- **Optimization discrepancy**: Source was `-O0` (debug), but decompiled code shows optimization artifacts
+- **LOC ratio**: 888 LOC source → 1558 LOC decompiled (1.75x expansion)
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic patterns like `iVar1`, `piVar1`, `puVar4`, `__ptr`, `pvVar1` with no semantic meaning. The loop variable in `local_array` is completely unresolved ("Unresolved local var: int i@[???]"), making it impossible to understand the iteration logic without significant effort.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions are correctly named (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`). However, internal functions like `FUN_00011030` remain unnamed, and some static helpers like `static_helper` are inlined and lost.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42) and `0x14` (20) appear without explanation. While some literals like array sizes (10, 2048) can be inferred, the decompiler doesn't recognize them as meaningful constants that should be named.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution includes: 15+ "WARNING" comments about unknown calling conventions, unresolved local variables marked with `@[???]`, stack canary checks (`__stack_chk_fail_local`) inserted throughout, and injected thunk functions (`get_pc_thunk_bx`). This makes the code nearly unreadable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control structures are preserved, but loop constructs are problematic. In `local_array`, the loop uses pointer arithmetic (`piVar1 != local_10`) instead of a clear for-loop. The VLA and alloca functions have convoluted stack setup code that obscures the actual logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the source. Each test function (`test_stack_memory`, `test_heap_memory`, etc.) is separate and cohesive. No excessive inlining or outlining artifacts observed at this level.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but early returns and the stack canary checks create non-linear jumps. The VLA function `vla_stack` has complex pointer arithmetic that disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: In `heap_basic`, the loop is unrolled with stride 2 (`iVar1 * 2`) instead of the original `i++`. This optimization artifact makes the code harder to understand. Some dead code from register spills may be present.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined1`, `undefined4`, `undefined1*` everywhere instead of specific types. Function pointers use `_func_int_int*` which is auto-generated. The `in_GS_OFFSET` hack for stack canary is exposed rather than hidden.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Structures `Node` and `TreeNode` are correctly identified with proper field names (`data`, `next`, `left`, `right`). However, the `Point` struct in `local_struct` was optimized away (inlined to `x * 3`), and the `Point` typedef used in heap operations shows as `void*`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present: in `heap_basic`, pointer arithmetic uses `int` instead of `size_t` for offsets (`(int)__ptr + iVar1 * 2`). The `memop_unaligned_access` uses unsafe cast `*(int *)(buf + 1)`. However, most memory operations are reasonably safe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are almost entirely auto-generated warnings ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block"). No useful algorithm explanations or decompilation confidence indicators. The "WARNING: Subroutine does not return" is misleading for normal functions with stack canaries.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard patterns like malloc/free pairs, linked list traversal, and tree operations are recognizable but not explicitly named or documented. The memory leak pattern in `memory_leak` is not flagged as such.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Ghidra correctly flags unresolved local variables with `@[???]` and unknown calling conventions. The indirect function resolution failures are noted. However, the critical issue (architecture mismatch) is not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The null checks in heap functions (`if (__ptr == (void *)0x0)`) are present but not explained as contracts. Error return values (-1, -2) have no documentation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are implicit in the code but not documented. The callback pattern in `set_global_callback`/`call_global_callback` works but the relationship to `double_value` is not explained. Global variable usage is visible but not mapped.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (stack functions, heap functions, static functions, memory operations). Static functions like `static_helper` are correctly identified. However, the organization is flat with no namespace or module structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code references undefined symbols like `extern_global_var`, `extern_function`, `__gmon_start__`, `frame_dummy`, `__do_global_ctors_aux`. These external dependencies are not documented, making standalone compilation impossible without significant patching.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+1. **Variable naming**: Generic names like `iVar1`, `piVar1`, `__ptr` make code comprehension extremely difficult
+2. **Noise pollution**: 15+ WARNING comments per function create visual clutter obscuring actual logic
+3. **Type precision**: `undefined1`/`undefined4` types everywhere instead of specific types
+4. **Unresolved loop variables**: "Unresolved local var: int i@[???]" prevents understanding iteration logic
+5. **No contract documentation**: Preconditions/postconditions absent, making API usage unclear
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+Functions maintain proper granularity matching source. Test functions are logically separated and cohesive.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Generic variable names like `iVar1`, `piVar1`, `puVar4`, `__ptr` provide no semantic information about variable purpose, forcing analysts to trace usage patterns manually.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage**: When a variable is used as loop counter starting at 0, name it `i` or `index`; when used as size, name it `size` or `count`
+2. **Consolidate warnings**: Move compiler warnings to a separate section or use a cleaner annotation system instead of polluting each function
+3. **Recover loop constructs**: Instead of showing pointer comparison loops (`piVar1 != local_10`), reconstruct standard for/while loops with proper variable names

@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a0`, `ptr`, `v38`, `v40` throughout. The original source uses meaningful names like `x`, `arr`, `n`, `str`, `c`, `p`. For example, in `array_1d_stack`, the decompiled version uses `ptr` and `a1` while source uses `arr` and `n`. No semantic meaning is conveyed.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions are correctly named (`double_value`, `process_int`, `process_char`, `process_short`), but many remain as `sub_4008d4`, `sub_400904`, etc. The test functions are named correctly, but internal helper functions lack proper naming. The original source has all functions with descriptive names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with magic numbers like `4294967295` (0xFFFFFFFF), `4294967294` (0xFFFFFFFE), `65535` (0xFFFF), `40` (array stride), and `8` (pointer size). These are not explained. The original source has no magic numbers - all values are computed or named constants.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution. The floating-point functions (`__addtf3`, `__multf3`) are 600+ lines of incomprehensible code that should be library calls. Redundant casts like `(unsigned int)v0` appear repeatedly. The `process_float` function returns an uninitialized variable `v0`. The `process_double` function returns a string literal `"06 (struct_bitfields): %d\n"` instead of actual code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is preserved - loops become while loops, conditionals are if statements. However, some patterns are awkward: `array_2d_stack` uses pointer arithmetic `ptr += 11` instead of nested loops. The `array_3d` function has unrolled loops that are hard to follow. At -O0, this should be much cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are mostly separated correctly. The original source's test functions call the target functions appropriately. However, the floating-point library functions (`__addtf3`, `__multf3`) are included inline instead of being recognized as library calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with few forward jumps. The `array_complex_index` function has complex nested conditionals that disrupt flow. Some test functions have early returns that are appropriate.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in the floating-point functions - they contain massive amounts of dead code and duplicate expressions. The test functions compute values at compile time and print constants, which is reasonable for -O0 but creates visual clutter.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Mixed results. Integer types are generally `unsigned int` or `int` which is close. However, pointers are often `unsigned long` instead of proper pointer types. The `process_long` function uses `unsigned long` when source uses `long`. Function pointers are `unsigned long` instead of proper function pointer types. The `ptr_diff` function has bizarre type handling.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs are partially recovered with generic names like `struct_0`, `struct_1` with `field_0`, `field_1`, `field_8`. The original source has meaningful names like `Point3D {x, y, z}`, `Node {data, next}`, `TreeNode {data, left, right}`. Union types are not properly recovered - `union_type` treats it as `void*`. Bitfields are computed manually rather than reconstructed.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns. The `process_double` returns a string literal instead of a double. The `process_float` returns uninitialized memory. Many casts like `*((int *)(ptr + v2 * 4))` without proper type safety. The `ptr_func_simple` uses `goto a0` which is dangerous. Function pointers are called through `goto` instead of proper function call syntax.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments present. The decompiled code has no explanations of algorithms, parameter purposes, or return value meanings. The original source has extensive comments explaining each test case. Auto-generated function signatures like `extern unsigned long long g_413f88;` provide no context.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns are recognizable (loops, conditionals) but not named or explained. The original source uses specific patterns like linked list traversal, binary tree recursion, graph traversal with adjacency lists - these are not identified in the decompiled code.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of anomalies. The `process_float` returning uninitialized data is not flagged. The `process_double` returning a string is not flagged. The bizarre `double_value` implementation `(a0 * 2 | a0 >> 31) & 4294967294` is presented as correct without question.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source has clear contracts (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated"). The decompiled code provides none of this.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are present but relationships are unclear. The test functions call target functions but there's no documentation of who calls whom. Global variables like `g_413f88` are declared but their purpose is unknown. The callback relationship in `ptr_func_complex` calling `complex_callback` is not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are roughly grouped by type (data types, arrays, pointers, composites) but the file is a single monolithic block. The original source has clear section comments and logical grouping. No header files or API declarations are provided.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code would not compile. The `process_float` function uses an uninitialized variable. The `process_double` returns a string where a double is expected. The floating-point library functions are massive inline blobs that would not link properly. Many `extern` declarations are incomplete.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.1/10
+
+**Critical Defects:**
+- `process_float` returns uninitialized variable `v0` - completely broken
+- `process_double` returns string literal `"06 (struct_bitfields): %d\n"` instead of actual code - completely broken
+- `double_value` has incorrect implementation `(a0 * 2 | a0 >> 31) & 4294967294` instead of `x * 2`
+- `process_bool` has wrong logic: checks `0 >= a0` instead of `a0 > 0`, uses `~(a0) & 1` instead of `a0 % 2 == 0`
+- All struct fields are generic (`field_0`, `field_1`, `field_8`) losing original semantic names
+- Floating-point functions (`__addtf3`, `__multf3`) are 600+ lines of inline assembly instead of library calls
+
+**Best Quality Aspect:** Function Decomposition (7/10)  
+Functions are mostly separated correctly and maintain reasonable granularity. The test functions properly call target functions.
+
+**Most Needs Improvement:** Type System Fidelity (3.3/10)  
+Types are imprecise, composite types are not recovered with meaningful names, and there are severe type safety issues including broken functions.
+
+**Top 3 Recommendations:**
+1. Recognize and properly call floating-point library functions (`__addtf3`, `__multf3`) instead of inlining their implementations
+2. Recover struct field names from debug symbols or usage patterns (e.g., `field_0` → `data`, `field_8` → `next`)
+3. Fix broken function reconstructions - `process_float` and `process_double` produce completely incorrect output
+4. Add semantic variable naming by analyzing usage patterns (e.g., loop counter variables, array indices)
+5. Flag anomalies and uncertain reconstructions with comments rather than presenting broken code as correct

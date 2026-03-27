@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+The original source is a comprehensive C++ test file demonstrating object-oriented features (classes, virtual functions, templates, exceptions, RTTI). The decompiled output shows significant discrepancies from the metadata: the binary is x86 (not arm64) and appears compiled with optimization (functions return computed constants rather than executing logic). This fundamentally affects readability expectations.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (local_28, param_1, puVar1, piVar2, iVar3, sVar1, uVar2). None reflect semantic purpose - "local_28" should be "obj" or "simpleClass", "puVar1" should be "rttiBasePtr1".
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions retain original names (test_cpp_member_func, test_cpp_virtual_func), but many utility functions are generic (FUN_00011030, FUN_00011385). Template functions correctly show specialization (template_max<int>).
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Code is saturated with unexplained magic numbers: 0x125c (should be 4704), 0x3e9 (1000), 0x2a (42), 0x47 (71). No named constants or explanatory comments for any computed values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy pollution from WARNING comments ("Unknown calling convention", "Removing unreachable block", "This is an inlined function"). These auto-generated comments obscure logic rather than clarify it.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Since functions are reduced to constant returns, control flow is minimal. Where logic exists (test_cpp_exception shows throw), flow is readable. Optimization artifacts are present but expected given constant propagation.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are appropriately separated. However, FUN_00011385 appears to be a duplicate/thunk of test_cpp_constructor with confusing "unaff_retaddr" access. Template instantiations properly separated.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads linearly top-to-bottom. Most functions are simple return statements. No excessive forward jumps or goto usage.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: test_cpp_oo_features duplicates logic from test_cpp_rtti inline rather than calling the function. The strncpy/strlen pattern appears twice (test_cpp_member_func and test_cpp_oo_features) without extraction.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of "undefined4" instead of int. Function pointers use "code *" instead of proper signatures. Template types partially recovered (Container<int>, Container<double>).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery - all objects allocated via operator_new and accessed via raw pointer arithmetic. Container template partially reconstructed but fields accessed via offset (this + 0x28).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns: direct vtable calls via (*(code **)(*piVar2 + 4))(piVar2), raw pointer arithmetic (this + offset). No bounds checking visible. Mixed with some type-safe patterns.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only WARNING comments present (compiler artifacts, unreachable blocks). No explanation of algorithm logic, expected values, or what test functions verify. Decompilation confidence not indicated.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Virtual function calls recognized as vtable indirect calls, templates show specialization. But no explicit naming of patterns (vtable, RAII, factory). Lambda expressions not recovered at all.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: WARNING comments flag unknown calling conventions and unreachable blocks. However, no indication that functions returning constants are result of constant propagation (semantic anomaly). Indirect calls flagged but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that test functions have expected return values that could be documented as contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some relationships clear (call_virtual_func uses vtable). But test_cpp_oo_features duplicates test_cpp_rtti logic instead of calling it - no indication why. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by test case. Template instantiations grouped together. But initialization functions (_init, _GLOBAL__sub_I) interleaved with test code. Static functions not clearly scoped.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile - uses undefined types (EVP_PKEY_CTX, Init, undefined4). Missing includes. operator_new/operator_delete not declared. Many external references unresolved.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (local_28, puVar1, iVar3) - no semantic meaning recovered
+- All magic numbers unexplained (0x125c, 0x3e9, 0x2a) - should show computed values or named constants
+- No struct/class recovery - all objects accessed via raw pointer arithmetic
+- test_cpp_oo_features duplicates test_cpp_rtti inline instead of calling function
+- Heavy WARNING comment pollution obscures actual logic
+
+**Best Quality Aspect:** Code Linearization (scored 8/10)  
+The code generally reads top-to-bottom without confusing jumps, and control flow is straightforward where present.
+
+**Most Needs Improvement:** Literal Clarity (scored 2/10)  
+Magic numbers throughout (especially test function return values) are completely unexplained. A reader cannot understand why test_cpp_virtual_func returns 0x2a without cross-referencing source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - "local_28" used as SimpleClass object should be named "obj" or "simpleClass"
+2. Detect constant propagation results and annotate with computed value explanation (e.g., "// Computed: 10 + 34 + 4660 = 4704")
+3. Recover class structures from constructor patterns and vtable usage rather than showing raw operator_new/pointer arithmetic

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `a1`, `a2`) with no semantic meaning. For example, `param_opaque_predicate` uses `v1`, `v2`, `v3` instead of meaningful names like `predicate_result` or `gcd_value`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Most original function names preserved (`param_fake_branch`, `call_opaque_predicate`), but some are mangled with compiler suffixes (`param_division_by_zero.constprop.0`). Helper functions like `sub_104F0` have no semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5A` (XOR key) and `0x1Fu` appear without explanation. Some constants are folded away entirely (e.g., `call_fake_branch` returns literal `10` instead of showing computation).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present throughout - register variables (`v4`, `v5`), explicit type casts (`(__sighandler_t)`), and temporary variables from optimization. `param_vectorized_loop` has 17 temporary variables for a simple loop.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops converted to do-while patterns instead of for-loops (e.g., `param_tail_call_optimized`). Some functions show optimization artifacts like constant propagation that obscure original logic flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized, but some are over-optimized (`param_fake_branch` is empty, `call_fake_branch` returns constant). `test_obf_opt_edge` is 100+ lines and could be better decomposed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but complex functions like `divsi3_skip_div0_test` have excessive branching that disrupts flow. Forward jumps present in loop constructs.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Optimization artifacts create redundancy - `param_opaque_predicate` recalculates expressions that were constant-folded in source. `test_obf_opt_edge` duplicates decryption logic from `param_string_encryption`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - some functions use `size_t` correctly, others use generic `int`. `param_instruction_substitution` takes `unsigned int` but source used `int`. Pointer types often degraded to `int` (e.g., `param_null_pointer_deref(int a1)`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The bitfield struct in `param_implementation_defined` is completely optimized away (returns constant `44`). No struct definitions recovered - all composite types lost to optimization.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`int` to pointer in `param_null_pointer_deref`). Signal handler casts (`(__sighandler_t)`) are verbose but correct. No buffer overflow warnings despite obvious vulnerabilities in source.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments - only decompiler metadata ("Decompiled by IDA Pro"). No explanation of obfuscation techniques, optimization artifacts, or why `param_fake_branch` is empty.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. The GCD algorithm in `param_opaque_predicate` isn't identified. String decryption pattern not labeled. Tail-call optimization not noted.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 14 functions marked "FAILED to decompile" at end, but no warnings about optimization artifacts within functions. Empty function `param_fake_branch()` has no explanation why body is missing.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` doesn't note `a1 != 0` requirement). No postconditions or error condition documentation. Signal handler behavior unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Global variables (`jmp_buffer`, `encrypted_0`) referenced without context about their purpose.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Related functions (e.g., `param_*` and `call_*` pairs) not organized together. No header file or API documentation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 14 external functions failed to decompile (`__imp_puts`, `__imp_malloc`, etc.). Won't compile standalone without stubs. Architecture mismatch (source ARM64, decompiled ARM32).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+5+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (5+4+6)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                              4.73/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named based on semantic usage (e.g., `gcd_result`, `predicate_value`, `loop_counter`)
+- **`param_fake_branch()` is empty** - decompiler eliminated dead code without indicating original logic existed
+- **14 external functions failed to decompile** - no stubs provided for compilation
+- **Architecture mismatch** - source compiled for ARM64, decompiled as ARM32
+- **No comments explaining obfuscation techniques** - fake branches, opaque predicates, and string encryption patterns not identified
+
+### Best Quality Aspect: **Function Decomposition (7/10)**
+- Function boundaries mostly preserved with original names, maintaining logical separation between test cases
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no explanatory comments despite complex obfuscation techniques that require documentation to understand
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and annotate optimization artifacts** - When dead code is eliminated (like `param_fake_branch`), add comments explaining original structure existed
+2. **Infer semantic variable names from usage patterns** - Variables in GCD loops should be named `a`, `b`, `temp` not `v1`, `v2`, `v5`
+3. **Generate compilation-ready stubs for failed imports** - Instead of "FAILED to decompile", provide function declarations with appropriate signatures

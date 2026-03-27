@@ -1,0 +1,162 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses almost exclusively generic variable names: `param_1`, `param_2`, `param_3` for function parameters, and `iVar1`, `iVar2`, `uVar1`, `uVar2`, `auVar1`, `puVar2` for local variables. The original source used meaningful names like `a`, `b`, `c`, `x`, `sum`, `count`, `result`, `target`, `flag`. At -O0, the decompiler should have been able to infer these from debug symbols.
+
+### 2. Function Naming Quality
+**Score: 10/10**
+
+Nearly every function name matches the original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `nested_if_deep`, `if_elseif_chain`, `loop_for_fixed`, `loop_while`, `loop_dowhile`, `loop_nested`, `loop_break`, `loop_continue`, `goto_forward`, `goto_backward`, `ternary_op`, `recursion_factorial`, `duffs_device`, `state_machine`, `computed_goto`, etc. This is exceptional recovery.
+
+### 3. Literal Clarity
+**Score: 7/10**
+
+Most literals are clear: `0x3e9` (1001) for loop limit, `0x65` (101) for boundary checks, `0xffffffff` (-1) for error returns. However, some values like `0x14` (20) in `if_elseif_chain` and `0x2d` (45) in `loop_for_fixed` appear without explanation. The hex format sometimes obscures the actual values.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Significant noise artifacts present: NEON vector operations (`auVar1`, `NEON_ext`, `ZEXT816`) in `recursion_factorial` and `tail_recursion` obscure the simple recursive logic; stack protection checks (`___stack_chk_guard`) add boilerplate; `fsm_func_table` and `computed_goto` contain massive amounts of byte-manipulation code that appears to be decompilation artifacts rather than actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Most control flow is natural and matches source: `if/else`, `while`, `do-while`, `for` loops all properly recovered. However, `loop_for_fixed` and `loop_continue` show aggressive loop unrolling that makes the code nearly incomprehensible. The `goto_forward` and `goto_backward` are correctly handled. At -O0, this level of unrolling is unexpected.
+
+### 6. Function Decomposition
+**Score: 10/10**
+
+All functions from the original source are preserved with proper granularity. No inlining or outlining artifacts observed. Each function maintains its original responsibility: `sequential_ops` (3 lines), `single_if` (4 lines), `duffs_device` (complex but self-contained), etc.
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Most code reads top-to-bottom naturally. However, `loop_for_fixed` has deeply nested conditionals (6+ levels) that disrupt linear reading. Some forward jumps exist but are manageable. The `switch_small` uses a jump table (`CSWTCH_55`) which is appropriate.
+
+### 8. Redundancy Elimination
+**Score: 3/10**
+
+Severe redundancy in several functions. `recursion_factorial` contains repeated multiplication chains that could be a simple loop. `loop_for_fixed` has massive duplicated logic for handling different iteration counts. `loop_continue` has extensive NEON operations that duplicate simple arithmetic. Dead code appears in some functions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 7/10**
+
+Types are generally correct: `int`, `uint`, `bool`, `undefined4`, `undefined8` are used appropriately. However, heavy use of `undefined` types and `code*` for function pointers loses specificity. The original had `int (*f)(int)` but decompiler shows `code *UNRECOVERED_JUMPTABLE`. Signed/unsigned is mostly correct.
+
+### 10. Composite Type Recovery
+**Score: 1/10**
+
+No struct or union types recovered. The original source had `int matrix[3][4]` and `int arr[]` which are completely lost. The decompiler shows raw pointer arithmetic instead of array access. This is a critical loss for readability.
+
+### 11. Type Safety
+**Score: 6/10**
+
+Some unsafe operations present: `(*UNRECOVERED_JUMPTABLE)(param_2)` uses generic function pointer type; extensive pointer arithmetic in `duffs_device` without bounds checking; some implicit conversions between signed/unsigned. However, no severe violations that would cause undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+No comments present in the decompiled output. The original source had extensive comments explaining each control flow pattern (CF-L1-01 through CF-L3-10), test scenarios, and expected values. This complete absence of documentation severely impacts understandability.
+
+### 13. Idiom Recognition
+**Score: 2/10**
+
+Some patterns are implicitly present but not named: Duff's device is recognizable in `duffs_device`, state machine structure in `state_machine`, but no explicit pattern naming or explanation. The decompiler doesn't identify these as known idioms.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+The decompiler marks some items as `UNRECOVERED_JUMPTABLE` but provides no explanation of what this means or what the implications are. No flags for suspicious code, unusual patterns, or potential issues. The massive byte-manipulation code in `fsm_func_table` and `computed_goto` should have been flagged.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No preconditions, postconditions, or invariants recovered. The original had implicit contracts (e.g., `duffs_device` requires `n > 0`, `loop_while` handles `x=0` specially) that are not documented in the decompiled output.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 2/10**
+
+No explicit cross-references provided. The `test_control_flow_l1/2/3` functions clearly call other functions, but there's no documentation of call relationships, global variable usage, or callback patterns. The function pointer arrays in `call_func_ptr_array` and `large_jump_table` aren't explained.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Functions are grouped reasonably (test functions at end, helper functions together) but the massive file (2425 LOC) lacks organization. No logical grouping or separation into modules/sections. The original had clear section comments (CF-L1, CF-L2, CF-L3) that are lost.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+The code would not compile standalone. Missing declarations for external functions (`puts`, `__printf_chk`, `_setjmp`, `__longjmp_chk`), undefined types (`undefined4`, `undefined8`, `code`), and missing includes. The `jump_buffer` global is used but not declared.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 10 + 7 + 4) / 4 = 5.75
+L2_avg = (5 + 10 + 6 + 3) / 4 = 6.00
+L3_avg = (7 + 1 + 6) / 3 = 4.67
+L4_avg = (1 + 2 + 2 + 1) / 4 = 1.50
+L5_avg = (2 + 6 + 3) / 3 = 3.67
+
+Overall = (5.75 × 0.30) + (6.00 × 0.25) + (4.67 × 0.20) + 
+          (1.50 × 0.15) + (3.67 × 0.10)
+        = 1.725 + 1.5 + 0.934 + 0.225 + 0.367
+        = 4.75/10
+```
+
+**Overall Readability Score: 4.75/10**
+
+---
+
+### Critical Defects
+
+1. **Variable naming is unusable**: All locals are `iVar1`, `uVar2`, `auVar12` - at -O0 with debug symbols, this should be near-perfect
+2. **No struct/union recovery**: Array `int matrix[3][4]` and `int arr[]` completely lost to raw pointer arithmetic
+3. **No comments or documentation**: Zero explanation of algorithms, patterns, or intent
+4. **Excessive noise in recursive functions**: `recursion_factorial` and `tail_recursion` have massive NEON vector code that obscures simple recursion
+5. **No semantic pattern recognition**: Duff's device, state machines, callbacks not identified or explained
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (10/10)** - Nearly every function name matches the original source exactly, from simple functions like `sequential_ops` to complex ones like `duffs_device` and `computed_goto`. This is exceptional recovery.
+
+---
+
+### Most Needs Improvement
+
+**Semantic Transparency (1.5/10)** - The decompiled code has zero comments, no pattern recognition, no anomaly indication, and no contract recovery. This dimension scored lowest and severely impacts the ability to understand the code's purpose and behavior.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from debug symbols**: At -O0 with debug info (`-g`), parameter names like `a`, `b`, `c`, `x`, `sum`, `count` should be recovered. Local variables can be inferred from SSA form and usage patterns.
+
+2. **Recover composite types**: Detect array accesses (e.g., `*(int*)((char*)ptr + i*4)`) and reconstruct as `ptr[i]`. Identify struct layouts from field offsets and reconstruct with meaningful field names.
+
+3. **Add semantic annotations**: Include comments identifying known idioms (Duff's device, state machine, etc.), flag suspicious code patterns, and document implicit contracts (preconditions, postconditions). Even basic inline documentation would dramatically improve readability.

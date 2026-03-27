@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `iVar2`, `bVar1`, `pbVar3`) with no semantic meaning. Original source had meaningful names like `result`, `p1`, `p2`, `p3`, `encrypted`, `decrypted` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions retained original names (`param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`), but helper functions use generic names (`FUN_00100730`, `FUN_001008bc`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0xe1`, `0x30` appear without explanation. Original source had comments explaining constants (e.g., `"Hello" ^ 0x5A`, expected return values).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive "Unresolved local var" comments clutter every function. Multiple "WARNING: Removing unreachable block" and "Unknown calling convention" warnings add noise without aiding understanding.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loop structures partially preserved but often use `do-while` instead of `for`. Some functions overly simplified (`call_fake_branch` returns constant `10` directly instead of calling `param_fake_branch`).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but internal structure lost in some cases (`param_fake_branch` reduced to `return x;` losing the fake branch logic entirely).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Loop structures use standard patterns without excessive `goto` usage.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding occurred aggressively (`call_fake_branch`, `call_instruction_substitution` return pre-computed constants). Some redundant variable assignments in loop bodies.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char`, `size_t`) but unsigned/signed distinctions often lost. Pointer types generally correct but some casts to `ulong`, `byte` obscure original intent.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct in `param_implementation_defined` not recovered (shows as `anon_struct_4_3_4e909822 bitfield`). Arrays preserved but field names completely lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts visible (`(ulong)local_40`, `(byte)local_40[0]`). Pointer arithmetic present but no obvious buffer overflow patterns in decompiled output.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated "Unresolved local var" and "WARNING" comments present. No algorithm explanations, no API contracts, no documentation of original obfuscation intent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption pattern not named. No design pattern or algorithm recognition whatsoever.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "Unresolved local var" comments flag recovery issues. "WARNING: Subroutine does not return" present for `longjmp` calls. Inconsistent coverage across functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions inferred. Error conditions not documented despite signal handler presence.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variable usage (`div_zero_caught`, `jmp_buffer`) not clearly indicated. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order. Runtime functions (`_init`, `_start`, `_fini`) mixed with application code. No logical grouping by test category.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code compiles (per metadata) but has undefined references (`param_string_encryption::encrypted`). External dependencies not clearly documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+6+7+6)/4 = 6.25  × 0.25 = 1.56
+Level 3 (Type):        (6+4+6)/3 = 5.33    × 0.20 = 1.07
+Level 4 (Semantic):    (4+3+6+3)/4 = 4.00  × 0.15 = 0.60
+Level 5 (Contextual):  (5+4+6)/3 = 5.00    × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                                  5.23/10
+```
+
+**Overall Readability Score: 5.2/10**
+
+### Critical Defects
+- **Variable names completely generic** (`iVar1`, `iVar2`, `bVar1`) - original semantic names like `result`, `p1`, `p2`, `encrypted` entirely lost
+- **`param_fake_branch` logic eliminated** - function reduced to `return x;` losing the fake branch obfuscation demonstration entirely
+- **Struct/bitfield not recovered** - `param_implementation_defined` shows `anon_struct_4_3_4e909822` instead of proper struct with named fields
+- **No algorithm recognition** - GCD computation in `param_opaque_predicate` not identified, string decryption pattern unnamed
+- **Excessive "Unresolved local var" noise** - clutters every function without providing actionable recovery information
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Core test functions retained their original descriptive names, making it possible to identify which obfuscation technique each function demonstrates.
+
+### Most Needs Improvement
+- **Variable Naming Quality (3/10)** - Complete loss of semantic variable names makes understanding data flow extremely difficult; this is the most impactful readability issue.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement usage-based variable renaming** - Analyze how variables are used (e.g., `iVar1` used in multiplication context should suggest `multiplier` or `result`)
+2. **Recover obfuscation pattern semantics** - Detect and annotate common obfuscation patterns (fake branches, opaque predicates, instruction substitution) with explanatory comments
+3. **Reduce unresolved variable noise** - Either resolve local variables from debug info (`-g` flag present) or suppress repetitive "Unresolved local var" comments that add no value

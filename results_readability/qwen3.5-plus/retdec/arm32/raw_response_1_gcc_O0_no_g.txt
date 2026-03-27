@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: All parameters are generic (`a1`, `a2`, `a3`) losing semantic meaning (e.g., `sequential_ops` should have `a`, `b`, `c`). Local variables use `v1`, `v2`, `result` without indicating purpose like original `temp1`, `sum`, `count`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: All function names preserved exactly from source (`sequential_ops`, `nested_if_2`, `loop_for_fixed`). Names accurately reflect functionality and match original source perfectly.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `10`, `100`, `1000` appear without explanation. String literals stored as hex-encoded globals (`g1`, `g2`, `g3`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Redundant casts present (`(uint32_t)(int32_t)(bool)`). Global variables `g4-g8` used for register spilling artifacts. Some unnecessary type conversions obscure logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `switch_fallthrough` uses goto labels (`lab_0x10a64`) instead of fall-through semantics. `loop_break` uses pointer arithmetic instead of array access. Switch case ordering is unnatural (case 1 before case 0).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized with single responsibility. No inappropriate inlining detected. Parameter lists reasonable though generic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom but `switch_fallthrough` and `loop_multi_exit` have forward jump labels disrupting flow. Some unreachable labels present.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Switch statements assign `result` then immediately return (redundant). `loop_for_fixed` uses closed-form formula instead of loop (optimization artifact losing clarity).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t`, `uint32_t` consistently. Some sign mismatches (`uint32_t a1` where original had `int`). Pointer types generally correct but function pointer types degraded.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays handled as pointer arithmetic (`loop_break` uses `*(int32_t *)((int32_t)&v2 - 28 + 4 * v1)`). `jmp_buf` structure shown but overly verbose. No struct field names recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts between signed/unsigned. `call_func_ptr` and `call_func_ptr_array` lose function pointer semantics entirely (just return parameter). Pointer arithmetic in `loop_break` is unsafe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive Chinese documentation explaining each function's purpose, test cases, and difficulty level. Complete documentation loss.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition (state machine, recursion, Duff's device not identified). `duffs_device` completely broken - only shows switch with default case, losing the unrolled loop semantics entirely.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `UNREACHABLE` markers in `non_local_jump`. No indication of unresolved indirect calls. Function pointer degradation silent (`call_func_ptr` just returns `result` without warning).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n > 0`). No postconditions inferred. Error conditions not documented despite being in original comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but callback relationships lost (`process_with_callback` parameter `a3` should be function pointer). Global variable usage (`g1-g8`) not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file with prototypes at top. Related functions not grouped logically. Test functions mixed with implementation functions.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. Standard headers included. Some compiler-specific constructs (`_setjmp` with verbose struct initialization) may need adjustment.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+6+6)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (5+7+6+6)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (7+6+5)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.625/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Zero comments** - Original had extensive documentation explaining purpose, test cases, and difficulty; all lost
+- **Generic variable names** - `a1`, `a2`, `a3`, `v1`, `v2` obscure semantic meaning (should be `packet_size`, `sum`, `count`)
+- **Function pointer semantics lost** - `call_func_ptr` and `call_func_ptr_array` don't actually call functions, just return parameters
+- **Duff's device completely broken** - Shows only switch with default case, losing the famous loop unrolling pattern entirely
+- **Array access degraded to pointer arithmetic** - `loop_break` uses `*(int32_t *)((int32_t)&v2 - 28 + 4 * v1)` instead of `arr[i]`
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - All original function names preserved exactly, making it easy to identify each function's purpose from the name alone.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation despite original having extensive comments explaining purpose, test cases, and expected behavior for every function.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover debug symbol comments** - When `-g` flag is present, extract and preserve source comments and documentation in decompiled output
+2. **Infer variable names from usage patterns** - Analyze how variables are used (e.g., loop counters, accumulators) to suggest semantic names like `i`, `sum`, `count`
+3. **Flag function pointer degradation** - When function pointer calls cannot be resolved, add explicit warnings like `// WARNING: Function pointer call degraded - original target unknown`

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables are mostly generic (`v1`, `v2`, `result`, `temp`) obscuring semantic meaning. For example, `param_macro_constants` uses no named variables while original had `size` parameter clearly used.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation of original function names (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). Action-oriented naming clearly reflects purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (64, 512, 0xdef0, 282). String literals stored in hex-encoded globals (`g8`, `g9`) instead of readable constants. Original macros like `MAX_SIZE` lost.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) repeated in many functions. Global variable references for strings (`g8`, `g9`) add indirection. Some compiler artifacts present but manageable.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow uses natural if/else and for loops. `param_asm_clobber` correctly recovered loop structure from assembly. Some awkward patterns in `call_asm_multi_insn` with modulo comparisons.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Excellent granularity - each test function is separate with clear single responsibility. No monolithic functions. Parameter lists are reasonable and match original signatures.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with appropriate early returns. `param_memory_protection` has clear linear flow through mmap/mprotect/munmap sequence.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks duplicated across ~15 functions. Some redundant type casts (`(int64_t)`, `(int32_t)`) from compiler promotions not eliminated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good use of `int32_t`, `int64_t`, `uint32_t` matching original intent. Some degradation to generic `int64_t*` for pointers. `param_variadic_macro` correctly uses `uint32_t` for parameters.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in source, so recovery is N/A. Simple array access patterns recovered correctly (`*(int32_t *)(4 * i + arr)`). Pointer arithmetic visible but understandable.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(int64_t *)dst`, `(int32_t *)&v1`). Stack variable address-taking for array simulation in `call_asm_clobber` is questionable pattern.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Critical failure** - zero comments in decompiled code despite original having extensive documentation. No explanation of macro semantics, assembly behavior, or test expectations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition for common idioms (macro expansion, atomic operations). `__aarch64_ldadd4_acq_rel` not identified as atomic operation wrapper.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Assembly-to-C conversions presented confidently without indicating potential accuracy issues. `__asm_hint`, `__asm_ldaddal` undefined.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `arr != NULL` for `param_asm_clobber`). No postconditions or error condition documentation. Original test expectations lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph clear through preserved names. Global variables (`g1`-`g29`) have opaque names losing semantic meaning. String globals should be named constants.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file matching original. No header file separation. Function prototypes listed at top but no logical grouping comments.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes present but references undefined functions (`__asm_hint`, `__asm_stlxr`, `__asm_ubfx`). Stack canary infrastructure requires runtime support. Would need stubs to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+9+5+6)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (7+7+6)/3   = 6.67 × 0.20 = 1.334
+Level 4 (Semantic):    (2+4+3+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+6+6)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.98/10
+```
+
+**Overall Readability Score:** 6.0/10
+
+### Critical Defects:
+- **Zero comments** despite original having extensive documentation explaining macro semantics and test expectations
+- **Generic variable names** (`v1`, `v2`, `result`) obscure parameter purposes (e.g., `size` in `param_macro_constants`)
+- **String literals stored as hex-encoded globals** (`g8`, `g9`) instead of readable constants
+- **Magic numbers without explanation** (64, 512, 0xdef0, 282) where original had named macros (`MAX_SIZE`, `BUFFER_COUNT`)
+- **Undefined assembly helper functions** (`__asm_hint`, `__asm_ldaddal`) prevent standalone compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Original function names perfectly preserved, making code navigation and purpose identification excellent
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation loses all semantic context about macro behavior, test expectations, and assembly semantics
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Extract debug info (`-g` flag) to restore original documentation explaining macro semantics and test purposes
+2. **Infer variable names from usage patterns** - Analyze parameter usage to suggest semantic names (e.g., `size` for comparison against threshold, `counter` for atomic operations)
+3. **Replace magic numbers with named constants** - Detect repeated literals and suggest constant definitions (e.g., `MACRO_CONSTANT_RESULT_1 = 64`, `MACRO_CONSTANT_RESULT_2 = 512`)

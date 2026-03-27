@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables are mostly generic (`v0`, `v1`, `v2`, `result`) rather than semantic. For example, `param_dynamic_code` uses `v1`, `v2`, `v3`, `v4` instead of `page_size`, `exec_mem`, `code_ptr`, `function_result`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`param_macro_constants`, `call_asm_basic`, `param_token_paste`). Only startup functions like `sub_1020` use generic names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `1025`, `57072`, `282`, `-1065092983`. Original macros like `MAX_SIZE`, `BUFFER_COUNT` are completely lost, replaced with raw values.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output without excessive compiler artifacts. Some warnings present ("local variable allocation has failed", "positive sp value has been detected") but don't severely impact readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but complex functions use awkward patterns like `if ( !(v1[16] ^ 0x48 | v1[20] ^ 0x6F) )` instead of clear character comparisons.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match original source well. No inappropriate inlining or fragmentation. Each function maintains single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Some complex functions (`call_asm_simd`, `test_asm_features`) have awkward variable allocation patterns that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding removes actual computation logic. Caller functions like `call_macro_constants()` return `64` directly instead of showing `param_macro_constants(2048)` call.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, size_t, void*), but generic `__int64` used frequently. SIMD types (`__m128i`) correctly recovered. Pointer types sometimes unclear (`_DWORD *`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited structs in source, but SIMD vector types preserved correctly. Array handling reasonable. No significant pointer-to-struct degradation observed.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(_DWORD *)-1LL`, `(__int64 (__fastcall *)(_QWORD))`). Pointer arithmetic in memory operations lacks clarity about safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Original source had extensive documentation about macro behavior, preprocessing, and expected values—all lost in decompilation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition. Macro expansion patterns, conditional compilation branches, and stringization operations not identified or documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("local variable allocation has failed") but don't explain implications. No indication that conditional compilation branches were lost.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or expected value ranges documented. Original comments like "期望: 64" completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. No call graph or dependency information. Global variable usage (`global_var`) somewhat clear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source, but no logical grouping or section markers. Original section comments (5.2, 5.3) lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 9 external functions marked "FAILED to decompile" (printf, mmap, mprotect, etc.). Code will not compile standalone without significant stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+4+7)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (6+8+7+5)/4 = 6.50 × 0.25 = 1.63
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.27
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.76/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects
+- **Constant folding eliminated semantic logic**: Functions like `call_macro_constants()` return `64` directly instead of showing the actual call to `param_macro_constants(2048)`, losing all computation context
+- **Macro semantics completely lost**: Named constants (`MAX_SIZE`, `BUFFER_COUNT`, `SQUARE`) replaced with magic numbers (1024, 16, 64) without any indication of original macro names
+- **Conditional compilation branches invisible**: `param_conditional_compile()` only shows release branch (`3*x+2`); no indication DEBUG_MODE branch ever existed
+- **Zero documentation recovery**: Original source had extensive comments explaining preprocessing behavior, expected values, and test purposes—all absent in decompiled output
+- **Metadata inconsistency**: Decompiled header claims "IDA Pro 9.1" but metadata states "Ghidra 12.0"; binary path shows `clang_O3_g` but source metadata claims `gcc -O0 -g`
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Function names are accurately preserved from source, maintaining semantic meaning across the entire codebase
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding the purpose of complex operations nearly impossible without referring to original source
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover macro semantics from debug symbols**: When `-g` flag is present, extract macro definitions and constant names from DWARF debug info to replace magic numbers with named constants
+2. **Preserve caller computation logic**: Avoid aggressive constant folding in caller functions; show actual function calls even when arguments are constant to maintain semantic transparency
+3. **Generate semantic comments from debug info**: Use function names, variable debug symbols, and source line mappings to auto-generate explanatory comments indicating original intent and expected behavior

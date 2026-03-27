@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Variables use completely generic names like `param_1`, `param_2`, `iVar1`, `iVar2`, `piVar1`, `local_4e8`, `auStack_48c`. These provide zero semantic information about the variable's purpose (e.g., should be `x`, `y`, `sum`, `count`).
+
+### 2. Function Naming Quality
+**Score: 7/10**
+Justification: Most function names match source exactly (`process_char`, `process_short`, `array_1d_stack`, `ptr_single`). Some test functions have slightly different names but remain recognizable. Minor loss in helper functions.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Magic numbers like `0x61` ('a'), `0x62` ('b'), `0xb` (11), `0x14` (20) appear without explanation. Floating-point constants like `0x3fc00000` are unexplained. Some computed values in test functions show results directly.
+
+### 4. Noise Reduction
+**Score: 4/10**
+Justification: Significant decompiler artifacts present: "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call". Many compiler helper functions (`__muldf3`, `__adddf3`, `__mulsf3`) clutter output.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+Justification: Loops use do-while with counter decrement pattern (e.g., `param_2 = param_2 + -1`) instead of idiomatic for/while. At -O0 this is unexpected. Some switch statements converted to lookup tables (`enum_switch` uses `&DAT_000124f8 + param_1 * 4`).
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions maintain appropriate granularity matching source. Each function has single responsibility. No over-fragmentation or monoliths. Parameter counts match original signatures.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Generally reads top-to-bottom. Early returns used appropriately. Some forward jumps in complex functions like `array_complex_index` but manageable. Nested loops in `array_3d` and `graph_traverse` are traceable.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No significant dead code. Some loop unrolling visible in test functions but minimal. Common subexpression elimination not excessive. Code is reasonably clean.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Generic `int` used throughout instead of specific types. Function pointers typed as `code *` or `undefined4 *` losing signature info. `bool` recovered correctly. `ushort` used for bitfields. Mixed precision.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+Justification: All structures lost - accessed via pointer arithmetic: `param_1[1] + *param_1 + param_1[2]` for 3-field struct. No field names recovered. Unions not distinguished from structs. Nested structures use raw offsets like `param_1 + 0x14`.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Some unsafe casts present (e.g., `(int *)*param_1`). Pointer arithmetic explicit but potentially unsafe. No `const` correctness in decompiled output. Type-confused function pointers present (`code *UNRECOVERED_JUMPTABLE`).
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Only decompiler header comments present. No algorithm explanation, no @param/@return documentation. Test function output strings preserved but no logic documentation. Auto-generated warnings dominate.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some patterns recognizable: linked list traversal (`param_1[1]` as next pointer), array iteration patterns. No explicit pattern naming or documentation. Basic structure visible but not highlighted.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+Justification: Decompiler flags unreachable blocks and unrecovered jumptables. "UNRECOVERED_JUMPTABLE" named appropriately. Some uncertainty expressed. However, some incorrect code presented confidently (e.g., `process_float` returns void).
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No precondition/postcondition recovery. No NULL check documentation. No invariant recognition. Error conditions not documented. Completely absent.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function calls are explicit and clear. No documentation of callers/callees. Global variable usage not documented. Callback relationships not explained.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Functions grouped logically (data types, arrays, pointers, composites, tests). Static functions properly scoped. No header file structure recovered. Reasonable but not optimal.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+Justification: Code would not compile standalone - missing includes, external declarations. Dependencies (libc functions) not documented. Type mismatches (returning void for float functions). Some patching required.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 avg: (2+7+4+4)/4 = 4.25
+Level 2 avg: (6+8+7+7)/4 = 7.00
+Level 3 avg: (5+3+5)/3 = 4.33
+Level 4 avg: (3+5+6+2)/4 = 4.00
+Level 5 avg: (5+6+5)/3 = 5.33
+
+Overall = (4.25 × 0.30) + (7.00 × 0.25) + (4.33 × 0.20) + (4.00 × 0.15) + (5.33 × 0.10)
+        = 1.275 + 1.75 + 0.866 + 0.60 + 0.533
+        = 5.02/10
+```
+
+### Overall Readability Score: 5.0/10
+
+### Critical Defects
+- **Variable naming**: All variables use generic names (`param_1`, `iVar1`, `local_4e8`) providing zero semantic information about purpose
+- **Struct recovery failure**: All composite types lost - accessed as raw pointer arithmetic (`param_1[1] + param_1[2]`) with no field names
+- **Type precision loss**: All types generic `int` instead of specific types (short, long, size_t)
+- **No contract recovery**: Zero preconditions, postconditions, or invariants documented
+- **Excessive noise**: Warning messages about unreachable blocks and unrecovered jumptables clutter output
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions maintain appropriate granularity matching source exactly. Each function has single responsibility with correct parameter counts - the decompiler preserved the original function boundaries well.
+
+### Most Needs Improvement: Variable Naming (2/10)
+Every variable uses cryptic generic names. At -O0 with debug symbols, the decompiler should infer meaningful names from usage patterns. `param_1` should be `x` or `c`, `iVar1` should be `sum` or `result`.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage**: At -O0, analyze SSA form to determine variable purpose (loop counter, accumulator, buffer pointer) and assign semantic names
+2. **Recover struct layouts**: Detect regular memory access patterns to reconstruct struct fields with meaningful names instead of array indices
+3. **Add semantic comments**: Document algorithm intent, preconditions, and key decisions (e.g., "// Converts uppercase to lowercase by adding 32")

@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar5`, `uVar1`, `local_30`, `__ptr`) obscuring semantic purpose. Original names like `buffer`, `ptr`, `sum`, `fd` are lost. Only `__stream` for FILE pointer shows meaningful naming.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions preserved well (`param_strcpy`, `thread_compute`, `param_mutex_lock`). However, helper functions like `FUN_001012e0`, `FUN_001017fc` are auto-generated with addresses, losing semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xffffffff` (-1), `0x38`/`0x39` (syscall numbers), `0x1b6` (file permissions). String literals preserved well, but numeric constants lack explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Frequent "WARNING: Unknown calling convention" and "Unresolved local var" comments clutter output. Compiler artifacts like `__aarch64_have_lse_atomics` checks remain visible without abstraction.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_malloc_free` shows aggressive loop unrolling obscuring original simple for-loop. Signal handling loops use convoluted boolean checks (`bVar1`, `bVar2`) instead of clean while conditions.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but `thread_sum` optimized into mathematical formula losing original loop semantics. Some functions expanded significantly due to inlining.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `param_malloc_free` has complex branching for size cases. Forward jumps in signal handling loops disrupt natural flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling in `param_malloc_free` and `param_memset` creates 8+ similar variable assignments (`iVar8` through `iVar15`). Significant redundancy from optimization artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many types degraded to generic `int`, `void*`, `char*`. `atomic_int` becomes `int` in `thread_atomic_load_store`. `size_t` sometimes preserved, sometimes not. Original type precision significantly lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `sockaddr` struct fields named generically (`sa_data[0]` through `sa_data[0xd]`). `ThreadData` struct not recovered—fields accessed via offset (`(long)arg + 4`, `(long)arg + 8`). TLS accessed via raw offset (`lVar3 + 0x10`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts pervasive: `(ulong)(uint)x`, `(int)sVar1`, `(char *)0xffffffffffffffff`. `atomic_counter` accessed directly without atomic operations in `thread_atomic_load_store`. Pointer arithmetic without type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings ("Unresolved local var", "WARNING: Subroutine does not return"). No algorithm explanations, no API contracts. Original had extensive semantic comments completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions recognized (`strcpy`, `strlen`, `printf`). Atomic operations recognized but named generically (`__aarch64_ldadd4_acq_rel`). No design pattern identification.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "WARNING: Subroutine does not return" for `_exit` present. "Unresolved local var" indicates decompilation uncertainty. Some anomalies flagged but not comprehensively explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"). No postcondition inference. Error conditions not documented. Original comments about expected return values completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`signal_received`, `atomic_counter`, `shared_counter`) used without context. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 75 functions in single output file. No logical grouping by section (standard library vs. syscalls vs. threads). Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External function calls present (`pthread_create`, `printf`, `syscall`) but type definitions missing. Would require significant stubs and header files to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (3+5+6+2)/4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.85/10
+```
+
+**Overall Readability Score:** 4.85/10
+
+### Critical Defects:
+- Variable `iVar5`, `uVar1`, `local_30` should be named based on usage (e.g., `sum`, `size`, `buffer`)
+- `ThreadData` struct not recovered—fields accessed via raw offset arithmetic losing semantic meaning
+- Magic numbers `0x2a`, `0x38`, `0x1b6` lack explanation or constant definitions
+- `atomic_counter` accessed without atomic operations in `thread_atomic_load_store` function
+- No contract documentation for preconditions (null checks) or expected return values
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved from source (`param_strcpy`, `param_mutex_lock`, `thread_compute`), maintaining semantic intent for primary entry points.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - Complete absence of precondition/postcondition documentation; original source had extensive comments about expected values and error conditions that are entirely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable renaming** - Analyze variable usage patterns to infer semantic names (e.g., variables used in size comparisons should be named `size`, `length`, `count`)
+2. **Recover struct definitions from access patterns** - Detect consistent offset access patterns to reconstruct `ThreadData`, `sockaddr_in` with meaningful field names
+3. **Add contract inference from error handling** - Detect null checks, return value validation, and generate precondition/postcondition comments automatically

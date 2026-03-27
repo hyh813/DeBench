@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names `a0`, `a1` instead of semantic names like `dst`, `src`. Local variables are `v0`, `v1`, `v2` - completely obscuring their purpose as `len` or `result`. Compare to source which uses meaningful names throughout.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core test functions correctly recovered: `param_strcpy`, `call_strcpy`, `param_strlen`, `call_strlen` all match source exactly. However, some internal functions like `sub_402020` remain unnamed. The primary API functions are well-named.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals like "HelloLib", "Value: %d, Name: %s\n" preserved correctly. However, error return values use magic number `4294967295` (0xFFFFFFFF) without explanation. The constant `8` for buffer size in `strncpy(v0, "HelloLib", 8)` is unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Some redundant assignments like `v0 = v2; v0 = v7;` but no excessive register spilling noise. The code is relatively clean for a decompilation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - loops properly recognized as do-while constructs, conditionals are clear. Example: `do { v2 += *((char *)a0 + v1); v1 += 1; } while (n != v1);` correctly represents the verification loop. No goto abuse.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-50 lines typical). `param_strcpy` is 3 lines - perfect. `param_malloc_free` at ~25 lines is reasonable. Parameter lists are clean, not exposing implementation details.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some early returns present (e.g., `if (!fp) return 4294967295;`). Minor forward jumps but flow is traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant expressions like `v0 = v3; v0 = a1;` in `param_mutex_lock`. Loop unrolling is minimal. No significant dead code. Acceptable for -O0 decompilation.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Parameters correctly typed as `char *a0, char *a1` for string functions. Return types mostly accurate (`long long` for length functions). Some `unsigned long long` vs `long long` mismatches. Minor type erasure but functional.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Basic structs defined (e.g., `struct sockaddr`). Some struct definitions are incomplete placeholders like `typedef struct FILE { } FILE;`. Thread data structures not fully recovered - uses raw pointer arithmetic.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: `*((char *)a0 + v1)` pointer arithmetic, `*(int*)*((long long *)&v2)` double dereference. Could lead to undefined behavior. Minor bonus for some type annotations like "Other Possible Types".
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **No comments present in decompiled output.** Zero explanation of algorithm intent, parameter contracts, or return value semantics. Compare to source which has extensive documentation. This severely impacts readability.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library calls correctly identified (`strcpy`, `strlen`, `memcpy`, `pthread_create`). Some patterns like condition variables recognized but not named. No explicit pattern documentation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some "Other Possible Types" annotations present (e.g., `char v0[8]; // [bp-0x28], Other Possible Types: unsigned long long`). However, no explicit anomaly flags for indirect calls or suspicious code. Silent on potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: **No preconditions, postconditions, or invariants documented.** Source has explicit return value expectations (e.g., "期望: 8") but decompiled code provides none. No error condition documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear (`strcpy(a0, a1)`). External dependencies noted via `extern` declarations. However, no documentation of who calls whom or global variable usage. Basic call graph inferable but not explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - standard library tests, system calls, thread tests. Static functions properly scoped. Related functions (param_* and call_*) are paired. Reasonable organization matching source structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Has `extern` declarations for external symbols. Uses standard C constructs. Would require linking against libc, libpthread. Some type stubs needed. Generally compilable with minor patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming uses generic `a0`, `a1`, `v0`, `v1`, `v2` instead of semantic names like `dst`, `src`, `len`
+- **Zero comments** in entire decompiled output - no algorithm explanation, no parameter documentation
+- No contract recovery - preconditions, postconditions, and error conditions undocumented
+- Magic number `4294967295` used throughout for error returns without explanation
+- Type safety issues with unsafe pointer arithmetic and double dereferences
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- Loops and conditionals properly recognized; code structure matches source logic flow
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+- Complete absence of comments severely impacts understanding of algorithm intent, parameter contracts, and return value expectations
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a0` used as destination in `strcpy(a0, a1)` should be named `dst`; `a1` used as source should be `src`
+2. **Add semantic comments**: Document function purpose, parameter contracts, and return value expectations (e.g., "// Returns: string length in bytes")
+3. **Replace magic numbers with named constants**: `4294967295` should be explained as error return or -1 cast to unsigned

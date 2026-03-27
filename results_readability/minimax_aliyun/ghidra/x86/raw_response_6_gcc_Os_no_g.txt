@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy` (and related functions)
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and locals use stack offsets (`local_10`, `local_30`, `local_38`). The original `dst` and `src` are completely lost. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names match source (`param_strcpy`, `call_strcpy`, `param_strcmp`). However, some internal functions have cryptic names like `FUN_00011030`. The naming is mostly preserved which helps understand the code structure.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x2a` (42), `0x14` (20), signal numbers `10` and `14` instead of `SIGUSR1`/`SIGALRM`. The literal "HelloLib" is preserved but most string constants are shown as `&DAT_00014015` without meaningful labels.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy compiler artifacts present: `__stack_chk_fail_local()` calls, `get_pc_thunk_bx` injections, WARNING comments about unreachable blocks. Many "WARNING: Function: ... replaced with injection" comments clutter the output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow (if-else, while loops) is natural. However, some patterns are awkward like the ternary expression in `param_strcmp`: `iVar2 = -(uint)(iVar1 != 0);` which obscures the original logic of returning -1, 0, or 1.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and decomposed. Each test function (`call_strcpy`, `call_strcmp`) is separate from its implementation (`param_strcpy`, `param_strcmp`). However, some functions like `call_memcpy` are 40+ lines with mixed responsibilities.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. However, some complex nested conditionals in functions like `param_fread_fwrite` and `param_signal_handling` create deep nesting that disrupts linear flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some loop unrolling visible in `call_memcpy` and `call_memcmp` where data is copied element-by-element instead of using the underlying `param_memcpy`. This is a -O0 binary so optimization artifacts are unexpected.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: **Critical defect**: `param_strcpy` returns `void` instead of `int` - the return value `strlen(dst)` is completely discarded! Parameters use `undefined4` instead of `int`, `char*`. The `const` qualifier on `src` parameter is lost. Many return types are `undefined4` instead of proper types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery visible. The `ThreadData` struct used in `param_pthread_join` is completely lost - it's accessed as raw array offsets (`local_50[iVar5 * 3 + 5]`). FILE* is used correctly in some places but sockaddr is partially reconstructed with generic field names.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe pointer arithmetic in thread functions. The `thread_tls_test` uses `in_GS_OFFSET[-9]` which is cryptic and potentially unsafe. However, basic operations like strcpy/strlen are type-correct.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only WARNING comments from decompiler present (e.g., "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection"). No meaningful comments explaining algorithm intent, preconditions, or return value semantics. The `param_strcpy` return value loss is completely undocumented.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard library functions (strcpy, strlen, strcmp, memcpy, memcmp, fopen, pthread_create) are correctly recognized. The signal handling pattern with signal/raise/alarm is identifiable. However, the ternary normalization in strcmp/strncmp is not recognized as a semantic pattern.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: WARNING comments flag some anomalies (inlined functions, unreachable blocks). However, the critical anomaly of lost return value in `param_strcpy` is not flagged. The architecture mismatch (x86 decompiled from ARM64 source) is not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The contract of `param_strcpy` (returns string length) is completely lost without any indication. No error condition documentation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are implicit through direct calls but not documented. No indication that `call_strcpy` calls `param_strcpy` or that `thread_compute` is a pthread entry point. Global variables like `signal_received`, `shared_counter` are used without explaining their roles.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (test functions, param functions, thread functions). However, the organization is flat with no namespace or module structure. Static functions are not distinguished from externals.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: **Critical defect**: Code will NOT compile standalone. Many undefined types: `FILE`, `pthread_t`, `pthread_mutex_t`, `sockaddr`. Undefined functions: `__printf_chk`, `__stack_chk_fail_local`, `__isoc99_sscanf`. The decompiled code requires significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+1. **Lost return value**: `param_strcpy` returns `void` instead of `int` - the `return strlen(dst)` is completely discarded
+2. **Type degradation**: Parameters use `undefined4` instead of proper types; `const` qualifiers lost
+3. **No struct recovery**: `ThreadData` struct accessed via raw offsets (`local_50[iVar5 * 3 + 5]`)
+4. **Uncompileable code**: Missing declarations for `FILE`, `pthread_t`, `__printf_chk`, etc.
+5. **Generic variable names**: All parameters are `param_1`, `param_2` - original `dst`/`src` lost
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+Most function names match the original source (`param_strcpy`, `call_strcpy`, `param_strcmp`), making it possible to identify the intended functionality.
+
+**Most Needs Improvement:** Type System Fidelity (3.3/10)  
+The type system is severely degraded - return types wrong, const lost, no struct recovery, uncompileable due to missing type declarations. This is the most severe degradation area.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Preserve return values**: Detect when functions have return statements and ensure they're not discarded (the `strlen(param_1)` call result was completely lost in `param_strcpy`)
+2. **Recover struct types**: Analyze stack frame access patterns to reconstruct composite types instead of showing raw offsets like `local_50[iVar5 * 3 + 5]`
+3. **Add type declarations**: Generate proper includes for standard types (FILE, pthread_t, size_t) and function prototypes so code can compile standalone

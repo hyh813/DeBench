@@ -1,0 +1,119 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+The target function `param_strcpy` from the original source:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+Decompiled version:
+```c
+int32_t param_strcpy(char * dst, char * src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+This specific function is actually well-decompiled. However, I must evaluate the entire decompiled output (2067 LOC) against the full source (1174 LOC).
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: The decompiled code extensively uses generic variable names like `v1`, `v2`, `v3`, `mem`, `result`, `a1`. While some globals like `signal_received`, `shared_counter`, and `atomic_counter` match the source, the majority of local variables lack semantic meaning, making it difficult to track their purpose through complex functions.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: User-defined functions like `param_strcpy`, `call_strcpy`, `param_mutex_lock` are correctly named. However, 100+ functions use mechanical address-based names (e.g., `function_13c0`, `function_14d0`, `function_1680`). The decompiler failed to recover meaningful names for standard library wrappers and internal functions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: The code contains numerous unexplained magic numbers: `0x140000000a` (line 106), `0x200000001` (line 127), `66` for open flags, `16` for sockaddr size, `18` for data length. While some string literals are preserved, the pervasive use of raw numeric values obscures their semantic meaning (e.g., `*(int64_t *)0x14fe0 == 0`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: The output contains significant compiler artifacts including: `__stack_chk_fail()` calls, `__asm_` intrinsics (`__asm_stlr`, `__asm_ubfx`, `__asm_mrs`), complex bit manipulation expressions (`v5 = v7 & 0xffffffff`), and redundant stack checks (`if (*(int64_t *)g2 == *(int64_t *)g2)`). These add noise but don't completely obscure the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is readable with natural loops and conditionals. However, some goto-based jumps exist (e.g., `goto lab_0x2c84`), and the pthread_join function uses complex labeled goto patterns that make execution flow difficult to trace. At -O0, this level of control flow disruption is unexpected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized with clear single responsibilities. The decompiler correctly separated user functions from library wrappers. However, some functions like `param_pthread_join` (100+ lines) are overly complex, and the parameter lists expose implementation details (e.g., `(int64_t * (*)(int64_t *))((int64_t)&g1 + 2348)` for function pointers).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom without excessive forward jumps. The main issues are: deep nesting in some functions (e.g., `param_fread_fwrite` has 4+ levels), and the goto-based state machines in `param_pthread_join` and `param_thread_local_storage` that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some loop unrolling is present but not commented (e.g., in `param_malloc_free`). The code has redundant stack checks (`if (*(int64_t *)g2 == *(int64_t *)g2)`) appearing in nearly every function. Dead code elimination is generally good, but the combination of uncommented optimizations and redundant checks creates readability issues.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: The decompiler uses `int32_t`, `int64_t`, `uint32_t` appropriately. However, `const` correctness is lost (src parameter should be `const char *`). Some parameters use generic types where more specific ones could be inferred (e.g., `int64_t a1` instead of `size_t` for size parameters).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: The decompiler recovered struct definitions (`struct _IO_FILE`, `struct shmid_ds`, `struct sockaddr`, `struct stat`) but all field names are generic (`e0`, `e1`, `e2`, etc.). The struct layouts are present but lose all semantic meaning - a developer cannot tell that `struct stat.st_size` is the file size without cross-referencing.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns exist: `(int32_t *)&buffer` cast for file descriptors, `(int64_t *)` casts throughout for pointer arithmetic, function pointer type confusion (`(int64_t * (*)(int64_t *))((int64_t)&g1 + 2348)`). The code has numerous type punning operations that could lead to undefined behavior.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 7/10  
+Justification: Each function includes address ranges (e.g., `// Address range: 0x1bc0 - 0x1be8`) and source line mappings (e.g., `// Line range: 45 - 49`). This is useful for debugging but provides no semantic insight. The comments are auto-generated and don't explain algorithm intent or recovery confidence.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions are correctly identified (strcpy, strlen, pthread_create, etc.). However, design patterns like producer-consumer, thread pools, and TLS are not explicitly named or documented. The decompiler sees the patterns but doesn't communicate them.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No explicit anomaly marking exists. Indirect calls that couldn't be resolved are presented as raw function pointer arithmetic without warnings. The code confidently presents potentially incorrect interpretations (e.g., `signal(SIGBUS, ...)` instead of `SIGUSR1` in `param_signal_handling`).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition, postcondition, or invariant documentation exists. The decompiler doesn't infer that `param_fopen_fclose` requires a valid file path or that `param_mutex_lock` requires `thread_count > 0`. Error handling is present but not explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are syntactically clear, but relationships aren't documented. There's no indication which functions call `param_strcpy` or what role each function plays in the overall program. The call graph must be inferred from the code.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped: standard library wrappers first, then test functions, then main. Static functions are properly scoped. However, the file is monolithic (2067 lines in single output) with no header separation.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code includes all necessary headers and should compile with gcc. Function prototypes are declared. Minor issues include some incorrect function signatures (e.g., `param_strlen` takes `int64_t a1` instead of `const char*`). The code is close to being standalone-compilable.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- **Function naming**: 100+ functions use address-based names (`function_13c0`) instead of semantic names
+- **Variable naming**: Generic names like `v1`, `v2`, `v3`, `mem`, `result` dominate, obscuring purpose
+- **Struct field loss**: All recovered structs use generic field names (`e0`, `e1`) losing semantic meaning
+- **Magic numbers**: Pervasive unexplained literals (0x140000000a, 66, 18) without constants
+- **Anomaly silence**: Incorrect signal handling (SIGBUS vs SIGUSR1) presented without warning
+
+**Best Quality Aspect:** Build System Compatibility (8/10)  
+The decompiled code includes proper headers and function prototypes, making it nearly standalone-compilable with minimal patching.
+
+**Most Needs Improvement:** Function Naming Quality (3/10)  
+The decompiler defaults to address-based naming for 100+ functions, making it nearly impossible to understand the codebase without cross-referencing the binary. This is the most severe readability barrier.
+
+**Top 3 Recommendations:**
+1. **Implement semantic naming inference**: Use string references, cross-module calls, and debug symbols to recover meaningful function names (e.g., `function_1680` → `pthread_create_wrapper`)
+2. **Recover struct field names**: Match struct layouts against known libc structures and use field names from those definitions
+3. **Add anomaly warnings**: Flag indirect calls, uncertain type reconstructions, and potential mis-identifications with confidence indicators

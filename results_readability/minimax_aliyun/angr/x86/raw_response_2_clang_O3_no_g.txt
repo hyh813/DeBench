@@ -1,0 +1,147 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `ptr`, `index`, `i`, `result`. Compare to source where variables have meaningful names like `x`, `sum`, `c`, `arr`, `n`. The decompiler provides no semantic inference - `v0` in `process_int` should be `x`, and `result` in `array_1d_stack` should be `sum`.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+
+Justification: Mixed results - some functions correctly recovered (`process_char`, `process_int`, `process_long`, `process_double`, `array_1d_stack`, `ptr_single`, `struct_simple`), but many have generic addresses like `sub_401030`, `sub_401070`, `sub_401216`. The test functions (`test_data_types_l1`, `test_array_types`) are correctly named.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: The decompiler hardcodes expected output values (e.g., `v0 = 97`, `v0 = 300`, `v0 = 11`) rather than computing them, and these magic numbers lack explanation. The literal `32` (for case conversion) and `65` (ASCII 'A') appear without context. No named constants recovered from the source.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+Justification: Some `[D]` annotations for unsupported operations (particularly in floating-point functions `process_float`, `process_double`, `process_ld`), but these are clearly marked and don't severely impede reading. The code is otherwise clean without excessive compiler artifacts.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Justification: Loops are implemented as do-while with goto constructs (e.g., `array_1d_stack` uses `do { ... } while`), which is a common decompilation artifact. At `-O0` optimization, this should ideally show as for/while loops. Some conditional logic is clear but could be more idiomatic.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Function granularity is appropriate - each function handles a single responsibility as in the original source. Functions are not inlined or over-fragmented. Parameter counts match original signatures reasonably well.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Some computed jumps exist in complex functions like `graph_traverse`, but overall flow is traceable.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: Loop unrolling is present in array functions (e.g., `array_1d_stack` processes 8 elements at a time) but this is expected at any optimization level. No significant dead code or unexplained duplication.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Most parameters use `unsigned int` uniformly, losing distinctions between `short`, `char`, `int`, `long` from source. Function pointers are typed as `unsigned int*` rather than proper function signatures. The `const_param` correctly uses `unsigned int*` but loses the `const` qualifier on the pointed-to data.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+
+Justification: Structs are reconstructed but with generic names (`struct_0`, `struct_1`) and generic field names (`field_0`, `field_1`, `field_4`). Linked list (`linked_list`) and tree (`binary_tree_sum`) structures are properly recovered with self-referential pointers. However, `Point3D` becomes anonymous struct with array-style access (`a0[1] + *(a0) + a0[2]`).
+
+### 11. Type Safety
+**Score: 6/10**
+
+Justification: Some unsafe patterns exist - direct pointer arithmetic (`ptr + index * 4`), void pointer casts in `ptr_void`. Function pointer calls like `a0(a1)` lose type safety. However, no obviously dangerous buffer operations or type-confused pointers that would cause undefined behavior.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+Justification: No comments present in the decompiled output whatsoever. The original source had extensive comments explaining each test case (e.g., "// DT-L1-01: 字符类型", "// ARR-L1-01: 一维int数组"). Zero recovery of documentation.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some data structure patterns are implicitly recognized (linked list traversal in `linked_list`, tree recursion in `binary_tree_sum`), but no explicit naming or documentation of these patterns. The original source's algorithmic patterns (diagonal sum, pointer traversal) are executed but not highlighted.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+
+Justification: Some `[D]` annotations mark unsupported operations, particularly in floating-point code (`process_float`, `process_double`, `union_type`). However, these are generic and don't explain what specifically failed or suggest workarounds. Many potential issues (like the intentional OOB in `array_oob`) are not flagged.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear expectations (e.g., "期望: 15", "期望: 'a'") that are not recovered. No documentation of error conditions or return value semantics.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+
+Justification: Function call relationships are clear - `main` calls `test_data_types_l1`, etc. External dependencies are marked with `extern` (e.g., `extern char g_4035bf`). However, no documentation of who calls each function or global variable usage patterns.
+
+### 17. Module Organization
+**Score: 8/10**
+
+Justification: Functions are logically grouped matching the original source organization - data type functions together, array functions together, pointer functions together, composite type functions together. The test functions appropriately wrap their respective categories.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+Justification: Uses `extern` declarations for external symbols. Should compile with standard library linkage. Some functions return `unsigned int*` when they should return different types, but basic compilation should succeed with minor fixes.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 3 + 7) / 4 = 4.25
+L2_avg = (6 + 8 + 7 + 7) / 4 = 7.00
+L3_avg = (5 + 6 + 6) / 3 = 5.67
+L4_avg = (1 + 5 + 5 + 1) / 4 = 3.00
+L5_avg = (6 + 8 + 7) / 3 = 7.00
+
+Overall = (4.25 × 0.30) + (7.0 × 0.25) + (5.67 × 0.20) + (3.0 × 0.15) + (7.0 × 0.10)
+        = 1.275 + 1.75 + 1.134 + 0.45 + 0.7
+        = 5.31/10
+```
+
+### Overall Readability Score: 5.3/10
+
+### Critical Defects
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `a0`, `ptr`) losing all semantic meaning from source (`x`, `sum`, `c`, `arr`)
+- **No comments**: Zero recovery of extensive source documentation explaining test cases and expected values
+- **Type precision loss**: All integer types collapsed to `unsigned int`, losing `short`, `char`, `long` distinctions
+- **Struct field names**: Generic `field_0`, `field_1`, `field_4` instead of semantic names like `x`, `y`, `z`, `next`
+- **Function naming inconsistency**: Many functions still have address-based names (`sub_401030`) despite symbol recovery
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Function boundaries are well-preserved with appropriate granularity matching the original source. Each function maintains single responsibility, and the test wrapper functions correctly organize their respective categories.
+
+### Most Needs Improvement: Comment Quality & Assertion Recovery (1/10)
+The decompiler recovered zero comments or documentation from the binary. The original source had extensive Chinese comments explaining each test case, expected values, and semantic intent - all completely lost. Combined with no contract recovery, the decompiled code provides no guidance on what functions do or how to use them correctly.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, bounds checking) to suggest semantic names like `sum`, `index`, `length`, `buffer`
+2. **Recover comments from debug symbols**: The source was compiled with `-g`, so debug info should contain source file line numbers - attempt to extract and associate comments
+3. **Preserve type distinctions**: Use debug info to recover `short`, `char`, `long` types rather than defaulting all integers to `unsigned int`

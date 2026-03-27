@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3` instead of descriptive names. Local variables use `v0`, `v1`, `v2`, `v4` for computation results. Loop variables `i`, `j`, `k` are acceptable but don't indicate purpose (e.g., should be `sum`, `index`, `offset`). The generic naming makes tracking variable semantics extremely difficult.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, `enum_switch`, etc. The decompiler recovered the exact function names from debug symbols, demonstrating excellent function name recovery.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `65` and `90` in `process_char` (ASCII bounds for 'A'-'Z') are unexplained. The value `32` for case conversion offset has no comment. Enum values in switch statements are raw integers without symbolic names. However, some context like loop bounds (`10`, `5`) are inferable from usage patterns.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. The code is relatively clean without obvious debug instrumentation or register spilling artifacts. Some unnecessary return type casts (`__int64` instead of actual types) but these are manageable. No spurious goto statements or dead code blocks observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and matches source patterns. Loops use `for` constructs correctly. The `enum_switch` function properly uses a switch statement. At `-O0` optimization, the decompiled flow closely mirrors the original source logic with no goto abuse or confusing conditionals.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent decomposition matching source granularity. Each small function (`double_value`, `process_char`, etc.) is preserved as separate function. Test helper functions like `complex_callback` are correctly identified. No over-fragmentation or monolithic functions - decomposition is nearly identical to 830-line source.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns in `process_char` and `array_complex_index` are appropriate. No forward jumps into loop bodies. Nested loops in `array_3d` and `graph_traverse` are properly structured. The flow is easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy detected. No dead code or duplicate expressions. Loop unrolling is not present (expected at `-O0`). The decompiled code is clean without unnecessary computations that the compiler would have eliminated.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant return type degradation - most functions return `__int64` when they should return `int`, `char`, or `_BOOL8`. For example, `process_int` returns `__int64` instead of `int`, and `process_char` returns `__int64` instead of `char`. Parameter types are better (`_DWORD *`, `char *`) but return types lose precision.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct types are recovered. Functions like `struct_simple` use raw pointer arithmetic (`a1[0]`, `a1[1]`, `a1[2]`) instead of named struct fields (`p->x`, `p->y`, `p->z`). Nested structures like `Rect` and `Widget` are accessed via offsets without type recovery. Unions are treated as `char*`. This is a major readability issue.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. The `ptr_void` function incorrectly treats `char *a1` for both int and char access. Function pointer types are imprecise (`__int64 (__fastcall *)(_QWORD)` instead of proper signatures). However, basic pointer arithmetic is correct, and no severe type-confused operations that would cause undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments except for the decompiler header. No explanation of algorithms, parameter purposes, or return value meanings. The original source had extensive comments (test scenarios, expected values) but none were recovered. Functions like `array_complex_index` with non-trivial indexing logic have no documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some common patterns are implicitly present (loops, conditionals) but not explicitly identified or named. The linked list traversal in `linked_list` is recognizable but not labeled as such. No recognition of patterns like "pointer chase," "array indexing," or "state machine." The code is a literal translation without pattern abstraction.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of uncertain or potentially incorrect decompilation. The header mentions "6" failed functions but doesn't explain what couldn't be resolved. No warnings about indirect calls that couldn't be resolved or unusual stack layouts. The decompiler presents all code with equal confidence regardless of reliability.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Functions like `array_complex_index` with bounds checking don't have comments explaining the validation logic. No documentation of error return values (e.g., `-1` for invalid bounds). The implicit contracts of the original source are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are correctly resolved (e.g., `ptr_func_simple` calls `double_value`). However, there's no documentation of call relationships - who calls what, callback relationships, or global variable usage. The `complex_callback` is correctly identified but its role in testing isn't explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are loosely grouped by category (data types, arrays, pointers, composites, tests, main) but in a single flat listing. Static functions aren't explicitly marked as such. The original's logical sections (comments separating DT-L1, ARR-L1, PTR-L2, etc.) are not reflected in the decompiled output organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code would not compile as-is. Missing `#include <stdio.h>` and other headers. Return types are wrong (`__int64` vs actual types). External functions like `printf`, `memcpy`, `memset` are mentioned as "FAILED to decompile" but referenced in code. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic names (`a1`, `a2`) and computation results use `v0`, `v1`, `v2` - completely obscuring semantic purpose
+- **No struct recovery**: Composite types are accessed via raw pointer arithmetic (`a1[0]`, `a1[1]`) instead of named fields (`p->x`, `p->y`)
+- **Return type precision loss**: Most functions return `__int64` when they should return `int`, `char`, or `_Bool`
+- **No comments**: Zero documentation of algorithms, parameters, return values, or test expectations
+- **No type definitions**: Struct/union/enum types are completely lost, replaced with raw memory access
+
+### Best Quality Aspect: Function Naming (scored 9/10)
+The decompiler almost perfectly recovered function names from debug symbols, matching the original source exactly (`process_char`, `array_1d_stack`, `ptr_double`, `struct_simple`, etc.). This is the standout success.
+
+### Most Needs Improvement: Composite Type Recovery (scored 3/10)
+Struct, union, and enum types are completely lost. The decompiler treats all composite types as raw memory (`_DWORD *`, `char *`) with array indexing instead of field access. This severely impacts readability for any code using structures.
+
+### Top 3 Recommendations:
+1. **Recover struct field names**: Use type information from debug symbols to generate struct definitions with meaningful field names instead of array indexing
+2. **Add variable name inference**: Analyze usage patterns (e.g., `a1 + 4LL * i` suggests array index) to generate descriptive names like `array`, `index`, `sum`
+3. **Preserve comments from debug info**: The original source had extensive comments - recover these from debug line information to explain test scenarios and expected values

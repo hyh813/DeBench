@@ -1,0 +1,232 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+**Focus Function:** `param_strcpy` (Original: line 1174)
+
+**Original Implementation:**
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+**Decompiled Implementation:**
+```c
+int32_t param_strcpy(int32_t * a1, int32_t a2, int32_t str2) {
+    char * str = (char *)a2;
+    strcpy(str, (char *)str2);
+    return strlen(str);
+}
+```
+
+---
+
+### LEVEL 1: LEXICAL CLARITY
+
+#### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses completely generic parameter names (`a1`, `a2`, `str2`) and local variables (`v1`, `v2`). The original function has clear parameters `dst` and `src`, but these are lost entirely. The decompiler treats all pointers as `int32_t *` and uses positional naming that provides no semantic value.
+
+#### 2. Function Naming Quality
+**Score: 7/10**
+
+The main test functions (`param_strcpy`, `call_strcpy`, `call_strlen`) correctly match the original source names. However, many internal helper functions use the `function_XXXX` pattern (e.g., `function_1200` for strcpy wrapper), which is non-descriptive. The standard library wrapper functions are correctly identified.
+
+#### 3. Literal Clarity
+**Score: 5/10**
+
+The decompiled code contains magic numbers like `0x2706` in format string offsets, `66` for file open flags (O_CREAT|O_RDWR), and `256`/`260` for signal handler offsets. These are not explained. However, some constants like `AF_INET`, `SOCK_STREAM` are properly recognized.
+
+#### 4. Noise Reduction
+**Score: 3/10**
+
+The code contains significant noise:
+- Address comments on every function (`// 0x1560`)
+- Redundant casts everywhere (e.g., `(char *)a2`, `(int32_t *)`)
+- Unnecessary intermediate variables (`v1`, `v2`)
+- The code shows signs of being x86 decompiled for ARM64 (uses `__x86_get_pc_thunk_bx` which is x86 specific)
+
+---
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+#### 5. Control Flow Naturalness
+**Score: 7/10**
+
+The control flow is generally natural - simple sequential execution with if-else branches. The `param_strcpy` function has straightforward linear flow. However, some functions like `param_pthread_join` use goto statements and complex while loops that are harder to follow.
+
+#### 6. Function Decomposition
+**Score: 6/10**
+
+Functions are reasonably decomposed. The original test functions are correctly separated. However, the decompiler created many small wrapper functions (e.g., `function_1200` wrapping strcpy) that weren't in the original source at -O0. Some functions like `param_pthread_join` are over 200 lines, which is too large.
+
+#### 7. Code Linearization
+**Score: 6/10**
+
+Most code reads top-to-bottom, but there are forward jumps in complex functions. The `param_pthread_join` function has goto labels (`lab_0x2e25`) that disrupt linear reading. Early returns are used appropriately in some functions.
+
+#### 8. Redundancy Elimination
+**Score: 5/10**
+
+Some redundant code patterns exist. For example, in `call_memcpy`:
+```c
+memcpy(&v1, (int32_t *)(v2 + 0x2c78), 20);
+memset(&v3, 0, 20);
+param_memcpy(&v3, &v1, 20, (int32_t)&g19);
+```
+This could be simplified. Dead code is minimal but some loop patterns are unoptimized.
+
+---
+
+### LEVEL 3: TYPE SYSTEM FIDELITY
+
+#### 9. Type Precision
+**Score: 4/10**
+
+The decompiler uses `int32_t` universally, which loses the distinction between:
+- Original `char *dst` becomes `int32_t * a1`
+- Original `const char *src` becomes `int32_t a2` (inconsistent with dst)
+- `size_t` parameters become `uint32_t` or `int32_t` inconsistently
+- No const-correctness preserved
+
+#### 10. Composite Type Recovery
+**Score: 2/10**
+
+The decompiler creates placeholder structures with generic field names:
+```c
+struct _IO_FILE {
+    int32_t e0;
+};
+struct ipc_perm {
+    int32_t e0;
+    // ...
+};
+```
+These lose all semantic meaning. The original uses standard types like `FILE *`, `struct stat`, `struct sockaddr_in` but these are either raw `int32_t` or generic structs.
+
+#### 11. Type Safety
+**Score: 4/10**
+
+Multiple unsafe casts throughout:
+- `(char *)a2` - pointer to int cast
+- `(int32_t *)str2` - pointer type confusion
+- `(void (*)(int32_t))` - function pointer casts
+- Buffer access patterns like `*(int32_t *)(4 * v2 + v1)` without bounds checking
+
+---
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+#### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Only address comments present (`// 0x1560`, `// bp-40, 0x15b0`). No semantic comments explaining:
+- What functions do
+- Parameter purposes
+- Return value meanings
+- Algorithm explanations
+
+#### 13. Idiom Recognition
+**Score: 7/10**
+
+Standard library functions are correctly identified:
+- `strcpy`, `strlen`, `strcmp`, `memcpy`, `memset`
+- `pthread_create`, `pthread_join`, `pthread_mutex_lock`
+- `socket`, `bind`, `listen`, `accept`
+- `signal`, `raise`, `alarm`
+
+However, no pattern recognition for higher-level idioms (producer-consumer, thread pool, etc.)
+
+#### 14. Anomaly Indication
+**Score: 1/10**
+
+No anomaly indication. The decompiler silently produces incorrect code in some places:
+- The `param_strcpy` has wrong parameter count (3 vs 2)
+- Uses x86-specific code on what should be ARM64
+- No warnings about indirect calls or unresolved references
+
+#### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No contracts recovered. Preconditions like "dst must be large enough to hold src" are not documented. Postconditions like "returns length of copied string" are lost.
+
+---
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+#### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Function call relationships are visible but not documented. The call graph can be traced through the code but there's no explicit documentation of who calls whom or the callback relationships in pthread code.
+
+#### 17. Module Organization
+**Score: 6/10**
+
+Functions are grouped somewhat logically (test functions together, param functions with call functions). However, the massive number of helper functions (`function_XXXX`) pollutes the namespace. The original source organization by section (6.1, 6.2, 6.3) is not reflected.
+
+#### 18. Build System Compatibility
+**Score: 3/10**
+
+The code has multiple compilation issues:
+- Uses `int32_t` but includes `<stdint.h>` inconsistently
+- Missing proper includes for some functions
+- The placeholder structures would cause conflicts with standard headers
+- x86 code patterns (`__x86_get_pc_thunk_bx`) suggest wrong architecture handling
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 5 + 3) / 4 = 4.25
+L2_avg = (7 + 6 + 6 + 5) / 4 = 6.0
+L3_avg = (4 + 2 + 4) / 3 = 3.33
+L4_avg = (2 + 7 + 1 + 1) / 4 = 2.75
+L5_avg = (5 + 6 + 3) / 3 = 4.67
+
+Overall = (4.25 × 0.30) + (6.0 × 0.25) + (3.33 × 0.20) + (2.75 × 0.15) + (4.67 × 0.10)
+        = 1.275 + 1.5 + 0.666 + 0.4125 + 0.467 = 4.32/10
+```
+
+### Overall Readability Score: 4.3/10
+
+---
+
+### Critical Defects
+
+1. **Wrong function signature for `param_strcpy`**: Has 3 parameters (`a1, a2, str2`) when original only has 2 (`dst, src`). The decompiler incorrectly interprets the stack frame.
+
+2. **Complete loss of variable semantics**: All parameters renamed to generic `a1`, `a2`, `v1`, `v2` - original `dst` and `src` completely lost.
+
+3. **No struct type recovery**: Standard types like `FILE *`, `struct stat`, `struct sockaddr_in` are either raw `int32_t` or generic placeholder structs with fields named `e0`, `e1`, etc.
+
+4. **Architecture mismatch**: Code shows x86 decompilation patterns (`__x86_get_pc_thunk_bx`) on what should be ARM64, indicating the decompiler is misidentifying or cross-compiling.
+
+5. **No semantic comments**: Only address comments present; no explanation of function purpose, parameters, return values, or algorithm logic.
+
+---
+
+### Best Quality Aspect
+
+**Idiom Recognition (Score: 7/10)** - The decompiler correctly identifies standard library functions like `strcpy`, `strlen`, `pthread_create`, `socket`, etc. This is the strongest area.
+
+---
+
+### Most Needs Improvement
+
+**Type System Fidelity (Score: 3.3/10)** - The decompiler fails to recover precise types. All pointers become `int32_t *`, const-correctness is lost, and composite types are generic placeholders. This fundamentally undermines code understanding.
+
+---
+
+### Top 3 Recommendations
+
+1. **Infer parameter names from usage**: When `a2` is passed to `strcpy` as source string, name it `src`. When `a1` is the destination buffer, name it `dst`.
+
+2. **Recover struct types from standard library usage**: When code uses `fopen`, `fread`, `fclose` with the same pointer, recognize it as `FILE *`. When `stat()` is called, use `struct stat`.
+
+3. **Add semantic comments**: For each function, add comments explaining: "Copies src string to dst buffer, returns length of copied string" - this takes minimal effort but dramatically improves readability.

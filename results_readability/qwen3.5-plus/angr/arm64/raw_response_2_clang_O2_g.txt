@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`, `cur`) with no semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `head` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`process_char`, `array_1d_stack`, `ptr_single`), but runtime functions are generic (`sub_400634`, `$x`) and some are completely wrong (`process_float` returns `long long` instead of `float`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`4294967295`, `32767`, `2251799813685247`) without explanation. Test functions show constant-folded results (`printf("DT-L1-01...: %c\n", 97)`) instead of actual function calls, obscuring the logic.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts including `[D] unsupported_Iop_ZeroHI96ofV128()`, frame pointer manipulation (`v0 = &v1`), and runtime initialization code (`_init`, `register_tm_clones`) mixed with application logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Uses `goto` for function calls (`goto a0` in `ptr_func_simple`), complex nested conditionals for simple operations, and `__addtf3` has hundreds of lines of unreadable conditional logic with labels like `LABEL_4017d8`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Test functions were constant-folded instead of preserving actual function calls. Helper functions like `complex_callback` weren't properly recovered. Individual functions are sized reasonably but structure is lost.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps disrupt flow throughout (`LABEL_4017d8`, `LABEL_40182c` in `__addtf3`). Test functions read more linearly, but overall requires significant effort to trace execution paths.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling artifacts in array functions, massive redundant conditional blocks in `__addtf3`/`__multf3`, and dead code from optimization present throughout without cleanup.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical type errors: `process_float`/`process_double` return `long long` instead of float types, `process_ld` returns `void`. Many functions use `unsigned long long` where `int` should be used. Const/volatile qualifiers completely lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs are generic (`struct_0`, `struct_1`) with field names like `field_0`, `field_8` instead of semantic names (`x`, `y`, `next`). Nested structures not properly recovered, bitfields lost, unions treated as generic structs.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout, pointer arithmetic often incorrect, function pointers use `goto` instead of proper calls. `volatile_access` lost volatile semantics entirely (returns `*(a0) * 2` instead of two separate reads).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only header comment present. No documentation of algorithm logic, decompilation confidence indicators, or API contracts. Original source had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (linked list traversal, array summation, tree recursion) not identified. State machine in `enum_switch` not recognized. No design pattern hints provided.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some unsupported operations marked (`[D] unsupported_Iop_ZeroHI96ofV128()`), but indirect calls not flagged, type mismatches unnoted, and floating-point function failures lack explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not explained. Original source had clear test expectations that are lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage unclear (`g_413ff8`, `g_4031ef`). Callback relationships not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear roughly in source order but not logically grouped. No header file structure. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone - missing external function declarations, undefined globals, unsupported operations. Requires extensive modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+6+4+3)/4 = 4.00
+Level 2 Average: (3+5+5+4)/4 = 4.25
+Level 3 Average: (4+3+4)/3 = 3.67
+Level 4 Average: (2+3+5+2)/4 = 3.00
+Level 5 Average: (5+5+3)/3 = 4.33
+
+Overall = (4.00 × 0.30) + (4.25 × 0.25) + (3.67 × 0.20) + (3.00 × 0.15) + (4.33 × 0.10)
+        = 1.20 + 1.06 + 0.73 + 0.45 + 0.43
+        = 3.87/10
+```
+
+**Overall Readability Score: 3.9/10**
+
+### Critical Defects:
+- **Floating-point functions completely broken**: `process_float`, `process_double`, `process_ld` have incorrect signatures and return types
+- **Test functions constant-folded**: Shows results directly (`printf("...: %d\n", 97)`) instead of calling actual functions, losing all logic
+- **Struct fields all generic**: `field_0`, `field_8` instead of semantic names like `x`, `next`, `data`
+- **Volatile semantics lost**: `volatile_access` returns `*(a0) * 2` instead of two separate memory reads
+- **Massive floating-point runtime functions**: `__addtf3` is 500+ lines of unreadable conditional logic with goto labels
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core application function names were preserved from debug symbols, making basic identification possible
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero meaningful comments despite complex logic; original source had extensive documentation that is completely lost
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level constructs from patterns**: Detect array summation loops, linked list traversals, and tree recursions to restore original control flow instead of raw jumps
+2. **Preserve type information from debug symbols**: Use `-g` flag data to recover correct return types (float/double) and const/volatile qualifiers
+3. **Add confidence annotations**: Mark uncertain decompilations (floating-point operations, indirect calls) with warnings so analysts know where manual review is needed

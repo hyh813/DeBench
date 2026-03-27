@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names (`v0`, `v1`, `ptr`, `result`, `a0`, `a1`), though some globals retain semantic meaning (`signal_received`, `shared_counter`, `atomic_counter`). Parameters are consistently unnamed (`a0`, `a1`, `a2`), obscuring their purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names recovered (`param_strcpy`, `thread_compute`, `param_mutex_lock`), but many use generic `sub_` prefixes (`sub_402020`, `sub_402f91`). Compiler-generated variants like `param_thread_local_storage.constprop.0` indicate optimization artifacts.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers (`4294967295` for -1, `8589934593` for array initialization, `316912650130844326686193876996` SIMD constant). No named constants recovered; error codes like `4294967293` (-3) are opaque.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive wrapper functions (`sub_402f91` just calls `call_strcpy`). Vector operations in `param_memset` and `thread_sum` obscure simple logic. Redundant variable assignments (`ptr = ptr`) throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Goto labels present (`LABEL_403987` in `test_standard_library_functions`). Loop unrolling in `thread_sum` creates deeply nested conditionals. Constant-folded functions (`call_strcpy` returns 8 directly) lose actual logic.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Over-fragmented with wrapper functions that serve no purpose. Some functions properly sized, but `param_thread_local_storage.constprop.0` is 80+ lines with complex nesting. Compiler outlines (`.part.0`, `.constprop.0`) create artificial fragmentation.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Goto statements disrupt top-to-bottom reading. Deep nesting in verification loops (15+ levels in `param_memset`). Some functions read linearly but many have forward jumps into loop bodies.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Constant folding eliminates actual computation (`call_strcpy`, `call_memcpy` return constants). Loop unrolling in `thread_sum` creates 10+ nearly identical conditional blocks. Duplicate error return values throughout.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate (`unsigned long long`, `void*`). Some precision recovered (`FILE*`, `pthread_t`), but signed/unsigned often lost. Function pointers frequently typed as `void*`. Array bounds not preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs use generic field names (`field_0`, `field_8`, `field_c`). `FILE` struct declared but empty. `struct_0` has no semantic meaning. ThreadData struct not recovered—fields accessed via offset arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Implicit casts throughout (`(unsigned int)v1`, `(char *)ptr`). Pointer arithmetic common without bounds checking. No `const` correctness preserved. No safety annotations (`restrict`, `_Atomic` lost).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contracts. Only one anomaly marker (`[D] Unsupported jumpkind Ijk_SigTRAP`).
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls identified (`strcpy`, `memcpy`, `pthread_create`), but threading patterns not named. Producer-consumer pattern in `param_condition_variable` not documented. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged (`Ijk_SigTRAP`). No uncertainty indicators for indirect calls. Type mismatches not warned about. Critical issues like architecture mismatch (ARM64 source vs AMD64 decompilation) not noted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions (e.g., "returns heap-allocated memory"). Error conditions not explained. Return value semantics opaque (`42` = success, `4294967295` = -1 error).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships unclear. Global variable usage not documented. Thread entry points (`thread_compute`, `thread_sum`) not linked to creation sites. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions ordered by address, not logical grouping. No header file structure. Related functions scattered (`param_strcpy` at 0x402f80, `call_strcpy` at 0x402fa0). No namespace organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears compilable but requires external dependencies (pthread, libc) without documentation. Platform-specific code not handled. No Makefile or build instructions provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+5+3+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (5+4+5+4)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (1+4+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                              = 4.14/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Architecture mismatch**: Source compiled for ARM64, decompiled as AMD64—fundamental binary incompatibility
+- **Optimization level discrepancy**: Metadata claims -O0 (debug), but decompiled code shows O3 artifacts (constant folding, loop unrolling)
+- **Zero comments**: No documentation of algorithm intent, error conditions, or decompilation uncertainty
+- **Magic numbers everywhere**: Error codes (`4294967295`), SIMD constants, and array values lack semantic meaning
+- **Excessive wrapper functions**: Functions like `sub_402f91` that merely call other functions add noise without value
+
+### Best Quality Aspect: **Build System Compatibility (6/10)**
+- The decompiled code appears structurally compilable with proper external declarations, despite other issues.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding non-trivial logic nearly impossible without cross-referencing source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add decompilation confidence annotations**: Mark uncertain reconstructions (indirect calls, type guesses) with comments like `// UNCERTAIN: type inferred from usage`
+2. **Recover semantic names from usage patterns**: Variables used in size checks should be named `size`/`length`; loop counters should be `i`, `idx`, etc.
+3. **Detect and document optimization artifacts**: When constant folding or loop unrolling is detected, add comments explaining the original structure (e.g., `// Original: for loop unrolled by compiler`)

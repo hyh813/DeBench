@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, ptr, p, result) with zero semantic meaning. For example, `v0`, `v1`, `v4`, `v5` in `test_cpp_member_func` should be `obj`, `name_buffer`, `this_ptr`, etc. based on usage patterns.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Functions retain mangled C++ names (_Z20test_cpp_member_funcv) without demangling to readable form. Some use mechanical naming (sub_400d74, sub_400efc) with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound (4700, 1001, 42, 71, 650) hardcoded in printf calls instead of being computed. Expected values are embedded rather than derived from actual computation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Frame pointer setup code persists throughout (v4 = &v5 patterns). Unnecessary intermediate variables and compiler artifacts clutter every function without being eliminated.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most test functions simply `return;` without implementing any logic. Where logic exists (test_cpp_exception), it uses goto and _Unwind_Resume instead of structured try/catch blocks.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Critical functions are empty stubs (test_cpp_constructor, test_cpp_virtual_func return immediately). test_cpp_oo_features mixes unrelated test outputs incoherently instead of calling individual test functions.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Excessive goto usage (register_tm_clones, sub_4010f4) disrupts flow. Forward jumps into code blocks make top-to-bottom reading impossible in several functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate __cxa_atexit calls appear in $x.18. Repeated patterns like `v0 = v2; v1 = v3;` serve no purpose and aren't eliminated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy reliance on void*, char*, unsigned long long instead of precise types. Class types (SimpleClass, LifecycleClass, Base, Derived) are completely lost or reduced to generic pointers.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Some structs defined (struct_0, struct_1) but with generic field names (field_0, field_8, padding_0). Original class structures with methods, inheritance, and vtables are not recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Pervasive unsafe casts and pointer arithmetic (*(p)->field_8(p), *((char **)ptr)). No const-correctness preserved. Template type information lost in most instantiations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments explaining logic, algorithms, or intent. Only auto-generated type declarations exist. No decompilation confidence indicators for uncertain regions.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized: RAII (smart pointers), virtual dispatch (vtable calls), templates (recovered as separate functions without connection), exception handling (reduced to __cxa_throw calls).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite massive semantic loss. Functions returning immediately without logic should be marked as "INCOMPLETE" or "OPTIMIZED AWAY".
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts, null checks, and bounds validation are invisible in decompiled output.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships unclear. Virtual dispatch not properly recovered (call_virtual_func uses goto to vtable). Inheritance relationships lost entirely.
+
+**17. Module Organization:** Score: 4/10  
+Justuration: Functions appear in arbitrary order without logical grouping. Runtime initialization functions (_init, _start, _fini) mixed with application logic. No namespace or class grouping.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile standalone. Missing dependencies (operatornew, operatordelete, __dynamic_cast), undefined symbols, and incorrect function signatures prevent compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (2+3+4+5)/4 = 3.50
+Level 2 Average: (3+3+4+5)/4 = 3.75
+Level 3 Average: (3+3+3)/3 = 3.00
+Level 4 Average: (1+2+2+2)/4 = 1.75
+Level 5 Average: (3+4+2)/3 = 3.00
+
+Overall = (3.50 × 0.30) + (3.75 × 0.25) + (3.00 × 0.20) + 
+          (1.75 × 0.15) + (3.00 × 0.10)
+        = 1.05 + 0.94 + 0.60 + 0.26 + 0.30
+        = 3.15/10
+```
+
+**Overall Readability Score: 3.15/10**
+
+### Critical Defects:
+- **Empty function stubs**: 10+ test functions return immediately without implementing any logic (test_cpp_constructor, test_cpp_virtual_func, test_cpp_operator_overload, etc.)
+- **Hardcoded expected values**: test_cpp_oo_features prints expected results (4704, 21, 42, etc.) instead of computing them from actual function calls
+- **Lost class structures**: All C++ class definitions (SimpleClass, LifecycleClass, Base, Derived, Container, Point) are not recovered as proper types
+- **Mangled names not demangled**: Function names remain as _Z20test_cpp_member_funcv instead of readable test_cpp_member_func
+- **No semantic comments**: Zero documentation explaining what any code does, despite complex C++ features being present
+
+### Best Quality Aspect:
+- **Noise Reduction (5/10)** - While not good, this scored highest because the decompiler at least eliminated some obvious compiler artifacts and didn't introduce excessive spurious code beyond the frame pointer setup patterns.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any explanatory comments makes this decompilation practically unusable for understanding the original program's intent or logic.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ name demangling** - Convert mangled names (_Z20test_cpp_member_funcv) to readable forms (test_cpp_member_func) using standard C++ ABI demangling
+2. **Recover class structures from vtable analysis** - Analyze vtable layouts to reconstruct class hierarchies, member functions, and inheritance relationships
+3. **Add confidence annotations for incomplete recovery** - Mark functions that appear optimized away or incomplete with warnings like "// DECOMPILATION INCOMPLETE: function body optimized out"

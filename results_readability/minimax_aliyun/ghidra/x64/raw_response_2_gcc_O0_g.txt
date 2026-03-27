@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Mix of descriptive names (sum, i, len, n) and generic local copies (x_local, c_local, p_local). The `_local` suffix pattern adds noise without semantic value. However, loop counters and accumulators are appropriately named.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly perfect match with source - every function name recovered exactly: `double_value`, `process_char`, `process_int`, `array_1d_stack`, `ptr_double`, `struct_simple`, `linked_list`, `binary_tree_sum`, etc. The decompiler preserved all semantic function names.**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers: `0x28` (stack canary offset), `0x14`=20, `0x1e`=30, `0xff`=255, `0x2a`=42 appear as hex without context. The `in_FS_OFFSET` usage is unexplained. Some literals like array sizes (10, 5) are inferable but not documented.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise includes: "WARNING: Unknown calling convention" repeated 5 times, "WARNING: Removing unreachable block" messages, "WARNING: Subroutine does not return" for stack_chk_fail, and redundant local variable copies (x_local, p_local) that serve no readability purpose.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow is natural with clear for/while loops. The `process_bool` uses if-else appropriately. Minor issue: `enum_switch` uses chained if-else instead of switch, but this is acceptable decompilation behavior.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent granularity - each function has single responsibility. Test functions call sub-functions appropriately. No monolithic functions; all functions are under 30 lines with clear purpose.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns in `array_complex_index` and `ptr_void` are appropriate. No excessive nesting. The flow is easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy. Dead code from unreachable blocks is flagged as warnings (appropriate). Loop constructs are clean without unnecessary duplication.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types accurate: int, short, char, long, longlong, float, double, _Bool all correct. CRITICAL ISSUE: `process_ld` returns `longdouble*` instead of `longdouble` - severe type error. Const-correctness lost: `const_param` takes `int*` not `const int*`. Function pointers use placeholder `_func_int_int*`.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct/union recovery. All types reconstructed: Point3D (x,y,z), Rect (position, size), Widget, Node (data, next), Flags (bitfields), UnionData (i,f,bytes), State enum, Device, TreeNode, Graph, Edge, DNode. Field names preserved perfectly.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally safe with appropriate casts in `ptr_void` and `ptr_cast`. However, `process_ld` has wrong return type (returns pointer instead of value) - this is a semantic error. The `ptr_diff` calculation `(long)p1 - (long)p2 >> 2` is correct but unclear without parentheses.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only compiler-generated warnings: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Subroutine does not return". No explanation of algorithms, preconditions, or intent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms explicitly identified. The test functions calling multiple test cases could be recognized as test harness patterns but aren't flagged. Linked list traversal is recognized but not named.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Compiler warnings are present but generic ("Unknown calling convention"). The `process_ld` return type anomaly is NOT flagged - this is a significant bug. No indication of potential undefined behavior in `array_oob` (intentional out-of-bounds).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The `array_complex_index` bounds checking could be documented as precondition but isn't. No error handling contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible in test functions, but relationships aren't documented. No indication of which functions call which, callback relationships, or global state usage. The `complex_callback` usage in `ptr_func_complex` isn't explained.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions logically grouped by type (data types, arrays, pointers, composites). Test functions separate from implementation. Static functions properly scoped. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Does NOT compile due to: (1) `process_ld` returns wrong type, (2) `builtin_strncpy` is not a standard function (should be `strncpy`), (3) Multiple "WARNING" comments would cause compilation issues. Requires fixes to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- `process_ld` returns `longdouble*` instead of `longdouble` - semantic error in return type
+- `const_param` loses const-correctness (parameter should be `const int*`)
+- Magic numbers like `0x28`, `0x14`, `0xff` unexplained throughout
+- `builtin_strncpy` is not a valid standard C function
+- No comments explaining any algorithm or intent
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+Every function name matches the original source exactly - this is exceptional decompilation.
+
+**Most Needs Improvement:** Literal Clarity (4/10) and Comment Quality (3/10)  
+Magic numbers are unexplained and the code has zero useful comments for understanding algorithms or intent.
+
+**Top 3 Recommendations:**
+1. Fix `process_ld` return type - should return `longdouble` value, not `longdouble*`
+2. Add explanatory comments for magic numbers (0x28 stack canary, hex constants like 0x14=20)
+3. Recover const-correctness for pointer parameters (const int* for const_param)
+4. Replace `builtin_strncpy` with standard `strncpy`
+5. Add algorithm documentation explaining what each function computes

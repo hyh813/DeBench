@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic Ghidra names (`iVar1`, `iVar2`, `pPVar1`, `pTVar4`) that obscure semantic meaning. Parameters sometimes retain source names (`c`, `x`, `arr`) but locals are completely generic.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). Only startup functions (`FUN_00101020`, `_init`) lack meaningful names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions show aggressive constant folding with hex literals (`0x61`, `0xb`, `0x12345678`) replacing actual computations. Magic numbers like `0x2c` in array_2d_stack lack explanation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains expected -O2 artifacts: stack canary checks (`__stack_chk_fail`), frame offsets (`in_FS_OFFSET`), and "Unresolved local var" comments throughout test functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions use natural patterns, but `binary_tree_sum` transforms recursion into 8+ levels of nested do-while loops. Array iterations use do-while instead of for loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Individual functions have appropriate granularity. Test functions are bloated due to constant folding but remain cohesive units.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but `binary_tree_sum` has extreme nesting that disrupts linear reading. Some functions use unnatural pointer-end comparisons.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `binary_tree_sum` shows excessive redundancy from loop unrolling (repeated `local_XX = local_XX + local_YY` patterns). Test functions duplicate printf call patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types recovered well (int, char, float, double, structs). Critical error: `process_ld` returns `longdouble*` instead of `longdouble`. Function pointers use custom typedefs (`_func_int_int`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs well-recovered (`Point3D`, `Rect`, `Widget`, `Node`, `Graph`) with field names. Bitfields handled via manual bit operations instead of proper bitfield syntax.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe cast in `opaque_handle_create`: `(void *)(long)size`. Several void* casts without clarity. Pointer arithmetic generally correct but some implicit conversions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only auto-generated warnings ("WARNING: Unknown calling convention", "Unresolved local var"). No algorithm explanations or API documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns (linked list traversal, tree recursion, enum switch) not identified. `enum_switch` uses jump table (`CSWTCH_61`) without explanation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Ghidra flags some issues ("Could not recover jumptable", "Treating indirect jump as call"). Does NOT flag critical semantic loss: test functions don't actually call tested functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks exist in code but lack explanatory comments about requirements.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code, but test functions show constant-folded results instead of actual calls. Struct field access is clear through recovered types.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure. All code in single output without header separation or logical grouping comments.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone: missing type definitions (`EVP_PKEY_CTX`), external dependencies (`__libc_start_main`, `__printf_chk`), custom typedefs undefined.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Weighted |
+|-------|-----------|---------|--------|----------|
+| L1: Lexical Clarity | 4, 8, 5, 6 | 5.75 | 30% | 1.725 |
+| L2: Structural Intelligibility | 5, 7, 6, 5 | 5.75 | 25% | 1.438 |
+| L3: Type System Fidelity | 7, 7, 6 | 6.67 | 20% | 1.334 |
+| L4: Semantic Transparency | 3, 4, 5, 3 | 3.75 | 15% | 0.563 |
+| L5: Contextual Coherence | 6, 6, 4 | 5.33 | 10% | 0.533 |
+
+**Overall Readability Score: 5.59/10**
+
+### Critical Defects:
+- **Variable `iVar1`, `iVar2`, `pPVar1`** should be named based on usage (e.g., `sum`, `end_ptr`, `current_node`)
+- **`process_ld` returns `longdouble*`** instead of `longdouble` - critical type recovery error
+- **Test functions don't call actual functions** - constant folding obscures semantic relationships
+- **`binary_tree_sum` recursion transformed** into 8+ nested loops losing algorithmic clarity
+- **No comments explaining bitfield operations** in `struct_bitfields` (manual bit shifts vs. proper bitfields)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names preserved accurately from source, making navigation and identification straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Almost no explanatory comments; decompiler provides zero semantic documentation beyond auto-generated warnings.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables used in accumulation should be named `sum`, loop counters as `i/j/k`, pointers as `ptr_*` or `current_*`
+2. **Detect and annotate optimization transformations** - Flag constant-folded test code, loop unrolling, and recursion-to-iteration conversions with explanatory comments
+3. **Recover proper bitfield syntax** - Instead of manual bit shifts (`bVar1 >> 1 & 3`), reconstruct original bitfield declarations when access patterns match

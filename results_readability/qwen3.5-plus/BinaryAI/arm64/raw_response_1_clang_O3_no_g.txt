@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `param_1`, `iVar1`, `uVar1` instead of semantic names from source (`temp1`, `sum`, `count`, `result`). Functions like `loop_continue` have 30+ variables (`uVar1` through `uVar17`, `iVar18` through `iVar38`) with no meaningful distinction.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`sequential_ops`, `nested_if_2`, `recursion_factorial`). However, some helpers use generic names (`FUN_00100880`, `FUN_001009fc`) and external functions are marked `<EXTERNAL>`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (`0x3e9`, `0x65`, `0xfffffff8`, `0x12345678`). Test functions print hardcoded expected values (e.g., `printf("CF-L1-01...%d\n",0x15)`) instead of computing results, obscuring the actual logic.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise in optimized-looking code despite `-O0` compilation. Functions like `loop_continue` and `recursion_factorial` contain 100+ lines of NEON vector operations (`auVar32`, `NEON_cmeq`, `NEON_ext`) that should not exist in debug builds.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (`sequential_ops`, `ternary_op`) recover well, but complex patterns degrade. `duffs_device` uses explicit `goto` labels instead of fall-through switch. `loop_break` becomes a switch statement instead of array search with early return.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are mostly preserved, but test functions are fundamentally broken—they print expected values directly instead of calling actual functions. Helper functions like `deregister_tm_clones` are empty stubs.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read top-to-bottom naturally. Complex functions have excessive forward jumps and switch-case structures that disrupt flow. `duffs_device` has 7 goto labels (`switchD_0010109c_caseD_2` through `caseD_7`).
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy in vectorized functions. `loop_continue` has 16 `ulong` variables and repeated bit-shift patterns. `recursion_factorial` duplicates similar multiplication logic 8+ times with different variable names.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int`/`uint` used throughout instead of precise types. Several functions return `undefined4` or `undefined8` (e.g., `nested_if_deep`, `switch_small`). Pointer types lack specificity (`code *`, `undefined4 *`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct/union recovery visible. Arrays are reduced to pointer arithmetic (`*(int *)(&DAT_001019cc + uVar2)`). The `jmp_buf` type is recovered as `__jmp_buf_tag *` which is good, but most composite types are lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: `loop_break` takes `undefined4` but should be `int`. Function pointers use generic `code *` type. Several implicit casts between signed/unsigned (`(int)param_1`, `(ulong)uVar23`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty level. No decompilation confidence indicators or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Control flow idioms not recognized. Duff's device appears as raw goto chains. Loop unrolling in `recursion_factorial` not identified as optimization. State machine patterns in `state_machine` not labeled.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious patterns. NEON operations in simple functions unexplained. Test functions printing hardcoded values not flagged. Only one `UNRECOVERED_JUMPTABLE` annotation in `call_func_ptr`.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had test validation comments (e.g., "输入5,7,3应返回21"). No error condition documentation or parameter validation hints.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships not documented. No call graph information. Callback patterns (`process_with_callback`) show function pointer usage but no explanation of expected callback signature.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. Original source had clear sections (L1, L2, L3 control flow features). No header file or API declarations recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies declared (`_setjmp`, `longjmp`, `printf`) but some functions have return type mismatches. `non_local_jump` missing return in one path. Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+3)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+5+3)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (1+3+2+1)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.20/10
+```
+
+### Overall Readability Score: **4.2/10**
+
+### Critical Defects:
+- **Test functions are fundamentally broken** - they print hardcoded expected values instead of calling actual functions, making verification impossible
+- **NEON vector operations in simple functions** - `loop_continue`, `recursion_factorial` contain 100+ lines of vector code that shouldn't exist at `-O0`
+- **Zero comments** - complete loss of original documentation explaining purpose, test cases, and difficulty levels
+- **Generic variable naming** - `param_1`, `iVar1`, `uVar1` obscure semantic meaning across all functions
+- **Type degradation** - `undefined4`/`undefined8` return types and generic pointer types lose type safety
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most original function names preserved accurately (`sequential_ops`, `nested_if_deep`, `recursion_factorial`), enabling quick identification of purpose.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation, confidence indicators, or algorithm explanations makes understanding intent nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover test function semantics** - Instead of printing hardcoded values, reconstruct actual function calls to enable verification
+2. **Detect and simplify compiler artifacts** - Identify NEON vectorization patterns in simple functions and recover original scalar loops
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions, unresolved indirect calls, and potential optimization artifacts with comments

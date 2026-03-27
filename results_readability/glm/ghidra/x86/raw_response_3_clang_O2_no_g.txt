@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Variables are generic (`param_1`, `iVar1`, `uVar2`) and do not reflect the original semantic names like `x`, `n`, or `arr`. While `global_counter` and `static_local_counter` are recovered, most local variables lose their meaning entirely.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: Many high-level function names like `local_vars`, `heap_basic`, and `test_stack_memory` are preserved. However, some functions are reduced to addresses (e.g., `FUN_00011f75` for `global_var_access`), and `double_value` is recovered correctly.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Aggressive constant propagation replaced meaningful values with magic numbers (e.g., `0x2a` instead of `42`, `0x3c` instead of `60`, `0x14` instead of `20`). This obscures the original logic, especially in functions like `tree_heap_traversal` which just returns `0x3c`.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains compiler artifacts like `__x86.get_pc_thunk.bx` injections and `undefined4` types. While the control flow is mostly clean, the presence of `LOCK()`/`UNLOCK()` macros for memory barriers and Ghidra-specific warnings adds noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Loop structures are frequently destroyed by optimization (unrolling), resulting in long sequences of assignment statements (e.g., `large_stack_frame`, `linked_list_heap`). While the flow is linear, the loss of `for`/`while` constructs makes the logic hard to follow.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: Functions that contained loops in the source (e.g., `linked_list_heap`, `heap_basic`) have become monolithic blocks of unrolled code. `linked_list_heap` is particularly bloated, repeating the same allocation logic 5 times instead of using a loop.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Despite the unrolling, the code reads linearly from top to bottom without complex jumps or `goto` spaghetti. The lack of forward jumps makes it mechanically readable, even if the logic is verbose.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The decompiler failed to re-roll unrolled loops. The code is filled with repetitive patterns (e.g., `*(int *)((int)__ptr + iVar3 * 2 + -8) = iVar3 + -4;` repeated 4 times per loop iteration), which significantly hinders readability.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int` and `void*` are mostly correct, though `undefined4` is used excessively for `int`. `size_t` is often demoted to `uint` or `int`. The distinction between signed and unsigned is sometimes lost (e.g., `undefined4` for return values).
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct types are largely lost. The `Point` struct in `local_struct` is optimized away. The `Node` struct in `linked_list_heap` is accessed via raw array indexing (`__ptr[1]` for `next`, `*__ptr` for `data`) rather than field names, obscuring the data structure.
+
+**11. Type Safety:** Score: 5/10
+Justification: Pointer arithmetic is performed on `void*` and `undefined4*`, which is unsafe. The code relies on casts like `(int)__ptr` to calculate offsets, which is error-prone and reflects the loss of type safety from the original source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to Ghidra's internal warnings (e.g., "WARNING: Function: __x86.get_pc_thunk.bx replaced..."). There are no comments explaining the *logic* of the code, such as the purpose of the unrolled loops or the meaning of magic numbers.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level idioms are not recognized. The "Linked List Creation" idiom in `linked_list_heap` is presented as a flat list of `malloc` calls. The "Tree Traversal" idiom is completely lost to constant folding.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: Ghidra flags standard compiler artifacts (thunks, unreachable blocks) but fails to indicate semantic anomalies caused by optimization, such as `tree_heap_traversal` returning a constant `0x3c` or `heap_overflow` returning `0` despite the source containing a loop.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or postconditions. For example, `heap_basic` does not indicate that `param_1` represents the number of elements, nor does it document the null check on the malloc result.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Calls to standard library functions (`malloc`, `free`, `printf`) are clear. Global variables like `global_counter` are accessed directly. The relationship between `test_stack_memory` and the functions it calls is preserved, though the calls are often inlined.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are ordered by memory address, mixing test functions (`test_...`) with implementation logic (`local_vars`, `heap_basic`). This scatters related logic and makes it harder to find specific implementations compared to the source order.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses Ghidra-specific types (`undefined4`) and macros (`LOCK()`, `UNLOCK()`) that would not compile without modification. The `extern_function` definition is present but relies on the decompiler's inference.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Constant Propagation Obscures Logic**: Functions like `tree_heap_traversal` are reduced to `return 0x3c`, completely hiding the tree structure and summation logic.
+- **Loop Unrolling**: Loops in `linked_list_heap` and `large_stack_frame` are unrolled into hundreds of lines of repetitive assignments, destroying the algorithmic structure.
+- **Struct Field Loss**: Composite types like `Node` are accessed via array offsets (`__ptr[1]`) instead of semantic field names (`next`), making data structures hard to understand.
+- **Magic Numbers**: Meaningful constants like `42` or `10` are replaced with hex values like `0x2a` or `0xa`, reducing semantic clarity.
+
+**Best Quality Aspect:** Cross-Reference Clarity (scored 7/10)
+- Standard library calls and global variable accesses are easily identifiable, maintaining the basic connections between components.
+
+**Most Needs Improvement:** Idiom Recognition (scored 2/10)
+- The decompiler fails to reconstruct high-level patterns (loops, data structures) from the optimized binary, leaving the user to parse raw assembly logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Loop Rolling**: Implement pattern matching to detect and re-roll unrolled loops, restoring `for`/`while` structures for better readability.
+2.  **Struct Recovery from Access Patterns**: Infer struct definitions based on sequential pointer offsets (e.g., `ptr[0]`, `ptr[1]`) and apply field names if type information is available or can be guessed.
+3.  **Symbolic Constant Substitution**: Map hex literals back to likely decimal values or symbolic names, especially when they correspond to common constants or results of constant-folded expressions.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar1`, `lVar1` instead of semantic names like `size`, `x`, `result`, `counter`. For example, `param_macro_constants(int param_1)` should be `param_macro_constants(int size)` based on usage pattern.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`param_macro_constants`, `call_asm_basic`, `param_atomic_c11`), which is exceptional for decompilation. Only helper functions like `FUN_00101020` lack meaningful names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound: `0x200` (should be `MAX_SIZE`), `0x40` (should be `BUFFER_COUNT * 4`), `0x10` (should be `16`), `0xdef0` (platform constant). No named constant recovery despite `-O0` compilation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail()`) appear in most functions. Type casts like `(undefined *)`, `(undefined8 *)` add visual noise. These are compiler artifacts that could be filtered.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as proper `for` statements (e.g., `param_asm_clobber`). Conditionals are natural `if` statements. Some functions like `call_asm_multi_insn` have awkward nested conditionals for simple checks.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. Each function maintains single responsibility. Caller functions like `call_macro_constants` are constant-folded appropriately.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom naturally. Stack canary checks at function exits create minor disruption. No excessive goto usage or deep nesting observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Good constant folding in caller functions (e.g., `call_macro_constants` returns `0x40` directly). No dead code or loop unrolling artifacts. Minimal redundant expressions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of generic types: `undefined8`, `undefined4`, `undefined *` instead of `int`, `int32_t`, `size_t`. Function `param_macro_constants` returns `undefined8` when it should return `int`. Pointer types lack specificity.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays shown correctly (`local_28 [6]`, `local_38 [16]`). Limited struct usage in source code means less opportunity for recovery. Stack arrays properly sized.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout (`(undefined *)`, `(undefined8 *)`, `(undefined4 *)`). Non-standard macros `LOCK()` and `UNLOCK()` in atomic functions aren't valid C and would fail compilation.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments recovered. Original source had extensive documentation about preprocessing, macros, and expected values. Only header comment "Decompiled by BinaryAI" present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns visible but not identified. `param_macro_recursion` implements "x + 16" but not documented. Atomic lock patterns not recognized as such.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Stack canary checks present but not explained as security features. `LOCK()`/`UNLOCK()` macros aren't flagged as non-standard. No decompilation uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions (e.g., `mmap` failure returning `-1`) not explained. No parameter validation hints.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and call graph visible. Global variable `global_var` referenced but declaration not shown in output. External functions marked `<EXTERNAL>::` but relationships unclear.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in reasonable order matching source sequence. Loses original section structure (5.2 preprocessing, 5.3 assembly sections). All functions in single file as expected.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Non-standard macros (`LOCK()`, `UNLOCK()`) require definition. `undefined` types aren't valid C. External function declarations need proper headers. Requires significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+7+8)/4 = 7.50 × 0.25 = 1.875
+Level 3 (Type):        (5+7+5)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (2+4+4+3)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (6+7+4)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 5.79/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects:
+- Variable `param_1` should be named `size` or `x` based on semantic usage patterns
+- Magic numbers like `0x200`, `0x40`, `0x10` should recover original constants (`MAX_SIZE`, `BUFFER_COUNT * 4`, `16`)
+- No comments recovered despite extensive source documentation about preprocessing behavior
+- Non-standard `LOCK()`/`UNLOCK()` macros prevent standalone compilation
+- Generic types (`undefined8`, `undefined4`) lose type precision and safety information
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names preserved from source code, which is exceptional for decompilation and greatly aids navigation
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of recovered comments loses critical semantic information about macro behavior and expected values
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement constant recovery**: Detect compile-time constants and recover named macros (e.g., `0x200` → `MAX_SIZE`) from debug symbols or pattern analysis
+2. **Add semantic comment generation**: Generate comments explaining recovered logic, especially for macro-expanded code and platform-specific branches
+3. **Improve type inference**: Replace `undefined*` types with contextually appropriate types based on usage patterns and function signatures

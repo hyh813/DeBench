@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use completely generic names like `local_28`, `local_9`, `param_1`, `param_2`, `iVar1`, `sVar1`, `puVar1`, `piVar2`. These provide no semantic meaning - `local_28` should be `name_buffer` based on its use with `memcpy` and `strlen`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions are correctly named (`test_cpp_member_func`, `test_cpp_constructor`), and template functions include type info (`template_max<int>`). However, some functions remain as addresses (`FUN_00011030`) and the naming doesn't indicate their C++ nature (e.g., constructors should be marked as such).
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: The decompiled code is littered with unexplained magic numbers: `0x125c`, `0x14`, `0x32`, `0x2a`, `0x47`, `0x28a`, `0x16`, `0x27`, `0x10`, `0x55`, `0x2bf`. These are the expected return values but完全没有解释, making it impossible to understand what they represent without cross-referencing source.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The code has many WARNING comments about unreachable blocks, inlined functions, and unknown calling conventions - these are helpful decompiler diagnostics. However, the core code is relatively clean of compiler artifacts like register spilling or frame pointer manipulation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: **CRITICAL DEFECT**: Many functions return hardcoded values instead of executing actual logic. `test_cpp_virtual_func()` returns `0x2a` directly instead of computing the polymorphic calls. `test_cpp_member_func()` computes `strlen(local_28) + 0x125c` but the `local_28` buffer is just copied from data, not actually built through the SimpleClass operations. The control flow is present but produces wrong results.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Each test function is properly separated, and template instantiations are correctly extracted as distinct functions (`template_max<int>`, `template_max<double>`). The Container class methods are properly decomposed. Minor issue: some functions like `test_cpp_oo_features` bundle multiple operations.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code generally reads top-to-bottom without excessive forward jumps. Early returns are used appropriately. The `test_cpp_constructor` uses a simple do-while loop that is readable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code, but the hardcoded return values create apparent redundancy (multiple functions returning constants). Loop unrolling in `test_cpp_constructor` (the manual loop from 0 to 0x32) is present but not commented.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - almost everything is `undefined4`. The distinction between `int` and `double` is lost (template_max<double> uses undefined4). Pointers are sometimes shown, sometimes not. No const correctness. `size_t` becomes `undefined4` or `size_t` inconsistently.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The Container template class is partially reconstructed with offsets (0x28 for size, array at offset 0), which is good. However, SimpleClass, LifecycleClass, Base, Derived, and all RTTI classes are completely lost - just raw pointer arithmetic. The `this` pointer handling shows `__thiscall` but no actual class structure recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns present: `*(undefined4 *)(this + 0x28)` without bounds checking in Container::push. The virtual function call `(*(code *)**(undefined4 **)param_1)(param_1,param_2)` uses unsafe function pointer casting. However, no obvious buffer overflows or severe undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are mostly auto-generated warnings ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block"). Function signatures like `/* test_cpp_member_func() */` are helpful but don't explain the logic. No explanation of what the hardcoded return values mean or why certain operations occur.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No C++ idioms are recognized or named. The virtual function mechanism is shown as raw vtable dispatch but not identified as polymorphism. RAII patterns in LifecycleClass (constructor/destructor) are not recognized. Template instantiation is shown but not explained as such beyond the function name.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The decompiler does flag some issues: "WARNING: Unknown calling convention", "WARNING: Subroutine does not return" for __cxa_throw. However, the most critical anomaly - that functions return hardcoded values instead of computing results - is not flagged. The indirect virtual call is noted but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The contracts of functions (e.g., that getValue returns the stored value, that compute performs multiplication and addition) are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible (e.g., test_cpp_oo_features calls test_cpp_member_func, test_cpp_constructor). However, the relationships between classes (inheritance, virtual function overrides) are not documented. The vtable pointers in RTTI test are not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - test functions together, template functions together, Container methods together. The main function calls test_cpp_oo_features. However, all in one large file with no namespace or class structure recovery.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code uses `undefined4` which is not a valid C type. Functions like `operator_new` and `operator_delete` are not declared. The code would require significant patching to compile (replacing undefined4 with appropriate types, adding includes). The "Compilation Result: Yes" in metadata seems incorrect given the issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Functions return hardcoded values instead of computing results**: `test_cpp_virtual_func()` returns `0x2a` directly, `test_cpp_multiple_inheritance()` returns `0x47`, etc. This is a fundamental decompilation failure where the actual logic is replaced with constants.
+- **Complete class structure loss**: SimpleClass, LifecycleClass, Base, Derived, RTTI classes are all reduced to raw pointer arithmetic with no struct recovery.
+- **Severe type degradation**: Almost all types are `undefined4`, losing int vs double, pointer vs value, const semantics.
+- **Magic numbers everywhere**: `0x125c`, `0x2a`, `0x47`, `0x28a` etc. have no explanation - these are expected return values but not documented.
+- **No C++ idiom recognition**: Virtual dispatch, RAII, templates, exceptions are shown as raw assembly patterns without identifying the high-level idiom.
+
+### Best Quality Aspect: Function Decomposition (7/10)
+- Test functions are properly separated, template instantiations are correctly extracted as distinct functions, and Container class methods are logically grouped.
+
+### Most Needs Improvement: Control Flow Naturalness (2/10)
+- The most critical issue is that functions don't actually compute anything - they return pre-computed constants. This makes the entire decompilation misleading and useless for understanding the original code's logic.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect constant folding/optimization artifacts**: When a function body just returns a constant, flag this as suspicious and attempt to recover the actual computation path. The current output suggests the decompiler accepted optimized/inlined code without trying to recover the original logic.
+2. **Recover class structures from vtable pointers and constructor patterns**: Use known patterns (vtable pointer at offset 0, constructor sets vtable, destructor calls delete) to reconstruct class layouts with meaningful field names.
+3. **Improve type inference for C++**: Distinguish between int/double/long through usage analysis, recover const from read-only checks, and properly type template instantiations based on the mangled names which already contain type information.

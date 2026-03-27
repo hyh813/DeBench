@@ -1,0 +1,139 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables use generic names like `iVar1`, `iVar2`, `__ptr`, `pNVar1`, `pvVar1`, `local_10`, `auStack_1c`. The original source uses semantic names like `arr`, `n`, `i`, `head`, `current`, `sum`, `result`. The decompiled version makes it nearly impossible to track variable purpose without analyzing usage patterns.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Function names are almost perfectly preserved from source: `double_value`, `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `global_var_access`, `memop_memset`, `memop_memcpy`. The decompiler correctly recovered all function names with high fidelity.
+
+### 3. Literal Clarity
+**Score: 6/10**
+Justification: Some literals are clear (e.g., `10` in loops), but many magic numbers remain unexplained: `0x2a` (42), `0x14` (20), `0x800` (2048), `0x28` (40). The original source has explicit values like `42`, `10`, `2048` that are partially preserved but often converted to hex.
+
+### 4. Noise Reduction
+**Score: 4/10**
+Justification: Heavy pollution from compiler/runtime artifacts including: `WARNING: Function: __x86.get_pc_thunk.ax replaced with injection`, `WARNING: Unknown calling convention`, `WARNING: Removing unreachable block`, stack canary checks (`__stack_chk_fail_local`), and injected thunk functions. These 70+ warning lines obscure the actual logic significantly.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Loop structures are correctly recovered as `for` loops (`for (i = 0; i < n; i = i + 1)`). However, VLA and alloca handling shows complex pointer arithmetic that obscures the simple `int vla[n]` and `alloca()` patterns. At -O0, this is more aggressive than necessary.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Each source function is decompiled as a separate function with appropriate granularity. Functions like `linked_list_heap` and `tree_heap_traversal` maintain their cohesive single-responsibility design. No over-fragmentation or monolith issues observed.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom. Early returns in error handling (`if (__ptr == 0x0) return -1;`) are used appropriately. Some forward jumps exist in VLA handling but are manageable.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No significant dead code or obvious redundancy. Loop unrolling is minimal (the original loops are preserved). Some repetitive stack canary checks but these are compiler-inserted, not decompiler artifacts.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Basic types are reasonable: `int` for integers, `void*` for generic pointers, `char*` for strings. However, `size_t` is not used (sizes use `int`), and function pointers use custom types like `_func_int_int` instead of proper signatures. The original uses `size_t` in several places.
+
+### 10. Composite Type Recovery
+**Score: 9/10**
+Justification: Struct types are correctly recovered: `Point` (with x, y fields), `Node` (with data, next fields), `TreeNode` (with data, left, right fields). Field names are preserved. This is excellent recovery.
+
+### 11. Type Safety
+**Score: 6/10**
+Justification: Manual pointer arithmetic prevalent: `*(int *)((int)__ptr + i * 4)`. No bounds checking visible. Some unsafe patterns like `memop_unaligned_access` directly casting `buf + 1` to `int*`. The original uses array indexing which is safer.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Only decompiler warnings present (e.g., "WARNING: Unknown calling convention"). No algorithm explanations, no intent documentation, no recovery confidence indicators. The warnings are noise, not useful comments.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Common patterns like linked list traversal (`while (temp != NULL)`) and tree operations are implicit in the code but not explicitly named or highlighted. No "this is a linked list" or "binary tree traversal" annotations.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+Justification: Technical warnings present (unknown calling convention, inlined functions, unreachable blocks) but these are compiler artifacts, not semantic anomalies. No indication of potential undefined behavior like the `dangling_pointer` or `double_free` functions.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: No preconditions, postconditions, or invariants are documented. The original has explicit bounds checking (e.g., `if (n <= 0 || n > 1000) return -1;`) that is preserved but not explained as a contract.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function calls are clear (`malloc`, `free`, `printf`). Global variables accessed directly (`global_counter`, `global_array`). Callback relationships (e.g., `set_global_callback(double_value)`) are preserved but not explicitly documented as relationships.
+
+### 17. Module Organization
+**Score: 5/10**
+Justification: Single monolithic output file. No file boundaries preserved. The original has clear sections (stack memory, heap memory, static memory, memory operations) but these are lost in the flat listing.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+Justification: Code references external symbols (`extern_global_var`, `extern_function`) that would need stubs. Library functions (`malloc`, `free`, `printf`, `memset`, `memcpy`) require linking against libc. No explicit dependency documentation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 6 + 4) / 4 = 5.50
+L2_avg = (7 + 8 + 7 + 8) / 4 = 7.50
+L3_avg = (7 + 9 + 6) / 3 = 7.33
+L4_avg = (3 + 5 + 5 + 3) / 4 = 4.00
+L5_avg = (6 + 5 + 6) / 3 = 5.67
+
+Overall = (5.50 × 0.30) + (7.50 × 0.25) + (7.33 × 0.20) + (4.00 × 0.15) + (5.67 × 0.10)
+        = 1.650 + 1.875 + 1.466 + 0.600 + 0.567 = 6.158 ≈ 6.2/10
+```
+
+### Overall Readability Score: 6.2/10
+
+---
+
+### Critical Defects (Bullet List)
+- **Variable naming**: Generic names like `iVar1`, `iVar2`, `__ptr`, `pNVar1`, `local_10` make tracking variable purpose extremely difficult
+- **Noise pollution**: 70+ warning lines (`WARNING: Function: __x86.get_pc_thunk.ax replaced`, `WARNING: Unknown calling convention`) obscure actual logic
+- **No semantic comments**: Only technical warnings present; no algorithm explanations, no intent documentation, no contract recovery
+- **Type safety issues**: Manual pointer arithmetic (`*(int *)((int)__ptr + i * 4)`) instead of safe array indexing
+- **Magic numbers**: Hex values like `0x2a` (42), `0x14` (20), `0x800` (2048) without explanations
+
+---
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+Function names are almost perfectly preserved from the original source. The decompiler correctly recovered names like `double_value`, `local_vars`, `heap_basic`, `global_var_access`, `memop_memset` with high fidelity.
+
+---
+
+### Most Needs Improvement: Variable Naming Quality (3/18 dimensions tied with Comment Quality)
+Variable naming uses cryptic generic names (`iVar1`, `pNVar1`, `__ptr`, `auStack_1c`) that completely obscure the semantic purpose. Combined with the lack of useful comments, the code requires significant reverse-engineering effort to understand even simple functions.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a variable is used as array index, name it `index` or `i`. When used to store malloc result, name it `ptr` or `buffer`. When used in arithmetic, derive name from operation (e.g., `result`, `sum`, `count`).
+
+2. **Filter or separate compiler warnings**: Move all `WARNING:` messages to a separate section or comment block, or provide a "clean" output option without these artifacts. The current output has ~70 warning lines for a ~1700 line decompilation.
+
+3. **Recover semantic comments**: Add comments explaining recovered constructs (e.g., "// VLA: variable-length array", "// TLS: thread-local storage", "// Precondition: n > 0"). Document the intent of bounds checks and error returns.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `local_c`, `local_10` with no semantic meaning. Original source had meaningful names like `x`, `arr`, `n`, `sum` that indicated purpose clearly.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`double_value`, `process_char`, `test_array_types`). Some helper functions have generic names (`FUN_00012434`) but core functionality is identifiable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Character constants shown as hex (`0x41` instead of `'A'`, `0x62` instead of `'b'`). Magic numbers like `0x20`, `0x5b` for character range checks obscure the uppercase-to-lowercase conversion intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail`) present in every test function. Verbose floating-point helper calls (`__mulsf3`, `__aeabi_ddiv`) add noise. Some redundant type casts throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as `for` constructs in most cases. Switch statement recovered for `enum_switch`. Some awkward patterns in floating-point helper functions but core logic is readable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized with single responsibility. Test functions separated from implementation. Floating-point helpers are separate but excessively verbose.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with clear execution flow. Some forward references in test function variable initialization but doesn't significantly impede understanding.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant type casts (`(undefined4)((ulonglong)uVar3 >> 0x20)`). Floating-point operations show compiler library call patterns that could be simplified to standard operators.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `long long` becomes `undefined8`, `float`/`double` become `undefined4`. `volatile` qualifier lost in `volatile_access`. Original type information significantly degraded.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All structs accessed as `int*` with array indexing (`param_1[1]`, `param_1[2]`). No struct definitions recovered. `Point3D`, `Rect`, `Widget` all lost. Unions completely unrecovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`undefined4*` to `int*`). Pointer arithmetic on generic types. Function pointers typed as `code*` losing signature information.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments** in decompiled output. Original source had extensive documentation explaining each test case, expected values, and purpose. Complete loss of semantic documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Linked list traversal pattern not identified. Tree recursion not labeled. Switch-on-enum pattern recovered but not documented as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for `volatile` access optimization (reads collapsed to `*param_1 + *param_1`). No warnings about potential undefined behavior in `array_oob`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`, `n > 0`). No postconditions. Original test expectations completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. `double_value` called from `ptr_func_simple` but no indication of callback relationship. Global variable usage unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions present but not grouped by category (data types, arrays, pointers, composites mixed). No header file structure. Test functions interleaved with implementations.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies (`printf`, `puts`, `memset`) declared. Floating-point library functions present but may need linking.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+3+3+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (6+5+7)/3   = 6.00 × 0.10 = 0.600
+
+Overall Score: 4.87/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Struct types completely lost** - All composite types (`Point3D`, `Rect`, `Widget`, `Node`) accessed as raw `int*` with offset arithmetic
+- **No comments preserved** - Original 830 LOC had extensive documentation; decompiled output has zero comments
+- **Variable names generic** - `param_1`, `local_c`, `uVar1` provide no semantic information about purpose
+- **Type precision degraded** - `long long`, `float`, `double` all become `undefined8`/`undefined4`
+- **Volatile qualifier lost** - `volatile_access` function shows compiler optimization that defeats volatile semantics
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved from source, making basic functionality identifiable
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding intent impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union definitions** from access patterns - detect consistent offset usage and propose type definitions with field names
+2. **Preserve or infer comments** from string literals, function names, and test expectations in the binary
+3. **Improve type inference** for floating-point and 64-bit types using calling convention analysis and operation patterns

@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `local_28`, `piVar1`, and `iVar3`, completely losing semantic meaning (e.g., `obj`, `data`, `size`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Ghidra successfully demangled C++ symbols, preserving names like `Container<int>::push` and `RTTIDerivedA::~RTTIDerivedA`, which accurately reflects the source structure.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers resulting from optimization (e.g., `0x2a` for 42, `0x125c` for 4704) and raw sizes (e.g., `0x1f` for string copy length), obscuring the original logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present, including injected `__x86.get_pc_thunk` functions and incorrect type signatures like `EVP_PKEY_CTX *ctx` in `_init`, which pollute the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While the control flow is natural where logic exists (e.g., the `do-while` loop in `test_cpp_constructor`), many functions are reduced to simple constant returns due to optimization, hiding the original flow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-decomposed; template instantiations like `template_max<int>` and `template_max<double>` are correctly separated into distinct functions.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads linearly with minimal jumps, though the optimized functions returning constants make the flow trivial to follow but semantically empty.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately reflects the optimized binary, removing redundant calculations (e.g., `test_cpp_virtual_func` just returns `0x2a`), though this is a compiler feature.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded; standard integers are `undefined4`, and `Container<double>::get` returns a `longdouble` instead of `double`, indicating poor FPU/ABI handling.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Class structures are not recovered; member access is performed via raw pointer arithmetic on `this` (e.g., `*(int *)(this + 0x28)`), completely losing the object-oriented layout.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies on unsafe casts and pointer arithmetic (e.g., casting `this` to `int*`), and the use of `undefined` types removes all safety guarantees.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are sparse and limited to generic warnings like "Unknown calling convention," providing no insight into the algorithm or C++ semantics.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: The decompiler successfully identifies C++ idioms like `operator_new`, `__cxa_throw` (exceptions), and `__dynamic_cast` (RTTI), which aids in understanding the high-level intent.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: Generic warnings are present, but specific anomalies—like the constant folding replacing logic or the incorrect `EVP_PKEY_CTX` type—are not explicitly flagged as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the null check implied by `getData` is lost in the arithmetic.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Cross-references are clear where function names are preserved (e.g., calls to `std::ios_base::Init::Init`), but the lack of struct definitions weakens the context of member access.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically by class/template instantiation, maintaining a structure that mirrors the original source's organization.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to `undefined` types, incorrect signatures (e.g., `_init`), and missing struct definitions.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Class structures (structs) are not recovered; member access is via raw pointer arithmetic (e.g., `*(int *)(this + 0x28)`).
+- Variable names are generic (`local_28`, `piVar1`), obscuring the original semantic intent.
+- Types are generic (`undefined4`, `undefined1`) or incorrect (`longdouble` for `double`), reducing type safety and clarity.
+- Optimization artifacts (constant folding) result in functions returning magic numbers (e.g., `0x2a`) instead of showing the original logic.
+
+**Best Quality Aspect:** Function Naming (scored 9/10)
+- Ghidra's C++ demangler is highly effective, preserving the original names for classes, methods, and template instantiations.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct class definitions from vtables and member access patterns forces the reader to interpret raw pointer offsets, which is the biggest barrier to understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement C++ class recovery to reconstruct struct definitions from vtables and member access patterns.
+2. Improve type inference to replace `undefined4` with specific integer types (`int`, `uint32_t`) based on usage context.
+3. Enhance variable naming heuristics to infer names from context (e.g., `size` for loop counters or array bounds) rather than defaulting to `local_X`.

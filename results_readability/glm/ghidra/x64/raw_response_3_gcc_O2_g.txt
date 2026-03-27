@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `puVar2`, `plVar1`, `__ptr`), providing no semantic context about their role in calculations or data structures.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are recovered perfectly from the binary symbols, matching the original source exactly (e.g., `double_value`, `heap_basic`, `linked_list_heap`).
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers are frequently represented in hex (e.g., `0x2a` for 42, `0x14` for 20) without comments explaining their meaning, making arithmetic harder to follow.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Compiler-inserted stack canary checks (`in_FS_OFFSET`) are explicitly inlined in almost every function, cluttering the logic and obscuring the actual return paths.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Loops are often represented as `do-while` structures even when the source was `for`, and Variable Length Array (VLA) allocation involves complex stack probing loops that obscure the simple allocation intent.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are well-separated and correspond logically to the source; the decompiler successfully identified function boundaries despite the optimization level.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with minimal forward jumps; the control flow is generally easy to trace despite the optimization artifacts.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler effectively presents the optimized logic (e.g., `local_struct` returning `x * 3` instead of struct member access), which is clean and free of dead code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Standard types like `int` and `void*` are used correctly, though pointers are often cast to `undefined8` or `long` for arithmetic, slightly reducing type safety clarity.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Complex structures like `Node` and `TreeNode` are recovered with accurate field names (`data`, `next`, `left`, `right`), allowing for high-level understanding of heap operations.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic and casts are generally accurate to the binary execution; there are no glaringly incorrect type conversions that would mislead the analyst.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost exclusively auto-generated warnings (e.g., "WARNING: Unknown calling convention") and provide no insight into the algorithm's purpose or logic.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Common patterns like linked list traversal are present but rendered as raw pointer manipulation (e.g., `piVar3 = *(int **)(piVar3 + 2)`) rather than high-level structural idioms.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler flags issues like "Removing unreachable block" and "Unknown calling convention," which is helpful, though it misses higher-level semantic anomalies like the aggressive inlining in test functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: Preconditions (like `if (n <= 0) return -1`) are preserved as code, but there are no explicit comments or annotations summarizing these contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names; the relationship between `malloc`, `free`, and struct pointers is easy to follow.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically in the output, matching the source's separation of stack, heap, and global memory operations.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on Ghidra-specific types like `undefined8` and `undefined1`, requiring manual definition of these types to compile, but standard library calls are intact.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.5/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`iVar1`, `puVar2`), forcing the analyst to manually track data flow.
+- Stack canary checks (`in_FS_OFFSET`) are inlined into every function, significantly cluttering the control flow.
+- Magic numbers are displayed in hex (e.g., `0x2a`) without context, reducing immediate comprehension.
+- Variable Length Array (VLA) allocation is obscured by verbose stack probing logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly recovered all function symbols, making the high-level flow of the program immediately obvious.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)
+- The reliance on generic names like `iVar1` and `puVar2` is the single biggest barrier to understanding the code's logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement data flow analysis to infer variable names based on usage (e.g., renaming `iVar1` to `sum` if it accumulates values).
+2. Abstract stack canary checks into a macro or a separate code block to reduce visual noise in the main function logic.
+3. Add an option to display integer literals in decimal by default, or infer named constants from repeated usage.

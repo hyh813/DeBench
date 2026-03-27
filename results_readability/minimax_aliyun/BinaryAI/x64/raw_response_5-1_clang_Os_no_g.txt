@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**  
+Justification: Variables use completely generic names like `local_24`, `uStack_20`, `puVar1`, `lVar2`, `iVar4`, `sVar1`. The original source had meaningful names like `value`, `name`, `data`, `size`, `instance_count`, `capture_by_value`, `capture_by_ref`. This is a severe degradation where the semantic purpose of each variable is completely lost.
+
+### 2. Function Naming Quality
+**Score: 9/10**  
+Justification: Most function names match the original source exactly (e.g., `test_cpp_member_func`, `test_cpp_constructor`, `call_virtual_func`). Template instantiations are properly named with type suffixes (e.g., `template_max_int_`, `Container_int_::push`). Minor deduction for some mangled names like `_RTTIDerivedA` for destructors.
+
+### 3. Literal Clarity
+**Score: 6/10**  
+Justification: Magic numbers like `0x2a` (42), `0x47` (71), `0x28a` (650) appear without explanation, but they correctly represent expected return values. The string "Test" is reconstructed as `0x74736554` (displayed as "tset" due to endianness). Some literals are inferable from context but not documented.
+
+### 4. Noise Reduction
+**Score: 8/10**  
+Justification: The code is relatively clean without obvious compiler artifacts like register spilling, __asm__ blocks, or frame pointer manipulation. Stack variable naming (`local_24`, `uStack_20`) is a decompilation artifact but doesn't significantly impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 5/10**  
+Justification: Most functions have natural control flow, but `call_virtual_func` uses an awkward indirect call pattern `(***(code ***)param_1)();` that obscures the vtable dispatch mechanism. The do-while loop in `test_cpp_constructor` is readable but could be better as a for-loop. At -O0, this level of awkwardness is unexpected.
+
+### 6. Function Decomposition
+**Score: 9/10**  
+Justification: Functions are appropriately sized with good separation. Template instantiations are properly extracted as separate functions. Class methods are correctly decomposed. The granularity is excellent and matches the source organization.
+
+### 7. Code Linearization
+**Score: 8/10**  
+Justification: Most functions read top-to-bottom without excessive jumps. The `test_cpp_constructor` do-while loop is slightly non-linear but understandable. No deep nesting or computed jumps disrupting flow.
+
+### 8. Redundancy Elimination
+**Score: 9/10**  
+Justification: No dead code or obvious redundancy. Loop unrolling is minimal (the initialization loop in constructor is kept as loop). Constants are returned directly without redundant computation.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**  
+Justification: Types are imprecise - uses `undefined4`, `undefined8`, `undefined3` instead of specific types like `int`, `size_t`. The original source used `int`, `size_t`, `char*`, `bool` but decompiled code has generic types. Function signatures like `void call_virtual_func(Base *param_1, int param_2)` are mostly correct but parameter types lack precision.
+
+### 10. Composite Type Recovery
+**Score: 4/10**  
+Justification: Classes are not properly reconstructed. `LifecycleClass` is completely lost - we see raw memory operations like `puVar1[2]` instead of `obj.getData(2)`. Template classes `Container<int>` and `Container<double>` are partially recovered with type suffixes but lack proper struct definitions. The class hierarchy for RTTI classes is partially visible but field names are lost.
+
+### 11. Type Safety
+**Score: 6/10**  
+Justification: Some unsafe patterns exist - the indirect vtable call `(***(code ***)param_1)();` lacks type safety. Raw pointer arithmetic like `puVar1[2]` and `*(int *)(this + 0x28)` bypass type safety. However, no buffer overflows or obvious undefined behavior patterns are present.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**  
+Justification: Only a header comment "// Decompiled by BinaryAI" is present. No explanation of what functions do, no uncertainty indicators, no algorithm documentation. The original source had extensive comments explaining each test case's purpose, but these are completely lost.
+
+### 13. Idiom Recognition
+**Score: 5/10**  
+Justification: Template instantiation pattern is recognized and named well. Virtual function dispatch is partially recognized but awkwardly represented. Exception handling is not well recognized (shows raw `__cxa_throw`). Lambda expressions are not recognized (just returns constant). Some patterns have hints but aren't explicitly identified.
+
+### 14. Anomaly Indication
+**Score: 2/10**  
+Justification: No anomalies are flagged. The indirect vtable call in `call_virtual_func` that couldn't be fully resolved is not marked as uncertain. Raw memory operations that might be unsafe are not flagged. The decompiler presents potentially incorrect information confidently.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear expectations (e.g., "期望: 4704") but these are completely lost. No contract information recovered whatsoever.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**  
+Justification: Function call relationships are clear (e.g., `main` calls `test_cpp_oo_features`). However, the relationships between classes (inheritance, virtual function overrides) are not documented. The vtable relationships are not explained. Some cross-references are inferable but not explicit.
+
+### 17. Module Organization
+**Score: 8/10**  
+Justification: Functions are logically grouped - test functions together, template functions together, class methods together. This matches the source organization reasonably well. Static vs. non-static distinction is maintained.
+
+### 18. Build System Compatibility
+**Score: 6/10**  
+Justification: External functions are declared (printf, operator_new, etc.) but some non-standard types (`undefined4`, `undefined8`) would need replacement for compilation. The code structure is compilable with moderate patching for type definitions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 6 + 8) / 4 = 6.25
+L2_avg = (5 + 9 + 8 + 9) / 4 = 7.75
+L3_avg = (5 + 4 + 6) / 3 = 5.00
+L4_avg = (3 + 5 + 2 + 1) / 4 = 2.75
+L5_avg = (5 + 8 + 6) / 3 = 6.33
+
+Overall = (6.25 × 0.30) + (7.75 × 0.25) + (5.00 × 0.20) + (2.75 × 0.15) + (6.33 × 0.10)
+        = 1.875 + 1.9375 + 1.0 + 0.4125 + 0.633
+        = 5.86/10
+```
+
+### Overall Readability Score: 5.86/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use generic names (`local_24`, `puVar1`, `iVar4`) instead of semantic names like `value`, `data`, `size` from the original source
+- **Class reconstruction failure**: `LifecycleClass` is completely lost - raw memory operations like `puVar1[2]` instead of `obj.getData(2)`
+- **No comments**: Complete absence of explanatory comments; original source's extensive documentation is lost
+- **Anomaly indication missing**: The awkward vtable call `(***(code ***)param_1)();` is not flagged as uncertain
+- **Contract recovery zero**: No preconditions, postconditions, or expected values are documented
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+Function names closely match the original source and template instantiations are properly identified with type suffixes.
+
+### Most Needs Improvement: Assertion & Contract Recovery (1/10)
+The decompiler provides no documentation of function contracts, preconditions, postconditions, or expected return values. The original source had explicit "期望: X" comments for every test function that are completely lost.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `puVar1[2]` accessing index 2 suggests it's an array; `strlen()` called on a buffer suggests it's a string)
+2. **Recover class structures**: Reconstruct C++ classes with proper field names instead of raw pointer arithmetic; use vtable analysis to identify class hierarchies
+3. **Add uncertainty markers**: Flag indirect calls, ambiguous control flow, and reconstructed types that couldn't be fully resolved with confidence indicators

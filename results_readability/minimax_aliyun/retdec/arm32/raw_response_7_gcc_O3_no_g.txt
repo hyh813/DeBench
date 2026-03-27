@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables like `v1`, `v2`, `v3`, `v4`, `v5`, `v6` and parameter `a1` are generic and obscure purpose. The original had meaningful names like `result`, `x`, `str` but these are lost. Only `str` and `mem` retain some semantic meaning.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly named (`main`, `test_obf_opt_edge`, `call_vectorized_loop`, `param_null_pointer_deref`), but `param_division_by_zero` was incorrectly split into `param_division_by_zero_constprop_0` and `param_division_by_zero_constprop_1`, creating misleading names. Many original functions are completely missing.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic number `90` (XOR key 0x5A) appears without explanation. String literals are encoded as hex (`\xe6\xb5\x8b\xe8\xaf\x95...`). Constants like `31` (buffer size), `256` (modulus), and `0x1c5fefff` (signal handler address) lack context. The original source had clear comments explaining these values.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. The complex struct initializations for jmp_buf are verbose but necessary for accurate decompilation. No redundant casts or debug instrumentation observed.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Control flow is mostly readable with while loops and conditionals. However, the incorrect function decomposition of `param_division_by_zero` into two separate functions disrupts the natural structure. The original had a single clear function with signal handling and setjmp/longjmp.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: Severe decomposition failure. The original source contained 15+ functions (`param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `param_string_encryption`, `param_tail_call_optimized`, etc.) but only 6 are detected. `param_division_by_zero` was incorrectly split into two variants. Most obfuscation and optimization test functions are completely missing.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. The `test_obf_opt_edge` function has a gcd computation loop that is reasonably linear. Some complexity from struct initializations for jmp_buf creates minor discontinuities.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy detected. The decompiled code is clean in this regard.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently which is appropriate for arm64. Pointer types are generally correct (`int32_t *`). Minor issues with some generic types but nothing severe.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The jmp_buf is reconstructed as a complex anonymous struct with nested structures, which is technically accurate but very difficult to read. No struct field names recovered. The original had clear `jmp_buffer` variable.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Minor issues with some pointer arithmetic but no severe violations that would cause undefined behavior. The signal handler function pointer cast is acceptable.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining the code logic. The original source had extensive comments describing obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.) and their purposes. Only a meta-information section exists at the bottom with compiler detection.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The gcd computation loop in `test_obf_opt_edge` is not recognized as such. The opaque predicate pattern from the original is completely lost. No pattern naming or explanation provided.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged. The decompiler silently fails to recover many functions and provides no indication of the missing code or the incorrect function splitting. The split of `param_division_by_zero` should have been flagged as uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had clear expectations (e.g., "期望: 10", "期望: 20") that are not recovered. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present in `test_obf_opt_edge` but relationships are not documented. No indication of which functions call which, or the expected call graph. The original had clear `call_*` and `param_*` function relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file, grouped somewhat logically. Static functions not properly indicated. The organization is basic but functional.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes are present but the code may not compile correctly due to the incorrect function decomposition. The complex struct initializations for jmp_buf may cause issues. External dependencies (libc functions) are properly declared.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- **Function decomposition failure**: Only 6 of 15+ functions recovered; `param_division_by_zero` incorrectly split into two functions
+- **Missing functions**: `param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `param_string_encryption`, `param_tail_call_optimized`, and many others completely absent
+- **Variable naming**: Generic names (`v1`-`v6`, `a1`) obscure semantic purpose
+- **No comments**: Complete absence of explanatory comments for obfuscation techniques and algorithm explanations
+- **Literal obscurity**: Magic numbers like `90`, `31`, `256` unexplained; string literals hex-encoded
+
+**Best Quality Aspect:** Noise Reduction (scored 7/10)  
+The decompiled code has minimal compiler artifacts and is relatively clean without redundant casts or debug instrumentation.
+
+**Most Needs Improvement:** Function Decomposition (scored 2/10)  
+The decompiler failed to recover most functions from the original source and incorrectly split one function into two variants. This is the most severe readability issue.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Improve function boundary detection**: The decompiler incorrectly split `param_division_by_zero` and missed entirely 15+ other functions. Better control flow analysis is needed.
+2. **Recover variable names from usage patterns**: Variables like `v1` used in signal/setjmp contexts should be named `signal_handler` or `jmp_result` based on API usage.
+3. **Add semantic comments**: The original had clear documentation of obfuscation techniques (OBF-L4-02, etc.) that should be inferred and added as comments when patterns like fake branches or opaque predicates are detected.

@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are generic stack offsets like `local_38`, `uStack_2c`, and `pvVar1`, providing no semantic hint about their roles as objects, members, or indices (e.g., `local_38` holds the value `10` but is not named `value`).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Ghidra successfully demangled C++ symbols, preserving class scopes and template parameters (e.g., `Container<int>::push`, `virtual thunk to MultiDerived::funcB`), which accurately reflects the original structure.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `0x125c` (4700) and `0x14` (20) appear without explanation, though string literals like `"12RTTIDerivedA"` are recovered, providing some context for RTTI logic.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is relatively clean of register spills, but the use of `undefined` types (e.g., `undefined8`, `undefined1 [16]`) and bit masking operations like `(ulong)&local_38 | 4` adds unnecessary complexity.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Optimized functions like `test_cpp_operator_overload` are reduced to single returns, losing all logic structure, while `test_cpp_rtti` contains complex nested conditionals for string comparison that obscure the high-level `typeid` logic.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Class methods are correctly separated into individual functions with proper `this` passing, and thunks are identified, though the inlining of logic into `test_cpp_oo_features` makes that specific function monolithic.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom with minimal spaghetti jumps, although the exception handling logic in `test_cpp_exception` is flattened into low-level calls rather than structured blocks.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately reflects the compiler's optimizations (e.g., constant propagation), removing redundant intermediate calculations, though this sometimes removes the logic necessary to understand the source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While `this` pointers are correctly typed (e.g., `Container<int> *`), many return types and variables fall back to generic `undefined` types or `undefined1 [16]` (for a double), losing precision.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Class structures are not reconstructed; member access is performed via raw pointer arithmetic (e.g., `*(int *)(this + 0x28)` instead of `this->size`), completely hiding the object layout.
+
+**11. Type Safety:** Score: 6/10
+Justification: Necessary casts for low-level memory access are present, but the prevalence of `undefined` types and pointer arithmetic on `void*` (e.g., in `test_cpp_rtti`) reduces the perceived safety and clarity.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic; only generic warnings like "WARNING: Unknown calling convention" are present, which offer little value.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The decompiler identifies C++ mechanisms like vtable calls and RTTI checks (`__dynamic_cast`), but fails to recognize high-level patterns like RAII, smart pointers, or exception handling blocks.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: It flags calling convention issues, but it does not explicitly warn when high-level logic has been optimized away (e.g., `test_cpp_lambda` returning a constant), which could be misleading.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the bounds check in `Container::get` is visible but not annotated as a safety contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear, and the demangled names make the class hierarchy evident, but the lack of struct definitions makes understanding data relationships difficult.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a flat manner; while naming groups them by class, there is no logical separation or namespace structure preserved in the view.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on implicit standard library structures and types that are not defined in the snippet, making it impossible to compile standalone without significant manual reconstruction.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Composite types (classes) are not recovered; member access uses raw pointer offsets (e.g., `this + 0x28`), destroying the OOP model.
+- Variable names are generic stack offsets (`local_38`, `uStack_2c`), making it impossible to track object state without manual mapping.
+- High-level logic is lost to optimization (e.g., `test_cpp_operator_overload` is just `return 0x16`), providing no insight into the original implementation.
+- Exception handling is flattened into `__cxa_throw` calls without reconstructing the `try/catch` block structure.
+- Type precision is poor, with `undefined` types used for standard types like `double`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)
+- Ghidra's C++ demangling is excellent, preserving class namespaces, template arguments, and distinguishing between thunks and virtual functions, which is the primary anchor for understanding the code.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- The failure to reconstruct class structures (structs with member names) forces the reader to interpret raw pointer arithmetic, which is the single biggest barrier to understanding C++ decompilation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement aggressive C++ class structure recovery to replace pointer offsets (e.g., `this + 0x28`) with member access (e.g., `this->size`).
+2. Infer variable names from constructor parameters and usage patterns (e.g., `local_38` initialized to `10` in a test context should likely be named `expected_value` or similar).
+3. Detect and annotate optimized-away functions with a warning like "Logic optimized out at compile time; result is constant" to prevent misinterpretation of the source complexity.
+4. Reconstruct high-level exception handling blocks (`try`/`catch`) from the personality routine and landing pad tables.

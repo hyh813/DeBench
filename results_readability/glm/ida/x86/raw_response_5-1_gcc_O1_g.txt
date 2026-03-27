@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Local variables in test functions are generic (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`), obscuring the logic (e.g., `v0` accumulating results in `test_cpp_virtual_func`). However, class member access is recovered well (`this->multiplier`, `obj.name`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: C++ name demangling is excellent; functions like `_Z20test_cpp_member_funcv` are clearly presented as `test_cpp_member_func`, and class methods like `Base::virtual_func` are accurately named.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals ("Test", "Base") are preserved, but integer constants are aggressively folded into magic numbers (e.g., `4700` in `test_cpp_member_func` instead of the original `4660 + 34`), making the arithmetic logic hard to follow.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: Stack canary checks (`__readgsdword(0x14u)`) and vtable initialization casts (`(int (**)(...))&off_4CD4`) are present, which is expected for C++ decompilation but adds noise compared to clean source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally natural and linear, matching the `-O0` source structure. However, `test_cpp_exception` is reduced to just the throw, missing the `catch` block structure in the decompiled view.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are decomposed correctly with appropriate granularity. Class methods are separated from test drivers, and compiler-generated thunks (e.g., `virtual thunk to...`) are correctly isolated.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal forward jumps or spaghetti logic, making it easy to trace execution paths within the functions.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is little dead code. The loop in `test_cpp_constructor` appears unrolled (`v0[1]=10; v0[2]=20...`), which is a valid compiler transformation at `-O0` for small fixed-size arrays and doesn't significantly hinder readability.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally precise; `SimpleClass`, `Base`, and `Derived` objects are correctly identified. Return types like `__int64` are used where stack canaries are involved, which is technically accurate for the ABI.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Struct recovery is excellent; class layouts including vtable pointers (`_vptr_Base`) and member fields (`multiplier`, `dataA`) are accurately reconstructed and used naturally in the code.
+
+**11. Type Safety:** Score: 7/10
+Justification: Vtable calls use necessary function pointer casts (`(*obj->_vptr_Base)(obj, x)`), which are "unsafe" in C syntax but accurately represent the C++ dynamic dispatch mechanism without hiding details.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining the logic, the purpose of magic numbers, or the complex C++ runtime mechanisms (like RTTI or exception handling) being utilized.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: C++ idioms are well-recognized; virtual calls are explicitly shown as vtable lookups, and RTTI checks (`typeid`, `dynamic_cast`) are translated into their underlying runtime calls (`__dynamic_cast`).
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: No specific anomalies are flagged (e.g., the missing catch blocks in `test_cpp_exception` are presented silently as just a throw).
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: Preconditions (like array bounds checks in `Container::get`) are visible as `if` statements, but there is no explicit documentation of contracts or invariants.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Cross-references are clear; `main` calls `test_cpp_oo_features`, which in turn calls specific test functions. Virtual function calls are resolved to their correct vtable offsets.
+
+**17. Module Organization:** Score: 8/10
+Justification: The decompiled output is organized logically, with related class methods grouped together (e.g., all `Container` methods) and test functions grouped separately.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on external symbols (e.g., `off_4CD4`, `__cxa_throw`) and standard library headers that are not included, requiring significant patching to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.0/10
+
+**Critical Defects:**
+- Variables in test functions (`v0`, `v1`) are generic, obscuring the accumulation logic (e.g., `v0` should be `result`).
+- Constant folding creates magic numbers (e.g., `4700`) that hide the original arithmetic intent (`4660 + 34`).
+- Exception handling logic (`catch` blocks) is missing from the decompiled view of `test_cpp_exception`, leaving only the `throw`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- C++ name demangling is perfectly implemented, making the high-level structure of classes and test functions immediately obvious.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)
+- The lack of comments explaining the C++ runtime mechanics (vtables, RTTI) or the logic behind folded constants significantly impedes deep understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage context (e.g., variables accumulating return values should be named `result`).
+2. Annotate or unfold folded constants to reflect the original source arithmetic (e.g., show `4660 + 34` instead of `4700`).
+3. Attempt to reconstruct `try-catch` blocks by analyzing personality routines and landing pads, rather than just showing the `throw`.

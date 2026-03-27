@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `ptr`, `idx`, `result`) with no semantic meaning. For example, `vla_stack` uses `vvar_39{r24|4b}` instead of meaningful names like `stack_ptr` or `array_base`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions like `double_value`, `local_vars`, `local_array` are correctly recovered, but 40+ helper functions remain as `sub_401xxx` (e.g., `sub_401030`, `sub_401120`), obscuring their runtime initialization purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (should be `-1`), `4096`, `0xfffff000`. Struct padding sizes like `padding_0[19815]` are meaningless artifacts.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifacts: `__x86.get_pc_thunk.*` functions (8 variants), stack canary checks in every function, absurd struct padding definitions, and platform mismatch (X86 vs original ARM64).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions use `goto` for simple loops (e.g., `sub_401030`: `goto ptr[2]`). Complex functions like `vla_stack` have confusing while-loops that should be simple allocations.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Excessive fragmentation with 40+ `sub_401xxx` runtime stubs. Main test functions are reasonable size, but runtime initialization code is over-decomposed into meaningless single-call functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but computed gotos (`goto v1->field_48`) and forward jumps in `test_heap_memory` disrupt natural flow significantly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks duplicated in every function. Runtime thunk functions (`__x86.get_pc_thunk.*`) appear repeatedly without consolidation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All integers are `unsigned int` or `int` regardless of original type. `size_t` parameters become `unsigned int`. Pointer types often degrade to `unsigned int` (e.g., `heap_basic` returns `unsigned int` instead of proper pointer type).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_4`). Absurd padding definitions (`padding_0[19815]`) indicate failed data section analysis. Node structures for linked lists are partially correct but lack semantic field names.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe patterns: function pointer calls via `goto` (`goto *((int *)(...))`), pointer arithmetic on `unsigned int`, implicit casts throughout. `call_global_callback` uses goto for indirect call instead of proper function pointer syntax.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only auto-generated function headers. No explanation of algorithms, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Memory allocation patterns (malloc/free pairs) visible but not identified. Linked list and tree traversal patterns present but unnamed. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`), but most issues silent. Platform mismatch (ARM64→X86) not flagged. Failed struct recoveries not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present but not documented as preconditions. No postconditions or invariants. Error return values (`4294967295`) not explained as error codes.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Global variables have opaque names (`g_403008`, `g_403151`). No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with no logical grouping. Runtime initialization code mixed with application logic. No separation of concerns between test functions and memory operation functions.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies undeclared (`extern_function`, `extern_global_var`). Platform-specific thunks present. Would require significant stubbing and modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (5+5+6+6)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+4+3)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.05/10
+```
+
+**Overall Readability Score: 4.1/10**
+
+### Critical Defects
+- **Platform mismatch**: Original ARM64 compiled to X86 decompilation without warning
+- **Variable `vvar_39{r24|4b}`** in `vla_stack` should be named `vla_base_ptr` based on VLA allocation pattern
+- **Struct padding artifacts** like `padding_0[19815]` indicate failed data section recovery
+- **Function pointer calls via goto** (`goto *((int *)(...))`) instead of proper indirect call syntax
+- **40+ `sub_401xxx` functions** should be identified as runtime initialization stubs and consolidated
+
+### Best Quality Aspect
+- **Function Naming Quality (5/10)** - Core application functions (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`) were correctly recovered with original names, showing the decompiler can identify meaningful symbols when debug information is available.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding complex recovery patterns (VLA, alloca, stack canaries) nearly impossible without comparing to original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Detect and flag platform/architecture mismatches** - The ARM64→X86 discrepancy should trigger a prominent warning about potential accuracy issues
+2. **Recover semantic variable names from usage patterns** - Variables used in size calculations should be named `size`, `count`, `length`; pointer variables should indicate their target type
+3. **Consolidate runtime stubs and add explanatory comments** - Group `sub_401xxx` initialization functions together with comments explaining their purpose (e.g., "CRT initialization thunk")

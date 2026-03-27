@@ -1,0 +1,165 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Nearly all variables use cryptic generic names like `param_1`, `param_2`, `iVar1`, `iVar2`, `uVar1`, `puVar2`. The original source used meaningful names like `temp1`, `temp2`, `sum`, `count` but the decompiled version completely obscures these with auto-generated names. For example, in `sequential_ops`, parameters should be `a`, `b`, `c` but are `param_1`, `param_2`, `param_3`.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: Most function names are correctly preserved from the source: `sequential_ops`, `single_if`, `if_else`, `recursion_factorial`, `double_value`, `triple_value`, `loop_for_fixed`, etc. Minor issues include compiler-added suffixes like `.constprop.0` and some internal functions with generic names like `FUN_00101020`.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Multiple unexplained magic numbers appear throughout: `0x14` (20), `0x1e` (30), `0xffffffff` (-1), `0x3e9` (1001), `0x65` (101). The source had clear constants but these are lost in decompilation. Some values like `0xfffffffc` in bit manipulation contexts are somewhat inferable but lack explicit documentation.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Justification: Significant noise artifacts include: "WARNING: Removing unreachable block" messages, "WARNING: Could not recover jumptable" warnings, "WARNING: Treating indirect jump as call", "WARNING: Subroutine does not return" annotations. These clutter the output and indicate decompilation limitations rather than actual code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+Justification: At -O0, control flow should closely match source, but extensive loop unrolling is present. For example, `loop_for_fixed` (lines 00101540-0010161F) shows massive manual loop unrolling with 10+ sequential additions instead of a simple `for` loop. Similarly, `loop_continue` is heavily unrolled with bit manipulation to simulate the continue behavior. This level of transformation is inappropriate for -O0 compilation.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Each original function is preserved as a separate function in decompiled output. Functions maintain reasonable granularity - none are monolithic. However, some functions like `test_control_flow_l1` contain hardcoded values instead of actual function calls, losing the decomposition benefit.
+
+### 7. Code Linearization
+**Score: 5/10**
+
+Justification: Generally reads top-to-bottom but some forward jumps disrupt flow. The `duffs_device` function has complex switch-case fallthrough logic with multiple labels (`switchD_00101c5f_caseD_7`, etc.) that creates non-linear reading. Some goto patterns in `loop_multi_exit` with labeled jumps also disrupt linear flow.
+
+### 8. Redundancy Elimination
+**Score: 3/10**
+
+Justification: Severe redundancy from loop unrolling. In `loop_for_fixed`, the same addition pattern is repeated 10+ times manually. In `loop_continue`, similar redundant patterns exist. At -O0, this unrolling is inappropriate and creates massive code bloat that obscures the original simple loop logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Generic `int` used throughout instead of more specific types. Parameters like `int param_1` lose the original type information. Function pointers are typed as generic `code *` rather than proper function signatures. The original source used `int` consistently, so this is partially acceptable, but unsigned variants (`uint`, `ulong`) are sometimes used incorrectly.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+Justification: No struct or union recovery. The original source had arrays like `int arr[] = {10, 20, 30, 40, 50}` in `loop_break` and `int matrix[3][4]` in `loop_multi_exit`, but these are completely flattened in decompilation. The `loop_break` function shows hardcoded value comparisons (10, 0x14, 0x1e, 0x28, 0x32) instead of array access.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Several type safety issues: unsafe pointer arithmetic in `duffs_device` with `param_1` and `param_2` as `undefined4 *`, implicit conversions between signed/unsigned (e.g., `(int)(param_1 & 7)`), and function pointer type mismatches in `call_func_ptr_array` where the array is declared as `code *local_28 [3]` but called with mismatched signatures.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 5/10**
+
+Justification: Ghidra provides auto-generated comments like "WARNING: Could not recover jumptable at 0x00101f09. Too many branches" and "WARNING: Treating indirect jump as call". These indicate decompilation limitations but don't explain the algorithm intent. No comments recovered from source (which had extensive Chinese comments). The comments are noise rather than helpful explanations.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some patterns are recognized: switch statements are partially recovered (though with goto labels), loops are present (though unrolled). However, the original patterns like "Duff's device" in `duffs_device` are obscured by the goto-based fallthrough implementation. State machine patterns in `state_machine` are somewhat recognizable but not explicitly identified as such.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+
+Justification: Decompiler does flag anomalies with warnings: "Could not recover jumptable", "Treating indirect jump as call", "Subroutine does not return", "Removing unreachable block". However, these warnings are generic and don't provide specific guidance on what the actual code might be or how to manually resolve the ambiguity.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No precondition, postcondition, or invariant recovery. The original source had explicit return value expectations (e.g., "测试验证: 输入5,7,3应返回21") but these are completely lost. No documentation of expected input ranges or error conditions.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function calls are present in the code (e.g., `recursion_factorial`, `double_value` are called), but relationships aren't documented. No indication of which functions call which, or the callback relationships (e.g., `process_with_callback` uses function pointer `param_3`).
+
+### 17. Module Organization
+**Score: 5/10**
+
+Justification: Functions are organized by their memory addresses (00101200, 00101220, etc.) rather than logically grouped by purpose. The original source had clear sections: "基础控制流特征", "高级控制流特征", "极端控制流特征" but this organization is lost.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+Justification: Code will not compile as-is. Issues include: undefined types (`undefined4`, `undefined8`, `bool`), undefined functions (`__printf_chk`, `__stack_chk_fail`, `__gmon_start__`), missing includes, and type mismatches in function calls. The decompiled code is not standalone compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 4 + 4) / 4 = 4.5
+L2_avg = (4 + 7 + 5 + 3) / 4 = 4.75
+L3_avg = (5 + 2 + 5) / 3 = 4.0
+L4_avg = (5 + 5 + 6 + 2) / 4 = 4.5
+L5_avg = (5 + 5 + 4) / 3 = 4.67
+
+Overall = (4.5 × 0.30) + (4.75 × 0.25) + (4.0 × 0.20) + (4.5 × 0.15) + (4.67 × 0.10)
+        = 1.35 + 1.1875 + 0.8 + 0.675 + 0.467
+        = 4.48/10
+```
+
+**Overall Readability Score: 4.48/10**
+
+---
+
+### Critical Defects
+
+1. **Variable naming completely generic**: All parameters are `param_N` and locals are `iVarN/uVarN/puVarN`, making it impossible to track semantic purpose without cross-referencing source.
+
+2. **Inappropriate loop unrolling at -O0**: Functions like `loop_for_fixed` and `loop_continue` are massively unrolled (10+ repeated blocks), which is inappropriate for debug (-O0) compilation and severely obscures the simple original logic.
+
+3. **No composite type recovery**: Arrays from source (e.g., `int arr[]` in `loop_break`, `int matrix[3][4]` in `loop_multi_exit`) are completely lost, replaced with hardcoded value comparisons.
+
+4. **Type precision lost**: All types are generic `int` or `undefined4`, losing any semantic type information from the original.
+
+5. **No struct/union recovery**: The original had no complex structs, but the decompilation doesn't even recover simple arrays, showing raw values instead.
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (8/10)** - Most function names are correctly preserved from the source (`sequential_ops`, `recursion_factorial`, `double_value`, etc.), making it easy to identify which function is being analyzed.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - The decompiler uses completely generic auto-generated names (`param_1`, `iVar1`, `uVar1`) that provide no semantic information. At -O0, the original variable names should be recoverable from debug symbols, but they're completely lost.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from debug symbols**: At -O0 with debug info (-g), variable names like `temp1`, `sum`, `count` should be recovered from DWARF debug information, not replaced with generic `param_N` or `iVarN`.
+
+2. **Recognize and annotate loop unrolling**: When unrolling is detected (especially inappropriate at -O0), add comments like "// Loop unrolled by compiler" or better yet, reconstruct the original loop structure for readability.
+
+3. **Recover array access patterns**: Instead of showing `if (param_1 == 10) { return 0; } if (param_1 == 0x14) { return 1; }`, recognize this as array indexing and display as `arr[param_1 - 10]` with the array recovered.

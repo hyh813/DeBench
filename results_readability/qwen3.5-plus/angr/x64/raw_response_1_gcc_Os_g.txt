@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `i`) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `target` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core algorithm functions preserved original names (`sequential_ops`, `nested_if_2`, `recursion_factorial`), but many helper functions remain as `sub_401020`, `sub_401030` with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (unsigned representation of -1) and `4294967294` (-2) appear throughout without explanation. Original source used clear signed integers.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive type casts (`(unsigned int)i`, `(unsigned long long)((unsigned int)v1 + 1)`) and CONCAT operations (`i >> 31 CONCAT i`) clutter the code with compiler artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Function pointer calls use unsafe `goto` instead of proper call syntax (`goto a0` in `call_func_ptr`). `loop_dowhile` has a bug returning uninitialized `v2 + 1`. Some switches converted to if-else chains.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized and cohesive, but fragmentation exists with many `sub_401xxx` helper functions. Test functions remain monolithic matching source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but `goto` usage in function pointer dispatch (`call_func_ptr_array`, `conditional_func_ptr`) disrupts natural flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Type casts are repeated excessively throughout functions. No dead code observed, but redundant casting patterns obscure the actual logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe signed/unsigned confusion: `sequential_ops` takes `unsigned int` but original was `int`. `single_if` returns `long long` instead of `int`. Function pointers degraded to `unsigned long`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays handled as pointer arithmetic (`loop_break` shows array as stack variables with `*((int *)((char *)&v0 + 4 * v4))`). No struct recovery needed for this code.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts throughout. Function pointer calls via `goto` are fundamentally unsafe. CONCAT operations indicate severe type confusion that could cause undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels—all lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic control flow patterns (if-else, loops) recognized, but function pointer dispatch patterns not identified (uses `goto`). No pattern naming or algorithm explanations provided.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`). Bugs like `loop_dowhile`'s uninitialized variable returned confidently without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error condition documentation recovered. Original test validation comments completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships unclear. Global variables referenced without documentation. No call graph or relationship information provided.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file matching source organization. No header file separation. Static functions not properly scoped in decompiled output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires significant stubs for external functions (`__printf_chk`, `puts`). Architecture mismatch (AMD64 decompilation vs ARM64 original). Would need extensive modification to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+6)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (4+5+3)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.50/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects:
+- **Function pointer calls use `goto`** instead of proper call syntax (`call_func_ptr`, `call_func_ptr_array`, `conditional_func_ptr`)
+- **`loop_dowhile` returns uninitialized variable** `v2 + 1` instead of `v1` (semantic bug)
+- **Signed/unsigned type confusion** throughout (e.g., `4294967295` instead of `-1`)
+- **Variable names completely generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original source
+- **CONCAT operations** indicate unresolved type promotions that obscure actual computation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core algorithm function names were preserved from original source (`sequential_ops`, `nested_if_2`, `recursion_factorial`), making function identification straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation; original source's extensive comments explaining purpose, test cases, and difficulty levels are entirely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., loop counters should be `i`, accumulators should be `sum`, condition variables should reflect their purpose)
+2. **Use proper function call syntax** for function pointers instead of `goto` - this is a critical correctness issue, not just readability
+3. **Preserve signed integer semantics** and add comments explaining unsigned representations of negative constants (e.g., `4294967295 /* -1 */`)

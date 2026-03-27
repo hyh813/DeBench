@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `a0`, `a1` with no semantic meaning. For example, `sequential_ops` uses `a0, a1, a2` instead of `a, b, c` from source, and complex functions like `loop_while` use `v0, v1, v3` obscuring their roles as counters.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions recovered original names (`sequential_ops`, `single_if`, `if_else`), but many wrapper functions use mechanical names (`sub_40122f`, `sub_40123c`). Runtime functions like `_init`, `_start` are appropriate, but helper functions lack descriptive names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (UINT_MAX/-1), `1717986919` (division constant), `0x80000000`. The decompiler doesn't recover these as meaningful constants, making logic like `loop_for_fixed` nearly unreadable.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts like `__x86.get_pc_thunk.*` functions, excessive struct padding definitions (`padding_0[20183]`), and redundant variable assignments (`v0 = v1; v1 = v0`). However, most runtime initialization code is appropriately separated.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: At `-O0` source, loops should be recovered as `for/while`, but decompiled code shows optimized patterns: `loop_for_fixed` uses bit manipulation instead of a loop, `loop_while` has a `do-while` with complex conditions. `switch_fallthrough` partially recovered but with nested ifs instead of fall-through.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but wrapper functions (`sub_40122f` calling `sequential_ops`) create unnecessary fragmentation. Some functions like `register_tm_clones` are 50+ lines of incomprehensible padding arithmetic that should be simplified.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but contains awkward patterns: `infinite_loop` has redundant conditional chains (`else if (*(ptr) == 1)` repeated 4 times), and `duffs_device` uses goto labels (`LABEL_40195c`) instead of structured fall-through.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from optimization: `infinite_loop` and `loop_external_state` have nearly identical 20-line conditional chains. `test_control_flow_l1` repeats `printf` patterns 20+ times without abstraction. Loop unrolling artifacts not recognized or commented.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Source uses `int` throughout, but decompiled code uses `unsigned int` inconsistently. Function pointers degraded: `call_func_ptr` shows `return a0(a1)` with `a0` as `unsigned int *` instead of proper function pointer type. Signed/unsigned mismatches in comparisons (`a0 < 0` on unsigned).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered with generic names (`struct_0`, `struct_1`) and meaningless fields (`field_0`, `padding_0[20183]`). The massive padding arrays suggest failed type recovery. No union detection, and nested structures lose all semantic meaning.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: implicit casts in `switch_small` (`*((int *)&(&_GLOBAL_OFFSET_TABLE_)[...])`), function pointer called as `v4()` without proper typing in `__do_global_ctors_aux`. However, no obvious buffer overflow patterns in recovered code.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only annotations are decompiler metadata (`// Angr Decompilation`, `[D] Unsupported jumpkind`). No algorithm explanations, no parameter documentation, no recovery confidence indicators. Original source had extensive comments; none preserved.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Basic patterns recognized (switch-case, loops) but not named. State machine pattern in `state_machine` not identified. Duff's device partially recovered but not labeled. No recognition of common algorithms (factorial, sum computation).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`), but many issues silent: incorrect logic in `nested_if_deep` (returns `a4 > 0 | 4` instead of proper nested returns), `loop_break` uses switch instead of array search without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `duffs_device` require `n > 0` but this isn't noted. Error return values (`4294967295`) not explained as error codes. No parameter validation documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. `test_control_flow_l1` calls all L1 functions but no call graph documentation. Global variables (`g_403691`, `jump_buffer`) declared but usage context not explained. Callback relationships in `process_with_callback` not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime functions (`_init`, `_fini`, `deregister_tm_clones`) mixed with test functions. No header file separation, no static function scoping recovery. Original source had clear section comments; none preserved.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears compilable with proper headers, but has issues: undefined external symbols (`_GLOBAL_OFFSET_TABLE_`, `puts`, `printf`), architecture mismatch (X86 vs ARM64 source), and some functions return wrong types. Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+5+5+4)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (4+3+5)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 4.19/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a0`) obscuring all semantic meaning
+- **Control flow optimization artifacts** not recognized as such (loops became bit manipulation at -O0 source)
+- **No comments preserved** from original source despite extensive documentation
+- **Type precision lost** - `int` became `unsigned int`, function pointers degraded to `unsigned int *`
+- **Platform mismatch** - ARM64 source decompiled as X86, indicating potential binary mismatch
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core test function names were successfully recovered from symbols (`sequential_ops`, `single_if`, `nested_if_2`), providing anchor points for understanding.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero useful comments despite original source having extensive documentation; decompiler provides no recovery confidence indicators or algorithm explanations.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve and enhance source comments** - When debug symbols exist (-g flag), extract and retain original function/variable documentation
+2. **Detect optimization level mismatches** - Flag when decompiled patterns don't match expected compilation artifacts for the stated optimization level
+3. **Improve variable name inference** - Use data flow analysis to name variables based on usage patterns (e.g., loop counters, accumulators, indices) rather than generic `v0, v1`

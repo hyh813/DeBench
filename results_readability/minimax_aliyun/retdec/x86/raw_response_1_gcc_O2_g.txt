@@ -1,0 +1,148 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+Justification: Parameters use generic names like `a1`, `a2`, `a3` instead of semantic names (`a`, `b`, `c` in `sequential_ops`). Local variables use `v1`, `v2`, `v3` pattern throughout (e.g., `int32_t v1 = 0;` in `loop_for_fixed` should be `i`). Only `result` and a few globals have meaningful names.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: Most function names match source exactly: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `recursion_factorial`. Internal compiler functions have generic names (`function_10a0`, `function_10b0`) but these are expected artifacts.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Justification: Magic numbers like `20` in `__readgsdword(20)` (stack canary offset), `100` in `multi_return`, and string-to-int comparisons like `(int32_t)"_ITM_registerTMCloneTable"` lack explanation. Some constants like array sizes are recoverable but not named.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Justification: Heavy compiler artifacts present: `__x86_get_pc_thunk_bx` calls throughout, `__readgsdword(20)` for stack canaries, address range comments (`// Address range: 0x1430 - 0x1443`), line range comments, redundant struct definitions (`struct __jmp_buf_tag`). These significantly obscure the actual logic.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Justification: `loop_for_fixed` uses while-loop instead of for-loop, losing the original idiomatic structure. `if_elseif_chain` uses switch instead of if-else-if chain. Complex boolean expressions like `(bool)(a1 >= 0 == (a1 != 0))` are convoluted. At -O0, these transformations are unnecessary.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Function granularity matches source well - each small function remains separate. However, large test functions (`test_control_flow_l1` ~80 lines) weren't improved. Parameter lists expose implementation (e.g., `int32_t a1` instead of semantic names).
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Justification: Generally reads top-to-bottom with few forward jumps. Some disruption in `loop_multi_exit` with complex nested break logic. Early returns used appropriately in `multi_return`.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+Justification: `loop_nested` has repeated expression `(a2 >= 0 == (a2 != 0) ? a2 : 0)` not simplified. Some duplicate calculations in complex conditions remain. No dead code elimination visible.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+
+Justification: Uses `int32_t` consistently which is appropriate. However, function pointers are typed as `int32_t` instead of proper function signatures (e.g., `int32_t (*f)(int)` becomes `int32_t a3` in `process_with_callback`). Mixed signed/unsigned in some places (`uint32_t a1` vs `int32_t a1`).
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+
+Justification: The original source has no custom structs, so none to recover. Standard library structures (`struct __jmp_buf_tag`) are partially reconstructed with generic field names (`e0`, `e1`, `e2`). Arrays are accessed via pointer arithmetic rather than subscript notation.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Multiple unsafe patterns: function pointers stored as integers (`call_func_ptr` returns `result` directly), pointer arithmetic with integer types (`4 * a1 + (int32_t)&v3`), string literals cast to integers for comparison. No bounds checking visible in array accesses.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: Only metadata comments present: address ranges, line ranges, module paths. No semantic comments explaining algorithm intent, preconditions, or non-obvious logic. For example, no comment explains why `loop_for_fixed` uses while instead of for.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some patterns recognizable: state machine in `state_machine`, jump tables in `switch_small`/`switch_large`, recursion in `recursion_factorial`. However, patterns are not explicitly labeled or documented as design patterns.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+Justification: No indication of uncertain or anomalous code. The decompiler presents all code with equal confidence, including potentially problematic patterns like indirect calls or unusual stack manipulations.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants documented. For example, `duffs_device` has no indication that `n > 0` is required, despite the source having this check.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function call relationships are visible through direct calls (e.g., `test_control_flow_l1()` calls various functions). However, no explicit documentation of who calls whom or callback relationships. Global variable usage not documented.
+
+### 17. Module Organization
+**Score: 8/10**
+
+Justification: All functions in single file matching original single-file structure. Static functions properly scoped. Related functions grouped together. No artificial splitting or merging.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+Justification: Code references many undefined external functions (`__libc_start_main`, `__printf_chk`, etc.) without headers. Would require linking against libc and appropriate setup. No compilation instructions or dependency documentation provided.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+8+5+3)/4 = 4.75
+L2_avg = (5+7+6+5)/4 = 5.75
+L3_avg = (6+7+4)/3 = 5.67
+L4_avg = (2+5+2+2)/4 = 2.75
+L5_avg = (5+8+4)/3 = 5.67
+
+Overall = (4.75 × 0.30) + (5.75 × 0.25) + (5.67 × 0.20) + 
+          (2.75 × 0.15) + (5.67 × 0.10)
+        = 1.425 + 1.4375 + 1.134 + 0.4125 + 0.567
+        = 4.98/10
+```
+
+### Overall Readability Score: 4.98/10
+
+### Critical Defects
+- **Variable naming**: Parameters `a1`, `a2`, `a3` and locals `v1`, `v2`, `v3` completely obscure semantic meaning (e.g., `sequential_ops(a1, a2, a3)` should be `sequential_ops(a, b, c)`)
+- **Control flow distortion**: `loop_for_fixed` uses while-loop instead of for-loop, losing the original idiomatic structure
+- **No semantic comments**: Only address/line metadata comments, no explanation of algorithm intent or contracts
+- **Type safety issues**: Function pointers stored as integers, string literals compared as integers
+- **Anomaly silence**: No indication of uncertain or problematic code patterns
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+Function names largely match the original source (`sequential_ops`, `recursion_factorial`, `state_machine`), making it easy to identify which function is being analyzed.
+
+### Most Needs Improvement: Semantic Transparency (2.75/10)
+The decompiled code lacks any meaningful semantic annotations - no comments explaining algorithms, no pattern recognition labels, no indication of anomalies or uncertainties, and no contract documentation. This makes understanding non-trivial functions extremely difficult.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage**: When a parameter `a1` is used as a loop bound in `loop_for_fixed`, name it `n`; when `a1` is compared to 0 in `single_if`, name it `x`
+2. **Recover idiomatic control flow**: At -O0, for-loops should be recovered as for-loops, if-else-if chains should not become switches
+3. **Add semantic comments**: Include algorithm explanations, pattern names (e.g., "// State machine pattern"), and uncertainty indicators (e.g., "// UNRESOLVED: indirect call")

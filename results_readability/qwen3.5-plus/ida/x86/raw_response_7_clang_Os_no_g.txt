@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `a1`, `v0`, `v1`, `v2` throughout (e.g., `param_fake_branch(int a1)` instead of `int x`). Source had meaningful names (`result`, `x`, `str`, `encrypted`, `decrypted`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`). However, helper functions use generic names (`sub_1030`, `sub_10C0`, `sub_10FC`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x5A` (XOR key) and `0x20u` appear without explanation. Some constants preserved (return values like `500500`, `225`), but no named constants recovered from source defines.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Register annotations present (`@<eax>`, `@<ebx>`, `@<edx>`), stack variable comments (`[esp+0h] [ebp+0h] BYREF`), and compiler artifacts like `__usercall` calling conventions clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Critical issue: `param_fake_branch` dead code eliminated entirely (returns `a1` directly), losing obfuscation intent. `param_opaque_predicate` shows complex expression `!(v5 ^ ((a1 + 1) * (a1 + 1)) | v2 ^ 1)` instead of clear boolean logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized, but caller functions like `call_fake_branch()` return constants (`return 10;`) instead of calling the actual function, indicating aggressive inlining that loses call structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with standard loop constructs. Some functions use do-while patterns that match source while-loops adequately.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Dead code appropriately removed (fake branches), loop computations simplified to closed-form formulas (`param_tail_call_optimized` uses arithmetic formula instead of recursion).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`), but signed/unsigned distinctions sometimes lost (`param_instruction_substitution` takes `unsigned int a1` vs source `int x`). Some `__cdecl` annotations add clarity.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: The bitfield struct in `param_implementation_defined` completely lost - decompiled version just returns `43` constant. Array parameters decay to pointers without size information.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(__sighandler_t)div_zero_handler`, `*(_DWORD *)a1` for pointer dereference, `(_BYTE v5[43])` byte array annotations that obscure intent.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no meaningful comments. Only auto-generated annotations like `// positive sp value has been detected, the output may be wrong!` and `/* FAILED to decompile: */` for library functions.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition visible. Obfuscation patterns (opaque predicates, fake branches) not identified or documented. String decryption loop not labeled as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations noted at end (`FAILED to decompile: __libc_start_main`), but no warnings about suspicious patterns like the eliminated dead code in `param_fake_branch`.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` doesn't note `a1 != 0` for normal path). No postconditions or error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code, but call graph not documented. Global variables like `jmp_buffer`, `div_zero_caught` referenced without context about their purpose.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. Source had clear section comments (`// 7.1 混淆与保护`, `// 7.2 编译器特有优化`) completely lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 9 library functions failed to decompile requiring stubs. External dependencies (`signal.h`, `setjmp.h` functions) not documented. Would need significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+6+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (5+7+7+8)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (7+5+6)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+5+5)/3   = 5.33 × 0.10 = 0.533
+
+Overall = 1.725 + 1.688 + 1.200 + 0.525 + 0.533 = 5.67/10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- Variable `a1` should be named `x` based on source; all parameters use generic `a1`, `a2` naming
+- `param_fake_branch` dead code completely eliminated, losing obfuscation demonstration intent
+- No comments explaining the purpose of obfuscation techniques or edge case handling
+- Bitfield struct in `param_implementation_defined` collapsed to constant return value `43`
+- 9 library functions failed to decompile without stub implementations provided
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most original function names preserved accurately (`param_fake_branch`, `decrypt_string`, `param_tail_call_optimized`)
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no semantic documentation; only auto-generated compiler artifacts present
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve dead code at -O0**: When source compiled with debug flags, maintain fake branches and opaque predicates rather than optimizing them away
+2. **Infer variable names from usage patterns**: Parameters used in arithmetic should be named by role (`multiplier`, `offset`) not `a1`, `v1`
+3. **Add semantic annotations for obfuscation patterns**: Detect and label fake branches, opaque predicates, and string encryption with explanatory comments

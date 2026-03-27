@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names like `iVar1`, `local_14`, `local_28` instead of semantic names (`result`, `r1`, `r2` from source). Class members are better preserved (`this->value`, `this->name`), but test function locals lose all meaning.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions retain original names (`test_cpp_member_func`, `test_cpp_constructor`), and class methods are properly named (`SimpleClass::getValue`). However, some helpers get generic names (`FUN_001019a0`, `FUN_00101c7c`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers appear throughout (`0x1234`, `0x1f`, `0x32`, `0x96`, `0xfa`) without explanation. Some are recognizable (`0x1234` for `getClassID()`), but others like `0x96` (150) and `0xfa` (250) obscure the original arithmetic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from 216 decompiled functions including standard library internals (`_Head_base`, `_Tuple_impl`, `__get_helper`). Multiple "WARNING: Unknown calling convention" and "WARNING: Struct ignoring overlapping field" annotations clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is reasonably natural for -O0 compilation. Try-catch blocks are preserved with comments (`/* try { // try from 00101d70 to 00101d97 has its CatchHandler @ 00101ddc */`). Loop structures are recovered correctly.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Test functions maintain appropriate granularity, but standard library templates are over-decomposed into many small functions (`_Head_base`, `_Tuple_impl`, `__get_helper`, `__uniq_ptr_impl`). This inflates the output from 540 to 3714 lines.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with logical statement ordering. Some forward references from try-catch handlers exist but don't significantly disrupt flow. Constructor/destructor calls are properly sequenced.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from template instantiations being fully decompiled multiple times for different types (`template_max<int>`, `template_max<double>`, `Container<int>`, `Container<double>`). Smart pointer implementation code is repeated extensively.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Class types are well-preserved (`SimpleClass*`, `LifecycleClass*`, `Base*`), but some types degrade to generic forms (`undefined4*`, `undefined8`, `type*`, `pointer`). Template types are verbose but accurate (`unique_ptr<int,_std::default_delete<int>_>`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Class structures are recovered with field names in many cases (`this->value`, `this->name`, `this->data`, `this->size`). However, complex inheritance shows issues ("WARNING: Struct ignoring overlapping field" for `DiamondDerived`), and lambda closures become `anon_class_16_2_b9b285fb`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(undefined4*)`, `(_func_int**)`, `(MultiDerived *)0x0`), though these reflect C++ implementation details (vtable access, this-pointer adjustment) rather than decompilation errors. Pointer arithmetic for virtual inheritance is exposed but accurate.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Ghidra adds technical warnings but lacks semantic comments explaining what the code does. DWARF information is present (`/* DWARF original prototype: */`) but not human-friendly. No algorithm explanations or intent documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns like vtable calls (`(**obj->_vptr_Base)(obj,...)`) and smart pointers are recognized but not explicitly identified as such. Lambda closures are named generically (`anon_class_1_0_00000001`) without indicating their purpose.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Ghidra does flag issues with "WARNING" comments for calling conventions, struct overlaps, and unreachable blocks. Comments like "Unresolved local var" indicate decompilation uncertainty, which is helpful for manual review.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. Exception handling is visible but contracts (e.g., "requires: idx < size" for `getData`) are not recovered or annotated.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear, and class relationships are visible through inheritance notation (`super_Base`, `super_BaseA`, `super_MiddleA`). However, callback relationships and virtual dispatch chains aren't explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code appears in one output without logical grouping. Related class methods are scattered, and there's no separation between test code, class implementations, and standard library internals.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The decompiled code would not compile standalone due to missing headers, external dependencies (`std::ios_base::Init`, `__cxa_atexit`), and Ghidra-specific types (`undefined4`, `undefined8`, `pointer`). Requires extensive patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+7+6+4)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+6+7+5)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (6+6+6)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (4+5+7+3)/4 = 4.75 × 0.15 = 0.71
+Level 5 (Contextual):  (6+5+3)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.59/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Variable `iVar1`, `local_14`, `local_28`** should be named `r1`, `result`, `capture_by_value` based on usage patterns in test functions
+- **216 decompiled functions** include excessive standard library internals that obscure the 12 actual test functions
+- **Magic numbers** like `0x96` (150), `0xfa` (250), `0x32` (50) lose semantic meaning from original arithmetic
+- **Lambda closures** named `anon_class_16_2_b9b285fb` instead of indicating capture semantics
+- **Diamond inheritance struct** has "ignoring overlapping field" warning indicating incomplete recovery
+
+### Best Quality Aspect:
+- **Anomaly Indication (7/10)** - Ghidra consistently flags decompilation uncertainties with "WARNING" and "Unresolved local var" comments, helping analysts identify areas needing manual review
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No preconditions, postconditions, or invariants are documented despite being inferable from the source code (e.g., array bounds checks, null pointer requirements)
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer semantic variable names from DWARF debug info** - The `-g` flag was used during compilation; leverage this to recover original variable names (`r1`, `result`, `capture_by_value`) instead of `iVar1`, `local_14`
+2. **Filter standard library template instantiations** - Provide an option to collapse or summarize repeated STL implementations (`_Tuple_impl`, `_Head_base`, `__uniq_ptr_impl`) rather than fully decompiling all 200+ helper functions
+3. **Recover C++ idiom annotations** - Explicitly mark vtable calls, smart pointer operations, and lambda captures with comments explaining the C++ construct being represented (e.g., "// virtual dispatch via vtable")

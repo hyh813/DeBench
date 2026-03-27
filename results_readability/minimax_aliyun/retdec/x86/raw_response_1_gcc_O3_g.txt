@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`, `result`) and local variables are numbered (`v1`, `v2`, `v3`, etc.). For example, `sequential_ops(int32_t a1, int32_t a2, int32_t a3)` should preserve semantic names `a, b, c`. The naming provides no semantic meaning about variable purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names exactly match the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `recursion_factorial`, etc. The decompiler preserved the original function nomenclature almost perfectly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Global variables have unexplained hex values (`g1 = 0x1022`, `g2 = 0x10000000`). Some expressions like `100 * a1 + 100` in `if_elseif_long` could be `(a1 + 1) * 100`. However, some constants like array indices in switch statements are reasonably handled.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_bx/cx/dx/ax` calls throughout, `__stack_chk_fail_local`, `__readgsdword(20)` for stack canary checks. These x86_64-specific functions appear despite metadata indicating arm64 architecture, suggesting cross-compilation artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some control flows are transformed awkwardly. `loop_break` becomes a switch statement instead of a for loop with break. `loop_for_fixed` uses a while loop with manual increment. At -O0, these transformations are unnecessary and reduce readability.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is preserved from source. Each test function (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) remains separate. No obvious inlining or outline artifacts. Functions maintain reasonable size (20-80 lines typical).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom with minimal forward jumps. However, `loop_multi_exit` uses complex switch-with-goto patterns, and `indirect_recursion_a` has multiple labeled sections (`lab_0x1df2`, `lab_0x1e0c`, etc.) that disrupt linear flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some loop unrolling in `loop_complex_cond` with nested if statements, but it's manageable. The code is generally clean of redundant expressions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Uses `int32_t` and `uint32_t` consistently. Parameter types are preserved (`int32_t` for most, `uint32_t` for unsigned parameters). Minor issue: some functions like `loop_break` use `uint32_t` for parameter that could be signed.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: The decompiler recovered `struct __jmp_buf_tag` with generic field names (`e0`, `e1`, `e2`). Global variables are identified but lack semantic names. No recovery of the local arrays like `int arr[] = {10, 20, 30, 40, 50}` in `loop_break`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with appropriate casts. Some concerning patterns: `(int32_t)(bool)(a1 > 0)` in `single_if` is overly complex. Pointer arithmetic in `call_func_ptr_array` uses raw addresses but is justified for function pointer dispatch.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are minimal and technical: "From module: /work/1.c", "Address range: 0x1470 - 0x1483", "Line range: 590 - 590". No explanation of algorithm intent, preconditions, or semantic reasoning. The comments serve debugging rather than comprehension.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic control structures recognized (switch, while, for). However, no explicit naming of patterns like "state machine", "callback pattern", or "Duff's device". The `duffs_device` function is partially recognized but not identified as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No explicit anomaly flags. The `call_virtual_func` simply returns `2 * (int32_t)obj` without indicating this is a stub for C++ virtual dispatch. The `infinite_loop` has unusual string comparison (`v2 == (int32_t)"_ITM_registerTMCloneTable"`) without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. Functions like `duffs_device` with `if (n <= 0) return -1;` don't have comments explaining the requirement. No documentation of error return semantics.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present but relationships aren't documented. No indication of which functions call `recursion_factorial` or how `call_func_ptr_array` relates to the function pointer array. Static functions aren't identified as such.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file, but reasonably grouped. Test functions at end, helper functions like `op_add`, `op_sub` grouped together. However, compiler runtime functions (`_init`, `_start`, `frame_dummy`) mixed with user code reduces clarity.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile standalone. Requires many undefined symbols: `__x86_get_pc_thunk_bx`, `__printf_chk`, `__stack_chk_fail`, `__libc_start_main`, `__cxa_finalize`. No stubs provided for these dependencies.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 5 + 3) / 4 = 4.75
+L2_avg = (5 + 8 + 6 + 7) / 4 = 6.50
+L3_avg = (8 + 5 + 7) / 3 = 6.67
+L4_avg = (4 + 5 + 3 + 2) / 4 = 3.50
+L5_avg = (5 + 6 + 2) / 3 = 4.33
+
+Overall = (4.75 × 0.30) + (6.50 × 0.25) + (6.67 × 0.20) + 
+          (3.50 × 0.15) + (4.33 × 0.10)
+        = 1.425 + 1.625 + 1.334 + 0.525 + 0.433
+        = 5.34/10
+```
+
+**Overall Readability Score:** 5.34/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic names (`a1`, `a2`, `a3`) and locals are numbered (`v1`, `v2`), providing zero semantic information about variable purpose
+- **Noise pollution**: Excessive compiler artifacts (`__x86_get_pc_thunk_*`, stack canary checks) obscure user code, especially problematic given -O0 compilation
+- **No contract recovery**: Functions lack preconditions, postconditions, or semantic comments explaining behavior
+- **Build incompatibility**: Code requires extensive patching with ~10+ undefined symbols to compile
+- **Anomaly silence**: Complex patterns like virtual function stubs, indirect recursion, and unusual string comparisons in `infinite_loop` are presented without explanation
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (9/10)** - Function names exactly match the original source code, providing perfect semantic mapping for the primary interface
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)** - The generic numbered variables (`a1`, `v1`, `v2`) make it extremely difficult to understand code logic without significant reverse engineering effort
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparison) to suggest semantic names like `packet_size`, `index`, `count`
+2. **Provide compilation stubs**: Include minimal implementations of compiler runtime functions (`__x86_get_pc_thunk_*`, `__stack_chk_fail`) to enable standalone compilation
+3. **Add semantic comments**: Include algorithm explanations, preconditions, and pattern identification (e.g., "// State machine pattern", "// Requires: n > 0")

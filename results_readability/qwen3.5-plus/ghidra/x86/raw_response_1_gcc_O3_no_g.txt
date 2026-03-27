@@ -1,0 +1,121 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `iVar1`, `iVar2`, `uVar1`) with zero semantic meaning. For example, `sequential_ops` parameters should be `a`, `b`, `c` but are `param_1`, `param_2`, `param_3`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`sequential_ops`, `recursion_factorial`, `loop_while`), but some are mangled with optimization suffixes (`computed_goto.constprop.0`, `non_local_jump_constprop_0`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers throughout without explanation (`0x3e9`, `0x65`, `0x14`, `0x12345678`). Hex values like `0xffffffff` for `-1` reduce clarity.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86.get_pc_thunk` warnings, "Removing unreachable block" warnings, "WARNING: This is an inlined function" markers clutter output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as do-while, but `loop_multi_exit` uses goto labels (`LAB_00011a9e`). `recursion_factorial` converted from recursive to iterative (optimization artifact at O3).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity preserved, but `test_control_flow_l2` appears partially merged with other logic. Helper functions like `double_value` correctly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `loop_multi_exit` has multiple forward goto jumps disrupting flow. `switch_fallthrough` uses nested if instead of switch structure.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `if_elseif_long` optimized to arithmetic `(param_1 + 1) * 100` instead of explicit comparisons. Some functions show duplicated comparison patterns.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical type errors: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `char` instead of `int`, `state_done` has no parameters but should have `event`. Function pointers often `code *` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Function pointer arrays partially recovered (`local_1c[3]`), but no struct definitions visible. Jump tables referenced as raw memory (`CSWTCH_56 + param_1 * 4`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple "WARNING: Treating indirect jump as call" warnings. Function pointer calls use generic `code *` type. Stack canary checks present but not properly contextualized.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments beyond function headers. No algorithm explanations, no parameter documentation. Only compiler warnings present as comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: State machine pattern in `state_machine` not identified. Duff's device in `duffs_device` not recognized as such. Fall-through switch not annotated.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present ("Could not recover jumptable", "Removing unreachable block"), but inconsistent. `call_func_ptr` shows "UNRECOVERED_JUMPTABLE" but continues with generic call.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n > 0`). No postconditions. Error conditions not explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Callback relationships (`process_with_callback`) not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order but no logical grouping. Test functions separated but helper functions scattered. No header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__printf_chk`, `__stack_chk_fail`, `_setjmp`) require stubs. Architecture mismatch (source ARM64, decompiled x86). Cannot compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Weighted |
+|-------|-----------|---------|--------|----------|
+| L1: Lexical Clarity | 4 | 4.75 | 30% | 1.425 |
+| L2: Structural Intelligibility | 4 | 6.00 | 25% | 1.500 |
+| L3: Type System Fidelity | 3 | 5.00 | 20% | 1.000 |
+| L4: Semantic Transparency | 4 | 3.75 | 15% | 0.563 |
+| L5: Contextual Coherence | 3 | 4.67 | 10% | 0.467 |
+
+**Overall Readability Score: 4.96/10**
+
+---
+
+### Critical Defects
+
+- **Test functions print hardcoded values instead of calling actual functions** - `test_control_flow_l1` prints `0x15` directly instead of `sequential_ops(5, 7, 3)`, making tests useless for verification
+- **Type mismatches in return types** - `if_else` returns `bool`, `nested_if_deep` returns `char`, `state_done` missing parameters
+- **All variables use generic names** - `param_1`, `iVar1`, `uVar1` provide zero semantic information about purpose
+- **Function pointer calls unresolved** - Multiple "WARNING: Could not recover jumptable" with generic `code *` treatment
+- **Architecture/optimization metadata mismatch** - Source claims ARM64/-O0, binary shows x86/-O3, causing unexpected optimization artifacts
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (7/10)** - Most original function names preserved accurately (`sequential_ops`, `recursion_factorial`, `loop_while`), allowing immediate identification of purpose despite other issues.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - Complete failure to infer semantic names from usage patterns; every variable is `param_N` or `iVarN`, requiring manual reverse-engineering of each variable's purpose.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement usage-based variable renaming** - Analyze how variables are used (e.g., `param_1 * 2` in doubling context) to suggest names like `multiplier` or `input_value`
+
+2. **Recover test function semantics** - Detect printf patterns with function names and reconstruct actual function calls instead of printing expected values
+
+3. **Add type inference validation** - Cross-check return types against usage contexts (e.g., `if_else` result used in integer context should not be `bool`)

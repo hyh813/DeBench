@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names (`v0`, `v1`, `a0`, `a1`, `ptr`) that obscure semantic meaning. Original source had meaningful names like `size`, `counter`, `increment`, `exec_mem` which are lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_macro_constants`, `call_asm_simd`). However, helper functions like `sub_4004ec`, `sub_4005c8` are cryptic auto-generated names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x400`, `57072`, `282` replace original constants (`MAX_SIZE`, `0xDEF0+calculation`). Some literals are clear (64, 30, 32 match expected outputs) but macro semantics are lost.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Runtime initialization boilerplate present (`_init`, `deregister_tm_clones`, `frame_dummy`). Some functions are over-optimized to single returns, losing original logic visibility.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use clean ternary/if-else patterns. However, `call_weak_fn` and `param_memory_protection` use goto labels (`LABEL_4005ec`, `LABEL_400cb1`) where if-else would be clearer.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with single responsibility. Helper functions like `my_func` preserved separately. Test functions well-organized into logical groups.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Goto labels in `param_memory_protection` disrupt flow. Loop in `param_asm_clobber` uses recognizable do-while pattern.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding eliminated some calculations (good for simplicity, bad for understanding original logic). `test_preprocessing_features` has redundant printf calls at end (same args twice).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most types degraded to generic `unsigned int`/`int`. Lost `size_t`, `const char*`, `void*` distinctions. Original `int *arr` became `unsigned int *a0`, losing semantic clarity.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No structs in original to recover. Pointer types handled reasonably (`unsigned int *`). Array access patterns preserved correctly in SIMD functions.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Critical bug: `param_asm_clobber` returns `*(ptr) + v1` where `ptr` is uninitialized. `memcpy` return assigned to `dst` despite returning `void*`. Duplicate `ptr` variable names in `param_memory_protection`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Completely absent comments. Original had extensive documentation explaining macros, assembly, expected values. No decompilation confidence indicators or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Macro expansions recognized (SQUARE, MAX became arithmetic). Conditional compilation resolved to single path. Assembly patterns converted to C equivalents. No explicit pattern documentation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `armg_calculate_condition` appears without explanation (decompiler artifact). `__atomic_fetch_add_4()` called with unclear parameters in some cases. No uncertainty warnings for indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions or return value guarantees. Error conditions (mmap failure) not documented despite being in code.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved with original names. Global variables named generically (`g_400fb7`, `g_412008`) obscuring string literal content. Call relationships clear through function names.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Related functions grouped logically (macro tests together, asm tests together). Initialization functions at top, main at bottom. No header file separation (expected for decompilation).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External declarations present (`extern unsigned int g_412008`). Standard library functions referenced. Intrinsics (`__atomic_fetch_add_4`) may need specific headers. Runtime stubs needed for `_init`, `_start`.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (25%): (6+8+7+7)/4 = 7.00 × 0.25 = 1.750
+Level 3 (20%): (5+7+5)/3  = 5.67 × 0.20 = 1.133
+Level 4 (15%): (2+5+4+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (10%): (6+7+6)/3  = 6.33 × 0.10 = 0.633
+─────────────────────────────────────────────────────
+Overall Score: 5.77/10
+```
+
+### Overall Readability Score: **5.8/10**
+
+### Critical Defects:
+- **Uninitialized variable bug**: `param_asm_clobber` returns `*(ptr) + v1` where `ptr` is never initialized (critical correctness issue)
+- **Variable names generic**: `a0`, `a1`, `v0`, `v1` obscure parameter purposes (should be `size`, `x`, `y`, `counter`)
+- **Magic numbers unexplained**: `57072`, `282`, `0x400` replace original named constants (`MAX_SIZE`, line numbers)
+- **String literals obscured**: Format strings stored as `g_400fb7` globals instead of inline literals
+- **No comments**: Complete absence of documentation despite complex assembly and macro logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making code navigation intuitive despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero comments recovered despite original having extensive documentation explaining macros, assembly semantics, and expected values
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (size comparisons, loop counters, pointers) to infer semantic names like `packet_size`, `index`, `buffer_ptr`
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., `// DECOMPILER_UNCERTAIN: armg_calculate_condition may be artifact`) and document recovered macro semantics
+3. **Inline string literals instead of global references** - Display format strings and constants directly in code rather than as `g_400xxx` references to improve immediate readability

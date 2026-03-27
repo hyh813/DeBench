@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar2`, `uVar3`, `piVar1`, `piVar4`. These provide no semantic information about their purpose (e.g., `param_1` should be `a` or `count` based on usage in `varargs_func`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions retain original names (`cdecl_func`, `stdcall_func`, `varargs_func`, `func_no_args`), but some helper functions are auto-generated (`FUN_00011030`, `FUN_00011ba5`). The core test functions are well-named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Extensive use of unexplained magic numbers: `0xf` (15), `0x32` (50), `0x2a` (42), `0x15` (21), `0xad` (173), `0x12345678`. No named constants recovered; all are raw hex/decimal values.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple WARNING comments about inlined functions (`__x86.get_pc_thunk.bx`) and unreachable blocks clutter output. However, no redundant casts or debug instrumentation in actual logic. The noise is metadata rather than code pollution.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural—simple returns, conditionals, and loops. The varargs functions show loop unrolling (processing 4 integers at a time), which is expected at -O0 but slightly obscures the original loop structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-50 lines each), with clear single responsibilities. The test wrapper functions (`call_cdecl`, `call_stdcall`) are correctly separated from implementation functions. No over-fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The varargs loop has some forward jumps for remainder handling, but flow is traceable. No excessive nesting or goto abuse.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Loop unrolling in `varargs_func` and `param_varargs` is present but represents legitimate optimization. No dead code or significant duplication beyond what compiler generates.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type degradation—`undefined4` used instead of `int`, generic `int*` for all pointers, `code*` for function pointers. No `size_t`, `uint32_t`, or other specific types. The original had `int`, `char*`, `double`, `long long`—these are lost.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct recovery whatsoever. `LargeStruct` (128 bytes) is flattened to 16 separate `int`/`undefined4` parameters in `func_struct_byval`. `SmallStruct` becomes raw pointer arithmetic (`param_1[1] * *param_1`). Original struct field names (`data`, `x`, `y`) completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns: `*(undefined4 *)*param_1` in `param_double_ptr`, raw pointer arithmetic in struct functions. Function pointer typed as `code*` instead of proper function signature. Moderate risk of misinterpretation.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only WARNING comments from decompiler ("Function: __x86.get_pc_thunk.bx replaced with injection"). No algorithm explanations, no recovery confidence indicators, no API contracts. The original source had extensive comments explaining each test case—none recovered.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithm patterns identified. The varargs pattern (va_list, va_start, va_arg, va_end) is not recognized as such—just raw stack manipulation. No naming of patterns like "cdecl calling convention" or "variable arguments function."
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some WARNING messages flag indirect calls and unreachable blocks, but these are decompiler artifacts rather than code anomalies. No indication of potential undefined behavior (e.g., the `param_order_dep` with unsequenced modifications).
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero contract information. No preconditions (e.g., "requires: count > 0"), no postconditions, no invariant documentation. The original source had clear semantic intent completely lost.
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in test functions, but relationships aren't documented. No indication that `call_cdecl` calls `cdecl_func`, or that `callback_func` is passed to `param_func_ptr`. Call graph relationships invisible.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions ordered by address (`@ 00011210`, `@ 00011220`), not logically grouped. Original had clear sections: calling conventions, parameter passing, return values. This organization completely lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeded ("Compilation Result: Yes"). Basic types used (int, char*) should compile. However, `undefined4` and `code*` types may require typedefs. No external dependency documentation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming is nearly useless: `param_1`, `param_2`, `iVar1`, `uVar2` provide zero semantic information
+- Composite types completely lost: `LargeStruct` flattened to 16 parameters, `SmallStruct` becomes raw pointer arithmetic
+- No struct field recovery: original field names (`data`, `x`, `y`) replaced with positional access
+- Magic numbers everywhere: `0xf`, `0x32`, `0x2a`, `0xad` without explanation
+- No semantic context: calling convention tests not identified, varargs pattern not recognized
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions maintain appropriate granularity with clear separation between test wrappers and implementations. No excessive inlining or fragmentation.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)  
+Structures are completely flattened—128-byte `LargeStruct` becomes 16 separate parameters, losing all semantic meaning of the original data structure.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct types from stack layout patterns**: The 16 consecutive parameters in `func_struct_byval` clearly indicate a 128-byte struct passed by value; reconstruct as `struct LargeStruct s`
+2. **Infer variable names from usage patterns**: `param_1` used as count in loop (`param_1 < 1`) should be named `count` or `num_args`
+3. **Add semantic annotations for calling conventions**: Flag functions like `cdecl_func` with "// cdecl: caller cleans stack" to preserve ABI semantics from source

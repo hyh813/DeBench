@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `ptr`, `idx`, `result` throughout. Stack variables show only register hints (`// r0`, `// r1`) and stack offsets (`// [bp-0x4]`). Original semantic names like `global_counter`, `arr`, `n` are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recover original names (e.g., `local_vars`, `heap_basic`, `global_var_access`, `memop_memset`), but many remain as generic address-based names like `sub_400568`, `sub_400800`. The inconsistency is significant.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF) for error returns, `0x800` (2048) for buffer sizes appear without explanation. String literals reference external symbols (`&g_402f62`) without context. Some computed expressions like `(4294967293 & (a0 + (a0 >> 31)) * 2)` are opaque.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: register annotations (`// r0`, `// r4`), stack frame comments (`// [bp-0x28]`), synthetic struct definitions (`typedef struct struct_0 {...}`), condition expressions like `armg_calculate_condition(49, ...)`, and conversion artifacts like `Not Conv(32I->1I, ...)`. These make code nearly unreadable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops and conditionals are present but obscured by noise. At -O0, control flow should closely match source, but goto patterns and complex computed indices like `(&v3)[-1 * i]` make tracing difficult. Some loop structures are recognizable but awkward.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity generally matches original (many small functions preserved). However, parameter lists expose implementation details (e.g., `call_global_callback` has 6 parameters when original had 1). Some functions appear fragmented with unnecessary intermediate variables.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom but contains forward jumps and computed addresses that disrupt flow. Complex indexing expressions like `*((unsigned int *)((char *)&v8 - (7 + i * 4 & 0xfffffff8) + 4 * idx))` make linear reading difficult.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some dead code present but minimal. Loop unrolling is limited (expected at -O0). Redundant expressions exist in complex pointer arithmetic but don't significantly obscure logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most variables use generic `unsigned int` or `unsigned int *`. Original types like `int`, `char`, `size_t`, `Point*`, `Node*` are lost. Function pointers are incorrectly typed as `unsigned int` instead of proper function signatures.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Synthetic struct definitions created with meaningless names (`struct_0`, `struct_1`, `struct_2`) and generic field names (`field_0`, `field_4`, `padding_0`). Original types like `Point`, `Node`, `TreeNode` are completely lost. Nested structures become chains of void-like accesses.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns present: pointer arithmetic with computed offsets, casting between incompatible types (e.g., `char*` to `int*`). However, basic memory operations (malloc/free pairs) are generally correct. No alignment annotations or restrict keywords recovered.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only technical annotations present (register hints, stack offsets). No explanatory comments about algorithm purpose, non-obvious logic, or decompilation confidence. Original comments about test scenarios (e.g., "MEM-L1-01") are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions (malloc, free, calloc, realloc, memset, memcpy, memmove, memcmp) are correctly identified. However, design patterns (linked list creation, tree traversal, memory leak patterns) are not explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The dangling pointer access in `dangling_pointer()` function is presented without warning. Memory leak in `memory_leak()` not flagged. Undefined behavior patterns not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. Error handling (NULL checks, bounds validation) present but not documented. Original safety checks like `if (n <= 0 || n > 1000) return -1` are partially preserved but not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are traceable. External dependencies declared (`extern unsigned int global_counter`). However, callback relationships (e.g., `global_func_ptr` usage) not documented. No call graph or usage context provided.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions listed in address order (0x400568, 0x400654, etc.) rather than logical grouping. Original organization by category (stack memory, heap memory, static memory, memory operations) completely lost.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would not compile standalone. Issues include: synthetic struct definitions, undefined types (e.g., `char [5]` return type), external symbols without definitions, missing standard library integration. The "Compilation Result: Yes" in metadata is questionable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `ptr`, `idx`) losing all semantic meaning from original source
+- **Noise artifacts**: Register annotations (`// r0`), stack offsets (`// [bp-0x4]`), synthetic struct definitions, and condition expressions create severe visual pollution
+- **Type loss**: Original types like `Point`, `Node`, `TreeNode` replaced with generic `struct_0`, `struct_1` with meaningless field names
+- **No anomaly flagging**: Dangerous patterns like dangling pointer access and memory leaks presented without warnings
+- **Function naming inconsistency**: Mix of recovered names (`local_vars`) and generic address-based names (`sub_400568`)
+
+### Best Quality Aspect: Control Flow Naturalness (5/10)
+- Basic loop and conditional structures are recognizable
+- Standard library functions (malloc, free, memcpy, etc.) correctly identified
+- At -O0, control flow should be close to source and it mostly is
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Every meaningful variable name from original source is lost
+- Generic names make tracking data flow practically impossible
+- Combined with noise artifacts, code is nearly unreadable
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `ptr` used with `malloc`/`free` → `heap_ptr`; `idx` in loop → `index` or `i`)
+2. **Eliminate technical noise**: Remove register annotations, stack offset comments, and synthetic struct definitions unless explicitly requested
+3. **Recover composite type names**: Use RTTI, debug symbols, or common patterns to reconstruct struct names (`Point`, `Node`) and field names (`x`, `y`, `data`, `next`)

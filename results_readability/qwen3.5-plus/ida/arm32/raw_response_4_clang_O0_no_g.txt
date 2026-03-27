@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`a1`, `a2`, `v1`, `v30`, `v31`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `s` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user-defined function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Only runtime helpers use generic names (`sub_40C`, `frame_dummy`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals referenced as opaque identifiers (`asc_2180`, `aCallL206`) instead of actual text. Numeric literals like `5`, `10`, `15` are clear in context but magic numbers like `0xFFFFFFFF` lack explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive stack annotations (`// [sp+4h] [bp-4h]`), register hints (`// r0`), and type decorations (`__fastcall`, `_DWORD`) clutter every function. Decompiled LOC (1315) is 2x original (665).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control structures recovered well (if/else, for loops, switch). Some awkward patterns like `JUMPOUT(0)` in `sub_40C` and complex variable shuffling in `test_calling_conventions`.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved, but struct-by-value causes parameter explosion (`param_struct_byval` has 16 parameters instead of 1 struct). Helper functions like `callback_func` correctly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `test_calling_conventions` has scattered variable assignments (`v23 = 5; v26 = 4; v27 = 1...`) before use, disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant intermediate variables common (`v0 = call_cdecl(); printf(..., v0)`). Stack variable declarations verbose. No dead code in user functions but type casts often redundant.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, double) but degraded to platform-specific types (`__int64` vs `long long`, `_DWORD` vs `int`). Function pointer signatures recovered but with `__fastcall` annotations.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: **Critical failure** - structs completely flattened. `LargeStruct` becomes 4 int parameters in `func_struct_byval`. `SmallStruct` accessed as `_DWORD *a1` with array indexing. No struct type definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(_DWORD *)`, `(__int64 *)`, `(int)`. Function pointer casts like `(int (__fastcall *)(int))callback_func`. No const-correctness preserved. Pointer arithmetic explicit but not type-safe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated stack layout comments present. No algorithm explanations, no purpose documentation. Original source's extensive comments (calling convention explanations, test expectations) completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard C idioms recognized (va_start/va_end, for loops, strlen checks) but not explicitly identified. No design pattern or algorithm pattern recognition.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "FAILED to decompile" markers for 7 external functions. Warning present: "positive sp value has been detected, the output may be wrong!" No flags for suspicious casting or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., `a1 != NULL`). Null checks present but not documented as contracts. No postcondition inference or error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear and traceable. Global variable references use opaque names (`dword_70`, `asc_2180`, `byte_4`). No call graph documentation. Callback relationships visible but not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in roughly source order. Runtime functions (`__do_global_dtors_aux`, `register_tm_clones`) mixed with user code. No logical grouping beyond linear ordering.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 7 external functions failed to decompile (printf, strlen, memset, etc.). Would need stubs and recreated type definitions. Type mismatches likely (struct types lost, calling convention annotations).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+6+6+6)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (6+3+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (3+5+5+3)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                              5.15/10
+```
+
+**Overall Readability Score:** 5.15/10
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct`, `TestIntPair` flattened to primitive parameters/pointers
+- **Variable names entirely generic** - `a1`, `a2`, `v1`...`v39` provide zero semantic information
+- **String literals opaque** - Referenced as `asc_2180`, `aCallL206` instead of actual string content
+- **Excessive type casting** - `(_DWORD *)`, `(__int64 *)` throughout obscuring type intent
+- **No semantic comments** - Original source's 100+ lines of documentation completely absent
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - User-defined function names preserved accurately, maintaining traceability to original source intent
+
+### Most Needs Improvement:
+- **Composite Type Recovery (3/10)** - Complete failure to recover struct/union types, forcing parameter explosion and pointer arithmetic that obscures original data structure intent
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct types from memory access patterns** - Detect consistent field offsets (e.g., `a1[0]`, `a1[1]` access pattern) and propose struct definitions with field names
+2. **Infer variable names from usage context** - Variables used in loop bounds should be named `count`/`limit`; accumulators should be `sum`/`total`
+3. **Preserve string literal content in output** - Instead of `asc_2180`, display actual string `"=== 测试基础调用约定 ===\n"` with optional address annotation

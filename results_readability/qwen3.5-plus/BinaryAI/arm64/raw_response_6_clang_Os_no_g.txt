@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `local_30`, `iVar1`, `uVar2`). Original semantic names like `dst`, `src`, `buffer`, `fd` are lost. In `param_strcpy`, parameters should be `dst` and `src` based on usage.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`param_strcpy`, `call_strcmp`, `param_fork_exec`), but initialization functions use generic names (`FUN_001012e0`, `FUN_001017fc`). External stubs are properly labeled.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0x2a`=42, `0xffffffff`=-1, `0x38`/`0x39` for syscall numbers). String literals referenced via `&DAT_00102eb6` instead of inline.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: External function stubs create clutter (60+ wrapper functions like `memcpy`, `strlen` that just call themselves). Compiler artifacts present (`__do_global_dtors_aux`, `register_tm_clones`). Architecture-specific intrinsics (`__aarch64_cas4_acq_rel`) add noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if-else structures preserved well. Some loops use awkward do-while patterns. Signal handling code has deeply nested conditionals that could be flattened. At -O0, control flow should match source more closely.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized and separated. Thread functions properly extracted (`thread_compute`, `thread_sum`, `thread_increment`). No monolithic functions observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but goto labels present (`LAB_00102240`, `LAB_00102c78`). Some forward jumps disrupt natural flow in `param_shmget_shmat` and `param_thread_local_storage`.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `param_malloc_free` shows loop unrolling artifacts with NEON operations (`NEON_cmhs`, `auVar7`). Redundant type casts throughout. Dead code from register spilling visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation with `undefined8`, `undefined4`, `ulong` replacing precise types. Original `size_t`, `ssize_t`, `pid_t` often lost. Pointer types frequently degraded to generic types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct definitions visible in output. `sockaddr` fields accessed individually (`sa_family`, `sa_data[0]`...). `ThreadData` struct not recovered (accessed as array with `param_1[2]`). Critical semantic loss.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(undefined8 *)0xffffffffffffffff`, `(int *)0x0`). Pointer arithmetic on generic types throughout. `param_strcpy` return type changed from `int` to `void` (semantic error).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contract documentation. Completely bare code.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`). Thread patterns partially identified. No explicit pattern naming or algorithm identification (e.g., "producer-consumer pattern").
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags or warnings. Suspicious code (signal handler race conditions, atomic operation intrinsics) not flagged. Silent on potential decompilation uncertainties.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). No postconditions. Error return values (`0xffffffff`, `0xfffffffd`) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables (`signal_received`, `atomic_counter`, `shared_counter`) referenced without context. No callback relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by category (library functions vs. syscalls vs. threads). External functions listed separately but mixed with application code.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies listed. Architecture-specific intrinsics may need adjustment for portability. Minimal stubs needed.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+5+3+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+5+7)/3   = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.56/10
+```
+
+**Overall Readability Score: 4.6/10**
+
+### Critical Defects:
+- **Variable `param_1`, `param_2` should be `dst`, `src`** in `param_strcpy` based on strcpy semantics
+- **`param_strcpy` return type changed from `int` to `void`** - critical semantic error losing return value
+- **Zero comments** - no explanation of magic numbers, algorithms, or decompilation confidence
+- **No struct recovery** - `ThreadData`, `sockaddr` accessed as raw arrays losing field semantics
+- **60+ external function stubs** create noise without adding value to understanding
+
+### Best Quality Aspect:
+- **Function Decomposition (7/10)** - Functions are appropriately sized and logically separated; thread worker functions properly extracted as separate entities
+
+### Most Needs Improvement:
+- **Comment Quality (1/10)** - Complete absence of any documentation makes understanding non-trivial logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from function semantics** - `param_1`/`param_2` in `strcpy` wrapper should be `dst`/`src`; `param_1` in `param_malloc_free` should be `size`
+2. **Add decompilation confidence annotations** - Flag uncertain type recoveries, indirect calls, and architecture-specific intrinsics with comments
+3. **Recover and emit struct definitions** - Instead of array access patterns, emit `struct ThreadData { int start; int end; int result; }` with field names

@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic numbered names (`a1`, `a2`) instead of semantic names (`a`, `b`). Local variables like `v1`, `v2`, `v4`, `i` are opaque. The source has `int a, int b` but decompiled shows `int a1, int a2`, losing the semantic connection.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the source exactly (`cdecl_func`, `stdcall_func`, `varargs_func`, `func_no_args`). Minor issue: some functions like `call_thiscall` return hardcoded `15` rather than showing the actual computation, but naming is otherwise accurate.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are clear - `42` in `func_no_args()` is meaningful. However, computed values like `15` in `call_thiscall()` aren't explained as the sum of `10 + 5`. Some magic numbers in complex functions lack context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise present: incorrect `__fastcall` annotations on functions (e.g., `cdecl_func` marked `__fastcall` despite being cdecl), register-related artifacts like `kr00_4` in variable declarations, and `JUMPOUT` statements for unresolved control flow. These obscure the actual logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - loops use `for (i = 0; i < a1; ++i)` pattern, conditionals use `if/else`, and switch statements are properly recovered. At `-O0`, the flow closely matches source. Minor issue: some complex expressions could be clearer.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each function is properly separated with appropriate granularity. Parameter counts match the source (e.g., `func_many_args` has 8 parameters). No over-fragmentation or monoliths observed. Functions maintain single responsibility.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately. The complex `test_calling_conventions` function has some forward references but nothing that breaks comprehension.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Loop unrolling is minimal at `-O0`. The decompiled code is clean without duplicate expressions obscuring logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are generic - uses `_DWORD`, `int` rather than `int32_t`. Function pointers are incorrectly cast: `(int (__fastcall *)(int))callback_func` loses type safety. Pointers are correctly identified as `int*` or `_DWORD*`. Const correctness is partially lost (`const char *a2` becomes potentially non-const).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The source defines `LargeStruct` (128 bytes) and `SmallStruct` (8 bytes), but decompiled code uses raw arrays like `_DWORD v7[4]` and `_DWORD v1[2]` with no struct names or field semantics. The struct by-value passing is partially recovered but loses all type information.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations: function pointer casts `(int (__fastcall *)(int))callback_func`, raw pointer arithmetic in struct handling, and implicit conversions between int and pointer types. The `param_complex_cast` uses `_DWORD*` for void pointers, losing type safety.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only header comments identifying the decompiler and binary. No algorithm explanations, no documentation of non-obvious logic, no recovery confidence indicators. The source has extensive comments explaining each test case, but these are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No explicit recognition of calling convention patterns (cdecl, stdcall, fastcall). The test functions demonstrate different parameter passing styles but these aren't identified. The varargs pattern is partially recognized but not named or explained.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed functions are marked with "FAILED to decompile" messages. However, the incorrect `__fastcall` annotations on non-fastcall functions aren't flagged as anomalies. No warnings about unusual stack layouts or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The source has implicit contracts (e.g., `func_struct_byptr` requires non-null pointer) but these aren't recovered. Error return values (-1 for null pointer) aren't explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are explicit in the code (e.g., `cdecl_func(5, 10)`). However, there's no documentation of which functions call which, no global variable usage tracking, and no callback relationships explained. The test harness structure isn't documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped reasonably - all test functions together, all calling convention functions together. However, the original source file structure with sections (4.1, 4.2, 4.3) isn't reflected. Static vs. non-static functions aren't distinguished.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code uses standard library functions (`printf`, `strlen`, `memset`) but doesn't show their declarations. The code structure suggests it could compile with minimal stubs. No compiler-specific flags or dependencies documented.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `v1`, `v2` instead of semantic names from source (`a`, `b`)
+- Composite types completely lost - `LargeStruct` and `SmallStruct` become raw `_DWORD` arrays
+- Incorrect `__fastcall` annotations on cdecl/stdcall functions mislead about calling conventions
+- No struct field recovery - all struct semantics lost in favor of raw pointer arithmetic
+- Function pointer types incorrectly cast, losing type safety
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- Loops, conditionals, and switch statements are properly recovered and read naturally
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)  
+- Struct definitions are completely lost; only raw arrays remain, losing all semantic meaning of the original composite types
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a1 + a2` in `cdecl_func` clearly indicates these should be named `a` and `b`
+2. Recover struct/union definitions from stack layout and memory access patterns rather than exposing raw arrays
+3. Detect calling convention mismatches and flag them as anomalies rather than incorrectly applying `__fastcall` to all functions

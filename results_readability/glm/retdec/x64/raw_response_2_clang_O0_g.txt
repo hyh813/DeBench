@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`, `result`), providing no semantic context. For example, in `struct_simple`, `v1` represents the struct pointer and `v2` represents the first field, but these names reveal nothing about their roles.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the source symbols (e.g., `process_char`, `array_2d_stack`, `binary_tree_sum`). The names accurately reflect the original source's intent and are fully descriptive.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers and unexplained constants. For instance, `array_2d_stack` uses the magic number `44` (offset calculation) without explanation, and `process_float` uses the hex constant `0x3fc00000` instead of `1.5f`.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: Significant noise is present, particularly the use of inline assembly intrinsics for floating-point operations (e.g., `__asm_movss`, `__asm_mulss`) and complex pointer arithmetic casts like `0x100000000 * (int64_t)arr >> 32` which obscure the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While loops and conditionals are generally recovered, the logic inside is often obfuscated by low-level arithmetic. For example, `process_char` uses a ternary operator with range checks `(unsigned char)(c - 65) > 25` which is less readable than the original `if` statement.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler successfully maintains the original function boundaries and granularity. No functions are inappropriately inlined or merged, and the separation of concerns (e.g., test functions vs. implementation) is preserved.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but pointer arithmetic often disrupts the flow. In `array_1d_stack`, the manual calculation of array indices inside the loop condition makes the linear flow harder to follow than the original array subscripting.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is moderate redundancy, such as repeated casting patterns in pointer arithmetic. The decompiler fails to simplify expressions like `*(int32_t *)(4 * v1 + (int64_t)arr)` back into `arr[v1]`, adding cognitive load.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: While basic integer types (`int32_t`) are correct, complex types are poorly handled. Floating-point values are cast to `int128_t` to hold SSE register data, and structs are demoted to generic pointers (`int32_t *`), losing type safety and clarity.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Composite types are completely lost. `struct_simple` takes `int32_t * p` instead of `Point3D * p`, and accesses fields via raw offsets (`v1 + 4`, `v1 + 8`) rather than field names (`p->y`, `p->z`).
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts. Pointers are frequently cast to `int64_t` for arithmetic and back, and floating-point operations are performed by casting floats to `int128_t` to use `__asm_` intrinsics, which is highly unsafe and non-idiomatic.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic. The only comments are address ranges (e.g., `// Address range: 0x1160 - 0x119f`) and source line numbers, which offer no semantic value to a reader.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level patterns are not recognized. Bitfields in `struct_bitfields` are decompiled into complex division/modulo arithmetic (`v2 / 64 + v2 % 2...`) rather than preserving the struct field access, and string loops are manual pointer increments.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the code confidently without flagging issues. For example, the use of `__asm_` intrinsics or the loss of struct definitions is not highlighted as a potential readability issue or decompilation artifact.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions or postconditions. For instance, `array_complex_index` checks bounds but does not indicate that `arr` must be a valid pointer or that the function returns `-1` on error via comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear and use the correct names, but the loss of struct definitions breaks the data flow context. It is impossible to see what fields a struct pointer is supposed to have without cross-referencing the raw offsets manually.
+
+**17. Module Organization:** Score: 8/10
+Justification: The file organization is excellent, matching the original source's order. Functions are grouped logically by type (Data Types, Arrays, Pointers, etc.), and helper functions are placed near their usage.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile as-is. It relies on non-standard `__asm_` intrinsics and uses invalid C syntax for array initialization in the test functions (e.g., `arr1 = {1};` is not valid assignment syntax).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Composite types (structs/unions) are completely lost, replaced by raw pointer arithmetic and magic number offsets.
+- Floating-point operations are decompiled to inline assembly intrinsics (`__asm_movss`) rather than C operators.
+- Variable names are entirely generic (`v1`, `v2`), obscuring the semantic meaning of data.
+- Magic numbers for array offsets (e.g., `44` for `int[10][10]` diagonal access) are not explained or replaced with constants.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved the original function names from the symbol table, making the high-level flow easy to map back to the source.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The failure to recover `struct` and `union` definitions, reducing complex data structures to untyped byte pointers, is the single biggest barrier to understanding the code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a robust type recovery engine to reconstruct struct definitions from stack layout and access patterns (e.g., detecting `p+4`, `p+8` as struct fields).
+2. Lift SIMD/FP instructions to standard C arithmetic operators (`+`, `*`, `/`) instead of emitting `__asm_` intrinsics or `int128_t` casts.
+3. Improve variable naming heuristics to infer names from usage (e.g., variables used as loop counters should be named `i` or `index`, not `v1`).

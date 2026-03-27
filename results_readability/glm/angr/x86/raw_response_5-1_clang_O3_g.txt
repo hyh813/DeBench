@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `p`. For example, in `test_cpp_member_func`, the `SimpleClass` instance is represented by scattered variables `v0`, `v1`, `v2` rather than a cohesive object or named variable like `obj`.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: The decompiler successfully demangles C++ symbols (e.g., `_Z20test_cpp_member_funcv` becomes `test_cpp_member_func`), preserving the original semantic names. However, some functions remain generic (e.g., `sub_401030`).
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals like `"Test"` are preserved, but magic numbers are not explained. For instance, in `test_cpp_member_func`, the value `10` is assigned to `v0` without context that it represents the value being set in the source.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present, including compiler artifacts like `__x86.get_pc_thunk.bx` and `frame_dummy`. Furthermore, the output contains raw decompiler errors like `[D] unsupported_<class 'pyvex.expr.GetI'>()` which act as severe noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is often broken or missing. Functions like `test_cpp_constructor` and `test_cpp_virtual_func` are decompiled as empty `void` functions despite having complex logic in the source. `Container<double>::push` is littered with unsupported IR statements, making flow impossible to follow.
+
+**6. Function Decomposition:** Score: 3/10
+Justification: While class methods are separated, the main test functions are frequently empty or stubs. The logic for `test_cpp_lambda` and `test_cpp_smart_ptr` is entirely missing, representing a failure to decompose the binary into meaningful logic blocks.
+
+**7. Code Linearization:** Score: 5/10
+Justification: In the few functions where logic is present (e.g., `test_cpp_member_func`), the code reads relatively linearly. However, the prevalence of empty functions and `goto` statements in thunks disrupts the overall reading experience.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: There is little obvious redundancy in the recovered logic, but this is largely because the logic itself is missing or abstracted away by failed decompilation attempts rather than successful optimization.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are often imprecise. `class Base` is recovered in `call_virtual_func`, but many objects are cast to `void*` or `unsigned int*` (e.g., in `test_cpp_rtti`), losing the specific class type information like `RTTIDerivedA`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are not reconstructed semantically. Instead of fields like `value` or `data`, the decompiler uses generic layouts like `struct_0 { char padding_0[...]; struct struct_1 *field_4; };`, which obscures the actual data structure.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies on unsafe casts. For example, in `call_virtual_func`, the vtable lookup is performed via `(*((int *)*((int *)arg_0)))(arg_0, arg_1);`, treating the object and vtable as raw integer pointers rather than using C++ type semantics.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic. The only "comments" are error messages from the decompiler engine (e.g., `[D] unsupported...`), which do not aid in understanding the code's intent.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level C++ idioms are not recognized. Virtual function calls are shown as raw pointer dereferences, and exception handling is reduced to calls to `__cxa_throw` without indicating that an exception is being thrown.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler explicitly marks where it failed with `[D] unsupported...` tags, which is honest but highlights the tool's inability to handle the code (specifically floating point/SIMD in `Container<double>::push`).
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are recovered. The logic is so sparse that contracts would be impossible to infer anyway.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: The demangled function names allow for cross-referencing the original C++ source structure. However, the lack of reconstructed class hierarchies makes understanding relationships (like inheritance) difficult.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are presented in address order rather than logical grouping. While related class methods are often close, the overall flow jumps between runtime helpers and test functions.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to the presence of inline IR statements (`[D] unsupported...`), missing definitions for generic structs, and the use of platform-specific intrinsics without context.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- **Missing Logic**: Critical functions like `test_cpp_constructor`, `test_cpp_virtual_func`, and `test_cpp_lambda` are decompiled as empty `void` functions, completely losing the implementation.
+- **Floating Point/SIMD Failure**: The function `Container<double>::push` is unreadable due to unsupported IR expressions (`[D] unsupported_<class 'pyvex.expr.GetI'>()`), indicating a backend lifting failure.
+- **Generic Type Recovery**: Class structures are reduced to `struct_0` with `padding_0` and `field_4`, completely losing semantic field names like `value` or `multiplier`.
+- **Poor Variable Naming**: Variables are consistently named `v0`, `v1`, `ptr`, etc., providing no semantic context.
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)
+- The decompiler successfully demangles C++ mangled names (e.g., `_ZN9ContainerIiEC2Ev` to `Container<int>::Container`), preserving the original identifiers which is crucial for mapping back to source.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.5/10)
+- The decompiler fails to convey *what* the code is doing. It presents raw memory accesses and library calls without recognizing the high-level C++ constructs (exceptions, RTTI, virtual dispatch) or providing any explanatory comments.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve Lifting Engine**: Fix the handling of SIMD and floating-point instructions to prevent "unsupported" IR statements from polluting the output (as seen in `Container<double>::push`).
+2.  **Enhance Control Flow Recovery**: Investigate why functions with clear logic at `-O0` are being decompiled as empty stubs; ensure the basic block graph is being traversed correctly.
+3.  **Implement C++ Class Recovery**: Develop heuristics to reconstruct class layouts (field names/types) from vtables and constructor usage, rather than outputting generic `struct_0` definitions.

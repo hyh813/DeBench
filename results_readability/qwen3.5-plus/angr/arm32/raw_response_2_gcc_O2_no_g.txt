@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `a0`, `a1`, `ptr`, `i`) with no semantic meaning. For example, in `process_char`, `v0` should be `char_offset` and `v1` should be `result`. No variable indicates its purpose from the name alone.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original function names preserved (`process_char`, `process_int`, `struct_simple`), but many are generic (`sub_103a0`, `sub_10450`). Test functions correctly named but don't actually call the processing functions they claim to test.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation: `65`, `32`, `25` in `process_char` (ASCII conversion), `0x800000`, `0x100000` in floating point functions. No named constants recovered despite original source having clear semantic values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive `armg_calculate_condition()` calls obscure logic (e.g., 20+ calls in `process_bool` for a simple even-number check). Register spilling artifacts (`vvar_26{r64|4b}`) and condition code variables (`cc_op`, `cc_dep1`) pollute the code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Heavy `goto` usage instead of natural loops (e.g., `array_1d_stack` uses `goto LABEL_10768` and `do-while` with manual pointer arithmetic). `armg_calculate_condition` replaces simple `if` statements, making even `process_char`'s uppercase check unreadable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function sizes are reasonable, but test functions are broken—they print hardcoded expected values instead of calling actual functions (e.g., `test_data_types_l1` prints `97` instead of calling `process_char('A')`). Floating point functions expanded into hundreds of lines of bit manipulation.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps disrupt reading flow. `binary_tree_sum` has deeply nested gotos spanning 300+ lines. Loop bodies split across multiple labels with non-linear execution paths.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Repeated `armg_calculate_condition` patterns with identical parameters. Floating point functions (`__muldf3`, `__aeabi_dadd`) have massive duplicated bit-manipulation code that should be library calls.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Critical type errors: `process_char(unsigned int)` should be `char`, `process_float()` returns `void` instead of `float`, `process_ll(unsigned int, unsigned int)` should be `long long`. Pointer types degraded to `unsigned int` throughout.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic names (`struct_0`, `struct_1`) and fields (`field_0`, `field_4`, `field_8`). Bitfield struct `Flags` lost all field names. Unions not distinguished from structs. Nested struct access reduced to array indexing (`a0[2]`, `a0[5]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `ptr_void` casts `void*` to `int*`/`char*` without validation. `ptr_cast` loses the int→char→int conversion chain. Function pointers use `goto a0` instead of proper call syntax.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. No algorithm explanations, no parameter documentation, no decompilation confidence indicators. Only auto-generated function headers present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns not recognized: character case conversion (`c >= 'A' && c <= 'Z'`), array summation loops, linked list traversal all appear as raw arithmetic. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about critical issues: wrong function signatures, missing function calls in tests, floating point mangling. Code presents incorrect information confidently without flagging problems.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `array_complex_index` bounds checking not explained). No postconditions or error condition documentation. Return value semantics unclear.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships not documented. `test_pointer_types` claims to test functions but prints hardcoded values. Global variables named generically (`g_12044`, `g_23008`). No call graph information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order. Related functions not grouped (e.g., `process_char` through `process_ld` scattered). Library functions mixed with application code. No header file structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone: missing `armg_calculate_condition` implementation, undefined globals (`GLIBC_2.4::__stack_chk_guard`), incorrect function signatures. Requires extensive patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (3+5+4+4)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type):        (3+4+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.44/10
+```
+
+**Overall Readability Score: 3.4/10**
+
+### Critical Defects
+- **Variable names completely generic**: `v0`, `v1`, `a0`, `a1` throughout with no semantic meaning
+- **Type signatures incorrect**: `process_char(unsigned int)` should be `char`, `process_float()` returns `void` instead of `float`
+- **Test functions broken**: Print hardcoded expected values instead of calling actual functions
+- **ARM condition code pollution**: `armg_calculate_condition()` calls obscure simple logic (20+ calls for a boolean check)
+- **Floating point functions mangled**: Hundreds of lines of bit manipulation instead of `f * 1.5f + 0.5f`
+
+### Best Quality Aspect
+- **Function Naming Quality (5/10)**: Some original function names preserved (`process_char`, `struct_simple`, `linked_list`), providing minimal semantic anchors in an otherwise opaque codebase.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)**: Zero meaningful comments despite complex bit manipulation in floating point functions and non-obvious ARM condition code patterns that desperately need explanation.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover semantic variable names from usage patterns**: Analyze how variables are used (e.g., compared to 65/90 for ASCII, used in array indexing) to infer names like `char_code`, `array_index`, `sum`.
+2. **Recognize and simplify ARM condition code patterns**: Replace `armg_calculate_condition(146, v0, 25, 0)` patterns with natural `if (v0 <= 25)` constructs.
+3. **Preserve floating point operations as high-level expressions**: Instead of expanding `f * 1.5f` into bit manipulation, recognize IEEE 754 library calls and emit readable floating point arithmetic.

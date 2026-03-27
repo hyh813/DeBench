@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `uVar2`, `lVar1`, `param_1`) and fail to reflect the original semantic intent (e.g., `sum`, `count`, `i`). Comments like "Unresolved local var" appear frequently, indicating a failure to recover stack variable mappings.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source symbols (e.g., `sequential_ops`, `loop_for_fixed`, `duffs_device`), making the high-level purpose of each unit immediately clear despite the internal obfuscation.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Meaningful constants from the source (e.g., `1000`, `100`) are replaced by obscure magic numbers in hex (e.g., `0x3e9`, `0x65`) or derived values (e.g., `0x12` used for digit counting logic), requiring manual calculation to understand the original constraints.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is largely free of register spilling artifacts, but it is polluted with "WARNING" comments (e.g., "Removing unreachable block", "Unknown calling convention") and "Unresolved local var" tags that distract from the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The aggressive optimization (O3) has destroyed the original structure; loops are replaced by complex mathematical formulas (e.g., `loop_for_fixed`), and simple `if` statements are transformed into bit-shift hacks (e.g., `single_if`), making the code extremely difficult to map back to the source logic.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler successfully maintains the original function boundaries and granularity; no functions were inlined into monoliths, and helper functions like `double_value` remain distinct.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly linearly, but this is largely due to optimization collapsing logic into single expressions (e.g., `sequential_ops`), which, while linear, obscures the step-by-step flow present in the source.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler presents the optimized code cleanly without redundant intermediate steps or dead code, accurately reflecting the compiler's efficiency.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types (`int`, `uint`) are generally correct, though the use of `undefined4` in `_start` and `longlong` in `loop_for_fixed` (for a 32-bit sum) shows some imprecision in tracking the exact original type widths.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Local arrays and structs are not recovered; instead, the code uses raw pointer arithmetic to global data segments (e.g., `*(int *)(&DAT_00011e5c + op * 4)` in `switch_small`), completely losing the semantic context of accessing an array or struct field.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic and casts appear consistent with the optimized binary's logic, and there are no obviously dangerous or nonsensical casts introduced by the decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to decompiler warnings (e.g., "Could not recover jumptable") and provide zero semantic explanation of the complex algorithms or optimizations applied (e.g., explaining the math formula in `loop_for_fixed`).
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler fails to identify standard patterns; `duffs_device` is presented as a messy switch/goto structure rather than being labeled as the known idiom, and the optimized loop formulas are not annotated as series summations.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler correctly flags issues it cannot resolve, such as "WARNING: Could not recover jumptable" in `call_func_ptr` and "Unresolved local var", which accurately communicates uncertainty to the user.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the requirement that `n > 0` in `duffs_device` is present in the code but not explicitly documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and standard; the relationships between `main`, the test functions, and the logic functions are preserved and easy to trace.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled output maintains the logical grouping of functions (e.g., `test_control_flow_l1`, `l2`, `l3` blocks) matching the source file's organization.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on runtime helper functions (e.g., `__aeabi_idivmod`, `__divsi3`) and uses specific types (`undefined4`) that would require significant patching or a specific runtime environment to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- **Optimization Mismatch:** The binary was compiled with `-O3` (likely Clang, based on the filename) while the source metadata claims `-O0`. This results in loops being replaced by obscure math formulas (e.g., `loop_for_fixed`), making the decompiled code structurally unrecognizable compared to the source.
+- **Loss of Array Semantics:** Local arrays (e.g., `arr` in `loop_break`) are replaced by raw global data offsets (`DAT_00011e5c`), destroying the context of array indexing.
+- **Generic Variable Naming:** Critical variables are reduced to `iVar1`, `uVar2`, etc., with "Unresolved local var" warnings, forcing the analyst to manually reverse-engineer variable roles.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original symbol names, allowing immediate identification of function purposes despite the internal obfuscation.
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.25/10)
+- The decompiler fails to explain *why* the code looks the way it does (e.g., annotating optimized math formulas or identifying known patterns like Duff's Device), leaving the user to decipher complex compiler artifacts alone.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Pattern Recognition for Optimized Loops:** Detect when a loop has been optimized into a closed-form mathematical expression (like arithmetic series summation) and annotate it with the original loop logic or a comment explaining the formula.
+2. **Array Recovery from Global Data:** Improve analysis to identify when global data segments are being accessed as arrays (constant stride access) and reconstruct the local array variable syntax instead of using raw pointer offsets.
+3. **Variable Type Inference from Usage:** Enhance heuristic analysis to infer meaningful names for variables based on their usage context (e.g., a variable used as a loop counter should be named `i` or `counter`, not `iVar1`).

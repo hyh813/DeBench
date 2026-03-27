@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use auto-generated names like `param_1`, `param_2`, `uVar1`, `iVar1`, `puVar1`, `local_14`. These cryptic names completely obscure semantic purpose - e.g., `param_1` should be `size` or `x`, `uVar1` should be `result`. The original source had meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` that are completely lost.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names perfectly match the original source: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, `param_memory_protection`. The decompiler achieved excellent function name recovery.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers throughout: `0x40` (64), `0x200` (512), `0x401` (1025), `0xdef0`, `0xdf22`, `0x10` (16), `0x32` (50), `0xb` (11), `0x22` (34), `7`, `3`, `1`. The original source had named constants like MAX_SIZE, BUFFER_COUNT, ADD_16 that are lost. Only `0x1e` is correctly identified as `_SC_PAGESIZE`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts like redundant casts or debug instrumentation. However, the proliferation of auto-generated variable names (`uVar1`, `iVar10`, `iVar11`, `iVar12`, `iVar13`, `iVar14`, `iVar15`, `iVar16`, `iVar17`) in `param_asm_clobber` creates significant visual noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural and idiomatic. Simple if-else structures match source (`if (param_1 < 0x401)`). Loops are properly formed. No spurious goto statements. At -O0, the control flow should be close to source, and it is.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity matches source - many small, focused functions like `param_macro_constants` (3 lines), `my_func` (2 lines), `param_asm_basic` (2 lines). Each function has clear single responsibility. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without excessive jumps. Early returns are used appropriately. No deep nesting (>4 levels). The `param_asm_clobber` function has some forward jumps for loop handling but is manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Loop unrolling in `param_asm_clobber` is present (processing 8 elements at a time) but this is expected at higher optimization levels and the logic is traceable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are accurate - `int`, `uint`, `ulong`, `size_t` used correctly. However, `undefined4` appears for return types (should be `int`) and `undefined8` for pointers (should be `void*` or `int*`). The parameter types like `int param_1` are correct.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: No complex structs in this test case to recover. Simple types like `int*` are handled correctly. The code doesn't attempt to reconstruct non-existent structures.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No obvious unsafe casts or type-confused function pointers. Pointer arithmetic in `param_asm_clobber` (`param_1 + uVar7 * 4`) is correct. No buffer-overflow-prone patterns. Minor concern: `param_2` passed as `uint` to functions expecting `int` in some places.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only the standard Ghidra header comment present ("Decompiled by Ghidra 12.0"). No useful comments explaining macro semantics, assembly behavior, or algorithm intent. The original source had extensive comments explaining each test case that are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No design patterns or algorithms explicitly identified. However, the code is clear enough that patterns like "atomic fetch-and-add" can be inferred from the `__aarch64_ldadd4_acq_rel` function name. The inline assembly patterns are not labeled.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: No anomalies are flagged. The code presents everything confidently, even where there might be uncertainty (e.g., the conditional compilation branches that were resolved at compile time).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. For example, `param_asm_clobber` has implicit requirements (array must have at least `n` elements) that are not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. However, there's no documentation of caller/callee relationships, global variable usage, or callback patterns. The relationship between `test_preprocessing_features` and the functions it calls is not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in reasonable order matching the source file structure (preprocessing functions first, then asm functions, then test functions). However, all functions are in a single flat namespace without grouping or section comments.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code should compile as C with minor fixes. Issues: `undefined4` and `undefined8` types need to be replaced with standard types. External functions like `printf`, `mmap`, `mprotect`, `sysconf` need declarations. The code references `global_var` which must be defined externally.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.5/10
+
+**Critical Defects:**
+- Variable naming is completely auto-generated (`param_1`, `uVar1`, `iVar10`) losing all semantic meaning from source
+- Magic numbers everywhere (`0x40`, `0x200`, `0xdef0`) without named constant recovery
+- No comments explaining macro semantics, inline assembly behavior, or algorithm intent
+- Type artifacts (`undefined4`, `undefined8`) need resolution for clean compilation
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- Nearly all function names perfectly match the original source, which is exceptional for decompilation
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- All variable names are auto-generated cryptics that completely obscure semantic purpose; the decompiler should infer names from usage patterns (e.g., `param_1` used in size comparison → `size` or `buffer_size`)
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - e.g., variables used as loop counters should be named `i` or `index`, variables compared to constants like `0x401` should be named after those constants
+2. Detect magic numbers and suggest named constants based on common patterns (e.g., `0x401` → `MAX_SIZE + 1`, `0x22` → `MAP_PRIVATE | MAP_ANONYMOUS`)
+3. Add semantic comments explaining preprocessing results (e.g., "Macro MAX_SIZE expanded to 1024") and inline assembly behavior (e.g., "Atomic fetch-and-add operation")

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `a1`, `v4`), obscuring semantic meaning like `arr`, `i`, or `n`. While `global_counter` is preserved, local variables like `v5` (representing `arr[5]`) are not merged or named meaningfully.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: User-defined function names like `local_vars`, `heap_basic`, and `linked_list_heap` are recovered perfectly. Only runtime functions like `sub_8E0` or `frame_dummy` use generic names, which is acceptable.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers like `0x10u` (size of Node) and `0x7FFFFFFF0LL` (alignment mask) are used instead of `sizeof(Node)` or named constants. While `0xFFFFFFFFLL` clearly represents `-1`, other hex literals lack context.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains standard decompiler noise such as `__int64` return types for `int` functions and redundant casts `(unsigned int)`. The use of `__fastcall` on ARM64 is incorrect and adds confusion.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Loops are consistently represented as `do-while` structures even when the source used `for`, which is a common decompiler pattern but slightly less natural. The `linked_list_heap` function uses a `goto LABEL_11` for control flow, which disrupts readability.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: Significant inlining and constant propagation occurred. For example, `test_stack_memory` contains the inlined loop logic of `local_array` and constant-folded results (e.g., `local_vars(5)` becomes `20`), destroying the original function call structure present in the `-O0` source.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but forward jumps and `goto` statements (e.g., in `linked_list_heap`) interrupt the flow. The VLA setup in `vla_stack` involves complex pointer arithmetic that breaks linear reading.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully simplifies expressions (e.g., `local_vars` reduces to `2 * a1 + 10`). While this removes intermediate variables present in the source, it produces clean, non-redundant logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types are mostly correct, though `int` return values are often typed as `__int64` (ARM64 register width). `size_t` is correctly identified as `__int64`. However, pointer types for heap allocations are sometimes generic (`void*`) or specific (`_DWORD *`) inconsistently.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely lost. `Point` and `Node` structures are replaced by raw pointer arithmetic (e.g., `*(_DWORD *)v4` for data and `v4[1]` for next pointer), making the code hard to understand compared to the source.
+
+**11. Type Safety:** Score: 4/10
+Justification: Heavy reliance on unsafe casts like `(_DWORD *)` and `*(unsigned int *)&dest[...]` to access memory. The code treats memory as raw byte arrays or integer arrays rather than using the defined structures, violating type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining the logic. Only `// attributes: thunk` appears. Complex operations like VLA allocation or struct member access lack explanatory notes.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Basic patterns like linked list traversal are recognizable as loops, but they are not explicitly identified or named. The "memory leak" or "dangling pointer" patterns are not flagged or commented.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler explicitly lists functions it failed to decompile (e.g., `memcpy`, `malloc`) at the end, which is good. However, it does not flag the suspicious inlining or the aggressive optimization of `stack_alias` (which returns a constant `20`).
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: Preconditions (e.g., `malloc` result checks) are present as `if (v2)` but are not documented as contracts. There is no indication of function requirements or guarantees.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear where they exist (before inlining). Global variables like `global_counter` are accessed correctly. The relationship between `test_` functions and their implementations is visible, albeit distorted by inlining.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are grouped roughly by category (stack, heap, static), but runtime functions (`init_proc`, `frame_dummy`) are intermixed. The overall organization is decent but not perfectly aligned with the source sections.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses `__fastcall` (incorrect for ARM64) and `JUMPOUT` macros. It would require significant patching (removing macros, fixing types) to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Composite types (structs) completely lost, replaced by raw pointer arithmetic (e.g., `v4[1]` instead of `node->next`).
+- Function logic in `test_stack_memory` is inlined and constant-folded (e.g., `local_vars(5)` -> `20`), destroying the source structure.
+- Stack variable aliasing not resolved (e.g., `v5` used instead of `arr[5]`).
+- Incorrect architecture annotations (`__fastcall` on ARM64).
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- User-defined function names are preserved accurately from the source symbols.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover `Point` and `Node` structures forces the reader to interpret raw offsets, drastically reducing readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement structure recovery to identify and reconstruct `struct` types from heap allocation and field access patterns.
+2. Disable aggressive constant propagation and inlining when analyzing code compiled with `-O0` to preserve the original function boundaries and variable assignments.
+3. Resolve stack variable aliasing to merge scalar variables that represent specific array elements (e.g., `v5` should be `arr[5]`).
+4. Remove architecture-specific calling convention macros (like `__fastcall`) that do not apply to the target binary architecture (ARM64).

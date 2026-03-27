@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `uVar2`, `local_30`) with no semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`). A few generic names exist (`FUN_00101020`, `_init`) but core logic functions retain semantic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound (`0x14`, `0xe1`, `0x2f`, `0x5a`, `0x10`) without explanation. Some are recoverable (0x14=20, 0xe1=225) but no named constants were recovered from the original source.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: stack canary checks (`__stack_chk_fail()`), frame offset references (`in_FS_OFFSET`, `in_RAX`), and undefined type casts. These don't completely obscure logic but add clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as for/while constructs in most cases (`param_tail_call_optimized` converted recursion to iteration). However, aggressive optimization eliminated fake branches entirely, changing expected structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is reasonable; helper functions like `decrypt_string` remain separate. No monolithic functions, but some caller functions are trivial due to constant folding optimization.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. No problematic goto statements; control flow follows natural C patterns where not optimized away.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Compiler optimization removed entire code paths (fake branches, opaque predicate false paths). While technically correct, this loses the original obfuscation intent that should be visible for analysis.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types (`undefined4`, `undefined8`, `ulong`) instead of precise types. Original `int`, `size_t`, `char*` distinctions often lost. Signal handler types degraded to `(__sighandler_t)0x0`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The bitfield struct in `param_implementation_defined` is completely lost—function now returns constant `0x2f`. Array structures represented as individual stack variables (`local_70`, `local_68`, etc.) rather than arrays.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present: `(undefined *)0x0`, `(undefined4 *)`, `(byte *)`. Pointer arithmetic lacks proper typing. Original type safety guarantees not preserved in decompilation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no semantic comments. Only auto-generated warnings exist ("WARNING: Subroutine does not return", "WARNING: Removing unreachable block"). No algorithm explanations or logic documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns identified. The GCD computation in `param_opaque_predicate` and tail-call optimization pattern not recognized or documented despite being recoverable.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged with WARNING comments for unreachable blocks and non-returning subroutines. However, critical issues like constant-folded functions not flagged as potentially misleading.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original function contracts (e.g., "永假条件", "期望: 10") completely lost. No parameter validation hints.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but relationships not documented. Global variable usage (`jmp_buffer`, `encrypted_0`) not clearly indicated. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file with no logical grouping. Original source had clear section organization (7.1 混淆, 7.2 优化, 7.3 边界) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies present (signal, malloc, strlen, printf) without declarations. Would require significant stubbing to compile standalone. Architecture mismatch (ARM64 source → x86 decompilation).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+7+5)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Context):     (5+5+4)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                              4.86/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`, `uVar2`) losing all semantic meaning from original source
+- **Type system severely degraded** with `undefined4/8` instead of precise `int32_t`, `size_t`, `char*`
+- **Composite types lost** - bitfield struct in `param_implementation_defined` collapsed to constant return
+- **No semantic documentation** - original comments explaining obfuscation techniques completely absent
+- **Constant folding obscures logic** - functions like `call_fake_branch` return `10` directly instead of showing computation path
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, allowing identification of purpose despite other degradation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no semantic comments; decompiler provides zero explanation of algorithm intent or obfuscation patterns
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and string references (e.g., `param_1` in division context → `divisor`)
+2. **Recover and preserve original comments** from debug symbols when `-g` flag was used during compilation
+3. **Flag aggressively optimized code** with confidence indicators when constant folding eliminates original logic paths

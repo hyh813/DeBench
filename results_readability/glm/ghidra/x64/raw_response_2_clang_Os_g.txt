@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: While parameter names (`arr`, `n`, `x`) are preserved, local variables rely heavily on generic types like `iVar1`, `lVar2`, and `uVar3`, obscuring their specific roles (e.g., `sum`, `i`, `offset`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`process_char`, `array_1d_stack`, `struct_bitfields`) match the original source exactly, indicating symbols were preserved in the binary.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with "magic numbers" like `0x2c` (array stride), `0x19` (range check), and `0x400c000000000000` (float constant), making it difficult to understand the logic without manual calculation.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present, including `undefined` types (`undefined8`, `undefined4`), "Unresolved local var" comments, and "WARNING: Unknown calling convention" messages that clutter the output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Control flow is often unnatural; `process_char` uses obscure range arithmetic, `binary_tree_sum` transforms recursion into a `do-while` loop, and array accesses use manual pointer arithmetic instead of `[]`.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source; there is no inlining or outlining, maintaining the original granularity perfectly.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but complex pointer arithmetic in functions like `array_3d` and `array_2d_stack` disrupts the linear flow with manual offset calculations.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little dead code, but the manual reconstruction of array indexing (e.g., `*(int *)((long)*arr + lVar2)`) introduces verbosity that feels redundant compared to the source's `arr[i][i]`.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types are correct, but `process_ld` fails to recover the `long double` return value (returning `in_RAX` unassigned), and `undefined` types are used for stack variables.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Standard structs like `Point3D` and `Node` are recovered with correct field access, but bitfields in `Flags` are degraded into bit-shifts on a `ushort`, losing the semantic field names.
+
+**11. Type Safety:** Score: 6/10
+Justification: Necessary but unsafe casts like `(int *)0x0` and `(long)*arr + lVar2` are used to implement pointer arithmetic, which is technically correct for the decompiled view but looks unsafe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to decompiler warnings ("Unknown calling convention") and do not explain the algorithm or logic, providing no semantic value to the reader.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Common idioms are missed; `process_char`'s case conversion is obfuscated, and `enum_switch` is turned into a table lookup without noting the switch statement origin.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The critical failure in `process_ld` (returning an uninitialized register) is not flagged as an anomaly or error, leaving the user to discover the broken logic themselves.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the `volatile` requirement in `volatile_access` is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls to standard library (`printf`, `puts`) and internal functions are clear and easy to trace.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are presented in the same logical order as the source, maintaining the module's structure effectively.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code will not compile without significant modification due to `undefined` types, the incorrect `process_ld` signature, and the use of Ghidra-specific variables like `in_RAX`.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (5 + 10 + 3 + 4) / 4 = 5.5
+L2_avg = (5 + 10 + 6 + 7) / 4 = 7.0
+L3_avg = (6 + 7 + 6) / 3 = 6.33
+L4_avg = (2 + 4 + 3 + 1) / 4 = 2.5
+L5_avg = (8 + 9 + 4) / 3 = 7.0
+
+Overall = (5.5 * 0.30) + (7.0 * 0.25) + (6.33 * 0.20) + 
+          (2.5 * 0.15) + (7.0 * 0.10)
+Overall = 1.65 + 1.75 + 1.266 + 0.375 + 0.7
+Overall = 5.74 / 10
+```
+
+### Overall Readability Score: **5.7/10**
+
+### Critical Defects
+- **Function `process_ld` Failure**: The function body is completely lost, returning an uninitialized register `in_RAX` instead of calculating `d * d + 1.0L`.
+- **Array Indexing Obfuscation**: Multi-dimensional array access (e.g., in `array_2d_stack`) is represented as raw pointer arithmetic with hardcoded hex offsets (`0x2c`, `0x1b8`) instead of `arr[i][j]`.
+- **Bitfield Loss**: The `Flags` struct bitfields are recovered as manual bit shifts on a `ushort`, destroying the semantic meaning of `flag1`, `flag2`, etc.
+- **Literal Obscurity**: Floating-point constants and integers in `test` functions are displayed as raw hex (e.g., `0x400c000000000000`), making the expected values unreadable.
+- **Volatile Semantics Lost**: `volatile_access` collapses two distinct memory reads into `*p + *p`, hiding the explicit volatile read sequence required by the source.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**: The decompiler perfectly preserved all original function names, making it trivial to map the decompiled code back to the source logic.
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (1/10)**: There is a total absence of semantic information regarding preconditions, volatile behavior, or data structure invariants, forcing the user to reverse-engineer the intent.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover Multi-Dimensional Array Syntax**: Implement pattern matching to convert manual pointer arithmetic with constant strides back into `arr[i][j]` syntax.
+2.  **Fix Floating-Point Return Handling**: Correct the analysis of `long double` return values to ensure the function body logic is recovered and assigned to the return variable.
+3.  **Symbolic Constant Recovery**: Enhance literal analysis to display hex values as their corresponding character or float equivalents (e.g., `0x61` -> `'a'`) when used in format string contexts.

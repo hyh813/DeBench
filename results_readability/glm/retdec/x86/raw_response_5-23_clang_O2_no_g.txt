@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are universally generic (`v1`, `v2`, `a1`, `a2`), providing zero semantic context. For example, in `param_macro_constants`, `a1` represents `size` and the result is stored in a generic `result` equivalent, making it impossible to understand the logic without cross-referencing the original source.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the original source (e.g., `param_macro_constants`, `param_asm_basic`), accurately reflecting their purpose and making the high-level structure immediately navigable.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are accessed via opaque offsets (e.g., `printf((char *)(v1 + 3320))`) rather than displaying the actual string content. Magic numbers like `0xdef0` are preserved, but constants like `MAX_SIZE` are lost or replaced by confusing global address references (e.g., `(int32_t)&g11`).
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant compiler artifacts, including `__x86_get_pc_thunk` functions for Position Independent Code and `__asm_hlt()` instructions, which clutter the output without adding value to the logic understanding.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is often obfuscated by complex ternary operators for simple logic (e.g., `param_macro_functions` reconstructs `MAX` with a verbose bitwise check). Furthermore, `param_macro_constants` uses nonsensical global address arithmetic (`a1 - (int32_t)&g11`) instead of a simple constant comparison, indicating a decompilation failure.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions match the source granularity perfectly; no inlining or outlining occurred (expected for `-O0`), and the boundaries between logical units (like `call_...` vs `param_...`) are preserved.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with appropriate early returns. While some expressions are complex, the execution flow is generally linear and easy to trace within functions.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no obvious dead code or loop unrolling artifacts. The logic is presented concisely, even if the variable names obscure the meaning.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Significant type confusion exists. In `param_include_guard`, the function returns `&g1` (a pointer address) despite the return type being `int32_t` and the source returning a calculated integer value (`500`). This indicates a failure to distinguish between pointer values and integer data.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: SIMD vectors are correctly identified and typed as `int128_t`, and the decompiler uses appropriate SIMD intrinsics (`__asm_movaps`). Since the source primarily used primitives and arrays, there was little struct recovery to test, but the array handling is acceptable.
+
+**11. Type Safety:** Score: 4/10
+Justification: Unsafe casts are prevalent. For example, `*(int32_t *)(v1 + (int32_t)&g5 + 48)` in `param_memory_clobber_demo` relies on raw pointer arithmetic and hardcoded offsets, which is unsafe and difficult to validate.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of the complex global address arithmetic. The only comments are auto-generated address ranges.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: SIMD instructions are excellently mapped to intrinsics like `__asm_paddd` and `__asm_movaps`, clearly identifying the vector operations. Standard loops and array traversals are also correctly identified.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents incorrect logic (e.g., returning an address in `param_include_guard`) with high confidence, offering no warnings or flags about potential anomalies or recovery failures.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or error handling contracts are inferred or documented. For instance, the failure path in `param_memory_protection` is not explicitly commented as an error state.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear, but global variable usage is opaque. Accesses like `*(int32_t *)(v1 + (int32_t)&g11)` obscure the relationship between the code and the data section, making it hard to track data flow.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source file's structure. The separation between preprocessing tests and assembly tests is maintained.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses non-standard constructs like `__asm_hlt()` and likely custom `__asm_` intrinsic definitions that would not compile with a standard C compiler without significant modification or specific decompiler headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 10 + 3 + 5) / 4 = 5.0
+L2_avg: (4 + 9 + 8 + 8) / 4 = 7.25
+L3_avg: (3 + 7 + 4) / 3 = 4.67
+L4_avg: (1 + 8 + 1 + 1) / 4 = 2.75
+L5_avg: (6 + 8 + 3) / 3 = 5.67
+
+Overall = (5.0 × 0.30) + (7.25 × 0.25) + (4.67 × 0.20) + 
+          (2.75 × 0.15) + (5.67 × 0.10)
+Overall = 1.5 + 1.8125 + 0.934 + 0.4125 + 0.567
+Overall = 5.226
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects (Bullet List)
+- **Semantic Failure in `param_include_guard`**: Returns `&g1` (pointer address) instead of the calculated value `500`, completely breaking the function's logic.
+- **Constant Propagation Error in `param_macro_constants`**: Compares input against a global address `(int32_t)&g11` instead of the constant `1024`, rendering the condition unreadable.
+- **Parameter Mapping Error in `param_variadic_macro`**: Returns `a2 + 50` instead of `a1 + 50`, mixing up the arguments `x` and `y`.
+- **Opaque String Literals**: Strings are accessed via offsets (e.g., `v1 + 3320`), hiding the actual text being printed.
+- **Generic Variable Naming**: Universal use of `v1`, `a1`, etc., obscures the semantic meaning of variables like `size`, `result`, or `counter`.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (10/10)
+- **Why?** The decompiler perfectly preserved all original function names from the symbol table, providing a high-level map that matches the source exactly.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Comment Quality & Presence (1/10)
+- **Why?** The complete absence of comments, especially for complex reconstructed logic or obvious decompilation errors (like the pointer return), leaves the user to guess the intent of the code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Constant Propagation**: Fix the logic that replaces immediate constants (like `1024`) with global variable addresses or register spills in comparisons.
+2.  **Recover String Literals**: Instead of emitting pointer arithmetic offsets, resolve the address to the actual string literal in the data section and inline it into the code.
+3.  **Add Anomaly Warnings**: Flag functions where the return type signature appears violated (e.g., returning a pointer in an `int` function) to alert the user of potential decompilation errors.

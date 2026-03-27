@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively named `v0`, `v1`, `v2`, `a0`, `a1` - completely generic. For example, in `local_vars`, the decompilation uses `v1 = (a0 * 2 | a0 >> 31) & 4294967294` where source had clear variable names `a`, `b`, `c`. Loop iterators like `i` are acceptable, but the vast majority of variables lose all semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test function names are correctly preserved: `local_vars`, `local_array`, `heap_basic`, `double_value`, `memop_memset` all match source exactly. Some internal functions like `sub_400934` are generic, but the core test functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently as error return without explanation. The bit manipulation pattern `(x * 2 | x >> 31) & 4294967294` for signed multiplication is unexplained. Loop bounds like `10` are clear, but the signed-int emulation pattern obscures the logic.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Redundant operations present - e.g., in `sub_400934`: `dst = memcpy(...); return memcpy(...);` calls memcpy twice. Frame pointer setup `v4 = &v5;` appears in nearly every function. Some dead code from register spilling, but not severe.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops correctly use `for` construct: `for (i = 0; 10 > i; i += 1)`. Conditionals are natural `if (!ptr)` patterns. At -O0, control flow should closely match source, and it does for most functions. Minor awkwardness from bit manipulation in expressions.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function maintains appropriate granularity matching source. Functions like `linked_list_heap` (80 lines) and `tree_heap_traversal` are cohesive. Parameter lists are reasonable - not exposing implementation details. Good match to source decomposition.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately (e.g., `if (!ptr) { v3 = 4294967295; return v3; }`). No excessive forward jumps. Good linearization for most functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant expressions present - the double memcpy in `sub_400934` is notable. Loop unrolling is minimal at -O0. Some duplicate calculations but nothing severe enough to impede understanding significantly.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `unsigned int` for most integers which is reasonable for ARM64. However, many pointers are `char*` when they should be more specific. Function parameters like `unsigned long ptr` in `address_of_local` should be `int*`. Mixed precision between `unsigned int` and `unsigned long`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are partially recovered with generic names: `struct_0`, `struct_1`, `struct_2`. Field names are `field_0`, `field_8` - losing all semantic meaning. The Node structure in `linked_list_heap` has `field_0` (data) and `field_8` (next) but original names are lost. No union recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe pointer operations present. In `heap_nested`: `*(ptr)->field_8 = ptr;` is confusing and potentially unsafe. Pointer arithmetic like `ptr + i * 4` is common but not always type-safe. Some incorrect type usage between pointers and integers.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only auto-generated function signatures. No explanation of algorithm logic, no @param/@return documentation. The source had extensive comments (MEM-L1-01, MEM-L2-01, etc.) which are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns like loops and conditionals are recognized. Memory allocation patterns (malloc/calloc) are identified. But no explicit naming of patterns like "linked list traversal" or "binary tree creation". Could be much better at identifying common idioms.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `dangling_pointer` function accesses memory after free - a critical undefined behavior - but there's no warning. The `double_free` has no indication of the bug. No confidence indicators for unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Error returns like `-1` for NULL checks are present but not documented as contracts. No "requires: ptr != NULL" style annotations. Could recover more from the defensive programming in source.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (`malloc`, `free`, `printf` recognized). External functions declared with `extern`. But relationships like "called by test_heap_memory" are not documented. Global variable usage is marked but not fully explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - stack functions together, heap functions together, memory ops together. Matches source organization reasonably well. Static functions properly scoped. Some internal bootstrap functions mixed in.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has `extern` declarations for external functions. Should compile with libc. However, some issues: `bcopy` may not be available on all systems, TLS access via `ptr->field_10` assumes tpidr_el0. Requires moderate patching for standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+8+4+5)/4 = 5.0
+L2_avg = (7+9+8+6)/4 = 7.5
+L3_avg = (5+4+5)/3 = 4.67
+L4_avg = (3+4+2+3)/4 = 3.0
+L5_avg = (5+7+6)/3 = 6.0
+
+Overall = (5.0 × 0.30) + (7.5 × 0.25) + (4.67 × 0.20) + 
+          (3.0 × 0.15) + (6.0 × 0.10)
+Overall = 1.5 + 1.875 + 0.934 + 0.45 + 0.6 = 5.36/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects (Bullet List)
+- Variable naming is completely generic (`v0`, `v1`, `a0`) - loses all semantic meaning from source (`a`, `b`, `c`, `arr`, `ptr`)
+- No comments recovered from source - extensive test labels (MEM-L1-01, HEAP-L2-03) completely lost
+- Struct field names are generic (`field_0`, `field_8`) - Node.data and Node.next become meaningless
+- No anomaly indication for dangerous patterns like dangling pointer access and double-free bugs
+- Magic numbers like `4294967295` (0xFFFFFFFF) used without explanation as error codes
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (score: 9/10)** - Function granularity closely matches source; each function has appropriate size and single responsibility. Test functions like `local_vars`, `heap_basic` maintain their original decomposition.
+
+### Most Needs Improvement (Single Dimension)
+- **Anomaly Indication (score: 2/10)** - Critical undefined behaviors in source (dangling_pointer, double_free, heap_overflow) are presented without any warnings. Decompiler should flag memory safety issues, especially since source intentionally tests these patterns.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Variables used as loop bounds should be named `i`, `n`, `count`; pointers used for malloc results should be `ptr`, `buffer`; variables assigned constants like 42 should consider names like `magic_value` or `default_val`
+2. **Recover struct field names from context**: `field_0` used as `data` in Node structures should be named based on usage patterns. The `next` pointer in linked lists is recognizable and should be recovered
+3. **Add anomaly warnings for undefined behavior patterns**: Flag dangling pointer dereferences after free(), double-free calls, and buffer overflows with comments like "WARNING: potential use-after-free" - especially important since source intentionally tests these

@@ -1,0 +1,105 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `param_1`, `local_10`, and `iVar1`, providing no semantic context about their role (e.g., `sum`, `count`, `index`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from symbols (e.g., `cdecl_func`, `test_calling_conventions`), matching the original source exactly and clearly indicating purpose.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals are replaced with data section references (e.g., `&DAT_0001148c`), and decimal constants are often represented in hex (e.g., `0xf` instead of `15`), requiring mental translation.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean, but contains stack canary checks (`__stack_chk_fail`) and fortified function calls (`__printf_chk`) which add minor noise compared to the original source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally natural with proper `for` and `do-while` loops; however, some `switch` statements are recovered as `if-else` chains, which is slightly less idiomatic.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source granularity; there is no inlining or artificial fragmentation, maintaining the original logical separation.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps or confusing control flow transfers, making it easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no dead code or loop unrolling present; the logic is direct without optimization artifacts that would complicate understanding.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are significantly degraded; `int` is often `undefined4`, and large structures passed by value are truncated into a few scalar parameters (e.g., `func_struct_byval` takes only 4 `int` params instead of a 128-byte struct).
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Struct types are completely lost in function signatures; `LargeStruct` and `SmallStruct` are flattened into individual parameters or hidden pointers without reconstructing the original type definition.
+
+**11. Type Safety:** Score: 6/10
+Justification: While basic pointer types (`int *`, `char *`) are correct, the loss of struct boundaries and the use of `undefined` types in signatures make the code unsafe relative to the original API.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Only auto-generated warnings (e.g., "Removing unreachable block") are present; there are no semantic comments explaining the logic or algorithms.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Critical patterns are missed; the `varargs` logic is completely lost (empty loop body), and floating-point operations remain as low-level library calls (`__aeabi_dadd`) rather than C operators.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Basic compiler warnings are present, but significant semantic losses—such as the missing body of `varargs_func` or the truncated struct parameters—are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: No preconditions, postconditions, or invariants are documented; the code provides no hints about the expected state of variables or data structures.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls and global data references are explicit and easy to trace, providing a clear view of the module's interactions.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped in a logical order that closely matches the source file structure, maintaining the original organization.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code requires significant patching to compile due to Ghidra-specific types (`undefined4`), missing data definitions for `DAT_` references, and incorrect function signatures.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 10 + 6 + 7) / 4 = 6.5
+L2_avg: (8 + 9 + 9 + 8) / 4 = 8.5
+L3_avg: (3 + 1 + 6) / 3 = 3.33
+L4_avg: (2 + 3 + 5 + 3) / 4 = 3.25
+L5_avg: (8 + 8 + 4) / 3 = 6.67
+
+Overall = (6.5 × 0.30) + (8.5 × 0.25) + (3.33 × 0.20) + 
+          (3.25 × 0.15) + (6.67 × 0.10)
+Overall = 1.95 + 2.125 + 0.666 + 0.4875 + 0.667
+Overall ≈ 5.9/10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 5.9/10
+
+### Critical Defects (Bullet List)
+- **Variable `param_1` should be named `count`** based on usage in `varargs_func`.
+- **Control flow in `varargs_func` is missing logic**: The loop body is empty in the decompiled version, whereas the source contains `sum += va_arg(args, int)`.
+- **Struct parameters are truncated**: `func_struct_byval` accepts only 4 integer parameters (16 bytes) instead of the full 128-byte `LargeStruct`, losing the majority of the data passed.
+- **Floating point arithmetic is obscured**: Operations like `x + len + d + ll` are replaced by low-level calls to `__aeabi_dadd` and `__floatsidf`, hiding the mathematical intent.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (10/10)**
+- **Why?** Ghidra perfectly recovered all function symbols from the binary, matching the original source names exactly and providing immediate semantic context for every function entry point.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Composite Type Recovery (1/10)**
+- **Why?** The decompiler completely failed to recover struct types in function signatures, flattening `LargeStruct` and `SmallStruct` into scalars and truncating parameters, which destroys the API interface.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve stack argument recovery for large structs on ARM**: The decompiler must detect when multiple register and stack arguments combine to form a large struct passed by value and reconstruct the composite type.
+2.  **Enhance varargs analysis**: The analyzer needs to recognize `va_list` traversal patterns (specifically `va_arg` inside loops) to recover the logic that is currently being dropped as an empty loop body.
+3.  **Lift soft-float ABI calls to operators**: Replace sequences of `__aeabi_dadd`, `__floatsidf`, etc., with high-level arithmetic operators (`+`, `-`, `*`) to restore semantic transparency for floating-point math.

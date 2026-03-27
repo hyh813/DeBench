@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `a2`) with no semantic meaning. Original source used descriptive names like `temp1`, `sum`, `total`, `count` which are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`sequential_ops`, `single_if`, `if_else`), but helper functions use cryptic names (`sub_4004dc`, `$a.14`, `$a.16`). About 60% of functions have meaningful names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound: `4294967295` (should be `-1`), `1717986919` (division optimization constant), `0x12345678`. No constants recovered; all literals are raw numeric values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant ARM-specific artifacts: `armg_calculate_condition()` calls throughout, dead code after goto labels (unreachable `return` statements), redundant label definitions (`LABEL_400720`, `LABEL_400824`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Natural loops converted to `do-while` with goto labels. `nested_if_deep` uses scattered label jumps instead of nested if-else. `single_if` has bizarre bit-shift expression instead of simple conditional.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Duff's device incorrectly split into 8+ tiny functions (`$a.14`, `sub_400d5c` through `sub_400d8c`). Some functions reasonable size, but over-fragmentation in copy loops.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into middle of logic blocks (`goto LABEL_400720`). Dead code between return and label creates non-linear reading. Multiple exit points not consolidated.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate `armg_calculate_condition` calls in same basic block. Dead code paths preserved (unreachable returns after goto). No common subexpression elimination visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All parameters degraded to `unsigned int` regardless of original signedness. `sequential_ops(int a, int b, int c)` became `sequential_ops(unsigned int a0, unsigned int a1, unsigned int a2)`. Pointer types generic.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays completely lost - `loop_break`'s `int arr[] = {10,20,30,40,50}` became a switch-case. No struct/union recovery visible. All composite types flattened to primitives.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout: `(char)armg_calculate_condition(...)`, `(char *)ptr + 1`. Pointer arithmetic without type safety. Function pointer calls use `goto` instead of proper call syntax.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining logic. Original source had extensive documentation (test cases, difficulty ratings, scene labels). Only `/* do not return */` annotations present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop patterns not recognized as for/while. Switch fallthrough in `switch_fallthrough` partially recovered but logic incorrect. State machine patterns not identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `armg_calculate_condition` calls not flagged as decompilation uncertainty. No warnings about potentially incorrect recovery. Confident presentation of questionable code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). Test case expectations not preserved as assertions. Error conditions not annotated.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships unclear. Global variables named generically (`g_413008`, `g_401e2c`). No call graph documentation or callback relationship hints.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by control flow level (L1/L2/L3). Test functions mixed with implementation functions.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: ARM-specific runtime functions (`__divsi3`, `__aeabi_idivmod`, `__libc_start_main`) require platform-specific libraries. External globals need stubs. Would not compile on x86.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (4+5+4+4)/4 = 4.25  × 0.25 = 1.06
+Level 3 (Type):        (4+3+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):  (4+5+4)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────
+Overall Score:                                  3.80/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Variable names completely generic** - `a0`, `a1`, `v0`, `v1` provide zero semantic information about purpose
+- **Control flow degraded to goto** - Natural loops and conditionals converted to label jumps with `armg_calculate_condition` artifacts
+- **Magic numbers unexplained** - `4294967295` for -1, `1717986919` for division, no constant recovery
+- **Arrays lost entirely** - `loop_break`'s static array became incorrect switch-case logic
+- **Zero documentation** - No comments explaining algorithm intent, test expectations, or decompilation confidence
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core test function names were preserved from debug symbols (`sequential_ops`, `nested_if_2`, `test_control_flow_l1`), providing some anchor points for understanding.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments makes understanding algorithm intent nearly impossible; original source had extensive documentation that was entirely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., loop counters → `i`, accumulators → `sum`, bounds → `limit`)
+2. **Recover high-level control structures** - Pattern-match goto sequences back to for/while/do-while and if-else-if chains instead of raw labels
+3. **Add decompilation confidence annotations** - Flag uncertain recoveries (like `armg_calculate_condition` calls) with comments indicating manual review needed

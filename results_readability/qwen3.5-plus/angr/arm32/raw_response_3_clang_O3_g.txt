@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `ptr`, `a0`) with no semantic meaning. Even simple functions like `local_vars` lose the original `a`, `b`, `c` variable names. Only occasional names like `idx` and `result` provide minimal context.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`local_vars`, `heap_basic`, `global_var_access`), but helper functions are cryptic (`sub_400568`, `$a.30`). The preserved names accurately reflect functionality when present.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Pervasive magic numbers like `4294967295` (should be `-1`), `4294905792` (unexplained), and `4294967293` obscure logic. No constants recovered; even simple values like `42` appear without context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive `armg_calculate_condition` calls throughout (e.g., `vla_stack`, `alloca_usage`), redundant variable assignments (`v1 = v4; v0 = v5`), and compiler artifacts pollute readable code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Heavy use of `goto` labels (`LABEL_4006b0`, `LABEL_40076c`) instead of structured conditionals. Loops sometimes recovered (`do-while`) but often obscured by condition calculations.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function sizes are reasonable, but signatures are corrupted (e.g., `heap_nested` has 8 extra parameters, `memory_leak` has 6 parameters instead of 1). Test functions constant-folded away losing structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps to labels disrupt top-to-bottom reading. Some functions like `local_vars` are linear, but complex ones (`vla_stack`, `linked_list_heap`) have scattered control flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate condition checks appear (e.g., `memop_memset` checks `a0` multiple times). Variable shadowing (`ptr` declared multiple times in `heap_nested`) creates confusion.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degrades to `unsigned int` or `void*`. Original `int`, `char`, `size_t` distinctions lost. Function pointers become `unsigned int` (`global_func_ptr`). No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs recovered but with generic names (`struct_0`, `struct_1`, `struct_2`) and fields (`field_0`, `field_4`). The `Node` struct lost its `data` and `next` semantic names. Multiple conflicting struct definitions exist.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer arithmetic throughout (`*((char *)&v2 + i)`). Function pointer calls use `goto` instead of proper call syntax. Cast chains obscure type intent.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no API contracts, no decompilation confidence indicators. Original source had extensive documentation; none recovered.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Memory allocation patterns (`malloc`/`free` pairs) visible but not identified. Linked list traversal in `linked_list_heap` not recognized as such. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Dangerous patterns like `dangling_pointer` (use-after-free) not flagged. `double_free` vulnerability silent. No warnings about undefined behavior or potential crashes.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `n > 0` requirements). Error return values (`-1`, `-2`) not explained. No postcondition or invariant recovery.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables declared `extern` but usage context unclear. Callback mechanism (`global_func_ptr`) not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order. Related functions not grouped (e.g., `set_file_static`/`get_file_static` separated). No header file or API boundary documentation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Contains undefined symbols (`g_413008`, `g_402d52`). `armg_calculate_condition` is decompiler-specific and won't compile. Would require extensive stubbing and cleanup.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+2+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+5+5+5)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+
+Overall Score: 3.88/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `ptr`** should be named based on semantic usage (e.g., `counter`, `buffer_size`, `node_ptr`)
+- **Magic numbers** like `4294967295` should be recovered as `-1` or named error constants
+- **`armg_calculate_condition`** calls obscure simple boolean logic and should be simplified
+- **Struct fields** `field_0`, `field_4` lose semantic meaning (should be `data`, `next`, `x`, `y`)
+- **Zero comments** when original source had extensive documentation explaining test scenarios
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions retained original meaningful names like `local_vars`, `heap_basic`, `global_var_access` which immediately convey purpose
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, explanations, or decompilation confidence indicators makes understanding intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in loop bounds → `count`, `size`; variables passed to `malloc` → `buffer`, `array`)
+2. **Recover and simplify condition expressions** - Replace `armg_calculate_condition` calls with readable boolean expressions and add comments for complex optimizations
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions, potential undefined behavior, and recovered vs. inferred code sections

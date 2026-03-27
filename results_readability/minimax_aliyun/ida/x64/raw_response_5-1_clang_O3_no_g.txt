@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a1`, `a2`, `s[31]`. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier` which are completely lost. The decompiled code makes it nearly impossible to track variable purpose without cross-referencing the source.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Many C++ mangled names remain demangled incorrectly (e.g., `_Z20test_cpp_member_funcv` instead of `test_cpp_member_func`). Some functions use generic names like `sub_1020`, `sub_1120`. Only a few functions like `call_virtual_func` accurately reflect their purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `1001`, `4700`, `42` appear without explanation. The formula `1001 * LifecycleClass::instance_count + 21` is visible but the semantic meaning (1000 multiplier for instance count) is unclear. Some constants like `4u`, `8u` for allocation sizes are not explained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant decompilation artifacts present: `JUMPOUT(0)` for unreachable code, "positive sp value has been detected" warnings, `// FAILED to decompile:` for 19 functions including `printf`, `strlen`, `__cxa_throw`. These indicate incomplete analysis but don't severely impede reading the successfully decompiled functions.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions are simple return statements with computed values, which is natural for test functions that just return constants. The `test_cpp_exception` function shows proper throw/catch structure. At -O3 optimization, constant propagation and inlining are expected and the decompiler correctly shows the results.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The original source's function granularity is well preserved. Each test function (`test_cpp_member_func`, `test_cpp_constructor`, etc.) remains separate. Template functions are properly extracted as individual instantiations. Function sizes are appropriate and cohesive.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal jumps. Most functions are single basic blocks returning a value. No complex control flow structures that would disrupt linear reading. The exception test function has proper try-catch structure visible.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. The expression `1001 * LifecycleClass::instance_count + 21` appears in both the function body and printf call, showing the decompiler didn't optimize this common subexpression, but this is minor. Loop unrolling is not excessive.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are reasonably precise: `__int64` for return values, `int` for parameters, `double` for floating point. However, the decompiler uses Windows-style types (`_BYTE`, `_DWORD`, `_QWORD`) which may not match the original source. Some parameter types like `unsigned int` vs `int` could be more precise.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some class structures recovered: `LifecycleClass::instance_count` (static member), `Container<int>` and `Container<double>` (template classes with offset-based access), `RTTIBase`, `RTTIDerivedA`, `RTTIDerivedB`. However, struct fields are accessed via raw offsets (e.g., `a1 + 40`, `a1 + 80`) without field names. The original class members like `data`, `size`, `name` are lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: pointer arithmetic in Container template code (e.g., `a1 + 4 * result`), function pointer casts for vtable calls. The code uses `operator new` and `operator delete` directly rather than `new`/`delete` expressions. However, no severe type safety violations that would cause undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are primarily decompilation metadata: "positive sp value has been detected", "attributes: thunk", "FAILED to decompile". No algorithm explanations, no documentation of non-obvious logic, no recovery of original source comments. The decompiler provides no semantic context about what the code does.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are visible: virtual function calls through vtable (`**a1)(a1)`), exception throwing mechanism, template instantiation. However, these patterns are not explicitly named or documented. A human analyst would recognize them but the decompiler doesn't highlight them.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler does indicate failures: "FAILED to decompile" for 19 functions, warnings about stack pointer issues. However, it doesn't flag indirect calls that couldn't be resolved, uncertain type deductions, or potential undefined behavior. The warnings are generic rather than specific to the code context.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of error conditions or expected input ranges. The decompiler provides zero contract information, leaving the analyst to infer all requirements from the code.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Some relationships visible: static member access (`LifecycleClass::instance_count`), virtual function dispatch through vtable, template instantiation relationships. However, no explicit documentation of who calls whom, no callback relationships, no global variable usage patterns.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are grouped logically (test functions together, template functions together, RTTI functions together) but there's no clear module or namespace structure. The output is a single monolithic file with no organization hints matching the original source's logical grouping.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code would require significant patching to compile: missing `#include` statements, undefined references to `std::` functions, mangled names that need demangling. The decompiler doesn't provide dependency information or suggest what headers to include.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Variable names are completely generic (`v0`, `v1`, `a1`, `a2`, `s`) with no semantic meaning recovered
+- C++ name mangling not properly demangled (`_Z20test_cpp_member_funcv` instead of `test_cpp_member_func`)
+- Class/struct field names lost; all access is via raw memory offsets (e.g., `a1 + 40`, `a1 + 80`)
+- No comments explaining algorithm intent or recovered from source
+- 19 functions failed to decompile including critical functions like `printf`, `strlen`, `__cxa_throw`
+- No type contracts, preconditions, or postconditions documented
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+- The decompiler correctly recognized that most functions are simple return statements with computed values, which is natural for test functions at -O3 optimization level
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic variable names like `v0`, `v1`, `a1`, `a2` make it nearly impossible to understand code purpose without cross-referencing the source. The decompiler should infer names from usage patterns (e.g., `temp` used in swap operations, `idx` used in array access)
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, size calculations, string operations) to suggest semantically meaningful names like `index`, `size`, `buffer` instead of `v0`, `v1`
+2. **Properly demangle C++ names**: The mangled names like `_Z20test_cpp_member_funcv` should be converted to readable `test_cpp_member_func()` format
+3. **Recover struct/class field names**: Instead of showing raw offsets like `a1 + 40`, the decompiler should attempt to recover field names based on type information and usage patterns, or at least document the offset-to-field mapping

@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic `v1`, `v2`, `v3` etc., making tracking purpose extremely difficult. While `str`, `len`, `result` are descriptive, the vast majority use single-letter generic names that obscure semantic meaning (e.g., `v1` should be `this_ptr`, `v4` should be `instance_count_ptr`).
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: The decompiler provides demangled names in comments (e.g., `// Demangled: test_cpp_member_func()`), but the actual code uses mangled names like `_Z20test_cpp_member_funcv`. Non-class functions use generic names like `function_1170`, `function_1180`. The comment-based demangling helps but requires constant reference.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers appear throughout: `0x74736554` (the string "Test"), `0x125c` (value 4704), `20` (object size), `9` (array bound). The literal `0x74736554` is particularly opaque - it's clearly the string "Test" but presented as an integer, making the constructor logic hard to follow.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Stack canary checks (`__readgsdword(20)`) and stack protection (`__stack_chk_fail_local`) are present but don't significantly impede readability. No redundant casts or debug instrumentation clutter the code significantly.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Uses goto statements for exception handling (`goto lab_0x1740`, `goto lab_0x1745`) which is legitimate for C++ exception semantics. However, the complex nested exception handling in `test_cpp_exception` becomes difficult to trace with multiple conditional gotos. Loop structures are correctly recovered.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with good granularity. Template instantiations are properly separated (e.g., `_Z12template_maxIiET_S0_S0_` for int, `_Z12template_maxIdET_S0_S0_` for double). Member functions are correctly decomposed from the class. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Exception handling introduces some forward jumps but these are necessary for the semantics. Early returns are used appropriately. The overall flow is traceable without excessive disruption.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Loop unrolling is not excessive. Common subexpression elimination artifacts are minimal. The code is clean without obvious duplicated logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently for integers, `float64_t`/`float80_t` for floating point. However, all pointers are generic `int32_t*` rather than proper type-specific pointers. The decompiler correctly identifies `uint32_t` for some array indices. Minor type erasure but mostly accurate.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: **Critical failure** - class structures are not recovered. Instead of proper struct access, the code uses raw pointer arithmetic: `*(int32_t *)(v3 + 4) = 10;` instead of `obj->value = 10;`. The `SimpleClass`, `LifecycleClass`, `Base`, `Derived` - none are reconstructed as structs. This is the most severe readability issue.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Minor type safety issues present but not severe. Some pointer arithmetic like `*(int32_t *)(4 * v2 + result2)` is potentially unsafe but manageable. No obviously dangerous type-confused function pointers observed. The code can be reasoned about safely.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10  
+Justification: Demangled function names in comments are helpful. Address range comments (`// Address range: 0x1421 - 0x14b5`) provide location context. However, no algorithm explanations, no recovery confidence indicators, no API contracts. Sparse but useful when present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms explicitly identified. The virtual function mechanism is visible through vtable calls but not explained. Template instantiation pattern is visible but not named. Exception handling patterns not identified as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No explicit flags for suspicious code or uncertain areas. The indirect virtual function calls could have been flagged. The complex exception handling could have warnings. The decompiler presents everything with equal confidence.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition, postcondition, or invariant documentation. Bounds checks like `if (v2 <= 9)` could have comments like `// requires: index < 10`. No error condition documentation. The contracts are completely implicit.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are somewhat clear through the call graph. Virtual dispatch is visible through the vtable mechanism. However, global variable usage (`g1`, `g2`) is not well-documented. Callback relationships not explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - test functions together, template functions together, member functions together. Static functions properly scoped. The overall organization follows a reasonable structure matching the original source grouping.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Proper includes (`<stdbool.h>`, `<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`). Function prototypes declared. External dependencies (`__cxa_*` functions) properly declared. The code should compile with minimal stubs.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- **Composite type recovery failure**: Class structures (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`) are not reconstructed - all access uses raw pointer arithmetic like `*(int32_t *)(v3 + 4)` instead of `obj->value`
+- **Variable naming**: Generic `v1`-`v12` naming makes tracking purpose extremely difficult; should infer names from usage patterns (e.g., `v4` in constructor is clearly `instance_count`)
+- **Magic numbers**: Literal `0x74736554` is clearly the string "Test" but presented as opaque integer; `0x125c` (4704) and other values lack explanation
+- **No struct/class recovery**: The decompiler lost all C++ class abstractions, presenting everything as flat memory operations
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions are appropriately sized with good granularity. Template instantiations are properly separated, and member functions are correctly decomposed from their classes. The decomposition matches the original source structure well.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)  
+The decompiler failed to reconstruct any C++ class structures. All class members are accessed via raw pointer arithmetic, completely losing the object-oriented abstractions. This is the single biggest readability barrier.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover class/struct layouts**: Analyze constructor sequences and vtable usage to reconstruct struct layouts with proper field names instead of raw pointer arithmetic
+2. **Infer variable names from usage**: Use data flow analysis to name variables - if `v4` is used as `instance_count` (incremented/decremented), name it accordingly
+3. **Explain magic numbers**: Detect string literals encoded as integers (like `0x74736554`) and present as string with comment explaining the encoding

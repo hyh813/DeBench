@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `ptr`) with no semantic meaning. Original source had meaningful names like `buffer`, `thread_count`, `iterations_per_thread` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions like `param_strcpy`, `call_strcpy`, `thread_compute` are preserved, but many helper functions use mechanical names (`sub_401030`, `sub_4013e0`). The param_*/call_* structure is maintained.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `4294967295` (unsigned -1), `4294967294`, `4294967293` for error codes with no explanation. String literals preserved well, but numeric constants lack semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86.get_pc_thunk.*` functions, empty stub functions (`sub_4013e6`, `sub_40141c`), and initialization boilerplate that obscures main logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Inappropriate `goto` statements in `sub_401030` and `sub_4013e0`. Loop structures sometimes recovered as do-while instead of for. Deep nesting in `param_signal_handling` could be flattened.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good separation maintained between `param_*` and `call_*` functions. Thread functions properly extracted. Some functions are trivial constant returns but this reflects optimizer behavior.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. Some goto disruptions and forward jumps in initialization code. `param_thread_local_storage` has complex label-based flow (`LABEL_402add`).
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding occurred (e.g., `call_strcmp` returns 0 directly). Redundant variable assignments visible (`v0 = v1` patterns). No obvious dead code in main logic paths.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `size_t` → `unsigned int`, `pid_t` → `unsigned int`, `ssize_t` → `unsigned int`. `FILE*` preserved in some places but struct definition is empty. Pointer types often `void*` or `char*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs have generic field names (`field_0`, `field_4`, `padding_0`). `FILE` struct is empty (`typedef struct FILE { }`). `ThreadData` struct not recovered—fields accessed via array indexing (`ptr[0]`, `ptr[1]`, `ptr[2]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible. Pointer arithmetic on void pointers. `param_strchr_strstr` has duplicate variable name `ptr` (compilation error). Integer/pointer confusion in several thread functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. No algorithm explanations, no decompilation confidence indicators. Original source had extensive section headers and function documentation that are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`, `pthread_create`). Signal handling pattern visible but not named. No design pattern identification or algorithm naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted: `[D] Unsupported jumpkind Ijk_SigTRAP`. Serious issues like duplicate variable names in `param_strchr_strstr` have no warnings. Platform mismatch (ARM64 source → X86 decompilation) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions inferred. Error return values (`4294967293`, `4294967294`, `4294967295`) not explained. No invariant recognition for thread synchronization.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables referenced (`signal_received`, `signal_number`, `atomic_counter`) without explanation. No call graph documentation or callback relationship indicators.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Original source had clear section headers (6.1 Standard Library, 6.2 System Calls, 6.3 Threads) that are completely lost. No namespace structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies not documented. Platform mismatch noted (source ARM64, decompilation X86). Some platform-specific code not handled well.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+6+4+5)/4 = 4.50
+L2 Average: (5+7+6+6)/4 = 6.00
+L3 Average: (4+3+4)/3 = 3.67
+L4 Average: (2+5+3+2)/4 = 3.00
+L5 Average: (5+4+6)/3 = 5.00
+
+Overall = (4.50 × 0.30) + (6.00 × 0.25) + (3.67 × 0.20) + (3.00 × 0.15) + (5.00 × 0.10)
+        = 1.35 + 1.50 + 0.73 + 0.45 + 0.50
+        = 4.53/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `ptr`** should be named semantically (e.g., `buffer_size`, `thread_id`, `result_ptr`) based on usage context
+- **Type degradation**: `size_t`, `pid_t`, `ssize_t` all collapsed to `unsigned int`, losing important semantic information
+- **No comments**: Original source had extensive documentation; decompiled code has zero explanatory comments
+- **Magic error codes**: `4294967293`, `4294967294`, `4294967295` should be recovered as `-3`, `-2`, `-1` or named constants
+- **Duplicate variable name**: `param_strchr_strstr` has two variables both named `ptr`—this is a compilation error
+- **Platform mismatch**: Source compiled for ARM64 but decompilation shows X86 architecture without warning
+
+### Best Quality Aspect:
+- **Function Decomposition (7/10)** - The param_*/call_* function structure is well preserved, maintaining logical separation between parameterized test functions and their callers.
+
+### Most Needs Improvement:
+- **Comment Quality (2/10)** - Virtually no documentation exists; even basic function purpose comments would dramatically improve readability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze variable usage patterns to infer names (e.g., variables used in loop bounds → `count`, `iterations`; variables passed to `malloc` → `buffer`, `ptr`)
+2. **Recover type information from function signatures** - Use calling convention analysis to distinguish `size_t` from `int`, and recover struct layouts from field access patterns
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions, magic numbers, and platform mismatches with inline comments to guide manual review

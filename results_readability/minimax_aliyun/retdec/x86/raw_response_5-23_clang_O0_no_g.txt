@@ -1,0 +1,148 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names throughout. Parameters are named `a1`, `a2`, `a3` (e.g., `param_macro_constants(int32_t a1)` should be `size`). Local variables use `v1`, `v2`, `v3` with no semantic meaning. For example, in `param_stringize`, the variable `v1` is used but has no indication it's related to string handling. This makes tracking variable purpose across the function extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 6/10**
+
+The decompiler correctly recovered names for many test functions like `param_macro_constants`, `call_asm_basic`, `param_conditional_compile` which match the source. However, many utility functions are named with addresses: `function_1040`, `function_1050`, `function_1060` (which is actually `printf`). The naming is inconsistent - some semantic names exist but many are just mechanical address-based identifiers.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Critical preprocessing macros are completely lost. In `param_macro_constants`, the original uses `MAX_SIZE` (1024) and `BUFFER_COUNT` (16), but the decompiled version shows `a1 > (int32_t)&g8 ? 64 : (int32_t)&g1` - the constants are replaced with global variable addresses. The magic number `0xdef0` in `param_multi_branch_compile` is preserved but unexplained. String literals are accessed via complex address calculations like `(char *)(v1 + (int32_t)&g5 - 0x1f67)` making them nearly impossible to read.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+At -O0 optimization, there's minimal compiler-generated noise. The code doesn't have excessive register spilling artifacts or dead code. Some minor artifacts exist like the unreachable `__asm_hlt()` in `_start` and some unused thunk functions, but these don't significantly impede readability. The inline assembly in SIMD functions uses pseudo-functions like `__asm_movaps` which are decompiler artifacts but relatively clean.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Control flow is generally natural with standard if-else and while loops. However, there's one significant anomaly: in `call_asm_privileged`, the expression `v1 == 15 == v2 == 42 == param_clobber_importance(3, 7) == 20` uses chained equality operators which is semantically incorrect (evaluates left-to-right producing unexpected boolean results). This appears to be a decompilation error rather than optimization artifact. Otherwise, loops are properly structured.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Functions are appropriately sized with clear single responsibilities. Each test function (`param_macro_constants`, `param_asm_basic`, etc.) is separate and focused. The decomposition matches the source well - no monolithic functions or over-fragmentation. Parameter counts are reasonable and don't expose excessive implementation details.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+The code generally reads top-to-bottom without excessive forward jumps. Early returns are used appropriately in functions like `param_asm_clobber` and `param_asm_multi_insn`. There's minimal deep nesting (mostly 1-2 levels). The flow is mostly linear and easy to follow.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+No significant redundancy is present. The code doesn't have obvious dead code or duplicate expressions. Loop unrolling isn't excessive. Some minor redundancy in the SIMD functions where values are loaded through multiple intermediate variables, but this is manageable.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+The decompiler consistently uses `int32_t` which is appropriate for the 32-bit code. However, type precision is lost in several places: pointers are often just `int32_t*` rather than more specific types (e.g., `char*` for string operations). The parameter `a2` in `param_asm_clobber` is `uint32_t` which is correct. But many pointer types should be more specific - for example, the `mmap` result should be `void*` not `int32_t*`.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+No struct or union types were recovered. All composite access uses raw pointer arithmetic. For example, in `param_asm_clobber`: `*(int32_t *)(4 * v1 + (int32_t)a1)` instead of `a1[v1]`. The array passed to `call_asm_clobber` is accessed via complex `memcpy` from computed addresses rather than being recognized as a stack array. This is a significant degradation from the source.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Multiple unsafe casts exist throughout. In `call_asm_clobber`: `memcpy(&v1, (int32_t *)(v2 + (int32_t)&g4 - 0x1d14), 20)` - casting to `int32_t*` from computed address. In `param_stringize`: `(char *)(v2 + 0x1bbc)` - casting integers to char pointers. The chained comparison in `call_asm_privileged` produces type confusion. Many pointer arithmetic operations lack proper type context.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Comments are minimal and only show address ranges (e.g., `// Address range: 0x1260 - 0x128f`). No explanation of what the functions do, no recovery of macro semantics, no documentation of inline assembly behavior. The comments provide zero semantic value beyond showing where code came from in the binary.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+The decompiler did not recognize preprocessing macros as such - they appear as computed values. Inline assembly is partially recognized but uses pseudo-functions (`__asm_movaps`, `__asm_paddd`) that don't clearly indicate they're assembly instructions. The conditional compilation in the source (`#ifdef DEBUG_MODE`) is not indicated - the decompiled code just shows the active branch. No design patterns or algorithms are identified.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+The decompiler presents incorrect information confidently. The chained comparison `v1 == 15 == v2 == 42 == param_clobber_importance(3, 7) == 20` is semantically wrong but presented without warning. No flags for suspicious code patterns, indirect calls that couldn't be resolved, or potential undefined behavior. The code looks confident but contains errors.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No preconditions, postconditions, or invariants are documented. The original source had no explicit assertions, but the decompiler could have inferred some - for example, that `param_asm_clobber` requires `n > 0` based on the loop structure. No contract information is provided.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Function calls are present but relationships aren't documented. The call graph is implicit in the code structure but there's no comment explaining which functions call which, or the purpose of helper functions. Global variable usage is opaque - `g1`, `g2`, etc. are just addresses with no indication of their role.
+
+### 17. Module Organization
+**Score: 5/10**
+
+The code is a single monolithic file with functions grouped by address range rather than logical purpose. Related functions (preprocessing tests vs. assembly tests) are interspersed. The organization is arbitrary based on binary layout rather than semantic grouping. Static functions aren't distinguished from extern ones.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+
+The code includes necessary headers (`<stdbool.h>`, `<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`, `<sys/mman.h>`, `<unistd.h>`). Function prototypes are declared. The metadata states "Compilation Result: Yes". It should compile with minimal stubs. The main issue is the chained comparison bug which would cause runtime issues.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 3 + 7) / 4 = 4.5
+L2_avg = (6 + 8 + 7 + 7) / 4 = 7.0
+L3_avg = (5 + 2 + 4) / 3 = 3.67
+L4_avg = (2 + 3 + 2 + 1) / 4 = 2.0
+L5_avg = (4 + 5 + 8) / 3 = 5.67
+
+Overall = (4.5 × 0.30) + (7.0 × 0.25) + (3.67 × 0.20) + 
+          (2.0 × 0.15) + (5.67 × 0.10)
+        = 1.35 + 1.75 + 0.73 + 0.30 + 0.57
+        = 4.70/10
+```
+
+### Overall Readability Score: 4.7/10
+
+### Critical Defects
+
+1. **Variable naming is unusable**: All parameters are `a1`, `a2`, `a3` and locals are `v1`, `v2`, `v3` - completely generic with no semantic meaning
+
+2. **Preprocessing macros completely lost**: `MAX_SIZE`, `BUFFER_COUNT` replaced with global variable addresses `&g8`, `&g1`, making the logic unreadable
+
+3. **Chained comparison bug**: `call_asm_privileged` has `v1 == 15 == v2 == 42 == ...` which is semantically incorrect C code
+
+4. **No struct recovery**: All array accesses use raw pointer arithmetic like `*(int32_t *)(4 * v1 + (int32_t)a1)` instead of `a1[v1]`
+
+5. **No comments or documentation**: Only address range comments exist; no explanation of macro behavior, assembly semantics, or algorithm intent
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions are properly separated with appropriate granularity matching the source. Each test function is distinct and focused on a single responsibility.
+
+### Most Needs Improvement: Semantic Transparency (2.0/10)
+Comments are virtually non-existent, idioms are not recognized, anomalies are not flagged, and no contracts are recovered. The code provides zero semantic context about what it's doing.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a parameter `a1` is compared against constant 1024 and used to return 512 or 64, name it `size` or `max_size`. When `v1` is used as array index, name it `index` or `i`.
+
+2. **Recover macro semantics**: Detect when a constant value (like 1024, 16, 64) appears multiple times and suggest it might be a named constant. Flag computed values that could be macro expansions.
+
+3. **Add semantic comments**: Include basic documentation explaining what each function does, what preprocessing conditionals were active, and what inline assembly is accomplishing. At minimum, explain the address-based string literal accesses.

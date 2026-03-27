@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (v0, v1, v2, temp, result) with no semantic meaning. Original source had descriptive names like `result`, `str`, `encrypted`, `buffer`, `decrypted` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved accurately (`param_fake_branch`, `call_opaque_predicate`, `param_vectorized_loop`). However, runtime functions use mechanical names (`sub_1030`, `sub_10C0`) and metadata claims Ghidra but header says IDA Pro.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5A`, `0x20u`, `0x7FFFFFFC` appear without explanation. Original source had comments explaining encryption keys and bit masks. Some literals like signal numbers (8, 11) are recognizable but undocumented.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler/runtime artifacts included (`_do_global_dtors_aux`, `frame_dummy`, `__x86.get_pc_thunk.bx`, `deregister_tm_clones`). Code bloated from 464 LOC to 693 LOC with initialization boilerplate not in original source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Dead code elimination correctly simplified `param_fake_branch` (removed永假 branches). However, `param_tail_call_optimized` converted recursion to mathematical formula obscuring original intent. Loop unrolling in `param_vectorized_loop` is recognizable but verbose.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: `call_string_encryption` duplicates entire `param_string_encryption` logic instead of calling it. Runtime functions mixed with application code. Core functions maintain reasonable size but caller functions are over-optimized (constant folded).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. Some awkward do-while patterns from loop recovery (e.g., `param_opaque_predicate` GCD loop). No excessive goto usage but some forward references disrupt flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe constant folding - `call_fake_branch()` returns 10 directly instead of calling function. `call_opaque_predicate()` and `call_string_encryption()` duplicate logic. Original call relationships lost to optimization.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, size_t) but const-correctness lost (`encrypted` should be `const char*`). Mixed signed/unsigned usage (`unsigned int)x` casts). Function pointer types degraded to `void(*)()`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Bitfield struct from `param_implementation_defined` completely lost - function just returns 43. No struct/union recovery visible. Original had explicit `struct { unsigned int a:3; b:5; c:24; }` which is entirely absent.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple implicit casts present (`(unsigned int)x`, `(__sighandler_t)`). Pointer arithmetic in `param_null_pointer_deref` uses `int *p` but called with `0`. No buffer overflow warnings despite original testing these scenarios.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled code. Original source had extensive documentation explaining obfuscation techniques, expected values, and test scenarios. Only auto-generated type annotations present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Obfuscation patterns (opaque predicates, fake branches, instruction substitution) not identified or flagged. GCD algorithm in `param_opaque_predicate` not recognized. No pattern naming or algorithm identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: External functions marked "FAILED to decompile" (9 functions) which is helpful. However, suspicious patterns within code (constant-folded callers, lost recursion) not flagged. No uncertainty indicators for transformed logic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note x≠0 for normal path). Error handling contracts lost. Original comments about expected return values (期望：10, 期望：20) completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. No call graph information. Original source showed clear test harness structure (`test_obf_opt_edge()` calling all functions) which is preserved but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Runtime initialization code mixed with application logic. No logical grouping (obfuscation vs. optimization vs. edge case functions all intermingled). Original had clear section headers (7.1, 7.2, 7.3) completely lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 9 external functions marked "FAILED to decompile" (printf, strlen, signal, etc.). Cannot compile standalone without stubs. Metadata mismatch (original: gcc/arm64/-O0, decompiled: x86/clang/-O2) indicates different binary than source provided.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 (Lexical):     (3+7+5+4)/4 = 4.75
+L2 (Structural):  (6+5+6+4)/4 = 5.25
+L3 (Type):        (6+2+5)/3   = 4.33
+L4 (Semantic):    (1+2+3+2)/4 = 2.00
+L5 (Contextual):  (5+4+3)/3   = 4.00
+
+Overall = (4.75 × 0.30) + (5.25 × 0.25) + (4.33 × 0.20) + (2.00 × 0.15) + (4.00 × 0.10)
+        = 1.425 + 1.3125 + 0.866 + 0.300 + 0.400
+        = 4.30/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable names all generic** (v0, v1, v2) - original semantic names like `result`, `encrypted`, `buffer` completely lost
+- **Zero comments** - original had extensive documentation explaining obfuscation techniques and expected values
+- **Composite types lost** - bitfield struct in `param_implementation_defined` reduced to constant return value 43
+- **Caller functions constant-folded** - `call_fake_branch()` returns 10 directly, losing call relationship to `param_fake_branch()`
+- **Metadata mismatch** - source claims gcc/arm64/-O0 but decompiled shows x86/clang/-O2 (different binary than provided source)
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core application function names preserved accurately from source, maintaining semantic identity despite other degradations
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation; original source had extensive comments explaining obfuscation techniques, test scenarios, and expected values that would aid reverse engineering
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (e.g., `v0` in string operations should be `buffer` or `decrypted`)
+2. **Preserve call relationships over constant folding** - Keep `call_fake_branch()` calling `param_fake_branch(10)` rather than returning constant 10
+3. **Add semantic annotations for obfuscation patterns** - Flag opaque predicates, dead code elimination, and instruction substitution with confidence indicators

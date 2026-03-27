@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a0`, `a1`, `a2` and local variables use `v0`, `v1`, `v2`. The original source uses meaningful names like `a`, `b`, `count`, `args`, `str`. These cryptic names make it extremely difficult to track variable purposes across the 1000+ lines of decompiled code.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are almost perfectly preserved from source: `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `param_by_value_int`, `ret_pointer`, etc. The verb-noun structure accurately reflects each function's purpose. Minor deduction for some internal functions with generic names.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently for error returns without explanation. The value `18446743528248704968` in varargs functions is unexplained. However, printf result values like `15`, `50`, `6` are correctly hardcoded. Some literals lack semantic meaning.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution includes: redundant double-calls (`v0 = frame_dummy(); return frame_dummy();`), unnecessary `uint128_t` typedefs, complex struct typedefs for simple operations, unused variable declarations, and "..." placeholder in `func_struct_byval`. The code contains significant compiler and decompilation artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most control flow is readable with if/else and return statements. However, `varargs_func` and `param_varargs` contain goto-based loops with labels (`LABEL_400944`, `LABEL_400d28`) that obscure loop logic. The `register_tm_clones` function has an extremely complex conditional expression that is hard to parse.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity closely matches the original source - small, focused functions like `cdecl_func` (2 parameters), `func_no_args` (no params), `ret_basic_type` are all properly separated. Each function has a single responsibility. Good decomposition quality.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. Some forward jumps exist in varargs functions but are manageable. No severe nesting issues observed. The code flows reasonably well despite some goto artifacts.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant patterns present: `frame_dummy()` called twice in succession, some duplicate variable assignments in complex functions. Loop unrolling in varargs functions creates verbose code. Some dead code from register spilling visible. Not severe but noticeable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - original uses `int` but decompiled uses `unsigned int` throughout. Pointers are often `unsigned long long` instead of proper pointer types. The original `double` parameter in `func_mixed_args` is completely lost. Function parameters don't match original signatures (e.g., `func_mixed_args` should have `double d, long long ll`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery - `LargeStruct` with 128 bytes becomes `unsigned int *a0` in `func_struct_byval` (shows `...`). `SmallStruct` becomes generic pointer arithmetic in `func_struct_byptr`. The original's meaningful struct definitions (`SmallPoint`, `BigStruct`, `LargeData`) are lost, replaced with raw pointer operations.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety concerns: function pointers treated as `unsigned long long` in `param_func_ptr`, mixed signed/unsigned operations with masks like `& 4294967294`, pointer arithmetic in `ret_pointer` returning `a0 + 4` without clear semantics. Not dangerous but lacks type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The original source has extensive comments explaining each test case (CALL-L1-01, PARAM-L2-06, RET-L3-01, etc.), calling convention explanations, and test expectations. This complete absence of documentation severely impacts understandability.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C idioms are partially recognizable: varargs handling shows `va_list` patterns (though convoluted), function pointer callbacks are somewhat visible in `param_func_ptr`. However, no design patterns or algorithms are explicitly identified or named. The original's calling convention tests are not annotated.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies are flagged: `func_struct_byval` shows `return ...;` indicating incomplete decompilation. The `ret_large_struct` function contains "unsupported_Iop_ZeroHI64ofV128" showing SIMD operation issues. However, many other anomalies (type mismatches, missing parameters) are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original has implicit contracts (e.g., `func_struct_byptr` requires non-null pointer, `varargs_func` requires count > 0) that are not recovered. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Some external references are documented with `extern` declarations (e.g., `extern char g_401228;` for string constants, `extern unsigned long long g_412ff8;`). Standard library calls (`printf`, `puts`, `strlen`) are recognized. However, the relationships between test functions and their targets are not explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in roughly address-ordered sequence rather than logical grouping. The original clearly organizes code by sections (Calling Conventions, Parameter Passing, Return Values) with test functions grouped together. The decompiled output mixes all functions without clear organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will not compile as-is due to: `return ...;` in `func_struct_byval`, "unsupported_Iop_" expressions, undefined `uint128_t` type usage, missing struct definitions. Requires significant patching to compile. External dependencies not documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`a0`, `v1`, `ptr`) making code comprehension extremely difficult
+- No comments despite 665 lines of well-documented original source
+- Type precision severely degraded - `int` → `unsigned int`, `double` lost, structs become raw pointers
+- Composite types not recovered - `LargeStruct` shows `...`, `SmallStruct` becomes pointer arithmetic
+- Code contains significant noise: redundant calls, unused variables, placeholder expressions
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are almost perfectly preserved from the original source, making it easy to identify which test case each function implements.
+
+**Most Needs Improvement:** Comment Quality & Type Precision (both 1-4 range)  
+The decompilation lacks any explanatory comments while the original has extensive documentation. Additionally, types are significantly degraded from the original, losing signedness, floating point, and struct semantics.
+
+**Top 3 Recommendations:**
+1. **Add variable name inference** - Analyze usage patterns (e.g., `a0 + a1` suggests addition operation) to suggest meaningful names like `param_a`, `param_b`
+2. **Recover struct types** - Detect sequential memory accesses (e.g., `a0[0]`, `a0[15]`) to reconstruct array/struct layouts with field names
+3. **Insert semantic comments** - Add decompiler-generated comments explaining calling convention tests, parameter purposes, and expected results based on function names and constant values

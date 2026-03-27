@@ -1,0 +1,151 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+Let me analyze the decompiled code against the original source for this specific function.
+
+### Original Source Analysis
+```c
+int param_fake_branch(int x) {
+    int result = x;
+    
+    // 永假条件：x*x < 0 对于实数x恒不成立
+    if (x * x < 0) {
+        result = result * 2 + 0xDEADBEEF;
+    }
+    
+    // 另一个永假条件：字符串长度不可能为负
+    const char *str = "test";
+    if (strlen(str) < 0) {
+        result += 1000;
+    }
+    
+    return result;
+}
+```
+
+### Decompiled Code Analysis
+```c
+int __fastcall param_fake_branch(int a1)
+{
+  int v2; // [sp+8h] [bp-8h]
+
+  v2 = a1;
+  if ( a1 * a1 <= -1 )
+    v2 = 2 * a1 - 559038737;
+  strlen("test");
+  return v2;
+}
+```
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameter renamed from `x` to `a1` and local variable from `result` to `v2` - generic names that obscure semantic purpose. The decompiler uses stack location comments (`[sp+8h] [bp-8h]`) as a crutch rather than inferring meaningful names from usage patterns.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function name `param_fake_branch` is correctly preserved, matching the original source exactly. This is excellent recovery.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: The magic number `0xDEADBEEF` (3735928559) from source is completely lost - replaced with `-559038737` which is semantically wrong. The string "test" is preserved but the constant `1000` in the second branch is completely missing. Multiple unexplained literals.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts - the stack frame annotations `[sp+8h] [bp-8h]` are present but not excessive. No register spilling debris. The `strlen("test")` call result not being used is a minor artifact but doesn't severely impact readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural - simple if-then structure preserved. The condition `a1 * a1 <= -1` is semantically equivalent to `x * x < 0` (just expressed differently). At -O0, this is as close to source as expected.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: Function is appropriately sized (8 lines), single responsibility, no inlining issues. Matches original granularity exactly.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with no forward jumps. Early return pattern is natural. No goto abuse.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or redundant expressions. The unused strlen result is a minor artifact from the original source's second always-false branch.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Parameter correctly typed as `int`, return type is `int`. Minor issue: the decompiler added `__fastcall` calling convention which wasn't in source, but this is architecture-appropriate for ARM.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types in this function - not applicable for evaluation.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts or pointer arithmetic. The expression `a1 * a1` could overflow for large values but this mirrors the original source behavior. Minor: implicit int multiplication without overflow warnings.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining the "fake branch" obfuscation technique. The original source has detailed comments about "永假条件" (always-false condition). The decompiler provides no context about this being an obfuscation pattern.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The decompiler completely fails to recognize this as an OBF-L4-02 (虚假分支/False Branch) obfuscation pattern. No indication that the condition is intentionally always-false.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for the suspicious computation `2 * a1 - 559038737` which doesn't match the source constant `0xDEADBEEF`. The decompiler silently produces incorrect code without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions (x can be any int) or postconditions (returns x). The function's contract is not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: The function is called by `call_fake_branch()` which is correctly identified. The relationship is clear from the call graph.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically - param_fake_branch near call_fake_branch. Related obfuscation functions are nearby.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The function would compile standalone with minimal dependencies (just stdio.h for printf if testing). External functions (strlen) are properly referenced.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 2 + 7) / 4 = 5.25
+L2_avg = (8 + 10 + 9 + 9) / 4 = 9.00
+L3_avg = (8 + 10 + 8) / 3 = 8.67
+L4_avg = (2 + 1 + 3 + 2) / 4 = 2.00
+L5_avg = (7 + 8 + 8) / 3 = 7.67
+
+Overall = (5.25 × 0.30) + (9.00 × 0.25) + (8.67 × 0.20) + 
+          (2.00 × 0.15) + (7.67 × 0.10)
+Overall = 1.575 + 2.25 + 1.734 + 0.30 + 0.767 = 6.63/10
+```
+
+**Overall Readability Score:** 6.6/10
+
+### Critical Defects (Bullet List)
+- **Wrong constant value**: The decompiled code shows `2 * a1 - 559038737` instead of `result * 2 + 0xDEADBEEF` - this is a critical semantic error in the decompilation
+- **Missing second fake branch**: The second always-false condition `if (strlen(str) < 0) { result += 1000; }` is completely missing from decompiled output
+- **No obfuscation pattern recognition**: The function implements OBF-L4-02 (fake branch/obfuscation) but decompiler provides zero context about this
+- **Generic variable names**: `a1` for parameter and `v2` for local variable lose the semantic meaning of `x` and `result`
+- **No comment explaining fake branch**: Original source has detailed comments about "永假条件" that are completely lost
+
+### Best Quality Aspect: Structural Intelligibility (L2)
+- **Why?** Control flow is natural, function decomposition is perfect, code is linear, no redundancy. At -O0, the structure closely matches source.
+
+### Most Needs Improvement: Semantic Transparency (L4)
+- **Why?** Score of 2.0/10 - the decompiler fails to recognize this as an obfuscation pattern, produces incorrect constant values, and provides no meaningful comments about the fake branch technique.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Pattern recognition for obfuscation**: Detect always-false conditions (like `x*x < 0`) and flag them as potential obfuscation (OBF-L4-02) with explanatory comments
+2. **Constant verification**: The value `559038737` doesn't match any reasonable transformation of `0xDEADBEEF` - the decompiler should flag suspicious constant mismatches
+3. **Usage-based variable naming**: Infer names from context - `a1` used in multiplication suggests it's a numeric parameter like `x`; `v2` assigned from `a1` and returned suggests it's a `result` variable

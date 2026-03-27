@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic IDA-style names like `a1`, `v0`, `v1`, `v2`, `v3`, `v4` throughout. For example, in `local_vars(int a1)`, the parameter should be named `x` based on source. Loop counters sometimes use `i` (good), but most locals are opaque like `v1` in `heap_basic` which represents the allocated array pointer.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `double_value`, `local_vars`, `local_array`, `local_struct`, `address_of_local`, `heap_basic`, `heap_calloc`, `linked_list_heap`, `tree_heap_traversal`, `memory_leak`, `dangling_pointer`. The decompiler correctly preserved the semantic naming from the binary's symbol table.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14u` (20 bytes for 5 ints), `0x28u` (40 bytes), `0x18u` (24 bytes for TreeNode) are used without explanation. Error returns like `0xFFFFFFFFLL` are consistent but unexplained. The value `50` in the linked list loop (`v1 == 50`) is a computed constant that should be documented as `5 * 10`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: The VLA/alloca functions show complex pointer arithmetic (`v3 = (_QWORD *)((char *)v6 - (v1 & 0xFFFFFFFFFFFF0000LL));`) that appears to be compiler-generated stack adjustment code. The line `STACK[0x10000] = 0;` in `vla_stack` looks like stack canary setup. However, most functions are relatively clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops are correctly recognized as `for` loops (`for ( i = 0; i != 10; ++i )`) and `while` loops. Conditionals use proper `if/else` structures. The `stack_alias` function correctly shows simple return flow. At `-O0`, control flow should be nearly identical to source, and it is.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-80 lines each). The test wrapper functions properly call sub-functions. Parameter counts are reasonable. No obvious "outline" artifacts where a single function is split into unnatural pieces. The decomposition matches the source structure well.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Early returns are used appropriately in error-checking code (e.g., `if ( !v2 ) return 0xFFFFFFFFLL;`). The `tree_heap_traversal` has some nested conditionals but remains traceable. No severe forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. The test functions have hardcoded expected values (e.g., `__printf_chk(1, "MEM-L1-01 (local_vars): %d\n", 20);`) which is a decompilation artifact but doesn't impede readability. Loop unrolling is minimal at -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Uses appropriately sized types: `_DWORD` (32-bit), `_QWORD` (64-bit), `_BYTE`, `unsigned int`, `size_t`. Function signatures correctly show `int` parameters and return types. The type precision is good, though `unsigned int` is sometimes used where `int` would be more precise for return values.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The `Point` struct is completely lost - `local_struct` returns `3 * a1` directly without any struct reconstruction. The `Node` and `TreeNode` structs are accessed via raw pointer arithmetic (`*(_DWORD *)v0 = v1;`, `v0[1] = 0;`). Arrays like `v4[10]` in `local_array` are correctly sized. No struct field names recovered.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: manual pointer arithmetic in struct access (`*(_DWORD *)v0`), casting between pointer types (`_QWORD *v3 = v2;`). The `heap_realloc` function has confusing pointer manipulation (`*v0 = 0x200000001LL`). No bounds checking visible. However, no severe violations like buffer overflows being hidden.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in any function. Only the header comment identifying the decompiler. No explanation of algorithms, no documentation of preconditions/postconditions. The source had extensive comments (`// MEM-L1-01: 局部变量`) which are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are visible: malloc/free pairs, linked list traversal (the `while (v7)` loop), tree creation and traversal. However, no explicit pattern naming or comments identifying these as design patterns. The "State machine" or "Iterator" patterns are not identified.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The end of the file lists 19 functions that "FAILED to decompile" (memcpy, memmove, exit, malloc, etc.). However, there's no in-code indication of uncertain decompilation, indirect calls, or potential undefined behavior. The `dangling_pointer` function accesses freed memory but no warning is present.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: n > 0"). No postconditions (e.g., "ensures: return is heap-allocated and must be freed"). Error return values are consistent but not explained. The source's input validation (`if (n <= 0 || n > 1000) return -1;`) is preserved but not documented as a contract.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear (`heap_basic(10)`, `local_array(2)`). Global variables like `global_counter`, `global_array`, `file_scope_static` are properly referenced. However, no documentation of who calls whom, no callback relationships documented, no call graph information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in a single decompiled output. Related functions are grouped together (test functions call their testees). Static functions are identified. No header file structure or API boundary separation. The original source's section comments (`// 3.1 栈内存操作`) are lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses standard C types and library functions. External functions (malloc, free, printf, memcpy, etc.) are called but not defined - this is expected. The code should compile with linking to libc. No compiler-specific hacks visible. The "Failed to decompile" functions are external imports, not compilation errors.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming uses generic IDA-style names (`a1`, `v0`, `v1`) obscuring semantic purpose
+- Composite types (Point, Node, TreeNode) completely lost - accessed via raw pointer arithmetic
+- No comments or documentation explaining algorithms, contracts, or anomalies
+- The `Point` struct in `local_struct` is reduced to arithmetic expression `3 * a1`
+- No struct field names recovered - all accessed as offsets (`*(_DWORD *)v0`, `v0[1]`)
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The decompiler preserved nearly all function names exactly from the source symbol table, making it easy to identify what each function does.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+The decompiled code has zero useful comments. The original source had extensive documentation explaining each test case, expected values, and semantic purpose - all completely lost in decompilation.
+
+**Top 3 Recommendations:**
+1. **Recover struct types**: Use pointer analysis to identify struct layouts and field names. The Node and TreeNode structures are clearly identifiable from allocation sizes and field access patterns.
+2. **Add variable naming from usage inference**: Analyze how variables are used (array indexing, pointer dereferencing, arithmetic) to infer better names than generic `v0`/`v1`.
+3. **Generate semantic comments**: Add comments explaining test case purposes, expected values, and algorithm intent based on code pattern recognition.

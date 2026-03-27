@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar2`) with no semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`). Some have optimization suffixes (`non_local_jump.constprop.0`) but remain identifiable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers throughout (`0x14`, `0x1e`, `0xffffffff`, `0x3e9`) without explanation. Original source used decimal values with comments explaining expected results.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: External function stubs present (`raise`, `__libc_start_main`). Division functions (`__aeabi_idiv`) are excessively verbose with 30+ boolean variables. Most core functions are clean.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `do-while` instead of `for`. `loop_multi_exit` uses goto labels (`LAB_00010c90`) instead of structured returns. Duff's device recovered with goto chains.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions properly separated with reasonable sizes. Helper functions recovered (`double_value`, `op_add`). Some functions have excessive parameters due to type issues.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `loop_multi_exit` has multiple forward goto labels disrupting flow. `duffs_device` has complex label jumping.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Test functions have hardcoded expected values as literals. Division functions contain redundant boolean chains. Core logic functions are reasonably clean.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` and `undefined4` types throughout. `if_else` returns `bool` but source returned `int`. Function pointers use `code *` instead of proper signatures. Some `uint` vs `int` inconsistencies.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Function pointer arrays recovered (`apcStack_18[6]`) but with generic naming. `jmp_buf` referenced but structure not defined. No struct recovery visible in this codebase.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(int)param_1`). Function pointer calls use `code *` type. `op_div` returns `undefined4` inconsistently. No buffer overflow protections visible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels. Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns (loops, conditionals) recognized but not named. Duff's device not identified as such. State machine pattern in `state_machine` not explicitly documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some `UNRECOVERED_JUMPTABLE` markers present in `call_func_ptr`. No explicit warnings about setjmp/longjmp complexity. Optimization artifacts (`.constprop.0`) indicate transformations but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions or error condition documentation. Original source had test validation comments completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear through direct references. Global `jump_buffer` referenced but not defined in output. Callback relationships visible through function pointer arrays.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order (not grouped by control flow level). Test functions separated from implementations. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions declared as stubs. ARM-specific functions (`__aeabi_idiv`) present. Would require significant work to compile standalone. Missing type definitions for `__jmp_buf_tag`, `EVP_PKEY_CTX`.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+6+7)/4 = 6.50 × 0.25 = 1.63
+Level 3 (Type):        (5+4+6)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (1+4+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 5.23/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Zero comments** - Complete loss of original source documentation explaining function purpose and test cases
+- **Generic variable names** - `param_1`, `iVar1` instead of `a`, `b`, `sum`, `count` obscuring semantic meaning
+- **Magic numbers** - Hex literals (`0x14`, `0x3e9`) without explanation instead of decimal with context
+- **Goto labels in loops** - `loop_multi_exit` uses `LAB_` labels instead of structured control flow
+- **Type degradation** - `undefined4`, `code *` instead of proper function signatures and return types
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names preserved accurately from source, making identification straightforward despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, losing all semantic context that made the original source self-explanatory
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from debug symbols** - The `-g` flag was used during compilation; Ghidra should extract and preserve original variable names from DWARF debug info
+2. **Add semantic comments for control flow patterns** - Automatically detect and annotate patterns like "Duff's device", "state machine", "tail recursion optimization"
+3. **Convert magic numbers to named constants** - Detect repeated literals and suggest constant definitions, especially for test expected values and loop bounds

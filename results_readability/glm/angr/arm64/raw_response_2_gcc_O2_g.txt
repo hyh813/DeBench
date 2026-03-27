@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v2`, `a0`, `a1`), providing no semantic context. While `ptr` is used for pointers, it is generic; meaningful names like `sum`, `len`, or `c` from the source are lost.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: High-level functions like `process_char`, `array_1d_stack`, and `test_data_types_l1` retain their original names, which is excellent. However, helper functions and thunks are reduced to generic names like `sub_4008d4` or `sub_40090c`, degrading overall quality.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers and ASCII codes (e.g., `25`, `65`, `32` in `process_char` instead of `'Z'`, `'A'`, `32`). Bitmasks like `4294967294` are used instead of explaining the intent (multiplication by 2), making logic hard to decipher.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The decompiled code contains significant low-level noise, such as `__ROL__` (rotate left) macros, `arm64g_calculate_condition` calls, and `__stack_chk_guard` checks. These artifacts obscure the high-level logic, particularly in arithmetic and conditional operations.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is often unnatural; `process_char` uses bitwise arithmetic for range checks instead of comparison operators. The function `binary_tree_sum` is decompiled into a "spaghetti" structure of nested loops and `goto` labels (`LABEL_4015ac`), completely losing the original recursive intent.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While simple functions are preserved, complex logic like `binary_tree_sum` is a monolithic mess. Additionally, test functions like `test_data_types_l1` have had their logic inlined and constant-folded away, leaving them as long, flat lists of print statements rather than structured tests.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code suffers from poor linearization, especially in `binary_tree_sum` where execution jumps backward and forward via gotos. Even in simpler functions, the use of `do-while` loops for logic that was originally a simple `for` loop adds unnecessary complexity.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The decompiler fails to abstract away compiler optimizations. For example, `test_data_types_l1` contains redundant `__printf_chk` calls with hardcoded results (e.g., `97`) because the function calls were optimized out, making the test logic redundant and unreadable.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Type information is partially lost or generic. `process_char` takes `unsigned int` instead of `char`, and `process_long` returns `unsigned long long` instead of `long`. Structs are frequently treated as arrays of integers (e.g., `unsigned int *a0`), losing the specific type context.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Structs are often accessed via array indexing (e.g., `a0[1]`, `a0[2]` in `struct_simple`) rather than member names (`p->y`, `p->z`). While some structs like `struct_0` are defined, they use generic field names (`field_0`, `field_8`) and fail to recover the original `Point3D` or `Node` definitions.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code exhibits unsafe patterns. Function pointer calls are represented as `goto a0` (in `ptr_func_simple`), which is semantically risky and obscure. Pointer arithmetic is used extensively to access struct fields, bypassing type safety.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex logic, such as the bit-manipulation in `process_int` or the state machine in `binary_tree_sum`, is left unexplained, forcing the reader to reverse-engineer the intent.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms are not recognized. `process_int` (`x * 2 + 1`) is decompiled to complex masking `((a0 * 2 | a0 >> 31) & 4294967294) + 1`. `array_string` (strlen) is a loop but not explicitly identified as such. Recursion in `binary_tree_sum` is completely missed.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag anomalies. The `binary_tree_sum` function is clearly decompiled incorrectly or represents a highly optimized edge case, yet there is no warning comment. The `process_float` function returning `v0` (input) without logic is also suspicious but unmarked.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are recovered. For example, `array_complex_index` performs bounds checking logic, but the contract (e.g., "returns -1 on out of bounds") is not documented or clear from the code structure.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are visible where they haven't been inlined. However, the inlining of logic within `test_...` functions breaks the call graph clarity, making it hard to see the relationship between the test harness and the implementation.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are organized by memory address rather than logical grouping. Related functions (e.g., `process_int`, `process_long`) are scattered or separated by unrelated `sub_` functions, making navigation difficult.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on non-standard macros like `__ROL__` and `arm64g_calculate_condition`. It will not compile without defining these or including specific internal headers, significantly hindering reusability.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 7 + 3 + 4) / 4 = 4.25
+L2_avg = (3 + 5 + 4 + 5) / 4 = 4.25
+L3_avg = (5 + 4 + 5) / 3 = 4.67
+L4_avg = (1 + 2 + 2 + 1) / 4 = 1.50
+L5_avg = (6 + 5 + 2) / 3 = 4.33
+
+Overall = (4.25 * 0.30) + (4.25 * 0.25) + (4.67 * 0.20) + 
+          (1.50 * 0.15) + (4.33 * 0.10)
+Overall = 1.275 + 1.0625 + 0.934 + 0.225 + 0.433
+Overall = 3.93/10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.9/10
+
+### Critical Defects (Bullet List)
+- **Recursive Logic Lost:** `binary_tree_sum` is decompiled into an unreadable "spaghetti" mess of gotos and labels, completely failing to recover the recursive tree traversal.
+- **Struct Access via Indexing:** Struct fields are accessed using array indices (e.g., `a0[1]`, `a0[2]`) instead of member names (e.g., `p->y`), destroying semantic meaning.
+- **Arithmetic Idioms Obfuscated:** Simple math like `x * 2 + 1` is represented as complex bitwise masking and rotation operations (`__ROL__`), making basic logic hard to verify.
+- **Test Logic Inlined:** The `test_data_types_l1` function has been reduced to a list of hardcoded `printf` statements due to constant folding, removing the actual test logic.
+- **Unsafe Function Pointers:** Function pointer calls are represented as `goto address`, which is syntactically valid but semantically opaque and unsafe.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (7/10)**
+- **Why?** The decompiler successfully preserved the original names for most high-level functions (e.g., `process_char`, `struct_simple`), which provides at least a basic entry point for understanding the code.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Comment Quality & Presence (1/10)**
+- **Why?** The complete absence of comments, especially for complex logic like bit-manipulation or the `binary_tree_sum` control flow, leaves the reader with no assistance in deciphering the decompiler's low-level output.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover High-Level Arithmetic:** Implement pattern matching to simplify complex bitwise/rotation sequences back into standard arithmetic operations (e.g., recognize `__ROL__(x, 1) & mask` as `x * 2`).
+2.  **Improve Struct Recovery:** Enhance type propagation to recover struct member access from pointer arithmetic, replacing `ptr[offset]` with `ptr->member`.
+3.  **Recursive Structure Detection:** Improve control flow analysis to detect and reconstruct recursive patterns (like tree traversals) instead of flattening them into iterative state machines with gotos.

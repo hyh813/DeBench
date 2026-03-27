@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names (`a0`, `a1`, `a2`) while local variables are `v0`, `v1`, `v2`. Only loop iterators like `ptr`, `i` are meaningful. Compare to source's descriptive names like `packet_size`, `array_sum` - the decompiled version obscures variable purpose entirely.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core logic functions correctly recovered: `process_char`, `array_1d_stack`, `ptr_double`, `struct_simple`. However, infrastructure functions remain as `sub_401020`, `sub_4010cb`. The test wrapper functions also have generic names. Good recovery for test target functions, poor for everything else.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String format literals preserved ("DT-L1-01 (process_char): %c\n"), making test output clear. Magic number `4294967295` used for error returns without explanation. ASCII values like `65` and `97` appear directly in code. Mixed result - some constants meaningful, others are magic numbers.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution: wrapper functions like `sub_4011b9` that just call `process_char()`, VEX IR artifacts (`[D] unsupported_<class 'pyvex.expr.GetI'>()`), and incomplete code fragments. The binary_tree_sum function shows massive local variable declarations (21 stack slots) that clutter readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops correctly decompiled as do-while constructs (e.g., `array_1d_stack`). Conditionals are clear. Minor issues: function pointer calls use `goto a0` which is awkward, and some complex nested structures in `binary_tree_sum`. At -O0, control flow should be nearly perfect, but some artifacts remain.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Matches source granularity well - each small function preserved separately. Test functions are large but that's faithful to source. Parameter lists are reasonable. Some wrapper functions (sub_4011b9 calling process_char) are unnecessary artifacts.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. The `binary_tree_sum` function has deeply nested do-while loops (5+ levels) that make tracing difficult. Some forward jumps exist but are manageable. Complex nested structures disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in `binary_tree_sum` - same calculations repeated with different struct type casts. The decompiler didn't optimize away duplicate expressions. Loop unrolling not present (expected at -O0). Some dead code from register spills.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - `unsigned int` for most parameters, `unsigned long long` for pointers. Confusion between signed/unsigned: `process_bool` returns `unsigned long long` but source returns `_Bool`. `process_long` returns `unsigned long long` instead of `signed long`. Many parameters are `unsigned` when source uses signed.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Partial struct recovery - some have proper field layouts (`struct_0 { unsigned int field_0; char padding_4[4]; struct struct_0 *field_8; }`), but most are just `unsigned int*` with pointer arithmetic. Union types not distinguished from structs. Compare to source's `Point3D`, `Node`, `Rect` - these are lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `(unsigned int)v1 + *(ptr)` casts, pointer arithmetic without bounds (`ptr += 1`), function pointer gotos (`goto a0->field_8`). The `ptr_diff` function has operator precedence issues: `a0 - a1 >> 2` should be `(a0 - a1) >> 2`. Many implicit casts between int/pointer types.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining algorithm logic. Only VEX IR artifacts like `[D] PutI(904:F64x8)[t4,0] = t7()` appear. No documentation of what functions do, parameter meanings, or return value expectations. Compare to source's rich comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized: loops, conditionals, pointer traversal. But no explicit naming of patterns like "linked list traversal", "binary tree recursion", "array sum pattern". The complex `binary_tree_sum` could be annotated as recursive tree traversal but isn't.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged: `[D] unsupported_<class 'pyvex.expr.GetI'>()` for long double operations, "Other Possible Types" annotations in some struct declarations. However, many issues are silent - e.g., the ptr_diff precedence bug has no warning. Inconsistent anomaly reporting.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that `array_oob` has undefined behavior (source has comment about this). No error condition documentation. The decompiler provides no semantic contract information.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are preserved (`test_data_types_l1()` calls `process_char()`). External dependencies declared (`extern char g_403008`). But no documentation of call relationships, who calls what, or global variable usage. Compare to source which groups functions logically.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped by type: data type functions, array functions, pointer functions, composite functions. Matches source organization. Static functions properly scoped. However, infrastructure functions (`_init`, `_start`, `deregister_tm_clones`)混在一起.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Multiple compilation barriers: unsupported operations (`[D] unsupported_...`), incomplete type definitions, function pointer gotos that won't compile, missing struct definitions for some types. Would require significant patching to compile. The "Compilation Result: Yes" in metadata seems incorrect.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming uses generic `a0`, `a1`, `v0`, `v1` making tracking purpose impossible
+- `binary_tree_sum` has 21 local variables with cryptic names, making algorithm unreadable
+- Type precision poor - confusion between signed/unsigned, int/long
+- Composite types mostly lost - structs become pointer arithmetic
+- No comments or documentation explaining any function's purpose
+- `ptr_diff` has operator precedence bug: `a0 - a1 >> 2` should be `(a0 - a1) >> 2`
+- Severe noise from wrapper functions and VEX IR artifacts
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+The decompiler correctly recovered most target function names from debug symbols (`process_char`, `array_1d_stack`, `ptr_double`, etc.), making it clear what each function does.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Generic parameter names (`a0`, `a1`, `a2`) and local variables (`v0`, `v1`, `v2`) make it nearly impossible to understand what data each variable holds without tracing through the entire function.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: If `a0` is used in array indexing like `a0[x]`, name it `array` or `buffer`. If `a1` is compared to 0, name it `count` or `length`.
+2. **Recover struct types from field access patterns**: When seeing `ptr->field_0` and `ptr->field_8`, create a struct definition instead of treating as raw pointer arithmetic.
+3. **Add semantic comments**: At minimum, document what each function parameter represents and what the return value means - this costs little but adds enormous value.

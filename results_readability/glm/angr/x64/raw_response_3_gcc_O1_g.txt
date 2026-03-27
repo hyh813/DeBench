@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `v3`) or obscure internal artifacts like `vvar_54{r48|8b}`. In `vla_stack`, the pointer to the VLA is named `vvar_54{r48|8b}`, which provides zero semantic context.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully recovered the original function names for almost all user-defined functions (e.g., `local_vars`, `heap_basic`, `test_stack_memory`), which significantly aids navigation despite the poor internal variable naming.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are preserved perfectly, but integer constants are problematic. The value `-1` is consistently represented as `4294967295` (UINT_MAX), and magic numbers like `0x800` (2048) appear without context or named constants.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is polluted with compiler runtime artifacts. For example, `test_stack_memory` uses `__printf_chk` instead of `printf`, and `vla_stack` exposes raw stack probing logic (`while (&v7 != &(&v0)[-1 * (v3 & ...)]`) instead of abstracting the allocation.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Standard loops are recovered as `do-while` loops, which is acceptable. However, the control flow for Variable Length Arrays (`vla_stack`) is obfuscated by stack probing checks and pointer arithmetic that mimics assembly rather than C logic.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: User functions are distinct, but the test functions (`test_stack_memory`, etc.) are severely compromised. Because the compiler inlined the logic (e.g., `local_vars(5)` became `20`), the decompiled test functions are just sequences of print statements with constants, losing the structural intent of the original code.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The VLA and alloca functions contain complex pointer arithmetic and forward/backward jumps for stack alignment that disrupt top-to-bottom reading. The `do-while` loops in `local_array` rely on pointer comparisons (`cur != &v2`) rather than index counters, which is harder to follow.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: The decompiler failed to eliminate redundancy in a way that harms readability. In `test_stack_memory`, the function calls were inlined into constants (e.g., `20`), removing the *semantic* redundancy of the test calls but destroying the program's logical structure.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types are generally correct (`unsigned int`, `unsigned long long`), but pointers are often cast to `unsigned long long` for arithmetic. The distinction between `int` and `size_t` is somewhat lost in the generic usage of `unsigned long`.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structs are recovered but with generic names (`struct_0`, `struct_1`) and fields (`field_0`, `field_8`). The `Point` struct and `Node` struct are not recognized as specific types; instead, multiple generic struct definitions are scattered throughout the code (e.g., in `heap_nested` and `linked_list_heap`).
+
+**11. Type Safety:** Score: 5/10
+Justification: There are frequent casts between pointers and integers (`unsigned long long`) and strict type casting on array access (`*((int *)&v1)`). While this reflects the binary reality, it results in unsafe-looking C code that mimics low-level memory manipulation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex logic like the stack probing in `vla_stack` or the bit-manipulation in `memop_unaligned_access` is left unexplained.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The decompiler does not recognize high-level idioms. The linked list and tree traversals are presented as raw pointer manipulations (`ptr->field_8`) rather than semantic operations like `node->next`. The "memory leak" or "dangling pointer" patterns are not flagged.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged. The code confidently presents the `vvar_54{r48|8b}` syntax and the inlined constants in test functions without any warning that these might be artifacts or optimization side-effects.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: Preconditions (like `if (n <= 0) return -1;`) are preserved as code, but there is no higher-level contract documentation or indication of function purpose beyond the raw logic.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While function calls are visible, the inlining of constants in `test_...` functions breaks the call graph visualization. The relationship between the test functions and the logic they are supposed to test is severed.
+
+**17. Module Organization:** Score: 4/10
+Justification: The code is presented as a flat list of functions. While the order roughly follows the source, the lack of grouping (e.g., "Stack Memory Operations", "Heap Memory Operations") makes the module structure hard to discern.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses `__printf_chk`, which requires specific macro definitions (`_FORTIFY_SOURCE`). The variable names like `vvar_54{r48|8b}` contain characters invalid in standard C identifiers, making the code uncompilable without cleanup.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 4.25
+L2_avg: 4.25
+L3_avg: 4.67
+L4_avg: 1.25
+L5_avg: 3.67
+
+Overall = (4.25 × 0.30) + (4.25 × 0.25) + (4.67 × 0.20) + 
+          (1.25 × 0.15) + (3.67 × 0.10)
+Overall = 1.275 + 1.0625 + 0.934 + 0.1875 + 0.367
+Overall ≈ 3.83/10
+```
+
+### Overall Readability Score: 3.8/10
+
+### Critical Defects
+- **Variable Naming**: Variables like `vvar_54{r48|8b}` are syntactically invalid in C and semantically meaningless.
+- **Optimization Artifacts**: The test functions (`test_stack_memory`, etc.) are reduced to printing constants because the function calls were inlined, destroying the program's logic.
+- **Stack Probing Exposure**: The VLA/Alloca functions expose raw stack alignment and probing logic (`while (&v7 != ...)`), making them unreadable.
+- **Struct Recovery**: Structs use generic names (`struct_0`, `field_0`) and are redefined multiple times instead of being unified.
+- **Magic Numbers**: Error codes like `-1` are displayed as `4294967295`, obscuring the logic.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: The decompiler successfully recovered the original function names for the vast majority of the codebase, which is the only strong link back to the original source intent.
+
+### Most Needs Improvement
+- **Semantic Transparency (1.25/10)**: The complete lack of comments, idiom recognition, and anomaly indication makes the code very difficult to understand semantically. The "noise" of the implementation details completely overshadows the "signal" of the algorithm.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Abstract Stack Probing Logic**: Detect and hide or comment out the stack alignment/probing loops common in VLA/Alloca implementations to reveal the actual allocation logic.
+2.  **Recover Intermediate Variables**: Even in optimized builds, attempt to split complex expressions (like `a0 * 2 + 10`) back into intermediate assignments if it matches common patterns, to preserve source structure.
+3.  **Sanitize Variable Names**: Map internal temporary registers (like `vvar_54{r48|8b}`) to valid C identifiers and attempt to infer names based on usage (e.g., `stack_ptr`, `alloca_ptr`).

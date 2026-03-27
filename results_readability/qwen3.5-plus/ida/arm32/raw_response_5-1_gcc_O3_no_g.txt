@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a1`, `a2`, `temp`, `result`) with no semantic meaning. For example, in `test_cpp_rtti`, `v0` and `v1` should be `obj1` and `obj2` based on their usage as RTTI object pointers.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions recovered with mangled C++ names (`_Z20test_cpp_member_funcv`), but helper functions use generic names (`sub_1092C`). Virtual thunks are properly labeled (`virtual thunk to'MultiDerived::funcB`), showing some C++ awareness.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `4700` (should be `4660 + 40`), `1074003968` (double constant), `0x1Fu` (31). No constants recovered from original source's documented expected values.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (`COERCE_DOUBLE`, `_DWORD` casts), but constant-folded functions are clean. The `_bss_start` global tracking in `__do_global_dtors_aux` is unnecessary noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most test functions are constant-folded to single returns (losing original structure). Complex functions like `test_cpp_rtti` use natural if-else but with confusing pointer arithmetic instead of object-oriented access.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but optimization eliminated original structure. Virtual thunks properly separated (`_ZThn8_N12MultiDerived5funcBEv`), showing good C++ vtable recovery.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom without excessive jumps. The `test_cpp_rtti` function has clear sequential flow despite complex pointer operations.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding eliminated redundant computation but also original logic. No dead code observed, but the optimization makes it impossible to verify original algorithm correctness.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy degradation to `_DWORD`, `int`, `void*`. C++ class types lost entirely—`Base*` becomes `int (__fastcall ***a1)(_DWORD)`. No const-correctness preserved despite `-g` debug symbols.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **CRITICAL FAILURE**: Zero struct/class definitions recovered. `SimpleClass`, `LifecycleClass`, `Container<T>` all accessed via raw pointer arithmetic (`*(_DWORD *)(result + 40)`). Field names completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `COERCE_DOUBLE`, `(_DWORD *)this`, `*(void (__fastcall **)(void *))`. Pointer arithmetic on `char*` for object field access is error-prone and obscures type intent.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal auto-generated comments (`BYREF`, `[sp+4h]`). No algorithm explanations, no recovery of original source comments explaining expected values (e.g., "期望: 10 + 34 + 4660 = 4704").
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No C++ idioms recognized: RAII, virtual dispatch, template instantiation all appear as raw operations. Lambda captures, smart pointer semantics completely invisible in decompiled output.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 25 functions marked "FAILED to decompile" at end, but no inline warnings for uncertain operations. The `test_cpp_exception` function marked `__noreturn` incorrectly (should return after catch).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `idx < size` in `Container::get`). Exception handling contracts invisible—no indication of what exceptions functions may throw.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Virtual dispatch visible through vtable calls but not explicitly marked. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed sequentially without logical grouping. Related class methods scattered (Base/Derived methods not grouped). No namespace or module structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: **Will not compile**: 25 external functions failed (`__imp___cxa_throw`, `__imp_strlen`, etc.). No header declarations, no stub implementations provided for failed decompilations.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+6)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+6+7+6)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (3+2+4)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (3+2+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.433
+
+Overall Score: 4.26/10
+```
+
+### Overall Readability Score: **4.3/10**
+
+### Critical Defects:
+- **Zero composite type recovery**: All C++ classes (`SimpleClass`, `Container<T>`, etc.) reduced to raw pointer arithmetic with no struct definitions
+- **Variable names completely generic**: `v0`, `v1`, `a1`, `a2` provide no semantic information about purpose
+- **Constant folding hides original logic**: Test functions return pre-computed constants (42, 71, 650) instead of showing computation
+- **25 functions failed to decompile**: Critical runtime functions (`__cxa_throw`, `dynamic_cast`, `strlen`) missing
+- **Type system severely degraded**: C++ types replaced with `_DWORD`, `int`, `void*` losing all type safety information
+
+### Best Quality Aspect: **Code Linearization (7/10)**
+- Code reads sequentially top-to-bottom without excessive jumps or goto statements, making basic flow traceable despite other issues.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover any C++ class/struct definitions forces all object access through opaque pointer arithmetic, fundamentally breaking object-oriented semantics.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class layouts from vtable and debug symbols**: Use `-g` debug information to reconstruct struct definitions with field names (`value`, `name[32]`, `data`, `size`)
+2. **Preserve semantic variable names from debug symbols**: Map `v0`, `v1` to original names (`obj1`, `obj2`, `capture_by_value`) using DWARF metadata
+3. **Add inline uncertainty annotations**: Mark operations where type recovery is uncertain (e.g., "// UNCERTAIN: vtable call, verify manually") instead of silently presenting potentially incorrect code

@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Local variables are overwhelmingly generic (e.g., `v2`, `v3`, `v4`), losing semantic meaning present in the source (e.g., `sum`, `count`, `result`). While parameters (`a`, `b`, `c`) and loop counters (`i`, `j`) are acceptable, the loss of accumulator names hinders quick understanding.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `sequential_ops`, `duffs_device`, `opaque_predicate`), likely due to the presence of debug symbols (`-g`). This provides perfect context for the code's purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: In `switch_small`, arithmetic logic like `a + b` is replaced by magic numbers (e.g., `15`), obscuring the operation being performed. While string literals are preserved, the constant propagation in switch cases reduces semantic transparency.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains compiler artifacts such as `__int128` types for stack arrays (e.g., `__int128 v3` in `loop_break`) and references to `xmmword` for initialization data. These low-level details clutter the high-level logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally excellent with proper `for`, `while`, and `switch` recovery. However, `computed_goto` devolves into inline assembly (`__asm { BR X8 }`), and `duffs_device` is represented as a complex web of `goto` labels rather than the structured `do-while` switch fall-through, which is difficult to read.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries are perfectly preserved 1:1 with the source. There is no inlining or outlining of code, maintaining the original modularity and cohesion of the test suite.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps. Early returns and breaks are used appropriately, matching the source structure closely.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler successfully folds simple expressions (e.g., `sequential_ops` returns `2 * (a + b) - c` directly) and removes redundant temporary variables present in the source, actually improving conciseness without losing meaning.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Integer types are often widened to `__int64` (e.g., `__fastcall recursion_factorial` returns `__int64` instead of `int`), which is technically accurate for ARM64 registers but deviates from the original `int` types. Arrays are often typed as `__int128` or `_OWORD` rather than standard C arrays.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Stack-allocated arrays are frequently represented as large integer types (e.g., `_OWORD dest[3]`, `__int128 v3`) or accessed via pointer casts to `xmmword`, rather than being recovered as standard C arrays with proper indexing syntax.
+
+**11. Type Safety:** Score: 8/10
+Justification: Function pointer casts are verbose but generally safe (e.g., `(__int64 (__fastcall *)(_QWORD))f`). There are no obviously dangerous pointer arithmetic errors introduced by the decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: The decompiled output is completely devoid of comments. The rich documentation in the source (e.g., "CF-L1-01: 线性顺序执行", "Duff's device") is entirely lost, leaving no explanation for complex logic like Duff's device or state machines.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard loops and switches are recognized, but complex idioms are missed. Duff's device is not identified as such, and the computed goto (GCC extension) is not mapped back to a C equivalent, instead being left as raw assembly.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: There are no explicit warnings or flags about the inline assembly block in `computed_goto` or the unusual control flow in `duffs_device`. The code is presented confidently even where it represents non-standard or obfuscated patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement that `n > 0` for `duffs_device` is not explicitly stated in the decompiled view.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are direct and clear, but there are no comments indicating caller/callee relationships or grouping (e.g., "Test functions for Level 1"). The reliance on global data offsets (e.g., `off_13D30`) for function pointer arrays is opaque.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source file's structure. Helper functions like `double_value` are placed near their usage or in a coherent block.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code includes inline assembly (`__asm { BR X8 }`) and non-standard types like `__int128`, which prevents it from compiling as standard C without modification or specific compiler flags.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Critical Defects:**
+- Variable names are generic (`v2`, `v3`) instead of semantic names (`sum`, `result`), significantly reducing comprehension.
+- Complex idioms like Duff's device and computed gotos are not recovered into readable C, resulting in `goto` spaghetti or inline assembly.
+- Stack arrays are represented as `__int128` or `_OWORD` blobs rather than standard C arrays, adding noise.
+- Complete absence of comments removes the educational and explanatory context present in the source.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved all original function names, making it trivial to identify the purpose of every unit.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)
+- The total lack of comments, especially for complex algorithms like Duff's device or state machines, makes the code much harder to understand than the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement data-flow analysis to recover semantic variable names (e.g., identifying accumulators as `sum` or `result`).
+2. Add pattern recognition for Duff's device to reconstruct the `do { switch... } while` structure instead of emitting raw `goto` chains.
+3. Improve stack array recovery to emit standard C array syntax (e.g., `int arr[5]`) instead of `__int128` or `_OWORD` types.

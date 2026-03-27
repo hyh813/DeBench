@@ -1,0 +1,130 @@
+### LEVEL 1: LEXICAL CLARITY (30% weight)
+
+#### 1. Variable Naming Quality (10% weight)
+**Score: 3/10**
+**Justification:** Variables are reduced to generic names like `param_1`, `local_c`, and `local_10`, completely losing semantic meaning found in the source (e.g., `x`, `sum`, `i`). While `local_c` often accumulates a sum, the names are purely positional rather than descriptive.
+
+#### 2. Function Naming Quality (10% weight)
+**Score: 10/10**
+**Justification:** Function names are perfectly recovered from the debug symbols, matching the source exactly (e.g., `process_char`, `array_1d_stack`, `test_data_types_l1`). The names are action-oriented and semantically accurate.
+
+#### 3. Literal Clarity (5% weight)
+**Score: 6/10**
+**Justification:** ASCII character checks are represented as hex comparisons (e.g., `0x40 < param_1` instead of `'A'`) and arithmetic uses hex offsets (e.g., `+ 0x20` instead of `+ 32`). While logically correct, this obscures the intent of character manipulation compared to the source.
+
+#### 4. Noise Reduction (5% weight)
+**Score: 2/10**
+**Justification:** The decompiled output is heavily polluted with extensive soft-float library implementations (`__mulsf3`, `__adddf3`, etc.) that are not part of the original source logic. Additionally, types like `undefined4` and macros like `CONCAT44` add significant noise, making it difficult to isolate the user's code.
+
+---
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+#### 5. Control Flow Naturalness (8% weight)
+**Score: 9/10**
+**Justification:** Control flow is excellent; loops and conditionals are recovered naturally as `for` and `if` statements (e.g., `array_1d_stack` uses a standard `for` loop). The structure is very readable, largely due to the `-O0` compilation preserving the original flow.
+
+#### 6. Function Decomposition (7% weight)
+**Score: 10/10**
+**Justification:** Functions map 1:1 with the source, maintaining appropriate granularity. There is no inlining or outlining, and the boundaries between test functions (`test_data_types_l1`, `test_array_types`) are preserved perfectly.
+
+#### 7. Code Linearization (5% weight)
+**Score: 9/10**
+**Justification:** The code reads linearly from top to bottom with minimal jumps. Early returns and loop structures are placed logically, facilitating a straightforward reading path.
+
+#### 8. Redundancy Elimination (5% weight)
+**Score: 8/10**
+**Justification:** Given the `-O0` optimization level, the code is verbose but the decompiler does not introduce artificial redundancy. It accurately reflects the compiler's generated instructions without adding confusing duplicate logic.
+
+---
+
+### LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+#### 9. Type Precision (8% weight)
+**Score: 2/10**
+**Justification:** Type information is severely degraded. `float` and `double` parameters/returns are demoted to `void` or `undefined4`/`undefined8`. `long long` on a 64-bit architecture is incorrectly split into `uint` and `int` parameters. `short` is recovered as `ushort` (unsigned), and `volatile` qualifiers are lost.
+
+#### 10. Composite Type Recovery (7% weight)
+**Score: 1/10**
+**Justification:** Struct types are completely lost. For example, `struct_simple(Point3D *p)` is decompiled as `struct_simple(int *param_1)`, accessing fields via raw pointer arithmetic (`*param_1`, `param_1[1]`) rather than field names (`p->x`, `p->y`).
+
+#### 11. Type Safety (5% weight)
+**Score: 5/10**
+**Justification:** The code relies heavily on explicit casts and raw pointer arithmetic (e.g., `*(int *)(param_1 + local_10 * 4)`). While this accurately represents the low-level memory access, the loss of high-level types removes the safety net provided by the original struct definitions.
+
+---
+
+### LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+#### 12. Comment Quality & Presence (5% weight)
+**Score: 2/10**
+**Justification:** There are virtually no comments explaining the logic. The decompiler does not annotate the soft-float calls or explain the hex literals, leaving the user to infer the purpose of complex arithmetic operations.
+
+#### 13. Idiom Recognition (3% weight)
+**Score: 5/10**
+**Justification:** Standard idioms like array summation are recognizable via the loop structure, but specific patterns like the "uppercase to lowercase" conversion are obscured by hex literals (`0x20`, `0x5b`) rather than being explicitly identified or annotated.
+
+#### 14. Anomaly Indication (3% weight)
+**Score: 2/10**
+**Justification:** The decompiler presents the split 64-bit parameters and missing float return types as normal code without flagging them as potential ABI anomalies or decompilation errors. The massive inclusion of library code is also not demarcated.
+
+#### 15. Assertion & Contract Recovery (4% weight)
+**Score: 2/10**
+**Justification:** No preconditions or postconditions are documented. For instance, the requirement that pointers in `pointer_array` are non-null is checked in the code but not stated as a contract.
+
+---
+
+### LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+#### 16. Cross-Reference Clarity (4% weight)
+**Score: 8/10**
+**Justification:** Function calls to other user-defined functions (e.g., `printf`, `process_char`) are clear and use the recovered names. The relationship between the test functions and their helpers is evident.
+
+#### 17. Module Organization (3% weight)
+**Score: 7/10**
+**Justification:** Functions are ordered roughly by address, which correlates with the source order. However, the interleaving of massive soft-float library functions disrupts the logical grouping of the user's test modules.
+
+#### 18. Build System Compatibility (3% weight)
+**Score: 2/10**
+**Justification:** The code uses Ghidra-specific types (`undefined4`, `undefined8`) and macros (`CONCAT44`), making it non-compilable without significant modification or a specific Ghidra utility header.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 6 + 2) / 4 = 5.25
+L2_avg = (9 + 10 + 9 + 8) / 4 = 9.00
+L3_avg = (2 + 1 + 5) / 3 = 2.67
+L4_avg = (2 + 5 + 2 + 2) / 4 = 2.75
+L5_avg = (8 + 7 + 2) / 3 = 5.67
+
+Overall = (5.25 * 0.30) + (9.00 * 0.25) + (2.67 * 0.20) + 
+          (2.75 * 0.15) + (5.67 * 0.10)
+Overall = 1.575 + 2.25 + 0.534 + 0.4125 + 0.567
+Overall = 5.34 / 10
+```
+
+### Overall Readability Score: **5.3/10**
+
+### Critical Defects (Bullet List)
+- **Struct types completely lost**: `Point3D *p` is decompiled as `int *param_1`, forcing the reader to parse raw pointer arithmetic (`param_1[1]`, `param_1[2]`) instead of field access (`p->y`, `p->z`).
+- **Floating point return types missing**: `process_float` and `process_double` are decompiled with `void` return types, discarding the calculation results present in the source.
+- **64-bit integer splitting**: On an ARM64 architecture, `long long` parameters are incorrectly split into two 32-bit integers (`uint param_1, int param_2`).
+- **Soft-float library noise**: The output includes hundreds of lines of soft-float implementation (`__mulsf3`, `__divdf3`), obscuring the simple arithmetic logic of the source code.
+- **Variable naming**: All meaningful variable names (`sum`, `i`, `len`) are replaced with generic names (`local_c`, `local_10`, `local_8`).
+
+### Best Quality Aspect
+- **Control Flow Naturalness (9/10)**
+- **Why?** Despite the type failures, the decompiler perfectly reconstructed the high-level control flow (loops, conditionals) from the `-O0` binary, making the logic sequence easy to follow.
+
+### Most Needs Improvement
+- **Composite Type Recovery (1/10)**
+- **Why?** The total inability to recover `struct` definitions reduces complex data structure manipulations to indecipherable pointer math, which is the single biggest barrier to understanding the code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Struct Recovery**: Utilize debug information (DWARF) more effectively to recover struct layouts and field names, or implement heuristic analysis to group pointer offsets into logical structures.
+2.  **Handle Soft-Float ABIs**: Detect and abstract soft-float library calls, either by inlining simple operations or replacing them with high-level arithmetic operators (e.g., replace `__mulsf3(a, b)` with `a * b`).
+3.  **Fix 64-bit Type Handling**: Correctly identify 64-bit integer and floating-point types/registers on 64-bit architectures instead of splitting them into 32-bit halves.

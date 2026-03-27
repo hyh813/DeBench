@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `v0`, `v1`, `v2`, `temp`) with no semantic meaning. For example, `param_fake_branch` parameter `a1` should be `x`, and `param_opaque_predicate` variables `v1-v4` obscure the predicate calculation logic.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`), but helper functions use mechanical names (`sub_1030`, `sub_1040`, `sub_10F0`) with no semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers throughout: signal numbers `8` and `11` instead of `SIGFPE`/`SIGSEGV`, XOR key `90` instead of `0x5A`, canary offset `0x14u` unexplained. Some literals like `0xF` for modulo are recognizable.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: `__readgsdword(0x14u)` for stack canary, register annotations (`@<eax>`, `@<ebx>`), `LODWORD`/`HIDWORD` macros. These don't prevent understanding but add visual clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural (if/else, for, while loops preserved). `param_opaque_predicate` shows some awkward restructuring with the gcd loop, but generally follows C idioms appropriate for O1 optimization.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with single responsibility. `param_fake_branch` correctly simplified (dead code eliminated), `decrypt_string` properly separated from `param_string_encryption`. No monolithic functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with appropriate early returns. `param_vectorized_loop` has clean loop structure. Some functions like `param_opaque_predicate` have slightly awkward variable assignment ordering.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some optimization artifacts remain: `param_instruction_substitution` returns `15*a1 + 6*a1` which could simplify to `21*a1`. Stack canary checks duplicated across functions (`__readgsdword(0x14u)` pattern).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Inconsistent types: `param_string_encryption` returns `__int64` but original returns `int`. Pointer types degraded to `_DWORD *` in `param_vectorized_loop`. Some `unsigned int` correctly recovered but mixed with generic `int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure on struct recovery. `param_implementation_defined` bitfield struct completely lost (function just returns constant `43`). No struct/union definitions visible in decompiled output despite original having explicit bitfield structure.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(__sighandler_t)div_zero_handler`, `*(_DWORD *)a1` for pointer dereference, `(int)v2` array-to-int conversions. Signal handler type casting is particularly concerning for type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no meaningful comments. Only auto-generated headers with addresses (`/* Function: param_fake_branch @ 0x1377 */`). No explanation of obfuscation patterns, optimization artifacts, or algorithm intent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. Obfuscation techniques (opaque predicates, fake branches, instruction substitution) not identified or documented. GCD algorithm in `param_opaque_predicate` not recognized as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged: "FAILED to decompile" for 12 library functions, "positive sp value has been detected" warning in `_start`. However, optimization-induced simplifications (dead code elimination) not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `param_null_pointer_deref` don't indicate NULL handling behavior. Error return values (-1, -2) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible through code (`call_fake_branch` calls `param_fake_branch`), but no call graph documentation. Global variable usage (`encrypted_0`, `jmp_buffer`) not clearly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Original source had clear section comments (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases) completely lost. No header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 12 library functions failed to decompile requiring stubs. Metadata claims "Compilation Result: Yes" but 12 `FAILED to decompile` entries suggest significant external dependencies. Architecture mismatch (original arm64, decompiled x86).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (5+2+5)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.075/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable `a1` should be named `x`** - All function parameters use generic `a1`, `a2` naming losing semantic meaning from original source
+- **Bitfield struct completely lost** - `param_implementation_defined` reduced to constant return `43`, original bitfield structure unrecoverable
+- **No comments explaining obfuscation patterns** - Opaque predicates, fake branches, and instruction substitution not identified or documented
+- **Magic numbers unexplained** - Signal numbers `8`/`11`, XOR key `90`, canary offset `0x14u` all lack symbolic names
+- **Architecture mismatch unexplained** - Original metadata says arm64 but decompiled code shows x86 assembly and registers
+
+### Best Quality Aspect:
+- **Function Decomposition (scored 8/10)** - Functions maintain appropriate granularity with single responsibility; dead code correctly eliminated without creating monolithic functions
+
+### Most Needs Improvement:
+- **Composite Type Recovery (scored 2/10)** - Complete failure to recover struct/union definitions; bitfield structure in `param_implementation_defined` entirely lost, reducing complex logic to constant return value
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze variable usage patterns to infer names (e.g., loop counters → `i`, parameters matching source → `x`, `n`, `acc`)
+2. **Add obfuscation pattern detection** - Recognize and document common obfuscation techniques (opaque predicates, fake branches, instruction substitution) with explanatory comments
+3. **Improve composite type recovery** - Better struct/union reconstruction from memory access patterns, especially for bitfields and nested structures

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `temp_0`, `temp_1`) obscuring their semantic roles. Some variables like `arr`, `head`, `current`, `sum` are descriptive, but test functions use meaningless temporaries (`int v0; // eax`) instead of purpose-driven names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved original names (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`). However, initialization functions use generic labels (`sub_1020`, `sub_1030`, `sub_1040`) losing semantic meaning entirely.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive throughout: `0x28u` (stack canary offset), `0x10u`/`0x14u`/`0x28u` (byte sizes instead of element counts). Original `sizeof(int)` expressions converted to `4LL` or `4u` without explanation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary code (`v4 = __readfsqword(0x28u)`) appears in nearly every function. Compiler temporaries (`v7`, `v8`, `v9`, `v12`, `v19`) clutter function bodies. Metadata inconsistency (claims "IDA Pro" but is Ghidra output).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops successfully recovered as `for` constructs. Conditionals are clear. VLA handling in `vla_stack` shows awkward alloca patterns with while-loop alignment that obscures original intent.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches original source well. `static_helper` preserved as separate function. No monolithic functions; each test case remains isolated and cohesive.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward references in complex functions (`linked_list_heap`), but no disruptive gotos. Early returns used appropriately for error handling.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions create redundant temporaries (`v0`, `v1`, `v2`...`v16` in `test_static_global`). Stack canary variable (`v12`, `v19`) assigned but never used beyond initialization check.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved correctly (`int`, `char*`, `void*`). Struct pointers accurate (`Node*`, `Point*`, `TreeNode*`). Some degradation: `size_t` parameters sometimes shown as generic `int` or `unsigned __int64`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structs `Node`, `Point`, `TreeNode` recovered with accurate field names (`data`, `next`, `left`, `right`, `x`, `y`). Field offsets match original layout. No raw pointer arithmetic for struct access.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Explicit casts present throughout (`(int *)malloc(4LL * n)`, `(_DWORD *)p_vla`). Pointer arithmetic visible but generally safe. No restrict or alignment annotations recovered.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. Original source had extensive documentation (`// MEM-L1-01: 局部变量（基础类型）⭐`). Only function headers with addresses present. No algorithm explanations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns (malloc/free pairs, linked list traversal, tree creation) are recognizable from code structure. No explicit pattern naming or documentation. Reader must infer patterns independently.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (18 functions). One warning present ("positive sp value has been detected"). Suspicious code like `dangling_pointer` not flagged as potentially undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present in code but not documented as preconditions. No `@param`/`@return` contracts. Error conditions (return -1, -2, -3) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls clearly visible. Global variable usage transparent (`global_counter`, `global_array`, `global_func_ptr`). Callback relationship (`set_global_callback` → `call_global_callback`) recoverable.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. Original section comments (`// 3.1 栈内存操作`, `// 3.2 堆内存操作`) completely lost. No logical grouping visible in output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 18 library functions failed to decompile (`malloc`, `free`, `printf`, `fork`, etc.). Would require stubs for all external dependencies. Some type definitions missing from output.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):    (5+7+5+4)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural): (7+8+7+5)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):       (7+8+6)/3   = 7.00 × 0.20 = 1.400
+Level 4 (Semantic):   (2+5+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Context):    (7+4+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────
+Overall Score:                                  5.73/10
+```
+
+### Overall Readability Score: **5.7/10**
+
+### Critical Defects:
+- **Variable `v0`-`v16` in test functions** should be named after their purpose (e.g., `local_vars_result`, `heap_basic_result`)
+- **Zero comments** despite original source having extensive documentation for each test case
+- **18 library functions failed to decompile** requiring manual stub creation
+- **Stack canary noise** (`__readfsqword(0x28u)`) clutters every function without being collapsible
+- **Section organization lost** - original 4 major sections (stack/heap/static/memop) not preserved
+
+### Best Quality Aspect: **Composite Type Recovery (8/10)**
+- Struct definitions (`Node`, `Point`, `TreeNode`) recovered with accurate field names and layouts, enabling clear understanding of data structures.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of documentation makes understanding test purposes require cross-referencing with original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** from debug symbols (`-g` flag) when available, especially for test documentation
+2. **Infer semantic variable names** from usage patterns (e.g., variables used in printf format strings should inherit the label context)
+3. **Group related functions** with section headers matching original source organization (stack/heap/static/memory operations)

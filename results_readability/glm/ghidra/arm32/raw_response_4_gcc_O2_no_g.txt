@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `param_1`, `local_10`, `uVar1`, and `iVar1`, providing no semantic context about their usage (e.g., `sum`, `count`, or `ptr`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `param_by_value_int` are perfectly preserved from the source symbols, accurately reflecting their purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: While hex constants like `0xf` (15) and `0x2a` (42) are accurate to the optimized binary, they obscure the original arithmetic logic (e.g., `5 + 10`), making the code harder to read than the source.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains significant noise from software floating-point emulation (e.g., `__aeabi_dadd`, `__floatsidf`) and compiler fortification (`__printf_chk`), which clutter the logic of `func_mixed_args` and test functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally natural, using `do-while` loops for iterations and `if-else` for conditionals, which maps well to the ARM architecture's `cbz`/`cmp` instructions.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decomposition accurately reflects the optimized binary; small wrapper functions like `call_cdecl` are preserved (though inlined to constants), and complex logic remains in the `test_...` functions.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly with minimal jumps; loops are clearly defined, and there are no confusing `goto` chains interrupting the top-to-bottom flow.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler successfully presents the optimized state of the code, such as replacing function calls with their pre-calculated return values (e.g., `return 0xf`), which is cleaner than retaining dead code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: 64-bit types like `double` and `long long` are split into pairs of 32-bit parameters (e.g., `param_3`, `param_4`), which is ABI-accurate for ARM32 but significantly reduces readability compared to the original types.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Structures passed by value (e.g., in `func_struct_byval`) are flattened into scalar parameters (four `int`s) rather than being reconstructed as a struct, losing the composite type semantics.
+
+**11. Type Safety:** Score: 6/10
+Justification: The code uses generic types like `undefined4` and `undefined8` extensively, and while pointer arithmetic in `ret_pointer` (`param_1 + 4`) is correct, it relies on implicit integer size assumptions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to auto-generated warnings like "WARNING: Removing unreachable block" and provide no semantic explanation of the algorithm or variable usage.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler fails to recognize the `varargs` idiom; `varargs_func` is decompiled as a simple counter loop, completely losing the `va_list` and `va_arg` semantics present in the source.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Ghidra correctly flags unreachable blocks and potential issues, but it does not explicitly warn about the loss of varargs semantics or the splitting of 64-bit types, which are significant semantic changes.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions (e.g., non-null checks) or postconditions; logic like `if (param_1 == (int *)0x0)` is present but not documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and clear; the relationships between the test functions and the logic they test are maintained, and calls to library functions like `puts` are easily identifiable.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are organized by address, which groups related logic (e.g., `test_calling_conventions` and its callees) reasonably well, though it separates the `main` function from the helpers.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on specific compiler intrinsics (`__aeabi_*`) and non-standard `__printf_chk`, and the use of `undefined` types prevents standalone compilation without significant modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- **Variable Naming:** Variables like `param_1` and `local_10` provide no semantic meaning, forcing the reader to reverse engineer the logic from scratch.
+- **Idiom Recognition:** The `varargs` pattern in `varargs_func` is completely missed, decompiling to a meaningless counter loop instead of showing argument access.
+- **Composite Type Recovery:** Structures passed by value (e.g., `LargeStruct`) are flattened into scalar integer parameters, destroying the data structure abstraction.
+- **Type Precision:** 64-bit types (`double`, `long long`) are split into two 32-bit variables, making arithmetic operations involving them difficult to follow.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 9/10)
+- **Why?** The decompiler successfully preserved the original function symbols from the binary, making the high-level purpose of each function immediately obvious.
+
+**Most Needs Improvement:** Idiom Recognition (Score: 3/10)
+- **Why?** The failure to recognize standard C idioms like `varargs` results in decompiled code that bears little resemblance to the source logic, significantly hindering understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve Varargs Recovery:** Implement pattern matching for `va_start`, `va_arg`, and `va_end` on ARM architectures to reconstruct stack-based argument access instead of optimizing it into a counter loop.
+2.  **Reconstruct Split Types:** Automatically detect pairs of 32-bit registers/stack variables that are used together (e.g., passed to soft-float helpers) and merge them into `long long` or `double` types.
+3.  **Aggregate Type Reconstruction:** Analyze groups of contiguous registers or stack slots used in function calls to reconstruct structures passed by value, rather than flattening them into individual parameters.

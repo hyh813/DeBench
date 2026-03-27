@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely labeled as "Unresolved local var" with DWARF register expressions (e.g., `int a@[DW_OP_reg5(RDI)]`, `int arr@[???]`). Generic names like `iVar1`, `piVar1`, `lVar1` dominate. The original variables `a`, `b`, `c`, `arr`, `i` are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names match source exactly (`local_vars`, `heap_basic`, `test_stack_memory`). However, some internal functions have cryptic names like `FUN_00101020`. Standard runtime functions (`deregister_tm_clones`) retain appropriate names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0xf` (15) appear without explanation. String data references like `&DAT_00103719` are opaque. The decompiler correctly identifies some constants but provides no semantic meaning.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: "Unresolved local var" annotations, "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", raw stack offsets like `&stack0xfffffffffffffff8`, and extensive type casts. The `large_stack_frame` function contains 200+ lines of unrolled loop code with no abstraction.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loop unrolling is pervasive - `large_stack_frame` has fully unrolled 2048-byte loop, `vla_stack` and `heap_basic` show 4x/8x unrolling. At -O0 this is unexpected. Some goto-style jumps present. However, basic control structures (if/else, while) are recognizable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity (most <100 lines). The decomposition matches source - separate functions for stack, heap, static operations. No monolithic functions. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately for error handling. Some forward jumps in unrolled loops disrupt flow. No excessive deep nesting observed.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling creates massive redundancy (200+ lines in `large_stack_frame`). Common subexpression elimination visible but not excessive. Dead code appears minimal. The unrolling could be commented or abstracted.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int`, `uint`, `ulong` rather than fixed-width types. Pointers correctly typed as `int*` or `void*`. No const correctness. Function pointers partially typed as `_func_int_int*`. Mixed precision - some `size_t` usage but mostly generic integers.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structs `Point`, `Node`, `TreeNode` recovered with field names (`data`, `next`, `left`, `right`). Nested structures handled properly. The `Node` typedef is preserved. Some field name precision lost but structure is clear.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(int *)(&stack0xfffffffffffffff8 + lVar9 * 4 + lVar7 + 8)`. Raw pointer arithmetic throughout. Function pointer type confusion exists (`_func_int_int*`). No buffer overflow detection.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Auto-generated comments dominate: "Unresolved local var", "WARNING: Removing unreachable block", "WARNING: Unknown calling convention". No algorithm explanations, no decompilation confidence indicators. The "Unresolved local var" comments are noise rather than useful guidance.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable: malloc/free pairs, linked list traversal (in `linked_list_heap`), tree operations. However, no explicit naming or documentation of these patterns. The "design patterns" are implicit but not highlighted.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Warnings present for unreachable blocks and unknown calling conventions. However, indirect calls (like `(*global_func_ptr)(x)`) not clearly flagged as uncertain. No indication of potential undefined behavior in `dangling_pointer` or `double_free`.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition or postcondition recovery. Error handling (NULL checks, bounds checks) present but not documented as contracts. The `if (n <= 0 || n > 1000) return -1` validation in source is partially recovered but not annotated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible through code structure. Global variables (`global_counter`, `global_array`) accessed correctly. Callback relationships (e.g., `set_global_callback` → `call_global_callback`) inferable but not documented.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions logically grouped: stack memory functions, heap functions, static/global functions, memory operation functions. Static functions properly scoped. Organization mirrors source file structure closely.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has compilation issues: printf format string problems (e.g., `printf("STM-L1-01 (global_var_access): %d\n");` missing argument), undefined types (`Node`, `TreeNode`, `Point` need typedefs). External dependencies not documented. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Variable naming is completely degraded - all locals show as "Unresolved local var" with DWARF expressions
+- Loop unrolling at -O0 creates 200+ line functions (`large_stack_frame`) that are unreadable
+- Type precision lost - using generic `int`/`ulong` instead of fixed-width types
+- Extensive noise: "WARNING" comments, raw stack offsets, unresolved var annotations
+- Build compatibility issues: missing typedefs, incorrect printf format strings
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+Functions maintain appropriate size and responsibility. The decomposition matches source structure well.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The complete loss of local variable names is the most severe readability issue. At -O0, DWARF debug info should enable near-perfect name recovery.
+
+**Top 3 Recommendations:**
+1. **Recover variable names from DWARF debug info** - The decompiler shows DWARF expressions but doesn't translate them to readable names. `int a@[DW_OP_reg5(RDI)]` should become `int a`.
+2. **Abstract loop unrolling** - The 200+ line unrolled loops should be collapsed back to `for` loops with a comment noting the optimization.
+3. **Add typedef declarations** - Include `typedef struct Node { int data; struct Node *next; } Node;` so the code compiles and is type-safe.

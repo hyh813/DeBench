@@ -1,0 +1,121 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `local_30`, `pbVar1`) with zero semantic meaning. No variable indicates its purpose (e.g., `result`, `encrypted`, `buffer`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Original function names preserved (`param_fake_branch`, `param_opaque_predicate`), accurately reflecting purpose. However, helper functions use generic names (`FUN_00011030`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers throughout without explanation (`0x14`, `0xe1`, `0x2b`, `0x7a314`, `0x5a`). Some are constant-folded results but lack context about original meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: `get_pc_thunk_*` functions, stack canary checks (`in_GS_OFFSET`), and multiple "WARNING: Removing unreachable block" annotations clutter the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops recovered well (e.g., `param_tail_call_optimized` converted from recursion to iteration correctly). Natural for/while constructs used throughout.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical issue: caller functions constant-folded to return literals instead of calling actual functions (e.g., `call_fake_branch()` returns `10` directly, not calling `param_fake_branch`).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns used appropriately in signal handler functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code in recovered functions. However, optimization eliminated the fake branch logic entirely from `param_fake_branch`.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4` instead of `int`. Type mismatches: `param_instruction_substitution` takes `uint` but original used `int`. Signal handlers use `byte*` for strings.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - the bitfield struct in `param_implementation_defined` was optimized to constant return `0x2b`. No struct/union recovery visible anywhere.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`undefined4` to `int`, `void*` casting in signal handlers). Stack canary checks provide some runtime safety.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated Ghidra warnings present ("WARNING: Function...replaced", "Subroutine does not return"). Zero semantic documentation of algorithm intent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No obfuscation patterns identified. Fake branches, opaque predicates, and instruction substitution patterns completely unrecognized despite being the code's purpose.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings about function replacements and unreachable blocks, but doesn't flag the semantic loss from optimization (e.g., dead code elimination not noted).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Signal handler contracts (`div_zero_handler`, `segv_handler`) not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`jmp_buffer`, `div_zero_caught`) used without declaration context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 46 functions in single output with no logical grouping. No distinction between test functions, handlers, and target functions.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies (signal.h, setjmp.h functions) present but not explicitly documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Contribution |
+|-------|--------------|--------|--------------|
+| L1: Lexical Clarity | 5.25/10 | 30% | 1.575 |
+| L2: Structural Intelligibility | 7.00/10 | 25% | 1.750 |
+| L3: Type System Fidelity | 4.00/10 | 20% | 0.800 |
+| L4: Semantic Transparency | 3.25/10 | 15% | 0.488 |
+| L5: Contextual Coherence | 5.67/10 | 10% | 0.567 |
+
+**Overall Readability Score: 5.2/10**
+
+---
+
+### Critical Defects
+
+- **Variable `param_1`, `iVar1`, `local_30`** should be named semantically (e.g., `input_value`, `gcd_result`, `decrypted_buffer`) based on usage context
+- **Caller functions constant-folded**: `call_fake_branch()`, `call_opaque_predicate()`, etc. return literals instead of calling actual functions, destroying call graph visibility
+- **`param_fake_branch` logic eliminated**: The fake branch conditions (`x*x < 0`, `strlen(str) < 0`) completely removed by optimizer, losing the obfuscation demonstration
+- **Composite types lost**: Bitfield struct in `param_implementation_defined` optimized to constant `0x2b` with no struct recovery
+- **Architecture mismatch**: Original ARM64, decompiled as x86 - indicates potential binary mismatch or re-compilation
+
+---
+
+### Best Quality Aspect
+
+**Control Flow Naturalness (8/10)** - Loop structures recovered accurately from assembly, including tail-call optimization conversion from recursion to iteration in `param_tail_call_optimized`.
+
+---
+
+### Most Needs Improvement
+
+**Composite Type Recovery (2/10)** - Complete failure to recover any struct/union types; the bitfield example was optimized away entirely with no indication of original structure.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Preserve call relationships even with constant folding**: When a caller is constant-folded, add a comment showing the original call (e.g., `// Originally: return param_fake_branch(10)`)
+
+2. **Detect and annotate optimization artifacts**: Flag when dead code elimination removed logic (e.g., "OPTIMIZATION: Always-false branch eliminated at -Os")
+
+3. **Infer variable names from usage patterns**: Variables used in arithmetic contexts should be named by operation (e.g., `iVar2` used in GCD loop → `gcd_temp`), and buffer variables → `buffer`, `decrypted`

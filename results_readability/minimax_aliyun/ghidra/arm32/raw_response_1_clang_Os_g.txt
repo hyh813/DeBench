@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled code contains extensive "Unresolved local var" annotations (e.g., `int temp1 @[???]`, `int sum @[???]`, `int i @[???]`, `int count @[???]`). Variables that clearly should have semantic names (like `temp1`, `temp2`, `temp3` from sequential_ops) remain generic or unresolved, making it nearly impossible to track variable purpose without significant effort.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently recovered and match the original source almost perfectly (e.g., `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `goto_forward`, `goto_backward`). The decompiler correctly preserved action-oriented naming conventions from the source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers appear throughout (e.g., `0x3e9` = 1001, `0x12` = 18, `0x65` = 101, `0x2d` = 45). The test functions use hardcoded hex values like `0x15` (21) instead of computed expressions. Constants like `0x3e8` (1000) in loop bounds lack explanatory comments.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The code is relatively clean with minimal compiler artifacts. Some warnings about unreachable blocks and unknown calling conventions appear in comments but don't significantly impede readability. The actual decompiled logic is free from excessive register spilling artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural and readable - loops (for/while/do-while) are correctly identified, conditionals are clear. However, some issues exist: `loop_for_fixed` uses an unusual mathematical formula instead of a recognizable loop, and `goto_forward`/`goto_backward` are not clearly identified as goto constructs. At -O0, loop structures should be nearly perfect.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries are well-preserved - each function from the original source appears as a separate decompiled function. Function sizes are appropriate (not monolithic). The decompiler correctly kept the 40+ test functions separate from main logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. However, `loop_complex_cond` has confusing variable reuse in its loop condition that disrupts linear reading. Some nested conditionals in `nested_if_deep` create moderate nesting depth.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy observed. The `loop_for_fixed` shows mathematical optimization (formula instead of loop) which is appropriate for -O0 but slightly unusual. Overall clean code without duplicate expressions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types like `int`, `int*` are correctly identified. However, some degradation exists: `undefined4` appears in function signatures (e.g., `_start`), function pointer types use `_func_int_int` which is generic. The original `int` types are preserved but without width specification (int32_t vs int).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union recovery is evident. Arrays like `int arr[5]` in `loop_break` and `int matrix[3][4]` in `loop_multi_exit` are marked as "Unresolved local var" with only raw pointer access (`&DAT_00011848`). The decompiler failed to reconstruct any composite types from the original source.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns exist: pointer arithmetic without bounds checking in array access (e.g., `puVar2[iVar1]`), indirect function calls marked with "WARNING: Treating indirect jump as call". Function pointer type confusion in `call_func_ptr_array` where the switch directly inlines operations rather than using the function pointer array properly.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are minimal and mostly auto-generated warnings (e.g., "WARNING: Removing unreachable block", "WARNING: Unknown calling convention"). No explanation of algorithm logic, no @param/@return documentation, no description of what each function does. The decompiler provides no semantic understanding aids.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms are identified or named. The state machine functions (`state_machine`, `fsm_func_table`) are decompiled as switch statements without recognizing the state machine pattern. Duff's device appears as a complex switch with goto labels rather than being identified as a known idiom.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies are flagged with warnings: "Could not recover jumptable at 0x00010e90. Too many branches", "Unresolved local var" annotations. However, these are generic warnings without specific guidance on what the anomaly means or how to handle it.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had no explicit contracts, but the decompiler could have inferred some (e.g., "requires: n > 0" for factorial functions) but provides nothing.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls within test functions are visible (e.g., `test_control_flow_l1` calls `sequential_ops(5, 7, 3)`), but there's no documentation of call relationships, global variable usage, or callback patterns. The relationship between `indirect_recursion_a` and `indirect_recursion_b` is not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in some logical order (initialization, then test functions, then helper functions), but there's no clear grouping or namespace structure. The original source's comment-based sections (CF-L1, CF-L2, CF-L3) are not reflected in the decompiled output organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would not compile as-is due to: `undefined4` type, unresolved references like `call_weak_fn`, `__gmon_start__`, missing standard library declarations (puts, printf), and "WARNING: Subroutine does not return" annotations. Significant patching would be required.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming is severely degraded with "Unresolved local var" annotations for most local variables, making code comprehension extremely difficult
+- No composite type recovery - all structs/arrays are flattened to raw pointer arithmetic with unresolved annotations
+- No struct field recovery - arrays like `matrix[3][4]` and `arr[5]` lose their semantic structure
+- Magic numbers throughout without explanation (0x3e9, 0x12, 0x65, etc.)
+- No comment content beyond auto-generated warnings - zero algorithm explanation or semantic documentation
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names are excellently preserved and match the original source almost perfectly, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The decompiler failed to recover variable names from debug symbols or infer them from usage patterns. Nearly all local variables are marked as "Unresolved local var @[???]", forcing analysts to manually track which variable serves which purpose.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Variables like `temp1`, `temp2`, `temp3` in sequential_ops should be named based on their role (e.g., `sum`, `doubled`, `result`) by analyzing data flow
+2. **Recover composite types**: Arrays like `int arr[5]` and `int matrix[3][4]` should be reconstructed with proper dimensions, not just pointer arithmetic
+3. **Add semantic comments**: Include basic explanation of what each function computes, especially for complex patterns like Duff's device, state machines, and recursive functions

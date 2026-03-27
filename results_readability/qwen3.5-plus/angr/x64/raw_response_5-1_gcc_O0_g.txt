@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (v0, v1, v2, ptr, result) with no semantic meaning. In `test_cpp_member_func()`, variables v0, v1, v2 should be r1, r2, r3 based on source. Even `this` pointers are unnamed.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions partially recovered (`test_cpp_member_func`, `test_cpp_virtual_func`), but many helper functions use generic names (sub_402020, sub_402030). C++ mangled names present but not demangled consistently.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation: 4294967295 (mask), offsets 40/32/16/8, 4096, 65535. String literals stored in globals (g_405040) without content visibility.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant runtime boilerplate (_init, _start, deregister_tm_clones, __do_global_dtors_aux). Many wrapper functions that just call other functions (sub_40202d → sub_402030). Stack check code adds noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Mostly natural at O0, but some goto patterns (LABEL_402e4a in test_cpp_rtti). Stack canary checks interrupt flow. Exception handling uses explicit __cxa_* calls instead of try/catch.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Excessive fragmentation from template instantiations. Many tiny wrapper functions (sub_40203f → sub_402040). C++ standard library internals exposed (std::_Tuple_impl, std::_Head_base).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but forward jumps in exception handling and RTTI code. Stack check epilogues create non-linear exits.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Template instantiations create duplicate code patterns. Multiple similar thunk functions for virtual dispatch. No dead code elimination visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mix of generic (unsigned long long, void*) and some C++ types (std::unique_ptr, Container<int>). Many function signatures use wrong parameter counts (getClassID has 6 unused parameters).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic field names (field_0, field_8, padding_4). Class vtable pointers visible but not identified as such. Object layouts partially correct.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (long long to pointer, void* conversions). Pointer arithmetic without bounds checking. Virtual calls use raw pointer dereferencing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled output. No algorithm explanations, no confidence indicators. Only one anomaly note ([D] Unsupported jumpkind).
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns visible (vtables, smart pointers, RTTI) but not identified. Virtual dispatch shown as raw pointer calls. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: One anomaly noted (Unsupported jumpkind Ijk_SigTRAP). Otherwise silent about unresolved calls, type ambiguities, or potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts not recovered. No null checks documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch partially recovered. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output file. No logical grouping by class or feature. Runtime functions mixed with application code.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies declared (__cxa_throw, operatornew, std::type_info) but would need stubs. Some type definitions incomplete.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (6+4+6+5)/4 = 5.25 × 0.25 = 1.3125
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.4875
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+
+Overall = 1.125 + 1.3125 + 0.866 + 0.4875 + 0.467 = 4.26/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable names completely generic** (v0, v1, v2, ptr) - should recover semantic names from usage context
+- **No comments recovered** - original source had extensive documentation, none preserved
+- **Runtime boilerplate not filtered** - _init, _start, tm_clones functions clutter output
+- **C++ constructs verbose** - std::_Tuple_impl, std::_Head_base exposed instead of simplified
+- **Magic numbers unexplained** - 4294967295, offsets 40/32/16 without context
+
+### Best Quality Aspect: **Control Flow Naturalness (6/10)**
+- At O0 optimization, basic block structure is preserved reasonably well with minimal restructuring
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Original source had extensive documentation; decompiler produced zero meaningful comments
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in return statements should be named r1, r2, r3)
+2. **Filter runtime boilerplate** automatically (_init, _start, tm_clones, stack check functions)
+3. **Recover C++ semantic constructs** - identify vtables, smart pointers, and exception handling as high-level patterns with explanatory comments

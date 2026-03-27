@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are entirely generic (`local_34`, `iVar1`, `puVar1`, `local_10`) with no semantic meaning. For example, `local_34` should be `name` based on the `strncpy` usage pattern, and `iVar1` in `test_cpp_template_func` should be `max_result`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names are preserved from source (`test_cpp_member_func`, `test_cpp_virtual_func`), and class methods show some structure (`Base::virtual_func`, `Derived::getName`). However, helper functions use generic names (`FUN_00101020`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers dominate (`0x125c`, `0x2a`, `0x47`, `0x28a`, `0x16`) representing expected return values but without explanation. String literals like `"Test"` are preserved but hex constants obscure intent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack canary checks (`__stack_chk_fail()`), frame pointer manipulation (`in_FS_OFFSET`), and explicit per-byte null initialization (30+ lines of `local_34[0x1e] = 0`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Many functions constant-folded to simple returns due to optimization. Actual logic functions show natural flow but end with stack canary checks disrupting readability.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but many are reduced to constant returns (`test_cpp_virtual_func` returns `0x2a` directly). Virtual thunk functions are properly separated but numerous.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but stack canary checks at function ends create artificial branching. No excessive goto usage observed.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy in array initialization (30+ individual null-byte assignments instead of `memset`). Each `local_34[n] = '\0'` line is redundant compiler artifact.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed type quality—`int`, `double` preserved in templates, but many `undefined4`, `undefined8`, `long` types. Pointer types often degraded to generic `void*` equivalents.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class structures not recovered—pointer arithmetic used instead of field access (`*(int *)(this + 8)` instead of `this->multiplier`). No struct definitions visible in output.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(undefined4 *)`, `(undefined8 **)`, `(long *)`). Virtual table access through `**(undefined8 **)param_1` is particularly dangerous-looking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Auto-generated warnings present ("WARNING: Unknown calling convention", "WARNING: Could not recover jumptable") but no semantic documentation explaining algorithm intent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Virtual thunks identified (`virtual thunk to MiddleA::func()`) but not explained. C++ patterns (vtable, RTTI) partially recognized but not named as design patterns.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning coverage for indirect calls, unreachable blocks, and calling convention issues. Messages like "Treating indirect jump as call" help identify decompiler uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Exception handling contracts completely lost (e.g., `test_cpp_exception` shows throw but no catch structure).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible through naming, but virtual dispatch relationships unclear. Inheritance hierarchy not documented in decompiled output.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. Related class methods scattered (Base/Derived methods not grouped together).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile standalone—missing type definitions, external dependencies (`__cxa_allocate_exception`, `operator_new`), and Ghidra-specific types (`undefined4`, `undefined8`).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (5+5+7+2)/4 = 4.75 × 0.15 = 0.71
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.67/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Constant folding eliminated actual logic** - Most test functions return pre-computed constants (`0x2a`, `0x47`, `0x28a`) instead of showing executable logic
+- **No class/struct recovery** - All object field access uses pointer arithmetic (`*(int *)(this + 8)`) instead of named fields
+- **Excessive noise from stack initialization** - 30+ lines of individual null-byte assignments instead of `memset`
+- **Generic variable naming** - `local_34`, `iVar1`, `puVar1` provide zero semantic information
+- **Type degradation** - `undefined4`, `undefined8` types instead of proper C++ types
+
+### Best Quality Aspect:
+- **Anomaly Indication (7/10)** - Ghidra provides clear warnings about decompiler uncertainty, indirect calls, and unreachable code blocks
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No exception handling contracts, preconditions, or postconditions recovered despite complex C++ exception semantics in source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover aggregate types from vtable layouts** - Use virtual function tables to reconstruct class structures with named fields instead of pointer arithmetic
+2. **Eliminate redundant initialization patterns** - Detect compiler-generated memset patterns and collapse individual byte assignments into single calls
+3. **Preserve optimization-aware semantics** - When constant folding occurs, add comments showing original computation (e.g., `// Optimized: 10 + 34 + 4660 = 4704`)

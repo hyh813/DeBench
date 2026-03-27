@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (e.g., `local_c`, `acStack_2c`, `puVar1`, `param_1`). In `test_cpp_member_func`, the `SimpleClass` object is flattened into stack variables rather than a named struct instance, obscuring the object-oriented nature of the code.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: The decompiler successfully demangles most C++ symbols, recovering names like `Base::virtual_func`, `Container<int>::push`, and `test_cpp_member_func`. However, some stubs like `FUN_0001092c` remain unnamed.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: The code is littered with magic numbers (e.g., `0x125c`, `0x2a`, `0x1f`) that correspond to calculated values or constants from the source but are presented here as raw hex without context. String literals like "Test" are recovered correctly.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise is present, including `__stack_chk_fail` calls, `CONCAT44` macros (ARM64 register concatenation artifacts), and `undefined` type padding, which impedes readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: While basic loops are preserved, high-level control flow structures like `try/catch` blocks in `test_cpp_exception` are completely lost, replaced by low-level calls to `__cxa_throw`. Virtual inheritance logic relies on complex pointer arithmetic (`this + *(int *)(*(int *)this + -0xc)`) rather than clear field access.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Class methods, constructors, and destructors are correctly separated into individual functions. The granularity matches the source well, with distinct functions for `Container<int>::push` vs `Container<double>::push`.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The code generally reads top-to-bottom. However, the inlining of logic (e.g., in `test_cpp_member_func`) and the flattening of objects make the execution path harder to follow compared to the original source's clear sequence of operations.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Given the `-O0` optimization level, the code is verbose but the decompiler manages to present it without excessive duplication. The main redundancy comes from the verbose stack handling required by unoptimized code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: While class pointers like `Base *` and `Derived *` are identified, many data types are generic (`undefined4`, `undefined8`). The distinction between `int` and `size_t` is sometimes lost or blurred in pointer arithmetic.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor. Class instances like `SimpleClass` and `Point` are flattened into individual local variables (e.g., `local_c`, `acStack_2c`) rather than being reconstructed as a cohesive structure with named fields.
+
+**11. Type Safety:** Score: 4/10  
+Justification: The code contains many unsafe casts and pointer arithmetic operations, particularly for `this` pointer adjustment in multiple inheritance (e.g., `return this + -8`). The use of `undefined` types further degrades the perception of safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are no comments explaining the logic, algorithms, or the purpose of complex C++ constructs like virtual inheritance or exception handling tables.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: High-level C++ idioms are reduced to low-level implementations. Virtual functions are shown as indirect vtable calls (`(***(code ***)param_1)()`), and templates are shown as mangled function names (`template_max_int_`) rather than generic concepts.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The decompiler does not explicitly flag the complex pointer arithmetic for virtual inheritance or the missing exception handling blocks as anomalies; it presents them as standard code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. For example, the bounds checking in `Container::get` is visible but not explicitly marked as a safety contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Calls to external library functions (e.g., `std::ios_base::Init::Init`) are visible. However, the relationship between a class and its virtual methods is obscured by the lack of vtable structure visualization.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are listed, but they are not grouped by class or logical module in the output. The user must infer the class structure from the function names (e.g., `Base::`, `Derived::`).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code relies heavily on `undefined` types and compiler-specific macros (`CONCAT44`), making it non-compilable without significant manual intervention to define the missing structures and fix types.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- **Object Flattening**: Class instances (e.g., `SimpleClass`) are decomposed into generic stack variables (`local_c`, `acStack_2c`), destroying the object-oriented structure.
+- **Lost Control Flow**: High-level `try/catch` blocks are missing, replaced by low-level runtime calls (`__cxa_throw`), making exception handling logic invisible.
+- **Magic Numbers**: Calculated results and constants appear as raw hex (e.g., `0x125c`) without semantic context.
+- **Pointer Arithmetic**: Complex `this` pointer adjustments for multiple/virtual inheritance are exposed as raw math (`this + -8`) rather than implicit compiler handling.
+- **Type Erasure**: Widespread use of `undefined4` and `undefined8` obscures data types.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 8/10)  
+- The decompiler successfully demangles C++ symbols, accurately recovering class names, method names, and template instantiations (e.g., `Container<int>::push`).
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 3/10)  
+- The failure to reconstruct class structures from stack variables is the single biggest barrier to understanding, as it turns OOP code into a flat list of variables.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Stack Object Reconstruction**: Analyze constructor/destructor calls and member access patterns to re-aggregate stack variables into struct instances.
+2. **Exception Handling Recovery**: Identify LSDA (Language-Specific Data Area) tables and personality routine calls to reconstruct `try/catch` blocks in the control flow graph.
+3. **Virtual Inheritance Visualization**: Abstract the complex `this` pointer adjustment arithmetic into implicit casts or comments explaining the offset logic.

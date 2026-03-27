@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `param_1`, `param_2`, and local variables use cryptic names like `iVar1`, `iVar2`, `puVar3`. The original source had meaningful names like `x`, `c`, `arr`, `n`, `p`. This is a severe degradation making it difficult to track variable purposes.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most functions correctly recovered: `process_char`, `process_short`, `process_int`, `test_data_types_l1`, `test_array_types`. Only two helper functions have generic names (`FUN_0001123f`, `FUN_0001125c` for float/double). The verb-based naming is appropriate.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions use hardcoded expected values (e.g., `0x61` for 'a', `0xb` for 11) instead of calling actual functions. Magic numbers like `0x2c`, `0x1b8`, `0x14` for array offsets are unexplained. The literal quality is poor with many unexplained values.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Contains Ghidra WARNING comments about inlined functions and removed unreachable blocks. However, the actual logic functions are clean without register spilling artifacts or redundant casts. The noise is minimal in the core decompiled logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops are well-recovered using do-while constructs (e.g., `array_1d_stack` uses `do { ... } while (param_2 != iVar2)`). The control flow matches the original for loops at -O0. Conditional expressions are clear and natural.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each small function from the original is properly decomposed (process_char, process_short, etc.). Test functions are separate. Function granularity is appropriate with clear single responsibilities. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in functions like `array_1d_stack` and `array_vla`. No computed jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Logic functions are clean without dead code. Test functions show inlining artifacts (hardcoded values) which is expected. No obvious duplicate expressions in the recovered functions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types recovered well: `short` for process_short, `bool` for process_bool, `longdouble` for process_ld, `ushort` for bitfields. However, function pointers use generic `code *` instead of proper signatures. Some float/double functions have weird `undefined4` parameters.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct fields accessed via array indexing (param_1[0], param_1[1], param_1[2]) which is Ghidra's standard representation. Linked list and binary tree traversals correctly use pointer arithmetic. Union handling treats it as float* with type casting - not ideal but functional.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Pointer arithmetic used correctly for arrays. Some unsafe casts in union handling (treating union as float*). Function pointers use generic `code *` type. No obvious buffer overflow patterns. Minor issues that don't cause danger.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only file header comments and WARNING messages present. No algorithm explanation, API contracts (@param, @return), or semantic documentation. The comments are decompilation metadata rather than useful documentation for understanding the code.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Data structure patterns (linked list, binary tree, graph) are recognizable through code structure (pointer traversal). However, no explicit naming of design patterns or algorithms. The patterns can be inferred but aren't highlighted.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: WARNING comments indicate some anomalies (inlined functions, removed unreachable blocks, type propagation not settling). However, these are Ghidra internal warnings rather than semantic anomalies like indirect calls that couldn't be resolved or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication of error conditions or validation requirements. The contracts from the original source are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls within each function are clear. No documentation of caller/callee relationships or global variable usage. Relationships between functions must be inferred from the code structure.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions grouped logically: data type functions, array functions, pointer functions, composite type functions, then test functions. This matches the source organization well. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Standard library dependencies (puts, printf) are implicit. Logic functions should compile with minimal issues. Test functions have complex local variable declarations that might need adjustment. Overall should be compilable with standard C library.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- Variable naming uses generic names (`param_1`, `iVar1`, `puVar3`) severely obscuring semantic purpose
+- Literal values in test functions are hardcoded expected results rather than function calls, losing semantic meaning
+- No comments explaining algorithms, contracts, or non-obvious logic
+- Function pointers use generic `code *` type instead of proper function signatures
+- Magic numbers for array offsets (0x2c, 0x1b8, 0x14) unexplained
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+- Loop constructs properly recovered as do-while loops matching original for loops
+- Conditional expressions are clear and idiomatic
+- At -O0, the control flow closely matches the source structure
+
+### Most Needs Improvement: Variable Naming Quality (3/10)
+- Generic parameter names (`param_1`, `param_2`) and local variable names (`iVar1`, `iVar2`) completely obscure the semantic purpose that was clear in the original source (`x`, `c`, `arr`, `n`, `p`)
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: Analyze how parameters are used (e.g., `param_1` used in array indexing → `arr`, `param_2` used as loop bound → `n`) to generate semantically meaningful names
+2. **Recover literal meanings**: Detect magic numbers in test functions and recognize they should be function calls with expected return values; explain offset constants like `0x2c` as struct member offsets
+3. **Add semantic comments**: Include algorithm explanations, preconditions/postconditions, and identify design patterns (linked list traversal, binary tree recursion, etc.) to aid understanding

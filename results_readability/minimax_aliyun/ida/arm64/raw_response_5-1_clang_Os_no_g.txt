@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `a1`, `a2`, `result`, `exception`). The original source uses meaningful names like `obj`, `r1`, `r2`, `capture_by_value`, `capture_by_ref`, but the decompiled version lost all this semantic information.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions are properly demangled (`test_cpp_member_func`, `call_virtual_func`, `Container<int>::push`), but others remain cryptic (`sub_D60`, `init_proc`, `frame_dummy`). The mangled names like `_Z20test_cpp_member_funcv` are partially readable but inconsistent.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Return values like `42`, `71`, `650` are correct but unexplained. The formula `1001 * LifecycleClass::instance_count + 21` is actually well-recovered showing the computation. However, magic numbers like `130`, `200`, `14` in the RTTI function lack context.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. The `__fastcall`, `__noreturn` annotations and `// attributes: thunk` comments are appropriate. No obvious register spilling or debug instrumentation clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions are simple return statements with straightforward logic. The RTTI function has clean if-else chains. The exception function properly shows `__noreturn`. At -O0, control flow should be nearly source-equivalent.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The decompiler preserved the original function granularity - each test function remains separate. Template instantiations are properly separated (`template_max<int>`, `template_max<double>`). No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal jumps. Early returns are used appropriately. No forward jumps into loop bodies or computed goto disruption.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. At -O0, there should be no loop unrolling or common subexpression elimination, and indeed none appears.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses Windows-style types (`_BYTE`, `_DWORD`, `_QWORD`) instead of standard C++ types. Function parameters like `__int64 (__fastcall ***a1)(_QWORD)` for `Base*` are overly complex. Template functions correctly show `double` return type.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Classes like `Container<int>` and `Container<double>` are properly recovered with template parameters. Static member `LifecycleClass::instance_count` is accessed correctly. However, internal struct layouts use raw offsets like `result + 40` instead of named fields.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe pointer arithmetic: `*(_DWORD *)(result + 40)` for size field, `*(double *)(a1 + 8LL * a2)` for array access. The vtable handling in `call_virtual_func` uses `__int64 (__fastcall ***a1)(_QWORD)` which is overly complex. No buffer-overflow-prone patterns are severe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Function headers like `/* Function: test_cpp_member_func @ 0x1014 */` are helpful. The `// attributes: thunk` comment is useful. However, no explanatory comments within functions about algorithm intent or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Virtual function calls through vtables are recognizable (`**a1)(a1)`). Exception throwing pattern is clear (`__cxa_throw`). Template instantiation pattern is identified. However, no explicit naming of design patterns.
+
+**14. Anomaly Indication:** Score: 8/10  
+Justification: The decompiler explicitly marks 20 functions as `/* FAILED to decompile: puts @ 0x12130 */`. This transparency about limitations is excellent and helps analysts know what needs manual investigation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source has no explicit assertions, but the decompiler could infer some (e.g., `Container::get` bounds checking).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function headers show addresses but not caller/callee relationships. The `test_cpp_oo_features` function clearly calls other test functions, but this isn't explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions dumped in single file with arbitrary ordering. No logical grouping matching the original source sections (CPP-L3-01, CPP-L3-02, etc.). Static functions not clearly distinguished.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code uses standard library functions (`strlen`, `printf`, `operator new`) but these are not declared. The `__cxa_*` exception functions require libstdc++. Would need moderate patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v1`, `v2`, `a1`, `result`) losing all semantic meaning from original source
+- Composite type fields accessed via raw offsets (`result + 40`, `a1 + 8LL * a2`) instead of named fields
+- Function `call_virtual_func` uses overly complex type `__int64 (__fastcall ***a1)(_QWORD)` instead of `Base*`
+- No explanatory comments within functions about algorithm intent
+- No pre/postcondition documentation for functions with constraints (e.g., Container::get bounds)
+
+**Best Quality Aspect:** Noise Reduction (scored 8/10)  
+The decompiled code is relatively clean without obvious compiler artifacts, register spilling, or debug instrumentation cluttering the output.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The decompiler failed to infer meaningful variable names from usage patterns. Original source names like `capture_by_value`, `capture_by_ref`, `obj`, `r1`, `data`, `size` were completely lost.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: `v2` used as counter in `Container::push` should be named `size` or `count` based on `*(_DWORD *)(result + 40)` pattern
+2. **Recover struct field names**: Instead of `result + 40`, recognize this as `this->size` based on the original class layout
+3. **Simplify function pointer types**: `call_virtual_func` parameter should be `Base*` not `__int64 (__fastcall ***)(_QWORD)` - the triple indirection obscures the vtable call pattern

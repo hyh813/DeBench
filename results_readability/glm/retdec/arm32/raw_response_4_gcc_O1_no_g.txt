@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, and `a2`, providing no semantic context (e.g., `sum` or `count` in `varargs_func`). Despite `-g` compilation flags, debug symbols for variable names were not utilized.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: High-level test functions like `test_calling_conventions` and `varargs_func` retain their original names, which is helpful. However, many smaller helper functions (e.g., `cdecl_func`, `stdcall_func`) are missing, likely inlined, reducing the API's clarity.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals are extracted to global variables (`g1`, `g2`), but their definitions contain raw hex-encoded UTF-8 bytes rather than readable strings. Magic numbers like `15`, `50`, and `6` appear directly in `test_calling_conventions` without explanation, representing constant-folded results.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains significant noise, including stack offset comments (`bp-12`, `bp-272`), redundant casts like `(int32_t)a1`, and compiler instrumentation calls like `__stack_chk_fail` which interrupt the reading flow.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Basic loops are recovered as `while` loops, but the logic inside is often obscured by pointer arithmetic (e.g., `v2 += 4` in `varargs_func`). The flow is readable but lacks the idiomatic `for` loops used in the source.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: The decompiler failed to maintain the original modularity; logic from functions like `func_struct_byval` is inlined directly into `test_calling_conventions`, creating a monolithic function that mixes setup, testing, and logic.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but forward jumps and complex pointer manipulation in functions like `param_ptr_array` disrupt the linear flow, requiring the reader to track pointer offsets manually.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: There is no obvious dead code, but the decompiler introduces redundancy through explicit type casts and stack pointer manipulations that are artifacts of the compilation process rather than the source logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Primitive types are generally correct (`int32_t`, `char**`), but higher-level semantics are lost. For example, `int32_t * a1` in `param_double_ptr` should be `int **`, and `int32_t * a1` in `param_ptr_array` should be `char *[]`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery is a major failure. `LargeStruct` and `SmallStruct` are not reconstructed; instead, their usage is represented by raw stack variables (`v1`, `v2`) and `memcpy` calls, completely obscuring the data structure semantics.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains unsafe pointer arithmetic, such as `(int32_t)a1 - 4` in `param_ptr_array` and casting `int32_t*` to `void*` and back, which mimics the assembly but loses the type safety guarantees of the original C code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to memory addresses (e.g., `// Address range: 0x10564 - 0x1056c`) and stack offsets. There are no comments explaining the logic, algorithms, or the purpose of the complex pointer manipulations.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard C idioms are missed. The `va_list` pattern in `varargs_func` is not recognized; instead, it is decompiled as a fixed-argument function with manual stack walking. Struct passing idioms are also unrecognized.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag potential issues. For instance, in `param_func_ptr`, the indirect function call is completely missing (replaced by `a2 + 10`), yet there is no warning or indication of this anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the check `if (a1 == NULL)` in `param_double_ptr` is present but not documented as a contract requirement.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are generally clear, and global variables are referenced by name. However, the inlining of helper functions obscures the call graph, making it hard to see the relationships between the test functions and their implementation.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions and global variables. There is no logical grouping or separation between the different test categories (calling conventions, parameter passing, return values) that existed in the source.
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code includes necessary headers and function prototypes. While it uses `__printf_chk` instead of standard `printf`, it is close to being compilable with minimal stubs or macro definitions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 5.25
+L2_avg: 5.50
+L3_avg: 4.00
+L4_avg: 2.00
+L5_avg: 6.00
+
+Overall = (5.25 × 0.30) + (5.50 × 0.25) + (4.00 × 0.20) + 
+          (2.00 × 0.15) + (6.00 × 0.10)
+        = 1.575 + 1.375 + 0.8 + 0.3 + 0.6
+        = 4.65
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects (Bullet List)
+- **Composite Type Loss**: `LargeStruct` and `SmallStruct` are completely unrecovered, replaced by raw memory operations (`memcpy`, stack offsets).
+- **Varargs Mishandling**: `varargs_func` is decompiled as a fixed-argument function (`int32_t a1...a4`) using manual pointer arithmetic instead of `va_list`.
+- **Function Pointer Erasure**: The indirect call in `param_func_ptr` is missing; the logic is incorrectly simplified to `return a2 + 10`.
+- **Debug Info Ignored**: Despite compilation with `-g`, variable names are generic (`v1`, `a1`) rather than source names (`sum`, `count`).
+- **Aggressive Inlining**: Helper functions like `cdecl_func` are inlined into `test_calling_conventions`, destroying the modular structure of the test suite.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (7/10)
+- **Why?** The decompiler successfully preserved the names of the high-level test functions (`test_calling_conventions`, `test_parameter_passing`), which provides at least a basic roadmap of the binary's functionality.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Composite Type Recovery (2/10)
+- **Why?** The complete failure to recover `LargeStruct` and `SmallStruct` turns structured data operations into incomprehensible pointer manipulation, making it impossible to understand the data layout without referencing the original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhance Struct Recovery**: Implement algorithms to detect stack-based struct initialization patterns and aggregate member accesses to reconstruct `struct` definitions.
+2.  **Improve Varargs Handling**: Recognize standard `va_start`/`va_arg` prologues and epilogues to generate `...` function signatures and `va_list` usage instead of fixed-argument approximations.
+3.  **Utilize Debug Information**: When available (e.g., DWARF info from `-g`), prioritize mapping variable names and types from debug symbols over generic synthesized names.

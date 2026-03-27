@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `iVar1`, `uVar2`, `lVar1` instead of semantic names (`temp1`, `sum`, `count`, `result`). Multiple "Unresolved local var" comments indicate failed name recovery (e.g., `sequential_ops` shows all three temp variables as unresolved).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved original names (`sequential_ops`, `single_if`, `nested_if_deep`), but runtime functions use generic names (`FUN_00100880`, `FUN_001009fc`). Helper functions like `double_value`, `op_add` retained meaningful names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (`0x3e9`, `0x65`, `0x12`, `0x12345678`). Test functions show hardcoded expected values (e.g., `printf("CF-L1-01...%d\n",0x15)`) instead of actual function calls, obscuring test logic.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple compiler artifacts present: "Unresolved local var" comments throughout, "WARNING: Removing unreachable block" warnings, runtime initialization functions (`_init`, `__do_global_dtors_aux`) mixed with test code, excessive type casts (`(ulong)`, `(uint)`, `(int)`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Original conditionals transformed to arithmetic: `single_if` uses `x << (0 < x)` instead of if-statement, `if_else` uses `(int)(0 < x)`. Loops converted to formulas (`loop_for_fixed` returns closed-form expression). `switch_fallthrough` recovered as nested if-statements rather than switch with fallthrough.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable granularity and single responsibility. Helper functions (`double_value`, `triple_value`, `op_add`) properly separated. Test functions are large but cohesive with printf sequences.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. `loop_break` uses goto for early exit (`goto LAB_00100c7c`). `duffs_device` uses multiple goto labels for fallthrough cases (`switchD_00101024_caseD_7`), disrupting linear flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Aggressive optimization creates formula substitutions that obscure original loop intent (`loop_nested` returns `n * m` directly). Some redundant intermediate variables remain (`iVar1`, `iVar2` chains). Test functions duplicate expected values instead of computing them.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic integer types preserved but with generic `int` instead of `int32_t`. Function pointer types partially recovered (`_func_int_int*`). Pointer/array distinction lost (arrays shown as pointers). Signed/unsigned mixing visible (`(uint)x`, `(ulong)(n-1)`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays noted but not properly typed: "Unresolved local var: int[3][4] matrix@[???]", "Unresolved local var: int[5] arr@[???]". Function pointer arrays partially recovered with `PTR_*` symbols. No struct recovery visible in this codebase.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Frequent unsafe casts throughout (`(ulong)`, `(uint)`, `(int)`, `(long)`). Function pointer calls use generic `code*` type. Pointer arithmetic visible in array access (`(&DAT_001018d8)[lVar1]`). No buffer overflow protections visible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are auto-generated warnings ("WARNING: Subroutine does not return", "Unresolved local var") rather than semantic documentation. No algorithm explanations, no @param/@return documentation. Original source had extensive Chinese/English comments explaining each function's purpose.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: `duffs_device` switch fallthrough pattern partially recognized with case labels. Loop patterns identified but transformed to formulas. State machine patterns (`state_machine`, `fsm_func_table`) not explicitly identified as state machines. No design pattern documentation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "Unresolved local var" comments indicate decompilation uncertainty. "WARNING: Removing unreachable block" shows analysis decisions. `longjmp` calls marked with "WARNING: Subroutine does not return". However, optimization transformations not flagged as potential semantic changes.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation recovered. No error condition documentation. Test functions show expected values but not as formal contracts. Original source had test validation comments (e.g., "输入5,7,3应返回21") completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no call graph documentation. Global variables referenced as `DAT_*`, `PTR_*` symbols without semantic meaning. Callback relationships visible through function pointer types but not explicitly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 74 functions in single output with no logical grouping. Runtime functions (`_init`, `_start`, `_fini`) mixed with test functions. Original source had clear section comments ("基础控制流特征", "高级控制流特征", "极端控制流特征") completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code references undefined external symbols (`__libc_start_main`, `__gmon_start__`, `DAT_*`, `PTR_*`). Test functions have hardcoded expected values instead of actual function calls, making verification impossible. Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (5+7+6+6)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (6+5+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (4+5+6+3)/4 = 4.50 × 0.15 = 0.675
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.25/10
+```
+
+**Overall Readability Score:** 5.25/10
+
+### Critical Defects:
+- **Variable names completely generic**: `iVar1`, `uVar2`, `lVar1` instead of `temp1`, `sum`, `count`, `result` - requires manual reverse engineering to understand purpose
+- **Control flow transformed to arithmetic**: `single_if` uses `x << (0 < x)` instead of clear if-statement, obscuring original conditional logic
+- **Test functions non-functional**: Hardcoded expected values (e.g., `printf("CF-L1-01...%d\n",0x15)`) instead of actual function calls, preventing verification
+- **Original documentation lost**: All Chinese/English comments explaining function purpose, test cases, and difficulty levels completely absent
+- **Section organization lost**: Three clear source sections (L1/L2/L3 control flow features) merged into single undifferentiated output
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core test function names preserved accurately (`sequential_ops`, `nested_if_deep`, `duffs_device`), allowing immediate identification of test purposes
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - Zero precondition/postcondition documentation recovered; original test validation comments completely lost, making it impossible to verify correctness without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming**: Analyze variable usage patterns to infer meaningful names (e.g., accumulator variables → `sum`, loop counters → `i`/`count`, temporary results → `temp1`)
+2. **Preserve control flow structure at -O0**: When debug symbols indicate no optimization, avoid transforming conditionals to arithmetic expressions and loops to closed-form formulas
+3. **Recover and preserve source comments**: Extract and include original source comments from debug information, especially test case documentation and function purpose descriptions

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `result` throughout. For example, in `loop_continue`: `int v1; // r2` and `int v2; // r1` obscure their roles as loop counter and accumulator. The decompiler makes no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match original source exactly (sequential_ops, single_if, if_else, nested_if_2, loop_for_fixed). However, some internal functions like `sub_4DC` and `init_proc` use generic naming. The test functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xA` (10), `0x65` (101), `0x12` (18) appear without explanation. Some expressions like `10 * x + 10` are self-evident, but constants like the array indices in `switch_small` (`dword_1E2C[op]`) lack context.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Register annotations (`// r0`, `// r1`) are present but non-intrusive. No redundant casts or debug instrumentation observed. The output is relatively clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use do-while constructs, conditionals are clear. However, `loop_for_fixed` is converted to a complex arithmetic expression: `((n-1)*(n-2)/2) + n - 1` which obscures the original loop semantics. At -O0 this transformation is unnecessary.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions maintain appropriate granularity matching the original source. Each function has a single responsibility. No monolithic functions or over-fragmentation observed. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `multi_return`. No excessive forward jumps. The flow is mostly linear and easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Some loop unrolling in `loop_for_fixed` but it's recognized as a formula rather than unrolled code. Clean representation overall.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most parameters correctly typed as `int`. Function pointer types are properly preserved (e.g., `int (*f)(int)`). However, `volatile` qualifier is lost in `infinite_loop(volatile int *flag)` - shown as just `int *flag`. Some signed/unsigned distinctions unclear.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct/union recovery. Arrays are accessed via pointer arithmetic (e.g., `*arr++` in `process_with_callback`). The matrix in `loop_multi_exit` is accessed via `dword_1E6C[v1] + dword_1E3C[v1]` - losing all structural information.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe. Function pointers properly cast. No obvious unsafe casts. Minor issue: some pointer arithmetic in array access but nothing dangerous.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only register annotations (`// r0`, `// r1`) present. No algorithm explanations, no decompilation confidence indicators, no @param/@return documentation. The comment "positive sp value has been detected" in `_start` is auto-generated noise.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly present - `switch_large` uses jump table pattern (array lookup), `state_machine` shows state transition logic. However, no explicit pattern naming or documentation. The computed goto in `computed_goto` is reduced to a switch statement, losing the idiom.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The output correctly identifies 9 functions that failed to decompile (`__imp_raise`, `__imp___libc_start_main`, etc.). However, no warnings about suspicious patterns in successfully decompiled functions. The `duffs_device` shows inline assembly `__asm { ADD PC, LR, R3 }` but no explanation of the anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. No documentation of error handling expectations. The `duffs_device` function returns -1 for invalid input but this contract is not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function names allow inference of relationships (test functions call implementation functions). However, no explicit documentation of who calls whom, no global variable usage transparency. The callback relationships in `process_with_callback` are implicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (test functions together, implementation functions together). However, it's a single monolithic output file. Static functions like `double_value`, `triple_value` are properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The metadata shows "Compilation Result: Yes", indicating it compiles. External dependencies (libc functions) are called but not explicitly documented. No compiler-specific hacks observed.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v1`, `v2`, `result`) throughout, making semantic tracking difficult
+- `loop_for_fixed` converted to arithmetic formula at -O0, losing loop semantics entirely
+- No struct/union recovery - all composite types lost to raw pointer arithmetic
+- Comments almost entirely absent except register annotations
+- `volatile` qualifier lost in function parameters
+
+**Best Quality Aspect:** Function Decomposition (scored 9/10)  
+Functions maintain proper granularity matching the original source with clear single responsibilities.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+Generic variable names like `v1`, `v2`, `v3` throughout make code comprehension extremely difficult. The decompiler should infer names from usage patterns.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `v1` used as loop counter should be named `i` or `counter`)
+2. Preserve loop constructs at -O0 instead of converting to arithmetic expressions
+3. Add minimal comments explaining algorithm intent and any decompilation uncertainties

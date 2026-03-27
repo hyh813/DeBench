@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (`param_1`, `iVar1`, `local_50`, `uVar1`). No semantic names like `count`, `sum`, or `seed` were recovered, forcing the reader to track usage manually.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: User-defined function names like `cdecl_func` and `test_calling_conventions` are preserved well. However, standard library calls like `printf` are obfuscated as `FUN_000110e0`, and some utility functions are generic (`FUN_00011030`).
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals are referenced by address (e.g., `&DAT_00012008`) rather than inline strings, obscuring context. Integer constants are often hex (e.g., `0xf` instead of `15`), which is acceptable but less readable than decimal for simple counters.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is mostly clean of register spilling artifacts. However, stack canary checks (`in_GS_OFFSET`) are present in the decompiled logic, adding minor noise to the function prologues/epilogues.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Loops are generally recovered as `do-while` or `for` structures that match the source intent. The flow is linear and easy to follow, with no spaghetti code or excessive `goto` usage.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source perfectly. There is no inlining or outlining of code blocks; each function in the source corresponds to a distinct function in the decompiled output.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads top-to-bottom effectively. There are minor disruptions due to stack variable initialization blocks, but overall execution flow is easy to trace.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: No dead code or obvious redundancy was introduced by the decompiler. The compiler's constant propagation (e.g., `call_cdecl` returning `0xf`) is preserved accurately without unnecessary artifacts.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Significant type information is lost. The `long long` parameter in `func_mixed_args` is split into two `undefined4` variables (`param_4`, `param_5`) rather than a 64-bit integer. Function signatures for struct returns use `void` with hidden pointers instead of the struct type.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are almost entirely lost in function signatures. `func_struct_byval` is decompiled as `void func_struct_byval(void)`, completely missing the `LargeStruct` parameter. `ret_small_struct` uses a raw pointer (`undefined4 *`) instead of a struct definition.
+
+**11. Type Safety:** Score: 5/10
+Justification: Necessary casts for pointer arithmetic are present (e.g., `**(char **)(param_1 + iVar1 * 4)`), but the reliance on `undefined4` and `undefined8` types removes safety guarantees and makes the code prone to misinterpretation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex logic, such as the manual stack walking in `varargs_func`, is left unexplained.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler failed to recognize the `varargs` idiom in `varargs_func`, presenting it as a function taking a single `int` and manually accessing stack offsets. Struct return (SRET) is not explicitly labeled.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No warnings are provided for suspicious or failed recoveries. For instance, the completely empty body logic in `func_struct_byval` (compared to the source) is presented confidently without any "UNCERTAIN" markers.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement that `param_1` in `param_double_ptr` be a valid pointer is not stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Calls to `printf` are opaque (`FUN_000110e0`), hiding the relationship to standard I/O. Calls to user functions are clear, but the context of library usage is lost.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a logical order that roughly follows the source, but the lack of grouping (e.g., separating calling convention tests from parameter passing tests) makes the module structure flat.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on undefined types (`undefined4`, `undefined8`) and missing external function declarations (`FUN_000110e0`), requiring significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 7 + 6 + 7) / 4 = 6.0
+L2_avg = (8 + 8 + 7 + 8) / 4 = 7.75
+L3_avg = (4 + 2 + 5) / 3 = 3.67
+L4_avg = (1 + 3 + 2 + 1) / 4 = 1.75
+L5_avg = (5 + 6 + 4) / 3 = 5.0
+
+Overall = (6.0 × 0.30) + (7.75 × 0.25) + (3.67 × 0.20) + 
+          (1.75 × 0.15) + (5.0 × 0.10)
+Overall = 1.8 + 1.9375 + 0.734 + 0.2625 + 0.5
+Overall = 5.234
+```
+
+### Overall Readability Score: **5.2/10**
+
+### Critical Defects
+- **Struct Parameter Loss**: `func_struct_byval` is decompiled as `void func_struct_byval(void)`, completely dropping the 128-byte struct parameter and the loop body logic, rendering the function unreadable.
+- **Varargs Obliteration**: The `varargs_func` signature is reduced to `(int)`, and the `va_list` logic is replaced by raw stack offset access (`*(int *)(&stack0x00000008 + iVar1 * 4)`), obscuring the variable argument intent.
+- **64-bit Type Splitting**: The `long long` parameter in `func_mixed_args` is split into two `undefined4` variables (`param_4`, `param_5`) rather than being reconstructed as a 64-bit integer.
+- **Opaque Library Calls**: Standard library functions like `printf` are renamed to generic addresses (`FUN_000110e0`), removing context for I/O operations.
+- **Missing Struct Definitions**: Return types for structs (e.g., `ret_small_struct`) use raw pointers (`undefined4 *`) instead of defining the `SmallStruct` type, hiding the data structure semantics.
+
+### Best Quality Aspect
+- **Control Flow Naturalness (Score: 8/10)**
+- **Why?** Despite type issues, the decompiler accurately reconstructed loops and conditionals, making the execution path easy to follow.
+
+### Most Needs Improvement
+- **Composite Type Recovery (Score: 2/10)**
+- **Why?** The complete failure to recover struct definitions in function signatures (both for parameters and return values) significantly degrades semantic understanding.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Large Struct Parameter Recovery**: Enhance the analysis of stack frames to identify large structure-by-value arguments (like `LargeStruct`) instead of dropping them or treating the function as `void`.
+2.  **Reconstruct 64-bit Integers**: Automatically detect and merge adjacent 32-bit parameters/variables that represent 64-bit integers (e.g., `long long`) on 32-bit architectures.
+3.  **Varargs Signature Recovery**: Utilize debug information (if available, as implied by `-O0 -g`) or heuristic analysis to restore `...` in function signatures instead of defaulting to manual stack access.

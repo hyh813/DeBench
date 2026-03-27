@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Almost all local variables use generic IDA-style names (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`, `v13`, `v14`, `v15`, `v16`, `v17`, `v18`, `v19`, `v20`, `v21`, `v22`, `v23`). Only loop indices like `i`, `j`, `k`, `n`, `m` and function parameters retain meaningful names. This severely obscures variable purpose.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All 50 functions have exact matches to source names: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `ptr_double`, `struct_simple`, `linked_list`, `binary_tree_sum`, `graph_traverse`, etc. The decompiler perfectly recovered function names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions contain hardcoded results (e.g., `printf("DT-L1-01 (process_char): %c\n", 97)` instead of calling the function). Many unresolved references: `s`, `asc_25E0`, `asc_25FB`, `asc_2616`, `off_3DE0`, `xmmword_2640`, `dword_2680`. Enum values `STATE_IDLE`, `STATE_RUNNING`, etc. referenced but not defined. Magic numbers throughout.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Relatively clean output. Minor noise includes unused parameters `a1` in `process_float` and `process_double`, and `__int64` for `long long` (architecture-appropriate). No debug artifacts or register spilling visible. Test functions compute at compile time which is acceptable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with `do-while` loops, clear conditionals, and no spurious goto statements. However, `array_2d_stack` uses unusual indexing pattern (`v1 += 11`) due to optimization. At O1, some restructuring is expected but could be cleaner.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity (mostly 10-30 lines). The largest is `test_array_types` at ~80 lines. Static helper functions like `complex_callback` properly inlined. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns for boundary checks (`if (n <= 0) return 0;`) used appropriately. Some forward jumps in complex functions like `test_array_types` but manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling present in `array_2d_stack` (manual 10 iterations) and `array_3d` (nested loops). Not commented as optimization artifacts. Test functions compute results at compile time which is a form of constant folding but expected at -O1.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types correctly identified: `char`, `short`, `int`, `long`, `float`, `double`, `long double`, `bool`. Pointers accurate. `const` preserved. `long long` shown as `__int64` (architecture-appropriate). Function pointer signatures partially recovered but could be more explicit (e.g., `int (*f)(int*, char**)` in `ptr_func_complex`).
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: Excellent struct/union recovery. All types perfectly reconstructed: `Point3D` (x, y, z), `Rect` (position, size), `Widget`, `Node` (data, next), `Flags` (bitfields), `UnionData`, `State` (enum), `Device`, `DNode`, `TreeNode`, `Edge`, `Graph`. Field names match source exactly.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Minor issues: `ptr_diff` casts to `char*` before subtraction then shifts by 2 (unusual but correct). `struct_bitfields` uses direct bit manipulation which is low-level but accurate. No obvious undefined behavior patterns.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only standard IDA header comment present. No algorithm explanations, no preconditions/postconditions, no decompilation confidence indicators. The test functions have hardcoded results rather than actual function calls, which is misleading.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable: linked list traversal (`while (head) { ... head = head->next }`), binary tree recursion, graph adjacency list traversal. However, no explicit naming or comments identifying these as common patterns.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed functions marked with "FAILED to decompile" (5 functions). However, no uncertainty indicators in successfully decompiled functions. No flags for potential undefined behavior (e.g., `array_oob` has intentional out-of-bounds access).
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information recovered. No preconditions (e.g., "requires: n > 0"), no postconditions, no invariant documentation. The decompiler provides no semantic contract information.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 1/10  
+Justification: No cross-reference information in the decompiled output. No documentation of which functions call which, no global variable usage transparency, no callback relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed in address order (0x1150, 0x1160, etc.) rather than logically grouped. Original source had clear sections: Data Types, Array Types, Pointer Types, Composite Types. This organization is lost. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile as-is. Multiple undefined symbols: `s`, `asc_25E0`, `asc_25FB`, `asc_2616`, `off_3DE0`, `xmmword_2640`, `dword_2680`, `xmmword_2658`, `xmmword_2670`. Enum values `STATE_IDLE`, `STATE_RUNNING`, `STATE_PAUSED`, `STATE_STOPPED` used but not defined. Test functions use hardcoded values instead of function calls.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 4 + 8) / 4 = 6.25
+L2_avg = (7 + 8 + 7 + 6) / 4 = 7.00
+L3_avg = (7 + 10 + 7) / 3 = 8.00
+L4_avg = (2 + 5 + 6 + 1) / 4 = 3.50
+L5_avg = (1 + 5 + 3) / 3 = 3.00
+
+Overall = (6.25 × 0.30) + (7.00 × 0.25) + (8.00 × 0.20) + (3.50 × 0.15) + (3.00 × 0.10)
+        = 1.875 + 1.75 + 1.60 + 0.525 + 0.30
+        = 6.05/10
+```
+
+**Overall Readability Score:** 6.05/10
+
+### Critical Defects (Bullet List)
+- Variable naming uses generic `v0`-`v23` pattern, completely obscuring semantic purpose of local variables
+- Test functions (`test_data_types_l1`, `test_array_types`, etc.) contain hardcoded results instead of actual function calls, making them non-functional
+- Multiple unresolved symbols (`asc_25E0`, `xmmword_2640`, `dword_2680`, etc.) prevent compilation
+- Enum values `STATE_IDLE`, `STATE_RUNNING`, `STATE_PAUSED`, `STATE_STOPPED` used but never defined
+- No comments explaining algorithms, preconditions, or decompilation confidence
+- No cross-reference information between functions
+
+### Best Quality Aspect (Single Dimension)
+- **Composite Type Recovery (10/10)** - All struct/union types perfectly reconstructed with accurate field names matching source exactly
+
+### Most Needs Improvement (Single Dimension)
+- **Cross-Reference Clarity (1/10)** - Complete isolation with no relationship information between functions; should document call graphs and global usage
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Instead of `v0`, `v1`, `v2`, analyze how variables are used (e.g., `v0` used as array index → name it `index` or `i`)
+2. **Recover function calls in test code**: Instead of hardcoding `printf("DT-L1-01: %d\n", 15)`, actually call `array_1d_stack(arr, 5)` and print the result
+3. **Add cross-reference information**: Document which functions call each function, global variable usage, and callback relationships to improve contextual coherence

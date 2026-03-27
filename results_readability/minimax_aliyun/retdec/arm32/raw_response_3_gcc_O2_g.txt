@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `mem`, `mem2`, `mem3`, `v4`, `v5`, `v6` throughout. These provide no semantic meaning - compare to source's descriptive names like `arr`, `counter`, `n`, `head`, `root`. The decompiler made no attempt to infer purpose from usage patterns.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions are well-named: `test_stack_memory`, `test_heap_memory`, `test_static_global`, `test_memory_op_functions` match source exactly. Helper functions like `large_stack_frame`, `alloca_usage`, `linked_list_heap`, `tree_heap_traversal` are preserved. However, small inlined functions like `local_vars`, `local_array` were not recovered as separate functions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test output values like `20`, `10`, `15`, `42` are hardcoded correctly. However, malloc sizes like `8`, `12`, `20`, `40` are magic numbers without explanation. The size `8` for Node struct and `12` for TreeNode should be documented as `sizeof(Node)` and `sizeof(TreeNode)`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Contains `__stack_chk_fail` calls (compiler artifact) and some unreachable code blocks marked "UNREACHABLE". However, no debug instrumentation or register spilling artifacts. Relatively clean compared to highly optimized code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses goto labels (`lab_0x10d14`) for loop constructs instead of while/for loops. The `linked_list_heap` function has awkward goto-based control flow that obscures the natural while loops from the source. At -O0, this should be more readable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions like `test_stack_memory` (502 LOC total) are reasonable in size. However, many small utility functions from source (`local_vars`, `local_array`, `local_struct`, `address_of_local`) were inlined into test functions rather than recovered as separate functions, losing decomposition clarity.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with sequential printf calls. However, goto labels in `linked_list_heap` and `tree_heap_traversal` create non-linear jumps that disrupt the flow. Early returns are used appropriately in some places.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Loop patterns in `test_heap_memory` are unrolled but readable. Some repetition in memory allocation patterns but not excessive.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently for integers and `uint32_t` for `pid`. However, mixes `int32_t` and `char*` in pointer arithmetic (e.g., `v3++`, `*(char *)v3`). Function pointer `global_func_ptr` is cast to `int32_t` incorrectly: `*(int32_t *)&global_func_ptr = 0x10798;`
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - The `Point` struct (used in `local_struct`, `heap_struct`, `global_struct_access`) was completely lost. The decompiler uses raw `malloc(8)` instead of `sizeof(Point)`. Similarly, `Node` and `TreeNode` structures are not recovered - uses `malloc(8)` and `malloc(12)` with manual field offsets instead of proper struct types.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `(int32_t)&v2` pointer-to-int conversion in `alloca_usage`; `(int32_t)mem` cast in `heap_realloc`; mixing `int32_t` and pointer types throughout. No `const` correctness recovered for `const_global` or `const_string`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only contains auto-generated metadata comments showing address ranges and source file paths. No algorithm explanations, no recovery confidence indicators, no API contracts. The comment "From module: /work/src/3.c" is useless for understanding the code logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like malloc/free pairs are recognizable. Linked list traversal is partially visible but obscured by goto usage. No explicit naming of patterns (e.g., "Implements linked list with 5 nodes").
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The unreachable code blocks after `exit(0)` are not commented. The `__stack_chk_fail` calls at function ends are not explained. No indication of potential undefined behavior in `dangling_pointer` test.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions (e.g., "requires: n > 0"), postconditions, or invariants. The safety checks in source like `if (arr == NULL) return -1;` are present but not documented as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear within each test function. However, the relationship between `global_func_ptr` and `double_value` is obscured - the decompiler shows raw address `0x10798` instead of showing the callback pattern. Global variable usage is visible but not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file. Static functions from source (like `static_helper`, `static_local`) are not properly scoped - appear as regular functions. No separation between test functions and helper functions.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes some headers but missing `<alloca.h>`, `<strings.h>`. The `bzero` and `bcopy` calls in memory operation tests won't compile on platforms where these don't exist. Requires moderate patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- **Variable naming is unusable**: `v1`, `v2`, `mem`, `mem2` provide zero semantic information
+- **Composite types completely lost**: `Point`, `Node`, `TreeNode` structs not recovered - all raw pointer arithmetic
+- **Type safety violations**: Mixing int and pointer types throughout, incorrect function pointer casts
+- **No struct field recovery**: Manual field offsets like `*(int32_t *)(v1 + 4)` instead of `node->next`
+- **Goto abuse**: Uses goto labels for loops instead of while/for constructs
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+- Test function names match source exactly, making it easy to identify what each function tests
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+- The decompiler failed to recover any struct types, forcing analysis of raw memory offsets instead of meaningful field access
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct types from allocation sizes**: Detect `malloc(sizeof(TypeName))` patterns and reconstruct struct layouts with field names based on field access patterns
+2. **Infer variable names from usage**: Analyze how variables are used (array indexing, pointer dereferencing, arithmetic) to suggest semantic names like `node`, `counter`, `buffer`
+3. **Convert goto-based loops to while/for**: Recognize backward jump patterns and present as natural loop constructs, especially at -O0 where control flow should be more readable

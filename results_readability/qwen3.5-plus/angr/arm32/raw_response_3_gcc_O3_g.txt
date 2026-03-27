@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `ptr`, `a0`, `a1`) with no semantic meaning. Original names like `large_buf`, `arr`, `head`, `current` are completely lost, making it difficult to track variable purpose across functions.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some original names preserved (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`), but many are generic (`sub_10598`, `sub_106d8`) or have optimization suffixes (`alloca_usage.constprop.0`) that obscure intent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (should be `-1`), `0xfffffff8` (alignment mask), `4294905792` (unknown purpose). String literals in printf are preserved but numeric constants lack context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `armg_calculate_condition()` calls throughout, stack canary checks (`GLIBC_2.4::__stack_chk_guard`), and redundant assignments (`v1 = v2`, `v0 = v3`) that obscure actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` labels (`LABEL_10718`, `LABEL_10724`, `LABEL_10cfc`) replace natural loop constructs. Complex conditionals wrapped in `armg_calculate_condition` make execution paths difficult to follow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but some functions are constant-folded (`alloca_usage.constprop.0` returns literal 15). `main()` has incorrect signature calling test functions with wrong parameters.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Moderate non-linearity with forward jumps disrupting flow. Deep nesting in `linked_list_heap` and `test_heap_memory` functions makes top-to-bottom reading difficult.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from duplicate variable assignments, repeated `armg_calculate_condition` calls, and dead code from register spilling that obscures core logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to generic `unsigned int` instead of `int`, `size_t`, or specific types. Some functions incorrectly return arrays (`unsigned int [5] heap_realloc()`). Pointer types often generic (`void*`, `unsigned int*`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered with generic names (`struct_0`, `struct_1`, `struct_2`) and fields (`field_0`, `field_4`, `padding_0`). Original `Point`, `Node`, `TreeNode` structs not properly reconstructed with semantic field names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present, pointer arithmetic often unclear, function pointer types degraded to `unsigned int` (`global_func_ptr`). No const-correctness preserved from original source.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Only decompiler-generated header ("Angr Decompilation of 3_gcc_O3_g"). No algorithm explanations, API contracts, or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common C idioms (malloc/free pairs, linked list traversal, tree traversal) not recognized or named. Design patterns completely obscured by low-level representation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly warnings for suspicious code. `armg_calculate_condition` calls indicate unresolved logic but are not flagged as decompilation uncertainties. Silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not annotated). No postconditions inferred. Error conditions and return value meanings not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage visible but not explained. Callback relationships (`global_func_ptr`, `set_global_callback`) not clearly indicated.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Static functions not properly scoped. No header file structure or namespace organization recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains many undefined symbols (`GLIBC_2.4::__stack_chk_guard`, `armg_calculate_condition`, `__printf_chk`). Would require extensive stubbing and patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+5+5+4)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.84/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `ptr`** should be named based on usage (e.g., `loop_counter`, `buffer_ptr`, `node_current`)
+- **`armg_calculate_condition()`** calls throughout obscure all conditional logic and should be recovered to standard C operators
+- **Struct fields `field_0`, `field_4`** lose all semantic meaning from original `Point.x`, `Node.data`, `Node.next`
+- **Magic number `4294967295`** used repeatedly instead of `-1` or `UINT32_MAX` constant
+- **`main()` function signature** incorrectly passes parameters to test functions that take no arguments
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Some original function names were successfully recovered (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`), providing anchor points for understanding code structure.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation, algorithm explanations, or decompilation confidence indicators makes understanding non-trivial logic extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns and debug symbols (when `-g` flag present) instead of generic `v0`, `v1` naming
+2. **Replace `armg_calculate_condition()`** artifacts with standard C comparison operators and add confidence annotations for uncertain recoveries
+3. **Reconstruct struct field names** from debug information or access patterns rather than generic `field_0`, `field_4` naming

@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `result`. For example, in `test_cpp_lambda`, the captured variables `capture_by_value` and `capture_by_ref` are reduced to `v2` and `v1`, completely obscuring the lambda's capture semantics.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Excellent demangling of C++ symbols; functions like `_Z20test_cpp_member_funcv` are perfectly recovered as `test_cpp_member_func`, and complex template names like `std::unique_ptr<int, test_cpp_smart_ptr()::'lambda'(int*)>::unique_ptr` are fully preserved.
+
+**3. Literal Clarity:** Score: 8/10
+Justification: String literals (e.g., "Test", "=== 测试C++面向对象特性 ===") and magic numbers (e.g., `0x1234`) are preserved. Floating point literals like `2.5` appear as their hex representation `0x4004000000000000`, which is accurate but less readable without conversion.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Stack canary checks (`__stack_chk_guard`) clutter every function prologue/epilogue. Additionally, pointer arithmetic for array indexing is represented using rotate macros like `__ROL__(i, 2) & 18446744073709551612` (equivalent to `i*4`), which adds low-level noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Standard loops and conditionals are recovered naturally (e.g., `for` loops in constructors). However, exception handling control flow is fragmented; the `try-catch` block in `test_cpp_exception` is split into a main function and a separate landing pad function (`sub_4022c8`), disrupting the linear reading of the logic.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler successfully separates complex C++ constructs into distinct functions, such as extracting the lambda functor into `test_cpp_lambda()::'lambda'(int)::operator()`, and correctly identifying template instantiations like `Container<int>::push`.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While most code reads top-to-bottom, the exception handling mechanism introduces non-linear jumps. The `throw` in `test_cpp_exception` exits the function flow, and the `catch` logic is located in a different function, requiring the user to manually piece together the execution path.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: As expected with `-O0`, there is inherent redundancy in variable loading/storing, but the decompiler presents it cleanly without excessive dead code. The verbose expansion of `std::move` and `std::forward` is necessary for C++ accuracy rather than redundant noise.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Exceptional recovery of complex C++ types, including `std::unique_ptr` with custom deleters, template classes (`Container<int>`), and standard library types. The signatures accurately reflect the source, even preserving `const` qualifiers in methods like `SimpleClass::getValue`.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Class definitions like `SimpleClass`, `Base`, and `Derived` are recovered with their correct names. While some internal structures for thunks use generic names like `struct_0`, the primary user-defined types are intact and accessible.
+
+**11. Type Safety:** Score: 8/10
+Justification: The decompiled code maintains type safety, explicitly showing casts like `dynamic_cast` and `static_cast`. Operations on `std::unique_ptr` correctly show the pointer and deleter types, avoiding unsafe `void*` usage where type information was available in the binary.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex logic, such as the virtual table offset calculation in `call_virtual_func` or the RTTI checks, is presented without explanation, leaving the user to infer the semantics solely from the code.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: The decompiler recognizes C++ Standard Library idioms by name (e.g., `std::move`, `std::forward`, `operatornew`). However, it does not explicitly label higher-level patterns like "Virtual Dispatch" or "RAII Resource Acquisition," leaving the user to identify the `(*(long long *)*((long long *)...))` pattern as a vtable call manually.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No anomalies or potential issues are flagged. For instance, the complex bit-manipulation in `template_max<double>` involving `arm64g_calculate_condition` and `CmpF` is presented as-is without warning that it represents a floating-point comparison, which could be confusing.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the bounds check in `Container::get` (`if (idx >= 0 && idx < size)`) is visible code, but it is not documented as a contract or safety check.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are highly readable; calls to member functions like `SimpleClass::setValue` are explicit. The relationship between base and derived classes is clear through the function names (e.g., `Derived::Derived` calling `Base::Base`).
+
+**17. Module Organization:** Score: 7/10
+Justification: The output is organized alphabetically by function signature, which groups class methods together (e.g., all `SimpleClass` methods are adjacent). While not a perfect source-file reconstruction, it provides a logical grouping of related functionality.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code is decompiled into a C-like syntax that relies on complex standard library types. While the types are defined, recompiling this output would require significant effort to reconstruct headers and handle the specific C++ syntax (like lambdas and templates) that Ghidra represents as function calls.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.6/10
+
+**Critical Defects:**
+- Variable naming is extremely poor, using generic names (`v0`, `v1`) even with debug symbols available (`-g`), obscuring the logic of lambdas and local computations.
+- Exception handling logic is fragmented across multiple functions (`test_cpp_exception` and `sub_4022c8`), making it difficult to understand the control flow of `try-catch` blocks.
+- Complete lack of comments or semantic annotations for complex C++ patterns like virtual dispatch thunks or RTTI structures.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Ghidra's demangling of C++ symbols is flawless, perfectly recovering namespaces, class names, template arguments, and function signatures from the mangled binary names.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)
+- The absence of any explanatory comments for complex C++ constructs (like the vtable call in `call_virtual_func`) significantly hampers understanding, forcing the user to reverse-engineer standard patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Leverage Debug Symbols for Variables**: When `-g` is present, map local variables to their original names from the DWARF debug info instead of defaulting to `v0`, `v1`.
+2. **Reconstruct Exception Handling Flow**: Integrate `try` and `catch` blocks into a single continuous view or clearly annotate the landing pads to preserve the logical structure of exception handling.
+3. **Annotate C++ Idioms**: Automatically detect and comment on common C++ patterns, such as labeling `(*(vtable_ptr + offset))(this)` as "Virtual Call via vtable" to improve semantic transparency.

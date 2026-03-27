@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `a0`, `a1`, `v0`, `v1`, `ptr`). While `ptr` and `idx` are acceptable, the lack of semantic names like `count` or `sum` (from source `varargs_func`) significantly hinders understanding.
+
+**2. Function Naming Quality:** Score: 5/10
+Justification: High-level semantic names like `cdecl_func`, `main`, and `test_calling_conventions` are recovered, which is excellent. However, many functions remain generic addresses like `sub_401030` or `sub_4010e0` (which is clearly `printf`), resulting in a mixed experience.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals like `"CALL-L1-01: %d\n"` are preserved perfectly. However, magic numbers resulting from constant propagation (e.g., `15`, `50`, `4294967295` for `-1`) are presented without context, requiring cross-referencing with the source to understand their origin.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is polluted with severe noise, particularly in `func_mixed_args` where VEX IR artifacts like `[D] unsupported_<class 'pyvex.expr.GetI'>()` and `PutI` appear. Additionally, compiler runtime artifacts like `__x86.get_pc_thunk.bx` and `__stack_chk_fail_local` are exposed without abstraction.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Control flow is generally natural (e.g., `do-while` loops in `varargs_func`), but `func_mixed_args` is completely broken by unsupported instructions, rendering its flow unreadable. `ret_large_struct` contains a loop that is readable but verbose.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: The decompiler successfully separates distinct functions like `cdecl_func` and `call_cdecl`, maintaining good granularity. The separation of logic into `test_calling_conventions` and `test_parameter_passing` is preserved well.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom within functions like `test_calling_conventions`. There are no excessive spaghetti jumps or confusing forward branches in the successfully decompiled sections.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately reflects the compiler's optimizations, such as constant folding in `call_cdecl` (returning `15` directly). It does not introduce artificial redundancy, presenting the optimized logic cleanly.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `unsigned int`, `char*`, and `double` are recovered. However, specific types like `int` vs `unsigned int` are often defaulted to `unsigned int`, and function signatures for `varargs` lose the `...` notation, using manual stack access instead.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Composite types are poorly recovered. `SmallStruct` and `LargeStruct` from the source are lost; `ret_small_struct` returns `unsigned int [2]` (an array type) rather than a struct, and `func_struct_byval` uses raw pointer arithmetic on a stack buffer rather than struct field access.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on raw pointer arithmetic (e.g., `*(ptr) = *(ptr) * 2;` in `param_by_value_ptr`). While this matches the low-level implementation, the lack of struct types and the presence of IR artifacts in `func_mixed_args` make the code feel unsafe and fragile.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic. The only text present are debug markers like `[D] Unsupported jumpkind`, which are artifacts rather than explanatory comments.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: The varargs idiom in `varargs_func` is recognized as a loop summing arguments from the stack, which is good. However, standard library idioms like `printf` are not recognized (named `sub_4010e0`), and struct-return idioms are presented as raw array returns.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler explicitly flags failures with `[D] Unsupported jumpkind Ijk_SigTRAP` and `[D] unsupported_<class 'pyvex.expr.GetI'>()`. This transparency is excellent for the analyst, clearly indicating where the decompilation is unreliable.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the requirement for `ptr` to be non-null in `param_double_ptr` is checked in code but not documented as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear (e.g., `test_calling_conventions` calls `call_cdecl`). However, global variable references like `g_402008` are obscure, and the relationship to `printf` is lost because it is named `sub_4010e0`.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are organized by address, which roughly groups related test functions together. The separation between `test_calling_conventions`, `test_parameter_passing`, and `test_return_values` is visible in the address space.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to IR artifacts (`[D] ...`), undefined external globals (`g_404ff4`), and missing standard library headers. It requires significant manual cleaning to be buildable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 5 + 6 + 2) / 4 = 4.0
+L2_avg: (5 + 7 + 7 + 8) / 4 = 6.75
+L3_avg: (6 + 3 + 4) / 3 = 4.33
+L4_avg: (1 + 5 + 8 + 1) / 4 = 3.75
+L5_avg: (6 + 6 + 2) / 3 = 4.66
+
+Overall = (4.0 × 0.30) + (6.75 × 0.25) + (4.33 × 0.20) + 
+          (3.75 × 0.15) + (4.66 × 0.10)
+Overall = 1.2 + 1.6875 + 0.866 + 0.5625 + 0.466
+Overall = 4.782
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects
+- **IR Artifacts:** `func_mixed_args` contains unreadable VEX IR artifacts (`[D] unsupported_<class 'pyvex.expr.GetI'>()`), making the function logic completely opaque.
+- **Loss of Struct Types:** Composite types like `SmallStruct` and `LargeStruct` are not recovered; instead, the code uses raw pointer arithmetic and array returns (`unsigned int [2]`), destroying semantic meaning.
+- **Generic Naming:** Critical variables are named `a0`, `v0`, etc., and standard library functions like `printf` are aliased as `sub_4010e0`, obscuring the program's intent.
+- **Metadata Mismatch:** The decompiled output is for x86 (evidenced by `__x86.get_pc_thunk`), while the source metadata claims ARM64, leading to confusion in evaluating calling convention recovery (e.g., `fastcall` using `ecx`/`edx` is correct for x86 but irrelevant for ARM64).
+
+### Best Quality Aspect
+- **Anomaly Indication (Score: 8/10)**
+- **Why?** The decompiler explicitly marks areas where it failed to lift instructions (e.g., `[D] Unsupported jumpkind`), which is crucial for analysts to know when the output cannot be trusted.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (Score: 1/10)**
+- **Why?** The complete absence of explanatory comments for complex logic (like varargs handling or struct returns) forces the user to reverse-engineer the decompiler's output line-by-line.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Instruction Lifting:** Fix the handling of SIMD and floating-point instructions to prevent VEX IR artifacts from leaking into the C output (specifically in `func_mixed_args`).
+2.  **Standard Library Signature Recovery:** Implement signature matching to identify common functions like `printf` and recover their names and parameter types instead of generating generic `sub_XXXXXX` placeholders.
+3.  **Composite Type Reconstruction:** Enhance the type recovery engine to identify stack-based struct passing and return patterns, reconstructing `struct` definitions rather than defaulting to raw pointer arithmetic or array returns.

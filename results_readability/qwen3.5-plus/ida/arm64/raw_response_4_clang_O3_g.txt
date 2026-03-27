@@ -1,0 +1,105 @@
+## EVALUATION REPORT: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names (`a`, `b`, `c`, `v0`, `v1`, `v2`, `v7[8]`) with no semantic meaning. In `varargs_func`, variables like `v5`, `v8`, `v9` obscure their roles as va_list pointers and stack offsets.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `func_struct_byval`), clearly indicating purpose. Minor issue: `sub_640` remains generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xFFFFFF80FFFFFFC8LL` and `0x80000000` in `varargs_func` lack explanation. Simple constants (42, 15) are recognizable but not documented.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: explicit casts `(__int64 (__fastcall *)(_QWORD))`, SIMD operations in `ret_large_struct`, verbose stack variables `_QWORD v7[8]`. `varargs_func` is excessively verbose.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions are natural, but `varargs_func` uses confusing `while(1)` with `LABEL_5` goto statements. `param_ptr_array` has complex loop unrolling obscuring the original simple for loop.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. However, constant folding merged callers into return values (e.g., `call_cdecl()` returns 15 directly), losing call structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom clearly. `varargs_func` and `param_ptr_array` have forward jumps and labels that disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `func_struct_byval` unrolls loop into 16 separate addition statements instead of a loop. `param_ptr_array` shows loop unrolling artifacts that complicate understanding.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types mostly preserved, but issues exist: `func_mixed_args` returns `__int64` instead of `int`, `func_struct_byval` takes pointer instead of by-value struct. SIMD types (`int32x4_t`) appear unexpectedly.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct names recovered (`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`). However, field access uses array notation (`s->data[0]`) losing semantic field names from original source.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts: `(__int64 (__fastcall *)(_QWORD))callback` in `param_func_ptr`, `(_DWORD *)p` in `param_complex_cast`. Pointer arithmetic present but generally correct.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments beyond function signatures. Original source had extensive documentation explaining each test case (CALL-L1-01, PARAM-L2-01, etc.), all lost in decompilation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common C idioms (variadic functions, struct passing, function pointers) not identified or explained. Decompiler doesn't recognize these as standard patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Failed decompilations noted ("FAILED to decompile: strlen"), but suspicious code patterns lack warnings. `varargs_func` complexity not flagged as potentially problematic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks exist (`if ( p )`) but not explained as contracts or requirements.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible, but constant folding obscures some relationships. External function failures noted but not explained. No call graph documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical sequence matching source structure. Test functions and implementation functions somewhat mixed but generally coherent.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple external functions failed to decompile (strlen, printf, puts, __libc_start_main). Undefined symbols appear (`ret_opaque_handle_handle1`). Won't compile without significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+7+6+5)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.27
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (6+7+4)/3   = 5.67 × 0.10 = 0.57
+
+Overall Score: 5.19/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects
+- **Variable names completely generic**: `v0`, `v1`, `v2`, `v7[8]` provide no semantic information about purpose
+- **Constant folding destroyed call structure**: `call_cdecl()` returns 15 directly instead of showing `cdecl_func(5, 10)` call
+- **No comments recovered**: Original source had extensive documentation (CALL-L1-01, PARAM-L2-01 labels) all lost
+- **Varargs handling overly complex**: `varargs_func` decompilation is 100+ lines of confusing stack manipulation vs. 10 lines of clean source
+- **Loop unrolling not recognized**: `func_struct_byval` shows 16 explicit additions instead of recognizable for loop
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most function names preserved from source (`cdecl_func`, `varargs_func`, `func_struct_byval`), making high-level purpose immediately clear
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Zero semantic documentation recovered; original source's extensive test case labels and explanations completely lost
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming**: Analyze usage patterns to infer names (e.g., variables used in loop bounds → `count`, `index`; pointer dereferences → `buffer`, `data`)
+2. **Preserve call structure over constant folding**: Offer option to show original call relationships even when values can be computed at decompile time
+3. **Recover and preserve source comments**: When debug symbols (-g) are available, extract and embed original comments and test case labels in decompiled output
+
+---
+
+**Note on Optimization Level Discrepancy**: The source metadata indicates `-O0 -g` but the binary path shows `clang_O3_g` and the decompiled code exhibits aggressive optimizations (constant folding, loop unrolling, SIMD operations). This evaluation assumes the actual compilation was `-O3`, which explains many structural transformations. At true `-O0`, readability should be significantly higher (8-10 range).

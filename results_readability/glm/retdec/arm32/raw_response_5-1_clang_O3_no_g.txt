@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `g1` through `g22` for globals and `v1`, `v2`, `a1`, `a2` for locals. For example, `str` in `test_cpp_member_func` is actually an integer `0x74736554` (ASCII for "Test"), not a string pointer, demonstrating a failure to recover semantic types or names.
+
+**2. Function Naming Quality:** Score: 4/10
+Justification: Function definitions use mangled C++ names (e.g., `_Z20test_cpp_member_funcv`), which are unreadable without external tools. While demangled names appear in comments (e.g., `// Demangled: test_cpp_member_func()`), the code itself relies on the mangled symbols, significantly hindering readability.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: String literals are often represented as pointer arithmetic offsets rather than the actual string content, such as `(char *)((int32_t)"X_3.4" + 3472)`. Magic numbers like `0x74736554` (representing "Test") are used directly without explanation or character array context.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is cluttered with redundant casts, such as `int32_t result2 = (int32_t)result;` appearing frequently. There is also significant noise from compiler-generated artifacts like the `.thread` label in `Container::push` and the extensive list of global variables representing vtables or RTTI data.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is often unnatural or incorrect. In `test_cpp_exception`, the logic `if ((g7 || 1) != 3)` is a confusing reconstruction of exception handling flow. The `Container::push` function uses a `.thread` label, suggesting a goto-based reconstruction that disrupts the linear reading of the loop.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: Functions are generally small and correspond to source methods, which is good. However, the logic inside many test functions (e.g., `test_cpp_smart_ptr`) is completely missing or reduced to returning a global address, failing to decompose the actual operations performed in the source.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code reads poorly due to pointer arithmetic used for string access and global variable lookups interrupting the flow. In `test_cpp_oo_features`, the execution jumps between `puts` calls with calculated offsets, making it difficult to follow the original sequence of printf statements.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: There is significant redundancy in variable assignments, such as `int32_t v1 = (int32_t)this;` followed immediately by casts back. The decompiler fails to simplify these expressions, leaving behind artifacts that obscure the actual logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `int32_t` and `float64_t` are used correctly. The decompiler successfully identified the layout of the `Container` class, correctly accessing `size` at offset 40 (after 10 ints). However, it fails to recover higher-level types like `std::unique_ptr` or `SimpleClass` as structs, treating them as generic `int32_t*`.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: The `Container` template class structure is recovered with accurate field offsets (e.g., `*(int32_t *)(result2 + 40) = 0;` for the size member). However, other classes like `SimpleClass`, `Base`, and `Derived` are not reconstructed as structures; their members are accessed via raw pointer arithmetic or not recovered at all.
+
+**11. Type Safety:** Score: 2/10
+Justification: There is a critical type safety failure in `template_swap`: `*a1 = (int32_t)a2; *a2 = (int32_t)a1;`. This assigns the *address* of the pointer (cast to int) to the value, rather than swapping the values. This is a dangerous semantic error that completely changes the function's behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to demangled function names and address ranges. There are no comments explaining the logic, the purpose of the global variables, or the complex pointer arithmetic used for string reconstruction.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Some idioms are partially recognized; `template_max` is decompiled correctly as a ternary operator. However, C++ specific idioms like RAII (`unique_ptr`), exceptions (`try/catch` blocks are lost in `test_cpp_exception`), and RTTI are not clearly presented, often reduced to calls to `__cxa_*` helper functions.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents incorrect logic confidently without any warnings. For instance, the nonsensical string arithmetic in `test_cpp_oo_features` and the broken logic in `template_swap` are presented as valid code, misleading the user about the program's actual behavior.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the bounds checking in `Container::get` is present as `if (a2 < 0)`, but the semantic contract (returning 0 for out-of-bounds) is not explicitly documented or highlighted.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Calls to C++ runtime support functions like `__cxa_throw` and `__dynamic_cast` are visible, which helps identify high-level operations. However, the relationship between these calls and the user-defined logic (e.g., which specific exception is being thrown) is obscured by the use of global variables like `g7` for type info.
+
+**17. Module Organization:** Score: 6/10
+Justification: The functions are grouped in a single file, roughly following the order of the source. Template instantiations are separated, which is accurate, but the lack of namespace or class grouping makes it hard to see the original object-oriented structure.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: Function prototypes are provided, and the code uses standard types. However, the logic errors (like `template_swap`) and the reliance on specific global memory layouts (`g1`...`g22`) mean the code would not compile or run correctly as a standalone source file without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- **Variable Naming**: Extensive use of generic names (`g1`-`g22`, `v1`, `a1`) obscures data flow.
+- **Logic Corruption**: The `template_swap` function is decompiled incorrectly (`*a1 = (int32_t)a2`), assigning pointer addresses to values instead of swapping values.
+- **String Reconstruction Failure**: String literals are represented as pointer arithmetic (e.g., `"X_3.4" + 3472`), making text output logic unreadable.
+- **Missing Logic**: Many test functions (e.g., `test_cpp_smart_ptr`) are reduced to returning a constant or a global address, losing the implementation details entirely.
+- **Function Naming**: Reliance on mangled names (`_Z20...`) in the function bodies instead of demangled identifiers.
+
+**Best Quality Aspect:** Composite Type Recovery (scored 6/10)
+- The decompiler successfully recovered the memory layout of the `Container` template class, correctly identifying the offset of the `size` member relative to the `data` array.
+
+**Most Needs Improvement:** Anomaly Indication (scored 1/10)
+- The decompiler fails to flag obvious errors, such as the corrupted logic in `template_swap` or the nonsensical pointer arithmetic for strings, presenting them confidently as correct code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve String Literal Recovery**: Replace pointer arithmetic offsets with actual string content or references to a reconstructed string table to restore readability of `printf` and string manipulation logic.
+2.  **Fix Variable Swapping Logic**: Ensure that swap operations are correctly identified to avoid assigning pointer addresses (cast to integers) to value variables.
+3.  **Demangle Identifiers in Code**: Use demangled C++ function and variable names directly in the decompiled output body, rather than relying solely on mangled symbols or comments.

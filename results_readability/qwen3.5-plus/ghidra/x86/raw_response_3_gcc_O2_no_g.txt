@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `puVar2`, `local_10` with no semantic meaning. Original source had meaningful names like `arr`, `head`, `current`, `sum` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`). Some helpers like `FUN_00011030` are generic, but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers in hex obscure meaning (`0x2a` for 42, `0x14` for 20, `0xf` for 15). String literals referenced as `&DAT_00013008` instead of showing actual content. Original had clear decimal constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) appear in every function. Compiler thunks (`__x86.get_pc_thunk.bx`) and "WARNING" comments about unreachable blocks add noise throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as do-while but heavily optimized. `local_vars` collapses to `param_1 * 2 + 10` losing intermediate variable structure. `vla_stack` has complex pointer arithmetic obscuring original VLA logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but `static_helper` folded into `call_static_func`. Test functions heavily optimized with constant folding. Function sizes reasonable but some over-optimized.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with early returns. Stack canary checks create non-linear flow at function ends. Most functions maintain reasonable linear structure.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding removed intermediate calculations (beneficial for brevity, harmful for understanding original logic). Test functions show significant constant folding losing original test structure.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined1`, `void*` instead of specific types. Original `Point*`, `Node*`, `TreeNode*` lost. `size_t` often becomes `int` or `uint`. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - No struct definitions recovered. `Point` accessed as `malloc(8)` with array indexing. `Node` struct fields accessed via `piVar2[1]` for next pointer. Original had clear struct definitions with named fields.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(int)`, `(undefined4*)`, `(void*)`). Pointer arithmetic on void pointers. Function pointer `global_func_ptr` typed as `code*` then called without proper signature. No restrict or alignment annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated WARNING comments about decompiler uncertainty. No algorithm explanations or API contracts. Original had extensive comments explaining each test case (MEM-L1-01, HEAP-L2-01, etc.) - all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Memory allocation patterns present but not named. Original test pattern labels (MEM-L1-01, HEAP-L3-01) completely absent. Linked list and tree traversal not recognized as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some WARNING comments about indirect calls ("Could not recover jumptable"). Stack canary checks noted. However, critical undefined behavior patterns (dangling pointer, double free, heap overflow) not flagged as dangerous.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 > 0`). No postconditions inferred. Error conditions not clearly documented. Original had clear test expectations in comments - all lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible. Global variable usage clear (`global_counter`, `file_scope_static`). Callback relationship partially visible (`global_func_ptr = double_value`). No explicit call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no file organization. Static functions not clearly marked as file-scoped. Original had clear section organization (3.1 Stack, 3.2 Heap, 3.3 Static, 3.4 Memory Ops) - lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions without declarations. No header includes. Platform-specific code (`__printf_chk`, `__stack_chk_fail_local`) requires stubs. Would need moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.0   × 0.30 = 1.50
+Level 2 (Structural):  (5+6+7+6)/4 = 6.0   × 0.25 = 1.50
+Level 3 (Type):        (4+2+3)/3   = 3.0   × 0.20 = 0.60
+Level 4 (Semantic):    (3+2+5+2)/4 = 3.0   × 0.15 = 0.45
+Level 5 (Contextual):  (6+4+4)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.52/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects:
+- **No struct type recovery** - `Point`, `Node`, `TreeNode` all accessed via raw pointer arithmetic (`malloc(8)`, `piVar2[1]`)
+- **Variable names completely generic** - `param_1`, `iVar1`, `puVar2` provide no semantic information
+- **Magic numbers in hex** - `0x2a`, `0x14`, `0xf` obscure original constant values (42, 20, 15)
+- **Test case metadata lost** - Original MEM-L1-01, HEAP-L2-01 labels and expectations completely absent
+- **Stack canary noise in every function** - `in_GS_OFFSET`, `__stack_chk_fail_local` clutter all function bodies
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved from source (`double_value`, `heap_basic`, `linked_list_heap`), making it possible to identify function purpose despite other degradation.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union definitions; all composite types reduced to pointer arithmetic, making data structure understanding nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from allocation patterns** - Detect `malloc(sizeof(struct))` patterns and reconstruct field access as struct member access with inferred names (field0, field1, etc.)
+2. **Convert hex literals to decimal with comments** - Display `0x2a` as `42 /* 0x2a */` to improve readability while preserving original binary representation
+3. **Preserve test metadata in comments** - When function names match known patterns (MEM-*, HEAP-*, STM-*), add comments indicating original test case labels and expected values

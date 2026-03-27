@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic (`v0`, `v1`, `v2`, `a0`, `a1`) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` which are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test function names preserved (`sequential_ops`, `if_else`, `nested_if_2`), but many wrapper functions use generic `sub_400xxx` naming. Mixed quality across the codebase.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `4294967295` (UINT_MAX), `1717986919` (division multiplier), `0x8000000000000000`. No constants recovered from original source.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`__stack_chk_guard`, `__stack_chk_fail()`) in nearly every function. Redundant calls present (e.g., `v0 = _setjmp(); return _setjmp();`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if-else recovered well, but complex patterns degraded. `loop_while` uses multiplication by `1717986919` for division instead of clean `/10`. Some `goto` patterns could be structured loops.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but unnecessary wrapper functions created (`sub_400cdc` calling `nested_if_2`). Function sizes reasonable but fragmentation present.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps disrupt flow (`LABEL_40123c`, `LABEL_401288`). Some functions read linearly but test functions have scattered jump targets breaking top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate function calls observed (`v0 = _setjmp(); return _setjmp();`). Stack check code repeated identically across many functions without consolidation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mix of `unsigned int`, `unsigned long`, `unsigned long long` without clear rationale. Original `int` types often become `unsigned int`, losing signedness semantics.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays represented as pointer arithmetic (`v6 = &v1`, `v6 += 1`). Matrix in `loop_multi_exit` becomes opaque pointer manipulation. No struct recovery visible.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Function pointer calls use unsafe `goto` (`call_func_ptr`: `goto a0;`). Many implicit casts visible. Pointer arithmetic without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled output. Only auto-generated function headers. Original source had extensive documentation explaining each control flow pattern.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns (if-else, loops) recognized but complex idioms not identified. Duff's device, state machines, and fall-through switches not labeled or explained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings for problematic code. `goto a0` for function pointer call presented confidently without uncertainty indication. No anomaly flags anywhere.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions or error condition documentation. Original test expectations completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Global variable usage (`g_413f78`, `g_414018`) unexplained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output. No logical grouping by control flow level (L1/L2/L3). Original source organization completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external symbols requiring stubs (`__printf_chk`, `__stack_chk_guard`, `__libc_start_main`). Would need significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25  × 0.30 = 1.275
+Level 2 (Structural):  (5+6+5+4)/4 = 5.00  × 0.25 = 1.250
+Level 3 (Type):        (5+4+4)/3 = 4.33    × 0.20 = 0.866
+Level 4 (Semantic):    (2+4+2+2)/4 = 2.50  × 0.15 = 0.375
+Level 5 (Contextual):  (5+4+4)/3 = 4.33    × 0.10 = 0.433
+─────────────────────────────────────────────────────
+Overall Score:                                  4.199 ≈ 4.2/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects
+- **Variable names completely generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original (`temp1`, `sum`, `count`)
+- **No comments or documentation** despite original source having extensive explanations for each control flow pattern
+- **Magic numbers unexplained** (`4294967295`, `1717986919`, `0x8000000000000000`) obscuring arithmetic intent
+- **Function pointer calls use unsafe `goto`** instead of proper call syntax (`goto a0` in `call_func_ptr`)
+- **Stack canary noise in every function** creating visual clutter without analytical value
+
+### Best Quality Aspect
+- **Function Naming Quality (6/10)** - Core test function names like `sequential_ops`, `if_else`, `nested_if_2` were preserved from original source, providing some semantic anchors.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation despite original having extensive comments explaining each control flow pattern's purpose and test cases.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop bounds should be named `count`, `limit`, `index`)
+2. **Add uncertainty annotations** for problematic constructs (function pointer calls, computed gotos) with confidence indicators
+3. **Recover and preserve original comments** from debug symbols when `-g` flag was used during compilation

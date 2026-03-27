@@ -1,0 +1,120 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy`
+
+The original source shows a simple wrapper function:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+The decompiled version shows critical issues:
+```c
+void param_strcpy(char *param_1,char *param_2)
+{
+  char *__s;
+  __s = strcpy(param_1,param_2);
+  strlen(__s);  // Return value discarded!
+  return;
+}
+```
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`param_1`, `param_2`, `local_30`, `local_28`, `__s`). The function `param_strcpy` has parameters that should be `dst` and `src`, but are labeled `param_1`/`param_2`. This makes tracking data flow extremely difficult across the 2000+ lines of decompiled code.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Function names generally match source (`param_strcpy`, `param_strcmp`, `call_strcpy`). However, the critical issue is that `param_strcpy` is declared as `void` return type when source specifies `int`. This semantic mismatch is severe.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals like `"Value: %d, Name: %s\n"` are preserved correctly. However, magic numbers like `0x2a` (42) appear without explanation, and the return value computation in `param_strcpy` (`strlen(__s)`) is completely discarded rather than being recognized as the return value.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts observed. No redundant casts or debug instrumentation cluttering the output. The code is relatively clean from a noise perspective.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper if-else structures. At `-O0`, loops are correctly represented as while/do-while constructs. Minor issues include some awkward conditional expressions that could be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (not monolithic). The `param_strcpy` issue is an isolated case - most functions maintain reasonable granularity. Parameter lists are sometimes overly exposed with implementation details.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in error handling paths. No severe non-linearity issues disrupting comprehension.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling present in functions like `param_malloc_free` but it's manageable. The main issue is the missing return value in `param_strcpy` - the `strlen` call result is computed but discarded, which is redundant with the intended semantics.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Critical type errors exist. `param_strcpy` returns `void` instead of `int`. Many functions use `undefined4`/`undefined8` instead of proper types. The return value `strlen(__s)` is computed but discarded - this is a semantic loss, not just a type issue.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Basic struct handling is reasonable. The `sockaddr` structure in `param_socket_create` is partially reconstructed with field names like `sa_family`, `sa_data`. Some nested structures use generic field names but are usable.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations present. In `param_strcpy`, the return value is completely lost. In `call_strcpy`, the string "HelloLib" is constructed via manual byte assignment to a stack buffer (`local_30._0_1_ = 'H'`), which is error-prone. Function pointer casts in thread functions could be safer.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The original source has extensive comments explaining each function's purpose, but these are completely absent. No documentation of what `param_strcpy` is supposed to return.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions like `strcpy`, `strlen`, `pthread_create` are correctly identified. However, the pattern of "copy string and return length" is not recognized as a common idiom. The discarded `strlen` result should trigger a "return value not used" anomaly note.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indicators whatsoever. The `param_strcpy` function has a critical semantic error (discarded return value) that should be flagged. No warnings about indirect calls or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source has clear semantics (`dst` must be large enough, return value is string length), but this is completely lost in decompilation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are visible but relationships are not documented. No indication that `call_strcpy` calls `param_strcpy`. No global variable usage documentation (e.g., `signal_received`, `shared_counter` are used across multiple functions).
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - standard library functions, system calls, thread functions are separated. However, everything is in a single flat listing rather than organized by source file sections.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will NOT compile as-is. The `param_strcpy` function returns `void` but the caller `call_strcpy` expects a return value. Type mismatches throughout prevent standalone compilation. Dependencies on libc functions are not explicitly declared.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- **`param_strcpy` return value discarded**: The function computes `strlen(__s)` but doesn't return it. This is a complete semantic loss - the decompiled function does NOT match the source.
+- **Wrong function signature**: `param_strcpy` declared as `void` instead of `int` - this is a fundamental type error.
+- **Generic variable names**: `param_1`/`param_2` throughout obscure data flow; should be `dst`/`src`.
+- **No comments**: Zero documentation explaining function purposes, parameters, or return values.
+- **No anomaly flags**: The discarded return value in `param_strcpy` should trigger a warning but完全没有提示.
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+- At `-O0` optimization, control structures (loops, conditionals) are correctly recovered and readable.
+
+**Most Needs Improvement:** Anomaly Indication (1/10)  
+- The decompiler fails to flag critical semantic errors like the missing return value in `param_strcpy`. This is a fundamental failure to communicate uncertainty or detected issues to the analyst.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Detect and flag discarded function results**: When a function call result is computed but not used (like `strlen(__s)` in `param_strcpy`), flag this as a potential "return value not used" anomaly.
+2. **Infer parameter names from usage patterns**: Analyze how parameters are used within functions to suggest meaningful names (e.g., `param_1` used as destination in `strcpy` → name it `dst`).
+3. **Recover return types from caller expectations**: Analyze how functions are called to infer correct return types. `call_strcpy` uses the return value of `param_strcpy`, so the return type cannot be `void`.

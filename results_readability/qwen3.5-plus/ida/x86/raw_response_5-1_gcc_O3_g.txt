@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Object-Oriented Code
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `v5`, `v14`) with no semantic meaning. For example, `v14 = __readgsdword(0x14u)` should be `stack_canary`. Some better names exist (`exception`, `obj`, `this`) but are inconsistent.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: C++ mangled names recovered (`_Z20test_cpp_member_funcv`, `_ZN4Base12virtual_funcEi`) which can be demangled, but helper functions use meaningless names (`sub_1030`, `sub_1040`). Class methods correctly show `Base::virtual_func`, `Derived::getName`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `4700`, `1001`, `42`, `71`, `650`, `22`, `16`, `85`, `703`. These are optimized return values but provide no insight into computation. String literals like `"Test"` preserved but format strings are `&unk_303C`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__readgsdword(0x14u)` stack canaries in every function, `__usercall` annotations, `__noreturn` markers, 20 stub functions (`sub_1030` through `sub_1150`), and `LODWORD`/`HIDWORD` macros obscuring 64-bit returns.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions show natural flow (`template_max` uses if/return), but test functions are completely optimized to `return 42;` losing all computational logic. RTTI function has complex nested conditionals that obscure the original try/catch structure.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Class methods properly separated (`Container<int>::push`, `Container<double>::get`), but test functions should show object construction and method calls—instead they return constants. Virtual thunks properly extracted (`_ZThn8_N12MultiDerived5funcBEv`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. Some pointer arithmetic disrupts flow: `*(int *)((char *)&this->dataA + *((_DWORD *)this->_vptr_MiddleA - 3))` requires mental parsing. No excessive goto usage.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Multiple destructor variants create redundancy (`D1Ev`, `D2Ev`, `D0Ev` for each class). Virtual thunks duplicate logic (`_ZTv0_n12_N7MiddleA4funcEv` vs `_ZN7MiddleA4funcEv`). Stack canary code repeated in every function.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mix of precise types (`int`, `double`, `size_t`, `__int64`) and degraded types (`_DWORD`, `void*`, `int*`). Const-correctness partially preserved (`const Base *const this`). Function pointers often degraded to `void(*)()`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: **Critical failure**: No struct/class definitions recovered. Fields accessed via pointer arithmetic: `this->dataA`, `this->_vptr_MiddleA`. Original `SimpleClass { int value; char name[32]; }` completely lost. Vtable pointers visible but not structured.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(int *)operator new(4u)`, `(RTTIBase *)operator new(4u)`, `(const char **)`. Pointer arithmetic throughout: `&this[-1].dataB + 1`. No bounds checking visible. 20 external functions failed to decompile safely.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments—only function headers with parameter annotations. No algorithm explanations. One useful warning: `"positive sp value has been detected, the output may be wrong!"`. No documentation of C++ semantics (vtable, RTTI, exception handling).
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns visible but not identified: vtable calls `(*obj->_vptr_Base)()`, virtual thunks labeled but not explained, `__dynamic_cast` calls present but no note about RTTI mechanism. Exception handling (`__cxa_throw`, `__cxa_begin_catch`) not contextualized.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 20 failed decompilations listed at end (`/* FAILED to decompile: __printf_chk */`) but not at call sites. Some uncertainty noted (`// positive sp value has been detected`). Indirect calls not flagged at point of use.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `idx >= 0` checks exist but not noted as contracts). No postconditions. Exception safety not documented. Original comments about expected values (期望：4704) completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch obscured. Inheritance relationships not documented (no note that `Derived` extends `Base`). Global variables (`LifecycleClass::instance_count`) referenced but not defined. Call graph not provided.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Related class methods scattered (`Base::virtual_func` at 0x1AE0, `Derived::virtual_func` at 0x1B20). No header file structure. Initialization code mixed with application logic.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: **Will not compile**: 20 external functions undefined (`__printf_chk`, `__cxa_throw`, `__dynamic_cast`, `operator new`). Architecture mismatch (source arm64, decompiled x86). Optimization mismatch (source -O0, binary -O3). Requires extensive stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+5+3+4)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (5+5+6+4)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (3+4+5+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+
+Overall Score: 4.175 ≈ 4.2/10
+```
+
+### Overall Readability Score: **4.2/10**
+
+### Critical Defects:
+- **No class/struct definitions recovered** - All composite types accessed via pointer arithmetic (`this->dataA`, `this->_vptr_MiddleA`)
+- **Test functions optimized to constants** - `test_cpp_member_func()` returns `4700 + strlen(name)` instead of showing object construction and method calls
+- **20 external functions failed to decompile** - Critical C++ runtime functions (`__cxa_throw`, `__dynamic_cast`, `operator new`) undefined
+- **Variable names are generic temporaries** - `v0`, `v1`, `v2` throughout instead of semantic names (`packet_size`, `instance_count`)
+- **Magic numbers without explanation** - Return values `42`, `71`, `650`, `703` appear without showing computation
+
+### Best Quality Aspect: **Control Flow Naturalness (5/10)**
+- Simple functions like `template_max` and `Container` methods show recognizable if/return patterns that match source logic
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- No documentation of preconditions, postconditions, or expected values that were explicit in original source comments
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts** - Analyze `_vptr_*` fields to reconstruct class definitions with field names and types
+2. **Preserve optimization metadata** - When functions are constant-folded, add comments showing original computation (e.g., `// Optimized: 10 + 34 + 4660 = 4704`)
+3. **Infer variable names from usage patterns** - Variables used in size checks should be named `size`/`length`, pointer arithmetic on objects should reference field names

@@ -1,0 +1,110 @@
+# Decompilation Readability Assessment
+
+## Overall Readability Score: **4.2/10**
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `dest`) with no semantic meaning. For example, `dest[40]` should be `name_buffer` based on the `strncpy` usage pattern from source.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions retain mangled names that decode correctly (`test_cpp_member_func`), but helper functions use generic labels (`sub_1030`, `sub_1160`) with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x1Fu`, `4700`, and `1000` appear without explanation. Some test constants (42, 71, 650) match expected outputs but lack context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack annotations (`[esp+4h] [ebp-28h] BYREF`), register hints (`@<eax>`, `@<ebx>`), and inline assembly (`jmp dword ptr [ebx+8]`) clutter the output significantly.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most test functions collapsed to single `return` statements with constants, losing all original control flow. Exception handling lost all try-catch structure entirely.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Class methods separate reasonably well (`Container<int>::push`, `Container<int>::get`), but test functions optimize away completely, losing logical boundaries.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Functions read top-to-bottom without excessive jumps, but heavy optimization obscures the original structure making logical flow difficult to trace.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding removes redundancy but obscures original logic. The decompiler cannot distinguish between optimization artifacts and intentional code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Basic types preserved (int, double, char*), but C++ class structures degrade significantly. Most objects become `_DWORD *` or `void *` losing type safety.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Only `Container` class retains partial structure. `SimpleClass`, `LifecycleClass`, and all inheritance hierarchies (Base/Derived, diamond inheritance) vanish entirely.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Pervasive unsafe casts (`_DWORD *`, `void *`), pointer arithmetic throughout, and exception handling types fail to decompile creating potential undefined behavior.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated stack variable annotations present. No algorithm explanations, decompilation confidence indicators, or API contract documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns (RAII, virtual dispatch, exception handling) completely unrecognized. Only template instantiation partially recovered with no pattern naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Failed decompilations listed at end (21 functions), but no inline warnings flag suspicious code. Single "positive sp value" warning appears once.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Exception contracts completely lost, making error handling impossible to understand.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but virtual dispatch relationships unclear. Inheritance hierarchies don't surface, making polymorphic behavior opaque.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions list sequentially without logical grouping. No namespace or class organization visible, losing source file structure.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: 21 functions failed to decompile (operator new/delete, exception handling, etc.), making standalone compilation impossible. External dependencies undocumented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+```
+L1 (Lexical):     (2+5+4+4)/4 = 3.75 × 0.30 = 1.125
+L2 (Structural):  (3+5+6+5)/4 = 4.75 × 0.25 = 1.1875
+L3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.667
+L4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+L5 (Contextual):  (4+4+2)/3   = 3.33 × 0.10 = 0.333
+─────────────────────────────────────────────────────
+TOTAL:                                     4.24/10
+```
+
+### Critical Defects
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (e.g., `instance_count`, `data_ptr`, `result`)
+- **Control flow collapsed** - test functions return constants instead of showing original logic
+- **21 functions failed to decompile** including critical runtime functions (operator new, delete, exception handling)
+- **C++ class structures lost** - inheritance hierarchies, vtables, and object layouts not recovered
+- **Exception handling completely lost** - try-catch blocks reduced to direct `__cxa_throw` calls
+
+### Best Quality Aspect
+- **Code Linearization (6/10)** - Functions read top-to-bottom without excessive jumps, making basic flow traceable despite optimization artifacts
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments; no algorithm explanations, confidence indicators, or documentation of decompilation uncertainty
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover C++ class structures** - Reconstruct vtables, inheritance hierarchies, and object layouts from RTTI and vtable pointers
+2. **Add inline anomaly warnings** - Flag unresolved indirect calls, suspicious stack layouts, and decompilation confidence levels at each call site
+3. **Preserve control flow for test functions** - Avoid constant folding for functions that appear to be test/validation code based on naming patterns

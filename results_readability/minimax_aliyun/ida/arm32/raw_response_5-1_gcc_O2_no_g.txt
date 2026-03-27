@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named with generic patterns like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `a1`, `a2`, `a3`, `a4`, `result`, `exception`. The original source used meaningful names like `value`, `name`, `data`, `size`, `capture_by_value`, `capture_by_ref`. The decompiled names provide no semantic context about their purpose.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Functions retain mangled C++ names like `_Z20test_cpp_member_funcv`, `_ZN4Base12virtual_funcEi`, `_Z12template_maxIiET_S0_S0_`. Some have mechanical names like `sub_1092C`. The original had clear names like `getValue`, `setValue`, `compute`, `template_max`. The mangled names are unreadable without demangling.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1Fu` (31), `4u`, `8u`, `0x10u`, `0x18u`, `1074003968`, `1073217536` appear without explanation. Some are inferable (31 for buffer size), but others like the double encoding constants are opaque. The original used `sizeof(name)-1` and explicit values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Moderate noise includes `COERCE_DOUBLE` casts, virtual thunk functions (`_ZThn8_N12MultiDerived5funcBEv`), "FAILED to decompile" sections for 25 functions, and `JUMPOUT` statements. Some artifacts are necessary (thunks for multiple inheritance) but add clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural control flow - simple returns, basic if-else in template functions. The `template_max<int>` shows proper conditional `if (result < a2)`. Some functions are constant-folded which is appropriate for O0. Minor awkwardness in virtual function thunks.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Template functions are properly separated (`template_max<int>`, `template_max<double>`, `template_swap<int>`). Virtual functions are separate. Container class methods are extracted. Some aggressive constant folding (e.g., `test_cpp_member_func` returns `strlen(dest) + 4700` directly) but overall decomposition is reasonable.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Most functions read top-to-bottom with minimal jumps. Template functions show good linearity. The few forward jumps are manageable. Overall clean linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Constant folding is appropriate. The code is clean without duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - uses `_DWORD` (32-bit), `size_t`, `double`, `int`. However, many parameters are generic `int` when more specific types could be used. Function pointers use generic signatures. The original had precise types like `size_t`, `int*`, `const char*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery. Class members accessed via raw pointer arithmetic: `*(_DWORD *)(result + 40)` for Container's size field, `*((_DWORD *)this + 1)` for Derived's multiplier. No struct/class definitions reconstructed. Original had clear class definitions with named members.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `*(_DWORD *)v0`, `*(_QWORD *)`, `(char *)this - 8`. Pointer arithmetic without bounds checking: `result + 4 * v2`. Function pointer type confusion in `call_virtual_func`. These patterns risk undefined behavior.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal useful comments. Only auto-generated headers with addresses like `/* Function: _Z20test_cpp_member_funcv @ 0x10C50 */`. No algorithm explanations, no recovery confidence indicators, no API contracts. The "BYREF" comment is helpful but insufficient.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Virtual function thunks are labeled (`non-virtual thunk to`, `virtual thunk to`). Template instantiation patterns recognized. However, no explicit pattern naming (e.g., "RAII pattern", "Virtual dispatch"). Some recognition but not named or documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "FAILED to decompile" sections flag 25 unresolved functions. Some indirect calls noted. However, no warnings about unusual stack layouts, potential undefined behavior, or decompilation confidence levels. Partial but inconsistent anomaly reporting.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. No error condition explanations. The original had clear semantics (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated") that are completely lost.
+
+### LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are somewhat inferable from the code (e.g., `test_cpp_oo_features` calls other test functions). However, no explicit documentation of who calls whom, no global variable usage transparency, no callback relationships documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in a flat list sorted by address, not logically grouped. Related classes (Base, Derived) are separated. No namespace structure. Original had clear class groupings and logical section organization.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile. Mangled C++ names require demangling. Missing `#include` statements. Some stub functions like `call_weak_fn` are incomplete. External dependencies (std::ios_base, std::type_info) not declared.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v0`, `v1`, `a1`, `a2`, `result`) providing no semantic meaning
+- Function names are mangled C++ symbols (`_Z20test_cpp_member_funcv`) unreadable without external demangling
+- No composite type recovery - all class members accessed via raw pointer arithmetic (`*(_DWORD *)(result + 40)`)
+- 25 functions failed to decompile, leaving significant gaps
+- No struct/class definitions reconstructed; original object-oriented structure completely lost
+
+**Best Quality Aspect:** Structural Intelligibility (scored 7.5/10)  
+Control flow is natural and linear, with good function decomposition. Template functions and virtual methods are properly separated, making the logical structure understandable even without good naming.
+
+**Most Needs Improvement:** Lexical Clarity (scored 3.5/10)  
+Variable and function naming is nearly unusable. Generic numbered variables and mangled C++ symbols make the code extremely difficult to read. A human analyst would struggle to understand the code's purpose without referring to the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `*(_DWORD *)(result + 40)` being incremented suggests it's a "size" or "count" field) to generate semantic names like `container_size` instead of `v2`.
+2. **Demangle C++ names automatically**: Convert `_Z20test_cpp_member_funcv` to `test_cpp_member_func()` and `_ZN4Base12virtual_funcEi` to `Base::virtual_func(int)` for immediate readability.
+3. **Reconstruct class/struct definitions**: Instead of raw pointer arithmetic, generate struct definitions like `struct Container { int data[10]; int size; }` and use member access syntax `result->size`.

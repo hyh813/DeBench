@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Mixed quality - test functions preserve meaningful names (`capture_by_value`, `obj`, `base`), but temporaries are generic (`v0`, `v1`, `v2`, `var_30`). Debug symbols helped recover some names but stack variables remain opaque.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions preserved well (`test_cpp_member_func`, `test_cpp_virtual_func`), class methods readable (`SimpleClass::getValue`), but some fallback to generic names (`sub_19A0`, `sub_2B50`, `sub_2BAC`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic number `0x1234` becomes `4660` without explanation; array bounds like `0x1Fu` (31) are unclear; test values (5, 10, 20) remain clear but lack context comments.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive stack annotations (`[xsp+14h] [xbp-28h]`), verbose type declarations (`const const struct {_BYTE gap0;} *`), and 25 failed external function decompilations clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as for/while constructs, conditionals are clear if-else; however, virtual dispatch shows explicit vtable calls and complex inheritance uses pointer arithmetic that obscures intent.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Source-to-function mapping preserved well; class methods are separate functions; but STL helper functions are over-fragmented (`std::_Tuple_impl`, `std::_Head_base` chain).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but virtual thunk functions interrupt flow and `test_cpp_exception` incorrectly marked `__noreturn` breaks expected control flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Template instantiations create expected duplicate code, but verbose STL type chains (`std::__uniq_ptr_impl`, `std::_Tuple_impl`) create unnecessary repetition without consolidation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, double, size_t), but some erosion to `__int64`; const correctness partially preserved; template types verbose but accurate (`Container<int>`, `std::unique_ptr<int>`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Class structures recovered with field names (`SimpleClass` has `value`, `name`), inheritance shown through `_vptr$Base`, but STL internals verbose (`_M_t._M_t._M_head_impl`) and some fields generic (`gap0`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts for vtable access (`(*(__int64 (__fastcall **)(MultiDerived *))v2->_vptr$BaseA)`), pointer arithmetic for virtual base offsets, and some const correctness lost in decompilation.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no semantic comments; function headers show only metadata; no algorithm explanations, no decompilation confidence indicators, no API contract documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns visible (constructors, destructors, virtual functions) but not explicitly identified; RAII in unique_ptr not named; lambda capture patterns shown but not explained as closure semantics.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 25 failed decompilations listed at end; stack warning present ("positive sp value has been detected"); but vtable access and complex inheritance not flagged as potentially uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation; exception contracts not documented; null checks present but not documented as contracts; no class invariant documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clearly shown through naming; inheritance shown through vtable structure; template relationships traceable but verbose; no explicit call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output; no file organization matching source sections (CPP-L3-01 through CPP-L4-03); related functions not grouped; no header/implementation separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 25 external functions failed (`strlen`, `__cxa_throw`, `operator new`); would need stubs for library functions; C++ ABI functions need linking; significant work required to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+7+6+5)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (7+7+6+6)/4 = 6.50 × 0.25 = 1.63
+Level 3 (Type):        (7+7+6)/3   = 6.67 × 0.20 = 1.33
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (6+4+4)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  5.72/10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- **No semantic comments** - Zero documentation explaining algorithm intent, C++ patterns, or decompilation confidence
+- **25 failed function decompilations** - External library functions (`strlen`, `__cxa_throw`, `operator new`) not recovered
+- **Generic variable names** - Temporaries `v0`, `v1`, `v2`, `var_30` obscure data flow in complex functions
+- **Flat module organization** - All 218 functions in single output without source section grouping
+- **Verbose STL type chains** - `std::__uniq_ptr_impl`, `std::_Tuple_impl` create readability noise without consolidation
+
+### Best Quality Aspect: **Type System Fidelity (6.67/10)**
+- Class structures, inheritance relationships, and template instantiations are mostly preserved with accurate field names despite verbose STL internals.
+
+### Most Needs Improvement: **Semantic Transparency (3.25/10)**
+- Complete absence of comments explaining C++ idioms, algorithm intent, or decompilation confidence makes understanding non-trivial code extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add semantic comment generation** - Detect C++ patterns (RAII, virtual dispatch, lambda captures) and add explanatory comments like "// Virtual dispatch via vtable" or "// Lambda capture by reference"
+2. **Recover function contracts** - Analyze null checks, exception throws, and return value patterns to document preconditions/postconditions
+3. **Group related functions by source section** - Use debug symbols to organize output matching original file structure (CPP-L3-01 through CPP-L4-03 sections)

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`, `param_3`) and local variables use cryptic patterns (`uVar1`, `iVar1`, `lVar1`, `auVar1`). No semantic names like `size`, `count`, or `buffer` were recovered despite being clear from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names like `param_macro_constants`, `param_asm_basic`, `call_asm_atomic` are perfectly preserved. Internal Ghidra functions use generic names (`FUN_00101020`) but these are expected for non-exported symbols.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x400` (MAX_SIZE), `0x40` (BUFFER_COUNT*4), and `0xdef0` appear without explanation. However, string literals in printf calls are preserved. The value `0x1e` for `_SC_PAGESIZE` is unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Stack protection checks (`__stack_chk_fail`) are present but expected at -O0. No redundant casts or debug instrumentation clutter the code significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with proper if-else structures and for-loops. The `param_asm_clobber` function correctly recovers the loop structure from the assembly. No goto abuse or confusing conditionals.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the original source. Each function has a single clear responsibility (e.g., `param_asm_simd` handles vector addition). No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns in error handling (`if (__addr == ...) return -1`) are appropriate. No forward jumps into loop bodies.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. The SIMD functions show proper element-wise operations without redundant computations. Loop unrolling is not excessive.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` for most integers. Some improvement with `size_t` in memory functions and `undefined4`/`undefined8` for uninitialized variables. Original types like `int32_t`, `size_t` not recovered.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery visible. Arrays like `local_40`, `local_38` are accessed via pointer arithmetic (`param_1 + uVar2 * 4`). The SIMD 128-bit vectors use raw `undefined (*param_3) [16]` instead of `__m128i`.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present. The atomic functions use manual LOCK/UNLOCK instead of proper atomic types. Pointer arithmetic is manual without bounds checking. No `restrict` or `_Atomic` annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining macro expansion, assembly constraints, and test expectations - all lost in decompilation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like atomic operations show LOCK/UNLOCK but aren't labeled as such. The self-modifying code pattern in `param_dynamic_code` isn't identified. No pattern naming or algorithm identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of suspicious code or uncertainty. The indirect function call via `(*(code *)__addr)(param_1)` in dynamic code generation has no warning. No flags for potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The mmap/mprotect error handling has no contract documentation. Memory allocation success checks aren't explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear within `test_preprocessing_features` and `test_asm_features`. However, no documentation of which functions call which, or global variable usage. The relationship between `param_*` and `call_*` pairs isn't explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - preprocessing functions first, then assembly functions. Static functions like `my_func` are properly scoped. However, no header file structure or API boundaries are indicated.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: External functions (mmap, munmap, sysconf, printf) are properly declared. The code should compile with standard libc. Stack protection is the only build consideration.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming is uniformly poor: `param_1`, `uVar1`, `iVar1` provide no semantic meaning
+- No comments recovered from source - all macro documentation and assembly explanations lost
+- Composite types not recovered - SIMD vectors remain as `undefined [16]` instead of `__m128i`
+- No anomaly indication for potentially dangerous operations like self-modifying code
+- Type precision is low - original `int32_t`, `size_t` types degraded to generic `int`
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- The decompiler correctly recovers loop structures and conditional logic, making execution flow easy to follow
+
+**Most Needs Improvement:** Comment Quality (1/10)  
+- The original source had extensive documentation explaining macro expansion, assembly constraints, and test expectations - all completely lost in decompilation
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: `param_1` compared against `0x400` should be named `size`; variables used in arithmetic with `param_1` should follow (e.g., `size_squared`)
+2. **Recover struct types**: The SIMD vectors should be typed as `__m128i` or `int32_t[4]`; arrays like `local_40` should be `int[4]`
+3. **Add semantic comments**: Document what macros expanded to (e.g., "// MAX_SIZE = 1024"), explain assembly constraint semantics, and flag anomalies like indirect calls in `param_dynamic_code`

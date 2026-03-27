@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `a1`, `a2`, `a3` for parameters and `v1`, `v2`, `v3` for locals. Global variables are `g1`, `g2`, `g3`. The original had meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` - all lost in decompilation. This makes tracking variable purpose nearly impossible without cross-referencing.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test wrapper functions like `call_macro_constants`, `call_asm_basic` are well-named. However, utility functions use address-based names: `function_50c`, `function_518`, `function_524`. The core test functions (`test_preprocessing_features`, `test_asm_features`) are correctly identified, but internal helpers are cryptic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some constants like `64`, `30`, `32`, `0xdf22`, `116` are correctly recovered from macro expansions. However, mmap parameters use unexplained magic numbers: `7` (PROT_READ|WRITE|EXEC), `34` (MAP_PRIVATE|MAP_ANONYMOUS). The original had named constants like `MAX_SIZE`, `BUFFER_COUNT` that are lost.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. No obvious dead code from register spilling. Some unnecessary casts exist but don't significantly impede readability. The code is relatively clean for a decompiled output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with proper if-else structures and while loops. The `param_asm_clobber` function correctly recovers a loop structure. At `-O0` optimization, the flow closely matches the original source. Minor issues with some ternary expressions but overall readable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches the original well. Each test function (`param_macro_constants`, `param_asm_basic`, etc.) is properly separated. The original's 700+ lines are decomposed into 63 functions appropriately. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error handling paths (e.g., `param_dynamic_code`). No excessive forward jumps or goto abuse. The flow is easy to trace.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code observed. Common subexpression elimination is minimal at `-O0`. The decompiled code doesn't have obvious redundant computations that would obscure logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently which is appropriate for arm64. However, loses distinction between `size_t` (used in `mmap`, `memcpy`), `int`, and other integer types. Function pointers are declared with proper signatures. Minor type erosion but acceptable.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays are accessed via pointer arithmetic (e.g., `*(int32_t *)(a3 + 4)`) rather than array notation. The original had `result[i]` syntax which is clearer. No struct recovery needed as the source didn't define complex structs in the decompiled functions.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns exist: pointer arithmetic without bounds (`*(int32_t *)(a3 + 4)`), casting `-1` to pointer for error checking (`(int32_t *)-1`). The original used `MAP_FAILED` constant which is semantically clearer. Multiple unsafe casts observed in memory protection code.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address range comments present (e.g., `// Address range: 0x6f8 - 0x70c`). No explanation of algorithm intent, macro semantics, or inline assembly behavior. The original had extensive comments explaining preprocessing and assembly patterns - all lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are implicitly present (atomic operations use `__atomic_fetch_add_4`, memory functions map to `mmap`/`mprotect`), but no explicit naming or documentation of the patterns. The original's `#define` macros, `#ifdef` conditionals, and inline assembly idioms are not flagged.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The decompiler silently produces potentially incorrect code in some places (e.g., `param_asm_multi_insn` has a suspicious `memcpy` call with all three parameters being `v1`). No warnings about indirect calls or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original had explicit error handling (checking `MAP_FAILED`, validating return values) that could inform contracts, but none are recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes at the top provide some cross-reference. However, no documentation of which functions call which, or the relationship between test wrappers and their implementations. The original's clear `call_*` → `param_*` relationship isn't explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically with prototypes at the top, globals in the middle, and implementations after. However, it's a single monolithic file. The original's clear section comments (`// 5.2 预处理与条件编译`, `// 5.3 内联汇编`) are lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes standard headers (`<stdio.h>`, `<stdint.h>`, `<sys/mman.h>`, `<unistd.h>`). Should compile with minor fixes. However, some function signatures may not match exactly, and the use of `(int32_t *)-1` instead of `MAP_FAILED` could cause issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable naming**: Parameters `a1`/`a2`/`a3` and locals `v1`/`v2`/`v3` make code nearly impossible to follow without cross-referencing
+- **No comments**: All semantic information about preprocessing macros, inline assembly, and algorithm intent is lost
+- **Magic numbers**: mmap parameters use raw numbers (7, 34, -1) instead of named constants (PROT_READ|WRITE|EXEC, MAP_PRIVATE|ANONYMOUS)
+- **Type safety issues**: Unsafe pointer casts like `(int32_t *)-1` instead of proper error handling
+- **Anomaly silent failure**: `param_asm_multi_insn` produces suspicious code (`memcpy(v1, v1, v1)`) without warning
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+The decompiler correctly recovers loop structures and conditional logic. At `-O0`, the control flow closely matches the original source, making execution paths easy to trace.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+The generic `a1`/`v1` naming scheme completely obscures variable purpose. The original had clear names like `size`, `x`, `y`, `result`, `arr`, `n` that convey semantic meaning.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a1 > 1024` suggests `a1` is `size` or `max_size`; `a1 * a1` suggests squaring operation)
+2. **Recover macro semantics**: Detect constant expressions like `64` (from `16*4`) and suggest they came from macro expansion; flag `#define` derived values
+3. **Add semantic comments**: Document inline assembly purpose, preprocessing behavior, and algorithm intent - the original had extensive comments that should be partially recoverable from string literals and function structure

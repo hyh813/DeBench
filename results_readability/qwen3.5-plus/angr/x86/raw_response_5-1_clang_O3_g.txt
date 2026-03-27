@@ -1,0 +1,123 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `ptr`, `result`, `flag1`) with zero semantic meaning. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mix of C++ mangled names (`_Z20test_cpp_member_funcv`) and generic `sub_XXXXXX` names. Mangled names preserve original intent but aren't demangled for readability; many test functions are empty stubs.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers (42 for exception, 100/200 for RTTI) appear without explanation. String literals referenced through opaque globals (`g_402081`, `g_40209f`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise from massive padding arrays (`padding_0[11763]`), multiple `[D] Unsupported` markers, and compiler artifacts throughout. Initialization code contains meaningless pointer arithmetic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Uses `goto` statements in initialization code (`goto ptr[2]`). Many functions return immediately without logic. Exception handling uses low-level `__cxa_*` calls instead of try/catch blocks.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Most test functions (`test_cpp_constructor`, `test_cpp_virtual_func`, etc.) are empty stubs returning immediately. Template functions recovered correctly but class methods fragmented.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Goto statements disrupt natural flow. Forward jumps in initialization code. Exception handling uses explicit labels (`LABEL_0x4014ba`) instead of structured blocks.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Padding arrays create massive redundancy. Some duplicate initialization patterns. No dead code elimination visible in decompiled output.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type erosion—most types are `void*`, `unsigned int`, `char*`. Original C++ class types (`SimpleClass`, `Base`, `Derived`) completely lost. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs have generic field names (`field_0`, `field_4`) with massive padding arrays obscuring actual layout. Class inheritance relationships (virtual, multiple, diamond) not recovered.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Numerous unsafe casts (`void*` to `int*`, `char**`). Incorrect pointer arithmetic throughout (`ptr[40]`, `ptr[80]`). Vtable calls use raw pointer dereferencing.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only decompiler error markers (`[D] Unsupported`). No algorithm explanations, API contracts, or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized—vtables, exceptions, templates, smart pointers, RTTI all reduced to raw memory operations. Lambda expressions not recovered at all.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `[D] Unsupported` markers present for failed decompilations (e.g., `_Z12template_maxIdET_S0_S0_`, `Container<double>::push`). This is the only positive aspect—decompiler admits uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts lost. No null checks or bounds validation comments.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships unclear. Virtual dispatch reduced to raw vtable pointer dereferencing. Global variable usage opaque (`g_403ecc`, `g_403ee0`).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file with no logical grouping. Related class methods scattered. No namespace or header structure recovered.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Won't compile—contains `[D] Unsupported` markers, undefined external symbols, and invalid syntax. Requires extensive manual修复.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+4+4+2)/4 = 3.00 × 0.30 = 0.90
+Level 2 (Structural):   (3+3+3+4)/4 = 3.25 × 0.25 = 0.81
+Level 3 (Type System):  (2+2+2)/3   = 2.00 × 0.20 = 0.40
+Level 4 (Semantic):     (1+2+5+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):   (4+5+2)/3   = 3.67 × 0.10 = 0.37
+
+Overall Score: 2.86/10
+```
+
+**Overall Readability Score: 2.9/10**
+
+---
+
+### Critical Defects
+
+- **Empty function stubs**: 10+ test functions (`test_cpp_constructor`, `test_cpp_virtual_func`, etc.) return immediately with no implementation
+- **Complete type erosion**: All C++ class types lost; everything reduced to `void*` and `unsigned int`
+- **Missing C++ semantics**: Exceptions, virtual dispatch, templates, lambdas, smart pointers not recovered as high-level constructs
+- **Platform mismatch**: Original compiled for arm64, decompiled output shows X86 architecture
+- **Uncompilable output**: `[D] Unsupported` markers and invalid syntax prevent compilation
+
+---
+
+### Best Quality Aspect
+
+**Anomaly Indication (5/10)** - The decompiler honestly marks failed decompilations with `[D] Unsupported` markers rather than confidently presenting incorrect code, which helps analysts identify problem areas.
+
+---
+
+### Most Needs Improvement
+
+**Type System Fidelity (2.0/10 average)** - Complete loss of C++ type information makes the decompiled code practically unusable for understanding object-oriented semantics, inheritance relationships, and memory layout.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover C++ class structures**: Implement vtable analysis to reconstruct class hierarchies, virtual method tables, and inheritance relationships (single, multiple, virtual)
+
+2. **Demangle and rename C++ symbols**: Convert mangled names (`_Z20test_cpp_member_funcv`) to readable names (`test_cpp_member_func`) and infer variable names from usage patterns
+
+3. **Recognize C++ idioms**: Implement pattern matching for exceptions (try/catch/throw), smart pointers (unique_ptr/shared_ptr), templates, lambdas, and operator overloading to recover high-level semantics

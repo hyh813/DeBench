@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are universally generic (`v0`, `v1`, `a0`, `a1`) despite the source being compiled with `-g` (debug symbols). For example, `sequential_ops` uses `v2`, `v1`, `v0` instead of the original `temp1`, `temp2`, `temp3`, requiring significant mental effort to track data flow.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the source (e.g., `sequential_ops`, `loop_for_fixed`, `duffs_device`). This provides excellent high-level context and makes locating specific logic trivial.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Signed constants are often represented as unsigned equivalents (e.g., `-1` becomes `4294967295`), and compiler magic numbers appear without explanation (e.g., `1717986919` in `loop_while` which is the inverse of 10 for division), obscuring the original mathematical intent.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is polluted with decompiler artifacts, specifically calls to `armg_calculate_condition` (e.g., in `multi_return` and `conditional_return`). These represent lifted condition flags but break the C abstraction, making the code look like pseudo-assembly rather than high-level code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Basic loops and `if` statements are recovered, but `switch` statements are often decompiled into computed `goto` jumps (e.g., `switch_large` uses `goto (char *)(4196980 + ...)`), which is accurate to the binary but significantly harder to read than a standard `switch` block.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries match the source perfectly with no inlining or outlining. The granularity is excellent, maintaining the original modularity of the test cases (e.g., `test_control_flow_l1` remains a distinct function).
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom, but the use of computed gotos for switch cases and ternary operators for simple branches (e.g., `if_else` becomes `v0 = (a0 < 1 ? 0 : 1)`) introduces minor non-linearity compared to the explicit block structure of the source.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: As expected with `-O0`, there is standard redundancy like `v0 = a0; return v0;`, which is faithful to the stack frame but verbose. However, there is no dead code or loop unrolling artifacts that would complicate understanding.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Signed integers are frequently treated as unsigned (e.g., parameters are `unsigned int` while source used `int`), and comparisons are adjusted accordingly (`x > 0` becomes `v0 >= 1`). This changes the semantic meaning of boundary conditions.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Arrays are not recovered as array types; instead, pointer arithmetic is used. For example, in `loop_break`, the array access `arr[i]` is represented as `(&v2)[i]`, which is technically correct but loses the semantic context of an array data structure.
+
+**11. Type Safety:** Score: 4/10
+Justification: The insertion of `armg_calculate_condition` calls with magic integers (e.g., `193`, `66`) represents a type safety violation where CPU flags are exposed as function arguments, creating an opaque and unsafe interface within the C code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. The rich documentation in the source (e.g., "难度依据", "场景标签") is completely lost, leaving no explanation for complex logic like Duff's device or state machines.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Basic loops are recognized, but complex patterns are not. `duffs_device` is decompiled into a mess of arithmetic and a computed goto, failing to identify the specific loop-unrolling idiom used in the source.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The `armg_calculate_condition` calls appear without any warning or explanation that this is a decompiler artifact or lifting failure. The code presents these opaque calls as standard logic, which is misleading.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are recovered. For example, the requirement that `n > 0` in `duffs_device` is not documented, nor are the return value constraints for the state machines.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are direct and readable, but global variable usage (e.g., `g_414008`, `jump_buffer`) is explicit but lacks context regarding what these globals represent (e.g., `jump_buffer` is identified, but its role as a `jmp_buf` is not typed).
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are ordered by address, which roughly correlates with the source order in this specific compilation unit. The grouping of `test_control_flow_l1`, `l2`, and `l3` is preserved, maintaining logical sections.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to undefined symbols (`armg_calculate_condition`, external globals like `g_414008`) and non-standard syntax (computed goto targets). It requires significant patching to become valid C.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable names are generic (`v0`, `v1`) despite debug symbols being available in the build.
+- `armg_calculate_condition` calls obscure boolean logic and break C abstraction.
+- Signed integers are displayed as unsigned (e.g., `-1` as `4294967295`), altering semantic meaning.
+- Arrays are accessed via pointer arithmetic (`(&v2)[i]`) rather than array indexing syntax.
+- Switch statements are decompiled to raw computed gotos, losing the high-level control flow structure.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved all original function names, providing a reliable high-level map of the binary.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)
+- The complete absence of comments, combined with the loss of source documentation, makes understanding complex algorithms (like Duff's device) unnecessarily difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Parse Debug Symbols**: Utilize DWARF debug information (available via `-g`) to recover original variable names and types instead of defaulting to `v0`, `a0`.
+2. **Lift Condition Flags**: Replace `armg_calculate_condition` calls with native C boolean operators (e.g., `&&`, `||`, `>`, `<`) to restore natural control flow.
+3. **Improve Type Inference**: Implement better signed/unsigned analysis to correctly display negative integers and use appropriate signed types for variables involved in comparisons.

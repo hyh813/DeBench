@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic decompiler names (`v2`, `v3`, `w8`, `x0`, `v11`) throughout. For example, `param_asm_clobber` uses `v2`, `v3`, `v5` instead of meaningful names like `vector_sum`, `array_ptr`, `loop_index`. Only parameter names (`size`, `x`, `y`, `arr`, `n`) are preserved from original source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved accurately (`param_macro_constants`, `call_macro_functions`, `param_asm_basic`). A few runtime functions use generic names (`sub_7A0`, `init_proc`), but user code maintains semantic naming well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation: `57072` in `param_multi_branch_compile` (should be `0xDEF0`), `282` in `param_builtin_macros` (line + counter sum). Some constants are clear (`1024`, `512`, `64`) but computed values lack context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Register annotations (`// w8`, `// x0`, `// x20`) add minor noise. Type casts like `(__int64)` and `(unsigned int)` are present but not excessive. No dead code or debug instrumentation observed.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control structures are natural (if-else, loops). However, aggressive constant folding obscures original logic—`call_macro_constants` returns `64` directly instead of calling `param_macro_constants(2048)`, losing the call relationship.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly. However, caller functions are over-optimized into constant returns (`call_macro_functions` returns `30` directly), losing the semantic relationship between caller and callee.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. No excessive gotos or forward jumps. Loop in `param_asm_clobber` uses proper `do-while` structure. Early returns are used appropriately.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Constant folding actually reduces redundancy. `param_simd_intrinsics` and `param_asm_simd` have identical bodies (expected from optimization), which could be noted.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `void*`, `size_t`). ARM-specific types appear (`int32x4_t`, `__int64`, `atomic_uint`). Some type erosion: `param_stringize` returns `__int64` instead of `int` for string length sum.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: No complex structs in source to recover. Pointer types generally correct. Array parameters shown as pointers (`int *arr`) which is C-correct but loses array semantics.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts visible. Pointer arithmetic appears safe. Atomic operations use proper intrinsics (`_aarch64_ldadd4_acq_rel`). No buffer overflow patterns introduced by decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments—only register annotations (`// w8`, `// x0`). No semantic comments explaining purpose. Original source had extensive documentation (macro explanations, test expectations) completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No pattern recognition. Inline assembly converted to C equivalents (good), but no indication this was originally assembly. SIMD vectorization in `param_asm_clobber` not identified as optimization pattern.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed decompilations listed at end ("FAILED to decompile: memcpy @ 0x120D8"). No warnings about constant folding losing original semantics. Architecture mismatch (arm64 source vs arm decompiled) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `arr != NULL` for `param_asm_clobber`). No postconditions. Original test expectations (e.g., "期望：64") completely lost from decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls visible and named correctly. Global variable `global_var` referenced properly. However, constant-folded callers (`call_macro_constants`) lose the call relationship entirely.
+
+**17. Module Organization:** Score: 8/10  
+Justification: All functions in single file matching source structure. Function ordering roughly preserved. Runtime initialization functions (`init_proc`, `_start`) appropriately separated from user code.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 12 library functions failed to decompile (printf, mmap, memcpy, etc.). Would require stub implementations to compile. ARM-specific intrinsics (`_aarch64_ldadd4_acq_rel`) need proper headers.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+7)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (7+7+8+8)/4 = 7.50 × 0.25 = 1.88
+Level 3 (Type):        (7+6+8)/3   = 7.00 × 0.20 = 1.40
+Level 4 (Semantic):    (3+5+6+3)/4 = 4.25 × 0.15 = 0.64
+Level 5 (Contextual):  (7+8+5)/3   = 6.67 × 0.10 = 0.67
+
+Overall Score: 6.39/10
+```
+
+### Overall Readability Score: **6.4/10**
+
+### Critical Defects:
+- **Constant folding destroys call relationships**: `call_macro_constants` returns `64` directly instead of showing `return param_macro_constants(2048)`, losing semantic traceability
+- **Magic numbers without context**: `57072`, `282`, `382` appear without explanation of their derivation from original constants
+- **Variable names are generic**: `v2`, `v3`, `w8`, `x0` obscure variable purposes (e.g., loop counters, accumulators, pointers)
+- **No semantic comments**: Original documentation about macro behavior, test expectations, and assembly purpose completely lost
+- **Architecture mismatch unflagged**: Source claims arm64/gcc but decompiled shows arm/IDA with ARM-specific intrinsics
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- User-defined function names preserved accurately, maintaining semantic connection to original source code intent
+
+### Most Needs Improvement: **Comment Quality & Presence (3/10)**
+- Zero semantic comments explaining purpose, algorithm, or recovered information; only register annotations present
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve call relationships even when constant-foldable**: Show `return param_macro_constants(2048)` with a comment noting "evaluates to 64" rather than just `return 64`
+2. **Recover and annotate magic numbers**: Detect computed constants and add comments like `// 57072 = 10*5 + 0xDEF0 (from multi_branch_compile)`
+3. **Generate semantic comments from debug symbols**: Use `-g` debug info to recover original comments, variable purposes, and test expectations into decompiled output

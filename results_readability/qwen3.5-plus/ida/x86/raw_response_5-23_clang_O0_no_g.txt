@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v0`, `v1`, `temp`) with no semantic meaning recovered. For example, `param_macro_constants(int a1)` should have `size` as the parameter name based on source.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation of original function names (`param_macro_constants`, `call_macro_constants`, `param_asm_simd`). Names accurately reflect functionality and match source exactly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `57072` in `param_multi_branch_compile` (should be `0xDEF0`), `282` in `param_builtin_macros` (line number), and `30` for `_SC_PAGESIZE` lack explanation or constant recovery.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean with minimal compiler artifacts. Some unnecessary stack variable declarations (`[esp+0h] [ebp-8h]`) but no excessive register spilling noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures well-recovered (if/else in `param_macro_constants`, for loop in `param_asm_clobber`). No spurious gotos in application logic.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Original function granularity perfectly preserved. Each source function maps to one decompiled function with appropriate boundaries.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Loop constructs properly recovered (e.g., `param_asm_clobber` shows clean for loop instead of assembly jumps).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal redundancy. Some stack variable declarations could be eliminated (`v3`, `v2`, `v1` chains in `test_preprocessing_features`).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, size_t), SIMD types recovered (`__m128i`). However, `volatile` lost in atomic operations, `const` missing on string pointers, and `param_stringize` returns `size_t` but source returns `int`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays handled reasonably (`_BYTE dest[24]`, `char v3[14]`). SIMD vectors recovered as `__m128i` structs. No complex struct recovery needed in this code.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns: `param_memory_clobber_demo` returns `char *` but performs pointer arithmetic on `int` (`(char *)global_var + 50`). Cast-heavy array access in `param_asm_clobber`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. No algorithm explanations, no macro semantics recovered, no indication of what `57072` represents (should be `0xDEF0` from PLATFORM default).
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition. Assembly patterns optimized to C (good) but no indication that `param_asm_basic` was originally inline assembly. Macro expansions not documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (`FAILED to decompile: __libc_start_main`), but no inline warnings. `param_dynamic_code` loses mmap code generation logic silently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_asm_clobber` requires valid array pointer). No postconditions or error condition documentation recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call graph clear (`call_macro_constants` → `param_macro_constants`). Global variable `global_var` referenced but not declared in output. External dependencies listed as failed.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source. Test functions grouped together. No header file or API declarations provided.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 10 external functions failed to decompile (`printf`, `mmap`, `memcpy`, etc.). Would require significant stubbing. Type mismatches (`param_stringize` return type) would cause compilation warnings.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+5+7)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (8+9+8+7)/4 = 8.00 × 0.25 = 2.00
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.27
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (7+7+5)/3   = 6.33 × 0.10 = 0.63
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.19/10
+```
+
+### Overall Readability Score: **6.2/10**
+
+### Critical Defects:
+- **Variable `a1` should be `size`** in `param_macro_constants` based on comparison logic (`a1 <= 1024`)
+- **Magic number `57072`** in `param_multi_branch_compile` should be `0xDEF0` with comment explaining PLATFORM default
+- **Zero comments** despite complex macro semantics that are impossible to recover from binary alone
+- **`param_memory_clobber_demo` returns wrong type** (`char *` instead of `int`) - type inference error
+- **No indication of lost assembly semantics** - `param_asm_basic` appears as simple addition with no note it was inline assembly
+
+### Best Quality Aspect: **Function Naming Quality (9/10)**
+- Original function names perfectly preserved, making navigation and understanding significantly easier than typical decompilation.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of semantic documentation means macro expansions, assembly intent, and magic numbers are unexplained, requiring manual reverse engineering.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic comments from debug symbols** - When `-g` flag is present, extract variable names and function documentation from DWARF info
+2. **Annotate magic numbers with hex equivalents** - Display `57072 (0xDEF0)` and suggest constant names based on usage patterns
+3. **Flag assembly-to-C transformations** - Add comments like `// Originally: inline assembly (x86_64)` when assembly was optimized to equivalent C

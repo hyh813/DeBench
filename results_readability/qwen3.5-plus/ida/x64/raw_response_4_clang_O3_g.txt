@@ -1,0 +1,106 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `v6`, `v8`, `v9`, `v10`, `v11`, `v13`, `v15-v20`) obscuring their semantic purpose. Only a few variables like `result`, `overflow_arg_area`, and `callback` have meaningful names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions preserve original names (`cdecl_func`, `varargs_func`, `func_struct_byval`), but helper functions use generic names (`sub_1020`, `init_proc`) and string literals are opaque (`aCallL206`, `asc_23AB`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (`0x28`, `0x29`, `0xFFFFFFFE`, `238` in shuffle). Constant folding hides original computations (functions return `15`, `50`, `6` directly instead of showing `cdecl_func(5, 10)`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: register annotations (`// rax`, `// rdx`), stack frame comments (`[rsp-8h] [rbp-8h] BYREF`), calling convention markers (`__fastcall`, `__cdecl`), and SIMD intrinsics (`_mm_add_epi64`, `_mm_shuffle_epi32`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Varargs functions use goto labels (`LABEL_11`, `LABEL_12`) instead of structured loops. Simple functions have natural if-else flow, but constant folding eliminates original control structures entirely.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and cohesive. However, caller functions are constant-folded (e.g., `call_cdecl()` returns `15` directly), losing the actual call structure from source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but varargs handling has complex jump patterns with labels. SIMD-optimized functions (`func_struct_byval`, `ret_large_struct`) have non-linear appearance due to intrinsic calls.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding creates apparent redundancy (all test functions return hardcoded values). Varargs functions have duplicated logic for register vs. stack argument handling. Optimization artifacts create visual redundancy.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `double`, `__int64`), but va_list handling shows type confusion (`_QWORD`, `_DWORD`). Struct types preserved but some generic types (`__int64` instead of specific integer types) degrade precision.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs recovered with field names (`LargeStruct`, `SmallStruct`, `BigStruct`, `LargeData`, `SmallPoint`). Field access is clear (`s.data[i]`, `p->x`, `retstr->data[0]`), but SIMD operations obscure original struct iteration intent.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(_DWORD *)`, `(_QWORD)`, `(char *)`, `(void*)`. Function pointer calls have aggressive casts: `((__int64 (__fastcall *)(_QWORD))callback)`. Va_list handling has many type-unsafe operations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only warning comments present ("positive sp value has been detected, the output may be wrong!", "local variable allocation has failed"). No algorithm explanations, API contracts, or semantic documentation. String references are opaque.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern present but not explicitly named. Standard C idioms (strlen, printf) preserved but not commented. Calling convention annotations present but not explained. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Stack and allocation warnings present. Failed decompilation noted for library functions. However, constant folding artifacts and SIMD optimization artifacts are not indicated as decompiler transformations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Null checks present (`if (p)`, `if (pp)`) but not documented as contracts. No invariant recognition or error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear where not constant-folded. Global variable names degraded (`_gmon_start__`, `_bss_start`). String references opaque (`s`, `aCallL206`, `asc_23AB`). Call graph obscured by constant folding.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical groups matching source structure (calling conventions, parameter passing, return values). Static functions properly identified. Library functions separated in "FAILED to decompile" section.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: References external functions (printf, puts, strlen) that failed decompilation. Requires stubs for dependencies. Compiler-specific annotations (`__fastcall`, `__cdecl`) and SIMD intrinsics need appropriate headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (5+7+6+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (6+7+4)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (3+4+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (5+7+5)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.28/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable names are generic** (`v1`, `v2`, `v3`...) requiring significant effort to track semantic purpose in varargs functions
+- **Constant folding obscures original logic** - caller functions return hardcoded values (15, 50, 6) instead of showing actual function calls
+- **Unsafe type casts pervasive** - `(_DWORD *)`, `(_QWORD)`, function pointer casts without safety documentation
+- **No semantic comments** - only compiler warning comments present; no algorithm or API contract documentation
+- **String literals opaque** - referenced as `s`, `aCallL206`, `asc_23AB` instead of actual string content
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - User-defined function names preserved from source (`cdecl_func`, `varargs_func`, `func_struct_byval`), maintaining semantic connection to original code.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Virtually no useful documentation; only compiler warnings present, no algorithm explanations, API contracts, or semantic guidance for understanding transformed code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables used in size checks should be named `count` or `size`; pointer variables should indicate their target type
+2. **Document optimization transformations** - Add comments indicating constant folding, SIMD vectorization, and other optimizations that differ from source structure
+3. **Recover string literal content** - Display actual string values inline rather than opaque references (`aCallL206` → `"CALL-L2-06: varargs_func(5, 1-5) = %d\n"`)
+
+---
+
+### Important Note on Optimization Mismatch:
+The source metadata indicates `-O0` (debug) compilation, but the decompiled binary shows `-O3` optimization artifacts (constant folding, SIMD intrinsics, aggressive inlining). This mismatch significantly impacts readability expectations. At true `-O0`, scores would be 2-3 points higher across most dimensions.

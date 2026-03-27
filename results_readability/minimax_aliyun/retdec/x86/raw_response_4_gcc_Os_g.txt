@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2`, `a3`, `a4`, `a5`, `a6`. Local variables use cryptic names like `v1`, `v2`, `result`. The original source uses meaningful names like `count`, `args`, `sum`, but these are completely lost. For example, in `varargs_func`, the parameter `count` becomes `uint32_t count` in source but `uint32_t count` is lost - the decompiled version uses no named parameters at all.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately match the original source: `cdecl_func`, `call_cdecl`, `varargs_func`, `func_no_args`, `func_many_args`, `ret_basic_type`, etc. The decompiler correctly recovered the semantic names. Minor deduction for some internal functions like `function_1090`, `function_10a0` that should have been named more meaningfully.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most numeric literals are correct and meaningful (e.g., `return 15;` for `call_cdecl()`, `return 50;` for `call_stdcall()`). The magic number `0x12345678` in `call_complex_cast()` is correctly preserved. Some string literals are reconstructed via relative offsets which is confusing but functional.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts including `__x86_get_pc_thunk_bx`, `__x86_get_pc_thunk_dx`, `__x86_get_pc_thunk_ax`, `__x86_get_pc_thunk_di` functions that are pure noise. Stack protection code (`__readgsdword`, `__stack_chk_fail_local`) adds clutter. However, at -O0 level, these are expected artifacts. The varargs handling shows some awkward pointer arithmetic but no extreme degradation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use while/for constructs correctly, conditionals are clear. The `ret_complex_expr` function has an overly complex ternary expression that could be simplified, but it's semantically correct. At -O0, the control flow should closely match source, and it does for most functions.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - most are 10-50 lines. The test functions (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) are larger but that's expected for test harness code. Each function has a single responsibility. No over-fragmentation or monolith issues observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present in `varargs_func` when `count <= 0`. Some forward jumps in complex functions like `test_calling_conventions` but nothing severe. The code is mostly linear and followable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Some loop unrolling in varargs functions but it's handled through proper while loops. The `param_ptr_array` function has a small amount of code duplication between the first iteration and loop body, but it's manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently which is good. However, there's confusion between pointers and integers - `param_string(int32_t a1)` should be `const char*`. Function pointers are properly typed: `int32_t (*callback)(int32_t)`. The `float64_t` type is correctly used in `func_mixed_args`. Mixed results - mostly correct but some pointer types lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**. The original source defines `LargeStruct` (128 bytes) and `SmallStruct` (8 bytes), but the decompiler completely failed to recover these. In `func_struct_byval`, the decompiler shows raw pointer arithmetic: `*(int32_t *)((int32_t)&v1 + 8 + 8 * i)` instead of `s.data[i]`. Similarly, `func_struct_byptr` uses `*(int32_t *)(a1 + 4) * *(int32_t *)a1` instead of `p->x * p->y`. The struct types are completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present throughout. In `param_string`: `(int32_t)*(char *)(a1 + 1)` - mixing int32_t and char* inappropriately. In `param_ptr_array`: `(int32_t)*(char *)v2` - casting pointer to int32_t. The `param_complex_cast` function uses raw pointer arithmetic without type safety. These patterns could lead to undefined behavior on 64-bit systems.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal useful comments. The decompiler includes source line ranges (e.g., `// Line range: 660 - 665`) which are auto-generated and not helpful for understanding. No explanation of algorithms, calling convention implications, or parameter purposes. The comment `// From module: /work/4.c` is noise. No contracts or preconditions documented.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C idioms are present but not named or explained. The varargs usage (`va_list`, `va_start`, `va_arg`, `va_end`) is not explicitly identified as such - it's just raw pointer arithmetic. The calling convention tests (cdecl, stdcall, fastcall) are not annotated to explain what they test. No design patterns identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code or uncertain decompilation. The `param_func_ptr` function has a concerning pattern: `int32_t v1; return v1 + 10;` where `v1` is uninitialized, but there's no warning. The indirect function call resolution in `call_func_ptr_param` uses raw pointer arithmetic without indicating uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `func_struct_byptr` that check for NULL (`if (!p) return -1;`) don't have comments explaining the contract. The varargs functions have no documentation about expected argument types.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear - you can see `call_cdecl()` calling `cdecl_func()`. However, the relationships between functions (which are test helpers, which are test targets) are not documented. No indication that these are calling convention tests. Global variable usage is present but not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically - all calling convention functions together, all parameter passing functions together, all return value functions together. However, everything is in one massive file (1002 lines). No separation into logical sections with comments. The test functions are mixed with implementation functions.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Function prototypes are declared at the top. The code should compile with standard library linkage. However, it relies on external functions like `__printf_chk`, `__stack_chk_fail`, `__cxa_finalize` which are libc functions. The code would need linking against glibc. No header file separation makes integration difficult.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 7 + 5) / 4 = 5.5
+L2_avg = (7 + 8 + 7 + 7) / 4 = 7.25
+L3_avg = (7 + 2 + 5) / 3 = 4.67
+L4_avg = (3 + 4 + 3 + 2) / 4 = 3.0
+L5_avg = (5 + 6 + 7) / 3 = 6.0
+
+Overall = (5.5 × 0.30) + (7.25 × 0.25) + (4.67 × 0.20) + 
+          (3.0 × 0.15) + (6.0 × 0.10)
+        = 1.65 + 1.8125 + 0.934 + 0.45 + 0.6
+        = 5.4465 ≈ 5.4/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects (Bullet List)
+- **Struct type recovery completely failed**: `LargeStruct` and `SmallStruct` are lost; all access is raw pointer arithmetic like `*(int32_t *)(a1 + 4)` instead of `p->y`
+- **Variable naming is unusable**: All parameters are `a1`, `a2`, etc.; local variables are `v1`, `v2`, `result` - no semantic meaning whatsoever
+- **Type safety violations**: Multiple unsafe pointer-to-integer casts (e.g., `(int32_t)*(char *)v2`) that would break on 64-bit systems
+- **No function contracts or preconditions**: Functions like `func_struct_byptr` that check for NULL don't document their requirements
+- **Uninitialized variable used**: In `param_func_ptr`, local variable `v1` is used uninitialized (`return v1 + 10;`) with no warning
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (scored 8/10)**: Functions are properly separated with appropriate granularity. Each function has a clear single responsibility matching the original source. No excessive inlining or fragmentation.
+
+### Most Needs Improvement (Single Dimension)
+- **Composite Type Recovery (scored 2/10)**: The decompiler completely failed to recover struct types. The original source defines clear structs (`LargeStruct`, `SmallStruct`, `TestClass`, `SmallPoint`, `LargeData`) but the decompiled code uses only raw pointer arithmetic, losing all semantic meaning of the data structures.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct/union types from stack layout analysis**: Analyze stack frame access patterns to identify structured data. For example, `*(int32_t *)(a1 + 4) * *(int32_t *)a1` should be recognized as `p->x * p->y` where `p` is a struct with `x` and `y` fields.
+
+2. **Infer variable names from semantic usage**: Use data flow analysis to name variables. If a parameter is used as a loop counter with `count` comparisons, name it `count`. If a variable is used to accumulate a sum, name it `sum`.
+
+3. **Add type safety checks and warnings**: Flag unsafe casts that could cause issues on different architectures. Warn about uninitialized variable usage like `v1` in `param_func_ptr`. Add annotations for potential undefined behavior.

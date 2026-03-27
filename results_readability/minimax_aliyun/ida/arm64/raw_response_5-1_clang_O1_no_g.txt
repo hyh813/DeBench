@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `v0`, `v1`, `v2`, `i`, `result`. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value` - all completely lost. Even loop indices are just `i` rather than descriptive names.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Member functions like `Base::virtual_func` and `Derived::virtual_func` are correctly named. However, most functions retain C++ mangled names like `_Z20test_cpp_member_funcv` and `_ZN4Base12virtual_funcEi`. Static/utility functions use cryptic names like `sub_1630`, `call_weak_fn`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (e.g., string "Test" preserved), but many magic numbers lack explanation. The value `4700` appears in calculations without indicating it's derived from `0x1234 = 4660`. Numbers like `0x14u` (20 bytes), `5` (array size), `10` (multiplier) are unexplained.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate noise present including `__hidden` annotations in function signatures, thunk function markers (`non-virtual thunk to`), and 23 failed decompilations listed at the end. However, core logic is relatively clean without excessive register spilling artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper if/else and loop structures. At `-O0`, the code should closely match source. Some virtual dispatch complexity exists but is manageable. The exception handling shows `__cxa_throw` directly which is expected at this level.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with good granularity. Member functions are extracted correctly as separate functions. Template instantiations appear as separate functions (`template_max<int>`, `template_max<double>`). The `test_cpp_oo_features` function correctly aggregates all test calls.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Some complex expressions in virtual function calls (especially in diamond inheritance) involve multiple pointer dereferences that disrupt flow slightly, but are manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or redundant expressions. Loop constructs are properly recognized. The code shows inline expansion of template functions which is appropriate for `-O0` compilation.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - uses `_DWORD`, `_QWORD`, `int`, `char*` appropriately in places, but many function pointers use generic `__int64` instead of proper signatures. The `__fastcall` is correctly identified. However, return types often default to `__int64` when more specific types could be used.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/class reconstruction visible. All class members are accessed via raw pointer arithmetic (e.g., `*(_DWORD *)(result + 40)` for `Container<int>::size`). The original class members like `value`, `name`, `data`, `size`, `multiplier` are completely lost - replaced with offset calculations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Significant type safety issues - extensive manual pointer arithmetic without type information. Function pointer types are often incorrect (e.g., `__int64 (__fastcall ***a1)(_QWORD)` for vtable pointer). Unsafe casts like `(Base *)&v4` are common. No bounds checking visible in array operations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Very few comments present. The decompiler provides minimal documentation - only function names and some `// attributes: thunk` markers. No explanation of complex logic, algorithm intent, or non-obvious operations. The original source comments explaining each test scenario are completely absent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are visible (virtual function calls through vtable, `__dynamic_cast` for RTTI, thunk functions for multiple inheritance). However, these patterns are not explicitly named or documented. A reader wouldn't understand "virtual thunk to" without additional knowledge.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations are listed at the end (23 functions), but there's no in-code indication of uncertainty or anomalies. The complex virtual function implementations (especially diamond inheritance) contain suspicious pointer arithmetic without warnings. No flags for potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source had no explicit assertions, but semantic contracts (e.g., "requires: idx < size" for `getData`) are completely lost. No documentation of error handling expectations.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., `test_cpp_oo_features` calls all test functions). Virtual dispatch through vtables is apparent. However, no explicit documentation of who calls what or callback relationships. Static member access patterns (`LifecycleClass::instance_count`) are visible but not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically by class (all `Base*`, `Derived*`, `Container*` functions together). Template instantiations are grouped. However, everything is in a single monolithic output with no namespace or file structure recovery. The original C++ class organization is partially preserved.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code has "FAILED to decompile" markers throughout and 23 unresolved functions. Many external dependencies (stdlibc++, libc) are called but not declared. The code would require significant patching to compile. No header declarations or dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable naming**: All meaningful variable names lost - `value`, `name`, `data`, `size`, `multiplier` all replaced with `v0`, `v1`, offset calculations
+- **No class/struct recovery**: All composite types lost; original class members accessed via raw pointer arithmetic like `*(_DWORD *)(result + 40)`
+- **Type safety**: Extensive unsafe pointer operations without type information; function pointer signatures often incorrect
+- **Function names**: Mangled C++ names retained instead of demangled (e.g., `_Z20test_cpp_member_funcv`)
+- **No semantic context**: Original comments explaining test scenarios, expected values, and algorithm intent completely absent
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions are properly separated with appropriate granularity. Member functions are correctly extracted as separate functions, and template instantiations appear as distinct functions. The overall function boundaries match the original source well.
+
+### Most Needs Improvement: Composite Type Recovery (2/10)
+The decompiler failed to reconstruct any class or struct definitions. All class members are accessed through raw pointer arithmetic with hardcoded offsets, completely losing the semantic meaning of fields like `value`, `name`, `data`, `size`. This makes the code extremely difficult to understand and modify.
+
+### Top 3 Recommendations:
+1. **Recover class/struct definitions**: Reconstruct class layouts with field names and types instead of exposing raw offset calculations
+2. **Demangle all C++ names**: Convert mangled names like `_Z20test_cpp_member_funcv` to `test_cpp_member_func()`
+3. **Infer variable names from usage**: Use data flow analysis to name variables based on how they're used (e.g., `v2` used as size → `size`)

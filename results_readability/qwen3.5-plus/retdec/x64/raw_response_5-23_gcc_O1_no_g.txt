@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `a1`, `a2`, `temp`, `result`) with zero semantic meaning. Original parameters like `size`, `x`, `y` are reduced to `a1`, `a2`, making it impossible to understand variable purpose without tracing usage.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original function names preserved (`param_macro_constants`, `call_asm_basic`), but many helper functions are generic (`function_1090`, `function_10a0`). The test functions retained meaningful names which helps navigation.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0xdef0`, `0xffffffff`, `0x4010`) without explanation. Original macros like `MAX_SIZE` (1024) and `BUFFER_COUNT` (16) are lost. String literals stored as hex-encoded globals (`g1`, `g2`) obscuring their content.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive `& 0xffffffff` masking throughout, stack canary checks (`__readfsqword`, `__stack_chk_fail`), and redundant type casts. At `-O0` these artifacts should be minimal but decompiler introduced them.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Unnatural conditional expressions like `v2 < 0 == ((v2 ^ v1) & (v1 ^ (int32_t)&g20)) < 0` instead of simple `if (size > MAX_SIZE)`. Some while loops recovered but many conditionals are obfuscated.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized (10-50 lines each). Call functions properly separated from param functions. However, some inline assembly functions lost their structure (`param_asm_multi_insn` has undefined variables `v1`, `v2`).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but assembly-related functions have confusing forward references. Some functions have uninitialized variable usage (`v1` used before assignment in `param_asm_multi_insn`).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding lost original logic (`call_macro_constants` just returns 64). Repetitive `& 0xffffffff` masking throughout. Some dead code from stack checking remains.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `int64_t`, `int32_t`, or `int64_t *`. Original types (`size_t`, `char *`, `void *`, `atomic_int`) lost. Function signatures wrong (`param_asm_clobber` has 4 parameters instead of 2).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No structs/unions in this code to evaluate. Arrays represented as pointers. The `int128_t` typedef for SIMD is creative but incorrect (typedef'd as `int64_t`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts throughout (`(int32_t)a1`, `(int64_t *)-1`). Pointer arithmetic without proper typing. `param_asm_multi_insn` uses uninitialized pointers which would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive Chinese documentation explaining each test case, macro purpose, and expected behavior. Complete loss of semantic documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No macro expansion patterns identified. Inline assembly not marked as such. Original patterns like `SQUARE(x)`, `MAX(a,b)`, `ADD_16(x)` completely lost to constant folding.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about unresolved calls, assembly blocks, or potential issues. `param_asm_multi_insn` has clearly broken code (uninitialized variables) with no anomaly flag.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `size > 0`, `ptr != NULL`). No postconditions. Original expected values (注释中的"期望: 64") completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph visible through code. Global variables (`g1`-`g20`) used but relationships not documented. No indication of which functions call which.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file. Functions grouped somewhat logically (preprocessing tests together, assembly tests together). No header file separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Missing `#include <stdio.h>` but uses `__printf_chk`. Some functions reference undefined symbols. Would require significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+4)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+6+5+5)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (3+5+3)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 3.76/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Variable `a1`, `a2` should be named `size`, `x`, `y`** based on original source semantics and usage patterns
+- **Zero comments** despite original having extensive documentation explaining each test case
+- **Magic numbers everywhere** (`0xdef0`, `0xffffffff`) without recovering original macro constants (`MAX_SIZE`, `BUFFER_COUNT`)
+- **Broken function `param_asm_multi_insn`** uses uninitialized variables (`v1`, `v2`, `v4`, `v5`, `v6`) with no anomaly warning
+- **Type degradation** - all parameters become `int64_t` losing original type information (`size_t`, `char *`, `void *`)
+
+### Best Quality Aspect:
+- **Function Decomposition (6/10)** - Functions are appropriately sized and logically separated (param_* vs call_* functions), making navigation possible despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation means readers cannot understand the purpose of each test function or the expected behavior without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics** - Detect constant-folded values and suggest original macro names based on usage patterns (e.g., `1024` → `MAX_SIZE`, `16` → `BUFFER_COUNT`)
+2. **Add anomaly flags** - Mark functions with uninitialized variables, unresolved assembly blocks, and potential undefined behavior with clear warnings
+3. **Preserve parameter semantics** - Use data flow analysis to infer meaningful parameter names (`a1` used in size comparison → `size`, `a1` used in array indexing → `index`)

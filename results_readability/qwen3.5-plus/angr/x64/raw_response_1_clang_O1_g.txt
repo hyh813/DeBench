@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic (`v0`, `v1`, `v2`, `a0`, `a1`, `a2`). Original source had meaningful names like `temp1`, `sum`, `count`, `i`, `j` that are completely lost. Example: `loop_while` uses `v1` instead of `count`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names recovered (`sequential_ops`, `single_if`, `if_else`), but surrounded by generic wrapper functions (`sub_401169`, `sub_401178`). Test functions properly named (`test_control_flow_l1`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears constantly without explanation. Compiler optimization constant `1717986919` for division is opaque. Test values hardcoded without context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Register variable comments (`// rax`, `// [bp-0x8]`) add noise. Unnecessary wrapper functions created. Type casts throughout obscure simple operations.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Critical failures: `loop_while` has broken condition `v2 + 9 > 18` with undefined `v2`. `loop_dowhile` returns undefined `v2`. Loops converted to complex arithmetic expressions instead of recognizable constructs.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but unnecessary wrapper functions created (`sub_401169` just calls `sequential_ops`). Function sizes reasonable but fragmentation adds confusion.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Goto labels (`LABEL_4016d5`, `LABEL_401a73`) disrupt flow in test functions. Simple functions read linearly, but complex control flow creates jump-heavy code.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Excessive type casts throughout. Some expressions could be simplified. No dead code removal issues, but compiler artifacts remain visible.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `int` becomes `unsigned long long` or `unsigned int`. `if_else` returns `long long` instead of `int`. Signed/unsigned confusion throughout (e.g., `single_if` takes `unsigned long` for signed comparison).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Only one trivial struct recovered (`struct_0` with `field_0`). Arrays lost: `loop_break` treats `"\n"` string as integer array. Function pointer arrays not properly reconstructed.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts visible. `loop_break` has dangerous pointer arithmetic on string literal. Function pointer calls have incorrect signatures. Integer overflow potential with unsigned wrapping.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only compiler-generated register comments (`// rax`, `// ecx`). Zero semantic comments explaining algorithm intent. No decompilation confidence indicators for uncertain regions.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Loop idioms not recognized (digit counting via division by 10 becomes magic multiplication). Switch fall-through not identified. State machine patterns completely missed.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`). Functions with obvious errors (`loop_while` undefined variable) have no warnings. Silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n > 0`). No postconditions inferred. Error conditions not documented despite multiple return paths.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables referenced (`g_403654`, `g_405fe0`) without purpose explanation. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Test functions mixed with implementation. No header structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies declared but many globals undefined. Would require significant stubbing to compile standalone. No build documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (3+6+5+6)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (2+2+3+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.43
+
+Overall Score: 3.90/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **`loop_while` and `loop_dowhile`** contain undefined variables (`v2`, `v3`) making them semantically broken
+- **`loop_break`** incorrectly treats string literal `"\n"` as integer array for comparison
+- **Type precision lost**: `int` parameters become `unsigned long long`, breaking signed comparisons
+- **Magic number `4294967295`** appears 30+ times without explanation (should be `UINT_MAX` or `-1`)
+- **Loop structures not recovered**: Division by 10 becomes multiplication by `1717986919` with shifts
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names like `sequential_ops`, `nested_if_2`, `test_control_flow_l1` were successfully recovered from debug symbols
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Arrays, structs, and function pointer tables almost completely lost; `loop_break`'s array became a string literal
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Improve loop pattern recognition** - Detect division-by-constant patterns (like `x/10`) and recover as readable operations instead of multiply-shift sequences
+2. **Add anomaly warnings for undefined variables** - Functions like `loop_while` reference `v2` before definition; this should trigger decompilation confidence warnings
+3. **Recover array types from access patterns** - When seeing `arr[i]` access patterns with known bounds, reconstruct as arrays rather than pointer arithmetic on literals

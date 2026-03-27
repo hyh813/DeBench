@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `idx`, `cur`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `test_str` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions retained original names (`cdecl_func`, `varargs_func`, `test_calling_conventions`, `main`), but runtime initialization functions use generic names (`sub_401020`, `sub_40102d`). Important test functions are identifiable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF mask) appears repeatedly without explanation. String literals referenced via opaque globals (`g_402008`, `g_402030`) instead of inline. Original constants like `5`, `10`, `15` lost context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack variable declarations with offsets (`[bp-0x58]`, `[bp+0x8]`) clutter code. Redundant type casts (`(unsigned int)v12`, `& 4294967295`) appear throughout. One unsupported jumpkind error marker present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but `varargs_func` uses complex do-while loops that are hard to follow. Runtime init functions use `goto` patterns. Loop structures recoverable but not idiomatic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and cohesive. However, optimizer constant-folded many caller functions (`call_cdecl()` returns 15 directly instead of calling `cdecl_func(5, 10)`), losing call relationships.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Do-while loops in `varargs_func` and `func_struct_byval` disrupt flow slightly. No excessive goto usage in main application logic.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding created redundancy (caller functions return constants). Repeated type masks `& 4294967295` appear unnecessarily. No dead code in main logic but optimization artifacts present.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` became `unsigned int` or `unsigned long long` inconsistently. `varargs_func` signature completely wrong (6 explicit params instead of variadic). `func_mixed_args` missing `double` and `long long` parameters entirely.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `LargeStruct` and `SmallStruct` not recovered; accessed via pointer arithmetic (`a0[1] * *(a0)`). Generic `struct_0` with `field_0` naming loses all semantic meaning. Original struct layouts completely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts visible throughout. `varargs_func` signature is type-unsafe (cannot handle variadic properly). Pointer arithmetic without type safety. Type mismatches would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. One anomaly marker (`[D] Unsupported jumpkind Ijk_SigTRAP`) but no algorithm explanations. No API contracts or parameter documentation recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Variadic function pattern not recognized (signature wrong). Struct access patterns not identified. No design patterns or algorithm names recovered. Standard C idioms obscured.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly flagged (`Unsupported jumpkind`) but critical issues silent. Variadic function signature problem not indicated. Type mismatches not warned. Inconsistent anomaly detection.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not explained). No postconditions inferred. Null checks present in code but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced opaquely (`g_402008`, `g_402030`). Callback relationship visible (`callback_func` called by `param_func_ptr`) but not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Runtime init functions mixed with application logic. Original test organization (calling conventions, parameter passing, return values) lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External declarations present but many reference undefined symbols. Type mismatches would cause compilation errors. `varargs_func` signature incompatible with standard C variadic handling. Requires extensive patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3+7+4+5)/4 = 4.75  × 0.30 = 1.425
+Level 2 (Structural):   (6+7+7+6)/4 = 6.50  × 0.25 = 1.625
+Level 3 (Type System):  (4+3+3)/3   = 3.33  × 0.20 = 0.667
+Level 4 (Semantic):     (2+3+4+3)/4 = 3.00  × 0.15 = 0.450
+Level 5 (Contextual):   (6+5+4)/3   = 5.00  × 0.10 = 0.500
+---------------------------------------------------------
+Overall Score:                                  4.667 ≈ 4.7/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `a0`, `a1`** should be named based on usage (e.g., `count`, `sum`, `index`, `pointer`)
+- **`varargs_func` signature completely wrong** - takes 6 explicit parameters instead of variadic `...`
+- **Struct types not recovered** - `LargeStruct` and `SmallStruct` accessed via raw pointer arithmetic
+- **Magic number `4294967295`** appears repeatedly without explanation (should be `UINT32_MAX` or similar)
+- **String literals obscured** - referenced via globals (`g_402008`) instead of inline strings
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core application functions retained original semantic names (`cdecl_func`, `varargs_func`, `test_calling_conventions`), making high-level structure identifiable despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no comments recovered; decompiler provides no guidance on algorithm intent, parameter purposes, or decompilation confidence levels.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variadic function signatures** - Detect `va_list` patterns and restore `...` parameter syntax instead of expanding to fixed parameters
+2. **Infer variable names from usage context** - Analyze how variables are used (loop counters, accumulators, pointers) to generate semantic names like `index`, `sum`, `buffer_ptr`
+3. **Recover struct/union types from access patterns** - Analyze consistent field offsets across functions to reconstruct composite type definitions with meaningful field names

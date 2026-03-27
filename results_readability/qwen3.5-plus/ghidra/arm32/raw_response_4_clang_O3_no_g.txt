@@ -1,0 +1,125 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar2`, `local_c` with no semantic meaning. Original names like `count`, `sum`, `args`, `x`, `y` are completely lost, making it difficult to understand variable purposes without referring to source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names are well-preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`). This is one of the strongest aspects, though runtime helpers like `__adddf3` remain cryptic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Heavy constant folding obscures intent - `0xf` instead of `15`, `0x32` instead of `50`, `0x2a` instead of `42`. Hex notation used inconsistently with no named constants recovered from the original test expectations.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler runtime functions (`__adddf3`, `__floatsidf`, `__fixdfsi`) are included with verbose implementations. Unreachable block warnings present but don't severely impede reading main logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Simple functions have natural if/else and do-while loops. Varargs functions use reasonable stack iteration patterns. No excessive goto usage in main test logic.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Aggressive constant folding collapsed caller functions into single return statements (`call_cdecl` returns `0xf` directly instead of calling `cdecl_func(5, 10)`). This destroys the testing structure and semantic relationships.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with clear early returns. No spaghetti control flow in user functions, though floating-point helpers are excessively complex.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Floating-point runtime functions are extremely verbose (200+ lines each). Main test functions are oversimplified due to optimization, creating imbalance in code density.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `undefined4` used extensively instead of `int`. `double` parameters split into two `undefined4` values (`param_3, param_4`). Return types often `undefined4` instead of `int`. Pointer types use `undefined8*` instead of proper typed pointers.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: `LargeStruct` (128 bytes) completely lost - expanded into 32 individual `int`/`undefined4` parameters in `func_struct_byval`. `SmallStruct` partially recovered as pointer arithmetic (`param_1[1] * *param_1`) with no struct definition. This is a critical failure.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many implicit casts present. Pointer arithmetic used where struct field access should be. No const-correctness preserved. Type confusion in `func_mixed_args` where double is split across parameters.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. Original had extensive documentation for each test case (CALL-L1-01, PARAM-L2-03, etc.). Only compiler warnings present ("WARNING: Removing unreachable block").
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern partially recognized (stack-based access via `local_c`). Calling convention differences not explained. No algorithm or design pattern identification despite clear test structure in original.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings about unreachable blocks present. Floating-point helpers clearly marked as compiler runtime. However, no indication of optimization artifacts or constant folding issues that fundamentally change code semantics.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL` for pointer functions). No postconditions or return value guarantees. Original test expectations (期望：15, 期望：42) completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but many collapsed to constants. `test_calling_conventions` no longer shows actual function calls. Callback relationships unclear (`param_func_ptr` uses `code *` type).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Runtime functions mixed with user code without clear separation. No header file or API boundary documentation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes compiler runtime functions requiring special linking. References external symbols (`__gmon_start__`, `__libc_start_main`, `puts`, `printf`). Would require significant work to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+6)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):  (7+4+7+5)/4 = 5.75  × 0.25 = 1.438
+Level 3 (Type):        (4+2+5)/3   = 3.67  × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+6+2)/4 = 3.25  × 0.15 = 0.488
+Level 5 (Contextual):  (5+6+4)/3   = 5.00  × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.735 ≈ 4.7/10
+```
+
+**Overall Readability Score: 4.7/10**
+
+---
+
+### Critical Defects
+
+- **`LargeStruct` completely lost**: 128-byte struct expanded into 32 individual parameters in `func_struct_byval`, making the function signature unreadable and semantically meaningless
+- **Aggressive constant folding**: Test caller functions (`call_cdecl`, `call_stdcall`, etc.) return constants directly instead of showing actual function calls, destroying test structure
+- **Type degradation**: `undefined4` and `undefined8` used extensively instead of proper types (`int`, `double`, pointers)
+- **No semantic comments**: Original documentation explaining each test case (CALL-L1-01 through CALL-L3-05) completely absent
+- **Double parameter splitting**: `func_mixed_args` has `double d` split into `undefined4 param_3, undefined4 param_4`, obscuring the floating-point operation
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (8/10)**
+- Original function names are well-preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), providing clear entry points for understanding code structure.
+
+---
+
+### Most Needs Improvement
+
+- **Composite Type Recovery (2/10)**
+- Struct definitions are completely lost; `LargeStruct` becomes 32 parameters and `SmallStruct` becomes pointer arithmetic, fundamentally breaking type semantics and making reverse engineering extremely difficult.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover struct definitions from stack layouts**: Analyze parameter access patterns (e.g., `param_1`, `param_1[1]`) to reconstruct struct definitions with field names based on access patterns and sizes.
+
+2. **Preserve call relationships despite constant folding**: When constants are folded, add comments showing original call structure (e.g., `// Originally: return cdecl_func(5, 10) = 15`) to maintain semantic traceability.
+
+3. **Infer variable names from usage context**: Use data flow analysis to name variables based on their role (e.g., `local_c` used in va_list iteration should be named `varargs_args` or `arg_list`).

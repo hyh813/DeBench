@@ -1,0 +1,114 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `iVar1`, `sVar1`, `pvVar1`, `local_14`, `piVar1`, `piVar2`. The original source had meaningful names like `value`, `name`, `result`, `capture_by_value`, `capture_by_ref`, `multiplier`. Only `base` and `derived` for Base/Derived objects are reasonable.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Test functions correctly match source names (`test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`, etc.). However, internal helper functions use mechanical names like `FUN_000109bc`. Member functions like `virtual_func`, `getName`, `~Base` are properly recovered.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: The code is saturated with unexplained magic numbers: `0x1f` (31), `0x125c` (4704), `0x14` (20), `0x15` (21), `0x2a` (42), `0x2bf` (703), `0x16` (22), `0x10` (16), `0x55` (85), `0x47` (71), `0x32` (50), `0x96` (150), `0xfa` (250). None are explained despite being critical to understanding the logic.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Extensive compiler artifacts including: "WARNING: Removing unreachable block" (15+ occurrences), "WARNING: Unknown calling convention", "Unresolved local var: int r1@[???]", "WARNING: Struct 'DiamondDerived': ignoring overlapping field". Also includes compiler-specific intrinsics like `__thiscall`, `__aeabi_d2iz`, `__dynamic_cast`.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow generally matches source - if/else, loops, and function calls are recognizable. At -O0, minimal optimization distortion is expected. Some complexity in virtual function thunks and diamond inheritance handling, but structure is traceable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and match source function boundaries. Template instantiations are properly separated (`template_max<int>`, `template_max<double>`, `Container<int>`, `Container<double>`). Member functions correctly extracted from classes.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present but appropriate. No excessive goto usage or forward jumps into loops. Virtual function dispatch adds some complexity but is manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Loop unrolling is minimal at -O0. Template code is instantiated cleanly without duplication artifacts.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types: `undefined4`, `undefined`, `undefined1` instead of specific types. Function pointers use `_func_int_varargs **` which is imprecise. DWARF comments show correct prototypes but actual types are generic. `int` used where `size_t` would be appropriate.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct names recovered (`SimpleClass`, `Base`, `Derived`, `MultiDerived`, `DiamondDerived`, `Container<int>`), but field names are cryptic: `_20_4_`, `_8_4_`, `_16_4_`, `field_0x10`. Warning: "Struct 'DiamondDerived': ignoring overlapping field 'super_MiddleB'" indicates layout confusion. Original fields like `value`, `name`, `multiplier`, `data`, `size` lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: pointer arithmetic like `*(undefined4 *)((int)pvVar1 + 4)` for field access, raw `void*` casts throughout, indirect vtable calls `(**obj->_vptr_Base)()` without type safety. The virtual function call in `call_virtual_func` has wrong signature - it calls with no arguments when it should pass `x`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: DWARF comments provide function prototypes which are helpful (e.g., "DWARF original prototype: int virtual_func(Base * this, int x)"). However, most other comments are auto-generated warnings: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention". No explanation of algorithm logic or intent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ idioms are present (constructors, destructors, virtual functions, templates, exceptions) but not explicitly named or highlighted as patterns. The exception handling shows `__cxa_throw` but the re-throw logic isn't clearly documented. Smart pointers use raw `unique_ptr` pattern but custom deleter handling is obscure.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged: "WARNING: Struct 'DiamondDerived': ignoring overlapping field", "WARNING: Removing unreachable block", "WARNING: Unknown calling convention". However, these are generic warnings without specific guidance. The incorrect virtual function call signature in `call_virtual_func` isn't flagged as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No bounds checking explanations for array access. No documentation of exception safety guarantees or ownership semantics for smart pointers.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships aren't documented. Virtual dispatch through vtables isn't explained. No comments indicating which functions call which. Static member access (`LifecycleClass::instance_count`) is correctly identified but relationships aren't clear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically by test case. Related member functions grouped together. However, it's a single monolithic file with no namespace structure. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Uses compiler-specific `__thiscall` calling convention which may not compile on all platforms. Contains ARM-specific intrinsics like `__aeabi_d2iz`. References to `operator_new`, `operator_delete` without proper includes. Unresolved external references would cause linking failures.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 2 + 3) / 4 = 3.75
+L2_avg = (7 + 7 + 7 + 8) / 4 = 7.25
+L3_avg = (4 + 5 + 4) / 3 = 4.33
+L4_avg = (3 + 5 + 5 + 1) / 4 = 3.50
+L5_avg = (4 + 6 + 3) / 3 = 4.33
+
+Overall = (3.75 × 0.30) + (7.25 × 0.25) + (4.33 × 0.20) + 
+          (3.50 × 0.15) + (4.33 × 0.10)
+        = 1.125 + 1.8125 + 0.866 + 0.525 + 0.433
+        = 4.76/10
+```
+
+**Overall Readability Score:** 4.76/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All meaningful variable names lost - `value`, `name`, `result`, `capture_by_value`, `capture_by_ref` replaced with `iVar1`, `sVar1`, `local_14`
+- **Magic numbers**: Dozens of unexplained constants like `0x125c` (4704), `0x2a` (42), `0x2bf` (703) without any explanation
+- **Type precision**: Struct fields use cryptic names (`_20_4_`, `_8_4_`, `field_0x10`) instead of original names (`multiplier`, `dataA`, `dataB`)
+- **Virtual function bug**: `call_virtual_func` calls `(**obj->_vptr_Base)()` with no arguments, but should pass `x` parameter - this is semantically incorrect
+- **Noise pollution**: 15+ "WARNING: Removing unreachable block" comments and numerous "Unresolved local var" annotations make code nearly unreadable
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (L2)** scored highest at 7/10
+- **Why?** At -O0, function boundaries are preserved. Template instantiations properly separated. Member functions correctly extracted from class definitions.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (L1.1)** scored lowest at 2/10
+- **Why?** Nearly all variables use generic names like `iVar1`, `sVar1`, `pvVar1`, `local_14` that provide no semantic information about their purpose or usage
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `capture_by_ref += 5` suggests capture-by-reference, array indexing suggests collection variables) to generate meaningful names
+2. **Detect and explain magic numbers**: Identify constants that correspond to expected values (e.g., `0x1234` = 4660 matches `getClassID()` return value) and add explanatory comments
+3. **Fix virtual function call resolution**: The `call_virtual_func` incorrectly calls vtable function with no arguments - should pass the `x` parameter to match the source `obj->virtual_func(x)`

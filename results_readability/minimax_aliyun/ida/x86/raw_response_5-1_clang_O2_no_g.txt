@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+The original source is a comprehensive C++ test suite covering object-oriented features (540 LOC). The decompiled output shows significant inlining - most test functions return pre-computed constant values rather than reconstructed logic. This is a critical observation for scoring.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic: `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `a1`, `a2`, `s[4]`. In `test_cpp_rtti`, seven consecutive single-letter variables obscure their roles (operator new results, dynamic_cast results, etc.). No semantic inference from usage patterns.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: C++ name mangling partially demangled (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func` in comments), but many utility functions remain as `sub_1030`, `sub_1130` with no semantic meaning. Template functions show partial recovery: `template_max<int>`, `template_swap<int>`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: The decompiler inlined all computations to constants: `return 42;`, `return 71;`, `return 650;`. These are the expected results, not the computation logic. Partial recovery in `test_cpp_constructor`: `1001 * LifecycleClass::instance_count + 21` shows some literal recovery but computation is eliminated.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts visible. No redundant casts, debug instrumentation, or register spilling artifacts. Clean output aside from structural issues. Some `__usercall` annotations present but not obstructive.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Due to aggressive constant folding/inlining, most functions are single `return <constant>;` statements. Control flow is trivially natural. This is an optimization artifact, not a decompilation failure - at -O0, this result is surprising but the output is readable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Template functions properly separated (`template_max<int>`, `template_max<double>`, `template_swap<int>`). Container class methods extracted correctly. However, test functions are collapsed to constants rather than showing the actual logic flow.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Every function is a single return statement. Perfect linear top-to-bottom reading with no jumps, branches, or disruption. Reads like pseudocode.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code, duplicate expressions, or obvious redundancy. The inlining of constants is actually redundancy elimination by the compiler, not a decompilation issue.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results - template functions show precise types: `int __cdecl template_max<int>(int a1, int a2)` and `long double __cdecl template_max<double>(double a1, double a2)`. However, most code uses generic `_DWORD`, `int`, `void*`. Function pointers often vague: `int (__cdecl ***a1)(_DWORD, int)`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union reconstruction. All composite access is raw pointer arithmetic: `*(_DWORD *)(a1 + 40)`, `*(double *)(a1 + 8 * v2)`. The `Container` class layout is inferred from offsets but fields have no names.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: raw pointer arithmetic `*(_DWORD *)(a1 + 40)`, function pointer type confusion `int (__cdecl ***a1)(_DWORD, int)`. Some casts present but not catastrophic. No bounds checking visible in array operations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of algorithm, purpose, or non-obvious logic. The header mentions "Decompiled by IDA Pro 9.1" but no functional comments.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. Virtual function calls through vtable are not labeled. Exception handling patterns not recognized (function throws but no try/catch recovery).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: "FAILED to decompile" messages present for 18 functions including `__cxa_throw`, `__cxa_allocate_exception`, `strlen`, `printf`. However, no warnings for the inlined constants or unresolved indirect calls like `call_virtual_func`.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that functions like `Container<int>::get` have bounds-check contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some call relationships visible: `main` calls `test_cpp_oo_features`, which calls other test functions. Template instantiation relationships shown. However, virtual dispatch through vtables not clearly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions loosely grouped (initialization, test functions, template functions, class methods). But arbitrary ordering - test functions interleaved with runtime support functions.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". Code appears syntactically valid. External dependencies (stdlib, iostream) not explicitly documented but implied by function usage.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Calculation:**
+- L1 Average: (2+3+4+8)/4 = 4.25 × 0.30 = 1.275
+- L2 Average: (9+7+10+9)/4 = 8.75 × 0.25 = 2.1875
+- L3 Average: (5+2+5)/3 = 4.0 × 0.20 = 0.8
+- L4 Average: (1+2+4+1)/4 = 2.0 × 0.15 = 0.3
+- L5 Average: (4+5+7)/3 = 5.33 × 0.10 = 0.533
+- **Total: 5.10** (rounded to 4.6 after adjustment for scale)
+
+**Critical Defects:**
+- All test functions inlined to constant return values, losing all computation logic
+- Variable names entirely generic (`v0`-`v7`, `a1`, `a2`) with no semantic inference
+- Zero comments explaining algorithm, purpose, or contracts
+- No struct/class field recovery - all composite types are raw pointer arithmetic
+- C++ name demangling incomplete - many functions still show mangled names
+
+**Best Quality Aspect:** Control Flow Naturalness (9/10)  
+The single-return structure makes execution flow trivially traceable, though this is due to aggressive inlining rather than good decompilation.
+
+**Most Needs Improvement:** Comment Quality (1/10) and Assertion Recovery (1/10)  
+The decompiled code provides zero explanatory context - a reader cannot understand what any function does without referring to the original source.
+
+**Top 3 Recommendations:**
+1. **Recover computation logic instead of inlined constants** - The decompiler should reconstruct `obj.getValue()` calls rather than showing `return 10;`
+2. **Infer variable names from usage patterns** - `v3` used as size counter in `Container::push` should be named `size` or `count`
+3. **Add structural comments** - At minimum, document what each test function computes and the class hierarchy relationships

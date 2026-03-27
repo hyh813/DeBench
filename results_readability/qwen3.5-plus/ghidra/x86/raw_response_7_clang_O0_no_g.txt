@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `local_c`, `local_8`, `param_1`, `iVar1` instead of semantic names like `result`, `p1`, `p2`, `p3` from source. In `param_opaque_predicate`, original variables `p1`, `p2`, `p3` (opaque predicates) became `local_14`, `local_10`, `local_8`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from original source (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`). Some helper functions have generic names (`FUN_00011030`), but core logic functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `-0x21524111` appears instead of `0xDEADBEEF` (sign extension issue). Constants like `0x5a`, `0x41`, `0x42` lack explanation. Some literals clear (10, 5, 1000) but many magic numbers obscure intent.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple "WARNING: Removing unreachable block" comments clutter output. Compiler thunk functions (`__x86.get_pc_thunk.bx`) present but marked as inlined. Moderate noise level for -O0 compilation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control structures recovered well (if/else, while, for loops). `param_opaque_predicate` GCD loop correctly identified. However, `param_fake_branch` second if-block completely removed (unreachable code optimization).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity preserved but return types incorrect. `call_fake_branch`, `call_opaque_predicate` marked as `void` when they should return `int`. `param_link_time_optimization` also incorrectly returns `void`.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Loop structures properly linearized without excessive jumps. `param_vectorized_loop` shows clean for-loop recovery with proper iteration variables.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Dead code blocks identified and marked. `param_instruction_substitution` correctly simplified from bit operations to arithmetic (`param_1 * 0x15 + (param_1 >> 1) + (param_1 & 0xf)`). Some optimization artifacts remain visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation. `param_instruction_substitution` parameter changed from `int` to `uint`. Many functions return `undefined4` instead of `int`. `param_division_by_zero` returns `undefined4` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Bitfield struct in `param_implementation_defined` completely lost—function returns constant `0x2b` instead of computing from struct fields. Array handling preserved but struct semantics destroyed.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present: `(undefined4)(10 / (longlong)param_1)`, `(__sighandler_t)0x0`. Pointer arithmetic visible in `param_vectorized_loop` (`*(int *)(param_3 + local_8 * 4)`). Signal handler types incorrectly cast.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only decompiler warnings present ("WARNING: Removing unreachable block"). Zero semantic comments explaining algorithm purpose. Original source comments about obfuscation techniques completely absent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified as such. String XOR decryption pattern in `decrypt_string` not recognized. No design pattern documentation despite clear obfuscation patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some unreachable blocks flagged with warnings. However, critical anomalies not indicated: `setjmp/longjmp` patterns, signal handler registration, division by zero potential not highlighted as risky.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). No postconditions or error condition explanations. `param_division_by_zero` doesn't indicate it may return -1 on exception.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`jmp_buffer`, `div_zero_caught`) referenced without context. No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. Related functions (e.g., `param_*` and `call_*` pairs) not visually grouped. No header file or API boundary indication.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates "Compilation Result: Yes" but requires external dependencies (printf, malloc, signal, strlen). External function declarations present but not consolidated. Some architecture mismatch (original arm64, decompiled x86).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+6+8+7)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.26/10
+```
+
+**Overall Readability Score: 5.3/10**
+
+### Critical Defects:
+- **Variable `local_c`, `local_8`, `param_1`** should be named semantically (e.g., `result`, `opaque_predicate_result`, `input_value`)
+- **Composite type completely lost** in `param_implementation_defined`—bitfield struct reduced to constant return value
+- **Return type errors** in 4+ functions (`call_fake_branch`, `param_link_time_optimization` marked void instead of int)
+- **Zero semantic comments**—original obfuscation technique documentation completely absent
+- **Magic number `-0x21524111`** should be `0xDEADBEEF` (sign extension corruption)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)**—Core function names preserved from original source, making function purpose immediately identifiable despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)**—Complete absence of semantic comments means readers cannot understand the obfuscation techniques being tested or algorithm purposes without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns**—Analyze how variables are used (e.g., `local_10` in GCD loop should be named `gcd_result` or `a`)
+2. **Preserve composite type structures**—Bitfield structs should be reconstructed with field names, not optimized away to constants
+3. **Add semantic comments for recognized patterns**—Detect and document obfuscation techniques (opaque predicates, fake branches, string encryption) with explanatory comments

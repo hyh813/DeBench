@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `iVar1`, `lVar1`, and `piVar1`, completely losing the semantic intent of names like `size`, `result`, `sum`, or `page_size` found in the source.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `param_macro_constants` and `test_preprocessing_features` are perfectly recovered from debug symbols, accurately reflecting the original source structure and purpose.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The source relies heavily on macros (e.g., `MAX_SIZE`, `BUFFER_COUNT`), but the decompiled code contains only magic numbers (e.g., `0x200`, `0x40`, `0x1e` for `sysconf` arg), making the logic significantly harder to understand.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While the logic is clean, there is frequent noise from "Unresolved local var" comments and "WARNING: Unknown calling convention" messages, though no severe register spilling artifacts are present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is natural with idiomatic `if-else` and `do-while` loops; the compiler's optimization (constant propagation) is handled gracefully, resulting in clean linear code where appropriate.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-separated and match the source granularity; the `call_*` functions are correctly reduced to simple constant returns due to optimization, which is the correct semantic representation.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal jumps; the `do-while` loops used for array iteration are easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully presents the optimized code without redundant calculations; for example, `call_macro_constants` is just a return statement, reflecting the compiler's work cleanly.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally accurate (`int`, `int *`, `void *`, `size_t`), but some functions like `param_simd_intrinsics` use `long` for pointers instead of `int *` or `void *`, and `undefined8` appears in helper functions.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: No complex structs were defined in the source, so the decompiler correctly handles the primitive types and stack arrays (e.g., `int arr [5]`) without introducing fake structures.
+
+**11. Type Safety:** Score: 8/10
+Justification: The code is type-safe with no dangerous casts; the use of `__aarch64_ldadd4_acq_rel` correctly matches the atomic operation semantics of the source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to auto-generated warnings like "Unresolved local var" and provide no insight into the logic, macro definitions, or the purpose of magic numbers.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library calls like `memcpy` and `__printf_chk` are recognized, but the specific macro patterns (token pasting, stringizing) and the intent behind hardcoded strings (e.g., "Jan 15 2026") are lost.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Ghidra flags "Unknown calling convention" and "Unresolved local var", but it fails to highlight the semantic loss of macro constants or the hardcoded nature of what were once dynamic builtin macros.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or postconditions; for example, the contract that `param_dynamic_code` requires valid memory protection flags is not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and easy to trace; the relationship between `test_preprocessing_features` and the various `param_*` functions is preserved perfectly.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source file's organization, with clear separation between preprocessing tests and assembly tests.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on compiler intrinsics like `__aarch64_ldadd4_acq_rel` and `__printf_chk` which require specific headers, and `undefined8` types might need casting to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Critical Defects:**
+- Macro constants replaced with magic numbers (e.g., `0x200` instead of `MAX_SIZE / 2`) without comments explaining their origin.
+- Variable names are generic (`iVar1`, `lVar1`), obscuring the semantic meaning of parameters like `size`, `sum`, or `page_size`.
+- "Unresolved local var" comments appear frequently (e.g., in `param_stringize`), cluttering the output without providing the actual variable names.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The debug symbols allowed for perfect recovery of original function names, making navigation and high-level understanding trivial.
+
+**Most Needs Improvement:** Literal Clarity (scored 3/10)
+- The heavy reliance on macros in the source code translates to a binary full of magic numbers; the decompiler provides no context for these values, making the logic cryptic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic analysis to suggest named constants for magic numbers based on usage context (e.g., detecting `0x200` used as a size limit).
+2. Improve variable renaming algorithms to infer names from context (e.g., loop counters should be `i`, accumulators should be `sum`).
+3. Detect and annotate hardcoded strings that result from compiler builtin macros (like `__DATE__` or `__FILE__`) to indicate they are compile-time constants rather than logic literals.

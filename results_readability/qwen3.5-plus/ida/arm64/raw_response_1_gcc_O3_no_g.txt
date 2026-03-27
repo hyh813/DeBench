@@ -1,0 +1,106 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `a3`, `v1`, `v2`, `result`) with zero semantic meaning recovered. For example, `sequential_ops` parameters should be `a`, `b`, `c` but appear as `a1`, `a2`, `a3`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`sequential_ops`, `single_if`, `nested_if_2`), but some are mangled (`non_local_jump.constprop.0`, `sub_940`). Action verbs and purpose generally clear from names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xFFFFFFFFLL` (-1), `4294967294LL` (-2), `0x12345678` appear without explanation. Test functions print hardcoded expected values instead of computing them.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy SIMD artifacts (`vaddq_s32`, `vmulq_s32`, `int8x16_t`, `int32x4_t`) pollute simple functions. Excessive casts (`(unsigned int)`, `(__int64)`, `(_DWORD *)`) throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if-else and switch recovered well, but loops heavily transformed with SIMD vectorization and unrolling. `recursion_factorial` and `goto_backward` become nearly unreadable with cascading if-statements.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly; no inappropriate inlining or fragmentation. Helper functions (`double_value`, `op_add`) remain separate as expected.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Deep nesting from loop unrolling (13+ levels in `recursion_factorial`). Some functions use goto labels (`LABEL_15`, `LABEL_18`) disrupting top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe loop unrolling creates massive redundancy. `recursion_factorial` has 13 nested if-checks for `a1 != 3` through `a1 != 13`. `goto_backward` similarly unrolled with repetitive multiplication chains.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic int/__int64 preserved, but SIMD types (`int8x16_t`, `int32x4_t`) incorrectly appear in scalar functions. Signed/unsigned confusion (`unsigned int a2` vs `int a2` in `op_div`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited composite types in source. Function pointer arrays partially recovered (`v3[0] = off_14010[0]`) but lose semantic meaning. No struct reconstruction needed for this code.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Excessive unsafe casts throughout. `call_func_ptr` uses `__int64 (__fastcall *a1)(_QWORD)` losing original signature. Pointer arithmetic with `_DWORD *` casts obscures intent.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contracts. Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Factorial computation, state machines, and Duff's device not identified. `switch_fallthrough` logic transformed but fall-through semantics not documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: External functions marked "FAILED to decompile" (good), but SIMD transformations in scalar functions not flagged. `computed_goto` has inline assembly without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). Error return values (`0xFFFFFFFFLL`) not explained. No postcondition inference.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Test functions don't actually call target functions (constant-folded). Callback relationships unclear (`process_with_callback`).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. No header file or API declarations provided.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 9 external functions failed to decompile (`__printf_chk`, `__libc_start_main`, etc.). Would require significant stubbing. Inline assembly in `computed_goto` is architecture-specific.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+3)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+7+5+3)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (1+2+4+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 4.36/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `a2`, `v1`, `result`) - zero semantic recovery despite clear usage patterns
+- **Test functions constant-folded** - print expected values instead of actually calling functions, defeating testing purpose
+- **Aggressive loop unrolling without recovery** - `recursion_factorial` has 13-level nested if-statements instead of simple recursion
+- **SIMD artifacts in scalar code** - `int8x16_t`, `vaddq_s32` appear in simple arithmetic functions, obscuring logic
+- **Zero comments** - original source had extensive documentation; decompiled output has none
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved correctly, allowing immediate identification of purpose
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation, algorithm explanations, or decompilation confidence indicators
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., loop counters → `i`, accumulators → `sum`, parameters → `a`, `b`, `c`)
+2. **Recover high-level constructs from optimized code** - Detect loop unrolling patterns and reconstruct original loop structure with explanatory comments
+3. **Add decompilation confidence annotations** - Flag transformed code regions, note optimization artifacts, and document uncertainty about recovered logic
+
+---
+
+### Additional Critical Observation:
+**Metadata Inconsistency**: Source claims `-O0 -g` (debug), but decompiled code shows aggressive O3 optimizations (SIMD, loop unrolling, constant folding). Binary path confirms `O3_no_g`. This mismatch significantly impacts readability expectations and should be flagged by the decompiler.

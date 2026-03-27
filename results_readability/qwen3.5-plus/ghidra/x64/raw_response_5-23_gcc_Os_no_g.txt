@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `uVar1`, `local_10`) with no semantic meaning. Original source used meaningful names like `size`, `result`, `counter`, `exec_mem` which are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). Only runtime functions like `FUN_00101020` use generic names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `0x400` (MAX_SIZE), `0x40` (64), `0xdef0`, `0x117` (line number). Original constants like `MAX_SIZE`, `BUFFER_COUNT` are completely lost.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail()`) appear in most functions. Generic types (`undefined8`, `undefined4`) and runtime functions (`_init`, `_fini`, `deregister_tm_clones`) add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures reconstructed well with natural if/for/while patterns. `param_asm_clobber` shows proper for-loop recovery from assembly. No spurious goto statements in main logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match original source well. Each function maintains single responsibility. No excessive inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately. No deep nesting or forward jumps disrupting flow in main functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding visible (`call_macro_constants` returns `0x40` directly). Some redundancy in test functions but no significant dead code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation with `undefined8`, `undefined4`, `undefined1` replacing specific types. Original `int`, `size_t`, `char*`, `void*` distinctions lost. Return types often wrong (`undefined8` for int functions).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union definitions recovered. Array access uses pointer arithmetic (`param_1 + uVar2 * 4`). Complex types like `__m128i` completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe implicit casts visible. Pointer arithmetic without type safety. `LOCK()/UNLOCK()` pseudo-functions suggest atomic operations but type safety unclear.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining logic. Original source had extensive documentation (e.g., "// 预处理后会替换为: if (size > 1024) return 16 * 4;") completely absent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Atomic operations shown as `LOCK()/UNLOCK()` but not identified as such. SIMD intrinsics lost to scalar operations. No pattern recognition for common idioms.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Removing unreachable block", "WARNING: Subroutine does not return"). Stack check failures noted. But no uncertainty indicators for indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. Error conditions (e.g., `mmap` failure returns `-1`) not explained. No contract inference.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variable `global_var` referenced without context. No callback relationship documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. No file organization preserved. Related functions not explicitly grouped.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External dependencies visible (`__printf_chk`, `mmap`, `sysconf`, `munmap`). Would require stubs for `LOCK()/UNLOCK()` and some runtime functions to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (4×0.10 + 8×0.10 + 4×0.05 + 5×0.05) = 1.65
+Level 2 (25%): (8×0.08 + 8×0.07 + 8×0.05 + 7×0.05) = 1.95
+Level 3 (20%): (4×0.08 + 3×0.07 + 4×0.05) = 0.73
+Level 4 (15%): (2×0.05 + 4×0.03 + 5×0.03 + 3×0.04) = 0.49
+Level 5 (10%): (5×0.04 + 6×0.03 + 6×0.03) = 0.56
+
+Overall = 1.65 + 1.95 + 0.73 + 0.49 + 0.56 = 5.38/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- Variable `param_1` should be named `size` or `x` based on function context and usage patterns
+- Magic numbers `0x400`, `0x200`, `0x40` should be recovered as `MAX_SIZE`, `MAX_SIZE/2`, `BUFFER_COUNT*4`
+- Type `undefined8` should be recovered as `int` or `long` based on return value usage
+- Zero comments explaining macro expansion semantics that are lost during preprocessing
+- `LOCK()/UNLOCK()` pseudo-functions should be identified as atomic operations with proper annotations
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Ghidra successfully preserved most original function names, making it easy to identify the purpose of each function relative to the source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments means readers cannot understand the semantic intent behind macro expansions, conditional compilation choices, or assembly optimizations.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement constant recovery from usage patterns** - Detect when values like `0x400` are used in comparisons and suggest named constants based on context (e.g., size validation suggests `MAX_SIZE`)
+2. **Add semantic comment generation for common patterns** - Automatically annotate atomic operations, SIMD code, and macro-expanded logic with explanatory comments
+3. **Improve type inference from function signatures** - Use return value usage and parameter passing conventions to recover `int` vs `long` vs pointer types instead of generic `undefined8`

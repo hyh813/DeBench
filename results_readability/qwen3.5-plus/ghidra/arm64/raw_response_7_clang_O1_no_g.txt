@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `local_40`, `pbVar4`) with zero semantic meaning. Original names like `result`, `encrypted`, `decrypted` are completely lost, making it difficult to track data flow.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Original function names preserved (`param_fake_branch`, `call_opaque_predicate`), which is excellent. However, helper functions like `FUN_00100730` and `FUN_001008bc` remain unnamed, and some functions are reduced to stubs losing their purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0x23`, `0xe1` appear without explanation. Some are recoverable from context (0x14 = 20 decimal), but encryption key `0x5a` and signal numbers (8, 0xb) lack documentation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; unreachable block warnings are appropriately flagged. Some redundant type casts (`(ulong)`, `(uint)`) from ARM64 ABI but don't severely impede reading.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural if/while constructs. However, `param_opaque_predicate` shows optimization artifacts with complex conditionals that obscure the original opaque predicate logic.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical failure: `param_fake_branch`, `param_buffer_overflow_stack`, and `param_buffer_overflow_heap` reduced to empty `return;` stubs. Logic completely lost to optimization, destroying functional decomposition.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate loop structures. `test_obf_opt_edge` is lengthy but follows logical test sequence without disruptive jumps.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding eliminated redundant computations (e.g., `call_fake_branch` returns 10 directly). Some redundancy in `test_obf_opt_edge` where decryption logic is duplicated from `param_string_encryption`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Type degradation evident: `param_instruction_substitution` takes `uint` instead of `int`, `call_opaque_predicate` returns `undefined4` instead of `int`. Signed/unsigned distinctions sometimes lost.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited struct usage in source code. `jmp_buf` correctly typed as `__jmp_buf_tag*`. No complex struct recovery needed but bitfield in `param_implementation_defined` completely optimized away.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(undefined *)0x0`, `(__sighandler_t)0x0`, `(byte *)((ulong)local_40 | 1)`. Pointer arithmetic on `local_40` array loses type safety guarantees.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated warnings present ("WARNING: Subroutine does not return", "WARNING: Removing unreachable block"). Zero semantic comments explaining algorithm purpose or obfuscation intent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition visible. GCD algorithm in `param_opaque_predicate` not identified, XOR decryption pattern not labeled, signal handler pattern not documented.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good anomaly flagging for unreachable blocks and non-returning subroutines. However, critical anomalies (functions optimized to stubs) are not flagged as potential decompilation failures.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). Signal handler contracts not recovered. Return value semantics completely undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`div_zero_caught`, `jmp_buffer`) referenced without context. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Startup/teardown functions (`_init`, `_fini`, `__do_global_dtors_aux`) properly separated from application logic.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Metadata indicates successful compilation. External dependencies (signal.h, setjmp.h functions) properly declared. Would require minimal stubs for standalone compilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+7)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+4+7+6)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (2+4+6+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (5+6+8)/3   = 6.33 × 0.10 = 0.633
+
+Overall Score: 5.28/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **`param_fake_branch` completely lost**: Function reduced to `void param_fake_branch(void) { return; }` - all conditional logic eliminated by optimizer
+- **`param_buffer_overflow_*` functions empty**: Both stack and heap overflow test functions reduced to `return;` stubs, losing all test logic
+- **Zero semantic variable names**: All 50+ variables use generic names (`iVar1`, `param_1`, `local_40`) with no purpose indication
+- **No algorithm documentation**: GCD computation, XOR decryption, and opaque predicate patterns not identified or commented
+- **Type degradation on returns**: Multiple functions return `undefined4`/`undefined8` instead of precise `int` types
+
+### Best Quality Aspect:
+- **Build System Compatibility (8/10)** - The decompiled code compiles successfully with minimal modifications, indicating good structural recovery despite semantic losses.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic comments means readers must reverse-engineer algorithm intent from raw code alone.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect optimization-induced logic loss**: Flag functions where control flow is simplified beyond recognition (e.g., `param_fake_branch` should warn "Dead code eliminated - original had conditional branches")
+2. **Infer variable names from usage patterns**: Variables used in string operations should be named `buffer`/`encrypted`, loop counters should be `i`/`index`, signal numbers should be `SIGFPE`/`SIGSEGV`
+3. **Recognize common algorithm patterns**: GCD loops, XOR decryption, and opaque predicates should be identified and commented with algorithm names for analyst context

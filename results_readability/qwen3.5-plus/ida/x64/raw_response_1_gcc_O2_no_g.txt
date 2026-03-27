@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (a1, a2, v1, v2, result) with zero semantic meaning recovered. Original names like `temp1`, `temp2`, `sum`, `count` are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved names (sequential_ops, recursion_factorial, double_value), but helper functions use generic labels (sub_1020, sub_1030, init_proc). Metadata mismatch (claims Ghidra, header says IDA Pro).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation (0xFFFFFFFFLL, 4294967294LL, 100 * (a1 + 1)). No constants recovered from original source code.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present throughout: stack canary checks (__readfsqword(0x28u)), excessive type casts ((unsigned int)), and register annotations (// rax, // r8d) clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions recovered well (sequential_ops, single_if), but test functions show optimization artifacts—printing constants instead of actual function calls. duffs_device uses excessive goto labels.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions properly separated with appropriate granularity. Helper functions (op_add, op_sub, state_idle) correctly identified as separate entities.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: duffs_device function has 11 goto labels (LABEL_4 through LABEL_11) creating non-linear flow. Most other functions read top-to-bottom adequately.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: switch_fallthrough shows redundant pattern detection (hardcoded returns for cases 2 and 3 instead of fall-through logic). Some optimization artifacts remain visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: __int64 returns where int was expected, mixed signed/unsigned throughout (int vs unsigned int), function pointers use _QWORD instead of proper signatures. Original int types degraded.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No structs/unions in this code to evaluate. Arrays shown as raw memory (v5[4], v3[5], v14[4]) without type information. Matrix in loop_multi_exit lost 2D structure.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts ((unsigned int)(a1 + a2)), function pointers use generic _QWORD type, signed/unsigned mixing in comparisons ((int)a2 >= (int)a1).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ALL original comments lost. Zero decompiler-generated comments explaining logic. No algorithm descriptions, no parameter documentation, no confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No patterns identified (state machines, loops, recursion not labeled). factorial optimization to iterative form not noted. Duff's device structure not recognized.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Library functions marked "FAILED to decompile" (8 functions), but no warnings about optimization artifacts in test functions or potential semantic changes.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "n > 0" for factorial), no postconditions, no error condition documentation. Original test validation comments completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. No call graph information. Callback relationships (process_with_callback) not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order, not grouped by purpose (L1/L2/L3 tests mixed). No header file structure or logical grouping preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 8 external dependencies marked "FAILED to decompile" (__printf_chk, puts, _setjmp, etc.). Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+4+5)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (6+7+5+6)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (5+5+4)/3   = 4.67 × 0.20 = 0.933
+Level 4 (Semantic):    (1+3+4+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+
+Overall Score: 4.52/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable `a1`, `a2`, `v1` should be named semantically** (e.g., `input`, `operand`, `counter`) based on usage patterns
+- **All original comments lost** - no documentation of algorithm intent or test validation expectations
+- **Test functions optimized away** - test_control_flow_l1/l2/l3 print constants instead of calling functions, losing test semantics
+- **Type degradation** - int returns become __int64, function pointers become _QWORD, losing type safety
+- **Metadata inconsistency** - claims Ghidra but binary header shows IDA Pro; claims O0 but binary is O2
+
+### Best Quality Aspect:
+- **Function Decomposition (7/10)** - Functions properly separated with appropriate granularity; helper functions correctly identified as separate entities
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete loss of all original documentation; zero decompiler-generated explanations for non-trivial logic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (loop counters, accumulators, parameters) to suggest semantic names like `i`, `sum`, `input`
+2. **Preserve or regenerate documentation** - Either retain original debug symbol comments or generate explanatory comments for recovered control structures
+3. **Detect and annotate optimization artifacts** - Flag when test code has been optimized to constant folding, warning users that runtime behavior differs from source appearance

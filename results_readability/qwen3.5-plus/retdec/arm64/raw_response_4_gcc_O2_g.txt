@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v1, v2, v3, etc.) with zero semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `ptr` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved (test_calling_conventions, call_cdecl), but helper functions degraded to function_730, function_740, function_1004. Better than complete loss but inconsistent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (0xffffffff, 0xfffffffe, 0x100000000) without explanation. String literals stored in opaque globals (g7-g25) with hex-encoded content instead of readable strings.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts including __stack_chk_fail calls, initialization routines (__do_global_dtors_aux), and redundant masking operations (v1 & 0xffffffff) throughout every function.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: varargs_func uses complex goto-based loops (lab_0xad0, lab_0xad4, lab_0xadc) instead of simple for loops. Original had clean while/for constructs that are completely lost.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical parameter information lost - cdecl_func, stdcall_func, fastcall_func all show as void parameter functions when they should have (int a, int b) signatures. Function boundaries preserved but signatures broken.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Heavy goto usage with labels (lab_0xb0c, lab_0xf9c) disrupts top-to-bottom reading. Multiple backward and forward jumps make execution flow difficult to trace.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Repetitive masking patterns (v1 & 0xffffffff) appear in nearly every function. Stack canary checks duplicated. No dead code elimination from compiler artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to int64_t regardless of original type. Original had int, int32_t, char*, double, long long - all collapsed. Function pointers became int64_t losing signature information.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: LargeStruct (128 bytes) and SmallStruct completely lost. All struct access converted to raw pointer arithmetic (*(int32_t *)(v2 + 4)). No struct definitions in output.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe implicit casts throughout. func_b uses uninitialized v1 variable. No const correctness preserved. Pointer arithmetic without type safety checks.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comments present. Zero documentation of logic, algorithms, or purpose. Original had extensive comments explaining each test case (CALL-L1-01, PARAM-L2-01, etc.).
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: va_list/varargs pattern not recognized (complex goto mess instead). Loop constructs not identified. No design pattern recognition whatsoever.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Functions like func_b confidently present code using uninitialized variables without any uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., ptr != NULL checks). No postconditions inferred. Error conditions not explained despite null checks present in code.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls preserved but relationships not documented. Global variables g1-g25 completely unexplained. No call graph or dependency information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file with function prototypes at top. Rough grouping by function type but no logical module separation matching original structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Headers included but many function signatures wrong (missing parameters). Uninitialized variable usage (func_b's v1) would cause undefined behavior. Won't compile correctly without fixes.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+4+4)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (3+4+3+4)/4 = 3.50  × 0.25 = 0.875
+Level 3 (Type):        (3+2+3)/3   = 2.67  × 0.20 = 0.534
+Level 4 (Semantic):    (2+2+2+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):  (4+5+4)/3   = 4.33  × 0.10 = 0.433
+─────────────────────────────────────────────────────
+Overall Score:                                  3.34/10
+```
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects:
+- **Variable names completely generic** - v1, v2, v3 throughout with no semantic meaning recoverable from usage patterns
+- **Function signatures broken** - cdecl_func, stdcall_func, fastcall_func all show void parameters instead of (int a, int b)
+- **Struct types completely lost** - LargeStruct and SmallStruct definitions absent, all access via pointer arithmetic
+- **Control flow degraded to goto** - Simple for/while loops converted to complex label-based jump structures
+- **Zero documentation** - No comments explaining purpose, logic, or uncertainty in decompilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test function names preserved (test_calling_conventions, call_cdecl, varargs_func) providing some semantic anchors
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions, forcing all composite type access through opaque pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable naming** - Analyze how variables are used (loop counters, accumulators, pointers) to infer semantic names like `count`, `sum`, `ptr`
+2. **Recover function signatures from call sites** - Analyze how functions are called to reconstruct parameter types and counts, not just rely on prologue analysis
+3. **Detect and reconstruct struct patterns** - Identify consistent offset-based access patterns (v2+0, v2+4, v2+8) to recover struct definitions with field types

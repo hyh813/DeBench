@@ -1,0 +1,99 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `uVar2`, `__addr`, `__len`) with 20+ "Unresolved local var" annotations indicating complete name loss. Original names like `result`, `sum`, `counter` are not recovered.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User-defined function names are well-preserved (`param_macro_constants`, `call_asm_simd`, `test_preprocessing_features`) matching original source. Only internal runtime functions use generic names (`FUN_00101020`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Critical constants lost to magic numbers: `MAX_SIZE` (1024)→`0x400`, `BUFFER_COUNT*4` (64)→`0x40`, `ADD_16` offset (16)→`0x10`. String references appear as `DAT_0010227d` instead of actual content.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate noise from "Unresolved local var" comments (20+ instances), "WARNING: Unknown calling convention" warnings, and artificial `LOCK()/UNLOCK()` pseudo-functions for atomic operations.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered well (`for (uVar2 = 0; (int)uVar2 < n; ...)`), conditionals are natural. However, constant folding obscures logic (`call_macro_constants` just returns `0x40` instead of showing the comparison).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Original function boundaries preserved correctly. No inappropriate inlining or fragmentation. Function sizes remain reasonable and cohesive.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `call_asm_multi_insn` has excessive sequential assignments (16+ `local_28[x] = '\0'` lines) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding creates redundancy (caller functions return pre-computed constants). Test functions duplicate printf patterns without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `void*`, `size_t`, `char*`). Some erosion present (`ulong` instead of `size_t` in loop counters). Pointer types generally correct.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered correctly (`local_18[6]`, `local_28[40]`, `char[10] src`). No complex structs in source to recover, so no losses in this category.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(undefined1 *)dst`, `(code *)0x...`, `(int *)((long)piVar5 + 1)`. `LOCK()/UNLOCK()` pseudo-functions obscure actual atomic semantics and memory ordering.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only decompiler warnings present ("Unresolved local var", "WARNING: Removing unreachable block"). No algorithm explanations, no API contracts, no semantic documentation recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Assembly loops converted to C `for` loops (good). However, atomic operations reduced to `LOCK()/UNLOCK()` losing `__atomic_fetch_add` semantics. No pattern naming.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "Unresolved local var" and "Unknown calling convention" warnings indicate recovery issues. However, anomalies lack explanation of root cause or suggested manual analysis.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., `arr != NULL`), no postcondition inference, no error condition documentation. Return value semantics completely undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and traceable. Global variable `global_var` usage shown. No callback relationship documentation or call graph summaries.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Requires stubs for `LOCK()/UNLOCK()` pseudo-functions. `DAT_0010227d` string references need resolution. External dependencies (printf, mmap, sysconf) undeclared.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Contribution |
+|-------|-----------|---------|--------|--------------|
+| L1: Lexical Clarity | 4, 8, 3, 6 | 5.25 | 30% | 1.575 |
+| L2: Structural Intelligibility | 7, 8, 6, 6 | 6.75 | 25% | 1.688 |
+| L3: Type System Fidelity | 7, 7, 5 | 6.33 | 20% | 1.267 |
+| L4: Semantic Transparency | 4, 5, 6, 3 | 4.50 | 15% | 0.675 |
+| L5: Contextual Coherence | 6, 6, 5 | 5.67 | 10% | 0.567 |
+
+**Overall Readability Score: 5.77/10**
+
+### Critical Defects
+- **Macro constants completely lost**: `MAX_SIZE`, `BUFFER_COUNT`, `ENABLE_FEATURE` all folded to hex literals (`0x400`, `0x40`, `0x10`)
+- **20+ "Unresolved local var" annotations** indicate variable name recovery failure throughout the codebase
+- **Atomic operations obscured**: `__atomic_fetch_add` reduced to generic `LOCK()/UNLOCK()` pseudo-functions losing memory ordering semantics
+- **String literals as data references**: `DAT_0010227d` instead of actual string content in printf calls
+- **No contract documentation**: Zero precondition/postcondition recovery for functions with error returns (`-1`, `-2`, `-3`)
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Symbol table preservation allowed accurate recovery of all user-defined function names matching original source intent.
+
+### Most Needs Improvement
+- **Literal Clarity (3/10)** - Preprocessor macro expansion permanently destroyed constant semantics; decompiler cannot distinguish `0x400` from arbitrary magic number without debug symbols or pattern analysis.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement constant folding reversal**: Detect arithmetic patterns (`x > 0x400` with return `0x40`) and suggest original constant names via pattern matching against common macro patterns.
+2. **Recover atomic operation semantics**: Recognize `LOCK` prefix patterns and memory barrier sequences to restore `__atomic_*` or `atomic_*` function calls with proper memory ordering annotations.
+3. **Add semantic confidence annotations**: Replace generic "Unresolved local var" with specific recovery confidence levels and suggested manual analysis actions (e.g., "Variable used in size comparison - likely named `size` or `length`").

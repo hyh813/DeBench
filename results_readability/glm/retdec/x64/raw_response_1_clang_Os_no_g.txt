@@ -1,0 +1,105 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `v3`, and `result`, providing no semantic context (e.g., `sum`, `count`, `temp`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are preserved exactly from the source (e.g., `sequential_ops`, `loop_continue`), providing clear semantic context for the code's purpose.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with compiler-generated magic numbers like `0x66666667` (used for division by 10) and `0xffffffff` (masking), obscuring the original logic.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The decompiled code contains severe noise, including raw SIMD intrinsics (`__asm_pshufd`, `__asm_paddd`) in C code and excessive masking operations (`& 0xffffffff`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is heavily distorted; `switch` statements are replaced by jump table arithmetic, and loops are replaced by mathematical formulas or opaque SIMD blocks.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries are respected and match the source granularity well, with no inappropriate inlining or outlining observed.
+
+**7. Code Linearization:** Score: 3/10
+Justification: Logic is flattened into dense ternary operators (e.g., `v1 >= 0 != v1 != 0 ? ...`) and broken up by SIMD blocks, making top-to-bottom reading difficult.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: While some loops are optimized to formulas, the code introduces new redundancy through repeated masking operations and fails to abstract low-level implementation details.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are imprecise; 32-bit integers are widened to `int64_t`, and SIMD vector types are exposed as `int128_t` rather than abstracted vector types.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Standard library structures like `jmp_buf` and `sigset_t` are recovered, but the code primarily deals with scalar types, offering little opportunity to demonstrate complex struct recovery.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe bit-masking (`& 0xffffffff`) and bit-shifting for type conversions instead of using standard C casts, indicating poor type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, the SIMD intrinsics, or the compiler optimizations applied.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: The decompiler fails to recognize standard idioms; `for` loops are replaced by math, `switch` statements by pointer arithmetic, and `if` chains by ternary expressions.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No warnings or flags are provided for the drastic structural changes (e.g., loops becoming SIMD) or potential decompilation errors.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred in the output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls and global variable references are clear and syntactically correct, though global variable names are generic.
+
+**17. Module Organization:** Score: 8/10
+Justification: The file is well-organized with prototypes at the top and implementations following, matching standard C file structure.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on non-standard `__asm_` intrinsics and custom type definitions that are unlikely to compile without significant modification or specific compiler support.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 3 + 1) / 4 = 4.0
+L2_avg = (2 + 8 + 3 + 4) / 4 = 4.25
+L3_avg = (4 + 6 + 3) / 3 = 4.33
+L4_avg = (1 + 1 + 1 + 1) / 4 = 1.0
+L5_avg = (7 + 8 + 2) / 3 = 5.67
+
+Overall = (4.0 × 0.30) + (4.25 × 0.25) + (4.33 × 0.20) + 
+          (1.0 × 0.15) + (5.67 × 0.10)
+Overall = 1.2 + 1.0625 + 0.866 + 0.15 + 0.567
+Overall = 3.8455
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.8/10
+
+### Critical Defects (Bullet List)
+- **SIMD Intrinsics in Scalar Code:** Functions like `loop_continue` and `recursion_factorial` contain raw SIMD intrinsics (`__asm_pshufd`) instead of the original C loops, rendering them unreadable.
+- **Lost Control Flow Structures:** `switch` statements (e.g., `switch_small`) are decompiled into jump table arithmetic/pointer dereferences rather than `switch-case` structures.
+- **Loop Elimination:** `loop_for_fixed` is decompiled into a mathematical formula (`n*(n-1)/2`) instead of the original loop structure, despite the `-O0` optimization level.
+- **Excessive Masking:** The code is polluted with `& 0xffffffff` operations, obscuring the original integer logic.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (9/10)**
+- **Why?** The decompiler successfully preserved the original function names from the binary symbols, which is the only clear link to the source code's intent.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Idiom Recognition (1/10)**
+- **Why?** The decompiler failed to recognize virtually every high-level control flow idiom (loops, switches, ifs), replacing them with low-level arithmetic or assembly.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Suppress SIMD Intrinsics:** Implement a pattern matcher to detect SIMD loops and replace them with pseudo-code scalar loops or vectorized notations, rather than dumping raw `__asm_` intrinsics.
+2.  **Recover High-Level Control Flow:** Improve the analysis engine to reconstruct `switch` statements from jump tables and `for`/`while` loops from counter-based arithmetic, especially when debug info (`-g`) suggests unoptimized code.
+3.  **Clean Up Compiler Artifacts:** Aggressively remove redundant masking operations (`& 0xffffffff`) and magic numbers generated by compiler optimizations (like `0x66666667` for division) to improve literal clarity.

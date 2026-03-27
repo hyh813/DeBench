@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v5`, `v6`, `ptr`) with no semantic meaning. For example, in `test_cpp_exception()`, variables `v0-v13` obscure their roles as exception handlers, result accumulators, and type info pointers.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Most functions named `sub_XXXXXX` by address (e.g., `sub_401030`, `sub_401150`). Some C++ mangled names recovered (`_Z20test_cpp_member_funcv`) but not demangled. A few like `test_cpp_exception` and `main` are readable but most test functions are empty stubs.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers scattered throughout without explanation (`11622`, `11542`, `84`, `132`). Some expected values present (42, 4700, 71) but not contextualized as test expectations from source.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe compiler artifacts: `__x86.get_pc_thunk.*` functions, stack canary checks (`__stack_chk_fail_local`), initialization code (`__do_global_ctors_aux`), and decompilation failures (`[D] unsupported_<class 'pyvex.expr.GetI'>()`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Extensive `goto` usage including computed gotos (`goto v1->field_54;`, `goto *((int *)*((int *)arg_0));`). Many functions are just wrappers calling single other functions with no structured control flow.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: Severe fragmentation with ~40 single-line wrapper functions (`sub_40104e`, `sub_40105e`, etc.). Many test functions (`test_cpp_virtual_func`, `test_cpp_lambda`) are empty stubs. Original 540 LOC expanded to 2149 LOC with no semantic value added.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Poor linearity due to heavy goto usage and computed jumps. Forward jumps into function bodies disrupt top-to-bottom reading. Many functions end with `return;` after single call.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Massive redundancy with wrapper function chains (e.g., `sub_40104e`→`sub_401050`→`sub_401030`). Similar struct definitions repeated 20+ times with different padding values (`padding_0[84]`, `padding_0[11622]`, etc.).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type degradation - most types are `unsigned int`, `void*`, `char*`. No proper C++ type recovery. Template instantiations lost (`template_max<int>` calls show raw parameters). Architecture mismatch (original ARM64, decompiled shows X86).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs defined as `struct_0` with `padding_0[X]` and `field_X` (e.g., `field_54`, `field_2d66`). Some class names recovered (`Base`, `Derived`, `MultiDerived`) but with empty bodies. No proper vtable or inheritance layout recovery.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Many unsafe casts and pointer arithmetic on generic types. Computed gotos through function pointers (`goto v1->field_54`). Raw pointer manipulation without type safety (`(char *)a0 + (*(a0))[12]`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Almost no comments. No algorithm explanations, no decompilation confidence indicators. Only auto-generated function headers with addresses. Critical logic like exception handling has zero documentation.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No C++ idioms recognized - virtual dispatch, RAII, templates, lambdas, smart pointers all lost. Thunk functions present (`_ZThn8_N12MultiDerived5funcBEv`) but not explained as virtual inheritance adjustments.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some anomalies marked with `[D]` but not explained (`[D] Unsupported jumpkind Ijk_SigTRAP`). No clear indication of what couldn't be recovered vs. what's actual code. Failed decompilation noted but not contextualized.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts lost. No indication of null checks, bounds validation, or ownership semantics from smart pointers.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls present but relationships unclear. Virtual dispatch not properly recovered (thunks present but unexplained). Global variables named `g_403ff4`, `g_402018` with no semantic meaning.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All code in single output file. No logical grouping by class or feature. Related functions scattered (e.g., `Base::virtual_func` at 0x401a30, `Derived::virtual_func` at 0x401a70 with no visual grouping).
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Contains compilation errors (`[D] unsupported_<class 'pyvex.expr.GetI'>()`). Won't compile standalone. External dependencies (`_ZTI8RTTIBase`, `_ZStL8__ioinit`) declared but not defined. Architecture mismatch prevents direct use.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+3+4+2)/4 = 2.75 × 0.30 = 0.825
+Level 2 (Structural):  (2+2+3+2)/4 = 2.25 × 0.25 = 0.563
+Level 3 (Type System): (2+3+2)/3   = 2.33 × 0.20 = 0.466
+Level 4 (Semantic):    (1+1+3+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (3+3+2)/3   = 2.67 × 0.10 = 0.267
+
+Overall Score: 2.35/10
+```
+
+**Overall Readability Score:** 2.4/10
+
+### Critical Defects:
+- **Architecture mismatch**: Original ARM64 compiled, decompiled as X86 - fundamental recovery failure
+- **Variable names all generic**: `v0-v13`, `ptr` obscure all semantic meaning (e.g., exception handler variables in `test_cpp_exception`)
+- **Control flow uses goto extensively**: Computed gotos (`goto v1->field_54`) instead of structured C++ constructs
+- **40+ wrapper functions**: Single-line functions like `sub_40104e`→`sub_401050` add no value, bloat code 4x
+- **Decompilation failures embedded**: `[D] unsupported_<class 'pyvex.expr.GetI'>()` appears in production code paths
+
+### Best Quality Aspect: **Literal Clarity (4/10)**
+- Some expected test values (42, 71, 4700) are present and match source expectations, providing minimal semantic anchors.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero documentation for any non-trivial logic; exception handling, virtual dispatch, and template instantiation have no explanatory comments.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ semantics from mangled names**: Demangle `_Z20test_cpp_member_funcv` to `test_cpp_member_func()` and infer class membership from vtable patterns.
+2. **Eliminate wrapper function chains**: Detect and inline single-call wrapper functions (`sub_40104e`→`sub_401050`) to reduce 4x code bloat.
+3. **Flag decompilation failures prominently**: Replace `[D] unsupported_...` with clear comments explaining what couldn't be recovered and suggested manual analysis steps.

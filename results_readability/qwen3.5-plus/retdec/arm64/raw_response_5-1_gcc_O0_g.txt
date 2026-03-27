@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `result`, `a1`, `a2`) with no semantic meaning. For example, in `_Z20test_cpp_member_funcv`, the `SimpleClass` object is just `v1` instead of `obj`, and return values are `v2`, `v3`, `v4` instead of `r1`, `r2`, `r3`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions use C++ mangled names (`_Z20test_cpp_member_funcv`) with demangled versions only in comments. Some functions are mechanically named (`function_1860`, `function_1870`) with no semantic meaning despite demangled info being available.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x1234` stored in `g1` without explanation. String literals are encoded in hex in globals (`g31 = "=== \xe6\xb5\x8b..."`). Array sizes (31, 32) visible but not named constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts including stack canary checks (`__stack_chk_fail()`) at end of every function, redundant type casts throughout, and massive STL implementation exposure (234 functions from 540 lines of source).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses explicit goto labels (`lab_0x2ed4`, `lab_0x2f18`) in `_ZN14LifecycleClassC2Em` instead of natural for-loop. Some functions have reasonable if-else but loop recovery is inconsistent.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Massive over-fragmentation with 234 functions from 540 lines of source. STL template instantiations exposed as separate functions (`_ZNSt11_Tuple_implILm0E...`, `_ZNSt10_Head_baseILm0E...`) instead of being inlined or abstracted.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Frequent forward jumps and goto labels disrupt reading flow. Stack canary checks at function ends create artificial branching. Some test functions read reasonably but constructor/destructor code is fragmented.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Template instantiation creates massive redundancy (multiple `_ZSt3get`, `_ZSt12__get_helper` variants for each type combination). No dead code removal; all STL internals exposed separately.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses appropriate `int64_t`, `int32_t`, `uint64_t` for primitives. However, significant type erasure with `int64_t*` used for all object pointers instead of class-specific types. Const correctness mostly lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Vtable structures recovered (`struct vtable_167f8_type`) but class structures not recovered at all. Objects accessed via pointer arithmetic (`*(int32_t *)(v1 + 8)`) instead of field names. No `SimpleClass`, `Point`, etc. struct definitions.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts throughout (`(int64_t *)(v1 + 8)`, `(int32_t *)result`). Pointer arithmetic for object field access without bounds checking. No const correctness on member functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Demangled function names and line ranges in comments (`// Demangled: test_cpp_member_func()`) but no algorithm explanations. No decompilation confidence indicators or logic documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: C++ patterns partially recognized through naming (constructors `C2`, destructors `D2`, virtual functions). Virtual inheritance thunks identified (`_ZThn16_`, `_ZTv0_n24_`) but not explained. No design pattern documentation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags or uncertainty indicators. Code presented confidently even when questionable (e.g., complex virtual inheritance this-pointer adjustments shown without warning).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. No invariant recognition for class members. Exception handling contracts not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch partially recovered through vtables but no call graph. Global variable usage (`g44` as dummy this-pointer) not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with no logical grouping beyond function order. No header file separation. Related class methods scattered throughout file.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes standard headers and external function declarations present. Would require significant work to compile standalone due to missing class definitions and STL dependencies.
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Calculation:**
+```
+Level 1 (Lexical):     (3+4+5+4)/4 = 4.0 × 0.30 = 1.20
+Level 2 (Structural):  (5+4+5+4)/4 = 4.5 × 0.25 = 1.125
+Level 3 (Type):        (6+4+4)/3   = 4.7 × 0.20 = 0.94
+Level 4 (Semantic):    (4+5+3+2)/4 = 3.5 × 0.15 = 0.525
+Level 5 (Contextual):  (5+4+5)/3   = 4.7 × 0.10 = 0.47
+Total: 4.26 ≈ 4.3/10
+```
+
+**Critical Defects:**
+- Variable `v1` in `_Z20test_cpp_member_funcv` should be named `obj` (SimpleClass instance)
+- Class structures not recovered; all objects accessed via pointer arithmetic instead of field names
+- C++ mangled names used as function names instead of demangled versions
+- Goto labels (`lab_0x2ed4`) used instead of natural for-loop in LifecycleClass constructor
+- 234 functions from 540 lines indicates massive STL implementation exposure
+- No comments explaining virtual inheritance this-pointer adjustments
+- Global `g44` used as dummy this-pointer without explanation
+
+**Best Quality Aspect:** Type Precision (scored 6/10)  
+- Primitive types (int32_t, int64_t, uint64_t) are appropriately used rather than generic int
+
+**Most Needs Improvement:** Assertion & Contract Recovery (scored 2/10)  
+- No precondition, postcondition, or invariant documentation anywhere in the decompiled output
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover class structures from vtable layouts** - Map pointer arithmetic (`*(int32_t *)(v1 + 8)`) to named struct fields based on vtable analysis
+2. **Use demangled names as actual function identifiers** - Don't just put demangled names in comments; use `test_cpp_member_func` instead of `_Z20test_cpp_member_funcv`
+3. **Inline or abstract STL template implementations** - Recognize common STL patterns (unique_ptr, tuple) and present them at higher abstraction level rather than exposing all internal helper functions

@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `a0`, `a1`, `v23`), providing no semantic context about their role in the calculation or data structure.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `param_by_value_int` are perfectly preserved from the source, accurately reflecting their purpose.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `4294967295` (which is `-1`) and `18446743528248704968` appear without explanation or named constants, obscuring the intent of error codes or initialization values.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Significant noise is present, such as redundant stack pointer assignments (`v0 = &v1`) and unused register spills (`uint128_t v0...v7` in `varargs_func`), which clutter the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Control flow is often unnatural; `varargs_func` uses `goto` and complex pointer arithmetic instead of a simple loop, and `param_ptr_array` contains unrolled loops that look like spaghetti code.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-separated and correspond to the source structure, though some logic (like in `test_calling_conventions`) is heavily inlined due to compiler optimization.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While mostly linear, functions like `varargs_func` and `ret_large_struct` contain forward jumps and computed labels that disrupt top-to-bottom readability.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: Some dead stores remain (e.g., `v0 = v3; v1 = &v2;` in `func_mixed_args`), and loop unrolling in `param_ptr_array` creates visual redundancy without explicit indication.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Critical type information is lost; `double` parameters in `func_mixed_args` become `unsigned int`, and `int` arguments are frequently demoted to `unsigned int`, losing signedness context.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct types are poorly recovered; `LargeStruct` in `func_struct_byval` is reduced to a raw pointer `unsigned int *a0`, and `SmallStruct` fields are generic (`field_0`, `field_8`).
+
+**11. Type Safety:** Score: 5/10
+Justification: The code contains unsafe casts and operations resulting from type confusion, such as treating floating-point registers as integers (`v5` in `func_mixed_args`) without explicit casts.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are almost entirely absent, with only a few auto-generated notes like `/* do not return */` or `// Angr Decompilation...`, providing no insight into algorithm logic.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard idioms are missed; the `va_list` pattern in `varargs_func` is not recognized, instead represented as raw pointer arithmetic and memory offsets.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler flags unsupported operations like `[D] unsupported_Iop_ZeroHI64ofV128()` and uses placeholders like `AddV`, which accurately indicates where translation failed.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the null check in `param_string` is present but not explicitly stated as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Cross-references are clear; function calls use the correct recovered names, and global string references (e.g., `extern char g_4014a8`) are explicitly linked.
+
+**17. Module Organization:** Score: 7/10
+Justification: The code is organized logically by function address, generally grouping related test functions together, matching the source file's structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile standalone due to undefined intrinsics like `arm64g_calculate_condition`, `AddV`, and `__ROL__`, requiring significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Type precision is severely degraded; `double` and `long long` parameters are lost or converted to `unsigned int`.
+- Variable naming is entirely generic (`v0`, `a0`), obscuring the semantic meaning of arguments and locals.
+- The `va_list` idiom in `varargs_func` is not recovered, replaced by confusing pointer arithmetic and `goto` statements.
+- Composite types (structs) are not reconstructed; `LargeStruct` is passed as a raw pointer.
+- Magic numbers like `4294967295` are used instead of `-1` or `UINT_MAX`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully recovered all original function names from the binary symbols, making the high-level flow easy to trace.
+
+**Most Needs Improvement:** Type Precision (scored 3/10)
+- The loss of type information (signedness, floating-point vs. integer, structs) fundamentally breaks the understanding of the function signatures and data manipulation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Enhance type recovery for floating-point arguments and structure passing to avoid demoting `double` to `unsigned int`.
+2. Implement pattern matching for standard C library idioms like `va_list`/`stdarg` to reconstruct loops instead of emitting raw pointer arithmetic.
+3. Infer and replace magic numbers (e.g., `0xFFFFFFFF`) with their semantic equivalents (e.g., `-1`) based on context.

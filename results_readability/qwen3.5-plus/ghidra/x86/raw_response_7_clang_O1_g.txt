@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use mechanical naming (`iVar1`, `iVar2`, `bVar1`, `pbVar2`) with no semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main test functions preserved original names (`param_fake_branch`, `param_opaque_predicate`, `call_vectorized_loop`). Helper functions use generic names (`FUN_00011030`) but core functionality is identifiable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0x23`, `0xe1` appear without explanation. Some constants are pre-computed (e.g., `call_fake_branch` returns `10` directly), losing the original computation logic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive "Unresolved local var" comments throughout. Compiler artifacts like `__i686.get_pc_thunk.bx`, `get_pc_thunk_dx` present. Multiple WARNING comments about calling conventions and unreachable blocks clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs instead of for loops. `param_fake_branch` completely simplified (fake branches optimized away to `return x`). GCD loop in `param_opaque_predicate` recovered but with awkward variable swapping.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized and separated. However, `test_obf_opt_edge` contains duplicated decryption code from `param_string_encryption`. Some caller functions constant-folded (`call_fake_branch` returns literal `10`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Do-while loops disrupt natural for-loop reading pattern. No excessive goto usage observed.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `test_obf_opt_edge` duplicates decryption logic from `param_string_encryption`. Array initialization verbose (each element set individually: `local_24[7] = 0; local_24[6] = 0;...`). Constant folding removed semantic meaning.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char, size_t) but unsigned/signed distinctions sometimes unclear. Strange cast appears: `(int)(10 / (longlong)x)`. Pointer types generally correct but array vs pointer distinction lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Bitfield struct noted as "Unresolved local var: anon_struct_4_3_4e909822 bitfield". Arrays shown as individual element assignments. No struct field names recovered - all composite type semantics lost.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Casts present but generally appropriate for decompilation context. Pointer arithmetic visible but not obviously dangerous. No severe type confusion detected, though `(__sighandler_t)0x0` cast is awkward.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments indicate decompilation failures ("Unresolved local var") rather than explain logic. No algorithm explanations (GCD, XOR decryption not identified). WARNING comments helpful but indicate problems.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. XOR decryption pattern not recognized. No design pattern or algorithm identification. Original obfuscation techniques completely opaque in output.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "Unresolved local var" flags decompilation issues. "WARNING: Subroutine does not return" for longjmp is accurate. "Removing unreachable block" notes optimization artifacts. Some anomalies flagged but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions or invariants. Original function contracts (expected return values in comments) completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables referenced (`div_zero_caught`, `jmp_buffer`) without declaration context. `param_string_encryption::encrypted` reference suggests unresolved global.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping (obfuscation vs optimization vs edge case tests mixed). Helper functions (`_init`, `_fini`, `__do_global_dtors_aux`) mixed with test code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References external functions (signal, longjmp, strlen) without declarations. Global variables (`div_zero_caught`, `jmp_buffer`, `completed_1`) undefined. `param_string_encryption::encrypted` syntax suggests compilation issues. Would require significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+7+7+5)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (6+3+7)/3 = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (4+2+6+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (5+5+3)/3 = 4.33 × 0.10 = 0.43
+
+Overall Score: 5.09/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable names completely generic** (`iVar1`, `iVar2`, `bVar1`) - original semantic names like `result`, `encrypted`, `canary` lost
+- **`param_fake_branch` over-optimized** - fake branches eliminated entirely, returning just `x` instead of showing the obfuscation logic
+- **Composite types not recovered** - bitfield struct shown as "anon_struct_4_3_4e909822" with no field names
+- **No idiom recognition** - GCD algorithm, XOR decryption patterns not identified or documented
+- **Build incompatibility** - undefined globals, missing declarations, would not compile without significant modification
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core test function names preserved from source, making it possible to identify which obfuscation technique each function tests
+
+### Most Needs Improvement:
+- **Idiom Recognition (2/10)** - No algorithm or pattern identification; GCD, XOR decryption, and obfuscation techniques completely opaque in output
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze variable usage patterns to infer names (e.g., variables used in XOR operations should be named `key`, `encrypted`, `decrypted`)
+2. **Add algorithm pattern detection** - Recognize common algorithms (GCD, string decryption, checksums) and add explanatory comments
+3. **Recover composite type structures** - Improve struct/union recovery with field name inference from access patterns rather than generic "anon_struct" labels

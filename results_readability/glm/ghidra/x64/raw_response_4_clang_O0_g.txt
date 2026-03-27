@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10
+Justification: Parameters (`a`, `b`, `count`) and key locals (`sum`, `i`) are well-named, but stack temporaries in complex functions like `varargs_func` use generic names (`local_100`, `local_e8`), obscuring the `va_list` mechanics.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`cdecl_func`, `test_calling_conventions`, `main`) are perfectly recovered from the binary symbols, matching the source exactly and clearly indicating purpose.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals are preserved, but integer constants are often represented in hex (e.g., `0x2a` instead of `42`, `0x14` instead of `20`), which requires mental conversion for simple arithmetic checks.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise from unoptimized code artifacts, such as redundant local variable copies (`int a_local;` in `cdecl_func`) and verbose manual struct member copying in `test_calling_conventions`, which clutters the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent; `for` loops and `if/else` structures are naturally recovered. The switch statement in `ret_multi_branch` is correctly represented as an `if/else` chain, which is idiomatic for decompilation.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Function boundaries match the source perfectly with no inlining or outlining, maintaining the original modular structure and granularity intended by the developer.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps; early returns and loop structures are placed logically, making execution paths easy to follow.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The decompiler failed to collapse verbose struct copying (e.g., `s_00.data[0] = large.data[0];` repeated 16 times) and retained dead stores from the `-O0` build, significantly bloating the code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate (`int`, `char *`, `longlong`), though the use of `undefined8` in `_start` and some generic casts in `varargs_func` slightly reduce precision.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Structs like `LargeStruct` and `SmallPoint` are recovered with correct field names (`x`, `y`, `data`), but access to `long long` fields in `LargeStruct` is split into weird sub-fields (`_0_4_`, `_4_4_`), reducing readability.
+
+**11. Type Safety:** Score: 8/10
+Justification: Code is type-safe with appropriate casts; the decompiler correctly handles the hidden pointer parameter for `ret_large_struct`, preserving the ABI-specific type safety mechanism.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to Ghidra's internal warnings (e.g., "Unknown calling convention") and provide no semantic explanation of the code's logic or purpose.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: The `varargs_func` implementation is expanded into low-level pointer arithmetic (`gp_offset`, `overflow_arg_area`) rather than being represented as `va_start`/`va_arg`, completely obscuring the standard C idiom.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Ghidra correctly flags "Unknown calling convention" for functions where it couldn't lock parameter storage, which is helpful metadata for the analyst.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the null check in `func_struct_byptr` is present but not explicitly highlighted as a contract requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are direct and use recovered names, making the call graph clear, but there are no explicit "Called by" or "Calls" comments in the function bodies.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically (mostly by address, which correlates with source order here), and related test functions are grouped together, maintaining good organization.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on inferred struct definitions and `undefined` types in startup code; it would require significant manual definition of headers/types to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.9/10
+
+**Critical Defects:**
+- The `varargs_func` implementation is expanded into low-level ABI pointer arithmetic instead of using `va_list` idioms, making it very hard to read.
+- Struct copying in `test_calling_conventions` is expanded into verbose line-by-line member assignments instead of a struct assignment or `memcpy`.
+- Redundant local variable assignments (e.g., `int a_local;` in `cdecl_func`) from the `-O0` build are not stripped, adding unnecessary noise.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Symbols were preserved in the binary, allowing the decompiler to recover exact function names that perfectly match the source intent.
+
+**Most Needs Improvement:** Idiom Recognition (scored 4/10)
+- The failure to recognize and reconstruct `va_list` usage patterns into standard C macros (`va_start`, `va_arg`) significantly degrades the semantic transparency of variable argument functions.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching for `va_list` initialization and access to reconstruct `va_start`/`va_arg` loops instead of exposing raw register save area offsets.
+2. Add a post-processing pass to detect and collapse sequences of struct member assignments (e.g., `a.x = b.x; a.y = b.y;`) into a single struct assignment (`a = b;`).
+3. Introduce an option to filter out dead store assignments common in unoptimized builds (e.g., `param_local = param;` where `param_local` is never used).

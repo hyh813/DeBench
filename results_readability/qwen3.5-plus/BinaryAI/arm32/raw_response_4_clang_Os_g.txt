@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `local_c`, `uVar6` with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `x`, `y` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). This is the strongest aspect—names accurately reflect functionality.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers dominate (`0xf`, `0x32`, `0x2a` instead of 15, 50, 42). String literals replaced with opaque references (`&DAT_0001178b`). Constant folding obscures original intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler runtime artifacts present (`__adddf3`, `__floatsidf`, `__aeabi_drsub` with hundreds of lines of bit manipulation). Startup/teardown functions (`_init`, `_fini`, `deregister_tm_clones`) add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but floating-point helpers use excessive branching. Test functions are constant-folded to single returns, losing actual call structure.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function sizes are reasonable, but struct-passing functions are broken (`func_struct_byval` takes 4 `int` params instead of 1 struct). Caller functions constant-folded, losing call relationships.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom adequately. Floating-point runtime functions have excessive jumps disrupting flow. Test functions overly simplified.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding removes legitimate computation structure. Floating-point operations show repetitive bit-manipulation patterns across multiple helper functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate (`undefined4`, `undefined8`, `ulonglong`). Function pointers degraded to `code *`. Float/double parameters split into multiple `undefined4` params losing type semantics.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**—struct types completely lost. `LargeStruct` (128 bytes) becomes 4 `int` parameters. `SmallStruct` becomes `int *`. No struct definitions recovered anywhere.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe implicit casts throughout. Pointer arithmetic on `int *` without proper typing. Float conversions use low-level bit operations instead of proper type handling.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation. Completely bare code.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not recognized (shows as manual stack iteration). Struct passing idiom lost. Floating-point library calls not identified as standard operations.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about type mismatches, struct decomposition, or constant folding. Silent failures throughout—code presents incorrect information confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. NULL checks exist (`if (param_1 == (int *)0x0)`) but without contract explanation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but many constant-folded away. Global references use opaque labels (`&DAT_0001178b`). Call relationships in test functions lost to optimization.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order. No logical grouping by test category. Runtime helpers mixed with application code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions declared but signatures often incorrect. Runtime dependencies (`__adddf3`, `__floatsidf`) not documented. Would require significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50  × 0.25 = 1.375
+Level 3 (Type):        (4+2+4)/3   = 3.33  × 0.20 = 0.667
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):  (4+5+4)/3   = 4.33  × 0.10 = 0.433
+─────────────────────────────────────────────────────
+Overall Score:                                  4.28/10
+```
+
+### Overall Readability Score: **4.3/10**
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct` and `SmallStruct` decomposed to raw `int` parameters with no type recovery
+- **Zero comments** - No documentation for any non-trivial logic, algorithms, or decompilation uncertainties
+- **Constant folding obscures call structure** - Test functions return hardcoded values instead of showing actual function calls
+- **Generic variable naming** - All variables named `param_N`, `iVarN`, `uVarN` with no semantic meaning
+- **Floating-point operations expanded** - Hundreds of lines of bit-manipulation code instead of recognizable float operations
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Original function names preserved accurately, making it possible to identify purpose despite other degradation
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding non-obvious logic nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack layouts** - Analyze parameter access patterns to reconstruct struct definitions instead of splitting into multiple scalar parameters
+2. **Add decompilation confidence annotations** - Flag constant-folded code, type uncertainties, and unresolved references with comments
+3. **Recognize standard library patterns** - Identify varargs, floating-point operations, and common idioms to produce higher-level representations instead of raw bit manipulation

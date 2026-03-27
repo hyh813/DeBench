@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`) with no semantic meaning. For example, `varargs_func` uses `a0` for `count` but this isn't reflected in the name, requiring manual inference.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test function names preserved accurately (`cdecl_func`, `call_cdecl`, `func_struct_byval`), but helper functions use generic names (`sub_400694`, `sub_400770`) losing semantic context.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX) and `18446743528248704968` appear without explanation, while simple constants (15, 42, 50) remain clear from constant folding.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: register spilling variables (`v0`, `v1` for stack), unsupported operations (`[D] unsupported_Iop_ZeroHI64ofV128()`), and redundant calls (memcpy called twice in `sub_400694`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but `varargs_func` uses awkward do-while with manual index tracking instead of clean for-loop. `register_tm_clones` uses goto unnecessarily.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate, but optimizer constant-folded caller functions (`call_cdecl` returns 15 directly instead of calling `cdecl_func`), losing call relationship visibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally, though `varargs_func` has complex loop structure with forward references that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `sub_400694` calls memcpy twice with identical arguments. Test functions show constant-folded results losing original computation structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Original `int` types degraded to `unsigned int` or `unsigned long long`. `cdecl_func(int a, int b)` became `cdecl_func(unsigned int a0, unsigned int a1)`, losing signedness semantics.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `LargeStruct` completely lost in `func_struct_byval` (shows unsupported operation). `SmallStruct` recovered as generic `struct_0` with `field_0` naming, losing `x`, `y` semantics.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Varargs handling shows unsafe parameter access patterns. Pointer arithmetic in `func_struct_byptr` uses array indexing on typed pointer without bounds checking visibility.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only auto-generated function headers present. Complex operations like varargs iteration have zero documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern not recognized (shows as 8 explicit parameters instead of `...`). Loop patterns partially recognized but no algorithm identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies marked (`[D] unsupported_Iop_ZeroHI64ofV128()`), but no warnings about type degradation, potential undefined behavior, or optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` requires non-NULL). No postconditions or invariants recovered from original code contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but string literals lost to generic globals (`g_4012d0`, `g_40157a`). External dependencies declared but not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. Original file structure (4.1, 4.2, 4.3 sections) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires external dependencies (printf, puts, memcpy, strlen). Would need significant stubbing and type corrections to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+4)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50  × 0.25 = 1.63
+Level 3 (Type):        (5+4+5)/3   = 4.67  × 0.20 = 0.93
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25  × 0.15 = 0.49
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.02/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects
+- **Variable names are entirely generic** (`v0`, `v1`, `a0`) requiring manual semantic inference for every variable
+- **LargeStruct type completely lost** in `func_struct_byval` showing `[D] unsupported_Iop_ZeroHI64ofV128()` instead of struct access
+- **Zero documentation** - no comments explaining varargs iteration, struct handling, or calling convention differences
+- **Varargs pattern not recognized** - shows 8 explicit parameters instead of `...` variadic syntax
+- **String literals replaced with opaque globals** (`g_4012d0`, `g_40157a`) losing printf format string visibility
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately, maintaining semantic connection to source code purpose
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Virtually no explanatory comments for complex operations like varargs handling or struct manipulation
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Infer names from usage patterns (e.g., parameter used in loop bound → `count`, pointer dereferenced in struct context → `struct_ptr`)
+2. **Recover variadic function signatures** - Detect `va_list` patterns and restore `...` syntax instead of expanding to explicit parameters
+3. **Add confidence annotations** - Mark decompiled code with uncertainty indicators for unsupported operations and type degradation areas

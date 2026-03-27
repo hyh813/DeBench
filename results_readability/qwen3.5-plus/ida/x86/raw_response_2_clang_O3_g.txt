@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names (`v0`, `v1`, `v2`, `result`) instead of semantic names. For example, `array_1d_stack` uses `v2` for loop index instead of `i`, and `v4`/`v5` for pointer arithmetic instead of `ptr`/`offset`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User functions retained original names (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`), clearly indicating purpose. However, helper functions like `sub_1030`, `sub_1070` are cryptic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `32` (ASCII offset), `65` ('A'), `0x1Au` (26) in `process_char` lack explanation. Test functions show constant-folded values (e.g., `printf("...%d\n", 97)`) obscuring original computation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: register comments (`// al`, `// eax`), calling convention annotations (`__cdecl`, `__usercall`), and 4 functions marked "FAILED to decompile". Internal labels like `LABEL_13` disrupt readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Aggressive loop unrolling in `array_1d_stack`, `ptr_increment`, `array_vla` transforms simple for-loops into complex unrolled blocks with bit-masking conditions (`(n & 0x7FFFFFF8)`). `volatile_access` optimized to `2 * *p`, losing semantic intent of two separate reads.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches original source well. Each test case remains a separate function. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. However, `graph_traverse` uses goto (`goto LABEL_13`) disrupting flow, and `binary_tree_sum` has awkward loop transformation from original recursion.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from loop unrolling: `array_3d` has 25 additions in one expression, `array_pointer` unrolls 4 elements per iteration. This obscures the simple original loop logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types well-preserved: `__int64` for long long, `long double` for extended precision, `bool` for _Bool. Pointer types mostly correct (`int *`, `int **`, `int ***`). Some degradation to `_DWORD` in internal variables.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs well-recovered with field names (Point3D: x,y,z; Rect: position,size; Widget: bounds,style,id). However, `struct_bitfields` converted to manual bit operations `((*(_WORD *)f >> 3) & 7)` losing bitfield semantics.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts: `(char **)v3` in `ptr_func_complex`, `(_DWORD *)i[1]` in `graph_traverse`, `(_DWORD)handle` in `opaque_handle_op`. No buffer overflow warnings despite `array_oob` containing intentional UB.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments beyond function headers. Original source had extensive documentation (e.g., "// DT-L1-01: 字符类型（char）⭐", "// 大写转小写") - all lost. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns not identified: linked list traversal in `linked_list`, array summation in `array_1d_stack`, tree recursion in `binary_tree_sum` all appear as raw code without pattern labels.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some functions marked "FAILED to decompile" (`__libc_start_main`, `printf`). However, critical anomalies like `volatile_access` optimization (losing volatile semantics) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `array_complex_index` requires bounds checking). No postconditions or invariants. Original test expectations completely lost in constant-folded test functions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Test functions no longer call actual functions - they print pre-computed constants. `test_data_types_l1` prints `97` instead of calling `process_char('A')`, breaking semantic relationship between test and implementation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching original structure (data types → arrays → pointers → composites). All code in single file without header separation, but grouping is coherent.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies (`printf`, `puts`, `__libc_start_main`) marked "FAILED to decompile". Would require stubs to compile. Some internal references like `dword_3640`, `asc_35BF` need resolution.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (5+8+5+6)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):     (5+8+7+5)/4 = 6.25  × 0.25 = 1.56
+Level 3 (Type System):    (8+7+6)/3   = 7.00  × 0.20 = 1.40
+Level 4 (Semantic):       (2+4+5+3)/4 = 3.50  × 0.15 = 0.53
+Level 5 (Contextual):     (5+7+5)/3   = 5.67  × 0.10 = 0.57
+─────────────────────────────────────────────────────────────
+Overall Score:                                    5.86/10
+```
+
+**Overall Readability Score: 5.9/10**
+
+### Critical Defects
+- **Test functions constant-folded**: `test_data_types_l1` prints hardcoded values (97, 300, 11) instead of calling actual functions, destroying test-to-implementation relationship
+- **Volatile semantics lost**: `volatile_access` optimized from two separate reads to `2 * *p`, eliminating volatile behavior
+- **No documentation recovery**: All original comments explaining test purposes, expected values, and场景 annotations completely absent
+- **Loop unrolling obscures logic**: Simple for-loops transformed into complex unrolled blocks with bit-masking conditions
+- **Bitfield structure lost**: `struct_bitfields` converted to manual bit operations, losing field semantics
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - User-defined function names perfectly preserved (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`), maintaining clear semantic intent matching original source.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation; original source had extensive comments explaining each test case, expected values, and scenarios - all lost in decompilation.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Preserve test function call relationships** - Avoid constant-folding test functions; maintain actual function calls to preserve semantic testing relationships
+2. **Recover and annotate optimization artifacts** - When loop unrolling is detected, add comments explaining the original loop structure (e.g., "// Original: for(i=0; i<n; i++) sum += arr[i]")
+3. **Flag semantic-preserving transformations** - Detect and warn when volatile semantics, memory barriers, or other side-effect-dependent code is optimized away

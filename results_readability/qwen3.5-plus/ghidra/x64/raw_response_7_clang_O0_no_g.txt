@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `local_10`, `local_1c`, `iVar1`) with no semantic meaning. Original source had meaningful names like `result`, `str`, `p1`, `p2`, `p3` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Function names are preserved from source (`param_fake_branch`, `call_opaque_predicate`), which is excellent. However, return type mismatches (void vs int) undermine the naming accuracy.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `-0x21524111` (should be `0xDEADBEEF`), `0x2f` (simplified from complex logic), and `0x5a` appear without explanation. String literals become opaque `&DAT_` references.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: `strlen("test");` call without using result is compiler artifact noise. Some unreachable block warnings are helpful, but unnecessary casts like `(undefined4)` and `(long)` clutter the code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Second fake branch (`strlen(str) < 0`) is completely removed, leaving only `strlen("test");` as dead code. The opaque predicate's p3 check is missing entirely, altering control flow semantics.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are properly separated, but `call_*` wrapper functions return `void` instead of `int`, breaking the call chain semantics. Function granularity is appropriate otherwise.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom naturally with standard if/while constructs. No excessive gotos or forward jumps disrupting flow. Loop structures are properly recovered.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: The `strlen("test");` call serves no purpose (result unused). Some functions like `param_implementation_defined` are over-simplified to single return statements, losing original logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `param_link_time_optimization` returns `void` instead of `int`, `param_string_encryption` returns `long` instead of `int`, `param_instruction_substitution` parameter changed from `int` to `uint`. Generic `undefined4` types appear frequently.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: The bitfield struct in `param_implementation_defined` is completely lost (simplified to `return 0x2f`). Array parameters become `long` pointers without size information. No struct field names recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(undefined4)`, `(long)param_1`, `(__sighandler_t)0x0`, `(undefined *)0x0`. Pointer arithmetic uses explicit casts that obscure intent and could hide bugs.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No explanatory comments in decompiled code. Only auto-generated warnings like "WARNING: Removing unreachable block" and "WARNING: Subroutine does not return". No algorithm or intent documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Opaque predicate pattern not identified. Fake branch obfuscation pattern not flagged. The GCD computation in `param_opaque_predicate` is recovered but not recognized as a known algorithm pattern.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some unreachable block warnings are present, but critical semantic anomalies (removed branches, missing predicate checks) are not flagged. The decompiler confidently presents incorrect/missing logic without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). No postconditions or return value semantics. Error handling paths not distinguished from normal paths.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph is clear, but global variable references are opaque (`&DAT_00102009`, `&param_string_encryption_encrypted`). Signal handler relationships not documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped in a single file with reasonable ordering. Static variables (`div_zero_caught`, `jmp_buffer`) are referenced but not declared in visible scope. No header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code uses Ghidra-specific types (`undefined`, `undefined4`, `undefined8`) that won't compile with standard gcc. Multiple type mismatches would cause compilation errors. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+6)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+7+6)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (4+5+5)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 4.84/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Semantic loss**: Second fake branch (`strlen < 0`) completely removed, only `strlen("test");` remains as dead code
+- **Type corruption**: Multiple functions have wrong return types (`void` instead of `int` for `call_*` and `param_link_time_optimization`)
+- **Missing logic**: `param_opaque_predicate` missing p3 bitwise check, altering the predicate completeness
+- **Variable naming**: All variables use generic names (`param_1`, `local_10`) losing all semantic meaning from source
+- **Magic numbers**: `-0x21524111` instead of `0xDEADBEEF`, `0x2f` instead of computed value, no explanations provided
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Function names preserved from source code, making it possible to identify which function is which despite other degradation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero explanatory comments; decompiler provides no insight into obfuscation patterns, algorithm intent, or confidence levels in recovered logic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve semantic branches**: Detect and preserve fake/dead branches even when conditions are always false, with comments indicating "always false condition - possible obfuscation"
+2. **Type inference from usage**: Analyze return value usage to infer correct return types (e.g., `call_fake_branch()` result is ignored but source returns int)
+3. **Magic number annotation**: Detect common constants (0xDEADBEEF, 0x5A XOR keys) and annotate them with hex+decimal+potential meaning comments

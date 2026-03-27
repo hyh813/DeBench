@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7` throughout. For example, in `param_opaque_predicate`, `v1` represents `x+1` (the increment), `v2` and `v3` are used for GCD computation but lose the semantic meaning of `a` and `b`. The name `mem` in `param_buffer_overflow_heap` is acceptable but inconsistent with the overall naming strategy.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names largely match the original source: `param_opaque_predicate`, `call_opaque_predicate`, `param_tail_call_optimized`, `param_division_by_zero`, etc. The naming is descriptive and action-oriented. Minor issue: some wrapper functions like `call_*` could be more specific about their role.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple magic numbers lack explanation. The value `90` in `decrypt_string` call should be named as `key` (0x5A). The string `"\x1a+<M"` is the encrypted form but not labeled as such. The `4` used for pointer arithmetic in `param_vectorized_loop` should be explained as `sizeof(int)`. The global `g1` has a cryptic address `-0x16d2bff0` that serves as a signal handler.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution. The `_setjmp` construct is expanded into a massive inline struct initialization with confusing field names (`e0`, `e1`, `e2`). The `param_vectorized_loop` uses raw pointer arithmetic with integer arithmetic instead of array indexing. The `call_vectorized_loop` has incorrect array initialization syntax `a = {1, 0, 0, 0...}` which wouldn't compile. The global `g1` with value `(void (*)(int32_t))-0x16d2bff0` is a compiler artifact.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is preserved (if/else, while loops), but the `param_vectorized_loop` uses raw pointer arithmetic with manual index management instead of idiomatic for loops. The GCD computation in `param_opaque_predicate` is correctly structured as a while loop. At -O0, more natural loop constructs should be recoverable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately decomposed - each function has a single responsibility. However, several functions from the original source are missing entirely (e.g., `param_fake_branch`, `param_instruction_substitution`, `param_string_encryption`, `param_link_time_optimization`). The decompilation appears incomplete.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. The while loops in `param_opaque_predicate` and `param_vectorized_loop` are straightforward. However, the nested structure in `decrypt_string` with its pointer chasing is somewhat difficult to follow linearly.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant redundancy detected. The loop in `param_vectorized_loop` computes the sum in a second pass, which matches the original source. Dead code appears minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `int32_t` consistently which is good for arm64. However, `jmp_buffer` and `segv_buffer` are declared as `int32_t` instead of `jmp_buf` type - this is a critical type error. The parameter `p` in `param_null_pointer_deref` is `int32_t *` but should be `int32_t *` (this is correct). The global `g1` is incorrectly typed as `void (*)(int32_t)` when it should be a signal handler type.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. The `jmp_buf` type is completely lost - it's represented as `int32_t jmp_buffer` and `int32_t segv_buffer`. The setjmp/longjmp mechanism is incorrectly reconstructed with manual struct construction. No recovery of the bitfield structure from `param_implementation_defined`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Significant type safety issues. The `_setjmp` reconstruction creates a complex struct inline which is incorrect. The pointer arithmetic in `param_vectorized_loop` uses raw `int32_t` instead of proper pointer types. The signal handler casting to `(void (*)(int32_t))&g1` is unsafe. The array initialization `a = {1, 0, 0, 0...}` is syntactically incorrect C code.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Some useful comments present (e.g., "From module: /work/src/7.c", "Address range", "Line range"). However, no comments explaining the algorithmic logic (e.g., GCD computation, string decryption, signal handling). The decompilation lacks documentation of what each function actually does.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are recognizable (GCD algorithm, string decryption loop, tail recursion). However, the decompiler doesn't identify these as known algorithms or patterns. The signal/setjmp error handling pattern is not labeled as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No explicit flagging of anomalies. The incorrect type for `jmp_buffer` is presented without warning. The malformed array initialization in `call_vectorized_loop` would fail to compile but isn't flagged. The unusual global `g1` with negative address is not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions like "x != 0" for division, "p may be NULL" for null pointer dereference are not documented. Postconditions and invariants are not indicated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear from the code structure - `call_*` functions call `param_*` functions. Global variable usage is partially visible (g17 for encrypted string). However, the relationship between signal handlers and the functions that use them is not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically. The decompiled output includes function prototypes at the top. However, the organization is flat without clear sectioning for related functions (obfuscation vs. optimization vs. edge cases).
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code would NOT compile as-is. Major issues: 1) `jmp_buffer` and `segv_buffer` are wrong types (should be `jmp_buf`), 2) Array initialization syntax `a = {1, 0, 0...}` is invalid in C, 3) The inline struct for setjmp is malformed, 4) Missing functions from original source.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- **Missing functions**: `param_fake_branch`, `param_instruction_substitution`, `param_string_encryption`, `param_link_time_optimization`, `param_buffer_overflow_stack`, `param_integer_overflow`, `param_undefined_behavior`, `param_implementation_defined` - the decompilation is incomplete
+- **Type error**: `jmp_buffer` and `segv_buffer` declared as `int32_t` instead of `jmp_buf`, breaking setjmp/longjmp functionality
+- **Invalid C syntax**: `call_vectorized_loop` has `a = {1, 0, 0, 0...}` which is not valid C - should be `int32_t a[] = {...}`
+- **Generic variable names**: All variables use `v1`-`v7` naming, losing semantic meaning
+- **Malformed setjmp reconstruction**: The `_setjmp` call is expanded into an illegible inline struct that doesn't match the original API
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Function names accurately reflect their purpose and match the original source naming convention
+
+**Most Needs Improvement:** Type System Fidelity (3.0/10)  
+- Critical type errors (jmp_buf, invalid array initialization) combined with complete loss of composite types make the code dangerous to use and misleading
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover standard library types**: Recognize `jmp_buf`, `sigjmp_buf`, and other standard types instead of decomposing them into primitives
+2. **Fix array initialization**: Properly handle array initializers - `int32_t a[8] = {1, 2, 3...}` not `a = {1, 2, 3...}`
+3. **Infer variable names from usage**: Use data flow analysis to rename `v1`, `v2` to meaningful names based on how variables are used (e.g., `v1` used in division → `divisor`)
+4. **Complete function recovery**: Ensure all functions from the binary are decompiled - the missing functions suggest incomplete analysis
+5. **Add semantic annotations**: Label known patterns like GCD algorithm, signal/setjmp error handling, and string decryption operations

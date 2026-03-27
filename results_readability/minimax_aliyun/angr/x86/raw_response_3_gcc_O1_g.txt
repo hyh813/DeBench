@@ -1,0 +1,152 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+Justification: Parameters use generic names like `a0`, `a1`, `a2` instead of original names like `x`, `n`, `arr`. Local variables are `v0`-`v21`, `ptr`, `idx`, `result` - a mix of generic and somewhat descriptive. The decompiler uses internal artifacts like `vvar_35{r24|4b}` which are completely opaque. Only `ptr`, `idx`, `result`, `i` provide any semantic value.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: Most original function names are preserved correctly: `double_value`, `local_vars`, `local_array`, `local_struct`, `address_of_local`, `heap_basic`, `heap_calloc`, `linked_list_heap`, `memory_leak`, `test_stack_memory`, `test_heap_memory`, `main`. Internal compiler functions like `__x86.get_pc_thunk.bx` are appropriately named as such. Minor deduction for some unnamed internal helper functions.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Magic number `4294967295` (0xFFFFFFFF) used repeatedly for error returns without explanation. Values like `50, 60, 70, 80, 90` in `heap_realloc` appear without context. The original source had clear constants like `n*2`, `i*3` but these are now literal values. Some string literals referenced but not visible. No effort to name constants.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+Justification: Severe noise pollution throughout. Internal decompiler constructs like `vvar_35{r24|4b}`, `vvar_68{r24|4b}`, `vvar_2{r24|4b}` appear in VLA/alloca functions. Multiple `*((int *)_ccall(...))` patterns for stack canary checks. Struct definitions with `padding_0[19799]`, `padding_0[19651]` are clearly compiler-generated artifacts. Many unnamed internal functions (`sub_4011f0`, `sub_401220`) clutter the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Justification: Most functions have recognizable if/else and while/do-while constructs. However, `local_array` uses unusual goto pattern: `goto v1->field_50` with computed jump. VLA functions (`vla_stack`, `alloca_usage`) have complex while loops for stack checking that obscure the actual logic. At -O0, such restructuring is unexpected. Some loop constructs are correctly identified but the overall flow is occasionally confusing.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Function granularity matches original source well. Each test function (`local_vars`, `heap_basic`, `linked_list_heap`, etc.) is preserved as a separate function. Functions are appropriately sized - none are monolithic. Internal compiler functions (frame_dummy, register_tm_clones, etc.) are correctly separated. Minor deduction for some test wrapper functions being inlined.
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Justification: Most code reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in error-checking code (e.g., `if (!result) return 4294967295`). Some functions like `vla_stack` have complex nesting that disrupts linear reading. The `local_array` function has a somewhat convoluted structure with the do-while loop and stack check.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: No significant dead code observed. Loop unrolling is present in `heap_realloc` where values are set individually (`p[0]=1; p[1]=2...`) rather than in a loop - this is an optimization artifact but doesn't severely impact readability. The code is generally clean without duplicate expressions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Uses `unsigned int` for most parameters while original source used `int` - type mismatch. Pointers are properly typed as `unsigned int *` or `char *`. Function pointers have proper signatures in `call_global_callback`. However, many return types are `unsigned int` when original was `int`. The original had `size_t` for memory sizes but decompiler uses `unsigned int`. Mixed precision: some correct, some degraded.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: Struct definitions are created but with generic names: `struct_0`, `struct_1`, `struct_2`. Field names are generic: `field_0`, `field_4`, `field_8`, `field_c`, `field_10`. Padding is detected (`char padding_0[80]`) but original struct names like `Point`, `Node`, `TreeNode` are lost. The `Node` struct in `linked_list_heap` has correct layout but generic naming. Union vs. struct distinction is not made.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Some unsafe pointer arithmetic present (e.g., `ptr + idx * 4`, `ptr + idx * 2`). Casts like `*((int *)&ptr->padding_0[136])` are potentially unsafe. The VLA functions have complex pointer manipulations that could be error-prone. No `restrict` keywords or alignment annotations. However, basic type safety is maintained - no completely dangerous patterns like mixing incompatible pointer types.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+Justification: **No comments whatsoever** in the decompiled output. The original source had extensive comments explaining each test case (e.g., "// MEM-L1-01: 局部变量（基础类型）", "// 测试: 纯栈上基础变量"). No decompiler-added comments explaining logic, algorithm, or uncertainty. This is a critical deficiency for understanding the code's purpose.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some patterns are implicitly recognizable: malloc/free pairs in heap functions, linked list traversal in `linked_list_heap`, tree creation/traversal in `tree_heap_traversal`. However, no explicit pattern naming or documentation. The original source clearly labeled patterns like "复杂链表操作", "树结构的堆分配" but these are lost. Could recognize "linked list", "binary tree", "VLA", "alloca" patterns.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+Justification: No explicit anomaly warnings or flags for suspicious code. The internal constructs like `vvar_35{r24|4b}` might indicate decompiler uncertainty but aren't explained. No warnings about potential undefined behavior (e.g., in `dangling_pointer` which accesses memory after free). No indicators for indirect calls that couldn't be resolved. The code presents everything as confident when some parts are uncertain.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: **No pre/postcondition or invariant documentation**. Original source had implicit contracts (e.g., "requires: n > 0" for VLA, "ensures: returns heap-allocated or -1"). None of this is recovered. No error condition documentation beyond return value inspection. The decompiler doesn't infer or document any contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function calls are clear and traceable. External dependencies marked with `extern` (e.g., `extern unsigned int g_403008`, `extern unsigned int extern_global_var`). Global variable usage is somewhat visible through the struct-based access patterns. However, callback relationships (like `set_global_callback` → `call_global_callback` → `double_value`) are not explicitly documented. The call graph is inferable but not stated.
+
+### 17. Module Organization
+**Score: 3/10**
+
+Justification: All functions in a single flat file with no logical grouping. No header file structure or API declarations. Related functions (stack, heap, static, memory ops) are not visually separated. Original source had clear sections with comments ("// ============================================================================"). The decompiled output is a single 2000+ line file with functions in address order, not logical grouping.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+
+Justification: Uses `extern` declarations for external references. Should compile with minimal patching. Some compiler-specific constructs present (`__x86.get_pc_thunk.bx`). The code declares external variables appropriately. However, missing definitions for some externals would cause linker errors. Not standalone-ready but close.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 avg: (3+8+4+2)/4 = 4.25
+Level 2 avg: (5+8+6+7)/4 = 6.50
+Level 3 avg: (5+4+5)/3 = 4.67
+Level 4 avg: (1+5+2+1)/4 = 2.25
+Level 5 avg: (5+3+6)/3 = 4.67
+
+Overall = (4.25 × 0.30) + (6.50 × 0.25) + (4.67 × 0.20) + 
+          (2.25 × 0.15) + (4.67 × 0.10)
+        = 1.275 + 1.625 + 0.934 + 0.338 + 0.467
+        = 4.64/10
+```
+
+### Overall Readability Score: **4.6/10**
+
+### Critical Defects (Bullet List)
+- **No comments whatsoever** - Original source had extensive documentation explaining each test case and purpose
+- **Severe noise pollution** - Internal decompiler artifacts like `vvar_35{r24|4b}`, `*((int *)_ccall(...))`, struct padding definitions clutter every complex function
+- **Generic variable names** - Parameters `a0`, `a1`, `a2` and locals `v0`-`v21` provide no semantic value
+- **Lost composite type names** - Original structs `Point`, `Node`, `TreeNode` become `struct_0`, `struct_1`, `struct_2` with fields `field_0`, `field_4`
+- **No anomaly/uncertainty indication** - Suspicious code like dangling pointer access presented without warning
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+- Most original function names are correctly preserved: `double_value`, `local_vars`, `heap_basic`, `linked_list_heap`, `memory_leak`, etc.
+- Test functions retain their descriptive names
+- Internal compiler functions appropriately identified
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+- Zero comments in entire 2030-line decompiled output
+- Original source had rich documentation for each test case
+- No decompiler-added explanations for logic, algorithms, or uncertainty
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Add meaningful comments**: Document function purpose, algorithm explanation, and mark uncertain decompilation with confidence levels
+2. **Clean internal artifacts**: Eliminate or hide decompiler constructs like `vvar_35{r24|4b}`, `_ccall` patterns, and massive padding struct definitions
+3. **Recover semantic names**: Infer variable names from usage patterns (e.g., `a0` used as array index → `index` or `i`), recover struct/field names from context rather than generic `struct_0`/`field_0`

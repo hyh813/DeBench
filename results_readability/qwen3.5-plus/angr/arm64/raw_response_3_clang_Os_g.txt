@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, v2, ptr, cur, i) with zero semantic meaning. For example, `local_vars` uses `a0` instead of `x`, and complex functions use `v0`, `v1` throughout with no indication of purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results—some original names preserved (`local_vars`, `heap_basic`, `test_stack_memory`) but many are generic (`sub_4008f4`, `$x`, `sub_400a70`). The `$x` function name is particularly problematic.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers from optimization artifacts (4294967295, 17179869180, 1157442765409226768). Simple `x * 2` becomes `(a0 * 2 | a0 >> 31) & 4294967294` obscuring intent.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts including `[D] unsupported_Iop_ZeroHI64ofV128()`, `[D] MBusEvent-Imbe_Fence()`, and complex bit manipulation replacing simple arithmetic throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple for-loops transformed into complex do-while with bit-manipulation conditions. Example: `vla_stack` uses `__ROL__` operations for loop termination instead of simple `i < n`.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are generally separated correctly, but some are over-optimized (e.g., `tree_heap_traversal` just returns 60, `stack_alias` returns 20 directly).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Multiple forward jumps and goto statements disrupt flow. `register_tm_clones` uses `goto g_412fe0` instead of structured control flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Repeated complex expressions throughout (e.g., the division-by-2 bit manipulation appears dozens of times). No common subexpression elimination in output.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned long long` or generic `int`. Original `int`, `char*`, `size_t` distinctions lost. Function `double_value` takes `unsigned int` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered but with generic field names (`field_0`, `field_4`, `field_8`, `padding_4`). The `Node` struct becomes `struct_0` with `field_8` for the `next` pointer.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe pointer casts and arithmetic. `heap_nested` has confusing pointer assignments (`ptr->field_8 = ptr`). Many void* to typed pointer conversions without clarity.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. No algorithm explanations, no parameter documentation, no decompilation confidence indicators. Only auto-generated type definitions present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Memory allocation patterns, linked list traversal, and tree operations not identified. `linked_list_heap` shows no indication it's a list operation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some unsupported operations flagged (`[D] unsupported_Iop_ZeroHI64ofV128()`) but not explained. No indication of potential undefined behavior in `dangling_pointer`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a0 > 0` checks not explained). No postconditions or error condition documentation. Null checks present but not annotated.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships unclear. `test_stack_memory` calls functions but no call graph documentation. Global variables referenced as `$d.3`, `$d.4` obscuring relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but not logically organized. Test functions mixed with implementation. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Despite metadata claiming "Compilation Result: Yes", code contains `[D]` unsupported operations that would fail compilation. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+5+3+3)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):   (4+6+4+4)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type System):  (4+5+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):     (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):   (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.88/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Variable names completely generic** - `v0`, `v1`, `v2` throughout with no semantic meaning; `a0` instead of `x` in `double_value`
+- **Simple arithmetic obscured** - `x * 2` becomes `(a0 * 2 | a0 >> 31) & 4294967294` making basic operations unreadable
+- **Unsupported operations present** - `[D] unsupported_Iop_ZeroHI64ofV128()` and `[D] MBusEvent-Imbe_Fence()` would prevent compilation
+- **Functions optimized away** - `tree_heap_traversal`, `stack_alias`, `global_struct_access` return constants instead of actual logic
+- **Global variables renamed** - `global_counter` becomes `$d.3`, `global_array` becomes `$d.4` losing all semantic meaning
+
+### Best Quality Aspect:
+- **Function Decomposition (6/10)** - Most functions remain as separate units with reasonable boundaries; the decompiler successfully identified function boundaries even if internal logic is degraded.
+
+### Most Needs Improvement:
+- **Variable Naming Quality (2/10)** - Complete failure to infer semantic names from usage patterns; this single issue makes the code nearly unusable for human analysis.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable naming** - Analyze how variables are used (e.g., loop counters, array indices, pointers) to infer names like `i`, `index`, `ptr`, `size`
+2. **Simplify arithmetic expressions** - Recognize common optimization patterns like `(x * 2 | x >> 31) & 0xFFFFFFFE` and recover them as simple `x * 2` for signed integers
+3. **Preserve original symbol names from debug info** - Since compiled with `-O0 -g`, debug symbols should be available to recover original variable and function names instead of generating `v0`, `$d.3`, etc.

@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All local variables use generic names (`v1`, `v2`, `v3`, `result`) with no semantic meaning. For example, in `array_1d_stack`, the loop counter is `v1` instead of `i`, and `result` could be `sum` based on usage pattern.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`process_char`, `array_1d_stack`, `struct_simple`), accurately reflecting their purpose. This is one of the few strengths of this decompilation.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Critical magic numbers appear without explanation (e.g., `64`, `90`, `32` in `process_char` instead of `'A'`, `'Z'`, character offset). String literals are stored as hex-encoded globals (`g1`, `g2`) rather than readable strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive type casts throughout (`(int32_t)p`, `(int32_t)arr`), redundant temporary variables (`v3 = result; v3 = result`), and awkward pointer arithmetic expressions clutter the code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple for-loops are decompiled as awkward while-loops with manual increment (e.g., `array_1d_stack` uses `v1++` then `while (v1 < n)`). Switch statements have fall-through bugs (missing breaks in `enum_switch`, `union_type`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are correctly identified and match source structure. However, helper functions like `binary_tree_sum` are preserved while inline operations aren't appropriately consolidated.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code has moderate non-linearity with forward references and scattered variable declarations. Test functions like `test_array_types` have initialization code split across multiple blocks disrupting top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from compiler artifacts - multiple temporary variables holding same values (`v5 = v8; v6 = v9; v7 = v9` in `graph_traverse`), repeated pointer arithmetic expressions throughout.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - `long` incorrectly typed as `int32_t` (should be `int64_t` on x86_64), `long double` becomes `float64_t`, all struct types collapse to `int32_t *`, `void *` becomes `char *`. Signed/unsigned mismatches throughout.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: **Complete failure** - no struct/union definitions recovered. `Point3D`, `Rect`, `Widget`, `Node`, `Graph` all become `int32_t *` with raw offset arithmetic (`v1 + 8`, `v1 + 12`, `v1 + 20`). Bitfields completely lost.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Critical type safety violations: `const_param` treats pointer as value (`(int32_t)p + 10` instead of `*p + 10`), `ptr_single/double/triple` all have same bug, unsafe casts everywhere, pointer arithmetic without bounds checking.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only decompiler metadata comments present ("From module:", "Address range:"). Zero semantic comments explaining algorithm purpose, no recovery of original Chinese comments, no anomaly warnings for suspicious code.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition - linked list traversal, binary tree recursion, graph traversal all appear as raw pointer arithmetic without any indication of the underlying data structure patterns.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: **Critical failures presented confidently** - `process_double` shows `d / 0.0` (division by zero!) instead of `d / 2.0`, `volatile_access` loses volatile semantics entirely, no warnings about these severe semantic errors.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Array bounds checks exist in code (`if (x < 0 || x >= w)`) but aren't documented as contracts. NULL checks present but not annotated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible through direct calls, but callback relationships lost (function pointers become raw addresses like `0x10520`). Global variable usage unclear (`g1`-`g4` are string literals without context).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped in a single file with forward declarations. Test functions grouped together, but no logical separation between data types, arrays, pointers, and composite type tests beyond function naming.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes standard headers and function prototypes. Would require stub implementations for some functions and fixing type errors, but structure is compilable with moderate patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3 + 8 + 4 + 5) / 4 = 5.00
+Level 2 (Structural):  (4 + 7 + 5 + 4) / 4 = 5.00
+Level 3 (Type System): (3 + 1 + 2) / 3   = 2.00
+Level 4 (Semantic):    (2 + 2 + 1 + 2) / 4 = 1.75
+Level 5 (Contextual):  (5 + 6 + 7) / 3   = 6.00
+
+Overall = (5.00 × 0.30) + (5.00 × 0.25) + (2.00 × 0.20) + 
+          (1.75 × 0.15) + (6.00 × 0.10)
+        = 1.50 + 1.25 + 0.40 + 0.26 + 0.60
+        = 4.01/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Semantic corruption**: `process_double` shows `d / 0.0` (division by zero) instead of `d / 2.0` - fundamentally broken
+- **Complete struct type loss**: All composite types (`Point3D`, `Rect`, `Widget`, `Node`, `Graph`) collapsed to `int32_t *` with raw offset arithmetic
+- **Pointer dereference failures**: `const_param`, `ptr_single`, `ptr_double`, `ptr_triple` all treat pointers as integer values instead of dereferencing
+- **No volatile semantics**: `volatile_access` compiles to `2 * (int32_t)p` losing the double-read requirement entirely
+- **Missing type precision**: `long` incorrectly typed as 32-bit instead of 64-bit on x86_64 platform
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names are accurately preserved from source, making it possible to identify what each function should do despite implementation errors.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (1/10)** - Complete failure to recover any struct/union definitions, forcing all composite type access through opaque pointer arithmetic with magic offsets.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct/union type inference** from consistent offset access patterns (e.g., `+8`, `+12`, `+20` recurring across functions indicates struct fields)
+2. **Add semantic validation passes** to detect impossible operations (division by zero, pointer-as-value arithmetic) and flag them as anomalies
+3. **Recover high-level loop constructs** from backward jump patterns instead of emitting while-loops with manual increment variables

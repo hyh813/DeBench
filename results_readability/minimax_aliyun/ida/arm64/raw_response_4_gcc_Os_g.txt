@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `a`, `b`, `a1`, `v3`, `v4`, `v5`, `v7`, `v8`, `v9` throughout. While `count`, `n`, `x`, `y` appear in some places, the majority obscure their semantic purpose. For example, in `varargs_func`, variables `v3` through `v9` make it difficult to track the loop logic.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately match the original source: `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `func_many_args`, `func_mixed_args`. The decompiler preserved the semantic intent in function names, though some internal functions like `sub_750` remain cryptic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Many computed results are inlined as constants (e.g., `return 15`, `return 50`, `return 21`) without explaining their origin. String format placeholders like `asc_145C` are uninformative. Some literals like `100` in `call_ret_large_struct(100)` are preserved but lack context about what they represent.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The output is relatively clean with minimal compiler artifacts. No excessive register spilling artifacts, redundant casts, or debug instrumentation clutter the code. Some type casts exist but are manageable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Standard control structures (if/else, while, for) are used appropriately. The `varargs_func` has complex loop logic due to ARM64 calling convention handling, but it's still recognizable. At -O0, control flow should be nearly identical to source, which is mostly true here.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. Wrapper functions like `call_cdecl` returning constant 15 are properly separated from implementation `cdecl_func`. The decomposition matches the original source organization well.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The `varargs_func` has some complex pointer arithmetic that disrupts linear flow, but most functions are straightforward. No excessive goto usage or backward jumps.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Some functions like `call_cdecl` are inlined to constants, which is appropriate for -O0. Loop unrolling is minimal and reasonable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Integer types use `int` consistently, appropriate for ARM64. Pointers are correctly typed (`int*`, `char*`, `char**`). Function pointers have proper signatures like `int (*callback)(int)`. Some parameter types like `__int64` vs `int` inconsistency exists (e.g., `func_b` returns `__int64` but should return `int`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types are partially recovered: `LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint` all have correct names matching source. Field names like `data`, `x`, `y` are preserved. However, `LargeData` struct in `ret_large_struct` has generic field access patterns.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present: `*(_DWORD *)p` in `param_complex_cast`, `(char *)v3` in varargs functions. Pointer arithmetic appears correct. No major buffer-overflow-prone patterns. The cast `(int (*)(int))callback_func` in `call_func_ptr_param` is a minor type safety issue.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Very sparse commenting. Only function headers like `/* Function: cdecl_func @ 0x96C */` are present. No explanation of complex logic, algorithm descriptions, or decompilation confidence indicators. The original source had extensive comments explaining each test case, none of which were recovered.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard C idioms (function calls, loops, conditionals, switch statements) are preserved. The `ret_multi_branch` function correctly uses if-else chain instead of switch. No design patterns or algorithms are explicitly named or highlighted.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed functions are noted: "FAILED to decompile: strlen @ 0x13090" with 8 total failures listed. However, no warnings about indirect calls, unusual stack layouts, or potential undefined behavior. The "local variable allocation has failed" message for `ret_small_struct` is helpful but rare.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No explicit preconditions, postconditions, or invariants recovered. Some implicit contracts exist (e.g., `if (!p) return -1` in `func_struct_byptr`) but no documentation of expected input/output states.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear: `test_calling_conventions()`, `param_varargs(4, 10, 20, 30, 40)`. Callback relationships visible (`callback_func` passed to `param_func_ptr`). However, no explicit documentation of call graph or global variable usage.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically: test functions together, parameter functions together, return functions together. However, the organization is flat with no namespace or module structure. Static functions not explicitly marked.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The metadata shows "Compilation Result: Yes". External dependencies like `puts`, `__printf_chk`, `strlen` are referenced but not declared. Should compile with minimal stub definitions.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- Variable naming is predominantly generic (`v3`, `v4`, `v5`, `a1`, `a2`) making code flow difficult to trace
+- Comment quality is severely lacking - no algorithm explanations or semantic context recovered from source
+- Type precision issues: `func_b` returns `__int64` instead of `int`, inconsistent with source
+- No contract or assertion recovery - preconditions/postconditions completely lost
+- String literals use placeholder names (`asc_145C`) obscuring their content
+
+### Best Quality Aspect: Function Naming (8/10)
+Function names accurately reflect their purpose and match the original source closely. The decompiler preserved semantic intent in names like `cdecl_func`, `varargs_func`, `func_mixed_args`.
+
+### Most Needs Improvement: Comment Quality & Presence (3/10)
+The original source had extensive comments explaining each test case (CALL-L1-01, PARAM-L2-06, etc.), calling convention behaviors, and expected outputs. None of this semantic context was recovered. The decompiled code provides only function address headers.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: Variables like `v5` in `varargs_func` should be named based on how they're used (e.g., `offset` or `index` based on the loop logic)
+2. **Recover comments from debug symbols**: Since the source was compiled with `-g`, debug information contains source comments that could be extracted
+3. **Fix type precision for return values**: Functions like `func_b` returning `__int64` when source returns `int` creates type mismatches that could cause issues

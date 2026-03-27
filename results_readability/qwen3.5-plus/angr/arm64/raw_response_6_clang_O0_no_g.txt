@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with occasional semantic names like `len`, `fp`, `count`. Original names like `dst`, `src`, `write_data`, `read_buffer` are completely lost, making data flow difficult to track.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved original names (`param_strcpy`, `call_strcpy`, `thread_compute`), but helper functions use mechanical names (`sub_4012f4`, `sub_401724`). Action verbs are present where names exist.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Error codes appear as magic numbers (`4294967295` for -1, `4294967294` for -2). System constants are numeric (`socket(2, 1, 0)` instead of `AF_INET, SOCK_STREAM, 0`; `signal(10, ...)` instead of `SIGUSR1`).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Every function has frame pointer setup (`v0 = &v1;`). Redundant `__ROL__` operations appear throughout. Stack variable initialization patterns (`v2 = &v3;`) add noise without semantic value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: While loops generally preserved, but signal handling uses awkward `while(true)` with break patterns. Some functions use `goto g_414ff8;` instead of proper function calls. Nested conditionals in `param_signal_handling` are hard to follow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with clear single responsibility. Thread functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`). Some wrapper functions are minimal but cohesive.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but signal handling has deep nesting (5+ levels). Forward jumps in initialization code (`goto g_414ff8`) disrupt flow. Most functions maintain reasonable linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate function calls present: `len = strlen(ptr); return strlen(ptr);` in `param_strcpy`. Redundant variable assignments (`v0 = v2; v1 = v3;`) throughout. Some dead code from register spilling visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: `unsigned long long` used where `int` or `size_t` would be appropriate. `char *` used generically instead of `const char *`. Atomic types degraded to `unsigned int`. Some signedness information lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `struct FILE` defined but empty. `struct sockaddr` partially recovered with generic `sa_data[14]`. TLS struct uses `struct_0` with `field_10`, `padding_0`. Thread data structures not recovered as proper structs.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Extensive unsafe casts (`(unsigned int *)`, `(char *)`). Pointer arithmetic without proper typing (`*((int *)&v0)`). `void*` used extensively for thread return values. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators. Only "Failed to decompile function" markers for atomic operations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions recognized (`strcpy`, `strlen`, `memcpy`, `pthread_create`). Signal handling pattern not explicitly identified. Producer-consumer pattern in condition variables not named.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Two functions marked "Failed to decompile" (`__aarch64_cas4_acq_rel`, `__aarch64_ldadd4_acq_rel`). No warnings about uncertain code regions or potential undefined behavior. `arm64g_calculate_condition` calls unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions inferred. No invariants recognized for shared state. Error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`shared_counter`, `atomic_counter`) referenced without context. Callback relationships (thread entry points) not explicitly marked.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure. Test functions grouped (`test_standard_library_functions`, `test_system_calls`, `test_thread_concurrency`). No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies not declared (pthread, libc). Some globals undefined (`g_414ff8`, `__TMC_END__`). `arm64g_calculate_condition` is decompiler-specific. Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+3+4)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type):        (5+4+4)/3   = 4.33  × 0.20 = 0.87
+Level 4 (Semantic):    (2+5+4+2)/4 = 3.25  × 0.15 = 0.49
+Level 5 (Contextual):  (5+6+4)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                                  4.71/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Magic error codes**: `4294967295`, `4294967294`, `4294967293` should be `-1`, `-2`, `-3` or named constants
+- **System constant degradation**: `socket(2, 1, 0)` loses `AF_INET`, `SOCK_STREAM` semantics
+- **Frame pointer noise**: Every function has `v0 = &v1;` stack setup pattern adding no value
+- **Duplicate expressions**: `param_strcpy` calls `strlen(ptr)` twice instead of using cached `len`
+- **Empty struct definitions**: `struct FILE {}` provides no type information for file operations
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core test functions preserved original semantic names (`param_strcpy`, `thread_compute`, `param_mutex_lock`), making high-level purpose immediately clear despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero comments throughout 1800+ lines of code; no explanation of algorithms, no decompilation confidence markers, no API documentation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover symbolic constants** - Map magic numbers to named constants (e.g., `4294967295` → `UINT32_MAX` or `-1`, `socket(2,1,0)` → `socket(AF_INET, SOCK_STREAM, 0)`)
+2. **Eliminate frame pointer artifacts** - Remove redundant `v0 = &v1;` stack setup patterns that add no semantic value
+3. **Add decompilation confidence annotations** - Mark uncertain regions, failed recoveries, and architecture-specific intrinsics with explanatory comments

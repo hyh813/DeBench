@@ -1,0 +1,103 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `a1`, `a2`) with zero semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `test_str` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some top-level test functions retained names (`test_calling_conventions`, `varargs_func`), but most helper functions are missing entirely (no `cdecl_func`, `func_struct_byval`, `call_ret_basic`, etc.).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals stored as hex-encoded globals (`g1`, `g2` with UTF-8 bytes). Pre-computed printf values (15, 50, 6) lose original computation context—reader cannot see `5+10=15` logic.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack frame artifacts visible (`bp-12`, `bp-272`), pointer arithmetic noise (`v2 += 4`), and `__stack_chk_fail()` calls present. Some optimization artifacts but not severe.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops use while constructs but with awkward manual pointer traversal instead of array indexing. Varargs implementation uses raw stack walking instead of recognizable `va_list` pattern.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Massive function collapse—`test_calling_conventions` contains inlined test cases that should be separate functions. Original 20+ functions reduced to 7 detected functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with reasonable flow. Loop conditions use forward jumps but not severely disruptive to reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant pointer arithmetic patterns (`v2 += 4` repeated in loops). No obvious dead code but loop structures could be cleaner.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything reduced to `int32_t`. Original had `char*`, `double`, `long long`, `void*`, function pointers—all lost. No signed/unsigned distinction preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—`LargeStruct`, `SmallStruct`, `TestIntPair`, `BigStruct` all lost. Struct operations replaced with `memcpy(&v5, &v1, 128)` and raw pointer arithmetic.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`*(int32_t *)v2`), raw pointer arithmetic without bounds checking. No const correctness. Type-confused operations throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated file header comments. Zero documentation of algorithm logic, no confidence indicators, no explanation of recovered patterns.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: `va_list` pattern completely unrecognized (manual stack traversal instead). Struct copy patterns not identified. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about missing functions, unresolved calls, or reconstruction uncertainty. Code presented confidently despite massive information loss.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `p != NULL` checks lost). No postconditions or error condition documentation recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. 19 global variables (`g1`-`g19`) with no explanation of purpose. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped arbitrarily by address range, not logical organization. Original test sections (calling conventions, parameter passing, return values) not preserved structurally.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes present but missing many function declarations. External dependencies (`__printf_chk`, `__stack_chk_fail`) undocumented. Would require significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (2+5+4+5)/4 = 4.0
+Level 2 Average: (5+4+6+6)/4 = 5.25
+Level 3 Average: (4+2+3)/3 = 3.0
+Level 4 Average: (2+2+2+2)/4 = 2.0
+Level 5 Average: (4+4+5)/3 = 4.33
+
+Overall = (4.0 × 0.30) + (5.25 × 0.25) + (3.0 × 0.20) + (2.0 × 0.15) + (4.33 × 0.10)
+        = 1.20 + 1.31 + 0.60 + 0.30 + 0.43
+        = 3.84/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects
+- **Variable `v1`, `v2`, `v3`** should be named based on usage (e.g., `loop_counter`, `stack_ptr`, `sum`)
+- **All struct types lost**—`LargeStruct`, `SmallStruct` replaced with raw `memcpy` and pointer arithmetic
+- **15+ functions missing**—most test helper functions (`cdecl_func`, `func_no_args`, `call_ret_basic`, etc.) not recovered
+- **va_list pattern unrecognized**—manual stack traversal instead of standard variadic handling
+- **String literals hex-encoded**—global variables `g1-g19` contain UTF-8 bytes instead of readable strings
+
+### Best Quality Aspect
+- **Code Linearization (6/10)** - Code generally reads top-to-bottom without severe jump disruption, making basic execution flow traceable despite other issues.
+
+### Most Needs Improvement
+- **Semantic Transparency (2.0/10 average)** - Zero comments, no idiom recognition, no anomaly flags, and no contract recovery make the decompiled code practically unusable for understanding original intent.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover composite types from memory access patterns**—detect struct field access patterns (`offset+0`, `offset+4`, etc.) and reconstruct named struct types with field names.
+2. **Recognize standard library idioms**—identify `va_list`/`va_start`/`va_arg` patterns and recover variadic function signatures instead of raw stack traversal.
+3. **Preserve function call graph**—detect and recover inlined or optimized-away helper functions, maintaining original function boundaries and call relationships.

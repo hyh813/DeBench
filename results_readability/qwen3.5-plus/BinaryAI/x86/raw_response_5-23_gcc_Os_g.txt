@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar1` instead of semantic names like `size`, `result`, `counter`. Original source had meaningful names (`size`, `x`, `y`, `result`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User-defined function names preserved well (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). However, helper functions are generic (`FUN_00011110` for printf, `FUN_000110f0` for mmap).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic hex numbers everywhere: `0x400` (MAX_SIZE), `0x40` (64), `0x200` (512), `0xdef0`, `0x10` (16). Original had named constants (`MAX_SIZE`, `BUFFER_COUNT`) that are completely lost in decompilation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) add noise to simple functions. Helper function calls (`FUN_00011110`) obscure printf calls. Debug artifacts from `-O0` compilation visible throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with proper if/else and for loops. Assembly loops correctly decompiled (e.g., `param_asm_clobber` shows proper for loop). Some functions constant-folded eliminating actual logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match original source well. Each original function has corresponding decompiled function. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with natural flow. Some forward references to data (`&DAT_0001206e`) disrupt reading. Stack variable initialization scattered in some functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding eliminated logic in caller functions (`call_macro_constants` just returns `0x40`). Some redundancy in stack canary checks repeated across functions. No dead code removal visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `undefined4`, `undefined` instead of precise types (`int32_t`, `uint64_t`). Pointer types partially preserved but array types often lost. Original `size_t`, `int` distinctions blurred.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays handled reasonably (`local_24 [20]`, `local_40 [4]`). No complex structs in this code to recover. SIMD vector types represented as `undefined (*param_3) [16]` which is adequate.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts visible: `(undefined4 *)`, `(char *)`, `(undefined *)`. Pointer arithmetic present without bounds checking. No const-correctness preserved from original.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: ZERO comments in decompiled code. Original had extensive section headers, macro explanations, and test expectations. Complete loss of semantic documentation is critical readability failure.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Macro expansions not identified (e.g., `SQUARE(x)` becomes `param_1 * param_1`). Assembly patterns decompiled but not labeled as such. No pattern recognition visible.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for constant-folded functions or unresolved helpers. `FUN_00011110` used throughout without explanation that it's printf. Silent about decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. Stack canary checks present but not explained as safety features. Original test expectations (e.g., "期望：64") completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but helper functions unclear (`FUN_00011110` is printf but not indicated). Global variable `global_var` referenced but definition not shown in output. Data references (`&DAT_0001206e`) opaque.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in one file matching original structure. No clear separation between preprocessing tests and assembly tests in output order. Initialization functions mixed with test functions.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Uses undefined types (`undefined4`, `undefined`) requiring custom headers. Helper functions (`FUN_00011110`, `FUN_000110f0`) not declared. Would need significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+4+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (5+7+5)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (2+4+3+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 5.41/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Zero comments** - Original had extensive documentation explaining macros, test expectations, and section purposes; all lost
+- **Magic hex numbers** - `0x400`, `0x40`, `0x200` instead of `MAX_SIZE`, `BUFFER_COUNT`, named constants
+- **Generic variable names** - `param_1`, `iVar1`, `uVar1` instead of `size`, `result`, `counter`
+- **Unresolved helper functions** - `FUN_00011110` (printf), `FUN_000110f0` (mmap) not identified
+- **Type erosion** - `undefined4`, `undefined` instead of precise C types
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - User-defined function names preserved accurately, maintaining semantic connection to original source code structure.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments is the most severe readability failure; original code had extensive documentation that would aid understanding.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics** - Detect constant-folded patterns and suggest original macro names (e.g., `0x400` → `MAX_SIZE` based on comparison patterns)
+2. **Add decompilation confidence annotations** - Flag unresolved functions (`FUN_00011110` → `// LIKELY: printf`), constant-folded regions, and assembly-derived code
+3. **Infer variable names from usage** - Analyze how `param_1` is used (size comparison → `size`, loop counter → `i`, pointer → `buffer`) to suggest semantic names

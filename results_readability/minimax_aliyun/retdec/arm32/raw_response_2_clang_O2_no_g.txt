@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2`, `a3` and local variables use `v1`, `v2`, `v3`, `result`, `result2`. The original source had meaningful names like `x`, `c`, `sum`, `len`, `i`, `j`, `k`. This complete loss of semantic variable names severely impedes understanding.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (e.g., `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). However, some infrastructure functions have cryptic names like `function_3f8`, `_24_a`. The core test functions are well-named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x100000`, `0x254`, `0x80000000`). String literals are raw hex (e.g., `"\n\x0e!\x90\xe7"`). The original had clear constants like `'A'`, `'Z'`, `32` (for case conversion), but these are obscured in the decompiled version.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Massive compiler/library artifact pollution with functions like `__aeabi_dmul`, `__aeabi_f2d`, `__adddf3`, `__mulsf3`, `_init`, `_start`. These 87 detected functions are mostly irrelevant to the actual program logic and obscure the meaningful code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow (loops, conditionals) is preserved. However, some patterns are awkward - e.g., `array_1d_stack` uses manual pointer arithmetic in while loops instead of cleaner for loops. The `array_complex_index` has convoluted ternary operator chains that are hard to follow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is preserved from original - each test case remains separate. However, some functions like `test_array_types` (lines 0xa7c-0xca8) are very long with duplicated initialization code. Parameter lists are reasonable but expose implementation details.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom, but has some forward jumps and complex nested conditionals. The `array_complex_index` function has deeply nested ternary operators: `(a5 < a3 ? a4 : v1) < (a5 < a3 ? a2 : v1)` that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in `array_3d` with repeated memory access patterns (27 separate `*(int32_t *)(v2 + offset)` calls). The `test_array_types` function has massive duplicated initialization code for arrays. Loop unrolling is present but not commented.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently (appropriate for ARM64), but loses distinctions between `short`, `int`, `long`, `long long`. Pointers are represented as `int32_t` rather than proper pointer types. The original had `float`, `double`, `long double` - these are collapsed to `int32_t`/`float32_t`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery - all access is raw pointer arithmetic. For example, `struct_simple` uses `*(int32_t *)(a1 + 4) + a1 + *(int32_t *)(a1 + 8)` instead of `p->x + p->y + p->z`. Union types are partially recognized but lose member names. Bitfields become arithmetic operations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: raw pointer arithmetic throughout (e.g., `v1 += 4`, `v1 += 40`), no const correctness, void pointer casts without type checking. The `ptr_const_ptr` function directly modifies memory via `*(int32_t *)a1 = result` without safety.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only address range comments present (e.g., `// Address range: 0x3cc - 0x3d8`). No algorithm explanations, no recovery confidence indicators, no API contracts. The original had extensive comments explaining each test case's purpose.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are explicitly identified. The original had clear data structure patterns (linked list, binary tree, graph) but these are just raw pointer chasing in decompiled code.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `array_oob` function has intentional out-of-bounds access (loop `i <= n`) but this is not indicated as anomalous. No warnings about undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition/invariant recovery. The original had clear semantics (e.g., "requires: ptr != NULL", "returns: sum of array elements") but these are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are traceable through the code but not explicitly documented. No comments indicating which functions call which, or global variable usage. The original had clear test driver structure.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Single monolithic file output. Functions are grouped somewhat logically (data types, arrays, pointers, composites) but this is basic. No header file separation, no namespace/scoped grouping.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes standard headers (`<stdio.h>`, `<stdlib.h>`, `<math.h>`, `<stdbool.h>`, `<stdint.h>`). However, relies on undefined helper functions. The decompiled main function compiles but the infrastructure functions would need stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable naming**: All meaningful variable names lost (`a1`, `a2`, `v1`, `v2`, `result` instead of `x`, `sum`, `len`)
+- **Struct recovery failure**: All struct/union access uses raw pointer arithmetic (`*(int32_t *)(a1 + 4)`) instead of field access (`p->x`)
+- **Noise pollution**: 87 functions detected, most are compiler/library artifacts (`__aeabi_dmul`, `__mulsf3`, etc.) obscuring actual program
+- **Type precision loss**: All types collapsed to `int32_t`/`float32_t`, losing `short`, `long`, `long long`, `double`, pointer distinctions
+- **Magic numbers**: Unexplained constants like `0x100000`, `0x254`, `0x80000000` throughout code
+
+### Best Quality Aspect: Function Naming (8/10)
+Function names for the core test logic match the original source exactly (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). This preserves the semantic intent of the program.
+
+### Most Needs Improvement: Variable Naming (2/10)
+The complete loss of semantic variable names is the most severe readability issue. Parameters like `a1, a2, a3` and locals like `v1, v2, v3` make it nearly impossible to understand code flow without extensive cross-referencing.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `a1` used in size check → `array_size`; `v1` accumulating sum → `sum`; `result` returned → `return_value`
+2. **Recover struct layouts**: Detect repeated offset patterns and reconstruct struct definitions with field names
+3. **Filter compiler artifacts**: Identify and separate/remove library helper functions (`__aeabi_*`, `__*sf3`) from user code
+4. **Add type annotations**: Distinguish pointers from integers, recover `const`, detect array vs. pointer parameters
+5. **Document anomalies**: Flag potential undefined behavior (like the OOB array access) with uncertainty indicators

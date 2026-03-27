@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `idx`, `ptr`) with no semantic meaning. Only loop iterators like `idx`, `i`, `j`, `k` and `cur` provide minimal context. Original variable names like `sum`, `len` are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user functions retain original names (`double_value`, `process_char`, `array_1d_stack`, `struct_simple`). However, compiler runtime helpers use generic names (`sub_103c0`, `sub_12434`) and some are misnamed.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `65`, `98`, `4294967295`, `0x3fc00000`, `0x40000000`. Floating point constants appear as hex integers. No named constants recovered for values like `'A'` (65) or array sizes.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts: stack canary checks (`GLIBC_2.4::__stack_chk_guard`), register annotations (`// r0`, `// [bp-0x4]`), and runtime helper calls (`__mulsf3`, `__aeabi_dadd`) clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions use natural for/while loops. However, floating point helpers (`__aeabi_dadd`, `__muldf3`) use excessive goto labels (`LABEL_1285a`, `LABEL_12c0d`) creating spaghetti code that's nearly unreadable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved well. However, runtime helpers are monolithic (200+ lines each) and should be treated as external library calls rather than decompiled.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read top-to-bottom. Complex functions have forward jumps into nested conditionals that disrupt flow. The `__aeabi_dadd` function has 50+ label jumps making linear reading impossible.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy in floating point helpers with identical conditional blocks repeated. Example: `__aeabi_dadd` has nearly identical code in both branches of multiple if-statements.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion: `short` becomes `unsigned short` then `unsigned int`, `long long` becomes two `unsigned int` parameters, `float`/`double` become `unsigned int` with helper calls. `char` parameter in `process_char` correctly preserved but return type changed to `int`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered (`struct_0`, `struct_1`) but with generic field names (`field_0`, `field_4`). Original struct names (`Point3D`, `Rect`, `Widget`) completely lost. Nested struct access reduced to array indexing (`a0[2]`, `a0[5]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(char *)(!a0->field_4 ? NULL : a0->field_4->field_0)` in `struct_with_ptr`. Pointer arithmetic on `unsigned int` instead of typed pointers. Void pointer handling loses type information entirely.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only auto-generated annotations like `/* do not return */` and `// [bp-0x4]`. No algorithm explanations, no parameter documentation, no decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns not recognized: linked list traversal appears as generic loop, enum+switch pattern lost (`enum_switch` returns constant `4294967295`), bitfield operations reduced to manual bit manipulation without explanation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly warnings despite clear issues: `enum_switch` returning wrong value, function pointer calls with incorrect signatures, potential undefined behavior in `array_oob` not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Null pointer checks exist in code but not documented as contracts. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`GLIBC_2.4::__stack_chk_guard`) without context. Callback relationships (`ptr_func_simple`, `complex_callback`) not explicitly linked.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source order roughly. Test functions grouped together. However, runtime helpers interspersed with user code. No header file separation or API documentation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code structure suggests it could compile with proper stubs. External dependencies declared (`GLIBC_2.4::__stack_chk_guard`, `__aeabi_dadd`). Would need significant runtime library support.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+3+5)/4 = 5.0 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+5+4)/4 = 5.0 × 0.25 = 1.25
+Level 3 (Type System): (3+5+4)/3   = 4.0 × 0.20 = 0.80
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.5 × 0.15 = 0.23
+Level 5 (Contextual):  (5+6+7)/3   = 6.0 × 0.10 = 0.60
+
+Overall Score: 4.38/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Type erosion**: `long long`, `float`, `double` all degraded to `unsigned int` with opaque helper calls
+- **Zero documentation**: No comments explaining any non-trivial logic or magic numbers
+- **Floating point helpers unreadable**: Functions like `__aeabi_dadd` (400+ lines) are essentially impossible to understand
+- **Struct field names lost**: All composite types use `field_0`, `field_1` instead of semantic names
+- **enum_switch broken**: Returns constant `4294967295` instead of proper switch statement
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most user-defined functions retained their original semantic names, making basic navigation possible
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any explanatory comments makes understanding complex logic nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover type information from debug symbols** (`-g` flag was used) to restore `float`, `double`, `long long` types instead of generic `unsigned int`
+2. **Add confidence annotations** for uncertain decompilations (e.g., "FLOATING_POINT_OPERATION: implementation approximated")
+3. **Recognize and document common patterns** like linked list traversal, enum+switch, and bitfield access with explanatory comments

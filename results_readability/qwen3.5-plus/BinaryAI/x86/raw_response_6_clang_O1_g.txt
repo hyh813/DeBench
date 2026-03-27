@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `local_24`, `iVar1`, `uVar2`). Original source had meaningful names like `dst`, `src`, `buffer`, `filename` that are completely lost. For example, `param_strcpy` uses `param_1` and `param_2` instead of `dst` and `src`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_strcpy`, `call_strcpy`, `thread_compute`, `param_mutex_lock`). However, some helper functions have generic names (`FUN_00011030`, `FUN_00012545`) and external stubs clutter the output.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals preserved well ("/etc/passwd", "HelloPipe", "BinBench Test Data"). However, magic numbers abound: `0x2a` (42), `0xffffffff` (-1), `0x7f` (127), `0x12` (18 bytes) with no explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Architecture mismatch visible (source says arm64, decompiled shows x86 artifacts like `__i686.get_pc_thunk.bx`). External function stubs (40+ wrapper functions) add significant noise without value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow uses natural if-else and do-while constructs. Fork/exec logic preserved correctly. Signal handling loops use appropriate break patterns. Some do-while could be cleaner for/while.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions match source structure well. Thread functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`). Test functions appropriately call param functions. Some wrapper functions are unnecessarily small.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but has forward references to data (`DAT_00014026`, `DAT_000143d8`). Some functions have awkward return value calculations (`iVar1 >> 0x1f | 0x2a` for conditional return).
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `call_*` functions often duplicate `param_*` logic with hardcoded values. Test functions inline logic that should call helper functions. No significant dead code but structural redundancy present.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many generic types (`undefined4`, `int`, `void*`) replace precise types (`size_t`, `ssize_t`, `pid_t`, `FILE*`). Critical bug: `param_strcpy` returns `void` instead of `int`. Some types preserved (`pthread_t`, `sockaddr`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `stat` struct partially recovered (`local_5c.st_size`). `sockaddr` shown as byte array access (`sa_data[0]`, `sa_data[1]`) instead of proper struct. No proper struct definitions visible for `shmid_ds`, `pthread_attr_t`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(int *)malloc`, `(undefined4 *)shmat`, `(pthread_mutex_t *)counter_mutex`. Pointer arithmetic on generic types throughout. Function pointer casts common without type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive comments explaining each function's purpose, test scenarios, and expected values. No decompilation confidence indicators or API documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `malloc`, `pthread_create`). pthread patterns visible but not named. Producer-consumer pattern in condition variable test not identified. Signal handling pattern not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags in decompiled code. Architecture mismatch (arm64 source, x86 decompilation) not indicated. `__regparm1`, `__regparm3` annotations present without explanation. No warnings about unresolved calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). No postconditions (e.g., "ensures: return is heap-allocated"). Error return values (-1, -2, -3, 0x2a) not explained.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables used without declaration context (`signal_received`, `signal_number`, `atomic_counter`, `shared_counter`, `ready`, `data`). Thread function relationships not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No file/module separation matching source organization (6.1, 6.2, 6.3 sections). External functions listed but not organized by category (libc, pthread, syscall).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External function declarations present but would need significant stubs to compile. Architecture-specific code (`__regparm`, x86 thunks) present. Missing type definitions for `pthread_t`, `sockaddr`, `stat`.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Weighted |
+|-------|-----------|---------|--------|----------|
+| L1: Lexical Clarity | 4 | 5.00 | 30% | 1.50 |
+| L2: Structural Intelligibility | 4 | 6.50 | 25% | 1.63 |
+| L3: Type System Fidelity | 3 | 4.33 | 20% | 0.87 |
+| L4: Semantic Transparency | 3 | 3.00 | 15% | 0.45 |
+| L5: Contextual Coherence | 4 | 4.25 | 10% | 0.43 |
+| **TOTAL** | **18** | **4.86** | **100%** | **4.88/10** |
+
+**Overall Readability Score: 4.9/10**
+
+### Critical Defects:
+- **Variable `param_1`, `param_2` should be named `dst`, `src`** based on strcpy semantics - completely obscures function purpose
+- **`param_strcpy` returns `void` instead of `int`** - critical type error losing return value semantics
+- **Zero comments** despite original having extensive documentation for each test case
+- **Magic numbers `0x2a`, `0xffffffff`, `0x7f`** used without explanation (42, -1, 127)
+- **Architecture mismatch** (arm64 source compiled, x86 decompilation output) not indicated
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most function names preserved from source (`param_strcpy`, `thread_compute`, `param_mutex_lock`), making high-level structure understandable despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of comments is the most severe degradation; original source had extensive documentation explaining each function's purpose, test scenarios, and expected values
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from function semantics** - For `strcpy(dst, src)`, analyze parameter usage to name them `dst` and `src` rather than `param_1`/`param_2`
+2. **Recover and preserve return types accurately** - Fix critical bugs like `param_strcpy` returning `void` when source returns `int` (strlen result)
+3. **Generate semantic comments for recognized patterns** - Add comments like "// String copy with length return" for library wrappers and "// Producer-consumer synchronization" for pthread patterns

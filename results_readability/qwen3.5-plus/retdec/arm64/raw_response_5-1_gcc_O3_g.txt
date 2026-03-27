@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are generic (`v1`, `v2`, `v3`, `str`, `result`) with no semantic meaning. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Functions use mangled C++ names (`_Z18test_cpp_exceptionv`) instead of readable names like `test_cpp_exception`. Demangled comments exist but the actual function names remain unreadable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers (4, 42, 8, 16, 24, 32, 48) appear without explanation. String literals stored in globals (`g16`, `g17`) with no semantic labels. Original had clear expected values in comments.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present including `__stack_chk_fail()` calls, unnecessary type casts, and generic global variables (`g1` through `g30`). Debug mode (-O0) should have eliminated most of these.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Extensive goto usage (`lab_0x10e0`, `lab_0x10e4`) instead of structured control flow. Exception handling logic is particularly broken with confusing jump patterns that don't match try/catch semantics.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: Critical functions are empty stubs (`test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_lambda` all just `return;`). Logic completely lost despite -O0 compilation that should preserve it.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Excessive forward jumps disrupt reading flow. Exception handling in `_Z18test_cpp_exceptionv` has multiple label jumps that make execution path nearly impossible to follow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Similar vtable thunk functions repeated without abstraction. Exception handling code shows duplicated patterns that could be consolidated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `int64_t`, `int32_t`, `void*`. Lost all C++ class type information, const-correctness, and specific types like `size_t`. Original had precise type declarations throughout.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Only basic vtable structures recovered (`vtable_12c28_type`). All class definitions (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`) completely lost with no field names or structure.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(int64_t *)result`, `(int32_t *)v1`). Pointer arithmetic without type safety. No const correctness preserved from original source.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated metadata comments (line ranges, demangled names). No semantic comments explaining what code does. Original had extensive documentation for each test case.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely lost - RAII, smart pointers, lambdas, templates not recognized. Exception handling pattern not properly recovered despite explicit try/catch in source.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Empty functions don't indicate why logic is missing. No confidence indicators for recovered vs. guessed code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Exception contracts not recovered. Class invariants completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships unclear. Virtual dispatch partially recovered through vtables but inheritance relationships not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with address-based grouping. No logical organization matching source file structure or class hierarchy.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has includes and prototypes but many external dependencies (`__cxa_*`, `_Znwm`, `_ZdlPvm`). Would not compile standalone without significant stub implementation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+3+4+5)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (3+2+4+5)/4 = 3.50 × 0.25 = 0.875
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.534
+Level 4 (Semantic):    (3+2+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (4+4+4)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                              = 3.197 ≈ 3.2/10
+```
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects:
+- **Most test functions are empty stubs** - `test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_lambda`, `test_cpp_smart_ptr` all just `return;` with zero logic recovered
+- **Variable names are completely generic** - `v1`, `v2`, `v3` instead of semantic names like `capture_by_value`, `instance_count`
+- **C++ class structures completely lost** - No recovery of `SimpleClass`, `LifecycleClass`, `Base`, `Derived` definitions
+- **Exception handling control flow broken** - Uses goto labels instead of try/catch structure, making logic incomprehensible
+- **Function names remain mangled** - `_Z18test_cpp_exceptionv` instead of `test_cpp_exception`
+
+### Best Quality Aspect:
+- **Contextual Coherence (4.0/10)** - At least function call relationships and some vtable structures are present, providing minimal cross-reference information
+
+### Most Needs Improvement:
+- **Type System Fidelity (2.67/10)** - Complete loss of C++ type information, class structures, and const-correctness makes the code nearly unusable for understanding original semantics
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts** - Use vtable function pointers to reconstruct class hierarchies and member function relationships
+2. **Preserve debug symbol information at -O0** - When compiled with `-g`, variable and function names should be recovered from DWARF debug info
+3. **Recognize C++ exception handling patterns** - Detect `__cxa_*` call sequences and reconstruct as try/catch blocks instead of goto-based control flow

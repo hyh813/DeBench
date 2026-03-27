@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled code uses exclusively generic variable names (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`) throughout all functions. The original source used descriptive names like `temp1`, `temp2`, `sum`, `count`, `result`, `i`, `j` which clearly indicated purpose. These cryptic names make it extremely difficult to track variable roles across the 1000+ lines of code.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names are perfectly preserved from the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `nested_if_deep`, `if_elseif_chain`, `loop_for_fixed`, `loop_while`, `recursion_factorial`, etc. The decompiler accurately recovered every function name with exact spelling.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple magic numbers appear without explanation (e.g., `1001` in `infinite_loop`, `10` in `loop_nested`, `101` in `multi_return`). The original source had no magic numbers—all values were computed or named. Additionally, Chinese UTF-8 strings are displayed as hex escapes (`\xe6\xb5\x8b\xe8\xaf\x95`) rather than decoded text.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Address comments (`// 0x105b4`) and module metadata (`// From module: /work/src/1.c`) are present but don't significantly impede readability. No redundant casts or debug instrumentation clutter the code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural and recognizable—loops, conditionals, and switch statements are properly structured. However, some issues exist: `loop_break` uses pointer arithmetic instead of array indexing, and `switch_fallthrough` uses goto labels (`lab_0x10a64`) rather than natural fall-through semantics. At -O0, these should be cleaner.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: The original 20+ functions are all correctly separated. Each function maintains appropriate granularity—none are monolithic. The test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) are properly extracted as separate functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but several functions have poor linearization. The `loop_multi_exit` function has deeply nested while loops with complex pointer arithmetic that disrupts flow. The `switch_fallthrough` uses goto labels instead of natural fall-through. Forward jumps interrupt natural reading order.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop unrolling is minimal. However, `loop_for_fixed` computes the sum formula directly (`v1 + (int33_t)v1 * (int33_t)(n-2) / 2`) rather than showing the original loop, which is a common decompilation artifact but obscures the algorithm.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently which matches the original `int` on arm64. However, some parameters are incorrectly typed as `uint32_t` when the original used `int` (e.g., `goto_backward(uint32_t x)` should be `int32_t x`). The `int33_t` typedef for intermediate calculations is unusual and not explained.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: The original had arrays like `int arr[] = {10, 20, 30, 40, 50}` and `int matrix[3][4]`. The decompiled version shows these as pointer arithmetic (`*(int32_t *)((int32_t)&v6 - 56 + 4 * v2)`) rather than proper array access. The array initialization is also broken (`arr = {5, 0, 0, 0, 0}` is invalid C).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues exist: (1) Invalid array initialization syntax (`arr = {5, 0, 0, 0, 0}`), (2) Pointer arithmetic with computed offsets (`*(int32_t *)((int32_t)&v6 - 56 + 4 * v5)`), (3) Function pointer type confusion in `call_func_ptr_array` where `v1[0] = (int32_t (*)(int32_t))idx` treats an index as a function pointer. These create potential undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments only contain metadata (address ranges, line numbers, module paths) but no algorithm explanation. No documentation of what each function does, the logic flow, or any uncertainty indicators. The original had extensive comments explaining each control flow pattern's purpose and test validation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic control flow idioms (loops, conditionals, switches) are recognized but not named or highlighted. The original explicitly labeled patterns like "Duff's device", "state machine", "tail recursion", "indirect recursion" - none of which are indicated in the decompiled output.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code. Several functions have clear semantic errors (e.g., `call_func_ptr` returns `x` instead of calling `f(x)`, `call_func_ptr_array` treats index as function pointer, `process_with_callback` doesn't actually call the callback). These are presented as confident, correct code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original had explicit test cases validating each function's behavior - none of this contract information is present. Functions like `duffs_device` with specific requirements (n > 0) are not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No function call relationships documented. The original showed which functions call which others (e.g., `call_func_ptr` calls `double_value`, `triple_value`). Static functions like `double_value`, `triple_value` are not shown as being used by other functions.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in roughly the same order as the source file. Related functions are grouped together (test functions at end). However, the global variable declarations are in a non-optimal position (between prototypes and functions).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes necessary headers and has function prototypes. However, several syntax errors prevent compilation: (1) Invalid array initialization `arr = {5, 0, 0, 0, 0}`, (2) Invalid struct initialization in `setjmp` handling, (3) The `int33_t` typedef may not be defined. Would require fixes to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable names are exclusively generic (`v1`-`v8`) making code nearly impossible to follow without constant cross-referencing
+- Array access is replaced with unsafe pointer arithmetic (`*(int32_t *)((int32_t)&v6 - 56 + 4 * v5)`)
+- Several functions have incorrect semantics: `call_func_ptr` returns `x` instead of `f(x)`, `call_func_ptr_array` treats index as function pointer
+- Invalid C syntax in array initializations (`arr = {5, 0, 0, 0, 0}`) prevents compilation
+- No comments explaining algorithms, only address metadata
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+All function names are perfectly preserved from the original source, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The exclusive use of generic names like `v1`, `v2`, `v3` completely obscures variable purpose. At -O0 debug level, the decompiler should easily infer meaningful names from usage patterns (e.g., `v1` used as loop counter should be `i` or `count`).
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Variables used as loop indices should be named `i`, `j`, `n`; accumulators should be `sum`, `result`, `count`; array subscripts should reflect array names
+2. **Recover array syntax**: Instead of `*(int32_t *)((int32_t)&v6 - 56 + 4 * v5)`, emit `matrix[i][j]` with proper array recovery
+3. **Fix semantic errors**: `call_func_ptr` must call the function pointer (`return f(x)`), not return the parameter; verify all decompiled functions produce correct output

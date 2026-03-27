@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: While function parameters like `size`, `x`, `y`, `arr`, `n`, `dst`, `src`, `counter`, `increment` are correctly preserved, numerous local variables remain "Unresolved" (e.g., `int result@[DW_OP_breg0(r0): 0; DW_OP_lit3...]`, `char * str1@[???]`, `int sum@[???]`, `int old_value@[???]`). These unresolved variables severely hinder understanding of intermediate computations.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source: `param_macro_constants`, `call_macro_functions`, `param_conditional_compile`, `param_asm_basic`, `param_asm_clobber`, `param_asm_simd`, `param_asm_atomic`, `param_dynamic_code`, `param_memory_protection`. The naming is excellent and preserves the semantic intent from source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers are correctly computed (0x401=1025 for MAX_SIZE+1, 0x200=512 for MAX_SIZE/2, 0x40=64 for BUFFER_COUNT*4, 0xdf22=57122 for default branch), but they lack symbolic names. The decompiler correctly resolved the preprocessor macros to their constant values but did not recover the original macro names (MAX_SIZE, BUFFER_COUNT).
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution throughout: "WARNING: Unknown calling convention" (15+ occurrences), "WARNING: Removing unreachable block", "WARNING: Variable defined which should be unmapped", "Unresolved local var" comments with DW_OP debug info scattered everywhere, and "WARNING: Subroutine does not return". This noise significantly obscures the actual code logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with proper if/else constructs. The decompiler correctly resolved conditional compilation branches (DEBUG_MODE, PLATFORM macros) to single paths. Loops are properly recognized (for loops in `param_asm_clobber`, `param_asm_simd`). Minor issue: some complex assembly patterns were replaced with C equivalents (e.g., `param_asm_multi_insn` became `memcpy`).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and decomposed. Each test function (`param_*`, `call_*`) is separate. The 98 total functions include both the test code and compiler-generated atomic operation stubs (`__sync_fetch_and_add_4`, etc.), which is appropriate. No excessive inlining or outlining issues at -O0.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads mostly top-to-bottom with minimal forward jumps. Early returns are used appropriately in error handling (e.g., `param_dynamic_code`, `param_memory_protection`). No spaghetti code or excessive goto patterns. The code is easy to follow linearly.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. Dead code from unreachable blocks is properly flagged with warnings. The compiler-generated atomic operation functions are repetitive by nature (different sizes), but this is expected output, not redundancy in the decompiled user code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly correct: `int` for integers, `size_t` for sizes, `void*` for generic pointers, `int*` for array pointers. However, some precision is lost: the decompiler uses generic `int` where the original used specific types (e.g., `uint32_t` implied by some operations). The `bool` return type is correctly identified in some sync functions.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex composite types (structs/unions) are present in this particular source file - it's all flat function code. The decompiler correctly handles simple arrays (e.g., `int arr[5]`, `char dst[32]`) without needing struct recovery. For this specific code, the lack of struct recovery is not a deficiency.
+
+**11. Type Safety:** Score: 7/10  
+Justification: The code appears type-safe with no obvious unsafe casts. Pointer arithmetic is correct (e.g., `arr[iVar2]`). However, the unresolved local variables with `[???]` annotations indicate some type uncertainty. The atomic operation functions use proper pointer types. Minor issue: some function signatures have `undefined4` instead of proper types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are predominantly auto-generated noise: "WARNING: Unknown calling convention", "Unresolved local var: int result@[DW_OP_breg0(r0)...]", DW_OP stack value annotations. There are no explanatory comments about what the functions do, the macro semantics that were lost, or the assembly patterns that were converted to C. The comments hinder rather than help understanding.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms are explicitly identified. The decompiler does not recognize that `param_asm_atomic` uses atomic operations, that `param_dynamic_code` implements self-modifying code, or that `param_memory_protection` demonstrates memory protection. These semantic insights from the source are completely lost.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra does flag anomalies with WARNING comments (unreachable blocks, unknown calling conventions, variables that should be unmapped). However, these are generic warnings without specific explanations of what went wrong during decompilation or what the analyst should look for. The "Unresolved local var" annotations do indicate uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler does not indicate that `param_dynamic_code` requires `page_size` to be page-aligned, or that `param_memory_protection` expects specific PROT_* values. The implicit contracts from the original source (e.g., "requires: counter != NULL" for atomic functions) are completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - `main` calls `test_preprocessing_features` and `test_asm_features`, which call their respective `call_*` functions, which call `param_*` functions. Global variable `global_var` is used in `param_memory_clobber_demo`. However, there's no explicit documentation of the call graph or callback relationships.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped: initialization functions first (`_init`, `_start`), then test functions in source order (preprocessing tests, then asm tests), then compiler-generated atomic stubs at the end. Static functions are properly scoped. The organization mirrors the source file structure well.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code uses `__printf_chk` (fortified printf) and `__stack_chk_fail` (stack protector), which require glibc. The atomic operation stubs are compiler-builtins. The code would require linking against libc and would need these functions stubbed out for standalone compilation. Dependencies are not documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- "Unresolved local var" annotations with DW_OP debug info create severe noise pollution, making intermediate computations unreadable
+- All magic numbers lack symbolic names (e.g., should indicate MAX_SIZE=1024, BUFFER_COUNT=16)
+- Comments are entirely auto-generated warnings with no semantic explanations of what functions do
+- Type precision issues: unresolved local variables, some `undefined4` types
+- No recovery of preprocessor macro semantics - the original `#define` names are lost
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names perfectly match the original source, preserving the semantic intent (e.g., `param_macro_constants`, `param_asm_atomic`, `param_dynamic_code`). This makes it easy to locate specific functions from the original source.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 3/10)  
+Comments are entirely auto-generated warnings and debug info (DW_OP, "WARNING: Unknown calling convention") with no useful explanations of function purpose, lost macro semantics, or algorithm descriptions. The noise actively impedes readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover symbolic names for magic numbers**: Detect constant expressions (e.g., 0x401, 0x200, 0x40) and suggest original macro names based on common patterns or leave as named constants with comments like "/* MAX_SIZE + 1 */"
+2. **Eliminate DW_OP debug noise**: Remove DW_OP stack value annotations from the output; these are internal debug info useless for code analysis
+3. **Add semantic comments**: Instead of "WARNING: Unknown calling convention", provide context like "/* Assembly function - consider analyzing raw disassembly */" or explain what was lost in the decompilation process

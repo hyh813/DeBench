@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Local variables are overwhelmingly generic stack offsets (e.g., `local_38`, `uStack_2c`, `pvVar1`) which obscure the semantic meaning of the original C++ objects (like `SimpleClass obj` or `Point p1`). While some struct members like `dataA` and `size` are recovered, the local variable context is lost.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are recovered excellently, including complex template instantiations like `Container<int>::push` and class methods like `Base::virtual_func`, likely due to DWARF debug information. This makes identifying the purpose of individual functions very easy.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers resulting from constant propagation (e.g., `return 0x16;` instead of the calculation logic, or `0x125c` in `test_cpp_member_func`). String literals for RTTI are raw (e.g., `"12RTTIDerivedA"`) rather than the clean class names.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: There is significant noise from compiler artifacts, including frequent `undefined` types (`undefined4`, `undefined8`), `CONCAT44` macros for register splitting, and warnings like "Unknown calling convention" which clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: High-level C++ control structures are missing; `try/catch` blocks are reduced to raw `__cxa_throw` calls, and many functions are reduced to simple `return constant;` statements due to optimization, making the logic flow impossible to trace.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: The decompiler successfully separates class methods and template instantiations into distinct functions (e.g., `template_max<int>` vs `template_max<double>`), maintaining good granularity despite the optimization.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Where logic exists (e.g., in `test_cpp_constructor`), the code reads relatively linearly, but pointer arithmetic and stack manipulation often interrupt the flow, requiring the reader to track offsets manually.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler presents the code cleanly without obvious dead code or redundant variables, though this is largely because the compiler optimized away the complex logic into constants.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While parameter types for class methods are precise, local variables often default to `undefined` or generic `int`/`void*`. The distinction between C++ objects (like `unique_ptr`) is lost, replaced by raw memory handling.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Structs like `Base`, `Derived`, and `Container<int>` are recovered with correct field names (`_vptr_Base`, `multiplier`, `size`). However, inheritance layouts (like `MultiDerived`) expose internal padding or vtable pointers (`super_BaseA`) which can be confusing.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains numerous unsafe casts, such as `(long)pvVar1` and `(int)sVar1`, and relies on pointer arithmetic like `*(int *)((long)pvVar1 + 8)` to access struct fields, which is error-prone.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are mostly technical warnings (e.g., "WARNING: Unknown calling convention") or "Unresolved local var" markers. There are no high-level comments explaining the C++ idioms used (e.g., "Virtual dispatch via vtable").
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: C++ idioms are not explicitly recognized. Virtual function calls are shown as indirect memory accesses, and exception handling is shown as library calls (`__cxa_allocate_exception`) rather than `try/catch` blocks.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: The decompiler flags "Unresolved local var" and calling convention issues, but it fails to indicate that the logic in functions like `test_cpp_operator_overload` has been completely optimized away, which might mislead a reader into thinking the source was trivial.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or invariants. Checks that existed in the source (like `idx < size`) are present as `if` statements but are not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear, and vtable references are visible. However, the relationship between a mangled thunk name (e.g., `_ZThn16_N12MultiDerived5funcBEv`) and its high-level purpose is obscured.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically, with class methods generally appearing near their usage or in related blocks. The separation of template instantiations helps organization.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on Ghidra-specific macros (`CONCAT44`) and `undefined` types, making it non-compilable without significant manual modification to define types and remove artifacts.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- **Optimized-away Logic**: Functions like `test_cpp_operator_overload` and `test_cpp_lambda` are reduced to `return constant;`, completely hiding the source implementation logic.
+- **Generic Variable Naming**: Local variables are named `local_XX` or `uStack_XX`, making it impossible to track the flow of specific objects like `SimpleClass` or `Point`.
+- **Missing High-Level Constructs**: C++ exceptions are not reconstructed into `try/catch` blocks, and virtual calls are raw pointer dereferences rather than semantic dispatches.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 9/10)
+- **Why?** The decompiler leveraged debug symbols (DWARF) to perfectly recover original function names, including complex template signatures and class methods.
+
+**Most Needs Improvement:** Semantic Transparency (Score: 2.75/10)
+- **Why?** The code fails to convey the *intent* of the C++ source, presenting low-level implementation details (like `__cxa_throw` or vtable offsets) without explaining the high-level patterns (exceptions, polymorphism) they represent.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Pattern Matching for Exceptions**: Implement logic to detect `__cxa_throw` and `__cxa_begin_catch` sequences and reconstruct them into `try/catch/throw` blocks.
+2.  **Variable Recovery from Stack Objects**: Improve analysis to map stack slots (`local_38`) back to the struct fields they represent when the constructor logic is inlined or visible.
+3.  **Optimization Annotation**: When a function body is reduced to a constant return, add a comment like "Logic optimized away by compiler" to clarify that the source was not empty.

@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `arg_0`. For example, in `test_cpp_member_func`, the `SimpleClass` object is reduced to a stack array `v0[4]` and `v1`, completely losing the semantic context of the object and its members.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: The decompiler successfully demangles many C++ symbols (e.g., `_Z20test_cpp_member_funcv` is labeled `test_cpp_member_func`, and `_ZN4Base12virtual_funcEi` is `Base::virtual_func`). However, a significant number of functions remain generic (e.g., `sub_401030`, `sub_401040`), and critical logic is often hidden inside these unnamed stubs.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers (e.g., `4`, `20`, `42`, `0x40040000`) without context. While string literals like `"Test"` are preserved, constants like `sizeof(name)-1` from the source are replaced by raw integers, obscuring the original intent.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The output contains significant compiler and runtime noise, including `__x86.get_pc_thunk.ax`, `frame_dummy`, and `_init` functions. Additionally, decompiler artifacts like `[D] unsupported_<class 'pyvex.expr.GetI'>()` appear directly in the code body, severely impacting readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is highly unnatural, relying on indirect jumps like `goto v1->field_54;` (likely a failed switch or virtual call recovery) and obscure conditional checks. The presence of syntax errors (`[D] unsupported...`) inside the flow makes it impossible to follow the logic.
+
+**6. Function Decomposition:** Score: 2/10
+Justification: The decomposition is poor; many functions that contain logic in the source (e.g., `test_cpp_virtual_func`) are decompiled as empty stubs containing only `return;`. Conversely, logic seems to be scattered into generic `sub_401xxx` functions, breaking the cohesion of the original test functions.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code does not read linearly. It contains forward jumps and is interrupted by decompiler error messages. The flow is disjointed, making it difficult to read from top to bottom.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is little obvious redundancy because the actual logic is largely missing or abstracted away into `sub_` calls. However, the repetitive definition of thunk functions (e.g., `non-virtual thunk to...`) is a necessary artifact of C++ compilation rather than decompiler redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Types are heavily degraded. Complex C++ types like `std::unique_ptr` and class instances are reduced to generic `void*`, `unsigned int`, or `struct_0`. The specific types `int`, `double`, and class pointers are lost, replaced by low-level machine types.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Struct recovery has failed completely. Classes like `SimpleClass` or `Container` are not reconstructed. Instead, memory is accessed via raw offsets in generic structs (e.g., `struct_0 { char padding_0[84]; unsigned int field_54; };`), providing no semantic insight into the class layout.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code relies on unsafe pointer arithmetic and casts, such as `(char *)a0 + (*(a0))[12]`. This reflects the loss of high-level type safety and object-oriented boundaries present in the original source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic. The only text present are decompiler error messages (`[D] unsupported...`) and standard headers, offering no assistance in understanding the algorithm or purpose.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: The decompiler correctly identifies C++ idioms like "non-virtual thunk" and "thunk to," which is positive. However, it fails to recover higher-level idioms like RAII (for `unique_ptr`), exception handling (try/catch blocks are invisible), or template instantiations.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler explicitly flags failures with `[D] unsupported_<class 'pyvex.expr.GetI'>()`. While this accurately indicates a problem, the frequency of these errors renders the code practically unusable.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. The logic of the original functions (e.g., checking bounds in `Container::get`) is lost or obscured.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10
+Justification: Calls to library functions or other test functions are opaque (e.g., `sub_401190`, `sub_401250`). It is difficult to determine what these functions do or how they relate to the standard library or other test cases without analyzing the addresses.
+
+**17. Module Organization:** Score: 3/10
+Justification: The code is presented as a flat list of functions. While the demangled names help group related class methods, the overall organization does not reflect the logical structure of the source file (e.g., separation of test functions, class definitions).
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not compilable. It contains syntax errors (`[D] unsupported...`), undefined types, and missing headers. It serves only as a disassembly view rather than valid source code.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 6 + 3 + 3) / 4 = 3.5
+L2_avg: (2 + 2 + 3 + 5) / 4 = 3.0
+L3_avg: (2 + 1 + 2) / 3 = 1.67
+L4_avg: (1 + 5 + 5 + 1) / 4 = 3.0
+L5_avg: (2 + 3 + 1) / 3 = 2.0
+
+Overall = (3.5 × 0.30) + (3.0 × 0.25) + (1.67 × 0.20) + 
+          (3.0 × 0.15) + (2.0 × 0.10)
+Overall = 1.05 + 0.75 + 0.334 + 0.45 + 0.20
+Overall = 2.784
+```
+
+**Overall Readability Score:** 2.8/10
+
+### Critical Defects (Bullet List)
+- **Decompiler Lift Failure:** The code contains numerous `[D] unsupported_<class 'pyvex.expr.GetI'>()` errors, indicating the decompiler (likely Angr/VEX) failed to lift specific instructions, rendering the code invalid.
+- **Missing Function Logic:** Critical functions like `test_cpp_virtual_func` are decompiled as empty stubs (`return;`), completely losing the implementation logic present in the source.
+- **Total Type Erasure:** C++ classes and templates are reduced to generic `struct_0` with `padding_0` and `field_X` offsets, destroying all semantic meaning of the Object-Oriented structure.
+- **Platform Mismatch:** The source metadata specifies `arm64`, but the decompiled code is clearly `X86` (evident from `__x86.get_pc_thunk`), suggesting a mismatch in the provided artifacts.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (6/10)
+- **Why?** The decompiler successfully demangled C++ mangled names (e.g., `_ZN4Base12virtual_funcEi` to `Base::virtual_func`), providing at least some semantic anchor points in a sea of generic names.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Composite Type Recovery (1/10)
+- **Why?** The failure to reconstruct `struct` or `class` types is the most damaging issue; without `SimpleClass` or `Container` definitions, the code is just a sequence of pointer arithmetic on undefined memory blocks.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Fix Lifting Engine:** Address the `pyvex.expr.GetI` unsupported errors to prevent syntax errors from appearing in the output.
+2.  **Enhance C++ Type Recovery:** Implement robust analysis to recover class layouts, vtables, and template instantiations rather than falling back to generic `struct_0` with padding.
+3.  **Improve Control Flow Reconstruction:** Develop better heuristics to recover `if/else` and `switch` statements from indirect jumps and complex branching patterns, especially for optimized code.

@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: While class instances like `obj` are named well, local variables in complex functions (e.g., `iVar1`, `lVar1`, `plVar3` in `test_cpp_rtti`) are generic, obscuring their roles as accumulators or specific object pointers.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Excellent demangling of C++ symbols (e.g., `Base::virtual_func`, `Container<int>::push`, `virtual thunk to DiamondDerived::func`) preserves the original semantic structure perfectly.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `0x125c` (4700) and `0x3e9` (1000) are left in hex without comments, making the arithmetic logic in optimized functions (e.g., `test_cpp_constructor`) difficult to verify against the source.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The decompilation of `test_cpp_member_func` contains excessive noise, listing 20+ lines of explicit null assignments (`obj.name[5] = '\0'`, etc.) instead of abstracting the array initialization.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: The remaining logic (e.g., in `test_cpp_rtti`) flows naturally, though the heavy optimization (constant folding) removes most control structures, leaving only simple returns or arithmetic.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler correctly separates template instantiations (`template_max<int>` vs `double`) and identifies compiler-generated thunks (`non-virtual thunk to MultiDerived::funcB`) as distinct functions.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly where logic exists; the use of `__cxa_throw` and `__dynamic_cast` is presented sequentially without confusing jumps.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The explicit initialization of the `SimpleClass` name buffer is highly redundant, representing compiler padding as verbose code rather than a high-level initialization construct.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: C++ class types (`SimpleClass`, `Base`, `Derived`) are recovered accurately. However, some types are generic (`undefined4 *puVar1` for the exception object), and `long` is used for pointers on x64.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Structs like `DiamondDerived` are recovered with correct base class layouts (`super_MiddleA`, `super_MiddleB`), and the `Container` template classes show correct member fields (`data`, `size`).
+
+**11. Type Safety:** Score: 6/10
+Justification: The complex pointer arithmetic in virtual thunks (e.g., `(long)&this->dataA + (long)this->_vptr_MiddleA[-3]`) is accurate to the binary but difficult to read and verify for safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 8/10
+Justification: DWARF comments (`/* DWARF original prototype: ... */`) are excellent. Warnings about overlapping fields in `DiamondDerived` and unknown calling conventions are helpful for context.
+
+**13. Idiom Recognition:** Score: 9/10
+Justification: The decompiler successfully identifies high-level C++ idioms like RTTI (`typeid`, `dynamic_cast`), exception handling (`__cxa_throw`), and virtual table thunks.
+
+**14. Anomaly Indication:** Score: 9/10
+Justification: The warning `/* WARNING: Struct "DiamondDerived": ignoring overlapping field "super_MiddleB" */` is a precise and critical indication of the complexity introduced by diamond inheritance.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: There is no recovery of preconditions or invariants; for example, the null check in `Container::get` is decompiled but not explicitly documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Vtable references (e.g., `PTR__RTTIDerivedA_00103c70`) and typeinfo links are clearly labeled, allowing the user to trace the object-oriented structure.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are generally grouped by class, and template instantiations are adjacent, though the overall file is ordered by address which scatters related logic slightly.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on compiler-specific intrinsics (`__builtin_strncpy`, `__stack_chk_fail`) and undefined types (`undefined4`), requiring significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.5/10
+
+**Critical Defects:**
+- **Excessive Initialization Noise**: The decompilation of `test_cpp_member_func` lists 20+ lines of explicit null assignments for `obj.name`, which obscures the simple `strncpy` logic.
+- **Literal Opacity**: Calculated constants like `0x125c` (4700) and `0x3e9` (1000) are left in hex, making the arithmetic logic (`result + 1000`) hard to verify.
+- **Generic Variable Names**: Key variables in complex functions like `test_cpp_rtti` are named `iVar1`, `lVar1`, `plVar3`, requiring manual tracking of their semantic roles (e.g., result accumulators, object pointers).
+
+**Best Quality Aspect:** Idiom Recognition (scored 9/10)
+- Ghidra successfully identifies complex C++ idioms like virtual thunks, `dynamic_cast`, `__cxa_throw`, and RTTI structures, which are often missed or mishandled by other decompilers.
+
+**Most Needs Improvement:** Noise Reduction (scored 3/10)
+- The representation of struct initialization, particularly the explicit zeroing of array elements, creates massive blocks of low-value code that significantly degrade readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Aggregate Initialization**: Detect patterns where consecutive array elements are set to zero/constant and collapse them into a `memset` or initialization list representation.
+2. **Constant Propagation/Annotation**: When a function returns a constant expression (e.g., `instance_count * 1000 + 21`), annotate the hex values with their decimal equivalents or the original variable names if available in debug info.
+3. **Variable Renaming Heuristics**: In functions with RTTI or exception handling, infer variable names from the types they interact with (e.g., rename `plVar3` to `derived_obj_ptr` if it is passed to `__dynamic_cast` with `RTTIDerivedA::typeinfo`).

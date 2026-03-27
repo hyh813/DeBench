@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, a0, a1, ptr, cur, idx) with no semantic meaning. For example, `process_char` uses `a0` instead of `c` or `character`, and loop variables like `i` in source become `idx`, `i`, `j`, `k` inconsistently.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions like `process_char`, `process_int`, `array_1d_stack` are recovered correctly, but numerous wrapper functions (`sub_401149`, `sub_40115f`) add noise. Function names don't indicate parameter types or purpose consistently.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (UINT_MAX), `18446744073709551612`, `0x3fc00000` (float constant). Test functions show computed values directly (e.g., `printf("...%d\n", 97)`) instead of function calls, obscuring intent.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant decompilation artifacts: `[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] unsupported_<class 'pyvex.expr.GetI'>()`, excessive temporary variables (v0-v56 in `test_array_types`), and redundant wrapper functions that just call the real function.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions are readable, but optimized loops use incomprehensible SIMD patterns (`AddV`, `CONCAT`, `>> 96`, `>> 64`). `ptr_func_simple` uses `goto a0` instead of proper function pointer call syntax.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but duplicate wrapper functions (`sub_401149` calls `process_char`) fragment the code. Some functions like `array_1d_stack` and `array_vla` have nearly identical 80+ line SIMD implementations that should be unified.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but disrupted by SIMD loop unrolling with multiple nested do-while loops. `test_data_types_l1` has inline assembly-like `[D] PutI()` blocks that break flow completely.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Massive redundancy from loop unrolling—`array_1d_stack`, `array_vla`, `array_oob`, `ptr_increment`, `union_array` all have nearly identical 80-line SIMD accumulation code. No abstraction or comments explain this is the same pattern.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `process_char` returns `long long` instead of `char`, `process_bool` returns `char` instead of `_Bool`, `volatile_access` loses volatile semantics (returns `*(a0) * 2` instead of two separate reads). Many `unsigned long long` where `int` or `size_t` expected.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_8`, `padding_4`). `Node` struct becomes `struct_0` with `field_0` (data) and `field_8` (next). Union type distinction lost—`union_type` treats all members as `void*` casts.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `ptr_func_simple` uses `goto a0` for function pointer call, `ptr_double` uses struct typedefs that conflict (`struct_0` defined twice differently), pointer arithmetic obscures bounds checking.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. No algorithm explanations, no parameter documentation, no decompilation confidence indicators. Only `[D]` markers indicate problems without explanation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns completely unrecognized: linked list traversal (`linked_list`, `doubly_linked_list` have identical code), array summation patterns all expanded to SIMD, no identification of state machine in `enum_switch`.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `[D]` markers indicate unsupported operations in `process_ld`, `test_data_types_l1`, and `sub_401085`, but no explanation of what went wrong or how to fix. `process_ld` is completely broken with raw VEX IR.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `array_complex_index` should note bounds requirements). No postconditions. `array_oob` intentionally has undefined behavior but this isn't flagged as a warning.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but wrapper functions obscure relationships. `test_data_types_l1` calls are constant-folded so actual function relationships lost. Global variables named `g_404fe0`, `g_4035df` with no semantic meaning.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source order but no logical grouping. Related functions (all array operations, all pointer operations) not grouped. No header file or API documentation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone—`[D]` markers are syntax errors, undefined externals (`g_404fe0`, `__TMC_END__`, `deregister_tm_clones`), conflicting struct definitions (`struct_0` defined multiple times differently).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Contribution |
+|-------|-----------|---------|--------|--------------|
+| L1: Lexical Clarity | 4 dims | 3.50 | 30% | 1.05 |
+| L2: Structural | 4 dims | 4.75 | 25% | 1.19 |
+| L3: Type System | 3 dims | 4.33 | 20% | 0.87 |
+| L4: Semantic | 4 dims | 2.25 | 15% | 0.34 |
+| L5: Contextual | 3 dims | 4.67 | 10% | 0.47 |
+
+**Overall Readability Score: 3.9/10**
+
+### Critical Defects:
+- **Variable `a0`, `v0`, `v1` should be named semantically** (e.g., `character`, `sum`, `index`) based on usage patterns
+- **`process_ld` is completely broken** with `[D] unsupported_<class 'pyvex.expr.GetI'>()` - long double not recovered
+- **SIMD loop unrolling creates 80+ line unreadable blocks** in 6+ functions that should be simple for-loops
+- **Test functions constant-folded** - `printf("...%d\n", 97)` instead of showing actual `process_char('A')` calls
+- **Struct fields all generic** (`field_0`, `field_8`, `padding_4`) losing all semantic meaning from original (`data`, `next`, `position.x`)
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- Core function names like `process_char`, `array_1d_stack`, `linked_list` were correctly recovered from symbols, providing anchor points for understanding.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero explanatory comments anywhere; even `[D]` error markers lack explanation of what failed or how to proceed.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement pattern-based variable renaming** - detect loop accumulators (`sum`), indices (`i`), and type-specific variables (`character` for char params) from usage patterns
+2. **Recognize and collapse SIMD loop unrolling** - detect vectorized accumulation patterns and emit simple for-loops with a comment noting compiler optimization
+3. **Add decompilation confidence annotations** - replace `[D] unsupported` with structured warnings like `// DECOMPILER_ERROR: long double operations not supported - manual review required`

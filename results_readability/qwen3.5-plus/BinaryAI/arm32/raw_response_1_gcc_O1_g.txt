@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar2` with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved correctly (`sequential_ops`, `recursion_factorial`, `double_value`). Test functions also retained names (`test_control_flow_l1`). Minor issues with external function labeling.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex (`0x14`, `0x1e`, `0xffffffff`) without explanation. Test functions have hardcoded expected values instead of actual function call results, obscuring test logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary variables (`local_c`, `local_14`) and `__stack_chk_fail` calls add noise. Type artifacts like `undefined4`, `undefined8` clutter function signatures unnecessarily.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Basic if/else and switch structures recovered well. However, `duffs_device` and `switch_fallthrough` use goto labels instead of structured fall-through, and some loops converted to do-while unnecessarily.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Helper functions preserved (`op_add`, `state_idle`, etc.). Test functions bloated with stack variable declarations. Function granularity generally appropriate.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Goto labels in `duffs_device` (switchD_00010ed0_caseD_0 through caseD_7) disrupt flow but are localized.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `__aeabi_idiv` function has 35 boolean variables (bVar1-bVar35) from compiler expansion. Test functions contain redundant hardcoded values instead of computed results.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate (`int`, `undefined4`, `uint`). Original type information lost. Function pointer types use generic `code *` instead of proper signatures. Some return type mismatches (`if_else` returns `bool` instead of `int`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Stack arrays recovered as individual variables (`local_20[4]`, `apcStack_18[3]`). No struct/union definitions visible. Function pointer arrays partially recovered but with generic element types.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(int)param_1`, `(undefined4 *)`). Function pointer calls use generic `code *` type. Stack canary checks add safety but also introduce noise.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (switch-case, loops, recursion). Duff's device partially recognized but with goto labels. No explicit pattern naming or algorithm documentation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No anomaly flags or warnings in output. Stack canary checks present but unexplained. No indication of unresolved indirect calls or uncertain recovery areas.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had test validation comments with expected values. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. No call graph information. Global variable usage (`jump_buffer`) not clearly indicated with context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by control flow level (L1/L2/L3). External functions marked but not organized by category.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Contains external function declarations but references undefined symbols (`__aeabi_idiv`, `__gmon_start__`). Would require stubs and ARM-specific linking to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (7+7+7+5)/4 = 6.50  × 0.25 = 1.625
+Level 3 (Type):        (5+5+6)/3   = 5.33  × 0.20 = 1.067
+Level 4 (Semantic):    (2+5+4+3)/4 = 3.50  × 0.15 = 0.525
+Level 5 (Contextual):  (5+5+5)/3   = 5.00  × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.37/10
+```
+
+### Overall Readability Score: **5.4/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`) - original semantic names like `temp1`, `sum`, `count` lost entirely
+- **Test functions print hardcoded values** instead of actual function call results, breaking test verification capability
+- **Zero comments** - original had extensive documentation explaining purpose, test cases, and difficulty levels
+- **Type mismatches** - `if_else` returns `bool` instead of `int`, `loop_break` returns `void` instead of `int`
+- **Goto labels for fall-through** - `switch_fallthrough` and `duffs_device` use goto instead of structured fall-through semantics
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names preserved accurately from source, making identification and navigation straightforward despite other degradation.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of comments removes all semantic context that made the original source self-documenting and educational.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and function context (e.g., loop counters should be `i`, `j`; accumulators should be `sum`, `count`)
+2. **Recover and preserve test function semantics** - execute actual function calls rather than hardcoding expected values
+3. **Add decompilation confidence annotations** indicating uncertain recoveries, unresolved calls, and potential optimization artifacts

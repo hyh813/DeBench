@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `flag1`, `flag2`) instead of semantic names like `result`, `encrypted`, `decrypted`. Only a few variables like `cur`, `i`, `j`, `ptr` have minimal meaning.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved well (`param_fake_branch`, `call_opaque_predicate`, `param_vectorized_loop`), but runtime functions use mechanical names (`sub_400774`, `sub_400870`, `$x`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `3735928559` (0xDEADBEEF), `2863311530` (0xAAAAAAAA), `305419896` (0x12345678), signal numbers `8` and `11` instead of `SIGFPE`/`SIGSEGV`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Every function has stack frame setup artifacts (`v0 = &v1`, `v2 = &v3`, `v1 = &v2`) that serve no semantic purpose and clutter the code significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loop structures mostly recovered (for loops in `param_vectorized_loop`, `param_buffer_overflow_stack`), but some conditionals are awkward (inverted logic in `param_fake_branch`: `if (0 <= strlen(v0)) return v1`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well; no monolithic functions. However, some functions like `register_tm_clones` have unnecessary complexity from decompiler artifacts.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but some functions have awkward early returns that disrupt flow (e.g., `param_fake_branch` returns in middle of second condition check).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated stack frame patterns in every function, duplicate return statements (`return v1; return v1;`), and redundant variable assignments throughout.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate (`unsigned int`, `unsigned long long`) instead of precise types (`int32_t`, `size_t`). Signed/unsigned sometimes incorrect (original `int x` becomes `unsigned int a0`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Bitfield struct in `param_implementation_defined` not reconstructed as struct; accessed via raw operations. Arrays partially recovered but field names lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(unsigned int)v2`, `(char)v0`), pointer arithmetic without proper typing (`*((char *)&v3 + i)`), and type-confused parameters throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only auto-generated artifacts like `/* do not return */`. No explanation of obfuscation patterns, magic numbers, or algorithm intent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Obfuscation patterns completely unrecognized (fake branches, opaque predicates, instruction substitution appear as normal code). No pattern identification whatsoever.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about suspicious code, potential undefined behavior, or decompiler uncertainty. Code presented confidently even when transformations are questionable.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`), no postconditions, no error condition explanations. Function contracts completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced as `g_411ff8`, `$d.2` without explanation of purpose or relationship to source.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in load order rather than logical grouping. Related functions (`param_*` and `call_*`) scattered. No header file or API documentation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Marked as compilable ("Compilation Result: Yes"). External dependencies declared (`extern`), but many globals have cryptic names that would need manual resolution.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type):        (5+4+4)/3   = 4.33  × 0.20 = 0.87
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):  (5+5+7)/3   = 5.67  × 0.10 = 0.57
+─────────────────────────────────────────────────────
+Overall Score:                                  4.67/10
+```
+
+### Overall Readability Score: **4.7/10**
+
+### Critical Defects:
+- **Variable naming**: All variables are `v0`, `v1`, `v2` instead of semantic names like `result`, `encrypted`, `decrypted`, `canary`
+- **Magic numbers**: `3735928559`, `2863311530`, `305419896` used without any explanation or constant definitions
+- **Stack frame noise**: Every function has unnecessary `v0 = &v1` stack setup patterns that obscure actual logic
+- **No comments**: Zero documentation of obfuscation patterns, algorithm intent, or decompiler confidence
+- **Type degradation**: Original `int` types become `unsigned int`, losing signed semantics critical for overflow detection
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core test function names preserved accurately (`param_fake_branch`, `param_opaque_predicate`, `param_vectorized_loop`), maintaining semantic connection to source.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments makes understanding obfuscation patterns, magic numbers, and algorithm intent nearly impossible without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in size checks should be named `size`, `length`, `count`)
+2. **Add semantic comments** for recognized patterns (obfuscation, cryptographic operations, signal handling) with confidence indicators
+3. **Eliminate stack frame artifacts** by recognizing and removing compiler prologue/epilogue patterns that don't contribute to semantics

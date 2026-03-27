@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `ptr`, `a0`, `a1`) with no semantic meaning. For example, in `param_malloc_free`, variables like `flag1`, `index`, `v5`, `v6` obscure the loop counter and array indexing logic that should be clear.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results—original names preserved for some functions (`param_strcpy`, `call_strcpy`, `param_mutex_lock`) but many are mechanical (`sub_401030`, `sub_4013e0`, `sub_40141b`). The preserved names do accurately reflect functionality.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout: `4294967295` (unsigned representation of -1), syscall numbers `5`, `6`, `10`, `14` without explanation, signal numbers as raw integers. No constants recovered from the original source.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (redundant variable assignments like `v0 = v1; v1 = v0`), but no severe noise pollution. One `[D] Unsupported jumpkind` marker indicates decompiler limitation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural if/else and loop constructs, but some use awkward patterns. The `param_signal_handling` function has deeply nested conditionals that could be flattened. At -O0, control flow should match source more closely.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical failure—`call_strcmp`, `call_strlen`, `call_memcpy`, `call_malloc_free`, `call_memset`, `call_strchr_strstr` all return constants directly instead of calling their respective functions, indicating aggressive inlining that wasn't recovered.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Some functions like `param_thread_local_storage` have excessive goto-style labels (`LABEL_4030a6`) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns from optimization visible (e.g., `param_memset` has unrolled byte-summing loop that obscures the simple verification logic from source). No dead code removal issues.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation—`unsigned int` used where `int` needed (affecting negative return values), `const` correctness completely lost, `size_t` becomes `unsigned int`. Function `param_strcmp` returns `unsigned int` but should return signed comparison result.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_4`, `field_8`, `field_c`). Thread-local storage completely lost—`thread_tls_test` shows incomprehensible `_ccall` operations instead of `__thread` variable access. `FILE*` struct empty.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: pointer arithmetic on void pointers, incorrect cast chains (`(char *)&v2->field_5b87 + 3`), `pthread_mutex_unlock()` called without argument in `consumer_thread`. Buffer handling in `param_fread_fwrite` uses `(&v0)[count] = 0` which is unsafe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments recovered. Only auto-generated decompiler markers present (`/* do not return */`, `[D] Unsupported jumpkind`). No algorithm explanations or API contract documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions recognized (`strcpy`, `strcmp`, `memcpy`, `printf`, `fopen`), but higher-level patterns not identified. Producer-consumer pattern in `param_condition_variable` not named. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged (`[D] Unsupported jumpkind`, `Other Possible Types` comments) but inconsistently applied. Critical issues like `call_strcmp` returning constant 0 not flagged as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Error return values (`4294967295` for -1) not documented. No null pointer check documentation despite many present in code.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`g_404074`, `signal_received`, `shared_counter`) without context. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Original source had clear sections (6.1 Standard Library, 6.2 System Calls, 6.3 Threads) completely lost. No header file structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears syntactically compilable but has semantic errors (`pthread_mutex_unlock()` missing argument, `vvar_15{r8|4b}` invalid syntax). External dependencies not documented. Would require significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+6)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+5+6+6)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (4+4+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (2+5+4+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.58/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Function logic lost**: `call_strcmp`, `call_strlen`, `call_memcpy`, `call_malloc_free`, `call_memset`, `call_strchr_strstr` all return hardcoded constants instead of executing actual logic
+- **Thread-local storage completely broken**: `thread_tls_test` uses incomprehensible `_ccall` operations instead of `__thread` variable access
+- **Type signature errors**: `param_strcmp` returns `unsigned int` but should return signed int for proper comparison semantics
+- **Missing function arguments**: `param_printf` and `call_printf` don't pass format string arguments to `printf()`
+- **Invalid syntax**: `vvar_15{r8|4b}` in `call_fork_exec` is not valid C syntax
+
+### Best Quality Aspect: **Noise Reduction (6/10)**
+- Compiler artifacts are present but not overwhelming; the decompiler successfully eliminated most register spilling noise and debug instrumentation.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no documentation recovered; even basic function purpose comments are absent, making it extremely difficult to understand intent without comparing to source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover inlined function calls**: Detect constant-returning wrapper functions and trace back to identify inlined logic that should be restored as function calls
+2. **Improve TLS variable recognition**: Add specific patterns for `__thread` and `thread_local` storage to recover per-thread variable semantics instead of generating opaque `_ccall` sequences
+3. **Add semantic annotations**: Automatically generate comments for recognized library function patterns (strcpy, strcmp, pthread operations) and flag suspicious constant-return functions as potential decompilation errors

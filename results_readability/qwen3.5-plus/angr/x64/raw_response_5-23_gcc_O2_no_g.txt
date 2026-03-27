@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`, `iter`) instead of semantic names like `size`, `x`, `y`, `arr`, `dst`, `src` from the original source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Original function names preserved well (`param_macro_constants`, `test_preprocessing_features`), but cluttered with spurious `sub_401xxx` wrapper functions that add no value.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0x400`, `57072`, `4294967295`, `282`) with no explanation; original had named constants like `MAX_SIZE`, `BUFFER_COUNT`, `0xDEF0`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive wrapper functions (`sub_401209`, `sub_401228`, etc.) that just call the real functions; runtime initialization code (`_init`, `deregister_tm_clones`) pollutes output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural flow, but initialization code uses `goto g_403fa0` patterns; loop structures recovered reasonably in `param_asm_clobber`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Over-fragmented with wrapper functions; `sub_401209` just calls `param_macro_constants()` - this is outline artifact, not meaningful decomposition.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom; loop structures in `param_asm_clobber` and `param_asm_multi_insn` are properly linearized as for-loops.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive constant folding loses original logic - `call_macro_constants()` returns `64` directly instead of calling `param_macro_constants(2048)`, obscuring the relationship.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate (`unsigned long long`, `unsigned int`) instead of specific types; original `int`, `size_t`, `char*` degraded to generic equivalents.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: One struct defined (`struct_0`) but unused meaningfully; original had minimal struct usage so limited recovery opportunity.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple implicit casts visible (`(unsigned int)a0`, `(unsigned long long)v1`); pointer arithmetic with generic `char*` types but no critical violations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments recovered; original had extensive documentation explaining preprocessing, macros, assembly semantics, and expected values.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition; macro expansions constant-folded losing the pattern; assembly recovered as C but not identified as such.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`); constant-folded functions should be flagged as optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or expected value documentation; original had comments like "期望: 64" completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented; global variables (`g_403fe8`, `g_40203d`) referenced without explanation of purpose.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping; original had clear section organization (5.2 Preprocessing, 5.3 Assembly) completely lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds; external dependencies declared (`__printf_chk`, `mmap`, `atomic_exchange_add`) but may need stubs.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+3+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+5+7+4)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (5+6+6)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (1+3+4+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+4+7)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.84/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects
+- **Zero comments recovered** - Original had extensive documentation explaining preprocessing behavior, macro semantics, and expected values
+- **Magic numbers without context** - Values like `57072`, `282`, `4294967295` replace named constants (`0xDEF0`, line numbers, `UINT_MAX`)
+- **Spurious wrapper functions** - Functions like `sub_401209`, `sub_401228` add no value, just call the real function
+- **Constant folding loses semantics** - `call_macro_constants()` returns `64` directly instead of showing `param_macro_constants(2048)` call
+- **Generic variable names** - `v0`, `v1`, `a0`, `a1` instead of `size`, `x`, `y`, `arr`, `result`
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Original function names were preserved (`param_macro_constants`, `test_preprocessing_features`, `param_asm_basic`), making core functionality identifiable despite other issues.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of comments is the most severe deficit; original source had extensive documentation explaining preprocessing behavior, macro semantics, assembly intent, and expected values that would guide reverse engineering.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover or infer comments from debug symbols** - When `-g` flag is present, extract and preserve source comments, especially for macro-heavy code where semantics are lost after preprocessing.
+
+2. **Detect and flag constant-folded functions** - When a function body is reduced to a single return value, annotate it with the original call pattern (e.g., `// Optimized: originally returned param_macro_constants(2048)`).
+
+3. **Eliminate trivial wrapper functions** - Detect functions that only call another function with no additional logic and either inline them or mark them as compiler artifacts to reduce noise.

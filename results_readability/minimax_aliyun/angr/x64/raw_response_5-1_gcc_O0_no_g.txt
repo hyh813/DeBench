@@ -1,0 +1,92 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively named with generic patterns like `v0`, `v1`, `v2`, `ptr`, `result`. In `test_cpp_member_func()`, the object `obj` is represented as `v3` on stack, and return values as `v0`, `v1`, `v2` - completely obscuring their semantic roles as `r1`, `r2`, `r3` from the source.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some functions have proper C++ mangled names like `_Z20test_cpp_member_funcv` (matching source), but the majority use generic address-based names like `sub_402020`, `sub_40202d`. The test functions themselves are properly named, but helper/utility functions are not.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers throughout. For example, `*((long long *)(40 + ptr))` uses 40 without explanation (likely stack canary offset). The value `4294967295` (0xFFFFFFFF) appears frequently as return value for error cases. String literals are referenced via external addresses like `&g_405040` without content visibility.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise from compiler artifacts. Many empty stub functions like `sub_4023b5()` (empty body), `sub_4023b9()` just calls `frame_dummy()`. The CRT initialization functions (`_init`, `_start`, `deregister_tm_clones`, etc.) add hundreds of lines of irrelevant code. Register spill code and stack frame setup pollute the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Exception handling in `test_cpp_exception()` is extremely convoluted with `__cxa_throw`, `__cxa_begin_catch`, `__cxa_rethrow`, `__cxa_end_catch` scattered across multiple functions. Virtual function calls use indirect dispatch through vtable (`*((long long *)*((long long *)&arg_0))`) which is hard to follow. Some simple functions have natural flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: C++ standard library functions are decomposed into many small template/utility functions (e.g., `std::unique_ptr` operations split across 20+ functions). This is actually accurate but creates fragmentation. Main test functions are appropriately sized. Some parameter lists are excessive (e.g., `test_cpp_template_func` has 6 unused register parameters).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in some functions. The exception handling code has some non-linear jumps. Overall acceptable but not excellent.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant redundant code blocks observed. Template instantiations are properly separated. Some loop unrolling present but not excessive. Code is reasonably clean.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mix of `unsigned int`, `unsigned long`, `unsigned long long` without clear rationale. The decompiler uses `int` for some return values but `unsigned int` for stack variables. Some type precision issues - `char*` used for object pointers. Const correctness is mostly lost.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct recovery with generic field names: `struct struct_0 { unsigned int field_0; char padding_4[31]; char field_23; }` for SimpleClass. Class layouts are partially recovered but field names are generic. The padding information is preserved which is helpful.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations present. In `call_virtual_func`: `(*((long long *)*((long long *)&arg_0)))(arg_0, arg_1, arg_1, *((long long *)*((long long *)&arg_0)))` - incorrect argument passing. Pointer arithmetic like `v1 * 4 + *(v2)` in array access. Some casts between incompatible types.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only a single header comment "// Angr Decompilation of 5-1_gcc_O0_no_g" present. No explanatory comments for complex logic, no decompilation confidence indicators, no @param/@return documentation. The code is completely devoid of semantic explanation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ idioms are implicitly present (RAII via constructor/destructor pairs, virtual dispatch through vtables) but not explicitly named or documented. The decompiler doesn't identify patterns like "virtual function call", "smart pointer ownership transfer", or "lambda closure".
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: One explicit anomaly flag: `[D] Unsupported jumpkind Ijk_SigTRAP at address 4203269()`. However, many indirect calls that couldn't be resolved are not flagged. Some unusual stack layouts (like the fs:0x28 stack canary) go unmentioned.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. The bounds checking in `Container::get()` (`if (v1 >= 0 && v1 < v2[10])`) is present but not documented as a bounds check. No error handling contracts recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are somewhat clear through direct calls. Virtual dispatch relationships are obscured. Global variable usage is partially visible through `extern` declarations. No documentation of "called by" or "calls" relationships.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (test functions together, STL implementation functions together, class methods together). However, the massive amount of CRT/initialization code is interleaved with business logic. No clear file/namespace separation in output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many `extern` declarations required for undefined symbols. Would require significant patching to compile. Dependencies on standard library symbols are documented but not on which headers needed. The code won't compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `ptr`, `result`) completely obscuring semantic purpose
+- **No comments**: Zero explanatory comments for complex C++ idioms (virtual functions, exceptions, templates)
+- **Exception handling**: Extremely convoluted flow with `__cxa_throw`/`__cxa_begin_catch` scattered across multiple functions
+- **Type safety**: Incorrect argument passing in virtual function call (`call_virtual_func` has wrong parameter order)
+- **Noise**: Hundreds of lines of CRT initialization code mixed with actual test functions
+
+### Best Quality Aspect: Function Decomposition (6/10)
+- C++ template/library functions are appropriately decomposed into small, cohesive units
+- Class methods are properly separated from each other
+- The decomposition accurately reflects the compiled structure
+
+### Most Needs Improvement: Variable Naming Quality (2/10) and Comment Quality (2/10)
+- Generic variable names make it nearly impossible to track data flow
+- Complete absence of comments leaves complex C++ idioms unexplained
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: `v0` used as return value in `test_cpp_member_func()` should be named `r1` based on it being the first result variable
+2. **Add explanatory comments for C++ idioms**: Document virtual function calls, exception handling blocks, lambda closures with their semantic purpose
+3. **Filter CRT/initialization noise**: Separate startup code (`_init`, `_start`, frame_dummy) from application logic to improve signal-to-noise ratio

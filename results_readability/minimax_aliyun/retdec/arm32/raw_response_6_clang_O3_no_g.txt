@@ -1,0 +1,87 @@
+### LEVEL 1: LEXICAL CLARITY
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `str`, `v1`, `v2`, `a1`, `a2` with no semantic meaning. The original parameters `dst` and `src` are completely lost. The variable `str` in `param_strcpy` is uninitialized and used incorrectly as both source and destination.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: The target function `param_strcpy` retains its name, but many helper functions use cryptic addresses (e.g., `function_c68`, `function_c74`). The naming is inconsistent - some match source while others are auto-generated hex identifiers.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Magic number `0x6c6c6548` appears without explanation (it's "Hell" as ASCII bytes). No constants or enums recovered. The literal represents a string literal from the source but is treated as a raw pointer value.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Address comments (e.g., `// 0x10d8`) add clutter. Some redundant casts present. However, no debug instrumentation or obvious compiler artifacts. Moderate noise level.
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control structures (if/else, while) present. Some goto patterns in complex functions. At -O0, control flow should more closely mirror source, but the broken parameter handling obscures the logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized (not monolithic). The `param_strcpy` is simple but broken. Some granularity issues in pthread functions but generally acceptable.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom with some forward jumps. The broken `param_strcpy` has minimal flow to evaluate. Some complex functions have nested loops that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant expressions in complex functions (e.g., repeated calculations in thread functions). Loop unrolling present but not explicitly marked. Manageable but not optimal.
+
+### LEVEL 3: TYPE SYSTEM FIDELITY
+
+**9. Type Precision:** Score: 2/10  
+Justification: Uses `int32_t` (appropriate for ARM64), but `param_strcpy` has zero parameters when it should have two (`char* dst, const char* src`). Many pointers are generic `int32_t*` instead of specific types. Const-correctness lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Some struct definitions exist (e.g., `_IO_FILE`, `struct stat`) but with generic field names (`e0`, `e1`, etc.). The original field semantics are completely lost. No meaningful struct recovery.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Multiple unsafe casts throughout. The `param_strcpy` uses uninitialized `str` variable as both source and destination pointer - fundamentally broken. Many `(int32_t*)` casts without justification. Incorrect pointer arithmetic patterns.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address comments present (e.g., `// 0x10d8`). No useful comments explaining algorithm, purpose, or decompilation confidence. No indication that the code is fundamentally incorrect.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library functions (strcpy, strlen, memcpy, pthread_create) are recognized by name. However, the usage is completely broken in `param_strcpy` - the semantics are not properly recovered.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flagging of suspicious code. The `param_strcpy` function has completely wrong parameters (none vs two) and uses uninitialized memory - this is not flagged. No decompilation confidence indicators.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No pre/postconditions recovered. No error handling documentation. The function contract (copy string, return length) is completely lost. No contract information whatsoever.
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls present but incorrectly used. No documentation of caller/callee relationships. The broken `param_strcpy` doesn't even call correctly.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped somewhat logically (string functions together, thread functions together). However, it's a single monolithic file with no logical separation matching the original source sections.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: The code would NOT compile. `param_strcpy` uses uninitialized variable `str` as pointer. Wrong function signature. Multiple type safety issues that would cause compilation errors or undefined behavior.
+
+---
+
+### FINAL SUMMARY
+
+**Overall Readability Score:** 2.9/10
+
+**Critical Defects:**
+- `param_strcpy` has zero parameters when it should have two (`char* dst, const char* src`)
+- Variable `str` is uninitialized and used as both source and destination in strcpy call
+- `call_strcpy` treats literal `0x6c6c6548` ("Hell") as a pointer instead of a string literal
+- No type safety: uses uninitialized memory as pointers leading to undefined behavior
+- Function signature completely wrong - cannot compile or run correctly
+
+**Best Quality Aspect:** Function Decomposition (6/10)  
+- Functions are reasonably sized and not overly fragmented
+
+**Most Needs Improvement:** Type System Fidelity (2.3/10)  
+- Types are fundamentally broken: wrong parameter counts, uninitialized pointers, no const-correctness, generic struct fields
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Parameter Recovery**: Fix parameter detection - `param_strcpy` must have 2 parameters (dst, src), not 0
+2. **Variable Initialization Tracking**: Detect and flag uninitialized variable usage as pointers
+3. **Literal String Recovery**: Recognize ASCII constants like `0x6c6c6548` as string literals ("Hell") and emit proper string initialization code

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `param_1`, `param_2`, `param_3` instead of meaningful names like `size`, `x`, `y`, `arr`, `n`. Local variables are cryptic: `iVar1`, `piVar2`, `uVar1`, `uVar2`, `local_20`, `local_c`. The original source had clear names like `size`, `result`, `counter`, `increment` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `test_preprocessing_features`, `test_asm_features`. External library functions (`mmap`, `mprotect`, `memcpy`, `sysconf`) are correctly identified. Minor扣分 for some internal naming inconsistencies.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x401` (1025 = MAX_SIZE+1), `0x200` (512 = MAX_SIZE/2), `0x40` (64 = BUFFER_COUNT*4), `0xdef0`, `0xdf22` appear without explanation. The original source had clear constants `MAX_SIZE 1024`, `BUFFER_COUNT 16` that are lost. Some literals like page size `0x1e` (30 = _SC_PAGESIZE) are understandable but not documented.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe pollution from compiler-generated atomic operation functions: `__sync_fetch_and_add_4`, `__sync_val_compare_and_swap_4`, `__sync_add_and_fetch_4`, and 30+ similar functions. These are compiler built-ins that were inlined in the original but expanded into 600+ lines of decompiled code. Also includes startup/cleanup functions (`_init`, `_start`, `_fini`, `register_tm_clones`) that add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and matches source well. Loops use proper do-while constructs, conditionals are clear if-else structures. Example: `param_asm_clobber` correctly shows loop iteration. At `-O0` optimization, minimal restructuring is expected and delivered.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Main functions from source are preserved with good boundaries. However, the compiler-generated atomic functions create massive fragmentation - 30+ tiny functions for sync operations. The original had just `__atomic_fetch_add` calls; decompilation expanded these into full implementations.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without confusing jumps. Early returns used appropriately (e.g., `param_asm_clobber` returns 0 if `param_2 < 1`). No excessive forward jumps or goto abuse. Good flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from atomic operation functions - nearly identical implementations for 1-byte, 2-byte, and 4-byte versions of same operations (`__sync_fetch_and_add_1/2/4`). This is compiler artifact, not code the original author wrote.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Parameters correctly use `int` for integers, `undefined4` (essentially int32_t) for return types. Pointers properly typed as `int*`, `void*`, `undefined4*`. `size_t` used for memory sizes (`__len`). Minor generic types like `undefined4` instead of specific `uint32_t`, but functionally accurate.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Original source used minimal composite types - mostly simple arrays like `int arr[]`. These are correctly handled. No complex structs to recover. The decompilation correctly shows array access patterns without needing struct reconstruction.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No obvious unsafe casts. Pointer arithmetic is correct (e.g., `param_1 + -4` for array indexing). Function pointer types in atomic operations are properly typed. No buffer overflow patterns evident. Good type safety overall.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in the entire decompiled output. The original source had extensive comments explaining each test case (PP-L2-01, PP-L2-02, etc.), macro semantics, and assembly purpose. All this context is completely lost. This is the single biggest readability failure.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Compiler atomic operations are correctly identified as `__sync_*` functions. The pattern of atomic fetch-and-add is recognizable. However, no explicit naming of patterns like "atomic compare-and-swap loop" or "memory barrier".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies are flagged. The code presents everything with equal confidence. For example, the indirect call resolution in atomic functions (`*(code *)&SUB_ffff0fc0`) could have been flagged as uncertain. No warnings about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions documented. The original source had clear expectations (e.g., "期望: 64", "期望: 15") that are completely lost. No documentation of what parameters require or what functions guarantee.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - `main` calls `test_preprocessing_features` and `test_asm_features`. External dependencies (`mmap`, `mprotect`, `sysconf`) are identified. However, no documentation of which functions call which or the call graph.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions together, asm functions together. Static functions like `my_func` are properly scoped. However, the atomic operation functions are interleaved with user code, disrupting organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code would not compile as-is. Many undefined types (`undefined4`, `undefined8`, `undefined2`, `undefined`), external function declarations needed, and the `SUB_ffff0fc0` reference is unresolved. Would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- **No comments whatsoever** - original source had extensive documentation explaining each test case and macro semantics
+- **Variable naming is completely generic** - `param_1`, `param_2`, `iVar1`, `piVar2` instead of `size`, `x`, `y`, `arr`, `n`
+- **Massive noise from atomic operation functions** - 30+ compiler-generated functions adding 600+ lines of noise
+- **Magic numbers without explanation** - `0x401`, `0x200`, `0x40`, `0xdef0` appear without context
+- **No contract/precondition documentation** - original expected values ("期望: 64") completely lost
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- At -O0 optimization, the decompiled control flow closely matches the original source. Loops, conditionals, and early returns are all properly structured.
+
+**Most Needs Improvement:** Comment Quality (1/10)  
+- The complete absence of comments is the most severe readability failure. The original source was specifically designed as an educational test file with extensive documentation that is now completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover macro semantics into comments** - When decompiling preprocessor macros that were expanded, add comments showing original macro name and definition (e.g., `// MAX_SIZE = 1024`)
+2. **Infer variable names from usage patterns** - Analyze how parameters are used (e.g., `param_1 > 0x401` suggests `param_1` is a size/buffer parameter)
+3. **Collapse compiler built-in expansions** - Instead of expanding `__sync_fetch_and_add` into full implementations, keep as single call with comment explaining it's a compiler atomic operation

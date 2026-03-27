@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `iVar1`, `puVar2`, `local_818`) instead of semantic names like `arr`, `n`, `local`. Original source had clear names like `large_buf`, `vla`, `global_counter` that are lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names preserved (`double_value`, `local_vars`, `heap_basic`), but some are mangled (`alloca_usage.constprop.0`) and test functions show constant folding instead of actual calls.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`0x2a`, `0xf`, `0x14`, `0x32`) instead of decimal values. Original `42`, `15`, `20`, `50` converted to hex without explanation, obscuring intent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack canary checks (`__stack_chk_fail`), frame pointer manipulation (`in_FS_OFFSET + 0x28`), and vector operations in `large_stack_frame` with 16+ `auVar` variables.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops converted to do-while with manual increments instead of for loops. `large_stack_frame` has extremely complex SIMD-like vector operations instead of simple array initialization loop.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: `test_heap_memory` is monolithic (200+ lines) with inline code that should be function calls. Some functions constant-folded entirely (`alloca_usage_constprop_0` just returns `0xf`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `large_stack_frame` has complex nested operations. Some functions use goto labels (`LAB_001015ce`) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling present without explanation (4-element unrolling in `heap_basic`, `vla_stack`). Redundant vector operations in `large_stack_frame` obscure the simple byte-fill logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined8`, `ulong` instead of precise types. Original `int`, `size_t`, `char*` degraded. Function pointers become `undefined8` or `code*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct types completely lost—`Node`, `TreeNode`, `Point` become `undefined4*` with pointer arithmetic (`*(undefined4 **)(__ptr + 2)`). Field names (`data`, `next`, `left`, `right`) unrecoverable.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(int *)`, `(undefined4 *)`, `(void *)`). Pointer arithmetic on void pointers. Function pointer calls lose signature information (`(*global_func_ptr)()` with no parameters shown).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. No algorithm explanations, no decompilation confidence indicators. Only auto-generated function headers with addresses.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Memory allocation patterns (malloc/free pairs) not identified. Linked list traversal in `linked_list_heap` not recognized as such. No pattern naming.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Dangerous code (`dangling_pointer`, `double_free`, `heap_overflow`) not flagged. No warnings about undefined behavior or potential crashes.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `param_1 != NULL`). Null checks present but not documented as contracts. Return value semantics unexplained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships unclear (`set_global_callback` → `call_global_callback`). Global variable usage not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output. Original logical grouping (stack/heap/static/memory-op sections) lost. No header file structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External functions declared (`malloc`, `free`, `printf`), but dependencies not documented. Some functions reference undefined globals (`global_counter`, `DAT_00103004`).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.733
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.19/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Variable `param_1`** should be named based on context (e.g., `n` for array size, `x` for value)
+- **Struct types completely lost** - `Node`, `TreeNode` become `undefined4*` with offset arithmetic
+- **`large_stack_frame`** decompilation is nearly unreadable with 16+ vector variables instead of simple byte array
+- **Zero comments** explaining algorithm intent, safety concerns, or decompilation confidence
+- **Dangerous patterns unflagged** - `dangling_pointer`, `double_free` not marked as undefined behavior
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core function names preserved from source (`double_value`, `local_vars`, `heap_basic`), providing anchor points for understanding
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments makes understanding complex functions like `large_stack_frame` nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types** from consistent memory access patterns (e.g., `*(ptr + 8)` always accessing `next` field should be named)
+2. **Add decompilation confidence annotations** for uncertain reconstructions, especially for optimized code paths and indirect calls
+3. **Simplify vector/SIMD operations** in debug builds (-O0) - the `large_stack_frame` function should show a simple byte-fill loop, not 16+ vector variable manipulations

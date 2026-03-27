@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `ptr`, `flag1`), providing no semantic context about their role in exception handling or RTTI logic.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent demangling of C++ symbols (e.g., `non-virtual thunk to MultiDerived::funcB()`), accurately reflecting class hierarchies and special function types.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4700`, `71212`, and `0x21e98` are used without explanation; floating-point values in `template_max<double>` appear as raw hex integers (`0x40040000`).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from compiler runtime checks (`__stack_chk_fail`) and decompiler artifacts like `armg_calculate_condition`, which obscure the core logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Exception handling in `test_cpp_exception` is decompiled into spaghetti code with `goto` statements and obscure flag checks, completely losing the `try/catch` structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Thunks and virtual function dispatches are correctly identified as separate functions, but high-level test functions (e.g., `test_cpp_constructor`) are reduced to empty stubs due to optimization.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps (e.g., `goto LABEL_10a90`) and non-linear execution paths in exception handling routines make top-to-bottom reading difficult.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: The compiler optimized away logic in main test functions (replacing them with constants), which is accurate for the binary but removes the redundant source logic intended for demonstration.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Class member functions use `void*` for the `this` pointer instead of the specific class type, and floating-point arguments are passed as unsigned integers.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: User-defined classes are not recovered; instead, generic structures like `struct_0` and `struct_1` are used, forcing manual interpretation of pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Code relies on implicit casts from `void*` and raw memory access (e.g., `*(ptr) = 42`), which is typical of decompilation but lacks type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments are provided to explain the complex exception handling or RTTI logic, leaving the user to decipher low-level runtime calls.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: High-level C++ idioms like `try/catch` and `dynamic_cast` are not recognized; the code exposes low-level implementation details like `__cxa_throw` and vtable lookups.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The presence of `armg_calculate_condition` suggests the decompiler struggled with ARM condition codes, but this is not flagged as an anomaly or uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented; the logic of the original test functions is entirely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Despite other issues, the demangled function names provide excellent cross-references, clearly showing inheritance relationships and virtual function overrides.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped by address, which is standard, but the logical grouping of class methods is only implied by their naming, not by explicit structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code relies on internal compiler runtime functions (e.g., `__cxa_allocate_exception`) and would not compile standalone without significant stubbing and headers.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Exception handling logic (`test_cpp_exception`) is decompiled into low-level `__cxa` calls and `goto` spaghetti, completely obscuring the `try/catch` structure.
+- RTTI and `dynamic_cast` operations are reduced to pointer arithmetic and magic numbers, losing the semantic meaning of type checks.
+- Composite types (classes) are not recovered; generic `struct_0` definitions are used instead of `SimpleClass` or `Base`.
+- Floating-point literals appear as raw hex integers (e.g., `0x40040000`), significantly reducing literal clarity.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+- The decompiler accurately demangles complex C++ symbols, including virtual thunks and namespace-scoped functions, which is crucial for navigating the code.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.75/10)  
+- The failure to recognize high-level C++ idioms like exceptions and RTTI results in code that reads like assembly rather than C++, severely impacting understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching for C++ exception handling tables (LSDA) to reconstruct `try/catch` blocks instead of showing raw `__cxa` calls.
+2. Enhance type recovery to reconstruct class hierarchies and apply them to `this` pointers, rather than defaulting to `void*`.
+3. Detect and abstract RTTI patterns (vtable inspection, `type_info` comparisons) into high-level operators like `dynamic_cast` and `typeid`.

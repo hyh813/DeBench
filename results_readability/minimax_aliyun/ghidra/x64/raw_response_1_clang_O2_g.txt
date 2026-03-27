@@ -1,0 +1,123 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**  
+Justification: Variables are almost entirely generic (iVar1, uVar2, param_1, auVar5, auVar6). The decompiler marks many as "Unresolved local var: int temp1@[???]" losing all semantic meaning. Original source had clear names like `temp1`, `temp2`, `temp3`, `sum`, `count`, `i`, `j` - all lost in decompilation.
+
+### 2. Function Naming Quality
+**Score: 6/10**  
+Justification: Core test functions preserve original names (sequential_ops, single_if, if_else, nested_if_2, goto_forward, goto_backward). However, many internal functions have cryptic auto-generated names (FUN_00101020, _init, _start, __do_global_dtors_aux). Mixed result - user-defined functions good, system/utility functions poor.
+
+### 3. Literal Clarity
+**Score: 2/10**  
+Justification: Magic numbers throughout without explanation (0x12, 0x17, 0x1c, 0x3e9). The decompiler uses raw numeric values like `n + 7U >> 3` instead of explaining it's computing loop count for Duff's device. No constants or enum recovery. String literals are just referenced as &DAT_001037e5.
+
+### 4. Noise Reduction
+**Score: 3/10**  
+Justification: Severe noise pollution with extensive "WARNING" comments: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "WARNING: Could not recover jumptable", "WARNING: Subroutine does not return". Auto-generated annotations like "Unresolved local var" clutter every function. Massive undefined1 arrays (auVar5 through auVar39) create unreadable code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 4/10**  
+Justification: At -O0, control flow should closely match source, but goto_backward shows massive loop unrolling (hundreds of lines of SIMD-style operations). loop_continue has extreme unrolling making it unreadable. Some transformations like using mathematical formulas instead of loops (loop_for_fixed) are inappropriate for -O0. The goto_forward correctly avoids goto but the logic is compressed.
+
+### 6. Function Decomposition
+**Score: 5/10**  
+Justification: Functions remain separate which is good. However, goto_backward (200+ lines), recursion_factorial (200+ lines), tail_recursion (200+ lines), and call_func_ptr_array (200+ lines) are bloated due to loop unrolling. At -O0, these should be simple recursive implementations. The decompiler failed to recognize and simplify these patterns.
+
+### 7. Code Linearization
+**Score: 3/10**  
+Justification: Code is largely non-linear due to massive loop unrolling in several functions. Functions like goto_backward, recursion_factorial, and loop_continue are impossible to read linearly - they contain hundreds of lines of repetitive calculations. Forward jumps exist but are manageable in simpler functions.
+
+### 8. Redundancy Elimination
+**Score: 2/10**  
+Justification: Severe redundancy in unrolled functions - the same multiplication patterns repeated dozens of times with slight variations. No attempt to recognize "this is a loop" and collapse back to source-level structure. Dead code warnings suggest some elimination but massive redundancy remains.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**  
+Justification: Basic types preserved (int, char, void*). However, uses generic `int` instead of specific types. Function pointers shown as `_func_int_int *` or `code *` - partially informative but not precise. Parameter types generally correct. No use of stdint types (int32_t, uint64_t).
+
+### 10. Composite Type Recovery
+**Score: 2/10**  
+Justification: Arrays shown as "Unresolved local var: int[5] arr@[???]" and "Unresolved local var: int[3][4] matrix@[???]" - the decompiler knows sizes but not semantics. No struct recovery at all. Instead uses raw pointer arithmetic like `*(int *)(&DAT_00103280 + (long)op * 4)` to access data.
+
+### 11. Type Safety
+**Score: 4/10**  
+Justification: Multiple unsafe pointer operations: `*(int *)(&DAT_00103280 + (long)op * 4)`, `arr[uVar2]` with unsigned index. Extensive use of undefined1 arrays (auVar5, auVar6, etc.) which are essentially type-less. Some casts present but not excessive. No restrict or _Atomic annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 4/10**  
+Justification: Comments are almost entirely auto-generated warnings and annotations. No explanatory comments about algorithm logic. "Unresolved local var" comments don't help understand code. No documentation of what functions do. The decompiler could add "Implements factorial via recursion" but doesn't.
+
+### 13. Idiom Recognition
+**Score: 3/10**  
+Justification: No explicit pattern naming. Duff's device (CF-L2-05) is somewhat recognizable in duffs_device but not named as such. State machines in state_machine/fsm_func_table are recognizable but not identified. The massive loop unrolling should be recognized as optimization artifact but isn't labeled.
+
+### 14. Anomaly Indication
+**Score: 7/10**  
+Justification: Good warning system: "WARNING: Could not recover jumptable at 0x001020e5. Too many branches", "WARNING: Removing unreachable block", "WARNING: Subroutine does not return" for longjmp. These help identify decompiler uncertainty. However, some anomalies like the massive unrolling aren't flagged as "extensive loop unrolling - consider original was simple loop".
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**  
+Justification: No precondition/postcondition recovery. No documentation of "requires: n >= 0" or "ensures: return > 0". No invariant detection. The decompiler doesn't add any contract or assertion information that would help understand function requirements.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**  
+Justification: Function calls are visible in the code (e.g., call_func_ptr calls (*f)(x)). But there's no documentation of "Called by: main, test_control_flow_l1" or "Calls: double_value, triple_value". The call graph relationships are not explicitly documented.
+
+### 17. Module Organization
+**Score: 3/10**  
+Justification: Single monolithic decompiled output with all 72 functions in one listing. No logical grouping (e.g., "Control Flow Level 1 functions", "Helper functions"). No separation between test code and implementation. Source had clear section comments (CF-L1-01, CF-L2-01, etc.) which are completely lost.
+
+### 18. Build System Compatibility
+**Score: 2/10**  
+Justification: Code would not compile. Uses undefined types: undefined1, undefined4, undefined8. References undefined functions: __gmon_start__, __libc_start_main. References undefined data: _DAT_00103140, completed_0. No headers or dependencies documented. Requires significant patching to even attempt compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+6+2+3)/4 = 3.25
+L2_avg = (4+5+3+2)/4 = 3.50
+L3_avg = (5+2+4)/3 = 3.67
+L4_avg = (4+3+7+2)/4 = 4.00
+L5_avg = (4+3+2)/3 = 3.00
+
+Overall = (3.25 × 0.30) + (3.50 × 0.25) + (3.67 × 0.20) + 
+          (4.00 × 0.15) + (3.00 × 0.10)
+Overall = 0.975 + 0.875 + 0.734 + 0.600 + 0.300 = 3.48/10
+```
+
+**Overall Readability Score: 3.48/10**
+
+### Critical Defects (Bullet List)
+- **Variable naming completely generic**: All local variables are iVar1, uVar2, auVar5, etc. with "Unresolved local var" markers - original semantic names (temp1, sum, count, i, j) completely lost
+- **Massive loop unrolling at -O0**: goto_backward, recursion_factorial, tail_recursion, loop_continue have 100-200+ lines of unrolled code when source had simple 5-10 line loops - inappropriate for debug build
+- **No composite type recovery**: Arrays and structs shown as "Unresolved local var: int[5] arr@[???]" instead of actual type information
+- **Severe noise pollution**: Hundreds of "WARNING" comments, undefined1/undefined4/undefined8 types, auVar arrays cluttering every function
+- **No build compatibility**: Uses undefined types (undefined1, undefined4) and undefined symbols (_DAT_00103140) making compilation impossible
+
+### Best Quality Aspect: Anomaly Indication (7/10)
+The decompiler does a reasonable job flagging uncertain decisions with warnings like "Could not recover jumptable", "Subroutine does not return", and "Removing unreachable block". This helps analysts know where to focus manual verification.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+The decompiler should infer variable names from usage patterns. For example, `temp1` used as `a + b` should be named `sum_ab`. Variables used as loop counters should be named `i`, `j`, `n`. The current approach of using generic iVar1/uVar2 makes code nearly impossible to read.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage**: Analyze how variables are used (arithmetic patterns, array indices, loop counters) to suggest semantic names. A variable used in `x / 10` repeatedly is likely a "digit_counter" or "num_digits".
+
+2. **Recognize and collapse loop unrolling**: When detecting repetitive similar instructions (especially at -O0), recognize this as loop unrolling and collapse back to loop structure. The current output makes simple recursive functions unreadable.
+
+3. **Recover composite types**: Instead of "Unresolved local var: int[5] arr@[???]", attempt to recover actual array contents or at least name it based on context (e.g., "int[5] target_array" if used in search context). Use pointer analysis to recover struct field layouts.

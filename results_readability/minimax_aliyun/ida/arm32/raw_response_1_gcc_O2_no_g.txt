@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (a1, a2, a3, v1, v2, v3, result) that convey no semantic meaning. For example, `sequential_ops(int a1, int a2, int a3)` should be `(int a, int b, int c)` to match source. The name "result" is reused across different functions with different meanings.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately match the original source (sequential_ops, single_if, nested_if_2, recursion_factorial). Minor issues: some internal functions like `sub_10454` are not meaningful, but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Test functions contain hardcoded expected values instead of actual function calls (e.g., `_printf_chk(1, "CF-L1-01 (sequential_ops): %d\n", 21)` calls nothing). Magic numbers like 1001, 8, 7 appear without explanation. The literal `71272` in computed_goto is completely opaque.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some register-related comments (r0, r3, cc) appear but don't significantly impede readability. No excessive debug instrumentation present.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (loops, conditionals, switches correctly identified). However, `goto_forward` is simplified to a conditional losing the original goto structure. The `switch_fallthrough` case has incorrect logic - it returns different values than source specifies.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and decomposed. Test functions are somewhat large but cohesive. The decompilation correctly separates distinct functions rather than inlining everything.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are preserved. Some forward jumps exist in complex functions like `duffs_device` but are manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in test functions where array initialization is duplicated (v7/v5 arrays in loop_break tests). Loop unrolling is minimal at -O0. Overall acceptable but could be cleaner.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct (int, unsigned int). However, `if_else` returns `bool` instead of `int`, which changes the API. Function pointer types are sometimes generic. The `op_shl` and `op_shr` use `char` for second parameter incorrectly.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No complex struct recovery visible. Arrays are properly detected (v5 in loop_break, v14 in test functions). The matrix in loop_multi_exit is flattened to 1D array with manual index calculation - functional but loses structure.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Critical bug in `call_func_ptr_array`: `v4[a1 - 4]` is incorrect pointer arithmetic (should be `v4[a1]`). The `computed_goto` uses inline assembly which is dangerous. Some potential buffer issues in array initialization patterns.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only file header comments present. No explanatory comments for complex logic. The "positive sp value has been detected" warning is useful but rare. No documentation of algorithm intent or non-obvious decisions.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Good pattern recognition - switches, loops, recursion, state machines all identified. Duff's device recognized. Function pointers detected. The patterns are named by their structure rather than explicitly labeled.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed functions are clearly marked ("FAILED to decompile"). However, logical errors are not flagged: `switch_fallthrough` has wrong semantics, `call_func_ptr_array` has pointer bug, and test functions don't call actual functions. No warnings about these issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The `duffs_device` has no indication of its unusual control flow semantics. No error condition documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No function call relationships documented. The test functions call other functions but this isn't explicitly shown. Callback relationships (process_with_callback) not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically (control flow L1, L2, L3 test functions together). Static helper functions (op_add, op_sub, etc.) grouped appropriately. Overall organization matches source structure.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code will NOT compile as-is. Test functions have hardcoded values instead of function calls. Missing function declarations for puts, _printf_chk, etc. The call_func_ptr_array bug would cause runtime errors. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- `call_func_ptr_array` has critical pointer arithmetic bug: `v4[a1 - 4]` should be `v4[a1]`
+- `if_else` returns `bool` instead of `int`, breaking API compatibility
+- Test functions use hardcoded values (21, 20, -5) instead of calling actual functions
+- `switch_fallthrough` has incorrect logic - returns wrong values for cases
+- No variable names convey semantic meaning (a1, a2, v1, v2 throughout)
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Core function names accurately reflect source (sequential_ops, recursion_factorial, state_machine)
+
+**Most Needs Improvement:** Build System Compatibility (2/10)  
+- Code cannot compile due to hardcoded test values and missing function calls
+
+**Top 3 Recommendations:**
+1. Fix pointer arithmetic in `call_func_ptr_array` - use `v4[a1]` instead of `v4[a1 - 4]`
+2. Replace hardcoded test values with actual function calls in test_control_flow_* functions
+3. Add semantic variable names by analyzing usage patterns (e.g., a1→a, a2→b in sequential_ops)
+4. Add type annotations to match source (if_else should return int, not bool)
+5. Add comments explaining complex patterns like Duff's device and computed goto

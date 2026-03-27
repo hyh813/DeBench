@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `ptr`, `arg_0`). In `test_cpp_oo_features`, `v1` holds the string "Test" but is not named descriptively, and `v0` through `v12` are used as generic registers/spills without semantic context.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: The decompiler successfully demangles C++ symbols (e.g., `_Z20test_cpp_member_funcv` becomes `test_cpp_member_func`), which is a significant strength. However, many runtime and helper functions are left as generic names like `sub_400854` or `$a.27`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals like `"Test"` and format strings are recovered, but the logic is obscured by compiler optimizations. For example, `strlen(&v1) + 4700` appears in `test_cpp_oo_features` instead of the original calculation `r1 + r2 + r3`, replacing semantic logic with magic numbers.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is heavily polluted with compiler and decompiler artifacts. The most prominent is the repeated use of `armg_calculate_condition`, which abstracts ARM condition codes but makes the logic unreadable (e.g., `if ((char)armg_calculate_condition(...))`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is heavily disrupted. Virtual function calls are represented as indirect jumps (`goto *((int *)*((int *)arg_0));`), and exception handling relies on complex `goto` chains and labels (`LABEL_400c76`) rather than structured `try/catch` blocks.
+
+**6. Function Decomposition:** Score: 3/10
+Justification: Many functions are reduced to empty stubs (e.g., `test_cpp_constructor`, `test_cpp_virtual_func` simply `return;`) because their logic was inlined into `test_cpp_oo_features` by the compiler. The decompiler failed to outline this logic back into the original functions.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code does not read linearly. Functions like `__do_global_dtors_aux` and `test_cpp_exception` contain forward jumps (`goto LABEL_400aac`) and conditional jumps that break the top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While the compiler eliminated redundancy via optimization (inlining), the decompiler presents the result of this (constant folded values) rather than the source logic. It fails to hide the redundancy of checking `if (0)` or `if (!...)` patterns found in `deregister_tm_clones`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are significantly degraded. Pointers are often cast to `unsigned int` (e.g., `unsigned int v0;` used for pointers). Function return types are incorrect; `test_cpp_member_func` is defined as `void` in the decompilation despite the source returning `int`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: C++ class structures are not recovered. `SimpleClass`, `Container`, and `RTTIBase` are missing. Instead, generic structs like `struct struct_0` with fields `padding_0` and `field_4` are used, losing all object-oriented context.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code contains unsafe casts and operations. Pointers are treated as integers for arithmetic, and virtual calls are executed by casting `this` to `int**` and dereferencing (`goto *((int *)*((int *)arg_0));`), which is type-unsafe and hard to follow.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or data structures. The output is purely raw code without any semantic annotation to guide the reader.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms are not recognized. Virtual functions are shown as raw memory indirections, exceptions as `__cxa_throw` calls, and RTTI as `__dynamic_cast` calls, rather than being abstracted into their language-level equivalents.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the code confidently without flagging anomalies. For instance, the fact that `test_cpp_member_func` is a void stub while the source expects a return value is not highlighted as an issue or potential optimization artifact.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. The logic involving `strlen` and magic numbers implies a contract (string length), but it is not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: The use of demangled names for external symbols (e.g., `_ZNSt8ios_base4InitD1Ev`) helps identify dependencies, but the relationships between the class methods and their data are lost due to the lack of struct recovery.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are organized by address, which is standard, but the logical grouping of class methods is absent. The file appears as a flat list of functions rather than a modular representation of the classes.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not compilable. It relies on non-standard helper functions like `armg_calculate_condition` and has incorrect function signatures (void vs int returns), making it impossible to rebuild without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.9/10
+
+**Critical Defects:**
+- **Logic Inlining/Outlining Failure**: Function bodies (e.g., `test_cpp_member_func`) are empty stubs because logic was inlined into `test_cpp_oo_features` and not outlined back.
+- **Type System Collapse**: C++ classes are replaced by generic structs (`struct_0`), and pointers are cast to `unsigned int`, destroying the object-oriented model.
+- **Noise Pollution**: The pervasive use of `armg_calculate_condition` obfuscates simple conditional logic, making the code difficult to read.
+- **Incorrect Signatures**: Functions that return values in the source (e.g., `int test_cpp_member_func()`) are decompiled as `void`.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 6/10)
+- The decompiler successfully demangles C++ mangled names, allowing the reader to identify the original test functions (e.g., `test_cpp_rtti`, `test_cpp_lambda`) despite the poor code quality.
+
+**Most Needs Improvement:** Semantic Transparency (Score: 1.25/10)
+- The decompiler fails entirely to map the low-level ARM instructions back to high-level C++ concepts (classes, exceptions, virtual calls), leaving the user with raw assembly-like logic in C syntax.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Improve C++ Class Recovery**: Implement analysis to reconstruct class hierarchies, vtables, and member layouts rather than outputting generic structs with padding fields.
+2. **Outlining Logic**: Detect when compiler optimizations have inlined function bodies into callers and attempt to outline them back into their respective functions to match source structure.
+3. **ARM Condition Code Abstraction**: Replace the `armg_calculate_condition` helper macro with actual C-style logical operators (e.g., `&&`, `||`, `==`) to improve readability of control flow.

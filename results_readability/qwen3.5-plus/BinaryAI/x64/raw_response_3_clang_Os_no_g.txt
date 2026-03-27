@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `lVar2`, `cVar2` through `cVar18` in `large_stack_frame`). No semantic meaning is recovered—`local_818`, `local_804`, `local_418` provide zero insight into purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`local_vars`, `heap_basic`, `double_value`, `main`). However, some helpers use generic names (`FUN_00101020`) and `stack_alias` loses its parameters entirely.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0x3c` (60) appear without decimal equivalents or comments. Some are inferable from context but many require manual calculation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive variable declarations (`cVar2` through `cVar18` for a simple loop), redundant casts (`(undefined4 *)`, `(long)`), and verbose stack variable naming (`acStack_808`, `acStack_814`) clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Original `for` loops converted to awkward `do-while` constructs with manual index management. `large_stack_frame` uses 16 parallel character variables instead of a simple array loop—unrecognizable optimization artifact.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but `stack_alias` loses all parameters and returns constant `0x14`. `create_tree_node` has wrong return type (`void` vs `TreeNode*`). Some functions like `test_stack_memory` are overly monolithic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `linked_list_heap` has confusing label `LAB_001016ba` and complex branching. `test_heap_memory` has nested fork/wait logic that's hard to follow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `large_stack_frame` unrolls 16 characters into separate variables with parallel increment logic—extremely verbose. Loop bodies repeat similar patterns without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: `int` becomes `undefined4`, `size_t` becomes `ulong`, pointers become `void*`. Signed/unsigned distinctions lost (`uint param_1` vs `int param_1`). Return types often wrong (`undefined8` for `int` functions).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `Point` struct completely lost—accessed via pointer arithmetic. `Node` struct in `heap_nested` not reconstructed; fields accessed as `*(undefined4 **)(__ptr + 2)`. No struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Pervasive unsafe casts: `(undefined4 *)`, `(long)`, `(undefined8 *)`. Pointer arithmetic on void pointers throughout. `stack_alias` signature changed from `(int*, int*)` to `void` with no parameters.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no parameter documentation, no decompiler confidence indicators. Completely bare code.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Linked list creation/traversal in `linked_list_heap` not identified. Tree operations in `tree_heap_traversal` reduced to constant return `0x3c`. Memory patterns (malloc/free pairs) not annotated.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Dangerous code like `dangling_pointer` (use-after-free) and `double_free` not flagged. `stack_alias` silently loses parameters without warning. No uncertainty indicators for indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `param_1 != NULL` checks not explained). No postcondition inference. Error return values (`0xffffffff`, `0xfffffffe`) not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. `double_value` referenced by `call_global_callback` but no call graph. Global variables (`global_counter`, `file_scope_static`) used without context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order (stack tests, heap tests, static tests, memory ops). External function wrappers grouped at top. No header file or API documentation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External functions declared but with questionable signatures (`printf` missing varargs). Type mismatches may cause compilation warnings. `extern_function` and `extern_global_var` referenced without definitions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (5+6+6)/3   = 5.67 × 0.10 = 0.57
+
+Overall = 1.50 + 1.31 + 0.73 + 0.30 + 0.57 = 4.41/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Variable `cVar2` through `cVar18`** in `large_stack_frame` should be a single loop variable with array indexing
+- **`stack_alias` function** lost all parameters—signature changed from `(int*, int*)` to `void`, destroying semantic meaning
+- **No struct type recovery**—`Point` and `Node` structs accessed via raw pointer arithmetic instead of field names
+- **Zero comments** throughout entire decompilation—no explanation of logic, anomalies, or contracts
+- **Magic hex literals** (`0x2a`, `0x14`, `0x3c`) used without decimal equivalents or named constants
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)**—Most original function names were preserved (`local_vars`, `heap_basic`, `double_value`), making function identification straightforward despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)**—Complete absence of any documentation, explanations, or decompiler confidence indicators makes understanding non-trivial logic extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level loop constructs** from backward jump patterns instead of generating verbose `do-while` with manual index management
+2. **Implement struct/union type recovery** by analyzing consistent field access patterns and generating named struct definitions
+3. **Add semantic annotations** including variable name inference from usage, magic number explanations, and anomaly warnings for dangerous patterns (use-after-free, double-free)

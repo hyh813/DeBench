@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `a0`, `a1`, `v0`, `v1`, `v2`, `ptr`, `i`, `idx`. The parameter `a0` in `process_int` should be `x` based on source. No semantic meaning conveyed whatsoever.**2. Function Naming Quality:** Score: 7/10  
+Justification: Target functions correctly named (process_char, process_int, array_1d_stack, etc.) matching source. However, many helper/thunk functions use generic names like `sub_401020`, `sub_40102c`. Test functions properly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears repeatedly without explanation. Character literals like `97`, `98` shown instead of `'a'`, `'b'`. Some constants inlined in printf without context. Only `0x3fc00000` and `0x3fe0000000000000` hint at float/double representation.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe pollution with `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers throughout. AddV/MulV operations for floating point exposed. Dead code and unused variable declarations abundant. The process_ld function is completely unreadable with PutI/GetI artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Original for loops converted to do-while with manual index management. Some goto statements present (e.g., `goto g_404010`). Loop constructs are traceable but read awkwardly. At -O0, this transformation is unnecessary and reduces readability.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good granularity maintained - each small function from source preserved separately. Functions remain cohesive. Some parameter lists expose implementation (e.g., `array_pointer` takes `unsigned long a0` instead of `int (*arr)[10]`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with manageable nesting (3-4 levels). Some forward jumps exist but minimal. The array traversal loops are straightforward despite using do-while instead of for.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some loop unrolling present in test functions but not commented. The `test_array_types` function has significant redundancy with manual array initialization code that could be abstracted. Moderate level of redundant expressions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - uses `unsigned int` where source has `char`, `short`, `int`. Pointers represented as `unsigned long`. No distinction between `int` and `long` on 64-bit. Function pointers typed as `unsigned long long *` instead of proper function signatures.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Partial struct recovery with generic field names (field_0, field_1, field_8). Some padding annotations present. Union types not clearly distinguished from structs. Nested structures flattened to index-based access (e.g., `a0[3]` instead of `r->size.width`). Bitfield handling present but basic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe pointer arithmetic operations (ptr + i * 4). Function pointer type confusion (calling `a0(a1)` where a0 is `unsigned long long *`). Cast-heavy code (many `(unsigned int)` casts). No const correctness preserved.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. No algorithm explanations. No decompilation confidence indicators. The source had extensive comments (DT-L1-01, ARR-L1-01, etc.) completely lost. Only auto-generated variable declarations present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some data structure patterns recognizable (linked list traversal, binary tree recursion) but not explicitly named or documented. No recognition of design patterns like State machine or Strategy. The source's test scenarios (SCENE-ALL, SCENE-DESK) completely lost.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some `[D] unsupported` markers present but unclear what they mean. The process_ld function shows severe decompilation failure but no explanation of why. No indication of confidence levels or manual analysis needed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No explanation of what functions expect (e.g., "requires: n > 0"). Error conditions not documented. The volatile behavior completely unexplained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. No indication of which functions call process_char, test_data_types_l1, etc. The callback relationships (complex_callback, process_int as function pointers) not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped somewhat logically (test functions together, process functions by category). However, it's a single monolithic output. Static functions not distinguished. No header/API separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has extern declarations for some globals (g_403fe0, g_404008). Would require significant patching to compile. No dependency documentation. Some functions have wrong signatures (process_float returns double, not float).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming is completely generic (a0, v0, ptr) with no semantic meaning
+- Severe noise pollution with [D] unsupported markers making code unreadable
+- Type precision severely degraded - all types generic (unsigned int, unsigned long long)
+- No comments or documentation explaining algorithms or intent
+- Composite types lost - structs have generic field_0/field_1 names
+- Function pointer types completely wrong (unsigned long long * instead of proper function pointer)
+- Magic numbers like 4294967295 unexplained
+
+**Best Quality Aspect:** Function Decomposition (7/10)  
+- Each small function from source preserved separately with correct boundaries
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Every variable uses generic names (a0, v0, v1, ptr, i) with zero semantic meaning
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a0` in `process_int` used as `x * 2 + 1` should be named `x`
+2. Eliminate [D] noise markers or move them to separate debug output - these make code unreadable
+3. Recover precise types from debug info (-g flag was used) - should get char, short, int, long correctly
+4. Add struct field names based on access patterns - `a0[1] + a0[2]` in struct_simple should reference x, y, z fields
+5. Recover comments from debug symbols - source had extensive DT-L1-01, ARR-L1-01 style comments

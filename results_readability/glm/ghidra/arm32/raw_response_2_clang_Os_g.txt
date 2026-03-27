@@ -1,0 +1,108 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `uVar1`, `piVar2`, `local_20`), providing no semantic context about their role in the algorithm, unlike the source's descriptive names like `sum`, `len`, or `packet_size`.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are successfully recovered from the symbol table (e.g., `process_char`, `array_1d_stack`, `struct_bitfields`), accurately reflecting the original source's intent and action-oriented naming.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers and hex-encoded literals, such as `0x1a` (26), `0x2c` (44), and `0x3fc00000` (1.5f), which obscure the logic compared to the source's use of character constants and floating-point numbers.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present, including `CONCAT44` and `SUB84` macros (indicating 32-bit analysis of 64-bit code), `undefined4` types, and `WARNING` comments that clutter the output without adding semantic value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Natural `for` loops are frequently converted into `do-while` loops with pointer arithmetic (e.g., `array_1d_stack`), and recursion in `binary_tree_sum` is flattened into a loop, making the control flow harder to follow than the source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are correctly separated and correspond well to the source boundaries; however, the inclusion of large runtime library functions like `__muldf3` and `__adddf3` bloats the output.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While the code generally reads top-to-bottom, the use of inverted logic (e.g., counting down `iVar3` from 0 to -5 in `array_3d`) and pointer arithmetic disrupts the linear flow of the original nested loops.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is little dead code or obvious redundancy; the transformations appear to be compiler mappings rather than redundant decompilation artifacts, though the logic is often expressed more verbosely than necessary.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are frequently degraded to generic `undefined4` or `undefined1`, and specific types like `long double` are handled via raw library calls (`__muldf3`) rather than native operators, losing type precision.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct fields are often accessed via raw pointer offsets (e.g., `piVar2 + -1` in `struct_array`), and bitfields in `struct_bitfields` are completely lost, replaced by manual bit shifting and masking (`uVar1 >> 1 & 3`).
+
+**11. Type Safety:** Score: 5/10
+Justification: The code contains numerous unsafe casts, such as `*(ushort *)f` to access a struct and `*(int *)p` for void pointers, which, while functionally correct, bypass the type safety mechanisms present in the original source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to auto-generated warnings (e.g., "WARNING: Unknown calling convention") and offer no insight into the algorithm's purpose or the logic behind complex pointer arithmetic.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level idioms like string length calculation or array summation are obscured by low-level pointer manipulation and `do-while` loops, failing to recognize the standard patterns used in the source.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: While warnings about calling conventions and unreachable blocks are present, the decompiler fails to flag the severe semantic loss of bitfields or the confusing `CONCAT44` macros as anomalies requiring user attention.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the null check in `array_complex_index` is transformed into a complex series of flag checks (`SBORROW4`) without explaining the boundary condition.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are visible, but the types passed are often generic (`undefined4`), and the relationship between the high-level logic and the low-level soft-float library calls is not clearly contextualized.
+
+**17. Module Organization:** Score: 6/10
+Justification: User functions are grouped, but they are interleaved with a large amount of compiler runtime support code (soft-float implementations), making it difficult to discern the module's logical boundaries.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile due to the use of Ghidra-specific macros (`CONCAT44`, `SUB84`), `undefined` types, and the lack of proper headers for the inlined runtime functions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 3 + 4) / 4 = 4.5
+L2_avg = (5 + 8 + 6 + 8) / 4 = 6.75
+L3_avg = (3 + 3 + 5) / 3 = 3.67
+L4_avg = (2 + 3 + 4 + 2) / 4 = 2.75
+L5_avg = (5 + 6 + 1) / 3 = 4.0
+
+Overall = (4.5 * 0.30) + (6.75 * 0.25) + (3.67 * 0.20) + (2.75 * 0.15) + (4.0 * 0.10)
+Overall = 1.35 + 1.6875 + 0.734 + 0.4125 + 0.4
+Overall = 4.58
+```
+
+### Overall Readability Score: **4.6/10**
+
+### Critical Defects
+- **Bitfield Structure Lost**: The `Flags` struct bitfields are completely decompiled into raw bitwise operations (`uVar1 >> 1 & 3`), destroying the semantic meaning of the fields.
+- **Floating Point Obfuscation**: Float operations are represented as calls to soft-float library routines (`__mulsf3`) with hex-encoded constants (`0x3fc00000`), making the math unreadable.
+- **Analysis Spec Mismatch**: The presence of `CONCAT44` and `SUB84` macros indicates the binary was analyzed with a 32-bit spec despite being ARM64, resulting in fractured 64-bit variable handling.
+- **Loop Structure Transformation**: Natural `for` loops are consistently converted into `do-while` loops with pointer arithmetic and inverted counters, obscuring the iteration logic.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: The decompiler successfully preserved the original function names from the symbol table, allowing the user to easily identify the purpose of each routine despite the poor internal code quality.
+
+### Most Needs Improvement
+- **Build System Compatibility (1/10)**: The output is heavily polluted with Ghidra-internal macros and undefined types, rendering the code non-compilable and requiring significant cleanup before it can be used or verified.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Correct Architecture Analysis**: Ensure the analysis specification matches the binary architecture (ARM64) to eliminate `CONCAT44` macros and correctly handle 64-bit registers/variables.
+2. **Recover Bitfield Types**: Implement logic to detect and reconstruct bitfield structures from masking/shifting patterns rather than outputting raw bitwise operations.
+3. **Preserve Loop Idioms**: Improve pattern matching to recover standard `for` loops and array indexing (`arr[i]`) instead of defaulting to `do-while` loops with pointer arithmetic.

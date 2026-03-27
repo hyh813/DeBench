@@ -1,0 +1,101 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Function parameters retain original names (`x`, `c`, `arr`, `n`), but local variables use generic patterns like `iVar1`, `uVar2`, `x_local`, `p_local` that obscure semantic meaning (e.g., `sum` is preserved but temporaries are not).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User function names perfectly preserved (`double_value`, `process_char`, `struct_nested`), but compiler runtime helpers use generic names (`FUN_00012434`, `FUN_00012614`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Character literals preserved (`'A'`, `'b'`, `' '`), but magic numbers like `0x3fc00000`, `0x3f000000` in float operations lack explanation; hex constants in test setup (`0x14`, `0x1e`) obscure decimal values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts: unnecessary `_local` variable copies for every parameter, repeated "WARNING: Removing unreachable block" annotations, verbose floating-point helper calls (`__mulsf3`, `__aeabi_ddiv`), and stack canary checks (`__stack_chk_fail`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop constructs well-recovered (for/while patterns intact), switch statements for enums preserved correctly, but floating-point helper functions have extremely complex branching that obscures original simple operations.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match original source accurately, appropriate granularity maintained, but floating-point operations expanded into multiple large helper functions that could be abstracted.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns, but floating-point helpers contain deep nested conditionals and forward jumps that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Every parameter gets a redundant `_local` copy (e.g., `int x_local;` when `x` is already a parameter), floating-point helpers repeat similar bit-manipulation patterns across multiple functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic integer/pointer types preserved well (`int`, `char*`, `int**`), but floating-point operations degrade to `undefined4`, `ulonglong`, and raw bit operations; function pointer types use typedefs (`_func_int_int *`) which is good.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct definitions recovered with field names (`Point3D`, `Rect`, `Widget`, `Node`), unions and enums preserved, but bitfield structs degrade to byte manipulation (`(*(byte *)f & 1) + (*(byte *)f >> 1 & 3)`) and 2D array access uses raw pointer arithmetic (`*(int *)((int)arr + i * 0x2c)`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout: `(int)uVar2`, `CONCAT44(extraout_s1,uVar1)`, `(void *)size`, explicit pointer-to-int conversions in `ptr_diff`; void pointer handling requires manual type discrimination.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated decompiler headers present (function addresses, processor info); all original source comments explaining test purposes completely lost; no algorithm explanations or API contracts.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns preserved structurally (linked list traversal, tree recursion, switch-on-enum) but not identified or named; no recognition of test harness patterns or data structure idioms.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present ("WARNING: Removing unreachable block", "Unknown calling convention"), but no indication of potential undefined behavior (e.g., `array_oob` intentionally accesses out-of-bounds) or floating-point precision issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented; null checks exist in code but not explained as contracts; no error condition documentation for functions that can fail.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear with proper names, callback relationships preserved (`ptr_func_simple(double_value, 5)`), but global data references use opaque labels (`&DAT_000133b0`) and no call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear roughly in source order, test functions grouped together, but everything in single file with no header separation; runtime initialization functions mixed with user code.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Would compile with proper ARM runtime support, but depends on compiler-specific helpers (`__aeabi_ddiv`, `__mulsf3`, `__addsf3`); type definitions present but would need header file for struct declarations.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+6+5)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type System): (6+7+5)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (3+5+6+2)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (6+5+6)/3   = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────
+Overall Score:                                  5.86/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects
+- **Variable naming degradation**: Every local variable becomes `iVar1`, `uVar2`, `bVar3` pattern losing all semantic meaning (e.g., loop counters, temporary calculations)
+- **Floating-point operations opaque**: Simple operations like `f * 1.5f + 0.5f` expand to 20+ lines of bit manipulation with magic constants (`0x3fc00000`, `0x3f000000`)
+- **Complete comment loss**: All original documentation explaining test purposes, expected values, and scenarios completely absent
+- **Redundant `_local` copies**: Every parameter gets an unnecessary local copy adding visual noise without semantic value
+- **Bitfield struct degradation**: `Flags` struct with named bitfields becomes raw byte manipulation losing field semantics
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - User-defined function names perfectly preserved from source, making it easy to identify purpose of each function
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or error contracts documented despite many functions having implicit requirements (null pointers, valid ranges)
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming**: Analyze variable usage patterns to infer names (e.g., variables used in loop bounds → `count`/`limit`, accumulators → `sum`/`total`)
+2. **Add floating-point operation comments**: Detect compiler runtime calls (`__mulsf3`, `__aeabi_ddiv`) and annotate with original high-level operation (e.g., `// Original: f * 1.5f`)
+3. **Recover source comments from debug info**: When `-g` flag is present, extract and preserve original source comments in decompiled output

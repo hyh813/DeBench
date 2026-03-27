@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 4/10**
+Justification: Variables use generic names like `v0`, `v2`, `v3`, `v4`, `v5`, `a`, `b`, `c`, `d`, `e`, `f`, `x`, `y` that obscure their semantic purpose. For example, in `func_mixed_args`, parameters `v4` and `v5` represent the high/low parts of a double but don't indicate this. Only `result` and `va` are reasonably named.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+Justification: Most function names match the original source exactly: `cdecl_func`, `stdcall_func`, `varargs_func`, `param_by_value_int`, `ret_pointer`, `ret_small_struct`. However, some internal functions like `sub_3F0`, `init_proc` use generic naming. The core test functions are well-preserved.
+
+### 3. Literal Clarity
+**Score: 6/10**
+Justification: Many computed results like `15`, `50`, `6`, `100`, `21`, `42`, `36`, `117`, `136`, `300` are inlined as return values without explanation of their origin. Format strings use obfuscated names like `aCallL206`, `aRetL101D`. Some values like `42` are self-evident, but most magic numbers lack context.
+
+### 4. Noise Reduction
+**Score: 4/10**
+Justification: Significant noise includes: 9 compiler helper functions (`__aeabi_drsub`, `__subdf3`, `__aeabi_dadd`, `__floatunsidf`, etc.), 7 "FAILED to decompile" import symbols, JUMPOUT statements, and decompiler warnings like "positive sp value has been detected" and "local variable allocation has failed". These artifacts severely clutter the output.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+Justification: Control flow is generally natural with clear returns, conditionals, and loops. The varargs functions use appropriate do-while loops. Some functions like `test_calling_conventions` have been reduced to direct printf statements with constants, which is typical of -O3 optimization. Minor awkwardness in `param_double_ptr` with complex null checking.
+
+### 6. Function Decomposition
+**Score: 9/10**
+Justification: Function decomposition closely matches the original source. Each test function (`call_cdecl`, `call_stdcall`, `param_by_value_int`, etc.) remains as a separate function. The granularity is appropriate - no 500-line monoliths. The decompiler correctly separated the wrapper functions from the core logic.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code generally reads top-to-bottom without excessive jumping. The varargs loop structure is clear. Early returns are used appropriately. No goto statements or computed jumps disrupting flow. The code is easy to follow linearly.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+Justification: `func_struct_byval` shows obvious loop unrolling - accessing each of 16 array elements individually instead of using a loop. This is expected at -O3 but makes the code verbose. Otherwise, no significant redundant code. The unrolling could be commented to improve readability.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Types are mostly correct but generic. Uses `int` instead of `int32_t`, `char*` instead of more specific types. Function pointers like `int (*callback)(int)` are properly typed. The `double` handling in `func_mixed_args` is awkward with `HIDWORD`/`LODWORD` macros. Const correctness is partially preserved (`const char *str`).
+
+### 10. Composite Type Recovery
+**Score: 9/10**
+Justification: Excellent struct recovery. `LargeStruct` with `data[16]`, `SmallStruct` with `x, y`, `SmallPoint` with `x, y`, `BigStruct` with `data[16]` are all correctly recovered with field names. The struct return mechanism with hidden pointer (`SmallPoint *__return_ptr retstr`) is properly identified.
+
+### 11. Type Safety
+**Score: 6/10**
+Justification: Several type safety concerns: raw pointer arithmetic in varargs (`*((_DWORD *)v2.__ap - 1)`), extensive use of `LODWORD`/`HIDWORD` for double manipulation, `__PAIR64__` macro usage. However, these are typical decompilation artifacts and not severe runtime safety issues. No obvious buffer overflow patterns.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+Justification: Minimal useful comments. The only comments are decompiler warnings ("positive sp value has been detected", "local variable allocation has failed") and attribution. No explanation of algorithm logic, no @param/@return documentation, no recovery confidence indicators. The code lacks any meaningful documentation.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some idioms are implicitly present but not explicitly named. The varargs pattern (`va_list`, `va_start`, `va_copy`, `va_arg`) is recognizable. The struct return via hidden pointer is present. However, no explicit pattern naming (e.g., "Implements: Strategy pattern") or algorithm identification.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+Justification: Some anomalies are flagged: "positive sp value has been detected, the output may be wrong!", "local variable allocation has failed, the output may be wrong!", and 7 "FAILED to decompile" messages for imports. However, not all potential issues are flagged, and there's no indication of uncertainty for indirect calls or complex control flow.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: No preconditions, postconditions, or invariants are documented. The original source had implicit contracts (e.g., `func_struct_byptr` requires non-null pointer) that aren't recovered. No "requires: ptr != NULL" or "ensures: return is heap-allocated" style documentation.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 7/10**
+Justification: Function call relationships are clear from code structure - `call_cdecl()` calls `cdecl_func()`, `param_func_ptr` uses callback, etc. However, there's no explicit documentation of call graphs, global variable usage, or callback relationships. The relationships are inferable but not stated.
+
+### 17. Module Organization
+**Score: 5/10**
+Justification: All functions are in a single monolithic file with no logical grouping. The original source had clear sections (calling conventions, parameter passing, return values) that aren't reflected. No static function scoping, no namespace structure, no logical ordering beyond address-based sequence.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+Justification: The code is not standalone compilable. Missing `#include <stdio.h>`, `#include <stdarg.h>`, `#include <string.h>`. Undefined references to `puts`, `printf`, `strlen`, `abort`, and various `__imp_*` symbols. Requires significant patching and library linking to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 8 + 6 + 4) / 4 = 5.50
+L2_avg = (7 + 9 + 8 + 6) / 4 = 7.50
+L3_avg = (6 + 9 + 6) / 3 = 7.00
+L4_avg = (4 + 5 + 6 + 3) / 4 = 4.50
+L5_avg = (7 + 5 + 3) / 3 = 5.00
+
+Overall = (5.50 × 0.30) + (7.50 × 0.25) + (7.00 × 0.20) + (4.50 × 0.15) + (5.00 × 0.10)
+        = 1.65 + 1.875 + 1.40 + 0.675 + 0.50
+        = 6.10/10
+```
+
+### Overall Readability Score: 6.1/10
+
+### Critical Defects
+- **Variable naming**: Generic names like `v0`, `v1`, `v2`, `a`, `b`, `c` obscure semantic purpose throughout the code
+- **Noise pollution**: 9 compiler helper functions and 7 failed imports clutter the output significantly
+- **No comments**: Complete absence of explanatory comments for algorithms, parameters, or return values
+- **Not compilable**: Missing headers and undefined symbols prevent standalone compilation
+- **No contract recovery**: Preconditions, postconditions, and invariants are not documented
+
+### Best Quality Aspect: Composite Type Recovery (9/10)
+Struct types like `LargeStruct`, `SmallStruct`, `SmallPoint`, and `BigStruct` are perfectly recovered with accurate field names. The struct return mechanism with hidden pointer is correctly identified.
+
+### Most Needs Improvement: Comment Quality & Presence (4/10)
+The decompiled code has virtually no useful comments - only decompiler warnings. There's no documentation of algorithm logic, function contracts, or decompilation confidence.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Add explanatory comments**: Document algorithm logic, parameter purposes, and return value meanings. Include "@param" and "@return" style documentation where inferable.
+2. **Improve variable naming**: Infer names from usage patterns (e.g., `v4` used as loop counter → `i`, `v7` used for string length → `len`).
+3. **Filter compiler artifacts**: Suppress or separate helper functions like `__aeabi_drsub` that aren't part of the original source code. Provide a clean "user code only" view.

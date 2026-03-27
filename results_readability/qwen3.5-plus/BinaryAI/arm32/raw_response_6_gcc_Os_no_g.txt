@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `local_c`, `uVar1`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `fd`, `shm`, but decompiler lost all semantic naming.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`param_strcpy`, `call_strcpy`, `thread_compute`, `signal_handler`). External library functions correctly identified. This is the decompiler's strongest lexical aspect.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xffffffff` (-1), `0x12` (18), `0x32` (50). String literals preserved ("HelloLib", "/etc/passwd") but numeric constants not converted to named constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail`) appear in most functions adding noise. External function stubs inflate output. Some redundant casts present but not severe.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures preserved (if/else, for loops). However, some functions use awkward patterns like `while ((signal_received == 0 && (iVar2 = iVar2 + -1, iVar2 != 0)))` instead of cleaner loop constructs.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match source well. Thread functions properly separated. However, some functions have incorrect signatures (e.g., `param_strcpy` returns `void` instead of `int`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but stack check calls at function ends disrupt flow. Some functions have early returns that could be cleaner.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Stack canary pattern is repetitive but serves security purpose. Loop structures not excessively unrolled.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined4` used frequently, `size_t` lost, `FILE*` sometimes preserved but often degraded. Original `pthread_t`, `key_t`, `__pid_t` often become generic `int` or `undefined4`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs not recovered - TLS access uses pointer arithmetic (`*(int *)(iVar1 + 8)`). `ThreadData` struct lost, accessed as `param_1[2]`. `stat` struct partially recovered but fields unnamed.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(pthread_mutex_t *)counter_mutex`, `(int *)malloc(4)`, `(char *)((ulonglong)uVar5 >> 0x20)`. Pointer arithmetic on typed pointers throughout thread functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contract documentation. Completely bare code.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`). Thread patterns partially identified. No design pattern naming or algorithm identification.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**14. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`shared_counter`, `atomic_counter`, `signal_received`) used without declaration context. Callback relationships implicit.
+
+**15. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. External functions listed separately at top. No logical grouping by functionality (library vs. syscall vs. thread).
+
+**16. Build System Compatibility:** Score: 7/10  
+Justification: Marked as compilable ("Compilation Result: Yes"). External dependencies listed. However, some function signatures would cause compilation warnings/errors (return type mismatches).
+
+**17. Return Value Recovery:** Score: 4/10  
+Justification: Critical issue - many functions that should return values return `void`: `param_strcpy`, `call_strcpy`, `param_strlen`, `call_memcpy`, `param_printf`. This fundamentally breaks semantic understanding.
+
+**18. Parameter Recovery:** Score: 5/10  
+Justification: Parameter counts often wrong: `param_strcpy` takes 4 parameters in decompiled version vs 2 in source. `call_strcpy` has 3 `undefined4` parameters. Thread functions have extra parameters not in source.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+6+7)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+5)/2     = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+5+7+4+5)/5 = 5.20 × 0.10 = 0.52
+
+Overall = 1.65 + 1.625 + 0.734 + 0.525 + 0.52 = 5.05/10
+```
+
+**Overall Readability Score: 5.1/10**
+
+### Critical Defects
+- **Return type corruption**: `param_strcpy`, `param_strlen`, `param_printf` return `void` instead of `int`, losing critical semantic information
+- **Parameter signature errors**: `param_strcpy` has 4 parameters instead of 2; `call_strcpy` has 3 undefined parameters
+- **Variable naming completely generic**: `param_1`, `iVar1`, `local_c` provide zero semantic information
+- **No struct recovery**: TLS variables accessed via raw pointer arithmetic (`iVar1 + 8`) instead of named fields
+- **Zero comments**: No documentation of algorithm intent, decompilation confidence, or API contracts
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Function names preserved accurately from source, making it possible to identify the purpose of each routine despite other degradation.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation makes understanding non-obvious logic extremely difficult, especially for complex thread synchronization code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover return types from calling conventions** - Analyze how return values are used by callers to infer correct return types instead of defaulting to `void`
+2. **Infer variable names from usage patterns** - Variables used in size calculations should be named `size`/`length`, pointers to buffers should be named `buffer`/`ptr`
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions (e.g., "// DECOMPILE UNCERTAINTY: parameter count inferred from stack usage") to guide manual review

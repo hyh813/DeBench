@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Mixed quality - original parameter names preserved (`dst`, `src`, `buffer`) but many auto-generated names like `iVar1`, `sVar1`, `local_c`, `local_14` obscure purpose. Parameter shadowing with `_local` suffixes (`pathname_local`, `filename_local`) adds noise without value.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Excellent preservation of original function names (`param_strcpy`, `call_strcmp`, `thread_compute`, `signal_handler`). Action-oriented names clearly reflect purpose. Only runtime stubs (`_init`, `_start`, `deregister_tm_clones`) use generic naming.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Extensive magic numbers without explanation: `0x2a` (42), `0x14` (20 bytes), `10` and `0xe` for signal numbers (SIGUSR1/SIGALRM), `2` and `1` for socket constants (AF_INET/SOCK_STREAM). String literals preserved well but numeric constants lose semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary boilerplate repeated in many functions (`local_c = 0; if (local_c != 0) { __stack_chk_fail(...) }`). Redundant parameter copies (`dst_local`, `src_local`) that just mirror inputs. "WARNING: Removing unreachable block" annotations clutter output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as proper `for`/`while` constructs. Fork/exec branching preserved with clear if-else structure. Signal handling polling loops are natural. Some nested conditionals in error handling could be cleaner but remain understandable at -O0.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Excellent granularity matching source - each test function separated (`call_strcpy`, `call_memcpy`). Thread worker functions properly extracted (`thread_compute`, `thread_sum`, `thread_increment`). No monolithic functions or over-fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate control structures. Some while loops with break conditions in pthread join loops. Atomic CAS operations use do-while patterns appropriately. No spaghetti goto chains.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant assignments present (`iVar1 = __pid; pid = __pid;`). Stack canary code duplicated across ~20 functions. Local parameter copies create unnecessary verbosity. No loop unrolling artifacts (appropriate for -O0).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`, `FILE*`, `pthread_t`). Const-correctness lost (`char *src` instead of `const char *src`). Some type degradation (`__pid_t` sometimes becomes `int`). Pointer types generally accurate.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `ThreadData` struct recovered with field names (`start`, `end`, `result`). `sockaddr_in` fields accessible (`sin_family`, `sin_port`). TLS access degraded to `__aeabi_read_tp()` with offset arithmetic instead of clean `__thread` variable access. Some pointer arithmetic: `*(int *)((int)arg + 8)`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(int)buffer + i`, `(pthread_mutex_t *)&counter_mutex`. Thread argument access uses raw pointer arithmetic. Stack canary checks present (positive). No buffer overflow patterns introduced but type confusion possible in thread functions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only structural comments present (`/* Function: param_strcpy @ 000110a8 */`). Warning annotations for unreachable blocks and non-returning subroutines. No semantic documentation explaining algorithm purpose, API contracts, or parameter meanings.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`, `malloc`). pthread patterns preserved (`pthread_create`, `pthread_mutex_lock`). Atomic operations converted to `__sync_*` builtins. No explicit pattern naming or algorithm documentation.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning coverage: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "WARNING: Subroutine does not return". Stack canary failures noted. No false confidence - decompiler indicates uncertainty appropriately.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"). No postcondition inference. Error return values preserved (-1, -2, -3) but not documented. Null checks present but not explained as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and direct. Global variables referenced (`signal_received`, `atomic_counter`, `shared_counter`) but not documented. Thread callback relationships inferable from names. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 119 functions in single output file. Test functions grouped logically. Atomic helper functions at end. No header file separation or namespace structure. Source section organization (6.1, 6.2, 6.3) not preserved.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Uses standard library functions with clear dependencies. pthread usage evident. ARM-specific code (`__aeabi_read_tp()`) requires platform. Would need stubs for internal runtime functions. Generally compilable with appropriate headers.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+4+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.75
+Level 3 (Type):        (6+6+5)/3   = 5.67 × 0.20 = 1.13
+Level 4 (Semantic):    (4+6+7+3)/4 = 5.00 × 0.15 = 0.75
+Level 5 (Contextual):  (6+5+6)/3   = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.85/10
+```
+
+**Overall Readability Score: 5.9/10**
+
+### Critical Defects:
+- **Magic numbers everywhere**: `0x2a`, `0x14`, `10`, `0xe` should be named constants (SUCCESS_CODE, BUFFER_SIZE, SIGUSR1, SIGALRM)
+- **Stack canary boilerplate**: Repeated `local_c = 0; if (local_c != 0) { __stack_chk_fail(...) }` in 20+ functions adds noise
+- **TLS access degraded**: `__thread` variables accessed via `__aeabi_read_tp()` offset arithmetic instead of clean variable names
+- **Const-correctness lost**: `param_strcpy(char *dst, char *src)` should be `const char *src`
+- **Thread argument pointer arithmetic**: `*(int *)((int)arg + 8)` instead of struct field access
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved excellently, making code navigation and understanding straightforward despite other issues.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No precondition/postcondition documentation, making it difficult to understand function requirements and guarantees without referring to source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover named constants from usage patterns** - Detect repeated magic numbers (0x2a=42, signal numbers) and suggest symbolic names based on context
+2. **Eliminate stack canary boilerplate** - Recognize and collapse repeated `__stack_chk_fail` patterns into single function-level annotation
+3. **Preserve TLS variable semantics** - Recognize `__aeabi_read_tp()` + offset patterns as thread-local storage access and recover original `__thread` variable names

@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables consistently use generic names like `iVar1`, `uVar14`, `auVar4` instead of semantic names (`temp1`, `sum`, `count`). Many marked as "Unresolved local var" indicating complete name loss.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved correctly (`sequential_ops`, `single_if`, `nested_if_deep`), but helper functions use generic names (`FUN_00100880`, `FUN_001009fc`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3e9`, `0x65`, `0x12` appear without explanation. Test functions show constant-folded values (`0x15`, `0x14`) instead of actual computations, obscuring original logic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Repeated "Unresolved local var" comments, vector operation artifacts (`NEON_ext`, `auVar4 [16]`), and warnings ("Could not recover jumptable") clutter the output significantly.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Loops transformed to mathematical formulas (`loop_for_fixed`), if-else converted to bit operations (`single_if: x << (0 < x)`), and `loop_continue` vectorized beyond recognition despite -O0 compilation.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved with appropriate granularity. Helper functions (`double_value`, `triple_value`) correctly separated, no inappropriate inlining observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably, but `duffs_device` uses goto labels that disrupt flow, and `loop_break` uses goto for early exit instead of structured return.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy from loop unrolling in `loop_continue`, `goto_backward`, and `recursion_factorial` with repeated vector operations. Test functions show pre-computed constants instead of actual calls.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used instead of `int32_t`, vector types shown as `undefined1 auVar4 [16]`. Function pointers partially recovered as `_func_int_int *` but many casts remain.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays reduced to pointer arithmetic (`(&DAT_0010196c)[lVar1]`), no struct recovery visible. Original `int arr[] = {10, 20, 30, 40, 50}` lost semantic array structure.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present (`(int)((ulong)(n - 1) * (ulong)(n - 2) >> 1)`), function pointer calls marked with warnings, vector operations use undefined types without safety guarantees.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("Unresolved local var", "Could not recover jumptable"). Original source's extensive documentation completely lost, no algorithm explanations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop patterns not recognized (converted to formulas), switch fallthrough semantics lost, Duff's device partially recognized but structure messy. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged with warnings ("Unresolved local var", "Subroutine does not return" for longjmp), but many transformations occur silently without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not identified, no API contract recovery despite clear function purposes in source.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved and global variables referenced (`jump_buffer`, `completed_0`), but no call graph documentation or callback relationship explanations.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file, static functions marked appropriately, but no header file generation or logical module grouping beyond source order.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Contains Ghidra-specific types (`undefined1`, `_func_int_int`), references undefined symbols, would require significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Calculation:**
+```
+L1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+L2 (Structural):  (4+7+6+4)/4 = 5.25 × 0.25 = 1.313
+L3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.933
+L4 (Semantic):    (3+3+6+2)/4 = 3.50 × 0.15 = 0.525
+L5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+----------------------------------------------------
+Total: 4.66 ≈ 4.6/10
+```
+
+**Critical Defects:**
+- Variable `iVar1`, `uVar14` should be named `temp1`, `sum`, `count` based on usage patterns
+- Control flow uses mathematical formulas instead of loop constructs (`loop_for_fixed`, `loop_while`)
+- Vector operations (`NEON_ext`, `auVar4`) appear in functions that had no vectorization in source (-O0)
+- Switch fallthrough semantics completely lost in `switch_fallthrough` function
+- Test functions show constant-folded expected values instead of actual function calls
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)  
+- Core function names preserved accurately matching original source intent
+
+**Most Needs Improvement:** Assertion & Contract Recovery (scored 2/10)  
+- No preconditions, postconditions, or error handling contracts documented despite clear function purposes
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover variable names from usage patterns** - Analyze how variables are used (accumulators, counters, temporaries) to infer semantic names instead of `iVar1`, `uVar1`
+2. **Preserve original control flow structures at -O0** - When debug symbols indicate no optimization, avoid transforming loops to formulas or if-else to bit operations
+3. **Add semantic comments for transformed code** - When control flow must be transformed, add comments explaining the original structure (e.g., "// Original: for loop from 0 to n-1")

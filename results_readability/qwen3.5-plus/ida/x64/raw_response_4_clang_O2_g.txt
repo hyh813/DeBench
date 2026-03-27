@@ -1,0 +1,111 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `v1`, `v2`, `v3`, `v14`, `v15` in varargs functions obscure their purpose; however, parameter names like `count`, `callback`, `selector`, `seed` are preserved in simpler functions.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `func_struct_byval`); only startup helpers use generic names (`sub_1020`, `deregister_tm_clones`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x28`, `0x29`, `238` (shuffle constant) appear without explanation; string literals replaced with opaque references (`aCallL206`, `asc_23AB`).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: SIMD intrinsics (`_mm_add_epi64`, `_mm_load_si128`), stack annotations (`[rsp-8h] [rbp+0h] BYREF`), calling convention markers (`__fastcall`, `__cdecl`).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow; varargs functions show complex manual ABI handling with nested conditionals that obscure the original simple for-loop pattern.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical issue: caller functions constant-folded (`call_cdecl()` returns 15 directly instead of calling `cdecl_func(5, 10)`), losing original call structure and semantics.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally; varargs functions have branching that disrupts flow but remains traceable with effort.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: SIMD vectorization in `func_struct_byval` obscures original simple loop; varargs functions show redundant overflow area management from ABI compliance.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `char*`, `double`); some degradation to `__int64` and `void*`; function pointer types partially recovered (`int (*callback)(int)`).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types well-recovered (`LargeStruct`, `SmallStruct`, `BigStruct`, `LargeData`, `SmallPoint`) with field names preserved (`data[16]`, `x`, `y`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`(_DWORD *)p`, `(__m128i)`); varargs handling necessarily type-unsafe; pointer arithmetic visible in array decay functions.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no explanatory comments; only decompiler warnings present ("positive sp value has been detected", "local variable allocation has failed"); no algorithm documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern visible but implementation obscure; struct passing patterns not explained; no design pattern identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present for problematic decompilation; "FAILED to decompile" for 6 external functions; stack warnings in `ret_small_struct`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation; null checks present in code but not documented as contracts; no error condition explanations.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but many constant-folded; global variables use opaque names (`_gmon_start__`, `_bss_start`); string references unclear (`s`, `aCallL206`).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order similar to source; no file organization visible; static functions not clearly marked as such.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 6 external functions failed to decompile; would need stubs for library functions (`printf`, `strlen`, `puts`); type definitions need manual recovery.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (5+8+5+4)/4 = 5.5
+Level 2 Average: (6+5+7+5)/4 = 5.75
+Level 3 Average: (7+8+6)/3 = 7.0
+Level 4 Average: (3+4+5+2)/4 = 3.5
+Level 5 Average: (5+6+4)/3 = 5.0
+
+Overall = (5.5 × 0.30) + (5.75 × 0.25) + (7.0 × 0.20) + (3.5 × 0.15) + (5.0 × 0.10)
+        = 1.65 + 1.4375 + 1.4 + 0.525 + 0.5
+        = 5.5125 ≈ 5.5/10
+```
+
+**Overall Readability Score: 5.5/10**
+
+### Critical Defects:
+- **Constant folding destroyed call semantics**: `call_cdecl()` returns literal `15` instead of showing `cdecl_func(5, 10)` call
+- **Varargs implementation unreadable**: Complex manual ABI handling with `v1`-`v19` variables obscures simple `va_arg` loop
+- **SIMD intrinsics exposed**: `_mm_add_epi64`, `_mm_load_si128` in `func_struct_byval` hide original simple for-loop
+- **String literals opaque**: References like `aCallL206`, `asc_23AB` instead of actual string content
+- **No contract documentation**: Null checks exist but preconditions never documented
+
+### Best Quality Aspect:
+- **Composite Type Recovery (8/10)** - Struct types (`LargeStruct`, `SmallStruct`, `SmallPoint`) recovered with accurate field names and access patterns preserved
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - Zero documentation of preconditions, postconditions, or error conditions despite null checks being present in code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Disable aggressive constant folding** for test/demo binaries to preserve original call structure and parameter passing semantics
+2. **Recover high-level varargs patterns** from ABI handling code - recognize `va_start`/`va_arg`/`va_end` sequences and emit clean C-style loops
+3. **Add semantic comments** for optimization artifacts (SIMD operations, unrolled loops) explaining the original source pattern they represent

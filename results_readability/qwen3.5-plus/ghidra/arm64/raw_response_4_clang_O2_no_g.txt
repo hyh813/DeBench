@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar2`, `local_8`, `piVar3`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `x`, `y` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Some runtime functions use generic names (`FUN_00100640`, `FUN_001007bc`) but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex constants (`0xf`, `0x32`, `0x2a`) instead of decimal values. String literals replaced with opaque data references (`&DAT_001014d2`) obscuring printf messages.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler warnings present ("WARNING: Removing unreachable block"). Varargs functions contain complex pointer arithmetic (`register0x00000008`, `stack0xffffffffffffffe0`) that obscures logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have clean flow, but varargs handling uses complex nested conditionals with pointer arithmetic instead of clean `va_arg` loops. At O2 optimization, some restructuring is expected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved well; no excessive inlining or fragmentation. Each function maintains reasonable size and single responsibility despite optimization.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Loop structures in varargs functions are complex but follow logical progression.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding eliminated actual function calls (`call_cdecl` returns `0xf` directly). While efficient, this obscures the original computation logic completely.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` types replace specific widths. Return types degraded to `undefined8` in many places. Function pointers become `code *` instead of proper signatures like `int (*)(int)`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - all struct types lost. `func_struct_byval` takes `int *param_1` instead of `LargeStruct`. Field access becomes array indexing (`param_1[0x1e]`) losing all semantic meaning.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout (`(int *)`, `(undefined8 *)`, `(byte *)`). Pointer arithmetic on incorrectly typed pointers. Varargs handling has type-confused operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero semantic comments explaining function purpose. Only compiler warnings present ("WARNING: Subroutine does not return"). Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not recognized (complex pointer arithmetic instead of `va_list`). Struct passing conventions not documented. Calling convention differences invisible.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present for unreachable blocks. However, type mismatches and struct recovery failures not flagged. Varargs complexity unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null checks exist but not documented as preconditions. No postconditions or invariants recovered. Error conditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables appear as `&DAT_xxxxx`. No call graph documentation. Callback relationships not indicated.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order without logical grouping by test category. No header structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies undefined (`__libc_start_main`, `__gmon_start__`). Data references unresolved. Requires substantial modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+8+7+5)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+5+3)/4 = 3.25 × 0.15 = 0.4875
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+
+Overall Score: 4.89/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct` and `SmallStruct` recovered as `int *`, field access becomes `param_1[0x1e]` instead of `s.data[i]`
+- **Zero semantic comments** - Original source had extensive documentation; decompiled code has none
+- **Constant folding obscures logic** - Functions like `call_cdecl` return `0xf` directly instead of showing `cdecl_func(5, 10)` computation
+- **Varargs handling incomprehensible** - Complex pointer arithmetic instead of recognizable `va_list` pattern
+- **String literals opaque** - All printf format strings replaced with `&DAT_xxxxx` references
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source, making it possible to identify test purposes despite other degradation
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct definitions, turning meaningful field access into cryptic array indexing that destroys code understanding
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** - Analyze access patterns to recover struct layouts with field names (e.g., detect `param_1[0]` and `param_1[1]` as `x` and `y` fields)
+2. **Add semantic comment generation** - Infer function purpose from name patterns and add documentation headers explaining test scenarios
+3. **Recognize standard library patterns** - Detect varargs (`va_list`), string operations (`strlen`), and common idioms to produce cleaner, more recognizable code

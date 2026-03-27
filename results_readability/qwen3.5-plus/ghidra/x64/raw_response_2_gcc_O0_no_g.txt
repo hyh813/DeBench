@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `local_10`, `iVar1`, `uVar1`) with zero semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `head` that are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - function names preserved from source (`process_char`, `array_1d_stack`, `struct_simple`, `ptr_single`). Only runtime functions (`FUN_00101020`, `_init`) have generic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers for struct offsets (`0x28`, `0xc`, `0x50`) without explanation. Test values clear (100, 200, 5) but no named constants recovered for struct field offsets.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks present (`in_FS_OFFSET`, `__stack_chk_fail`), many type casts (`undefined4`, `undefined8`, `ulong`). Manageable but adds visual clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as for loops correctly. Some conditionals inverted from source (e.g., `process_char` checks if NOT uppercase first). Switch recovered as if-else chains (`enum_switch`).
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions properly separated with single responsibility. Granularity matches source well - no monolithic functions or over-fragmentation.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Reads top-to-bottom mostly. Some forward references in test functions but no excessive goto usage. Natural flow preserved.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant type casts present. No obvious dead code. O0 compilation means minimal optimization artifacts to clean up.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical errors: `process_ld` returns `void` instead of `long double`, `ptr_func_simple` returns `void` instead of `int`. Many types degraded to `undefined4`, `undefined8`. `volatile` qualifier lost in `volatile_access`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: NO struct types recovered - all accessed via pointer arithmetic. `struct_simple` takes `int *` instead of `Point3D *`. Field access via array indexing (`param_1[0]`, `param_1[1]`). Union/bitfield operations shown as bit shifts.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts (`undefined4 *`, `undefined8 *`). Pointer arithmetic on generic `int*` for struct access. Function pointers degraded to `code *`. No const correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated Ghidra headers. No algorithm explanations. Some WARNING comments for stack checks but no semantic documentation of function purpose.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns identified. Linked list traversal recognizable but not named. No algorithm naming or pattern hints provided.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some WARNING comments for unreachable blocks and stack checks. No flagging of type recovery issues or potentially incorrect decompilation (e.g., `process_ld` returning void).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error condition documentation. Null checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no documentation. No call graph information. Global variable usage not documented. Callback relationships unclear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions in reasonable order matching source. Test functions grouped together. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Compilation issues (undefined types like `EVP_PKEY_CTX`). Missing includes (`<stdio.h>`, `<setjmp.h>`). Requires significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (3+9+5+6)/4 = 5.75  × 0.30 = 1.725
+Level 2 (Structural):     (7+9+8+7)/4 = 7.75  × 0.25 = 1.938
+Level 3 (Type System):    (4+2+3)/3   = 3.00  × 0.20 = 0.600
+Level 4 (Semantic):       (3+4+5+2)/4 = 3.50  × 0.15 = 0.525
+Level 5 (Contextual):     (5+6+4)/3   = 5.00  × 0.10 = 0.500
+---------------------------------------------------------
+Overall Score:                                    5.29/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Struct types completely lost** - `Point3D`, `Rect`, `Widget` all reduced to `int *` with array indexing
+- **Incorrect return types** - `process_ld` returns `void` (should be `long double`), `ptr_func_simple` returns `void` (should be `int`)
+- **All variables generic** - `param_1`, `local_10`, `iVar1` provide no semantic information
+- **Volatile qualifier lost** - `volatile_access` no longer shows volatile semantics
+- **No const correctness** - `const_param` and `ptr_const` lose const annotations
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Original function names preserved almost perfectly, making it easy to identify what each function does
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union types; all composite access reduced to pointer arithmetic losing all field semantics
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct types from consistent memory access patterns** - Detect repeated offset patterns (e.g., +0, +4, +8) and propose struct definitions with field names
+2. **Improve return type inference for floating-point functions** - `process_ld` returning `void` is a critical error that should be caught by analyzing FPU register usage
+3. **Preserve type qualifiers from debug symbols** - When `-g` flag is present, extract `volatile`, `const`, and `restrict` qualifiers from DWARF debug information

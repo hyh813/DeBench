@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## Initial Observations
+
+I notice a significant metadata mismatch: the source describes arm64 with -O0 optimization, but the decompiled binary is x86 with O3-like optimizations (evident from heavy loop unrolling in functions like `loop_continue` and `goto_backward`). This affects my evaluation - the decompiler faced more challenges than the metadata suggests.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar2`, `auVar5`, etc. The original source uses meaningful names like `a`, `b`, `c`, `x`, `n`, `target`, `count`. No semantic meaning can be inferred from decompiled names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most functions retain their original names (sequential_ops, single_if, if_else, loop_for_fixed, etc.). Some utility functions have auto-generated names (FUN_00101020), but the core test functions are correctly named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear throughout without explanation: `0x12` in loop_while (should be 10 for base-10 division), `0x33` (51) in multi_return, `0x65` (101) for loop limits. The original source uses meaningful values like 10 for base-10 division, 1000 for timeout.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Multiple "WARNING" comments about unreachable blocks and unrecovered jumptables. Some functions like `goto_backward` have massive amounts of auto-generated variable declarations (auVar5, auVar6, etc.) that obscure logic. However, no debug instrumentation or asm blocks present.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: While basic control structures are recognizable, many show optimization artifacts. The `loop_continue` function is extremely convoluted with goto-based unrolling. `loop_while` uses unusual condition `0x12 < uVar2` instead of `param_1 != 0`. At O3, some transformation is expected but this exceeds typical patterns.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions remain properly separated matching original source granularity. Each test function (CF-L1-01 through CF-L3-10) is decompiled as a distinct function with appropriate parameter counts. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but some have complex goto patterns. The `loop_continue` function has multiple labels and jumps that disrupt linear reading. `infinite_loop` has redundant condition checks that create confusing flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling is present in `loop_continue` and `goto_backward` but not commented. Some redundant checks in `infinite_loop` (checking *param_1 == 1 multiple times). Dead code warnings indicate some elimination but not fully clean.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most integers are generic `int` or `uint` instead of specific sizes. No `int32_t`, `size_t`, or `uintptr_t` recovered. Function parameters use generic types. The original uses `int` consistently but decompilation could preserve this better.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. Arrays like `int arr[] = {10, 20, 30, 40, 50}` in loop_break are completely lost - decompiled as switch on the target value. Matrix in loop_multi_exit becomes pointer arithmetic with no type info.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate number of unsafe operations. Pointer arithmetic is explicit but not always safe. Function pointer calls use `code *` type which is generic. Some conversions between int/uint could cause issues. No `restrict` or safety annotations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Removing unreachable block", "WARNING: Could not recover jumptable"). No explanation of algorithms, preconditions, or intent. Original source has extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns recognized - switch statements for state machines (state_machine, switch_small), Duff's device partially recognized with labeled case statements. However, no explicit naming of patterns like "state machine", "Duff's device", or "tail recursion".
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present for unrecovered jumptables and unreachable blocks. However, no indication of why certain complex code exists (like the massive unrolled loops). Silent failures on type inference.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source has clear return value expectations (e.g., "期望: 21") that are not recovered. No error condition documentation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are implicit in the code but not documented. The test functions call the target functions, but this relationship isn't explicitly stated. No global variable usage documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - all CF-L1 functions together, CF-L2 functions together, etc. Static helper functions (double_value, triple_value) are placed near their usage. Overall structure matches source organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code uses standard C constructs but has type mismatches (undefined4 vs int). Missing includes (stdio.h, setjmp.h). Some functions have wrong return types (undefined8 vs int). Would require patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- All variables use generic names (param_1, iVar1, uVar2) with no semantic meaning
+- Composite types completely lost - arrays like {10,20,30,40,50} become switch statements
+- Magic numbers throughout (0x12, 0x33, 0x65) without explanation
+- loop_continue function is extremely convoluted with goto-based unrolling
+- No comments explaining algorithms or intent from original source
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Core function names match original source (sequential_ops, single_if, loop_for_fixed, etc.)
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Every variable uses generic auto-generated names making code comprehension extremely difficult
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., loop counter variables, array indices, function parameter roles)
+2. Recover array literals from switch/lookup patterns - the original `int arr[] = {10,20,30,40,50}` became a switch statement
+3. Add algorithm explanation comments for complex patterns like unrolled loops, Duff's device, and state machines
+4. Detect magic numbers and suggest named constants based on context (base-10 division, timeout values, etc.)

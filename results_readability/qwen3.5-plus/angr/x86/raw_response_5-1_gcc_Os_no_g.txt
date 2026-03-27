@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `ptr`, `result`) with no semantic meaning. Original meaningful names like `capture_by_value`, `multiplier`, `instance_count` are completely lost.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Some original names preserved (`test_cpp_exception`, `test_cpp_member_func`) but most are `sub_XXXXXX`. C++ mangled names (`_ZN4Base12virtual_funcEi`) not demangled. Architecture mismatch (ARM64→X86) compounds naming issues.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers scattered (42, 100, 200) without context. Original constant `0x1234` for `getClassID()` lost. Some string literals recovered ("Test", "Base", "Derived") but no named constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts (`__x86.get_pc_thunk.*`, `__stack_chk_fail_local`), redundant struct definitions repeated 40+ times, and many single-line wrapper functions that are pure noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` statements where loops should exist (`goto v1->field_60`), computed jumps for vtable calls, and many functions end with `goto` instead of structured returns.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: Severe fragmentation with 40+ single-line wrapper functions (`sub_40104e`, `sub_40105e`, etc.). Original cohesive test functions split across multiple unrelated functions with poor cohesion.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps disrupt reading flow, computed jumps interrupt linear execution, and stack check failures (`__stack_chk_fail_local`) break normal control flow patterns.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Repeated struct definitions with different offsets (40+ `struct_0` variants), similar wrapper functions repeated many times, and dead code from failed decompilation attempts marked with `[D]`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Most types are generic (`unsigned int`, `void*`), C++ class types partially recovered but incomplete, template types completely lost (`template_max<double>` shows `[D] unsupported`), and const-correctness absent.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs have generic `field_X` names with padding arrays obscuring actual structure (`char padding_0[19718]`). Class hierarchies (Base/Derived, diamond inheritance) not properly represented with vtable layouts lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts present (`(int)v1[4](ptr)`), pointer arithmetic without type checking, vtable calls through raw pointers (`goto *((int *)*((int *)arg_0))`), and no const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments explaining logic. Decompilation failures marked with `[D]` but not explained. No algorithm documentation, API contracts, or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns (RAII, virtual dispatch, smart pointers) not identified. Design patterns completely lost. Template instantiation not recognized (shows `[D] unsupported_<class 'pyvex.expr.GetI'>`).
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some `[D]` markers for failures but inconsistent. No warnings about uncertain decompilation. Architecture mismatch (ARM64→X86) not flagged. Optimization level discrepancy (-O0 vs -Os) unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., null checks), no postconditions inferred, error conditions not documented. Exception handling logic (`test_cpp_exception`) completely obscured.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function relationships unclear, global variable usage not documented (`g_405ff4`, `g_40301a`), virtual dispatch relationships lost, and callback relationships not identified.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions not grouped logically, no namespace structure recovered, related functions scattered (class methods separated from test functions), and 2517 LOC vs 540 LOC original shows poor organization.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Contains compilation errors (`[D]` markers), external dependencies not documented, architecture mismatch prevents compilation, and C++ features (templates, lambdas) not properly recovered for recompilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+3+4+3)/4 = 3.00 × 0.30 = 0.90
+Level 2 (Structural):   (3+2+4+3)/4 = 3.00 × 0.25 = 0.75
+Level 3 (Type System):  (3+2+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):     (1+2+3+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):   (3+3+2)/3   = 2.67 × 0.10 = 0.27
+
+Overall Score: 2.75/10
+```
+
+**Overall Readability Score:** 2.8/10
+
+### Critical Defects:
+- **Architecture mismatch**: Original ARM64 compiled code decompiled as X86, causing fundamental structural errors
+- **Variable names completely generic**: `v0`, `v1`, `ptr` instead of semantic names like `capture_by_value`, `multiplier`
+- **40+ redundant wrapper functions**: Single-line functions like `sub_40104e` that just call another function
+- **C++ features lost**: Templates show `[D] unsupported`, lambdas not recovered, smart pointer semantics lost
+- **Struct definitions polluted**: Generic `field_X` names with massive padding arrays (`padding_0[19718]`)
+
+### Best Quality Aspect: **Literal Clarity (4/10)**
+- Some string literals recovered ("Test", "Base", "Derived") and a few function names preserved, though this is the "least bad" dimension rather than genuinely good.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero meaningful comments explaining any logic, algorithm, or decompilation uncertainty; completely silent on all non-trivial operations.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Fix architecture detection**: Ensure ARM64 binaries are analyzed as ARM64, not misidentified as X86, which causes fundamental structural errors
+2. **Implement C++ semantic recovery**: Add template instantiation recognition, lambda closure recovery, and proper vtable/class hierarchy reconstruction
+3. **Add decompilation confidence annotations**: Mark uncertain regions with `[UNCERTAIN]` tags and explain why certain constructs couldn't be recovered (e.g., "indirect call target unresolved")

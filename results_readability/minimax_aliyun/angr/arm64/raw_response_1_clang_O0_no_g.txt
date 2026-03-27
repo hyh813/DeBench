@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Almost all variables use generic names like `a0`, `a1`, `a2` for parameters and `v0`, `v1`, `v2` for locals. The original had meaningful names like `temp1`, `temp2`, `result`, `count`, `sum`. Only loop iterators `i`, `j` are somewhat descriptive.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions correctly named (`sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, etc.) matching source exactly. However, many internal functions have cryptic address-based names like `sub_400894`, `sub_400970`, and external data references use patterns like `$d.1`, `$d.2`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (unsigned -1) appears frequently without explanation. The array in `loop_break` is reconstructed as `3169126501123975826038943907850` - a completely opaque representation. No constants or enum values recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Moderate noise from decompilation artifacts: bit manipulation for "multiply by 2" as `(v0 * 2 | v0 >> 31) & 4294967294`, unnecessary goto statements in switch implementations, and extraneous casts. Some compiler artifacts present but manageable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops correctly use `for` and `while`, conditionals use `if-else` chains. Switch statements properly identified though some use jump tables (`goto &(&g_400d70)[$d.1[a0]]`). Goto used appropriately in `duffs_device` and `computed_goto`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: All 20+ original functions preserved with appropriate granularity. Functions like `sequential_ops`, `recursion_factorial`, `state_machine` maintain single responsibility. No monolithic functions created.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Minor non-linearity from goto in switch statements and early returns. No severe forward jumps into loop bodies. Depth manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. Loop unrolling not present at -O0. Code is clean without redundant computations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - all functions use `unsigned int` while original uses signed `int`. This causes semantic issues: `if (0 > a0)` becomes nonsensical with unsigned, `-(a0)` produces unexpected results. Parameters should be `int`, not `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays reconstructed as raw memory with pointer arithmetic: `*((int *)((char *)&v2 + 4 * i))` for array access. Original `int arr[] = {10,20,30,40,50}` becomes `int v2 = 3169126501123975826038943907850`. Some structure recovered but loses semantic clarity.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations: pointer arithmetic `*((int *)(a0 + i * 4))`, function pointer casting, unsigned comparison with zero `if (0 > a0)`. No `restrict` or alignment annotations. Some operations risk undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only auto-generated extern declarations like `extern char $d.2;` and occasional "do not return" notes. No explanation of algorithms, magic numbers, or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns identifiable: state machines (`state_machine`, `fsm_func_table`), jump tables (`switch_large`), Duff's device (`duffs_device`). However, no explicit naming or comments identifying these patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The unsigned comparison `if (0 > a0)` should be flagged. The opaque array reconstruction `3169126501123975826038943907850` has no warning. Code presents everything confidently without uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of error handling expectations. Original had no explicit contracts but decompilation could infer things like "requires: n > 0" for factorial.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls present but relationships not documented. No indication of who calls whom or global variable usage. External dependencies shown via `extern` but not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically: test functions together, helper functions like `op_add`, `op_sub` grouped. Static functions properly scoped. But no explicit module/namespace structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has `extern` declarations for external references. Would require linking against libc. Some stubs needed. Not standalone compilable without understanding dependencies.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- All variables use generic names (`a0`, `a1`, `v0`, `v1`) losing original semantic meaning (`temp1`, `result`, `count`)
+- Type precision severely degraded: all `int` converted to `unsigned int`, causing semantic issues like `if (0 > a0)` being always false
+- Arrays reconstructed as opaque magic numbers (`3169126501123975826038943907850`) losing original data
+- No comments explaining algorithms, magic numbers, or non-obvious patterns
+- No anomaly indication for suspicious code patterns (unsigned comparisons, unusual constructs)
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+All original functions preserved with appropriate granularity and single responsibility.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+Generic variable names completely obscure the semantic purpose of each variable, making code comprehension extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a + b` suggests operands, `count++` suggests counter variables, `result` for return values
+2. Preserve signed/unsigned types from instruction analysis - check sign extension operations to determine signedness
+3. Detect array literals and reconstruct with initializer syntax rather than opaque magic numbers

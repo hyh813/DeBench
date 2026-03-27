@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar2`, `local_808`. The original variable `x` becomes `param_1`, and stack buffers like `large_buf` become `local_808`. No semantic meaning is conveyed.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source: `local_vars`, `heap_basic`, `global_var_access`, `memop_memset`. The decompiler correctly recovered the original function names with minor exceptions.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0x800` (2048) appear without explanation. However, some values like array indices and loop bounds are understandable from context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Comments like "WARNING: Removing unreachable block" and "WARNING: Subroutine does not return" are present but minimal. No significant compiler artifacts like register spilling or frame pointer manipulation visible.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops are properly recovered as do-while constructs. The `large_stack_frame` function correctly shows a loop filling `local_808`. At -O0, control flow should be near-original and mostly matches.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. The test functions like `test_stack_memory` correctly aggregate related tests. No over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in error handling paths are present but don't disrupt understanding significantly.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some loop constructs could be more elegant but no severe redundancy that obscures logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined1`, `undefined2` instead of proper types. The original `int` becomes `undefined4`, and `char` becomes `undefined1`. Function pointers use `code*` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The `Point` struct is completely lost - `heap_struct` just computes `param_1 * 3` instead of using struct fields. The `Node` struct is partially recovered with generic field access but no type definition. No struct definitions are reconstructed.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally safe pointer usage. Some unsafe operations like `*(undefined4 *)(param_1 + 1)` in `memop_unaligned_access` but no severe violations that would cause obvious undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Subroutine does not return", "WARNING: Removing unreachable block"). No useful comments explaining algorithm logic, decompilation confidence, or recovered contracts.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic memory operations (malloc/free, memset) are recognized but not explicitly named as patterns. No recognition of linked list traversal, tree operations, or other data structure patterns.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some warnings about unreachable blocks and indirect jumps. However, no flags for suspicious patterns like the dangling pointer in `dangling_pointer()` or the intentional memory leak in `memory_leak()`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant recovery. The safety checks in functions like `if (param_1 == NULL) return -1` are present but not documented as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible and clear. Global variable usage is apparent. However, no documentation of call graphs, callback relationships, or external dependencies.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in some logical order but no explicit grouping or comments indicating source file structure or module organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard C library. External functions like `malloc`, `free`, `memset` are properly declared. Minor type issues may require fixes.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 5 + 7) / 4 = 5.5
+L2_avg = (7 + 8 + 7 + 7) / 4 = 7.25
+L3_avg = (4 + 2 + 7) / 3 = 4.33
+L4_avg = (3 + 4 + 4 + 2) / 4 = 3.25
+L5_avg = (5 + 5 + 7) / 3 = 5.67
+
+Overall = (5.5 × 0.30) + (7.25 × 0.25) + (4.33 × 0.20) + 
+          (3.25 × 0.15) + (5.67 × 0.10)
+Overall = 1.65 + 1.8125 + 0.866 + 0.4875 + 0.567 = 5.38/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use generic names (`param_1`, `iVar1`, `local_808`) losing all semantic meaning from original source
+- **Struct recovery failure**: The `Point` struct is completely lost - `heap_struct` returns `param_1 * 3` instead of accessing struct fields `p->x + p->y`
+- **Type precision**: Heavy use of `undefined4`, `undefined1`, `undefined2` instead of proper C types like `int`, `char`
+- **No comments**: Only auto-generated warnings present; no algorithm explanations or decompilation confidence indicators
+- **No contract recovery**: Preconditions, postconditions, and invariants are not documented despite being present in source
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+Function names are well-preserved from the original source, making it easy to identify which decompiled function corresponds to which source function.
+
+### Most Needs Improvement: Composite Type Recovery (2/10)
+Struct and union types are almost completely lost. The decompiler cannot reconstruct the original `Point` or `Node` struct definitions, forcing analysis to work with raw pointer arithmetic instead of structured access.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When a variable is used as an array index, name it `index` or `i`; when it's used as a size, name it `size` or `count`
+2. **Recover struct definitions**: Analyze memory allocation sizes and field access patterns to reconstruct struct layouts with meaningful field names
+3. **Add semantic comments**: Include decompilation confidence indicators, explain non-obvious transformations, and document recovered preconditions/postconditions

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `a1`, `a2`, `v1`, `v2` throughout (e.g., `sequential_ops(int a1, int a2, int a3)` instead of `a, b, c`). Original source had semantic names like `temp1`, `sum`, `count`, `target` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions retain original names (`sequential_ops`, `recursion_factorial`, `double_value`), but helper functions use generic labels (`sub_1030`, `sub_1040`). Runtime functions keep compiler-generated names (`_x86_get_pc_thunk_bx`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x14u` (stack canary offset) and `1001` (loop limit) appear without explanation. Array sizes (`v2[9]`, `v5[16]`) are numeric rather than named constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: `__readgsdword(0x14u)` stack canary checks, thunk functions (`_x86_get_pc_thunk_*`), and initialization routines (`deregister_tm_clones`). Assembly blocks remain in `sub_1030` and `computed_goto`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as do-while constructs, but `switch_fallthrough` uses goto labels (`LABEL_7`) instead of proper switch semantics. `computed_goto` contains inline assembly breaking structured flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches original source well. Helper functions (`double_value`, `triple_value`) properly separated. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally, but `duffs_device` has complex label jumping (`_L174`, `LABEL_11`) and `switch_fallthrough` uses goto disrupting linear flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minor redundancy in switch statements (assigning `result` before each return). `sequential_ops` elegantly simplified to single expression `2 * (a1 + a2) - a3`. No significant dead code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of generic `int` and `_DWORD *` instead of specific types. `op_or` has type error (`__int64 a1` should be two ints). Some `_BOOL4` usage is appropriate but inconsistent.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Stack arrays represented as `_DWORD v2[9]` without struct definitions. Matrix in `loop_multi_exit` uses raw array indexing. No struct reconstruction attempted (though source had minimal structs).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts for function pointers: `((int (__cdecl *)(int))v3[a1])(a2)`. Pointer arithmetic present but mostly safe. No obvious buffer overflow patterns detected.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments beyond function signatures. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels—all lost in decompilation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. State machines (`state_machine`, `fsm_func_table`) not identified as such. Duff's device structure not recognized despite distinctive pattern. Recursion not labeled.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("FAILED to decompile" for 7 library functions, "positive sp value has been detected"). Inline assembly in `computed_goto` not explained. Inconsistent warning coverage.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had test validation comments (e.g., "输入5,7,3应返回21") completely absent. Error conditions unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear through direct naming. Callback relationships visible through function pointer arrays (`v3[0] = double_value`). No explicit call graph documentation provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without logical grouping. Static functions properly marked. No header file or namespace structure. Test functions mixed with implementation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 7 functions failed to decompile (`__libc_start_main`, `puts`, etc.). External dependencies undocumented. Architecture mismatch (metadata says ARM64, code is x86). Requires stubs to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+6+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+7+6+7)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+5+6)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.37/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Zero semantic comments**: Original source had extensive documentation explaining purpose, test cases, and difficulty—all lost
+- **Generic variable naming**: `a1`, `a2`, `v1`, `v2` throughout instead of semantic names like `sum`, `count`, `target`
+- **Architecture mismatch**: Metadata claims ARM64 but decompiled code is x86 with x86-specific constructs
+- **7 failed decompilations**: Critical library functions (`__libc_start_main`, `puts`, `__longjmp_chk`) not recovered
+- **No contract documentation**: Preconditions, postconditions, and test validation comments completely absent
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core function names preserved accurately (`sequential_ops`, `recursion_factorial`, `loop_for_fixed`) matching original source intent
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments makes understanding algorithm purpose require reverse-engineering from code alone
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop counters should be named `i`, `count`, `index`)
+2. **Recover and preserve source comments** when debug symbols (`-g`) are available, especially test validation documentation
+3. **Add semantic annotations** for recognized patterns (state machines, Duff's device, recursion) with confidence indicators

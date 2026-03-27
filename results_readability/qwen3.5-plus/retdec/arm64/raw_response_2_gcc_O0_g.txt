@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `v1`, `v2`, `v3` throughout (e.g., `int64_t v1; // 0xa18` in `const_param`), making it impossible to infer semantic purpose. Original source had meaningful names like `sum`, `len`, `current`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names were correctly recovered from debug symbols (`process_char`, `array_1d_stack`, `struct_simple`), matching original source. However, some helper functions are named generically (`function_15a0`, `function_1cbc`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear without explanation (e.g., `c == 64 || c < 64` instead of `'A'`), and character literals are converted to integers (`process_char(65)` instead of `'A'`). String literals are stored as hex-encoded globals (`g5 = "=== \xe6\xb5..."`).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive compiler artifacts including stack canary checks (`if (*(int64_t *)g1 != *(int64_t *)g1) { __stack_chk_fail(); }`), unnecessary casts (`(int64_t)process_short(100, 200) & 0xffffffff`), and massive floating-point helper functions (`__addtf3` is 400+ lines of unreadable code).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple for-loops converted to while loops with manual increments (e.g., `array_1d_stack` uses `while (v1 != n)` instead of `for`). The `process_char` function has bizarre conditionals (`c >= 90 == (c != 90) ? c : c + 32`) that obscure the original simple `if` statement.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are correctly identified, but floating-point operations are exploded into massive inline code (`__addtf3`, `__multf3` each 400+ lines) instead of being recognized as library calls. Original 2-line functions become 20+ line decompilations.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Excessive forward references and label-based jumps (`lab_0x26e4:`, `goto lab_0x236c`) disrupt reading flow. The `__addtf3` function has over 30 labeled blocks making it practically impossible to follow linearly.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from optimization artifacts—`array_3d` has nested loops with duplicate accumulation logic, and `pointer_array` repeats the same pointer dereference pattern 4 times with different variable names (`v4`, `v6`, `result`).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All struct pointers degraded to `int32_t *` (e.g., `struct_simple(int32_t * p)` instead of `Point3D *`). Function pointers lose signature information (`ptr_func_simple(int32_t (*f)(int32_t), int32_t x)` is correct, but `struct_func_ptr` returns just `result` without calling the function). Signed/unsigned mixing is inconsistent.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—no struct, union, or enum types recovered. `struct_simple` accesses fields via hardcoded offsets (`*(int32_t *)(v1 + 4) + (int32_t)v2 + *(int32_t *)(v1 + 8)`) instead of `p->x + p->y + p->z`. Bitfields use `__asm_ubfx` intrinsics instead of field access.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: `ptr_void` uses `char *` for `void *` parameter losing type information, `ptr_cast` returns uninitialized `result`, and `const_param` reads from uninitialized `v1` instead of `*p`. Many functions have broken dereferencing (`ptr_single`, `ptr_double`, `ptr_triple` all read uninitialized variables).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated metadata comments present (`// From module: /work/2.c`, `// Address range: 0x894 - 0x8ac`). No semantic comments explaining algorithm intent or non-obvious logic. Original source had extensive documentation that was completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not recognized—linked list traversal in `linked_list` is recoverable but not labeled as such, binary tree recursion in `binary_tree_sum` is present but not identified as tree traversal. Switch statements for enums recovered but not documented as state machines.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about broken logic—`process_float` and `process_double` silently return input unchanged instead of performing calculations. `ptr_single`, `ptr_const`, `volatile_access` all read from uninitialized variables without any decompiler warning about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `array_complex_index` should note bounds checking), no postconditions, and no error condition documentation. The original source's test expectations are completely absent from decompiled code.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible through direct calls, but callback relationships are obscured (`ptr_func_simple` shows function pointer but doesn't indicate it's a callback pattern). Global variable usage (`g5`, `g6`, etc.) is opaque without original string content.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped somewhat logically (data types, arrays, pointers, composites), but all in single file without header separation. Test functions (`test_data_types_l1`, etc.) are present but helper functions like `__addtf3` pollute the namespace.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes necessary headers (`stdio.h`, `stdlib.h`, `stdint.h`) and function prototypes. However, many functions have broken semantics that would produce incorrect results at runtime. Custom typedefs (`int128_t`, `float128_t`) may not be portable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+5+4)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type System): (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.600
+
+Overall Score: 4.21/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Struct types completely lost** - All composite types (`Point3D`, `Rect`, `Widget`, `Node`, etc.) degraded to `int32_t *` with manual offset calculations
+- **Multiple functions have broken semantics** - `process_float`, `process_double`, `ptr_single`, `ptr_double`, `ptr_triple`, `const_param`, `volatile_access` all return incorrect values due to uninitialized variable reads
+- **Floating-point operations exploded** - `__addtf3` and `__multf3` are 400+ lines each of unreadable code instead of recognized library calls
+- **No variable name recovery** - All local variables are `v1`, `v2`, `v3` despite debug symbols being available (`-g` flag)
+- **Control flow obfuscation** - Simple `if` statements converted to complex conditionals (e.g., `process_char` has `c >= 90 == (c != 90)` instead of `c <= 'Z'`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Debug symbols preserved most function names correctly, making it possible to identify function purposes from the source
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct, union, or enum types, forcing all composite data access through raw pointer arithmetic with hardcoded offsets
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct types from debug information** - When `-g` flag is present, use DWARF debug info to reconstruct original struct layouts with field names instead of raw pointer arithmetic
+2. **Add semantic validation for simple functions** - Detect when functions read uninitialized variables (like `ptr_single` reading `v1` without assignment) and flag as potential decompilation errors
+3. **Recognize standard library floating-point helpers** - Identify `__addtf3`, `__multf3` as compiler-generated helpers and replace with readable arithmetic expressions instead of inlining hundreds of lines

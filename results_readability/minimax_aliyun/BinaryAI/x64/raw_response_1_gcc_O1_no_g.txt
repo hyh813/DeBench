@@ -1,0 +1,164 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables use purely generic names like `param_1`, `param_2`, `param_3` for parameters, and `iVar1`, `iVar2`, `iVar3`, `uVar1`, `puVar1` for local variables. The original source used meaningful names like `a`, `b`, `c`, `temp1`, `temp2`, `sum`, `count` - all completely lost. Even array indices like `local_28[6]` provide no semantic meaning about the array's purpose (the original `arr[] = {10, 20, 30, 40, 50}`).
+
+### 2. Function Naming Quality
+**Score: 9/10**
+
+Justification: Nearly all function names are correctly preserved from the source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `recursion_factorial`, `duffs_device`, etc. The decompiler accurately recovered the original function identifiers. Minor deduction for some internal functions like `FUN_00101020` which have no source equivalent.
+
+### 3. Literal Clarity
+**Score: 6/10**
+
+Justification: Most literals in the decompiled functions are clear (e.g., `param_1 * 2`, `param_1 + param_2`). However, test functions contain magic numbers like `0x15` (21), `0x14` (20), `0xfffffffb` (-5) without explanation. The constant `0x3e9` (1001) in `infinite_loop` is unexplained. Some literals like `0x65` (101) in boundary checks could be named.
+
+### 4. Noise Reduction
+**Score: 5/10**
+
+Justification: Significant compiler artifacts present including: stack canary checks (`__stack_chk_fail()` with FS_OFFSET comparisons), redundant variable initializations, type mismatches (e.g., `op_div` returns `undefined[16]` instead of proper struct), and some unnecessary casts. The `in_FS_OFFSET` boilerplate appears in nearly every function. At -O0, some noise is expected, but this exceeds necessary artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Justification: Most control flow is natural and readable. Loops are correctly recovered as `while`/`do-while` constructs. Switch statements are partially recovered - `if_elseif_long` and `switch_large` use proper switch syntax, while `switch_small` and `switch_default` use if-else chains. The `duffs_device` function has complex goto-based control flow that is difficult to follow but represents the original's intentional complexity. At -O0, control flow should closely match source, and it mostly does.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: The decompiled code maintains excellent function granularity matching the source. Each function is appropriately sized (typically 5-30 lines). The 20+ functions from the source are all preserved as separate functions with correct boundaries. Parameter counts match the original. No over-fragmentation or monolith formation observed.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Code generally reads top-to-bottom with minimal disruption. Most functions have straightforward linear flow. The `duffs_device` function has multiple goto labels (`LAB_00101abc`, `switchD_00101aa1_caseD_2`) that disrupt linearity but represent the original's intentional fall-through pattern. Early returns are used appropriately in functions like `single_if` and `if_else`.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+Justification: At -O0, minimal optimization artifacts should exist, and the decompiled code reflects this. No significant dead code, common subexpression duplication, or unnecessary tail duplication observed. Loop unrolling is minimal (appropriate for debug build). Some redundant variable assignments exist but are minor.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 6/10**
+
+Justification: Type precision is mixed. Parameters correctly use `int` for 32-bit values. However, several issues exist: function pointers use generic `code *` instead of proper function signatures (e.g., `int (*)(int)`), some returns use `undefined4`/`undefined8` for uncertain types, and `bool` is used inconsistently (some functions return `bool`, others `int`). The `op_div` function incorrectly returns `undefined[16]` instead of a proper division result struct.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+Justification: Simple arrays are partially recovered (e.g., `int local_28[6]` in `loop_break` correctly sized for 5 elements plus padding). However, field names are completely lost - all arrays use generic `local_XX` naming. No struct recovery is evident; the code uses raw pointer arithmetic instead. The original's `int matrix[3][4]` became untyped stack allocations.
+
+### 11. Type Safety
+**Score: 6/10**
+
+Justification: Several type safety issues present: function pointer calls use generic `code *` type without proper signatures, some pointer arithmetic without bounds checking, and the `op_div` function has severe type confusion (returns undefined 16-byte blob). The `call_func_ptr` returns `void` instead of `int`. However, most basic operations are type-safe. Each unsafe pattern: -1 point.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Justification: No meaningful comments present in the decompiled code. Only the auto-generated header "Decompiled by BinaryAI" with SHA256 hash appears at the top. No explanation of algorithm logic, no identification of non-obvious patterns, no decompilation confidence indicators. The original source had extensive comments explaining each function's purpose and test cases - completely lost.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some patterns are implicitly present but not explicitly identified. The state machine pattern in `state_machine` and `fsm_func_table` is recognizable from the switch/function pointer structure but not named. Duff's device is recovered but not identified as such. The function pointer array pattern in `call_func_ptr_array` and `large_jump_table` is visible but not annotated. No pattern naming or explanation provided.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+
+Justification: No anomaly flags or warnings present. Indirect function calls (e.g., `(*param_1)(param_2)`) are called without any indication of uncertainty. The computed goto in `computed_goto` uses raw addresses (`&DAT_001022bf`) without explanation. No warnings about potential undefined behavior or unusual patterns. The decompiler presents everything as confident output.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The original source had explicit test cases validating behavior (e.g., "输入10应返回20 (正数加倍)"). No error condition documentation. No indication of what values parameters must have or what return values mean. Contracts are completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function calls are syntactically clear (e.g., `recursion_factorial(param_1 + -1)`). However, no documentation exists about which functions call which, the purpose of callback relationships, or the role of static functions. The relationship between `indirect_recursion_a` and `indirect_recursion_b` is visible in the code but not explained. Global variable `jump_buffer` is used without documentation of its purpose.
+
+### 17. Module Organization
+**Score: 6/10**
+
+Justification: All functions are in a single file, which matches the original's single-source structure. Related functions are somewhat grouped (control flow L1, L2, L3 test functions together). Static functions like `double_value`, `triple_value` are properly scoped. However, no logical grouping or section headers exist to organize the 40+ functions.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+
+Justification: The code has several compilation issues: external functions (`puts`, `__printf_chk`, `__stack_chk_fail`) are declared inline but may conflict with standard headers; `op_div` has incorrect signature returning `undefined[16]`; `call_func_ptr` returns `void` instead of `int`; some type mismatches exist. Would require moderate patching to compile cleanly. No dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 6 + 5) / 4 = 5.50
+L2_avg = (7 + 8 + 7 + 8) / 4 = 7.50
+L3_avg = (6 + 5 + 6) / 3 = 5.67
+L4_avg = (2 + 5 + 3 + 2) / 4 = 3.00
+L5_avg = (5 + 6 + 5) / 3 = 5.33
+
+Overall = (5.50 × 0.30) + (7.50 × 0.25) + (5.67 × 0.20) + 
+          (3.00 × 0.15) + (5.33 × 0.10)
+        = 1.65 + 1.875 + 1.134 + 0.45 + 0.533
+        = 5.66/10
+```
+
+**Overall Readability Score:** 5.66/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Variable naming completely generic**: Parameters `param_1/2/3` and locals `iVar1/uVar1/puVar1` lose all semantic meaning from original (`a`, `b`, `temp1`, `sum`, `count`)
+- **No comments whatsoever**: Zero explanation of algorithms, test cases, or non-obvious logic - the original had 200+ lines of documentation
+- **Type precision issues**: Function pointers use generic `code *` instead of proper signatures; `op_div` returns `undefined[16]` instead of proper division result
+- **No anomaly indication**: Indirect calls and computed addresses presented without any uncertainty flags
+- **Missing contracts**: No pre/postconditions or invariants documented; original's test validation comments completely lost
+
+---
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (score: 9/10)**
+- **Why?** The decompiler almost perfectly preserved the original function names (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`, etc.), making it easy to identify each function's purpose.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (score: 2/10)** and **Assertion & Contract Recovery (score: 2/10)** - tied for lowest
+- **Why?** The decompiled code provides zero semantic context - no explanation of what functions do, no test case documentation, no identification of patterns like Duff's device or state machines, and no indication of decompilation uncertainty. This makes analysis significantly harder.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a variable is used as an array index, name it `index` or `i`; when used to accumulate sum, name it `sum` or `total`. The original source had clear patterns that could be detected.
+
+2. **Add semantic comments automatically**: Include basic documentation explaining what each function does, referencing the algorithm pattern if recognizable (e.g., "// State machine pattern detected"). Add test case comments from embedded printf strings.
+
+3. **Improve type precision for function pointers**: Instead of generic `code *`, infer the function signature from call sites and generate proper typed function pointers like `int (*)(int)` or `int (*)(int, int)`.
+
+4. **Flag anomalies and uncertain decompilations**: Add markers like `// UNCLEAR: indirect call target` or `// NOTE: computed jump target` to alert analysts to uncertain areas requiring manual verification.

@@ -1,0 +1,101 @@
+## EVALUATION: C++ Object-Oriented Features Decompilation
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `v3`, `result`, `str`) with no semantic meaning. For example, in `_Z18test_cpp_exceptionv`, variables `v1` through `v16` obscure the exception handling flow completely.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Function names are C++ mangled symbols (e.g., `_Z20test_cpp_member_funcv`) with demangled comments provided. However, the actual identifiers are not human-readable without external demangling tools.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some constants are preserved (71, 22, 85 for optimized functions), but magic numbers like `0x4d06`, `0x4b7e` appear without explanation. String literals are referenced via offset calculations rather than direct values.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_*` calls, `__readgsdword(20)` stack canary checks in every function, and redundant frame pointer manipulation that obscures actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Exception handling uses explicit `goto` labels (`lab_0x1384`, `lab_0x138f`) instead of structured try-catch blocks. Some functions optimized to constants (e.g., `test_cpp_multiple_inheritance` returns 71 directly) lose all original structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original test functions are preserved as separate units, but compiler-generated helpers (`__do_global_ctors_aux`, `frame_dummy`) are mixed with application code. Function granularity is reasonable but organization is poor.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps disrupt reading flow. Exception handling in `_Z18test_cpp_exceptionv` has multiple label targets that require backtracking to understand execution paths.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks (`if (v2 != __readgsdword(20))`) appear in nearly every function. Thunk functions (`__x86_get_pc_thunk_*`) are repeated throughout without consolidation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Almost everything degrades to `int32_t` or `int32_t *`. C++ class types are lost entirely. Template instantiations lose type information (e.g., `Container<int>` becomes raw pointer arithmetic with offset 40).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**: No C++ class structures recovered. `SimpleClass`, `Base`, `Derived`, `MultiDerived` all become raw `int32_t *` pointers. Virtual table layouts are completely opaque.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Extensive unsafe casts throughout: `(int32_t *)v2`, `(char *)&str`, `(float32_t)v3`. Pointer arithmetic on class objects (`*(int32_t *)((int32_t)result + 4)`) replaces safe member access.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Demangled function names provided in comments (e.g., `// Demangled: test_cpp_exception()`), but no explanation of logic, algorithms, or C++ semantics. No documentation of exception handling flow.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized: virtual function calls appear as `*(int32_t *)*a1`, RTTI as `__dynamic_cast` with opaque parameters, smart pointers as raw pointer management with destructor calls.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: **Critical**: Architecture mismatch not flagged (metadata says arm64, code contains `__x86_get_pc_thunk_*` and `__readgsdword`). No warnings about unresolved indirect calls or type erasure.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception safety guarantees lost. Object lifetime management (constructors/destructors) not clearly indicated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but virtual dispatch mechanism opaque. Inheritance relationships not documented (e.g., `DiamondDerived` inheriting from `MiddleA` and `MiddleB` is not apparent from code).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file. No separation between application logic, compiler runtime, and C++ standard library wrappers. Related class methods scattered throughout.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code references undefined globals (`g1`, `g2`, `g3`, `g4`). External dependencies (`__cxa_*`, `_Znwj`, `_ZdlPvj`) declared but not implemented. Will not compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+5+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+6+4+5)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type System): (3+2+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (3+2+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.51/10
+```
+
+### Overall Readability Score: **3.5/10**
+
+### Critical Defects:
+- **Architecture mismatch**: Metadata claims arm64 but decompiled code contains x86-specific instructions (`__readgsdword`, `__x86_get_pc_thunk_*`)
+- **Complete C++ class structure loss**: All classes (`SimpleClass`, `Base`, `Derived`, etc.) reduced to raw `int32_t *` pointers with offset arithmetic
+- **Variable naming completely generic**: `v1` through `v16` in exception handler with no semantic meaning
+- **Exception handling decompiled to goto spaghetti**: Try-catch blocks converted to label jumps (`lab_0x1384`, `lab_0x138f`)
+- **Virtual function mechanism opaque**: Vtable calls appear as `*(int32_t *)*a1` without indicating polymorphic dispatch
+
+### Best Quality Aspect: **Function Decomposition (6/10)**
+- Original test functions preserved as separate units with demangled name comments, maintaining some logical boundaries despite internal degradation.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover any C++ class/struct definitions; all object-oriented features reduced to pointer arithmetic, making the decompiled code fundamentally unable to express the original design intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ ABI-aware type recovery**: Parse Itanium C++ ABI mangling to reconstruct class layouts, vtable structures, and inheritance relationships from symbol information.
+2. **Add architecture validation**: Cross-check metadata architecture against actual instruction patterns and flag mismatches prominently to prevent misleading analysis.
+3. **Recover high-level C++ constructs**: Recognize exception handling tables (`.eh_frame`), RTTI structures, and smart pointer patterns to restore try-catch blocks and RAII semantics instead of raw `__cxa_*` calls.

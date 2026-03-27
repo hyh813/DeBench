@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic auto-generated names like `v0`, `v1`, `a0`, `a1`, `ptr`, `idx`. Original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` - completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Functions named with address-based patterns like `sub_401020`, `sub_40102d`, `param_401210`. Original had semantic names like `param_macro_constants`, `call_asm_basic`, `param_dynamic_code` - completely replaced with mechanical addresses-based names.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some constants recovered correctly (0x400 for MAX_SIZE, 0x200 for 512, 64 for 16*4). However, builtin macros show hardcoded strings like `"src/5-23.c"` without explaining these came from `__FILE__`, and some magic numbers like `30` in `sysconf(30)` remain unexplained (should be `_SC_PAGESIZE`).
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Relatively clean output with minimal compiler artifacts. One anomaly: `goto g_403fa0` in `sub_401020` appears to be a jump table artifact. Otherwise, no significant noise from register spilling or debug instrumentation.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with proper if-else and for loops. The `param_asm_clobber` correctly recovered as a for loop. Minor issue: `sub_401020` has unusual `goto g_403fa0` pattern which appears to be a jump table artifact rather than legitimate code.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized - small wrapper functions (call_* functions) separate from implementation functions (param_* functions). Some parameter exposure issues where implementation details leak (e.g., `param_asm_clobber` takes `unsigned long ptr` instead of `int* arr`).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns used appropriately in functions like `param_dynamic_code` and `param_memory_protection`. No excessive nesting observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy. Dead code is minimal. Loop unrolling present in `call_asm_clobber` but this is expected at -O0 and doesn't significantly obscure logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of generic types like `unsigned long long` where `int` would be more appropriate. Parameters like `unsigned int a0` instead of `int size`. The `param_asm_simd` returns `double` instead of `int` - type confusion. `sysconf(30)` should use named constant `_SC_PAGESIZE`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. The code uses raw pointer arithmetic throughout. For example, `param_asm_clobber` uses `ptr + idx * 4` instead of array subscript. The original had `int *arr` but decompiler couldn't recover this.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. In `param_asm_simd`: `*((void*)addr) = v1` is a void pointer assignment. In `param_dynamic_code`: `v4 = ptr(a0)` treats pointer as function - concerning pattern. However, most pointer operations are reasonably safe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments. Only structural comments like "// Function: main at 0x401100". No explanation of what macros expanded to, no documentation of assembly behavior, no indication of preprocessor conditionals. The original had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns visible but not named. The conditional compilation `#ifdef DEBUG_MODE` is correctly resolved to single branch but not documented. The atomic operations use `atomic_exchange_add` which is correct but no explanation of lock prefix. No explicit pattern naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags. The unusual `goto g_403fa0` pattern is presented as normal code. The indirect function call `v4 = ptr(a0)` in `param_dynamic_code` could be flagged as potentially dangerous but isn't. No indication of decompilation confidence issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Original had no explicit assertions but the decompiler could note preconditions like "requires: page_size > 0" for mmap calls, or "ensures: return is MAP_FAILED or valid pointer". None present.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., `test_preprocessing_features` calls `call_macro_constants`). However, no documentation of call graph, no indication of which functions are internal vs external, no callback relationships documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with arbitrary ordering based on address. Original had logical grouping (preprocessing tests, asm tests). No namespace or static scope recovery. Header declarations not separated from implementations.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: Code compiles successfully (marked "Compilation Result: Yes" in metadata). External dependencies like `__printf_chk`, `mmap`, `munmap`, `mprotect`, `sysconf`, `atomic_exchange_add` are properly declared as extern. Minimal stubs needed.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- All function names replaced with address-based patterns (`sub_401020`) losing original semantic names (`param_macro_constants`)
+- All variable names are generic (`v0`, `a0`, `ptr`) instead of meaningful names (`size`, `arr`, `n`)
+- No struct recovery - all composite types lost to raw pointer arithmetic
+- No comments explaining macro expansions, conditional compilation branches, or assembly behavior
+- Type precision poor - uses `unsigned long long` everywhere instead of specific types like `int`, `size_t`
+
+**Best Quality Aspect:** Build System Compatibility (9/10)  
+The decompiled code compiles successfully with minimal external dependencies needed. Function signatures are mostly correct and extern declarations are appropriate.
+
+**Most Needs Improvement:** Lexical Clarity (4.5/10 average)  
+Variable and function naming is completely mechanical - address-based function names and generic variable names completely obscure the original semantic intent. This is the most impactful degradation for human understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `if (a0 > 0x400)` suggests `a0` is a size threshold; `ptr + idx * 4` suggests `ptr` is an int array)
+2. **Recover function names from symbol table or call sites**: If original symbols available, use them. Otherwise, analyze call patterns (e.g., `param_401210` called with 2048 suggests it's `call_macro_constants`)
+3. **Add semantic comments for preprocessor and assembly**: Document what macros expanded to, which conditional branch was taken, what assembly constraints mean

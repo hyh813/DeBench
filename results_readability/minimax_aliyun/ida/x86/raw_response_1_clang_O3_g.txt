@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic: `v1`, `v2`, `v3`, `v4`, `v5`, `result`, `i`, `j`. The original source used descriptive names like `temp1`, `temp2`, `temp3` in `sequential_ops`, but these became meaningless single letters. Parameter names like `a`, `b`, `c`, `x` are preserved, but intermediate variables lost all semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main test functions are perfectly preserved: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, etc. Some internal helper functions have generic names (`sub_1030`, `sub_1090`) but these are likely runtime support functions, not user code. The function naming largely matches the original source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many magic numbers remain unexplained: `0x65` (101 decimal), `0x32` (50), `0xA` (10), `0xB` (11). The decompiler does compute expressions like `10 * x + 10` for `if_elseif_chain`, but constants like `100` used directly without explanation. The original had clear test expectations in comments; these are lost.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation output with minimal compiler artifacts. Some auto-generated comments present ("positive sp value has been detected") but these are rare. No obvious register spilling, frame pointer manipulation, or debug instrumentation remains in the user code functions.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Heavy optimization artifacts transform loops into mathematical expressions. `loop_for_fixed` becomes `(((unsigned int)(n - 2) * (unsigned __int64)(n - 1)) >> 1) + n - 1` (the sum formula). `loop_continue` shows unrolled loops with goto statements. `goto_backward` has convoluted control flow with computed jumps. At -O3, some restructuring is expected, but loop constructs should still be recognizable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - each function handles a single test case. No excessive inlining or fragmentation observed. The original 961 LOC became 1233 LOC, indicating reasonable function boundaries were preserved.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but some have forward jumps. The `goto_backward` function has complex control flow with multiple labels. Some switch statements create non-linear paths. Generally manageable but not perfectly linear.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or duplicate expressions. Loop unrolling is present (e.g., `loop_continue` with unrolled 4-iteration chunks) but this is an optimization artifact, not redundancy. Code is clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` throughout instead of specific types like `int32_t` or `size_t`. Parameter types are preserved correctly in function signatures (e.g., `int a, int b, int c`). Function pointers have proper signatures (e.g., `int (*f)(int)`). However, no use of fixed-width or semantic types.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Minimal struct/union recovery. The code primarily uses primitive types. Some global arrays like `dword_3700`, `dword_30D8`, `funcs_1B6A` are used but not reconstructed as proper arrays with meaningful names. No struct types recovered from the original code.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No obvious unsafe casts or type-confused operations. Function pointers are properly typed. Pointer arithmetic is minimal and appears safe. The code doesn't exhibit dangerous patterns like buffer-overflow-prone operations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. The decompiler provides function headers and some auto-generated notes ("positive sp value has been detected"), but no explanation of algorithm logic, preconditions, or intent. The original source had extensive comments explaining each test case; these are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: switch statements remain as switches, function pointers are identified as such. However, no explicit naming of patterns like "state machine", "Duff's device", "tail recursion", or "callback pattern". The `duffs_device` function is recognized as a switch with goto labels but not identified by name.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The output correctly notes "FAILED to decompile" for 6 functions (`__libc_start_main`, `printf`, `longjmp`, `_setjmp`, `__cxa_finalize`, `puts`). However, no indication of decompilation confidence or suspicious patterns in successfully decompiled code. The "positive sp value has been detected" warning is present but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had clear test expectations (e.g., "测试验证: 输入5,7,3应返回21 (5+7)*2-3=21") which are completely absent. No contract information recovered whatsoever.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present in the code, but relationships aren't documented. The test functions call the target functions, but there's no comment explaining the call graph. No indication of which functions call `process_with_callback` as a callback pattern.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically: test functions (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) are together, helper functions are grouped. This matches the original source organization reasonably well. Static functions are properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Function signatures are present and look compilable. External dependencies (libc functions) are called but not defined - this is expected for decompiled code. No compiler-specific hacks observed. The code would require linking against libc to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 4 + 8) / 4 = 5.5
+L2_avg = (4 + 8 + 6 + 7) / 4 = 6.25
+L3_avg = (5 + 4 + 8) / 3 = 5.67
+L4_avg = (3 + 5 + 6 + 2) / 4 = 4.0
+L5_avg = (4 + 7 + 7) / 3 = 6.0
+
+Overall = (5.5 × 0.30) + (6.25 × 0.25) + (5.67 × 0.20) + 
+          (4.0 × 0.15) + (6.0 × 0.10)
+        = 1.65 + 1.5625 + 1.134 + 0.6 + 0.6
+        = 5.5465 ≈ 5.5/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects (Bullet List)
+- Variable naming is almost entirely generic (`v1`, `v2`, `v3`, `result`) - original semantic names like `temp1`, `temp2` are lost
+- Loop constructs transformed into mathematical formulas (e.g., `loop_for_fixed` becomes sum formula) making control flow unrecognizable
+- No comments explaining algorithm logic, test expectations, or function intent - original extensive documentation completely lost
+- No preconditions/postcontracts recovered - test expectations like "输入5,7,3应返回21" are absent
+- Composite types not recovered - all struct/array types lost, only primitive `int` used throughout
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (8/10)** - Main function names perfectly preserved from source (`sequential_ops`, `single_if`, `loop_for_fixed`, etc.)
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)** - Nearly all intermediate variables use generic single-letter or v-prefixed names, completely obscuring their semantic purpose
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When a variable is used in arithmetic operations matching `temp1 = a + b; temp2 = temp1 * 2`, infer names like `sum`, `doubled` rather than `v1`, `v2`
+2. **Preserve loop constructs at -O3**: Even when loops are optimized to mathematical formulas, add comments like "// Optimized: sum of 0 to n-1 = n*(n-1)/2" to aid understanding
+3. **Recover comments from debug symbols**: The source was compiled with `-g`, so DWARF debug info may contain variable descriptions and test expectations that could be recovered

@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are generic (`a0`, `v0`, `v1`) rather than semantic (`a`, `temp1`, `sum`). While loop counters like `i` are recovered, most local variables lose their meaning, requiring manual tracking of stack slots.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: User-defined function names like `sequential_ops` and `loop_for_fixed` are preserved perfectly. However, runtime and wrapper functions use generic names like `sub_401030` or `frame_dummy`.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers like `4294967295` (representing `-1`) are used instead of `-1` or named constants. While some constants like `10` and `5` in `switch_small` are clear, their context is lost without the original `case` labels.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant noise is present, including redundant assignments (`v0 = v1;`), Global Offset Table references (`v0 = &_GLOBAL_OFFSET_TABLE_;`), and low-level artifacts like `CONCAT` operations in division logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While loops and simple `if` statements are natural, `switch` statements are decompiled into computed gotos (`goto *`), which is a severe readability regression. `while` loops are sometimes converted to `for` loops, which is acceptable but less faithful.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are mapped 1:1 with the source. There is no inlining or outlining at `-O0`, and the granularity matches the original source perfectly.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom. However, computed gotos in switch statements and the complex `CONCAT` expressions for division interrupt the linear flow significantly.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: Dead stores like `v0 = v1;` appear frequently. Some redundant casts and stack operations persist, likely due to the `-O0` compilation preserving every stack spill.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Signed integers are consistently treated as `unsigned int` (e.g., parameters in `sequential_ops`). This changes the semantic meaning of comparisons and return values, though the logic often remains functionally similar for positive inputs.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Arrays and structs are largely handled via `memcpy` and raw pointer arithmetic (e.g., `loop_break` uses `memcpy` for the array). The structure of the data is lost, treating data as byte blobs.
+
+**11. Type Safety:** Score: 4/10
+Justification: The use of computed gotos (`goto *`) is inherently unsafe and non-standard in C. The `CONCAT` pseudo-operations suggest bit-level manipulation that isn't valid standard C, requiring interpretation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures. The code is presented as-is without any semantic annotation.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Basic loops are recognized, but the decompiler fails to identify the `switch` idiom, replacing it with a jump table dispatch. Duff's device is also not recognized as a specific pattern.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the computed goto and `CONCAT` operations as standard code without flagging them as unusual or difficult-to-reconstruct artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement for `n > 0` in `duffs_device` is not explicitly stated in the decompiled view.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are direct and clear. The relationships between functions (e.g., `test_control_flow_l1` calling `sequential_ops`) are preserved and easy to trace.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source file structure. Helper functions and main test functions are grouped appropriately.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile as-is due to the use of `goto *` (GCC extension, but here used in a way that relies on specific runtime addresses) and the `CONCAT` pseudo-operator which is not valid C.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- **Switch Statement Loss**: `switch` statements are decompiled into unsafe computed gotos (`goto *`), destroying high-level logic.
+- **Signedness Erasure**: `int` types are consistently recovered as `unsigned int`, altering semantic meaning.
+- **Low-Level Arithmetic**: Division operations are expanded into complex `CONCAT` and shift expressions instead of simple `/` operators.
+- **Generic Naming**: Variables use generic names (`a0`, `v0`) instead of semantic names from the source.
+
+**Best Quality Aspect:** Function Decomposition (Score: 9/10)
+- The decompiler perfectly preserved the function boundaries and granularity found in the original source, making it easy to navigate between specific logic units.
+
+**Most Needs Improvement:** Idiom Recognition (Score: 3/10)
+- The failure to recognize and reconstruct `switch` statements from jump tables is the single biggest readability hurdle, turning structured control flow into spaghetti code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Switch Recovery**: Implement pattern matching to identify jump tables and reconstruct `switch-case` structures instead of emitting computed gotos.
+2.  **Signedness Analysis**: Improve type inference to distinguish between `signed` and `unsigned` integers based on comparison operations (e.g., `x < 0` implies signed).
+3.  **Arithmetic Simplification**: Simplify complex division/modulo logic involving `CONCAT` and shifts back into standard C division operators (`/`, `%`) for readability.

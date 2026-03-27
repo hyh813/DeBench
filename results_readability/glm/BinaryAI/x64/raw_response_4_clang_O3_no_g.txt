@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: While parameters are named `param_1`, `param_2` (which is acceptable given the source's generic `a`, `b`), local variables like `iVar2`, `uVar4`, and `local_d8` in `varargs_func` obscure the original semantic intent (`sum`, `i`, `args`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`cdecl_func`, `test_calling_conventions`, `param_by_value_int`) are perfectly recovered from the debug symbols, matching the source exactly.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are replaced with pointers to data sections (e.g., `&DAT_0010238a`), making `printf` statements unreadable. Magic numbers like `0x2a` (decimal 42) are used instead of the original decimal values, though this is a minor stylistic difference.
+
+**4. Noise Reduction:** Score: 9/10
+Justification: The code is very clean with no compiler artifacts like redundant casts or frame pointer manipulation code visible in the decompiled output, which is expected for `-O0`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: The `varargs_func` decompilation is highly unnatural, using `goto` labels (`LAB_00101396`, `LAB_00101340`) and manual stack pointer arithmetic instead of the simple `for` loop and `va_arg` logic present in the source.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions are recovered with perfect granularity matching the source; there is no inlining or outlining that deviates from the original structure.
+
+**7. Code Linearization:** Score: 6/10
+Justification: While most functions read top-to-bottom, `varargs_func` and `param_varargs` contain forward jumps and `goto` statements that disrupt the linear reading flow significantly.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is no obvious dead code, but the logic in `varargs_func` is verbose and repetitive compared to the concise source implementation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: In `func_mixed_args`, the parameter order is incorrect: decompiled as `(double, int, char*, long)` vs source `(int, char*, double, long long)`. This is likely due to ARM64 ABI register mapping (V registers vs X registers) being prioritized over source order.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: `func_struct_byval` completely fails to recover the `LargeStruct` parameter, instead representing it as a list of individual integers (`param_7`, `in_stack_00000010`, etc.) and a `void` return type.
+
+**11. Type Safety:** Score: 5/10
+Justification: The incorrect parameter order in `func_mixed_args` and the exploded struct in `func_struct_byval` make the decompiled signatures unsafe to use for recompilation or calling without manual correction.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code; the rich documentation and section headers from the source are entirely missing.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The `va_list` idiom in `varargs_func` is not recognized; it is decompiled into raw stack walking logic (`local_d0 = (int *)&stack0x00000008`), obscuring the standard variable argument pattern.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the complex stack manipulation in `varargs_func` and the parameter reordering in `func_mixed_args` as standard code without any warnings or flags indicating potential reconstruction issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the null check in `func_struct_byptr` is present but not explicitly highlighted as a contract).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are resolved correctly to their named targets, and the relationship between callers and callees is clear.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are listed in a logical order that roughly follows the source flow, though the lack of section headers (like "4.1 调用约定") makes the grouping less explicit.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile standalone due to the use of undefined data pointers (`&DAT_...`) in place of string literals and the incorrect signatures for struct passing.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable `iVar2` in `varargs_func` should be named `sum` to reflect accumulation logic.
+- Control flow in `varargs_func` uses `goto` and manual stack access instead of a `for` loop with `va_list`.
+- Function `func_mixed_args` has incorrect parameter order (`double` moved to front) due to ARM64 ABI handling.
+- Struct `LargeStruct` in `func_struct_byval` is completely exploded into individual integer parameters.
+- String literals are replaced with opaque pointers (e.g., `&DAT_0010238a`), obscuring output messages.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Debug symbols were perfectly preserved, making the high-level purpose of every function immediately obvious.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.25/10)
+- The decompiler fails to recognize standard idioms (like `va_list`) and provides no comments or warnings about complex reconstructions, leaving the user to decipher raw stack manipulation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve ARM64 parameter recovery to respect source code order rather than register file order for mixed integer/floating-point arguments.
+2. Implement pattern matching for `va_list`/`stdargs` to reconstruct `for` loops and `va_arg` usage instead of emitting raw stack pointer arithmetic.
+3. Enhance composite type recovery to group adjacent stack/registers into structs when the access pattern suggests array/struct member access.

@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score:2/10  
+Justification: All parameters use generic names like `a0`, `a1`, `a2` and local variables use register names `v0`, `v1`, `v2`. The original source uses meaningful names like `size`, `x`, `y`, `counter`, `increment`. No semantic inference from usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions recovered well: `param_macro_constants`, `call_macro_constants`, `param_asm_basic` match source exactly. However, many functions use address-based names like `sub_10438`, `sub_10510`, and helper functions like `__sync_fetch_and_add_4` are not explained.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x400` (1024), `0x200` (512), `0x1234`, `0x5678`, `57072` (0xDEF0) appear without explanation. The original source defines `MAX_SIZE = 1024`, `BUFFER_COUNT = 16` but these are lost. Some values like `30` for `sysconf(_SC_PAGESIZE)` are unexplained.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Minimal compiler artifacts since -O0 was used. Some decompilation artifacts like `armg_calculate_condition` and strange control flow in `param_asm_clobber` with undefined `ptr` variable. Generally manageable but some confusing constructs.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_macro_constants` has convoluted conditional logic with `armg_calculate_condition` instead of simple if-else. The `param_asm_clobber` loop is poorly decompiled with undefined `ptr` variable. Some functions like `param_conditional_compile` are correctly linearized.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-50 lines each). Good separation between test wrapper functions and implementation functions. No excessive inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Early returns used appropriately in functions like `param_dynamic_code`. Some forward jumps in complex functions but generally manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some repeated patterns in test functions but that's expected. The atomic operation functions have some redundancy but that's compiler-generated.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All parameters use `unsigned int` or `int` generically. Original uses `int`, `size_t`, `int*`, `void*`, `unsigned int*` precisely. No `int32_t`, `size_t`, or pointer type distinction. The atomic functions lose the pointer parameter type.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. The original has `int arr[]` parameter but decompiled shows `unsigned int *a0`. The `param_asm_simd` uses three separate pointer parameters but original `int *a, *b, *result` is lost. All composite types flattened to raw pointers.
+
+**11. Type Safety:** Score: 5/10  
+Justification: `param_asm_clobber` has undefined `ptr` variable causing potential undefined behavior. Some unsafe pointer arithmetic in atomic functions. No `const` correctness. Mixed signed/unsigned in comparisons.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining macro semantics, assembly behavior, or algorithm intent. The original has extensive comments explaining each test case. The decompiled code has zero useful comments.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Atomic operations recognized as `__sync_fetch_and_add` but not explained. The macro expansion patterns (SQUARE, MAX, ADD_16) are not identified as such. No pattern naming like "macro expansion" or "inline assembly".
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `param_asm_clobber` has undefined `ptr` variable but no warning. The strange `armg_calculate_condition` calls not explained. Indirect calls not resolved but no indication.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original has implicit contracts (e.g., "ptr != NULL" for atomic operations) completely lost. No error condition documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some external function references documented (e.g., `extern unsigned int g_23008`). But function call relationships not clear. The test wrapper functions calling implementation functions not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped by address but no logical grouping. The original has clear sections: preprocessing tests, asm tests. This organization is lost in decompiled output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has compilation issues - undefined `ptr` in `param_asm_clobber`, missing `armg_calculate_condition` declaration, external globals referenced. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`a0`, `a1`, `v0`, `v1`) losing all semantic meaning from source
+- `param_asm_clobber` has undefined `ptr` variable causing potential undefined behavior
+- No struct/array type recovery - all flattened to raw pointers
+- Magic numbers like `0x400`, `57072` not replaced with named constants
+- No comments explaining macro semantics, inline assembly, or algorithm intent
+- `armg_calculate_condition` is an unexplained decompilation artifact
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Functions are appropriately sized with good separation between test wrappers and implementations. No excessive inlining or fragmentation.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+All parameters and locals use generic register-based names. The decompiler should infer names from usage patterns (e.g., `a0` used in size comparison → `size`).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a0` compared to `0x400` should suggest `size` or `max_size`
+2. Recover macro semantics - recognize constant expressions like `a0 * 5 + 57072` as `x * 5 + 0xDEF0` from multi-branch compile
+3. Add type recovery for arrays - `param_asm_clobber(unsigned int *a0, unsigned int a1)` should recognize `int arr[], int n`
+4. Flag anomalies - `ptr` used uninitialized in `param_asm_clobber` should have a warning
+5. Add semantic comments - explain that `__sync_fetch_and_add` implements atomic fetch-and-add operation

@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `idx`) with no semantic meaning. Original source had meaningful names like `large_buf`, `local`, `arr`, but decompiler produces `v0 = &v3` patterns throughout.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retain original names (`double_value`, `local_vars`, `heap_basic`), but many helper functions are generic (`sub_4009c4`, `sub_400b24`). Runtime functions (`_init`, `_start`) are correctly identified.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Simple `x * 2` becomes `(a0 * 2 | a0 >> 31) & 4294967294`. Magic numbers like `4294967295`, `17179869180` appear throughout with no explanation. String literals referenced via opaque globals (`g_401d98`).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Stack canary checks (`__stack_chk_guard`) appear in every function. Register spill variables (`v0 = &v3`, `v1 = v16`) clutter code. ARM64 condition calculations (`arm64g_calculate_condition`) appear in simple functions like `memop_memset`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops generally recovered as `do-while` or `for`, but `register_tm_clones` uses `goto`. The `main` function has incorrect nested call structure (`test_static_global(test_heap_memory(v2))`) that doesn't match source's sequential calls.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are separated correctly with reasonable granularity. However, `heap_realloc` creates conflicting struct definitions, and `stack_alias` is incorrectly reduced to a constant return.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but `test_heap_memory` has deep nesting with fork/wait logic that's hard to follow. Forward jumps in `register_tm_clones` disrupt flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `sub_4009c4` calls `memcpy` twice with identical arguments. Register preservation creates redundant assignments (`v0 = v2; v1 = v3`). Bit manipulation patterns repeat unnecessarily across functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` types often become `unsigned long long`. Function pointers degraded to `unsigned long long` (`global_func_ptr`). No const-correctness preserved. Pointer types sometimes correct, often generic `void*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_8`, `padding_4`). Original `Point { int x, y; }` not recovered. `struct_0` defined multiple times with conflicting layouts. No semantic field names.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(unsigned int *)((char *)ptr + 4 * idx)`). Pointer arithmetic on void pointers. `stack_alias` returns constant 20 instead of proper alias logic—severe semantic loss. Dangling pointer code presented without warnings.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments. Only auto-generated `/* do not return */` annotations. No algorithm explanations or decompilation confidence indicators. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Linked list and tree structures not explicitly recognized. Simple arithmetic (`x * 2`) becomes obscure bit manipulation without explanation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged. Incorrect code presented confidently (`stack_alias` returns 20). No warnings about indirect calls, undefined behavior (dangling pointer, double free), or potential crashes.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented. NULL checks present but not explained as contracts. No postconditions or invariants recognized. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variable usage unclear (`global_counter`, `file_scope_static`). Callback relationships (`global_func_ptr = double_value`) not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Static functions not properly scoped. Test functions mixed with implementation. No header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many undefined extern symbols (`g_412f20`, `__TMC_END__`). ARM64-specific code not portable. Would require significant stubbing to compile. Standard library functions referenced correctly.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3 + 6 + 2 + 3) / 4 = 3.50
+Level 2 (Structural):  (5 + 6 + 6 + 4) / 4 = 5.25
+Level 3 (Type):        (4 + 3 + 3) / 3     = 3.33
+Level 4 (Semantic):    (2 + 2 + 2 + 2) / 4 = 2.00
+Level 5 (Contextual):  (4 + 4 + 4) / 3     = 4.00
+
+Overall = (3.50 × 0.30) + (5.25 × 0.25) + (3.33 × 0.20) + (2.00 × 0.15) + (4.00 × 0.10)
+        = 1.05 + 1.31 + 0.67 + 0.30 + 0.40
+        = 3.73/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Magic number explosion**: Simple `x * 2` becomes `(a0 * 2 | a0 >> 31) & 4294967294` obscuring trivial logic
+- **`stack_alias` completely broken**: Returns constant `20` instead of implementing pointer alias logic
+- **Generic variable names**: `v0`, `v1`, `v2` throughout make tracking data flow nearly impossible
+- **Struct field names lost**: All fields named `field_0`, `field_8`, `padding_4` with no semantic meaning
+- **Compiler noise pollution**: Stack canary checks and register spills in every function
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions retained original names (`double_value`, `local_vars`, `heap_basic`), providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Semantic Transparency (2/10 average)** - No comments, no pattern recognition, no anomaly indication, no contract recovery; the decompiler presents incorrect code with full confidence
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover arithmetic simplifications**: Detect patterns like `(x * 2 | x >> 31) & 0xFFFFFFFE` and simplify to `x * 2` for signed integers
+2. **Implement semantic variable naming**: Analyze variable usage patterns to infer names (e.g., variables used in loop bounds → `count`, `size`; pointer dereferences → `ptr`, `buffer`)
+3. **Add decompilation confidence annotations**: Flag uncertain reconstructions (e.g., `// DECOMPILER_UNCERTAIN: indirect call target not resolved`) and warn about potential undefined behavior patterns

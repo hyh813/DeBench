@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `iVar1`, `iVar2`, `piVar4` throughout. Loop variables marked as "Unresolved local var: int i@[???]" lose semantic meaning. Original names like `temp1`, `temp2`, `sum`, `count` are replaced with meaningless identifiers.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match original source exactly: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `recursion_factorial`. Minor issues with internal functions like `FUN_00011030` but core functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14` (20), `0x3039` (12345), `0x3e9` (1001) appear without explanation. Some constants like `0x65` (101) are inferable from context in test functions but not documented in implementation functions.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy noise from "WARNING: Unknown calling convention", "Unresolved local var" annotations, stack canary checks (`__stack_chk_fail_local`), and unreachable block warnings. Significant decompiler artifacts impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops (for/while/do-while) and conditionals are correctly recovered. The `duffs_device` shows complex goto structure which is expected. At -O0, control flow should be nearly perfect, and it mostly is.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated and maintain single responsibility. Each function from the original source is recovered as a distinct unit. No over-fragmentation or monolith issues observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist in `loop_break` and `duffs_device` but are manageable. Minor disruption to linear flow from goto patterns.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Loop unrolling visible in `duffs_device` is appropriate for the pattern. No significant dead code. Some minor redundancy from optimization but manageable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Parameters correctly use `int` for 32-bit values. Function pointers have type `_func_int_int` or `_func_int_int_int`. Some generic `void*` usage but mostly appropriate for the code complexity.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered correctly: `int matrix[3][4]`, `int arr[5]`, `int dst[8]`, `int src[8]`. No complex struct reconstruction needed for this source. Basic composite types handled well.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Function pointer calls have "WARNING: Treating indirect jump as call" indicating uncertainty. Stack canary checks present. Generally safe code with minor potential issues in indirect calls.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly auto-generated warnings ("WARNING: Unknown calling convention", "WARNING: Could not recover jumptable"). No explanatory comments about algorithm logic or intent. Test functions have hardcoded expected values but no documentation.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: `duffs_device` is recognized as a special pattern (switch inside do-while). State machines in `state_machine` and `fsm_func_table` are identified. Some patterns recognized but not explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Multiple "WARNING: Could not recover jumptable" flags for indirect calls. "Unknown calling convention" warnings present. Good anomaly detection but could be more descriptive about what couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No explicit pre/postconditions or invariants documented. No recovery of function contracts (e.g., "requires: n > 0" for factorial). Completely absent from decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. No documentation of caller/callee relationships. External references (library functions) identified but not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - test functions separated, utility functions grouped. Static functions properly scoped. Reasonable organization matching source structure.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code should compile with standard C library. External dependencies (`puts`, `__printf_chk`, `setjmp`, `longjmp`) are standard. Minor patching may be needed for function pointer types.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Variable naming uses generic `iVar1`, `iVar2`, `piVar4` instead of semantic names like `temp1`, `sum`, `count`
+- Loop variables marked as "Unresolved local var" losing iteration context
+- No explanatory comments for algorithms or magic numbers
+- Missing contract/precondition documentation (e.g., "requires: n >= 0" for factorial)
+- Excessive "WARNING" noise from decompiler obscures actual code
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Core function names match original source exactly, making it easy to identify decompiled functions
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Generic iVarX names make it extremely difficult to track variable purpose and understand data flow
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `iVar1` used as accumulator should be named `sum` or `result`; loop counters should be named `i`, `j` based on nesting level
+2. Add explanatory comments for complex patterns like `duffs_device` explaining the switch-inside-do-while idiom
+3. Recover function contracts - detect recursive functions and add "requires: n >= 0" type preconditions based on usage patterns

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`, `arr`, `mem`) with no semantic meaning. Original names like `large_buf`, `global_counter`, `head`, `current`, `tls_var` are completely lost. Even simple cases like `local = 42` become `*out = 42` without the `local` variable.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: User-defined functions mostly preserved (`double_value`, `local_vars`, `heap_basic`), but 20+ helper functions have mechanical names (`function_1140`, `function_1150`, `function_127c`). Thunk functions (`__x86_get_pc_thunk_*`) are appropriately named for their purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Global variables are opaque hex constants (`g1 = 0x1880404`, `g3 = 0x40cc550`). Array sizes sometimes preserved (10, 2048) but magic numbers like `0x4d94`, `0x4ddb` appear without explanation. Original constants like `MAX_SIZE` are lost.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution: 20+ `__x86_get_pc_thunk_*` calls, stack canary checks (`__readgsdword(20)`) in nearly every function, 21 global variables (`g1`-`g21`) that are compiler artifacts. At `-O0` this should be minimal.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple for-loops transformed into convoluted while loops with manual increment (e.g., `local_array`, `heap_basic`). `linked_list_heap` uses explicit `goto` labels (`lab_0x1e02_2`, `lab_0x1e1b`) instead of structured loops.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but 20+ wrapper functions created for standard library calls (`function_1170` = `memmove`, `function_11f0` = `malloc`). Some functions like `large_stack_frame` are bloated with initialization noise.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Multiple forward jumps disrupt reading flow. `linked_list_heap` has complex label-based branching. Stack initialization in `large_stack_frame` shows 2048 individual assignments instead of a loop, breaking linear readability.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks (`if (v2 != __readgsdword(20))`) duplicated in 30+ functions. `__x86_get_pc_thunk_*` calls appear in nearly every function. Loop bodies show redundant variable assignments (`v5 = v7; v7 = arr[0]`).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything reduced to `int32_t`, `char*`, or `void*`. Original types like `size_t`, `Point`, `Node*`, `TreeNode*` lost. Function pointers become `int32_t (*f)(int32_t)` without proper typedef recovery. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `Point {x, y}`, `Node {data, next}`, `TreeNode {data, left, right}` all reduced to pointer arithmetic (`*(int32_t *)(v2 + 4)`, `*(int32_t *)(v3 + 8)`). No struct definitions recovered despite clear usage patterns.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Pervasive unsafe casts: `(int32_t)mem`, `(char *)buf`, `(int32_t *)v4`. Pointer arithmetic without bounds checking. Array access through raw offsets (`4 * v3 + v2`) instead of proper indexing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Original had extensive documentation (`// MEM-L1-01: 局部变量（基础类型）⭐`). Only auto-generated metadata comments present (`// From module: /work/3.c`). No algorithm explanations or uncertainty indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list creation/traversal, tree allocation, memory leak patterns all appear as opaque pointer manipulation. `alloca_usage` VLA pattern not identified. TLS access (`__thread`) reduced to `__writegsdword`.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical issues not flagged: `memory_leak` (no free), `dangling_pointer` (use-after-free), `double_free`, `heap_overflow` all presented as normal code. No warnings about undefined behavior or security concerns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` checks not explained). Null pointer checks present but not annotated as contracts. Return value semantics undocumented (what does -1 mean?).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships opaque. Global variables `g1`-`g21` have no semantic connection to original (`global_counter`, `global_array`, `const_global`). Callback registration (`set_global_callback`) loses function pointer semantics.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file despite original having clear sections (stack, heap, static, memory ops). No header file generation. Test functions mixed with implementation. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds, but requires many external dependencies (`__libc_start_main`, `__cxa_finalize`). Platform-specific code (`__readgsdword`, `__writegsdword`) limits portability.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+5+4+5)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (4+5+6)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.69/10
+```
+
+### Overall Readability Score: **3.7/10**
+
+### Critical Defects:
+- **Complete struct type loss**: `Point`, `Node`, `TreeNode` reduced to pointer arithmetic with offsets (`*(int32_t *)(v2 + 4)`)
+- **21 opaque global variables**: `g1` through `g21` replace meaningful names like `global_counter`, `const_global`, `tls_var`
+- **Loop structure degradation**: Simple for-loops transformed into manual while loops with explicit increment logic
+- **Zero semantic comments**: Original had 100+ explanatory comments; decompiled has none
+- **Compiler artifact pollution**: `__x86_get_pc_thunk_*` calls and stack canary checks in every function at `-O0`
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- User-defined function names mostly preserved from source, allowing basic identification of test purposes.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of documentation makes understanding intent impossible without comparing to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from access patterns**: Detect consistent offset usage (`+0`, `+4`, `+8`) to reconstruct struct definitions with field names based on usage context.
+2. **Eliminate compiler thunk artifacts**: Filter out `__x86_get_pc_thunk_*` calls and stack canary checks at `-O0` optimization level as they add no semantic value.
+3. **Generate semantic comments from patterns**: Auto-document memory allocation patterns, loop purposes, and flag potential issues (memory leaks, use-after-free) with confidence indicators.

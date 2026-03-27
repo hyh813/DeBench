@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic IDA naming conventions (`a1`, `a2` for parameters; `v0`, `v1`, `v2` for locals). While some globals like `signal_received` and `shared_counter` are well-named, the vast majority obscure semantic purpose. For example, in `param_strcpy`, parameters `a1` and `a2` should be `dst` and `src`.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names perfectly match the original source (`param_strcpy`, `call_strcpy`, `param_pthread_create`, `thread_increment`, etc.). The decompiler accurately recovered 60+ function names with complete fidelity to source.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are clear (string constants like "Value: %d, Name: %s\n", signal numbers like 10 for SIGUSR1), but magic numbers like `0x3E8` (1000), `0x1F` (31), `0x12` (18) lack explanations. The value 5 appears frequently for __ATOMIC_SEQ_CST without constant naming.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: Very clean output with minimal compiler artifacts. No register spill code, redundant casts, or debug instrumentation. Only minor markers like `__fastcall` and `attributes: thunk` present but don't impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: At -O0, control flow is natural and idiomatic. Loops use while/do-while constructs, conditionals are clear ternary expressions. No spurious goto statements. The code reads almost identically to source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity is excellent at -O0. Each function has single responsibility (e.g., `param_strcpy` does copy+length, `call_strcpy` allocates buffer). Parameter lists are clean without exposing implementation details. No over-fragmentation.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error handling (e.g., `if (!v1) return -1;`). One forward jump in `param_fread_fwrite` but traceable. No deep nesting issues.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy at -O0. Loop unrolling not present (correct for optimization level). Common subexpression elimination minimal. Clean code throughout.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed results - `size_t` correctly used for strlen/memcpy returns, `FILE*` identified, `pthread_t` recognized. However, many pointers use generic `int` instead of proper pointer types, and parameters use generic `a1`, `a2` without type hints.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Good recovery - `FILE*` recognized, `sockaddr` struct identified, `pthread_t` properly typed. However, `ThreadData` struct not explicitly reconstructed (uses raw `v4`, `v6`, `v8` arrays). Some pointer arithmetic instead of struct field access.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe code. No obviously dangerous casts. Pointer usage is appropriate. Minor issues: some `int` vs `size_t`混用 in loop counters, but no severe violations that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only the initial decompilation banner present. No explanation of algorithm logic, no @param/@return documentation, no decompilation confidence indicators. The code is a "black box" without semantic guidance.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Standard library patterns clearly identified (strcpy/strlen for string copy, strcmp with ternary normalization, pthread create/join patterns). Atomic operations use intrinsic functions. Design patterns like producer-consumer are recognizable.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Import thunk failures properly indicated ("FAILED to decompile: __imp_xxx"). However, no uncertainty markers for indirect calls or potential issues. Could flag suspicious patterns like the waitpid status checking in `param_fork_exec`.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No explicit preconditions/postconditions documented. Error return values (-1, -2, etc.) are present but not explained. Some implicit contracts visible in code structure but not explicitly stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are syntactically clear through direct calls. However, no documentation of call graph, global variable usage, or callback relationships. Each function appears somewhat isolated.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped matching source organization (standard library functions first, then system calls, then threading). Static functions properly scoped. Overall structure mirrors original source file layout.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: Code compiles cleanly as-is. Uses standard C library functions with proper declarations. No compiler-specific hacks. Dependencies are standard (libc, libpthread). Ready for integration testing.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.9/10
+
+**Critical Defects:**
+- Variable naming uses generic IDA conventions (`a1`, `a2`, `v0`, `v1`) obscuring semantic purpose
+- Almost complete absence of comments explaining algorithm logic or decompilation confidence
+- Type precision issues - many parameters use generic `int` instead of proper pointer types
+- No cross-reference documentation showing function call relationships or global usage
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+- Every function name perfectly matches the original source, demonstrating excellent symbol recovery
+
+**Most Needs Improvement:** Comment Quality & Presence (3/10)  
+- Code lacks any explanatory comments for non-trivial logic, making it a "black box" that requires reverse-engineering from scratch
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `a1` used as destination in strcpy should be named `dst`)
+2. Add algorithm explanation comments for complex patterns (e.g., "Normalizes strcmp return to -1/0/1")
+3. Document cross-references: which functions call this, what globals it accesses, callback relationships

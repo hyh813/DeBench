@@ -1,0 +1,113 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use extremely generic names like `v0`, `v1`, `v2`, `v3` in `test_cpp_rtti()`, `a`, `b` in template functions, and `size`, `value`, `idx` in Container methods. While some like `size` and `value` are marginally descriptive, the majority obscure semantic purpose completely.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions retain proper names (`test_cpp_member_func`, `test_cpp_virtual_func`), and template functions are well-named (`template_max<int>`, `template_swap<int>`). However, some utility functions remain as `sub_D60`, `sub_1368` with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4700`, `1001`, `42`, `71`, `650` appear without explanation. The computed expression `1001 * LifecycleClass::instance_count + 21` in `test_cpp_constructor()` obscures the original logic. Only `strlen(v1)` provides some transparency.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution includes 20 failed decompilations marked explicitly, warnings like "positive sp value has been detected, the output may be wrong!", and placeholder comments like "// attributes: thunk". Many functions show empty bodies or JUMPOUT statements.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions are simple return statements, which is natural for computed constants. The `call_virtual_func` properly shows vtable indirect call pattern. Container methods show appropriate if-check patterns. Minor issues with some forward jumps but generally readable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Template instantiations are properly separated (`template_max<int>`, `template_max<double>`). Container class methods are logically decomposed. However, some functions like `test_cpp_oo_features` combine multiple operations that could be better separated.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Most functions are simple single-return constructs. The linear flow makes comprehension straightforward despite some complexity in `test_cpp_rtti`.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or redundant expressions observed. The optimization has collapsed functions to their essential computed values. Loop unrolling is not present in this -O0 compilation.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - `int`, `unsigned int`, `__int64`, `_BYTE`, `_DWORD`, `_QWORD` are used. However, generic types like `void *` and lack of `const` correctness in some places (e.g., `Container<int>::get` should be `const`). Template type parameters are preserved but not always precisely typed.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Container template class shows `data` array and `size` field correctly. Base class vtable pointer (`_vptr$Base`) is properly recovered. However, some struct-like usages (like in RTTI functions) use raw pointer arithmetic without recovered structure definitions.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present - pointer arithmetic in Container methods (`this->data[size]`), indirect vtable calls without type verification. The `__dynamic_cast` usage shows proper type_info references but the surrounding code could be safer. Minor buffer risks in string handling.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated noise like "// attributes: thunk", "// positive sp value has been detected, the output may be wrong!", and "FAILED to decompile" messages. No explanation of algorithm logic or recovered intent.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: C++ idioms are partially recognized - vtable virtual dispatch shown as `(*obj->_vptr$Base)(obj, x)`, template instantiation properly separated, constructor/destructor patterns visible. However, no explicit naming of patterns like "RAII" or "virtual dispatch".
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations are explicitly marked with "FAILED to decompile" and function names. Warning messages about stack pointer issues present. However, no explanation of why failures occurred or confidence levels on indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The decompiled code presents computed results without documenting the original contract expectations (e.g., what `getValue()` guarantees).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible (e.g., `test_cpp_oo_features` calls other test functions). Virtual dispatch relationships shown through vtable pointers. However, no documentation of who calls each function or global variable usage patterns.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are somewhat grouped by type (test functions together, template functions together, Container methods together). However, the organization is flat with no namespace or class structure recovery visible in the output.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code appears structurally compilable but requires significant stubs for standard library functions (`puts`, `strlen`, `printf`, `__cxa_*` functions). No dependency documentation provided. The "FAILED to decompile" entries indicate missing pieces.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+7+4+3)/4 = 4.25
+L2_avg = (7+7+8+8)/4 = 7.50
+L3_avg = (5+6+6)/3 = 5.67
+L4_avg = (2+7+5+2)/4 = 4.00
+L5_avg = (5+6+5)/3 = 5.33
+
+Overall = (4.25 × 0.30) + (7.50 × 0.25) + (5.67 × 0.20) + 
+          (4.00 × 0.15) + (5.33 × 0.10)
+Overall = 1.275 + 1.875 + 1.134 + 0.600 + 0.533 = 5.417 ≈ 5.4/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects (Bullet List)
+- Variable naming uses extremely generic names (`v0`, `v1`, `v2`, `v3`, `a`, `b`) that completely obscure semantic purpose
+- Magic numbers like `4700`, `1001`, `42` appear without explanation, hiding the original computation logic
+- Severe noise pollution with 20 failed decompilations and warning messages that clutter output
+- Almost complete absence of useful comments explaining algorithm intent or recovered contracts
+- Type precision issues - missing `const` correctness, inconsistent use of sized types vs generic `int`
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Code Linearization (8/10)**
+- **Why?** The decompiled code generally reads top-to-bottom with minimal forward jumps. Most functions are simple single-return constructs that make comprehension straightforward.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Comment Quality (2/10)**
+- **Why?** The output contains almost no useful comments - only auto-generated noise like "FAILED to decompile" and "// attributes: thunk". No explanation of algorithm logic, recovered intent, or confidence levels on uncertain decompilations.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Variables like `v0` in `test_cpp_rtti()` should be named based on their role (e.g., `obj_a`, `obj_b`, `result`) by analyzing how they're used throughout the function
+2. **Explain magic numbers**: When a function returns a computed constant like `1001 * LifecycleClass::instance_count + 21`, add a comment showing the original computation or that this is a compile-time computed result
+3. **Add semantic comments for complex patterns**: Document vtable indirect calls, template instantiations, and RTTI operations with explanations of what the original C++ code likely looked like

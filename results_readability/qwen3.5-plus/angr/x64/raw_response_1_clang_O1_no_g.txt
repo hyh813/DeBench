@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v0`, `v1`, `a0`, `a1`, `a2`) with no semantic meaning. Original source had descriptive names like `temp1`, `temp2`, `sum`, `count` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retained original names (`sequential_ops`, `single_if`, `nested_if_2`), but many wrapper functions use mechanical names (`sub_401169`, `sub_401178`) that add no value.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout: `4294967295` (0xFFFFFFFF), `1717986919` (division constant), `1001` without explanation. Original code had clear arithmetic expressions.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Numerous unnecessary wrapper functions (`sub_401169` just calls `sequential_ops`), redundant type casts throughout, and compiler artifacts like frame pointer manipulation visible.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions recovered well (`sequential_ops`, `if_else`), but `loop_while` has broken condition `(unsigned int)v2 + 9 > 18`, and `switch_fallthrough` doesn't properly represent fall-through semantics.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Core functions appropriately sized, but excessive wrapper functions (`sub_401178`, `sub_40118a`, etc.) that just call the real function create fragmentation without purpose.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably, but some have disruptive gotos (`duffs_device` has computed goto) and broken loop conditions that require mental reconstruction.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Wrapper function pattern creates significant redundancy; some expressions repeated unnecessarily (e.g., multiple casts of same value in `loop_continue`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Type mismatches throughout: `sequential_ops` takes `unsigned int` instead of `int`, `if_else` returns `long long` instead of `int`. Original had precise `int` types.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited struct usage in this code; one struct defined (`struct_0`) but not meaningfully used. Array recovery is acceptable for test functions.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Function pointer types degraded (`call_func_ptr` has `unsigned long long *a0` instead of proper function pointer signature), many implicit signed/unsigned casts throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining each function's purpose, test cases, and difficulty level.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition evident. State machines, loops, and switch patterns not identified or named. `duffs_device` optimization not recognized as such.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`). Broken logic in `loop_while`, `goto_backward` not flagged as potentially incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error conditions documented. Original had test validation comments specifying expected inputs/outputs.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information or indication of which functions are test harnesses vs. test targets.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file ordered by address, not logical grouping. Related functions (e.g., state machine handlers) not grouped together.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has external declarations but many undefined symbols (`g_403654`, `__TMC_END__`). Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Calculation:**
+```
+L1_avg = (3+6+4+4)/4 = 4.25
+L2_avg = (5+5+6+5)/4 = 5.25
+L3_avg = (5+6+4)/3 = 5.00
+L4_avg = (2+3+4+2)/4 = 2.75
+L5_avg = (5+4+5)/3 = 4.67
+
+Overall = (4.25×0.30) + (5.25×0.25) + (5.00×0.20) + (2.75×0.15) + (4.67×0.10)
+        = 1.275 + 1.3125 + 1.0 + 0.4125 + 0.467 = 4.47 ≈ 4.5/10
+```
+
+**Critical Defects:**
+- Variable names (`v0`, `v1`, `a0`) provide zero semantic information about purpose
+- `loop_while` has broken loop condition `(unsigned int)v2 + 9 > 18` that doesn't match original logic
+- `switch_fallthrough` fails to represent intentional fall-through behavior correctly
+- Zero comments despite original having extensive documentation for each function
+- Function pointer types degraded (`call_func_ptr` uses `unsigned long long *` instead of proper function pointer)
+
+**Best Quality Aspect:** Function Naming Quality (scored 6/10)  
+- Core test functions retained their original semantic names, making identification possible
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Complete absence of comments loses all the original documentation about purpose, test cases, and expected behavior
+
+**Top 3 Recommendations:**
+1. Implement variable name inference from usage patterns (e.g., loop counters should be `i`, `j`, `count`)
+2. Add decompilation confidence indicators for uncertain reconstructions (especially for optimized loops)
+3. Recover and preserve original comments from debug symbols when `-g` flag was used during compilation

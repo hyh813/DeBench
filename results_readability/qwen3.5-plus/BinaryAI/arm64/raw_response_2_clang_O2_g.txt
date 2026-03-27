@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar2`, `puVar3`) with zero semantic meaning. For example, `array_1d_stack` uses `piVar9` instead of `array_ptr` and `iVar10` instead of `sum`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core processing functions retained original names (`process_char`, `process_int`, `struct_simple`), but helper functions use generic names (`FUN_00100620`, `FUN_0010077c`). Test functions kept meaningful names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation (`0x20` for lowercase conversion, `0x41` for 'A'). Test functions print hardcoded expected values instead of actual computations, obscuring the test purpose.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Floating-point functions (`__addtf3`, `__multf3`) contain 500+ lines of compiler-generated bit manipulation code. Simple operations like `process_ld` call library functions instead of showing `d * d + 1.0L`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions use natural if/return patterns, but `array_3d` unrolls all 125 iterations into hardcoded array accesses instead of nested loops. Floating-point functions use excessive goto labels (`LAB_00102050`, `joined_r0x001019ec`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are properly separated, but test functions don't actually call processing functions—they print pre-computed constants. `test_data_types_l1` prints `0x61` instead of calling `process_char('A')`.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well, but floating-point exception handlers have deep nesting with forward jumps that disrupt flow significantly.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: `array_3d` has 125 nearly identical array access expressions instead of a loop. `array_1d_stack` and `array_vla` have nearly identical 80-line unrolled summation code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation—`process_ll` returns `long` but decompiles as `long` (should be `long long`). `ptr_triple` takes `undefined8*` instead of `int***`. `process_float` returns `undefined4` instead of `float`.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Complete failure—all structs accessed as `int*` with array indexing. `struct_simple(Point3D*)` becomes `struct_simple(int* param_1)` accessing `param_1[0]`, `param_1[1]`, `param_1[2]`. No struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(undefined8*)`, `(int*)`), void pointer abuse in `ptr_void`, and function pointers degraded to `code*`. `ptr_func_simple` shows `UNRECOVERED_JUMPTABLE` indicating unresolved indirect calls.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining each test case purpose, expected values, and scenarios—none recovered.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition—linked list traversal, tree recursion, and graph traversal all appear as raw pointer arithmetic. Loop unrolling in `array_3d` obscures the 3D iteration pattern completely.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Minimal anomaly flags—`UNRECOVERED_JUMPTABLE` appears once for function pointers. No warnings about struct type loss, test function constant folding, or volatile access optimization.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `array_complex_index` should note bounds checking). No postconditions or error condition documentation despite original source having explicit test expectations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but relationships not documented. `main` calls four test functions clearly, but test functions don't call their corresponding processing functions (constants instead).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Original source had clear section headers (`// 2.1 基础数据类型`, `// 2.2 数组类型`)—none preserved.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies (`__libc_start_main`, `__addtf3`, `__multf3`) not documented. Code references undefined globals (`completed_0`, `__dso_handle`, `fpcr`, `fpsr`).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+5)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (4+5+6+2)/4 = 4.25 × 0.25 = 1.06
+Level 3 (Type):        (4+1+4)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (1+2+4+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  3.67/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Complete struct/union type loss**—all composite types degraded to `int*` with array indexing, losing all field semantics
+- **Test functions print constants instead of calling functions**—`test_data_types_l1` prints `0x61` instead of calling `process_char('A')`, defeating test purpose
+- **Massive loop unrolling**—`array_3d` has 125 hardcoded array accesses instead of 3 nested loops, making code 10x longer
+- **Zero documentation**—original source had 200+ lines of comments explaining each test; decompiled code has none
+- **Floating-point library calls opaque**—`process_ld` calls `__multf3` and `__addtf3` with 500+ lines of bit manipulation instead of showing `d * d + 1.0L`
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)**—Core processing functions retained original semantic names (`process_char`, `struct_simple`, `linked_list`), providing some anchor points for understanding.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (1/10)**—Complete failure to recover any struct, union, or enum definitions. All composite types accessed as raw pointer arithmetic, losing all semantic field information.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from access patterns**—When seeing `param_1[0]`, `param_1[1]`, `param_1[2]` accessed together, generate `struct { int f0, f1, f2; }` instead of `int*`
+2. **Preserve function call relationships in test code**—Don't constant-fold test function calls; maintain actual function invocations to show test structure
+3. **Detect and comment loop unrolling**—When generating 100+ similar statements, add comment explaining this was a loop and show original iteration pattern

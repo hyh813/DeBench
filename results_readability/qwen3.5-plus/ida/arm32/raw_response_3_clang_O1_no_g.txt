@@ -1,0 +1,132 @@
+# Decompilation Readability Assessment
+
+## Critical Metadata Issue
+**⚠️ WARNING**: There is a significant mismatch between claimed and actual decompilation metadata:
+- **Claimed**: Ghidra 12.0, gcc O0, arm64
+- **Actual**: IDA Pro 9.1/Hex-Rays, appears to be O1 optimization, arm32
+
+This mismatch fundamentally affects the evaluation baseline. I will evaluate based on the **actual decompiled output quality** relative to the original source.
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `a1`, `a2`) with no semantic meaning. For example, `local_vars(int a1)` should have parameter named `x`, and loop counters like `i` in `local_array` are named `v1` and `i` inconsistently.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: User functions retain original names (`local_vars`, `double_value`, `heap_basic`), but runtime functions use generic names (`sub_568`). Function names accurately reflect purpose where preserved.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xFFFFFFF8`, `0xFFFFFFFD`, `0x140C4` appear without explanation. Some literals are clear (42, 10, 2048) but bit-masking constants obscure index calculations like `((2 * (a1 + ((unsigned int)a1 >> 31))) & 0xFFFFFFFD)`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Compiler artifacts present throughout: frame pointer warnings ("positive sp value has been detected"), architecture-specific casts (`_DWORD *`, `__int64`), and 18 failed decompilation stubs clutter the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions like `double_value` have clean flow, but `local_array` uses backward loop (`for (i = 0; i != -10; --i)`) instead of natural forward iteration. `vla_stack` has convoluted conditional logic with bit operations obscuring the bounds check.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but test functions like `test_stack_memory` inline operations that should call the actual functions (e.g., prints `20` instead of calling `local_vars(5)`). This loses the relationship between test and implementation.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple functions use forward jumps with labels (`LABEL_10`, `LABEL_16` in `linked_list_heap`). The `tree_heap_traversal` function has complex branching that disrupts top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Test functions show constant-folded results instead of actual computation (e.g., `printf("MEM-L1-01 (local_vars): %d\n", 20)` instead of calling the function). This creates redundancy between test code and actual function behavior.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate: `_DWORD`, `_BYTE`, `__int64`, `unsigned __int8` instead of proper C types (`int32_t`, `uint8_t`, `size_t`). Function `memop_memset` has wrong signature with extra `size_t a4` parameter not in source.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**: The `Point` struct is completely lost—`local_struct` returns `3 * a1` instead of showing struct field access. `Node` struct in `heap_nested` is accessed via pointer arithmetic (`*((_DWORD *)*a1 + 1)`) instead of `->next` field names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(_DWORD *)`, `(char *)`, `(int *)` without justification. `stack_alias` loses all pointer parameters and just returns `20`, completely hiding the aliasing behavior being tested.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are sparse and mostly auto-generated ("// [sp+0h] [bp-28h]"). The warning "positive sp value has been detected, the output may be wrong!" is useful but rare. No algorithm explanations or API contracts.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns completely unrecognized: malloc/free pairs not identified as memory management, linked list traversal in `linked_list_heap` not labeled, tree structure in `tree_heap_traversal` not identified as binary tree operations.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 18 failed decompilations are listed at the end, which is good transparency. However, dangerous patterns like `dangling_pointer` (use-after-free) and `double_free` are not flagged as potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 >= 1` checks not labeled as validation). Null pointer checks exist but aren't documented as contracts. Error return values (-1, -2, -3) have no explanation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships aren't documented. Global variables (`global_counter`, `file_scope_static`) are referenced but their cross-file usage isn't clear. `set_global_callback(double_value)` relationship is visible but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order without logical grouping. Related functions (stack operations, heap operations, static/global) are intermixed. No header file structure or API boundary documentation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile standalone: undefined globals (`global_counter`, `extern_global_var`), missing includes, architecture-specific intrinsics (`_sync_synchronize()`), and 18 failed function stubs. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+6+5+4)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (3+2+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.04/10
+```
+
+**Overall Readability Score: 4.0/10**
+
+---
+
+### Critical Defects
+
+- **Struct types completely lost**: `Point` and `Node` structs accessed via raw pointer arithmetic instead of field names (`p->x` becomes `*(_DWORD *)p`)
+- **Test functions constant-folded**: `test_stack_memory` prints hardcoded values (20, 15, 42) instead of calling actual functions, losing test-to-implementation relationship
+- **Variable names entirely generic**: `a1`, `v0`, `v1` throughout with no semantic meaning inferable from context
+- **`stack_alias` function broken**: Returns constant `20` instead of showing pointer aliasing behavior being tested
+- **Metadata mismatch**: Claims Ghidra/O0/arm64 but output shows IDA Pro/O1/arm32 characteristics
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (6/10)** - User-defined function names were preserved from debug symbols (`local_vars`, `heap_basic`, `double_value`), providing some anchor points for understanding code purpose.
+
+---
+
+### Most Needs Improvement
+
+**Composite Type Recovery (2/10)** - Complete failure to recover struct definitions. The `Point` struct with `x` and `y` fields is reduced to arithmetic (`3 * a1`), and `Node` linked list structures are accessed via `((_DWORD *)*a1 + 1)` instead of `->next`, making data structure intent completely opaque.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover struct/union types from access patterns**: When consistent field offsets are accessed (e.g., `+0`, `+4`, `+8`), propose struct definitions with inferred field names based on usage context.
+
+2. **Preserve function call relationships in test code**: Instead of constant-folding test results, maintain actual function calls to show the relationship between test harness and implementation functions.
+
+3. **Add semantic annotations for dangerous patterns**: Flag use-after-free (`dangling_pointer`), double-free, and buffer overflow patterns with warnings like `// WARNING: Potential use-after-free at line X`.

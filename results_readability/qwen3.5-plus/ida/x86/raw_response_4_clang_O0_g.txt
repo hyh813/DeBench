@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Variables like `v0`, `v1`, `v2` through `v12` in `test_calling_conventions` are generic and obscure their purpose, while some names like `sum`, `test_str`, `struct_val` are meaningful. Original source had clearer intent (e.g., `large`, `s` for structs).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test functions preserved original names (`cdecl_func`, `varargs_func`, `func_struct_byptr`). Runtime functions like `sub_1030`, `sub_1080` are generic but represent compiler infrastructure, not user code.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Numeric literals (5, 10, 42) are clear, but format strings referenced as `asc_3008`, `aCallL206` are opaque. Magic number `0x28u` in memset could be named constant.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack annotations (`// [esp+0h] [ebp-4h]`), register hints (`@<eax>`, `@<ebx>`), and `BYREF` markers add visual clutter. Calling convention annotations (`__usercall`, `__userpurge`) are informative but noisy.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as `for` constructs, conditionals as `if/else`, switch statements preserved (`ret_multi_branch`). However, `call_order_dep` shows `param_order_dep(1, 2)` instead of original `++i, ++i` - semantic loss from optimization.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with single responsibility. Helper functions like `callback_func` properly separated. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately. No excessive goto usage in main logic. Stack variable initialization order is slightly awkward but not disruptive.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant variable assignments (`v0`, `v1`, `v2` in test functions). Duplicate declarations (`sum`/`suma` in `mixed_conventions_test`). No significant dead code observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char*, void*). Some degradation: `__int64` instead of `long long`, `size_t` usage inconsistent. `fastcall_func` has confusing parameter types with register annotations (`a1@<edx>`, `a2@<ecx>`).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Structs (`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData`, `TestIntPair`) recovered with field names preserved. Hidden pointer artifacts for large struct returns (`__return_ptr retstr`) correctly shown.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present: `*(_DWORD *)p`, `*(_DWORD *)ret_opaque_handle(0)`. These are necessary for decompilation but reduce type safety. Pointer arithmetic generally correct.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Virtually no comments in decompiled code. Only auto-generated register/stack annotations. Original source's extensive documentation (calling convention explanations, test expectations) completely lost.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Variadic patterns recognized (`va_start`, `va_arg`, `va_end`). Struct passing and function pointer callbacks preserved. No explicit pattern naming or algorithm documentation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Five functions marked "FAILED to decompile" at end. Warning about "positive sp value has been detected" in `_start`. No specific anomaly flags in main code logic.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: Null checks present (`if (p)`, `if (!pp || !*pp)`) but not documented as contracts. No precondition/postcondition documentation. Original source had no explicit contracts either.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls clear. Global variables shown (`GLOBAL_OFFSET_TABLE_`, `_bss_start`). Callback relationships visible (`callback_func` called by `param_func_ptr`). String references opaque (`asc_3008`).
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions in logical order matching source (calling conventions → parameter passing → return values). Runtime functions grouped at beginning/end. Static functions properly identified.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Five external functions failed to decompile (`printf`, `strlen`, `memset`, `__libc_start_main`, `__cxa_finalize`). Would need stubs and proper headers. Struct definitions need recovery for standalone compilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6 + 8 + 7 + 6) / 4 = 6.75 × 0.30 = 2.025
+Level 2 (Structural):  (7 + 8 + 8 + 7) / 4 = 7.50 × 0.25 = 1.875
+Level 3 (Type):        (7 + 8 + 6) / 3 = 7.00 × 0.20 = 1.400
+Level 4 (Semantic):    (3 + 6 + 5 + 5) / 4 = 4.75 × 0.15 = 0.713
+Level 5 (Contextual):  (7 + 8 + 5) / 3 = 6.67 × 0.10 = 0.667
+─────────────────────────────────────────────────────────────
+Overall Score:                                  6.68/10
+```
+
+**Overall Readability Score:** 6.7/10
+
+### Critical Defects
+- **Variable naming**: Generic names `v0` through `v12` in test functions obscure data flow and purpose
+- **Comment loss**: All original documentation (calling convention explanations, test expectations, scene tags) completely absent
+- **Failed decompilation**: 5 external functions (`printf`, `strlen`, `memset`, etc.) not recovered, requiring manual stubs
+- **Unsafe casts**: Multiple `*(_DWORD *)` casts reduce type safety and obscure intent
+- **Format string opacity**: String literals referenced as `asc_3008`, `aCallL206` instead of actual content
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most user-defined function names preserved accurately from debug symbols, maintaining semantic clarity for the core test functions.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (3/10)** - Complete loss of original documentation; decompiler provides no algorithm explanations, confidence indicators, or API contract documentation.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Variable name inference**: Use data flow analysis to infer semantic names (e.g., variables used in loop bounds → `count`, `index`; struct fields → `data`, `value`)
+2. **Comment recovery from debug info**: Extract and preserve DWARF debug comments, function descriptions, and test expectations from `-g` compilation
+3. **External function stub generation**: Automatically generate proper declarations for failed library functions with documented signatures rather than leaving them unresolved

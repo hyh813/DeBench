@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `v3`) or obscure internal artifacts (`vvar_56{r48|8b}`). While `ptr` and `idx` appear, they lack semantic specificity (e.g., `node_ptr`, `buffer_idx`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are recovered perfectly from the source symbols (e.g., `double_value`, `heap_basic`, `linked_list_heap`), accurately reflecting the original intent.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers like `4294967295` (UINT_MAX) and `8589934593` (packed data) appear without explanation. Furthermore, constant propagation in `test_stack_memory` replaces function calls like `local_vars(5)` with the literal `20`, obscuring the test logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code contains significant noise, including decompiler artifacts like `vvar_56{r48|8b}`, `[D] Unsupported jumpkind`, and `[D] MBusEvent-Imbe_Fence`. Standard library calls are replaced with fortified versions like `__printf_chk`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is often unnatural. `vla_stack` and `alloca_usage` contain obscure stack alignment loops (`while (&v5 != &(&v0)[-1 * ...])`). `linked_list_heap` uses a `while(true)` with internal breaks instead of a cleaner `for` loop structure.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are generally mapped 1:1 with the source, maintaining appropriate granularity. However, the selective inlining of simple functions within `test_stack_memory` disrupts the structural consistency of the test harness.
+
+**7. Code Linearization:** Score: 5/10
+Justification: Code reads mostly linearly, but computed jumps like `goto global_func_ptr` in `call_global_callback` interrupt the flow. The weird stack probing loops in VLA functions also break linearity.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: Aggressive constant propagation in `test_stack_memory` (e.g., inlining `local_struct(5)` as `15`) eliminates the redundancy of the function call but at the cost of hiding the program's structure and intent.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Primitive types like `unsigned int` and `unsigned long long` are used, but they are often generic. Pointers are frequently `void*` or generic `struct_0*` rather than specific types like `Node*` or `Point*`.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Structs are not recovered semantically. `Point`, `Node`, and `TreeNode` are all rendered as generic `struct_0`, `struct_1`, etc., with fields named `field_0`, `field_8`, losing all semantic meaning (e.g., `next`, `data`).
+
+**11. Type Safety:** Score: 2/10
+Justification: Critical semantic errors are present. In `heap_basic`, memory is accessed *after* `free(ptr)`. In `global_var_access`, the return value is `global_counter + 1` instead of `global_counter`, introducing a logic bug not present in the source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic. The only comments are decompiler error markers like `[D] Unsupported jumpkind`, which do not aid understanding.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common patterns are not recognized. The linked list traversal in `linked_list_heap` is just a loop with pointer arithmetic; there is no indication it is a list. The tree traversal is similarly opaque.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: Anomalies like the memory barrier and unsupported jumps are flagged with `[D]` markers, but they are vague. The semantic errors (use-after-free) are not flagged, presenting confidently incorrect code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement `n > 0` in `alloca_usage` is not explicitly stated as a contract, though the check exists.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are visible, and `extern` references are present. However, the relationship between the generic `struct_0` definitions and their usage in functions like `heap_nested` is difficult to trace.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are ordered roughly according to the source file, and related test functions are grouped together. The separation of `test_*` functions is maintained.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code is not valid C. Syntax like `vvar_56{r48|8b}` and the use of `CONCAT` in expressions (`>> 31 CONCAT (unsigned int)v2`) will cause compilation errors.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- **Semantic Error in `heap_basic`**: The decompiled code reads from `ptr` *after* calling `free(ptr)`, reversing the source logic and introducing a use-after-free bug.
+- **Logic Error in `global_var_access`**: Returns `global_counter + 1` instead of `global_counter`, altering the function's output.
+- **Invalid C Syntax**: Usage of `vvar_56{r48|8b}` and `CONCAT` operators renders the code non-compilable.
+- **Loss of Struct Semantics**: All user-defined structs (`Point`, `Node`, `TreeNode`) are flattened to generic `struct_0`/`struct_1` with `field_0`/`field_8`.
+- **Inconsistent Inlining**: `test_stack_memory` selectively inlines some functions (e.g., `local_vars` becomes `20`) but not others, breaking the test harness's readability.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully recovered all original function symbols, making it easy to locate specific logic blocks.
+
+**Most Needs Improvement:** Type Safety (scored 2/10)
+- The presence of semantic logic errors (use-after-free, incorrect return values) makes the decompiled code dangerous to use as a reference for understanding the program's behavior.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Preserve Operation Ordering**: Ensure that memory loads relative to `free()` or other side-effects are not reordered in a way that changes the program's apparent logic (e.g., reading after free).
+2.  **Recover Struct Field Names**: Utilize type information or heuristic analysis to rename `field_0`, `field_8` etc., to meaningful names like `data`, `next`, or `x`, `y`.
+3.  **Filter Internal Artifacts**: Remove or hide internal representation syntax (like register tags `{r48|8b}` or pseudo-operators like `CONCAT`) to produce syntactically valid C code.

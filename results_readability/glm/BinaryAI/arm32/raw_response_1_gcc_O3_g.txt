@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `param_1`, `iVar1`, `uVar1`, and `local_4c`, completely losing the semantic intent of names like `a`, `b`, `sum`, or `count` found in the source.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are preserved accurately from the source symbols (e.g., `sequential_ops`, `duffs_device`, `loop_for_fixed`), making the high-level purpose of each unit immediately clear.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The decompiler aggressively constant-folded function calls in the test harness (e.g., `sequential_ops(5, 7, 3)` became `0x15`), obscuring the logic being tested, and uses magic numbers like `0x3e9` (1000) without context.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean of register spilling artifacts, but the presence of runtime support functions like `__aeabi_idiv` and `__stack_chk_fail` in the main listing adds minor noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Critical control flow structures were lost; `recursion_factorial` was decompiled as an iterative `do-while` loop, and `duffs_device` became a mess of `goto` labels rather than the structured switch-in-loop construct.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Functions are correctly separated and correspond to source boundaries, avoiding monolithic inlining, though the test functions contain inlined logic that obscures the original call structure.
+
+**7. Code Linearization:** Score: 4/10
+Justification: Complex functions like `loop_multi_exit` and `indirect_recursion_a` rely heavily on forward and backward `goto` jumps (e.g., `goto LAB_00010c90`), disrupting top-to-bottom readability.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: While dead code like opaque predicates was correctly removed, the constant propagation in `test_control_flow_l1` removed the *intentional* redundancy of function calls, making the test logic harder to verify.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Types are generally correct but imprecise; `undefined4` is used frequently instead of `int`, and function pointers are often typed as generic `code *` rather than specific signatures.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Arrays and stack variables are handled well, correctly identifying stack-allocated arrays like `apcStack_18` used for function pointer tables.
+
+**11. Type Safety:** Score: 6/10
+Justification: The use of `undefined4` and generic `code *` types for function pointers introduces type ambiguity, though no dangerous pointer arithmetic errors were introduced.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output, leaving complex algorithms like Duff's device or the state machine unexplained.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler failed to recognize standard idioms, converting recursion to iteration, computed gotos to function pointer calls, and structured switches to jump table lookups or arithmetic formulas.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Unresolved indirect calls are clearly marked with `UNRECOVERED_JUMPTABLE`, which is helpful, though the lack of explanation for the `goto` spaghetti in complex functions is a drawback.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement that `n > 0` for `duffs_device` is lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: While function calls are visible, the aggressive inlining in test functions hides the relationships between the test harness and the functions being tested.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are listed in a logical order that roughly follows the source, and related helper functions (like `op_add`, `op_sub`) are grouped together.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on Ghidra-specific types like `undefined4` and `code *`, which would require significant patching (typedefs) to compile with a standard C compiler.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- **Test Harness Obfuscation**: In `test_control_flow_l1`, function calls like `sequential_ops(5, 7, 3)` were replaced with constant results (`0x15`), hiding the logic being tested.
+- **Recursion Elimination**: The recursive function `recursion_factorial` was decompiled as an iterative `do-while` loop, fundamentally altering the source structure.
+- **Control Flow Spaghetti**: Complex control flows like `duffs_device` and `loop_multi_exit` were reduced to unstructured `goto` labyrinths.
+- **Generic Naming**: All variables use generic names (`param_1`, `iVar1`), stripping semantic meaning.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler perfectly preserved the original function names, allowing the user to easily map the decompiled units back to the source code's intent.
+
+**Most Needs Improvement:** Idiom Recognition (scored 3/10)
+- The failure to recognize and preserve standard programming idioms (recursion, computed goto, specific loop structures) resulted in code that looks significantly different from the source, requiring significant mental effort to reverse-engineer the original logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Disable Aggressive Constant Propagation in Test Contexts**: Preserve function calls in `printf` statements or test harnesses so the user can see *what* is being tested, not just the result.
+2.  **Improve Recursion Detection**: Implement stricter heuristics to preserve recursive function structures instead of collapsing them into iterative loops, especially at `-O0` where stack frames are explicit.
+3.  **Enhance Control Flow Structuring**: Improve the recovery of structured loops and switches from complex patterns (like Duff's device) to avoid generating `goto`-heavy spaghetti code.

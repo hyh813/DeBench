@@ -1,0 +1,112 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`a1`, `a2`, `v1`, `v7`, `result`) with no semantic meaning. For example, `varargs_func` parameters `a1` through `a7` should indicate `count`, `va_list`, etc. based on usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `param_by_value_int`, `test_calling_conventions`) accurately reflect purpose. However, some helpers like `sub_1020` and `deregister_tm_clones` use mechanical naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x28`, `0x29`, `0xFFFFFFFE` appear in `varargs_func` without explanation. However, return values like `15`, `42`, `100` match expected test outputs and are inferable.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: redundant casts (`(unsigned int)`), stack frame variables (`[rsp-8h] [rbp-8h] BYREF`), and register hints (`// rax`, `// esi`) clutter the code throughout.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but `varargs_func` uses `goto LABEL_11/LABEL_12` patterns instead of clean while loops. At -O0 this is unexpected and reduces readability significantly.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate (most under 50 lines), but caller functions like `call_cdecl()` are constant-folded to single returns, losing the actual call relationship to `cdecl_func()`.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple forward jumps (`goto LABEL_11`, `goto LABEL_12`) disrupt top-to-bottom reading in varargs functions. The `param_ptr_array` function has nested loop unrolling that obscures the original simple for-loop.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling in `param_ptr_array` creates 4x redundant access patterns (`+ 8 * v3`, `+ 8 * v3 + 8`, etc.). Constant-folded callers duplicate return values instead of showing computation.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type degradation: `int` becomes `__int64`, `char*` becomes generic pointers, `va_list` becomes `gcc_va_list` struct. Function `func_mixed_args` shows `double a4` but original had `long long ll` - type mismatch.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `LargeStruct` (128 bytes) decomposed into 14 separate parameters (`a1` through `a14` including `__m128i` types). `SmallStruct` becomes `_DWORD *a1` with no struct definition recovered anywhere.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(_DWORD *)va[0].overflow_arg_area`, `*(_DWORD *)&v16[v7]`. Function pointer types degraded (`unsigned int (__fastcall *a1)(_QWORD)` vs original `int (*callback)(int)`).
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no explanatory comments. Only auto-generated headers like `/* Function: cdecl_func @ 0x1160 */`. No algorithm explanations, no parameter documentation, no decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern partially recognized (`va_start`, `va_arg`) but not labeled. Function pointer callback pattern in `param_func_ptr` not identified. No design pattern recognition whatsoever.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies noted (`// positive sp value has been detected, the output may be wrong!` in `_start`), but critical issues like struct decomposition failure not flagged. Failed decompilations listed at end but not at call sites.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `func_struct_byptr` should note `requires: a1 != NULL`). Null checks present but not documented as contracts. No postcondition inference anywhere.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible but constant folding obscures many (e.g., `call_cdecl()` returns 15 directly instead of showing `cdecl_func(5, 10)` call). Global variable references like `s`, `aCallL206` are undefined in output.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source-order grouping (calling conventions → parameter passing → return values), but no file/module structure. Related functions not explicitly grouped with comments.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Multiple undefined references (`s`, `aCallL206`, `ret_opaque_handle_handle1`, `xmmword_2010`). Six external functions marked "FAILED to decompile" without stubs. Will not compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3 + 8 + 5 + 4) / 4 = 5.00
+Level 2 (Structural):  (6 + 7 + 5 + 5) / 4 = 5.75
+Level 3 (Type):        (4 + 2 + 5) / 3     = 3.67
+Level 4 (Semantic):    (2 + 3 + 4 + 2) / 4 = 2.75
+Level 5 (Contextual):  (5 + 6 + 3) / 3     = 4.67
+
+Overall = (5.00 × 0.30) + (5.75 × 0.25) + (3.67 × 0.20) + 
+          (2.75 × 0.15) + (4.67 × 0.10)
+        = 1.50 + 1.44 + 0.73 + 0.41 + 0.47
+        = 4.55/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Struct types completely lost**: `LargeStruct` decomposed into 14 separate parameters instead of single struct parameter
+- **Constant folding obscures call relationships**: `call_cdecl()` returns literal `15` instead of showing `cdecl_func(5, 10)` call
+- **No semantic variable names**: All parameters are `a1`, `a2`, `v1`, etc. with no inference from usage patterns
+- **Undefined external references**: Variables `s`, `aCallL206`, `ret_opaque_handle_handle1` referenced but not defined
+- **Varargs implementation overly complex**: Original 15-line function becomes 100+ lines with goto labels
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Source function names preserved accurately, making it possible to identify purpose despite other degradation
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to reconstruct struct types, converting structured data into primitive parameter lists that obscure the original API
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct types from parameter patterns** - When 16+ consecutive parameters match expected struct layout, reconstruct as single struct parameter with field access
+2. **Preserve call relationships over constant folding** - Show actual function calls even when arguments are constants, allowing users to understand program flow
+3. **Infer variable names from usage context** - Parameters used in count comparisons should be named `count`, pointer parameters accessed with `->` should indicate struct types

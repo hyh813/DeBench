@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Overwhelmingly generic names (v0, v1, v2, v3) dominate; only rare exceptions like `cur`, `iter`, `result` provide any semantic hint. Original source had meaningful names like `temp1`, `sum`, `count` that were completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (sequential_ops, single_if, loop_while), but many stub wrappers have meaningless names (sub_40137c, sub_40138d). Core logic functions are identifiable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Compiler optimization artifacts introduce confusing literals (1717986919 for division by 10, 4294967295 for -1). Test functions have hardcoded expected values instead of actual computations, obscuring intent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive stub wrapper functions (sub_40137c calls sequential_ops) create redundancy. Test functions have 20+ local variables (v0-v24). CONCAT operations and bit manipulation artifacts pollute simple arithmetic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions recovered well (sequential_ops, if_else), but loop_while/loop_dowhile have broken logic with undefined variables. Function pointer calls use goto instead of proper call syntax.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but unnecessary wrapper pattern creates fragmentation (sub_40137c + sequential_ops pair). Test functions are monolithic with 100+ lines of hardcoded printf calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably. Goto usage for function pointer arrays (call_func_ptr_array, large_jump_table) disrupts flow. One label jump (LABEL_401ef8) in test_control_flow_l2.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Stub wrapper pattern doubles function count unnecessarily. Test functions duplicate identical printf patterns 20+ times. Redundant variable assignments (v3 = v1, v1 = v3) from register spilling.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Excessive unsigned long long where int suffices. Return type mismatches (long long vs int). Pointer types generic (unsigned long long *). Original source had clean int types throughout.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited composite types in source. Array handling degraded (loop_break shows array as individual variables v0, v1). Function pointer arrays converted to individual variables with goto dispatch.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple implicit casts (unsigned int to unsigned long long). Unsafe goto through function pointer array. CONCAT operations indicate type confusion. Parameter type mismatches in several functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty level. No decompiler confidence indicators provided.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns recognized (if-else chains, loops) but not named. Switch-fallthrough converted to if-else without indicating the pattern. Function pointer dispatch not identified as strategy pattern.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted ("Unsupported jumpkind Ijk_SigTRAP"). Critical bugs in loop_while/loop_dowhile (undefined variables i, v4) not flagged. Broken test function logic not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error documentation. Test functions have hardcoded expected values (implicit contracts) but actual function contracts not recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls generally clear through naming. Global variables have opaque names (g_405fe8, g_403008). No call graph documentation. Callback relationships not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Stub functions interspersed with real functions randomly. No header file or API separation. Original source had clear section organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies declared (printf, puts, __printf_chk). GCC-specific computed goto constructs present. Would need cleanup for portable compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+5+6+4)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (1+4+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                              = 4.48/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Zero comments** - Original source had extensive documentation; decompiled output has none
+- **Broken loop logic** - `loop_while` and `loop_dowhile` contain undefined variables (i, v4) making them non-functional
+- **Test functions hardcoded** - `test_control_flow_l1/2/3` print expected values instead of calling actual functions
+- **Generic variable names** - v0, v1, v2 throughout obscures semantic meaning (should be `sum`, `count`, `result`)
+- **Function pointer goto abuse** - `call_func_ptr`, `call_func_ptr_array`, `large_jump_table` use goto instead of proper indirect calls
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved (sequential_ops, single_if, nested_if_2), making core logic identifiable despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding intent impossible; even basic decompiler confidence indicators would help.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable semantics from usage patterns** - Analyze how variables are used (accumulators, counters, indices) to suggest meaningful names like `sum`, `count`, `index` instead of v0, v1, v2.
+
+2. **Fix loop reconstruction for division patterns** - The multiplication-by-reciprocal optimization (1717986919 for /10) should be recognized and converted back to simple division with explanatory comments.
+
+3. **Add anomaly detection for undefined variables** - Flag cases where variables are used before definition (loop_while's `i`, `v4`) as potential decompilation errors requiring manual review.

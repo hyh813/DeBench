@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `a0`, `a1`, `a2` for parameters and `v0`, `v1`, `v2`, `idx`, `ptr` for locals. The original source used meaningful names like `size`, `x`, `y`, `result`, `counter`. Only a few like `sum` in `param_asm_clobber` are descriptive.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions recovered proper names (e.g., `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `my_func`), but the majority use generic `sub_XXXXX` patterns. The original source had clear, descriptive names for all 20+ functions.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple unexplained magic numbers throughout: `1025`, `0x200` (64), `57072` (0xDEF0), `49925`, `3229874313`. The original source defined meaningful constants like MAX_SIZE=1024, BUFFER_COUNT=16. The decompiler uses raw numeric values without recovering macro semantics.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some unnecessary type conversions exist (e.g., `(unsigned int)idx` casts in loops), but no significant debug instrumentation or frame pointer manipulation clutter.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops properly recognized as `for` constructs with clear iteration. Conditionals use idiomatic `if` statements. Some optimization artifacts like computed jumps in `call_asm_simd` but overall flow is readable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized (20-50 lines typical). Some inlining occurred - `call_*` wrapper functions exist but are minimal. The original's test harness structure is partially preserved.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present in `param_dynamic_code` and `param_memory_protection`. Some forward jumps in complex functions like `call_asm_privileged` but manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling visible in `call_asm_clobber` and `test_asm_features` (manual array expansion). Dead code minimal. Some expression duplication in SIMD functions but not severe.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `unsigned int`, `unsigned long`, `long long` but loses specificity. Original had `int`, `size_t`, `int*`. Many pointers treated as generic `long long` or `char*`. Parameter types like `unsigned int a0` instead of original `int size`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery. All structures accessed via raw pointer arithmetic (e.g., `*((int *)(ptr + idx * 4))`). Original had clear `int arr[]` and `int *counter` but decompiler uses opaque pointers.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `(unsigned int)idx` casts, `*(int*)` dereferences, `ptr(a0)` function pointer call syntax. No `restrict` or `_Atomic` annotations despite original using atomic operations. Memory clobber not indicated.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in decompiled output. Original source had extensive documentation explaining macro behavior, test scenarios, and expected values. Zero recovery of preprocessor semantics.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns hinted at but not named. Atomic operations show as `atomic_exchange_add` but macro expansion not recognized. Stringize, token-paste, and variadic macros completely lost - appear as direct function calls or constants.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The indirect function call `ptr(a0)` in `param_dynamic_code` should be flagged as uncertain. SIMD `AddV` function undefined. No indication of hand-written assembly replacement.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear return value expectations (e.g., "期望: 64"). Error paths (MAP_FAILED checks) lack explanation of what went wrong.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are explicit and traceable. External dependencies noted via `extern` declarations. However, no documentation of call relationships (who calls whom, callback patterns).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions logically grouped - preprocessing tests together, asm tests together. Matches original file structure partially. Static functions properly scoped. Could be better organized by feature.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Multiple `extern` declarations for undefined symbols (`g_403fe8`, `g_40207f`, etc.). Would require stubs to compile. Missing standard library declarations (puts, printf, mmap, etc. used but not declared).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming is nearly unusable - all parameters `a0`/`a1`/`a2`, locals `v0`/`v1`/`idx` - loses all semantic meaning
+- Zero comments recovered - original had extensive documentation explaining macro behavior and test expectations
+- No macro semantics recovered - SQUARE(x), MAX(a,b), STRINGIZE all appear as raw arithmetic or constants
+- Type precision severely degraded - original `int* arr` becomes opaque `unsigned long ptr`
+- No struct recovery despite clear array usage in original
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+- Loop constructs properly recognized, conditional logic clear, execution flow follows expected patterns
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Generic single-letter variable names make tracking data flow nearly impossible; should infer names from usage patterns (e.g., `a0` used in size comparison → `size`)
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Track how parameters are used (arithmetic, comparison, array indexing) to suggest semantic names like `size`, `count`, `index`
+2. **Recover macro semantics**: Detect constant expressions that match macro expansion patterns and suggest original macro names (e.g., `a0 * 11 + 5` → `x * 11 + 5` suggests token paste)
+3. **Add minimal comments for non-obvious logic**: At minimum, document return value expectations, conditional branch purposes, and any unresolved indirect calls

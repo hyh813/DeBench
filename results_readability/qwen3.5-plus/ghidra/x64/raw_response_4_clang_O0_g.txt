@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Generic names like `iVar1`, `uVar1`, `a_local`, `b_local` dominate; original source had meaningful names like `sum`, `count`, `test_str`, `large` that were lost in decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`cdecl_func`, `varargs_func`, `param_by_value_int`); only startup functions use generic names (`FUN_00101020`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals replaced with opaque references (`&DAT_00103020`); numeric constants shown as hex (`0x14`, `0x2a`, `0xf`) without decimal equivalents or explanations.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Unnecessary local variable copies proliferate (`x_local`, `p_local`, `sum_local`); repeated "WARNING: Unknown calling convention" messages add visual clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures preserved well (for loops recognizable); conditional logic mostly natural; some functions show awkward parameter handling patterns.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries correctly preserved; appropriate granularity maintained; no inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom; minimal forward jumps; no excessive goto usage disrupting flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from parameter copying (`a_local`, `b_local` that mirror parameters); `varargs_func` and `param_varargs` are nearly identical with no consolidation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char*, double, longlong); function pointer types partially recovered (`_func_int_int *`); some void* usage where specific types existed.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types well-preserved (LargeStruct, SmallStruct, BigStruct, TestIntPair); field names maintained; struct layouts accurately recovered.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present but reasonable for decompilation; pointer arithmetic mostly correct; no obvious type confusion errors.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments recovered; original source had extensive test case explanations; only auto-generated warnings present ("WARNING: Unknown calling convention").
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard C idioms present but not explicitly identified; va_list handling visible but not labeled as variadic pattern; no design pattern recognition.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly warnings present ("WARNING: Removing unreachable block", "Unknown calling convention"); uncertainty properly flagged at call sites.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented; NULL checks preserved in code but not documented as contracts; no invariant recognition.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved and clear; global variable references opaque (`&DAT_00103020`); callback relationships visible but not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source; related functions grouped; no header file organization or namespace structure visible.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: References external functions (printf, strlen, memset); undefined symbols present (__gmon_start__, __libc_start_main); requires stubs to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+4+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+8+7+4)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (7+8+7)/3   = 7.33 × 0.20 = 1.466
+Level 4 (Semantic):    (2+5+7+3)/4 = 4.25 × 0.15 = 0.6375
+Level 5 (Contextual):  (6+6+5)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 5.95/10 ≈ 6.0/10
+```
+
+**Overall Readability Score:** 6.0/10
+
+### Critical Defects:
+- **String literals replaced with opaque references** (`&DAT_00103020`) making printf statements unreadable
+- **Excessive local variable copies** (`a_local`, `b_local`, `x_local`) that add no semantic value
+- **No comments recovered** despite original source having extensive test documentation
+- **Magic numbers in hex** (`0x2a`, `0x14`, `0xf`) without decimal equivalents or explanations
+- **Calling convention warnings** on every wrapper function despite -O0 compilation preserving this information
+
+### Best Quality Aspect:
+- **Composite Type Recovery (8/10)** - Struct types (LargeStruct, SmallStruct, TestIntPair) with field names accurately preserved, enabling clear understanding of data layouts.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all source comments explaining test purposes, expected values, and calling convention details.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover string literals from .rodata section** - Map `&DAT_00103020` references back to actual string content for readable printf statements
+2. **Eliminate redundant parameter copies** - Detect when `x_local` simply mirrors parameter `x` and omit the unnecessary local variable
+3. **Preserve source comments from debug symbols** - When `-g` flag is present, extract and embed original comments in decompiled output

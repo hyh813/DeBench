@@ -1,0 +1,93 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `local_14`, `local_18`, `local_20`, `iVar1`, `iVar2`, `puVar1`, `pvVar2`. The original source had meaningful names like `value`, `name`, `data`, `size`, `result`, `capture_by_value`, `capture_by_ref`. These cryptic names make tracking variable purpose nearly impossible.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions like `test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func` match source exactly. However, many internal functions use mangled names like `FUN_001019a0`, and lambda operators appear as `test_cpp_lambda()::$_1::operator__`. Template instantiations like `template_max_int_` are reasonably clear.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation: `0x1234` (class ID), `0x32` (50), `0x14` (20), `0x1e` (30), `0xfa` (250), `0x96` (150). String literals like "Test", "Base", "Derived" are preserved. The constant `1000` used for instance count multiplication is unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from compiler-generated code including: `_init`, `FUN_001019a0`, multiple `operator_new`/`operator_delete` variants, `__cxa_*` exception functions, and many internal STL implementation functions. These 100+ lines of boilerplate obscure the actual application logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with recognizable if-else and loop structures. Exception handling appears as direct `__cxa_throw`/`__cxa_begin_catch` calls rather than try-catch blocks, which is expected at -O0. Virtual dispatch through vtables is correctly represented as indirect calls.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. Class methods are properly separated. Template instantiations generate separate functions as expected. The decomposition closely matches the original class structure with constructors, destructors, and member functions in logical groupings.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately. Some complex expressions (like in `test_cpp_multiple_inheritance`) have pointer adjustments that disrupt flow slightly, but overall readability is good.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Loop unrolling is minimal at -O0. Common subexpression elimination artifacts are not prominent. The code is clean in this regard.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of generic types: `undefined4`, `undefined8`, `undefined`, `byte`, `bool`. The original `int`, `size_t`, `char`, `double` are often lost. Function parameters frequently use `ulong` instead of `size_t`. Const correctness is mostly lost.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Class structures are recovered: `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `MultiDerived`, `DiamondDerived`, `Point`, `Container_int_`, `Container_double_`. However, struct field names are often generic (e.g., `this + 4` instead of `this->name`). The vtable pointers are correctly identified.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present, particularly around virtual function calls using `***(code ***)param_1`. Pointer arithmetic is sometimes unchecked (e.g., `this + (long)param_1 * 4`). However, no severe type safety violations that would cause undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Almost no comments explaining logic. Function signatures are present but lack documentation. No explanation of algorithms, vtable mechanics, or template instantiation. The comment at the top is just decompiler attribution.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: C++ idioms partially recognized: constructors/destructors identified, virtual function tables present, template instantiation separate. However, no explicit naming or documentation of patterns like RAII, RAII with smart pointers, or exception handling patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No explicit flagging of suspicious patterns. Indirect virtual calls are presented without uncertainty indicators. The complex multiple inheritance and virtual inheritance pointer adjustments have no explanatory comments.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No bounds checking explanations. The original source had implicit contracts (e.g., `idx < size` check in `getData`) but these appear as raw conditional logic without semantic explanation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - you can see `test_cpp_member_func` calls `SimpleClass::getValue`, `SimpleClass::compute`, etc. Virtual dispatch is correctly represented. Global `instance_count` is properly tracked. However, no explicit call graph documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are organized in reasonable order, roughly matching source file structure. Related class methods are grouped together. External library functions are separated. However, the massive amount of internal STL functions disrupts the logical flow.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would not compile standalone. Heavy reliance on undefined external functions (`operator_new`, `strlen`, `std::*`). No header declarations or dependency documentation. The code is tightly coupled to libstdc++ implementation details.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable naming**: `local_14`, `local_18`, `iVar1`, `iVar2` are meaningless; original names like `value`, `result`, `capture_by_ref` were recoverable from usage
+- **No comments**: Zero explanatory comments for complex patterns like virtual inheritance, vtable dispatch, or exception handling
+- **Type precision loss**: `undefined4`/`undefined8` instead of `int`/`long`; const correctness lost
+- **Noise pollution**: 100+ lines of internal STL functions obscure application logic
+- **Magic numbers**: `0x1234`, `0x32`, `0xfa` appear without named constant explanations
+
+### Best Quality Aspect: Function Decomposition (8/10)
+- Functions are properly separated by responsibility
+- Class methods correctly grouped
+- Template instantiations handled appropriately
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Generic names like `local_X` and `iVarN` make code nearly incomprehensible
+- Original semantic names were clearly recoverable from usage patterns
+- This single issue cascades into making all other analysis more difficult
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: `local_14` used as accumulator for `getData()` results should be named `result` or `sum`
+2. **Add semantic comments**: Explain vtable mechanics, virtual inheritance pointer adjustments, and exception handling patterns
+3. **Recover precise types**: Use `int` instead of `undefined4`, `size_t` instead of `ulong`, preserve `const` qualifiers

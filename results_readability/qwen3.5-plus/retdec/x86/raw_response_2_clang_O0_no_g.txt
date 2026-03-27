@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v1`, `v2`, `a1`, `a2`, `result`) with no semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `edge` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), but helper functions use mechanical names (`function_1040`, `function_1050`). Good preservation considering decompilation.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation (`0x1000000`, `0x20000000`, `44`, `40`, `12`). String literals accessed via pointer arithmetic (`v1 + 0x1d70`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86_get_pc_thunk_*`, `deregister_tm_clones`, `register_tm_clones`, `__do_global_ctors_aux`. Uninitialized variables declared without assignment (`int32_t v1; // 0x13b0`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops use while-patterns where for-loops would be clearer. `process_char` uses bit manipulation (`>> 24`) instead of clear if-else. Some functions have awkward loop initialization patterns.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function sizes reasonable, but signatures corrupted (`ptr_func_simple` has 3 parameters instead of 2). Some test functions have extra unused parameters (`test_data_types_l1(int32_t a1)`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but global references use complex arithmetic (`v1 + (int32_t)&g4 - 0x2c4b`). Forward references disrupt flow in test functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant variable assignments common (`v3 = result; v3 = result;`). Loop patterns duplicate initialization code. Some functions return uninitialized variables (`function_1070`).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Critical type corruption: `process_float` takes `int32_t` instead of `float`, `process_double` returns `float80_t`. Everything degraded to `int32_t`/`int32_t*`. Signed/unsigned often incorrect.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - no struct definitions recovered. `Point3D`, `Rect`, `Widget`, `Node` all accessed via pointer arithmetic (`*(int32_t *)(v1 + 8)`). Unions and bitfields completely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(float32_t)*a1`). Pointer arithmetic without bounds checking. Function pointer types lost (`ptr_func_simple` signature corrupted). Multiple potential undefined behaviors.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments recovered from original source. Only address annotations present (`// Address range: 0x1000 - 0x102e`). No algorithm explanations or API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Linked list traversal, tree recursion, graph traversal all appear as raw pointer arithmetic without semantic identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Functions returning uninitialized values (`function_1070`, `process_ld`) not flagged. No confidence indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 != NULL`). No postconditions. Error conditions like `array_complex_index` returning -1 not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables opaque (`g1`, `g2`, `g3`, `g4`, `g5`). No call graph documentation. Callback relationships lost (`complex_callback` not linked to `ptr_func_complex`).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 73 functions in single file. Original sections (Data Types, Arrays, Pointers, Composite) not preserved. No logical grouping visible.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes present but references undefined globals. `__libc_start_main` non-standard. Several functions return uninitialized values. Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25  × 0.25 = 1.31
+Level 3 (Type):        (3+2+3)/3   = 2.67  × 0.20 = 0.53
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):  (5+4+4)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────
+Overall Score:                                  4.00/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Complete struct/union type loss** - All composite types (`Point3D`, `Rect`, `Widget`, `Node`, `UnionData`) accessed via raw pointer arithmetic instead of field access
+- **Floating-point type corruption** - `process_float` and `process_double` use integer parameters instead of float/double types
+- **Generic variable naming** - All variables named `v1`, `v2`, `a1`, `a2` with no semantic meaning
+- **Zero comment recovery** - Original source comments completely lost; no decompilation confidence indicators
+- **Compiler artifact pollution** - `__x86_get_pc_thunk_*`, `register_tm_clones`, and other runtime helpers clutter output
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), making basic navigation possible despite other issues
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions; all composite type access reduced to opaque pointer arithmetic, making complex data structure code nearly unreadable
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct/union pattern recognition** - Detect repeated offset patterns (`+0`, `+4`, `+8`) and propose struct definitions with field names based on access patterns
+2. **Improve floating-point type detection** - Analyze FPU instructions and constant pools to correctly identify float/double parameters and return types
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., `// UNCERTAIN: function pointer signature inferred`) and warn about uninitialized variable returns

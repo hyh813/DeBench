@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `ptr`, `a0`, `a1`) with no semantic meaning. For example, `array_1d_stack` uses `v0` for sum instead of `sum`, and `array_string` uses `v0` for length instead of `len`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results—original names preserved for core functions (`process_char`, `array_1d_stack`, `struct_simple`) but many wrapper functions use mechanical names (`sub_401271`, `sub_401030`). Test functions correctly named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers present without explanation (65, 32, 26 in `process_char`). Floating-point constants shown as hex (0x400c0000, 3435973837) instead of decimal values. Some printf format strings preserved helpfully.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant decompiler artifacts: `[D] unsupported_<class 'pyvex.expr.GetI'>()` appears in `process_float`, `process_double`, `process_ld`. Multiple `__x86.get_pc_thunk.*` stub functions and padding fields clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loop constructs mostly recovered as do-while patterns, but `ptr_func_simple` uses `goto a0;` instead of proper function call. `binary_tree_sum` has extremely deep nesting (10+ levels) that obscures the recursive pattern.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but unnecessary wrapper functions created (`sub_401271` just calls `process_char`). Function sizes are reasonable but fragmentation adds noise.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but `binary_tree_sum` has severe non-linearity with forward references. Some functions use computed gotos that disrupt flow (`sub_401080`: `goto v1->field_20;`).
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns from optimization visible but not excessive. Stack canary checks repeated across functions. No obvious dead code but some duplicate struct definitions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation—`char` becomes `unsigned int`, `short` becomes `unsigned short`, `long long` becomes `unsigned int`. Float/double operations completely broken with decompiler errors. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_4`, `field_8`). Original names lost (Point3D, Rect, Widget become `struct_0`, `struct_1`). Bit fields not recovered—`struct_bitfields` uses manual bit operations instead.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(int*)`, `(char*)`). Pointer arithmetic on generic `unsigned int*` types. `ptr_void` uses void pointer without proper type discrimination. Function pointer calls use `goto` instead of proper call syntax.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled output. Original source comments completely lost. Only decompiler-generated artifacts present, no algorithm explanations or API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Linked list traversal in `linked_list` and `doubly_linked_list` not recognized as such. Tree recursion in `binary_tree_sum` obscured by excessive nesting.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Anomalies marked with `[D]` prefix but not explained. `process_float`, `process_double`, `process_ld` contain unsupported operations but no guidance on manual analysis needed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` requirements). No postconditions inferred. Array bounds checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships obscured. Global variables referenced (`g_403008`, `g_4033bd`) without explanation. Function pointer calls use indirect syntax losing semantic clarity.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output with no logical grouping. Original test organization (data types, arrays, pointers, composites) lost. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains decompiler artifacts that prevent compilation (`[D] unsupported_...`). External dependencies (`_ccall`, `__stack_chk_fail_local`) need stubs. Struct redefinitions cause conflicts.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (3+5+5+4)/4 = 4.25  × 0.30 = 1.275
+Level 2 (Structural):     (5+6+5+6)/4 = 5.50  × 0.25 = 1.375
+Level 3 (Type System):    (3+4+4)/3 = 3.67    × 0.20 = 0.733
+Level 4 (Semantic):       (2+3+5+2)/4 = 3.00  × 0.15 = 0.450
+Level 5 (Contextual):     (5+4+3)/3 = 4.00    × 0.10 = 0.400
+---------------------------------------------------------
+Overall Score:                                    4.23/10
+```
+
+**Overall Readability Score:** 4.23/10
+
+### Critical Defects:
+- **Type degradation**: All specific types (char, short, long, long long, float, double) collapsed to `unsigned int`, losing semantic meaning and breaking floating-point functions entirely
+- **Decompiler artifacts**: `[D] unsupported_<class 'pyvex.expr.GetI'>()` appears in 3 functions making them unusable
+- **Struct field names**: All fields named generically (`field_0`, `field_4`, `field_8`) losing all semantic information about Point3D.x, Rect.position, etc.
+- **Function pointer calls**: Use `goto` syntax (`goto a0;`) instead of proper function call, obscuring callback patterns
+- **No comments**: Zero documentation recovered from original source's extensive comments explaining each test case
+
+### Best Quality Aspect:
+- **Function Decomposition (6/10)** - Original function boundaries mostly preserved with reasonable granularity; core test functions remain identifiable despite wrapper noise
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all original documentation; no algorithm explanations, no API contracts, no decompiler confidence indicators beyond error markers
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement type inference from usage patterns** - Detect char operations (comparisons with 'A', 'Z'), short arithmetic, and floating-point instructions to restore original types instead of defaulting to `unsigned int`
+2. **Recover struct/union field names from debug symbols** - When `-g` flag was used (as metadata indicates), extract field names like `x`, `y`, `z` from DWARF information instead of generating `field_0`, `field_4`
+3. **Eliminate or annotate decompiler artifacts** - Either successfully decompile floating-point operations or provide clear guidance like `// MANUAL REVIEW: SSE instruction not recovered` instead of leaving broken `[D] unsupported_...` code in output

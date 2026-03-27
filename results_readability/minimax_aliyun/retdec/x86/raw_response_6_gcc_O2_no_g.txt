@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters renamed to generic `str` and `str2`, temporaries to `v1`, `v2`. Global variables are `g1`, `g2`, etc. The original meaningful names `dst` and `src` are completely lost. This is a severe degradation making tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: The target function `param_strcpy` retains a semantically meaningful name. However, most helper functions are named `function_13e0`, `function_1420`, etc. - mechanical addresses with no semantic value. The function name alone doesn't indicate it's a wrapper around strcpy.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Magic numbers like `0x2ec8`, `0x2ef0`, `0x55c8` appear as offsets without explanation. No named constants for buffer sizes or return values. The string literals are embedded as global variables (`g13`, `g14`, etc.) with hex values that are never explained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy presence of `__x86_get_pc_thunk_bx` calls, stack canary checks (`__readgsdword(20)`), and address computations clutter the code. Redundant casts between `int32_t` and `char*` throughout. The decompilation includes 137 functions with significant noise from compiler instrumentation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: The basic control flow is readable - sequential execution with simple conditionals. However, the presence of `__x86_get_pc_thunk_bx` calls inserted for PIC addressing disrupts the natural flow. At -O0, this level of control flow disruption is excessive.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: The `param_strcpy` function is appropriately sized (~5 lines). However, the decompilation includes many tiny wrapper functions (e.g., `function_1490` just calls `memcpy`) that appear to be compiler-generated stubs rather than meaningful decomposition.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The function reads top-to-bottom without complex jumps or goto statements. Early returns are used appropriately. Minor disruption from the `__x86_get_pc_thunk_bx` call but overall linear flow is preserved.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code in the target function. The optimization from `strcpy + strlen` to `stpcpy` is preserved correctly. Some redundant stack canary checks but these are compiler-required.
+
+### LEVEL 3: TYPE SYSTEM FIDELITY
+
+**9. Type Precision:** Score: 4/10  
+Justification: All pointers are represented as `int32_t` losing the original `char*` and `const char*` types. The original function signature `int param_strcpy(char *dst, const char *src)` is degraded to `int32_t param_strcpy(int32_t str, int32_t str2)`. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery in this function. The decompilation does define some global structs (like `struct shmid_ds`) but with generic field names (`e0`, `e1`, etc.). For `param_strcpy`, no composite types were needed.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts between `int32_t` and `char*` throughout: `(char *)str`, `(char *)str2`. The arithmetic `stpcpy(...) - str` treats pointer as integer. No bounds checking or buffer size information preserved.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments only contain memory addresses (e.g., `// 0x1bf0`) with no functional explanation. No documentation of what the function does, what parameters mean, or what it returns. Auto-generated address comments provide no semantic value.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: The compiler optimization from `strcpy + strlen` to `stpcpy` is correctly preserved but not identified as an optimization pattern. The return value calculation `stpcpy(...) - str` is correct but the idiom is not labeled or explained.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warnings about suspicious code, indirect calls, or potential issues. The decompilation presents the code as confident when there are significant uncertainties (e.g., the actual string handling semantics).
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., "requires: dst buffer large enough"). No postconditions (e.g., "ensures: dst is null-terminated"). No error condition documentation. The function's contract is completely opaque.
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls to `stpcpy` are present but not documented. No indication of what calls this function or what it calls. The relationship to the original `strcpy` and `strlen` library functions is not explicitly noted.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 137 functions are in a single file with no logical grouping. The target function `param_strcpy` is buried among many unrelated functions. No header declarations or API boundaries visible.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code includes necessary headers (`<stdio.h>`, `<stdlib.h>`, etc.) and appears structurally compilable. However, the use of x86-specific intrinsics (`__x86_get_pc_thunk_bx`) on an ARM64 binary is incorrect - this is a cross-architecture decompilation artifact.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable naming completely generic: `str`, `str2`, `v1` instead of `dst`, `src`
+- Type precision lost: `char*` pointers become `int32_t`, losing const-correctness
+- No comments explaining functionality - only memory addresses
+- Type safety issues: unsafe casts between integers and pointers throughout
+- No function contracts or pre/postconditions documented
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 6/10)  
+- Basic sequential execution is preserved; the function logic is traceable despite noise
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic names like `v1`, `v2`, `g1`, `g2` make it nearly impossible to track variable purpose without extensive cross-referencing
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: The parameter `str` used as destination in `stpcpy` should be named `dst` or `dest`; the return value calculation from `strlen` pattern should yield `length` or `result`
+2. **Recover precise pointer types**: Use `char*` and `const char*` instead of `int32_t` for string parameters; preserve const-correctness
+3. **Add semantic comments**: Replace address comments with functional explanations (e.g., "// Copies src to dst using stpcpy, returns length")

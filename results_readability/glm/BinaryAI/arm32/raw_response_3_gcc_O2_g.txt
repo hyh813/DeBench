@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `param_1`, `iVar1`, `piVar2`, and `uVar3`, which obscure the semantic intent found in the source (e.g., `n`, `arr`, `result`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names such as `double_value`, `local_array`, and `heap_basic` are preserved exactly from the source, providing excellent context.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Simple integer constants like `42` and `20` are represented as hex (`0x2a`, `0x14`), which is less readable for logic values, and magic numbers are not replaced with named constants.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains compiler security wrappers like `__printf_chk` instead of standard `printf`, and uses non-standard types like `undefined4`, adding unnecessary noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Array loops are often represented as pointer arithmetic `do-while` loops (e.g., in `local_array`), and some function calls in test functions are inlined, deviating from the source structure.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Most functions map 1:1 with the source, but some test functions contain inlined logic (e.g., `test_static_global` manually increments `global_counter` instead of calling `global_var_access`).
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps or confusing control flow disruptions.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no significant redundancy or dead code; the logic is concise even if expressed differently than the source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: A critical failure is the loss of return types for multiple functions (e.g., `local_array`, `vla_stack`, `global_var_access` are decompiled as `void` despite returning `int` in the source).
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Struct fields are accessed via array indexing (e.g., `__ptr[1]` for `next` in `heap_nested`) rather than field names, losing semantic structure information.
+
+**11. Type Safety:** Score: 6/10
+Justification: While accurate to the binary, the code uses unsafe casts for stack pointer manipulation in VLA functions (e.g., `(int *)((int)aiStack_14 + iVar1)`), which looks dangerous.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code to explain logic, algorithms, or complex memory operations.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: Standard library patterns like `malloc`/`free` and `fork`/`waitpid` are clearly recognized and preserved.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag the intentional memory leaks or dangling pointers in the source code; it presents them as standard code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: Preconditions (like `n > 0` checks) are visible as code, but the loss of return values breaks the postcondition contracts (e.g., "returns the calculated value").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Calls to external functions like `malloc` and standard library APIs are clear and easily identifiable.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in address order rather than logical groupings (e.g., all heap operations together), which is standard but less organized than the source.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The use of Ghidra-specific types like `undefined4` and `undefined` prevents the code from compiling without modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Return values are lost for multiple functions (e.g., `local_array`, `vla_stack`, `global_var_access` are typed as `void`).
+- Struct fields are accessed via array index offsets (e.g., `__ptr[1]`) instead of semantic field names.
+- Variable names are generic (`iVar1`, `param_1`), obscuring the logic.
+- Non-standard types (`undefined4`) are used instead of standard C types.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved the original function names, making high-level navigation easy.
+
+**Most Needs Improvement:** Type Precision (scored 3/10)
+- The systematic loss of function return types (`int` -> `void`) is a severe semantic degradation that breaks the understanding of the code's interface.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Fix the return type analysis to correctly identify `int` returns in functions returning stack or heap values.
+2. Recover struct field names from type information to replace array index access patterns.
+3. Map generic types like `undefined4` to standard types (e.g., `int32_t`) to improve compilation readiness.

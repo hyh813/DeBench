@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `a`, `b` - completely generic single-letter names. No semantic meaning can be inferred. For example, in `test_cpp_template_func`, variables `a` and `b` should be named based on their usage as swap parameters.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Functions use mangled C++ names like `_Z20test_cpp_member_funcv` instead of `test_cpp_member_func`. Many functions are named `sub_1020`, `sub_1030` etc. with no semantic meaning. The decompiler failed to demangle symbols, making function purpose completely opaque.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `42` (thrown exception), `1953719636` (string "Test" as int), `0x28` (stack canary offset) appear without explanation. Some values like `1001 * LifecycleClass::instance_count + 21` are partially reconstructed but unclear. The number `1953719636` is clearly "Test" but not explained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise includes 21 failed decompilations (marked as "FAILED to decompile"), numerous stub functions (`sub_1020` through `sub_1120` all just call `sub_1020`), and `__noreturn` annotations that clutter output. The JUMPOUT statements and failed function list create severe noise pollution.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have straightforward control flow - simple returns. However, `test_cpp_exception` throws and never returns (correct but marked `__noreturn`). The JUMPOUT(0) in stub functions is unnatural. At -O0, control flow should be more transparent.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: The compiler aggressively inlined and computed results at compile time. Functions like `test_cpp_member_func` return `strlen(obj.name) + 4700` directly - the entire logic is collapsed. Functions that should exist (constructors, `setValue`, `compute`) are either missing or inlined into constant returns.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Most functions read top-to-bottom with no complex jumps. The simple return statements create good linear flow. Minor forward references exist in error handling paths but don't significantly disrupt readability.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or duplicate expressions. The main issue is not redundancy but over-aggressive inlining that removes all computation structure. What remains is clean but trivial.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved: `int`, `double`, `unsigned __int64`. However, many uses of generic types like `__int64` where `int` would be more precise. The stack canary access uses `__readfsqword(0x28u)` which is architecture-specific. Mixed precision between `_DWORD`, `int`, `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class structures partially recovered - `Base::virtual_func`, `Derived::virtual_func` show correct member function signatures. However, data members like `multiplier` in Derived are not shown in function signatures. Struct layouts not explicitly defined. Virtual inheritance handling shows complex pointer arithmetic but loses field names.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with appropriate casts. Minor issues: the `test_cpp_rtti` function has complex pointer arithmetic for vtable access that could be unsafe. No obvious buffer overflow patterns. Some void* usage but minimal.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comments from IDA Pro present. No useful comments explaining algorithm, purpose, or anomalies. The comment "positive sp value has been detected, the output may be wrong!" indicates decompiler uncertainty but provides no guidance on what is wrong.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ patterns recognized: virtual function calls via vtable (`(*obj->_vptr_Base)(obj, x)`), thunk functions for multiple inheritance. However, no explicit naming of patterns like "virtual dispatch", "thunk for multiple inheritance", or "RTTI dynamic_cast".
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Failed decompilations are listed but not explained. The "positive sp value has been detected" warning is vague. No indication of why certain functions couldn't be decompiled or what the implications are. Indirect calls not resolved but not flagged with actionable guidance.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The exception-throwing behavior in `test_cpp_exception` is correct but not explained. No contract information recovered for any functions.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function relationships not documented. No indication of which functions call which. Virtual dispatch relationships implicit in vtable usage but not explicitly stated. Static member functions like `LifecycleClass::instance_count` referenced but relationships unclear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped by address rather than semantic purpose. Related test functions scattered. Class methods grouped together which is good. However, the overall organization is arbitrary based on binary layout, not logical grouping.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code cannot compile - 21 functions failed to decompile including critical functions like `__printf_chk`, `strlen`, `operator new`, `operator delete`. Requires extensive stubs and library implementations. No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- Function names are mangled C++ symbols (`_Z20test_cpp_member_funcv`) instead of demangled names (`test_cpp_member_func`)
+- Variable names are completely generic (`v0`, `v1`, `v2`, `a`, `b`) with no semantic meaning
+- 21 functions failed to decompile, including standard library functions
+- Over-aggressive optimization/inlining removed all computation logic - functions return pre-computed constants
+- No comments explaining any functionality or anomalies
+
+**Best Quality Aspect:** Code Linearization (8/10)  
+- Control flow is generally straightforward with top-to-bottom readability in most functions
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Function Naming Quality (2/10)  
+- The lexical clarity is completely broken - neither variables nor functions have meaningful names, making the code practically unusable for analysis
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Demangle C++ symbols**: Transform `_Z20test_cpp_member_funcv` to `test_cpp_member_func` using Itanium or MSVC demangling
+2. **Infer variable names from usage**: Analyze how variables are used (e.g., `&a, &b` passed to swap function → name them `a` and `b` or better `first`, `second`)
+3. **Recover computation logic**: Instead of showing `return strlen(obj.name) + 4700`, reconstruct the original computation: create the object, call the methods, show the actual calculation that produced the constant

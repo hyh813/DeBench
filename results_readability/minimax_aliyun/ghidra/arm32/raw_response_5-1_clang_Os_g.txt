@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: Almost all local variables are marked as "Unresolved local var" with generic stack names like `local_28`, `uStack_24`, `uStack_20`. The decompiler failed to recover any meaningful variable names from debug symbols - compare to source where `obj`, `r1`, `r2`, `r3` are clearly defined.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Test functions like `test_cpp_member_func`, `test_cpp_constructor`, `call_virtual_func` match source exactly. Template instantiations like `template_max<int>` and member functions like `Container<int>::push` are correctly named. Minor deduction for some internal symbols like `_init` being generic.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `0x125c` (should be explained as result 4704), `0x3e9` (1000), `0x2a` (42), `0x47` (71). These computed results are used directly without explanation. String literals like `&DAT_00011294` are unrecoverable.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy noise pollution with WARNING comments: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable". The "Unresolved local var" comments appear repeatedly for every function, creating visual clutter.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Main test functions use simple return statements with computed values, which is natural for leaf functions. Template functions like `template_max<int>` show clean if-else structure. Some indirect jump warnings but overall flow is readable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each test function is properly separated. Template instantiations are separate functions (`template_max<int>`, `template_max<double>`). Member functions like `Container<int>::push`, `get`, `getSize` are well-decomposed. Good granularity overall.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Functions read top-to-bottom without complex jumps. Early returns used appropriately in template functions. No forward jumps into loop bodies. The code is highly linear.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or redundant expressions. Each function computes its result directly. Template functions show appropriate structure without over-unrolling at -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - uses `undefined4`, `undefined2`, `undefined1` for unresolved types. Integer types are generic `int` rather than `int32_t`. Function pointers shown as `code**`. However, some template types like `double` are preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover class types - every local variable shows "Unresolved local var: SimpleClass obj@[???]", "Unresolved local var: LifecycleClass obj@[???]". No struct field names recovered. The decompiler fell back to raw stack manipulation.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns like `*(undefined4 *)(this->data + iVar1) = in_r2` in Container<double>::push. However, no obvious buffer overflows or type-confused function pointers. Basic memory safety maintained.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Mixed quality - "DWARF original prototype" comments are highly useful (e.g., "DWARF original prototype: void Container(Container<int> * this)"), but "WARNING" and "Unresolved local var" comments are noise. No algorithm explanations or intent documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ patterns recognized - vtable indirect calls (`**obj->_vptr_Base`), template instantiation syntax, `__dynamic_cast` for RTTI. However, design patterns (RAII, factory, etc.) are not named or explained.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Many anomalies flagged with WARNING comments: "Could not recover jumptable", "Treating indirect jump as call", "Subroutine does not return". However, warnings are generic rather than specific (e.g., "UNCERTAIN: vtable call to Base::virtual_func").
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant recovery. The decompiler provides no documentation of expected input constraints or output guarantees. Silent on error handling contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., `test_cpp_oo_features` calls other test functions). However, no explicit documentation of call graph, global usage, or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - test functions together, template instantiations together, member functions grouped by class. Static functions properly scoped. Minor issue: some internal CRT functions mixed in.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile - uses `undefined4`, `undefined2`, `undefined1` types which don't exist. Many unresolved external references. Requires extensive patching to become compilable C++ code.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming is completely failed - all locals show "Unresolved local var" with generic stack positions
+- Composite type recovery is absent - classes like `SimpleClass`, `LifecycleClass` not reconstructed
+- Magic numbers everywhere without explanation (e.g., `0x125c` for expected result 4704)
+- Build system compatibility is broken - uses undefined types that won't compile
+- Contract/precondition recovery is completely missing
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions are properly separated with good granularity - test functions, template instantiations, and member functions are all correctly isolated.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 1/10)  
+The decompiler failed to recover any meaningful variable names from debug symbols, leaving every local variable as an unresolved generic name.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Extract variable names from DWARF debug info** - The source was compiled with `-g`, so variable names like `obj`, `r1`, `r2`, `result` should be recoverable
+2. **Recover class/struct types from vtable and constructor patterns** - Recognize constructor prologues and vtable pointers to reconstruct class layouts
+3. **Explain computed results as constants** - When a function returns `0x125c` (4704), add a comment showing the expected value from source

@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Only occasional names like `idx` in `param_asm_clobber` and `iter`/`cur` in `param_asm_multi_insn` provide minimal context.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Application functions preserve original names (`param_macro_constants`, `call_asm_basic`), but runtime functions use mechanical names (`sub_401030`, `sub_401040`). Mixed quality across codebase.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0x400`, `0x200`, `57072`, `279`, `282`. Some values like `64` and `16` are inferable from context, but most lack semantic meaning.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant runtime boilerplate pollutes output (`_init`, `__do_global_dtors_aux`, `register_tm_clones`, `__x86.get_pc_thunk.*`). Stack canary checks and compiler artifacts interspersed with application logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Application functions use natural if-else and for-loop constructs. However, runtime functions contain confusing `goto` patterns (e.g., `goto v1->field_2c`) and indirect jumps that obscure execution flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries preserved with appropriate granularity. Application functions are cohesive and single-purpose. Runtime functions are fragmented but this is expected for initialization code.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Application code reads top-to-bottom naturally. Runtime initialization code contains forward jumps and computed gotos that disrupt linear reading (e.g., `sub_4010b0`, `sub_4010c0`).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding applied effectively (`call_macro_constants` returns `64` directly). Some redundancy in runtime code but application logic is clean without dead code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`unsigned int`, `int`, `char*`), SIMD recovered as `uint128_t`. However, many types are generic (`unsigned int` instead of `size_t`, `int32_t`). Pointer arithmetic loses type information in runtime code.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct definitions exist but use entirely generic names (`struct_0`, `field_0`, `padding_0`, `field_2e57`). No semantic field names recovered. Padding calculations visible but meaningless.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Atomic operations recognized (`atomic_exchange_add`). However, unsafe pointer arithmetic present in runtime code. Some implicit casts between pointer types. Stack canary checks indicate safety awareness but add noise.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. No explanation of algorithm intent, macro semantics, or non-obvious logic. Single anomaly note (`[D] Unsupported jumpkind`) is insufficient.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized (atomic operations, SIMD vector addition as `AddV`), but not explicitly named or documented. Loop patterns in assembly functions recovered as C loops.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly flagged (`Unsupported jumpkind Ijk_SigTRAP`). Otherwise no indication of decompilation uncertainty, unresolved calls, or potential issues. Code presented confidently despite gaps.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions (e.g., `MAP_FAILED`, `mprotect` failures) not explained. Return value semantics unclear.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`g_40206e`, `g_402096`) without explanation of purpose. No call graph or dependency information.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output file. Runtime initialization and application logic mixed together without logical grouping. No separation of concerns or namespace structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies present (`_ccall`, `atomic_exchange_add`, `AddV`). Would require significant stubs and library linking to compile standalone. No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+6+4+4)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):   (6+7+6+7)/4 = 6.50  × 0.25 = 1.625
+Level 3 (Type System):  (6+4+5)/3   = 5.00  × 0.20 = 1.00
+Level 4 (Semantic):     (2+5+4+2)/4 = 3.25  × 0.15 = 0.4875
+Level 5 (Contextual):   (5+4+4)/3   = 4.33  × 0.10 = 0.433
+─────────────────────────────────────────────────────────────
+Overall Score:                                  = 4.895 ≈ 4.9/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Variable names are entirely generic** (`v0`, `v1`, `a0`, `a1`) losing all semantic meaning from original source
+- **No comments whatsoever** - original source had extensive documentation that is completely lost
+- **Magic numbers unexplained** - `57072`, `279`, `282` appear without connection to original constants (`0xDEF0`, `__LINE__`, etc.)
+- **Runtime boilerplate pollution** - initialization code (`_init`, `register_tm_clones`, `__do_global_dtors_aux`) mixed with application logic
+- **Struct field names generic** - `field_0`, `padding_0`, `field_2e57` provide no semantic information about data structures
+
+### Best Quality Aspect:
+- **Function Decomposition (7/10)** - Original function boundaries and names largely preserved for application code, maintaining logical separation between test functions
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation means readers must infer all intent from code alone, losing the educational value of the original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics** - Detect constant-folded values and annotate with original macro names (e.g., `// MAX_SIZE = 1024` for `0x400`)
+2. **Separate runtime from application code** - Filter or section compiler initialization code separately from user-defined functions
+3. **Infer variable names from usage patterns** - Analyze how variables are used (size comparisons, array indexing, pointer arithmetic) to suggest semantic names

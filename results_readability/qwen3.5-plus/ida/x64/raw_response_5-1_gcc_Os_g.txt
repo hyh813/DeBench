@@ -1,0 +1,101 @@
+## EVALUATION: C++ Object-Oriented Features Decompiled Code
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `v3`, `exception`) with no semantic meaning. For example, `test_cpp_member_func` uses `v0` for the strncpy return value instead of `name_ptr`. Only `this` pointer and a few parameters like `x`, `idx` have meaningful names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: C++ mangled names are successfully recovered (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func()`), and class methods show proper scope (`Base::virtual_func`, `Derived::getName`). However, 20+ placeholder functions (`sub_2020` through `sub_2150`) have meaningless names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `4700` in `test_cpp_member_func` (should be `4660 + strlen`), `1001` in `test_cpp_constructor`, `0x1Fu` for strncpy length. String literals like `"Test"`, `"Base"`, `"Derived"` are preserved correctly.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readfsqword(0x28u)`) appear in nearly every function despite `-O0` compilation. Empty destructor bodies show `;` statements. However, no excessive register spilling or debug instrumentation beyond expected stack protection.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but complex inheritance shows awkward patterns. `test_cpp_rtti` uses nested conditionals with `if ( v6 != "12RTTIDerivedA" )` followed by `if ( *v6 == 42 )` which obscures the original typeid comparison logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Individual class methods are properly separated (e.g., `Base::virtual_func`, `Derived::virtual_func`). However, 20 stub functions (`sub_2020`-`sub_2150`) that just call `sub_2020()` represent failed decomposition of initialization code.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `test_cpp_rtti` has confusing forward references and the virtual thunk functions use pointer arithmetic that disrupts linear reading (`(char *)this + *((_QWORD *)this->_vptr_MiddleA - 3)`).
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Multiple destructor variants exist (`D0Ev`, `D1Ev`, `D2Ev`, `D4Ev`) which is legitimate C++ but not explained. `test_cpp_smart_ptr` creates objects then immediately destroys them without using values, losing the original computation logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy type degradation: `__int64`, `_DWORD`, `_QWORD` instead of specific types. `template_max<double>` shows `(double a1, double a, double b)` - three parameters instead of two. `std::unique_ptr` internals exposed as `_M_t._M_t._M_head_impl.gap0`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Class structures partially recovered (`SimpleClass obj`, `Base base`, `Derived derived`) with some field names (`multiplier`, `dataA`, `dataB`, `_vptr_Base`). However, vtable structures shown as `int (**)(...)` instead of proper function pointer types, and `Container<int>` data array accessed as `r2[0]` without struct definition.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(int (**)(...))&off_58A8`, `(__int64 *)operator new(8u)`, `(const struct __class_type_info *)&\`typeinfo for'RTTIBase`. Virtual thunk functions use raw pointer arithmetic (`(char *)this - 16`) without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only header comment exists ("Decompiled by IDA Pro 9.1"). No comments explain complex logic like virtual thunk pointer adjustments, vtable layouts, or why `test_cpp_exception` is marked `__noreturn` when it should return. One useful note: "positive sp value has been detected, the output may be wrong!"
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Virtual function dispatch pattern visible through `_vptr_Base` and `(*obj->_vptr_Base)(obj, x)`, but not identified as vtable mechanism. RTTI patterns (`__dynamic_cast`, `typeid`) present but not explained. No recognition of RAII pattern in smart pointer code.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 24 functions marked "FAILED to decompile" at end (good transparency). Stack warning in `_start` function. However, critical issues like `test_cpp_exception` marked `__noreturn` (should return 226) not flagged as problematic.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `Container::get` requires `idx >= 0 && idx < size`). No postconditions. Exception handling contracts not recovered - `test_cpp_exception` should document it throws and catches int exceptions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible (e.g., `test_cpp_oo_features` calls all test functions). Virtual dispatch shown through `_vptr_Base` assignments. However, no call graph documentation, and 24 external dependencies listed as "FAILED" without resolution hints.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping. Class methods scattered (Base methods at 0x2A58, Derived at 0x2A72, etc.). Initialization functions (`_GLOBAL__sub_I_*`, `deregister_tm_clones`) mixed with application logic. No namespace organization recovered.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Will not compile - 24 external functions undefined (`__printf_chk`, `strlen`, `operator new`, `__dynamic_cast`, etc.). C++ name mangling present but no header declarations. `__noreturn` on functions that should return values causes semantic errors.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (3+4+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (6+5+2)/3   = 4.33 × 0.10 = 0.433
+
+Overall Score: 5.13/10
+```
+
+### Overall Readability Score: **5.1/10**
+
+### Critical Defects:
+- **24 external functions failed to decompile** - makes code non-compilable and loses critical library semantics
+- **Variable names entirely generic** (`v0`, `v1`, `v2`) obscuring all data flow understanding
+- **`test_cpp_exception` marked `__noreturn`** - semantic error that changes function behavior
+- **Template function signatures corrupted** - `template_max<double>` has 3 parameters instead of 2
+- **No struct/class definitions recovered** - fields accessed but types not defined (e.g., `Container<int>` layout)
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- C++ mangled names successfully demangled to readable function names with proper class scope resolution
+
+### Most Needs Improvement: **Build System Compatibility (2/10)**
+- Code cannot compile without extensive manual stubbing of 24+ external dependencies
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ standard library function signatures** - Map `__printf_chk`, `operator new`, `__dynamic_cast` to proper declarations with headers
+2. **Infer variable names from usage context** - Variables used in size comparisons should be named `size`, `length`, `count`; pointer arithmetic variables should indicate their role
+3. **Add semantic annotations for C++ features** - Mark vtable calls, virtual thunks, and RTTI operations with explanatory comments explaining the C++ mechanism being implemented

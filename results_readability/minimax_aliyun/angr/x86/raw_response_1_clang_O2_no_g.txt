@@ -1,0 +1,144 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: All parameters use generic names (`a0`, `a1`, `a2`) and local variables use single letters (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`). For example, in `sequential_ops`, parameters should be named `a`, `b`, `c` based on the source, but are `a0`, `a1`, `a2`. The variable `v0` in `loop_while` represents a counter but has no semantic meaning.
+
+### 2. Function Naming Quality
+**Score: 6/10**
+
+Justification: About half the functions have correct names from source (`sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, etc.), but many still use generic addresses like `sub_401030`, `sub_401090`. The naming is inconsistent - some functions recovered properly while others remain as address-based identifiers.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+Justification: The code is littered with unexplained magic numbers. `4294967295` (0xFFFFFFFF) appears frequently as error return without explanation. `1717986919` (0x66666667) used for division by 10 in `loop_while` is completely opaque. No named constants or enums recovered from source.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Justification: Significant compiler artifacts present: `__x86.get_pc_thunk.bx()` calls, struct padding with meaningless names (`padding_0[20183]`), complex CONCAT macros for 64-bit operations, and unnecessary casts. The code includes many helper functions like `deregister_tm_clones`, `register_tm_clones` that are CRT artifacts, not user code.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Justification: Basic control flow is recognizable (if-else, switch, loops), but some constructs are awkward. The `loop_for_fixed` uses complex bit manipulation instead of a loop: `(unsigned int)(((a0 - 1) * (a0 - 2) >> 32 CONCAT...)`. The `loop_while` has unusual structure with division-by-10 magic. At -O0, these should be more natural.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Functions are well-separated with appropriate granularity. Each function from the source is recovered as a separate function. However, some functions like `test_control_flow_l1` are 60+ lines of sequential printf calls, which could be better organized.
+
+### 7. Code Linearization
+**Score: 6/10**
+
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Some goto patterns exist in `duffs_device` with labeled jumps (`LABEL_40194c`, etc.) that disrupt linear reading. Early returns are used appropriately in some functions.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+Justification: Some redundant patterns present. The `infinite_loop` has duplicate condition checks (`if (*(ptr) == 1)` repeated 4 times). Loop unrolling in `loop_continue` creates complex redundant code. Dead code elimination is incomplete.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Uses `unsigned int` consistently, but loses sign information from original `int`. Parameters like `single_if(unsigned int a0)` should be `int` based on source (handles negative numbers). Function pointer types are imprecise - `int call_func_ptr(unsigned int *a0, unsigned int a1)` should be `int (*f)(int)`.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: Some struct definitions recovered but with generic names. `struct_0` and `struct_1` with fields like `field_0`, `padding_0[20183]` lose all semantic meaning. The `jmp_buf` for `non_local_jump` is declared as `extern unsigned int jump_buffer` instead of proper jmp_buf type.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Several unsafe operations present. In `call_func_ptr`: `return a0(a1)` treats function pointer as data pointer. In `loop_while`: `(result * 1717986919 >> 34)` is undefined behavior for signed overflow. In `op_div`: complex 64-bit division with `CONCAT` macros is error-prone.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+Justification: No comments present in the decompiled output whatsoever. Zero explanation of algorithms, no documentation of non-obvious logic, no indication of uncertainty or confidence level. The code provides no guidance to the reader.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: Some patterns like switch statements and basic loops are recognized, but not explicitly named or documented. The Duff's device in `duffs_device` is partially recognized with labels but not identified as a known idiom. State machines are recovered but not named as such.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+Justification: No anomaly indication. Indirect calls that couldn't be resolved are presented as regular function calls without warning. The `call_func_ptr_array` uses computed addresses from GOT without flagging the uncertainty. No indication of potential undefined behavior.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No contract information recovered. Preconditions like "n > 0" for `duffs_device`, postconditions, and invariants are not documented. Error conditions from source (like division by zero checks) are partially present but not explained.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Justification: Function call relationships are implicit through code but not documented. No indication of who calls whom or global variable usage. The `test_control_flow_*` functions call other functions but this relationship isn't explicitly stated.
+
+### 17. Module Organization
+**Score: 4/10**
+
+Justification: Functions are in a single large file with arbitrary ordering (by address). CRT initialization functions interleaved with user functions. No logical grouping or separation between test functions and implementation functions.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+Justification: Uses `extern` declarations for some functions but incomplete. Many CRT functions referenced but not declared. The code would require significant patching to compile standalone. Dependencies on libc functions (puts, printf) not clearly documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+6+3+3)/4 = 3.5
+L2_avg = (5+7+6+5)/4 = 5.75
+L3_avg = (5+4+4)/3 = 4.33
+L4_avg = (1+4+1+1)/4 = 1.75
+L5_avg = (3+4+4)/3 = 3.67
+
+Overall = (3.5 × 0.30) + (5.75 × 0.25) + (4.33 × 0.20) + (1.75 × 0.15) + (3.67 × 0.10)
+        = 1.05 + 1.4375 + 0.866 + 0.2625 + 0.367 = 3.98/10
+```
+
+**Overall Readability Score: 4.0/10**
+
+### Critical Defects
+
+1. **Variable naming**: All parameters `a0`, `a1`, `a2` and locals `v0`-`v7` are completely generic, losing all semantic meaning from source
+2. **No comments**: Zero documentation or explanation of any function's purpose or algorithm
+3. **Magic numbers**: `4294967295`, `1717986919`, and other constants appear without explanation
+4. **Type degradation**: All parameters are `unsigned int`, losing sign information critical for understanding (e.g., `single_if` handles negative numbers)
+5. **No anomaly indication**: Indirect calls and uncertain decompilations presented as fact without warnings
+
+### Best Quality Aspect
+
+**Function Decomposition (7/10)** - Functions are well-separated with appropriate granularity. Each source function is recovered as a distinct function with reasonable size.
+
+### Most Needs Improvement
+
+**Semantic Transparency (1.75/10)** - The decompiled code has zero comments, no idiom recognition, no anomaly indication, and no contract recovery. This makes understanding the code's purpose extremely difficult.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a0 > 0` check suggests `a0` is a "value" or "input"; loop counter `v0 += 1` suggests `v0` is "index" or "count")
+
+2. **Add comments explaining algorithms**: Document non-obvious logic like the division-by-10 trick in `loop_while` (`1717986919` is magic number for division), and identify known idioms like Duff's device
+
+3. **Recover type information**: Distinguish signed vs. unsigned based on operations (comparisons with 0, arithmetic that can go negative), and properly type function pointers with correct signatures

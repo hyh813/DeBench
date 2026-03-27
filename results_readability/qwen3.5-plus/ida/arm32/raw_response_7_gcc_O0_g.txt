@@ -1,0 +1,102 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Mixed quality - `heap_buffer`, `decrypted`, `buffer` are descriptive, but `test_obf_opt_edge` uses generic `v0` through `v13`, and `param_opaque_predicate` uses generic `a`, `b`, `temp` instead of semantic names like `gcd_result`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user function names preserved accurately (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`), though runtime helpers use generic names (`sub_104F0`, `divsi3_skip_div0_test`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Signal numbers appear as raw integers (8, 11) instead of `SIGFPE`/`SIGSEGV`, string literals replaced with opaque names (`format`, `aObfL403D`, `s`), and `90` used instead of `0x5A` for XOR key.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack offset annotations (`[sp+0h] [bp-14h]`) and type markers (`BYREF`, `__fastcall`, `__cdecl`) add visual noise; warning comment "positive sp value has been detected, the output may be wrong!" indicates potential issues.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions use natural if/else and for/while constructs; `param_opaque_predicate` recovered the GCD while loop well, though `param_division_by_zero` has inverted setjmp logic that requires mental translation.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is appropriate, but `param_implementation_defined` was over-simplified to return constant `44` instead of actual computation, losing the bitfield and implementation-defined behavior logic entirely.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns; `test_obf_opt_edge` is very linear with sequential printf calls, though some functions have stack variable declarations interrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Compiler optimizations removed dead code appropriately (fake branches in `param_fake_branch` eliminated at -O0), expressions simplified correctly (`6*x` instead of `(x<<3)-(x<<1)`), no obvious redundant patterns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, size_t), but `param_string_encryption` return type changed from `int` to `size_t`, and `encrypted_0` loses array type information, becoming an opaque global reference.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays recovered well (`a[8]`, `b[8]`, `c[8]`), but the bitfield struct in `param_implementation_defined` completely lost - function returns constant `44` instead of computing with struct fields `a:3`, `b:5`, `c:24`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some casts present (`(unsigned int)x >> 1`, `(__sighandler_t)`) but generally appropriate; pointer handling is safe, no obvious buffer overflow patterns introduced by decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no semantic comments - only address annotations and decompiler warnings; original source's extensive documentation about obfuscation techniques, expected values, and test scenarios completely absent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified, XOR decryption pattern in `decrypt_string` not commented, signal handler + setjmp/longjmp exception pattern not explained.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "FAILED to decompile" noted for 15 external functions, stack warning present, but no indication that `param_fake_branch` dead code was eliminated or `param_implementation_defined` was over-optimized to constant.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division), no postconditions inferred, error conditions not documented, expected return values from original comments completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships preserved, global variables referenced (`encrypted_0`, `jmp_buffer`, `div_zero_caught`), but no call graph documentation or explanation of callback relationships for signal handlers.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping, runtime initialization functions (`init_proc`, `register_tm_clones`) mixed with user code, no separation between test harness and target functions.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 15 external functions failed to decompile requiring stubs, type mismatches present (`size_t` vs `int`), would need significant modification to compile standalone, dependency on libc functions not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (5+8+4+6)/4 = 5.75  × 0.30 = 1.725
+Level 2 (Structural):   (7+6+7+8)/4 = 7.00  × 0.25 = 1.750
+Level 3 (Type System):  (6+4+7)/3   = 5.67  × 0.20 = 1.134
+Level 4 (Semantic):     (3+3+5+2)/4 = 3.25  × 0.15 = 0.488
+Level 5 (Contextual):   (6+5+4)/3   = 5.00  × 0.10 = 0.500
+---------------------------------------------------------
+Overall Score:                                  5.597 ≈ 5.6/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- `param_fake_branch` dead code eliminated entirely - fake branches (x*x<0, strlen<0) removed, losing obfuscation intent
+- `param_implementation_defined` returns constant `44` instead of actual bitfield computation - complete semantic loss
+- Signal numbers as raw integers (8, 11) instead of symbolic constants (SIGFPE, SIGSEGV)
+- String literals replaced with opaque variable names (`format`, `aObfL403D`, `s`) losing printf format context
+- 15 external functions failed to decompile, requiring manual stub creation
+- No comments explaining algorithm intent, expected values, or obfuscation purpose
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- User-defined function names preserved accurately from source, maintaining semantic intent for most target functions.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- Complete absence of precondition/postcondition documentation makes it impossible to understand function contracts without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover symbolic constants** - Map signal numbers (8, 11) to SIGFPE, SIGSEGV and magic numbers to named constants based on usage context
+2. **Preserve dead code at -O0** - When debug symbols indicate -O0 compilation, avoid eliminating branches even if compiler optimized them
+3. **Add semantic comments** - Infer and document algorithm patterns (GCD, XOR decryption, setjmp exception handling) with explanatory comments

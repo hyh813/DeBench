@@ -1,0 +1,158 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality (10%)
+**Score: 2/10**
+
+All parameters use generic names like `a1`, `a2`, `result` that provide no semantic meaning. Local variables use cryptic sequential names (`v2`, `v3`, `v5`, `v6`, etc.) that make tracking purpose impossible. For example, in `process_int`, parameter `a1` should be `x`, and in `array_1d_stack`, variables like `v2`, `v3`, `v5` should be `sum`, `i`, `arr` respectively.
+
+### 2. Function Naming Quality (10%)
+**Score: 9/10**
+
+Function names are excellent - they match the original source almost perfectly: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. The decompiler preserved the semantic intent in function naming throughout.
+
+### 3. Literal Clarity (5%)
+**Score: 7/10**
+
+Most literals are clear - test functions print expected values directly (e.g., `printf("DT-L1-01 (process_char): %c\n", 97)`). However, some magic numbers like array indices in `array_2d_stack` (`a1[99]`, `a1[88]`, etc.) are not explained as diagonal elements.
+
+### 4. Noise Reduction (5%)
+**Score: 4/10**
+
+Significant noise from SIMD optimization artifacts. Functions like `array_1d_stack` and `array_3d` use NEON intrinsics (`vaddq_s32`, `vld3q_f32`) that obscure the simple loop logic. The `__addtf3` and `__multf3` library functions are massive and unparseable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness (8%)
+**Score: 5/10**
+
+Simple functions like `process_char` have natural if-else flow. However, array functions show aggressive loop unrolling that transforms `for` loops into complex SIMD sequences. The `array_3d` function is particularly unreadable with its nested `vaddq_s32` calls. At `-O0`, this level of optimization is unexpected.
+
+### 6. Function Decomposition (7%)
+**Score: 8/10**
+
+Functions are appropriately sized and cohesive. Each test function (`test_data_types_l1`, `test_array_types`, etc.) calls individual test cases. The decomposition matches the source organization well.
+
+### 7. Code Linearization (5%)
+**Score: 6/10**
+
+Most functions read top-to-bottom. However, functions like `array_1d_stack` have early returns and multiple loop paths that disrupt linear reading. The `binary_tree_sum` uses a complex do-while pattern instead of clean recursion.
+
+### 8. Redundancy Elimination (5%)
+**Score: 4/10**
+
+Significant redundancy from loop unrolling. The `array_3d` function manually computes what should be a simple triple-nested loop. The `array_2d_stack` hardcodes all 10 diagonal indices instead of using a loop.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision (8%)
+**Score: 5/10**
+
+Types are mixed - some precision (`float`, `double`, `_DWORD*`) but many generic `__int64` and `__int128`. The `process_char` returns `__int64` instead of `char`. Function pointers like in `ptr_func_simple` use vague `__int64` instead of proper signatures.
+
+### 10. Composite Type Recovery (7%)
+**Score: 3/10**
+
+Struct recovery is poor. `struct_simple` uses raw array indexing (`a1[1]`, `a1[2]`) instead of named fields. `struct_nested` similarly uses `a1[3]` and `*a1` without field names. The original `Point3D`, `Rect`, `Widget` structs are completely lost.
+
+### 11. Type Safety (5%)
+**Score: 6/10**
+
+Some unsafe patterns exist. The `ptr_void` function uses type punning through `unsigned __int8*` then casts to `int*`. The `struct_bitfields` uses manual bit manipulation instead of proper bitfield access. However, most pointer operations are reasonably safe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence (5%)
+**Score: 1/10**
+
+No comments present in the decompiled output. The original source had extensive comments explaining each test case (e.g., "DT-L1-01: 字符类型", "场景: [SCENE-ALL]"). None of this semantic information was recovered.
+
+### 13. Idiom Recognition (3%)
+**Score: 4/10**
+
+Some patterns visible but not named. The linked list traversal in `linked_list` is recognizable but not labeled. The binary tree recursion is apparent but not identified as a tree traversal pattern.
+
+### 14. Anomaly Indication (3%)
+**Score: 2/10**
+
+No indication of anomalies. The `array_oob` function has an off-by-one bug (`i <= n` instead of `i < n`) that could cause buffer overflow, but there's no warning. The `process_ld` references `xmmword_2A80` without explanation.
+
+### 15. Assertion & Contract Recovery (4%)
+**Score: 1/10**
+
+No preconditions, postconditions, or invariants documented. The original `const_param` function's contract ("读取const数据，不能修改") is lost. No bounds checking documentation for array functions.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity (4%)
+**Score: 4/10**
+
+Function calls are visible in `main` but relationships aren't documented. The callback relationship in `ptr_func_complex` (calling `complex_callback`) is not explained. Global/static relationships unclear.
+
+### 17. Module Organization (3%)
+**Score: 7/10**
+
+Functions are grouped logically by type (data types, arrays, pointers, composites). The order matches the source file structure reasonably well.
+
+### 18. Build System Compatibility (3%)
+**Score: 8/10**
+
+The code has `// attributes: thunk` annotations and uses standard types. External functions like `puts`, `printf` are referenced but not declared. Would require header declarations to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 7 + 4) / 4 = 5.5
+L2_avg = (5 + 8 + 6 + 4) / 4 = 5.75
+L3_avg = (5 + 3 + 6) / 3 = 4.67
+L4_avg = (1 + 4 + 2 + 1) / 4 = 2.0
+L5_avg = (4 + 7 + 8) / 3 = 6.33
+
+Overall = (5.5 × 0.30) + (5.75 × 0.25) + (4.67 × 0.20) + 
+          (2.0 × 0.15) + (6.33 × 0.10)
+        = 1.65 + 1.44 + 0.93 + 0.30 + 0.63
+        = 4.95/10
+```
+
+**Overall Readability Score: 4.95/10**
+
+---
+
+### Critical Defects
+
+- **Variable naming**: All parameters use generic `a1`, `a2`, `result` - completely obscures semantic purpose
+- **Struct field loss**: `struct_simple` uses `a1[1]`, `a1[2]` instead of `p->y`, `p->z` - loses all field semantics
+- **No comments**: Zero recovery of the extensive Chinese comments explaining test scenarios
+- **Loop unrolling**: At `-O0`, aggressive SIMD unrolling in `array_3d` makes code nearly unreadable
+- **Type precision**: Returns `__int64` for `process_char` instead of `char` type
+
+### Best Quality Aspect
+
+**Function Naming (scored 9/10)**: The decompiler preserved nearly all function names exactly from the source (`process_char`, `array_1d_stack`, `ptr_double`, etc.). This is the strongest aspect of the decompilation.
+
+### Most Needs Improvement
+
+**Comment Quality (scored 1/10)**: The original source had 830 lines of heavily commented code explaining each test case, data type, and scenario. Zero of this semantic information was recovered. Combined with poor variable naming, the code is essentially unreadable without the source.
+
+---
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: When `a1` is used as an array and summed in a loop, infer `arr` or `array`. When `a2` bounds a loop, infer `length` or `count`.
+
+2. **Recover struct field access patterns**: When code accesses `a1[0]`, `a1[1]`, `a1[2]` consecutively, attempt to match against known struct layouts and suggest field names.
+
+3. **Detect and annotate optimization artifacts**: At `-O0`, loop unrolling should be recognized and either commented or refactored back to loops. The SIMD intrinsics in `array_3d` should be annotated as "compiler-generated loop unrolling".

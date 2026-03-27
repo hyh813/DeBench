@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `ptr`, `a0`, `a1`) with no semantic meaning. Original `dst`, `src`, `buffer`, `write_data` are lost. Example: `param_strcpy(unsigned int a0, unsigned int a1)` should be `(char *dst, const char *src)`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`param_strcpy`, `call_strcpy`, `thread_sum`, `main`), but many helper functions use address-based names (`sub_401030`, `sub_401040`). Better than typical decompilation but inconsistent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: `4294967295` (unsigned -1), `4294967293` (unsigned -3), `42` appear without explanation. String literals preserved well (`"Value: %d, Name: %s\n"`, `"HelloPipe"`), but numeric constants lack semantic names.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.*` functions, `__stack_chk_fail_local` calls in every function, 100+ PLT stub functions (`sub_401030` through `sub_401780`), excessive struct padding definitions. Architecture mismatch (ARM64→X86) adds confusion.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs reasonably well. Some goto usage present but not excessive. Stack canary checks introduce awkward early-exit patterns. `param_signal_handling` has deeply nested if-else that's readable but verbose.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved. However, `param_thread_local_storage` is monolithic (~150 lines). PLT stubs create unnecessary fragmentation. Thread functions appropriately separated but could be better organized.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with clear flow. Stack canary checks at function ends disrupt reading. Error handling paths are clear but add vertical noise. Loop structures are recognizable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks duplicated in nearly every function. Similar error handling patterns (`if (v6 == *((int *)_ccall(...))) return; __stack_chk_fail_local();`) repeated excessively. No obvious dead code but significant boilerplate.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: all pointers become `unsigned int`, `size_t` becomes `unsigned int`, no const-correctness. `param_strcpy(char *dst, const char *src)` becomes `param_strcpy(unsigned int a0, unsigned int a1)`. Function return types often wrong (void functions return `unsigned int`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`field_0`, `padding_0[224]`, `field_5783`). `ThreadData` struct not properly recovered. TLS variables lose thread-local semantics. Example: `struct_0 { char padding_0[22458]; unsigned int field_57ba; }` is unusable.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Implicit unsafe casts throughout. Pointer arithmetic on `unsigned int` types. No const correctness preserved. Stack canary checks indicate safety concerns but aren't explanatory. Function pointer types degraded to generic integers.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. Original source had extensive documentation (purpose, test scenarios, expected values) - all lost. Only anomaly is `[D] Unsupported jumpkind Ijk_SigTRAP`. No algorithm explanations or API contracts.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`sub_4015b0` for `strcpy`, `sub_401630` for `strlen`). Thread patterns visible (`pthread_create`, `pthread_join`) but not explicitly identified. Signal handling pattern present but unnamed. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly noted: `[D] Unsupported jumpkind Ijk_SigTRAP at address 4200379`. Stack canary failures indicated but not explained. Architecture mismatch (ARM64 source, X86 decompilation) not flagged. Indirect calls not marked as uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions inferred. Error conditions visible through return values (`4294967295` = -1) but not documented. No invariant recognition for loops or data structures.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`g_40409d`, `shared_counter`, `atomic_counter`) but not clearly identified as globals. Callback relationships (thread entry functions) not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single output file. No header file separation. Static functions not properly scoped. Original organization partially preserved through function naming groups (`test_standard_library_functions`, `test_system_calls`, `test_thread_concurrency`).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies not documented (pthread, libc). Some compiler-specific constructs (`__x86.get_pc_thunk.*`) present. Architecture mismatch would cause runtime issues despite compiling.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+6+7+6)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (4+4+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (2+5+4+3)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.77/10
+```
+
+**Overall Readability Score: 4.8/10**
+
+### Critical Defects:
+- **Variable `a0`, `a1` in `param_strcpy`** should be `dst`, `src` based on usage pattern and original source
+- **All 100+ PLT stub functions** (`sub_401030` through `sub_401780`) are noise that should be collapsed or hidden
+- **Type degradation**: `char*` and `const char*` both become `unsigned int`, losing critical semantic information
+- **Zero comments** despite original source having extensive documentation explaining purpose and expected values
+- **Architecture mismatch**: Original ARM64 compiled as X86, causing `__x86.get_pc_thunk.*` artifacts that confuse analysis
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions preserved original names (`param_strcpy`, `call_strcpy`, `thread_sum`, `main`), making it possible to locate key functionality despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation; original source had extensive comments explaining purpose, test scenarios, and expected values - all lost in decompilation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., first parameter to strcpy-like functions should be `dst`, second should be `src`)
+2. **Collapse PLT/stub functions** - Detect and hide compiler-generated stubs that add no semantic value, reducing 4031 LOC to something closer to original 1174 LOC
+3. **Recover and preserve type information** - Use calling convention analysis to distinguish `char*`, `const char*`, `void*`, and `size_t` instead of defaulting all to `unsigned int`

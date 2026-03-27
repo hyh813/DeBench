@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (iVar1, iVar2, uVar1, piVar2) with no semantic meaning recovered. Original names like `temp1`, `sum`, `count` are completely lost despite -O0 debug compilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved accurately (sequential_ops, recursion_factorial, switch_fallthrough). Only a few helpers show generic names (FUN_00101020).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like 0x3e9 (1001), 0x65 (101), 0x15 (21) appear without explanation. Test functions hardcode expected values instead of showing actual computations.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (__stack_chk_fail), frame pointer references (in_FS_OFFSET), and "Unresolved local var" comments add noise. Some compiler artifacts remain visible.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if/else and loops recovered well, but recursion_factorial converted to iterative loop. switch_fallthrough uses explicit if-chains instead of switch. loop_multi_exit uses goto labels.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly. Test functions became bloated with inline array initialization. Helper functions (op_add, double_value) properly separated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Some functions (loop_multi_exit, duffs_device) use goto labels that disrupt flow. Early returns preserved appropriately.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions duplicate array initialization code multiple times. switch cases show some redundant patterns. No dead code elimination visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: All integers are generic `int` without size specification (int32_t). Function pointers use custom typedefs (_func_int_int). No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays recovered correctly (matrix[3][4], funcs[3]). No struct/union reconstruction needed for this code. Pointer arithmetic visible in some cases.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple "WARNING: Treating indirect jump as call" warnings. Function pointer calls lack proper type verification. Stack canary checks indicate potential safety concerns.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only decompiler warnings present ("WARNING: Could not recover jumptable"). No algorithm explanations, no parameter documentation, no semantic comments recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Loop patterns recognized but not named. State machine pattern in state_machine function not identified. No design pattern documentation.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system for unresolved jumps, indirect calls, and stack checks. "Unresolved local var" comments help identify recovery limitations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not explained. Test expected values hardcoded without rationale.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but indirect calls flagged as warnings. Callback relationships not explicitly documented. Global variable usage (jump_buffer) visible.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 72 functions in single output file. No logical grouping by control flow level. Test functions mixed with implementation functions.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Requires external dependencies (__printf_chk, __stack_chk_fail, __libc_start_main). Would need significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.63
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (3+5+7+2)/4 = 4.25 × 0.15 = 0.64
+Level 5 (Contextual):  (6+5+5)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.52/10
+```
+
+**Overall Readability Score: 5.5/10**
+
+### Critical Defects:
+- **Variable names completely generic** (iVar1, iVar2) despite -O0 debug compilation with symbol information available
+- **Test functions hardcode expected values** instead of showing actual function calls, losing verification semantics
+- **Recursion converted to iteration** (recursion_factorial, tail_recursion) losing original algorithmic intent
+- **No semantic comments recovered** from original source documentation (CF-L1-01 labels, difficulty ratings, test cases)
+- **Architecture mismatch** (original ARM64, decompiled shows x86) indicating potential binary confusion
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or test case rationale documented despite rich original comments
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for variable naming** - At -O0 with -g flag, original variable names should be recoverable from DWARF debug information
+2. **Preserve source comments in decompilation output** - Original code has extensive documentation (difficulty ratings, test cases, scene labels) that should be embedded
+3. **Detect and preserve recursion patterns** - When tail-call optimization is detected, add comments indicating original recursive structure for semantic clarity

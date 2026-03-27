@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic auto-generated names like `local_5`, `local_8`, `iVar1`, `lVar1`, `cVar1` that completely obscure their semantic purpose. For example, in `process_char`, `local_5` should be named `result` or `converted_char`. Only a few variables like `sum`, `i`, `len` in loops are appropriately named.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names perfectly match the original source: `process_char`, `process_short`, `process_int`, `process_long`, `process_ll`, `process_float`, `process_double`, `process_ld`, `process_bool`, `const_param`, `volatile_access`, `array_1d_stack`, `array_string`, etc. The decompiler correctly recovered every function name.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Most literals are clear (e.g., `' '` for case conversion offset, `0x2a` for 42). However, `array_2d_stack` uses magic number `0x2c` (44 decimal) for array row stride without explanation—this should be `40` for a 10-element int row. The `enum_switch` uses `0x32` instead of `50` for STATE_PAUSED.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal code noise; the main artifacts are repeated "WARNING: Unknown calling convention" comments which are actually useful metadata. However, `process_ll` has overly complex decompilation artifacts with `CONCAT44` and `x._4_4_` constructs that obscure the simple `x * x` operation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most control flow is natural (for/while loops). However, `array_2d_stack` has a critical bug: it computes `*(int *)((int)arr + i * 0x2c)` instead of `arr[i][i]`, producing wrong results. Also, `ptr_diff` has operator precedence issues: `(int)p1 - (int)p2 >> 2` should be parenthesized.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent function granularity. Each function has single responsibility and appropriate size. The original source's test functions (`test_data_types_l1`, `test_array_types`, etc.) are correctly separated from implementation functions.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately in functions like `array_complex_index` and `struct_with_ptr`. No spaghetti code or computed goto patterns observed.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy removed appropriately. However, `volatile_access` loses important semantics—it simplifies `int a = *p; int b = *p; return a + b;` to `return *p + *p;`, eliminating the two separate volatile reads which was the point of the original code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Most basic types are correct (char, short, int, long, float, double). However, `const_param` takes `int *p` instead of `const int *p`, losing const correctness. The `process_ld` function is completely wrong—it's treated as returning a pointer `longdouble *` instead of `longdouble`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Excellent struct/union recovery. `Point3D`, `Rect`, `Widget`, `Node`, `UnionData`, `State`, `Device`, `TreeNode`, `DNode`, `Edge`, `Graph` all correctly recovered with proper field names. However, `Flags` bitfield uses raw bit manipulation `*(ushort *)f >> 6` instead of named fields like `f->value`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues: (1) `array_2d_stack` uses unsafe cast `*(int *)((int)arr + i * 0x2c)`, (2) `ptr_diff` has operator precedence bug, (3) `process_ld` returns pointer to local stack variable `in_EAX`, (4) `ptr_cast` oversimplifies the original three-step cast to just `*(int *)p`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only Ghidra metadata comments ("WARNING: Unknown calling convention") and function headers present. No meaningful comments explaining algorithm logic, purpose of non-obvious code, or recovered contracts. The original source had extensive comments (e.g., "DT-L1-01: 字符类型") that are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns like linked list traversal (`while (current != NULL)`), binary tree recursion, and graph adjacency list traversal are correctly structured but not explicitly identified or named. No pattern naming like "linked list traversal" or "binary tree recursion" present.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra correctly flags "Unknown calling convention" warnings and unreachable blocks. However, the critical bug in `array_2d_stack` (wrong indexing producing incorrect results) is not flagged as an anomaly. The `process_ld` malfunction is also not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. For example, `array_complex_index` has bounds checking but no comment indicating this is a precondition. No documentation of what conditions must hold before/after function execution.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are visible in code (e.g., `ptr_func_simple(double_value,5)`, `ptr_func_complex(complex_callback,&val11)`). The relationship between `binary_tree` and `binary_tree_sum` is clear. However, no documentation of who calls each function or global variable usage.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions logically grouped matching source structure: data type functions first, then array functions, pointer functions, composite type functions, then test functions. Static functions like `double_value` and `complex_callback` are appropriately placed near their usage.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code requires standard library linkage (`printf`, `memcpy`) and CRT functions (`__gmon_start__`, `__libc_start_main`). These dependencies are expected but not documented. The code would compile with `gcc -c decompiled.c`.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+1. **Variable naming**: Generic names like `local_5`, `iVar1`, `lVar1` completely obscure variable purpose
+2. **array_2d_stack bug**: Uses `i * 0x2c` instead of `arr[i][i]`, producing incorrect diagonal sum (should be 45, but computes wrong value)
+3. **Type precision loss**: `const_param` loses const correctness (`int *p` vs `const int *p`), `process_ld` completely wrong signature
+4. **Volatile semantics lost**: Two separate volatile reads collapsed to single expression, losing the original intent
+5. **No comments**: Complete absence of meaningful documentation explaining algorithms or recovered semantics
+
+**Best Quality Aspect:** Function Naming Quality (10/10) - Every single function name matches the original source perfectly, demonstrating excellent symbol recovery.
+
+**Most Needs Improvement:** Variable Naming Quality (4/10) - Generic auto-generated names like `local_5`, `iVar1` make it extremely difficult to track variable purpose and understand code logic.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: `local_5` in `process_char` is used as return value → name it `result` or `converted`. Loop indices like `i`, `j`, `k` are already good.
+2. **Fix array_2d_stack indexing**: The expression `*(int *)((int)arr + i * 0x2c)` should be `arr[i][i]` to correctly compute diagonal sum.
+3. **Recover const correctness**: `const_param` should take `const int *p` to match source and preserve type safety semantics.

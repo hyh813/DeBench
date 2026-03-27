@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `flag1`, and `result`, providing no semantic context (e.g., in `param_opaque_predicate`, `flag1` represents the GCD accumulator but is named generically).
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names are perfectly preserved from the original source (e.g., `param_fake_branch`, `param_opaque_predicate`), accurately reflecting their purpose and making the API surface very clear.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers are prevalent and undefined; for example, `4294967295` (UINT_MAX) and `90` (XOR key) appear without named constants or comments explaining their significance.
+
+**4. Noise Reduction:** Score: 1/10  
+Justification: The code is heavily polluted with low-level IR artifacts, specifically calls to `arm64g_calculate_condition` which obscure logic, and redundant stack pointer assignments like `v0 = &v1`.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Control flow is obscured by the use of helper functions for condition codes (e.g., `arm64g_calculate_condition`) instead of native C operators, making simple `if` statements difficult to parse.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions are recovered with excellent granularity, matching the original source structure exactly, with distinct functions for `call_...` wrappers and logic implementations.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: While mostly sequential, the code suffers from "forward variable declaration" patterns common in IR lifting (e.g., `v0 = ...; v1 = ...; if (v0)...`), which disrupts top-to-bottom readability.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Contains significant redundancy from stack frame setup, such as `v0 = &v1` in almost every function, which serves no semantic purpose in the decompiled view.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Types are frequently incorrect or overly generic; `int` return types are often lifted to `long long`, and pointers are frequently cast to `void*` or `unsigned long` (e.g., `decrypt_string` returns `char [2]` instead of `const char*`).
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No composite types (structs/unions) were recovered; the struct in `param_implementation_defined` is completely lost, replaced by raw arithmetic or constant folding.
+
+**11. Type Safety:** Score: 3/10  
+Justification: The code contains unsafe casts that violate type safety, such as `*((uint128_t *)&result) = 0` and `*((char *)&cur[1])`, which are dangerous and hard to read.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are virtually absent, with the exception of `/* do not return */` annotations; there is no explanation of the complex logic or the IR artifacts.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: High-level algorithms like GCD or string encryption are vaguely recognizable as loops, but the specific logic is buried under generic variable names and IR condition calls.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: The decompiler presents the IR artifacts (like `arm64g_calculate_condition`) as standard code without any warning or indication that they represent low-level implementation details.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the non-null requirement for pointers is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls are explicit and easy to trace (e.g., `param_tail_call_optimized(1000, 0)`), and global variable references like `g_411ff8` are clearly marked.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are organized by address, which is standard, but the lack of logical grouping (e.g., separating helpers from main logic) makes navigation slightly harder than the source.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: The code is not compilable due to dependencies on non-standard helper functions like `arm64g_calculate_condition` and `__ROL__` which are not defined in the output.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- **IR Leakage**: Pervasive use of `arm64g_calculate_condition` exposes low-level VEX IR details, making logic unreadable.
+- **Variable Naming**: Generic names (`v0`, `v1`, `flag1`) obscure all semantic meaning of local variables.
+- **Type Erosion**: Structs are completely lost, and integer types are incorrectly widened (e.g., `int` to `long long`).
+- **Uncompilable Artifacts**: Reliance on undefined internal helpers prevents the code from being compiled or tested.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- The decompiler perfectly preserved the original function names, which is the only reliable anchor for understanding the code's purpose.
+
+**Most Needs Improvement:** Noise Reduction (scored 1/10)  
+- The exposure of internal IR representation (`arm64g_calculate_condition`) and stack setup artifacts renders the code extremely noisy and difficult to read.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Implement IR-to-High-Level Pattern Matching**: Replace sequences involving `arm64g_calculate_condition` with native C comparison operators (`<`, `>`, `==`) to restore natural control flow.
+2. **Enhance Type Inference**: Improve the type recovery engine to distinguish between `int` and `long long` on AArch64 and attempt to recover stack-based structs.
+3. **Semantic Variable Renaming**: Infer variable names from usage context (e.g., variables used in loop conditions or as return values) rather than relying solely on generic SSA names.

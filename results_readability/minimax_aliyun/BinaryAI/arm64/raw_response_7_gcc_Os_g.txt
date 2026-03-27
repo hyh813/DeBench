@@ -1,0 +1,176 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+### Analysis Overview
+
+The original source code implements a fake branch obfuscation technique with two "always false" conditions that will never execute:
+1. `x * x < 0` (impossible for real numbers)
+2. `strlen(str) < 0` (string length can't be negative)
+
+The function simply returns the input `x` unchanged.
+
+The decompiled version shows a **critical failure**: the function signature is completely lost - it shows `void param_fake_branch(void)` instead of `int param_fake_branch(int x)`.
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 1/10**
+
+**Justification:** The decompilation completely failed to recover the function signature. The parameter `x` and return value `result` are entirely missing. The function shows as `void param_fake_branch(void)` when it should be `int param_fake_branch(int x)`. This is a catastrophic loss of semantic information - there are no variables to name because the parameter was completely dropped.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+**Justification:** The function name `param_fake_branch` was correctly recovered and matches the original source exactly. The naming is action-oriented and semantically accurate, reflecting the obfuscation technique purpose.
+
+### 3. Literal Clarity
+**Score: 10/10**
+
+**Justification:** Since the function body is empty (just `return;`), there are no literals to evaluate. The decompiler correctly recognized that the fake branch conditions were optimized away by the compiler at `-O0`, though it went too far by removing the entire function logic.
+
+### 4. Noise Reduction
+**Score: 10/10**
+
+**Justification:** No compiler artifacts, redundant casts, or debug instrumentation are present. The code is clean, though this is because the function was incorrectly reduced to an empty shell.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 1/10**
+
+**Justification:** The control flow is completely absent. The original function had two if-statements with fake branches, but the decompiled version shows only `return;`. This is not a natural control flow representation - it's a complete loss of the function's logic.
+
+### 6. Function Decomposition
+**Score: 10/10**
+
+**Justification:** Not applicable for this single function. The function is appropriately sized (empty, though incorrectly so).
+
+### 7. Code Linearization
+**Score: 10/10**
+
+**Justification:** The code reads top-to-bottom without jumps. However, this is because the function body is missing, not because of good linearization.
+
+### 8. Redundancy Elimination
+**Score: 10/10**
+
+**Justification:** No redundant code present. Again, this is because the function body was incorrectly removed entirely.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 1/10**
+
+**Justification:** Severe type degradation. The original function signature was `int param_fake_branch(int x)` but the decompiled version shows `void param_fake_branch(void)`. Both the return type and parameter type are completely wrong - lost entirely. This is the most critical defect in this decompilation.
+
+### 10. Composite Type Recovery
+**Score: 10/10**
+
+**Justification:** Not applicable - no structs or unions are used in this function.
+
+### 11. Type Safety
+**Score: 5/10**
+
+**Justification:** The empty function doesn't have obvious type safety violations, but the incorrect function signature could lead to calling convention mismatches and undefined behavior if someone tries to call it with the original signature.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+**Justification:** No comments explaining the fake branch logic or why the function body is empty. The decompiler should have noted that this appears to be dead code elimination or provided a comment about the missing implementation. The original source had detailed comments about the obfuscation technique that were not recovered.
+
+### 13. Idiom Recognition
+**Score: 1/10**
+
+**Justification:** The decompiler completely failed to recognize the "fake branch" (永假分支) obfuscation pattern. The original source explicitly uses this as an obfuscation technique with comments explaining it. The decompiled code shows nothing - the idiom is completely lost.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+**Justification:** No indication that the function signature was incorrectly recovered or that the function body is missing. The decompiler should have flagged this as suspicious - a function that takes no parameters and returns void when the calling convention suggests it should have parameters.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+**Justification:** No preconditions or postconditions recovered. The original function had an implicit contract: "takes an integer, returns that integer unchanged" (since the fake branches never execute). This contract is completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 7/10**
+
+**Justification:** The function is called by `call_fake_branch` which correctly returns 10, showing the decompiler understood the call relationship. However, the parameter passing is not visible in the function itself.
+
+### 17. Module Organization
+**Score: 8/10**
+
+**Justification:** Functions are grouped logically in the decompiled output. The obfuscation-related functions (`param_fake_branch`, `param_opaque_predicate`, etc.) are placed near each other.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+**Justification:** The function signature mismatch would cause compilation issues. If someone tried to call `param_fake_branch(10)` as in the original source, it would fail because the decompiled version takes no parameters. The function would need significant patching to compile correctly.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (1 + 8 + 10 + 10) / 4 = 7.25
+L2_avg = (1 + 10 + 10 + 10) / 4 = 7.75
+L3_avg = (1 + 10 + 5) / 3 = 5.33
+L4_avg = (3 + 1 + 1 + 2) / 4 = 1.75
+L5_avg = (7 + 8 + 3) / 3 = 6.00
+
+Overall = (7.25 × 0.30) + (7.75 × 0.25) + (5.33 × 0.20) + 
+          (1.75 × 0.15) + (6.00 × 0.10)
+        = 2.175 + 1.9375 + 1.066 + 0.2625 + 0.6
+        = 6.04/10
+```
+
+**Overall Readability Score:** 6.04/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Function signature completely lost**: `param_fake_branch(int x)` became `void param_fake_branch(void)` - both parameter and return type are missing
+- **Function body incorrectly empty**: The original logic with fake branches was completely removed instead of being recognized as dead code
+- **No anomaly flagging**: The decompiler should have indicated that the function signature appears incorrect or incomplete
+- **Idiom recognition failure**: The "fake branch" obfuscation pattern was not recognized or documented
+- **Comment loss**: Original source comments explaining the obfuscation technique were not recovered
+
+---
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (8/10)**
+- **Why?** The function name `param_fake_branch` was correctly recovered and matches the original source exactly.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Type Precision (1/10) and Anomaly Indication (1/10)**
+- **Why?** The function signature was completely lost - both the parameter `int x` and return type `int` are missing. This is a fundamental failure that makes the decompiled code unusable for analysis. Additionally, the decompiler provided no indication that anything was wrong.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover function calling conventions**: At `-O0`, function signatures should be preserved. The decompiler should analyze call sites to infer missing parameters - `call_fake_branch` passes `10` to `param_fake_branch`, clearly indicating a parameter was lost.
+
+2. **Flag incomplete decompilation**: When a function body appears empty or the signature doesn't match call sites, the decompiler should add an anomaly comment like `// WARNING: Function signature may be incorrect` or `// NOTE: Possible dead code elimination`.
+
+3. **Recognize obfuscation patterns**: The fake branch idiom (永假分支) is a known obfuscation technique. The decompiler should recognize patterns like `x*x < 0` as always-false conditions and either preserve them with comments or document the elimination.

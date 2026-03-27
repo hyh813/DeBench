@@ -1,0 +1,126 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+Looking at the specific function requested for evaluation:
+
+**Original Source:**
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+**Decompiled Version:**
+```c
+int32_t param_strcpy(int32_t * str) {
+    int32_t str2;
+    strcpy((char *)str, (char *)str2);
+    return strlen((char *)str);
+}
+```
+
+This is a critical failure - the decompilation has:
+1. Lost the second parameter entirely (should be `dst` and `src`)
+2. Introduced an uninitialized variable `str2` used as source
+3. Changed type from `char*` to `int32_t*`
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `str`, `str2`, `a1`, `a2`, `result`. The variable `str2` in `param_strcpy` is uninitialized and used as source - completely wrong. No semantic meaning conveyed.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Function names like `param_strcpy`, `call_strcpy`, `param_memcpy` correctly match source. However, parameter counts are wrong (e.g., `param_strcpy` has 1 param instead of 2), diminishing utility.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (e.g., `66` in `open("/tmp/binbench_shm", 66)`, `950` in `shmget(key, 0x1000, 950)`). String literals are present but encoded Chinese characters in global variables are not decoded.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise including redundant casts like `(int32_t)mem`, address comments like `// 0x11304`, weird constructs like `v1 = v1` in assignments, and spurious goto statements throughout.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive goto usage creates spaghetti code (e.g., `param_fread_fwrite` has `lab_0x11690`, `lab_0x116ac` labels). Loop constructs are often replaced with while loops and goto jumps. At -O0 this is unacceptable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized (20-80 lines typically). Some are too large (e.g., `param_thread_local_storage` is ~190 lines). Parameter lists expose implementation details rather than abstracting them.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Code is highly non-linear with frequent forward jumps. In `param_fread_fwrite`, control flow jumps between labels making it impossible to read top-to-bottom. Multiple goto labels disrupt understanding.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Some dead code present. Redundant computations like `int32_t v1 = (int32_t)mem;` followed by using `mem` directly. Loop unrolling not properly recognized or abstracted.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type degradation. `char*` becomes `int32_t*`, `size_t` becomes `int32_t`, `pthread_t` becomes `int32_t`. Function signatures are wrong - `param_strcpy` should have 2 parameters but has 1. Const correctness is lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are defined but with meaningless field names: `struct stat { int32_t e0, e1, e2... }`. Should be `st_mode`, `st_size`, etc. The `_IO_FILE` struct is incomplete and incorrect.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Critical safety issues: uninitialized `str2` used in `strcpy()`, incorrect pointer arithmetic, function pointers cast incorrectly (e.g., `(int32_t * (*)(int32_t *))0x110ec`). Buffer overflow patterns present.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are purely address markers (e.g., `// 0x11304`, `// bp-44, 0x1131c`) - useless for understanding. No algorithm explanations, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions (strcpy, strlen, memcpy, pthread_create) are recognized and named correctly. However, patterns like producer-consumer, thread pools, and TLS are not identified or named.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies flagged. The completely broken `param_strcpy` (missing parameter, uninitialized variable) is presented without any warning. Code confidently presents incorrect semantics.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not explained. The contract "src must be valid string" is completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships aren't documented. No indication of who calls whom, no global variable usage explanations, no callback relationships shown.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (test functions, param functions, call functions). Static functions properly scoped. However, everything in one file with no header separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would not compile due to: uninitialized variables used, wrong function signatures, missing includes for some types. Requires significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- `param_strcpy` has wrong signature (1 param instead of 2) and uses uninitialized `str2` as source - completely broken semantics
+- All `char*` parameters incorrectly typed as `int32_t*`, losing pointer semantics
+- Excessive goto usage creating spaghetti control flow
+- No useful comments - only address markers
+- Type safety violations throughout (uninitialized variables, incorrect casts)
+- Magic numbers without explanation (66, 950, etc.)
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+Function names mostly match source (param_strcpy, call_strcpy, etc.), providing some semantic anchor.
+
+**Most Needs Improvement:** Type System Fidelity (2.7/10)  
+Types are severely degraded - char* becomes int32_t*, function signatures are wrong, const is lost. This fundamental failure makes the code dangerous to use.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Parameter Recovery**: Implement better analysis to recover function parameters from stack frame and register usage. `param_strcpy` clearly needs two pointer parameters based on strcpy call.
+2. **Type Precision**: Distinguish between int and pointer types. The pattern of `(char *)str` casts indicates the base type should be `char*`, not `int32_t`.
+3. **Anomaly Detection**: Flag uninitialized variables, missing parameters, and suspicious control flow with warnings rather than presenting broken code as correct.

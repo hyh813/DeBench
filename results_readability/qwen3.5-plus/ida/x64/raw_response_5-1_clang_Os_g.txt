@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`) with no semantic meaning. For example, `test_cpp_constructor` uses `v0`, `v1`, `v2`, `v3` instead of `data`, `index`, `result`, `instance_count`. Only `exception` in `test_cpp_exception` has a meaningful name.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test function names are recovered correctly (`test_cpp_member_func`, `test_cpp_virtual_func`), but mangled names appear elsewhere (`_Z20test_cpp_member_funcv`). Helper functions use generic names (`sub_1020`, `deregister_tm_clones`). Class methods are properly named (`Container<int>::push`, `RTTIDerivedA::getType`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers dominate without explanation: `4700` in `test_cpp_member_func` (should be derived from computation), `0x14u` for allocation size, `8u` for object size. The expected return values (42, 71, 650, etc.) are hardcoded rather than computed, obscuring the original logic.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler runtime artifacts present (`_GLOBAL__sub_I_5_1_cpp`, `__do_global_dtors_aux`, `frame_dummy`). Stack manipulation comments appear ("positive sp value has been detected, the output may be wrong!"). However, no excessive register spilling visible in most functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Most test functions are constant-folded to single return statements, losing all original control flow. `test_cpp_constructor` shows a do-while loop that's readable, but `test_cpp_exception` is marked `__noreturn` incorrectly. Exception handling logic is completely lost.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are appropriately sized, but 21 functions failed to decompile entirely. Template instantiations are properly separated (`template_max<int>`, `template_max<double>`). Class methods are correctly extracted as separate functions with proper `this` pointers.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Successfully decompiled functions read top-to-bottom naturally. `test_cpp_constructor` has clear linear flow. However, `test_cpp_rtti` has complex pointer chasing that's hard to follow. No excessive goto usage in recovered code.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code in recovered functions. The constant-folding is actually over-aggressive (removing computation entirely rather than simplifying). Template functions show no redundant operations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `double`, `char*`), but C++ semantics lost. `template_max<double>` has wrong signature (3 parameters instead of 2). `Container<double>::push` shows `double a2, double value` parameter duplication. Pointer types often generic (`void*`, `_QWORD*`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Class structures completely lost. `SimpleClass` with `value` and `name[32]` becomes `char s[36]`. `LifecycleClass` dynamic array becomes raw pointer arithmetic. Vtable pointers shown as `_vptr$Base` but no struct definitions recovered. No field names preserved.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present: `(_DWORD *)`, `(_QWORD *)`, `(_OWORD *)`. Raw pointer arithmetic throughout (`v0[2]`, `this->data[size]`). No const-correctness preserved (original `const` methods show non-const `this` pointers in some cases).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated type annotations (`// rax`, `// [rsp+4h] [rbp-24h] BYREF`). No algorithm explanations, no decompilation confidence indicators. The header comment incorrectly states "IDA Pro 9.1" when metadata says "Ghidra".
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns recognized. RAII patterns from `unique_ptr` completely lost (functions just return 703). Exception handling idioms not identified. Virtual dispatch shown as raw vtable calls without explanation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (21 functions), but no inline warnings. Stack warning present in `_start` function. No indication that constant-folding removed original computation logic. Virtual calls shown without noting they're indirect.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original null checks (`idx >= 0 && idx < size`) preserved in code but not as contracts. Exception safety guarantees completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch shown (`*obj->_vptr$Base`) but inheritance hierarchy not documented. Static member access (`LifecycleClass::instance_count`) preserved but no indication it's shared state.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order (test functions grouped). Class methods grouped by class. However, no namespace structure recovered. Initialization/cleanup functions scattered throughout.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 21 functions marked "FAILED to decompile" including critical runtime functions (`printf`, `strlen`, `operator new`). Cannot compile standalone. Many external dependencies undocumented. Metadata inconsistency (Ghidra vs IDA Pro).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+5+6+7)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (2+2+4+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+
+Overall Score: 4.31/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Constant folding destroyed semantics**: Test functions return hardcoded values (42, 71, 650) instead of showing original computation logic
+- **Class structures completely lost**: `SimpleClass`, `LifecycleClass`, inheritance hierarchies reduced to raw pointers and arrays
+- **21 functions failed to decompile**: Including critical runtime functions (`printf`, `strlen`, `operator new`, exception handling)
+- **Variable names entirely generic**: `v0`, `v1`, `v2` throughout with no semantic meaning recoverable
+- **Metadata inconsistency**: Header claims "IDA Pro 9.1" but task metadata states "Ghidra 12.0_PUBLIC"
+
+### Best Quality Aspect: **Function Decomposition (5/10)**
+- Template instantiations properly separated and class methods correctly extracted as individual functions with appropriate `this` pointers
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no useful documentation; only auto-generated type annotations without any semantic explanation of what the code does
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve computation logic over constant folding**: Even if values are known, show the original calculation path for understanding (e.g., show `value * x + strlen(name)` not just `34`)
+2. **Recover C++ class structures from vtable layouts**: Use vtable information to reconstruct class definitions with field names and inheritance relationships
+3. **Add semantic comments for failed decompilations**: Instead of just listing failures at the end, inline warnings at call sites explaining what couldn't be recovered and why

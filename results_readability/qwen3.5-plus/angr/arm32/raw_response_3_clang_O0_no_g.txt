@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `a0`, `a1`) obscuring semantic purpose. Some better names exist (`idx`, `ptr`, `result`, `pid`) but most stack variables lose original meaning (e.g., `local` becomes `v0`, `arr` becomes `ptr`).
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retain original names (`local_vars`, `heap_basic`, `test_stack_memory`), but helper functions use mechanical names (`sub_400588`, `sub_401f2c`) and one is corrupted (`$a.42` for the callback function).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound: `4294967295` (unsigned -1), `4294967293`, `0xfffffff8` appear without explanation. Original constants like `1000`, `2048` are preserved but bit-masking constants obscure intent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack frame comments (`[bp-0x4]`), redundant assignments (`v0 = v1; return v1;`), 30+ `__sync_*` stub functions, and `/* do not return */` annotations clutter the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Runtime functions use excessive `goto` patterns (`goto LABEL_4006dc`, `goto g_414008`). Test functions have natural loops but VLA/allocation code has complex pointer arithmetic obscuring iteration logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Test functions are appropriately sized and cohesive, but 30+ `__sync_*` stub functions add noise. Runtime helpers (`_init`, `deregister_tm_clones`) are fragmented with label-based control flow.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most test functions read top-to-bottom, but runtime code has multiple forward jumps disrupting flow. `vla_stack` and `alloca_usage` have complex stack manipulation that breaks linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant variable chains (`v3 = v0; return v3;`), duplicate `__sync_*` function stubs (18 nearly identical functions), and some functions return through multiple equivalent paths.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `int` becomes `unsigned int`, `size_t` lost, pointers often `unsigned int`. Original `Point*`, `Node*`, `TreeNode*` all degraded to generic pointer types or `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic names (`struct_0`, `struct_1`) and fields (`field_0`, `field_4`, `field_8`). Original `Point {x, y}`, `Node {data, next}`, `TreeNode {data, left, right}` lose all semantic field names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(char *)ptr`, `(unsigned int *)ptr`), pointer-as-integer operations (`ptr[0] = malloc(8)`), and type-confused function pointers (`global_func_ptr(a0, global_func_ptr)` has wrong signature).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no useful comments. Only `/* do not return */` annotations present. Original source had extensive section headers and test case documentation (MEM-L1-01, HEAP-L2-01, etc.) all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Memory allocation patterns (`malloc`/`free`), linked list traversal, and tree operations not recognized as standard idioms. Test case numbering scheme completely lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Dangerous code (`dangling_pointer`, `double_free`, `heap_overflow`) not flagged. No warnings about undefined behavior, use-after-free, or double-free vulnerabilities that original code intentionally tested.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` checks not explained). No postconditions inferred. Original test expectations (期望：20, 期望：100) completely absent from decompiled output.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables referenced as `g_414008`, `g_4035b4` without context. Callback relationship (`set_global_callback` → `call_global_callback`) not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Original sections (3.1 Stack, 3.2 Heap, 3.3 Static, 3.4 Memory Ops) not preserved. Test functions mixed with runtime stubs.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile: undefined globals (`g_414008`, `extern_global_var`), 30+ `__sync_*` stubs need implementation, `__aeabi_read_tp()` undefined, function pointer call signature mismatch in `call_global_callback`.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Calculation:**
+```
+L1 (Lexical):     (4+6+4+4)/4 = 4.50 × 0.30 = 1.35
+L2 (Structural):  (5+6+5+5)/4 = 5.25 × 0.25 = 1.31
+L3 (Type):        (4+4+4)/3   = 4.00 × 0.20 = 0.80
+L4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.34
+L5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────
+Total:                                    4.20/10
+```
+
+**Critical Defects:**
+- Variable `v0`, `v1`, `v2` should be named based on usage (e.g., `local_value`, `result`, `temp`)
+- Struct fields `field_0`, `field_4`, `field_8` lose semantic meaning (should be `x`, `y`, `data`, `next`, `left`, `right`)
+- Magic numbers `4294967295`, `4294967293` should be `-1` or named constants
+- No comments explaining test case purposes or expected values
+- Dangerous code patterns (dangling pointer, double-free) not flagged as anomalies
+- Function `$a.42` is corrupted name for callback function
+- 30+ `__sync_*` stub functions add significant noise without value
+
+**Best Quality Aspect:** Function Naming Quality (scored 6/10)  
+- Core test functions retained original semantic names allowing identification of purpose
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.25/10 average)  
+- Complete absence of comments, anomaly flags, and contract documentation makes understanding intent nearly impossible
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover variable names from usage patterns** - Analyze how variables are used (size checks, array indexing, pointer dereference) to infer semantic names like `array_size`, `element_count`, `buffer_ptr`
+2. **Add anomaly detection for dangerous patterns** - Flag use-after-free, double-free, buffer overflow patterns with warnings for security analysis
+3. **Preserve struct field semantics** - Use type propagation and access patterns to recover meaningful field names (`data`, `next`, `left`, `right`) instead of `field_0`, `field_4`

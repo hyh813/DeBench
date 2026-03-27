@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all local variables use generic names (iVar1, uVar2, iVar10, etc.) instead of semantic names like `temp1`, `sum`, `count`, `result`. Original variable names are completely lost, making it difficult to track data flow (e.g., `loop_continue` has 17+ generic variables).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test function names are preserved accurately (sequential_ops, single_if, nested_if_2, recursion_factorial). However, some helper functions have generic names (FUN_00100880, FUN_001009fc) and the test functions lost their `test_` prefix clarity in some cases.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers appear throughout (0x3e9=1001, 0x65=101, 0xfffffff8, 0x12345678). Constants like 100, 10, 2 are contextually clear but larger hex values lack explanation or named constant recovery.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains "Unresolved local var" markers throughout, NEON vectorization artifacts (auVar3, auVar9, NEON_ext), and redundant type casts. Compiler artifacts from aggressive optimization obscure the original simple logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions use unnatural transformations (single_if: `x << (0 < x)` instead of conditional). Loops are aggressively unrolled into complex arithmetic (loop_continue, goto_backward, recursion_factorial), destroying original loop structure despite -O0 compilation claim.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate—no monolithic functions. Each original function remains separate. However, some functions like `loop_continue` became excessively complex (100+ lines) due to optimization recovery issues.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom with early returns. However, switch-case fallthrough in `duffs_device` creates confusing goto patterns, and some functions have deep nesting from optimization artifacts.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive loop unrolling creates massive redundancy (recursion_factorial has 20+ iVar variables doing similar operations). Same computation patterns repeated across unrolled iterations without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic int types preserved but many locals marked "Unresolved local var". Function pointer types partially recovered (_func_int_int*). Unsigned/signed distinctions sometimes lost (uint vs int mixing in comparisons).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays shown as unresolved (int[5] arr@[???], int[3][4] matrix@[???]). No struct recovery evident. Pointer arithmetic used instead of array indexing in some cases (switch_small uses *(int *)(&DAT_00101a20 + ...)).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present: "WARNING: Treating indirect jump as call" for function pointers. Cast operations like (ulong)(uint)n appear without justification. No buffer overflow protections visible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no semantic comments. Only compiler warnings present ("WARNING: Could not recover jumptable", "Unresolved local var"). No algorithm explanations, no parameter documentation, no purpose comments.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop patterns not recognized after unrolling. State machine patterns in state_machine/fsm_func_table not identified. Duff's device structure partially recovered but not labeled as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present for unresolved jumps and indirect calls. However, many semantic anomalies (like the -O0 vs -O3 optimization discrepancy) go unnoted. Inconsistent warning coverage.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., n>0 for factorial). No postconditions or invariants. Error conditions not explained. Function contracts completely absent from decompiled output.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Callback relationships (process_with_callback) not explained. Global variable usage (jump_buffer) not contextualized.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 74 functions in single output. No logical grouping by control flow level (L1/L2/L3). Test functions mixed with implementation. No header file or API separation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears compilable but has external dependencies (EVP_PKEY_CTX, __libc_start_main, __gmon_start__). Some functions reference undefined symbols. Would require stubs for standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (4+7+6+4)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (5+4+6)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (3+3+5+2)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.53
+
+Overall Score: 4.83/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable names completely lost**: All locals named iVar1, uVar2, etc. instead of temp1, sum, count, result
+- **Aggressive loop unrolling destroys structure**: loop_continue, recursion_factorial, goto_backward transformed from simple loops to 100+ line arithmetic expressions
+- **No semantic comments**: Zero algorithm explanations despite complex transformations
+- **Optimization level mismatch**: Claims -O0 but shows -O3 level optimizations (NEON, unrolling, strength reduction)
+- **Array/struct types unresolved**: All composite types marked as "Unresolved local var@[???]"
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most original function names preserved accurately, allowing immediate identification of test purposes
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- No preconditions, postconditions, or error handling documentation recovered despite many functions having implicit contracts
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference from usage patterns**: Analyze how variables are used (accumulators, counters, temporaries) to suggest semantic names like `sum`, `count`, `result`
+2. **Detect and preserve loop structures from unrolled code**: Recognize loop unrolling patterns and offer option to collapse back to original loop form with confidence indicators
+3. **Add semantic comment generation**: Automatically generate comments explaining algorithm purpose, detected patterns (state machine, factorial), and optimization transformations applied

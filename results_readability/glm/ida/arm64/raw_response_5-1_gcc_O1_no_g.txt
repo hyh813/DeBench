@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v2`, `dest`), obscuring the semantic meaning of objects like `SimpleClass` instances or loop counters.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: C++ name demangling is excellent; function names like `test_cpp_member_func`, `Base::virtual_func`, and `MiddleA::func` are preserved exactly from the source.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals like `"Test"` are clear, but magic numbers replace `sizeof` calculations (e.g., `0x1Fu` instead of `sizeof(name)-1`) and array sizes (e.g., `0x14u` instead of `5 * sizeof(int)`).
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output is cluttered with compiler-generated artifacts like `virtual thunk to'`, `non-virtual thunk to'`, and multiple destructor variants (`D0`, `D1`, `D2`) which obscure the core logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: High-level constructs like `try-catch` blocks are lost, replaced by low-level runtime calls (`__cxa_allocate_exception`, `__cxa_throw`), making exception handling logic hard to follow.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: Aggressive inlining (e.g., `SimpleClass` logic inside `test_cpp_member_func`) and constant folding (`4700`) hide the original class structure and call sequence.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code generally reads top-to-bottom within functions without excessive spaghetti jumps, maintaining decent flow.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: Loops are unrolled into repetitive assignments (e.g., `v0[1]=10; v0[2]=20; ...` in `test_cpp_constructor`), making the code verbose and obscuring the original iteration logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Primitive types are accurate for the platform (`__int64` for pointers, `int`, `double`), and function signatures match the source definitions well.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Class structures are not recovered; member access is replaced by raw pointer arithmetic and hardcoded offsets (e.g., `*(_DWORD *)(result + 40)` instead of `container->size`).
+
+**11. Type Safety:** Score: 3/10
+Justification: Heavy reliance on unsafe pointer arithmetic and casts (e.g., `(char *)this + *(_QWORD *)(*(_QWORD *)this - 24LL)`) to navigate inheritance hierarchies, which is error-prone.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or the purpose of complex pointer arithmetic used for virtual inheritance.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: C++ idioms are presented as low-level implementation details (e.g., `__dynamic_cast` calls, vtable offsets) rather than high-level concepts like polymorphism or RTTI.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler presents the code confidently without flagging the complex pointer adjustments in `DiamondDerived` or the missing `try-catch` structure as potential readability issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirements for `dynamic_cast` success are implicit in the control flow.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Demangled function names clearly indicate class ownership and relationships (e.g., `ZN14DiamondDerived4funcEv`), making the class hierarchy navigable.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in a flat order rather than grouped by class or logical module, requiring the reader to jump around to understand a single class.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on implicit definitions of C++ runtime functions (e.g., `__cxa_throw`) and specific compiler layouts, making it non-compilable without significant stubbing.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Class structures are completely lost; members are accessed via raw pointer offsets (e.g., `*(_DWORD *)(result + 40)`).
+- High-level control flow for exceptions (`try-catch`) is missing, replaced by library calls.
+- Loops are unrolled into verbose repetitive assignments (e.g., in `test_cpp_constructor`).
+- Variable naming is generic (`v0`, `v1`), losing all semantic context of the original objects.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly demangled C++ symbols, preserving class names and method signatures which is crucial for understanding the structure.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct `class`, `struct`, or `union` definitions forces the reader to interpret raw memory offsets, which is the biggest barrier to understanding C++ code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement C++ class reconstruction to map member offsets back to named fields and structs.
+2. Detect and abstract C++ exception handling patterns (`__cxa_throw`/`__cxa_begin_catch`) back into `try-catch` blocks.
+3. Identify repetitive memory access patterns (e.g., `base[i] = val`) and reconstruct them into loop structures.

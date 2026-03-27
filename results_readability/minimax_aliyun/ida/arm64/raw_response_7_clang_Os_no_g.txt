@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The function `param_fake_branch` has no variables (empty body), representing a complete decompilation failure. Other functions like `param_opaque_predicate` use cryptic names (v1, v2, v3, v4, v5, v6) instead of semantic names like `p1`, `p2`, `p3`. Only `call_fake_branch` has a clear name matching source.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: While most function names match source (call_fake_branch, param_instruction_substitution, param_division_by_zero), `param_fake_branch` is completely wrong - shown as `void param_fake_branch()` with empty body instead of `int param_fake_branch(int x)`. The name is preserved in comments but the function signature is lost.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `0x5A` in decrypt_string is used without explanation. The constant `0xDEADBEEF` from the source's fake branch is not visible (function was optimized away). Some literals like `10` in division-by-zero are clear. Overall inconsistent clarity.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Multiple empty stub functions create noise: `param_fake_branch()`, `param_buffer_overflow_stack()`, `param_buffer_overflow_heap()`, `frame_dummy()`. These are either failed decompilations or unnecessary artifacts. The empty `param_fake_branch` is the most critical noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most control flow is natural (loops, conditionals). However, `call_opaque_predicate` uses goto-style jumps instead of while loops. The empty `param_fake_branch` has no control flow to evaluate. At -O0, we should see the original if-statements with always-false conditions.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: `param_fake_branch` should have parameters and return value but doesn't - this is a decomposition failure. Other functions like `param_tail_call_optimized` show inlining artifacts where recursive calls became formulas. Overall decomposition is reasonable but with significant issues.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom without excessive jumps. The `param_opaque_predicate` gcd loop is linear. Early returns in signal handlers are appropriate. Good linearity overall despite some backward jumps in loops.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant redundancy detected. Loop unrolling in `call_vectorized_loop` is appropriate for SIMD. Common subexpression elimination is minimal. The code is generally clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: `param_fake_branch` shows `void` return type and no parameters - completely wrong (should be `int param_fake_branch(int x)`). Other functions use generic types like `unsigned int` instead of `uint32_t`. Some precision exists (size_t, unsigned int) but significant degradation.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No structs in this specific function, but other functions like `call_null_pointer_deref` properly show `&v3` for local variable address. The bitfield in `param_implementation_defined` is not recovered but that's expected at -O0. Overall reasonable composite handling.
+
+**11. Type Safety:** Score: 4/10  
+Justification: `param_fake_branch` has severe type errors (void function returning nothing). Some unsafe pointer arithmetic in `param_string_encryption` (char* operations). Multiple functions use raw pointer arithmetic without type safety. The signal handler casts are questionable.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only minimal auto-generated comments present (function names, addresses). No explanation of why `param_fake_branch` is empty. No documentation of the fake branch logic that was lost. The comment "Function: param_fake_branch @ 0x914" is just labeling, not explanation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Signal/setjmp pattern is recognized. The gcd algorithm in `param_opaque_predicate` is clear despite generic variable names. SIMD vectorization in `call_vectorized_loop` is well-identified with NEON intrinsics. Some patterns recognized but not explicitly named.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical failure - no indication that `param_fake_branch` decompilation failed. The empty function is presented as if correct. At the end, 11 functions are listed as "FAILED to decompile" (strlen, _setjmp, etc.) but this is at the end, not inline. No warnings about the fake branch logic loss.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions or postconditions recovered. The contract that `param_fake_branch` should return its input is lost. No documentation of the always-false conditions. Minimal contract information overall.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: `call_fake_branch` shows it calls `param_fake_branch(10)` but the called function is empty - this inconsistency is confusing. Function call relationships are partially clear but not comprehensively documented. Some global variable usage is visible.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped reasonably (obfuscation, optimization, edge cases). Static functions are properly scoped. The file organization follows logical groupings. Minor issues with function ordering.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: `param_fake_branch` will not compile (void return with no return statement). Many external dependencies not resolved (printf, signal, longjmp, etc. listed as "FAILED to decompile"). The code would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- `param_fake_branch` is completely wrong: empty void function instead of `int param_fake_branch(int x)` returning the input value
+- The fake branch logic (always-false conditions `x*x < 0` and `strlen(str) < 0`) is completely lost
+- No anomaly indication that this specific function failed to decompile
+- Variable names in `param_opaque_predicate` are generic (v1-v6) instead of semantic (p1, p2, p3)
+- Multiple functions listed as "FAILED to decompile" at the end with no inline warnings
+
+**Best Quality Aspect:** Structural Intelligibility (scored 5.5/10)  
+Control flow is mostly natural and linear. Loop constructs are recognizable. Code generally reads top-to-bottom without spaghetti code.
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.3/10)  
+No comments explaining the fake branch logic loss. No anomaly warnings for the failed `param_fake_branch` decompilation. No contract recovery for the lost semantics.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Detect and flag functions that were optimized away or failed to decompile - add explicit "DECOMPILATION FAILED" comments with uncertainty indicators
+2. Infer variable names from usage patterns - `v1`, `v2`, `v3` in opaque predicate functions should be named `p1`, `p2`, `p3` based on their role as predicate results
+3. Recover always-false condition branches even when compiler marks them as dead code - the fake branch logic is semantically important for obfuscation analysis

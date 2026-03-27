@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `local_c`, `iVar1` instead of semantic names (`size`, `result`, `counter`). For example, `param_1` in `param_macro_constants` should be `size` based on usage pattern.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - function names like `param_macro_constants`, `call_asm_basic`, `test_preprocessing_features` match original source exactly, likely preserved from debug symbols (-g flag).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear where constants should be: `0x401` (should be `MAX_SIZE+1`), `0x200` (should be `MAX_SIZE/2`), `0x40` (should be `BUFFER_COUNT*4`). String literals preserved well.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean but has external function wrappers that call themselves (e.g., `strlen` calling `strlen`), and pseudo-functions `LOCK()`/`UNLOCK()` for atomic operations that don't exist in standard C.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with proper if-else and for loops recovered. However, `call_*` functions return `void` when they should return `int`, losing return value semantics.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. Each original function recovered separately, but return type mismatches (void vs int) indicate decomposition issues.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom naturally without excessive gotos. Loop structures properly recovered from assembly (e.g., `param_asm_clobber` for loop, `param_asm_multi_insn` while loop).
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: External function wrapper functions are redundant (e.g., `<EXTERNAL>::strlen` just calls `strlen`). `param_asm_atomic` and `param_atomic_c11` are identical, showing no consolidation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision with `undefined4`, `undefined8`, `undefined *` types appearing. Return types incorrect (`param_stringize` returns `long` should be `int`, `call_*` functions return `void` should be `int`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in source code to recover. Arrays handled as pointers appropriately. Function pointer types in `param_dynamic_code` recovered as `(code *)__addr`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(undefined4 *)`, `(ulong)`, `(code *)`. `param_dynamic_code` has risky executable memory casts. Atomic operations use pseudo `LOCK()` instead of proper atomic types.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **CRITICAL**: Zero comments recovered despite original having extensive documentation. No algorithm explanations, no expected value comments (original had "期望：64"), no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition for macro expansions, conditional compilation, or assembly patterns. `LOCK()`/`UNLOCK()` pseudo-functions indicate atomic idiom not properly recognized.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No warnings about uncertain decompilation. `LOCK()`/`UNLOCK()` are non-standard pseudo-functions with no explanation. No indication that preprocessing information was lost.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Original had expected values in comments (e.g., "期望：500") but none recovered. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call graph preserved correctly. Global variable `global_var` usage visible. However, no documentation of relationships between functions or call dependencies.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in roughly original order but section organization lost. No grouping comments for "预处理与条件编译" vs "内联汇编与底层特性" sections.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: **Will not compile** without modification. `LOCK()`/`UNLOCK()` undefined, external function wrappers problematic, `undefined` types non-standard. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+5+7)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (5+7+5)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (1+3+4+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.60/10
+```
+
+**Overall Readability Score: 5.6/10**
+
+### Critical Defects:
+- **Zero comments recovered** despite original having extensive documentation explaining macros, expected values, and section purposes
+- **Variable names completely generic** (`param_1`, `local_c`, `iVar1`) losing all semantic meaning from original (`size`, `result`, `counter`)
+- **Magic numbers instead of constants** (`0x401`, `0x200`, `0x40`) where `MAX_SIZE`, `BUFFER_COUNT` should appear
+- **Non-compilable code** with undefined `LOCK()`/`UNLOCK()` pseudo-functions and `undefined` types
+- **Return type errors** in `call_*` functions (void instead of int) losing return value semantics
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from debug symbols, maintaining semantic clarity for function purposes
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete loss of all documentation, expected values, and semantic explanations that made original code understandable
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve comments from debug information** - When `-g` flag is used, extract and embed original comments or generate semantic explanations for non-trivial logic
+2. **Infer variable names from usage patterns and debug symbols** - Use DWARF debug info to recover original variable names instead of generic `param_N`/`local_N`
+3. **Detect and annotate magic numbers** - Identify constants that correspond to macro definitions and add comments suggesting original constant names (e.g., `// MAX_SIZE = 1024`)

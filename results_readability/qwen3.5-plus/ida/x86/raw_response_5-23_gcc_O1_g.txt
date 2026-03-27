@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables are mostly generic (`v0`, `v1`, `v2`, `result`, `i`) with no semantic meaning. Original source had meaningful names like `page_size`, `exec_mem`, `dynamic_func` that are lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - original function names preserved (`param_macro_constants`, `call_asm_basic`, `param_memory_protection`). Only startup helpers use generic names (`sub_1030`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many magic numbers without context: `57072` (was `0xDEF0`), `282` (line number sum), `19` (string length). Original macros like `MAX_SIZE`, `BUFFER_COUNT` completely lost.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean but stack canary code (`__readgsdword(0x14u)`) appears in test functions. Some `__printf_chk` instead of `printf` adds noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Natural C constructs (if/for/while) recovered well. `param_asm_clobber` correctly shows for-loop instead of assembly jumps. Constant folding simplifies some branches.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent - original function boundaries preserved. No inappropriate inlining or fragmentation. Each function maintains single responsibility.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. No excessive gotos or forward jumps disrupting flow. Early returns used appropriately.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Constant folding at O1 actually reduces redundancy. No dead code observed. Loop structures are clean without unrolling artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic `int` used instead of `int32_t`. Some `__int64` and `size_t` preserved. Pointer types mostly correct but lose const-correctness (`const void*` → `void*`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays correctly shown (`int arr[5]`, `char src[10]`, `char dst[32]`). No complex structs in this code to evaluate. Stack variables properly typed.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe casts present: `(int *)mmap(...)`, `(func_t)exec_mem`, `*(__m128i *)result`. No buffer overflow warnings despite risky operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments. Only function signatures with parameter annotations. Original source had extensive documentation explaining macros, assembly, and expected values - all lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Assembly-to-C recovery is good (`param_asm_clobber` shows loop) but not labeled as "recovered from assembly". No pattern identification for macro expansions.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External functions marked "FAILED to decompile" (8 functions). No warnings about constant folding losing original semantics or macro expansion effects.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`, `n > 0`). No postconditions. Original comments about expected return values completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call graph clear. Global variable `global_var` referenced correctly. Test functions show call relationships through printf statements.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file. No header separation. Original source had clear section comments (`// 5.2 预处理与条件编译`) that are lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 8 external functions failed to decompile (`mmap`, `printf`, `sysconf`, etc.). Would need stubs or library linking. `__printf_chk` is GCC-specific.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+9+4+7)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (8+9+8+8)/4 = 8.25 × 0.25 = 2.063
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.267
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (7+6+5)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.29/10
+```
+
+**Overall Readability Score:** 6.3/10
+
+### Critical Defects
+- **Macro semantics completely lost**: `MAX_SIZE` (1024), `BUFFER_COUNT` (16) appear as magic numbers with no indication they were macros
+- **No comments explaining constant folding**: Functions like `call_macro_constants()` return `64` directly without noting the original called `param_macro_constants(2048)`
+- **Conditional compilation branches collapsed**: `param_conditional_compile` only shows the non-DEBUG branch (`3*x+2`) with no indication DEBUG branch existed
+- **Assembly recovery unlabeled**: `param_asm_clobber` shows C loop but no indication this was recovered from inline assembly
+- **Build-time constants hardcoded**: `__LINE__`, `__DATE__`, `__FILE__` values are fixed strings with no indication they were compiler macros
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - Original function names preserved with high fidelity, making navigation and identification straightforward
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Critical semantic information (macro origins, assembly recovery, compile-time decisions) completely absent from decompiled output
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Detect and annotate constant-folded expressions** - When a function body is replaced with a constant, add comment showing original computation (e.g., `// Original: return param_macro_constants(2048)`)
+
+2. **Recover macro provenance** - When magic numbers match common macro patterns, suggest original macro names in comments (e.g., `// Likely: MAX_SIZE (1024)`)
+
+3. **Label assembly-to-C recovery** - When inline assembly is recovered as C constructs, add annotation indicating the recovery (e.g., `// Recovered from inline assembly: loop over array`)

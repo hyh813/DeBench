@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `iVar1`, `iVar2`, `param_1`, `piVar4`, and `lVar3`. Many locals are marked "Unresolved local var: int sum@[???]" losing all semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match original source exactly (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Some internal functions use generic names (`FUN_00100750`, `FUN_001008fc`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear as hex (`0xf`, `0x32`, `0x2a`, `0x12345678`) without explanation. String literals referenced as `DAT_0010145c` instead of showing actual content like `"=== 测试基础调用约定 ==="`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive warnings clutter output: "WARNING: Unknown calling convention -- yet parameter storage is locked" appears 30+ times. "Unresolved local var" comments and stack canary checks add visual noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Computational functions show natural loops/conditionals, but caller functions are constant-folded (e.g., `call_cdecl()` returns `0xf` instead of calling `cdecl_func(5, 10)`), obscuring actual program logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries correctly identified matching original source. Each function has appropriate granularity and single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Loop structures properly recovered as `for`/`while` constructs.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks (`___stack_chk_guard`) repeated in every function. Some functions show redundant pointer arithmetic in varargs handling.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types recovered correctly (`int`, `char*`, `longlong`), but function pointer types use generic names (`_func_int_int*`). Some types degraded to `undefined8`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Struct types recovered (`LargeStruct`, `SmallStruct`, `BigStruct`, `LargeData`, `SmallPoint`) but field names are generic (`data[0]`, `data[1]`, `x`, `y`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present in varargs handling (`(int *)(&stack0x00000000 + iVar3)`). Pointer arithmetic in `func_struct_byval` uses raw indexing without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are auto-generated warnings rather than explanatory. "Unresolved local var" indicates incomplete recovery but provides no guidance.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns identified. Varargs handling pattern not recognized as standard C variadic function idiom.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Warnings present but generic ("Unknown calling convention", "Removing unreachable block"). Don't explain WHY or suggest manual analysis steps.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `p != NULL` for pointer functions). No postconditions or error condition documentation recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Callback relationships (`callback_func` → `param_func_ptr`) not explicitly noted.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source, but no logical grouping indicated (calling conventions vs. parameter passing vs. return values not separated).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__libc_start_main`, `__printf_chk`, `___stack_chk_guard`, `strlen`) not documented. Would require significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+8+7+6)/4 = 6.50 × 0.25 = 1.63
+Level 3 (Type):        (6+6+5)/3   = 5.67 × 0.20 = 1.13
+Level 4 (Semantic):    (4+3+5+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                              5.29/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Constant folding obscures logic**: Functions like `call_cdecl()` return `0xf` instead of showing `cdecl_func(5, 10)` call, making program flow impossible to trace
+- **Generic variable naming**: All temporaries named `iVar1`, `iVar2`, `param_1` with no semantic meaning
+- **String literals hidden**: All printf format strings referenced as `DAT_0010145c` instead of showing actual text
+- **No contract documentation**: Null pointer checks exist but preconditions not documented for API understanding
+- **External dependencies undocumented**: Functions like `__printf_chk`, `___stack_chk_guard` require manual stub identification
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - Zero documentation of preconditions, postconditions, or error handling contracts despite null checks being present in code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Disable aggressive constant folding for decompilation output** - Show actual computation logic even when compiler optimized, as users need to understand program flow not just results
+2. **Implement semantic variable naming inference** - Use usage patterns to name variables (e.g., loop counter → `i`, sum accumulator → `sum`, pointer parameter → `ptr`)
+3. **Recover and display string literal content** - Replace `DAT_0010145c` references with actual string content in comments or inline for printf format strings

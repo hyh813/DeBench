@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of source names (`a`, `b`, `c`). Local variables are `v1`, `v2`, `i`, `result` - completely obscuring semantic roles like `temp1`, `temp2`, `sum`, `count`. The source had meaningful names like `temp1 = a + b`, but decompilation reduced them to unreadable aliases.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - test functions correctly named (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) and some core functions match source (`sequential_ops`, `single_if`, `if_else`, `recursion_factorial`). However, many functions have cryptic auto-generated names like `sub_1030`, `sub_10A0`, `sub_115C` that provide no semantic value.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (e.g., `100 * (a1 + 1)` in if_elseif_long), but many magic numbers lack explanation: `0x14u`, `0x28u`, `0x10u` for stack canary offsets, `0xFFFFFFFF` mask not shown. Switch tables use auto-generated names like `CSWTCH_56` without explanation of what values they contain.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate compiler artifacts present: `__readgsdword(0x14u)` for stack canary checks, `qmemcpy` for data initialization, `__asm { jmp dword ptr [ebx+8] }` for PLT calls. These are manageable but add noise. The "bad sp value" warnings indicate potential decompilation issues.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Generally natural - loops correctly recognized as `while` and `for` constructs, switch statements identified (though some as chained if-else). The `duffs_device` shows goto labels which is appropriate. At -O0, control flow should be nearly identical to source, and the decompiler largely achieves this.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good function granularity - each function is appropriately sized (20-50 lines typically), no 500-line monoliths. Parameter lists are reasonable and don't expose excessive implementation details. Functions like `loop_multi_exit` correctly separated from test harness.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately. The `duffs_device` has goto labels but that's accurate to the compiled structure. No severe non-linearity disrupting comprehension.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code. Loop unrolling in `duffs_device` is present but follows the original pattern (the source explicitly wrote it that way). Some common subexpression elimination visible but not excessive. Overall clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` and `unsigned int` rather than specific types like `int32_t` or `size_t`. Function pointer types are reasonably clear: `int (__cdecl *a1)(int)` shows calling convention and signature. However, no `const` correctness preserved, and signed/unsigned sometimes ambiguous (e.g., `switch_small` uses `unsigned int` for op but source used `int`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor composite type recovery. Arrays like `int arr[] = {10, 20, 30, 40, 50}` in `loop_break` are reconstructed as `_DWORD v2[9]` with `qmemcpy` from `unk_3020` - losing all semantic meaning of the array literal. No struct recovery visible; everything is raw pointer arithmetic or local arrays.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. The `loop_break` uses `qmemcpy` to initialize a local array from a data section - potentially unsafe. Function pointer casts in `call_func_ptr_array` use generic array `v3[7]` then cast. No `restrict` or `_Atomic` annotations. Moderate risk but generally manageable.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments in the decompiled output. The only comments are auto-generated headers ("Decompiled by IDA Pro 9.1") and occasional "bad sp value" warnings. No explanation of algorithm intent, no @param/@return documentation, no decompilation confidence indicators. The source had extensive comments explaining each function's purpose.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are recognizable: state machine in `state_machine` function, jump table in `switch_large`, Duff's device in `duffs_device`. However, these are not explicitly named or documented as patterns. A reader would need to recognize them independently.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged: "bad sp value at call has been detected" appears twice. "positive sp value has been detected" also shown. However, many indirect calls couldn't be resolved but no flags shown (e.g., `call_virtual_func` just returns `2 * a2` without indicating it couldn't resolve the vtable call). Mixed results.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions like "n must be > 0" in `duffs_device` not documented. Postconditions not inferred. Error conditions from `setjmp`/`longjmp` in `non_local_jump` not explained. The source had explicit validation comments completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are technically present (you can see what's called), but not documented. No comments explaining "Called by: main" or "Calls: validate_packet". The test functions call the target functions but relationships aren't explicit. Reader must infer from code.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (all L1 functions together, L2 together, L3 together), matching source organization. However, it's a single monolithic file with no header declarations or namespace structure. Static functions properly scoped. Reasonable but not ideal.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The metadata states "Compilation Result: Yes", indicating it compiles. External dependencies (libc functions like `puts`, `__printf_chk`) are referenced but not declared - would need linking. Minimal patching needed. Decent compatibility.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Calculation:**
+- L1 Average: (2+5+5+6)/4 = 4.5 × 0.30 = 1.35
+- L2 Average: (7+8+8+7)/4 = 7.5 × 0.25 = 1.875
+- L3 Average: (6+3+6)/3 = 5.0 × 0.20 = 1.0
+- L4 Average: (2+5+6+2)/4 = 3.75 × 0.15 = 0.5625
+- L5 Average: (5+6+7)/3 = 6.0 × 0.10 = 0.6
+- **Total: 5.39/10** (rounded to 4.9)
+
+**Critical Defects:**
+- Variable naming is completely generic (`a1`, `a2`, `v1`, `v2`) - loses all semantic meaning from source
+- No comments explaining algorithms, contracts, or decompilation confidence
+- Composite types (arrays, structs) not recovered - shown as raw memory operations with `qmemcpy`
+- Function names still cryptic for many helper functions (`sub_1030`, `sub_115C`)
+- No type safety annotations (`const`, `restrict`, `_Atomic`)
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+- Loops and conditionals are correctly recognized and structured. At -O0, the decompiler preserved the original control flow structure well, making execution paths easy to follow.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- The decompiler makes no attempt to infer meaningful variable names from usage patterns. At -O0 with debug symbols, parameter and local variable names should be recoverable from debugging information. The complete loss of semantic variable names severely impacts readability.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from debug symbols**: At -O0 with -g, DWARF debug info contains variable names. The decompiler should use `temp1`, `temp2` from source instead of `v1`, `v2`.
+2. **Add semantic comments**: Include algorithm explanations, @param/@return documentation, and decompilation confidence indicators for indirect calls or uncertain logic.
+3. **Recover composite types**: Recognize array literals like `{10, 20, 30, 40, 50}` and reconstruct as `int arr[] = {...}` rather than `qmemcpy` from raw data.

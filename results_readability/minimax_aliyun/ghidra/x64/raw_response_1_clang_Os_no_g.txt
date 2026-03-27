@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`, `param_3`) and local variables use cryptic abbreviations (`iVar1`, `uVar2`, `puVar3`, `auVar13`). At -O0 optimization, these should be meaningful like `a`, `b`, `temp1` from source. Zero semantic recovery.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Many functions correctly recovered their source names (`sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`), but internal helper functions use auto-generated names like `FUN_00101020`. Mixed result - public API functions well-named, internals cryptic.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `0x3e9` (1001), `0x12` (18), `0x14` (20), `0xffffffff`. Test functions hardcode expected values (`0x15` for 21) instead of computing them. No named constants recovered.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some warnings about unreachable blocks and unrecovered jumptables, but these are appropriately flagged. No excessive register spilling or debug instrumentation visible.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Severe issues - `loop_for_fixed` uses a complex mathematical formula instead of a loop. `loop_continue` uses bizarre bit manipulation (`uVar8 << 0x1f >> 0x1f`) instead of simple continue. `goto_backward` and `recursion_factorial` use unrecognizable loop constructs. At -O0, these should be nearly perfect.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions properly separated with reasonable granularity. Test functions are large but that's expected. Parameter counts mostly match source. No obvious outline artifacts - functions maintain reasonable cohesion.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns. Some switch statements use goto labels that slightly disrupt flow. Deep nesting in nested_if functions is preserved. Acceptable but not excellent.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No dead code observed. Some loop unrolling in `loop_continue` and `goto_backward` but not commented. At -O0, minimal optimization expected so this is appropriate.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed types - uses `int`, `uint`, `long`, `ulong`, plus Ghidra-specific `undefined4`, `undefined8`. Some signed/unsigned confusion (e.g., `param_1` sometimes treated as signed, sometimes unsigned). Not terrible but not precise.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union recovery. Arrays accessed via pointer arithmetic (`*(undefined4 *)(param_1 + uVar2 * 4)`). The matrix in `loop_multi_exit` should be a 2D array but is accessed via pointer arithmetic. Complete loss of composite type information.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally type-safe code with minimal unsafe casts. Pointer arithmetic is present but bounds-checked reasonably. Function pointer types use `code *` which is generic but functional. No severe type safety violations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality:** Score: 4/10  
+Justification: Some useful warnings about unrecovered jumptables and unreachable blocks. But most functions have no comments explaining their purpose. Test functions have hardcoded expected values instead of computed results, making them useless for verification.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns like switch statements and loops recognized. But complex idioms like Duff's device, state machines, and callback patterns not explicitly named or documented. The `duffs_device` function is recognized as a switch-do pattern but not named.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Appropriate warnings for unrecovered jumptables ("WARNING: Could not recover jumptable at 0x001019d8. Too many branches"). Some unreachable block warnings. But silent on some semantic issues like the mathematical loop transformation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. No error condition explanations. The function contracts from source (e.g., "n must be > 0" for duffs_device) are completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: No cross-reference comments. Function call relationships not documented. However, static functions are properly scoped and some helper functions (like `double_value`, `triple_value`) are placed near their users.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - test functions together, helper functions near main functions. Static functions properly scoped. File organization roughly matches source structure (control flow tests grouped).
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses standard C types mostly. Should compile with minimal changes. Some Ghidra-specific types (`undefined4`, `undefined8`) would need replacement. External dependencies not documented but minimal.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `iVar1`) with zero semantic recovery
+- Control flow transformations are severe - loops replaced with mathematical formulas (`loop_for_fixed`), complex bit manipulation for simple `continue` (`loop_continue`)
+- No struct/union recovery - all composite types lost to pointer arithmetic
+- No literal explanation - magic numbers everywhere without named constants
+- No contract/precondition documentation - function semantics unclear
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Functions are properly separated with reasonable granularity, maintaining cohesion. Public API functions retain their source names.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+At -O0 optimization, variables should have meaningful names from the source. The complete loss of semantic variable names is the most severe readability issue.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: At -O0, parameters like `a`, `b`, `c` should be recovered. Track how variables are used (e.g., `param_1 / 10` in a loop suggests digit counting) to infer names like `digit_count`.
+2. **Preserve loop constructs**: The mathematical formula in `loop_for_fixed` should be recognized as a loop and rendered as `for(int i=0; i<n; i++)`. Loop unrolling detection should add explanatory comments.
+3. **Recover composite types**: The 2D matrix in `loop_multi_exit` should be reconstructed as `int matrix[3][4]` not pointer arithmetic. Detect array patterns from initialization and access patterns.

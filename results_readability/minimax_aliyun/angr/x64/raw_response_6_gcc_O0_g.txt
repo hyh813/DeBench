@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Function parameters use generic names like `a0`, `a1`, `a2` instead of descriptive names like `dst`, `src`. Local variables use cryptic names like `v0`, `v1`, `v2` throughout. For example, in `param_strcpy`, the parameters should be `dst` and `src` based on usage, but are `a0` and `a1`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Standard library functions (strcpy, strlen, printf, fopen) are correctly identified. However, user-defined functions use mechanical naming like `sub_402869` or partially descriptive names like `param_strcpy`. The original source function names are partially preserved but lack semantic action verbs.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals like "HelloLib", "BinBench2025" are correctly preserved. However, magic numbers like `4294967295` (representing -1 as unsigned), `66` (O_CREAT|O_RDWR), `438` (octal 0666), and `950` (IPC_CREAT|0666) lack explanatory comments. The value 42 used as success indicator is also unexplained.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The decompiled output is relatively clean with minimal compiler artifacts. No debug code, register spilling, or frame pointer manipulation is visible. Some "Other Possible Types" annotations add minor noise but don't significantly impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow closely matches the source. Loops use for/while constructs appropriately. Conditionals are clear. The signal handling loop uses while(true) with break, which is acceptable. No goto abuse or spaghetti code observed.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-80 lines each). Each function has a single responsibility. The decomposition matches the original source structure well. Parameter lists are reasonable and don't expose excessive implementation details.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in error handling paths. No excessive forward jumps or deep nesting (>4 levels). The flow is easy to follow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy at -O0. Loop unrolling is not present (as expected at this optimization level). Common subexpression elimination artifacts are minimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are correct (char*, void*, int). However, const correctness is lost - `const char *src` becomes `char *a1`. Integer types are generic (int, unsigned int) rather than precise (int32_t, uint64_t, size_t). The `strlen` return type is `long long` instead of `size_t`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: The FILE struct is empty: `typedef struct FILE {} FILE;`. The sockaddr struct is partially reconstructed with field names like `sin_family`, `sa_data`. Thread data structures (ThreadData) are not recovered as structs - fields are accessed as array indices. Some struct_0 definitions are present but lack semantic field names.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with correct pointer types. Minor issues: some "Other Possible Types" annotations indicate uncertainty. Pointer arithmetic is used correctly (e.g., `ptr[idx]`). No major undefined behavior risks observed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining algorithm logic, preconditions, or postconditions. Only auto-generated annotations like "do not return" for `_exit`. No documentation of non-obvious logic or recovery confidence levels.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library function calls are correctly identified (strcpy, pthread_create, etc.). Some patterns like mutex operations are recognized. However, no explicit pattern naming (e.g., "Producer-Consumer pattern") or algorithm identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some uncertainty is indicated with "Other Possible Types" annotations. However, no explicit flags for indirect calls that couldn't be resolved, unusual stack layouts, or potential undefined behavior. The code presents uncertain information without clear warnings.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. Error return values (like -1, -2) are not explained. No contract information recovered from the binary.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. External function declarations (extern) are present. However, no comments indicate which functions call which, or the purpose of callback relationships. The call graph is implicit rather than documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically (standard library tests, system calls, thread tests). Related functions are near each other. The organization roughly matches the source file structure. Static vs. extern is not distinguished in output.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code has extern declarations for external symbols. Should compile with linking against libc, libpthread. Some type definitions may need stubs. The code is close to being standalone but may need minor patching for compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`a0`, `a1`, `v0`, `v1`) that completely obscure semantic purpose
+- No comments explaining algorithm logic, contracts, or recovery confidence
+- Const correctness is lost - all `const` qualifiers removed from parameters
+- Composite types (structs) are poorly recovered with generic field names
+- Magic numbers like `4294967295`, `66`, `438` lack explanatory constants
+
+**Best Quality Aspect:** Structural Intelligibility (scored 8.3/10)  
+Control flow is natural and matches the source at -O0. Functions are well-decomposed with good linearization and no redundancy.
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.8/10)  
+The decompiled code lacks any meaningful comments, pattern identification, anomaly warnings, or contract recovery. This severely limits understandability for reverse engineers.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a0` used as destination in strcpy should be named `dst`, `v0` used as length should be `len`
+2. Add comments explaining magic numbers - annotate `4294967295` as "UINT_MAX or -1 as unsigned", `66` as "O_CREAT|O_RDWR"
+3. Recover const correctness from type information - preserve `const char *` semantics rather than stripping to `char *`
+4. Generate struct definitions with semantic field names based on access patterns rather than generic `field_0`, `field_1`
+5. Add algorithm/pattern comments - identify producer-consumer, state machines, or common idioms explicitly

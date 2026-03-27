@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `a1`, `a2`, `result`) with no semantic meaning. Original source had meaningful names like `size`, `counter`, `exec_mem` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`param_macro_constants`, `call_asm_basic`, `param_asm_simd`). However, helper functions use generic names (`function_10b0`, `function_1100`) for system call wrappers.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound (`0xdef0`, `3215`, `3539`, `0xe000`) with no recovery of original macros (MAX_SIZE=1024, BUFFER_COUNT=16). Some constants correctly folded (64, 30, 32) but unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts: `__x86_get_pc_thunk_*` functions, `__readgsdword(20)` stack canary checks, and wrapper functions for system calls (`function_10d0` for mprotect) that add noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loop structures recovered in some functions (`param_asm_clobber` has while loop), but many functions are constant-folded to single returns losing original conditional logic structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity preserved from source. However, system call wrappers created as separate functions (`function_1100` for mmap) fragments the code unnecessarily.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with clear function boundaries. Some functions have while loops that maintain natural flow without excessive jumps.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Aggressive constant folding eliminates original logic (e.g., `call_macro_constants` returns 64 directly instead of calling `param_macro_constants(2048)`). Some redundancy in thunk functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `uint32_t` consistently but loses original type semantics. `int128_t` typedef for SIMD is incorrect (should be `__m128i`). Pointer types preserved but often cast unnecessarily.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in source to recover. Array parameters handled as pointers appropriately. The `int128_t` typedef is a reasonable attempt at SIMD type recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int32_t *)`, `(char *)`, `(int128_t)`. Pointer arithmetic without bounds checking. Original `const char*` lost in string handling functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Original source had extensive documentation (macro explanations, expected values). Only address ranges and line numbers in some places.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition visible. Assembly patterns not identified as SIMD/atomic operations. Macro expansion patterns completely lost to constant folding.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Minimal anomaly flags. Only "UNREACHABLE" comment in `_start`. No warnings about constant-folded functions losing original semantics or unresolved indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. Error conditions (mmap failure returns -1) not explained. Original expected values (注释中的期望值) completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear but global variables poorly documented (`g1`, `g2`, `g3` with hex addresses). No call graph documentation. Original test function relationships obscured.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed alphabetically/by address, not logically grouped. Original section organization (预处理，内联汇编) lost. No header file structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has necessary includes but external functions need stubs (`__printf_chk`, `__libc_start_main`). Some functions may not compile without runtime support.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.63
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (2+4+4+3)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                              5.50/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `a1` should be named semantically** (e.g., `page_size`, `exec_mem`, `increment`) based on usage context
+- **No comments explaining macro expansion results** - original `MAX_SIZE`, `BUFFER_COUNT` semantics completely lost to constant folding
+- **Global variables `g1`-`g6` have no semantic names** - should be `header_value`, `buffer_count`, etc.
+- **SIMD operations use incorrect `int128_t` typedef** instead of proper `__m128i` intrinsic types
+- **Constant-folded functions lose original logic** - `call_macro_constants()` returns 64 directly instead of showing the computation path
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names like `param_macro_constants`, `param_asm_simd` preserved accurately, maintaining semantic connection to source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments despite original source having extensive documentation about macro behavior, expected values, and test purposes.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics from constant patterns** - Detect folded constants (64=16×4, 512=1024/2) and add comments showing original macro expressions
+2. **Infer variable names from usage context** - Variables used in memory operations should be named `buffer`, `ptr`, `addr`; loop counters should be `i`, `count`, `index`
+3. **Add decompilation confidence annotations** - Flag constant-folded functions with comments like "/* Original: return BUFFER_COUNT * 4; (constant-folded) */"

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `local_8`, `local_10`, `iVar1`, `uVar2`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `thread_count`, `iterations_per_thread` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions preserved original names well (`param_strcpy`, `thread_compute`, `param_mutex_lock`, `test_standard_library_functions`). However, some internal functions are generic (`FUN_001013d0`, `FUN_001018fc`) and external wrappers add noise.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xffffffff` (-1), `0xfffffffe` (-2), signal numbers as `10` and `0xe`, socket constants as `2` and `1`. String literals preserved well ("HelloLib", "/etc/passwd") but numeric constants lack symbolic names.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks duplicated in nearly every function (`local_8 = ___stack_chk_guard;` ... `__stack_chk_fail()`). External function wrappers (60+ stub functions) that just call the real library function add significant noise without value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as `for`/`while` constructs appropriately. However, several functions use `goto` for error handling (`goto LAB_00102ed0`, `goto LAB_00103554`) instead of structured returns. At `-O0`, control flow should match source more closely.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; thread functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`). Test functions call param functions correctly. No monolithic functions, but external wrapper functions are unnecessary fragmentation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. Goto labels (`LAB_00102ed0`, `LAB_001038c8`) disrupt flow in error paths. Stack canary checks at function end add non-linear jumps that obscure the actual logic.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack protection code duplicated identically in ~50 functions. External function wrappers (e.g., `memcpy`, `strlen`, `printf` stubs) are completely redundant. Error handling patterns repeated without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision: some types correct (`FILE*`, `pthread_t`, `size_t`), but many degraded to `undefined8`, `undefined4`, `ulong`. Return types often wrong (`undefined8` instead of `int`). Pointer types frequently lost to `void*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor. `ThreadData` accessed as array indices (`param_1[0]`, `param_1[1]`, `param_1[2]`). `sockaddr` fields accessed as `sa_data[2]`, `sa_data[3]`. TLS variables accessed via raw register `tpidr_el0` instead of `__thread` variables. No struct definitions visible.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(int *)`, `(undefined8 *)`, `(void **)`, `(long)param_1 + local_10`. Pointer arithmetic without type safety throughout. Function pointers often `void*` instead of proper signatures. Architecture-specific atomics (`__aarch64_ldadd4_acq_rel`) lack type annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. No algorithm explanations, no API contracts, no decompilation confidence indicators. Only header comment "Decompiled by BinaryAI". Original source had extensive section comments and function documentation that are completely absent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`, `pthread_create`). pthread patterns visible but not named. Producer-consumer pattern in `param_condition_variable` not identified. Signal handling pattern visible but not documented as such. No design pattern naming.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly warnings present. Indirect calls (thread function pointers) not flagged. TLS access via `tpidr_el0` register not documented as architecture-specific. Stack layout issues not mentioned. Architecture-specific atomics not explained.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "param_1 must not be NULL"). Error return codes (-1, -2, -3, 0xfffffffd) visible but meanings not explained. No postconditions or invariants documented. Original source had clear expected return values in comments.
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible through direct calls. Global variables visible (`signal_received`, `atomic_counter`, `shared_counter`). Callback relationships (thread functions passed to `pthread_create`) not documented. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat file. Original source had clear section organization (6.1 Standard Library, 6.2 System Calls, 6.3 Threads) with section comments—completely lost. External functions listed at top, user functions follow, but no logical grouping.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". External functions properly declared as stubs. Architecture-specific code (ARM64 atomics) present but would need proper headers. Stack canary requires specific runtime support. Would compile with proper build environment.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75  × 0.30 = 1.425
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00  × 0.25 = 1.500
+Level 3 (Type):        (5+3+4)/3   = 4.00  × 0.20 = 0.800
+Level 4 (Semantic):    (2+5+3+3)/4 = 3.25  × 0.15 = 0.488
+Level 5 (Contextual):  (6+5+7)/3   = 6.00  × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.81/10
+```
+
+### Overall Readability Score: **4.8/10**
+
+### Critical Defects:
+- **Variable names completely generic**: `param_1`, `local_8`, `iVar1` obscure semantic meaning (e.g., `local_10` in `param_malloc_free` should be `i` or `index`)
+- **No comments whatsoever**: Original source had extensive documentation; decompiled code has zero explanatory comments
+- **Magic numbers everywhere**: `0x2a`, `0xffffffff`, `10`, `0xe` instead of named constants (42, -1, SIGUSR1, SIGALRM)
+- **Struct types not recovered**: `ThreadData` accessed as array indices; TLS accessed via raw `tpidr_el0` register
+- **Stack canary noise in every function**: Duplicated protection code obscures actual logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - User-defined function names were preserved from debug symbols (`param_strcpy`, `thread_compute`, `param_mutex_lock`), maintaining semantic connection to original source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments makes understanding algorithm intent, error conditions, and API contracts extremely difficult despite function names being preserved.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from debug symbols**: At `-O0 -g`, DWARF debug info contains original variable names that should be used instead of `param_N`/`local_N`
+2. **Replace magic numbers with symbolic constants**: Detect common patterns (return codes, signal numbers, socket constants) and suggest/apply named constants
+3. **Generate semantic comments for recognized patterns**: When standard library calls or pthread patterns are detected, add explanatory comments describing the high-level operation

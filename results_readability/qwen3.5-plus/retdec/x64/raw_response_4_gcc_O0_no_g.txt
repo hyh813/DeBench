@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v1`, `v2`, `a1`, `a2`, `temp_1`) instead of semantic names like `count`, `sum`, `large`, `ptr` from the original source, making purpose tracking extremely difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but helper functions like `function_1070`, `function_1080` are generic address-based names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xffffffff`, `0x100000000` appear without explanation; string literals stored as hex-encoded globals (`g1`, `g2`) obscuring their content.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`) appear in nearly every function; assembly intrinsics (`__asm_movaps`, `__asm_movsd`) obscure logic unnecessarily.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but varargs functions use complex while loops that should be for loops; some bit manipulation patterns (`& 0xffffffff`) appear artificially.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but `varargs_func` is excessively long (130+ lines) and could be decomposed; library wrappers like `function_1070` are unnecessary.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns; varargs handling has forward jumps that disrupt flow but remain traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary code repeated identically in 20+ functions; similar bit manipulation patterns (`& 0xffffffff`) appear redundantly throughout.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything converted to `int64_t`/`int32_t`; original types like `char*`, `double`, `long long` lost (e.g., `func_mixed_args` should have `char*`, `double`, `long long` parameters).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: `LargeStruct` and `SmallStruct` completely lost—converted to raw pointer arithmetic (`*(int64_t *)((int64_t)&v1 + 16 + 8 * i)`); no struct definitions recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(int32_t *)`, `(char *)`) throughout; pointer arithmetic without type safety; `func_struct_byptr` has uninitialized variable `v2` used in multiplication.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining logic; only auto-generated headers present; varargs handling complexity completely undocumented.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not identified despite being standard C; no recognition of calling convention patterns or parameter passing idioms.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for problematic code; varargs handling is clearly broken but not flagged; uninitialized variable usage not warned.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `p != NULL` for pointer functions); no postconditions; error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented; global variables (`g1`-`g20`) not explained; callback relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in one file without logical grouping comments; no separation between test functions and implementation functions.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has includes and prototypes, but references undefined symbols (`__asm_hlt`, `__asm_movaps`); requires patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+6+7+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.43/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Struct types completely lost**: `LargeStruct` and `SmallStruct` converted to raw pointer arithmetic, making `func_struct_byval` and `func_struct_byptr` nearly unreadable
+- **Universal generic variable naming**: All variables are `v1`, `v2`, `a1`, `a2` instead of semantic names like `count`, `sum`, `len`, `ptr`
+- **Varargs handling severely degraded**: `varargs_func` decompilation is 130+ lines of incomprehensible stack manipulation instead of clean `va_start/va_arg/va_end` pattern
+- **No comments or documentation**: Zero explanation of complex logic, especially for calling convention differences and type conversions
+- **Type precision collapsed**: All integers become `int64_t`, losing distinction between `int`, `char*`, `double`, `long long`
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`), providing crucial semantic anchors for understanding the code's purpose.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct definitions; all composite types converted to pointer arithmetic, destroying semantic meaning of data structures.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** from consistent memory access patterns (e.g., repeated `+4`, `+8` offsets indicate struct fields)
+2. **Add semantic variable naming** based on usage context (loop counters → `i`, sum accumulators → `sum`, pointer dereferences → `ptr`)
+3. **Recognize standard library patterns** like `va_start/va_arg/va_end` and emit idiomatic C instead of raw stack manipulation code

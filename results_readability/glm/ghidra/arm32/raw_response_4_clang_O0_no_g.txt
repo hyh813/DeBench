@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables use generic names like `param_1`, `local_10`, and `iVar1` instead of semantic names like `a`, `sum`, or `index`. While consistent, they obscure the purpose of the variables (e.g., `local_18` is clearly an accumulator).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are recovered perfectly from the source (e.g., `cdecl_func`, `varargs_func`, `test_calling_conventions`), accurately reflecting their purpose and matching the original C identifiers exactly.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals like `"Hello"` and format strings are preserved and clear. However, integer constants are often represented in hex (e.g., `0x2a` instead of `42`, `0x14` instead of `20`), which requires mental conversion for readability.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean of register spilling artifacts, but the use of `undefined4` instead of `int` and the presence of compiler-generated soft-float helper calls (e.g., `__adddf3`, `__floatsidf`) add significant noise to the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is highly natural and idiomatic, matching the source structure perfectly. Loops are represented as `for` loops, and conditionals as `if/else`, which is expected for unoptimized (`-O0`) code.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source code without inlining or outlining. The granularity is perfect, maintaining the original separation of concerns (e.g., `call_cdecl` wrapping `cdecl_func`).
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps or forward references, making it easy to follow the execution path as written in the original source.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: While there is no optimization redundancy, the verbosity of `-O0` code is present (e.g., storing to a local variable just to return it immediately), which slightly clutters the logic without being incorrect.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Basic `int` types are preserved, but 64-bit types (`double`, `long long`) are split into pairs of `undefined4` parameters (e.g., `func_mixed_args` takes 6 `undefined4` instead of the correct types). Struct return values are converted to hidden pointer parameters with `void` return types.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct types are not recovered; they are flattened into raw arrays or pointers. For example, `LargeStruct s` in `func_struct_byval` becomes `int local_10 [4]`, and `SmallStruct` fields are accessed via pointer arithmetic (`*param_1`, `param_1[1]`) rather than field names.
+
+**11. Type Safety:** Score: 5/10
+Justification: The splitting of 64-bit types into separate 32-bit parameters (`undefined4`) and the flattening of structs into raw byte arrays removes type safety boundaries, making the code look like it performs unsafe pointer arithmetic.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to Ghidra's auto-generated warnings (e.g., `/* WARNING: Removing unreachable block */`). There are no semantic comments explaining the logic, algorithms, or the purpose of the calling convention tests.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard idioms like `for` loops are recognized, but higher-level patterns like the "varargs" summing or struct-by-value passing are not explicitly identified or annotated; they appear as raw memory access patterns.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Ghidra correctly flags unreachable blocks, but it does not flag the type mismatches (e.g., `double` split into two ints) or the unusual stack access patterns for structs as anomalies, presenting them confidently as standard code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the requirement that `param_1` in `varargs_func` specifies the argument count is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. The relationships between callers (e.g., `test_calling_conventions`) and callees (e.g., `cdecl_func`) are easy to trace.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order that closely matches the source file structure, grouping related tests (calling conventions, parameters, return values) together.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on undefined soft-float helper functions (`__adddf3`, `__fixdfsi`) and global data labels (`DAT_00012180`) that would require significant external stubs or a specific compiler runtime environment to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Critical Defects:**
+- 64-bit types (`double`, `long long`) are split into pairs of `undefined4` parameters, obscuring the function signature.
+- Composite types (structs) are flattened into raw arrays or pointer arithmetic, losing field names and type safety.
+- Variable names are generic (`param_1`, `local_10`), requiring the user to manually track semantics.
+- Struct return values are converted to `void` functions with hidden pointer parameters, deviating from the source definition.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Ghidra perfectly recovered all function names from the binary, making the high-level flow trivial to follow.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- The complete failure to reconstruct `LargeStruct` and `SmallStruct` definitions, replacing them with raw array accesses (`local_10[4]`), significantly hinders understanding of the data manipulation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic merging of adjacent 32-bit parameters into 64-bit types (`long long`, `double`) based on ABI rules (e.g., ARM AAPCS).
+2. Analyze stack access patterns to reconstruct struct definitions and replace raw array indexing with named field access (e.g., `s.data[i]`).
+3. Infer variable names from usage context (e.g., variables used in accumulation loops should be named `sum` or `total`).

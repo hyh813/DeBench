@@ -1,0 +1,104 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `iVar2`, `uVar1`, `pbVar2`) with no semantic meaning. Original source had meaningful names like `result`, `p1`, `p2`, `encrypted`, `decrypted` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`). This is the strongest aspect of the decompilation.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0x23`, `0xe1` appear without explanation. Original source had comments explaining these (e.g., `"Hello" ^ 0x5A`), but decompiled code lacks this context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Frequent "Unresolved local var" comments and "WARNING: Unknown calling convention" messages clutter the code. Stack variables like `local_28`, `local_9` add noise without semantic value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural if/while constructs, but `param_opaque_predicate` has awkward conditional logic. The `_start` function has an infinite do-while loop artifact that's unnatural.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical semantic loss - `param_fake_branch` just returns `x` (losing the fake branch logic entirely). `call_*` functions return constants instead of making actual calls, destroying the test framework structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with acceptable linearity. Some do-while patterns instead of for-loops, but execution flow is traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `call_string_encryption` duplicates `param_string_encryption` logic instead of calling it. `test_obf_opt_edge` re-implements GCD calculation that should call `param_opaque_predicate`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mix of `int`, `uint`, `ulong`, `byte`, `size_t` shows some type awareness. However, many distinctions are lost (e.g., signed vs unsigned in overflow checks).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Bitfield struct in `param_implementation_defined` becomes generic `anon_struct_4_3_4e909822`. Array types partially recovered (`byte local_28 [31]`) but most composite types are lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(int)(char)`, `(ulong)`, `(long)x`). Pointer arithmetic in `call_vectorized_loop` is concerning. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are mostly auto-generated uncertainty indicators ("Unresolved local var"). No algorithm explanations or API contracts. WARNING comments about unreachable blocks are useful but sparse.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption pattern not named. No design patterns or algorithm patterns recognized at all.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "Unresolved local var" indicates decompiler uncertainty. "WARNING: Subroutine does not return" for longjmp is helpful. However, many semantic anomalies (like eliminated dead code) go unflagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `x != 0` for division). No postconditions or invariants. Critical for understanding edge case functions but completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible in code, but global variable usage not well documented. No call graph information. `param_string_encryption::encrypted` reference is unclear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Static functions not properly scoped. Original source's section organization (7.1, 7.2, 7.3) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (signal, setjmp, strlen) not declared. Would need significant stubs to compile. Some undefined references to global variables like `div_zero_caught`.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3 + 8 + 5 + 5) / 4 = 5.25
+Level 2 Average: (6 + 4 + 7 + 5) / 4 = 5.50
+Level 3 Average: (6 + 4 + 5) / 3 = 5.00
+Level 4 Average: (4 + 2 + 6 + 2) / 4 = 3.50
+Level 5 Average: (5 + 4 + 4) / 3 = 4.33
+
+Overall = (5.25 × 0.30) + (5.50 × 0.25) + (5.00 × 0.20) + 
+          (3.50 × 0.15) + (4.33 × 0.10)
+        = 1.575 + 1.375 + 1.00 + 0.525 + 0.433
+        = 4.91/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **`param_fake_branch` completely loses fake branch logic** - returns just `x` instead of preserving the dead code paths that are the entire point of the function
+- **All variables use generic names** (`iVar1`, `iVar2`, `uVar1`) making semantic tracking impossible
+- **`call_*` functions return constants** instead of calling underlying functions, destroying test framework structure
+- **No algorithm pattern recognition** - GCD, XOR decryption, opaque predicates all unidentified
+- **Magic numbers without context** - `0x5a`, `0x14`, `0x23` appear without explaining their purpose
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names are well-preserved, making it possible to identify which function is which despite other degradation.
+
+### Most Needs Improvement:
+- **Idiom Recognition (2/10)** - Complete failure to identify common algorithms (GCD), encryption patterns (XOR), or obfuscation techniques (opaque predicates) that are central to this code's purpose.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve semantic intent of obfuscation test code** - Dead code paths in `param_fake_branch` should be retained with comments explaining they're intentionally unreachable, not eliminated.
+2. **Implement pattern recognition for common algorithms** - Detect GCD loops, XOR decryption, bit manipulation idioms and add explanatory comments.
+3. **Recover variable names from debug symbols** - With `-g` flag present, original variable names (`result`, `p1`, `p2`, `encrypted`) should be recoverable instead of `iVar1`, `iVar2`.

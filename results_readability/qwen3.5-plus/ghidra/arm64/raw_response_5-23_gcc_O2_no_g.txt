@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`param_1`, `iVar1`, `uVar1`, `lVar1`) with no semantic meaning recovered from usage patterns. Only a few variables like `__len` and `__addr` show context awareness.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved (`param_macro_constants`, `test_preprocessing_features`), but many helper functions have generic names (`FUN_00100810`, `FUN_00100cdc`). Debug symbols helped recover some names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Heavy magic number usage (`0x400`, `0x200`, `0x40`, `0xdef0`, `0x117`) with no recovery of original macro constants (MAX_SIZE, BUFFER_COUNT). All preprocessor information lost.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Some compiler artifacts present (`undefined8`, `undefined4` types, stack canary code), but generally clean. Unreachable block warnings are helpful rather than obstructive.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural (if-else, loops). Some do-while patterns could be for-loops, but no excessive goto usage. Optimization-level appropriate restructuring.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with good separation. However, aggressive constant folding collapsed some functions entirely (`call_macro_constants` returns `0x40` directly instead of calling the parameterized function).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with logical flow. Loop structures are recognizable. No severe non-linearity or forward jump issues.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy from optimization—`call_variadic_macro` duplicates printf from `param_variadic_macro`. Constant folding creates call-site redundancy that obscures original structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision with generic types (`undefined8`, `undefined4`) alongside proper types (`size_t`, `void*`, `int*`). No const-correctness preserved. Pointer types sometimes unclear.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited composite types in this code sample. Arrays handled reasonably. No complex structs/unions to evaluate, but pointer-to-array distinctions are sometimes lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts visible (`(void *)0x0`, `(int *)mem`), but pointer arithmetic is reasonable. No obvious buffer overflow patterns. Architecture-specific intrinsics properly typed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no semantic comments. Only compiler-generated warnings ("WARNING: Removing unreachable block"). No explanation of recovered logic or macro semantics.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Atomic operations identified (`__aarch64_ldadd4_acq_rel`), but no algorithm or design pattern recognition. Macro expansion patterns not documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings about unreachable blocks and stack canary checks visible. However, no clear flagging of suspicious code or decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. No contract information recovered. Error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. No call graph information. Global variable usage (`global_var`) not clearly documented with references.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order with test functions grouped together. No clear module boundaries, but logical grouping is present.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References many external functions (`__printf_chk`, `mmap`, `sysconf`) requiring stubs. Architecture-specific intrinsics (`__aarch64_ldadd4_acq_rel`) limit portability.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (4+6+3+7)/4 = 5.0  → 1.50
+Level 2 (25%): (7+7+7+6)/4 = 6.75 → 1.69
+Level 3 (20%): (5+6+6)/3 = 5.67  → 1.13
+Level 4 (15%): (2+4+5+2)/4 = 3.25 → 0.49
+Level 5 (10%): (5+6+4)/3 = 5.0   → 0.50
+─────────────────────────────────────────────
+Overall Score:                    5.31/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Magic numbers everywhere**: `0x400`, `0x200`, `0x40` should be recovered as `MAX_SIZE`, `MAX_SIZE/2`, `BUFFER_COUNT*4` based on comparison patterns
+- **Generic variable names**: `param_1`, `iVar1`, `uVar1` obscure semantic meaning (e.g., `param_1` in `param_macro_constants` should be `size`)
+- **No comment recovery**: Zero semantic comments explaining macro expansion or conditional compilation decisions
+- **Constant folding obscures structure**: `call_macro_constants` returns `0x40` directly instead of showing `param_macro_constants(2048)` call
+- **Architecture mismatch unexplained**: x86 assembly in source became ARM64 C code with no indication of the transformation
+
+### Best Quality Aspect:
+- **Structural Intelligibility (6.75/10)** - Control flow patterns are natural and functions are well-decomposed despite optimization
+
+### Most Needs Improvement:
+- **Semantic Transparency (3.25/10)** - Complete absence of comments explaining recovered semantics, especially critical for macro-heavy code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Macro constant recovery**: Analyze comparison patterns and arithmetic to suggest named constants (e.g., `if (0x400 < param_1)` → `if (param_1 > MAX_SIZE)`)
+2. **Semantic comment generation**: Add comments explaining optimization transformations and recovered high-level patterns (e.g., "// Original: SQUARE(x) + MAX(x,y)")
+3. **Cross-architecture annotation**: When inline assembly is replaced with fallback code, document the original architecture and transformation applied

@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 7/10  
+Justification: Original parameter names preserved (`a`, `b`, `c`, `temp1`, `temp2`, `temp3` in `sequential_ops`), but unnecessary `_local` suffixes added to all parameters (e.g., `x_local`, `op_local`) creating visual noise without semantic benefit.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core test functions retain original names (`sequential_ops`, `nested_if_deep`, `switch_fallthrough`), accurately reflecting purpose. However, helper functions like `FUN_00101020` use generic auto-generated names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Hexadecimal literals used inconsistently (`0x14` instead of `20`, `0x32` instead of `50` in `switch_small`), obscuring the relationship to original decimal constants. Magic numbers like `0x3e9` (1001) and `0x65` (101) lack explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) appear in multiple functions (`loop_break`, `call_func_ptr_array`). Unnecessary `_local` variable copies and `in_FS_OFFSET` frame pointer references clutter otherwise simple functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops recovered as natural `for`/`while` constructs (`loop_for_fixed`, `loop_nested`). However, `switch_fallthrough` uses goto labels (`LAB_001014b1`) instead of structured fall-through, and `duffs_device` has complex goto patterns obscuring the original switch-in-loop idiom.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well—each test function remains separate and cohesive. No inappropriate inlining or fragmentation. Parameter lists are reasonable and don't expose implementation details.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. However, `switch_fallthrough` and `duffs_device` use goto statements that disrupt linear reading. `loop_break` uses goto for early exit instead of structured return.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks duplicated across ~15 functions. Parameter `_local` copies create redundant variable declarations. No dead code removal warnings indicate some redundancy remains unaddressed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic integer types preserved correctly. Function pointer types use generic names (`_func_int_int`, `_func_int_int_int`) instead of descriptive typedefs. Some bitwise operations show unsigned casting (`(i & 1U)`) not present in source.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered accurately (`int arr[5]`, `int matrix[3][4]`, `int funcs[3]`). No structs in original source to recover. Jump table arrays properly typed as function pointer arrays.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Stack canary checks add runtime safety. Function pointer calls properly typed. Some implicit casts present (`(ulong)uVar1` in printf calls). No dangerous pointer arithmetic observed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: All original source comments completely lost. Only auto-generated warnings present ("WARNING: Subroutine does not return", "WARNING: Removing unreachable block"). No algorithm explanations or API documentation recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic loops and conditionals recognized. Duff's device partially recovered but not identified as such. Fall-through switch converted to goto pattern without idiom annotation. State machine pattern in `state_machine` not explicitly identified.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra flags some issues ("WARNING: Could not recover jumptable at 0x001028b5" in `computed_goto`). `opaque_predicate` shows "Removing unreachable block" indicating dead code detection. However, many anomalies silently handled without warning.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation recovered. Error paths exist but aren't annotated (e.g., `non_local_jump` longjmp behavior not explained). Return value semantics not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls visible and traceable. Test functions show usage patterns (`test_control_flow_l1` calls all L1 functions). No explicit call graph documentation. Callback relationships visible but not annotated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 73 functions in single output without logical grouping. Related functions (state machine handlers: `state_idle`, `state_processing`, etc.) not grouped together. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies (`__libc_start_main`, `__stack_chk_fail`, `_setjmp`) would need stubs. Generic type definitions (`_func_int_int`) require resolution for standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (7+8+5+5)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (7+8+6+6)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (7+7+7)/3   = 7.00 × 0.20 = 1.400
+Level 4 (Semantic):    (2+4+6+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (7+5+7)/3   = 6.33 × 0.10 = 0.633
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.16/10
+```
+
+**Overall Readability Score: 6.2/10**
+
+### Critical Defects
+- **All source comments lost** - Original documentation explaining each function's purpose, test cases, and difficulty levels completely absent
+- **Hexadecimal literals obscure values** - `0x14`, `0x32`, `0x3e9` instead of decimal `20`, `50`, `1001` making mental calculation necessary
+- **Unnecessary `_local` variable suffixes** - Every parameter gets a `_local` copy (e.g., `x_local = x`) adding visual noise without semantic value
+- **Fall-through switch converted to goto** - `switch_fallthrough` uses `goto LAB_001014b1` instead of structured fall-through, obscuring the intentional pattern
+- **Stack canary checks clutter simple functions** - `__stack_chk_fail()` appears in functions like `loop_break` that had no such checks in source
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Core function names perfectly preserved from source (`sequential_ops`, `nested_if_deep`, `switch_fallthrough`), making function purpose immediately identifiable.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete loss of all source documentation; decompiler adds only generic warnings without any semantic explanation of algorithm intent or usage patterns.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Preserve or infer comments from debug symbols** - When `-g` flag is present, extract and retain source comments or generate semantic annotations based on function behavior patterns.
+
+2. **Convert hex literals to decimal when semantically appropriate** - Detect when hex values represent simple decimal constants (e.g., `0x14` → `20`) and use the more readable form unless hex is clearly intentional (bitmasks, addresses).
+
+3. **Recognize and annotate common idioms** - Identify patterns like Duff's device, fall-through switches, and state machines, then add explanatory comments rather than converting to generic goto structures.

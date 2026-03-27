@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are predominantly generic names like `v0`, `v1`, `a0`, and `a1`, offering no semantic insight (e.g., `process_bool` uses `v0` and `v1` for intermediate logic). While `ptr` and `idx` appear occasionally, the lack of descriptive names like `sum` or `packet_size` significantly hinders understanding.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: User-defined functions like `process_char` and `array_1d_stack` retain their original names, which is excellent. However, the output is dominated by library functions and compiler intrinsics named generically (e.g., `sub_4003e0`, `__mulsf3`), obscuring the actual source code within a sea of irrelevant symbols.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Character constants like `'A'` and `'Z'` are replaced with magic numbers (`65`, `90`), removing semantic context. While some constants like `65535` (short mask) are inferable, the reliance on raw ASCII values and hex constants without comments degrades readability.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The decompiled output is heavily polluted with hundreds of lines of soft-float library implementations (`__mulsf3`, `__adddf3`, etc.) and Angr-specific lifting artifacts (`armg_calculate_condition`). This noise bloats the file to nearly 5000 lines (vs. 830 source lines), burying the user's actual logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Simple loops and conditionals (e.g., in `array_1d_stack`) are recognizable, but complex logic is obfuscated by `armg_calculate_condition` calls that simulate low-level processor flags rather than high-level boolean expressions. This makes basic `if` statements look like complex state machine checks.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While user functions are distinct, they are intermixed with a massive amount of library code, creating a monolithic file structure. The lack of separation between the user's 830 lines of logic and the 4000+ lines of runtime support makes navigation difficult.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Within individual functions, the code generally reads top-to-bottom with minimal forward jumps. However, the excessive use of `goto` in library functions and the density of the lifting artifacts disrupt the natural reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The code contains significant redundancy in the form of `armg_calculate_condition` calls and verbose bit-manipulation logic for simple operations. While this reflects the low-level lifting process, it acts as redundancy that obscures the original high-level intent.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Floating-point types (`float`, `double`) are consistently represented as `unsigned int` bitcasts (e.g., `process_float` takes `unsigned int a0`), losing type safety and semantic meaning. While integer types like `char` and `short` are mostly preserved, the loss of floating-point types is a major failure.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely unrecovered; they are treated as raw pointers or arrays. For example, `struct_simple` takes `unsigned int *a0` and accesses fields via array indexing (`a0[1]`, `a0[2]`) rather than member access (`p->y`, `p->z`), destroying the data structure abstraction.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts, such as `*(int *)(ptr + idx * 4)`, to access memory. The representation of floats as integers and structs as byte arrays forces the reader to perform manual type reasoning, creating a high risk of misunderstanding.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex algorithms, magic numbers, and lifting artifacts are presented without explanation, leaving the user to decipher the intent solely from the obfuscated syntax.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard C idioms like string length calculation or array summation are not recognized or highlighted. The code presents them as generic loops and pointer arithmetic, failing to communicate the developer's original design patterns.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler does not flag the `armg_calculate_condition` calls or the soft-float function calls as anomalies or implementation details. It presents them as standard code, which is misleading regarding the original source structure.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For instance, pointer parameters are not annotated with expectations (e.g., non-null), providing no safety guarantees or API hints.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function calls are visible, but the context is lost because the called functions (mostly library code) are defined in the same file without distinction. The relationship between the user's `main` and the test functions is clear, but the dependency on the runtime is opaque.
+
+**17. Module Organization:** Score: 3/10
+Justification: The output is a flat list of functions with no logical grouping. User code, compiler runtime, and library functions are all interleaved, making it impossible to discern the original module structure (e.g., separating data type tests from pointer tests).
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on undefined Angr-specific helpers like `armg_calculate_condition` and `armg_calculate_flag_v`. It cannot be compiled without implementing these lifting artifacts or manually removing them, rendering it useless as a drop-in replacement for the source.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- **Massive Noise Inclusion:** The decompiler includes hundreds of lines of soft-float library implementation (`__mulsf3`, `__adddf3`, etc.) and Angr lifting artifacts (`armg_calculate_condition`), burying the actual user logic.
+- **Type System Failure:** Floating-point types (`float`, `double`) are represented as `unsigned int` bitcasts, and composite types (structs) are flattened into pointer arithmetic on arrays, losing all semantic meaning.
+- **Literal Obfuscation:** Character constants like `'A'` are replaced with magic numbers (`65`), and semantic constants are lost.
+- **Variable Naming:** Variables are almost exclusively generic (`v0`, `v1`, `a0`), providing no insight into their purpose.
+- **Control Flow Artifacts:** Simple boolean logic is obscured by `armg_calculate_condition` calls, making basic `if` statements look like complex state machine checks.
+
+**Best Quality Aspect:** Function Naming (for user code)
+- **Why?** The decompiler successfully preserved the names of the user-defined functions (e.g., `process_char`, `array_1d_stack`), which helps locate the relevant code amidst the noise.
+
+**Most Needs Improvement:** Noise Reduction
+- **Why?** The inclusion of library code and lifting artifacts is the single biggest factor reducing readability. The output is 6x larger than the source mostly due to irrelevant code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Filter Library Code:** Implement a mechanism to detect and exclude standard library/compiler intrinsic functions from the main decompilation view or move them to a separate section.
+2.  **Recover High-Level Types:** Improve type recovery to identify floating-point operations and struct layouts, rather than defaulting to integer bitcasts and array indexing.
+3.  **Simplify Lifting Artifacts:** Abstract away internal lifter details like `armg_calculate_condition` into standard C operators (`&&`, `||`, `<`, etc.) to make the control flow readable.

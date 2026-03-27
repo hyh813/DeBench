@@ -1,0 +1,102 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names (`v0`, `v1`, `v2`, `a0`, `a1`) obscuring semantic purpose. Some better names exist (`flag1`, `flag2`, `result`, `index`) but inconsistent. Original had meaningful names like `result`, `str`, `p1`, `p2`, `p3`, `encrypted`, `decrypted`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions recovered correctly (`param_fake_branch`, `param_opaque_predicate`, `call_fake_branch`), but many wrapper functions use mechanical names (`sub_401030`, `sub_4010f0`). Function purpose is inferable for main logic but obscured by wrapper noise.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `-559038737` (should be `0xDEADBEEF`), `2863311530` (should be `0xAAAAAAAA`), signal numbers `8` and `11` instead of `SIGFPE`/`SIGSEGV`. Original constants lost semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts: `_GLOBAL_OFFSET_TABLE_` references in every function, numerous `sub_XXXXXX` wrapper functions, frame setup code (`v0 = &_GLOBAL_OFFSET_TABLE_`), and platform mismatch artifacts (X86 vs arm64).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most if/else and for loops recovered correctly. However, GCD loop in `param_opaque_predicate` uses confusing CONCAT operations instead of clean modulo. Some functions use goto patterns (`goto ptr[2]`) that obscure logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved for main logic, but excessive wrapper functions (`sub_401271`, `sub_4012f2`, etc.) create fragmentation. Function sizes reasonable but cohesion reduced by wrapper noise.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Some forward jumps disrupt flow (`goto (int)v1[16]`), but most control structures follow natural C patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: GOT reference assignment repeated in nearly every function. Wrapper functions duplicate call patterns. Division code shows redundant CONCAT operations: `((0 CONCAT 10) % a0) CONCAT (int)((0 CONCAT 10) / a0)`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: `int` frequently degraded to `unsigned int` incorrectly (e.g., `param_fake_branch(unsigned int a0)` should be `int`). Pointer types often become `void*` or `unsigned int`. Signed/unsigned distinctions lost in overflow detection code.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct definitions exist but use generic field names (`padding_0`, `field_0`, `field_3e77`). Bitfield structure in `param_implementation_defined` completely lost, replaced with manual bit operations. Original struct with named bitfields (`a:3`, `b:5`, `c:24`) not recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int)((0 CONCAT 10) % a0)`, `(char *)&ptr[4032] + 3`. Pointer arithmetic uses raw integers. `strlen(v1)` called on integer offset rather than proper string pointer. Signal handler types incorrect.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No explanatory comments for logic. Only decompiler metadata header ("Angr Decompilation of 7_clang_O0_no_g"). Original source had extensive section headers and inline comments explaining obfuscation techniques—all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm not identified (shows as confusing loop with CONCAT). Opaque predicate pattern not recognized. Tail recursion not annotated. String decryption XOR pattern not documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly flagged: `[D] Unsupported jumpkind Ijk_SigTRAP at address 4198699()`. Most other issues (type mismatches, platform differences, signal handling complexity) silently presented as correct code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note `a0 != 0` for normal path). No postconditions. Error return values (`4294967295` = `-1`) not explained. Original comments about expected values completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible through code but not documented. Global variables (`div_zero_caught`, `jmp_buffer`, `segv_buffer`) declared extern without context. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order. Related functions not grouped (e.g., `param_fake_branch` and `call_fake_branch` separated by other code). No header file structure. Original section organization (7.1, 7.2, 7.3) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires external dependencies (`signal`, `strlen`, `malloc`, `longjmp`, `_GLOBAL_OFFSET_TABLE_`). Platform mismatch (X86 decompilation of arm64 binary). Won't compile standalone without significant stubbing and correction.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+6+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):   (6+6+7+5)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type System):  (5+4+4)/3   = 4.33  × 0.20 = 0.87
+Level 4 (Semantic):     (2+3+4+2)/4 = 2.75  × 0.15 = 0.41
+Level 5 (Contextual):   (5+4+4)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.71/10
+```
+
+**Overall Readability Score: 4.7/10**
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (e.g., `result`, `encrypted_ptr`, `canary_value`)
+- **Magic number `-559038737`** should be `0xDEADBEEF` with comment explaining obfuscation purpose
+- **Signal numbers `8` and `11`** should be `SIGFPE` and `SIGSEGV` constants
+- **GOT references** (`&_GLOBAL_OFFSET_TABLE_`) in every function are compiler artifacts that should be eliminated
+- **Bitfield struct** in `param_implementation_defined` completely lost, replaced with manual bit operations
+- **Platform mismatch**: arm64 source decompiled as X86, causing architectural artifacts
+
+### Best Quality Aspect:
+- **Code Linearization (7/10)** - Most functions read top-to-bottom with natural control flow; loops and conditionals generally follow C idioms despite optimization artifacts.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero explanatory comments; all original documentation about obfuscation techniques, expected values, and test scenarios completely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., variables used in size checks should be named `*_size`, XOR operations suggest `*_key` or `*_encrypted`)
+2. **Preserve original constants** by detecting common magic numbers (`0xDEADBEEF`, `0xAAAAAAAA`) and restoring hex notation with symbolic names
+3. **Eliminate compiler artifacts** by recognizing and removing GOT references, frame setup code, and wrapper functions that don't exist in source

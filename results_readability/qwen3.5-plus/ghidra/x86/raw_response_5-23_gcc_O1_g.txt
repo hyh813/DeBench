@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Function parameters are well-named (`size`, `x`, `y`, `arr`, `counter`), but local variables use generic `iVar1`, `iVar2`, `__len`, `__addr` patterns that obscure purpose (e.g., `iVar1` in `param_macro_constants` should be `result`).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - original function names preserved (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`) likely from debug symbols (`-g` flag), making code immediately understandable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers throughout without context: `0x200` (MAX_SIZE), `0x400` (size check), `0x40` (return value), `0xdef0` (platform constant), `0x32` (50 decimal) - original macro names lost during compilation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Compiler artifacts present but manageable: `__x86.get_pc_thunk.bx` warnings, stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local()`), and `__printf_chk` instead of `printf` add noise but don't obscure logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops and conditionals well-recovered: `param_asm_clobber` shows natural `for` loop, `param_asm_multi_insn` has clear `while`-style loop, no spurious goto statements in main logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Original function granularity preserved - no inappropriate inlining or fragmentation, each function maintains single responsibility matching source structure.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads naturally top-to-bottom with appropriate early returns, no forward jumps disrupting flow, loop structures clearly delineated.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Clean output with minimal dead code, constant folding occurred (expected at any optimization level) but no problematic loop unrolling artifacts visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types correct (`int`, `void*`, `size_t`, `char`), arrays properly typed (`int arr[5]`, `char dst[32]`), but no `int32_t` precision or const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Array types recovered correctly, but this code has minimal struct usage - what exists is accurate but no complex structure recovery to evaluate.
+
+**11. Type Safety:** Score: 6/10  
+Justification: `LOCK()`/`UNLOCK()` pseudo-functions aren't standard C (assembly recovery artifact), otherwise pointer operations are safe with stack canary protection present.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only decompiler warnings present ("WARNING: Unknown calling convention"), zero meaningful comments explaining algorithm intent, no API documentation recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Assembly patterns recovered as C loops (good), but macro semantics completely lost (constant-folded), atomic operations shown as non-standard `LOCK()`/`UNLOCK()`.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings present for calling conventions and unresolved variables ("Unresolved local var: int old_value@[???]"), stack canary failure paths noted appropriately.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`), no postconditions inferred, error return values (-1, -2, -3) not explained in context.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls clear and traceable, global variable `global_var` referenced correctly, call relationships implicit through direct function invocations.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source, but all in single output file with no header separation, static functions not clearly marked.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone - uses `__printf_chk`, `builtin_strncpy`, `LOCK()`/`UNLOCK()` pseudo-functions requiring significant stubbing and modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+9+5+7)/4 = 6.75  × 0.30 = 2.025
+Level 2 (Structural):  (8+8+8+8)/4 = 8.00  × 0.25 = 2.000
+Level 3 (Type):        (7+7+6)/3   = 6.67  × 0.20 = 1.334
+Level 4 (Semantic):    (2+5+6+2)/4 = 3.75  × 0.15 = 0.563
+Level 5 (Contextual):  (7+6+4)/3   = 5.67  × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 6.49/10
+```
+
+**Overall Readability Score:** 6.5/10
+
+### Critical Defects:
+- **Magic numbers everywhere**: `0x200`, `0x400`, `0x40`, `0xdef0`, `0x32` should reference original macro names (MAX_SIZE, BUFFER_COUNT, etc.)
+- **Zero semantic comments**: No explanation of algorithm intent, error conditions, or function contracts
+- **Non-standard constructs**: `LOCK()`/`UNLOCK()` pseudo-functions aren't compilable C code
+- **Generic local variables**: `iVar1`, `iVar2` obscure variable purpose when context could infer names
+- **Lost macro semantics**: Preprocessor macros completely constant-folded, losing original intent documentation
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Debug symbols (`-g` flag) enabled perfect recovery of original function names, making code immediately navigable and understandable.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments recovered; decompiler only outputs warnings, not semantic documentation that would explain intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover constant semantics**: Cross-reference magic numbers with common patterns and suggest named constant definitions (e.g., `0x400` → `#define MAX_SIZE 1024`)
+2. **Generate semantic comments**: Infer function purpose from name patterns and add documentation comments for non-trivial logic blocks
+3. **Replace pseudo-instructions**: Convert `LOCK()`/`UNLOCK()` to standard C11 atomics (`atomic_fetch_add`) or inline assembly comments for portability

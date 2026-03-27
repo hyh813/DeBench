@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic auto-generated names like `iVar1`, `piVar1`, `uVar2`, `local_3f8`, `local_3a8`. These provide no semantic meaning - e.g., `local_10` should be named `canary` based on its role in stack protection checks. The original source had meaningful names like `sum`, `i`, `arr` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions correctly recovered: `process_char`, `process_short`, `process_int`, `test_data_types_l1`, `test_array_types`, `test_pointer_types`, `test_composite_types`. However, some internal functions have cryptic names like `FUN_00101020`, and helper functions like `complex_callback` are not recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x20` (32 for case conversion), `0x19` (25), `0xbfU` appear without explanation. The expression `(byte)((char)param_1 + 0xbfU)` is opaque - should be documented as uppercase letter check. Constants like `0xb` (11), `0xf` (15), `0x14` (20) are used directly in printf without explaining what they represent.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant decompiler artifacts present: "WARNING: Removing unreachable block" comments, "WARNING: Subroutine does not return", "WARNING: Could not recover jumptable". Stack canary functions (`__stack_chk_fail`), FS register manipulation for stack protection, and undefined8/undefined4 types add substantial noise. The code is cluttered with 15+ warning messages.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: At -O0, control flow is generally preserved. Loops use do-while patterns which is acceptable. However, `array_2d_stack` uses confusing pointer arithmetic (`param_1 + 0x6e`, `param_1 + 0xb`) instead of clear 2D indexing. The `binary_tree_sum` function has deeply nested do-while loops that are hard to follow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-80 lines each), matching the original source decomposition. No obvious over-fragmentation. Test functions properly call sub-functions. The granularity matches source well.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but some disruptions exist. The `array_3d` function has complex nested loops with pointer comparisons that interrupt linear flow. Forward jumps present in error handling paths. Some functions like `binary_tree_sum` have 5+ levels of nesting.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: At -O0, minimal optimization artifacts are expected. Some loop unrolling in `array_3d` where it processes 5 elements at a time (`piVar4[1]`, `piVar4[2]`, etc.), but this is manageable. No obvious dead code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most integers are generic `int` instead of `int32_t` or `short`. Pointers are correctly typed as `int*`, `char*`. Float/double handled reasonably. However, `process_bool` returns `uint` instead of `_Bool`. Function pointers use generic `code*` type. The architecture mismatch (arm64 source, x86 output) may contribute to type issues.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor. `Point3D` is accessed as `param_1[0]`, `param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`, `p->z`. Nested structs like `Rect` and `Widget` are completely lost - accessed via raw offsets. Unions not clearly recovered - `union_type` treats it as float*. Linked list nodes accessed via `*(int **)(param_1 + 2)` instead of `node->next`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations present: `(byte)*param_1` truncates int to byte in `struct_bitfields`. Pointer arithmetic like `param_1 + 2` for struct field access is error-prone. The `ptr_diff` function has confusing `(param_1 - param_2) >> 2 & 0xffffffff` which mixes pointer arithmetic with bit manipulation. No `const` correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated comments present: "Decompiled by Ghidra 12.0", "WARNING: Removing unreachable block". No algorithm explanations, no documentation of non-obvious logic, no decompilation confidence indicators. The complex `process_char` logic has no comment explaining the uppercase-to-lowercase conversion.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The linked list traversal, binary tree traversal, and graph traversal are not labeled as such. The state machine in `enum_switch` using `CSWTCH_61` is not explained as a switch statement.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present: "WARNING: Could not recover jumptable at 0x00101cea. Too many branches" for function pointers. "WARNING: Treating indirect jump as call". However, these are generic and don't explain what the actual function might be or suggest recovery strategies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of expected input constraints (e.g., "requires: n > 0"). No error condition documentation. The code presents itself as complete when many contracts are implicit in source.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in the code. `main` clearly calls the four test functions. However, relationships like "complex_callback is passed to ptr_func_complex" or "double_value is used in ptr_func_simple" are not documented. No call graph or usage information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by type (data types, arrays, pointers, composites) which matches source. However, all functions are in a single flat namespace. Static functions not distinguished from public ones. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile standalone. Missing declarations: `puts`, `__printf_chk`, `__stack_chk_fail`, `__libc_start_main`, `__gmon_start__`, `__cxa_finalize`, `builtin_strncpy`. External dependencies (libc) not documented. Architecture mismatch (x86 decompiled from arm64 binary) would cause issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`iVar1`, `local_3a8`, `piVar4`) providing zero semantic value
+- Composite types (structs, unions) completely lost - accessed via raw pointer arithmetic like `param_1[2]` instead of `node->next`
+- No struct field names recovered - `Point3D` accessed as array indices instead of `.x`, `.y`, `.z`
+- Excessive decompiler noise with 15+ warning messages about unrecovered jumptables and unreachable blocks
+- No comments explaining algorithms or intent - the uppercase-to-lowercase conversion in `process_char` is opaque
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+Functions are appropriately sized and match the source granularity. Test functions properly call sub-functions in logical order.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Every local variable uses auto-generated names like `iVar1`, `uVar2`, `local_10` that provide no semantic meaning. This makes tracking data flow practically impossible.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When a variable is used as array index, name it `index` or `i`. When used as sum accumulator, name it `sum` or `total`. Analyze initialization and mutation patterns.
+2. **Recover struct layouts with field names**: Detect regular pointer arithmetic patterns (e.g., `ptr + 4`, `ptr + 8`) and reconstruct struct fields. Use field offset analysis to identify struct boundaries.
+3. **Add semantic comments for non-trivial logic**: Document what expressions like `(byte)((char)param_1 + 0xbfU)` represent. Explain indirect calls that couldn't be resolved. Provide context for magic numbers.

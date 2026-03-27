@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are reduced to generic names like `param_1`, `local_10`, and `uVar1`, completely losing semantic meaning (e.g., `sum` becomes `iVar4`, `args` becomes `local_38`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `main` are perfectly recovered from the debug symbols, matching the source exactly.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are preserved well, but integer constants are displayed in hex (e.g., `0xf` instead of `15`, `0x2a` instead of `42`), which obscures simple arithmetic results.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is cluttered with repetitive stack canary checks (`if (local_10 == *(long *)(in_FS_OFFSET + 0x28))`) in almost every function, which distracts from the core logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally natural, using `do-while` and `if` constructs that mirror the source, though some loops are slightly verbose.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source; there is no inlining or outlining, preserving the original structure perfectly.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal jumps or forward references, making it easy to follow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Struct initialization is expanded into verbose manual assignments (e.g., `local_98[0] = local_118[0];` repeated 16 times) instead of using a struct assignment or loop.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Significant type errors exist; `func_mixed_args` misidentifies the first parameter as `double` instead of `int`, and return types like `undefined8` are used where `int` is expected.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely lost; `LargeStruct` is represented as a raw array `long local_118 [16]`, and `SmallStruct` is accessed via pointer arithmetic (`param_1[1]`) rather than field access.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies on unsafe casts and pointer arithmetic (e.g., accessing struct fields as array indices) which, while functional, is not type-safe C.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are no semantic comments explaining logic; only header comments indicating function addresses are present.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The `varargs_func` idiom is not recognized; the `va_list` logic is exposed as complex stack manipulation (`local_58`, `local_50`) rather than a standard variadic function signature.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged; the decompiler confidently presents incorrect types (e.g., `func_mixed_args`) and lost struct parameters without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: While function calls are visible, some test functions like `call_cdecl` and `mixed_conventions_test` are reduced to constant returns (`return 0xf`), hiding the calling convention logic being tested.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are organized in address order, which roughly corresponds to the source file order, maintaining logical grouping.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Ghidra-specific types (`undefined8`, `code *`) and would require significant modification to compile with a standard compiler.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Struct types (`LargeStruct`, `SmallStruct`) are completely lost and replaced by raw arrays/pointers.
+- `varargs_func` is not recognized as a variadic function, exposing complex stack manipulation instead.
+- `func_mixed_args` has incorrect parameter types (identifying an `int` as a `double`).
+- Test functions like `mixed_conventions_test` are constant-folded, obscuring the calling convention demonstrations.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Debug symbols were perfectly preserved, making it easy to locate specific functions.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover `LargeStruct` and `SmallStruct` turns structured data access into raw memory indexing, severely impacting understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve analysis of stack-passed arguments to recover large struct parameters instead of treating them as local stack arrays.
+2. Implement pattern matching for `va_list` usage to reconstruct standard variadic function signatures.
+3. Refine type inference for mixed integer/floating-point arguments to respect the ARM64 ABI (x/d registers separation).

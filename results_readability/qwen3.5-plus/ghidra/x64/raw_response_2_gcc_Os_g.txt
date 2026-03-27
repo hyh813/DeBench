@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names like `iVar1`, `lVar1`, `pEVar2` obscuring purpose (e.g., loop counters should be `i`, `sum`). Parameter names often preserved (`x`, `arr`, `n`) but locals consistently generic.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`double_value`, `process_char`, `array_1d_stack`, `struct_simple`). Runtime functions use generic names (`FUN_00101020`, `_init`) but application code retains semantic names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions have constant-folded hex values (`0x61` instead of `'a'`, `0xb` instead of `11`, `0x14` instead of `20`). Magic numbers like `0x400c000000000000` for printf format specifiers are completely opaque.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Frequent "Unresolved local var: int i@[???]" comments clutter output. Stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail`) appear in many functions. Some compiler artifacts visible but not overwhelming.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `binary_tree_sum` incorrectly transformed from recursive to iterative loop (critical semantic loss). `enum_switch` uses lookup table instead of switch statement. `process_char` uses arithmetic `(byte)(c + 0xbfU) < 0x1a` instead of clear `'A' && c <= 'Z'`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Helper functions preserved (`complex_callback`, `opaque_handle_create`). No excessive inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Test functions have complex initialization sequences but remain traceable. No excessive goto usage in application code.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `volatile_access` lost double-read semantics (compiled as `*p + *p` instead of two separate volatile reads). Test functions have constant-folded results losing original computation logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: **Critical error**: `process_ld` returns `longdouble *` instead of `longdouble`. `volatile` qualifier lost on `volatile_access` parameter. Function pointer types use custom typedefs (`_func_int_int`) instead of standard C syntax.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct names preserved well (`Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`). Field names mostly retained. Bitfield struct (`Flags`) accessed via byte operations losing semantic field names (`flag1`, `flag2`).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe casts present (`(int)handle`, `(long)size` in opaque functions). Pointer arithmetic visible in array functions. Function pointer calls have "Could not recover jumptable" warnings indicating potential type confusion.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("WARNING: Unknown calling convention", "Unresolved local var"). No algorithm explanations, purpose comments, or API contract documentation recovered from source comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Linked list traversal recognized correctly. Tree recursion NOT recognized (transformed to iteration). Switch-on-enum pattern transformed to lookup table losing semantic clarity. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning messages for indirect calls ("Could not recover jumptable at 0x00101843. Too many branches"). Stack check warnings present. "Unknown calling convention" warnings help identify potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation recovered. NULL checks present but not documented as contracts. Source comments about test expectations completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in test functions. Callback relationships visible (`ptr_func_simple` calls `double_value`) but not explicitly documented. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. Runtime functions (`_init`, `_start`, `_fini`) mixed with application code. No file organization matching source module structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies (`__printf_chk`, `__libc_start_main`, `__stack_chk_fail`) not clearly documented. Some undefined symbols require linking.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+4+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (5+8+7+5)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (5+7+6)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (4+4+7+3)/4 = 4.50 × 0.15 = 0.675
+Level 5 (Contextual):  (6+5+6)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.73/10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- **`process_ld` returns wrong type** (`longdouble *` instead of `longdouble`) - breaks semantic correctness
+- **`volatile_access` lost volatile semantics** - two reads collapsed to one expression, defeating the test purpose
+- **`binary_tree_sum` recursion destroyed** - transformed to iterative loop, fundamentally changing algorithm structure
+- **Variable names generic** (`iVar1`, `lVar1`, `pEVar2`) instead of semantic names (`sum`, `index`, `edge`)
+- **Test function literals constant-folded** - original computation logic lost (e.g., `0x61` instead of `'a'`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most application function names preserved accurately from source, maintaining semantic clarity for core functionality.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No precondition/postcondition documentation, source test comments completely lost, no API contract information recovered.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve volatile semantics** - Detect and maintain volatile qualifier on memory accesses to prevent optimization-induced semantic loss
+2. **Recover recursive structures** - Improve pattern recognition for tree/graph recursion instead of collapsing to iterative equivalents
+3. **Infer semantic variable names** - Use usage patterns to name variables (e.g., loop accumulators → `sum`, indices → `i`, pointers → `edge`)

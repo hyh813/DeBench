@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `result`, `s`) with no semantic meaning. For example, `v0` in `test_cpp_constructor` should be `data_array` based on its usage with `operator new[]`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions retain mangled names that can be demangled (`_Z20test_cpp_member_funcv`), but helper functions use generic names (`sub_1020`). C++ class methods show mangled names (`_ZN9ContainerIiE4pushEi`) losing readability.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (`4700`, `0x14u`, `8u`, `130`). The constant `4700` in `test_cpp_member_func` should be documented as the base calculation value from source.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (explicit casts like `(__int64)`, `(_DWORD *)`), but not excessive. Stack frame comments like `[rsp-8h] [rbp-8h] BYREF` add noise without value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Most test functions are constant-folded to simple returns (e.g., `test_cpp_virtual_func` just returns 42), losing all original logic. `test_cpp_constructor` shows a do-while loop but with awkward structure.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are appropriately sized, but C++ class methods are flattened into standalone functions. Template instantiations are separate functions but not grouped logically.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. Some functions use `__fastcall` calling convention annotations that disrupt reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Constant folding eliminated redundant computation but also eliminated understanding of original logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type erosion - everything becomes `__int64`, `_DWORD`, `_QWORD`. Original types like `int`, `size_t`, `double` are lost or genericized. Pointer types lack semantic meaning.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: C++ class structures completely lost. `SimpleClass`, `LifecycleClass`, `Container<T>` all become raw pointer arithmetic. No struct definitions recovered for any class.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(_DWORD *)`, `(_QWORD *)`). Pointer arithmetic on class objects (`a1 + 40`, `a1 + 80`) without struct definitions is dangerous and unclear.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal auto-generated comments only (type annotations, register info). No semantic explanations of algorithm purpose or C++ construct recovery. Failed decompilations listed but not explained.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ OOP patterns completely unrecognized. Virtual function calls, inheritance, templates, lambdas, exceptions all appear as raw operations without pattern identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations are listed at end (21 functions), but no inline warnings for suspicious code. The `__noreturn` annotation on `test_cpp_exception` is helpful but isolated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts lost. No indication of null checks or bounds validation requirements.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch shown as `(**a1)(a1)` without vtable explanation. Inheritance relationships completely lost.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order. Related template instantiations (`Container<int>`, `Container<double>`) are separated. No logical grouping by C++ class or feature.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 21 functions failed to decompile including critical ones (`printf`, `strlen`, `operator new`). Cannot compile standalone. Many external dependencies undocumented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+6)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+5+6+7)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type System): (4+2+5)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (3+2+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────
+Overall Score:                                  4.27/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **C++ class structures completely lost** - All classes (`SimpleClass`, `Container`, `Base`, `Derived`) reduced to raw pointer arithmetic with no struct definitions
+- **21 critical functions failed to decompile** - Including `printf`, `strlen`, `operator new/delete`, exception handling primitives
+- **Constant folding eliminated semantic logic** - Test functions return hardcoded values (42, 71, 650) instead of showing actual computation
+- **Variable names provide zero semantic value** - All variables are `v0`, `v1`, `result` with no indication of purpose
+- **C++ OOP patterns unrecognized** - Virtual tables, inheritance, templates, lambdas appear as opaque operations
+
+### Best Quality Aspect: **Noise Reduction (6/10)**
+- Compiler artifacts are present but not overwhelming; the code doesn't have excessive register spilling or debug instrumentation cluttering the output.
+
+### Most Needs Improvement: **Idiom Recognition (2/10)**
+- The decompiler completely fails to identify C++ OOP patterns (virtual functions, inheritance, templates, exceptions), presenting them as raw low-level operations without any high-level abstraction recovery.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts** - Analyze vtable pointers to reconstruct class definitions with field names and method tables
+2. **Preserve computation logic instead of constant folding** - Show actual calculations even when compiler optimized them, with comments indicating constant results
+3. **Add semantic annotations for C++ constructs** - Label virtual calls, template instantiations, exception handlers, and lambda captures with explanatory comments

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most local variables are generic (`v1`, `v2`, `v3`, `result`) obscuring their purpose. Function parameters retain some original names (`arr`, `n`, `p`) but test function locals are all numbered temporaries.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`process_char`, `array_1d_stack`, `struct_simple`). Some runtime helpers have generic names (`function_1060`, `function_1070`) but core logic functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers present without explanation (65, 32, 0x3fc00000 for float constants). String literals stored as hex-encoded globals (`g1`, `g2`) rather than readable strings.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Assembly intrinsics pollute code (`__asm_movss`, `__asm_mulss`, `__readfsqword`). Stack canary checks and redundant casts throughout obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as while/for constructs, but `array_1d_stack` uses awkward do-while pattern. Switch statements converted to if-else chains (`enum_switch`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized and cohesive. Original structure mostly preserved, though runtime support functions (`deregister_tm_clones`) add noise.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with clear flow. Test functions have complex variable tracking but maintain reasonable linearity.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant casts present but no obvious dead code. Loop structures not excessively unrolled.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Integer types mostly correct (`int32_t`, `int64_t`), but pointer types degraded to `int32_t*` or `char*`. Custom float typedefs (`float128_t`) are non-standard.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct types lost. Access via pointer arithmetic (`*(int32_t *)(v1 + 8)`) instead of field names. No `Point3D`, `Rect`, `Widget` recovery.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts throughout. Functions like `ptr_single`, `ptr_double`, `ptr_triple` don't actually dereference properly (use uninitialized `v1`). Void/char pointers where specific types needed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only line range comments from debug info. No semantic comments explaining logic or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm explanations. Linked list traversal not identified as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: **Critical** - Broken functions (`const_param`, `volatile_access`, `ptr_single`) not flagged. No warnings about potentially incorrect decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error condition documentation. NULL checks present but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and visible. Global variable usage traceable (`g1`, `g2`, `g3`, `g4`). No callback relationship documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file with prototypes at top. Source file indicated in comments (`/work/2.c`) but no logical grouping.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes standard headers but assembly intrinsics may not compile portably. `int128_t` typedef is incorrect (maps to `int64_t`).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+8+5+4)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):   (6+7+7+7)/4 = 6.75  × 0.25 = 1.688
+Level 3 (Type System):  (4+2+3)/3   = 3.00  × 0.20 = 0.600
+Level 4 (Semantic):     (3+3+2+2)/4 = 2.50  × 0.15 = 0.375
+Level 5 (Contextual):   (6+6+5)/3   = 5.67  × 0.10 = 0.567
+─────────────────────────────────────────────────────────────
+Overall Score:                                  = 4.81/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Struct types completely lost** - All composite types accessed via pointer arithmetic (`*(int32_t *)(v1 + 8)`) instead of field names
+- **Broken function implementations** - `ptr_single`, `ptr_double`, `ptr_triple`, `const_param`, `volatile_access` use uninitialized variables instead of actual dereferences
+- **Float operations use assembly intrinsics** - `process_float`, `process_double` use `__asm_movss`, `__asm_mulss` instead of clean C expressions
+- **No anomaly warnings** - Clearly broken decompilations not flagged for manual review
+- **Generic variable naming** - Test functions use `v1`, `v2`, `v3` making data flow tracking difficult
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names largely preserved, making it easy to identify purpose of each function
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union definitions, forcing all access through opaque pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct layouts from access patterns** - Analyze consistent offset accesses (`+8`, `+12`, `+20`) to reconstruct field definitions with meaningful names
+2. **Flag uncertain decompilations** - Add confidence indicators when pointer dereferences cannot be verified (e.g., `// UNCERTAIN: pointer dereference may be incorrect`)
+3. **Replace assembly intrinsics with C expressions** - Convert `__asm_movss`/`__asm_mulss` patterns back to standard float operations for readability

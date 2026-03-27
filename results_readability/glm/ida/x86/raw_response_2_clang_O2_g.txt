@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (e.g., `v2`, `v3`, `v4`, `result`, `v0`), providing no semantic hint about their purpose (e.g., `sum`, `index`, `ptr`), which severely hampers comprehension.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names are perfectly recovered from the source (e.g., `process_char`, `array_1d_stack`, `binary_tree_sum`), accurately reflecting the original intent and making the API surface immediately understandable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers are prevalent due to optimization; for example, `array_2d_stack` uses raw indices like `99`, `88`, `11` instead of the original loop logic, and `process_char` uses `0x1A` instead of the explicit range check `'A'` to `'Z'`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The code is mostly clean, but contains some compiler artifacts like `__asm { jmp ... }` in `sub_1030`, `__usercall` annotations, and `LODWORD` casts in `test_data_types_l1` which add minor clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: The control flow is heavily distorted by aggressive loop unrolling (e.g., `array_1d_stack` processes 8 items per iteration, `array_3d` unrolls 25 additions), making the original simple `for` loops unrecognizable and difficult to read.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions are preserved with correct boundaries and granularity; helper functions like `binary_tree_sum` are correctly separated from `binary_tree`, maintaining the original modularity.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: While the code reads top-to-bottom, the massive unrolled blocks (e.g., in `array_3d` and `test_array_types`) disrupt the logical flow, requiring significant mental effort to map back to the original iterative logic.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: The decompiler fails to abstract compiler optimizations; it presents the redundant unrolled code (e.g., `result += v1[v2] + v1[v2-1] ...`) instead of collapsing it back into a readable loop structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Types are recovered with high accuracy, including specific sizes (`__int64`, `long double`), sign (`unsigned __int8`), and qualifiers (`volatile`, `const`), matching the source definitions closely.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Structs and unions are recovered perfectly with correct field names (e.g., `Point3D`, `Rect`, `Widget`), allowing for natural member access syntax like `w->bounds.position.z`.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Pointer arithmetic and casts are generally correct and safe; however, `struct_bitfields` resorts to manual bit shifting (`(*(_WORD *)f >> 3) & 7`) instead of field access, which is less safe and harder to read.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: There are virtually no comments explaining the logic; the decompiler output lacks annotations for the complex unrolled loops or the bitfield manipulations, leaving the reader to decipher the compiler's output.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard idioms like linked list traversal (`for ( result = 0; v1; v1 = v1->next )`) are recognized, but the "sum array" idiom is completely lost due to the presentation of unrolled arithmetic.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: No specific anomalies are flagged; the decompiler presents the optimized code (e.g., constant folding in `test_data_types_l1`) as standard code without indicating that the source logic was different.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: There is no recovery of preconditions or invariants; for example, the bounds check in `array_complex_index` is present but not explicitly documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls are clear and use the recovered names, making the call graph easy to follow (e.g., `main` calling the various `test_...` functions).
+
+**17. Module Organization:** Score: 8/10  
+Justification: The functions are ordered logically, generally matching the source file's structure with related test functions grouped together.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code is mostly valid C, but requires minor cleanup of compiler-specific annotations (like `__usercall`) and potentially missing headers for standard types to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.3/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`v2`, `v3`), obscuring the purpose of accumulators and indices.
+- Control flow is heavily obfuscated by loop unrolling (e.g., `array_3d`), making simple iterative logic look like complex arithmetic.
+- Bitfield access in `struct_bitfields` is degraded into manual bit-masking operations, losing the semantic clarity of the source.
+- Test functions like `test_data_types_l1` are reduced to constant printing, hiding the original logic flow.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- The decompiler successfully recovered all original function names, making the high-level structure and API immediately recognizable.
+
+**Most Needs Improvement:** Control Flow Naturalness (scored 4/10)  
+- The failure to re-roll unrolled loops into standard `for` or `while` constructs makes the low-level logic extremely difficult to map back to the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement loop rolling to transform unrolled arithmetic sequences back into readable `for` loops.
+2. Enhance variable renaming heuristics to infer names like `sum`, `i`, or `ptr` from usage patterns (e.g., accumulation, indexing).
+3. Improve bitfield recovery to generate struct field access syntax instead of raw shift-and-mask operations.

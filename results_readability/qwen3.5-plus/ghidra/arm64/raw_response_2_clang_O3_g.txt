@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Simple functions preserve parameter names well (`char c`, `int x`, `int *arr`), but complex functions devolve into generic temporaries like `iVar1`, `uVar2`, `piVar3`. Many locals show as "Unresolved local var: int sum@[???]" comments, indicating the decompiler couldn't recover original variable names from optimized code.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are accurately preserved from source (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). Only internal runtime functions receive generic names like `FUN_00100620`. Action verbs are appropriate and match original functionality.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions print pre-computed constants (`0x61`, `0x3c`, `0x12345678`) instead of showing actual computations. Hex literals appear without explanation (e.g., `0x400c000000000000` for float), and constant folding obscures what the code actually does.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts throughout: "Unresolved local var" comments, `undefined8` casts, internal function calls (`__addtf3`, `__multf3`), and "WARNING: Removing unreachable block" messages. At -O3 some artifacts are expected, but this volume is excessive.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural control flow, but complex ones show aggressive loop unrolling and vectorization. The `array_1d_stack` function has multiple accumulator variables (`iVar9` through `iVar16`) from unrolling, and `array_3d` is completely unrolled into a massive expression. Expected at -O3 but hurts readability.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are preserved correctly with appropriate granularity. However, test functions were optimized into constant-printing stubs rather than actual function calls, losing the original test structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code reads top-to-bottom in simple functions, but unrolled loops create long repetitive sequences that disrupt flow, particularly in `array_3d` with 60+ variable assignments before the return statement.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy from loop unrolling. The `array_3d` function has 60+ temporary variables (`uVar1` through `uVar60`) and repeated bit-shift patterns. The decompiler didn't recognize this as an optimization artifact to simplify.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are preserved correctly (char, short, int, long, float, double, long long), and struct types like `Point3D` and `Rect` are maintained. However, `long double` degrades to `undefined1 [16]`, and some pointer types lose specificity.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct definitions recover well with field names intact (`Point3D` has x, y, z; `Rect` has position and size). Nested structs work correctly, and bitfield access is recognized though field names are lost in `struct_bitfields`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts appear throughout (`(undefined8 *)`, `(ulong)`), void pointer handling is present but not ideal, and function pointer types are partially recovered with generic naming like `_func_int_int`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are sparse—mostly decompiler warnings like "WARNING: Could not recover jumptable" and "Unresolved local var" notes. There's no algorithm explanation or API documentation to help understand the code's purpose.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns like linked list traversal and tree recursion are preserved in structure, but the decompiler doesn't identify or name these patterns (e.g., no "linked list traversal" comment).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The decompiler does flag issues with warnings about unreachable blocks, unresolved variables, and indirect call problems. This helps identify where manual review is needed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling documentation appears. Function contracts are completely lost in the decompilation process.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships lack documentation, and global variable references use generic names like `DAT_0010303f` instead of meaningful identifiers.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions exist in one file without logical grouping or header separation. No namespace or package structure is preserved from the original source organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code includes external dependencies like `__addtf3` and `__multf3` that need stubs, and while it appears to compile, it requires additional setup to be functional.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Calculation:**
+- L1 (Lexical): (5+8+4+3)/4 = 5.0 × 0.30 = 1.50
+- L2 (Structural): (5+7+6+3)/4 = 5.25 × 0.25 = 1.31
+- L3 (Type System): (6+7+5)/3 = 6.0 × 0.20 = 1.20
+- L4 (Semantic): (3+5+6+2)/4 = 4.0 × 0.15 = 0.60
+- L5 (Contextual): (5+4+5)/3 = 4.67 × 0.10 = 0.47
+- **Total: 5.08/10**
+
+**Critical Defects:**
+- Variable `iVar1`, `uVar2`, `piVar3` should be named based on usage patterns (e.g., `sum`, `index`, `array_ptr`)
+- Test functions optimized to print constants instead of showing actual computation logic
+- `array_3d` function has 60+ redundant temporary variables from unrecognized loop unrolling
+- `long double` type degraded to `undefined1 [16]` losing semantic meaning
+- No function contracts or precondition documentation recovered
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+- Most function names accurately preserved from source with appropriate action verbs
+
+**Most Needs Improvement:** Assertion & Contract Recovery (scored 2/10)  
+- No preconditions, postconditions, or error handling documentation appears in decompiled output
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern recognition to detect loop unrolling and collapse redundant variables into loop constructs with comments
+2. Add heuristic-based variable naming from usage patterns (e.g., variables used in accumulation should be named `sum`)
+3. Recover and document function contracts by analyzing parameter validation and return value patterns

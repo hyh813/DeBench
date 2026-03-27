@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`iVar1`, `uVar2`, `pbVar3`, `local_2c`) with no semantic meaning. Original source used meaningful names like `result`, `p1`, `p2`, `a`, `b`, `temp` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core functions retain original names (`param_fake_branch`, `param_opaque_predicate`, `test_obf_opt_edge`) accurately reflecting purpose. However, helper functions use generic names (`FUN_00011030`, `FUN_000110c0`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0x23`, `0xe1` appear without explanation. Signal numbers (`8` for SIGFPE, `0xb` for SIGSEGV) are not named constants. Original `0xDEADBEEF` is lost entirely.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Runtime artifacts present (`__x86_get_pc_thunk_*`, `_init`, `__do_global_dtors_aux`). Some functions are oversimplified to the point of losing logic entirely (`param_fake_branch` just returns `param_1`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical logic loss: `param_fake_branch` lost both fake branch conditions entirely. `param_tail_call_optimized` shows multiplication instead of recursive structure. GCD loops are natural but original branch logic is gone.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and `decrypt_string` is properly separated from `param_string_encryption`. Handler functions (`div_zero_handler`, `segv_handler`) are correctly isolated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom with natural loop constructs (do-while for GCD). No excessive goto usage. Nested conditionals are generally clear.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `call_vectorized_loop` has explicit 8-line array initialization. `test_obf_opt_edge` duplicates GCD calculation from `call_opaque_predicate`. Some inlined constant calculations create redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed types (`int`, `uint`, `undefined4`, `byte`). `param_opaque_predicate` takes `uint` but source uses `int`. `undefined4` return types aren't standard C. Pointer types generally correct.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited composite types in source. `jmp_buf` shown as `__jmp_buf_tag*` correctly. Arrays handled properly (`local_2c[31]`, `local_24[8]`). No bit-fields to evaluate.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(undefined4)(10 / (longlong)param_1)`, `(__sighandler_t)0x0`. Type confusion between `uint` and `int` in several functions. No buffer overflow warnings despite overflow test functions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: ZERO comments in decompiled code. Original source had extensive documentation explaining obfuscation techniques, test scenarios, and expected values. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm not identified. String XOR decryption pattern not named. Signal handler exception pattern not documented. No design pattern recognition despite clear patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings that `param_fake_branch` lost all branch logic. No indication that `param_tail_call_optimized` logic is completely wrong. Silent failures throughout decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). No postconditions inferred. Signal handler contracts not explained. Error conditions undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`jmp_buffer`, `div_zero_caught`) used without declaration context. No call graph documentation. External dependencies marked but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output. No logical grouping comments. Original source had clear section headers (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Header inconsistency ("BinaryAI" vs "Ghidra"). `undefined4` type isn't standard C. External functions need proper headers. Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (4+7+7+6)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (5+7+4)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                              4.99/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **`param_fake_branch` completely lost fake branch logic** - both `if (x*x < 0)` and `if (strlen(str) < 0)` conditions eliminated, function just returns input
+- **`param_tail_call_optimized` has wrong logic** - shows multiplication formula instead of tail-recursive structure
+- **Zero comments** - original source had extensive documentation explaining obfuscation techniques and test scenarios
+- **Generic variable names** - `iVar1`, `uVar2`, `pbVar3` obscure semantic meaning throughout
+- **No anomaly warnings** - decompiler silently loses critical logic without flagging issues
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source (`param_fake_branch`, `param_opaque_predicate`, `test_obf_opt_edge`)
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding obfuscation intent impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add decompilation confidence annotations** - Flag functions where significant logic was lost or simplified (e.g., `// WARNING: Branch conditions eliminated by optimizer`)
+2. **Recover semantic variable names from usage patterns** - Analyze how variables are used to infer names (e.g., GCD loop variables should be `a`, `b`, `temp`)
+3. **Generate explanatory comments for recognized patterns** - Identify and document common algorithms (GCD, XOR decryption, signal handling) with brief explanations

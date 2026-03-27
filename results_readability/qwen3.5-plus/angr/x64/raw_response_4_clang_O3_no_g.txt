@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `a0`, `a1`, `v19`, `v20`, etc.) with no semantic meaning. In `varargs_func`, over 40 variables like `v29`, `v30`, `v31` obscure the varargs iteration logic that should use `args`, `sum`, `i`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retain original names (`cdecl_func`, `call_cdecl`, `func_no_args`), but many wrapper functions use meaningless `sub_401xxx` naming (e.g., `sub_401159`, `sub_401164`). The actual logic functions are named appropriately.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (UINT_MAX), `4294967294`, `206158430216` in varargs functions. Some return values (15, 50, 6) are clear from context but not documented.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from wrapper functions (`sub_401xxx` that just call another function), runtime initialization code (`_init`, `_start`, `deregister_tm_clones`), and redundant variable assignments (`v0 = v2` then unused).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions have natural flow, but `varargs_func` and `param_varargs` use excessive gotos (`LABEL_401340`, `LABEL_401396`) and complex branching. The original simple for-loop became an unreadable state machine.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Many unnecessary wrapper functions that just call another function (e.g., `sub_401159` calls `cdecl_func`). This creates artificial fragmentation. Core functions are appropriately sized but the wrapper pattern adds noise.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Goto statements in varargs functions severely disrupt flow. Most other functions read top-to-bottom reasonably well, but the varargs handling requires constant jumping between labels.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Wrapper functions create significant redundancy. Variable assignments like `v0 = v2` followed by no use of `v0` are redundant. Constant folding eliminated actual computation logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are mostly preserved but degraded—`int` becomes `unsigned int` or `unsigned long long`. Function pointers lose signature information (`unsigned long long *a0` instead of proper callback type). Return types often wrong (`unsigned long long` for `int` returns).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are recovered but with generic field names (`field_0`, `field_8`, `padding_4`). The `LargeStruct` and `SmallStruct` are partially recovered but `func_struct_byval` loses all struct information and returns nothing.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe casts present. Pointer arithmetic is visible in varargs handling (`*((int *)&v34[v33 & 4294967295])`). Function pointer types are degraded to generic pointers.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No meaningful comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no documentation of what varargs handling is attempting. Only one anomaly marker exists.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithm patterns identified. The varargs handling pattern (va_start/va_arg/va_end) is completely unrecognizable as such. Standard C idioms are not recovered.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: One anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`), but most issues are not flagged. No indication of optimization artifacts, constant folding, or inlining that transformed the code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks exist (`if (!a0)`) but aren't documented as contracts. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships aren't documented. No call graph information. Global variables referenced (`g_4020e0`, `g_402108`) but not explained. String constants externalized without context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in one file with no logical grouping. Runtime initialization code mixed with application code. No separation between test functions and utility functions.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code appears to compile but has external dependencies (`__libc_start_main`, `puts`, `printf`, `strlen`, `__cxa_finalize`). No dependency documentation. Some functions reference undefined globals.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+4+4)/4 = 4.00
+Level 2 (Structural):  (4+5+5+5)/4 = 4.75
+Level 3 (Type):        (5+4+5)/3   = 4.67
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00
+Level 5 (Contextual):  (4+4+5)/3   = 4.33
+
+Overall = (4.00 × 0.30) + (4.75 × 0.25) + (4.67 × 0.20) + (2.00 × 0.15) + (4.33 × 0.10)
+        = 1.20 + 1.19 + 0.93 + 0.30 + 0.43
+        = 4.05/10
+```
+
+**Overall Readability Score: 4.1/10**
+
+### Critical Defects:
+- **Variable `v19`, `v20`, `v29-v32`** in `varargs_func` should be named `args`, `sum`, `xmm_regs` based on varargs handling pattern
+- **Control flow uses goto labels** (`LABEL_401340`, `LABEL_401396`) instead of loop constructs for simple iteration
+- **Struct fields all generic** (`field_0`, `field_8`, `padding_4`) losing semantic meaning of `data[i]` array access
+- **Constant folding eliminated actual logic** - `call_cdecl()` returns 15 directly instead of showing `cdecl_func(5, 10)` computation
+- **No comments explaining** the varargs ABI handling which is the most complex recovered code
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names like `cdecl_func`, `func_no_args`, `param_by_value_int` were preserved from debug symbols, maintaining semantic connection to original source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero meaningful comments exist; no explanation of complex varargs handling, no decompilation confidence indicators, no algorithm documentation whatsoever.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level control structures** from jump patterns - convert `goto LABEL_xxx` loops back to `for/while` constructs, especially for varargs iteration patterns
+2. **Infer semantic variable names** from usage context - `v35` accumulating values in a loop should be named `sum`, pointer variables should indicate their target type
+3. **Add decompilation confidence annotations** - mark regions where optimization transformed code (constant folding, inlining) and indicate uncertainty about varargs ABI handling

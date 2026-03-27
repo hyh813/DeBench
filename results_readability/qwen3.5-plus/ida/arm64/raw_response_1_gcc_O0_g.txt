@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Generic names like `xa`, `v0-v26`, and `result` dominate; only loop variables (`i`, `j`, `sum`, `count`) are semantically meaningful. For example, `sequential_ops` has no intermediate variables while source had `temp1`, `temp2`, `temp3`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names preserved excellently (`sequential_ops`, `nested_if_deep`, `duffs_device`). Only runtime stubs use generic names (`sub_930`, `_do_global_dtors_aux`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic hex constants obscure array initialization (`0x140000000ALL`, `0x280000001ELL`). Switch case values preserved but data references like `xmmword_2C90` are opaque.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack annotations (`[xsp+10h] [xbp-4h]`) clutter every function. Memory casts like `*(_QWORD *)arr` and `*(_OWORD *)` add visual noise without semantic value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops and conditionals recovered naturally. However, `switch_fallthrough` uses goto labels (`LABEL_7`) instead of clean fall-through, and `duffs_device` has excessive label chains.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source exactly; no inappropriate inlining or fragmentation. Each test function remains cohesive and appropriately sized.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. `duffs_device` disrupts flow with 7+ goto labels, but most functions maintain natural execution order.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `duffs_device` shows significant redundancy with repeated `*vX = *vY` patterns across labels. `switch_large` has reorganized case order adding cognitive load.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types (int, void*) accurate. Function pointers lose precision with casts like `(int (*)(int))off_14010[0]`. Array types often degrade to pointer operations.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays initialized via hex constants (`*(_OWORD *)&matrix[0][0] = xmmword_2C90`) instead of clear initialization. No struct definitions recovered despite source having none to recover.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout: `(int (*)(int))off_14010[0]`, `*(_QWORD *)arr`. Function pointer array access loses type information.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompiler confidence indicators, no API documentation despite complex patterns like Duff's device.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Basic patterns (loops, if-else) recognized. Complex idioms like Duff's device, state machines, and fall-through switches not identified or labeled.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations noted at end ("FAILED to decompile: _setjmp"). However, suspicious patterns like opaque predicates receive no warnings or confidence indicators.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or error handling documentation. Functions like `duffs_device` (requires n>0) have no contract information.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Function pointer arrays reference opaque offsets (`off_14010[0]`) instead of resolved function names.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in source-order sequence. Test functions grouped logically (test_control_flow_l1/l2/l3). No explicit module boundaries.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation success. However, external references (`off_14010`, `xmmword_2C90`) require additional linking. 9 functions failed decompilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (5+8+5+5)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):     (7+8+7+6)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type System):    (7+4+5)/3 = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):       (1+3+5+1)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):     (5+7+6)/3 = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                    5.52/10
+```
+
+**Overall Readability Score: 5.5/10**
+
+### Critical Defects:
+- **Zero comments** despite complex patterns like Duff's device and state machines requiring explanation
+- **Array initialization via hex constants** (`0x140000000ALL`) instead of readable `{10, 20, 30, 40, 50}`
+- **Function pointer arrays use opaque offsets** (`off_14010[0]`) instead of resolved function names
+- **Goto labels for switch fall-through** (`LABEL_7`) instead of clean case fall-through semantics
+- **Stack variable annotations** (`[xsp+10h] [xbp-4h]`) clutter every function signature
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding complex patterns like Duff's device extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add semantic comments for recognized patterns** - Duff's device, state machines, and fall-through switches should be explicitly labeled with explanatory comments
+2. **Recover array initialization literals** - Replace hex constant assignments with clear C-style array initialization (`{10, 20, 30}`)
+3. **Resolve function pointer references** - Display actual function names in function pointer arrays instead of opaque offsets like `off_14010[0]`

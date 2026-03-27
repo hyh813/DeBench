@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of semantic names like `a`, `b`, `c` from source. Local variables are `v1`, `v2`, `result`, `result2` - completely obscuring their purpose (e.g., `temp1`, `temp2`, `count`, `sum`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most logic functions correctly recovered: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `recursion_factorial`. However, infrastructure functions are generic (`function_4fc`, `function_508`). Overall good for logic functions but mixed.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Code is littered with unexplained magic numbers: `0x66666667` (division constant), `0x40000000`, `0x8000000000000000`, `0x1e5c` (array base), `0x12f00` (global addresses). No attempt to name constants like `MAX_SIZE` or explain their purpose.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Massive noise from 1240 LOC vs 961 original. Includes: 50+ line struct definitions, 20+ unused infrastructure functions (`function_4fc` through `function_1440`), address range comments on every function, and complex struct initializations for setjmp.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Multiple unnatural patterns: `loop_for_fixed` uses bizarre formula instead of loop; `loop_while`/`loop_dowhile` have convoluted conditions like `while ((v3 & 0x40000000) != 0 == (v1 != 9))`; `loop_break` returns `v1 >= 40 == (v1 != 40)` - opaque boolean; recursion rendered as while loops.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Most functions appropriately sized (10-50 lines). However, `__aeabi_idiv` is 560+ lines of inlined division algorithm - clearly should be a library call. Some test functions have hardcoded values instead of calling actual logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with few forward jumps. However, complex boolean expressions in loop conditions (`v2 < 9 == v3 > 1 == v1 < v5`) and unusual operator precedence create non-linear reading. Some early returns present.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some dead code from optimization artifacts visible. Loop unrolling present in `loop_for_fixed` but not commented. Common subexpression elimination creates complex expressions. Overall manageable but not clean.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Excellent type precision - uses `int32_t`, `uint32_t` appropriately for ARM64. Function pointer types properly declared with signatures. Signed/unsigned correctly distinguished. Minor generic types in some infrastructure functions.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct recovery attempted: `struct __jmp_buf_tag` with fields `e0`, `e1`, `e2`. However, field names are generic (should be `__jmp_buf`, `__saved_mask`). Arrays accessed via pointer arithmetic rather than array syntax. Global arrays like `g5[8]` partially recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues: pointer arithmetic in array access (`*(int32_t *)(4 * a1 + 0x1e5c)`), complex boolean expressions with questionable precedence, indirect function calls without resolution. No `restrict` or safety annotations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only address range comments present (`// Address range: 0x6c4 - 0x6d0`). No algorithm explanations, no decompilation confidence indicators, no API contracts. Comments are purely metadata, not semantic guidance.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. State machines render as complex if-else chains. Jump tables in `switch_small`/`switch_large` partially recognized but not named. Duff's device completely lost - renders as simple switch. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings for suspicious code. Indirect calls not flagged. Complex boolean expressions not annotated as potentially incorrect. Unusual constructs like `// UNREACHABLE` after longjmp but no explanation of why.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No invariant detection. No documentation of error conditions or edge cases. Function contracts completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No function call relationship documentation. Global variables declared but not explained (`g1`, `g2`, etc.). Callback relationships not documented. No indication of who calls whom.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single monolithic file output. Functions somewhat grouped by type (test functions, helper functions, main). Static functions properly scoped. No header file separation. Arbitrary ordering.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code includes necessary headers (`<stdio.h>`, `<setjmp.h>`). Appears to compile standalone. Dependencies on standard library documented via imports. However, no build instructions or dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable naming**: All parameters `a1`/`a2`/`a3` and locals `v1`/`v2`/`result` are generic - should infer semantic names from usage
+- **Control flow unnatural**: `loop_for_fixed` uses bizarre formula instead of loop; complex boolean expressions like `(v3 & 0x40000000) != 0 == (v1 != 9)` are opaque
+- **Magic numbers**: `0x66666667`, `0x40000000`, `0x8000000000000000` unexplained - division algorithm artifacts
+- **No idiom recognition**: State machines, jump tables, Duff's device all lost
+- **Test functions hardcoded**: `test_control_flow_l1` prints constants instead of calling actual functions
+
+### Best Quality Aspect: Type Precision (8/10)
+Types are precise - uses `int32_t`/`uint32_t` correctly for ARM64, function pointer signatures accurate, signed/unsigned distinctions maintained.
+
+### Most Needs Improvement: Variable Naming (2/10)
+Every parameter and local variable uses generic names. At -O0, decompiler should easily infer semantic names like `count`, `sum`, `temp` from usage patterns.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: Analyze how variables are used (arithmetic, indexing, comparison) to name them semantically (`v1` used as loop counter → `i` or `count`)
+2. **Recognize and comment optimization artifacts**: The division constant `0x66666667` is clearly the "magic number" for signed division - add comment explaining this
+3. **Recover idioms**: Identify state machine patterns, jump tables, Duff's device and explicitly name them in comments rather than leaving as complex control flow

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables are generic (`v1`, `v2`, `v3`, `result`) with zero semantic meaning. Original `temp1`, `sum`, `count`, `i`, `j` are completely lost, making it impossible to track variable purpose across functions like `sequential_ops` and `loop_for_fixed`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main test functions preserved well (`sequential_ops`, `single_if`, `nested_if_deep`), but helper functions are cryptic (`function_8a0`, `function_1200`, `function_1654`). Original function names are recoverable but parameter semantics are lost.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0xffffffff`, `0xfffffffe`, `0x66666667`) with no explanation. String literals stored as hex-encoded globals (`g9`, `g10`, `g11`). No constants recovered from original meaningful values like loop bounds.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive `& 0xffffffff` masking throughout every function. Redundant type casts (`(int32_t)v1`, `(int64_t)v2`) pollute every expression. Compiler artifacts not cleaned despite -O0 compilation.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Clean if/else converted to bitwise operations (e.g., `v2 >= 1 ? v2 << 1 : v2` becomes `v2 << (int32_t)(v2 >= 1)`). Loop structures use complex while conditions instead of for loops. Goto labels (`lab_0xef4`, `lab_0xf54`) present in nested structures.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but signatures are broken—`sequential_ops` shows 0 parameters instead of 3 (`int a, int b, int c`). `recursion_factorial` calls itself with no arguments. Parameter lists don't match original semantics.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps into loop bodies disrupt reading flow. Labels like `lab_0x12d8` and `lab__loopexit_2` create non-linear execution paths. Some functions read top-to-bottom but many require jumping between sections.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repetitive masking operations (`& 0xffffffff`) appear in nearly every return statement. Similar bitwise patterns duplicated across functions without abstraction. No dead code elimination visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `int64_t`/`int32_t` regardless of original `int` types. Pointer types lost (`int arr[]` becomes pointer arithmetic). No const correctness. Function pointer signatures completely lost (`call_func_ptr` shows no parameters).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `jmp_buf` struct recovered but with generic field names (`e0[8]`, `e1`, `e2`). No other composite types in this code. Basic struct layout preserved but semantic field names lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe implicit casts between `int32_t` and `int64_t`. Pointer arithmetic without proper typing (`*(int32_t *)(4 * v1 + (int64_t)&g6)`). Function pointer calls lack signature verification.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered. Original source had extensive Chinese documentation explaining each function's purpose, test cases, and difficulty level. All semantic documentation completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. Switch fallthrough in `switch_fallthrough` not indicated. Loop patterns (for/while/do-while) not distinguished. State machine patterns in `state_machine` not identified.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about unresolved indirect calls. Functions with broken signatures not flagged. `recursion_factorial()` called with no arguments but no uncertainty indicator present.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions. Error handling paths not distinguished from normal paths. Original test case expectations completely lost.
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but signatures mismatch. Global variables (`g1`-`g15`) referenced without context or purpose. No call graph documentation. Callback relationships in `process_with_callback` not indicated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no header separation. Functions roughly grouped by test level (L1/L2/L3) but not well organized. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes present but many undefined references. Function signatures don't match actual calls (missing parameters). Would require significant patching to compile successfully.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+5+5+5)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (4+6+4)/3   = 4.67 × 0.20 = 0.933
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Context):     (4+5+4)/3   = 4.33 × 0.10 = 0.433
+
+Overall Score: 3.98/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Parameter information completely lost**: `sequential_ops(int a, int b, int c)` decompiles to `sequential_ops(void)` with no parameters
+- **Control flow obfuscated with bitwise operations**: Simple conditionals like `x > 0` become complex expressions like `(int32_t)v1 >= 1`
+- **Zero documentation recovered**: All original Chinese comments explaining function purpose and test cases are lost
+- **Excessive type masking noise**: Every function polluted with `& 0xffffffff` operations that obscure logic
+- **Function signatures broken**: Recursive functions like `recursion_factorial` called with no arguments despite needing parameters
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Main test function names were preserved accurately (`sequential_ops`, `nested_if_deep`, `switch_fallthrough`), providing some semantic anchor points for understanding code purpose.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete loss of all documentation is the most severe issue; original source had extensive comments explaining each function's purpose, difficulty level, and test cases, none of which survived decompilation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover parameter names from debug symbols**: When -g flag is present, extract variable names from DWARF debug information instead of generating `v1`, `v2`, etc.
+2. **Recognize and restore idiomatic control flow patterns**: Detect bitwise conditional patterns and convert them back to readable if/else and ternary operators.
+3. **Preserve and translate source comments**: Extract and include original source comments in decompiled output, especially when debug symbols are available.

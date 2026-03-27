@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Parameters named `param_1`, `param_2` obscure semantic meaning (e.g., `param_1` in `param_macro_constants` should be `size`). Local variables like `iVar1`, `uVar1`, `local_8` provide no semantic information about their purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`param_macro_constants`, `call_asm_basic`). However, some helpers use generic names like `FUN_00100880` and `FUN_00100a7c` instead of meaningful identifiers.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers replace constants: `0x401` (should be `MAX_SIZE`), `0x200` (should be `MAX_SIZE/2`), `0x40` (should be `BUFFER_COUNT*4`), `0xdef0` (platform constant). String literals like "Hello World" preserved correctly.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`___stack_chk_guard`) appear in most functions adding noise. Redundant casts like `(ulong)param_1` and `(int)sVar1` clutter the code. External function wrappers (`memcpy`, `strlen`) are unnecessary.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: If-else and for-loop structures recovered well (e.g., `param_asm_clobber` loop). The `__aarch64_ldadd4_acq_rel` do-while pattern is complex but accurate. No spurious goto usage observed.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match source correctly with appropriate granularity. However, unnecessary wrapper functions for external calls (`memcpy`, `printf`) fragment the code unnecessarily.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom naturally in most functions. `test_preprocessing_features` has repetitive printf patterns but maintains linear flow. No disruptive forward jumps.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Stack canary checks repeat across functions (necessary but noisy). `test_preprocessing_features` has repetitive call patterns matching source. No significant dead code observed.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic types like `undefined8`, `undefined4` used for return values instead of `int`. Parameters sometimes use `long` where `int*` would be more precise (e.g., `param_asm_simd`). Basic types (`int`, `size_t`, `void*`) generally correct.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited composite types in source code. Array access patterns recovered correctly (e.g., `*(int *)(param_1 + (long)local_4 * 4)`). Pointer arithmetic handled reasonably well.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present: `(undefined4 *)mmap(...)`, `(ulong)param_1` in printf. Stack canary checks add runtime safety but also noise. No severe buffer-overflow patterns introduced.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic, compared to extensive source comments. No decompilation confidence indicators. Critical macro semantics (SQUARE, MAX) lost without explanation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic C patterns (if-else, for loops) recognized correctly. Macro expansions not identified as such (e.g., `ADD_16` expanded to `+ 0x10` without noting macro origin). No pattern naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of decompilation uncertainty. Assembly-derived code not marked. Indirect calls not flagged. Code presents everything confidently even where recovery may be uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Error conditions (e.g., `mmap` failure returns) not explained. Return value semantics undocumented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships clear through direct calls. No call graph documentation. Global variable usage (`global_var`, `__aarch64_have_lse_atomics`) not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically (preprocessing together, asm together) matching source. No header file separation. External functions mixed with application code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External function declarations present but wrapped strangely. Stack canary dependencies (`___stack_chk_guard`) not documented. Would require significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+7+7+7)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (6+7+6)/3 = 6.33 × 0.20 = 1.267
+Level 4 (Semantic):    (2+5+3+3)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (6+6+4)/3 = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.76/10
+```
+
+**Overall Readability Score: 5.8/10**
+
+### Critical Defects
+- **Variable `param_1` should be named `size`** in `param_macro_constants` based on comparison logic (`param_1 < 0x401`)
+- **Magic number `0x401`** should be recovered as `MAX_SIZE` (1024) constant with comment
+- **No comments explaining macro expansions** - SQUARE, MAX, ADD_16 semantics completely lost
+- **Stack canary checks** (`___stack_chk_guard`) add noise to every function without option to suppress
+- **Return type `undefined8`** used instead of proper `int` or `void` in multiple functions
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making navigation and identification straightforward
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments represents the largest gap from source code readability
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover constant semantics** - Detect repeated magic numbers (0x401, 0x200, 0x40) and suggest named constant definitions with source line references
+2. **Add decompilation confidence annotations** - Mark assembly-derived code, indirect calls, and uncertain type recoveries with comments
+3. **Infer variable names from usage patterns** - Analyze parameter usage (e.g., `param_1` compared to 0x401) to suggest semantic names like `size`, `count`, `flags`

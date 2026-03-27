@@ -1,0 +1,101 @@
+## EVALUATION: C++ Object-Oriented Features Decompilation
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `a1`, `a2`) with no semantic meaning. For example, in `test_cpp_member_func`, `s[4]` should be `name` and `v6[8]` should represent the `SimpleClass` object, but no inference was made.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Functions use C++ mangled names (`_Z20test_cpp_member_funcv`) which are technically recoverable but not human-readable. Some like `test_cpp_constructor` are partially demangled, but helper functions like `sub_1030` and `sub_1160` remain cryptic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (e.g., `4700`, `0x14u`, `50`). The decompiler constant-folded many test functions to return literals (22, 39, 16, 85, 703) without showing the computation, losing semantic transparency.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts like `__usercall`, `__hidden`, `BYREF` annotations, and stack frame comments (`[esp+14h] [ebp-28h]`). Assembly blocks remain (`__asm { jmp dword ptr [ebx+8] }`), and 21 functions failed to decompile entirely.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered (e.g., `do-while` in `test_cpp_constructor`), but many test functions are constant-folded to single returns. Exception handling in `test_cpp_exception` is completely lost (marked `__noreturn` with just `__cxa_throw`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Individual class methods are properly separated (`Base::virtual_func`, `Derived::virtual_func`, `Container<int>::push`). However, test functions that should show object lifecycle are collapsed, losing the pedagogical structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but complex inheritance cases use thunks (`virtual thunk to`, `non-virtual thunk to`) that disrupt flow. Stack variable declarations at function start with `BYREF` annotations add visual noise.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from constant folding—`test_cpp_operator_overload`, `test_cpp_template_func`, `test_cpp_lambda`, `test_cpp_smart_ptr` all return pre-computed constants instead of showing the actual operations, losing educational value.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type erosion—`SimpleClass` object becomes `_BYTE v6[8]`, `LifecycleClass` data becomes `_DWORD *v1`. Function signatures use generic `int` instead of proper types (`size_t`, `const char*`). Pointer arithmetic replaces member access.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**—no class/struct definitions recovered. `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `MultiDerived`, `DiamondDerived`, `Container<T>`, `Point` all lost. Access is via raw offsets (`*(_DWORD *)(a1 + 40)`) instead of `obj.size`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout (`(_DWORD *)`, `(char *)this - 8`). Virtual table calls use function pointer casts (`**(int (__cdecl ***)(Base *, int))`). No const-correctness preserved despite original `const` methods.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated decompiler comments present (stack offsets, register hints). Zero semantic comments explaining C++ features (vtable mechanism, virtual inheritance, RAII). Failed functions just say "FAILED to decompile" without guidance.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No C++ idiom recognition—virtual dispatch appears as raw function pointer dereference, RAII (smart pointers, destructors) not identified, template instantiation not labeled. Diamond inheritance thunks present but unexplained.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations are listed at end (21 functions), but no inline warnings at call sites. Stack warnings present ("positive sp value has been detected, the output may be wrong!"). No indication of optimization-induced transformations.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. Exception contracts lost (try/catch blocks collapsed). No documentation of object lifetime requirements or ownership semantics for smart pointers.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Virtual function calls visible through vtable offsets (`off_5CE4`, `off_5D28`), but relationships not documented. Inheritance chains not explicit—`Derived : public Base` relationship must be inferred from method signatures.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped somewhat logically (class methods together), but no namespace or file organization recovered. Static members (`LifecycleClass::instance_count`) appear as globals without class association.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: **Does not compile standalone**—21 external functions failed (`operator new`, `__cxa_throw`, `printf`, `strlen`, etc.). No header declarations, missing standard library includes, architecture-specific calling conventions (`__usercall`, `__cdecl`) embedded.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+5)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type System): (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (2+2+4+1)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (4+5+2)/3   = 3.67 × 0.10 = 0.367
+
+Overall Score = 1.275 + 1.500 + 0.600 + 0.338 + 0.367 = 4.08/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **No class/struct type recovery**—all C++ classes reduced to raw pointer arithmetic and byte arrays
+- **21 functions failed to decompile** including critical runtime functions (`operator new`, `__cxa_throw`, `printf`)
+- **Constant folding destroyed semantics**—6 test functions return pre-computed literals instead of showing operations
+- **Generic variable naming**—all variables are `v0`, `v1`, `a1`, `a2` with zero semantic inference
+- **No C++ idiom recognition**—virtual dispatch, RAII, templates, exceptions all appear as low-level operations
+
+### Best Quality Aspect: **Function Decomposition (7/10)**
+- Individual class methods are properly separated and identifiable through mangled names, maintaining some structural organization despite type loss.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (1/10)**
+- Zero recovery of C++ semantics like exception contracts, object lifetime, ownership, or const-correctness—critical for understanding C++ code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts**—analyze virtual function tables to reconstruct class hierarchies with field names and inheritance relationships
+2. **Demangle and annotate C++ symbols**—convert `_Z20test_cpp_member_funcv` to `test_cpp_member_func()` with parameter types and add C++ feature annotations (virtual, static, const)
+3. **Preserve computational semantics over constant folding**—show actual operations even when compiler optimized them, with optional "compiler optimized to X" comments for transparency

@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `iVar1`, `uVar3`, `piVar1`, and `local_c`, completely losing semantic meaning (e.g., `sum`, `args`, `i`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `main` are perfectly preserved, likely due to the presence of debug symbols in the binary.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Constant folding at `-O2` replaced expressions like `5 + 10` with magic numbers like `0xf` (15) and `0x32` (50), obscuring the original arithmetic logic in test functions.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The output is cluttered with repetitive warnings like `/* WARNING: Unknown calling convention -- yet parameter storage is locked */` and `/* Unresolved local var: ... */` on almost every function.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While simple functions are clear, `func_struct_byval` is a disaster of unrolled assignments (e.g., `s.data[2]._0_4_ = (int)s.data[2];`) instead of the original loop, making it nearly unreadable.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-separated and match the source structure, though aggressive inlining (e.g., `call_cdecl` reduced to `return 0xf`) is a compiler artifact, not a decompiler error.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code generally reads top-to-bottom with minimal confusing jumps; `varargs_func` uses a standard `do-while` loop structure that is easy to follow.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The decompilation of `func_struct_byval` contains massive redundancy due to loop unrolling, listing 16 separate assignment statements instead of a simple loop.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Structs like `LargeStruct` and `SmallStruct` are correctly recovered, but generic types like `undefined4` and `undefined8` appear in function signatures (e.g., `func_mixed_args`), reducing precision.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: User-defined structures (`LargeStruct`, `SmallStruct`, `SmallPoint`) are accurately defined with correct field names and types, which is a strong point of this decompilation.
+
+**11. Type Safety:** Score: 6/10
+Justification: While structs are safe, the use of `undefined` types and the raw pointer arithmetic for `va_list` (treated as `int *`) introduce type-unsafe appearances.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are exclusively auto-generated warnings about calling conventions and unresolved variables; there are no semantic comments explaining the logic or algorithms.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard patterns like `ret_func_ptr` are clear, but the `varargs` idiom is lost, represented instead as raw pointer iteration over a stack array (`local_c`).
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: Ghidra explicitly flags areas of uncertainty with "WARNING: Unknown calling convention" and "Unresolved local var", which is helpful for the analyst despite the visual noise.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; for example, the null check in `func_struct_byptr` is visible but not explicitly documented as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls like `printf` and `puts` are clearly visible, and the relationship between `main` and the test functions is preserved, though inlined calls are obviously missing.
+
+**17. Module Organization:** Score: 6/10
+Justification: The code is organized linearly, but low-level runtime support functions (e.g., `__aeabi_drsub`, `__adddf3`) are intermixed with the high-level application logic, reducing modularity clarity.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on specific compiler builtins (e.g., `__fixdfsi`) and `undefined` types that would require manual cleanup or specific compiler flags to recompile successfully.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 5 + 4) / 4 = 5.25
+L2_avg = (5 + 8 + 8 + 4) / 4 = 6.25
+L3_avg = (7 + 8 + 6) / 3 = 7.00
+L4_avg = (2 + 4 + 8 + 2) / 4 = 4.00
+L5_avg = (7 + 6 + 5) / 3 = 6.00
+
+Overall = (5.25 × 0.30) + (6.25 × 0.25) + (7.00 × 0.20) + 
+          (4.00 × 0.15) + (6.00 × 0.10)
+Overall = 1.575 + 1.5625 + 1.4 + 0.6 + 0.6 = 5.74
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects (Bullet List)
+- **Variable Naming**: Variables like `iVar1` and `local_c` provide no semantic context, making it hard to understand the purpose of the code (e.g., `sum` vs `iVar2`).
+- **Loop Unrolling**: The function `func_struct_byval` is decompiled into a long series of individual assignments instead of a loop, destroying the original algorithmic intent.
+- **Varargs Obscurity**: The `varargs_func` implementation is reduced to raw pointer arithmetic on a stack array (`local_c`), completely hiding the standard `va_list` abstraction.
+- **Constant Folding**: Test functions like `call_cdecl` return hardcoded results (`0xf`) instead of showing the function calls, hiding the program's flow due to `-O2` optimization.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (9/10)
+- **Why?** The decompiler successfully preserved all original function names from the binary's symbol table, making the high-level structure easy to navigate.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Comment Quality & Presence (2/10)
+- **Why?** The output lacks any semantic comments explaining the logic, relying solely on generic compiler warnings which do not aid in understanding the code's purpose.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Loop Re-rolling**: Detect patterns of repeated array access and assignment (like in `func_struct_byval`) and reconstruct them into `for` or `while` loops to improve readability.
+2.  **Semantic Variable Naming**: Implement data flow analysis to infer variable names based on usage (e.g., identifying an accumulator as `sum` or a loop counter as `i`).
+3.  **Idiom Restoration**: Recognize standard ABI patterns for `va_list` on ARM and emit standard C idioms (`va_start`, `va_arg`) instead of exposing raw stack pointer manipulation.

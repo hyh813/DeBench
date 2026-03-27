@@ -1,0 +1,148 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy`
+
+### Original Source:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+### Decompiled:
+```c
+long long param_strcpy(char *a0, char *a1)
+{
+    char *dst;  // x0
+    unsigned long long len;  // x0
+    char *v0;  // [bp-0x10]    char v1;  // [bp+0x0]
+
+    v0 = &v1;
+    dst = strcpy(a0, a1);
+    len = strlen(dst);
+    return strlen(dst);
+}
+```
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters `a0`, `a1` are meaningless generic names - should be `dst`, `src`. Local variables `v0`, `v1` are cryptic stack artifacts. Only `dst` and `len` have meaningful names, but these are also auto-generated from register usage.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: The main function `param_strcpy` correctly matches the source name. However, many helper functions use mechanical names like `sub_4012f4`, `sub_401770`. The core test function is well-named but library functions vary.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently as error return without explanation. String literals like "Value: %d, Name: %s\n" are correctly recovered but appear as raw data references (`&g_4031a4`) rather than inline strings.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe redundancy - `strlen(dst)` is called twice in `param_strcpy`. Stack frame manipulation (`v0 = &v1`) serves no purpose. Multiple "Other Possible Types" annotations indicate uncertainty. Register spill comments (`// x0`, `// [bp-0x10]`) clutter the code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At `-O0`, control flow should closely match source. The simple sequential logic (strcpy then strlen) is preserved. However, the redundant strlen call creates unnecessary complexity. No goto abuse or confusing conditionals observed in this specific function.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: `param_strcpy` is appropriately small (8 lines). The call wrapper `call_strcpy` is separate. Function granularity is reasonable for the decompiled output. No 500-line monoliths in the examined functions.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without forward jumps or complex nesting. The function body is a simple linear sequence. Good linearization for this simple function.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Critical defect - `strlen(dst)` is computed twice with results stored in `len` and then computed again in the return. This is clear dead code elimination failure. The variable `len` is assigned but return recomputes instead of using it.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Return type is `long long` instead of `int`. Parameter `a1` should be `const char*` but is `char*`. The `len` variable is `unsigned long long` but source uses `int`. Multiple type precision issues present.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: For simple functions like `param_strcpy`, no composite types needed. However, in `param_fread_fwrite`, the code shows `char v0[8]` and `char v1[24]` which partially recovers the `buffer[32]` from source. Some struct recovery is evident in pthread functions.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Missing `const` qualifier on string source parameter. No obvious unsafe casts in this function. However, the type mismatches (long long vs int) could lead to issues. Some pointer arithmetic in `param_malloc_free` shows unsafe patterns.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments explaining the function purpose, parameters, or return value. Only register location comments (`// x0`, `// [bp-0x10]`) which are noise. No documentation of what `strcpy` does or why we return strlen.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard library functions `strcpy`, `strlen`, `strcmp` are correctly identified. The pattern of "wrapper function that calls libc and returns result" is recognized. pthread patterns are partially recovered.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of the redundant strlen call. No warnings about type mismatches. The "Other Possible Types" annotations show uncertainty but don't explain why. No flags for the const-correctness issue.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: dst buffer large enough"). No postconditions (e.g., "ensures: dst is null-terminated"). No error condition documentation. The function silently relies on strcpy behavior.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls `strcpy` and `strlen` are clear. The relationship between `param_strcpy` and `call_strcpy` is obvious from naming. However, global variable references like `extern unsigned long long g_414ff8` are cryptic.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped by category (library, syscall, thread). The test harness functions are separate. However, the ordering is somewhat arbitrary and doesn't match the original source's logical grouping with comments.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears syntactically correct and should compile. External declarations are present (`extern`). However, the "Other Possible Types" annotations and some undefined references might cause compilation issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation:
+
+```
+L1_avg = (3+7+4+3)/4 = 4.25
+L2_avg = (7+8+8+2)/4 = 6.25
+L3_avg = (4+7+6)/3 = 5.67
+L4_avg = (1+7+3+2)/4 = 3.25
+L5_avg = (6+6+7)/3 = 6.33
+
+Overall = (4.25 × 0.30) + (6.25 × 0.25) + (5.67 × 0.20) + 
+          (3.25 × 0.15) + (6.33 × 0.10)
+        = 1.275 + 1.5625 + 1.134 + 0.4875 + 0.633
+        = 5.09/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+---
+
+### Critical Defects:
+- **Redundant computation**: `strlen(dst)` called twice - computed into `len` variable then recomputed in return statement
+- **Parameter names**: `a0`, `a1` are meaningless; should be `dst`, `src` based on strcpy usage
+- **Type mismatch**: Return type `long long` instead of `int`, missing `const` on source parameter
+- **No comments**: Zero documentation of function purpose, parameters, or behavior
+- **Magic numbers**: Error return value `4294967295` (0xFFFFFFFF) appears without explanation
+
+### Best Quality Aspect: Control Flow Naturalness (7/10)
+- The sequential logic (strcpy then strlen) is preserved correctly
+- At -O0, the control flow should be simple and it is
+
+### Most Needs Improvement: Comment Quality (1/10)
+- No useful comments anywhere in the decompiled output
+- Even simple documentation explaining what strcpy/strlen do would help significantly
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement:
+
+1. **Eliminate redundant computations**: The decompiler should recognize when a computed value is stored in a variable and reused, rather than recomputing. The `len` variable should be used in the return statement.
+
+2. **Infer parameter names from usage**: When a parameter is passed to `strcpy`, the first arg should be named `dst` (or `destination`), second should be `src` (or `source`). Use the called function's parameter semantics to name caller parameters.
+
+3. **Add basic documentation**: Even at minimum, document what standard library functions do. "strcpy: copies string src to dst" takes minimal effort but greatly improves readability.

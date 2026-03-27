@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All function parameters use generic names like `a0`, `a1`, `a2` and local variables use `v0`, `v1`, `v2`, `v3`. The original source uses meaningful names like `count`, `args`, `sum`, `val`, `ptr`. The decompiler made no effort to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions were correctly recovered (e.g., `cdecl_func`, `stdcall_func`, `fastcall_func`), but many initialization and wrapper functions use address-based naming like `sub_401030`, `sub_4010bb`. The original source has clear, descriptive function names throughout.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Return value constants like `15`, `50`, `6` are clear since they match expected outputs. However, magic numbers like `4294967295` (unsigned -1) appear without explanation, and the decompiler uses raw hex values where symbolic constants would aid understanding.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe decompiler artifacts present, including `[D] unsupported_<class 'pyvex.expr.GetI'>()` markers, redundant struct definitions with padding fields, and incomplete type information. These artifacts significantly impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural with proper if/else and loop structures. Some goto statements remain (e.g., in `varargs_func`), but this is acceptable for decompiled code at -O0 level. The logic is traceable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized with appropriate granularity. The test functions like `test_calling_conventions` are larger but contain sequential operations. Function boundaries are correctly preserved from the original.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist in complex functions like `varargs_func` and `param_ptr_array`, but the overall flow is manageable with moderate effort.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant struct definitions (multiple `struct_0` declarations with padding). Loop unrolling in varargs functions is present but not explicitly marked. Overall manageable but not optimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most parameters use `unsigned int` when the original uses `int`. Pointers are often represented as `unsigned int*` rather than proper pointer types. The original uses `int`, `char*`, `double`, `long long` - these are largely lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery attempted (e.g., `struct_0` with `field_0`, `field_4`), but field names are generic and don't match original `LargeStruct`, `SmallStruct`, `SmallPoint`. The original has meaningful struct names and field layouts that are lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. The `param_func_ptr` treats function pointer as `unsigned int*` and calls it with `a0(a1)` which is type-unsafe. Pointer arithmetic is present but not clearly annotated. Mixed signed/unsigned operations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only decompiler markers like `[D] unsupported_<class 'pyvex.expr.GetI'>()` appear. No explanation of algorithm logic, parameter purposes, or return value semantics. The original source has extensive comments.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C idioms are recognizable (varargs handling with va_list-style struct, struct by-value passing). However, no explicit naming or documentation of these patterns. The original source explicitly tests varargs, cdecl, stdcall, etc.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The decompiler marks unsupported VEX expressions with `[D] unsupported_<class 'pyvex.expr.GetI'>()` in `func_mixed_args`, showing some anomaly detection. However, many other uncertain areas are presented confidently without flags.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source has clear contracts (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated") that are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible in the code (e.g., `test_calling_conventions()` calls various functions), but no documentation of call graphs, global variable usage, or callback relationships. The original shows clear caller/callee relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are roughly grouped by type (calling conventions, parameter passing, return values) but the organization is implicit. No clear separation into logical modules or files as the original demonstrates with section comments.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Uses `extern` declarations for global strings (`extern char g_4020a8`). Should compile with minimal stubs for standard library functions. Some dependencies are documented but not complete.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming uses only generic names (`a0`, `a1`, `v0`, `v1`) with no semantic inference
+- Function naming still uses address-based names (`sub_401030`) for many functions
+- Type precision severely degraded - all `int` become `unsigned int`, pointers lose type information
+- No comments explaining algorithm logic or parameter semantics
+- Struct field names are generic (`field_0`, `field_4`) losing original semantic meaning
+- Decompiler artifacts like `[D] unsupported_<class 'pyvex.expr.GetI'>()` pollute the code
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 6/10)  
+- The decompiler successfully recovered natural if/else and loop structures. Most functions have traceable logic flow despite some goto artifacts.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- The decompiler made no effort to infer meaningful variable names from usage patterns. Parameters like `a0`, `a1` should be named based on how they're used (e.g., `count`, `args`, `sum`).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how parameters and locals are used to suggest semantic names (e.g., if `a0` is used in a multiplication, consider `multiplier` or `factor`)
+2. **Recover struct types with meaningful field names**: Use field offset analysis and usage patterns to name fields (e.g., `field_0` used as `len` or `count`)
+3. **Add semantic comments for calling conventions**: Document which ABI each function uses (cdecl, stdcall, fastcall) based on parameter passing analysis

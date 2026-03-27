@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic names (`v0`, `v1`, `v2`, `v3`) obscuring semantic purpose; original parameter `x` is preserved but temporaries like `v4`, `v5` in `param_opaque_predicate` should reflect their roles (e.g., `gcd_result`, `predicate_value`).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved (`param_fake_branch`, `decrypt_string`, `param_tail_call_optimized`) matching original source intent with clear action semantics.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x5A` (encryption key) and `0x20u` (buffer size) lack symbolic names; however, some constants like `8` (SIGFPE) and `11` (SIGSEGV) are recognizable signal values.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Compiler artifacts present (`LOBYTE`, `HIDWORD`, `LODWORD`) but not excessive; some redundant type casts from ARM calling convention recovery.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Original recursion in `param_tail_call_optimized` converted to mathematical formula (TCO artifact); `param_opaque_predicate` uses do-while instead of while loop, disrupting natural flow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is appropriate; caller functions like `call_fake_branch` correctly inlined to return constants (expected at any optimization level).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally; some do-while patterns from loop recovery but no excessive goto usage.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `param_opaque_predicate` contains redundant calculations (`v3 = 2 * x` then used in complex condition); optimization artifacts not abstracted.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`); some precision loss with `__int64` casts where `int` suffices; unsigned/signed distinctions mostly maintained.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: No complex structs in source to recover; bitfield struct in `param_implementation_defined` was optimized away (constant return), which is acceptable.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(__sighandler_t)`, `LOBYTE`); pointer arithmetic in `decrypt_string` uses byte-level access without bounds checking annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal comments; only function attributes noted (`__fastcall`, `__noreturn`); no explanation of optimization transformations or algorithm intent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition (GCD algorithm in opaque predicate, tail-call optimization, string decryption) identified or documented.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly reporting ("positive sp value has been detected", "FAILED to decompile" for 13 external functions); shows decompiler confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` doesn't note `x != 0` may trigger handler); no postcondition inference.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but no call graph documentation; global variables (`div_zero_caught`, `jmp_buffer`) referenced without context.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source; related functions grouped (handlers near their users); no file separation visible.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 13 external functions failed decompilation (`__imp_printf`, `__imp_strlen`, etc.); requires stub implementations to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+9+6+7)/4 = 6.75 × 0.30 = 2.03
+Level 2 (Structural):  (6+8+7+6)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (7+8+6)/3   = 7.00 × 0.20 = 1.40
+Level 4 (Semantic):    (4+4+7+3)/4 = 4.50 × 0.15 = 0.68
+Level 5 (Contextual):  (6+7+5)/3   = 6.00 × 0.10 = 0.60
+
+Overall Score: 6.40/10
+```
+
+### Overall Readability Score: **6.4/10**
+
+### Critical Defects:
+- **Variable names generic**: `v0`, `v1`, `v2` throughout obscure semantic roles (e.g., `gcd_temp`, `predicate_result`)
+- **No optimization documentation**: TCO transformation in `param_tail_call_optimized` not explained (recursion → formula)
+- **Missing contract information**: Signal handlers and setjmp/longjmp patterns lack precondition documentation
+- **13 external functions failed**: `__imp_printf`, `__imp_strlen`, etc. require manual stub creation
+- **Magic numbers unexplained**: `0x5A` encryption key, signal numbers `8`/`11` lack symbolic constants
+
+### Best Quality Aspect: **Function Naming Quality (9/10)**
+- Function names perfectly preserved from source, maintaining semantic clarity across all 47 decompiled functions.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (3/10)**
+- No preconditions, postconditions, or error handling contracts documented despite complex signal/exception handling patterns.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Analyze how `v4`, `v5` are used in `param_opaque_predicate` to suggest names like `gcd_result`, `loop_temp`
+2. **Document optimization transformations**: Add comments when recursion is converted to formulas (TCO) or loops are unrolled
+3. **Recover API contracts from signal handlers**: Detect `setjmp`/`longjmp` patterns and document exception boundaries as preconditions

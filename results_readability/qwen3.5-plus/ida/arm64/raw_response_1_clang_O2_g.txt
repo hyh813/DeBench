@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `result`, `v3`) with no semantic meaning. Original source used descriptive names like `temp1`, `temp2`, `sum`, `count` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved (`sequential_ops`, `single_if`, `nested_if_2`, `loop_continue`) matching original source exactly, making identification trivial.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xFFFFFFF8`, `0x100000001LL`, `0x12` appear without explanation. Original source had no unexplained literals; these are optimization artifacts.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Heavy SIMD noise (`int32x4_t`, `vaddq_s32`, `vmulq_s32`) in functions like `loop_continue` and `tail_recursion`. These are compiler optimizations that obscure the simple original logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions recovered well (`sequential_ops`), but test functions are constant-folded to print literals instead of calling functions. `switch_fallthrough` uses goto labels instead of clean fall-through semantics.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. Each original function maps to one decompiled function without inappropriate inlining or fragmentation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `switch_fallthrough` uses `LABEL_5` and `goto` patterns. Loop conditions like `v3 > 0x12` in `loop_while` obscure the simple `x != 0` original.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive loop unrolling creates massive redundancy in `loop_continue` (50+ lines for a simple odd-sum loop). Original was 10 lines; decompiled is 60+ with SIMD operations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types (`int`, `void*`) preserved correctly. Function pointer types maintained (`int (*f)(int)`). However, SIMD vector types (`int32x4_t`, `int8x16_t`) introduce unnecessary complexity.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No structs/unions in this code sample, so dimension is N/A. Array handling is correct (`int arr[]`). Pointer arithmetic is type-safe where present.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts observed. Type conversions are explicit (`(unsigned int)`, `(unsigned __int64)`). Function pointer calls maintain proper signatures.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining each function's purpose, test cases, and difficulty level. Complete semantic loss.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Control flow patterns (loops, conditionals) recognized but not labeled. No identification of common patterns like "digit counting" in `loop_while` or "factorial" in `goto_backward`.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (8 functions). However, no warnings about optimization artifacts or semantic transformations that changed code meaning (test function constant-folding).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `n > 0` for `loop_for_fixed`). Original test cases showing expected inputs/outputs completely lost in decompiled test functions.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but test functions don't actually call the tested functions—they print pre-computed constants. Critical semantic break in verification chain.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically (test functions together, implementation functions together). Static helper functions properly scoped. No monolithic file issues.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External functions (`printf`, `puts`, `longjmp`) declared but undefined. Would need stub implementations. 8 functions failed decompilation entirely.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4 + 9 + 5 + 4) / 4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (5 + 8 + 6 + 5) / 4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (7 + 7 + 8) / 3   = 7.33 × 0.20 = 1.47
+Level 4 (Semantic):    (2 + 4 + 5 + 3) / 4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (5 + 7 + 6) / 3   = 6.00 × 0.10 = 0.60
+
+Overall Score: 5.75/10
+```
+
+**Overall Readability Score:** 5.75/10
+
+### Critical Defects:
+- **Test functions constant-folded**: `test_control_flow_l1()` prints hardcoded values instead of calling actual functions, breaking verification capability
+- **SIMD optimization noise**: Functions like `loop_continue` and `tail_recursion` expanded from ~10 lines to 60+ with vector intrinsics obscuring simple logic
+- **Zero documentation**: All original comments explaining purpose, test cases, and difficulty completely lost
+- **Magic numbers from optimization**: Values like `0xFFFFFFF8`, `0x100000001LL` appear without explanation
+- **Metadata inconsistency**: Claims -O0 compilation but shows aggressive optimization artifacts (SIMD, strength reduction, loop unrolling)
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - All function names preserved exactly from source, enabling immediate identification and cross-referencing
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation destroys semantic understanding; original had extensive comments explaining each function's purpose and test cases
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag optimization transformations** - When strength reduction converts loops to formulas (e.g., `loop_for_fixed`), add comments explaining the original pattern
+2. **Preserve test function semantics** - Never constant-fold test harnesses; maintain actual function calls for verification capability
+3. **Recover variable names from debug symbols** - With `-g` flag present, variable names like `temp1`, `sum`, `count` should be recoverable from DWARF information

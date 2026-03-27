@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `local_10`, `iVar1`, `local_1c`) with zero semantic meaning. At `-O0` debug level, original names like `x`, `result`, `str` should have been recoverable from debug symbols.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names preserved correctly (`param_fake_branch`, `decrypt_string`, `param_opaque_predicate`). However, helper functions like `FUN_00011030` remain generic, and some `call_*` functions incorrectly show `void` return.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0x21` appear without explanation. String literals shown as `DAT_00012010` references instead of actual content. Some values (10, 5, 1000) are self-explanatory.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple WARNING comments about function replacements (`__x86.get_pc_thunk.ax`), unreachable blocks, and stack canary checks (`__stack_chk_fail_local`) add noise. Compiler artifacts not fully filtered.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical failure in `param_fake_branch` - returns `param_1` directly, completely losing the fake branch conditions (`x*x < 0`, `strlen < 0`). `param_opaque_predicate` lost the `p3` bit运算 check. Loops generally recovered but logic is incomplete.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized and cohesive. `decrypt_string` properly separated. However, `call_*` wrapper functions incorrectly return `void` instead of `int`, breaking call chains.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with appropriate for/while constructs. No excessive goto usage. Early returns used appropriately in signal handlers.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks add redundancy in multiple functions. Some functions have duplicate parameter passing patterns. No dead code elimination visible despite `-O0` compilation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision with `undefined4`, `int`, `byte`, `size_t`. `param_fake_branch` takes `undefined4` instead of `int`. Pointer types sometimes generic (`undefined4*`). Return type errors (void vs int) in multiple functions.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `param_implementation_defined` bitfield struct completely lost (returns constant `0x2b`). Arrays shown as individual variables (`local_70`, `local_6c`, etc.). No struct/union recovery visible.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts visible (`(undefined4)(10 / (longlong)param_1)`). Pointer arithmetic without proper typing in `param_vectorized_loop`. Type confusion between `undefined4*` and `int*`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are technical decompiler warnings ("WARNING: Function replaced", "Removing unreachable block") not semantic explanations. No algorithm documentation or logic explanations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: GCD algorithm in `param_opaque_predicate` is recognizable but not named. XOR decryption pattern in `decrypt_string` is clear but unlabeled. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: WARNING comments indicate decompiler uncertainty ("Subroutine does not return", "unreachable block"). However, critical logic loss in `param_fake_branch` not flagged as anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Signal handler contracts not documented. Error conditions (division by zero, null pointer) not explained in comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible through code. Global variables referenced (`encrypted_0`, `jmp_buffer`, `div_zero_caught`). Call relationships inferable but not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by category (obfuscation vs optimization vs edge cases). Static functions not properly scoped with visibility indicators.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (signal, malloc, strlen) not declared. Type mismatches would prevent compilation (`undefined4` vs `int`). Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (4+7+7+6)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (5+2+5)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (3+5+6+2)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 5.05/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **`param_fake_branch` completely broken** - Returns `param_1` directly, losing ALL fake branch logic (the `x*x < 0` and `strlen < 0` conditions are entirely missing)
+- **`param_implementation_defined` returns constant** - Bitfield struct logic completely lost, returns hardcoded `0x2b` instead of computing implementation-defined behavior
+- **Return type errors** - Multiple `call_*` functions show `void` return when source returns `int`, breaking call chain semantics
+- **Zero semantic variable names** - All variables are `param_X`, `local_X`, `iVarX` despite `-O0 -g` debug symbols being available
+- **Architecture mismatch** - Original compiled for ARM64, decompiled as x86, causing potential instruction interpretation errors
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Source function names were preserved correctly from debug symbols, making function identification straightforward despite other issues.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/bitfield definitions, with `param_implementation_defined` reduced to a constant return value, losing all semantic meaning.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols at -O0** - When `-g` flag is present, recover original variable names from DWARF debug info instead of generating `param_X`/`local_X` names
+2. **Validate control flow completeness** - Add verification that all conditional branches from source are present in decompiled output; flag missing branches as anomalies
+3. **Recover composite types from debug info** - Use DWARF type information to reconstruct struct/union definitions with field names instead of flattening to primitive types

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Extensive "Unresolved local var" annotations throughout (e.g., `int a@[???]`, `int b@[???]`, `int c@[???]` in local_vars; `int[10] arr@[???]` in local_array). Nearly all local variables lost their names, making code nearly unusable for analysis.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved - `local_vars`, `heap_basic`, `global_var_access`, `double_value` all match source exactly. Action verbs appropriately used. Minor issue: some internal functions have generic names like `FUN_00011030`.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers frequently shown in hex (0x2a for 42, 0x14 for 20, 0x800 for 2048) without explanation. String literals like `&DAT_000135c1` are not resolved to actual strings. Some constants like array sizes are unclear.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe DWARF annotation pollution: `DW_OP_reg2(EDX)`, `DW_OP_breg4(ESP): +4`, `DW_OP_piece: 4`. Multiple "WARNING" comments about unreachable blocks and unknown calling conventions clutter output. "Unresolved local var" markers everywhere.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - for/while loops recognized, conditionals clear. However, some awkward patterns like `iVar1 * 2` indexing in loops instead of `i++` pattern. At -O0, loop unrolling is excessive in some functions like `local_array`.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity matches source well. Each test function (local_vars, heap_basic, etc.) is properly separated. No monolithic functions observed. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present in null-check patterns. Some goto-like patterns in complex functions like `linked_list_heap` but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Loop unrolling present (e.g., local_array uses manual index calculation instead of for-loop). Some redundant expressions but not severe. No obvious dead code.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic `int` used throughout instead of specific types like `int32_t` or `size_t`. Pointers often `void*` instead of specific types. Function pointer types use `_func_int_int` which is non-standard. Const correctness partially preserved.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `Node` and `TreeNode` structs properly recovered with field names (data, next, left, right). However, `Point` struct in `heap_struct` shows as unresolved. Some struct operations use raw pointer arithmetic instead of member access.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe pointer arithmetic patterns (e.g., `(int)__ptr + iVar1 * 2`). Some type-confused operations in memory functions. Buffer access patterns could lead to overflow. No alignment annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly auto-generated warnings ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block"). No meaningful algorithm explanations. No decompilation confidence indicators. DWARF annotations are not helpful comments.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns recognizable - linked list traversal, tree operations, memory allocation/free pairs. But no explicit naming of patterns (e.g., "Implements linked list" not stated). Memory leak pattern in `memory_leak` not flagged.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Generic warnings present ("WARNING: Unknown calling convention") but not specific about what couldn't be resolved. No indication of potential undefined behavior in `dangling_pointer` or `double_free`. Unresolved locals noted but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Null checks present in code but not explained as contracts. Error return values not documented as part of API contract.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear. Global variables like `global_counter`, `global_array` properly identified. Callback relationships (global_func_ptr) partially shown but not fully documented. External function declarations missing.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions logically grouped - stack functions together, heap functions together, static functions together. Static functions properly scoped. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears compilable with minimal stubs. External declarations (`extern_global_var`, `extern_function`) noted but undefined in this file. Dependencies not documented. Some function pointer types non-standard.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- **Variable naming completely failed**: Nearly all local variables show "Unresolved local var" with `@[???]` annotation, making code practically unusable
+- **Severe noise pollution**: DWARF annotations (`DW_OP_*`) and "WARNING" comments clutter every function
+- **Magic numbers in hex**: Values like `0x2a`, `0x14`, `0x800` obscure meaning without explanation
+- **No meaningful comments**: Only auto-generated warnings, no algorithm or intent documentation
+- **Type precision lost**: Generic `int` and `void*` everywhere instead of specific types
+
+### Best Quality Aspect: Function Naming (scored 9/10)
+Function names are almost perfectly preserved from source - `local_vars`, `heap_basic`, `global_array_access`, etc. match exactly and use appropriate action verbs.
+
+### Most Needs Improvement: Variable Naming (scored 2/10)
+The complete failure to recover local variable names is the single biggest readability issue. Every function has "Unresolved local var" annotations that make analysis extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array index, size, result) to generate semantic names like `packet_size` instead of `var_1`
+2. **Filter DWARF annotations**: Remove low-level debug info (`DW_OP_*`) from output - these are not meaningful to decompilation consumers
+3. **Resolve magic numbers**: Convert common constants (0x2a=42, 0x14=20) to decimal and suggest named constants based on context

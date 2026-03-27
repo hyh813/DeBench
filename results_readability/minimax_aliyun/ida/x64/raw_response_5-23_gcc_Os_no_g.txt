@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3` instead of semantic names like `size`, `x`, `y`. Local variables are `v0`, `v1`, `v2`, `v3` - completely non-descriptive. Only `result`, `i`, and `addr` have meaningful names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions like `param_macro_constants`, `call_conditional_compile`, `param_asm_basic` correctly match source names. However, infrastructure functions use generic names like `sub_1020`, `sub_1030`. The core test functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `57072` appears (0xDEF0) without explanation in `param_multi_branch_compile`. Constants like `1024`, `512`, `64` are used directly. However, some literals like `10` in `param_asm_basic` are self-explanatory. The hex constant `57072` is particularly unclear.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. No redundant casts, debug instrumentation, or register spilling artifacts visible. The code is straightforward without unnecessary complexity from optimization.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: At -O0, control flow closely matches source. The if-else in `param_macro_constants` is natural, loops in `param_asm_clobber` use standard for-loop structure. No spurious goto statements or confusing conditionals.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - each test case has separate `param_*` and `call_*` functions matching source structure. No monolithic functions; reasonable parameter counts.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without excessive jumps. Early returns used appropriately in functions like `param_dynamic_code`. No deep nesting or computed jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. Loop unrolling is minimal (appropriate for -O0). Common subexpression elimination not aggressively applied.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int` for most integers, `unsigned int` for some. However, return types are `__int64` for functions returning small integers (e.g., `param_macro_constants` returns 512 or 64). Parameters like `int a1` are correct but could be more precise (e.g., `int32_t`). `size_t` used correctly for memory sizes.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Not heavily struct-dependent in this test file. The `__m128i` type is correctly used for SIMD operations. No complex struct recovery needed for this preprocessing/assembly test.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with correct pointer arithmetic. Minor unsigned/signed mixing in some comparisons. No obviously dangerous casts. The `volatile` is correctly preserved for atomic operations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining macro semantics, assembly purpose, or algorithm intent. The decompilation provides zero insight into the original preprocessing tests (e.g., that `MAX_SIZE` was a macro). Only auto-generated function signatures present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No explicit pattern recognition. The preprocessing macro expansions are not identified as such (e.g., `SQUARE(x)` pattern). Inline assembly patterns not flagged as special. Some hints through function naming but no explicit documentation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: IDA provides some warnings like "bad sp value at call has been detected" and "positive sp value has been detected, the output may be wrong!" However, no flags for suspicious patterns like the dynamic code generation in `param_dynamic_code` or the self-modifying code aspects.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. For example, `param_asm_atomic` should indicate it requires a valid pointer and atomic operation semantics. No error condition documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible (test functions call param functions). However, no documentation of which functions call which, global variable usage, or callback relationships. The `global_var` usage in `param_memory_clobber_demo` is not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - preprocessing tests together, assembly tests together. Static functions properly scoped. However, no explicit module/header structure indicated.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The metadata states "Compilation Result: Yes", indicating the code compiles. External dependencies (libc functions) are implicitly available. Minor issues with some function signatures but generally compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming uses generic `a1`, `a2`, `a3`, `v0`, `v1`, `v2`, `v3` instead of semantic names like `size`, `x`, `y`, `result`
+- No comments explaining preprocessing macro semantics (e.g., that `1024` was originally `MAX_SIZE`)
+- Magic number `57072` (0xDEF0) appears without explanation in `param_multi_branch_compile`
+- No pattern recognition for macro expansions, inline assembly, or conditional compilation
+- Missing contract/precondition documentation for functions like `param_asm_atomic`
+
+**Best Quality Aspect:** Control Flow Naturalness (9/10)  
+- At -O0, the decompiled code closely mirrors the original source control structure with natural if/else and for-loop constructs
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+- Zero meaningful comments explaining the semantic purpose of the code, especially the preprocessing macro tests which lose all macro context during compilation
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a1` compared to `1024` in `param_macro_constants` should suggest `size` or `max_size`
+2. **Detect and document macro expansions**: Recognize constant expressions like `5 * a1 + 57072` and suggest they may derive from macros like `x * 5 + 0xDEF0`
+3. **Add semantic context comments**: For preprocessing tests, indicate "macro expansion expected" or "conditional compilation branch" to help analysts understand the lost preprocessor information

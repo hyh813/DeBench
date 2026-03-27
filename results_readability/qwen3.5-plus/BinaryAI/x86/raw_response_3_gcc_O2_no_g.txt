@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `local_10`, `puVar2`, `uStack_24`). Even at `-O0`, the decompiler fails to infer semantic names like `packet_size` or `array_index` from usage patterns.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Original function names preserved for user code (`double_value`, `local_vars`, `heap_basic`), but all library calls degraded to `FUN_00011xxx` placeholders (e.g., `malloc` → `FUN_000111e0`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex without explanation (`0x2a` for 42, `0x14` for 20, `0x32` for 50). Some are inferable from context but none are named constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`__stack_chk_fail_local`, `in_GS_OFFSET`) appear in every function. At `-O0` these should be minimal, indicating decompiler noise rather than compiler artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered as do-while constructs, but complex functions like `vla_stack` and `alloca_usage` use confusing pointer arithmetic instead of array indexing.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes are reasonable, but `test_heap_memory` is excessively large (200+ lines) with inlined test logic that should be separate.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with early returns. Stack check epilogues create minor forward jumps but don't severely disrupt flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary check code duplicated in every function. Some expressions repeated (e.g., `*(int *)(in_GS_OFFSET + 0x14)` appears multiple times per function).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation with `undefined4`, `undefined*`, and generic `int` replacing specific types. Function pointers lose signatures (`undefined4 (*global_func_ptr)(int)` → `code *`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—`Point` struct becomes raw pointer arithmetic (`puVar1[1]`), `Node` linked list uses array indexing instead of field access. No struct definitions recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(undefined4 *)`, `(int *)`, `(byte *)`) throughout. Pointer arithmetic on void-like types without bounds checking.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Memory allocation patterns (`malloc`/`free` pairs) not identified. Linked list traversal in `linked_list_heap` not recognized as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Dangerous patterns like `dangling_pointer` (use-after-free) not flagged. Stack canary checks present but unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: Some null checks preserved (`if (param_1 == NULL)`), but no documentation of preconditions, postconditions, or error conditions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph visible but library calls opaque (`FUN_000111e0` for `malloc`). Global variables retain names (`global_counter`, `file_scope_static`).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source, but test functions mixed with implementation. No header file separation.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Will not compile—`FUN_00011xxx` functions undefined, missing struct definitions, `undefined4` type not standard C. Requires extensive stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+6+5+4)/4 = 4.50
+Level 2 Average: (6+6+7+5)/4 = 6.00
+Level 3 Average: (3+2+3)/3 = 2.67
+Level 4 Average: (1+3+3+4)/4 = 2.75
+Level 5 Average: (5+6+2)/3 = 4.33
+
+Overall = (4.50 × 0.30) + (6.00 × 0.25) + (2.67 × 0.20) + 
+          (2.75 × 0.15) + (4.33 × 0.10)
+        = 1.35 + 1.50 + 0.53 + 0.41 + 0.43
+        = 4.22/10
+```
+
+**Overall Readability Score: 4.2/10**
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1`, `local_10`** should be named based on semantic usage (e.g., `array_size`, `loop_index`, `stack_canary`)
+- **Struct types completely lost** - `Point`, `Node`, `TreeNode` all reduced to pointer arithmetic with no field names
+- **Library functions unresolved** - `malloc`, `free`, `printf`, `memcpy` all appear as `FUN_00011xxx` placeholders
+- **Zero comments** - No documentation of algorithm intent, decompilation confidence, or anomaly warnings
+- **Stack canary noise** - Every function has `in_GS_OFFSET` and `__stack_chk_fail_local` checks that obscure logic at `-O0`
+
+### Best Quality Aspect:
+- **Code Linearization (7/10)** - Code generally reads top-to-bottom with minimal forward jumps; loop structures mostly recovered as natural constructs
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding non-trivial logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in loop bounds → `count`, `size`; variables passed to `malloc` → `buffer`, `array`)
+2. **Recover composite type definitions** - Detect struct access patterns (`ptr[offset]` sequences) and reconstruct struct definitions with field names based on access semantics
+3. **Resolve standard library calls** - Match common function prologues/epilogues to libc functions (`malloc`, `free`, `printf`, `memcpy`) and restore original names with proper signatures

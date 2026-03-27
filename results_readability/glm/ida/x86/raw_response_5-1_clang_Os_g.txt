@@ -1,0 +1,102 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: Variable names are a mix of recovered semantic names and generic placeholders. In `test_cpp_constructor`, `instance_count` and `size` are recovered well, but loop variables and pointers use generic names like `v0`, `v1`, and `v2`, obscuring the data initialization logic.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Excellent demangling of C++ symbols; functions like `_ZN9ContainerIiE4pushEi` are correctly presented as `Container<int>::push`. However, a few thunks like `sub_1030` remain unnamed, which is acceptable for compiler-generated artifacts.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers resulting from constant propagation (e.g., `4700`, `42`, `71`, `650`). While these are the correct results of the optimized logic, they obscure the original calculation (e.g., `4700` represents `4660 + 40`), making the code's intent hard to decipher.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Significant noise is present due to low-level x86 artifacts and compiler intrinsics, such as `__asm { jmp ... }`, `__usercall`, and `__x86.get_pc_thunk.bx`. These artifacts distract from the high-level C++ logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally natural where logic remains (e.g., the `do-while` loop in `test_cpp_constructor`). However, many functions are reduced to simple `return` statements due to optimization, which, while accurate, removes the structural context of the original algorithms.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Template instantiations are correctly decomposed into separate functions (e.g., `Container<int>::push` vs `Container<double>::push`). The granularity matches the source structure well, with class methods properly isolated.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom in most functions. There are no confusing spaghetti jumps or goto-based loops in the recovered logic; the flow is easy to follow within the scope of the optimized blocks.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: The decompiler shows the effects of compiler optimizations like inlining (e.g., logic from `test_cpp_member_func` appears inside `test_cpp_oo_features`). While this is accurate to the binary, it introduces redundancy from a source-code perspective, making it harder to map back to the original structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are recovered with high precision; `size_t`, `Base*`, and `Container<int>*` are correctly identified. The decompiler successfully distinguishes between different template instantiations and pointer types.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Class layouts are recovered effectively. For example, `Container<int>` correctly shows members `data` and `size`, and `Base` shows the vtable pointer `_vptr$Base`. The structure of the objects is preserved well.
+
+**11. Type Safety:** Score: 5/10
+Justification: The decompiler uses C-style casts and `__usercall` conventions that can be unsafe, such as `(_DWORD *)operator new(4u)` and pointer arithmetic like `a1 - 24` in `sub_1160`. While accurate to the binary, these patterns lower the perceived safety of the code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There is a severe lack of comments explaining the logic. The only comments are decompiler warnings (e.g., "positive sp value has been detected") or "FAILED to decompile" markers. No semantic context is provided for the complex C++ features like RTTI or exceptions.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: C++ idioms are visible but not explicitly labeled. The vtable call `(*obj->_vptr$Base)(obj, x)` is recognizable as a virtual function dispatch to an expert, and `__dynamic_cast` clearly indicates RTTI usage, but these are not annotated as "Virtual Call" or "RTTI Check".
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler clearly lists functions that "FAILED to decompile" at the end, providing good visibility into missing pieces. It also flags stack pointer anomalies, though it doesn't explicitly flag the optimization discrepancy (constant folding) as an anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions or postconditions. For instance, the bounds check in `Container::get` (`idx >= 0 && this->size > idx`) is visible as code, but there is no annotation indicating the contract (e.g., "requires: idx < size").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Cross-references are clear; calls to `printf`, `operator new`, and class methods are explicitly named. The relationship between `test_cpp_oo_features` and the specific test functions is obvious.
+
+**17. Module Organization:** Score: 8/10
+Justification: The decompiled code is organized logically, with class methods grouped together (e.g., all `Container<int>` methods are contiguous). This matches the source organization well.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code cannot be compiled standalone due to missing standard library stubs (marked as "FAILED to decompile") and the presence of inline assembly blocks (`__asm`). It requires significant patching to be buildable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (6 + 9 + 3 + 5) / 4 = 5.75
+L2_avg = (7 + 8 + 8 + 6) / 4 = 7.25
+L3_avg = (8 + 8 + 5) / 3 = 7.00
+L4_avg = (2 + 6 + 7 + 2) / 4 = 4.25
+L5_avg = (8 + 8 + 3) / 3 = 6.33
+
+Overall = (5.75 × 0.30) + (7.25 × 0.25) + (7.00 × 0.20) + 
+          (4.25 × 0.15) + (6.33 × 0.10)
+Overall = 1.725 + 1.8125 + 1.4 + 0.6375 + 0.633
+Overall = 6.208
+```
+
+### Overall Readability Score: **6.2/10**
+
+### Critical Defects
+- **Optimization Mismatch**: The decompiled code is heavily optimized (constant folding, inlining) despite the source metadata claiming `-O0`, resulting in functions like `test_cpp_virtual_func` being reduced to `return 42`, which destroys the logic's readability.
+- **Magic Numbers**: Extensive use of magic numbers (e.g., `4700`, `0x1Fu`) without comments explaining their derivation from the original source logic.
+- **Missing Semantic Context**: Lack of comments explaining C++ mechanisms like vtable dispatches (`*obj->_vptr$Base`) or exception handling (`__cxa_throw`), making it hard to understand the high-level intent.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**
+- **Why?** The decompiler excellently demangles complex C++ symbols (e.g., `_ZN9ContainerIiE4pushEi` to `Container<int>::push`), making the API surface immediately understandable.
+
+### Most Needs Improvement
+- **Literal Clarity (3/10)**
+- **Why?** The prevalence of magic numbers resulting from constant propagation (e.g., `4700`, `42`) makes it nearly impossible to understand the original arithmetic or logic without cross-referencing the source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Symbolic Constant Recovery**: Attempt to map folded constants back to potential symbolic expressions or annotate them with "Result of constant propagation" to aid understanding.
+2.  **High-Level Idiom Annotation**: Add comments for recognized C++ patterns, such as "// Virtual function call via vtable" or "// RTTI dynamic_cast", to improve semantic transparency.
+3.  **Metadata Consistency Check**: Warn the user if the decompiled code exhibits characteristics (e.g., aggressive constant folding) that contradict the assumed optimization level (e.g., `-O0`), as this significantly impacts readability expectations.

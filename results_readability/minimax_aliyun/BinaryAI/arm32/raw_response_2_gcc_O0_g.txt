@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `param_1`, `param_2`, and local variables use `local_10`, `local_c`, `local_14`. The original source had meaningful names like `x`, `c`, `a`, `b`, `arr`, `str`, `p`, `n`. No semantic meaning is preserved.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user-defined functions retain their original names: `double_value`, `process_char`, `process_short`, `process_int`, `array_1d_stack`, etc. However, some helper functions remain unnamed (e.g., `FUN_00012434`, `FUN_00012614`) and library stubs use generic names like `<EXTERNAL>::printf`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x40`, `0x5b`, `0x20`, `0x2c`, `0x28`, `0xc`, `0x14` appear without explanation. The original had clear constants like `'A'`, `'Z'`, `'\0'`, `10`, `100`. Some literals like `0x40000000` (float 2.0) are used directly in floating-point operations.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise from compiler-generated code: `_init`, `_start`, `deregister_tm_clones`, `register_tm_clones`, `__do_global_dtors_aux`, and numerous floating-point helper functions (`__mulsf3`, `__addsf3`, `__aeabi_ddiv`, etc.). These 1000+ lines of library code obscure the actual test functions.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural - loops use `for` constructs, conditionals are clear. At `-O0`, the flow closely matches source. Minor issues: some arithmetic replacements like `param_1 << 1` instead of `param_1 * 2` in `double_value`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated and maintain single responsibility. Each test function (`test_data_types_l1`, `test_array_types`, etc.) calls individual test cases. The main issue is the massive amount of compiler/library code mixed in.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in some functions. No excessive goto usage or forward jumps into loops. Minor disruption from stack protection checks.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in floating-point helper functions (multiple similar arithmetic helpers). Loop constructs are not unrolled, which is appropriate for -O0. Some duplicate stack frame setup code across functions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. Original had precise types: `char`, `short`, `int`, `long`, `long long`, `float`, `double`, `long double`, `_Bool`, `volatile int`. Decompiled uses `undefined4`, `undefined`, `int`, `byte`, `ushort` inconsistently. For example, `process_char` returns `byte` but `process_int` returns `int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery. Original had `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`, `UnionData`, `DNode`, `Edge`, `Graph`. Decompiled uses raw pointer arithmetic: `*(int *)(param_1 + local_c * 4)` instead of `pts[i].x`. Array access uses manual offset calculation losing all semantic structure.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: `(int *)(param_1 + local_c * 4)` for array access, `(byte *)param_1` casts in `ptr_void`, `**(int **)(param_1 + local_10 * 4)` in `pointer_array`. No `const` correctness preserved - `const_param` takes `int *` not `const int *`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The original had extensive comments explaining each test case (e.g., "// DT-L1-01: 字符类型（char）", "// 大写转小写"). No decompilation confidence indicators or uncertainty flags.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are implicit but not named. Linked list traversal (`while (current != NULL)`), binary tree recursion, and graph traversal are recognizable but not identified as specific data structure patterns. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication. The decompiler doesn't flag indirect function calls, potential undefined behavior (like the intentional out-of-bounds in `array_oob`), or uncertain type reconstructions. Everything is presented with equal confidence.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had implicit contracts (e.g., "requires: ptr != NULL" for pointer functions). The decompiler doesn't recover any of this semantic information.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in the test functions. However, relationships like "process_int is called by ptr_func_simple" or "complex_callback is used by ptr_func_complex" are not documented. No call graph or usage information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are in a single file, which is expected for decompiled output. However, the organization is purely alphabetical by address, not logical grouping. Test functions, data type functions, array functions, pointer functions, and composite functions are interleaved with library code.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile. Uses undefined types: `undefined4`, `undefined`, `EVP_PKEY_CTX`, `code`. External functions like `printf`, `puts`, `memset` are declared but not defined. Stack protection functions (`__stack_chk_fail`) are called but not implemented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use `param_N` and locals use `local_N` - completely loses semantic meaning
+- **No struct recovery**: All composite types reduced to raw pointer arithmetic, losing field names and type information
+- **No type precision**: Uses `undefined4`, `undefined` instead of original types like `char`, `short`, `float`, `_Bool`
+- **No comments**: Zero documentation explaining test cases, algorithms, or intent
+- **Excessive noise**: 1000+ lines of compiler/library code (FP helpers, init functions) obscures actual test functions
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+- User-defined test functions retain their original names: `double_value`, `process_char`, `array_1d_stack`, `ptr_single`, etc.
+
+### Most Needs Improvement: Type System Fidelity (3/10)
+- Original had 15+ distinct types (char, short, int, long, long long, float, double, long double, _Bool, const int*, volatile int*, various structs/unions). Decompiler reduced everything to a handful of generic types, losing critical semantic information.
+
+### Top 3 Recommendations:
+1. **Recover struct/union types**: Instead of `*(int *)(param_1 + local_c * 4)`, infer struct layouts and generate `pts[i].x` style access
+2. **Add variable naming inference**: Use data flow analysis to infer parameter purposes (e.g., `param_1` used as array index → name it `index` or `i`)
+3. **Generate semantic comments**: Add test case descriptions from debug symbols (e.g., "// DT-L1-01: Character type - uppercase to lowercase conversion")

@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`, `param_3`) and local variables use cryptic patterns like `iVar1`, `iVar2`, `uVar1`, `pcVar2`, `pcVar3`. No semantic recovery like `size`, `count`, or `buffer` from the original macros. This is a fundamental failure to infer names from usage patterns.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions like `param_macro_constants`, `call_macro_constants`, `param_asm_basic` correctly preserve original names. However, some internal functions use address-based naming (e.g., `FUN_00011030`). The public API functions are well-named, earning a good score.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x200`, `0x40`, `0x400` appear without explanation. The original `#define MAX_SIZE 1024` (0x400) and `BUFFER_COUNT * 4` (0x40) are replaced with raw hex values. No named constants recovered from preprocessor definitions.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple WARNING comments about inlined functions and unreachable blocks clutter output. Stack protector functions (`__stack_chk_fail_local`) injected. However, core logic is relatively clean without excessive debug artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is natural - if/else statements preserved, for loops correctly generated from while loops. The inline assembly in `param_asm_clobber` was correctly converted to a C loop. Minor issues from optimization artifacts.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with appropriate granularity. Each function (`param_macro_constants`, `param_asm_basic`, etc.) handles a single logical operation. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. However, in `call_asm_multi_insn`, there's manual string handling with multiple null-byte initializations that disrupt linear flow. Some forward jumps present but manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy in `call_asm_multi_insn` - manual string padding with 42 null bytes (`local_3a[0xb] = '\0'` through `local_3a[0x29] = '\0'`) instead of using `memset` or proper string functions. This appears to be a decompilation artifact.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` for most values and `undefined4` for some returns. However, `size_t` is correctly recovered for `sysconf()` and `mmap()` calls. Mixed precision - some correct, many generic.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or union types reconstructed. All arrays accessed via pointer arithmetic (e.g., `*(int *)(param_1 + iVar2 * 4)`). The original `int arr[]` parameter became raw pointer arithmetic with no array semantics.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns present - raw pointer arithmetic without bounds checking. The `param_asm_atomic` function uses `LOCK()`/`UNLOCK()` macros but the atomic semantics are not fully captured. Generally follows C semantics but with potential issues.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated WARNING comments present (e.g., "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection"). No comments explaining the original preprocessor macros, inline assembly semantics, or algorithm purpose. Comments are noise, not signal.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The inline assembly patterns (SSE SIMD, atomic operations, self-modifying code) are converted to C but not labeled as such. The preprocessor macro expansions are not recognized as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some WARNING comments flag injected functions and unreachable blocks. However, no indication of uncertain decompilation decisions or potential undefined behavior. The inline assembly conversion could have been flagged as "converted from asm".
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original comments about "requires: x > 0" or "ensures: return is heap-allocated" are completely lost. No contract information recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear through direct calls. However, no documentation of which functions call which, or the callback relationships in the test harness. The caller-callee relationships are implicit, not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by prefix (`param_*`, `call_*`, `test_*`) which provides some organization. However, no logical grouping by feature (preprocessing vs. assembly) or header file structure. Single flat file output.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears compilable with standard C library. Uses `__printf_chk`, `mmap`, `mprotect`, `sysconf` correctly. Minor issues with `undefined4` type but overall buildable with minimal patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming uses generic patterns (`param_1`, `iVar1`) with no semantic recovery from macro usage
+- No struct/union type reconstruction - all composite types lost to raw pointer arithmetic
+- Magic numbers like `0x40`, `0x200`, `0xdef0` replace original named constants (MAX_SIZE, BUFFER_COUNT)
+- Redundant code in `call_asm_multi_insn` with 42 manual null-byte initializations
+- No comments explaining preprocessor macro semantics or inline assembly patterns
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+Functions are properly separated with appropriate granularity, matching the original source's logical organization. Each function has a clear single responsibility.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The decompiler failed to infer meaningful variable names from usage patterns. Parameters like `param_1` should be `size` based on the function signature `param_macro_constants(int size)`. Local variables like `iVar1` should reflect their purpose (e.g., `result` or `sum`).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When a parameter is used in comparisons like `param_1 > 1024`, infer names like `size` or `threshold`. When `iVar1` accumulates values, name it `sum` or `result`.
+2. **Recover preprocessor macro semantics**: Detect constant expressions that match `#define` values and suggest original macro names. Recognize macro function expansions (e.g., `SQUARE(x)` becomes `x*x`).
+3. **Eliminate redundant code artifacts**: The 42 manual null-byte initializations in `call_asm_multi_insn` should be replaced with `memset(local_3a, 0, sizeof(local_3a))` or similar standard patterns.

@@ -1,0 +1,125 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `local_38` with zero semantic meaning. Original source had meaningful names like `x`, `c`, `arr`, `n`, `p` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names preserved from debug symbols (`process_char`, `array_1d_stack`, `struct_simple`). This is the decompiler's strongest aspect - names accurately reflect functionality.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation (`0xbfU`, `0x1a`, `0x20` in `process_char`). Test functions print pre-computed constants (`0x61`, `300`) instead of showing actual computation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86.get_pc_thunk.bx` injection warnings, stack canary checks (`__stack_chk_fail_local`), and runtime startup functions mixed with application code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple conditionals preserved but loops degraded to do-while with pointer comparisons. `binary_tree_sum` converted from 5-line recursion to 200+ lines of nested loops - unrecognizable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but test functions inline all computations (print constants instead of calling functions). Helper functions like `complex_callback` completely missing.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom but `pointer_array` has 10 levels of nested if-statements from loop unrolling. `binary_tree_sum` has extreme nesting disrupting flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe loop unrolling: `array_3d` expands 125 iterations to individual array accesses. `pointer_array` unrolls to 10 nested conditionals. Test functions compute at compile-time.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical type degradation: `process_long` returns `int` not `long`, `process_ll` returns `undefined8` with `CONCAT44`, `process_float` returns `longdouble` not `float`. Pointer types lost (`undefined4 *` instead of `int **`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Catastrophic failure - ALL structs accessed as `int *` with array indexing. `struct_simple` takes `int *` not `Point3D *`. No struct/union/enum definitions recovered. Bitfields manually expanded to bit operations.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts (`(int)(char)*param_1`), pointer type confusion throughout, `volatile_access` loses volatile semantics (reads same value twice), function pointers degraded to `code *`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated compiler warnings present. Zero semantic comments explaining purpose, algorithms, or non-obvious logic. Original source had extensive documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition whatsoever. Linked list traversal, tree recursion, switch-on-enum all appear as raw code with no identification of common patterns.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Best semantic dimension - warnings like "WARNING: Could not recover jumptable" and "Treating indirect jump as call" help identify problematic areas. But not comprehensive.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero contract recovery. No preconditions, postconditions, or invariants documented. NULL checks exist in code but not documented as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but misleading - test functions print pre-computed results instead of calling actual functions. `ptr_func_simple` shows "UNRECOVERED_JUMPTABLE" obscuring callback relationship.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in flat output with no logical grouping. Startup/runtime functions (`_init`, `_start`, `deregister_tm_clones`) mixed with application code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Uses Ghidra-specific types (`undefined4`, `undefined8`, `longdouble`) that won't compile standalone. External dependencies undocumented. Requires significant modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3+8+4+5)/4 = 5.0
+Level 2 Average: (5+5+6+4)/4 = 5.0
+Level 3 Average: (4+2+3)/3 = 3.0
+Level 4 Average: (3+2+6+2)/4 = 3.25
+Level 5 Average: (4+4+3)/3 = 3.67
+
+Overall = (5.0 × 0.30) + (5.0 × 0.25) + (3.0 × 0.20) + (3.25 × 0.15) + (3.67 × 0.10)
+        = 1.50 + 1.25 + 0.60 + 0.49 + 0.37
+        = 4.21/10
+```
+
+**Overall Readability Score: 4.2/10**
+
+---
+
+### Critical Defects
+
+- **Composite types completely lost**: All structs/unions/enums accessed as raw `int *` with array indexing - `struct_simple(Point3D *)` becomes `struct_simple(int *)`
+- **Type precision degraded**: `process_long` returns `int` not `long`, `process_ll` uses `undefined8` with `CONCAT44` instead of `long long`
+- **Test functions misleading**: Print pre-computed constants instead of calling actual functions, hiding real computation
+- **Recursive algorithms destroyed**: `binary_tree_sum` converted from 5-line recursion to 200+ lines of nested loops
+- **Volatile semantics lost**: `volatile_access` reads `*p + *p` instead of two separate volatile reads
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (8/10)** - Debug symbols preserved function names accurately (`process_char`, `array_1d_stack`, `struct_simple`), making it easy to identify function purpose despite other degradation.
+
+---
+
+### Most Needs Improvement
+
+**Composite Type Recovery (2/10)** - Complete failure to recover any struct/union/enum definitions. All composite types reduced to pointer arithmetic, making code nearly impossible to understand without original source.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover composite type definitions from memory access patterns** - Analyze consistent field offsets across functions to reconstruct struct layouts with named fields instead of `param_1[0]`, `param_1[1]`, etc.
+
+2. **Preserve original type information from debug symbols** - When `-g` flag is present, use DWARF debug info to recover exact types (`long`, `long long`, `float`) instead of generic `undefined8`, `int`.
+
+3. **Recognize and preserve recursive patterns** - Detect recursive call patterns and reconstruct as recursion instead of expanding into deeply nested iterative code that obscures algorithm intent.

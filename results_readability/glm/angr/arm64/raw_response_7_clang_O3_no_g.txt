@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `a0`, `flag1`, and `cur`. In `param_fake_branch`, the input `x` is reduced to `v0`, losing all semantic context.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Function names like `param_fake_branch`, `call_fake_branch`, and `param_opaque_predicate` are preserved accurately from the source, providing clear entry points. However, some helper functions are named `sub_400744`.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers such as `4294967295` (UINT32_MAX/-1), `90` (XOR key), and `18446744073709551612` without named constants or comments explaining their purpose.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: Significant noise is present, including non-standard intrinsics like `__ROL__`, `arm64g_calculate_condition`, and redundant casts like `(unsigned int)a0 & 4294967295`, which obscure the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is heavily distorted by optimization; `param_tail_call_optimized` is reduced to a complex one-line mathematical formula rather than a loop, and `param_vectorized_loop` uses `goto LABEL_400c50` and pointer arithmetic instead of array indexing.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Functions map 1:1 to the source structure, maintaining boundaries between different test cases (e.g., `param_fake_branch` vs `param_opaque_predicate`), which aids navigation.
+
+**7. Code Linearization:** Score: 4/10
+Justification: Forward jumps (e.g., `goto g_411ff8`) and computed jumps interrupt the top-to-bottom reading flow, particularly in initialization and vectorized loop functions.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: While the compiler optimized `param_fake_branch` to a simple return (removing dead code), the decompiler failed to abstract the complexity in other areas, leaving verbose, unrolled loops and redundant bit-masking operations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Types are generic; `int` is frequently represented as `long long` or `unsigned long`, and pointers are often `void*` or `unsigned long long`, losing the distinction between signed integers and memory addresses.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: No structs are defined; data is accessed via raw pointer arithmetic (e.g., `*((int *)iter)`). SIMD vectors are represented as `int128_t` but lack the semantic context of being an array of integers.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains numerous unsafe casts, such as `cur = &v0 | 1` (pointer manipulation) and `(char)arm64g_calculate_condition(...)`, which confuse the data types and create potential for misinterpretation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of complex mathematical expressions. The only comments are stack offset annotations (e.g., `// [bp-0x10]`).
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level idioms are completely missed. Recursion in `param_tail_call_optimized` is presented as a math formula, and simple loops are replaced by SIMD intrinsics (`AddV`) and pointer increments.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the optimized code as fact without flagging that the structure of `param_fake_branch` (missing branches) or `param_tail_call_optimized` (missing recursion) differs significantly from standard source patterns.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., buffer sizes) or postconditions. For example, `decrypt_string` does not indicate that `ptr` must be null-terminated or large enough.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are explicit and easy to trace (e.g., `call_fake_branch` calls `param_fake_branch`), but global variable usage (e.g., `g_411ff8`) is opaque and lacks context.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are ordered by memory address rather than logical grouping, mixing initialization code (`_init`, `_start`) with the actual test functions (`param_*`).
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code uses non-standard Angr/VEX intrinsics (`__ROL__`, `arm64g_calculate_condition`, `AddV`, `unsupported_Iop_ZeroHI96ofV128`) and will not compile without a custom runtime or significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.8/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`v0`, `a0`), obscuring the purpose of parameters and locals.
+- Use of non-standard intrinsics (`arm64g_calculate_condition`, `__ROL__`) makes the code look like IR rather than C.
+- Control flow is flattened; recursion is replaced by complex math formulas, and loops are replaced by SIMD pointer arithmetic.
+- Total absence of comments or annotations explaining the recovered logic or optimization artifacts.
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)
+- The decompiler successfully preserved the original function names from the symbol table, making it easy to locate specific test cases.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.5/10)
+- The decompiler fails to communicate *what* the code is doing, presenting low-level optimized instructions (SIMD, bit-twiddling) without any high-level semantic context or comments.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Lift IR Intrinsics:** Replace architecture-specific IR operations like `arm64g_calculate_condition` and `__ROL__` with standard C boolean logic and bitwise operators.
+2. **Variable Type Inference:** Utilize debug information (if available, given `-g` flag) or value set analysis to promote generic `v0` variables to meaningful types and names (e.g., `int x`).
+3. **Pattern Recognition for Optimizations:** Detect when aggressive optimizations (like loop unrolling or tail-call elimination) have destroyed the original structure and attempt to annotate or reconstruct the high-level intent (e.g., "Loop unrolled 8 times").

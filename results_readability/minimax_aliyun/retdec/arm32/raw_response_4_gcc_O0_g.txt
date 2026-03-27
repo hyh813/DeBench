@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiler uses predominantly generic numbered variables (`v1`, `v2`, `v3`, `v4`, `v5`) throughout, making it extremely difficult to track variable purposes. While some variables like `result`, `val`, `ptr` are descriptive, the vast majority obscure semantic meaning that the original source clearly expressed (e.g., `count`, `sum`, `args`, `x`, `y`).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from the original source. Names like `cdecl_func`, `varargs_func`, `param_by_value_int`, `ret_pointer`, `call_cdecl` accurately reflect their purpose and match the source exactly. Minor issues with some internal helper functions but overall excellent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Mixed results - some literals like `42` (return value) and `5`, `10` (function arguments) are clear from context, but `g1 = -0x1ad24ffc` is an unexplained magic number. UTF-8 encoded Chinese strings are present but not decoded. Some array sizes like `40` (for 10 int array) lack explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Several decompilation artifacts present including unusual constructs like `int32_t v3 = &v2;` (taking address of stack variable), redundant pointer arithmetic patterns in struct handling, and the `__stack_chk_fail` declaration. Some patterns like `*(int32_t *)(8 * i + (int32_t)&v1)` are difficult to parse.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural if/else and while loop structures. However, the varargs handling in `varargs_func` uses manual pointer arithmetic instead of proper va_list macros, and `test_calling_conventions` contains an unusual loop construct with complex stack manipulation that obscures the original for-loop intent.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with good single responsibility. Test functions are larger as expected. Minor issue: some functions like `test_calling_conventions` could benefit from splitting, but overall decomposition is reasonable for decompiled code.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom without excessive jumps. However, `test_calling_conventions` has complex nested loops with forward jumps, and some switch statements could be more clearly formatted. Generally readable but with some flow disruptions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns present, particularly in struct handling where the decompiler generates unusual pointer arithmetic that could be simplified. The loop in `call_struct_byval` has redundant variable updates. Overall manageable but not optimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Good use of `int32_t` for ARM64 compatibility. Function pointers have proper signatures. Some issues: `char*` used generically for strings, some `void*` conversions. The original had `long long` and `double` types which are mostly preserved but with some confusion (see `func_mixed_args`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct types are completely lost. Original had `LargeStruct` (128 bytes), `SmallStruct`, `BigStruct`, `SmallPoint` - all reduced to raw `int32_t`. Example: `func_struct_byval(int32_t s)` should be `func_struct_byval(LargeStruct s)`, and the decompiler uses `*(int32_t *)(8 * i + (int32_t)&v1)` instead of proper struct field access.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns: `*(int32_t *)(v1 + 4) * v1` in struct handling, unusual pointer arithmetic throughout, and some type confusion between int and pointer. The `param_by_value_ptr` function has `*p = 2 * (int32_t)p` which incorrectly multiplies the pointer address rather than the dereferenced value.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal useful comments - only metadata like "From module: /work/src/4.c" and address/line ranges. No explanation of algorithm intent, no recovery of original comments from debug info, no documentation of non-obvious logic. The source had extensive Chinese comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns identified. The varargs usage is not recognized as stdarg.h pattern - instead it's manually decoded as pointer arithmetic. No recognition of calling convention patterns or parameter passing idioms.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for suspicious code or potential issues. The incorrect pointer arithmetic in `param_by_value_ptr` is presented confidently without warning. No indication of indirect call resolution failures or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. The original source had clear function contracts (e.g., "requires: ptr != NULL") that are not recovered. No documentation of return value expectations or error handling contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are somewhat clear from the code structure - you can see `call_cdecl()` calling `cdecl_func()`. However, no explicit documentation of call graphs, global variable usage, or callback relationships. The original had clear test function relationships that aren't highlighted.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped with prototypes at the top, globals declared separately, and related functions (calling convention tests, parameter tests, return tests) grouped together. Some minor organization issues but overall matches source structure reasonably well.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code includes necessary headers (`stdint.h`, `stdio.h`, `stdlib.h`, `string.h`) and has proper function prototypes. Should compile with minimal issues. The `__stack_chk_fail` stub is appropriately declared. Minor: some unused variables and unusual constructs may generate warnings.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- **Struct type recovery completely failed** - All composite types (`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`) reduced to `int32_t`, losing all semantic meaning of data structures
+- **Variable naming is unusable** - Generic `v1`-`v5` variables throughout make code flow extremely difficult to trace
+- **Incorrect code generation** - `param_by_value_ptr` has `*p = 2 * (int32_t)p` which multiplies the pointer address, not the value (should be `*p = *p * 2`)
+- **Varargs handling broken** - Uses manual pointer arithmetic instead of recognizing stdarg.h patterns
+- **No comments or documentation** - Complete loss of original source comments explaining calling conventions and test scenarios
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names are well-preserved and accurately reflect the original source, making it easy to identify what each function does.
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+The decompiler completely failed to recover any struct types from the binary, reducing all structured data to raw integers. This is the most severe semantic loss in this decompilation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct types from stack layout analysis** - Analyze stack frame allocations to identify composite types and reconstruct struct field layouts with meaningful names
+2. **Infer variable names from usage patterns** - Use data flow analysis to rename `v1`/`v2` to descriptive names based on how variables are used (e.g., `count`, `sum`, `index`)
+3. **Recognize standard library patterns** - Identify varargs (va_list), calling conventions, and other common C patterns instead of generating low-level pointer arithmetic

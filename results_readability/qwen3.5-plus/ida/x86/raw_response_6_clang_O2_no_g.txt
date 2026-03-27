@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic `v0`, `v1`, `v2` patterns (e.g., `param_malloc_free` has `v2` through `v9`); only function parameters retain semantic names like `dst`, `src`. At `-O0` with debug symbols, variable names should be recoverable but aren't.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from debug symbols (`param_strcpy`, `thread_compute`, `consumer_thread`); however, helper functions like `sub_1030`, `sub_13E0` remain generic, and there's a metadata mismatch (claims Ghidra but header says IDA Pro).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `syscall(5, a1, 0)` (syscall numbers), `signal(10, ...)` and `signal(14, ...)` (signal constants), `0x2A` (42), `0x3E8u` (1000 microseconds); string literals preserved well but numeric constants not recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack frame annotations clutter code (`[esp+8h] [ebp-24h] BYREF`); calling convention markers (`__usercall`, `@<eax>`, `__cdecl`) add noise; 59 "FAILED to decompile" entries pollute output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural if/else and loops; however, `param_malloc_free` and `param_memset` show loop unrolling artifacts unexpected at `-O0`; boolean flag patterns like `v4 = -(v2 != 0); v5 = v2 <= 0;` are awkward.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity appropriate, but `call_strcmp`, `call_strlen`, `call_memcpy` are constant-folded to return literals directly instead of calling param functions, losing original call structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with appropriate early returns; `param_signal_handling` has deeply nested conditionals that disrupt flow; `param_malloc_free` has complex loop structures.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling in `param_malloc_free` and `param_memset` creates significant redundancy; some functions have duplicate conditional checks; no dead code removal evident.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (int, char*, size_t) but const-correctness lost (`param_strcpy(char *s, char *src)` should be `const char *src`); many variables use generic `int` instead of specific types; function pointers often generic `(void *(*)(void *))`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `ThreadData` struct not recovered—fields accessed as `a1[0]`, `a1[1]`, `a1[2]`; socket address uses raw field access `*(_DWORD *)&addr.sa_family = 2`; TLS variables accessed via `__readgsdword` instead of proper TLS semantics.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int *)malloc(4 * a2)`, `(char *)shmat(...)`, `(_DWORD *)thread_return`; pointer arithmetic for struct field access; function pointer casts are generic without type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled code; no algorithm explanations, no decompilation confidence indicators, no API contract documentation; only auto-generated function headers present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library patterns (`strcpy` + `strlen`) preserved but not identified; pthread patterns recognizable but not named; atomic operations converted to `_Interlocked*` without pattern explanation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: 59 functions marked "FAILED to decompile" with no explanation; no warnings about indirect calls, unusual stack layouts, or potential undefined behavior; architecture mismatch (arm64 source → x86 decompilation) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented; error conditions not explained; return value semantics lack documentation; no null-check requirements noted.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible in code; global variable usage apparent (`shared_counter`, `atomic_counter`); callback relationships not explicitly documented; no call graph summary.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source structure; test functions grouped together; no header file organization; no namespace/package structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 59 library functions failed to decompile requiring external linking; compiler-specific annotations (`__usercall`, `__cdecl`) present; cannot compile standalone without significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4 + 7 + 4 + 5) / 4 = 5.0  × 0.30 = 1.50
+Level 2 (Structural):   (6 + 6 + 6 + 5) / 4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):         (5 + 3 + 4) / 3 = 4.0      × 0.20 = 0.80
+Level 4 (Semantic):     (1 + 4 + 3 + 2) / 4 = 2.5  × 0.15 = 0.38
+Level 5 (Contextual):   (5 + 5 + 3) / 3 = 4.33     × 0.10 = 0.43
+─────────────────────────────────────────────────────────────
+Overall Score:                                  4.55/10
+```
+
+**Overall Readability Score: 4.6/10**
+
+### Critical Defects:
+- **Architecture mismatch**: Source compiled for arm64 but decompiled as x86 (evident from `__x86.get_pc_thunk.bx`, `ebx` registers)
+- **59 failed decompilations**: Library functions like `strcpy`, `printf`, `pthread_create` all failed, requiring external linking
+- **Variable names lost**: Despite `-O0 -g` debug symbols, most variables renamed to `v0`, `v1`, `v2` patterns
+- **No comments recovered**: Zero semantic documentation despite extensive original source comments
+- **Struct types not recovered**: `ThreadData` and other structs accessed via array indexing instead of field names
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most function names successfully recovered from debug symbols, preserving semantic meaning like `param_strcpy`, `thread_compute`, `consumer_thread`
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any meaningful comments despite original source having extensive documentation; decompiler provides no algorithm explanations or confidence indicators
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover debug symbol variable names** - At `-O0 -g`, original variable names should be preserved from DWARF debug info instead of generating `v0`, `v1` patterns
+2. **Add semantic comments for library function patterns** - Detect `strcpy` + `strlen` sequences and add comments explaining the high-level intent
+3. **Flag architecture mismatches explicitly** - When decompiling arm64 binary as x86, warn user about potential accuracy issues and instruction translation artifacts

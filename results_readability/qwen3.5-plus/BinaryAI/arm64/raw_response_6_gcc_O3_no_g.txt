@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `local_8`, `uVar3`) with no semantic meaning. For example, in `param_strcpy`, parameters should be `dst` and `src` but are `param_1` and `param_2`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`param_strcpy`, `thread_sum`, `signal_handler`, `test_standard_library_functions`), but compiler-generated splits have ugly suffixes (`param_fork_exec.part.0`, `param_thread_local_storage.constprop.0`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout: `0x2a` (42), `0x5a` (90), `0xc` (12), `0x10` (16), `0xffffff9c` (-100 for AT_FDCWD). No named constants recovered despite `-O0 -g` debug symbols.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks repeated in nearly every function (`local_8 = ___stack_chk_guard; ... __stack_chk_fail()`). External function stubs add 70+ lines of wrapper noise. Excessive type casts throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some loops recognizable (do-while in `thread_increment`), but `thread_sum` has heavily unrolled loop with nested if-chains. Error handling uses goto-like patterns with `LAB_` labels disrupting flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but compiler optimization created fragmented versions (`.part.0`, `.constprop.0`). Thread functions properly separated. Some functions like `param_memset` are 150+ lines due to loop unrolling.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns for error cases. Stack canary checks at function end disrupt natural flow. Forward jumps to `LAB_` labels break linearity in complex functions.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Stack canary pattern duplicated in ~50 functions. Loop unrolling in `thread_sum` and `param_memset` creates massive redundant code blocks. Similar error handling patterns not abstracted.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Mix of correct types (`int`, `char*`, `FILE*`, `pthread_t`) and generic decompiler types (`undefined8`, `undefined4`, `ulong`). Function returns often `undefined8` instead of specific types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs not recovered - `ThreadData` accessed as raw array (`param_1[0]`, `param_1[1]`, `param_1[2]`). `sockaddr` shown as generic struct with `sa_data` array. No struct definitions in output.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(int *)`, `(undefined8 *)`, `(pthread_mutex_t *)`. Pointer arithmetic visible (`(long)__ptr + lVar9 * 8`). `atomic_counter` accessed via `._0_4_` field notation indicating type confusion.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Only header comment present (BinaryAI SHA256). Zero comments explaining logic, algorithms, or decompilation uncertainty. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Thread patterns visible but not named (no "producer-consumer" identification). Atomic operations shown as `__aarch64_ldadd4_acq_rel` without explaining CAS semantics. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Indirect calls not flagged. Stack canary checks present but not explained as compiler artifacts. No confidence indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). Error return values visible but not explained. No postcondition inference for memory allocation functions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code. Global variables used (`shared_counter`, `atomic_counter`, `signal_received`) but not documented. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. External functions declared at top. Some logical grouping (thread functions together, test functions together) but no header file separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would require significant stubs to compile. ARM64-specific atomics (`__aarch64_cas4_acq_rel`) need platform support. External dependencies not documented. Stack canary functions need linking.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (4+3+3)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.02/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects
+- **Variable names completely generic**: `param_1`, `iVar1`, `local_8` obscure semantic meaning (e.g., `dst`/`src` in strcpy)
+- **Zero comments**: Original source had extensive documentation; decompiled code has none
+- **Magic numbers unexplained**: `0x2a`, `0x5a`, `0xffffff9c` should be named constants
+- **Struct types not recovered**: `ThreadData` accessed as raw array indices losing field semantics
+- **Stack canary noise**: Repeated `___stack_chk_guard` checks in every function clutter code
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most original function names preserved (`param_strcpy`, `thread_sum`, `signal_handler`), making high-level navigation possible despite other issues.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of comments makes understanding algorithm intent nearly impossible; this is the most severe degradation from source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover variable names from debug symbols** - With `-g` flag, original variable names (`dst`, `src`, `buffer`, `len`) should be available and inserted
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., `// DECOMPILER UNCERTAIN: loop bound`) and explain compiler artifacts (stack canaries)
+3. **Recover struct definitions from type info** - Use debug type information to reconstruct `ThreadData`, `sockaddr_in` with proper field names instead of array access patterns

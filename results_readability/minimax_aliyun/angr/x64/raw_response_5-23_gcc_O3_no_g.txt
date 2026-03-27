@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Initial Observations
+
+I notice a significant metadata mismatch: the original source specifies `arm64` architecture with `-O0` optimization, but the decompiled code clearly shows `AMD64` (x86_64) platform with `-O3` characteristics (function inlining, constant folding). This affects my evaluation - I'll assess the decompiled code as presented.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names `a0`, `a1`, `a2` instead of semantic names like `size`, `x`, `y`. Local variables are `v0`, `v1`, `idx` - only slightly better. Compare to source: original uses meaningful names like `size`, `x`, `y`, `result`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions correctly recovered: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `my_func`. However, many wrapper functions use address-based names like `sub_401020`. Mixed result - main functions well-named, helpers are not.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some constants correctly resolved: `64` (BUFFER_COUNT*4), `30` (SQUARE+MAX result), `32` (conditional compile). However, `0x400` (1024) and `0x200` (512) are magic numbers, and `30` for `sysconf(_SC_PAGESIZE)` is unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: `__printf_chk(1, ...)` wrapper adds noise. Many unnecessary wrapper functions (sub_401020, sub_40102d, etc.) that just call other functions. Some type casts present but manageable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - if/else statements, for loops. The `param_asm_clobber` correctly recovered as a for loop. Minor goto in initialization code. At -O3, some restructuring is expected.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Main functions are reasonable size (20-50 lines). However, excessive wrapper functions (sub_401020-series) create fragmentation. Some functions like `test_asm_features` are 80+ lines with mixed responsibilities.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive forward jumps. The flow is mostly linear and easy to follow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some loop unrolling present in `call_asm_clobber` but not excessive. Constant folding is appropriate (e.g., `call_macro_constants()` returns 64 directly).
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Major type error: `param_asm_simd` returns `double` instead of `int`. Parameters mix `unsigned int`, `unsigned long`, `unsigned long long` inconsistently. The source uses `int` consistently; decompiler widened many types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Minimal struct recovery. The source has no complex structs, but the decompiler uses raw pointer arithmetic where source has arrays (e.g., `arr[i]` became `ptr + idx * 4`). Some `uint128_t` appears but without context.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Wrong return type in `param_asm_simd` (double vs int). Pointer arithmetic in `param_asm_clobber` without bounds. Some unsafe conversions but no critical vulnerabilities. The atomic operations use `atomic_exchange_add` correctly.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The decompiled code contains zero explanatory comments. Source had extensive comments explaining macro behavior, assembly constraints, etc. - completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognizable (atomic operations, SIMD via `AddV`), but not explicitly named or documented. The source's macro expansions (SQUARE, MAX, etc.) are not identified as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The wrong return type for `param_asm_simd` is presented confidently. No warnings about indirect calls or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero contract information. No preconditions documented (e.g., "requires: n > 0" for array functions). No postconditions. The source's error handling (MAP_FAILED checks) is present but not explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships not documented. No indication which functions call which. The source's test harness structure (call_ functions calling param_ functions) is visible but not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Related functions grouped reasonably (param_* with call_*). Test functions together. However, arbitrary address-based ordering (sub_401020, sub_40102d...) breaks logical flow.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Uses `extern` declarations but incomplete. Relies on `__printf_chk` (glibc internal) rather than `printf`. Missing stddef/types headers. Would require patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming uses generic `a0`, `a1`, `v0`, `v1` instead of semantic names from source
+- `param_asm_simd` returns `double` instead of `int` - wrong type
+- Zero comments explaining macro behavior, assembly semantics, or algorithm intent
+- No anomaly indication for suspicious code patterns
+- Missing preconditions/postcontracts for functions requiring specific inputs
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+- Loops and conditionals correctly recovered; execution flow is easy to trace
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+- Complete absence of explanatory comments loses all macro semantics, assembly constraints, and algorithm explanations from original source
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `a0` in `param_macro_constants` should be `size` based on comparison with MAX_SIZE
+2. Fix return type for `param_asm_simd` - should be `int`, not `double`
+3. Add comments explaining decompilation confidence, especially for inline assembly recovery and macro expansion results

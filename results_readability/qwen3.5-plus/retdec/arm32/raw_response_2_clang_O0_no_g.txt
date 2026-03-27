@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `result`, `a1`, `a2`) with no semantic meaning. For example, in `process_char`, `v1` and `v2` obscure the character transformation logic that should use names like `char_value` or `converted_char`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Original function names are largely preserved (`process_char`, `array_1d_stack`, `struct_simple`, `binary_tree`), which is a significant strength. However, helper functions have cryptic names like `function_400`, `function_40c`, and `$a`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervade the code (`0x1000000`, `0x800000`, `0x100000`) without explanation. String literals are obscured as global variable references (`g18`, `g19`, `g20`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Compiler runtime functions (`__adddf3`, `__mulsf3`, `__aeabi_dmul`) are included unnecessarily. Excessive temporary variables (`v1` through `v70+` in floating point helpers) create severe noise pollution.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Basic loops are somewhat recognizable but use `while` with manual incrementing instead of `for`. Floating point helper functions have extremely convoluted control flow with nested conditionals and goto labels (`lab_0x22d0`, `lab_dec_label_pc_0x230c`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: User functions have reasonable granularity, but compiler helper functions are excessively large (e.g., `$a` spans 0x20f0-0x235c, over 600 lines). No recovery of the static `double_value` helper as inline.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom but many functions use goto patterns that disrupt flow. The floating point arithmetic functions have particularly poor linearization with multiple label jumps.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Excessive temporary variables create redundancy (e.g., `v4`, `v5`, `v6` all tracking similar values in `array_3d`). Repeated calculations appear throughout without common subexpression elimination.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: **Critical failure** - all types degraded to `int32_t`. Float/double operations are broken (`process_double` divides by `0.0`!). Original `char`, `short`, `long long`, `float`, `double`, `long double` distinctions completely lost. Pointer types reduced to `int32_t*`.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: **Complete failure** - no struct/union definitions recovered. All composite types accessed via raw pointer arithmetic (e.g., `struct_simple` uses `*(int32_t *)(v1 + 4)` instead of `p->x`). `Point3D`, `Rect`, `Widget`, `Node`, `Graph` structures entirely lost.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Pervasive unsafe casts throughout (`(int32_t)a1`, `(float32_t)v1`). Pointer arithmetic everywhere without bounds checking. The `process_double` function contains `division by 0.0` which would cause runtime errors.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments recovered** from original source. All original documentation (e.g., `// DT-L1-01: 字符类型（char）⭐`, `// 大写转小写`) completely lost. No decompiler-generated comments explaining uncertain regions.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition evident. Linked list traversal, binary tree recursion, and graph traversal algorithms are present but not identified. Switch-case patterns for enums not recognized as state machines.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: **No anomalies flagged** despite obvious critical issues. The `process_double` division by `0.0` is not marked. Type mismatches, potential undefined behavior, and struct access via pointer arithmetic go unnoted.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. Array bounds checks present in source (`if (x < 0 || x >= w)`) are partially preserved but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but callback relationships unclear. `ptr_func_simple` and `ptr_func_complex` lose their function pointer semantics. Global variable usage (`g1`, `g18`, etc.) not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Original organization (Data Types, Arrays, Pointers, Composite Types sections) completely lost. No header file separation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes standard headers but has type mismatches that would cause compilation warnings/errors. Floating point helper functions reference undefined operations. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+3)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+5+5+4)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type System): (2+1+2)/3   = 1.67 × 0.20 = 0.333
+Level 4 (Semantic):    (1+2+1+1)/4 = 1.25 × 0.15 = 0.188
+Level 5 (Contextual):  (4+5+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.39/10
+```
+
+**Overall Readability Score: 3.4/10**
+
+### Critical Defects:
+- **Type system collapse**: All types degraded to `int32_t`; float/double operations broken (e.g., `process_double` divides by `0.0`)
+- **Complete struct/union loss**: No composite type definitions recovered; all accessed via pointer arithmetic (`*(int32_t *)(v1 + 4)`)
+- **Zero comment recovery**: All original documentation and semantic hints completely lost
+- **No anomaly flagging**: Critical bugs like division-by-zero not identified or warned
+- **Excessive noise**: Compiler runtime functions (`__adddf3`, `__mulsf3`) and 70+ temporary variables per function
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Original function names largely preserved (`process_char`, `array_1d_stack`, `struct_simple`), providing crucial semantic anchors despite other failures.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (1/10)** - Complete failure to recover any struct/union definitions; all composite types reduced to raw pointer arithmetic, making data structure understanding impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement type inference from usage patterns** - Detect float/double operations from FP instructions and recover appropriate types instead of defaulting to `int32_t`
+2. **Add struct/union pattern recognition** - Analyze consistent offset access patterns to reconstruct composite type definitions with field names
+3. **Flag semantic anomalies automatically** - Detect and warn about division by zero, type mismatches, and suspicious pointer arithmetic with confidence indicators

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `a0`, `a1`, `ptr`, `i` with no semantic meaning. For example, in `process_char`, `v0` and `v1` should be named `char_offset` and `result` based on their usage patterns.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Original function names preserved for user code (`double_value`, `process_int`, `array_1d_stack`), but many helper functions use generic names (`sub_103c4`, `sub_10464`). Library functions retain actual names (`__muldf3`, `__aeabi_dadd`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive without explanation: `65` (ASCII 'A'), `32` (case conversion offset), `255` (byte mask), `0x80000000` (sign bit). Floating-point constants like `0x3f000000` appear without context.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe compiler artifact pollution: condition code variables (`cc_op`, `cc_dep1`, `cc_dep2`, `cc_ndep`), register spilling variables (`v0` through `v100+`), and `armg_calculate_condition` calls throughout simple functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Extensive goto usage instead of structured constructs. Simple loops become `do-while` with labels (`LABEL_10605`, `LABEL_10606`). The `process_bool` function uses 6+ goto labels for a simple boolean expression.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but library functions (`__muldf3`, `__aeabi_dadd`) are fully expanded into 500+ line monoliths. Some functions like `binary_tree` incorrectly have no parameters.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt reading flow. `test_array_types` has nested label jumps (`LABEL_10a49`, `LABEL_10a4a`) that make top-to-bottom reading impossible.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Repeated `armg_calculate_condition` calls with identical parameters. Floating-point functions contain massive duplicated conditional blocks. Loop bodies have redundant temporary variable assignments.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion: `char` becomes `unsigned int`, `short` becomes `unsigned short` then `unsigned int`, `float`/`double` operations expand to integer bit manipulation. `process_float` loses its `float` parameter entirely, becoming `void process_float()`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: All structs become `struct_0`, `struct_1`, `struct_2` with generic `field_0`, `field_1`, `field_4` names. Original field names (`x`, `y`, `z`, `width`, `height`, `data`, `next`) completely lost. Unions not distinguished from structs.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `void*` to `int*` casts without warnings, function pointer signatures degraded (`ptr_func_simple` takes `unsigned int *a0` instead of proper function pointer), pointer arithmetic on generic `unsigned int`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no parameter documentation, no decompiler confidence indicators. Original source comments completely absent.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns not recognized: loops appear as goto constructs, switch statements become chained if-else with labels, array indexing becomes pointer arithmetic. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings for problematic code. `binary_tree()` has no parameters but calls `binary_tree_sum(v0)` with uninitialized variable. No indication of unresolved indirect calls or stack corruption risks.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`), no postconditions, no error condition documentation. Functions like `array_oob` that intentionally have undefined behavior show no warnings.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. `test_data_types_l1` calls known functions but no call graph provided. Global variables (`g_11fa0`, `g_23008`) have opaque names.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Related functions (`process_char`, `process_short`, `process_int`) not grouped. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies declared (`GLIBC_2.4::__stack_chk_guard`, `__printf_chk`) but would require significant stubbing. Library functions like `__muldf3` included but may conflict with system libraries.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+6+3+2)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):   (3+5+4+3)/4 = 3.75 × 0.25 = 0.938
+Level 3 (Type System):  (3+3+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):     (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):   (5+4+5)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 3.27/10
+```
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `a0`, `a1`** should be named based on semantic usage (e.g., `char_input`, `result`, `array_ptr`, `array_length`)
+- **Control flow uses goto** for simple loops and conditionals instead of while/for/if constructs
+- **All struct fields generic** (`field_0`, `field_1`, `field_4`) losing original semantic names like `x`, `y`, `data`, `next`
+- **Floating-point functions completely degraded** - `process_float` loses parameter types and becomes void function with complex bit manipulation
+- **Zero comments** - no documentation of algorithm intent, parameter meanings, or decompiler confidence
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Original user function names mostly preserved (`double_value`, `process_int`, `array_1d_stack`), providing some semantic anchor points for understanding.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding algorithm intent nearly impossible without comparing to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (variables used in size comparisons → `length`, variables dereferenced → `ptr_*`)
+2. **Recover high-level control structures** - Convert goto-based loops to while/for constructs and label chains to switch statements
+3. **Add decompiler confidence annotations** - Mark uncertain type recoveries, unresolved calls, and potential undefined behavior with inline comments

@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all local variables are marked as "Unresolved local var" with generic suffixes like `int sum@[???]`, `int i@[???]`, `int a@[???]`. The original source had meaningful names like `sum`, `i`, `len`, `c`, `x` that were completely lost. Only function parameters retained their names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. However, some internal compiler functions have cryptic names like `FUN_00011640`, `__muldf3`, `__addsf3`.**3. Literal Clarity:** Score: 4/10  
+Justification: Many literals are unexplained magic numbers (e.g., `0x3fc00000`, `0x3f000000` for float operations). String literals are referenced as `&DAT_000124fb` without content. The original had clear constants like `' '` (32) for case conversion, but the decompiled version uses `(byte)(c + 0xbfU) < 0x1a` which is opaque.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution including: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "Unresolved local var" annotations throughout. Compiler intrinsics like `__mulsf3`, `__adddf3`, `__subdf3` clutter the output. The float/double functions are almost entirely intrinsics rather than readable code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is preserved (if/else, while loops), but significant optimization artifacts exist. The `array_2d_stack` function shows complete loop unrolling with 10 separate array accesses instead of a loop. The `array_3d` function has convoluted pointer arithmetic that obscures the original triple-nested loop structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is preserved - each test function remains separate. The original single-responsibility functions like `process_char`, `array_1d_stack`, `ptr_single` are maintained. However, some functions grew larger due to loop unrolling (e.g., `array_3d` expanded from 8 lines to ~30 lines).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with few forward jumps. However, the `array_3d` function has complex pointer arithmetic (`piVar2 = (int *)((int)(*arr)[0] + iVar3)`) that disrupts linear reading. Some test functions have convoluted initialization patterns.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Major redundancy from loop unrolling not recognized. In `array_2d_stack`, the original `for (int i = 0; i < 10; i++)` loop became 10 separate `arr[i][i]` additions. In `array_3d`, 125 array accesses are explicit rather than in a loop. No comments explaining these are optimization artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are correct: `char`, `short`, `int`, `long`, `longlong`, `float`, `_Bool`. However, `process_ld` (long double) uses `undefined4`/`undefined8` types. Function pointer types are sometimes generic (`_func_int_int *`). The `volatile` qualifier is lost in `volatile_access`.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery. All types preserved: `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Edge`, `Graph`, `Flags`, `UnionData`, `State`, `Device`. Field names are correct: `p->x`, `p->y`, `p->z`, `node->next`, `node->data`. Nested structures properly handled.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues: `ptr_diff` computes `(int)p1 - (int)p2 >> 2` instead of `p1 - p2` (loses proper pointer arithmetic). The `ptr_cast` function has aliasing concerns. Some pointer arithmetic in `array_3d` is complex and potentially error-prone. No `const` correctness preserved for `const_param` (parameter is `int *p` not `const int *p`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention". No algorithm explanations, no optimization documentation, no decompilation confidence indicators. The original source had extensive comments explaining each test case that are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No explicit pattern recognition. The decompiler doesn't identify the linked list traversal, binary tree recursion, or graph traversal patterns. However, the code structure does hint at these patterns for someone reading carefully.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present but generic and not actionable: "WARNING: Could not recover jumptable at 0x00010e00. Too many branches". No specific guidance on what the anomaly means or how to resolve it. The indirect function calls in `ptr_func_simple` and `struct_func_ptr` are flagged but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had clear expectations (e.g., "正偶数为真" for `process_bool`) that are completely lost. No documentation of NULL checks, bounds checking, or error conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present in the code but relationships aren't documented. No information about who calls which functions, callback relationships, or global variable usage. The test functions call other functions but this isn't explicitly mapped.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Single monolithic output file with all functions. No logical grouping, no separation between test functions and tested functions. The original had clear sections (Data Types, Array Types, Pointer Types, Composite Types) that are lost.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code would not compile standalone. Many undefined references: `puts`, `printf`, `__gmon_start__`, `__cxa_finalize`, all the `__*` compiler intrinsics. No header declarations, no dependency documentation. Would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable names completely lost - almost all marked as "Unresolved local var @[???]"
+- Severe noise from compiler intrinsics (float/double functions are mostly `__mulsf3`, `__adddf3` calls)
+- Loop unrolling not recognized or commented - `array_2d_stack` has 10 explicit accesses instead of loop
+- No comments explaining algorithms or optimization artifacts
+- Type safety issues: `ptr_diff` computes wrong result, `const` qualifier lost
+- String literals referenced as `&DAT_xxxxx` without content visible
+
+**Best Quality Aspect:** Composite Type Recovery (9/10)  
+- Excellent struct/union reconstruction with accurate field names. All types like `Point3D`, `Node`, `Graph` properly recovered with their fields.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Nearly all local variables are unresolved placeholders. The original source had clear, meaningful names (`sum`, `i`, `len`, `c`) that are essential for readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `temp_1` used as accumulator should be named `sum`, loop counter should be `i`
+2. Recognize and comment loop unrolling optimizations - flag expanded loops with "/* Loop unrolled by compiler */"
+3. Resolve string literal content - show actual strings instead of `&DAT_xxxxx` references
+4. Add algorithm comments explaining what each function tests
+5. Preserve `const` and `volatile` qualifiers in type signatures

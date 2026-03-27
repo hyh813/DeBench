@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `v0` through `v12` in `test_cpp_oo_features`, `ptr`, `p`, `flag1`). No semantic names like `obj`, `result`, or `derived_instance` are recovered, making it nearly impossible to map variables to the source logic.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: C++ mangled names are successfully demangled (e.g., `_Z20test_cpp_member_funcv` to `test_cpp_member_func`), which is a strong point. However, many runtime and helper functions are left as generic names like `sub_400854` or `$a.27`.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with "magic numbers" that are actually the *results* of optimized-away calculations (e.g., `4700`, `42`, `71`, `650`). While accurate to the binary, these literals obscure the original logic (e.g., `42` represents the sum of virtual function calls, not just a number).
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant noise is present, particularly the helper function `armg_calculate_condition` which appears inside control flow logic (e.g., in `test_cpp_exception`) instead of resolved boolean expressions, and redundant `goto` statements that disrupt readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is highly unnatural, especially in `test_cpp_exception` where `armg_calculate_condition` calls and nested `goto` statements replace standard `try/catch` logic. The main test function is a flattened sequence of `printf` calls rather than the structured logic of the source.
+
+**6. Function Decomposition:** Score: 2/10
+Justification: The compiler aggressively inlined logic into `test_cpp_oo_features`, resulting in a monolithic function (~60 lines) that performs the work of a dozen distinct test functions. The decompiler failed to outline or structure these inlined blocks, destroying the modularity of the source.
+
+**7. Code Linearization:** Score: 5/10
+Justification: `test_cpp_oo_features` reads linearly (top-to-bottom `printf` calls), but this is misleading as it represents optimized results, not logic. Other functions like `test_cpp_exception` suffer from non-linear jumps that make tracing execution difficult.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: The decompiler output itself is free of obvious dead code, but this is because the compiler eliminated the source logic (replacing it with constants). The output is clean but semantically empty regarding the original algorithms.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded; complex C++ objects are represented as generic `void*` or `unsigned int` stack variables (e.g., `v0`, `v1`). Specific class types like `SimpleClass` or `Derived` are lost in the main function, though `class Base` is declared (albeit empty).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery is poor. User-defined classes are not reconstructed; instead, generic structs like `struct_0` and `struct_1` are used for RTTI objects. The layout of classes like `Container` is accessed via raw pointer arithmetic (e.g., `ptr[40]`) rather than field access.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains numerous unsafe casts and pointer arithmetic, such as `*((char **)p) = &g_411ed8;` (vtable assignment) and accessing `ptr[40]` to get a size member, which erases type safety and makes the code fragile.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic, algorithms, or the purpose of the hardcoded constants. The only comments are standard headers (e.g., "Function: _init").
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms like RAII, smart pointers, and virtual inheritance are completely obscured. The decompiler presents low-level memory operations (e.g., `operatornew`, `__dynamic_cast`) without recognizing the design patterns they implement.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The presence of `armg_calculate_condition` indicates a failure to resolve ARM condition codes, but this is not flagged as an anomaly or uncertainty; it is presented as part of the standard code flow, misleading the user.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the exception handling contracts (catching specific types) are lost in a mess of `__cxa_*` calls and gotos.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls to standard library (`printf`, `strlen`) and C++ runtime (`__cxa_throw`, `operatornew`) are visible and clear. However, the relationships between the test functions are lost due to inlining.
+
+**17. Module Organization:** Score: 4/10
+Justification: Functions are ordered by memory address rather than logical grouping. Related class methods (e.g., `Container<int>` vs `Container<double>`) are scattered, and there is no namespace or class structure recovery.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on undefined external symbols (e.g., `g_401201`, `_ZTIi`) and would not compile without significant manual stubbing and header creation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- **Logic Replacement by Constants:** The core logic of the test functions (e.g., `test_cpp_virtual_func`) is replaced by hardcoded results (e.g., `42`), making the code semantically meaningless regarding the original source.
+- **Control Flow Obfuscation:** The use of `armg_calculate_condition` and `goto` in `test_cpp_exception` renders the exception handling flow unreadable.
+- **Loss of Type Information:** C++ class instances are reduced to generic stack variables (`v0`, `v1`) and `void*`, completely hiding the Object-Oriented structure.
+- **Monolithic Inlining:** The `test_cpp_oo_features` function contains the inlined logic of the entire file, destroying the modular decomposition of the source.
+
+**Best Quality Aspect:** Function Naming (Score: 7/10)
+- **Why?** The decompiler successfully demangled C++ symbols, recovering the original names for the main test functions, which provides at least a basic entry point for analysis.
+
+**Most Needs Improvement:** Semantic Transparency (Score: 1.75/10)
+- **Why?** The decompiler failed to preserve the meaning of the code; it presents a low-level, optimized view of memory operations and constants without any comments, pattern recognition, or high-level context.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Detect and Flag Constant Propagation:** Identify when complex logic has been reduced to a constant and annotate it (e.g., `/* Optimized result: 42 */`) or attempt to recover the original expression if debug symbols are present.
+2.  **Improve ARM Condition Code Analysis:** Replace the `armg_calculate_condition` helper calls with actual boolean expressions (e.g., `if (v6 == 3)`) to restore natural control flow.
+3.  **Stack Variable Type Recovery:** Utilize RTTI and vtable usage patterns to infer the actual C++ class types of stack variables instead of defaulting to `void*` or generic integers.

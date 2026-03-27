@@ -1,0 +1,120 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `param_1`, `local_c`, `uVar1`, `iVar1` with zero semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `head` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: User function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), but helper functions use cryptic names (`FUN_000120f0`, `FUN_000122d0`). Runtime functions clutter output.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation (`0x41`, `0x20`, `0x100000`, `0x7ff`). Original had character literals like `'A'`, `'Z'` that became hex values losing semantic meaning.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Runtime initialization functions (`_init`, `_start`, `__do_global_dtors_aux`) mixed with user code. Floating-point operations expanded into verbose helper calls (`__mulsf3`, `__adddf3`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loop structures recovered but with errors (e.g., `process_int()` called with no arguments when it requires one). Some conditionals awkward but traceable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but test functions became monolithic with excessive local variables (`local_534`, `aiStack_528[20]`). Signatures often incorrect.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but test functions have complex initialization sequences that disrupt flow. No excessive goto usage in user functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Floating-point helper functions create verbose patterns. Type conversions repeated unnecessarily. Some dead code from register spilling visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type degradation - `undefined4`, `undefined8`, `byte` replace precise C types. `long long` split into two parameters. Float/double operations use helper functions instead of native types.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Complete failure - ALL struct information lost. `struct_simple` accesses fields as `param_1[0]`, `param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`, `p->z`. No struct definitions recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts (`undefined4*`, `int*`), pointer arithmetic without type safety, function pointers degraded to generic `code *`. Original const/volatile semantics lost.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero useful comments. No algorithm explanations, no decompilation confidence indicators, no API documentation. Only decompiler header present.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No C idioms recognized (string length calculation, array traversal, linked list iteration all appear as raw pointer arithmetic). No pattern identification.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No warnings about incorrect function signatures, type mismatches, or potential undefined behavior. Decompiler presents incorrect code confidently.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or error conditions documented. Original null checks and bounds validation not highlighted.
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls visible but relationships not documented. Callback relationships unclear (function pointers shown as `code *`). No call graph information.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output with no logical grouping. Runtime functions mixed with user code. No header file or API declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would require significant stubs to compile. Many undefined types (`undefined4`, `undefined8`). External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+4)/4 = 3.75
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25
+Level 3 (Type):        (2+1+3)/3   = 2.00
+Level 4 (Semantic):    (1+1)/2     = 1.00
+Level 5 (Contextual):  (1+1+3+3+3)/5 = 2.20
+
+Overall = (3.75 × 0.30) + (5.25 × 0.25) + (2.00 × 0.20) + 
+          (1.00 × 0.15) + (2.20 × 0.10)
+        = 1.125 + 1.3125 + 0.40 + 0.15 + 0.22
+        = 3.21/10
+```
+
+**Overall Readability Score: 3.2/10**
+
+### Critical Defects:
+- **Complete struct type loss**: All composite types (`Point3D`, `Rect`, `Widget`, `Node`) reduced to raw pointer arithmetic with no field names
+- **Generic variable naming**: Every variable is `param_N`, `local_N`, `uVarN`, `iVarN` with zero semantic meaning
+- **Type precision degradation**: `undefined4`, `undefined8` replace precise C types; `long long` incorrectly split into two parameters
+- **Incorrect function signatures**: `process_int()` called with no arguments in `test_data_types_l1` when it requires one parameter
+- **Zero semantic documentation**: No comments explaining logic, no anomaly warnings, no contract information
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - User function names were preserved from debug symbols, maintaining some semantic connection to original purpose
+
+### Most Needs Improvement:
+- **Composite Type Recovery (1/10)** - Complete failure to recover any struct/union definitions; this is catastrophic for understanding data-oriented code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct layouts from access patterns** - Analyze consistent offset patterns (e.g., `[0]`, `[1]`, `[2]` access) to reconstruct struct definitions with field names
+2. **Infer variable names from usage context** - Variables used in loop bounds should be named `count`/`size`; accumulators should be `sum`/`total`
+3. **Add confidence annotations for uncertain recoveries** - Flag incorrect signatures, type mismatches, and unresolved calls with warnings rather than presenting confidently incorrect code
+
+---
+
+## Assessment Notes
+
+This decompilation is **exceptionally poor** for `-O0` (debug) compilation. At debug level, we should expect 8-10/10 readability since:
+- Debug symbols should preserve variable names
+- No optimization transformations should obscure structure
+- Type information should be fully recoverable
+
+The fact that this scores 3.2/10 indicates either:
+1. Debug symbols were not properly utilized by the decompiler
+2. The decompiler has fundamental limitations in type recovery
+3. Architecture-specific issues (ARM64) affecting recovery quality
+
+The complete loss of struct information is particularly concerning for a codebase that heavily tests composite types.

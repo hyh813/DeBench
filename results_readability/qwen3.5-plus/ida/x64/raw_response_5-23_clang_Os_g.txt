@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Complex functions like `test_asm_features` use generic `v0` through `v14` naming; simpler functions like `param_macro_constants` preserve `result` and `size` but most variables lack semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Debug symbols preserved most original names (`param_macro_constants`, `param_asm_basic`); only startup code uses generic names (`sub_1020`, `start`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`57072`, `57122`, `1025`) without recovering original constants like `MAX_SIZE`; format strings reduced to `aPpL201D` losing semantic meaning.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Compiler startup boilerplate present (`_start`, `deregister_tm_clones`) but not excessive; some "local variable allocation has failed" warnings add noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures recovered well in `param_asm_clobber` (proper for loop); however, aggressive constant folding in `param_conditional_compile` removes original branch structure entirely.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity preserved appropriately; each function maintains single responsibility; no monolithic functions created.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally; `test_asm_features` has many variables declared at top but flow remains traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding lost original structure (`call_macro_constants` returns literal 64 instead of showing computation); original macro semantics completely erased.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `size_t`, `__int64`); SIMD types (`__m128i`) correctly recovered; some generic `__int64` where specific types would help.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited structs in source code; array handling reasonable; SIMD vector operations preserved but cast heavily (`*(__m128i *)result`).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts visible (`(_DWORD *)`, `(_OWORD *)`, `(_BYTE *)`); pointer arithmetic present without bounds checking; atomic operations preserved correctly.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output; original had extensive documentation explaining macros, assembly, and expected values—all lost.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Loop patterns recognized and recovered; SIMD intrinsics preserved; assembly converted to C where possible; no higher-level pattern documentation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("local variable allocation has failed", "FAILED to decompile"); no specific flags for suspicious constant folding or lost semantics.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation; original comments about expected values (e.g., "期望: 64") completely lost; no error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved and visible; global variable `global_var` referenced; external library functions listed as "FAILED to decompile" without documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output; original section organization (5.2 Preprocessing, 5.3 Assembly) completely lost; no header file separation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 9 external functions failed to decompile requiring stubs; platform-specific code preserved; not immediately compilable without significant work.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+8+4+7)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):   (7+8+7+5)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type System):  (7+6+5)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):     (2+6+5+2)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):   (6+4+5)/3   = 5.00 × 0.10 = 0.500
+---------------------------------------------------------
+Overall Score:                                  5.68/10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- **Macro semantics completely lost**: `MAX_SIZE`, `BUFFER_COUNT` replaced with magic numbers (1024→1025, 64 literal)
+- **Conditional compilation branches erased**: `param_conditional_compile` shows only one branch (3*x+2), DEBUG_MODE branch invisible
+- **Variable names generic in complex functions**: `v0`-`v14` in `test_asm_features` instead of descriptive names
+- **No comments recovered**: Original had 200+ lines of documentation explaining macros, assembly, expected values
+- **String literals obfuscated**: Format strings like `"PP-L2-01: %d"` become `aPpL201D`
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Debug symbols preserved most original function names accurately, making navigation straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all documentation, macro explanations, and expected value annotations that made original code self-documenting.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover constant definitions from usage patterns**: Detect repeated literals (1024, 64, 512) and suggest named constant recovery with original macro names from debug info.
+2. **Preserve conditional compilation metadata**: When debug symbols indicate multiple compilation paths, document which branches were compiled and which were excluded.
+3. **Extract and preserve source comments**: Leverage debug information to recover original comments, especially for complex patterns like inline assembly and macro expansions.

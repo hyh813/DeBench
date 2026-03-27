@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `a0`, `ptr`), providing no semantic context about their role in the calculation or data structure.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `process_char`, `array_1d_stack`, and `main` are perfectly recovered from the symbol table, matching the source exactly.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Floating-point constants are represented as opaque hex integers (e.g., `0x3fc00000`), and string literals are replaced with global pointers (e.g., `&g_4035df`), obscuring their original values.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is polluted with low-level VEX/Angr intrinsics like `AddV`, `InterleaveLOV`, and `CONCAT`, which represent IR operations rather than high-level C logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Simple loops are replaced by complex, unrolled SIMD blocks and pointer arithmetic, making the control flow difficult to follow compared to the original `for` loops.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are recovered with correct granularity; there is no inlining, and boundaries match the source structure well.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The extensive loop unrolling (e.g., in `array_1d_stack`) creates long blocks of repetitive code that disrupt top-to-bottom readability.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: The decompiler presents the unrolled loop iterations explicitly rather than abstracting them, resulting in significant visual redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Floating-point operations are cast to `unsigned long long` and manipulated as integers, and SIMD registers are exposed as `int128_t` rather than appropriate vector types.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Structs are reduced to generic `struct_0` definitions with fields named `field_0`, `field_8`, etc., losing the semantic names like `Point3D` or `Node`.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code contains numerous unsafe casts, such as treating `int*` arrays as `int128_t*` for SIMD operations and interpreting float registers as integers.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no comments explaining the logic, algorithms, or the purpose of the complex vectorization patterns.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms like "summing an array" are completely obscured by the SIMD vectorization and are not recognizable as standard loops.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler explicitly marks unsupported operations with `[D] Unsupported...` tags (e.g., in `process_ld`), which is helpful for identifying failures.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants (e.g., array bounds checks are not explicitly documented).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and standard, and the relationships between functions (e.g., `main` calling test functions) are easy to trace.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in address order rather than logical grouping, though the descriptive names help mitigate this issue.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code uses non-standard intrinsics (`AddV`, `InterleaveLOV`) and syntax that will not compile with a standard C compiler.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- Floating-point arithmetic is represented as integer bit manipulation (e.g., `0x3fc00000`), losing semantic meaning.
+- Heavy use of low-level SIMD intrinsics (`AddV`, `InterleaveLOV`) obscures simple loop logic.
+- Composite types are generic (`struct_0`, `field_0`), erasing the domain-specific meaning of structures like `Point3D` or `Node`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The symbol table was successfully leveraged to preserve original function names exactly.
+
+**Most Needs Improvement:** Noise Reduction (scored 2/10)
+- The leakage of IR-level operations (VEX/Angr intrinsics) into the C output makes the code extremely noisy and difficult to read.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a pattern matcher to detect and re-roll SIMD loops into standard `for` loops or use standard vector types (e.g., `__m128i`) instead of raw intrinsics.
+2. Improve type recovery for floating-point operations to display actual float literals and math operations instead of hex integer casts.
+3. Utilize heuristics or debug information to rename struct fields based on access patterns or context, rather than defaulting to `field_0`.

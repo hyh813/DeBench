@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `param_1`, `local_40`), providing no semantic hint about their role in calculations like GCD or string decryption.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `param_fake_branch` and `param_opaque_predicate` are perfectly recovered from the debug symbols, accurately reflecting the original source intent.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are used for system signals (e.g., `8` for `SIGFPE`, `0xb` for `SIGSEGV`) instead of named constants, and hex values like `0x5a` lack context indicating they are encryption keys.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code contains Ghidra-specific artifacts like `undefined8`, `undefined4`, and `CONCAT44` macros, which clutter the output and obscure the actual data types.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While loops are generally recovered as `do-while` structures, several functions (`param_fake_branch`, `param_buffer_overflow_stack`) are completely empty, losing all control flow context present in the source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are correctly separated and match the source granularity, with helper functions like `decrypt_string` properly identified, though some logic was inlined into callers.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads top-to-bottom effectively where logic exists; jumps are mostly contained within standard loop constructs without excessive `goto` usage.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The decompiler presents compiler optimizations (like constant propagation in `param_implementation_defined` returning `0x30`) as source code, which hides the actual implementation logic and reduces readability of the algorithm.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are frequently degraded to generic `undefined` types (e.g., `undefined8`, `undefined4`), and specific types like `size_t` or `jmp_buf` are often replaced with `int` or `void*`.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: No complex structures are reconstructed; stack variables are accessed via raw offsets or generic arrays (e.g., `local_40`), losing the semantic structure of buffers or canaries.
+
+**11. Type Safety:** Score: 7/10
+Justification: While there are messy casts like `(ulong)&local_40`, there are no obviously dangerous type confusions that would lead to immediate misinterpretation of memory safety, just poor readability.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms (like GCD), or the purpose of complex bit manipulations, leaving the reader to guess the intent.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard patterns like the GCD algorithm or string decryption loops are present but not explicitly identified or named; they appear as generic loops and arithmetic.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler silently presents empty functions for `param_buffer_overflow_stack` and `param_fake_branch` without flagging that the logic was likely optimized away or failed to be recovered.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., buffer sizes) or postconditions; the `setjmp`/`longjmp` error handling patterns are visible but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names, making it easy to trace the flow between `call_...` wrappers and `param_...` implementations.
+
+**17. Module Organization:** Score: 8/10
+Justification: The functions are listed in a logical order that groups related tests together, matching the structure of the original source file.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile as-is due to Ghidra-specific types (`undefined8`) and macros (`CONCAT44`), requiring significant cleanup to be valid C.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Functions `param_fake_branch`, `param_buffer_overflow_stack`, and `param_buffer_overflow_heap` are rendered as empty `void` functions, completely losing the source logic.
+- Widespread use of `undefined8` and `undefined4` types obscures data representation and prevents compilation.
+- Logic in `param_implementation_defined` is replaced by a constant return value (`0x30`), hiding the bitfield and shift operations from the source.
+- Signal handling uses raw integers (`8`, `0xb`) instead of standard constants (`SIGFPE`, `SIGSEGV`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully leveraged debug symbols to recover exact function names, making the high-level purpose of each block immediately obvious.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.5/10)
+- The lack of comments, failure to flag optimized-away logic, and absence of idiom recognition make it very difficult to understand *why* the code is doing what it is doing.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Detect and explicitly comment on functions that have been optimized to no-ops or constants (e.g., "// Function body optimized away by compiler").
+2. Improve type inference algorithms to replace `undefined` types with concrete types based on register usage and context (e.g., inferring `int` for `undefined4` used in arithmetic).
+3. Map known system call numbers and signal constants to their standard macro names (e.g., replace `signal(8, ...)` with `signal(SIGFPE, ...)`).

@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `ptr`, `result`) with no semantic meaning. Original variables like `capture_by_value`, `instance_count`, `multiplier`, `data`, `size` are completely lost. Stack variables like `v0[31]` provide no context about their purpose.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions recovered with mangled C++ names (`_Z20test_cpp_member_funcv`, `_ZN4Base12virtual_funcEi`) but many use generic names (`sub_109bc`, `sub_10c34`). Test function names are partially recoverable but method names like `thunk to DiamondDerived::func()` are awkward.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers throughout: `0x21e70`, `0x11c88`, `72432`, `72456`, `72736`, `72760`, `72788`. Original constants like `0x1234` (getClassID) and array sizes (32, 10) are not recovered as named constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: `armg_calculate_condition()`, `__stack_chk_guard` checks, `__aeabi_d2iz()`, `__cxa_*` exception runtime calls. Stack canary checks appear in every function even at -O0, obscuring actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` statements replace natural C++ constructs. Exception handling devolves into `__cxa_throw`, `__cxa_begin_catch`, `__cxa_end_catch` calls with goto labels (`LABEL_10b38`, `LABEL_10b60`). Original try-catch blocks are unrecognizable.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: Critical functions are empty stubs: `test_cpp_constructor()`, `test_cpp_multiple_inheritance()`, `test_cpp_operator_overload()`, `test_cpp_lambda()` all just `return;`. Template functions have broken signatures (`template_max<double>()` takes no parameters).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt reading flow. Exception handling code has nested gotos that make execution paths impossible to follow. Some functions like `template_max<int>` are reasonably linear.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate `__stack_chk_guard` checks in every function. Multiple identical thunk functions (`_ZThn8_`, `_ZTv0_n12_`, `_ZTv0_n16_`) for vtable adjustments without consolidation. Destructor variants (`D0Ev`, `D1Ev`, `D2Ev`, `D4Ev`) all present separately.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type erosion: everything becomes `unsigned int`, `void*`, or `char*`. Original types like `int`, `size_t`, `std::unique_ptr<int>`, `Container<int>` are lost. Function parameters use `arg_0`, `arg_1` instead of typed names.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Class structures completely lost. `Base` defined as empty `class Base {}`. `SimpleClass`, `LifecycleClass`, `Point`, `Container<T>` structures not recovered. Only one generic `struct_0` with `field_0`, `field_4` appears. Member access becomes pointer arithmetic (`ptr[40]`, `ptr[80]`).
+
+**11. Type Safety:** Score: 2/10  
+Justification: Pervasive unsafe casts: `(unsigned int)`, `(void*)`, `(char *)`. Pointer arithmetic on class objects (`(char *)a0 + (*(a0))[12]`). Virtual calls through raw pointer dereferencing (`goto *((int *)*((int *)arg_0))`). No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only auto-generated annotations like `/* do not return */` and `// Other Possible Types: unsigned int`. No algorithm explanations, no API contracts, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: C++ idioms completely unrecognized: RAII (smart pointers), virtual dispatch, exception handling, lambda captures, template instantiation all appear as low-level operations. No pattern identification (e.g., "vtable call", "copy constructor").
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Empty function bodies not flagged as incomplete. Broken template signatures not annotated. Some `thunk` functions identified but not explained. No warnings about potentially incorrect recovery.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original assertions like `idx < size` checks become opaque conditionals. Exception guarantees not indicated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Virtual function relationships partially visible through thunk functions but not documented. Inheritance hierarchy not reconstructed. Call graph exists but relationships (override, virtual, static) not indicated.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped by address rather than logical module. Related class methods scattered. No namespace or class grouping. Static initialization functions (`_GLOBAL__sub_I_*`) separated from main logic.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: Code does not compile standalone. Missing type definitions, undefined external symbols (`g_22008`, `g_11af0`), broken function signatures. Would require extensive manual reconstruction to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+3+3)/4 = 3.00 × 0.30 = 0.90
+Level 2 (Structural):  (3+2+4+4)/4 = 3.25 × 0.25 = 0.81
+Level 3 (Type System): (2+1+2)/3   = 1.67 × 0.20 = 0.33
+Level 4 (Semantic):    (1+1+2+1)/4 = 1.25 × 0.15 = 0.19
+Level 5 (Contextual):  (3+4+1)/3   = 2.67 × 0.10 = 0.27
+
+Overall = 0.90 + 0.81 + 0.33 + 0.19 + 0.27 = 2.50/10
+```
+
+**Overall Readability Score:** 2.5/10
+
+### Critical Defects:
+- **Empty function bodies**: `test_cpp_constructor()`, `test_cpp_multiple_inheritance()`, `test_cpp_operator_overload()`, `test_cpp_lambda()` all return immediately without logic
+- **Complete class structure loss**: No recovery of `SimpleClass`, `LifecycleClass`, `Point`, `Container<T>` member layouts
+- **Template function signature corruption**: `template_max<double>()` shows no parameters despite source having two
+- **Exception handling obliterated**: Try-catch blocks reduced to `__cxa_*` runtime calls with goto spaghetti
+- **Lambda expressions not recovered**: `test_cpp_lambda()` is an empty stub despite complex capture logic in source
+
+### Best Quality Aspect: **Function Naming Quality (4/10)**
+- Some C++ mangled names were demangled to show class.method structure (`Base::virtual_func`, `Container<int>::push`)
+
+### Most Needs Improvement: **Composite Type Recovery (1/10)**
+- Complete failure to reconstruct any class/struct layouts; all objects treated as raw pointers with arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ class structure recovery**: Analyze vtable layouts and constructor patterns to reconstruct class member offsets and types
+2. **Add C++ idiom recognition**: Detect try-catch blocks from `__cxa_*` call patterns, recognize smart pointer patterns from destructor calls
+3. **Improve template instantiation analysis**: Track template parameter propagation through call sites to recover correct function signatures

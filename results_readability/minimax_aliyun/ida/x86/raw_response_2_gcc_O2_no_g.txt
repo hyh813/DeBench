@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of source names like `c`, `arr`, `n`. Local variables are `v2`, `v3`, `v4` etc. Only `result`, `i`, `sum` are somewhat descriptive. This is a severe degradation from the original meaningful names.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. Excellent recovery of function-level semantics.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `65` for 'A', `32` for case conversion offset, `11` stride in 2D array (should be 10), `0x1A` for range check. No named constants recovered. The string "hello" appears as `strcpy(v34, "hello")` without context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: `__readgsdword(0x14u)` for stack canary, multiple `__asm` blocks, "FAILED to decompile" markers for main and libc functions, "positive sp value has been detected" warnings. These obscure the actual logic significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - loops use do-while, conditionals use if statements. The switch statement in `enum_switch` correctly uses `CSWTCH_75[a1]` lookup table. Minor awkwardness in some array traversals due to pointer arithmetic.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent decomposition - all 40+ functions from source are preserved as separate entities. Each function maintains single responsibility. No over-fragmentation or monoliths. Matches source organization closely.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns for boundary checks (e.g., `if (a2 <= 0) return 0;`). No excessive forward jumps. Good linear flow overall.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Notable optimization artifacts: `array_2d_stack` uses stride of 11 instead of 10 (padding), `array_3d` has complex unrolled loops. The `binary_tree_sum` function is severely degraded with what appears to be fully unrolled recursion. These patterns are recognizable but obscure the original algorithm.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - `_DWORD` for int, `__int16` for short, `_BOOL4` for bool are correct. However, `process_char` returns `int` instead of `char`, and most pointers are generic `_DWORD*` without const/volatile distinction. Function pointer types are approximated but not precise.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover structs. `struct_simple` uses `a1[0] + a1[1] + a1[2]` instead of `p->x + p->y + p->z`. No struct/union type definitions recovered - all composite types reduced to raw pointer arithmetic with index offsets.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: extensive `_DWORD*` casts, pointer arithmetic without bounds checking in array functions, function pointer type mismatches (e.g., `ptr_func_complex` uses `_DWORD*` for `char**`). The `array_oob` function has obvious out-of-bounds access but no warning.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only register location comments (e.g., `// eax`, `// edx`) present. No algorithm explanations, no magic number documentation, no decompilation confidence indicators. Comments are purely mechanical, not semantic.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms explicitly identified. Linked list traversal in `linked_list` is recognizable but not named. No recognition of state machine patterns, tree traversals, or graph algorithms despite their presence in code.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some failures are flagged: "FAILED to decompile: main @ 0x10D0", "FAILED to decompile: __libc_start_main @ 0x6014". However, no explanations for why decompilation failed or what the actual issues are. Silent on indirect call resolution failures.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication of NULL pointer requirements, array bounds expectations, or error return semantics. The code presents as if everything is well-defined when it's not.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No function call relationship documentation. Callback relationships (e.g., `ptr_func_simple` calling `double_value`) not explained. No indication of which functions are test helpers vs. core logic.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions roughly grouped by category (data types, arrays, pointers, composites) matching source order. However, static helper functions like `complex_callback` not clearly associated with their users. Somewhat arbitrary ordering in places.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Uses standard library functions (`puts`, `__printf_chk`) but no includes. Missing function prototypes. Would require significant patching to compile. No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic `a1`, `a2`, `a3` instead of source names like `c`, `arr`, `n`, `x`
+- **Struct recovery failure**: All composite types reduced to raw pointer arithmetic (`a1[0]`, `a1[1]`) losing field semantics
+- **Magic numbers**: No constants recovered - `65`, `32`, `11`, `0x1A` appear without explanation
+- **Noise pollution**: Stack canary checks, assembly blocks, failed decompilation markers clutter output
+- **No comments**: Only register location comments, no algorithm or intent documentation
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (9/10)**: Nearly all function names match original source exactly - excellent recovery of function-level semantics
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)**: Complete loss of parameter and local variable names; all replaced with generic `a1`, `v2` style names that make code nearly impossible to follow
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how parameters are used (e.g., `a1 + 32` in char processing → `offset`, `a1[0] + a1[1]` in struct → `x + y`)
+2. **Recover struct/union types**: Detect regular memory access patterns and reconstruct composite types with field names based on offset analysis
+3. **Add semantic comments**: Include algorithm explanations, magic number identification, and decompilation confidence levels for indirect calls

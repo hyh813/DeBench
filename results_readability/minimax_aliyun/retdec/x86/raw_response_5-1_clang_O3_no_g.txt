@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6` throughout. Parameters are named `a1`, `a2`, `a3`, `a4`. These provide no semantic meaning - for example, in `_Z13test_cpp_rttiv`, `v1` and `v3` are heap allocations but named generically.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some C++ mangled names are demangled (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func()`), but many utility functions remain as `function_1040`, `function_1050`, etc. with no semantic meaning. The demangling is incomplete - many internal functions lack proper names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear throughout without explanation. For example, `0x74736554` (which is "Test" backwards), `0x2ce7`, `0x2980`, `0x2994` are used without context. The string "Test" is encoded as an integer literal rather than a proper string.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present including: `__x86_get_pc_thunk_bx` functions, raw `_Unwind_Exception` struct manipulation, inline assembly (`__asm_hlt()`), and many wrapper functions that add noise. The decompilation includes 60 functions when the original has far fewer.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures are preserved - if/else, returns. However, some functions like `template_max` have convoluted boolean expressions that obscure the simple "return a > b ? a : b" logic. The exception handling flow is particularly convoluted.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: The original 12 test functions are present, but many are reduced to constant return values (e.g., `test_cpp_virtual_func()` returns `42` directly). Template instantiations are properly separated. However, internal functions like constructors are fragmented.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom with minimal forward jumps. The exception handling function has some branching complexity but is generally followable. No excessive nesting observed.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some dead code present (e.g., unused variables). The `template_max<double>` has redundant boolean operations that could be simplified. Overall, no severe redundancy but room for improvement.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Almost all types are `int32_t` regardless of actual purpose. The original `size_t`, `bool`, `double` types are lost. For example, `template_max<double>` returns `float64_t` but the logic is convoluted. The architecture is x86/x64, not arm64 as stated in metadata - a significant mismatch.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Only the `_Unwind_Exception` struct is defined. Original classes like `SimpleClass`, `LifecycleClass`, `Base`, `Derived` are not reconstructed as structs. The `Container` template class fields are accessed via raw pointer arithmetic (e.g., `*(int32_t *)(result2 + 40)`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: raw pointer arithmetic without bounds checking, casting between incompatible types (e.g., `int32_t` to `int32_t*`), no const correctness. The `template_swap` function has a critical bug: `*a1 = *a2; *a2 = *a1;` loses the original value.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address range comments and demangled function names are present. No explanation of algorithm logic, no recovery of original comments from debug symbols. The comment `// Demangled: test_cpp_member_func()` is auto-generated noise.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some C++ idioms are partially visible (virtual function calls via vtable, exception handling) but not explicitly identified or named. The RTTI/dynamic_cast usage is present but not clearly documented as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of suspicious code or uncertainties. The `__asm_hlt()` is present without comment. The incorrect `template_swap` implementation is presented as-is without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. The function contracts are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are somewhat visible through the code (e.g., `test_cpp_oo_features` calls other test functions), but there's no documentation of who calls what or the call graph. Global variable usage is minimal.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped somewhat logically (test functions together, template functions together), but the file is a single monolithic block. No namespace or class structure recovered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code has many undefined references (`_Znwj`, `_ZdlPv`, `__cxa_*` functions). It would require linking against libstdc++ and libc. The architecture mismatch (x86 vs arm64) would cause compilation failures.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 4 + 3 + 3) / 4 = 3.0
+L2_avg = (6 + 5 + 7 + 6) / 4 = 6.0
+L3_avg = (4 + 4 + 4) / 3 = 4.0
+L4_avg = (2 + 3 + 2 + 1) / 4 = 2.0
+L5_avg = (4 + 5 + 5) / 3 = 4.67
+
+Overall = (3.0 × 0.30) + (6.0 × 0.25) + (4.0 × 0.20) + 
+          (2.0 × 0.15) + (4.67 × 0.10)
+Overall = 0.90 + 1.50 + 0.80 + 0.30 + 0.467 = 3.967 ≈ 4.0/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects (Bullet List)
+- **Architecture mismatch**: Decompiled code is x86/x64, but metadata states arm64 - indicates wrong binary was decompiled
+- **Variable naming**: All variables use generic names (`v1`, `v2`, `a1`, `a2`) providing no semantic meaning
+- **Type loss**: All types degraded to `int32_t`; original `size_t`, `bool`, `double` types not recovered
+- **Class structures lost**: No struct recovery for `SimpleClass`, `LifecycleClass`, `Base`, `Derived` - only raw pointer arithmetic
+- **Critical bug in template_swap**: `*a1 = *a2; *a2 = *a1;` loses the original value (should use temp variable)
+- **Magic numbers**: Unexplained constants like `0x74736554`, `0x2ce7` throughout code
+
+### Best Quality Aspect (Single Dimension)
+- **Code Linearization (7/10)**: Most functions read top-to-bottom with minimal forward jumps; control flow is generally followable
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)**: Every variable uses generic names like `v1`, `v2`, `a1`, `a2` - completely obscures semantic purpose
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `v1` used as size parameter → name it `size` or `num_elements`)
+2. **Recover class/struct definitions**: Instead of raw pointer arithmetic like `*(int32_t *)(result2 + 40)`, reconstruct the original struct layout with field names
+3. **Detect and flag anomalies**: Mark suspicious code patterns (like the broken `template_swap`) and architecture mismatches with warnings

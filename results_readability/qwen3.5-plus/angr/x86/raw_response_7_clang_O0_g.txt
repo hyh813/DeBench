@@ -1,0 +1,104 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `a0`, `a1`) losing semantic meaning from original names like `result`, `encrypted`, `decrypted`, `canary`. Only occasional meaningful names exist (`flag1`, `flag2`, `index`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions preserved well (`param_fake_branch`, `param_opaque_predicate`, `call_fake_branch`), but helper functions remain generic (`sub_401030`, `sub_4010f0`, `sub_40112b`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers obscure intent: `0xDEADBEEF` becomes `-559038737`, `0xAAAAAAAA` becomes `2863311530`, signal numbers appear as `8` and `11` instead of `SIGFPE`/`SIGSEGV`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts: `&_GLOBAL_OFFSET_TABLE_` loading in nearly every function, stack frame variables (`v0 = &_GLOBAL_OFFSET_TABLE_`), and initialization code (`deregister_tm_clones`, `register_tm_clones`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `for` constructs, but initialization functions use `goto` patterns (`sub_401030`: `goto ptr[2]`). At `-O0`, cleaner control flow should be achievable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Unnecessary wrapper functions created (`sub_401271` just calls `param_fake_branch`), fragmenting the code. Original function boundaries mostly preserved but with extra indirection.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Loop structures are linear. Some initialization code has forward jumps but main logic flows well.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: GOT reference loading repeated in nearly every function. Stack variable initialization patterns (`v0 = &_GLOBAL_OFFSET_TABLE_`) duplicated without consolidation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type erosion: all integers become `unsigned int` regardless of original `int`, `size_t`, or signedness. Lost distinction between `int` and `unsigned int` in `param_integer_overflow`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Some structs recovered but with generic names (`struct_0`, `struct_1`) and fields (`field_0`, `padding_0[15991]`). Original code had minimal structs but recovery quality is poor.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts prevalent: `(int)((i >> 31 CONCAT i) % flag3)`, pointer arithmetic without bounds (`*((char *)&v3 + i)`), type-confused operations in GCD calculation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Essentially no meaningful comments. Only auto-generated function headers. No algorithm explanations, no documentation of obfuscation techniques that were in original source.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Opaque predicates not identified as always-true conditions. Fake branches (`x*x < 0`) not flagged as dead code. Instruction substitution patterns not recognized.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly noted: `[D] Unsupported jumpkind Ijk_SigTRAP`. Signal handling code, setjmp/longjmp patterns not marked as special or potentially problematic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for `param_null_pointer_deref`). No postconditions inferred. Error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships preserved and traceable. Global variables referenced but not well documented (`div_zero_caught`, `jmp_buffer`). Call graph inferable from code structure.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. Static functions not properly scoped. No separation between initialization, main logic, and helpers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies declared (`printf`, `malloc`, `signal`, `strlen`) but would require significant stubbing. Struct definitions incomplete. Would not compile standalone without modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+6+7+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.05/10
+```
+
+**Overall Readability Score: 5.05/10**
+
+### Critical Defects:
+- Variable `v0`, `v1`, `v2` should be named based on usage (e.g., `result`, `encrypted_buffer`, `canary_value`)
+- Magic numbers like `-559038737` should be displayed as hex `0xDEADBEEF` for clarity
+- GOT reference loading (`v0 = &_GLOBAL_OFFSET_TABLE_`) repeated in every function adds noise
+- No comments explaining obfuscation techniques that were explicit in original source
+- Type precision lost: all integers become `unsigned int`, losing signed/unsigned semantics
+- Signal numbers `8` and `11` should be displayed as `SIGFPE` and `SIGSEGV`
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `param_fake_branch`, `param_opaque_predicate` were successfully recovered from symbols, preserving semantic intent for main logic functions.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Decompiler produces zero meaningful comments despite original source having extensive documentation of obfuscation techniques, test scenarios, and expected behaviors.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover symbolic constants from debug info** - Display `0xDEADBEEF` instead of `-559038737`, `SIGFPE` instead of `8`, leveraging `-g` debug symbols that were compiled in.
+
+2. **Infer variable names from usage patterns** - Variables used in length checks should be named `length`/`size`, variables compared to canary values should be named `canary`, variables passed to `strlen` should be named `string`/`buffer`.
+
+3. **Add semantic annotations for obfuscation patterns** - Flag always-false conditions (`x*x < 0`), identify opaque predicates, and add comments like `// OBFUSCATION: Dead code branch` to help analysts understand intent.

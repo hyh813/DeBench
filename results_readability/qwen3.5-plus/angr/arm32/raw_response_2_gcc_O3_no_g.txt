@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `a0`, `a1`, `ptr` with no semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `head` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), but many are generic (`sub_103a0`, `sub_10450`). Library functions correctly named (`__muldf3`, `__aeabi_dadd`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `65`, `32`, `255`, `0x80000000`, `0x100000`, `0x7f000000` with no explanation. Original operations like `c + 32` for case conversion are obscured by raw constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Extensive compiler artifacts: register annotations (`// r0`, `// r3`), stack canary checks (`__stack_chk_guard`), and massive library function implementations (`__muldf3` is 400+ lines of unreadable code).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Original for/while loops converted to do-while with goto statements. Labels like `LABEL_10768`, `LABEL_10794` disrupt readability. Test functions print pre-computed constants instead of calling actual functions.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but some have excessive parameters from register passing convention. Library functions are monolithic (400+ lines) and should be external calls.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Heavy use of forward jumps and labels throughout. Difficult to read top-to-bottom due to scattered label targets interrupting logical flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated condition checks visible (e.g., `armg_calculate_condition` called multiple times with same parameters). Test functions redundantly print same values twice before returning.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - original `char`, `short`, `long`, `float`, `double` all become `unsigned int`. Function `process_float` returns `void` instead of `float`. Pointer types often degraded to `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_4`, `field_8`). Original field names (`x`, `y`, `z`, `width`, `height`) completely lost. Auto-generated struct names (`struct_0`, `struct_1`, `struct_28`) are meaningless.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Extensive unsafe casts visible (`(char *)ptr9`, `(int *)(ptr + idx * 4)`). void* used extensively. Pointer arithmetic on generic integer types creates potential undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Only auto-generated register annotations (`// r0`). Original source had extensive documentation explaining each function's purpose and test expectations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. Common patterns (string length calculation, array sum, linked list traversal) not identified or named. Binary tree recursion completely obscured.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly warnings present. Problematic code (like `array_oob` intentional overflow) presented confidently without any indication of undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions not identified. NULL checks present but not explained as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Test functions call printf with hardcoded values instead of actual function results.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by category (data types, arrays, pointers, composites). Original source had clear section headers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would require significant work to compile. Many external dependencies (`__stack_chk_guard`, `__printf_chk`, `GLIBC_2.4`) not resolved. Library functions would need to be stubbed.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+3)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (4+5+4+5)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (3+4+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.68/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Type system collapse**: All numeric types (`char`, `short`, `int`, `long`, `float`, `double`) degraded to `unsigned int`, losing all type semantics
+- **Variable naming**: Zero semantic variable names - everything is `v0`, `v1`, `a0`, `ptr` with no indication of purpose
+- **Control flow degradation**: Natural loops converted to goto-based do-while constructs with scattered labels
+- **Struct field names lost**: Original meaningful fields (`x`, `y`, `z`, `width`, `height`, `data`, `next`) all become `field_0`, `field_4`, `field_8`
+- **Test functions broken**: Test functions print pre-computed constants instead of actually calling the functions they're testing
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- Some original function names were preserved (`process_char`, `array_1d_stack`, `struct_simple`), providing minimal semantic anchors in an otherwise opaque codebase.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of any documentation or explanation; a human reader has zero guidance for understanding the recovered logic or intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement type inference from usage patterns**: Detect that `process_char` operates on ASCII values and recover `char` type; identify floating-point operations and recover `float`/`double` types instead of `unsigned int`.
+
+2. **Recover loop constructs from branch patterns**: Recognize backward jumps with incrementing counters as for-loops, and convert goto-based patterns back to while/for constructs with proper loop variables.
+
+3. **Infer struct field names from access patterns**: When a struct field is consistently accessed in similar contexts (e.g., `field_0` always used as data, `field_4` always as next pointer), suggest semantic names like `data` and `next` for linked list structures.

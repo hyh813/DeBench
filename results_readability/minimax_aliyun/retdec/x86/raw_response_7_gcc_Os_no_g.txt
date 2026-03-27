@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: The parameter is named `result` but in the original source, `result` is a local variable while `x` is the parameter. The decompiler has misattributed the variable name. Additionally, the local variable `result` from the original (which held the computation) is completely eliminated.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function name `param_fake_branch` exactly matches the original source. The naming is semantically accurate and action-oriented.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: No literals present in this simple function. The original had `0xDEADBEEF` and `"test"` which are now eliminated along with the fake branches.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: Clean decompilation with no compiler artifacts like register spills or frame pointer manipulation. Only has address comments (`// 0x139d`) which are minimal.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: The original source contained two intentional always-false branches (obfuscation patterns): `if (x * x < 0)` and `if (strlen(str) < 0)`. The decompiler has completely eliminated these, transforming the function from a multi-branch obfuscated function to a trivial return statement. This is a critical loss of structural fidelity.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function is appropriately sized at 2 lines. No decomposition issues.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Perfect linear flow - just a return statement reading top-to-bottom.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: The decompiler has eliminated what it perceives as "dead code" - the fake branches. However, these branches are intentional obfuscation (OBF-L4-02) and their elimination represents a severe semantic loss. The decompiler should have preserved them with a comment indicating they are unreachable.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Uses `int32_t` which is appropriate for the ARM64 architecture with -O0. The original used `int` which is correctly inferred as 32-bit.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: N/A - no structs/unions in this function.
+
+**11. Type Safety:** Score: 9/10  
+Justification: No type safety issues in this simple function. Correct pass-through of the parameter.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only contains address comments (`// 0x139d`). No explanation of the fake branch obfuscation pattern that was present in the original. The decompiler should have noted: "Two always-false conditional branches were eliminated" or similar.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The "fake branch" (永假分支) obfuscation idiom from OBF-L4-02 is completely unrecognized. The original explicitly tests impossible conditions like `x*x < 0` for real numbers. This is a fundamental failure to recognize the obfuscation pattern.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that significant code was eliminated. The decompiler silently removed the fake branches without any warning or annotation. A high-quality decompiler should flag: "NOTE: Two unreachable code branches detected and removed (always-false conditions)."
+
+**15. Assertion & Contract Recovery:** Score: 10/10  
+Justification: N/A - no explicit contracts in original source for this function.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: The function is called by `call_fake_branch()` which passes the value 10. This relationship is preserved and clear from the call site.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped. The fake branch functions are near related obfuscation functions in the output.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The decompiled code compiles successfully. The metadata shows "Compilation Result: Yes".
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- **Fake branch obfuscation completely eliminated**: The two always-false conditions (`x*x < 0` and `strlen(str) < 0`) from OBF-L4-02 are completely removed, losing the core obfuscation pattern
+- **Variable naming confusion**: Parameter named `result` when it should be `x` (original parameter name); the local variable `result` from source is eliminated
+- **No anomaly indication**: Silent removal of unreachable code branches without any warning or comment
+- **Idiom recognition failure**: The "永假分支" (always-false branch) obfuscation pattern is not recognized or documented
+
+**Best Quality Aspect:** Type System Fidelity (scored 9.3/10)  
+- Types are precise (int32_t), appropriate for the architecture, and type-safe
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.3/10)  
+- The decompiler completely failed to recognize and preserve the fake branch obfuscation pattern, which is the entire purpose of this function. No comments, no idiom recognition, no anomaly indication for eliminated code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Detect and preserve unreachable code**: When encountering always-false conditions (like `x*x < 0` for integers), preserve them as intentional obfuscation with a comment like "// OBFUSCATION: always-false condition"
+2. **Add anomaly warnings**: Flag when code has been eliminated during decompilation, especially for security/obfuscation analysis
+3. **Improve variable name inference**: Use parameter names from function signatures and cross-reference with call sites to recover accurate variable names (e.g., `x` from `param_fake_branch(x)`)

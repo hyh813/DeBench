@@ -1,0 +1,145 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 4/10**
+Justification: Parameters use generic names like `param_1`, `param_2`, `param_3` throughout. Local variables use auto-generated patterns like `iVar1`, `uVar2`, `uVar3`, `piVar4`. While some semantic meaning can be inferred from usage, the names provide no semantic hints about purpose (e.g., should be `count`, `args`, `sum`).
+
+### 2. Function Naming Quality
+**Score: 7/10**
+Justification: Most function names match source exactly (`cdecl_func`, `stdcall_func`, `varargs_func`, `func_no_args`). However, some functions have cryptic auto-generated names like `FUN_00011030`, `FUN_00011ba5`, `FUN_00011be5` which obscure their purpose.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Magic numbers like `0xf` (15), `0x32` (50), `0x2a` (42), `0x15` (21) appear without explanation. The decompiler uses hex notation consistently but provides no named constants. Some values like `0xfffffffc` in varargs handling are particularly opaque.
+
+### 4. Noise Reduction
+**Score: 7/10**
+Justification: Relatively clean output with minimal compiler artifacts. Type alias `undefined4` appears frequently but is manageable. Some WARNING comments about removed unreachable blocks add noise but are informative. No significant dead code or redundant casts observed.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural and idiomatic. Loops use proper `do-while` constructs, conditionals are clear `if-else` statements. The varargs functions have unrolled loops but they're still readable. At `-O0` (debug), control flow should be nearly identical to source, and it is.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions maintain appropriate granularity matching source. Each function has a single responsibility. Parameter lists are reasonable. The test wrapper functions (`call_*`) are properly separated from implementation functions. No over-fragmentation or monoliths observed.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately. No excessive forward jumps. The varargs loop handling has some complexity but is traceable. Overall good linearization.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No significant dead code. Loop unrolling in varargs functions is present but not excessive. Some redundant expressions in the varargs handling could be cleaner, but nothing severe.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Basic types like `int`, `char*`, `int*` are correct. However, `undefined4` is used inconsistently (should be `int`). Function pointer type is shown as `code *` which is imprecise. The `uint` type is used but should be `unsigned int` or `size_t`. Mixed use of `undefined4` and proper types creates confusion.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+Justification: Small struct `SmallPoint` was not recovered - instead returned via hidden pointer parameter. Large struct `LargeData` is handled via pointer but fields are not named. The `LargeStruct` (128 bytes) in `func_struct_byval` is completely exploded into 16 separate parameters, losing all structure information. Array parameters correctly decay to pointers.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Generally type-safe code. Some unsafe patterns: `param_1[1]` pointer arithmetic in `func_struct_byptr`, cast from `int` to `pointer` in `param_double_ptr`. No severe type safety violations that would cause undefined behavior. Minor issues with pointer arithmetic but manageable.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+Justification: Minimal comments - mostly auto-generated Ghidra headers. No useful documentation explaining algorithm intent. The test functions have no comments about what they're testing. No decompilation confidence indicators. The WARNING comments are helpful but not true semantic comments.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Basic patterns recognized (loops, conditionals). The varargs handling shows recognition of `va_list` pattern but not explicitly named. No design patterns or algorithms explicitly identified. Some hints of pattern recognition but not communicated to reader.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+Justification: Ghidra provides WARNING comments for some anomalies (removed unreachable blocks, inlined functions, replaced functions). However, some issues are silently handled - like the `ret_func_ptr` function returning function pointers not being clearly explained. Some indirect calls could be flagged better.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: No precondition/postcondition recovery. No documentation of expected input constraints. No error condition documentation. The `func_struct_byptr` null check is present but not documented as a contract. Overall, implicit contracts from source are completely lost.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 8/10**
+Justification: Function call relationships are clear. The test wrapper functions clearly call implementation functions. Global variable references (like `ret_opaque_handle_handle1`) are visible. Callback relationships in `param_func_ptr` are understandable. Good relationship clarity.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: All functions in single file, which is reasonable for decompiled output. Static functions properly indicated. Related functions (test wrappers and implementations) are grouped reasonably. Could be better organized by functionality but acceptable.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+Justification: Code compiles successfully as indicated by "Compilation Result: Yes". Minimal external dependencies - only standard C library functions (printf, puts, strlen). Type definitions like `undefined4` are Ghidra-specific but compile. Good standalone viability.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Average = (4 + 7 + 5 + 7) / 4 = 5.75
+L2 Average = (8 + 8 + 8 + 7) / 4 = 7.75
+L3 Average = (6 + 5 + 7) / 3 = 6.00
+L4 Average = (4 + 5 + 6 + 3) / 4 = 4.50
+L5 Average = (8 + 7 + 8) / 3 = 7.67
+
+Overall = (5.75 × 0.30) + (7.75 × 0.25) + (6.00 × 0.20) + (4.50 × 0.15) + (7.67 × 0.10)
+        = 1.725 + 1.9375 + 1.2 + 0.675 + 0.767
+        = 6.30/10
+```
+
+### Overall Readability Score: 6.3/10
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming is generic**: Parameters use `param_1`, `param_2` instead of semantic names like `a`, `b`, `count`. Local variables use `iVar1`, `uVar2` which provide no semantic value.
+
+2. **Large struct recovery failed**: `func_struct_byval` with 128-byte `LargeStruct` is exploded into 16 separate int parameters (`param_1` through `param_31`), completely losing struct semantics.
+
+3. **Magic numbers unexplained**: Values like `0xf`, `0x32`, `0x2a`, `0x15` appear without explanation. Should be `15`, `50`, `42`, `21` or named constants.
+
+4. **No contract/precondition documentation**: Null checks exist in code but no comments explain preconditions (e.g., "requires: p != NULL").
+
+5. **Some functions have cryptic names**: `FUN_00011030`, `FUN_00011ba5`, `FUN_00011be5` are auto-generated and don't reflect function purpose.
+
+---
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+The decompiled control flow closely matches the original source. At `-O0` optimization, loops, conditionals, and function calls are structurally identical to source. This is the highest-performing dimension.
+
+---
+
+### Most Needs Improvement: Assertion & Contract Recovery (3/10)
+The decompiler provides no documentation of preconditions, postconditions, or invariants from the source. This is critical for understanding function contracts, especially for functions like `func_struct_byptr` with null checks or `varargs_func` with parameter expectations.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how parameters are used (e.g., `param_1 * 2` suggests doubling, `param_1 + param_2` suggests addition) to suggest semantic names like `a`, `b`, or more descriptive names based on context.
+
+2. **Recover struct types from parameter patterns**: When a function receives many consecutive parameters of the same type, recognize this as a potential struct by-value pass and attempt to reconstruct the composite type rather than listing all fields separately.
+
+3. **Add semantic comments for magic numbers**: When a literal appears multiple times or in specific contexts (like `0xf` = 15 appearing in test expectations), suggest it might be a named constant and provide the decimal value alongside hex.

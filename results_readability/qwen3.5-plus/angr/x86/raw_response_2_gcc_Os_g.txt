@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source had meaningful names like `x`, `c`, `arr`, `n` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions preserved original names (`double_value`, `process_int`, `array_1d_stack`), but many runtime helpers use generic `sub_401XXX` naming. Test functions (`test_data_types_l1`) correctly recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (`3435973837`, `1073794252` for double constants). Printf format strings preserved but numeric literals in calculations are unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from decompilation artifacts: `[D] unsupported_<class 'pyvex.expr.GetI'>()`, runtime init functions (`_init`, `__do_global_dtors_aux`), stack canary checks, and `__x86.get_pc_thunk.*` stubs.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions use `goto` instead of proper constructs (`ptr_func_simple`: `goto a0;`). Binary tree sum converted from recursive to iterative, losing original structure. Loops mostly recovered but awkward.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved. However, decompiler added many runtime helper functions not in source. Function sizes are reasonable and cohesive.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but forward jumps disrupt flow in several functions. Some functions have excessive local variable declarations at function start.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. Some redundant patterns from optimization but not severe. Loop structures mostly consolidated appropriately.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `char`→`unsigned int`, `short`→`unsigned int`, `float`/`double`/`long double` functions completely broken with unsupported operations. `long long` parameters split into two `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic names (`struct_0`, `field_0`, `field_4`). Original field names lost (`Point3D.x,y,z` → `field_0,field_1,field_2`). Bitfields not properly recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many implicit unsafe casts. Pointer arithmetic on `unsigned int` instead of proper pointer types. `volatile` semantics lost (`volatile_access` becomes simple `*p * 2`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. No algorithm explanations, no decompilation confidence indicators. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Linked list traversal recognized but not named. Tree/graph patterns not identified despite clear structures.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged with `[D]` markers for unsupported operations (float/double handling). However, many type mismatches and potential issues go unflagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Array bounds checks present but not explained as safety contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`g_403008`, `g_40360c`) without explanation of purpose.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output with no logical grouping. Runtime functions mixed with application code. No header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Contains external references needing stubs (`_ccall`, `__stack_chk_fail_local`). Would require significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (5+6+6+7)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type):        (3+4+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):  (5+4+4)/3   = 4.33  × 0.10 = 0.43
+─────────────────────────────────────────────────────
+Overall Score:                                  4.31/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects
+- **Type system collapse**: `float`, `double`, `long double` functions contain `[D] unsupported` markers and return garbage values instead of actual floating-point operations
+- **Variable naming**: All parameters named `a0`, `a1`, `ptr` with no semantic meaning (e.g., `process_char(unsigned int a0)` should be `process_char(char c)`)
+- **Struct field names lost**: `Point3D` fields `x`, `y`, `z` recovered as `field_0`, `field_1`, `field_2` losing all semantic information
+- **Control flow degradation**: Function pointers use `goto` instead of proper call syntax (`goto a0;` in `ptr_func_simple`)
+- **Runtime noise pollution**: 40+ lines of initialization/cleanup code (`_init`, `__do_global_dtors_aux`, `frame_dummy`) not present in original source
+
+### Best Quality Aspect
+- **Function Decomposition (6/10)**: Original function boundaries were mostly preserved with correct function names for application logic (`double_value`, `process_int`, `array_1d_stack`, etc.)
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)**: Zero comments explaining algorithm intent, decompilation confidence, or recovered semantics—critical for understanding decompiled code
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover floating-point operations properly**: The `[D] unsupported` markers in `process_float`, `process_double`, `process_ld` indicate complete failure—implement proper FPU instruction analysis
+2. **Infer variable names from usage context**: Analyze how variables are used (e.g., `a0` in `process_char` compared against 65-90 range) to suggest semantic names like `input_char`
+3. **Preserve struct field semantics**: Use type propagation and access patterns to recover meaningful field names (e.g., `field_0` accessed as coordinate → suggest `x`)

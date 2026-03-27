@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`param_1`, `iVar1`, `uVar2`, `lVar1`, `bVar2`) with zero semantic meaning. No variable names like `packet_size`, `counter`, or `buffer` were recovered despite clear usage patterns.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Original function names preserved for most user functions (`local_vars`, `heap_basic`, `test_stack_memory`), but helper functions use cryptic names (`FUN_00101020`). External function wrappers are redundant.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere in hex format (`0x2a`, `0x14`, `0xf`, `0x3c`) without explanation. Original decimal values (42, 20, 15) converted to hex obscures meaning.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive temporary variables (`bVar2` through `bVar17` in `large_stack_frame`), redundant casts, and compiler artifacts throughout. External function wrappers add no value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Simple for-loops transformed into complex unrolled versions with manual index tracking. `large_stack_frame` has 200+ lines of unrolled code instead of a 5-line loop.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but `linked_list_heap` became a 100+ line monolith with repeated allocation patterns. Some functions constant-folded incorrectly (`tree_heap_traversal` returns `0x3c` directly).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Multiple forward jumps (`LAB_0010145f`, `LAB_0010159f`) disrupt reading flow. Loop bodies scattered across multiple conditional blocks.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe loop unrolling redundancy - `heap_basic`, `heap_array`, `memory_leak` all have nearly identical 100+ line unrolled loops that should be 10 lines.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate (`undefined4`, `undefined8`, `ulong`). Original `int`, `size_t`, `char*` lost. Function pointers degraded to `undefined8`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `Point` struct, `Node` linked list, `TreeNode` all reduced to pointer arithmetic (`__ptr + 2`). No struct definitions recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts (`(undefined4 *)`, `(int *)`), pointer arithmetic without bounds checking. `stack_alias` signature changed from `(int*, int*)` to `void`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. No algorithm explanations, no decompiler confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Linked list creation, tree traversal, memory allocation patterns not identified. `linked_list_heap` appears as raw pointer manipulation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about memory leaks (`memory_leak`), dangling pointers (`dangling_pointer`), or double-free (`double_free`). Critical bugs silently presented.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). Null checks present but not explained as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. `double_value` referenced by `set_global_callback` but no call graph provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Static functions (`static_helper`) not properly scoped. No header file structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears compilable but external dependencies (`extern_global_var`, `extern_function`) not clearly documented. Some functions missing implementations.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (3+5+4+3)/4 = 3.75 × 0.25 = 0.938
+Level 3 (Type):        (5+2+5)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+
+Overall Score: 3.73/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1`, `uVar2`** should be named based on semantic usage (e.g., `array_size`, `loop_index`, `result`)
+- **`stack_alias` function** completely lost pointer aliasing logic - reduced to `return 0x14`
+- **Struct types (`Point`, `Node`, `TreeNode`)** not recovered - all pointer arithmetic
+- **Loop unrolling** in `large_stack_frame`, `heap_basic`, `memory_leak` creates 100+ line functions from 10-line source
+- **Test functions constant-folded** - `test_stack_memory` has hardcoded printf values instead of actual function calls
+- **No anomaly warnings** for memory leaks, dangling pointers, double-free patterns
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Most original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), providing some semantic anchor points.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover any struct/union definitions - all composite types reduced to raw pointer arithmetic, making data structure understanding impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from access patterns** - Detect consistent offset patterns (`+0`, `+4`, `+8`) and propose struct layouts with field names based on usage context.
+
+2. **Preserve loop constructs from -O0 binaries** - At debug optimization levels, avoid aggressive loop unrolling; recognize backward jumps as natural for/while loops.
+
+3. **Add semantic anomaly detection** - Flag memory leaks (malloc without free), dangling pointers (use after free), and double-free patterns with explicit warnings in decompiled output.

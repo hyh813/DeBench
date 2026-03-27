@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `param_1`, `local_30`, `aiStack_2c`, and `__ptr`. Semantic names like `x`, `n`, `arr`, `p`, or `head` from the source are completely lost, forcing the reader to track usage manually.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved from the source symbols (e.g., `local_vars`, `heap_basic`, `test_stack_memory`). The names accurately reflect the functionality, making the high-level flow easy to follow.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Simple integer constants are displayed in Hex (e.g., `0x2a` for 42, `0x14` for 20, `0xffffffff` for -1), which obscures the original decimal intent. While offsets are understandable, the choice of hex for simple arithmetic values reduces readability.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is cluttered with non-standard types like `undefined4` and `undefined`. Additionally, compiler/runtime artifacts like `__x86.get_pc_thunk.bx` and `__do_global_dtors_aux` appear in the listing, though they are separated from the main logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is excellent due to the `-O0` optimization level. Loops are correctly recovered as `for` loops, and `if/else` blocks are natural. The logic reads top-to-bottom without confusing jumps or gotos.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source code. There is no inlining or outlining; boundaries are perfectly preserved, maintaining the original modularity and cohesion (e.g., `create_tree_node` remains separate).
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code is highly linear. Execution flows naturally from entry to exit within functions, with minimal forward jumps or complex nesting, making it easy to read sequentially.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is no dead code, but there are redundant casts, such as `(int)aiStack_1c` in `vla_stack`, which add visual noise without adding semantic value. However, logic is not duplicated.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are heavily degraded. Standard types like `size_t` are replaced with `uint` or `undefined4`, and specific pointer types (e.g., `Node*`) are often reduced to `void*` or `int*`, losing type safety and semantic information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery is a major failure. User-defined structs like `Point`, `Node`, and `TreeNode` are completely lost. For example, in `heap_struct`, the struct fields are accessed via array indexing (`__ptr[1]`) rather than field names (`p->y`), and in `local_struct`, the struct logic is optimized away to a simple arithmetic expression without the struct definition.
+
+**11. Type Safety:** Score: 5/10
+Justification: The loss of struct types leads to unsafe-looking pointer arithmetic. For instance, `*(void **)((int)*param_1 + 4)` in `heap_nested` treats memory as a raw byte array rather than a structured object, making it hard to verify safety or correctness.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. No algorithm explanations, variable purpose descriptions, or logic summaries are provided to assist the reader.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common data structure patterns are obscured. The linked list in `linked_list_heap` is implemented via raw pointer offsets (`piVar2[1]`) rather than `node->next`, failing to highlight the standard "linked list traversal" idiom.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag potential issues. For example, in `dangling_pointer`, the read after `free(__ptr)` is presented as standard code without any warning about the use-after-free risk or undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions or postconditions are documented. For instance, `alloca_usage` does not indicate that `param_1` must be positive, nor does `heap_basic` indicate that the return value is derived from heap-allocated memory.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the recovered names, making the call graph clear. Global variables like `global_counter` are accessed by name, preserving the context of side effects.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source file's structure. Helper functions like `static_helper` are placed near their callers, and test functions are grouped together.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code will not compile as-is due to the use of non-standard types like `undefined4` and `undefined`. External data references like `DAT_00014008` also lack proper declarations, requiring significant manual patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 9 + 5 + 5) / 4 = 5.50
+L2_avg: (8 + 9 + 9 + 7) / 4 = 8.25
+L3_avg: (4 + 2 + 5) / 3 = 3.67
+L4_avg: (1 + 3 + 2 + 1) / 4 = 1.75
+L5_avg: (8 + 8 + 4) / 3 = 6.67
+
+Overall = (5.50 × 0.30) + (8.25 × 0.25) + (3.67 × 0.20) + 
+          (1.75 × 0.15) + (6.67 × 0.10)
+Overall = 1.65 + 2.06 + 0.73 + 0.26 + 0.67
+Overall = 5.37
+```
+
+### Overall Readability Score: **5.4/10**
+
+### Critical Defects
+- **Struct Loss**: User-defined structures (`Point`, `Node`, `TreeNode`) are completely unrecovered, replaced by raw pointer arithmetic (e.g., `ptr[1]` instead of `ptr->next`).
+- **Generic Naming**: Variable names are purely mechanical (`param_1`, `local_30`), stripping all semantic meaning provided in the source.
+- **Hex Literals**: Simple integers are displayed in Hex (`0x2a` vs `42`), unnecessarily complicating arithmetic logic.
+- **Non-Standard Types**: Pervasive use of `undefined4` and `undefined` renders the code invalid for standard C compilation.
+
+### Best Quality Aspect
+- **Function Decomposition (Score: 9/10)**
+- The decompiler perfectly preserved the original function boundaries and modularity, likely due to the `-O0` build, making the high-level structure easy to navigate.
+
+### Most Needs Improvement
+- **Composite Type Recovery (Score: 2/10)**
+- The failure to reconstruct `struct` types turns high-level data manipulation into low-level memory offsetting, which is the single biggest barrier to understanding the code's logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement Struct Recovery Heuristics**: Analyze access patterns (e.g., consistent offsets like `+0` and `+4`) to propose or automatically reconstruct struct definitions with field names.
+2. **Infer Variable Names**: Use context (e.g., `malloc(param * 4)`) to rename generic variables like `param_1` to semantic names like `count` or `size`.
+3. **Standardize Integer Literals**: Display small integer literals (e.g., < 1000) in decimal format by default to match typical source code style, reserving hex for addresses or bitmasks.

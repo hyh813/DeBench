@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `local_c`, `iVar1`, `uVar2`) despite `-O0 -g` debug symbols being available. Names like `local_20` in `param_malloc_free` should be `index` based on loop usage, and `auStack_2c` should be `read_buffer`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source (`param_strcpy`, `thread_compute`, `param_mutex_lock`). Action verbs and semantic purpose are clear, matching original source names precisely.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound: `0x2a` (42 success code), `0xffffffff` (-1 error), signal numbers as `10` and `0xe` instead of `SIGUSR1`/`SIGALRM`, socket constants as `2` and `1` instead of `AF_INET`/`SOCK_STREAM`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`local_c = 0; if (local_c != 0) __stack_chk_fail()`) appear in nearly every function. Multiple "WARNING: Removing unreachable block" annotations clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops use natural for/while constructs, but `param_pthread_join` uses awkward `do-while(true)` with goto label `LAB_000127d4`. Fork/exec branches are clear but verbose.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Thread functions properly extracted (`thread_compute`, `thread_sum`, `thread_increment`). Function granularity matches source well with appropriate single-responsibility separation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `param_pthread_join` has disruptive forward jumps. Signal handling while-loops are clear, but atomic section has excessive helper function calls interrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: 28+ `__sync_*` atomic helper functions represent significant bloat that should be recognized as compiler intrinsics. Stack canary code duplicates across all functions unnecessarily.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation despite debug info: `undefined4` instead of `int`, `char*`, or `size_t`. `param_strcpy` returns `size_t` but original returns `int`. Pointer types often generic `void*` instead of specific types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `stat` struct partially recovered (`sStack_68.st_size`), `sockaddr` has field access (`sa_family`, `sa_data`), but `ThreadData` struct lost—accessed via array indexing (`param_1[2]`, `param_1[0]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(undefined4 *)`, `(pthread_mutex_t *)counter_mutex`. Critical bug: `__ptr[param_1 + 0x3fffffff]` in `param_malloc_free` appears to be incorrect pointer arithmetic that could cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated function headers (`/* Function: param_strcpy @ 000110a8 */`) and warnings. No algorithm explanations, no API contracts, no documentation of error return values meaning.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library calls recognized (strcpy, pthread_create), signal/fork patterns identifiable, but no explicit pattern naming or explanation of what these idioms represent semantically.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present ("Subroutine does not return", "Removing unreachable block"), but critical issues like suspicious pointer arithmetic in `param_malloc_free` not flagged as anomalous.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"), no postcondition inference, error codes like `0xfffffffd` unexplained, no API contract recovery whatsoever.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls clear with proper names, global variables visible (`signal_received`, `shared_counter`, `atomic_counter`), callback relationships identifiable (thread functions passed to pthread_create).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 119 functions in single flat file with no logical grouping by category (library/system/thread). No header file structure, static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone—missing external function declarations, architecture-specific `__aeabi_read_tp()` calls, `__sync_*` intrinsics need proper headers. Requires extensive stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+8+6+5)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (2+6+6+2)/4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):  (7+5+4)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.29/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `local_c`, `iVar1`) despite `-g` debug symbols being available
+- **Type precision severely degraded** (`undefined4` instead of `int`/`char*`/`size_t`) losing semantic information
+- **Suspicious pointer arithmetic bug** in `param_malloc_free`: `__ptr[param_1 + 0x3fffffff]` appears incorrect
+- **No contract/assertion recovery** - error codes like `0xfffffffd` unexplained, no precondition documentation
+- **28+ redundant atomic helper functions** bloating output instead of recognizing compiler intrinsics
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names perfectly preserved from source with clear semantic meaning
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Almost no useful comments; only auto-generated headers and warnings without semantic explanation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for variable naming** - At `-O0 -g`, DWARF debug info should provide original variable names instead of `param_1`/`local_c`
+2. **Recover type information from debug metadata** - Use DWARF type entries to restore `int`, `char*`, `size_t` instead of `undefined4` generic types
+3. **Recognize and collapse compiler intrinsic patterns** - The 28+ `__sync_*` functions should be identified as atomic intrinsics and represented as `__atomic_*` builtins with comments

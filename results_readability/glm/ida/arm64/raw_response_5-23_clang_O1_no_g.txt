@@ -1,0 +1,101 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are named generically (e.g., `a1`, `v2`, `v3`) instead of semantic names like `size` or `arr`, requiring constant cross-referencing with the source to understand purpose.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `param_macro_constants`, `param_dynamic_code`), providing immediate semantic context.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Macro constants like `MAX_SIZE` are replaced with magic numbers (e.g., `1024`, `57072`), which is expected for compiled code but reduces readability compared to the source.
+
+**4. Noise Reduction:** Score: 9/10
+Justification: The decompiled code is clean with minimal compiler artifacts; `LODWORD` macros are used sparingly and don't significantly impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 10/10
+Justification: Control flow is highly natural, using standard `if/else` and `do/while` constructs that perfectly match the logic of the original C code.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are well-decomposed; the decompiler accurately reflects compiler optimizations (e.g., inlining `param_macro_constants` into `call_macro_constants`) without creating artificial fragmentation.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code is highly linear with no confusing jumps or spaghetti logic, making it easy to read from start to finish.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The code is concise with no redundant expressions or dead code, reflecting the compiler's optimization passes accurately.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: While generally accurate, some pointer types are recovered as integers (e.g., `unsigned __int64` instead of `int*` in `param_asm_clobber`), and `__int64` is used instead of standard `int64_t`.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: No complex composite types were present in the provided functions to evaluate, but pointer types are handled correctly where obvious.
+
+**11. Type Safety:** Score: 9/10
+Justification: Type safety is high; pointer arithmetic and casts are accurate and safe, with no dangerous type confusion observed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: The decompiled output lacks any comments or annotations explaining the logic, which is standard for decompilers but significantly lowers readability compared to the documented source.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: Standard library idioms like `printf` and `memcpy` are recognized and preserved, though higher-level macro patterns are naturally lost to compilation.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler clearly lists functions it failed to decompile (e.g., `memcpy`, `printf`), providing honest feedback on its limitations.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented in the decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls and global variable references are clear and easy to trace within the decompiled view.
+
+**17. Module Organization:** Score: 7/10
+Justification: The output is organized by address, which is standard for decompilers, though it doesn't group related functions logically like the source file.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses Hex-Rays specific types (`__int64`) and macros (`LODWORD`) that prevent direct compilation with standard compilers like GCC without modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 5 + 9) / 4 = 6.75
+L2_avg = (10 + 9 + 10 + 9) / 4 = 9.50
+L3_avg = (7 + 10 + 9) / 3 = 8.67
+L4_avg = (1 + 7 + 8 + 1) / 4 = 4.25
+L5_avg = (8 + 7 + 4) / 3 = 6.33
+
+Overall = (6.75 × 0.30) + (9.50 × 0.25) + (8.67 × 0.20) + 
+          (4.25 × 0.15) + (6.33 × 0.10)
+Overall = 2.025 + 2.375 + 1.734 + 0.6375 + 0.633
+Overall = 7.40
+```
+
+### Overall Readability Score: **7.4/10**
+
+### Critical Defects
+- **Variable Naming**: Variables are generic (`a1`, `v2`), losing all semantic meaning of parameters like `size` or `arr`.
+- **Macro Information Loss**: Preprocessor constants (e.g., `MAX_SIZE`) and macro functions are fully expanded into magic numbers and inline code, obscuring the original source structure.
+- **Missing Documentation**: Complete absence of comments or annotations explaining complex logic or compiler optimizations.
+- **Type Specificity**: Use of `__int64` and `LODWORD` reduces portability and standard C compliance.
+
+### Best Quality Aspect
+- **Control Flow Naturalness (10/10)**: The decompiler perfectly reconstructed natural loops and conditionals, making the execution path extremely easy to follow despite the underlying assembly.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)**: The lack of any semantic comments makes it difficult to understand the *intent* behind the code, especially where macros were expanded or constants folded.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Heuristic Variable Renaming**: Infer variable names from usage context (e.g., `v2` used in `sysconf(30)` should be named `page_size`).
+2.  **Macro Constant Recovery**: Analyze constant usage across functions to suggest `#define` replacements for magic numbers (e.g., replacing `1024` with `MAX_SIZE`).
+3.  **Standard C Types**: Provide an option to output standard C types (e.g., `int64_t`, `uint32_t`) instead of compiler-specific types like `__int64` to improve build compatibility.

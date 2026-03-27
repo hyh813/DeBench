@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `idx`, `ptr`, and parameters use `a0`, `a1`, `a2`. While some like `idx` and `ptr` are descriptive, the vast majority obscure their semantic purpose (e.g., `v0` should be `a`, `v1` should be `b` based on usage in `local_vars`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions like `double_value`, `local_vars`, `heap_basic`, `linked_list_heap` are correctly named matching source. However, runtime functions have cryptic names like `sub_105b4`, and some internal helpers like `call_weak_fn` could be better named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (representing -1) appear without explanation. String literals use raw addresses (e.g., `puts(0x13734)`). Some constants like array sizes `10` and loop bounds `0x800` are clear, but many literals lack semantic meaning.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise includes stack canary checks (`GLIBC_2.4::__stack_chk_guard`), type uncertainty annotations ("Other Possible Types"), incomplete functions like `tls_access` with `__aeabi_read_tp()`, and numerous redundant casts. The code includes many compiler-inserted artifacts that obscure logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper `for` loops and conditionals. At `-O0`, loops are correctly recovered. Minor issues include some forward jumps and the stack protection pattern adding complexity, but overall flow is readable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - none are excessively large. The decomposition matches source organization with separate functions for stack, heap, and static memory operations. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal disruption. Early returns used appropriately in error handling. Some forward jumps exist in stack protection code but don't severely impact readability.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: At `-O0`, there's minimal dead code or redundant expressions. Loop unrolling is not present (as expected). The code is clean without obvious duplication artifacts.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `unsigned int` extensively, losing signed/unsigned distinction (source uses `int`). Pointers are correctly identified as pointers. Some type precision lost - original `int` becomes `unsigned int`, and specific types like `size_t` are not recovered.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs are partially reconstructed with generic field names (`field_0`, `field_1`, `field_4`). The `Node` structure is recovered but fields are generic. Some pointer arithmetic代替 proper struct access (e.g., `heap_struct` uses array-style access instead of struct fields).
+
+**11. Type Safety:** Score: 6/10  
+Justification: Contains numerous casts between pointer types and some potentially unsafe pointer arithmetic. The `heap_nested` function has type confusion issues. However, most operations are relatively safe. Multiple cast operations add noise but don't cause severe safety issues.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are sparse, primarily showing variable stack locations (e.g., `// [bp-0x10]`). No explanation of algorithm logic, preconditions, or intent. Some auto-generated comments like "do not return" are present but provide minimal value.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns like linked lists and binary trees are present in the code but not explicitly identified or named. The decompiler doesn't highlight these as recognizable idioms. Some standard patterns are implicitly used but not documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code patterns. The dangling pointer access in `dangling_pointer` is presented without warning. No indication of undefined behavior or potential issues. The code presents everything with equal confidence.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No recovery of preconditions, postconditions, or invariants. Functions like `vla_stack` with bounds checking (`n <= 0 || n > 1000`) don't have comments explaining these constraints. No documentation of error handling expectations.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and direct. External functions marked as `extern`. However, relationships between functions (who calls whom, global variable usage) are not explicitly documented. Callback relationships like `set_global_callback` → `call_global_callback` are not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All decompiled code appears as a single monolithic block with no logical grouping. Related functions (stack, heap, static memory) are not visually separated. No header-like declarations or API boundaries indicated.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has many `extern` declarations and incomplete type definitions. Won't compile standalone without significant patching. Missing definitions for external functions like `puts`, `printf`, `malloc`. Some functions have incomplete implementations.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- Variable naming uses generic names (`v0`, `v1`, `a0`, `a1`) obscuring semantic purpose throughout
+- Struct field names are generic (`field_0`, `field_1`) losing original semantic meaning like `data`, `next`
+- No comments explaining algorithm logic, preconditions, or intent
+- Anomalies like dangling pointer access presented without warning
+- String literals use raw addresses (`0x13734`) instead of recovered strings
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions maintain appropriate granularity matching source organization. User functions are correctly named and separated. The decomposition is logical and cohesive.
+
+### Most Needs Improvement: Variable Naming Quality (4/10)
+Nearly all local variables use generic names like `v0`, `v1`, `v2` that require significant effort to understand their purpose. Combined with poor comment quality, this makes the code very difficult to analyze.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns** - `v0 = a0 * 2` should suggest `b = a * 2`, so name `v0` as `b`
+2. **Recover struct field names** from type definitions - `field_0` should be `data`, `field_4` should be `next` based on the `Node` typedef
+3. **Add semantic comments** explaining preconditions, return value meanings, and algorithm intent rather than just stack locations

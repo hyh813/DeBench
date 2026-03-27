@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v8`, `v9`, etc.). In `array_3d`, there are11 generic variables (`v1` through `v11`). In `binary_tree_sum`, dozens of variables like `v1`, `v2`, `data`, `left`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12` make the code nearly incomprehensible. Only a few like `arr`, `n`, `p`, `result` are meaningful.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `array_string`, `ptr_single`, `ptr_double`, `struct_simple`, `linked_list`, etc. Some helper functions like `sub_6D0` are generic, but the core test functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions print hardcoded results (e.g., `97`, `98` for character tests) without explaining the magic numbers. However, the string format specifiers include test labels like "DT-L1-01 (process_char)" which provide context. Some constants like `65` and `32` in character conversion are unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: SIMD vector instructions (`int32x4_t`, `vaddq_s32`, `vaddvq_s32`, `vld3q_f32`) appear extensively due to optimization. Some redundant type casts present. However, no debug instrumentation or obvious compiler artifacts beyond the expected optimization noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops are correctly recovered, but `binary_tree_sum` has extremely convoluted control flow with nested loops that are hard to follow. The function uses many labeled jumps (`LABEL_24`, `LABEL_27`, etc.) that obscure the original recursive tree traversal. At the apparent optimization level (-O3), some restructuring is expected but this exceeds reasonable complexity.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. Each function handles one test case. No 500-line monoliths. Function parameters are reasonable. The decomposition matches the source structure well.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom with early returns. However, `binary_tree_sum` has extensive forward jumps and deeply nested structures that disrupt linear reading. The `array_3d` function has a massive nested `vaddq_s32` chain that's hard to parse.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Extensive loop unrolling in `array_1d_stack`, `array_vla`, `ptr_increment`, `struct_array`, `union_array` - these process 4 elements at a time using SIMD. The `array_3d` function has massive redundant `vaddq_s32` chains. While expected at high optimization, it significantly impacts readability.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are generally precise: `char`, `short`, `int`, `long`, `float`, `double`, `long double`, `bool`. Function pointer signatures are correct. Some minor issues: `int` used where `size_t` might be better, and some pointer types could be more specific. The volatile qualifier is preserved in `volatile_access`.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery with accurate field names: `Point3D {x, y, z}`, `Rect {position, size}`, `Widget {bounds, style, id}`, `Node {data, next}`, `DNode {data, next, prev}`, `TreeNode {data, left, right}`, `Edge {dest, next}`, `Graph {adjList, numVertices}`, `Flags` bitfields, `UnionData {i, f, bytes}`, `Device {data, process}`, `State` enum. Only minor issues with some array parameter types.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Mostly type-safe with correct pointer arithmetic. Some unsafe-looking casts: `(unsigned __int8)(c - 65)` in `process_char`, `(unsigned __int64)((char *)p1 - (char *)p2) >> 2` in `ptr_diff`. The bitfield access in `struct_bitfields` uses raw bit manipulation. Overall acceptable but not perfect.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments whatsoever in the decompiled output. The function names are self-documenting, but there's no explanation of algorithms, non-obvious logic, or decompilation confidence. The original source had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly present: linked list traversal in `linked_list`, tree traversal in `binary_tree`, switch-like behavior in `enum_switch` (uses `CSWTCH_62` array). However, these are not explicitly named or documented. The original source clearly labeled each pattern.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No explicit anomaly flags. The decompilation appears confident even where there might be uncertainty. The metadata mentions "FAILED to decompile" for 7 functions but these aren't flagged in the code output itself. No warnings about indirect calls or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. No invariant recognition. The original source had clear expectations (e.g., "期望: 15" for expected values) but these aren't recovered. No documentation of error conditions or edge cases.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. The `main` function clearly calls the four test functions. Callback relationships are visible (e.g., `ptr_func_simple` calls function pointer `f`). However, no explicit documentation of who calls whom or global variable usage.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped: data type functions first, then array functions, pointer functions, composite type functions. Static functions are properly scoped. The organization mirrors the original source's test function grouping.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple issues prevent compilation: undefined string references (`asc_3078`, `asc_3208`, `asc_3340`, `asc_3518`), unresolved external functions (`__printf_chk`, `puts`, `__gmon_start__`), and the `CSWTCH_62` array is referenced but not defined. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable naming**: Completely generic variables (`v1`-`v11`, `v30`-`v44`) make `binary_tree_sum` and `array_3d` nearly incomprehensible
+- **No comments**: Zero explanatory comments despite complex algorithms
+- **Excessive loop unrolling**: The `array_3d` function has 60+ chained `vaddq_s32` calls instead of a loop
+- **Binary tree obfuscation**: `binary_tree_sum` uses goto-based control flow that's impossible to follow
+- **Missing string data**: Undefined `asc_*` references would prevent compilation
+
+### Best Quality Aspect: Type System Fidelity (8.0/10)
+- Composite types are excellently recovered with accurate field names matching the original source exactly
+
+### Most Needs Improvement: Lexical Clarity (5.5/10)
+- Variable naming is nearly unusable with generic names throughout; combined with complete lack of comments, the code is very difficult to understand semantically
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: `v6` in `array_1d_stack` is clearly `sum` based on accumulation pattern; `v3` is the loop pointer
+2. **Add algorithm comments**: Document that `binary_tree_sum` implements recursive tree traversal with explicit stack simulation
+3. **Abstract SIMD patterns**: Replace the 60+ `vaddq_s32` chain in `array_3d` with a commented loop or helper function call

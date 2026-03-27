@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10Justification: All parameters use generic names like `param_1`, `param_2`, `param_3` with no semantic meaning. Local variables are named `local_c`, `local_10`, `local_40` - completely opaque. Compare to source where parameters are clearly named `a`, `b`, `count`, `str`, etc.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately match source: `cdecl_func`, `stdcall_func`, `varargs_func`, `func_no_args`, `ret_basic_type`. Minor issue: some wrapper functions like `call_cdecl` return `undefined4` instead of `int`.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most numeric literals are clear (e.g., `0xf` = 15, `0x2a` = 42, `0x32` = 50). However, some float literals like `0x51eb851f` (3.14) and `0x40091eb8` are unexplained magic numbers without constant names.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some auto-generated warnings about unreachable blocks present but don't significantly impede reading. No excessive register spilling or debug instrumentation visible.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow preserved - if/else, loops, returns. However, some loops use awkward do-while constructs that could be for-loops (e.g., `varargs_func`). At -O0, better loop structure recovery expected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions properly separated with good granularity. Each test function (`call_cdecl`, `call_stdcall`) is correctly extracted as separate function. No monolithic code blocks.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Some forward jumps present in complex functions like `test_calling_conventions` but manageable. Early returns used appropriately.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy. Dead code from optimization not present (expected at -O0). Loop unrolling minimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation. Parameters use `undefined4` (4-byte) instead of `int`, `undefined8` for 8-byte values. No distinction between signed/unsigned. Compare to source: `int cdecl_func(int a, int b)` becomes `int cdecl_func(int param_1, int param_2)` - parameters correctly typed but return type of wrapper functions wrong.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct handling visible - `func_struct_byval` shows `local_10[4]` array but field names lost. `SmallStruct` and `LargeStruct` not recovered as named types. Compare to source: `struct BigStruct` becomes raw `int local_40[16]`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate type safety issues. Function pointers use `code *` type which is imprecise. Pointer arithmetic present but not well-typed. Some unsafe operations in `param_double_ptr` with multiple levels of indirection.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated comments present (e.g., "WARNING: Removing unreachable block"). No algorithm explanation, no decompilation confidence indicators, no API contracts. Compare to source which has extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns identified. The varargs handling, callback patterns, and calling convention tests are not recognized as idioms. Each function treated in isolation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings about unreachable blocks and indirect calls. However, no flags for unusual stack layouts, potential undefined behavior (like `param_order_dep` with undefined evaluation order), or indirect function pointer calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No pre/post conditions recovered. Functions like `func_struct_byptr` that check for NULL pointers don't have comments explaining the precondition. No documentation of what functions expect or guarantee.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships visible in code (e.g., `test_calling_conventions` calls `call_cdecl`, `varargs_func`). However, no documentation of call graph, no indication of which functions are test helpers vs. main logic.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically - all calling convention tests together, parameter passing tests together, return value tests together. However, library functions (`__adddf3`, `__floatsidf`) interleaved with user code reduces clarity.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Several compilation issues: wrapper functions return `undefined4` instead of `int` (e.g., `call_cdecl`), some functions have wrong signatures (`param_varargs` missing varargs), external dependencies on library functions not documented. Would require patches to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming completely generic (`param_1`, `param_2`, `local_c`) - no semantic recovery
+- Return types of wrapper functions incorrect (`undefined4` instead of `int`)
+- Type precision severely degraded (`undefined4`/`undefined8` instead of `int`/`double`/`long long`)
+- No comments explaining algorithm intent or test case purpose
+- Composite types not recovered (structs become raw arrays)
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names accurately reflect source: `cdecl_func`, `stdcall_func`, `varargs_func`, `func_no_args` all match original. This is the strongest area of the decompilation.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+All parameters and local variables use generic positional names. At -O0, the compiler preserves all local variables with debug info, so decompiler should be able to recover meaningful names from debug symbols or usage patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from debug symbols**: At -O0 with debug info, recover parameter names like `a`, `b`, `count`, `str` instead of `param_1`, `param_2`
+2. **Recover type information more precisely**: Use debug info to restore `int`, `double`, `long long` instead of `undefined4`/`undefined8`
+3. **Add semantic comments**: Document what each test case verifies (e.g., "Tests cdecl calling convention: caller cleans stack") and flag potential undefined behavior like the `param_order_dep` case

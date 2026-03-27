@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Only occasional better names like `idx`, `cur`, `iter`, `result` appear. Original parameters like `size`, `x`, `y` are lost to `a0`, `a1`, `a2`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User-defined functions retain original names (`param_macro_constants`, `call_asm_basic`, `param_atomic_c11`). However, runtime functions use cryptic names (`sub_401030`, `sub_4010b0`, `__x86.get_pc_thunk.bx`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `1025`, `0x200`, `57072`, `57122`. Original macros (`MAX_SIZE`, `BUFFER_COUNT`) were not recovered. Some values are correct but opaque (e.g., `57072` should be `0xDE00` or explained).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant runtime artifacts present: `_init`, `_start`, `__do_global_ctors_aux`, `deregister_tm_clones`, `frame_dummy`. Stack variables (`v0`, `v1`, `v2`) clutter simple functions. One unsupported jumpkind error appears.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most user functions use natural if-else and for loops. However, runtime functions use goto (`sub_401030`: `goto ptr[2]`). At -O0, this restructuring is unexpected and reduces clarity.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries are preserved well. Functions are appropriately sized. However, runtime initialization is fragmented into many small functions (`sub_4010f4`, `sub_401133`, etc.).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: User functions read top-to-bottom naturally. Runtime code has forward jumps disrupting flow. `test_preprocessing_features` has excessive variable assignments before printf calls.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding lost semantic information: `call_macro_constants()` returns `64` directly instead of calling `param_macro_constants(2048)`. `param_stringize()` returns `19` instead of computing `strlen` at runtime.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: All integers are `unsigned int` or `int`, losing original specificity (`int32_t`, `size_t`, `uint128_t`). Pointer types are generic (`void*`, `char*`). `param_asm_simd` uses `uint128_t*` which is non-standard.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs have meaningless names (`struct_0`, `struct_1`) and fields (`padding_0`, `field_2eb7`, `field_2e53`). Layouts appear inaccurate with large padding arrays. No original struct semantics recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(int)v1[16]`, `(char *)&v0`, `(func_t)exec_mem`. Pointer arithmetic on void pointers. `param_stringize` signature changed from `(int value)` to `()` losing parameter.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Only one anomaly marker: `[D] Unsupported jumpkind Ijk_SigTRAP`. No algorithm explanations, no parameter documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic loops and conditionals recognized. Atomic operations identified as `atomic_exchange_add`. SIMD shown as `AddV`. However, macro expansion patterns, conditional compilation branches, and token pasting semantics completely lost.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged (unsupported jumpkind). Many potential issues silent: constant-folded functions that should be dynamic, lost macro semantics, architecture-specific code paths merged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for array functions). No postconditions. No error condition documentation. `param_memory_protection` return values (`4294967295`, `4294967294`, `4294967293`) unexplained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but globals use opaque names (`g_4020cb`, `g_4020e6`, `g_4022c9`). No call graph documentation. `test_preprocessing_features` references 12+ globals without context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output. Runtime initialization mixed with user code. No logical grouping (preprocessing tests vs. assembly tests not separated). Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple `extern` declarations for undefined globals. `AddV` function undefined. `atomic_exchange_add` non-standard. Would require significant stubbing and library linking to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (2+4+4+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.89/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects
+- **Variable names lost semantic meaning**: `a0`, `a1`, `v0`, `v1` instead of `size`, `x`, `y`, `result`
+- **Constant folding destroyed runtime semantics**: `call_macro_constants()` returns `64` directly instead of calling the function
+- **Macro information completely lost**: No recovery of `MAX_SIZE`, `BUFFER_COUNT`, `SQUARE`, `MAX` macro definitions
+- **Struct recovery failed**: All structs named `struct_0`, `struct_1` with meaningless `padding_*` and `field_*` names
+- **No comments or documentation**: Zero explanation of algorithm intent, anomaly markers, or decompilation confidence
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - User-defined function names were preserved accurately (`param_macro_constants`, `param_asm_basic`, `param_atomic_c11`), maintaining semantic connection to original source.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Virtually no comments exist to explain non-trivial logic, recovered patterns, or decompilation uncertainty, making the code significantly harder to understand than necessary.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover macro semantics from constant patterns**: Detect when constants match common macro patterns (e.g., `1024` → `MAX_SIZE`, `16` → `BUFFER_COUNT`) and suggest named constants with confidence indicators.
+
+2. **Preserve function call relationships over constant folding**: Instead of folding `call_macro_constants()` to return `64`, maintain the call structure with a comment like `// Constant-folded: param_macro_constants(2048) = 64`.
+
+3. **Add semantic annotations for recovered patterns**: When detecting atomic operations, SIMD, or loop patterns, add comments like `// Recovered: atomic_fetch_add pattern` or `// Recovered: SIMD vector addition` to indicate decompilation confidence.

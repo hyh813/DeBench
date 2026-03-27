@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `v1`, `v2`, `a1`, and `result`, providing zero semantic context about their role in the C++ objects or logic.
+
+**2. Function Naming Quality:** Score: 5/10
+Justification: The code uses mangled C++ symbols (e.g., `_Z20test_cpp_member_funcv`), but the comments provide demangled names, which is the only saving grace for navigation.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers representing struct offsets (e.g., `4`, `8`, `40`, `80`) and pointer arithmetic adjustments without explanation or named constants.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise from redundant casts (e.g., `(int32_t)`, `(int32_t *)`) and low-level ABI calls (e.g., `__aeabi_dcmpgt`) obscures the high-level logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Many functions have lost their control flow entirely, returning constants (e.g., `test_cpp_operator_overload` returns `22`) or nonsensical expressions (e.g., `test_cpp_member_func`), while loops use unnatural reversed conditions (`i > -5`).
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While constructors, destructors, and thunks are separated, the main test functions are often empty or reduced to single return statements, failing to represent the actual logic decomposition.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code reads relatively linearly where logic exists, but the frequent loss of function bodies makes this metric less relevant; jumps are present but not overly chaotic.
+
+**8. Redundancy Elimination:** Score: 1/10
+Justification: The decompiler has aggressively eliminated logic to the point of failure, replacing entire function implementations with constant results (e.g., `test_cpp_template_func` returns `39`), removing all redundancy but also all code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: C++ objects are demoted to generic `int32_t*` or `void*`; even `double` template parameters are incorrectly handled as `int32_t` in function signatures.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: No C++ classes or structs are recovered; object members are accessed exclusively via raw pointer offsets (e.g., `*(int32_t *)(result2 + 40)`), completely losing the object-oriented structure.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code relies heavily on unsafe pointer arithmetic and casts (e.g., casting `int32_t*` to `char*` for `strlen`), presenting significant type confusion and safety risks.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10
+Justification: The only useful comments are the demangled function names; there are no comments explaining the complex C++ RTTI, exception handling, or virtual dispatch logic.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: C++ idioms like RAII, smart pointers, and virtual dispatch are not recognized; `std::unique_ptr` usage is reduced to raw `_Znwj` (new) and `_ZdlPv` (delete) calls without semantic context.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler confidently presents incorrect logic (e.g., `call_virtual_func` returning the object pointer instead of calling a method) without flagging these as anomalies or uncertainties.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; the contracts of the original C++ API are completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: Virtual function calls are not resolved to their targets (e.g., `call_virtual_func` fails to show the dispatch), making it impossible to trace the polymorphic call graph.
+
+**17. Module Organization:** Score: 4/10
+Justification: The output is a flat list of mangled functions; there is no logical grouping by class or namespace, making it difficult to reconstruct the original module structure.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: While the C syntax might compile, the logic is so fundamentally broken (constant returns instead of algorithms) that the resulting binary would not function like the original.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.1/10
+
+**Critical Defects:**
+- **Logic Elimination**: Functions like `test_cpp_operator_overload` and `test_cpp_template_func` are reduced to constant return values (`22`, `39`), completely removing the implementation logic.
+- **No Struct Recovery**: C++ classes (`SimpleClass`, `Container`, etc.) are entirely missing; all data access is done via raw pointer offsets (e.g., `result2 + 40`).
+- **Virtual Dispatch Failure**: The function `call_virtual_func` returns the `this` pointer instead of performing a vtable lookup, failing to model the core polymorphism behavior.
+- **Type Erasure**: All specific types are replaced by `int32_t` or pointers, losing the distinction between `int`, `double`, and object types.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 5/10)
+- **Why?** The inclusion of demangled names in comments is the only feature that allows a user to map the decompiled output back to the original source structure.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 1/10)
+- **Why?** The complete absence of C++ class/struct definitions makes the code nearly impossible to understand at a semantic level, forcing the reader to reverse-engineer object layouts from raw offsets.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Implement C++ Class Recovery**: Analyze vtables and member access patterns to reconstruct `struct` and `class` definitions with correct field offsets and types.
+2.  **Fix Logic Lifting Bugs**: Investigate why function bodies are being replaced by constant returns or garbage expressions (e.g., in `test_cpp_member_func`) and ensure the intermediate representation correctly preserves the control flow.
+3.  **Resolve Virtual Calls**: Implement vtable analysis to resolve indirect calls to their likely target functions, rather than defaulting to returning the `this` pointer or failing to decompile the call site.

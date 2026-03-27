@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `iVar2`, `local_c`, `local_18`, `local_20`) with no semantic meaning. Class member access preserves some clarity (`this->value`, `this->name`), but local variables like `capture_by_value` in lambda tests become `local_10[1]` losing all context.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions retain original names (`test_cpp_member_func`, `test_cpp_constructor`). Class methods are properly named (`SimpleClass::getValue`, `LifecycleClass::getData`). However, lambda closures become cryptic (`anon_class_8_2_336b0e7f::operator()`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `0x1234` (class ID), `0x1f` (buffer size-1), `0x32` (50 decimal), `0x96` (150 decimal), `0xfa` (250 decimal). Some recoverable from context but none documented.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive compiler warnings pollute output: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Struct...ignoring overlapping field". Multiple "Unresolved local var" comments per function add clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural flow at -O0, but `test_cpp_exception` is severely truncated (shows throw but no catch blocks). Diamond inheritance uses pointer arithmetic (`local_20._0_4_ + -0xc`) instead of clean member access.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Template instantiations cause function explosion (214 functions from 540 LOC source). Smart pointer internals are over-exposed with 20+ helper functions for `unique_ptr` that should be library code.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Some forward references exist but don't severely disrupt flow. Destructor calls appear at function ends as expected.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Extensive template code duplication between `Container<int>` and `Container<double>` (nearly identical functions). Smart pointer implementation details repeat across multiple type instantiations without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types pervasive: `undefined4`, `type`, `pointer`, `deleter_type`. Template parameters sometimes lost (`template_max<double>` returns via `extraout_r0`/`extraout_r1`). Class types mostly preserved but internal fields often generic.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Class structures recovered with field names (`SimpleClass::value`, `SimpleClass::name`). Virtual table pointers identified (`_vptr_Base`). However, diamond inheritance shows "ignoring overlapping field" warnings and uses `field_0x10`, `field_0x8` for some members.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts: `(MultiDerived *)0x0`, `(_func_int **)`, `(undefined4 **)`. Pointer arithmetic obscures type boundaries (`local_20._0_4_ + -0xc`). Raw vtable access (`(**obj->_vptr_Base)`) bypasses type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are exclusively auto-generated warnings and DWARF prototype recoveries. Zero semantic comments explaining algorithm intent, C++ feature behavior, or decompiler confidence. No documentation of exception handling or RAII patterns.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns visible but not identified: virtual dispatch shown as raw vtable calls, RAII as explicit destructor calls, lambdas as anonymous classes. No recognition of "virtual function table", "multiple inheritance this-pointer adjustment", or "diamond inheritance virtual base".
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "Unresolved local var" comments flag some issues. Diamond inheritance warnings present. However, `test_cpp_exception` truncation is NOT flagged as anomalous despite being incomplete. Lambda capture semantics not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: idx < size"). No postconditions (e.g., "ensures: instance_count decremented"). Exception handling contracts completely absent. No null-check documentation for pointer operations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear through naming. Virtual dispatch shown as raw vtable access without explaining polymorphism. Lambda-deleter relationships obscured (`lambda_at_src_5_1_cpp:445:20`). Inheritance chains visible but not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 214 functions in single output without logical grouping. Related class methods scattered. No separation between test code, class implementations, and library internals. Template instantiations mixed with hand-written code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone. Missing standard library implementations (`std::unique_ptr`, `std::type_info`). External dependencies undocumented. Requires C++ runtime (`__cxa_*` functions) without declaration.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (4+7+5+5)/4 = 5.25  → 5.25 × 0.30 = 1.575
+Level 2 Average: (6+5+7+4)/4 = 5.50  → 5.50 × 0.25 = 1.375
+Level 3 Average: (4+6+3)/3 = 4.33    → 4.33 × 0.20 = 0.867
+Level 4 Average: (2+4+5+2)/4 = 3.25  → 3.25 × 0.15 = 0.488
+Level 5 Average: (5+4+3)/3 = 4.00    → 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────────
+Overall Score: 4.70/10
+```
+
+### Overall Readability Score: **4.7/10**
+
+### Critical Defects:
+- **Variable `iVar1`, `local_c`, `local_18`** should be named based on semantic usage (e.g., `result`, `instance_count`, `capture_by_value`)
+- **`test_cpp_exception` is truncated** - shows throw but no catch blocks, making exception handling logic incomprehensible
+- **Diamond inheritance uses pointer arithmetic** (`local_20._0_4_ + -0xc`) instead of recovered struct member access
+- **Magic numbers undocumented** - `0x32`, `0x96`, `0xfa` should be constants with semantic names
+- **214 functions from 540 LOC** - template instantiation explosion creates unmanageable code volume
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Test functions and class methods retain original semantic names, making high-level code navigation possible despite other issues.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Zero semantic comments explaining C++ feature behavior, algorithm intent, or decompiler confidence; only auto-generated warnings present.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ semantic pattern recognition** - Detect virtual dispatch, RAII, lambdas, and templates to add explanatory comments rather than raw vtable/member access
+2. **Recover variable names from DWARF debug info** - At -O0 with `-g`, debug symbols contain original variable names that should be preserved instead of `iVar1`/`local_c`
+3. **Add anomaly detection for incomplete recovery** - Flag functions like `test_cpp_exception` where control flow is truncated, rather than silently producing incomplete code

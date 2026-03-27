@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `ptr`, `result`) with no semantic meaning. Only a few functions like `param_strcpy` have marginally better names (`dst`, `len`), but most obscure their purpose entirely.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions retain original names (`param_strcpy`, `call_strcmp`), but helper functions use cryptic names (`sub_400c48`, `$a.34` for signal handler). The signal handler should be named `signal_handler` based on source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout: `4294967295` (representing -1), `4294967294` (-2), `4294967293` (-3) used as error codes without explanation. Signal numbers (10, 14) not mapped to `SIGUSR1`, `SIGALRM`.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from `armg_calculate_condition()` calls throughout, redundant variable assignments (`v0 = v1; v1 = v4`), and goto labels (`LABEL_401088`). These are decompiler artifacts, not original code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Heavy reliance on `goto` statements instead of structured loops and conditionals. `armg_calculate_condition()` obscures simple boolean expressions. At `-O0`, this level of control flow degradation is unacceptable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are reasonably sized but some are fragmented. Signal handler extracted as `$a.34` but unnamed. Some caller functions (`call_strcpy`, `call_printf`) call their wrapped functions twice unnecessarily.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps and goto labels disrupt top-to-bottom reading. Nested conditionals use goto chains instead of if-else blocks, making execution paths hard to follow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate function calls in wrapper functions (`call_printf` calls `printf` twice). Redundant variable assignments (`v3 = v4; v2 = v5; v1 = v6; v0 = v7`) add no value.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `size_t` → `unsigned int`, `ssize_t` → `unsigned int`, `const char*` → `char*`. Return types often wrong (`param_strlen` returns `int` but decompiled as `int` with no parameter). `FILE*` partially recovered.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `sockaddr` struct partially recovered with field names. `FILE` struct empty (`typedef struct FILE {}`). `ThreadData` struct completely lost—fields accessed via array indexing (`ptr[0]`, `ptr[1]`, `ptr[2]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: pointer arithmetic on `unsigned int`, implicit casts throughout, `void*` used where specific types expected. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompiler confidence indicators, no API documentation. Completely bare code.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions recognized (`strcpy`, `strlen`, `pthread_create`). Threading patterns partially identified but not named. Producer-consumer pattern in `param_condition_variable` not documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: `armg_calculate_condition()` calls not explained as decompiler artifacts. No warnings about uncertain decompilation. Signal handler `$a.34` not flagged as auto-generated name.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `dst != NULL` for `param_strcpy`). No postconditions. Error return values not explained. No invariant documentation for concurrent code.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (`signal_received`, `atomic_counter`) referenced without context. No call graph or dependency information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source structure. Test functions grouped together. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile: `armg_calculate_condition()` undefined, `__atomic_fetch_add_4()` non-standard, missing includes. Requires extensive patching to build.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Weighted Contribution |
+|-------|-----------|----------------------|
+| L1: Lexical Clarity | 3+5+4+3 = 15/40 | 15 × 0.30 = 4.50 |
+| L2: Structural | 3+5+4+4 = 16/40 | 16 × 0.25 = 4.00 |
+| L3: Type System | 3+4+4 = 11/30 | 11 × 0.20 = 2.20 |
+| L4: Semantic | 1+5+2+2 = 10/40 | 10 × 0.15 = 1.50 |
+| L5: Contextual | 4+5+2 = 11/30 | 11 × 0.10 = 1.10 |
+
+**Overall Readability Score: 3.3/10**
+
+### Critical Defects:
+- **`armg_calculate_condition()` artifacts** throughout code obscure simple conditionals and prevent compilation
+- **Variable names universally generic** (`v0`, `v1`, `v2`) with no semantic meaning recoverable from usage
+- **Magic error codes** (`4294967295`, `4294967294`, `4294967293`) instead of `-1`, `-2`, `-3`
+- **Signal handler named `$a.34`** instead of `signal_handler` despite clear functionality
+- **Zero comments** despite complex concurrency and system call patterns requiring explanation
+
+### Best Quality Aspect: **Function Naming Quality (5/10)**
+- Core function names (`param_strcpy`, `param_mutex_lock`, `param_condition_variable`) were preserved from source, providing some semantic anchor points.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding complex patterns (signal handling, threading, IPC) extremely difficult without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Replace `armg_calculate_condition()` with native conditionals** - This artifact severely impacts both readability and compilability; should be converted to standard `if`/`while` expressions.
+
+2. **Implement usage-based variable naming inference** - Analyze how variables are used (e.g., `v0` passed to `strlen` should be `str` or `buffer`; loop counters should be `i`, `j`, `index`).
+
+3. **Add decompiler confidence annotations** - Flag uncertain reconstructions (e.g., `// DECOMPILER UNCERTAIN: indirect call target`) and document magic numbers with inferred meanings (e.g., `// Error code: -1 (4294967295 unsigned)`).

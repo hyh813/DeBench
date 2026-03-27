@@ -1,0 +1,106 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `a0`, `v0`, `v1`, providing no semantic context about their roles (e.g., `n`, `sum`, `result` are lost).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from symbols (e.g., `sequential_ops`, `recursion_factorial`), accurately reflecting the original source intent.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers like `4294967294` (0xFFFFFFFE), `1717986919` (division magic), and `0x40000000` without explanation or constant definitions.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: Significant noise from compiler intrinsics like `MulV`, `AddV`, `__ROL__`, and `arm64g_calculate_condition`, alongside placeholders like `[D] unsupported_Iop_SliceV128`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Loops and recursion are completely destroyed by aggressive optimization (unrolling/vectorization), resulting in massive arithmetic expressions (e.g., `recursion_factorial`) instead of recognizable control structures.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are correctly separated and boundaries are preserved, though some small stub wrappers (e.g., `sub_400e08`) exist, the granularity is generally good.
+
+**7. Code Linearization:** Score: 4/10
+Justification: While unrolled code is technically linear, it creates extremely long blocks of arithmetic (e.g., `loop_for_fixed`) that are difficult to read and trace mentally.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: The decompiler presents the redundancy introduced by optimization (unrolling) directly rather than abstracting it away, making the code verbose and repetitive.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Types are generally present (`unsigned int`, `unsigned long long`), but the decompiler often uses verbose or slightly incorrect types (e.g., `uint128_t` for 64-bit arithmetic, `unsigned int` vs `int` mismatches).
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Function pointer arrays (e.g., in `large_jump_table`) are recovered as raw `uint128_t` arrays or memory blocks rather than proper function pointer types, obscuring the high-level intent.
+
+**11. Type Safety:** Score: 5/10
+Justification: Frequent bit-masking operations (e.g., `& 4294967294`) suggest implicit truncations or casts that are not explicitly handled, and `goto a0` represents an unsafe computed jump.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output to explain the complex logic or optimization artifacts.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: The decompiler fails to recognize standard idioms; loops are unrolled into arithmetic, and recursion is flattened, losing all algorithmic context (e.g., factorial is unrecognizable).
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler explicitly marks failures with `[D] unsupported_Iop_...`, which is honest, but these markers clutter the code without offering a high-level explanation of the failure.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are inferred or documented (e.g., the `n > 0` requirement in `duffs_device` is lost).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function names provide strong implicit cross-referencing, but there are no explicit comments indicating "Called by" or "Calls" relationships.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in address order rather than logical grouping (e.g., L1, L2, L3 tests are interleaved by address), making it hard to navigate the original structure.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses non-standard intrinsics (`MulV`, `AddV`) and unsupported operations that will not compile without significant manual modification or a custom runtime.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 10 + 2 + 1) / 4 = 3.75
+L2_avg: (2 + 8 + 4 + 2) / 4 = 4.00
+L3_avg: (6 + 4 + 5) / 3 = 5.00
+L4_avg: (1 + 1 + 6 + 1) / 4 = 2.25
+L5_avg: (6 + 5 + 2) / 3 = 4.33
+
+Overall = (3.75 × 0.30) + (4.00 × 0.25) + (5.00 × 0.20) + 
+          (2.25 × 0.15) + (4.33 × 0.10)
+Overall = 1.125 + 1.00 + 1.00 + 0.3375 + 0.433
+Overall = 3.8955 ≈ 3.9/10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.9/10
+
+### Critical Defects (Bullet List)
+- **Loop Unrolling Artifacts**: Functions like `recursion_factorial` and `loop_for_fixed` are transformed into massive, unreadable arithmetic expressions and vector intrinsics (`MulV`, `AddV`).
+- **Generic Variable Naming**: All variables are renamed to generic `a0`, `v0`, etc., completely losing semantic meaning (e.g., `sum`, `i`, `n`).
+- **Magic Number Pollution**: Code is filled with unexplained constants like `4294967294` and `1717986919` which obscure the simple arithmetic logic of the source.
+- **Unsupported Operations**: The decompiler outputs `[D] unsupported_Iop_SliceV128` and similar placeholders, rendering parts of the code functionally opaque.
+- **Loss of Control Flow**: High-level control structures (loops, switches) are often replaced by low-level jump tables or computed jumps (`goto a0`), making logic hard to follow.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (10/10)**
+- **Why?** The binary symbols were preserved, allowing the decompiler to recover the exact original function names, which is the only remaining link to the source semantics.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Idiom Recognition (1/10)**
+- **Why?** The decompiler failed to abstract the optimized code back into recognizable patterns; loops and recursion are presented as raw arithmetic, making the algorithms unidentifiable.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Pattern Matching for Unrolled Loops**: Implement analysis to detect arithmetic series and unrolled loop bodies, collapsing them back into `for` or `while` loops with induction variables.
+2. **Semantic Variable Recovery**: Infer variable names from context (e.g., `a0` in `loop_for_fixed` should be `n`) or propagate type information to suggest meaningful names.
+3. **Intrinsic Lifting**: Map low-level vector intrinsics (`MulV`, `AddV`) and SIMD operations back to higher-level scalar operations or standard vector types where possible, rather than printing raw VEX IR.

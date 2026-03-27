@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `v3`, `a1`, `a2`, `a3`, `v5[8]`, `_BYTE v3[36]`. Only occasional improvements like `Value`, `Data`, `Size` appear. The decompiler makes no attempt to infer semantic meaning from usage patterns (e.g., `v3` should be `obj` based on being passed to `SimpleClass::getValue`).
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Class member functions are properly demangled and scoped (e.g., `SimpleClass::getValue`, `Derived::virtual_func`), but test functions retain mangled C++ names like `_Z20test_cpp_member_funcv`. Helper functions use generic names like `sub_D38`, `call_weak_fn`. Mixed results - member functions good, standalone functions poor.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout lack explanation: `4660` (should be named CLASS_ID = 0x1234), `0x1Fu` (31 = sizeof(name)-1), `5u`, `10`, `3` used without context. The value `4660` in `SimpleClass::getClassID` is clearly a constant but remains unnamed, forcing readers to decode hex manually.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: `JUMPOUT(0);` assembly jumps, "positive sp value has been detected" warnings, `COERCE_DOUBLE()` type coercion calls, `// attributes: thunk` comments, and many empty stub functions like `void term_proc() { ; }`. Moderate noise that requires filtering to read code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural with recognizable loops and conditionals. However, `test_cpp_constructor` uses confusing pointer arithmetic (`v6 = (LifecycleClass *)((char *)v6 + Data)`) that obscures the actual logic. At -O0, some awkward patterns remain but are mostly readable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good decomposition - each test function is separate, member functions properly extracted from classes, template instantiations are separate functions. Function granularity is appropriate with no obvious monoliths. Minor issue: some helper functions like `call_virtual_func` could be inlined.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns used appropriately in some functions. Some complex inheritance handling in `test_cpp_multiple_inheritance` disrupts flow slightly but remains traceable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: At -O0, minimal redundancy expected and delivered. No obvious dead code or duplicate expressions. Loop unrolling is minimal. Clean code in this dimension.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Types are mostly correct but generic - `int` used where `int32_t` would be precise, `unsigned int` for sizes where `size_t` appropriate. Pointers properly typed. Function pointer signatures correct. Some degradation from original but inferable.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Classes reconstructed well with proper structure: `SimpleClass`, `Base`, `Derived`, `MultiDerived`, `DiamondDerived`, `Point`, `Container<T>` all recovered with member functions. Virtual tables shown as `&off_xxx`. Inheritance relationships visible. Only minor field name losses.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with proper pointer usage. Some pointer arithmetic present but within bounds. No obvious buffer overflow patterns. Function pointers properly typed. Minor issues don't create undefined behavior risks.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Sparse comments - mostly just function addresses (e.g., `/* Function: sub_D38 @ 0xD38 */`) and parameter annotations like `// BYREF`. No algorithm explanations, no decompilation confidence indicators, no API contracts. Auto-generated noise dominates.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns recognized: virtual function calls through vtable (`*(_DWORD *)this = &off_14C48`), RAII visible in destructor calls (`LifecycleClass::~LifecycleClass`), template instantiation as separate functions. Design patterns not explicitly named but inferable.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present: "positive sp value has been detected, the output may be wrong!", "FAILED to decompile" for 28 functions. However, indirect calls not specifically flagged as uncertain, and no confidence indicators on potentially incorrect reconstructions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants recovered. Null checks visible in code (e.g., `if ( *v5 )`) but not documented as implicit contracts. Error handling visible but not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. Virtual dispatch visible through vtable usage. Inheritance relationships visible in construction sequences. However, no explicit call graph documentation or relationship annotations between functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single monolithic output file with all 218 functions. Functions grouped by address rather than logically. No namespace structure recovery, no header file separation. Arbitrary organization that matches binary layout not source structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code would not compile standalone - many undefined references to standard library (`std::ios_base::Init`, `operator new`, `printf`), no include statements, mangled names would need demangling. Requires significant patching to become compilable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`v1`, `v2`, `a1`, `a2`) with no semantic inference from usage patterns
+- Test functions retain mangled C++ names (`_Z20test_cpp_member_funcv`) instead of demangled names
+- Magic number `4660` in `getClassID()` should be named constant `CLASS_ID = 0x1234`
+- Sparse comments provide only addresses, no algorithm explanations or API contracts
+- Module organization is single monolithic file matching binary layout, not source organization
+
+**Best Quality Aspect:** Composite Type Recovery (8/10)  
+Classes are well-reconstructed with proper member function associations, inheritance relationships visible, and vtables shown. The decompiler correctly recovers the class hierarchy from the binary.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Generic single-letter variable names with numeric suffixes make code extremely difficult to follow. The decompiler should infer names from usage patterns (e.g., `v3` passed to `SimpleClass::getValue` → `obj`).
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage**: When a variable is passed to `ClassName::method()`, use `obj` or `instance`; when used in size calculations, use `size` or `count`
+2. **Demangle all function names**: Convert `_Z20test_cpp_member_funcv` to `test_cpp_member_func()` consistently
+3. **Detect and name magic numbers**: Identify constants like `0x1234` and suggest `CLASS_ID` or similar meaningful names based on context

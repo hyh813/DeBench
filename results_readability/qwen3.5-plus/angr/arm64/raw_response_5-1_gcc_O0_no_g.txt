@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v0`, `v1`, `v2`, `ptr`) with no semantic meaning. Original variables like `value`, `name`, `data`, `size`, `result` are completely lost. Even test function returns (`r1`, `r2`, `r3`) become `v1`, `v2`, `v3`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions retain mangled C++ names (`_Z20test_cpp_member_funcv`), but many are generic (`sub_401854`, `$x`). Class methods like `SimpleClass::getValue` are partially recovered but not demangled to readable form.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers abound without explanation: `4294967295` (UINT_MAX), `2305843009213693950`, `18446744073709551612`. String literals referenced via globals (`g_4045e8`) instead of inline. Bit operations like `__ROL__(v4, 2) & 18446744073709551612` are opaque.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks repeat in every function (`if (v5 == *((long long *)&__stack_chk_guard))`). Frame pointer setup (`v0 = &v6`) clutters each function. Redundant calls like `register_tm_clones()` called twice in `frame_dummy`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses `goto` for conditionals (e.g., `goto LABEL_40262c` in `test_cpp_rtti`). Exception handling becomes label-based spaghetti. Loops partially recovered but often as manual iteration with `i += 1`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Template instantiations explode into 20+ separate functions for `unique_ptr` alone. Test functions are reasonable size, but helper functions are over-fragmented (e.g., `_M_ptr`, `_M_deleter`, `_M_head` as separate functions).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Forward jumps with labels (`LABEL_40262c`, `LABEL_402670`) disrupt flow. Exception handling creates non-linear paths. Most functions read top-to-bottom otherwise.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate function calls (`register_tm_clones()` twice). Stack canary checks repeat identically across all functions. Template code shows massive duplication across int/double instantiations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: C++ types degraded to primitives (`int` → `unsigned int`, `size_t` → `unsigned long long`). `std::unique_ptr` becomes `char *` with manual dereferencing. Class `this` pointers often `void* this`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs named generically (`struct_0`, `struct_1`) with fields `field_0`, `field_8`. Class layouts partially recovered but field names lost (`ptr->field_8` instead of `ptr->multiplier`). Vtable structures not clearly identified.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(unsigned long long)`, `(long long)`, `(char *)`. Pointer arithmetic on void pointers throughout. Virtual function calls use raw pointer dereferencing (`(*((long long *)*((long long *)&v1)))(arg_0, arg_1)`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments present. Only auto-generated function headers. No algorithm explanations, confidence indicators, or API documentation. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns (RAII, virtual dispatch, smart pointers) not identified. Template patterns expanded but not recognized as templates. Lambda captured variables become struct fields without explanation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly warnings for indirect calls or unresolved symbols. Stack canary checks present but not explained as security features. Virtual thunks present but not flagged as compiler-generated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Exception contracts not recovered (try/catch becomes raw `__cxa_throw`). No invariant documentation for class methods.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but inheritance relationships obscured. Virtual dispatch not clearly indicated (vtable calls look like raw pointer dereferences). Callback relationships not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 100+ functions in single output file. No logical grouping by class or feature test. Static initialization functions mixed with test code arbitrarily.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References external symbols (`operatornew`, `__cxa_throw`, `__gmon_start__`) without declarations. Would require extensive stubs and C++ runtime to compile. Dependencies not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+3+4)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+4+3)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.367
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.76/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named semantically (e.g., `obj_ptr`, `result`, `index`) based on usage context
+- **Mangled function names** like `_Z20test_cpp_member_funcv` not demangled to `test_cpp_member_func()`
+- **Struct fields** all generic (`field_0`, `field_8`) losing class member semantics (`value`, `multiplier`, `data`)
+- **Control flow uses goto** for exception handling instead of try/catch reconstruction
+- **No comments** explaining C++ idioms (RAII, virtual dispatch, template instantiation)
+
+### Best Quality Aspect:
+- **Control Flow Naturalness (5/10)** - Despite issues, basic function structure and sequential logic is mostly preserved; loops are partially recognizable
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero semantic documentation; decompiler provides no guidance on C++ constructs, confidence levels, or recovered patterns
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ name demangling** - Automatically convert mangled names (`_Z20test_cpp_member_funcv`) to readable form (`test_cpp_member_func`)
+2. **Add semantic variable inference** - Use data flow analysis to name variables based on usage (e.g., variables used in size comparisons → `size`, `length`)
+3. **Recover C++ idioms with annotations** - Flag virtual calls, smart pointer patterns, and template instantiations with explanatory comments indicating decompiler confidence

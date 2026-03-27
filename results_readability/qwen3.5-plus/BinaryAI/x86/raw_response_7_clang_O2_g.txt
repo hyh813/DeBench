@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `uVar2`, `local_2c`) with no semantic meaning recovered. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions retained original names (`param_fake_branch`, `call_opaque_predicate`), but helper functions use generic names (`FUN_00011030`, `FUN_000110c0`). External functions properly marked with `<EXTERNAL>` prefix.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0x23`, `0x1e` appear without explanation. Some are recoverable (0x14=20=expected return), but no named constants were recovered from the original source's documented expected values.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Compiler artifacts present (`__x86_get_pc_thunk_*` functions, `deregister_tm_clones`) but don't impede core logic reading. Some redundant type casts in arithmetic operations.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as while/do-while but `param_tail_call_optimized` has completely incorrect logic (complex arithmetic instead of recursion). `param_opaque_predicate` condition is transformed into unreadable expression `(uVar1 ^ 1 | uVar6 * uVar6 ^ ...)`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized with single responsibility. However, `call_*` functions are constant-folded (return literals instead of calling underlying functions), losing call relationship visibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. No excessive gotos. Nested conditionals in `param_vectorized_loop` are deep but structurally accurate to optimization.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Compiler constant folding preserved (call functions return pre-computed values). No obvious dead code. Loop unrolling in `param_vectorized_loop` is present but reflects actual optimized binary.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed types (`int`, `uint`, `undefined4`, `byte`, `size_t`). Some type confusion exists (`param_1` as `uint` in some functions, `int` in others). Original `char*` vs `byte*` distinctions partially preserved.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `jmp_buf` handled as opaque `__jmp_buf_tag*`. No complex structs in this code to recover. Bit-field struct in `param_implementation_defined` was constant-folded away entirely.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe casts present (`(undefined4)(10 / (longlong)param_1)`). Pointer arithmetic in `param_vectorized_loop` uses raw offsets. Signal handler types cast to `(__sighandler_t)0x0`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **ZERO comments** in decompiled output. Original source had extensive documentation explaining obfuscation techniques, expected values, and test scenarios. Complete semantic information loss.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption pattern not labeled. No design patterns or algorithm names recovered despite clear patterns in source.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: **Critical**: `param_tail_call_optimized` decompilation is semantically wrong (complex multiplication instead of recursion) but no warning flag. `param_fake_branch` fake branches eliminated without noting optimization removed them.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note x≠0 for normal path). Signal handling contracts not explained. Return value meanings not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but call graph not documented. Global variables (`jmp_buffer`, `div_zero_caught`) referenced without context. `test_obf_opt_edge` calls visible but relationships not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by test category (OBF/OPT/EDGE). Original source's section organization (7.1, 7.2, 7.3) completely lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Claims compilation success but has type issues (`undefined4` is Ghidra-specific). External dependencies marked but no build instructions. Would require significant patching for standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+7+5+7)/4 = 5.5
+L2_avg = (5+7+7+8)/4 = 6.75
+L3_avg = (6+7+6)/3 = 6.33
+L4_avg = (1+3+2+2)/4 = 2.0
+L5_avg = (5+5+6)/3 = 5.33
+
+Overall = (5.5 × 0.30) + (6.75 × 0.25) + (6.33 × 0.20) + (2.0 × 0.15) + (5.33 × 0.10)
+        = 1.65 + 1.6875 + 1.266 + 0.3 + 0.533
+        = 5.44/10
+```
+
+**Overall Readability Score: 5.4/10**
+
+### Critical Defects:
+- **`param_tail_call_optimized` logic is completely wrong** - shows complex arithmetic instead of tail recursion, fundamentally incorrect decompilation
+- **Zero comments** - all original documentation about obfuscation techniques, expected values, and test scenarios lost
+- **`param_fake_branch` fake branches eliminated** - compiler optimization removed dead code but decompiler didn't indicate this transformation
+- **Generic variable names everywhere** - `param_1`, `iVar1`, `uVar2` provide no semantic information
+- **Call functions constant-folded** - `call_fake_branch` returns `10` directly instead of showing `param_fake_branch(10)` call relationship
+
+### Best Quality Aspect:
+- **Redundancy Elimination (8/10)** - No dead code present; compiler optimizations like constant folding are preserved cleanly without introducing spurious artifacts
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation means readers cannot understand the purpose of obfuscation techniques, expected test values, or why certain patterns exist
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag semantic mismatches** - When decompiled logic doesn't match expected patterns (like tail recursion becoming arithmetic), add uncertainty annotations
+2. **Recover and preserve source comments** - If debug symbols (-g) are available, extract and embed original comments in decompiled output
+3. **Infer variable names from usage context** - Variables used in string operations should be named `buffer`/`encrypted`, loop counters should be `i`/`index`, etc.

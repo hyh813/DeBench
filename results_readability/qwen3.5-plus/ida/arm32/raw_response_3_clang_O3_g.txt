@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3` throughout (e.g., `heap_basic` uses `v2`, `v3`, `v4`, `v5`), making it impossible to infer semantic purpose without tracing usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`local_vars`, `heap_basic`, `test_stack_memory`), but some runtime helpers use generic names like `sub_568` and `call_weak_fn`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xFFFFFFF8`, `0xFFFFFFFD` appear in address calculations without explanation; some constants folded (e.g., `return 20` instead of showing computation).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains compiler artifacts like `MEMORY[0xFFFF0FC0]` for atomics, redundant casts (`(_DWORD *)`), and stack frame comments (`[sp-4h] [bp-4h]`) that clutter reading.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple loops converted to do-while with manual counters (e.g., `heap_basic`); some functions constant-folded entirely (`tree_heap_traversal` returns `60` directly), losing original structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly; however, aggressive optimization collapsed multi-line logic into single returns (e.g., `local_struct` returns `3 * x` instead of showing struct operations).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom; some functions use nested do-while loops for simple for-loops, but no excessive goto usage observed.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding removed original computation patterns (e.g., `test_stack_memory` prints pre-computed values); loop unrolling not recognized, showing raw iteration.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Type degradation evident: `file_scope_static` declared as `int *` instead of `int`; `global_heap_ptr` cast to `(int)` losing pointer semantics; many `void *` where specific types expected.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Node` struct partially recovered with `data` and `next` fields, but accessed via array indexing (`v2[1]`) in `linked_list_heap`; `TreeNode` struct recovered but `tree_heap_traversal` constant-folded.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `file_scope_static = (int *)val` (int to pointer), `global_heap_ptr = (int)p` (pointer to int); `dangling_pointer` returns dereferenced freed memory without warning.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments; only stack frame annotations (`[sp+0h] [bp+0h] BYREF`); no algorithm explanations or decompilation confidence indicators for complex patterns.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Memory allocation patterns (`malloc`/`free` pairs) visible but not labeled; linked list traversal in `linked_list_heap` not identified as such; no pattern naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: 18 functions marked "FAILED to decompile" but no warnings for dangerous patterns like `dangling_pointer` accessing freed memory or `double_free` logic loss.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `n > 0` requirements); null checks present but not documented as contracts; error return values (-1, -2) unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved (`test_stack_memory` calls `local_vars`); global variables referenced (`global_counter`, `extern_global_var`); callback relationships visible but not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically (stack, heap, static tests together); static functions preserved; but all in single output without header file separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 18 external functions failed decompilation (`__imp_malloc`, `__imp_printf`, etc.); requires stub implementations; atomic operations use `MEMORY[]` pseudo-instructions that won't compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+7+7+5)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (3+4+3+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (6+7+4)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 5.31/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **Variable names all generic** (`v0`, `v1`, `v2`) obscuring semantic purpose throughout all functions
+- **Type corruption** in `file_scope_static` (int→int*) and `global_heap_ptr` (pointer→int) creating unsafe code
+- **18 external functions failed decompilation** requiring manual stub implementation
+- **Constant folding destroyed original logic** (e.g., `tree_heap_traversal` returns `60` instead of showing tree operations)
+- **No anomaly warnings** for dangerous patterns like `dangling_pointer` accessing freed memory
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No documentation of preconditions, postconditions, or error semantics; critical for understanding function contracts
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Variables used in size checks should be named `size`/`count`, pointers should indicate target type
+2. **Add decompilation confidence annotations** - Flag constant-folded functions with comments like "OPTIMIZED: original computation folded by compiler"
+3. **Recover type information from context** - Analyze pointer arithmetic and field access to restore correct types instead of defaulting to `int*` or `void*`

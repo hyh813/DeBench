@@ -1,0 +1,88 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `piVar2`, `local_4e0`. No semantic meaning is recovered - even simple counters like loop iterators are `iVar1` rather than descriptive names like `i` or `index`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. However, some internal functions like `FUN_00011608` remain unnamed, and library stubs are marked as `<EXTERNAL>`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Test functions are inlined with hardcoded literal values (e.g., `0x61` for 'a', `0xb` for 11) that obscure the original computation. Magic numbers like `0x2c` (44 bytes for 10-element int array row) appear without explanation. The decompiler computed results but didn't preserve the computation logic.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: (1) Inlined test functions with 500+ lines of setup code, (2) Full implementations of floating-point library functions (__muldf3, __adddf3, __mulsf3, etc. - 1000+ lines), (3) Startup/initialization code (_start, _init, register_tm_clones), (4) External function stubs. The actual test functions are buried in noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops and conditionals are generally recognizable. However, some patterns are unusual: loops use `param_2 + -1` instead of `param_2--`, and array access uses negative indices like `*(int *)(iVar3 + iVar2 * -4)`. At -O0, these should be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are preserved correctly. The main test functions (`test_data_types_l1`, `test_array_types`, etc.) are separate from the functions they test. However, the inlined test functions are excessively large (test_array_types is ~200 lines).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in some functions (e.g., `array_1d_stack` returns 0 for empty array). Some computed goto patterns in floating-point libraries but those are external code.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some dead code exists - for example, in test functions, values are computed but not always used. The floating-point library functions contain some redundant patterns. However, the main test logic is relatively clean.
+
+### LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: (1) All integers are `int` or `undefined4` instead of `short`, `long`, etc., (2) Pointers are generic `int*` without distinction (e.g., `int*` for both `short*` and `long*`), (3) Floating-point values use `undefined4`/`undefined8`, (4) No `const` or `volatile` qualifiers recovered. The original had 11 distinct data types; decompiled has 2-3.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs are completely lost - accessed as raw pointer arithmetic: `param_1[1] + *param_1 + param_1[2]` instead of `p->x + p->y + p->z`. Nested structs use hardcoded offsets like `param_1 + 0x14`. Unions partially recognized via conditional logic but field names lost. Bitfields use bit manipulation but without field names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: (1) Extensive pointer arithmetic without bounds, (2) Raw memory access via `*(int *)(param_1 + offset)`, (3) No type distinction between different pointer levels, (4) Function pointers use generic `code*` type. The original had type-safe operations; decompiled has C-style unsafe patterns.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Only the standard BinaryAI header comment present. No comments explaining algorithm intent, parameter purposes, return value meanings, or any other semantic information. The source had extensive comments (830 lines); decompiled has none.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The source contains clear patterns (linked list traversal, binary tree recursion, state machine via enum switch) but these are not recognized or named. Just raw control flow.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. The source had intentional out-of-bounds access (array_oob) but decompiler presents it as normal code without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The source had clear function contracts (e.g., "requires: ptr != NULL") but none recovered. No error condition documentation either.
+
+### LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls exist but relationships aren't documented. No indication of which functions call which, callback relationships, or global variable usage. The source showed clear caller/callee relationships through test functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by address but this is just binary layout, not meaningful organization. The original grouped by type (data types, arrays, pointers, composite types); decompiled mixes them arbitrarily.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will not compile. Requires: (1) External declarations for printf, puts, memset, etc., (2) Floating-point library implementations, (3) Startup code. The test functions have hardcoded stack allocations that won't work.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `iVar1`, `local_4e0`) - no semantic recovery
+- Struct/union types completely lost - accessed as raw pointer arithmetic with hardcoded offsets
+- Type precision severely degraded - 11 distinct data types reduced to 2-3 generic types
+- Test functions inlined with computed values instead of preserving computation logic
+- No comments or documentation despite 830-line commented source
+- Severe noise from floating-point library functions (1000+ lines) obscuring actual code
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Most function names match the original source exactly (e.g., `process_char`, `array_1d_stack`, `ptr_single`), making it easy to locate specific functions.
+
+**Most Needs Improvement:** Type System Fidelity (3.3/10)  
+The decompiler lost almost all type information - structs became pointer arithmetic, all integers became `int`, floating-point became `undefined4/8`. This makes the code dangerous to modify.
+
+**Top 3 Recommendations:**
+1. **Recover struct types** from memory access patterns - field names and nested structure layouts should be inferred from consistent offset patterns
+2. **Preserve computation logic** in test functions rather than inlining computed values - show `x * 2 + 1` not `11`
+3. **Add semantic variable naming** - infer names from usage patterns (e.g., loop counters should be `i`, array parameters should indicate element type)

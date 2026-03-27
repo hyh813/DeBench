@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6` and parameters `a1`, `a2`, `a3`, `a4`. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier`. Only `result` and `str` are somewhat descriptive.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most functions have demangled names matching source (e.g., `test_cpp_member_func`, `test_cpp_exception`). However, helper function `function_10a9c` lacks semantic meaning, and some internal class methods use only mangled names without full demangling context.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers: `0x125c` (should be 4704 - expected return), `21` (constructor result), `1000` (multiplier), `0x40040000` (double encoding). The original source had clear constants like `0x1234` for class ID.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts. No debug traces, redundant casts are minimal. The code is relatively clean except for some unnecessary intermediate variables in complex functions.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with standard if-else and loop constructs. The exception handling code (`_Z18test_cpp_exceptionv`) has some goto-like jumps but is manageable. At -O0, control flow should closely match source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-80 lines each). Each test function is separate. Some virtual function implementations are fragmented (e.g., destructors split into D1, D2, D0 variants), which is a compiler artifact but acceptable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. The exception handling has some backward jumps. The virtual function thunks (`_ZTv0_n12_N14DiamondDerived4funcEv`) add complexity but are necessary for multiple inheritance.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code. Some common subexpression patterns in virtual function implementations but nothing severe. Template instantiations are properly deduplicated.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently (good for arm64). However, loses precision: `size_t` becomes `int32_t`, `bool` becomes `int32_t`. Function parameters use generic `int32_t` instead of proper pointer types (e.g., `Base*` should be explicit).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Virtual tables are reconstructed as `struct vtable_XX_type` with function pointers. However, class data members are not recovered - the decompiled code uses raw pointer arithmetic (e.g., `*(int32_t *)(v1 + 4 + *(int32_t *)(v1 - 12))`) instead of named struct fields.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int32_t)a1`, `(int32_t)&g17`, `(int32_t *)v4`. Pointer arithmetic is error-prone (e.g., `*(int32_t *)(v1 - 12)`). No bounds checking in array operations like `Container<int>::push`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only basic demangling comments present (e.g., "// Demangled: test_cpp_member_func()"). No explanation of algorithm logic, no uncertainty indicators, no recovery confidence levels. Original source had extensive Chinese comments explaining each feature.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Virtual table mechanism is recognized and labeled. Some C++ idioms like unique_ptr destructor patterns are identified. However, patterns like RAII, rule of three/five, and exception handling are not explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about indirect virtual calls that couldn't be resolved. No indication of uncertain type deductions. The complex this-pointer adjustments in multiple inheritance are presented as-is without flags.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had clear expectations (e.g., "期望: 4704") which are completely lost. No documentation of null checks, bounds validation, or error conditions.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Virtual table references are documented (e.g., "From class: Base"). Function call relationships are traceable through the code. However, no explicit call graph or usage documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically (test functions, virtual methods, template instantiations). Global variables are declared together. However, all in single file with no namespace recovery.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code has many undefined references (`_Znwj`, `_ZdlPvj`, `__cxa_throw`, etc.). Requires substantial stubs. The decompiled code includes "Dynamically Linked Functions Without Header" section showing external dependencies but doesn't provide them.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v1`-`v6`, `a1`-`a4`) losing all semantic meaning from original source
+- Composite types (class data members) not recovered - uses raw pointer arithmetic like `*(int32_t *)(v1 + 4)` instead of `this->multiplier`
+- No comments explaining C++ idioms (virtual tables, multiple inheritance this-pointer adjustment, exception handling)
+- Magic numbers like `0x125c`, `21`, `1000` unexplained - original had clear expected return values
+- Type safety issues: unsafe casts between pointers and integers throughout
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- At -O0 optimization, the decompiled control flow closely matches the original source structure with standard if-else and loop constructs
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- All variables use generic names that completely obscure their semantic purpose. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value`, `capture_by_ref` that are completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `v1 + 4` accessing offset suggests field access, `v1 > v2` suggests comparison) to suggest semantic names
+2. **Recover composite type layouts**: Instead of raw pointer arithmetic, reconstruct struct/class layouts with field names based on vtable offsets and member access patterns
+3. **Add semantic comments for C++ idioms**: Document virtual table usage, this-pointer adjustments in multiple inheritance, and exception handling patterns with explanations of what the original code likely looked like

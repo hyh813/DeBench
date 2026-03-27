@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v4` throughout (e.g., `param_opaque_predicate` uses `v1`, `v2`, `v3`, `v4`), making it impossible to infer semantic purpose without tracing usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names are preserved (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`), which significantly aids navigation and understanding of program structure.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5A`, `0x14u`, `0x1Fu` appear without explanation; however, some values like `10`, `20`, `225` are inferable from context as expected return values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary code (`__readgsdword(0x14u)`), calling convention annotations (`__usercall`, `__cdecl`), and register hints (`@<eax>`, `@<ebx>`) clutter the output without adding semantic value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops are recovered as `do-while` constructs, but critical control flow is lost—`param_fake_branch` eliminates the fake branches entirely (should preserve dead code at -O0), and `param_opaque_predicate` shows optimization artifacts inconsistent with debug build.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries are preserved, but semantic logic is lost—`param_buffer_overflow_stack` reduces to `return a1;` losing the overflow demonstration, and `call_fake_branch` returns constant `10` instead of calling the function.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with appropriate loop structures, but some functions like `test_obf_opt_edge` have excessive temporary variables (`v0` through `v11`) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive constant folding occurred where it shouldn't at -O0—`call_fake_branch`, `call_opaque_predicate`, `call_instruction_substitution` all return pre-computed constants instead of actual function calls, losing test semantics.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types (`int`, `char*`, `size_t`) are present but lack precision (no `int32_t`, `uint8_t`); `__int64` appears inconsistently for return types (e.g., `param_string_encryption` returns `__int64` when source returns `int`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The bitfield struct from `param_implementation_defined` is completely lost—the function returns constant `43` instead of computing with struct fields; no struct definitions appear in output.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Function pointer casts appear (`(__sighandler_t)div_zero_handler`) which are necessary but unsafe; pointer arithmetic is minimal but type-erased in several locations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explain obfuscation techniques, edge case handling, or decompiler confidence; only auto-generated function headers exist with no semantic documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Obfuscation patterns (fake branches, opaque predicates, instruction substitution) are not identified or labeled; decompiler treats them as regular code without noting their protective intent.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations are listed at end ("FAILED to decompile: __libc_start_main"), but suspicious simplifications (dead code elimination at -O0) are not flagged as potential accuracy issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note `x` can be zero to trigger handler); no postconditions or error condition documentation exists.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships aren't documented—no indication which functions are test harnesses vs. test targets, and global variable usage (`encrypted_0`, `jmp_buffer`) lacks context.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order without logical grouping; related functions (`param_*` and `call_*` pairs) are not colocated, and no namespace/module structure exists.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 12 functions failed to decompile (library functions like `malloc`, `signal`, `strlen`); code cannot compile standalone without significant stubbing and external dependency resolution.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (5+3+6)/3   = 4.67 × 0.20 = 0.933
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.63/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Semantic loss in `param_fake_branch`**: Dead code branches completely eliminated despite -O0 compilation (should preserve for obfuscation testing)
+- **Constant folding in caller functions**: `call_fake_branch`, `call_opaque_predicate` return pre-computed constants instead of actual function calls, losing test framework semantics
+- **Architecture mismatch**: Original claims ARM64 but decompiled code shows x86 registers (eax, ebx, esp) and calling conventions
+- **Struct/bitfield recovery failure**: `param_implementation_defined` bitfield struct completely lost, function returns constant `43`
+- **12 library functions failed**: Critical functions (`malloc`, `signal`, `strlen`, `setjmp`) not decompiled, preventing standalone compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original semantic function names preserved throughout, enabling navigation and understanding of program structure despite other deficiencies.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero documentation of obfuscation techniques, edge case handling, or decompiler confidence; critical for understanding intentionally complex code.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve dead code at debug optimization levels** - Detect -O0 compilation and avoid eliminating branches that appear unreachable but serve obfuscation purposes
+2. **Add confidence annotations for aggressive simplifications** - Flag when constant folding or dead code elimination occurs with warnings about potential semantic loss
+3. **Recover and document composite types from stack layouts** - Analyze struct access patterns to reconstruct bitfield and struct definitions, especially for implementation-defined behavior tests

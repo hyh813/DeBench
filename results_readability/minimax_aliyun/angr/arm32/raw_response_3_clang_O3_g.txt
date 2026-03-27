@@ -1,0 +1,93 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, v2, ptr, i, idx, result) with no semantic meaning. Compare: source uses `arr`, `n`, `sum` while decompiled uses `v0`, `v4`, `ptr`. The only exception is some test functions where names like `pid` appear.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - test functions correctly named (`test_stack_memory`, `test_heap_memory`), but many utility functions use cryptic addresses (`sub_400568`, `sub_40068c`). Some source functions recovered (`local_vars`, `heap_basic`) while others like `static_helper` lost their names entirely.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently as error return without explanation. Some literals like `42` in printf are correct but unexplained. The decompiler doesn't recover constant names like `NULL` or recognize error codes.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution from decompilation artifacts including: `armg_calculate_condition` function calls, register hints in comments (r0, r4, lr), strange type casts like `(Not Conv(32I->1I, ...))`, and goto-based control flow that obscures logic. The code is nearly unreadable.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive use of goto statements instead of natural loops/conditionals. Example: `vla_stack` uses complex goto patterns with `armg_calculate_condition` instead of simple if/while. Even at -O0, the decompiled code is harder to follow than the original.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions generally appropriately sized. However, `test_heap_memory` at ~150 lines is quite large. Some inlining occurred (e.g., `tree_heap_traversal` returns constant 60). Parameter lists generally reasonable but expose implementation details.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Poor linearization with frequent forward jumps and goto statements disrupting flow. The `vla_stack` and `alloca_usage` functions have complex nested goto patterns that make top-to-bottom reading impossible.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some dead code present (e.g., `call_static_func` computes `1 | a0 * 2` which could be simplified). Loop unrolling is minimal at -O0. Some redundant variable assignments but not severe.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `unsigned int` where source uses `int`, `size_t`, or `char*`. Function parameters often wrong (e.g., `memop_memset` takes 4 params instead of 3). Pointer types frequently lost (many `void*` instead of `int*`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Inconsistent struct recovery - some have meaningful names (`struct_0` with `field_0`, `field_4` for Node), others completely generic. The `Point` struct from source was recovered as part of `heap_struct` but field names lost. Nested structs handled poorly.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations: pointer arithmetic without bounds checking, casting between incompatible types (e.g., `unsigned int ptr[10]` used as pointer). The `dangling_pointer` function has severe issues - returns `*(v2)` after free which is undefined behavior but not flagged.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Register allocation hints (e.g., `// r0`, `// lr`) are noise, not helpful. No explanation of algorithm intent, preconditions, or potential issues. The decompiler provides no guidance to the analyst.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized but not named - e.g., linked list traversal is present but not labeled. Memory allocation/free pairs visible but not highlighted. No recognition of common patterns like VLA, alloca, or TLS.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for suspicious code. The `dangling_pointer` function accesses freed memory but no warning. The `double_free` function is completely wrong (returns -2 without actually double-freeing). No indication of undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions (e.g., "requires: n > 0"), postconditions, or invariants. Error handling paths visible but not documented. The decompiler doesn't communicate what the function guarantees.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: External functions declared but relationships not documented. No indication of who calls whom. The `extern_function` and `extern_global_var` are declared but their sources unknown. Callback relationships not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions logically grouped by category (stack, heap, static, memory ops). Static functions properly marked. However, the organization is arbitrary - doesn't match source file structure. Many unrelated functions interleaved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code would not compile as-is. Missing includes, wrong function signatures, undefined types like `Node`, `TreeNode`, `Point`. External declarations incomplete. Would require significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (v0, v1, ptr) making code flow impossible to trace
+- **Noise artifacts**: `armg_calculate_condition`, register hints, and goto-based control flow create severe readability barriers
+- **Function naming**: Many functions retain addresses (sub_400xxx) instead of semantic names
+- **Type precision**: Excessive use of `unsigned int` and `void*` loses original type information
+- **No anomaly detection**: Dangerous patterns like dangling pointers and potential double-free not flagged
+
+### Best Quality Aspect: Function Decomposition (6/10)
+- Functions are appropriately sized with reasonable parameter lists
+- Test functions retain their original names and structure
+- Basic function boundaries preserved
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Every meaningful variable name was replaced with generic identifiers (v0, v1, ptr, i)
+- Compare source: `arr`, `n`, `sum`, `leak` vs decompiled: `v0`, `v4`, `v1`, `ptr`
+- This single issue makes the entire decompiled code nearly unusable for analysis
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: If a variable is used as array index, name it `idx` or `index`; if it's a size parameter, use `n` or `size`
+2. **Eliminate decompilation noise**: Remove `armg_calculate_condition` artifacts, register hints, and convert goto-based control flow to natural if/while/for constructs
+3. **Recover function names from debug symbols**: At -O0 -g, debug symbols contain full function names - use them instead of addresses

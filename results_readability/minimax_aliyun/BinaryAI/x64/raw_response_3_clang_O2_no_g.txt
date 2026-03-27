@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `param_1`, `lVar1`, `iVar2`, `piVar1`, `uVar1`, `puVar2`, `pvVar2`. These obscure the semantic purpose of each variable. For example, in `local_vars`, the parameter should be named `x` but is `param_1`. In `heap_basic`, variables like `piVar1`, `iVar3`, `iVar4` make it nearly impossible to track which is the loop index vs. the result.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions are correctly named (local_vars, local_array, heap_basic, heap_calloc, etc.) matching the source. However, some functions like `FUN_00101020` are generic, and the parameter-based naming in functions like `call_static_func` doesn't indicate it's calling an internal static helper. The core test functions are well-named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with unexplained magic numbers: `0x14` (20), `0x2a` (42), `0xf` (15), `0xffffffff` (-1), `0x10`, `0x80`. For example, in `local_vars`: `return param_1 * 2 + 10;` should explain what 10 represents. The hardcoded values in printf statements like `0x14` for expected output are not explained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts like dead code or debug instrumentation. Some redundant casts present (e.g., `(ulong)(uint)(int)local_408`). The code is relatively clean from pure noise, though the extensive loop unrolling in functions like `large_stack_frame` creates visual noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow (if/else, loops) is preserved and readable. However, the extensive loop unrolling in `large_stack_frame`, `vla_stack`, and `heap_basic` makes the logic hard to follow. The original `for (int i = 0; i < 10; i++)` loop is expanded into 50+ lines of repetitive code. At -O0, this unrolling is unexpected.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions like `large_stack_frame` (180+ lines) and `vla_stack` (100+ lines) are excessively large due to loop unrolling. The original simple functions are bloated. Some functions like `local_vars` are properly decomposed (3 lines). The decomposition is inconsistent.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom without excessive forward jumps. However, the loop unrolling creates massive block repetition that disrupts linear reading. Early returns are used appropriately in error checking (e.g., `if (__ptr == 0x0) return 0xffffffff;`).
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from loop unrolling. In `heap_basic`, the pattern `iVar3 = iVar8 * 2; piVar1[1] = iVar4;` is repeated 16 times with minor variations. This makes the code bloated and hard to maintain. No comments indicate this is unrolled loop code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. Ghidra uses `undefined4`, `undefined8`, `uint`, `long`, `ulong` instead of specific types. In `local_vars`, the return should be `int` but is `int` (correct). However, in `vla_stack`, parameters use `uint` when `int` would be more appropriate. Pointer types are often `void*` or `undefined4*` rather than specific types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct recovery is poor. The original `Point` struct is completely lost. In `heap_struct`, the code simply returns `param_1 * 3` instead of allocating and using a Point structure. In `heap_nested`, the Node structure is accessed via raw pointer arithmetic with no field names: `*(undefined4 **)(__ptr + 2) = puVar1;` instead of `node->next = new_node;`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations. In `heap_nested`: `*(undefined4 **)(__ptr + 2) = puVar1;` is an unsafe cast. In `memop_memcpy`: `*(undefined4 *)(((param_3 & 0xfffffffffffffffc) - 4) + (long)param_1)` performs dangerous pointer arithmetic. Many functions use `undefined4*` instead of proper types, risking undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. The code has zero useful comments about algorithm intent, preconditions, or non-obvious operations. Auto-generated function signatures like `int puts(char *__s)` are present but provide no value. No indication of decompilation confidence or uncertain areas.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms explicitly identified. The linked list creation in `linked_list_heap` is not recognized as a pattern. Memory allocation patterns (malloc+free) are not documented. No indication that this implements common data structures.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly detection. The `dangling_pointer` function returns `*__ptr` after `free(__ptr)` - this is undefined behavior but the code presents it without warning. Similarly, `double_free` is not flagged as dangerous. No warnings about potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: Basic null checks are present (`if (__ptr == 0x0)`) but not documented as preconditions. No recovery of preconditions like "requires: n > 0" or postconditions like "ensures: return is heap-allocated and must be freed". Error return values are not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No function call relationship documentation. The code doesn't indicate which functions call which others. Global variable usage (global_counter, global_array) is visible but not documented. Callback relationships in `set_global_callback`/`call_global_callback` are not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped: stack functions together, heap functions together, static/global functions together, memory operations together. This matches the source organization reasonably well. Static vs. external function distinction is maintained.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code compiles successfully (marked as "Compilation Result: Yes" in metadata). External functions (printf, malloc, free, etc.) are properly declared. Minimal stubs needed. The code is relatively standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`param_1`, `lVar1`, `iVar2`, `piVar1`) making code nearly unreadable
+- Composite types (structs Point, Node, TreeNode) are completely lost; all field access is raw pointer arithmetic
+- No comments explaining any logic, algorithms, or intent
+- Extensive loop unrolling at -O0 creates 100+ line functions from simple 5-line loops
+- No anomaly warnings for dangerous operations (dangling pointer, double free, heap overflow)
+- Magic numbers everywhere without explanation (0x14, 0x2a, 0xf, etc.)
+
+**Best Quality Aspect:** Build System Compatibility (8/10)  
+The code compiles successfully with minimal dependencies, and external function declarations are correct.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Every variable uses generic names that completely obscure their semantic purpose. A reader cannot determine what `iVar8` vs `iVar14` represents without extensive tracing.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Track how variables are used (array index, size, result, pointer) and assign semantic names like `array_size`, `loop_index`, `return_value`
+2. **Recover struct field names**: Analyze malloc sizes and field access patterns to reconstruct struct layouts with meaningful field names (e.g., `node->next` instead of `*(undefined4**)(ptr+8)`)
+3. **Add explanatory comments**: Document loop unrolling, magic numbers with likely meanings, and flag dangerous operations like dangling pointers with warnings

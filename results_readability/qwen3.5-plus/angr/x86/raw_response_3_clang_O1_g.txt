@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `ptr`, `idx`) with cryptic artifacts like `vvar_24{r8|4b}`. Original names like `large_buf`, `global_counter`, `head` are completely lost in most functions.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions recovered correctly (`local_vars`, `heap_basic`, `double_value`), but surrounded by meaningless wrappers (`sub_4012b1`, `sub_4012ca`) that add noise without semantic value.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX/-1) and `4294967294` (-2) appear throughout without explanation. Simple literals (42, 10, 20) are clear but array bounds and error codes are opaque.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts including `__x86.get_pc_thunk.*` functions, redundant wrapper functions, and unresolved jumps (`[D] Unsupported jumpkind Ijk_SigTRAP`). Platform mismatch (x86 vs original ARM64) adds confusion.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as do-while constructs but VLA/alloca functions have convoluted address calculations. Some functions use goto (`sub_401030`, `sub_401130`) instead of structured control flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but unnecessary wrapper functions created (e.g., `sub_4012b1` just calls `local_vars`). Test functions are monolithic (200+ lines).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom acceptably, but complex functions like `test_stack_memory` have forward jumps and non-linear variable assignments that disrupt flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate wrapper functions for every real function. Test functions repeat similar printf patterns without abstraction. Some redundant type casts present.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned int` instead of specific types (`int`, `size_t`, `char*`). Pointer types often lost (`void*` instead of `Node*`, `Point*`). Signed/unsigned frequently incorrect.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_4`) instead of semantic names (`data`, `next`, `x`, `y`). Extensive padding arrays (`padding_0[16]`) obscure actual structure layout.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present. Pointer arithmetic unclear in VLA functions. Dangerous patterns (dangling pointer in `dangling_pointer`) not flagged. Function pointer types degraded to `unsigned int`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. Original source had extensive documentation (test scenarios, expected values). No decompilation confidence indicators or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Memory allocation patterns (malloc/free pairs) not identified. List/tree traversal not recognized as such. No design pattern detection despite clear data structure usage.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged (`Unsupported jumpkind`). Critical issues like memory leaks (`memory_leak`), double-free, and dangling pointers pass silently without warnings.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). NULL checks present but not explained as contracts. Error return values (-1, -2) not documented with meaning.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variable usage not explained. Callback relationships (`set_global_callback`) not highlighted as special patterns.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. No logical grouping by category (stack/heap/static) that existed in source. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies declared. However, platform mismatch (x86 decompilation of ARM64 binary) would require significant work for integration.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (4+4+4)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (2+3+3+3)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.51/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects
+- **Variable `vvar_24{r8|4b}`** is completely unreadable and should be named based on usage (alloca buffer)
+- **Magic numbers `4294967295`/`4294967294`** represent -1/-2 error codes but appear as unsigned integers throughout
+- **Struct fields all generic** (`field_0`, `field_4`, `padding_0[...]`) losing all semantic meaning from original (`data`, `next`, `x`, `y`)
+- **No comments recovered** despite original having extensive documentation of test scenarios and expected values
+- **Platform mismatch** (x86 decompilation of ARM64 binary) indicates fundamental decompilation configuration error
+
+### Best Quality Aspect
+- **Function Naming Quality (6/10)** - Core function names like `local_vars`, `heap_basic`, `double_value` were correctly recovered, showing the decompiler can identify and preserve meaningful function identities when symbol information is available.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - The complete absence of any recovered comments or documentation is the most severe deficit, making it extremely difficult to understand the purpose of complex functions without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover and preserve source comments** - When debug symbols (-g) are available, extract and embed original comments into decompiled output
+2. **Infer semantic variable names from usage patterns** - Variables used in size checks should be named `size`/`count`, pointers to structures should reflect the struct type
+3. **Flag dangerous memory patterns** - Automatically detect and annotate memory leaks, dangling pointers, double-frees, and buffer overflows with warning comments

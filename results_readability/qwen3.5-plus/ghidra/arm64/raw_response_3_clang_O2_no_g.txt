@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar2`, `lVar3`, `puVar4`) with zero semantic meaning. Original variables like `arr`, `local`, `p`, `head` are completely lost, making it impossible to understand variable purpose without tracing through entire functions.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), but runtime functions use generic names (`FUN_001008e0`, `FUN_00100afc`). Core test functions are well-named and match source intent.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Heavy constant folding obscures logic - `printf("MEM-L1-01 (local_vars): %d\n",0x14)` shows pre-computed `0x14` instead of function call. Magic numbers like `0x2a`, `0x3c`, `0xfffffffe` appear without explanation of their semantic meaning.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present - `CONCAT44`, `CONCAT17` operations for loop unrolling, excessive temporary variables (`cVar4` through `cVar19` in `large_stack_frame`), and redundant stack manipulation obscure the original simple array initialization logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple for-loops transformed into complex unrolled patterns with `CONCAT` operations. The `large_stack_frame` function's simple 2048-byte initialization becomes 50+ lines of byte-shifting logic. At O2 optimization this is expected but severely impacts readability.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions maintain reasonable granularity and separation. However, test functions have constant-folded results inline (`printf("MEM-L1-02 (local_array): %d\n",10)`) instead of calling the actual functions, losing the call relationship.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code generally reads top-to-bottom but optimized loops create confusing patterns. The `vla_stack` function has multiple `goto LAB_00100c80` labels that disrupt natural flow, though this is an optimization artifact rather than decompiler error.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive loop unrolling creates massive redundancy without explanation. The `heap_basic` function's simple `arr[i] = i * 2` loop becomes 20+ lines of `iVar8 * 2`, `iVar9 * 2`, `iVar10 * 2` repeated operations with no indication this is unrolled code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation throughout - `int` becomes `undefined4` or `ulong`, `char*` becomes `byte*` or `void*`, return types inconsistent (`undefined8` for `int` functions). Original `size_t`, `int32_t` distinctions completely lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The `Point` struct is completely lost - `local_struct` returns `param_1 * 3` instead of showing `p.x + p.y`. The `Node` struct partially recovered but accessed via pointer arithmetic (`*(undefined4 **)(__ptr_00 + 2)`) instead of `->next` field access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(undefined4 *)`, `(undefined8 *)`), void pointer usage without clear intent. The `call_global_callback` function shows `(*global_func_ptr)()` with warning "Could not recover jumptable" indicating unresolved function pointer types.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated warnings like "WARNING: Removing unreachable block" and "WARNING: Subroutine does not return". No algorithm explanations, no parameter documentation, no semantic hints about what functions do.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Zero pattern recognition. Simple array initialization patterns become unreadable `CONCAT` chains. Linked list creation in `linked_list_heap` is structurally present but not identified as a linked list pattern. No design pattern identification whatsoever.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Could not recover jumptable", "Subroutine does not return", "Removing unreachable block") which help identify decompiler uncertainty. However, these are generic warnings without specific guidance on manual analysis needed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Null checks exist in code (`if (param_1 != (undefined4 *)0x0)`) but aren't documented as contracts. Error return values (`0xffffffff`, `0xfffffffe`) have no semantic explanation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships aren't documented. The `set_global_callback(double_value)` call shows the relationship but no comment explains this is a callback registration pattern. Global variable usage visible but not summarized.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file with no logical grouping. Original source's clear section markers (`// 3.1 栈内存操作`, `// 3.2 堆内存操作`) completely lost. Static functions not clearly distinguished from public API.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears structurally compilable with proper function signatures. External dependencies (`malloc`, `free`, `printf`, `extern_global_var`) are referenced but not declared with proper headers. Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+LEVEL 1 (30%): (2 + 7 + 3 + 3) / 4 = 3.75
+LEVEL 2 (25%): (4 + 6 + 5 + 4) / 4 = 4.75
+LEVEL 3 (20%): (3 + 2 + 4) / 3 = 3.00
+LEVEL 4 (15%): (2 + 2 + 5 + 2) / 4 = 2.75
+LEVEL 5 (10%): (5 + 5 + 6) / 3 = 5.33
+
+Overall = (3.75 × 0.30) + (4.75 × 0.25) + (3.00 × 0.20) + (2.75 × 0.15) + (5.33 × 0.10)
+        = 1.125 + 1.1875 + 0.6 + 0.4125 + 0.533
+        = 3.86 ≈ 3.9/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Variable names completely generic** - `param_1`, `iVar1`, `uVar2` provide zero semantic information; original names like `arr`, `local`, `head`, `p` are lost
+- **Struct types not recovered** - `Point` struct becomes raw arithmetic (`param_1 * 3`), `Node` struct accessed via `+ 2` offset instead of `->next`
+- **Loop unrolling obscures logic** - Simple `for` loops become 20+ line `CONCAT` chains that are practically unreadable
+- **Constant folding hides function calls** - Test functions show pre-computed values (`0x14`, `10`, `0xf`) instead of actual function invocations
+- **No semantic comments** - Zero documentation of algorithm intent, parameter meaning, or return value semantics
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately (`local_vars`, `heap_basic`, `test_stack_memory`), allowing quick identification of function purpose despite other readability issues.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct definitions; `Point {x, y}` becomes `param_1 * 3`, losing all field semantics and making data structure understanding impossible without source comparison.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (array indexing, pointer dereference, arithmetic) to suggest semantic names like `array_ptr`, `counter`, `buffer_size`
+2. **Recover struct/union types from access patterns** - Detect consistent offset patterns (`+0`, `+4`, `+8`) and propose named struct definitions with field names based on access context
+3. **Add optimization artifact annotations** - When detecting loop unrolling or constant folding, add comments like `// OPTIMIZED: loop unrolled 8x` or `// CONSTANT_FOLDED: original called local_vars(5)` to help users understand transformations

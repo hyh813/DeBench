@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `local_d8` instead of semantic names like `count`, `sum`, `args` from the original source, making purpose tracking difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`), accurately reflecting functionality, though some helpers use generic names (`FUN_00101020`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex values (`0xf`, `0x32`, `0x2a`, `0x12345678`) without explanation; original values (15, 50, 42) are obscured by constant folding.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present including `undefined8` return types, unclear stack variables (`local_b8 [46]`), and unnecessary complexity in varargs handling from decompilation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is reasonable (if-else, loops), but varargs functions have complex loop structures that are hard to follow; some functions are constant-folded losing original structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and original structure mostly preserved, though some functions that should call others are constant-folded (e.g., `call_cdecl` returns `0xf` directly).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns, though complex varargs handling and struct operations disrupt flow in some functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in varargs handling code; constant folding creates redundancy where functions just return constants instead of showing original computation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many types are generic (`undefined8`, `int`, `long`) instead of specific types; `func_mixed_args` parameter order changed (double, int, char*, long vs original int, char*, double, long long).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct types NOT recovered—`LargeStruct` and `SmallStruct` lost; `func_struct_byval` shows raw stack operations, `func_struct_byptr` uses `int*` instead of `SmallStruct*`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present, pointer arithmetic without type safety, varargs handling particularly unsafe with raw stack pointer manipulation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: NO comments in decompiled code; original had extensive comments explaining each test case (CALL-L1-01, PARAM-L1-01, etc.) completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithm patterns identified; varargs pattern not recognized as such, calling convention differences not documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged despite complex varargs handling, type mismatches, and struct recovery failures; silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented; null checks present but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are visible but no documentation of relationships; call graph not explicitly shown, external dependencies unclear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source, but no file/module structure visible in decompilation output.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies (puts, printf, strlen) declared but would need stubs to compile; type issues would prevent clean compilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):   (6+7+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):         (5+3+4)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):     (2+4+3+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):   (6+6+5)/3   = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.17/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct` not recovered; `func_struct_byval` shows raw stack operations instead of struct field access
+- **No comments preserved** - All original documentation (CALL-L1-01, PARAM-L1-01, test descriptions) completely absent
+- **Variable names generic** - `param_1`, `param_2`, `iVar1` instead of semantic names like `count`, `sum`, `x`, `y`
+- **Type precision degraded** - Return types often `undefined8` instead of specific types; `func_mixed_args` parameter order incorrect
+- **Constant folding obscures logic** - Functions like `call_cdecl` return `0xf` directly instead of showing `cdecl_func(5, 10)` call
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`), making function purpose immediately inferable.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments loses all semantic context from original source; no decompilation confidence indicators or algorithm explanations provided.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack access patterns** - Detect struct field access patterns (e.g., `param_1[0]`, `param_1[1]`) and suggest struct type definitions with field names.
+2. **Preserve or infer semantic comments** - Either preserve debug symbol comments from `-g` flag or generate contextual comments based on function naming patterns and API usage.
+3. **Improve varargs pattern recognition** - Detect `va_start`/`va_arg`/`va_end` patterns and generate cleaner C code with proper `va_list` types instead of raw stack manipulation.

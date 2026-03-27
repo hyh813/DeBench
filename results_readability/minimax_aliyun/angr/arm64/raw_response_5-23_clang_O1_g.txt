@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `a0`, `a1`, `v0`, `v1`, `v2`, `v3`. The original source used meaningful names like `size`, `x`, `y`, `result`, `counter`, `increment`, but these are completely lost in decompilation. Even loop indices are just `i` or `idx` rather than descriptive names.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: The main test functions are correctly named (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`, etc.), matching the original source. However, infrastructure functions like `_init`, `$x`, `sub_4007b4` remain generic. The core functionality functions are well-recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many magic numbers remain unexplained. For example, `0x400` (1024) should be `MAX_SIZE`, `0x200` (512) should be `MAX_SIZE/2`, `57072` should be `0xDEF0`. The decompiler correctly computed the values but lost the symbolic constant names from macros.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Some stack frame setup code (`v0 = &v1;`) exists but is manageable. No significant debug instrumentation or redundant casts cluttering the output. The code is relatively clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with clear if-else structures. The `param_asm_clobber` function uses a do-while loop correctly. Some goto statements exist but are used appropriately. At -O0, the control flow closely matches source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are well-decomposed with appropriate granularity. Each test function (`param_*` and `call_*`) is separate. Helper functions like `test_preprocessing_features` and `test_asm_features` correctly aggregate test calls. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads mostly top-to-bottom with minimal forward jumps. Early returns are used appropriately in functions like `param_macro_constants`. No deep nesting (>4 levels) observed. The flow is easy to follow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling in SIMD functions is present but represents legitimate optimization. The `call_asm_simd` function has some duplicated array access patterns but nothing severe.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly appropriate for ARM64 - `unsigned int`, `unsigned long`, `unsigned long long`, `int`. However, the original used `int` for some values where the decompiler uses `unsigned`, and `size_t` is represented as `unsigned long`. Minor signed/unsigned confusion exists.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct or union types are recovered. The code uses raw pointer arithmetic like `*((int *)(a2 + i))` instead of array subscript notation. The original had no complex structs, but the decompilation doesn't recover the simple array semantics cleanly.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present but typical for decompiled code. Pointer arithmetic like `cur += 1` and `*((int *)(a2 + i))` is common. No major type-confused function pointers. The code is reasonably safe for analysis purposes.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining each test case (PP-L2-01, ASM-L4-01, etc.) and the preprocessing behavior. This critical semantic information is completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are explicitly identified. The inline assembly patterns (SSE, atomic operations, memory protection) are converted to C code but not labeled as such. The macro expansion patterns are not recognized.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies are flagged. The decompiler doesn't indicate uncertainty about indirect calls, unusual stack layouts, or potential undefined behavior. The "Failed to decompile" message for `__aarch64_ldadd4_acq_rel` appears but without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had implicit contracts (e.g., "requires: ptr != NULL" for mmap results) that are not recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible in the code (e.g., `test_preprocessing_features` calls `call_macro_constants`), but not explicitly documented. External dependencies like `mmap`, `printf`, `memcpy` are declared but their roles aren't explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped reasonably - preprocessing tests together, assembly tests together. However, it's a single monolithic output file. The original had clear section comments (5.2, 5.3) that are not recovered.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code declares external functions properly (`extern char g_401223;`). It should compile with standard C libraries. Some ARM64-specific functions like `__aarch64_ldadd4_acq_rel` are referenced but not defined.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`a0`, `a1`, `v0`, `v1`) - loses all semantic meaning from original `size`, `x`, `y`, `counter`
+- No comments at all - the extensive documentation explaining test scenarios (PP-L2-01, ASM-L4-01, etc.) is completely lost
+- Magic numbers everywhere (`0x400`, `57072`, `0x200`) without symbolic constant names that existed in original macros
+- No struct/array recovery - uses raw pointer arithmetic `*((int *)(a2 + i))` instead of cleaner array syntax
+- No anomaly indication for failed decompilation of `__aarch64_ldadd4_acq_rel`
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+The core test functions (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`, etc.) are correctly named and match the original source. This is the strongest area of the decompilation.
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+The complete absence of comments is devastating for readability. The original source had extensive educational comments explaining preprocessing behavior, inline assembly semantics, and test scenarios. This semantic layer is entirely missing.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover macro constants**: Detect magic numbers that match preprocessor definitions and replace with symbolic names (e.g., `0x400` → `MAX_SIZE`)
+2. **Add semantic comments**: Include auto-generated comments explaining what each test case validates (e.g., "// Tests macro constant substitution: MAX_SIZE = 1024")
+3. **Improve variable naming**: Use usage pattern analysis to infer meaningful names - if a parameter is compared to `0x400` and used in size calculations, name it `size` or `max_size`

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`) with no semantic meaning. Original source had meaningful names like `buffer`, `write_data`, `shared_counter`, but decompiled version uses `v0[16]`, `v1[24]` obscuring their purpose as local buffers.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core test functions preserved (`param_strcpy`, `call_strcpy`, `param_mutex_lock`), but many helper functions are generic (`sub_4012f4`, `sub_401724`, `$x`). Some function names match source but internal helpers lost all semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `4294967295` (UINT_MAX/-1) appears dozens of times without explanation, `42` used as success code without context, large bit patterns like `7521977183824144706` for string comparison. String literals preserved but numeric constants not recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Frame pointer setup noise present (`v0 = &v1` in nearly every function), redundant variable assignments, compiler artifacts like `__ROL__` operations visible. Some functions have duplicate return statements calling same function twice.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Awkward condition checks like `((char)(v2 >> 31) & 1)` for sign testing instead of natural comparisons. Some loops recovered as do-while but many use explicit decrement patterns. `arm64g_calculate_condition` calls obscure simple boolean logic.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical errors: `call_strcpy` doesn't call `param_strcpy` but directly uses `strlen(&v0)`. `call_memcpy` returns constant `90` instead of calling `param_memcpy`. Thread functions fragmented with lost parameter passing logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom with reasonable structure. Some forward jumps present but not excessive. Nested conditionals in signal handling (`param_signal_handling`) create deep nesting but remain traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate function calls in return statements (`return param_fread_fwrite(...); return param_fread_fwrite(...);`). Frame setup code repeated in every function. Some redundant type casts from compiler promotions not eliminated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type erosion: `size_t` becomes `unsigned long`, `int` becomes `unsigned long long`, `FILE*` becomes `void*`. Original `atomic_int` becomes generic `unsigned int`. Signed/unsigned confusion throughout (return values as unsigned when should be signed).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs defined (`struct FILE`, `struct sockaddr`) but field names generic (`field_0`, `field_5`, `padding_0`). TLS structure partially recovered as `struct_0` with meaningless field names. Original `ThreadData` struct completely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts visible (`(char *)ptr + v6`), pointer arithmetic on void pointers, type-confused function returns (`unsigned int *` returned as `unsigned long long`). `param_malloc_free` has use-after-free bug in decompiled code (`free(ptr); return ptr[1 + v2]`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only auto-generated function headers with register assignments. No algorithm explanations, no API contract documentation, no decompilation confidence indicators. Original source had extensive comments completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`) but not identified as patterns. Thread synchronization patterns (mutex, condition variable) present but not labeled as such. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Two functions marked "Failed to decompile" (`__aarch64_cas4_acq_rel`, `__aarch64_ldadd4_acq_rel`). No warnings about suspicious code patterns, incorrect decompilations, or uncertain recoveries. `arm64g_calculate_condition` calls unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` requirements). No postconditions (e.g., "returns heap-allocated memory"). Error conditions not explained (magic return values like `4294967293`, `4294967294`, `4294967295`).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`shared_counter`, `atomic_counter`) without usage context. No call graph documentation. Thread callback relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source-order grouping (standard library, system calls, threads) but no clear module boundaries. Test functions mixed with implementation. No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has C-like syntax but won't compile standalone. Missing type definitions, external dependencies undocumented, `arm64g_calculate_condition` undefined. Would require significant patching to compile.
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Calculation:**
+```
+L1 Avg: (3+5+4+5)/4 = 4.25 × 0.30 = 1.275
+L2 Avg: (5+4+6+5)/4 = 5.00 × 0.25 = 1.250
+L3 Avg: (4+4+3)/3 = 3.67 × 0.20 = 0.734
+L4 Avg: (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+L5 Avg: (4+5+4)/3 = 4.33 × 0.10 = 0.433
+Total: 4.105/10
+```
+
+**Critical Defects:**
+- `call_strcpy` doesn't call `param_strcpy` - completely incorrect decompilation breaking function relationship
+- `param_malloc_free` has use-after-free bug (`free(ptr); return ptr[1 + v2]`)
+- Variables `v0`, `v1`, `v2` throughout provide zero semantic information
+- Magic number `4294967295` appears 50+ times without explanation (should be `-1` or `ERROR`)
+- Zero comments despite original source having extensive documentation
+
+**Best Quality Aspect:** Code Linearization (scored 6/10)  
+- Most functions read top-to-bottom without excessive jumps, making basic tracing possible despite other issues.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Complete absence of any explanatory comments makes understanding intent nearly impossible, especially critical given the original had comprehensive documentation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover function call relationships**: `call_*` functions should invoke their corresponding `param_*` functions, not duplicate logic or return constants
+2. **Infer variable names from usage context**: Variables used in size checks should be named `size`/`length`, file operations should use `fp`/`fd`, thread data should use `tid`/`thread_ret`
+3. **Replace magic numbers with symbolic constants**: Detect repeated values like `4294967295` and replace with `UINT_MAX` or `ERROR`, document error code meanings

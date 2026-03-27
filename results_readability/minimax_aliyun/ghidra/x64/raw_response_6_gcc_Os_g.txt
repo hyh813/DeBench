@@ -1,0 +1,141 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 6/10**
+Justification: Mix of good and poor naming. Parameters like `dst`, `src`, `buffer` are well-named, but locals like `lVar1`, `iVar2`, `piVar3`, `sVar1`, `__s` are generic. The pattern `*[variable name]*` for loop counters (e.g., `i@[???]`) indicates unresolved variables.
+
+### 2. Function Naming Quality
+**Score: 10/10**
+Justification: All function names exactly match the original source: `param_strcpy`, `call_strcpy`, `param_strcmp`, `call_strcmp`, `test_standard_library_functions`, etc. The decompiler preserved the semantic naming perfectly.
+
+### 3. Literal Clarity
+**Score: 7/10**
+Justification: String literals like `"HelloLib"`, `"Value: %d, Name: %s\n"` are clear. However, magic numbers appear without explanation: `0x2a` (42) used in return value transformations, `0x28` for sizeof(buffer), `0x42` for open flags. The numeric syscall numbers (2 for SYS_open, 3 for SYS_close) are unexplained.
+
+### 4. Noise Reduction
+**Score: 7/10**
+Justification: Stack canary checks (`__stack_chk_fail`) appear frequently but are expected at -O0. Unresolved local variable annotations (`/* Unresolved local var: int i@[???] */`) add noise. However, the core logic is relatively clean without excessive debug artifacts.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Most control flow is natural with clear if-else and loop structures. The `param_strcpy` function has perfect linear flow. Some complex functions like `param_pthread_join` have nested loops but are still readable. No spurious goto statements.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are appropriately sized - `param_strcpy` is 4 lines, `param_strlen` is 3 lines. The decompiler correctly separated the wrapper functions (`call_*`) from the test functions (`param_*`). Thread-related structures like `ThreadData` were recovered as a struct.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Most functions read top-to-bottom. Early returns in error handling (e.g., `if (__stream != (FILE *)0x0)`) are used appropriately. Some forward jumps exist in complex functions but don't severely disrupt readability.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No obvious dead code. Loop unrolling is minimal at -O0. Some repeated patterns (e.g., multiple `pthread_join` calls) but these are necessary for the algorithm, not redundancy from poor decompilation.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Most types are correct: `char *dst`, `size_t` for string lengths, `pthread_t`. However, `const` correctness is lost - `param_strcmp` shows `char *s1, char *s2` instead of `const char *`. Some `int` used where `ssize_t` would be more precise. The `src` parameter in `param_strcpy` should be `const char *src`.
+
+### 10. Composite Type Recovery
+**Score: 8/10**
+Justification: The `ThreadData` struct was recovered with fields `start`, `end`, `result`. However, field names are generic in some structures. The sockaddr_in structure shows `sin_zero`, `sin_family`, `sin_port`, `sin_addr` correctly. Some raw struct accesses remain.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Most pointer operations are safe. However, there are some concerning patterns: `(int)status >> 8 & 0xff` for extracting exit codes is fragile. The `param_fork_exec` function has multiple unsafe casts. No `restrict` keywords or alignment annotations.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Very sparse comments. The only comments are auto-generated warnings like "WARNING: Unknown calling convention" and "WARNING: Subroutine does not return". No explanation of algorithm logic, no decompilation confidence indicators, no @param/@return documentation.
+
+### 13. Idiom Recognition
+**Score: 6/10**
+Justification: Basic idioms recognized: strcpy+strlen pattern, pthread create/join pairs, mutex lock/unlock. However, more complex patterns like the producer-consumer condition variable pattern could be better documented. No explicit naming of design patterns.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+Justification: Some warnings present: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "Unresolved local var". However, these are generic and don't explain the root cause. No indication of indirect call resolution failures or unusual stack layouts.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants documented. The function contracts are completely lost. For example, `param_strcpy` has implicit contracts (dst must be large enough, src must be null-terminated) that are not documented.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 7/10**
+Justification: External library calls are clear (strcpy, strlen, pthread_create, etc.). However, there's no documentation of which functions call which, or the callback relationships. The `thread_compute` function is correctly identified as the thread entry point.
+
+### 17. Module Organization
+**Score: 8/10**
+Justification: Functions are logically grouped: standard library functions (strcpy, strlen, etc.), system calls (syscall, fork, pipe), thread functions (pthread_*). Static functions like `signal_handler` are properly scoped. Matches source organization reasonably well.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+Justification: The code should compile with standard libc and pthreads. Function declarations are implicit (K&R style in some places). No explicit #include statements but external functions are declared. Should compile with `-lpthread`.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (6 + 10 + 7 + 7) / 4 = 7.50
+L2_avg = (8 + 8 + 8 + 8) / 4 = 8.00
+L3_avg = (7 + 8 + 7) / 3 = 7.33
+L4_avg = (3 + 6 + 6 + 2) / 4 = 4.25
+L5_avg = (7 + 8 + 8) / 3 = 7.67
+
+Overall = (7.50 × 0.30) + (8.00 × 0.25) + (7.33 × 0.20) + 
+          (4.25 × 0.15) + (7.67 × 0.10)
+        = 2.25 + 2.00 + 1.47 + 0.64 + 0.77
+        = 7.13/10
+```
+
+### Overall Readability Score: 7.1/10
+
+---
+
+### Critical Defects (Bullet List)
+- **Variable naming inconsistency**: Generic names like `lVar1`, `iVar2`, `sVar1`, `__s` obscure variable purpose compared to source's semantic names
+- **Missing const correctness**: `param_strcmp` and `param_strlen` lose `const` qualifier on pointer parameters
+- **No comments**: Zero explanatory comments for algorithms, contracts, or decompilation confidence
+- **Magic numbers unexplained**: `0x2a` (42), `0x28` (40), syscall numbers (2, 3) appear without named constants
+- **Unresolved local variables**: Multiple `/* Unresolved local var: int i@[???] */` annotations indicate incomplete analysis
+
+---
+
+### Best Quality Aspect: Function Naming (10/10)
+All function names exactly match the original source code, making it immediately clear what each function does. The decompiler preserved the semantic intent perfectly.
+
+---
+
+### Most Needs Improvement: Assertion & Contract Recovery (2/10)
+The decompiler provides no documentation of preconditions, postconditions, or invariants. For a function like `param_strcpy`, the implicit contracts (dst buffer size, src null-termination) are completely lost, forcing reverse engineers to infer them.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover const correctness**: Add `const` qualifier to read-only pointer parameters (e.g., `const char *src` in strcpy, `const char *s1, *s2` in strcmp). This is a fundamental C type distinction.
+
+2. **Add explanatory comments**: Document algorithm logic, especially for non-trivial patterns like the pthread create/join sequences, condition variable signaling, and atomic operations. Include decompilation confidence indicators for indirect calls.
+
+3. **Name magic numbers**: Detect numeric constants that represent meaningful values (syscall numbers, flag masks, return codes) and either replace with enum names or add explanatory comments. For example, `syscall(2, ...)` should note "SYS_open".

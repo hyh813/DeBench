@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `local_4`, `iVar1` instead of semantic names like `size`, `result`, `counter`. For example, `param_macro_constants` uses `param_1` where original used `size`, and `local_4` where original had no intermediate variable.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`param_macro_constants`, `call_macro_constants`, `param_asm_basic`). Some runtime functions have generic names (`FUN_001007a0`, `_init`) but core test functions match source.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Macros expanded to magic numbers: `MAX_SIZE` (1024) becomes `0x401` comparison, `0x200` return; `BUFFER_COUNT * 4` (64) becomes `0x40`. Build-specific values like `__LINE__` hardcoded to "155" without explanation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Runtime initialization code mixed in (`_init`, `_start`, `deregister_tm_clones`, `__do_global_dtors_aux`). Type casting noise present (`(ulong)param_1`, `& 0xffffffff`). Core logic functions relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At `-O0`, control flow mostly matches source with natural if-else structures. `param_macro_constants` has clean branching. `param_asm_clobber` correctly recovered loop from assembly. Some awkward chaining in `test_preprocessing_features`.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. Helper functions like `header_func`, `my_func` remain separate. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads mostly top-to-bottom with natural early returns. `__aarch64_ldadd4_acq_rel` has clear do-while loop. No excessive gotos disrupting main logic flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code in main functions. Loop structures clean without unrolling artifacts. Some redundant type casts present but manageable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` instead of `int32_t`. Decompiler artifacts like `undefined4`, `undefined8` appear. `ulong` used for return values unnecessarily. Pointer types sometimes generic (`void*`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays handled correctly (`local_20[16]`). No complex structs in this code to recover. Function pointers not heavily used so limited evaluation possible.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(ulong)param_1`, `(void *)0x0`). `undefined4 *` casts are decompiler artifacts. No obvious buffer overflow patterns introduced by decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Complete loss of original comments explaining macros, expected values, and test purposes. Only Ghidra function headers present. No algorithm explanations or API contracts recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Macro patterns not recognized (expanded to constants). Assembly patterns correctly converted to C equivalents. No design pattern identification or naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Subroutine does not return", "WARNING: Removing unreachable block"). No indication of macro expansion loss or conditional compilation branches lost.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented. Expected return values from comments lost (e.g., "期望: 64"). No postconditions inferred for any function.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved correctly. Global variables referenced (`global_var`, `__aarch64_have_lse_atomics`). No call graph documentation or callback relationship indicators.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no separation between preprocessing tests and assembly tests. Runtime functions mixed with user code arbitrarily.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions (`printf`, `strlen`, `mmap`) without header includes. Ghidra-specific types (`undefined4`, `undefined8`) require patching. Would need significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+8+7)/4 = 7.50 × 0.25 = 1.875
+Level 3 (Type):        (5+7+6)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.825/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects:
+- **Variable `param_1` should be named `size`** in `param_macro_constants` based on usage pattern and original source
+- **All macro semantics lost** - `MAX_SIZE`, `BUFFER_COUNT`, `SQUARE(x)` expanded to magic numbers without documentation
+- **Complete comment loss** - Original 200+ lines of explanatory comments entirely absent
+- **Ghidra-specific types** (`undefined4`, `undefined8`) prevent standalone compilation
+- **Runtime initialization code mixed** with user code (`_init`, `deregister_tm_clones`, etc.)
+
+### Best Quality Aspect:
+- **Function Decomposition (8/10)** - Function boundaries and granularity preserved accurately with appropriate single-responsibility functions matching original source structure.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all semantic documentation, macro explanations, and expected value annotations that made the original source self-documenting.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro semantics** - Detect constant comparison patterns and suggest original macro names (e.g., `0x401` comparison → `MAX_SIZE + 1`)
+2. **Infer variable names from usage** - Analyze parameter usage patterns to suggest semantic names (`param_1` used in size check → `size`)
+3. **Preserve or regenerate documentation** - Include original debug symbols' comment data or generate explanatory comments for recovered patterns

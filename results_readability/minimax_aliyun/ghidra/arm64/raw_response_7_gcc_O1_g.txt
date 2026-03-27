@@ -1,0 +1,108 @@
+# Decompilation Readability Assessment
+
+## Function Under Evaluation: `param_fake_branch`
+
+### Analysis Summary
+
+The original source code for `param_fake_branch` demonstrates fake/always-false branch obfuscation with two never-executing conditional blocks:
+1. `if (x * x < 0)` - mathematically impossible for real integers
+2. `if (strlen(str) < 0)` - string length cannot be negative
+
+The decompiled version simplifies this to just `return x;`, which is correct behavior given the binary was compiled at O1 optimization (despite source metadata indicating O0). The decompiler correctly eliminated the dead code paths.
+
+---
+
+### LEVEL 1: LEXICAL CLARITY
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled function shows no local variables - they were optimized away entirely. The comments show "Unresolved local var: int result@[DW_OP_reg0(x0)]" and "Unresolved local var: char * str@[???]" indicating the decompiler could not recover these variables. The semantic meaning of `result` (which holds the return value) and `str` (the test string) is completely lost.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: The function is correctly named `param_fake_branch`, exactly matching the original source function name. This is a perfect recovery that preserves the semantic identity of the function.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: The function contains no literals - it's a simple return statement. The magic numbers from the source (0xDEADBEEF, 1000) were in the eliminated dead code branches, so they don't appear in the decompiled output.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The function body itself is clean with no compiler artifacts. The only noise is the "Unresolved local var" comments in the header, which are auto-generated and not obstructive for this simple function.
+
+---
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+**5. Control Flow Naturalness:** Score: 10/10  
+Justification: The control flow is maximally natural - a simple return statement. The eliminated fake branches were correctly recognized as dead code at O1 optimization level. This represents ideal simplification.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: The function is appropriately granular - it's a single, focused operation. No decomposition needed or beneficial for this simple function.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: The code reads perfectly top-to-bottom with no jumps, branches, or disruption to linear flow. It's a single statement.
+
+**8. Redundancy Elimination:** Score: 10/10  
+Justification: No redundancy exists in the decompiled output. The dead code (fake branches) was correctly eliminated rather than left as redundant blocks.
+
+---
+
+### LEVEL 3: TYPE SYSTEM FIDELITY
+
+**9. Type Precision:** Score: 10/10  
+Justification: The parameter `int x` and return type `int` are precisely typed, matching the original source exactly. No type degradation occurred.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types (structs, unions) are used in this function, so none need recovery. Not applicable.
+
+**11. Type Safety:** Score: 10/10  
+Justification: The simple `return x;` statement presents no type safety concerns. No unsafe casts, pointer arithmetic, or undefined behavior patterns.
+
+---
+
+### LEVEL 4: SEMANTIC TRANSPARENCY
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: The only comments are auto-generated "Unresolved local var" notes which provide no value. There's no explanation that fake branches were eliminated, no indication this is obfuscated code, and no documentation of the original logic intent. The comments are noise rather than useful documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The fake branch obfuscation pattern (OBF-L4-02 from the source) is not recognized or named. The decompiler provides no indication that this function contains intentionally false conditional branches - it simply shows the simplified result.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The decompiler silently eliminated the fake branches without any warning or annotation. There's no "WARNING: Dead code eliminated" or "NOTE: Always-false condition removed" to inform the analyst that significant source code logic was removed.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No preconditions, postconditions, or invariants were recovered. The function simply returns its input, which is technically correct but provides no semantic context about what the function is supposed to do.
+
+---
+
+### LEVEL 5: CONTEXTUAL COHERENCE
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The caller function `call_fake_branch` is present and shows it calls `param_fake_branch(10)`, making the relationship clear. The call site context is preserved.
+
+**17. Module Organization:** Score: 7/10  
+Justification: The function appears in a reasonable position among related test functions (call_fake_branch, param_opaque_predicate, etc.). The grouping with other obfuscation test functions is logical.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The decompiled function would compile cleanly as standalone C code. No external dependencies or stubs required for this simple function.
+
+---
+
+### FINAL SUMMARY
+
+**Overall Readability Score:** 7.8/10
+
+**Critical Defects:**
+- Variable naming completely lost - "result" and "str" variables are marked as unresolved
+- No comment explaining that fake/always-false branches were eliminated
+- No indication that this is obfuscated code with intentionally dead branches
+- Idiom pattern (fake branch obfuscation) not recognized or documented
+
+**Best Quality Aspect:** Type System Fidelity (scored 10.0/10)  
+The decompiler achieved perfect type precision - the int parameter and return type exactly match the original source with no degradation.
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.0/10)  
+The decompiler provides almost no semantic context - no comments explaining the eliminated fake branches, no recognition of the obfuscation idiom, and no anomaly warnings about removed code paths. An analyst would have no indication that significant source logic was optimized away.
+
+**Top 3 Recommendations:**
+1. Add comments when dead code branches are eliminated: "NOTE: Always-false condition (x*x < 0) was optimized away"
+2. Recover variable names from debug info or usage patterns - "result" is clearly the return value accumulator
+3. Recognize and document obfuscation patterns like fake branches with a comment: "OBFUSCATION: Contains intentionally false conditional branches (fake branch pattern)"

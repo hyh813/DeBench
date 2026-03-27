@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`a1`, `a2`, `v1`, `v2`, `v5`) losing semantic meaning; only a few like `stream`, `ptr`, `thread_return` provide hints about purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_strcpy`, `call_strcmp`, `param_mutex_lock`); thread functions like `thread_compute` and `consumer_thread` are descriptive and action-oriented.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: syscall numbers (`56`, `57`), signal numbers (`10`, `14` instead of `SIGUSR1`, `SIGALRM`), socket constants (`2`, `1` instead of `AF_INET`, `SOCK_STREAM`), and `4294967196LL` for `AT_FDCWD`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Moderate type casting noise (`(unsigned int)`, `(__int64)`, `(_DWORD)`) and `BYREF` annotations present, but no excessive dead code or debug instrumentation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At `-O0`, control flow is well-recovered with natural if/else and for/while constructs; signal handling polling loops correctly identified as while loops.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source; thread worker functions properly separated from coordination functions; no monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with clear execution flow; some forward variable declarations (`v10 = a1`) slightly disrupt reading but not severely.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code; some redundant type casts present but loop structures not excessively unrolled; stack variable initialization is verbose but not redundant.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`) but degraded to `__int64`, `__int128`; unsigned/signed confusion evident (`unsigned __int8 *a1` for `void *buffer`); some function return types incorrect.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `ThreadData` struct completely lost (shown as `s[16]` array with index access `s[0]`, `s[1]`, `s[2]`); `struct sockaddr` partially recovered but fields accessed via `sa_data` offsets; TLS variables shown as raw memory (`StatusReg + 16`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(_DWORD)v7 - (_DWORD)a1` for pointer arithmetic; `atomic_store(v0 + 100, (unsigned int *)&atomic_counter)` has reversed parameter order; void* usage where specific types expected throughout.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic; only auto-generated function headers with register info; no algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`); thread patterns partially visible but not explicitly identified; no design pattern documentation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 61 library functions marked "FAILED to decompile" which is honest; however, no warnings about suspicious patterns in successfully decompiled code (e.g., pointer arithmetic anomalies).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation; error return values visible in code but not documented; no contract information about null checks or valid ranges.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible through code structure; global variables (`shared_counter`, `atomic_counter`, `signal_received`) used but not documented; thread callback relationships inferable but not explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source sections (standard library → system calls → threads); related test functions grouped with their param functions; no header file organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 61 library functions failed to decompile requiring external stubs; atomic intrinsics (`_aarch64_ldadd4_acq_rel`) need platform-specific implementations; would not compile standalone without significant modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+4+7)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (8+8+7+7)/4 = 7.50 × 0.25 = 1.875
+Level 3 (Type):        (6+3+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+5+5+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+7+3)/3   = 5.33 × 0.10 = 0.533
+
+Overall Score: 5.53/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- **Variable names generic**: `a1`, `a2`, `v1`-`v11` obscure parameter purposes (e.g., `param_strcpy(char *a1, const char *a2)` should be `dst`, `src`)
+- **Magic numbers everywhere**: Signal numbers `10`, `14` instead of `SIGUSR1`, `SIGALRM`; syscall `56` instead of `SYS_open`
+- **Struct recovery failed**: `ThreadData` struct completely lost, accessed as raw array `s[0]`, `s[1]`, `s[2]`
+- **No comments**: Zero documentation explaining algorithm intent or non-obvious logic
+- **61 library functions failed**: Cannot compile standalone; requires extensive stubbing
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names preserved from source with semantically accurate verbs (`param_strcpy`, `call_mutex_lock`, `thread_compute`)
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no comments explaining logic, making non-trivial functions like `param_signal_handling` difficult to understand without source reference
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how `a1`, `a2` are used (e.g., `a1` passed to `strcpy` as destination → name it `dst`)
+2. **Recover symbolic constants from system headers** - Map magic numbers (`10`, `14`, `56`, `2`, `1`) to named constants (`SIGUSR1`, `SIGALRM`, `SYS_open`, `AF_INET`, `SOCK_STREAM`)
+3. **Generate semantic comments for recognized patterns** - Add comments like `// Signal handler registration` for `signal()` calls and `// Thread synchronization` for mutex/condition variable usage

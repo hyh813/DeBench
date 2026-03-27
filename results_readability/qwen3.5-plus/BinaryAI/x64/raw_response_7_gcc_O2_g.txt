@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `pbVar2` throughout; original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_fake_branch`, `decrypt_string`), but some helpers are generic (`FUN_00101020`) and external wrappers add noise.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0xe1`, `0x7a314` appear without explanation; original source had comments explaining these values (e.g., `"Hello" ^ 0x5A`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail()`), frame pointer manipulation (`in_FS_OFFSET`, `local_10`), and redundant external function wrappers add significant noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_fake_branch` dead branches completely eliminated (returns `param_1` directly); `param_opaque_predicate` uses do-while instead of original if-structure; constant folding in call functions loses original logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized but `param_fake_branch` lost its obfuscation logic entirely; `call_fake_branch` constant-folded to return 10 directly instead of calling the function.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but stack canary checks at function ends disrupt flow; do-while loops where while would be more natural.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Aggressive constant folding removed original test logic (e.g., `call_opaque_predicate` computes at compile time); some redundant type casts from decompilation process.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used instead of `int32_t`; `param_instruction_substitution` takes `uint` but source used `int`; `param_division_by_zero` returns `ulong` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited structs in this code; `jmp_buf` used as opaque type rather than showing structure; bitfield struct in `param_implementation_defined` completely constant-folded away.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present (`(long)param_1`, `(undefined *)0x0`, `(undefined4 *)`); pointer arithmetic visible in `param_vectorized_loop`; no const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only header comment about BinaryAI; zero comments explaining logic, algorithms, or decompilation uncertainty; original source had extensive documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible; dead code branches in `param_fake_branch` not identified as obfuscation; GCD algorithm in `param_opaque_predicate` not recognized.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged despite significant transformations; stack canary insertion not explained; signal handler behavior not documented.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented; signal handler contracts (`div_zero_handler`, `segv_handler`) not explained; error return values undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented; global variables (`encrypted_0`, `jmp_buffer`) referenced without context; no call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output; no header file structure; external functions marked but no API boundary documentation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Marked as compilable but requires external stubs; dependencies visible but not documented; some platform-specific code (`in_FS_OFFSET`) present.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+7+5+5)/4 = 5.00  × 0.30 = 1.50
+L2 Average: (5+6+6+6)/4 = 5.75  × 0.25 = 1.44
+L3 Average: (5+6+5)/3 = 5.33    × 0.20 = 1.07
+L4 Average: (2+3+3+2)/4 = 2.50  × 0.15 = 0.38
+L5 Average: (5+5+6)/3 = 5.33    × 0.10 = 0.53
+─────────────────────────────────────────────
+Overall Score: 4.92/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1` throughout** should be named based on semantic usage (e.g., `input_value`, `gcd_result`, `buffer_ptr`)
+- **`param_fake_branch` dead code eliminated** - obfuscation branches (x*x < 0, strlen < 0) completely removed without annotation
+- **Zero comments** - original source had extensive documentation explaining obfuscation techniques, now entirely lost
+- **Magic numbers unexplained** - `0x5a`, `0x14`, `0xe1`, `0x7a314` appear without context or constant names
+- **Call functions constant-folded** - `call_fake_branch`, `call_opaque_predicate` return constants instead of calling underlying functions, losing test structure
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`param_fake_branch`, `decrypt_string`, `param_tail_call_optimized`), making basic navigation possible despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation is the most severe issue; original source had extensive comments explaining obfuscation techniques, test scenarios, and expected values that are entirely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve dead code branches with annotations** - Instead of eliminating obfuscation branches, mark them as "DEAD_CODE: condition always false" to maintain semantic transparency
+2. **Infer variable names from usage patterns** - Analyze how variables are used (e.g., `param_1` in division context → `divisor`, `pbVar2` in string loop → `decrypt_ptr`)
+3. **Recover and insert documentation from debug symbols** - When `-g` flag is present, extract original comments and variable names from DWARF debug information

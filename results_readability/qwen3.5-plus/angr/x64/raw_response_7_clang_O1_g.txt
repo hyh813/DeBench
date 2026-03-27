@@ -1,0 +1,109 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `a0`, `v1`, `v2`, `flag1`, `result` instead of semantic names like `x`, `encrypted`, `decrypted`. Original `param_fake_branch(int x)` became `param_fake_branch(unsigned int a0)` losing intent.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Debug symbols preserved original function names (`param_fake_branch`, `call_opaque_predicate`, `test_obf_opt_edge`). This is the decompiler's strongest lexical recovery.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (0xFFFFFFFF), `90` (0x5A XOR key), `0x77359400` appear without explanation. Original had `0xDEADBEEF` with clear obfuscation intent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive compiler artifacts: uninitialized variable patterns (`v0 = v2` before v2 defined), redundant wrapper functions (`sub_401199` just calls `param_fake_branch`), register spill variables (`v1`, `v2`, `v3`).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Fake branches completely eliminated (should show `if (x * x < 0)` even if dead). GCD loop in `param_opaque_predicate` uses confusing `_ccall` and `CONCAT` operations instead of clean modulo arithmetic.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Severe over-fragmentation with wrapper functions (`sub_401199`, `sub_4011a3`, `sub_4011b6`) that do nothing but call the real function. Creates unnecessary indirection.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom within functions, but odd variable initialization patterns (`v0 = v2` before v2 is set) disrupt logical flow and suggest decompiler uncertainty.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate code between `call_string_encryption` and `param_string_encryption` (identical bodies). Wrapper functions create 100% redundant call layers throughout the binary.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Signed/unsigned confusion: `param_fake_branch(int x)` became `unsigned int a0`. Return types inflated to `unsigned long long` where original used `int`. Some precision lost but inferable.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in this code section. The bitfield struct from `param_implementation_defined` was completely optimized to constant `47`, losing all structural information.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Implicit unsafe casts throughout (`CONCAT` operations, pointer arithmetic like `ptr + idx * 4`). No const-correctness preserved. Signal handler types degraded.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. No explanation of obfuscation techniques, no indication that fake branches were eliminated, no algorithm documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. The "fake branch" obfuscation pattern (OBF-L4-02) completely lost. GCD algorithm not identified. String decryption loop not recognized as XOR cipher.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`). No warnings about eliminated code, optimized-away branches, or decompiler uncertainty regions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note x≠0 for normal path). No postconditions. Error handling contracts completely absent.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships clear through preserved names. However, global variables use opaque addresses (`g_402010`, `g_402030`) instead of semantic names like `array_a`, `array_b`.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file. Debug symbols preserved some logical grouping, but wrapper functions scattered throughout disrupt organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies undeclared (`signal`, `longjmp`, `__libc_start_main`). Would require significant stubbing to compile standalone. Type mismatches would cause warnings.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+4)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (5+4+6+5)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (2+3+3+3)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+6+5)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                              4.97/10 ≈ 5.0/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Fake branches completely eliminated** - The core obfuscation technique (OBF-L4-02) is invisible in decompiled output; `param_fake_branch` just returns input
+- **Excessive wrapper function fragmentation** - Functions like `sub_401199`, `sub_4011a3` add zero value and obscure call relationships
+- **Uninitialized variable patterns** - `v0 = v2` before `v2` is defined suggests decompiler stack analysis failures
+- **Zero semantic comments** - No explanation of obfuscation intent, algorithm purpose, or optimization artifacts
+- **Magic numbers unexplained** - `4294967295`, `90`, `0x77359400` appear without context or constant names
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Debug symbols (-g flag) preserved original function names perfectly, making navigation and identification straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments means readers cannot understand obfuscation intent, algorithm purpose, or decompiler confidence levels.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and annotate eliminated code** - When branches are optimized away, add comments like `// OPTIMIZED: Dead branch removed (x*x < 0 always false)`
+2. **Eliminate wrapper function artifacts** - Merge `sub_XXXXX` wrapper functions with their targets when they contain only a single call
+3. **Infer variable names from usage patterns** - Analyze how variables are used (e.g., loop counters, array indices, XOR keys) to generate semantic names instead of `v1`, `a0`, `flag1`

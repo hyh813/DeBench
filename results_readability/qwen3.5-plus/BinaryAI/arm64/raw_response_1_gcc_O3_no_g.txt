@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `param_1`, `iVar1`, `uVar2`, `auVar12` with no semantic meaning. For example, `sequential_ops` uses `param_1/2/3` instead of `a/b/c`, and complex functions like `recursion_factorial` have 10+ generic temporaries (`iVar4` through `iVar11`) that obscure the factorial computation logic.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`sequential_ops`, `recursion_factorial`, `loop_while`), but many helper functions are generic (`FUN_00100940`, `FUN_0010141c`). The naming is inconsistent—some functions match source while others are address-based.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x3e9` in `infinite_loop`, `0x65` in `loop_external_state`). Some literals are recoverable (10, 20, 30 in switch cases) but many hex constants lack context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: NEON vector operations (`NEON_ext`, `NEON_cmeq`), undefined arrays (`auVar1 [16]`, `auVar12 [16]`), and stack canary checks (`___stack_chk_guard`) clutter simple functions. The `recursion_factorial` function has 15+ lines of vector intrinsics for what should be simple recursion.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Despite -O0 compilation, many functions show aggressive optimization artifacts. `loop_for_fixed` and `goto_backward` have massive unrolled loops with nested conditionals instead of clean for/while constructs. `switch_small` uses jump table lookup (`*(undefined4 *)(&CSWTCH_55 + ...)`) instead of switch-case syntax.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function granularity is reasonable, but some functions are bloated with optimization artifacts. `recursion_factorial` is 80+ lines when source is 5 lines. Test functions like `test_control_flow_l2` contain inline loops that should be separate.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Many functions use goto labels (`LAB_001016f0`, `LAB_001016e0` in `loop_multi_exit`) instead of structured control flow. The `duffs_device` function has 10+ goto labels creating spaghetti-like flow for what should be a clean switch-with-fallthrough.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from loop unrolling. `loop_continue` has 60+ lines of repeated conditional checks for what should be a simple odd-number summation. `recursion_factorial` and `tail_recursion` have nearly identical 80-line unrolled implementations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types (`undefined4`, `undefined8`, `undefined [16]`). Many functions use `uint` where `int` is appropriate. Function pointers are typed as `code *` instead of proper signatures. `if_else` returns `bool` but source returns `int`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Array structures are lost—`loop_break`'s static array `{10, 20, 30, 40, 50}` became a chain of if-else comparisons. Jump tables appear as raw pointer arrays (`local_58 [10]`) without struct definitions. No struct/union recovery visible.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(ulong)(param_2 & 0x1f)` in `op_shl`). Function pointer calls use generic `code *` type. Some implicit conversions between signed/unsigned (`(int)param_1` casts throughout). No buffer overflow protections visible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API documentation. Only auto-generated function headers with addresses.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Pattern recognition is minimal. `duffs_device` doesn't identify the famous Duff's Device optimization pattern. State machine functions (`state_machine`, `fsm_func_table`) aren't labeled as such. Recursion patterns aren't identified.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged (`UNRECOVERED_JUMPTABLE` in `call_func_ptr`), but inconsistent. `computed_goto` and `fsm_func_table` have complex pointer manipulation without warnings. No indication of potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `op_div` and `op_mod` have division-by-zero checks in code but no contract documentation. Error conditions aren't labeled.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships aren't documented. Function pointer arrays (`local_58`, `apcStack_20`) show callback relationships but aren't explained. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped somewhat logically (test functions together, operation functions together), but no header file structure. Static functions aren't clearly marked. External functions have `<EXTERNAL>::` prefix which is helpful.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code references undefined symbols (`_DAT_00102b00`, `jump_buffer`, `tmp_ldXn`). Stack canary checks require specific runtime support. Would need significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Weighted Calculation:**
+- L1 (Lexical): 4.5 × 0.30 = 1.35
+- L2 (Structural): 4.5 × 0.25 = 1.13
+- L3 (Type System): 4.0 × 0.20 = 0.80
+- L4 (Semantic): 2.8 × 0.15 = 0.42
+- L5 (Contextual): 5.0 × 0.10 = 0.50
+- **Total: 4.20/10**
+
+**Critical Defects:**
+- Variable names are entirely generic (`param_1`, `iVar1`, `uVar2`) with zero semantic meaning across all functions
+- Loop unrolling artifacts transform simple 5-line functions into 80+ line monstrosities (`recursion_factorial`, `loop_for_fixed`)
+- Zero comments or documentation despite complex optimization patterns requiring explanation
+- Array and data structure recovery failed—`loop_break`'s static array became if-else chain
+- NEON vector intrinsics (`NEON_ext`, `NEON_cmeq`) appear in scalar integer functions, obscuring logic
+
+**Best Quality Aspect:** Function Naming Quality (scored 6/10)  
+- Core test functions retained original source names, providing some semantic anchor points for navigation
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Complete absence of any explanatory comments makes understanding optimization artifacts nearly impossible
+
+**Top 3 Recommendations:**
+1. **Implement variable name inference** from usage patterns and parameter positions (e.g., `param_1` in `sequential_ops` should be `a` based on source correlation)
+2. **Add optimization pattern detection** to label loop unrolling, vectorization, and jump table transformations with explanatory comments
+3. **Recover data structures** from access patterns—static arrays should be reconstructed rather than converted to if-else chains

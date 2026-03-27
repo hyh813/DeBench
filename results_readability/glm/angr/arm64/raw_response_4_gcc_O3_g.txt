@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `a0`, `v0`, `v1`, or `ptr`. Semantic names like `count`, `sum`, or `args` from the source are completely lost, making it hard to understand the purpose of local variables.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully recovered the original function names (e.g., `cdecl_func`, `test_calling_conventions`, `main`), likely because debug symbols or symbol table information was present. This makes identifying the high-level purpose of functions trivial.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with "magic numbers" that are unsigned representations of signed values or bitmasks, such as `4294967294` (which is `-2` in 32-bit signed) and `4294967295` (`-1`). This obscures the simple arithmetic logic present in the source.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The decompiled code contains significant noise, including pseudo-operations like `__ROL__`, `AddV`, and `CONCAT`, as well as repetitive stack canary checks (`__stack_chk_guard`). These artifacts clutter the code and distract from the core logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is severely distorted. A simple `switch` statement in `ret_multi_branch` was collapsed into a nonsensical mathematical formula involving rotation (`__ROL__`). Loops in `varargs_func` are represented as complex `while(true)` blocks with manual pointer arithmetic instead of a standard `for` loop.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler maintains a 1-to-1 mapping with the source functions. While there are some generic `sub_XXXX` thunks, the main logic functions are correctly separated into their own scopes, matching the source structure well.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code is difficult to read linearly. Functions like `varargs_func` and `param_varargs` contain deeply nested pointer arithmetic and conditional jumps that break the top-to-bottom reading flow, requiring significant mental effort to trace execution.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is moderate redundancy, primarily from stack frame setup (`v0 = &v1`) and stack canary checks which appear in almost every function. While some dead code is removed, the boilerplate safety checks add significant clutter.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Type information is significantly degraded. Signed integers are often represented as unsigned (e.g., `unsigned int` instead of `int`). The `va_list` type is completely lost, replaced by a generic `struct_0` and raw pointers.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Composite types are poorly recovered. The `va_list` structure is rendered as a generic `struct_0` with fields `field_0` and `field_8`. The `LargeStruct` parameter passing fails entirely with an unsupported operation error, losing the struct definition completely.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies on unsafe casts and pointer arithmetic. For example, accessing `struct_0` fields via pointer offsets (`&ptr->field_8`) and casting `char` arrays to `long long` pointers creates a fragile and unsafe representation of the original safe C code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are virtually absent. There are no explanations of the complex pointer arithmetic or the weird rotation logic. The only comments are auto-generated markers like `/* do not return */`, which offer little semantic value.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: Standard C idioms are completely missed. Variable argument lists (`va_start`, `va_arg`) are not recognized. Switch statements are not recognized. Struct passing is not recognized. The code reads like raw assembly lifted to C rather than high-level logic.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: The decompiler explicitly flags one failure with `unsupported_Iop_ZeroHI64ofV128()`, which is helpful. However, the incorrect transformation of `x * 2` into a rotation and the switch-to-math conversion are presented confidently as correct code, which is misleading.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For instance, the requirement that `ptr` is not null in `param_double_ptr` is checked in code but not documented as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. It is easy to see that `test_calling_conventions` calls `call_cdecl`, which calls `cdecl_func`. The call graph is preserved well despite the internal logic corruption.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are organized in memory address order, which roughly corresponds to the source file order in this case. Related test functions are grouped together, maintaining a logical flow for the file as a whole.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile without significant modification. It relies on pseudo-operations (`__ROL__`, `AddV`, `CONCAT`) and undefined structs (`struct_0`) that do not exist in standard C headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 9 + 2 + 2) / 4 = 4.0
+L2_avg: (2 + 8 + 4 + 5) / 4 = 4.75
+L3_avg: (3 + 2 + 3) / 3 = 2.67
+L4_avg: (2 + 1 + 4 + 1) / 4 = 2.0
+L5_avg: (8 + 7 + 2) / 3 = 5.67
+
+Overall = (4.0 × 0.30) + (4.75 × 0.25) + (2.67 × 0.20) + 
+          (2.0 × 0.15) + (5.67 × 0.10)
+Overall = 1.2 + 1.1875 + 0.534 + 0.3 + 0.567
+Overall = 3.79
+```
+
+### Overall Readability Score: **3.8/10**
+
+### Critical Defects
+- **Control Flow Collapse**: The `switch` statement in `ret_multi_branch` was incorrectly transformed into a mathematical formula (`__ROL__((a0 + 1) * 5, 1)...`), completely destroying the logic.
+- **Arithmetic Misinterpretation**: Simple multiplication (`x * 2`) is consistently decompiled as a bitwise rotation operation (`(a0 * 2 | a0 >> 31)...`), introducing logic errors and confusion.
+- **Lost Abstractions**: Standard `va_list` variable argument logic is lost, replaced by raw stack pointer arithmetic on a generic `struct_0`.
+- **Type Degradation**: Signed integers are displayed as large unsigned values (e.g., `4294967294`), and composite types like `LargeStruct` fail to decompile (`unsupported_Iop`).
+- **Pseudo-Operations**: The output relies on non-standard macros like `__ROL__`, `AddV`, and `CONCAT`, rendering the code unreadable and uncompilable.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**
+- **Why?**: The decompiler successfully preserved the original function names from the symbol table, allowing the user to easily identify the high-level purpose of each code block despite the poor internal decompilation.
+
+### Most Needs Improvement
+- **Idiom Recognition (1/10)**
+- **Why?**: The decompiler failed to recognize virtually every high-level idiom—switch statements became math, varargs became pointer math, and structs became unsupported ops—leaving behind only low-level implementation details.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Fix Arithmetic Lifting**: Correct the logic that interprets multiplication/shift instructions as rotation operations; `x * 2` should not become a rotate-left.
+2.  **Recover Control Flow Tables**: Improve switch table analysis to prevent collapsing jump tables into arithmetic expressions; preserve the `switch-case` structure.
+3.  **Standard Library Type Recognition**: Implement specific recovery for standard types like `va_list` to abstract away the stack-frame specific pointer arithmetic.

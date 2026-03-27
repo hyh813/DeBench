@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `a1`, `a2`, `v1`, `v2`, `result` instead of semantic names (e.g., `temp1`, `sum`, `count` from source). No attempt to infer meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`sequential_ops`, `nested_if_2`, `loop_for_fixed`). Clear verb-noun patterns maintained. Only `sub_940` is generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xFFFFFFFFLL` (-1) and `4294967294LL` (-2) obscure intent. Test functions hardcode expected values instead of computing them.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive type casts `(unsigned int)`, `(int)`, `(_DWORD)`. Register annotations (`// x0`, `// w1`) and stack offsets (`[xsp+10h]`) clutter output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions collapse well (`sequential_ops` → single expression). `duffs_device` becomes extremely complex with goto labels. Loops mostly recovered as do-while.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly. Helper functions (`op_add`, `double_value`) remain separate. No inappropriate inlining observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. `duffs_device` has 11+ goto labels disrupting flow. Test functions inline loops instead of calling original functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions constant-folded (printing expected values, not computing). Redundant type casts throughout. No dead code but expressions could simplify.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `__int64`, `_DWORD`, `_QWORD` instead of simple `int`. `if_else` incorrectly returns `bool` instead of `int`. Function pointer signatures generic.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays shown as `_OWORD`/`_QWORD` stack variables with hex initialization. No struct definitions (source had few). Matrix in `loop_multi_exit` not named.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts `(unsigned int)`, `(_DWORD)`. Function pointer calls use generic signatures. Pointer arithmetic visible in test functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments recovered. Original source had extensive documentation (algorithm descriptions, test cases) - all lost. Only auto-generated signatures present.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic control flow patterns recognized (if-else, switch, loops). State machine in `state_machine` not identified. No algorithm naming (e.g., "factorial calculation").
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 9 functions marked "FAILED to decompile" at end. No inline warnings about uncertain recovery. `computed_goto` shows inline assembly without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. Original test validation comments completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code. No call graph documentation. Callback relationships visible but not explained. Global variable usage not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No header file recovery. Static functions not clearly marked. Functions grouped but not logically organized.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Claims compilation success but has 9 failed decompilations. Inline assembly in `computed_goto`. Non-standard types (`__int64`, `_OWORD`) require headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00
+Level 2 (Structural):  (6+8+6+6)/4 = 6.50
+Level 3 (Type):        (5+6+4)/3   = 5.00
+Level 4 (Semantic):    (2+5+4+2)/4 = 3.25
+Level 5 (Contextual):  (6+5+4)/3   = 5.00
+
+Overall = (5.00 × 0.30) + (6.50 × 0.25) + (5.00 × 0.20) + 
+          (3.25 × 0.15) + (5.00 × 0.10)
+        = 1.50 + 1.625 + 1.00 + 0.4875 + 0.50
+        = 5.11/10
+```
+
+**Overall Readability Score: 5.1/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `a2`, `v1`, `result`) - should infer `temp1`, `sum`, `count` from usage patterns
+- **Zero semantic comments recovered** - original source had extensive documentation explaining algorithms and test cases
+- **Test functions constant-folded** - prints expected values instead of calling actual functions, losing verification capability
+- **Excessive type casting noise** - `(unsigned int)`, `(_DWORD)` casts obscure simple integer operations
+- **`duffs_device` decompilation extremely complex** - 11+ goto labels instead of recognizing the unrolled loop pattern
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names preserved from source with clear semantic meaning (`sequential_ops`, `nested_if_deep`, `loop_for_fixed`)
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete loss of all source documentation; no algorithm explanations, no test case descriptions, no decompilation confidence indicators
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable renaming** - Analyze how variables are used (loop counters, accumulators, indices) to suggest semantic names like `i`, `sum`, `count`
+2. **Recover and preserve source comments** - When debug symbols (`-g`) are available, extract and embed original comments in decompiled output
+3. **Detect and simplify common optimization patterns** - Recognize constant-folded test code, loop unrolling (Duff's device), and collapse to readable high-level constructs

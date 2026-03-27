@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Parameters like `a`, `b`, `x`, `y` in functions like `cdecl_func(int a, int b)` are acceptable, but generic loop indices like `v0`, `v1`, `v2` in `varargs_func` and `param_varargs` obscure their roles. The decompiler uses generic names for temporary variables rather than inferring semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test functions correctly recovered: `cdecl_func`, `stdcall_func`, `fastcall_func`, `func_a`, `func_b`, `varargs_func`, `func_no_args`, `func_many_args`. However, initialization functions use generic names (`sub_1030`, `sub_1040`, etc.). The core test functions match source names well.
+
+**3. Literal Clarity:** Score: 9/10  
+Justification: All return values are computed correctly (15, 50, 6, 21, etc.) matching expected test outputs. No unexplained magic numbers - literals like `42` in `func_no_args()` and computed sums are clear. The decompiler correctly preserved computed constant expressions.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Code is relatively clean with minimal compiler artifacts. Some noise present: `__usercall` and `__userpurge` annotations, occasional `_DWORD` casts, and the `LODWORD` macro usage in `func_struct_byval`. However, no debug instrumentation or obvious dead code observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural and idiomatic. Loops use `do-while` constructs appropriately in `varargs_func` and `param_ptr_array`. Switch statements are properly recovered in `ret_multi_branch`. At `-O0`, the control flow closely matches source structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. The decompiler correctly separated all test functions. Some granularity issues: `test_calling_conventions` is 50+ lines but this matches the source. Good decomposition overall.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns in `varargs_func` and `param_varargs` when `count <= 0` are appropriate. No excessive nesting or goto abuse. Good linearization.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Some loop unrolling in `func_struct_byval` (explicitly adding all 16 array elements) is present but represents the compiled output. Minor redundancy in test functions that return constants.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are precise: `int`, `char*`, `int*`, `double`, `__int64`. However, extensive use of `_DWORD` instead of `int` in varargs functions reduces precision. Function pointer types like `int (*callback)(int)` are correctly recovered. Mixed results.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types recovered well: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData`. Field names preserved (`s.data[0]`, `p->x`, `p->y`). The `LargeStruct` with `long long data[16]` is correctly identified. Minor issue: some struct definitions missing from output but used correctly in functions.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe casts present: `*(_DWORD *)p` in `param_complex_cast`, `*((_DWORD *)va + v1++)` in varargs functions. The pointer arithmetic in `param_ptr_array` (`&arr[n] != v2`) is technically questionable. These patterns work but lack type safety.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal useful comments. Only auto-generated comments like "positive sp value has been detected" and function headers. No explanation of algorithm logic, parameter contracts, or test purpose. The rich source code comments explaining calling conventions were not recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: varargs handling with `va_list`, `va_start`, `va_arg`. However, no explicit naming of patterns like "AAPCS calling convention" or "cdecl semantics". The calling convention annotations (`__cdecl`, `__stdcall`, `__fastcall`) are present but not explained.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: One anomaly flagged: "positive sp value has been detected, the output may be wrong!" in `_start` function. However, no indication of indirect call resolution failures or potential undefined behavior. Some uncertainty could be better communicated.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. The source had comments like "requires: ptr != NULL" for functions like `func_struct_byptr`, but these were not recovered. No documentation of contract expectations in the decompiled output.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear within test functions (e.g., `test_calling_conventions` calls various test targets). Static functions properly scoped. However, callback relationships like `param_func_ptr` calling `callback_func` could be better documented.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions logically grouped: initialization functions first, then test functions, then parameter/return test functions. Matches source organization of calling conventions, parameter passing, and return value sections. Good grouping.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: Metadata indicates "Compilation Result: Yes". The code compiles successfully. External dependencies (puts, strlen, __printf_chk) are properly referenced. Minimal stubs needed for standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.8/10
+
+**Critical Defects:**
+- Variable naming uses generic indices (`v0`, `v1`, `v2`) instead of semantic names like `sum`, `index`
+- No comments explaining calling convention semantics or test purpose
+- Type safety issues with unsafe casts (`*(_DWORD *)p`) that could cause issues
+- Missing struct definitions visible in function signatures but not fully declared
+- No contract or precondition documentation for functions like `func_struct_byptr` (requires: p != NULL)
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 9/10)  
+- At `-O0`, the decompiler recovered natural loop constructs and switch statements that closely match source structure
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 4/10)  
+- The decompiled output lacks explanatory comments about calling conventions, algorithm logic, and test purpose that were present in the original source
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v1++` in loop context should suggest `index` or `i`, not generic `v1`
+2. Recover source code comments that explain semantics (e.g., "cdecl: caller cleans stack")
+3. Add type-safe alternatives to `_DWORD` casts and flag potential undefined behavior in comments

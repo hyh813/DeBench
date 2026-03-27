@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Local variables in test functions are generic (e.g., `v0`, `v1`, `v3` in `test_cpp_member_func`), obscuring the original intent (`obj`, `r1`, `r2`). Struct fields are generic (`field_0`, `field_8`) rather than semantic names (`value`, `multiplier`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Excellent demangling of C++ symbols (e.g., `SimpleClass::getValue`, `test_cpp_virtual_func`, `std::unique_ptr<...>::~unique_ptr`). Function names accurately reflect the original source, including complex template instantiations and lambda operators.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals are preserved ("Test"), and magic numbers like `0x1234` (ClassID) are visible. However, vtable pointers are represented as global addresses (e.g., `&g_408b50`) rather than symbolic vtable references, which reduces clarity.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The decompiled output is bloated (3395 LOC vs 540 LOC) primarily due to the full expansion of STL internals (`std::unique_ptr`, `std::tuple`, `std::__uniq_ptr_impl`). This low-level library implementation detail obscures the high-level logic of the test functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: User-defined logic (e.g., `test_cpp_member_func`) is readable, but exception handling (`test_cpp_exception`) is reduced to low-level `__cxa_throw` calls and jump tables, losing the `try/catch` structure. Virtual function calls are explicit vtable indirections, which is accurate but less natural than the source syntax.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: The decompiler correctly separates constructors, destructors, and overloaded operators. However, the decomposition is overly granular regarding standard library templates, breaking the logic into dozens of tiny internal functions (e.g., `_ZNSt11_Tuple_impl...`).
+
+**7. Code Linearization:** Score: 7/10
+Justification: The main test functions read linearly from top to bottom. However, the control flow is interrupted by calls to the expanded STL functions and exception handling landing pads, requiring the reader to jump around the file.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Template instantiations for `int` and `double` are fully expanded, resulting in significant code duplication (e.g., separate implementations for `Container<int>` and `Container<double>`). While accurate to the binary, this redundancy hinders readability.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally precise, correctly distinguishing between `int`, `unsigned int`, `char*`, and `unsigned long long`. Template types are preserved in function signatures, and `this` pointers are explicitly handled as the first argument.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Structs are defined (e.g., `struct_0` for the lambda capture), but field names are generic (`field_0`, `field_8`). The layout is correct (offsets match), but semantic meaning (e.g., `capture_by_value` vs `capture_by_ref`) is lost.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is type-safe in the sense that it respects the binary types. However, C++ abstractions like `dynamic_cast` and `virtual` calls are exposed as unsafe-looking pointer arithmetic and indirect function calls (`(*((long long *)*((long long *)&arg_0)))`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no high-level comments. The only comments are register annotations (e.g., `// rax`, `// rdi`). There is no explanation of vtable usage, exception handling flow, or STL logic.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: The decompiler recognizes C++ idioms through naming (e.g., "non-virtual thunk to", "operator()"). It identifies lambda structures and RTTI usage (`__dynamic_cast`), but does not explicitly label them as design patterns or high-level idioms in the code body.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: There are no explicit flags or warnings about complex control flows like exception handling or indirect calls. The code is presented as-is, leaving the user to identify the `__cxa` calls as exception handling manually.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement for `operatornew` to return valid memory or the state of `unique_ptr` after `std::move` is not stated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear, and the demangled names help identify relationships (e.g., `SimpleClass::SimpleClass` calling `strncpy`). However, the sheer volume of internal STL calls makes tracing the *logical* flow of the test functions difficult.
+
+**17. Module Organization:** Score: 4/10
+Justification: The output is a flat list of functions ordered by address. Related class methods are scattered, and STL internals are intermixed with user code, rather than being grouped or abstracted away.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on standard library headers and compiler intrinsics (`__cxa_*`, `operatornew`). It would not compile standalone without significant stubbing or inclusion of specific system headers, and the struct definitions are local and incomplete.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- **STL Expansion Obscures Logic:** The full expansion of `std::unique_ptr` and `std::tuple` internals (hundreds of lines) buries the actual logic of `test_cpp_smart_ptr`.
+- **Generic Variable Naming:** Local variables holding objects are named `v0`, `v1`, etc., instead of semantic names like `obj` or `result`.
+- **Loss of High-Level Control Flow:** Exception handling (`try/catch`) is represented as raw `__cxa` calls and label jumps, losing the structural clarity of the source.
+- **Generic Struct Fields:** Class members are recovered as `field_0`, `field_8`, etc., losing the semantic context of `value`, `name`, or `multiplier`.
+- **Lack of Comments:** The code is devoid of explanatory comments, leaving complex C++ runtime mechanisms (vtables, thunks) undocumented.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 9/10)
+- The decompiler excels at demangling C++ symbols, accurately recovering names for overloaded operators, template instantiations, and lambda functions, which is crucial for navigating the code.
+
+**Most Needs Improvement:** Comment Quality & Presence (Score: 1/10)
+- The absence of comments explaining C++ runtime mechanisms (like vtable lookups or exception landing pads) makes the low-level implementation details extremely difficult to interpret.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **STL Intrinsic Summarization:** Implement pattern matching to recognize and collapse standard library template implementations (like `std::unique_ptr` or `std::vector`) into high-level pseudo-code or known API calls to reduce noise.
+2. **Variable Name Inference:** Improve heuristics for naming stack variables that hold class objects, potentially using the class type name (e.g., `SimpleClass_obj` instead of `v3`).
+3. **Exception Handling Recovery:** Analyze personality routines and landing pads to reconstruct `try/catch/throw` blocks rather than outputting raw `__cxa` calls and goto-based control flow.

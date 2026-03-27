@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4` throughout. For example, in `local_array`: `int *v1; // r2`, `int v2; // r3`. Only `arr` in `local_array` and `out` in `address_of_local` are properly named. The vast majority of variables lose semantic meaning from the original source.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions correctly recovered (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`). However, many helper functions use generic patterns like `sub_10598`, `sub_10684`. The static helper function `static_helper` was inlined and lost, while `extern_function` is correctly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x14u` (20), `0x28u` (40), `0x3E8` (1000) appear without explanation. The atomic operation addresses like `0xFFFF0FC0` are completely opaque. Some constants like `8u` for struct sizes are marginally clearer but still lack semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Heavy register annotations (`// r0`, `// r2`, `// r3`, `// r4`) clutter every variable. Frame pointer markers like `// [sp+0h] [bp-38h] BYREF` add noise. However, no debug instrumentation or obvious compiler artifacts beyond these ARM-specific annotations.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow is natural with `do-while` loops correctly recovered. Example: `local_array` uses `do { v1[1] = v2; ++v1; v2 += n; } while (v1 != &arr[9]);`. Conditionals use idiomatic `if-else` patterns. No goto abuse.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain reasonable granularity (20-80 lines). Core functions like `linked_list_heap` and `tree_heap_traversal` are properly separated. The `static_helper` function was correctly inlined into `call_static_func`. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns in error handling (`if (!v2) return -1;`) are appropriate. No forward jumps into loop bodies. The flow is highly linear.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling is minimal (appropriate for -O0). Common subexpression elimination artifacts are minimal. The code is clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic types like `_DWORD` (32-bit), `_BYTE` (8-bit), `void *` instead of precise types. Function pointers like `int (*f)(int)` are correctly typed. However, `size_t` is lost, and `int` is used generically. Mixed precision: some `unsigned int` but mostly signed defaults.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: `Node` and `TreeNode` structs are properly recovered with field names (`data`, `next`, `left`, `right`). The `Point` struct is used but its definition isn't shown in the decompiled output. Field names are accurate.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe patterns: pointer arithmetic in loops (`v3 += 4`, `v1[1] = v2`), casting between `_BYTE*` and `_DWORD*` (`*(_DWORD *)v0`). However, no obviously dangerous type-confused function pointers. The `dangling_pointer` function correctly demonstrates the vulnerability pattern.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no meaningful comments. Only register annotations (`// r0`) and frame markers. No explanation of algorithm logic, preconditions, or recovery confidence. The "FAILED to decompile" markers are useful but minimal.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Common patterns recognized: linked list creation/traversal (`linked_list_heap`), binary tree operations (`tree_heap_traversal`), memory allocation patterns. However, no explicit naming of these patterns (e.g., "// Linked list implementation").
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: "FAILED to decompile" markers clearly mark 18 functions that couldn't be resolved (e.g., `__imp_memset`, `__imp_free`). However, no warnings about potential undefined behavior in functions like `dangling_pointer` or `double_free`.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No explicit preconditions or postconditions documented. Error handling is present but not explained. The implicit contracts (e.g., "requires: n > 0" for `heap_basic`) are not made explicit.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are clear within test functions. However, no documentation of which functions call which. The relationship between `set_global_callback` and `call_global_callback` is clear from naming, but not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped logically (stack, heap, static, memory ops). However, it's a single flat output. Static functions like `static_helper` aren't clearly marked as file-scoped. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code references external functions via `__imp_*` symbols (e.g., `__imp_malloc`, `__imp_memset`). These would need linking against libc. No standalone compilation test performed, but structure suggests it would require moderate patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Variable naming is severely degraded: `v0`, `v1`, `v2` obscure roles that were clear in source (`arr`, `i`, `n`)
+- Magic numbers like `0xFFFF0FC0` (atomic operations) and `0x3E8` (1000) lack semantic explanation
+- No comments explaining algorithm logic, preconditions, or recovery confidence
+- Type precision lost: `_DWORD` instead of `int32_t`, generic `void*` instead of specific types
+- Cross-references between functions not documented
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- At -O0, loops and conditionals are correctly recovered in idiomatic form. The decompiler properly recognized `do-while` patterns and `if-else` structures.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+- Generic single-letter variables (`v0`-`v6`) dominate the output, making it extremely difficult to track which variable holds which semantic value. The original source had meaningful names like `arr`, `n`, `i`, `leak`, `p` that are completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Track how variables are used (array indexing → likely `arr` or `buffer`; loop counter → `i` or `index`; size parameter → `n` or `size`)
+2. **Detect and explain magic numbers**: Recognize common constants (1000 → "MAX_ITEMS", 0xFFFF0FC0 → atomic operation address) and add explanatory comments
+3. **Add semantic comments for complex patterns**: Document preconditions ("// requires: n > 0"), postconditions ("// returns: heap-allocated array"), and algorithm intent ("// Implements: linked list with sentinel node")

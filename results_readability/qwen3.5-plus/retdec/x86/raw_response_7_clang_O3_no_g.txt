@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `a1`, `a2`, `result`) with no semantic meaning. Original source used meaningful names like `x`, `encrypted`, `decrypted`, `buffer`, `key` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main function names are preserved from source (`param_fake_branch`, `call_opaque_predicate`), but helper functions use mechanical names (`function_1040`, `function_1050`, `function_10fc`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (`0x100000000`, `0x29fb`, `0x2c99`, `90` for XOR key). String literals are referenced through pointer arithmetic rather than directly visible.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_*`, `register_tm_clones`, `deregister_tm_clones`, `__do_global_ctors_aux`, `frame_dummy` - none are relevant to program logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_opaque_predicate` has overly complex conditionals that obscure the original simple logic. `param_tail_call_optimized` was converted to an iterative formula instead of preserving recursion structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but some are oversimplified (`call_fake_branch` just returns constant 10). Helper functions are fragmented with 55 detected functions for a 464 LOC source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but pointer arithmetic expressions (`v1 + (int32_t)&g2 - 0x1e27`) disrupt flow. Some functions have excessive nesting from decompilation artifacts.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `param_vectorized_loop` shows significant loop unrolling not in original. Complex modulo expressions repeated: `(0x100000000 * (int64_t)(v4 >> 31) | (int64_t)v4) % (int64_t)v3`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Types are `int32_t`, `uint32_t`, `char*` - reasonably precise. However, `param_fake_branch` takes `int32_t result` instead of `int x`, and some pointer types are overly generic.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `struct __jmp_buf_tag` recovered but with generic field names (`e0`, `e1`, `e2`). The bitfield struct from `param_implementation_defined` is completely lost (function just returns constant 43).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout (`(int64_t)(v4 >> 31)`). Extensive pointer arithmetic without bounds checking. Function pointer types sometimes use `void*`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: ZERO meaningful comments in decompiled code. Only auto-generated file header present. No algorithm explanations, confidence indicators, or logic documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not recognized. String decryption pattern not identified. No design patterns or algorithm patterns documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite significant semantic loss. `param_fake_branch` confidently returns just `result` without the fake branch logic - this is incorrect but unmarked.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error conditions (division by zero, null pointer) not explained in function contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`g1`, `g2`, `g3`) used without explanation of purpose.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in one file with no logical grouping. Static functions from source not properly scoped. No header file separation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes necessary headers and should compile. However, function signature mismatches may require adjustment (e.g., `param_division_by_zero` has extra `uint32_t a2` parameter).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (6+4+5)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                              4.60/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on semantic usage (e.g., `gcd_temp`, `loop_counter`, `xor_key`)
+- **`param_fake_branch`** completely loses the fake branch logic - just returns input unchanged
+- **Zero comments** explaining algorithm intent, especially for opaque predicates and GCD calculation
+- **Magic numbers** (`0x100000000`, `90`, `0x29fb`) used without explanation or named constants
+- **`param_implementation_defined`** reduced to constant return (43), losing all bitfield and implementation-defined behavior logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Main function names preserved from source, making it possible to identify which decompiled function corresponds to which original function.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any explanatory comments makes understanding algorithm intent nearly impossible without comparing to source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables in XOR loops should be named `key`, `buffer`, `decrypted`)
+2. **Add confidence annotations** - Flag regions where decompilation is uncertain (e.g., "UNCERTAIN: opaque predicate logic may be simplified")
+3. **Recover algorithm patterns** - Recognize common patterns like GCD, string decryption, and add explanatory comments identifying them

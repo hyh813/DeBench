@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `uVar3`) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` that are completely lost. Complex functions like `loop_continue` have 9+ generic variables (uVar4-uVar9) obscuring simple odd-number summation logic.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`sequential_ops`, `single_if`, `nested_if_2`, `loop_for_fixed`). Test functions also preserved (`test_control_flow_l1`). Only startup/runtime functions have generic names (`FUN_00101020`, `_init`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Many magic numbers without explanation (`0x3e9`, `0x65`, `0x12`, `0xfffffffc`). Test functions show hardcoded hex values (`0x15`, `0x14`, `0x2d`) instead of computed results. Original had no magic numbers - all values were semantically meaningful.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Vector operation artifacts create noise (`auVar13`, `auVar14` arrays in `recursion_factorial`). Some WARNING comments present ("Could not recover jumptable"). Simple functions are clean, but optimized functions have significant compiler artifact pollution.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical failure - compiled at `-O0` but decompiled code shows aggressive optimization artifacts. `loop_continue` uses bit manipulation instead of simple for-loop. `recursion_factorial` and `goto_backward` are completely unrolled with vector operations. `duffs_device` uses goto labels instead of structured switch.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly. Helper functions (`double_value`, `triple_value`) remain separate. No inappropriate inlining detected. Function sizes are reasonable and match source granularity.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. `duffs_device` has disruptive goto labels (`switchD_00101717_caseD_7`). Test functions are very linear but hardcoded. Complex optimized functions have non-linear bit manipulation sequences.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant redundancy from loop unrolling in `recursion_factorial`, `tail_recursion`, `goto_backward`. Vector operations duplicate similar computation patterns 4+ times. Test functions eliminate all computation entirely (just printf with constants).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of generic types (`undefined4`, `undefined8`, `undefined1 [16]`). Signed/unsigned confusion (`param_1` as `int` vs `uint` inconsistently). `if_else` returns `bool` in decompiled but `int` in source. Function pointers degraded to `code *UNRECOVERED_JUMPTABLE`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited composite types in source. Arrays handled as pointers (`&DAT_001020d0`). `jmp_buf` handled as opaque type. No struct reconstruction needed for this code sample, basic pointer handling is adequate.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`undefined *`, `code *`). Function pointer calls marked UNRECOVERED. Pointer arithmetic visible in array access (`piVar2 = piVar2 + 1`). No buffer overflow patterns detected but type confusion possible.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no useful comments. Only auto-generated WARNING comments for unrecoverable constructs. Original source had extensive comments explaining each function's purpose, difficulty, and test cases - all lost. No algorithm explanations provided.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns recognized (ternary in `ternary_op`, simple if-else). Complex patterns not recognized - `duffs_device` partially recovered but loop unrolling not identified as such. No design pattern identification. `switch_fallthrough` logic obscured.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Subroutine does not return" for `longjmp`, "Globals starting with '_' overlap"). Inconsistent reporting - some anomalies silent. `call_func_ptr` shows "Could not recover jumptable" but continues with potentially incorrect code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. No error condition documentation. Test functions show expected values but not as formal contracts. Original had explicit test validation comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables referenced as `DAT_` addresses (`&DAT_00102090`, `&DAT_001020d0`). No call graph documentation. Callback relationships unclear (`call_func_ptr` shows UNRECOVERED_JUMPTABLE).
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file. No header file separation. Static functions not clearly marked (`indirect_recursion_b` was static in source). Test functions grouped together matching source organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code uses Ghidra-specific types (`undefined4`, `undefined8`, `undefined1 [16]`) that won't compile in standard C. Would require significant modification and type definitions. External dependencies not documented. Architecture mismatch (source ARM64, decompilation x86).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50  × 0.30 = 1.650
+Level 2 (Structural):  (4+7+6+5)/4 = 5.50  × 0.25 = 1.375
+Level 3 (Type):        (5+6+6)/3   = 5.67  × 0.20 = 1.134
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50  × 0.15 = 0.525
+Level 5 (Contextual):  (5+6+4)/3   = 5.00  × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.18/10
+```
+
+**Overall Readability Score: 5.2/10**
+
+### Critical Defects
+- **Variable names completely generic** - `param_1`, `iVar1`, `uVar3` provide zero semantic information compared to original `temp1`, `sum`, `count`
+- **Test functions hardcoded** - `test_control_flow_l1/2/3` print constant values instead of actually calling functions, defeating decompilation purpose
+- **Aggressive optimization artifacts at -O0** - `loop_continue`, `recursion_factorial`, `goto_backward` show loop unrolling and vector operations that shouldn't exist at debug optimization level
+- **No comments recovered** - Original had extensive documentation explaining each function's purpose, difficulty level, and test cases; all lost
+- **Architecture mismatch** - Source compiled for ARM64 but decompilation shows x86, suggesting binary mismatch
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Most function names preserved accurately from source, making it easy to identify which decompiled function corresponds to which original function.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Virtually no useful comments recovered despite original having extensive documentation; this severely impacts understandability of complex functions.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (e.g., `param_1` used in loop bound → `loop_limit`, `sum` accumulator → `total`)
+2. **Recover and preserve source comments** - If debug symbols (-g) are present, extract and embed original comments in decompiled output
+3. **Detect and annotate optimization artifacts** - When loop unrolling or vectorization is detected, add comments explaining the original structure (e.g., "/* Original: for loop unrolled 4x */")

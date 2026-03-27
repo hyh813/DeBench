@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Parameters use generic names like `param_1`, `param_2` instead of source names like `x`, `c`, `a`, `b`. Local variables are `iVar1`, `lVar2`, `uVar3`, `piVar2` rather than meaningful names like `sum`, `i`, `len`, `n`. Only stack canary (`local_8`) has semantic meaning.
+
+### 2. Function Naming Quality
+**Score: 10/10**
+Justification: Nearly all function names perfectly match the original source: `double_value`, `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `ptr_double`, `struct_simple`, `linked_list`, `binary_tree_sum`, etc. Excellent recovery.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Magic numbers like `0x61` ('a'), `0x62` ('b'), `0xb` (11), `0x14` (20) lack symbolic names from source ('A', ' ', '\0'). Enum values `STATE_IDLE`, `STATE_RUNNING` are replaced with numeric 0, 1, 2. Test labels like "DT-L1-01" lost. However, format strings preserve some context.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: Minimal compiler artifacts present. Stack canary checks (`local_8 - ___stack_chk_guard`) are expected at -O0. No redundant casts or debug instrumentation. Code is relatively clean.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural with `do-while` loops, `if-else` chains, and `switch`-like constructs. No spurious goto statements. At -O0, loops are correctly recovered as loops, not backward jumps.
+
+### 6. Function Decomposition
+**Score: 9/10**
+Justification: Function granularity is appropriate. Each function has single responsibility (e.g., `array_1d_stack` sums array, `process_char` converts case). No 500-line monoliths. Static functions properly scoped.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive forward jumps. Some nested loops in `array_3d` but manageable.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No dead code observed. No obvious common subexpression duplication. At -O0, loop unrolling is minimal. Clean code without redundant computations.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Types are generic: `int`, `long`, `char`, `float`, `double`. Original types like `short`, `_Bool`, `long long`, `uint` are lost. `const int *p` becomes `int *param_1`. Function parameters lack const/volatile qualifiers.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+Justification: Struct fields are lost - `Point3D` becomes `int *param_1` with array-style access `param_1[0]`, `param_1[1]`, `param_1[2]`. Nested structs like `Rect`, `Widget` use raw pointer arithmetic. Union recovery partially works but loses type semantics. Bitfields use manual bit manipulation.
+
+### 11. Type Safety
+**Score: 4/10**
+Justification: Multiple unsafe casts present: `(int*)(param_1 + lVar2 * 4)`, `*(byte *)param_1`, `**(int **)*param_1`. Pointer arithmetic on generic `long` types. Function pointers use generic `code*` type. Significant risk of undefined behavior interpretation.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: No explanatory comments for algorithms or logic. Only format strings from `printf` preserved (e.g., "DT-L1-01 (process_char): %c\n"). No decompilation confidence indicators. No documentation of non-obvious logic.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some patterns recognizable: linked list traversal (`param_1 = *(int **)(param_1 + 2)`), binary tree recursion. But no explicit naming like "linked list node" or "binary tree". State machine in `enum_switch` not identified.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No warnings about indirect calls, unusual stack layouts, or potential undefined behavior. Code presents everything confidently without flags for uncertain decompilation.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants documented. Null checks in `linked_list` (`param_1 == (int *)0x0`) are present but not explained as contracts.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function call relationships are implicit in the code (e.g., `main` calls `test_data_types_l1`). No explicit documentation of callers/callees. Global usage not documented.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions grouped logically: data type functions, array functions, pointer functions, struct functions. Static functions properly scoped. Matches source organization reasonably well.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+Justification: Code should compile with proper declarations for external functions (`puts`, `__printf_chk`, `__stack_chk_fail`). Some types like `undefined4`, `undefined8` are Ghidra-specific but compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 5 + 8) / 4 = 6.5
+L2_avg = (8 + 9 + 8 + 8) / 4 = 8.25
+L3_avg = (5 + 4 + 4) / 3 = 4.33
+L4_avg = (3 + 5 + 2 + 2) / 4 = 3.0
+L5_avg = (5 + 7 + 7) / 3 = 6.33
+
+Overall = (6.5 × 0.30) + (8.25 × 0.25) + (4.33 × 0.20) + 
+          (3.0 × 0.15) + (6.33 × 0.10)
+        = 1.95 + 2.0625 + 0.866 + 0.45 + 0.633
+        = 5.97/10
+```
+
+### Overall Readability Score: 5.97/10
+
+### Critical Defects
+- **Variable naming**: Parameters `param_1`, `param_2` and locals `iVar1`, `lVar2` lose original meaningful names like `x`, `sum`, `i`, `len`
+- **Type precision loss**: Original types `short`, `_Bool`, `long long`, `const int*`, `volatile int*` become generic `int`, `long`
+- **Struct field loss**: Composite types like `Point3D`, `Rect`, `Node` reduced to raw pointer arithmetic with `param_1[0]`, `param_1[1]`, `param_1[2]`
+- **No comments**: Zero explanatory comments for algorithms, contracts, or decompilation confidence
+- **Type safety**: Multiple unsafe casts between `int*`, `int**`, `byte*`, `undefined4*` without justification
+
+### Best Quality Aspect
+**Function Naming (10/10)** - Nearly all 40+ function names perfectly match the original source, demonstrating excellent symbol recovery.
+
+### Most Needs Improvement
+**Type System Fidelity (4.33/10)** - Severe degradation in type precision, composite type recovery, and type safety. Original `short`, `_Bool`, `const` qualifiers, and struct field names are lost.
+
+### Top 3 Recommendations
+1. **Recover struct field names**: Use layout analysis to identify struct fields and name them (e.g., `param_1->x`, `param_1->y` instead of `param_1[0]`, `param_1[1]`)
+2. **Infer variable names from usage**: Analyze parameter/local variable usage patterns to suggest meaningful names (e.g., `param_1` used as loop counter → `i` or `index`)
+3. **Add type qualifiers**: Detect `const` and `volatile` from memory access patterns and add appropriate qualifiers to parameter types

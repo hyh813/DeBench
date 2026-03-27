@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (v1, v2, v3, v4) throughout the entire codebase. For example, in `double_value(void)` at 0x8d4, variable `v1` should be named `x` based on the source. No semantic meaning is conveyed - every function uses the same pattern of unnamed parameters.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core functions correctly match source names: `double_value`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`. However, some helper functions have generic names like `function_6f0`, `function_700`, `function_1008` which don't reflect their purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Global variables use cryptic names (g1, g2, g3, g4, g5). String literals contain raw UTF-8 bytes (e.g., `"\xe6\xb5\x8b\xe8\xaf\x95"`). Magic numbers like `0xfffffffe` appear without explanation. The decompiler hardcodes expected test values directly rather than showing the computation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy use of assembly intrinsics: `__asm_ubfx`, `__asm_movi`, `__asm_mrs`, `__asm_bfi`, `__asm_bfxil`. Redundant type casts everywhere (e.g., `(int64_t)(int32_t)v1`). Strange constructs like `__asm_movi(0.0f, 0)` for what appears to be a no-op. These artifacts severely impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops and conditionals are present but expressed awkwardly. For example, `array_1d_stack` uses a while loop with manual index management instead of a for loop. Some ternary operators are convoluted: `(v3 >= 25 == (v3 != 25) ? v2 : v2 + 32)` in `process_char`. At -O0, this should be more idiomatic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately separated and match source granularity. The main function correctly calls the four test functions. Each test function is decomposed into its constituent parts. Minor issue: some very long functions like `__addtf3` (600+ lines) are library code that shouldn't be decompiled this way.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but has some awkward constructs. The `array_3d` function has deeply nested while loops that are hard to follow. Some forward jumps exist but are manageable. The code doesn't flow naturally in complex functions.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: The `array_3d` function has duplicated loop patterns (same inner loop repeated three times). Many redundant casts like `(int64_t)(int32_t)v1` appear repeatedly. Some dead code patterns visible. The decompiler didn't clean up these artifacts from the binary.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Uses `int64_t` for virtually everything, losing all original type information. The source has `char`, `short`, `int`, `long`, `long long`, `float`, `double`, `long double`, `_Bool` - all collapsed to `int64_t`. No distinction between signed and unsigned in many places. Function return types are all `int64_t` regardless of actual return type.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery at all. Instead of `p->x + p->y + p->z`, we see `*(int32_t *)(v2 + 4) + (int32_t)v2 + v3`. The decompiler uses raw pointer arithmetic with hardcoded offsets (4, 8, 12) instead of recovering struct Point3D with fields x, y, z. Union types similarly use raw memory access without type recovery.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(int32_t)v1`, `(int64_t)(int32_t)v2`, `*(int32_t *)v1`. Pointer arithmetic is correct but not type-safe. No const correctness - `const_param` function doesn't preserve const. Function pointers treated as generic `int64_t`. Buffer overflow patterns in `array_oob` not flagged.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only comments are address ranges (e.g., `// Address range: 0x8d4 - 0x8dc`). No algorithm explanation, no decompilation confidence indicators, no @param/@return documentation. The comment `// 0x6b8` adds no value. Auto-generated noise comments only.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some C idioms are somewhat recognizable (loops, switch statements) but not explicitly identified. No pattern naming (e.g., "This implements a state machine"). The linked list traversal in `linked_list` is recognizable but not labeled as such.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of suspicious code whatsoever. The `array_oob` function has intentional out-of-bounds access (i=0 to i<=n) but no warning. Indirect calls not flagged. The decompiler confidently presents all code without any uncertainty markers.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. No invariant recognition. The `ptr_diff` function uses `__asm_ubfx(v1, v1, 2, 32)` which is clearly wrong (should be simple pointer subtraction) but no contract or expected behavior is documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are clear (e.g., `test_data_types_l1()` calls `puts` and `__printf_chk`). However, global variable usage is opaque - g1, g2, g3 have no documentation of their purpose. Callback relationships not documented (e.g., `complex_callback` passed to `ptr_func_complex`).
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped logically (data types, arrays, pointers, composite types). Static functions properly scoped. However, all in one massive file (3416 LOC). Library functions (__addtf3, __multf3) mixed with user code inappropriately.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Won't compile - many undefined functions: `__libc_start_main`, `__printf_chk`, `__stack_chk_fail`, `__gmon_start__`, `__cxa_finalize`. No header declarations provided. No dependency documentation. The code is decompiled but not usable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable naming: All variables use generic names (v1, v2, v3) with no semantic meaning - should infer names from usage like `x` for parameter, `sum` for accumulator
+- Type precision: All types collapsed to int64_t, losing char, short, int, float, double distinctions from source
+- Composite type recovery: Zero struct/union recovery - uses raw pointer arithmetic with magic offsets instead of field access
+- Noise: Excessive __asm_ intrinsics (__asm_ubfx, __asm_movi, __asm_bfi) that obscure logic
+- Comments: Only address range comments, no algorithm explanation or decompilation confidence indicators
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+- Core test functions correctly match source names (double_value, process_int, array_1d_stack, etc.)
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Every function uses generic v1, v2, v3 variables with no semantic meaning, making it impossible to track purpose across even simple functions
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns: parameter `v1` used in multiplication should be `x`, accumulator `v3` incremented in loop should be `sum` or `i`
+2. Recover struct layouts from pointer arithmetic patterns: `*(int32_t *)(v2 + 8)` accessing offset 8 should be recognized as field `z` of struct with 3 int fields
+3. Eliminate assembly intrinsics for common operations: `__asm_ubfx(v1, v2, 1, 2)` extracting bits should be expressed as simple C expressions with comments about the operation

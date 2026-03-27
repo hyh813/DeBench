@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 7/10
+Justification: Parameters like `s`, `src`, and `filename` are preserved well, but intermediate variables often resort to generic names like `v2`, `v3`, or `v0` (e.g., in `param_strcmp`), which obscures the specific comparison logic being implemented.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are recovered perfectly from the symbol table, matching the original source exactly (e.g., `param_strcpy`, `param_linux_syscall`, `thread_compute`), leaving no ambiguity about purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent; for example, `syscall(5, ...)` uses the raw syscall number for `open` instead of `SYS_open`, and string lengths are hardcoded as hex (e.g., `0x12u` for 18) in `param_fread_fwrite`.
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The code is generally clean with minimal compiler artifacts, though some function signatures use `__usercall` or specific register annotations (e.g., `int a1@<esi>`) which are technically noise for high-level readability.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While most flows are natural, `thread_sum` exhibits a severe structural transformation where the original loop is replaced by a complex arithmetic series formula (`((v3 * ...) >> 1) + ...`), making it hard to recognize the original summation logic.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-defined and match the source granularity; however, some `call_*` functions (like `call_strcpy`) have their logic inlined into `test_standard_library_functions` in the decompiled view, creating slight redundancy.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly with appropriate early returns and simple loops; the control flow is easy to follow top-to-bottom in most functions like `param_fork_exec`.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is little dead code; the decompiler successfully removed temporary variables used only for register spilling, presenting a streamlined version of the logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types are correct, but `size_t` is often demoted to `int` or `unsigned int`, and function signatures sometimes use `int` for pointers (e.g., `int a1` in `param_malloc_free`) instead of `void*` or specific struct pointers.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: Significant failure in `thread_sum`; the `ThreadData` struct is not recovered, and fields are accessed via raw array offsets (e.g., `a1[0]`, `a1[1]`, `a1[2]`) instead of `data->start`, `data->end`, `data->result`.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer arithmetic is generally safe and accurate; casts are mostly implicit or correct, though the use of `int` for memory addresses in `thread_tls_test` (`__readgsdword`) is technically unsafe for high-level C.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output; complex logic like the arithmetic series optimization in `thread_sum` is left unexplained.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library calls are recognized, but higher-level patterns are missed; the "sum of range" loop in `thread_sum` is not identified as such, and `bcmp` is used instead of `strcmp` in `param_fread_fwrite` without noting the optimization.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged; the decompiler presents the optimized arithmetic formula in `thread_sum` as standard source code without warning that this is a compiler transformation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions or postconditions are documented; for example, the requirement that `param_malloc_free` receives a valid size is not inferred or stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls to standard libraries and other internal functions are clear and named, making the call graph easy to understand despite the lack of explicit "Called by" comments.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are grouped logically in the decompiled output, matching the source file's organization (Standard Library, System Calls, Threads).
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses compiler intrinsics like `__readgsdword` and `__writegsdword` for Thread Local Storage, which are GCC/Clang specific and prevent portable compilation without modification.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (7 + 10 + 5 + 8) / 4 = 7.5
+L2_avg: (6 + 8 + 8 + 8) / 4 = 7.5
+L3_avg: (7 + 4 + 8) / 3 = 6.33
+L4_avg: (1 + 5 + 1 + 1) / 4 = 2.0
+L5_avg: (8 + 9 + 4) / 3 = 7.0
+
+Overall = (7.5 × 0.30) + (7.5 × 0.25) + (6.33 × 0.20) + 
+          (2.0 × 0.15) + (7.0 × 0.10)
+Overall = 2.25 + 1.875 + 1.266 + 0.3 + 0.7
+Overall = 6.39
+```
+
+### Overall Readability Score: **6.4/10**
+
+### Critical Defects
+- **Struct Recovery Failure**: In `thread_sum`, the `ThreadData` struct is completely lost, accessed via raw array offsets (`a1[0]`, `a1[1]`) instead of field names.
+- **Aggressive Loop Optimization**: The loop in `thread_sum` is replaced by a complex arithmetic formula, obscuring the original iterative logic.
+- **Magic Numbers**: System call numbers (e.g., `5` for `open`) and hardcoded lengths (e.g., `0x12u`) are used instead of named constants.
+- **Missing Semantic Context**: No comments explain *why* `bcmp` is used instead of `strcmp` or what the arithmetic formula in `thread_sum` represents.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**
+- **Why?**: The decompiler perfectly preserved all original function names from the symbol table, making the high-level purpose of every unit immediately obvious.
+
+### Most Needs Improvement
+- **Composite Type Recovery (4/10)**
+- **Why?**: The failure to recover the `ThreadData` struct in `thread_sum` forces the reader to interpret raw pointer arithmetic, significantly degrading semantic understanding.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhanced Struct Recovery**: Improve type propagation to recover struct layouts for pointer parameters, specifically detecting array access patterns on struct pointers (e.g., `a1[2]` should map to `struct->field`).
+2.  **Optimization Annotation**: Add comments or annotations when complex compiler optimizations are detected, such as noting that a loop was replaced by a closed-form arithmetic expression.
+3.  **Constant Mapping**: Map known system call numbers and common constants back to their macro names (e.g., `5` -> `SYS_open`) using system header databases.

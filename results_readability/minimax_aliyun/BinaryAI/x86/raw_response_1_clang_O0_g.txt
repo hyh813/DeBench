@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic `param_1`, `param_2`, `param_3` for parameters and `local_8`, `local_c`, `local_10` for locals. The original source used meaningful names like `a`, `b`, `c`, `temp1`, `temp2`, `sum`, `i`, `j`. Only in loops is there occasional better naming like `count`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main functions perfectly match source names: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `recursion_factorial`, etc. Some internal functions have generic names like `FUN_00011030`, but these are expected for non-exported symbols.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3e9` (1001), `0x65` (101), `0x14` (20), `0x1e` (30) appear without explanation. Hexadecimal dominates output making mental conversion needed. Some standard constants like `0xffffffff` for -1 are acceptable.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. No redundant casts, no debug instrumentation, no frame pointer manipulation visible. The code is straightforward without unnecessary artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops correctly use `for` and `while` constructs. Switch statements are properly recovered. The `goto_forward` and `goto_backward` functions correctly preserve goto semantics. The `duffs_device` shows awkward goto labels but this is expected for such complex control flow.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent granularity preservation. Each small function from source (`sequential_ops`, `single_if`, etc.) remains separate. Test functions are properly extracted. No inlining artifacts or function merging observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. One forward jump in `goto_forward` is correctly preserved. No excessive nesting disrupting readability.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling is minimal (Duff's device is complex but correctly handled). No significant redundant expressions that would impede understanding.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses generic `int` and `undefined4` types. Original source used `int` throughout so this matches. Some improvement with `uint` for bitwise operations (`op_and`, `op_or`). Function pointers use generic `code *` which is non-standard.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays are partially recovered (e.g., `local_20[6]` for the 5-element array). However, no struct reconstruction - the matrix in `loop_multi_exit` becomes `local_3c[13]` with manual index calculation. The `jmp_buf` is cast to `__jmp_buf_tag *` which is reasonable.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Function pointer type `code *` is non-standard and potentially unsafe. Pointer arithmetic is present but appears correct. Some casts between pointer types. No severe violations but room for improvement.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only file-level comments present (SHA256 hash, decompiler attribution). No recovery of the extensive source comments explaining each function's purpose, test scenarios, or algorithm explanations. Original had detailed Chinese comments and test validation notes.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly recognized (state machine in `state_machine`, jump table in `switch_large`), but not explicitly named or documented. The function name `duffs_device` helps but the pattern isn't highlighted as a known idiom.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies are flagged. Indirect calls like `(*param_1)(param_2)` in `call_func_ptr` could benefit from uncertainty indicators. No warnings about potential undefined behavior or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had implicit contracts (e.g., "n must be > 0" for `duffs_device`) that are not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: External functions properly marked with `<EXTERNAL>::` prefix. Function calls are visible within each function. However, no documentation of who calls whom or global variable usage. The call graph is not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in binary order which roughly matches source (test functions at end). Static functions like `double_value`, `triple_value` are properly scoped. Some internal functions like `FUN_00011030` break the logical grouping.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code would require patching to compile. Non-standard types like `code *` and `undefined4` need definition. External dependencies (printf, memcpy, setjmp/longjmp) are properly identified. The `<EXTERNAL>::` prefix helps but standalone compilation would fail.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming uses generic `param_X` and `local_X` forms instead of meaningful names from source
+- No comments recovered from original source explaining function purposes and test scenarios
+- No anomaly indication for uncertain decompilation decisions (indirect calls, complex patterns)
+- Type precision uses non-standard `code *` for function pointers and `undefined4` instead of proper types
+- No contract/precondition recovery - functions like `duffs_device` lack "requires: n > 0" documentation
+
+**Best Quality Aspect:** Function Decomposition (scored 9/10)  
+- Excellent preservation of function granularity; each small function from source remains separate with correct boundaries
+
+**Most Needs Improvement:** Semantic Transparency (scored 3/10)  
+- Severely lacking comments, pattern recognition, anomaly indication, and contract recovery - the decompilation provides code but loses all semantic context from the original
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `param_1` used as `x > 0` check should suggest `input_value` or similar
+2. Recover comments from debug symbols (-g flag was used) - source had extensive documentation that could be extracted
+3. Add uncertainty markers for indirect calls and complex patterns like Duff's device to help analysts focus manual analysis

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_8`, `local_c`, `local_10` throughout. In `cdecl_func`, parameters should be named `a` and `b` based on source, but are `param_1` and `param_2`. The `varargs_func` uses `local_10`, `local_c`, `local_8` with no semantic meaning.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names like `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func` correctly match source. However, some wrapper functions like `call_cdecl` return `void` instead of `int`, and `call_thiscall` returns `undefined4` instead of proper type.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation: `0xf` (15), `0x2a` (42), `0x14` (20), `0x1e` (30), `0x28` (40). Some literals like `0x10` for loop bounds are unclear. Mixed decimal/hexadecimal usage without consistency.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy Ghidra artifacts include: 15+ WARNING comments about inlined functions and unreachable blocks, injected `get_pc_thunk_bx` functions, stack references like `stack0x00000008` and `stack0xfffffec4`, and non-standard `code *` type for function pointers.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper if/else and loops. However, `call_cdecl` returns void when source shows it should return int. The `call_order_dep` incorrectly passes `(1, 2)` instead of `(++i, ++i)` for undefined behavior testing.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved from source. Functions like `test_calling_conventions` (60+ lines) are appropriately sized. Some functions like `call_struct_byval` have unnecessary complexity with manual struct copying.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Minor forward jumps exist but don't severely disrupt flow. The `test_calling_conventions` function has complex nesting but remains traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling in struct initialization is present but not excessive. Minor redundancy in the `test_calling_conventions` function setup.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `undefined4` instead of `int` in many places (e.g., `call_cdecl` returns `void`, `func_no_args` returns `undefined4`). Uses `longlong` instead of `long long`. Function pointers use non-standard `code *` type. Mixed precision throughout.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `SmallStruct` not recovered - `func_struct_byptr` uses raw pointer arithmetic `*param_1 * param_1[1]` instead of `p->x * p->y`. `LargeStruct` completely lost - `func_struct_byval` accesses raw stack memory. No struct type definitions recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns: `param_ptr_array` uses `**(char **)(param_1 + local_c * 4)` without bounds checking. `func_struct_byval` uses raw stack offsets `*(int *)(&stack0x00000004 + local_18 * 8)`. Function pointer casts use `code *` which loses signature information.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Ghidra provides WARNING comments about decompilation issues (inlined functions, unreachable blocks), but these are compiler artifacts, not code documentation. No explanation of algorithm logic, parameter purposes, or return value semantics.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. The varargs pattern is partially recognized but uses raw stack access instead of `va_list` semantics. No recognition of calling convention patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: WARNING comments flag some decompilation anomalies (e.g., "Function: __x86.get_pc_thunk.bx replaced with injection"). However, functional anomalies like incorrect return types (`call_cdecl` returning void) are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The `func_struct_byptr` null check is preserved but not documented as a precondition. No recovery of implicit contracts from source.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code structure. Static function `callback_func` is correctly associated with `param_func_ptr`. However, no explicit documentation of call graph or callback relationships.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file without logical grouping. Related functions (calling convention tests) scattered. No header file or API boundary separation.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will NOT compile: uses `undefined4`, `undefined8`, `code *` types which are not valid C. References `DAT_` symbols directly. Requires extensive patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Type degradation**: Uses `undefined4`, `undefined8`, `code *` instead of proper C types - code won't compile
+- **Struct recovery failure**: `SmallStruct` and `LargeStruct` completely lost; replaced with raw pointer arithmetic and stack access
+- **Variable naming**: All parameters use generic `param_N` and locals use `local_N` pattern with no semantic meaning
+- **Incorrect return types**: `call_cdecl` returns `void` instead of `int`, losing the return value
+- **Excessive noise**: 15+ WARNING comments, injected functions, and stack artifacts obscure actual logic
+
+### Best Quality Aspect: Control Flow Naturalness (7/10)
+Control flow structures (if/else, loops, returns) are mostly preserved and readable. The decompiler correctly recovered the algorithmic structure despite other issues.
+
+### Most Needs Improvement: Build System Compatibility (2/10)
+The decompiled code uses Ghidra-specific types (`undefined4`, `undefined8`, `code *`) that are not valid C, making the output unusable for compilation or further analysis without extensive manual editing.
+
+### Top 3 Recommendations:
+1. **Replace pseudo-types with standard C types**: Map `undefined4` → `int`, `undefined8` → `long`, `code *` → proper function pointer typedef
+2. **Recover struct types from stack access patterns**: Detect sequential stack accesses and reconstruct struct layouts with field names
+3. **Infer variable names from usage**: Use data flow analysis to name parameters (e.g., `param_1` used in addition → `a`) and locals based on their role in computations

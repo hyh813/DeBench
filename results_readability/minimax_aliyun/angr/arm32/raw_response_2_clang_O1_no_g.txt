@@ -1,0 +1,115 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic auto-generated names like `a0`, `a1`, `v0`, `v1`, `v2`, `ptr`, `v3`, `v4` throughout. These names convey no semantic meaning - for example, in `process_char`, parameter `a0` should be named `c` based on usage pattern `(a0 - 65 & 255) < 26`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly match source names (e.g., `process_char`, `process_int`, `array_1d_stack`), but many use generic patterns like `sub_4003f8`, `sub_400498`. The test functions are correctly named, but helper/library functions lack meaningful names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `65`, `32`, `255`, `26` appear without explanation in `process_char`. The value `97` is printed but not named as `'a'`. Constants like `4294967295` (for -1) are unexplained. No enum values recovered.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution from `armg_calculate_condition()` calls throughout, register annotations like `// r0`, `// r2`, `// [bp-0x4]`, and incomplete expressions. Library functions like `__muldf3` contain massive amounts of decompilation artifacts with uninitialized variable references.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions like `process_char` and `process_int` have natural if-then structure. However, `process_bool` has an overly complex expression `(0 < a0 ? 1 : 0) & v0 + -(v0) + (v0 <= 0)` that obscures the original `(x > 0 && x % 2 == 0)` logic. Some goto usage present.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized and decomposed. Test functions properly call sub-functions. However, some functions like `test_array_types` are large (100+ lines) with complex nested loops that could be better decomposed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom with minimal jumps. Early returns present in functions like `array_1d_stack`. However, some forward jumps exist in complex functions like `array_complex_index`.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: In `test_data_types_l1`, the volatile access test calls `printf` twice with identical arguments (`v0 * 2`). Some duplicate expressions in loop-heavy functions. Library functions show significant redundancy from incomplete optimization removal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Almost all types are generic `unsigned int` when original uses `char`, `short`, `int`, `long`, `float`, `double`, `_Bool`. Parameter `a0` in `process_char` should be `char`, not `unsigned int`. No `const` correctness recovered.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery attempted with generic names `struct_0`, `struct_1`, `struct_2`. In `struct_with_ptr`, fields are named `field_0`, `field_4` instead of `data`, `next`. Union types not clearly distinguished from structs.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: pointer arithmetic in `array_2d_stack` uses `i += 44` (should be `i += sizeof(int) * 10`). Cast from `void*` to specific types without validation. Function pointer type not properly recovered in `ptr_func_simple`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated register location comments like `// r0`, `// [bp-0x4]`. No explanation of algorithm intent, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns hinted at but not named - e.g., linked list traversal in `linked_list` function is recognizable but not labeled. No explicit pattern naming (e.g., "Implements: State Machine").
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. Indirect calls that couldn't be resolved are not marked. Unusual stack layouts not documented. Code presents everything with equal confidence even when uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No `// requires:` or `// ensures:` comments. Error conditions not documented. The `array_complex_index` boundary checks are present but not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are visible (`test_data_types_l1()` calls `process_char()`), but relationships to external code (globals, callbacks) not documented. No `// Called by:` or `// Calls:` comments.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped by address proximity rather than logical purpose. Test functions clustered together. Static functions not clearly separated from public API. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code has many `extern` declarations referencing undefined globals (`g_413008`, `g_4024c3`). Would not compile standalone. Dependencies on libc functions not clearly documented. Library functions (`__muldf3`) are decompiled rather than imported.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 4 + 2) / 4 = 3.25
+L2_avg = (5 + 6 + 6 + 4) / 4 = 5.25
+L3_avg = (3 + 4 + 4) / 3 = 3.67
+L4_avg = (2 + 3 + 1 + 2) / 4 = 2.00
+L5_avg = (3 + 4 + 2) / 3 = 3.00
+
+Overall = (3.25 × 0.30) + (5.25 × 0.25) + (3.67 × 0.20) + 
+          (2.00 × 0.15) + (3.00 × 0.10)
+Overall = 0.975 + 1.3125 + 0.734 + 0.3 + 0.3 = 3.62/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects
+
+- **Variable naming**: All parameters use generic `a0`, `a1`, `a2` and locals use `v0`, `v1`, `v2` - completely loses semantic meaning
+- **Type precision**: All types are `unsigned int` when original uses char, short, bool, float, double - severe type degradation
+- **No comments**: Zero useful comments explaining algorithm intent or decompilation confidence
+- **Noise**: Massive `armg_calculate_condition()` calls and register annotations make library functions unreadable
+- **Anomaly indication**: No flags for indirect calls, undefined behavior, or uncertain decompilation
+
+### Best Quality Aspect: Function Decomposition (6/10)
+- Functions are reasonably sized and test functions properly call sub-functions
+
+### Most Needs Improvement: Anomaly Indication (1/10)
+- Code presents everything with equal confidence; indirect calls not flagged; undefined behavior not marked
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: `a0` used in character range check `(a0 - 65 & 255) < 26` should be named `c` or `character`
+
+2. **Recover precise types from context**: `process_char` should return `char`, `process_bool` should return `_Bool`, `process_short` should use `short`
+
+3. **Add decompilation confidence comments**: Flag indirect calls that couldn't be resolved, mark potential undefined behavior, indicate uncertain type inferences

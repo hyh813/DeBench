@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2`, `a3` with no semantic meaning. Local variables use `v1`, `v2`, `v3`, etc. For example, `array_1d_stack(int32_t * a1, uint32_t a2)` should be `array_1d_stack(int *arr, int n)`. The decompiler makes no attempt to infer names from usage patterns.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions retain their original names: `double_value`, `process_int`, `array_1d_stack`, `test_data_types_l1`. However, libc helper functions are named generically (`function_1080`, `function_1090`). The core functionality names are preserved well.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `0x1f4` (500), `0x225d00` appear without explanation. String literals are accessed via raw offsets like `(char *)(v1 + 0x1c5d)` with no string recovery. The constant `65` in `process_char` for 'A' is not named. Many numeric constants remain unexplained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_bx`, `__do_global_ctors_aux`, `frame_dummy`, `__stack_chk_fail_local`. Assembly intrinsics like `__asm_rep_movsd_memcpy` and `__asm_rep_stosd_memset` pollute the code. Redundant casts throughout. The decompiled output includes 77 functions when only ~20 are user code.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops use while constructs correctly. However, `array_complex_index` has an unreadable compound condition: `if (a5 < a3 == a4 < a2 == (a5 || a4) > -1)`. The `array_3d` function has deeply nested while loops that are difficult to follow. Some control flow is awkward but traceable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries are preserved - each test function remains separate. However, some functions are large (test functions 300+ lines). Parameter lists expose implementation: raw `int32_t *` instead of array types. No inlining of simple functions like `double_value` into callers.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom with minimal forward jumps. Early returns used appropriately in functions like `array_1d_stack` and `linked_list`. Some complex nested loops in `array_3d` and `graph_traverse` disrupt linear flow but are manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling present in `array_3d` but not excessively so. Test functions have repetitive patterns but that's from original source. No obvious dead code elimination failures. Redundancy is at acceptable level for -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently which is appropriate for x86. Loses distinction between short/int/long types from original (all become int32_t). Pointer types are correctly preserved. Some unsigned/signed mixing (e.g., `uint32_t a2` for array length). Overall decent but loses some type information.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure to recover structs. `struct_simple` accesses fields via raw offsets: `*(int32_t *)a1 + *(int32_t *)(a1 + 4) + *(int32_t *)(a1 + 8)` instead of `p->x + p->y + p->z`. No struct/union type definitions recovered. All composite types degraded to void* with manual offset calculations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout: `(int32_t *)a1`, `(char *)a1`, `(float32_t *)a1`. Pointer arithmetic is error-prone: `ptr_diff` has `a1 - a2 >> 2` which is ambiguous. Function pointers not properly typed - `ptr_func_simple` takes `int32_t result` instead of function pointer. Many opportunities for undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address range comments present (e.g., `// Address range: 0x1000 - 0x102e`), which are useless for understanding logic. No algorithm explanations, no recovery notes, no API contracts. Zero helpful semantic comments.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The state machine in `enum_switch` is just a lookup table access. Linked list traversal in `linked_list` is manual pointer chasing without naming. No pattern recognition whatsoever.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies flagged. The complex condition in `array_complex_index` that could be simplified is not noted. Indirect calls that couldn't be resolved are not indicated. Code is presented with false confidence.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero contract information recovered. No preconditions (e.g., "requires: ptr != NULL"), no postconditions, no invariant documentation. The code is presented without any behavioral guarantees.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 1/10  
+Justification: No function call relationships documented. No indication of which functions call `double_value`, no callback relationships shown. Each function is isolated with no context.
+
+**17. Module Organization:** Score: 2/10  
+Justification: All functions in single monolithic file. No logical grouping. Static functions not properly scoped (all appear as global). No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code defines some types (`float32_t`, `float64_t`) but has undefined references to `__x86_get_pc_thunk_*` functions. Many libc dependencies not properly declared. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic `a1`, `a2`, `a3` - completely loses semantic meaning
+- **Composite type loss**: All structs/unions reduced to raw pointer arithmetic with offsets - original field names completely lost
+- **No comments**: Zero helpful comments explaining algorithms, contracts, or anomalies
+- **Noise pollution**: 57 compiler/runtime helper functions mixed with user code
+- **Type safety**: Multiple unsafe casts and ambiguous pointer arithmetic
+
+### Best Quality Aspect: Function Naming (7/10)
+- Core test functions retain their original descriptive names (test_data_types_l1, array_1d_stack, etc.)
+
+### Most Needs Improvement: Semantic Transparency (1.5/10)
+- Zero comments, no pattern recognition, no anomaly indication, no contract recovery - the decompiled code provides no semantic context to help analysts understand the code
+
+### Top 3 Recommendations:
+1. **Recover struct/union types**: Use field offset analysis to reconstruct composite types with meaningful field names instead of raw pointer arithmetic
+2. **Add semantic comments**: Include algorithm explanations, recovery confidence notes, and pre/postconditions
+3. **Filter compiler artifacts**: Separate runtime helper functions (CRT, stack protection) from user code, or at least clearly mark them as such

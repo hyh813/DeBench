@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (a1, a2, v1, v2, result) with zero semantic meaning. In `sequential_ops`, original `temp1`, `temp2`, `temp3` became unnamed intermediate calculations. No variable indicates purpose like `packet_size` or `user_count`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved (sequential_ops, single_if, nested_if_2, recursion_factorial, etc.) matching original source exactly. Action-oriented names clearly reflect functionality.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `CSWTCH_56[a1]`, `0x14u` for stack canary, `100 * (a1 + 1)` in if_elseif_long obscures the original switch logic. Test functions have hardcoded expected values instead of actual computations.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__readgsdword(0x14u)` stack canaries, `qmemcpy` operations, `_DWORD v3[8]` temporary arrays. However, core logic is visible beneath the noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as while/for constructs successfully. However, `duffs_device` uses goto labels (_L201, _L194, etc.) and `computed_goto` has inline assembly `jmp dword ptr`. At -O0, these should be cleaner.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well—each original function remains separate. No inappropriate inlining or fragmentation. Helper functions (op_add, double_value) properly extracted.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `duffs_device` has 8 goto labels disrupting flow. `switch_fallthrough` uses LABEL_7 pattern instead of natural fall-through structure.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks repeated in many functions. `recursion_factorial` and `tail_recursion` both converted to identical while loops—optimization artifact not explained.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of generic types (int, _DWORD, _BYTE). Critical errors: `op_or` takes `__int64 a1` instead of two ints, `state_done` has no parameters when source has `int event`. Signed/unsigned inconsistent.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays represented as raw buffers (`_BYTE v5[48]`, `_DWORD v3[8]`). No struct recovery for matrix, jump tables become opaque references (off_6020, CSWTCH_56).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `((int (__cdecl *)(int))v3[a1])(a2)`. Function pointer arrays lose type information. `computed_goto` has inline assembly that bypasses type checking entirely.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API contracts. Original source had extensive documentation—all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Duff's device not identified as such. State machine pattern in `state_machine`/`fsm_func_table` not recognized. Fall-through switch not documented as intentional.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("bad sp value at call", "FAILED to decompile: 7 functions"). However, type mismatches (op_or, state_done) not flagged. Inline assembly in computed_goto unexplained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "n must be > 0" for duffs_device). No postconditions. Error conditions not documented. Original test validation comments completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Jump tables reference undefined symbols (off_6020, off_6048). Callback relationships in process_with_callback not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without logical grouping. Static functions (op_add, state_idle) not marked as internal. No header file or API boundary documentation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile—undefined references (CSWTCH_56, off_6020, jump_buffer). 7 functions failed decompilation. Architecture mismatch (source ARM64, decompiled x86). Requires extensive patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (2+9+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):     (6+8+6+6)/4 = 6.50 × 0.25 = 1.63
+Level 3 (Type System):    (5+3+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):       (1+2+5+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):     (5+5+3)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                    4.74/10
+```
+
+**Overall Readability Score: 4.7/10**
+
+### Critical Defects
+- **Variable names completely generic** (a1, a2, v1, v2) with zero semantic recovery despite -O0 debug build
+- **Type errors in recovered signatures**: `op_or` takes `__int64` instead of two ints, `state_done` missing parameter
+- **Zero comments** despite original source having extensive documentation explaining each function's purpose
+- **Jump tables opaque**: References to `CSWTCH_56`, `off_6020` without recovery of actual table contents
+- **Architecture mismatch**: Source claims ARM64 but decompiled code is x86 with x86-specific constructs
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - Function names preserved perfectly from source, making it easy to identify which decompiled function corresponds to which original function.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation means readers must reverse-engineer intent that was explicitly documented in the original source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (e.g., loop counters, accumulators, pointers) to suggest semantic names like `i`, `sum`, `buffer_ptr`
+2. **Recover and preserve source comments** - When debug symbols (-g) are available, extract and embed original comments into decompiled output
+3. **Flag type signature anomalies** - When recovered types conflict with usage patterns (like `op_or` taking single `__int64`), add warning comments for manual review

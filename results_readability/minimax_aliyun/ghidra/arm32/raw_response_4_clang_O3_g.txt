@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like "param_1", "param_2", "local_c", "iVar1", "piVar1". The decompiler marks many as "Unresolved local var" with cryptic suffixes like "sum@[???]", "val@[???]". This makes tracking variable purpose nearly impossible.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most functions are correctly named matching source: cdecl_func, stdcall_func, fastcall_func, varargs_func, func_no_args, etc. The decompiler preserved the semantic naming from the source. Minor扣分 for some internal helpers with generic patterns.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Heavy use of unexplained magic numbers: 0xf (15), 0x32 (50), 0x15 (21), 0x2a (42). No named constants recovered. The source had clear test expectations but these are lost in hex representation. String literals replaced with &DAT_ addresses.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe compiler artifact pollution. Functions like __adddf3, __floatsidf, __fixdfsi, __subdf3, __extendsfdf2, __floatundidf, __floatdidf are 1000+ lines of irrelevant code. "WARNING: Removing unreachable block" comments everywhere. "Unresolved local var" markers clutter every function.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow is preserved - if/else, loops, returns all present. At -O0, loops are correctly recognized as loops. Some awkwardness in varargs handling where the stack access is exposed. Acceptable for debug build.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity. Each test function is separate. No obvious over-fragmentation. The main test functions call sub-functions appropriately. Minor issue: some inlining would help at higher optimization levels.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present. No goto abuse. Loop structures are clear. Some forward jumps in varargs handling but manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: func_struct_byval shows significant redundancy - 16 nearly identical statements accessing s.data[i] sequentially. This is loop unrolling that wasn't recognized/abstracted. Some dead code from unreachable blocks flagged but not removed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most integers are generic "int" rather than int32_t/int64_t. Function pointer type "_func_int_int *" is cryptic. Parameter types mostly correct but generic. No const correctness recovered. The source used specific types that are lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are recovered (LargeStruct, SmallStruct, BigStruct, SmallPoint) but with issues. func_struct_byval has bizarre field access pattern: s.data[2]._0_4_ = (int)s.data[2]; - this is clearly a decompilation artifact. Field names are correct but layout is questionable.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. In param_complex_cast: direct void* to int* casts. The ret_opaque_handle returns (double*)piVar1 which is type-confused. Multiple reinterpret_cast patterns visible. Not dangerous but shows type safety issues.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Many auto-generated warnings ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block") but these are noise. No useful algorithm documentation. The source had detailed comments about calling convention tests that are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic C idioms preserved (loops, conditionals). No design patterns identified. The calling convention tests are just treated as separate functions without recognizing the test pattern. varargs usage is recognized but not explained.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present about unresolved variables and calling conventions. However, many anomalies are silently presented as code - like the weird struct field access in func_struct_byval should be flagged as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The source had clear expectations (e.g., "期望: 15") that are not documented. No NULL check documentation for pointer parameters.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear from code structure. test_calling_conventions calls all the sub-functions. But no explicit documentation of call graph or relationships. Caller/callee relationships not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - calling convention tests together, parameter passing tests together, return value tests together. Matches source organization reasonably well. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code will NOT compile standalone. Heavy dependency on compiler intrinsics (__adddf3, etc.) that aren't defined. Many undefined references (DAT_ addresses). Requires significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming is nearly unusable - "param_1", "iVar1", "local_c" with "Unresolved local var" markers everywhere
+- Severe compiler artifact pollution - 1000+ lines of __adddf3, __floatsidf, etc. should be excluded or stubbed
+- func_struct_byval has bizarre field access pattern: s.data[2]._0_4_ = (int)s.data[2]; indicating decompilation failure
+- All magic numbers (0xf, 0x32, 0x2a) lack explanations; source had clear expected values
+- Build system compatibility is broken - code depends on undefined intrinsics and DAT_ addresses
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+The decompiler correctly recovered function names from the source: cdecl_func, stdcall_func, varargs_func, etc. This is the one area where the decompilation closely matches the original source intent.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The generic variable names (param_1, iVar1, local_c) with "Unresolved local var" annotations make the code nearly incomprehensible. At -O0 debug level, variables should have debug info available for proper naming recovery.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from DWARF debug info** - At -O0 with -g flag, all local variables should have symbolic names available. The decompiler should use these instead of generic names.
+2. **Filter or stub compiler intrinsics** - Functions like __adddf3, __floatsidf are library code, not user code. Either exclude them or provide minimal stubs.
+3. **Fix struct field access patterns** - The s.data[2]._0_4_ = (int)s.data[2]; pattern indicates a decompilation error. This should be recognized as loop unrolling and abstracted.

@@ -1,0 +1,113 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a1`, `a2`, `a3`, `i`, `result` throughout. For example, in `local_vars(int a1)`, the parameter `a1` should be `x`, and intermediate variables should reflect their semantic purpose (e.g., `a`, `b`, `c` from source). No meaningful inference from usage patterns.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions correctly named (`local_vars`, `heap_basic`, `global_var_access`), but many helper functions use mechanical addresses (e.g., `sub_1020`, `sub_1240`). The `double_value` function is correctly recovered. Mixed result - core functions clear but infrastructure functions opaque.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Hardcoded expected values like `printf("MEM-L1-01 (local_vars): %d\n", 20);` replace computation, hiding logic. Magic numbers like `0x14u` (20 bytes), `0x28u` (40 bytes) for malloc/realloc lack constant names. Some values like `42` are self-explanatory but most lack context.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: SIMD intrinsics (`_mm_load_si128`, `_mm_add_epi8`, `_mm_mfence`) appear for loop implementations, adding noise. However, these are legitimate compiler artifacts from -O0 that are unavoidable. No redundant casts or debug instrumentation observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow closely matches source. Loops use `for`/`while` constructs naturally. Example: `for ( i = 0; i != 10; ++i )` in `local_array`. Conditionals are clear. No spurious goto usage. Minor awkwardness in `linked_list_heap` but overall natural.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity matching source. `linked_list_heap` is 80+ lines but cohesive. No over-fragmentation. Parameter lists reasonable. Some inlining would be expected at higher optimization but at -O0 this is appropriate.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns used appropriately (e.g., `if (!v1) return -1;`). No computed jumps disrupting flow. Good linearization overall.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Loop unrolling in `large_stack_frame` uses SIMD but this is compiler-generated. Some duplicate expressions possible but minimal. Overall clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Integer types partially preserved (`_DWORD` for int, `_QWORD` for pointers). However, `size_t` parameters often become `unsigned int` or `unsigned __int64` inconsistently. Function pointers lose signature details (e.g., `global_func_ptr` as `__int64` instead of proper function pointer type). Const correctness not preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `Point` struct not recovered in `heap_struct` - returns `(unsigned int)(3 * a1)` instead of struct member access. `Node` struct appears as `_QWORD` with numeric indexing (`v0[1]`). `TreeNode` not reconstructed - `create_tree_node` returns `char*` with manual field offsets. Significant composite type loss.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations present. In `dangling_pointer`: `free(v1); return *v1;` - use-after-free. In `double_free`: accepts `unsigned int*` but frees without null check. In `heap_nested`: casts between `_DWORD*` and `_QWORD*` without safety. These patterns are dangerous.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in decompiled output whatsoever. Zero explanation of algorithm logic, no indication of decompilation confidence, no documentation of preconditions/postconditions. Completely uncommented code.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard patterns like malloc/free pairs, linked list traversal, tree operations are recognizable from structure but not explicitly named or documented. No "this implements a linked list" or similar identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `dangling_pointer` function contains undefined behavior (use-after-free) but no warning. `double_free` has obvious issue but no indication. `heap_overflow` writes past allocated bounds but silent.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions like null checks are present in code but not documented. Postconditions not indicated. Error handling visible but no explanation of what conditions are being handled.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships partially visible through code structure (e.g., `test_stack_memory` calls `local_vars`, `local_array`). However, no explicit documentation of call graph, global variable usage, or callback relationships. External dependencies not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Related functions (test functions + tested functions) somewhat grouped but no clear logical organization. Static functions not explicitly marked as file-scoped. No header/interface separation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with standard C compiler. Uses standard library functions (malloc, free, printf, etc.). External declarations present for `extern_global_var`, `extern_function`. Minor patching needed for string constants (referenced as `asc_2607`, etc.).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+6+4+6)/4 = 4.5
+L2_avg = (8+7+8+7)/4 = 7.5
+L3_avg = (6+3+4)/3 = 4.33
+L4_avg = (1+5+2+2)/4 = 2.5
+L5_avg = (4+5+7)/3 = 5.33
+
+Overall = (4.5 × 0.30) + (7.5 × 0.25) + (4.33 × 0.20) + (2.5 × 0.15) + (5.33 × 0.10)
+        = 1.35 + 1.875 + 0.866 + 0.375 + 0.533
+        = 4.999 ≈ 5.0/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `a1`, `i`, `result`) losing semantic meaning - parameter `a1` should be `x` in `local_vars`
+- **Composite type loss**: `Point` struct not recovered in `heap_struct`, `Node`/`TreeNode` appear as raw `_QWORD` with numeric field offsets
+- **No comments**: Zero documentation explaining algorithms, contracts, or decompilation confidence
+- **Anomaly silence**: Dangerous patterns like use-after-free in `dangling_pointer`, double-free in `double_free` not flagged
+- **Hardcoded results**: Expected values like `printf("...: %d\n", 20)` replace computation, hiding logic
+
+### Best Quality Aspect (Single Dimension)
+- **Control Flow Naturalness (8/10)**  
+- At -O0, the decompiler correctly recovers loop constructs (`for`, `while`), conditionals, and early returns. Code structure closely matches source.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality (1/10)**  
+- Zero comments present. Without documentation, understanding algorithm intent, decompilation confidence, and contracts is extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a1 * 2 + 10` suggests `x * 2 + 10` → parameter should be named `x` or `input_value`)
+2. **Recover struct/union types**: Detect repeated field offsets and reconstruct composite types with meaningful field names instead of raw pointer arithmetic
+3. **Add anomaly warnings**: Flag suspicious patterns like use-after-free, double-free, and buffer overflows with comments like `// WARNING: potential use-after-free`

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `piVar1` with no semantic meaning. For example, `process_char` uses `param_1` instead of `character` or `input_char`, making it impossible to understand variable purpose without tracing usage.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names are preserved (`process_char`, `array_1d_stack`, `struct_simple`), which is excellent. However, helper functions like `FUN_00011030`, `FUN_000110b0` are completely generic and obscure their printf-related purpose.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0xbf`, `0x1a`, `0x20` in `process_char` obscure the uppercase detection logic. Test functions show hex values like `0x61`, `0x6c6c6568` instead of character literals `'a'`, `"hell"`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts pollute the code: `__x86_get_pc_thunk_*` functions, `__stack_chk_fail_local`, `in_GS_OFFSET` stack canary checks, and `unaff_EBX` registers appear throughout, distracting from actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Natural for-loops transformed into do-while with pointer comparisons (`while (piVar1 != param_1)`). The `binary_tree_sum` function becomes an unreadable 200+ line nested mess instead of clean recursion, likely from aggressive inlining.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but `binary_tree_sum` is excessively large due to loop unrolling. Helper functions like `FUN_000110b0` (printf wrapper) should be recognized and simplified.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but `pointer_array` has deeply nested if-else chains (10+ levels) instead of a simple loop. Stack canary checks at function ends disrupt flow.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: `array_3d` explicitly lists all 125 array accesses instead of a loop. `pointer_array` unrolls all 10 iterations with repetitive if-checks. This is extreme redundancy from optimization recovery failure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `long long` becomes `undefined8`, `long` becomes `int` (platform-dependent size lost), `long double` becomes `longdouble` (non-standard). `process_long` returns `int` instead of `long`, losing 64-bit semantics on x86_64.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete struct/union failure. `Point3D` accessed as `int*` with offsets (`param_1[0]`, `param_1[1]`, `param_1[2]`). `Widget` nested struct becomes `*(int *)(param_1 + 0x14)`. No struct definitions recovered at all.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts everywhere: `(undefined4 *)`, `(int *)`, `(code **)`. `ptr_triple` takes `undefined4 *` instead of `int ***`. Function pointers become generic `code *` losing signature information.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining test scenarios, expected values, and type purposes. No decompilation confidence indicators or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not recognized: linked list traversal appears as raw pointer chasing, enum+switch becomes indirect table lookup (`CSWTCH_75`), bitfield operations become manual bit masking without explanation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite obvious issues: `volatile_access` loses volatile semantics (both reads collapsed to `*param_1 + *param_1`), `array_oob` undefined behavior not warned, type mismatches silent.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL` for pointer functions). No postconditions or error conditions explained. `array_complex_index` bounds check exists but isn't documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. `test_data_types_l1` calls `FUN_000110c0` (printf) without indication. Callback relationships (`ptr_func_simple`) lose function signature context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in arbitrary order mixed with compiler runtime code (`_init`, `_fini`, `deregister_tm_clones`). No logical grouping by test category (data types, arrays, pointers, composites).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone: undefined types (`undefined4`, `undefined8`, `longdouble`), missing function declarations (`FUN_000110b0`, `__stack_chk_fail_local`), architecture-specific code (`in_GS_OFFSET`).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+6+5+3)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.433
+
+Overall Score: 3.95/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Complete struct/union type loss**: All composite types reduced to `int*` with manual offsets, losing field names and semantic meaning
+- **Extreme loop unrolling**: `array_3d` and `pointer_array` unroll all iterations explicitly instead of recovering loop constructs
+- **Zero documentation**: No comments explaining logic, types, or decompilation confidence
+- **Type precision degradation**: `long long` → `undefined8`, `long` → `int`, losing platform-specific semantics
+- **Volatile semantics lost**: `volatile_access` collapses two reads into one expression, defeating the volatile purpose
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), making it possible to identify function purpose despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, making it impossible to understand intent without comparing to original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze access patterns to reconstruct struct layouts with field names based on usage semantics (e.g., `position.x`, `size.width` patterns)
+2. **Recognize and recover loop constructs** - Detect unrolled patterns and convert back to for/while loops with appropriate bounds, especially for array iteration patterns
+3. **Add decompilation confidence annotations** - Flag uncertain type recoveries, lost semantics (volatile, const), and potential undefined behavior with inline comments

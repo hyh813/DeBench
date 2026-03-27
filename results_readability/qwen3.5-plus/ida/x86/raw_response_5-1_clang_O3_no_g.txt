@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ OOP Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `a1`, `a2`) with no semantic meaning. Original names like `capture_by_value`, `instance_count`, `multiplier` are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions preserved mangled names that decode reasonably (`test_cpp_member_func`, `test_cpp_constructor`), but helper functions degrade to `sub_1030`, `sub_11AC` with no semantic meaning.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers dominate without explanation (`4700`, `1001`, `130`, `200`). Original constants like expected return values (4704, 42, 650) appear as unexplained literals.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: frame pointer annotations (`[esp+14h] [ebp-28h]`), register hints (`@<eax>`, `@<ebx>`), inline assembly (`__asm { jmp dword ptr [ebx+8] }`), and BYREF markers throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most test functions collapsed to `return constant;` due to optimization, losing original logic. Functions with actual logic (`test_cpp_rtti`) show reasonable if-else structures but with awkward pointer arithmetic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is appropriate (no monoliths), but template instantiations created separate functions (`Container<int>::push`, `Container<double>::push`) without indicating they're related template specializations.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. However, BYREF annotations and stack variable declarations at function start disrupt natural reading flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive constant folding eliminated computational logic entirely (e.g., `test_cpp_virtual_func` returns `42` instead of computing it). This optimization artifact obscures original algorithmic intent.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Basic types preserved (`int`, `double`, `size_t`) but class types degraded to raw pointers. `Container<int>` member access uses `*(a1 + 40)` instead of proper struct field access. Some type confusion (`long double` for `double` returns).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure—classes (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`) not recovered as structs. All member access is raw pointer arithmetic (`*(a1 + 40)`, `*(a1 + 8 * v3)`). No field names recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts throughout: `(_DWORD *)operator new(4u)`, `(struct type_info *)&\`typeinfo for'int`. Pointer arithmetic without bounds checking. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comments present. No algorithm explanations, no documentation of C++ semantics (vtable calls, exception handling). Failed decompilations listed without explanation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized: vtable dispatch appears as `(**a1)(a1, a2)`, exception handling as raw `__cxa_throw` calls, RTTI as `__dynamic_cast` without explaining the pattern.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations explicitly marked ("FAILED to decompile: _Znwj") but without explaining why or impact. Stack warnings present ("positive sp value has been detected, the output may be wrong!") but no guidance.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original comments about expected values (期望：4704) completely absent. No null checks or bounds validation documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch partially visible through vtable patterns but not explicitly documented. No call graph or dependency information.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order without logical grouping. Related template specializations scattered. No namespace or class organization recovered from C++ source.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: 18 functions failed to decompile entirely (including `operator new`, `printf`, `__cxa_throw`). Cannot compile standalone. External dependencies undocumented beyond failed symbol list.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+2+3)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (2+2+4+1)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (4+4+2)/3   = 3.33 × 0.10 = 0.333
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.71/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Optimization level mismatch**: Source compiled with `-O0` but decompiled binary shows `-O3` optimization (constant folding eliminated all computation logic)
+- **Architecture mismatch**: Source targets arm64 but decompiled code is x86 (ebx, eax, esp registers)
+- **Zero composite type recovery**: All C++ classes reduced to raw pointer arithmetic with no struct definitions
+- **18 failed decompilations**: Critical runtime functions (`operator new`, `__cxa_throw`, `printf`) completely missing
+- **Semantic loss**: Test functions return pre-computed constants instead of actual computation (e.g., `return 42;` instead of virtual function dispatch logic)
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - C++ name mangling was successfully demangled for test functions, preserving some semantic information about function purpose.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (1/10)** - No preconditions, expected values, or behavioral contracts recovered despite extensive original documentation about expected return values.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts** - Analyze vtable pointers to reconstruct class hierarchies with field names and inheritance relationships
+2. **Detect and annotate compiler optimization artifacts** - When constant folding is detected, flag that original computation logic was optimized away and cannot be recovered
+3. **Preserve debug symbol information** - When `-g` flag is present, use DWARF debug info to recover variable names, types, and original source line mappings

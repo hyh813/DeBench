@@ -1,0 +1,120 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy`
+
+The original source shows a simple wrapper function:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+The decompiled version has critical issues:
+```c
+void param_strcpy(char *param_1, char *param_2)
+{
+  char *__s;
+  __s = strcpy(param_1, param_2);
+  strlen(__s);  // Return value discarded!
+  return;
+}
+```
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables `param_1`, `param_2`, and `__s` are completely generic. `param_1` should be `dst`, `param_2` should be `src`, and the return value from `strlen` should be captured and returned. The cryptic naming makes tracking data flow nearly impossible.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function correctly named `param_strcpy` matching the source. The naming is action-oriented and semantically accurate. Minor deduction for not indicating it returns an int through naming convention.
+
+**3. Literal Clarity:** Score: 9/10  
+Justification: No magic numbers or unclear literals in this function. String literals like "HelloLib" are properly preserved in calling functions. The decompilation correctly identifies the string content.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: No compiler artifacts (stack canary checks, register spills) visible in this specific function. Clean decompilation without redundant casts or debug instrumentation.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Simple linear control flow - calls strcpy, then strlen, then returns. No goto, no complex conditionals. At -O0, this is exactly as expected.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function is appropriately small (3 lines of logic). Proper single responsibility - just wraps strcpy with length return. No inlining issues at -O0.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads perfectly top-to-bottom. No forward jumps, no deep nesting, no continue/break disrupting flow. Highly linear.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code, no duplicate expressions. The strlen call result is used (though incorrectly - see type issues).
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: **Critical type error**: Function declared as `void` but source returns `int`. The `strlen(__s)` result is computed but completely discarded - this is a semantic bug, not just a type issue. Also, `param_2` should be `const char*` not `char*`. At -O0 debug level, type precision should be near-perfect.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: No structs/unions in this function, so nothing to recover. Would be N/A but scoring as high since there's no degradation.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Two type safety issues: (1) Missing const on src parameter allows modification of input string, (2) Return value discarded - this is a semantic error, not just type issue. The function should return int but is declared void.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled function. No explanation that it returns string length, no indication of what parameters represent, no documentation of the strcpy+strlen pattern.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Standard library functions `strcpy` and `strlen` are correctly identified. However, the pattern of "copy string and return length" is not recognized as a common idiom - could suggest this is a common utility function pattern.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: **Critical anomaly not flagged**: The function computes `strlen(__s)` but discards the result while the source clearly returns this value. This should be flagged as "RETURN VALUE DISCARDED - possible decompilation error". No warnings present.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information. Should document: "Precondition: dst must have sufficient space", "Postcondition: returns length of copied string", "Effect: copies src to dst including null terminator".
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: External function calls (strcpy, strlen) are clear. The function is called by `call_strcpy` which is properly identified. However, no comments indicating the relationship to other string functions.
+
+**17. Module Organization:** Score: 9/10  
+Justification: Functions are logically grouped - string functions together, thread functions together. The organization matches the source file structure well.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: **Will not compile**: Function signature `void param_strcpy(...)` differs from source `int param_strcpy(...)`. This would cause link errors or incorrect behavior when integrated with other code. The discarded return value is also a semantic error.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- **Function return type wrong**: Declared as `void` but source returns `int` - this is a semantic bug, not just readability issue
+- **Return value discarded**: `strlen(__s)` result is computed but completely discarded; source clearly returns this value
+- **Missing const qualifier**: `param_2` should be `const char*` to match source signature
+- **No variable names**: `param_1`, `param_2`, `__s` are meaningless; should be `dst`, `src`, and capture return value
+- **No comments**: Zero documentation of function purpose, parameters, or return value
+
+**Best Quality Aspect:** Structural Intelligibility (scored 9.0/10)  
+Control flow is natural, function decomposition is appropriate, code is linear and readable. The structural aspects are excellent.
+
+**Most Needs Improvement:** Type System Fidelity (scored 4.7/10)  
+The return type error and discarded return value are critical semantic bugs that fundamentally break the function's correctness. At -O0 debug level, types should be nearly perfectly recovered.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Fix return value handling**: When a function computes a value and returns it (like `strlen`), do NOT discard the return value - this is a critical semantic error
+2. **Preserve const correctness**: Track const qualifiers through the decompilation - `const char*` should not become `char*`
+3. **Add anomaly warnings**: Flag cases where return values are computed but discarded, or where function signatures clearly differ from expected patterns

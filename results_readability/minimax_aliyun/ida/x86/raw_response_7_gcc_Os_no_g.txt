@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `i`). The original source uses meaningful names like `x`, `result`, `str`, but the decompiled code obscures these roles completely. Even loop iterators are generic rather than descriptive.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered their original names (`param_fake_branch`, `call_fake_branch`, `div_zero_handler`, `segv_handler`), but many remain as generic stubs (`sub_1030`, `sub_1040`, `frame_dummy`, `deregister_tm_clones`). The target function `param_fake_branch` is correctly named, but the naming is inconsistent across the codebase.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x14u` for stack canary, `90` for XOR key in decrypt_string, signal numbers `8` and `11`). The string "=== 测试混淆、优化与边界情况 ===" is embedded but not assigned to a named constant. Some literals like `0xFF` for char are inferable but not documented.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. The stack canary checks (`__readgsdword(0x14u)`) are visible but expected with stack protection. No redundant casts or debug instrumentation clutter the output significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow structures are natural and readable. Loops use `while` and `for` constructs appropriately. The `param_fake_branch` function correctly shows a simple return (fake branches optimized away). At `-O0` this is excellent; the decompiler properly recovered idiomatic C control flow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. The target function `param_fake_branch` is a single, cohesive 3-line function matching the source. Helper functions like `decrypt_string` are properly extracted with clear single responsibilities.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. No goto statements or confusing jumps. The `param_opaque_predicate` function has a while loop that flows naturally. Early returns are used appropriately.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. The `call_fake_branch` function is correctly inlined to return constant `10`. Loop unrolling is not excessive. Code is clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate. Parameters correctly use `int` and `unsigned int`. The function `param_instruction_substitution` correctly shows `unsigned int a1` matching the source's `unsigned int ux`. Some precision loss (e.g., `int` vs `int32_t`) is expected and acceptable.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: No complex structs are used in the target function. The decompiled code uses simple types throughout. The `param_string_encryption` function uses a stack buffer `char s[32]` which is reasonable. Overall, basic types are handled well; composite types are minimal in this code.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. The `decrypt_string` function has pointer arithmetic (`*(i - 1) = v5`) that could be clearer. The `param_vectorized_loop` uses raw pointer arithmetic `*(_DWORD *)(a3 + 4 * i)` which is necessary but not type-safe. Minor issues that don't make code dangerous.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments present. The only comments are the decompiler header ("Decompiled by IDA Pro 9.1") and occasional annotations like "BYREF". No explanation of what `param_fake_branch` does (implements fake/always-false branches), no documentation of the opaque predicate logic, no indication that fake branches were optimized away.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The fake branch pattern (OBF-L4-02) is not recognized - the decompiler simply shows the optimized result. The opaque predicate pattern (OBF-L4-03) shows the code but doesn't identify it as an "opaque predicate" obfuscation technique. No recognition of the cryptographic string decryption idiom.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The decompiler doesn't indicate that `param_fake_branch` had fake branches that were optimized away. No warnings about potential undefined behavior in the buffer overflow functions. Silent on anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions or invariants documented. The function `param_fake_branch` has no indication that it should always return the input unchanged (since fake branches never execute). No contracts for signal handlers or setjmp/longjmp pairs.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code but not documented. The `call_fake_branch` calls `param_fake_branch(10)` but there's no comment indicating this. Global variables like `jmp_buffer`, `segv_buffer` are used across functions but relationships aren't explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically. The test functions are together, handlers are together, and the obfuscation functions are grouped. Static functions like `decrypt_string` are properly scoped. Minor organization issues but generally coherent.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with minimal stubs for libc functions. External dependencies (`signal`, `malloc`, `free`, `strlen`, `strncpy`) are called but not defined - this is expected. The code structure is valid C.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`a1`, `v1`, `v2`) making it impossible to track semantic roles without cross-referencing source
+- No comments explaining the obfuscation techniques (fake branches, opaque predicates) or that they were optimized away
+- No pattern recognition for the OBF-L4-02 (fake branch) and OBF-L4-03 (opaque predicate) obfuscation patterns
+- Magic numbers like `90` (XOR key), `0x14u` (stack canary), signal numbers `8` and `11` lack explanations
+- No anomaly indication that `param_fake_branch` originally contained unreachable code paths
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+The decompiler properly recovered idiomatic C control flow structures. Loops, conditionals, and function calls are all clearly expressed. At `-O0`, the control flow closely matches the source.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.25/10)  
+The decompiled code provides almost no semantic context. No comments explain algorithms, no pattern recognition identifies obfuscation techniques, no anomaly flags indicate suspicious code, and no contracts document pre/post conditions. This makes understanding the *purpose* of the code extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When a variable is used as a loop bound, name it `n` or `count`; when it's returned directly, name it `result` or match the source parameter name
+2. **Detect and annotate optimization artifacts**: Flag when dead code was removed (e.g., "Fake branch optimized away: x*x < 0") so analysts understand the original logic
+3. **Recognize obfuscation patterns**: Identify opaque predicates, fake branches, and instruction substitution; add comments explaining the technique used

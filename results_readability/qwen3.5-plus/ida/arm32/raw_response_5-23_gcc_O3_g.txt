@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names like `v0`, `v1`, `v2`, `v4`, `v5`, `v6` instead of semantic names (e.g., `page_size`, `exec_mem`, `result`). Function parameters retain original names (`size`, `x`, `y`, `arr`, `n`) which is good, but locals obscure intent.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`param_macro_constants`, `call_asm_basic`, `param_atomic_c11`). A few unnamed functions exist (`sub_10438`), but core test functions match source intent well.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without context: `57072`, `57122`, `282`, `382`, `30` (for `_SC_PAGESIZE`). String literals replaced with opaque references (`asc_11DBC`, `aPpL201D`). Original constants (`MAX_SIZE`, `BUFFER_COUNT`) completely lost to constant folding.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output without excessive register spilling artifacts. Some ARM register hints leak through (`r0`, `r4`, `r5` comments). No debug instrumentation pollution observed.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control structures are idiomatic (if-else, do-while for atomics). However, aggressive constant folding eliminates original conditional logic (e.g., `param_conditional_compile` loses the `#ifdef DEBUG_MODE` branch entirely).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly; each source function maps to one decompiled function. No inappropriate inlining or fragmentation. Helper functions for atomics (`_sync_fetch_and_add_4`) are appropriately separated.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Loop in `param_asm_clobber` uses proper do-while construct. No spurious goto statements disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. However, constant folding creates redundancy where original computation semantics are lost (e.g., `call_macro_constants` returns `64` directly instead of showing `param_macro_constants(2048)` call).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types correct (`int`, `void*`, `size_t`). Some degradation to `_DWORD` in atomic helpers. Pointer arithmetic in `param_asm_clobber` uses `int*` correctly. Missing `const` qualifiers on string pointers.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited structs in this code, but pointer types handled appropriately. Array parameters (`int *arr`) correctly identified. No struct recovery issues since source had minimal composite types.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No unsafe casts observed. Atomic operations use helper functions that obscure type safety semantics. Pointer arithmetic in `param_asm_clobber` is safe but uses manual loop instead of showing original assembly intent.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments explaining function purpose or logic. No recovery of original section headers (`// PP-L2-01: 宏定义常量`). Only auto-generated register comments (`// r0`, `// r4`) present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Atomic operations recognized as `_sync_fetch_and_add_4` helpers but not identified as C11 atomics. No pattern naming for macro expansion patterns. SIMD operations decompiled to scalar loops losing vector semantics.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External function failures noted (`FAILED to decompile: __imp_sysconf`). No warnings about constant folding semantic loss. No indication that preprocessing macros were evaluated at compile-time.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `arr != NULL` for `param_asm_clobber`). No postconditions or return value semantics. Error conditions (`MAP_FAILED`, `mprotect` failures) not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships clear through direct calls. Test functions (`test_preprocessing_features`) call expected functions but with hardcoded values instead of actual function calls. Global variable `global_var` referenced correctly.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source. Section organization lost (no `5.2 预处理与条件编译` headers). Related functions grouped but no file-level structure recovery.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 10 external functions failed to decompile (`__imp_sysconf`, `__imp_mmap`, `memcpy`, etc.). Would require stub implementations. Atomic helper functions need runtime support. Not standalone compilable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+4+7)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):  (7+8+8+7)/4 = 7.50  × 0.25 = 1.88
+Level 3 (Type):        (7+7+7)/3   = 7.00  × 0.20 = 1.40
+Level 4 (Semantic):    (3+4+5+3)/4 = 3.75  × 0.15 = 0.56
+Level 5 (Contextual):  (6+6+5)/3   = 5.67  × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.21/10
+```
+
+### Overall Readability Score: **6.2/10**
+
+### Critical Defects:
+- **Constant folding destroyed macro semantics**: `call_macro_constants` returns `64` directly instead of showing `param_macro_constants(2048)` call, losing the test's purpose
+- **String literals replaced with opaque references**: `asc_11DBC`, `aPpL201D` instead of actual printf format strings
+- **No comments explaining preprocessing behavior**: Original `#ifdef DEBUG_MODE` branches completely invisible in decompiled code
+- **10 external functions failed to decompile**: `sysconf`, `mmap`, `mprotect`, `printf` all marked as FAILED
+- **Architecture mismatch unexplained**: Metadata says `arm64` but decompiled code is `arm32` with ARM-specific register hints
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names preserved accurately from source, making it easy to identify test purposes (`param_macro_constants`, `call_asm_basic`, etc.)
+
+### Most Needs Improvement: **Comment Quality & Presence (3/10)**
+- Zero semantic comments recovered; original section headers and macro explanations completely lost, making it impossible to understand the test's educational purpose
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and annotate constant-folded expressions**: When a function returns a hardcoded value that was computed from macros, add comments showing original computation (e.g., `// Original: BUFFER_COUNT * 4 = 64`)
+2. **Recover string literal content**: Instead of `asc_11DBC`, display actual string content or cross-reference to string table with readable labels
+3. **Add preprocessing awareness**: Flag functions affected by `#ifdef`/`#define` with notes about compile-time branch selection and lost alternative paths

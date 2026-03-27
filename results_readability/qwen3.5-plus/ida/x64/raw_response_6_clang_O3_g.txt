@@ -1,0 +1,102 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost exclusively generic (`v1`, `v2`, `v3`, `result`, `retaddr`) with no semantic meaning. For example, `param_malloc_free` uses `v3`, `v4`, `v6`, `v7` instead of `ptr`, `size`, `index`, making data flow tracking difficult.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_strcpy`, `call_strcmp`, `param_linux_syscall`). However, some helpers remain generic (`sub_2020`, `thread_compute`) and don't indicate purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals preserved ("HelloLib", "/etc/passwd"), but magic numbers abound: syscall numbers (2, 3), signal numbers (10, 14), socket constants (2, 1, 0) without explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifacts: SIMD intrinsics (`_mm_load_si128`, `_mm_add_epi32`), register variables (`v0`, `v1`), excessive type casts. `param_malloc_free` has 15+ SIMD operations obscuring simple loop logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if-else and loops preserved, but SIMD vectorization and loop unrolling create unnatural patterns. `param_memset` uses complex vector accumulation instead of simple byte iteration.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved with appropriate granularity. However, `call_*` functions are constant-folded (return literals instead of calling `param_*`), losing call relationship visibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Some functions like `param_signal_handling` have nested polling loops that could be cleaner.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from loop unrolling and SIMD vectorization. `param_malloc_free` has duplicated SIMD blocks for different size ranges that obscure the simple `ptr[i] = i * 10` logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, size_t), but many generic casts (`_DWORD *`, `__m128i *`). Pointer arithmetic loses array semantics (e.g., `*((_DWORD *)arg + 2)` instead of `data->result`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct fields lost to pointer arithmetic. `ThreadData` becomes `*((_DWORD *)arg + 2)` instead of `data->result`. `struct sockaddr` fields accessed via `*(_QWORD *)&v5.sa_family` instead of named fields.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Numerous unsafe casts throughout: `(_DWORD *)thread_return`, `(__m128i *)`, `(char *)&v3 + 4`. No const-correctness preserved. Buffer operations lack bounds checking visibility.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only function signatures and register annotations present. No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not identified: producer-consumer (`consumer_thread`/`producer_thread`), mutex protection, signal handling. SIMD patterns not recognized as loop vectorization.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (59 functions) but no inline warnings. No indication of uncertain indirect calls or potential undefined behavior in recovered code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values (-1, -2, -3) not explained. No null pointer check documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible through direct invocation. Global variables (`shared_counter`, `atomic_counter`, `signal_received`) referenced but not grouped. Callback relationships unclear.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically (library → syscall → thread). Related functions adjacent. However, no header file structure or API boundary documentation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code structure allows compilation, but 59 library functions failed decompilation requiring stubs. Platform-specific intrinsics (SSE) may need headers. No dependency documentation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+3)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+7+7+4)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (6+3+5)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Context):     (6+7+5)/3   = 6.00 × 0.10 = 0.60
+
+Overall Score: 4.94/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v1`, `v2`, `v3`) obscuring all data flow semantics
+- **59 library functions failed decompilation** including fundamental operations (strcpy, printf, malloc, pthread_create)
+- **SIMD intrinsics not simplified** - `param_malloc_free` shows 15+ `_mm_*` operations instead of simple loop
+- **Struct fields lost to pointer arithmetic** - `ThreadData` becomes `*((_DWORD *)arg + 2)` 
+- **call_* functions constant-folded** - return literals instead of showing actual function calls, losing behavioral visibility
+- **Optimization level mismatch** - Metadata claims `-O0` but binary shows `-O3` artifacts (SIMD, unrolling, constant folding)
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most original function names preserved (`param_strcpy`, `param_linux_syscall`, `param_mutex_lock`), maintaining semantic connection to source.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no documentation explaining logic, algorithms, or decompilation confidence; even complex SIMD blocks lack any explanatory comments.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Infer names from usage patterns (e.g., variables used in size checks → `buffer_size`, loop counters → `index`)
+2. **Recognize and simplify SIMD patterns** - Detect vectorized loops and recover original scalar C code with optional optimization annotations
+3. **Add decompilation confidence annotations** - Mark uncertain regions, failed library calls, and potential undefined behavior inline with the code

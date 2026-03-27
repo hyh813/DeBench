@@ -1,0 +1,108 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `v2`, `v3`, `temp`) with no semantic meaning. For example, `param_macro_constants(int a1)` should use `size` based on the original source, and `param_asm_clobber` uses `v5`, `v6`, `v7` instead of meaningful names like `vector_sum` or `loop_index`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from source (`param_macro_constants`, `param_asm_basic`, `test_preprocessing_features`). This is the strongest aspect—decompiler recovered original semantic function names accurately.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without context: `57072` (should be `0xDEF0`), `282` (line number + counter sum), `19` (string length sum). String literals referenced as `asc_14C7`, `aPpL201D` instead of actual content.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean code without excessive compiler artifacts. Some unnecessary casts like `(unsigned int)` and `(unsigned __int8)` present but don't severely impede reading. No dead code from register spilling observed.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with clear if-else and loop constructs. `param_macro_constants` shows clean branching. However, `param_asm_clobber` shows O3 optimization artifacts with vectorized loops that are harder to follow than original scalar code.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent function granularity preserved—each original function remains separate with appropriate size. No monolithic functions or over-fragmentation. Parameter lists are reasonable and don't expose implementation details.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally with minimal forward jumps. Early returns used appropriately. No spaghetti code patterns or computed jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code observed. Constant folding was applied correctly (e.g., `BUFFER_COUNT * 4` → `64`). Loop unrolling in `param_asm_clobber` is optimization artifact but doesn't create excessive redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation—uses decompiler-specific types (`__int64`, `_DWORD`, `int32x4_t`) instead of original C types. Return types all `__int64` regardless of original `int`. Pointer types lack specificity (e.g., `__int64 a1` instead of `int *counter`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Original source had minimal struct usage, so limited opportunity. Array parameters correctly identified (`int32x4_t *a1`). However, no recovery of semantic type information like `atomic_int *` vs regular `int *`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No dangerous casts or type-confused operations observed. Pointer arithmetic is minimal and correct. However, generic typing (`__int64`) loses signedness information that could affect safety analysis.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only auto-generated type annotations (`// x0`, `// w8`). No algorithm explanations, no decompiler confidence indicators, no API contract documentation. Critical loss compared to original source's extensive comments.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition evident. Macro expansions folded to constants without indicating original macro semantics (e.g., `ADD_16(x)` → `x + 16` with no comment about macro recursion). SIMD patterns not identified as vector operations.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly warnings for unresolved calls (12 functions marked "FAILED to decompile" at end but not flagged at call sites). No indication of optimization artifacts or potential undefined behavior from aggressive O3 optimization.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. No error condition documentation (e.g., `mmap` failure returns `-1` not documented). Original source's test expectations completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: String literals as opaque references (`aPpL201D`, `asc_14C7`). Function call graph not documented. No indication of which functions call which. Global variable `global_var` referenced without context.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source structure (preprocessing tests first, then assembly tests). Related functions grouped together. However, no header file or API declaration recovery.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Does not compile standalone—12 external functions marked "FAILED to decompile" (`memcpy`, `printf`, `mmap`, etc.). Uses decompiler-specific types (`__int64`, `__fastcall`) requiring custom headers. No dependency documentation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+4+7)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):  (8+9+8+8)/4 = 8.25  × 0.25 = 2.06
+Level 3 (Type):        (5+6+7)/3   = 6.00  × 0.20 = 1.20
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):  (4+7+4)/3   = 5.00  × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                                  5.94/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- **Variable `a1`, `a2`, `v2` etc.** should be named semantically (e.g., `size`, `counter`, `vector_sum`) based on usage patterns
+- **String literals** referenced as `aPpL201D`, `asc_14C7` instead of actual content, requiring manual cross-reference lookup
+- **Zero comments** explaining logic, macros, or test expectations—original source had extensive documentation
+- **Magic numbers** like `57072`, `282`, `19` without explanation of their semantic meaning
+- **12 external functions** failed to decompile with no stubs provided, preventing standalone compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** — Original function names perfectly preserved (`param_macro_constants`, `param_asm_basic`, `test_preprocessing_features`), making navigation and identification trivial.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** — Complete absence of explanatory comments loses all the original source's documentation about macro semantics, test expectations, and algorithm intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and display string literal content inline** instead of opaque references like `aPpL201D`—this single change would dramatically improve readability of test functions.
+2. **Infer variable names from usage context** (e.g., parameter used in size comparison → `size`, parameter used in atomic operation → `counter`).
+3. **Add decompiler confidence annotations** for optimized code regions, indicating where constant folding, loop unrolling, or macro expansion occurred versus original source structure.
+
+---
+
+### Additional Observations:
+- **Metadata inconsistency**: Header claims "IDA Pro 9.1" but metadata says "Ghidra 12.0_PUBLIC"
+- **Optimization mismatch**: Source claims `-O0 -g` but binary path shows `clang_O3_no_g`—decompiler correctly handled O3 optimization but this explains the aggressive constant folding
+- **Architecture difference**: Source compiled for ARM64, decompiled output shows ARM-specific intrinsics (`_aarch64_ldadd4_acq_rel`, `vaddq_s32`) correctly recovered

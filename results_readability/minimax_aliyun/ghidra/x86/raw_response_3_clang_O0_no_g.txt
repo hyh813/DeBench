@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables use generic names like `param_1`, `local_c`, `uVar1`, `pvVar1`, `piVar1`/`piVar2` throughout. Original source uses meaningful names like `x`, `arr`, `n`, `head`, `current`, `new_node`, `root`. The decompiler uses offset-based names like `aiStack_2c`, `local_30` which obscure semantic purpose.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Nearly all function names match original source exactly: `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `global_var_access`, `static_local`, `memop_memset`, etc. Excellent recovery of function semantics through naming.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0x800` (2048) appear without explanation. Error return values like `0xffffffff` are appropriately recognized. String literals preserved but constants like `MAX_SIZE` not recovered.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: Minimal compiler artifacts; warnings present for `__i686.get_pc_thunk.bx` replacements and unreachable blocks. No redundant casts or debug instrumentation. Clean decompilation overall.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Loops rendered as `for` statements, conditionals as `if/else`. At `-O0`, control flow closely matches source. Minor issues like `stack_alias` having confusing structure but overall natural.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions maintain appropriate granularity (20-80 lines). Static helper functions properly extracted. Parameter lists preserved. `static_helper` correctly identified as static.
+
+### 7. Code Linearization
+**Score: 9/10**
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns used appropriately. No goto abuse. Excellent linear flow.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: Some loop unrolling present in `large_stack_frame` but manageable. No significant dead code. Minor redundant expressions but not obstructive.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Basic types `int`, `char` correct but `size_t` rendered as `uint`. Pointers often `undefined4*` or `void*` losing specificity. `param_1 << 2` instead of `param_1 * sizeof(int)`. Mixed precision.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+Justification: `Point` struct partially recovered in `heap_struct` as `int*` with field access `__ptr[1]`. Linked list nodes use raw pointer arithmetic (`local_28[1]` for `next`). Tree nodes similarly degraded. Some structure lost.
+
+### 11. Type Safety
+**Score: 4/10**
+Justification: Significant unsafe pointer arithmetic: `*(int *)((int)__ptr + local_14 * 4)`. Function pointers typed as `code*` or `undefined4`. No `restrict` or alignment annotations. Multiple unsafe casts present.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 7/10**
+Justification: Useful warnings present: "WARNING: Function: __x86.get_pc_thunk.bx replaced", "WARNING: Removing unreachable block". Auto-generated but accurate. Missing: algorithm explanations, preconditions.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+Justification: Linked list traversal (`while(local_28 != NULL)`) and tree operations present but not identified as patterns. No explicit naming of data structure patterns. Could recognize "linked list" or "binary tree" idiom.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+Justification: Compiler artifacts flagged with warnings. However, `stack_alias` has severe decompilation failure (compares stack address to 0xc) with only "Heritage AFTER dead removal" warning. Some anomalies not well-explained.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No precondition/postcondition recovery. Null checks present in code but not documented as contracts. Error handling visible but not explained. Very limited contract information.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function calls visible (`malloc`, `free`, `printf`). Global variables accessed (`global_counter`, `global_array`). But no explicit documentation of call graph or relationships. Partially inferable.
+
+### 17. Module Organization
+**Score: 8/10**
+Justification: Functions logically grouped: stack functions together, heap functions together, static/global functions together. Matches source organization. Static functions properly scoped.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+Justification: Uses standard library functions correctly (`memset`, `malloc`, `free`, `printf`, `fork`, `waitpid`). Should compile with minimal patching. External declarations for `extern_function` present.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+9+5+8)/4 = 6.25
+L2_avg = (8+8+9+7)/4 = 8.00
+L3_avg = (5+6+4)/3 = 5.00
+L4_avg = (7+4+5+2)/4 = 4.50
+L5_avg = (5+8+8)/3 = 7.00
+
+Overall = (6.25 × 0.30) + (8.00 × 0.25) + (5.00 × 0.20) + 
+          (4.50 × 0.15) + (7.00 × 0.10)
+        = 1.875 + 2.0 + 1.0 + 0.675 + 0.7
+        = 6.25/10
+```
+
+### Overall Readability Score: 6.25/10
+
+### Critical Defects
+- **Variable naming**: Generic names like `param_1`, `local_c`, `uVar1`, `pvVar1` completely obscure semantic purpose compared to source names like `x`, `arr`, `head`, `root`
+- **Type safety**: Extensive unsafe pointer arithmetic `*(int *)((int)__ptr + local_14 * 4)` instead of proper array indexing
+- **Struct recovery failure**: `Point` struct rendered as `int*` with raw offset access; linked list nodes use `local_28[1]` instead of `node->next`
+- **Contract recovery**: Zero precondition/postcondition documentation; null checks not explained as contracts
+- **Anomaly handling**: `stack_alias` function severely decompiled (compares stack address to literal 0xc) with inadequate warning
+
+### Best Quality Aspect
+**Function Naming Quality (9/10)** - Nearly all function names match original source exactly, providing excellent semantic recovery.
+
+### Most Needs Improvement
+**Variable Naming Quality (3/10)** - Generic parameter/local variable names completely lose semantic information from original source.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns**: `param_1` used in `param_1 * 2` should suggest `multiplier` or similar; array index variables should be named `i`, `j` based on loop patterns
+2. **Recover composite type structures**: Recognize `malloc(8)` followed by `*ptr` and `ptr[1]` as struct allocation; reconstruct `Point` with `x`, `y` fields
+3. **Add contract documentation**: When null checks appear, add comments like `// requires: param_1 != NULL`; document error return conventions

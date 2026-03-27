@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `v0`, `v1`, `i`, `j`) with no semantic meaning recovered. For example, `param_fake_branch(int a1)` should have `x` or `input_value`, and stack variables like `v3` in `param_opaque_predicate` should be `gcd_result`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well preserved from source (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`). This is the strongest aspect—action-oriented names clearly reflect purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation: `0x14u` (stack canary offset), `90` (XOR key should be `0x5A`), `8` and `11` (signal numbers for SIGFPE/SIGSEGV). The XOR key `90` is particularly unclear compared to source's `0x5A`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__readgsdword(0x14u)`) appear in multiple functions adding noise. Frame setup code and return value splitting (`LODWORD`/`HIDWORD`) in `param_string_encryption` obscure the simple logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is well recovered for -O0 compilation. Loops use natural `for`/`while` constructs (e.g., `param_vectorized_loop`), and conditionals are clear. No spurious gotos observed.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source structure well. No inappropriate inlining or fragmentation. Each function has single responsibility matching original design.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately (e.g., `param_tail_call_optimized`). No forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Stack canary checks create redundancy across functions. Otherwise clean—no dead code or duplicate expressions beyond compiler artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision—`param_instruction_substitution` takes `unsigned int` instead of `int`. `param_string_encryption` returns `__int64` unnecessarily when source returns `int`. Pointer types often degraded to `int`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Critical failure—`param_implementation_defined`'s bitfield struct completely lost, function returns constant `43` instead of computing. No struct definitions recovered for any composite types.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `*(_DWORD *)a1` in `param_null_pointer_deref`, `(int)v2` array-to-int conversions in `call_vectorized_loop`. These obscure pointer semantics and could mislead analysis.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. No explanation of obfuscation patterns (fake branches, opaque predicates), no algorithm documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition evident. Obfuscation techniques (fake branches, opaque predicates, instruction substitution) not identified or named. GCD algorithm in `param_opaque_predicate` not recognized.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Library function failures noted ("FAILED to decompile: printf, malloc..."). However, semantic losses (bitfield collapse, fake branch elimination) not flagged as anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of expected behaviors (e.g., "param_fake_branch returns input unchanged for valid integers").
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible in code but not documented. No call graph, no indication of which functions are test entry points vs. implementation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in reasonable order matching source. Related functions grouped (param_*/call_* pairs). No header file organization visible.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 12 library functions failed to decompile requiring stubs. Architecture mismatch (source ARM64, decompiled x86) would cause compilation issues. Would need moderate patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (8+8+8+7)/4 = 7.75 × 0.25 = 1.94
+Level 3 (Type):        (6+4+5)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (6+7+5)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                              5.64/10
+```
+
+**Overall Readability Score:** 5.6/10
+
+### Critical Defects:
+- **Variable `a1`, `a2`, `v0` etc.** should have semantic names based on usage (e.g., `input`, `gcd_temp`, `canary_value`)
+- **`param_implementation_defined`** collapsed to `return 43;` losing all bitfield and char signness logic
+- **`param_fake_branch`** simplified to `return a1;` eliminating the fake branch conditions entirely
+- **No comments** explaining obfuscation patterns, algorithm purposes, or decompilation confidence
+- **Unsafe pointer casts** (`*(_DWORD *)a1`) obscure memory access semantics
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names preserved accurately from source, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding obfuscation intent and algorithm purposes extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns and cross-reference with debug symbols when available (e.g., `a1` → `x` in `param_fake_branch`)
+2. **Preserve complex expressions** even when optimizable—fake branches and opaque predicates should remain visible for security analysis
+3. **Add decompilation confidence annotations** indicating which code regions are certain vs. reconstructed, especially for collapsed structures like bitfields

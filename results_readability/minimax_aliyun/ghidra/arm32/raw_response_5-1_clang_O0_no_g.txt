@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled code uses exclusively generic variable names like `iVar1`, `iVar2`, `local_c`, `param_1`, `puVar1`, `ptVar1`. These provide no semantic meaning about the variable's purpose. For example, in `test_cpp_member_func`, variables should convey they're tracking `value`, `result`, and `class_id` but instead use abstract names like `aSStack_2c` for the object instance.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions like `test_cpp_member_func`, `test_cpp_virtual_func` are correctly named. However, internal implementation functions use cryptic patterns: `__1` for lambda closures, `$_0`/`$_1` for lambda classes, and `TEMPNAMEPLACEHOLDERVALUE` for operators. The C++ name mangling is partially demangled but loses semantic clarity (e.g., `test_cpp_lambda()::$_1` should be the captured lambda with clear semantics).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear throughout without explanation: `0x2a` (42), `0x14` (20), `0x1e` (30), `0x32` (50), `0x96` (150), `0xfa` (250). The constant `0x1234` is used but not named. String literals like `"Base"` and `"Derived"` are correctly preserved. The decompiler makes no effort to identify or name these constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: The output is cluttered with warnings: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Heritage AFTER dead removal". Multiple thunk functions for virtual dispatch add noise. Template instantiation functions are fully expanded rather than consolidated. The `undefined4` type appears extensively as a generic placeholder.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: The test functions maintain natural control flow matching the source - sequential statements, simple conditionals, and return expressions. The `call_virtual_func` correctly shows indirect vtable dispatch. At -O0, loops are properly formed. Minor issues include some convoluted pointer arithmetic in multiple inheritance handling.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Each class method is correctly extracted as a separate function. The 214 functions represent comprehensive decomposition. However, template instantiations are fully expanded (e.g., `Container<int>::push` and `Container<double>::push` separately) rather than showing they're from a template. Lambda operator() implementations are properly separated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive forward jumps. The `test_cpp_multiple_inheritance` function has some convoluted pointer manipulation but still maintains reasonable linearity. Early returns are used appropriately in accessor functions.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or redundant computations. Template instantiations are separate but necessary. Some repeated patterns in smart pointer implementations are unavoidable due to different deleter types. Overall clean without obvious redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: The decompiler uses `undefined4` extensively instead of `int`, `uint32_t`, or `size_t`. Function parameters use generic types. Boolean returns are sometimes `int` instead of `bool`. The `bool` type is partially recognized (e.g., `Point::operator==` returns `bool`). Pointer types are generally preserved but with `undefined4` for pointers.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Class names are correctly recovered: `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `Point`, `Container<T>`. Member function names match source. However, internal struct layouts use raw offsets (e.g., `this + 4`, `this + 8`) rather than named fields. The `name` array in `SimpleClass` is accessed via `this + 4` without field name recovery.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Extensive use of `undefined4` creates type-unsafe code. Raw pointer arithmetic throughout (e.g., `*(int *)(this + 4)`). The virtual function call pattern `(*(code *)*local_38)()` uses unsafe function pointer casting. Multiple implicit conversions between `int` and pointers. No `const` correctness on member functions that should be `const`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are minimal and mostly auto-generated warnings. No explanation of algorithms or intent. The comment "WARNING: Unknown calling convention -- yet parameter storage is locked" appears repeatedly but provides no actionable insight. No documentation of what the function does or returns.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are visible but not explicitly labeled: virtual function dispatch through vtable, RAII patterns in smart pointers, lambda closure objects. The template pattern is recognized but not explicitly identified as such. No mention of patterns like RAII, rule-of-three, or virtual inheritance.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Warnings about "Unknown calling convention" and "Removing unreachable block" are present but generic. No indication of uncertain decompilation decisions. The thunk functions for multiple inheritance are not flagged as such. No confidence indicators for indirect calls that couldn't be fully resolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The `const` member functions are not marked as such in the decompiled output. No documentation of exception safety, memory ownership, or thread safety guarantees that would be implicit in the original C++ code.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are explicit and traceable. Class relationships are visible through constructor calls and vtable setup. However, static member access (`instance_count`) is not clearly distinguished from regular globals. No documentation of call graph or which functions call which.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by class which is helpful. However, all 214 functions are in a single flat listing. No namespace information (`std::` is flattened). No indication of original source file organization or header structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code would not compile as-is. Many undefined identifiers: `operator_new`, `operator_delete`, `operator_new__`, `operator_delete__`, `std::ios_base::Init::Init`, `__cxa_atexit`. The `undefined4` type is not valid C++. Would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`iVar1`, `local_c`, `param_1`) with no semantic meaning
+- Type precision severely degraded - `undefined4` used instead of `int`, `bool`, proper pointers
+- Magic numbers throughout without named constants (0x2a, 0x14, 0x1e, 0x1234)
+- No comments explaining algorithm intent or contracts
+- Template instantiations fully expanded rather than recognized as template specialization
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+The decompiled test functions maintain natural sequential logic matching the source structure. At -O0, loops and conditionals are properly formed.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Every variable uses abstract names that provide zero insight into purpose. This single issue severely impacts the ability to understand and analyze the decompiled code.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Variables used as array indices should be named `index` or `i`, pointers to objects should carry the class name, return values should indicate their purpose
+2. **Replace `undefined4` with inferred types**: Analyze usage to determine if variables are `int`, `uint32_t`, `bool`, or pointers; use const-correctness for member functions marked const in source
+3. **Detect and name magic numbers**: Identify constants used in meaningful ways (array sizes, flags, return values) and suggest or create named constants

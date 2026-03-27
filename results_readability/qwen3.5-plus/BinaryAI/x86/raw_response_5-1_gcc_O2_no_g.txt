@@ -1,0 +1,125 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`iVar1`, `uVar2`, `local_20`, `puStack_3c`) with no semantic meaning. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test function names preserved (`test_cpp_exception`, `test_cpp_member_func`), and class methods retain names (`Base::virtual_func`, `Derived::getName`). However, helper functions use mechanical names (`FUN_00011xxx`) and template instantiations are mangled (`template_max_int_`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Return value constants are meaningful (0x2a=42, 0x47=71, 0x28a=650 match expected values), but magic numbers like `0x125c`, `0x96`, `0xfa` appear without explanation. String literals partially recovered ("Derived", "12RTTIDerivedA").
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack canary checks (`in_GS_OFFSET + 0x14`), `__stack_chk_fail_local()` calls in every function, helper thunks (`__x86_get_pc_thunk_*`), and initialization functions clutter the output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Exception handling in `test_cpp_exception` is heavily obfuscated with nested conditionals instead of try-catch blocks. Stack canary checks create unnatural branching. Most test functions collapse to constant returns losing original logic structure.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Test functions are appropriately sized but many reduce to single return statements. Helper functions (`FUN_00011xxx`) have unclear purposes. Class methods are properly separated but template instantiations create fragmented functions.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Stack checking creates forward jumps to `__stack_chk_fail_local()` disrupting flow. Exception handling produces complex branching. Otherwise most functions read top-to-bottom reasonably well.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple destructor variants for same class (`DiamondDerived::~DiamondDerived` appears 3 times). Similar patterns in `MiddleA::func`, `MiddleB::func`, `DiamondDerived::func` with duplicated pointer arithmetic logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy use of generic types (`undefined4`, `undefined`, `undefined8`, `undefined*`). Some type hints present (`int*`, `char*`, `double`) but const-correctness completely lost. Template types mangled (`Container_int_`, `Container_double_`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Class structures completely lost—no struct definitions visible. Object access through raw pointer arithmetic (`this + 4`, `this + 0x28`, `this + 0x50`). Vtable pointers implicit. No field names recovered (original had `value`, `name[32]`, `data`, `size`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts (`(undefined4*)`, `(undefined**)`). Pointer arithmetic without bounds checking throughout. Vtable calls through triple indirection (`(***(code ***)param_1)()`). No const correctness preserved.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Only file header comment present ("Decompiled by BinaryAI"). Zero function-level comments, no algorithm explanations, no decompilation confidence indicators. Original source had extensive documentation for each C++ feature.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns completely unrecognized: RAII (smart pointers), virtual dispatch, exception handling, lambda captures, template instantiation all appear as opaque C-style code. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Indirect calls not flagged. Exception handling complexity not noted. Stack canary checks not explained. No confidence indicators anywhere in output.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented. No postconditions inferred. Exception contracts not recovered. Original had clear expected return values in comments (e.g., "期望: 10 + 34 + 4660 = 4704") that are completely absent.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but semantic relationships unclear. Virtual dispatch not clearly indicated (just `(***(code ***)param_1)()`). Class inheritance not documented. Some typeinfo references visible but relationships obscured.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions appear in arbitrary order with no logical grouping by class or feature. Helper functions scattered throughout. Original had clear section organization with comments (`CPP-L3-01`, `CPP-L3-02`, etc.) completely lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code is C-style, not C++ (no class definitions, no templates). Would require significant stubs to compile. External dependencies (`std::ios_base::Init`, typeinfo) not properly declared. Missing all class layout definitions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (2+6+5+4)/4 = 4.25
+Level 2 Average: (4+5+5+5)/4 = 4.75
+Level 3 Average: (3+2+3)/3 = 2.67
+Level 4 Average: (1+2+2+2)/4 = 1.75
+Level 5 Average: (4+3+3)/3 = 3.33
+
+Overall = (4.25 × 0.30) + (4.75 × 0.25) + (2.67 × 0.20) + (1.75 × 0.15) + (3.33 × 0.10)
+        = 1.275 + 1.1875 + 0.534 + 0.2625 + 0.333
+        = 3.59/10
+```
+
+**Overall Readability Score: 3.6/10**
+
+---
+
+### Critical Defects
+
+- **Variable names completely generic**: `iVar1`, `uVar2`, `local_20` provide zero semantic information compared to original `capture_by_value`, `instance_count`, `multiplier`
+- **Class structures lost**: No struct definitions recovered; all object access through pointer arithmetic (`this + 4`, `this + 0x28`)
+- **Exception handling obfuscated**: Complex nested conditionals instead of recognizable try-catch blocks in `test_cpp_exception`
+- **Zero comments**: Original had extensive documentation for each C++ feature; decompiled code has only file header
+- **C++ semantics reduced to C**: Virtual dispatch, templates, lambdas, smart pointers all appear as opaque C-style code
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (6/10)**: Test function names preserved correctly (`test_cpp_exception`, `test_cpp_member_func`) and class method names retained (`Base::virtual_func`, `Derived::getName`), providing some anchor points for understanding.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (1/10)**: Complete absence of documentation is catastrophic for understanding C++ semantics. Even basic decompilation confidence indicators or algorithm explanations would significantly improve usability.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover C++ class structures from vtable layouts**: Analyze vtable pointers and object field access patterns to reconstruct struct definitions with field names (e.g., `struct SimpleClass { int value; char name[32]; }`)
+
+2. **Add decompilation confidence annotations**: Flag uncertain constructs (indirect calls, exception handling, optimized code) with comments like `// UNCERTAIN: vtable call - verify manually`
+
+3. **Preserve semantic information from debug symbols**: With `-g` flag present, extract variable names, function purposes, and expected return values from DWARF debug information to populate comments and naming

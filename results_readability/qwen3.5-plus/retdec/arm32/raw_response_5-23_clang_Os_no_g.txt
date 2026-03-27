@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All function parameters are generic (`a1`, `a2`, `a3`), locals are `v1`, `v2`, and globals are `g1`-`g28` with no semantic meaning. For example, `param_macro_constants(int32_t a1)` should have `size` as the parameter name based on source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved accurately (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). However, helper functions are generically named (`function_50c`, `function_518`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `&g17`, `&g15`, `0xdf22`, `282` without explanation. String literals stored as hex-encoded globals (`g22 = "PP-L2-01: %d (\xe6\x9c\x9f...`), obscuring meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (unnecessary casts like `(int32_t)&g17`), but no severe register spilling noise. Frame pointer manipulation mostly eliminated.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered reasonably (`param_asm_clobber` has while loop), but many functions constant-folded losing original structure (e.g., `call_macro_constants` just returns 64 instead of calling `param_macro_constants(2048)`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized and separated. Original function boundaries mostly preserved. However, `param_asm_multi_insn` lost its parameters entirely (should take `dst`, `src`, `n`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but some awkward patterns like `param_multi_branch_compile` using pointer arithmetic (`(int32_t)" %d, %d\n" + 0xd000`) instead of clean constant.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy from optimization recovery visible. `call_builtin_macros` duplicates the printf from `param_builtin_macros` instead of calling it, losing the original call relationship.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently but loses original type information. No `size_t` for sizes, no `const` correctness. Pointer types often just `int32_t *` instead of specific types like `void *` for `mmap`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No structs recovered (original had few). Arrays represented as pointer arithmetic (`*(int32_t *)(v1 + a2)`). The `char *` globals should ideally be `const char *`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present: `(int32_t *)-1` for error checking, `(int32_t)&g17` treating address as value. Pointer arithmetic without proper typing throughout assembly-recovered functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. No explanation of recovered logic, no indication of what was constant-folded vs. recovered. Original source had extensive documentation; none preserved.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern identification visible. Assembly patterns recovered as C loops but not identified as such (e.g., `param_asm_clobber` loop not marked as array summation pattern).
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain recovery. Functions like `param_asm_multi_insn` have clearly broken signatures (no parameters) but no anomaly flag. String encoding issues not noted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Error conditions (like `mmap` returning `MAP_FAILED`) not documented. No contract information for any function.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls clear through preserved names, but global variable usage opaque (`g1`-`g28` with no meaning). Call relationships lost (e.g., `call_macro_constants` should call `param_macro_constants`).
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but not logically organized. No separation between preprocessing tests and assembly tests. Helper functions (`function_50c`-`function_584`) mixed with main logic.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears compilable with necessary includes (`stdio.h`, `sys/mman.h`, etc.). Some external functions declared (`__atomic_fetch_add_4`). Metadata confirms "Compilation Result: Yes".
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Weighted |
+|-------|--------------|--------|----------|
+| L1: Lexical Clarity | 5.25 | 30% | 1.575 |
+| L2: Structural Intelligibility | 6.25 | 25% | 1.563 |
+| L3: Type System Fidelity | 4.67 | 20% | 0.934 |
+| L4: Semantic Transparency | 2.50 | 15% | 0.375 |
+| L5: Contextual Coherence | 5.67 | 10% | 0.567 |
+| **TOTAL** | | **100%** | **5.01/10** |
+
+**Overall Readability Score: 5.0/10**
+
+### Critical Defects:
+- **Variable `a1`, `a2`, `a3`** should be named based on semantic usage (e.g., `size`, `x`, `y`, `counter`, `increment`)
+- **Global variables `g1`-`g28`** have no semantic meaning; string constants should retain original content
+- **Function `param_asm_multi_insn`** lost all parameters; should be `(void *dst, const void *src, size_t n)`
+- **Call relationships broken**: `call_macro_constants` returns constant 64 instead of calling `param_macro_constants(2048)`
+- **No comments** explaining recovered logic, constant folding, or uncertainty indicators
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making it possible to identify test purposes
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding recovered logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how parameters are used (comparison, arithmetic, pointer dereference) to suggest semantic names like `size`, `counter`, `buffer`
+2. **Preserve call relationships** - Avoid constant-folding caller functions; maintain the original call graph structure for better traceability
+3. **Add confidence annotations** - Mark recovered code with uncertainty indicators (e.g., `// RECOVERED: loop structure`, `// UNCERTAIN: parameter types`) to help analysts understand decompilation quality

@@ -1,0 +1,96 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`, `cur`) despite `-O0 -g` debug symbols being available. Original names like `sum`, `i`, `n`, `width`, `height` are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved correctly (`process_char`, `array_1d_stack`, `struct_simple`), but cluttered with wrapper functions (`sub_401159`, `sub_40119f`) that add no value.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `4294967295` (repeated masking), `65`/`90` (ASCII values), `0x3fc00000` (float constant). No named constants recovered despite source having clear intent.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise: `[D]` decompilation failure markers, duplicate wrapper functions for every real function, vector operation artifacts in `process_float`/`process_double`, register spilling variables (`v1`, `v2` in `_start`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered correctly, but `enum_switch` uses `goto` for switch table instead of switch statement. Some functions have unnecessary jumps that could be simplified.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Every function has a pointless wrapper (`sub_401159` calls `process_char`). This artificial fragmentation doubles the function count without adding clarity.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well, but `test_data_types_l1` has forward jumps and `[D]` artifacts that disrupt flow. Switch table goto breaks linearity.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate wrapper functions create 100% redundancy. Repeated `& 4294967295` masking in printf calls. No dead code elimination of initialization artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe degradation: `long double` becomes `void` function, `float`/`double` show vector types (`ymm0`, `xmm0lq`), pointers become `unsigned long`, `char` return becomes `int`. Debug symbols should preserve this.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: All structs become `struct_0`, `struct_1` with `field_0`, `field_8` naming. Original names (`Point3D`, `Rect`, `Widget`, `Node`) completely lost. Bitfields reduced to bit operations. Unions not distinguished from structs.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `void*` to `int*`, `unsigned long` to pointer, function pointers as `unsigned long long*`. No const correctness preserved. Pointer arithmetic uses raw byte offsets.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of `[D]` failure markers. No algorithm documentation despite complex patterns (tree traversal, linked list, graph).
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list traversal, binary tree recursion, and graph traversal appear as generic loops. Switch tables not identified as enum dispatch.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `[D]` markers indicate failures but provide no explanation or recovery suggestions. `process_ld` completely fails with unsupported operations but no guidance on manual analysis.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for linked list). No postconditions. Array bounds checks in `array_complex_index` not explained as safety guards.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls preserved but relationships not documented. Global variables named generically (`g_403150`, `g_405fe0`). No call graph or dependency information.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single file with no logical grouping. Wrapper functions interspersed with real functions. No separation of test code from implementation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies declared (`printf`, `__libc_start_main`) but may not compile standalone. Missing struct definitions for some types. Some functions reference undefined globals.
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Calculation:**
+- Level 1 (30%): 4.25 × 0.30 = 1.28
+- Level 2 (25%): 5.25 × 0.25 = 1.31
+- Level 3 (20%): 2.65 × 0.20 = 0.53
+- Level 4 (15%): 2.00 × 0.15 = 0.30
+- Level 5 (10%): 4.00 × 0.10 = 0.40
+- **Total: 3.82 ≈ 3.9/10**
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `a0` should be named** `sum`, `i`, `n` based on loop usage patterns
+- **Struct fields `field_0`, `field_8` lose all semantic meaning** - original had `x`, `y`, `z`, `next`, `prev`
+- **`process_ld` completely fails decompilation** with `[D]` markers and no recovery
+- **Duplicate wrapper functions** (`sub_401159` → `process_char`) create 100% code bloat
+- **`long double` type completely lost** - function returns `void` instead of `long double`
+- **No comments despite `-g` debug symbols** being available during compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `process_char`, `array_1d_stack`, `struct_simple` were correctly recovered from debug symbols, preserving semantic intent.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero comments despite debug symbols being available; decompiler should leverage symbol information to add explanatory comments for complex patterns.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for variable names** - At `-O0 -g`, original variable names should be recovered from DWARF debug info instead of generating `v0`, `v1`
+2. **Eliminate wrapper function duplication** - Remove `sub_XXXXX` wrapper functions that just call the real function; they add no value and double code size
+3. **Add semantic comments for recovered patterns** - When detecting linked list traversal, tree recursion, or switch tables, add comments explaining the pattern (e.g., "// Linked list traversal")

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `lVar1`, `uVar2`, `piVar3`, `local_28`, `local_410`. The original source had meaningful names like `arr`, `i`, `p`, `result`, `sum`, `leak` - all completely lost. This is a severe degradation that makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions are correctly named: `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `global_var_access`. However, some utility functions have cryptic names like `FUN_001008e0`, `call_weak_fn`. The core test functions match the source well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear like `0x2a` (42) and `0x14` (20) in hardcoded returns, but many magic numbers remain unexplained. The decompiler shows some constant values inline but doesn't provide named constant suggestions for values like `0x10`, `0x28`, `0x800`.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present like `CONCAT17`, `CONCAT16` macros for loop unrolling, and `DataMemoryBarrier` calls. However, these are manageable and don't completely obscure the logic. The code is relatively clean of debug instrumentation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops are generally recognizable but heavily unrolled in array operations (e.g., `local_array` uses paired stores). At -O0, this level of transformation is unexpected. The control flow is traceable but requires significant mental effort to reconstruct the original loop logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are well-separated and match the source granularity. Each test function (`test_stack_memory`, `test_heap_memory`, etc.) is properly decomposed. No monolithic functions observed. The decomposition closely matches the original source organization.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. Early returns in error checking are preserved. Some complex loop constructs in memory operations but manageable. The code flow is mostly intuitive.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant loop unrolling in `local_array`, `vla_stack`, `alloca_usage`, and heap functions creates substantial redundancy. The paired-store pattern (`if (uVar3 < 10) { ... } if (uVar4 < 10) { ... }`) is repeated throughout, obscuring the simple original loop.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types are generic: `int`, `void*`, `undefined8`, `ulong`. The original used specific types like `size_t`, `uint32_t` not recovered. Pointers to structures like `Node*` are sometimes `int*` (see `linked_list_heap`). Signed/unsigned distinctions often lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The `Point` struct is completely lost - `local_struct` returns `x * 3` instead of accessing `p.x + p.y`. The `Node` struct is partially recovered but fields are accessed via offset arithmetic (`piVar4[2]`, `*(int **)(piVar3 + 2)`). The `TreeNode` is barely recognizable. This is a severe degradation.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present: extensive pointer arithmetic like `*(int *)((long)__ptr + (long)(n >> 1) * 4)`. Function pointer types use `_func_int_int` instead of proper signatures. However, no obviously dangerous buffer overflow patterns that would cause immediate harm.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only comments are "Unresolved local var" annotations and "WARNING" messages about unknown calling conventions. No algorithm explanations, no recovery confidence indicators, no API contracts. The comments are purely decompilation artifacts with no semantic value.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic memory operations (malloc/free) are recognizable. However, patterns like linked list traversal, tree operations, and VLA handling are not explicitly identified or named. The decompiler doesn't recognize these as common data structure patterns.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some warnings present: "Unresolved local var", "WARNING: Unknown calling convention", "WARNING: Removing unreachable block". However, critical issues like the dangling pointer in `dangling_pointer` or the double-free in `double_free` are not flagged. No indication of undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions like `if (n <= 0)` are preserved but not documented as preconditions. Postconditions like "returns heap-allocated value" not indicated. Error handling is present but not explained as part of API contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are clear (e.g., `malloc`, `free`, `printf`). However, global variable usage (like `global_counter`, `global_array`) is not documented in comments. Callback relationships like `set_global_callback` → `call_global_callback` → `double_value` are not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically: stack memory functions together, heap functions together, static/global functions together. Matches the source file organization reasonably well. Static functions properly marked.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code would require significant patching to compile. External dependencies like `extern_global_var` and `extern_function` are declared but their sources not documented. Missing includes for standard library functions. Some type mismatches would prevent compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Variable naming**: All meaningful variable names lost (`arr`, `i`, `result`, `sum` → `local_28`, `lVar1`, `piVar2`)
+- **Struct recovery failure**: `Point` struct completely lost in `local_struct`; returns `x * 3` instead of `p.x + p.y`
+- **Composite type degradation**: `Node` and `TreeNode` accessed via raw pointer arithmetic instead of struct fields
+- **Loop unrolling**: Heavy unrolling in array operations at -O0 creates unreadable paired-store patterns
+- **No semantic comments**: Only "unresolved local var" comments; no algorithm explanations or contract documentation
+
+### Best Quality Aspect: Function Decomposition (8/10)
+- Functions are properly separated and match source granularity
+- Each test function is correctly isolated
+- No monolithic functions created
+
+### Most Needs Improvement: Composite Type Recovery (2/10)
+- Struct/union types almost completely lost
+- Field names replaced with offset arithmetic
+- Original data structures unrecognizable in decompiled form
+
+### Top 3 Recommendations:
+1. **Recover struct layouts**: Use debug info (DWARF) to reconstruct struct fields with proper names instead of raw pointer arithmetic
+2. **Infer variable names from usage**: Analyze how variables are used (e.g., `arr[i]` suggests array, `*out =` suggests output parameter) to generate semantic names
+3. **Add semantic comments**: Document algorithm intent, preconditions/postconditions, and flag potential undefined behavior (dangling pointers, double-free)

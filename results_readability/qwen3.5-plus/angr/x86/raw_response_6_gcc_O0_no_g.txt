@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `ptr`, `result`) instead of semantic names like `dst`, `src`, `buffer`. In `param_strcpy`, parameters are `a0`, `a1` instead of `dst`, `src`. Only occasional names like `idx`, `flag1` provide minimal hints.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core test functions recovered original names (`param_strcpy`, `call_strcpy`, `param_mutex_lock`), but helper functions remain as `sub_401XXX` (e.g., `sub_4015d0` for `strcpy`). Platform mismatch noted (ARM64 source → X86 decompilation).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `4294967295` for `-1`, `4294967294` for `-2`, offsets like `-9886`, `-9585` for string addresses. String literals preserved ("HelloPipe", "BinBench Test Data") but numeric constants lack context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: `__x86.get_pc_thunk.*` calls in nearly every function, `__stack_chk_fail_local()` checks, `[D] Unsupported jumpkind Ijk_SigTRAP` errors, redundant register spilling variables (`v5`, `v6`, `ldt`, `gdt`, `gs`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic structures preserved (if-else, for loops) but awkward patterns like `while(true) { if(condition) break; }` instead of `while(condition)`. Some functions use `goto` patterns (`goto v1->field_fc`). At `-O0`, cleaner flow expected.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions reasonably sized but over-fragmented with helper wrappers (`sub_4015d0`, `sub_401650` for library calls). Original `param_strcpy` (3 lines) became 4 lines with external calls. Thread functions properly separated.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but disrupted by stack check code at function ends, forward references to undefined structures, and repeated `__x86.get_pc_thunk` calls breaking flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Stack check pattern repeated in ~30 functions, `__x86.get_pc_thunk.ax()` called redundantly, similar error handling code (`if(vX != *((int *)_ccall(...))) return __stack_chk_fail_local()`) duplicated extensively.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion: everything is `unsigned int` or `char*`. Original `size_t`, `const char*`, `FILE*`, `pthread_t`, `atomic_int` all degraded to `unsigned int`. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered with generic fields (`field_0`, `field_4`, `padding_0[252]`). Original `ThreadData { start, end, result }` lost. `struct_0` redefined dozens of times with different layouts indicating recovery failure.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe pointer arithmetic throughout (`ptr[idx]`, `(&v4)[v3]`), no const qualifiers, implicit casts everywhere. `param_malloc_free` uses `ptr[1073741823 + a0]` which is clearly wrong (should be `ptr[a0-1]`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered. Original source had extensive documentation (function purposes, expected values, scene tags). No decompiler confidence indicators or algorithm explanations present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Library calls identified as `sub_401XXX` but not named (e.g., `sub_4015d0` for `strcpy`). Thread patterns visible but not labeled as producer-consumer, mutex protection, etc. No pattern naming.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`), but most issues silent. Architecture mismatch (ARM64→X86) not flagged. Incorrect type recoveries presented confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`), no postconditions, no error condition explanations. Return values like `4294967295` for errors not explained as `-1`.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`signal_received`, `shared_counter`, `atomic_counter`) referenced but not explained. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output, no logical grouping by section (library functions, syscalls, threads). Original 3 test functions (`test_standard_library_functions`, etc.) preserved but helpers scattered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile standalone: missing headers, undefined external functions (`sub_401XXX`), architecture-specific thunks, incomplete struct definitions. Requires extensive stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+5+4+3)/4 = 3.75
+L2 Average: (5+5+5+4)/4 = 4.75
+L3 Average: (3+3+3)/3 = 3.00
+L4 Average: (1+3+4+2)/4 = 2.50
+L5 Average: (4+4+3)/3 = 3.67
+
+Overall = (3.75 × 0.30) + (4.75 × 0.25) + (3.00 × 0.20) + (2.50 × 0.15) + (3.67 × 0.10)
+Overall = 1.125 + 1.1875 + 0.600 + 0.375 + 0.367
+Overall = 3.65 ≈ 3.7/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable `a0`, `a1` should be `dst`, `src`** in `param_strcpy` based on function semantics
+- **Magic number `4294967295`** used throughout instead of `-1` (signed/unsigned confusion)
+- **Zero comments recovered** from extensively documented original source
+- **Architecture mismatch** (ARM64 source compiled, X86 decompilation output) not flagged
+- **Struct fields all generic** (`field_0`, `padding_0[252]`) losing all semantic meaning from `ThreadData`, etc.
+- **Incorrect array indexing** in `param_malloc_free`: `ptr[1073741823 + a0]` should be `ptr[a0-1]`
+
+### Best Quality Aspect:
+- **Structural Intelligibility (4.75/10)** - Basic control flow structures (if-else, for loops) mostly preserved despite artifacts; function boundaries correctly identified for most test functions.
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.50/10)** - Complete absence of comments, no idiom recognition, no contract recovery, and minimal anomaly indication makes understanding intent nearly impossible without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns** - Analyze how variables are used (e.g., passed to `strlen` → `string_ptr`, used in loop bound → `count`)
+2. **Preserve and display original debug symbol names** - When `-g` flag present, prioritize DWARF debug info for function/variable names over heuristic recovery
+3. **Add confidence indicators and anomaly flags** - Mark uncertain recoveries (e.g., "TYPE UNCERTAIN: could be size_t or int"), flag architecture mismatches, document magic number interpretations

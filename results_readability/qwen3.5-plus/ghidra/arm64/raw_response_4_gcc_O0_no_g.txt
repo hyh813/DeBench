@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named (`param_1`, `param_2`, `local_8`, `local_10`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `x`, `y` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test function names preserved (`cdecl_func`, `varargs_func`, `func_struct_byval`), but runtime functions use generic names (`FUN_00100750`, `FUN_001008bc`). Original intent partially recoverable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers prevalent (`0x2a` instead of 42, `0xf` instead of 15, `0x12345678`). String literals referenced as `DAT_00101fb0` instead of actual content, requiring external lookup.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`) repeated in nearly every function. Compiler runtime artifacts (`deregister_tm_clones`, `register_tm_clones`) clutter output without clear purpose.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop constructs recovered well (for loops in `varargs_func`, `func_struct_byval`). Conditionals are clear. Some "WARNING: Removing unreachable block" annotations indicate decompiler uncertainty.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original function boundaries mostly preserved with appropriate granularity. Runtime helper functions (`__do_global_dtors_aux`) are separate but appropriately sized.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code reads mostly top-to-bottom but stack variables declared at function start disrupt flow. Forward references to data (`DAT_00102078`) require scrolling to understand.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary check pattern repeated identically across 20+ functions. No dead code beyond marked unreachable blocks, but security instrumentation adds significant redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined8` used for return types (`func_no_args` returns `undefined8` instead of `int`), `long` used for pointers, `double` parameters misordered in `func_mixed_args`. Original `int`, `char*`, `double`, `long long` distinctions lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct types completely lost—`LargeStruct` and `SmallStruct` shown as `long` or `int*`. No field names recovered (`param_1[0xf]` instead of `s.data[15]`). Array types degraded to pointers.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(int *)register0x00000008`, `(undefined4 *)*param_1`). Pointer arithmetic on generic types (`param_1 + (long)local_c * 8`). Type-confused function pointers (`code *` instead of specific signature).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Removing unreachable block", "WARNING: Globals starting with '_' overlap"). No semantic comments explaining algorithm purpose or variable intent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern partially recognized but implementation obscure (complex stack pointer arithmetic in `varargs_func`). Function pointer calls recognized but not labeled as callback pattern.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings about unreachable blocks and overlapping symbols. However, no indication of type uncertainty or potential misinterpretation of calling conventions on ARM64.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present (`if (param_1 == (int *)0x0)`) but not documented as preconditions. No postcondition inference or error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced as `DAT_` addresses without context. No call graph or dependency documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 80 functions in single output with no logical grouping. Runtime functions mixed with test functions. No namespace or module structure recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References undefined external symbols (`___stack_chk_guard`, `__libc_start_main`, `__cxa_finalize`). Would require significant stubbing and external dependency resolution to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3 + 6 + 5 + 5) / 4 = 4.75
+Level 2 Average: (7 + 7 + 6 + 6) / 4 = 6.50
+Level 3 Average: (4 + 2 + 4) / 3 = 3.33
+Level 4 Average: (3 + 4 + 5 + 3) / 4 = 3.75
+Level 5 Average: (5 + 4 + 4) / 3 = 4.33
+
+Overall = (4.75 × 0.30) + (6.50 × 0.25) + (3.33 × 0.20) + (3.75 × 0.15) + (4.33 × 0.10)
+        = 1.425 + 1.625 + 0.666 + 0.563 + 0.433
+        = 4.71/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable `param_1`, `param_2` should be named semantically** (e.g., `count`, `sum` in `varargs_func`)
+- **Struct types completely lost** - `LargeStruct` shown as `long param_1` with no field names
+- **Return type degradation** - `func_no_args` returns `undefined8` instead of `int`
+- **String literals not recovered** - All strings shown as `DAT_` addresses requiring external lookup
+- **Stack canary noise** - Repeated `___stack_chk_guard` checks in every function obscure core logic
+
+### Best Quality Aspect:
+- **Control Flow Naturalness (7/10)** - Loop constructs and conditionals are recovered accurately with natural for/while patterns despite -O0 compilation
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct definitions, field names, or array types, making data structure manipulation nearly unreadable
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** from access patterns (e.g., `param_1[0]` and `param_1[1]` accessed together suggests a struct with two int fields)
+2. **Recover string literals inline** instead of external `DAT_` references for immediate semantic understanding
+3. **Add semantic variable naming** based on usage context (loop counters, accumulators, pointer dereferences) rather than generic `param_N` / `local_N` scheme

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`, `a1`, `a2`, `temp`) with no semantic meaning. Original parameter names like `dst`, `src` are lost, replaced with `str`, `str2`. Only occasional meaningful names like `file_path` appear.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names preserved (`param_strcpy`, `call_strcpy`, `thread_compute`), but helper functions use mechanical names (`function_13c0`, `function_13d0`). Original intent partially recoverable through naming.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (`0x5874`, `0x57d3`, `0x57a3`) with no explanation. String literals stored in opaque globals (`g19`, `g20`). Constants like `42`, `-1`, `-2`, `-3` used without semantic context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifacts: `__x86_get_pc_thunk_*` calls in nearly every function, stack canary checks (`__readgsdword(20)`) repeated throughout, architecture mismatch noise (ARM64 source decompiled as x86).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` labels (`lab_0x2a77_2`, `lab_0x2b57`) replace natural loop constructs. While some loops recovered, many use backward jumps with manual counter management instead of `for`/`while`.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved. Helper functions created for library calls (`function_13d0` for `setsockopt`). Some functions bloated with stack management code.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. Goto labels (`lab_0x2ea8_2`, `lab_0x2ede`) create non-linear flow requiring mental tracking.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks repeated in every function. `__x86_get_pc_thunk_*` calls appear redundantly. Some dead code from register spilling visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion—everything becomes `int32_t`. Pointer types degraded to `int32_t *`. No `const`-correctness preserved. Original `char *`, `size_t`, `void *` distinctions lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs defined (`struct _IO_FILE`, `struct ipc_perm`, `struct shmid_ds`) but fields named generically (`e0`, `e1`, `e2`...). Structure layout preserved but semantic field names lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(char *)str`, `(int32_t *)mem`, `(struct sockaddr *)&addr`. Pointer arithmetic on generic `int32_t` types creates potential undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero explanatory comments. Only auto-generated file header present. No algorithm documentation, no API contracts, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `pthread_create`). No pattern naming or algorithm identification. Thread patterns visible but not labeled.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `UNREACHABLE` comments in some places. Architecture mismatch (ARM64→x86) not flagged. No warnings about indirect call resolution failures.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions inferred. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variable usage (`g27`, `g2`) unexplained. No call graph or dependency information.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file. Original structure roughly preserved. No logical grouping beyond source organization. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes present but architecture mismatch requires fixes. Some function signatures incorrect. Would require moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (4+6+4+5)/4 = 4.75  × 0.25 = 1.19
+Level 3 (Type):        (3+4+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (2+5+4+2)/4 = 3.25  × 0.15 = 0.49
+Level 5 (Contextual):  (5+6+5)/3   = 5.33  × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  4.14/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on usage (e.g., `thread_id`, `buffer_ptr`, `loop_counter`)
+- **Control flow uses goto** (`lab_0x2a77_2`, `lab_0x2b57`) instead of natural loop constructs
+- **Struct fields all generic** (`e0`, `e1`, `e2`) losing semantic meaning for `ipc_perm`, `shmid_ds`
+- **Architecture mismatch** not indicated (ARM64 source decompiled as x86 with `__x86_get_pc_thunk_*` artifacts)
+- **Zero comments** explaining non-trivial logic like signal handling or thread synchronization
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names like `param_strcpy`, `thread_compute`, `consumer_thread` preserved, allowing semantic recovery of original intent
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding algorithm intent and decompilation confidence impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how variables are used (e.g., `v1` passed to `pthread_create` should be `thread_attr`)
+2. **Recover loop constructs from backward jump patterns** - Convert `goto` + counter patterns back to `for`/`while` loops
+3. **Add decompilation confidence annotations** - Flag architecture mismatches, unresolved indirect calls, and uncertain type recoveries with comments

@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local temporaries use generic names (`v0`, `v1`, `v2`, `temp`) obscuring purpose; however, function parameters retain original names (`x`, `n`, `out`, `buf`) which aids understanding.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`); only runtime helpers use generic names (`sub_1030`, `sub_1040`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14u` (stack canary) and `0xFFFFF000` (alignment mask) unexplained; many computations constant-folded (e.g., `static_complex_init` returns `15` directly instead of `1+5+9`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readgsdword(0x14u)`) present throughout; 17 library functions marked "FAILED to decompile"; assembly blocks for memory barriers remain.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `do-while` or `for`; however, `stack_alias` collapsed to `return 20` losing original conditional logic; VLA functions show confusing stack manipulation loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity preserved well; `static_helper` correctly inlined into `call_static_func`; no monolithic functions observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom; VLA/alloca functions have confusing pre-loop stack alignment code that disrupts flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding removed original computation patterns (e.g., `local_struct` returns `3*x` instead of `p.x + p.y`); some error handling paths show duplicate free patterns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char`, `void*`); however, `Node*` becomes `_DWORD*` in `linked_list_heap`; `size_t` correctly used in memory operations.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `TreeNode` struct recovered in `create_tree_node`; `Node` partially recovered in `heap_nested`; `Point` struct lost in `heap_struct` (uses `malloc(8u)` without struct name).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts (`_DWORD*`, `void**`, `(_WORD*)`); pointer arithmetic visible but generally correct; `dangling_pointer` correctly shows post-free access pattern.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic; no algorithm descriptions; original source comments completely lost; only function signatures present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Linked list pattern in `linked_list_heap` not identified; tree traversal in `tree_heap_traversal` not named; memory allocation patterns not documented.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: "FAILED to decompile" messages for 17 library functions; stack canary checks visible but not explained as security features; VLA unusual patterns not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present but not documented as preconditions; no postcondition inference; error return values (`-1`, `-2`) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear; global variables visible (`global_counter`, `file_scope_static`); callback relationship (`global_func_ptr = double_value`) recovered in `test_static_global`.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file; no logical grouping by test category (stack/heap/static); static functions properly marked with `static` keyword.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 17 library functions failed to decompile requiring stubs; external dependencies (`fork`, `waitpid`, `malloc`) not documented; would need significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+5+5)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (6+6+5)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.37/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (e.g., `result`, `iterator`, `temp_ptr`)
+- **`stack_alias` function** collapsed to `return 20` losing the original pointer aliasing logic entirely
+- **Zero comments** explaining algorithm intent, security checks, or decompilation confidence
+- **17 library functions** failed to decompile, requiring external stubs for compilation
+- **Struct type erosion** in `linked_list_heap` where `Node*` became `_DWORD*` losing semantic meaning
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names like `double_value`, `heap_basic`, `linked_list_heap` preserved accurately, providing immediate semantic context.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding non-trivial logic extremely difficult; original source had extensive documentation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add semantic comments** for non-trivial logic (e.g., "// Stack canary check for buffer overflow protection" for `__readgsdword(0x14u)`)
+2. **Infer variable names from usage patterns** (e.g., variables used in loop bounds should be named `count`, `size`, `length`)
+3. **Flag aggressive optimization artifacts** where constant folding removed original computation (e.g., warn when `stack_alias` logic is collapsed to constant return)

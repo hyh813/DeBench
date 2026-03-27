@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `a1`, `a2`, `str`, `result`) with no semantic meaning. Original names like `dst`, `src`, `thread_count`, `iterations_per_thread` are completely lost. Only occasional names like `file_path` and `items_written` provide clarity.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results—original names preserved for test functions (`param_strcpy`, `call_strcpy`, `thread_compute`) but many library wrappers degraded to `function_1040`, `function_1050`. Thread functions (`consumer_thread`, `producer_thread`) retained meaningful names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x6c6c6548` (encoded "Hell"), `0x1f4`, `0x120000` stored in globals without explanation. Constants like `42`, `-1`, `127` are clear, but string literals hidden in hex-encoded globals (`g1` through `g23`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86_get_pc_thunk_*` stub functions, frame pointer manipulation, and functions returning uninitialized values (`function_13e0`, `function_141c`). Redundant variable assignments throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` labels (`lab_0x2910`, `lab_0x2b30_2`, `lab_0x3080_2`) replace natural loop constructs. At `-O0` optimization, should have clean while/for loops but decompiler produces jump-heavy code obscuring logic.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Inconsistent granularity—`test_standard_library_functions` is monolithic (200+ lines), while some functions are constant-folded to single returns (`call_strcpy` returns literal 8). Helper functions like `function_1040` are trivial wrappers.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps and labels disrupt top-to-bottom reading. Complex functions like `param_mutex_lock` and `param_thread_local_storage` have multiple exit points with goto chains making execution flow difficult to trace.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant variable assignments (`v1 = v2; v2 = v1`), but no severe dead code. Constant folding in `call_*` functions loses original computation logic entirely, which is worse than redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently but loses original type distinctions (`size_t`, `ssize_t`, `pid_t` all become `int32_t`). Pointer types often degraded (`void*` → `int32_t*`). Some `char*` preserved for strings.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs defined (`struct _IO_FILE`, `struct ipc_perm`, `struct shmid_ds`) but all fields named generically (`e0`, `e1`, `e2`...). No semantic field recovery—original `sin_family`, `sin_port` lost completely.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(char *)`, `(int32_t *)`, `(struct _IO_FILE *)` throughout. Pointer arithmetic on typed pointers without bounds checking. Function pointer types often `int32_t * (*)(int32_t *)` instead of proper signatures.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments except RetDec header. No algorithm explanations, no decompilation confidence indicators, no API contracts. Original source had extensive documentation; all lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `pthread_create`) but no pattern identification. Producer-consumer pattern in `param_condition_variable` not identified. No design pattern naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags or warnings. Functions return uninitialized values (`function_13e0`) without indication. Some indirect calls resolved without confidence markers. Silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` requirements). No postconditions or error condition documentation. Original source had clear return value semantics; all lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes listed at top, global variables (`g1`-`g23`) referenced but undocumented. No call graph documentation. Callback relationships (thread functions) not explicitly marked.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 134 functions in single file with no logical grouping. No header file separation. Original source had clear section organization (6.1, 6.2, 6.3); completely lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Standard headers included, most code should compile. Some functions return uninitialized values which may cause warnings. External dependencies (pthread) not clearly documented in output.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+5)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+5+5+6)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.34/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `a1`, `a2`** should be named based on usage (e.g., `dst`, `src`, `thread_count`)
+- **Control flow uses goto labels** (`lab_0x2910`, `lab_0x2b30_2`) instead of natural loop constructs at -O0
+- **Struct fields all generic** (`e0`, `e1`, `e2`) losing all semantic meaning from original `sin_family`, `sin_port`
+- **Magic numbers in globals** (`g1`-`g23` with hex values) instead of readable string literals
+- **No comments or documentation** despite original source having extensive section headers and explanations
+
+### Best Quality Aspect:
+- **Build System Compatibility (6/10)** - Code includes proper headers and should mostly compile with minimal patching
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation, algorithm explanations, or decompilation confidence indicators
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how variables are used (size checks, pointer arithmetic, loop counters) to generate semantic names like `buffer_size`, `thread_id`, `iteration_count`
+2. **Recover loop constructs from backward jump patterns** - At -O0 optimization, convert goto-based loops back to while/for constructs for natural readability
+3. **Preserve string literals inline** - Instead of encoding strings in global hex variables (`g1`, `g2`), emit readable string constants directly at use sites

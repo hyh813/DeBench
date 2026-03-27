@@ -1,0 +1,105 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `param_2`, `local_1c`, `iVar1`, `uVar2`) instead of semantic names like `dst`, `src`, `buffer`, `filename` from the original source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_strcpy`, `call_strcmp`, `thread_compute`), but some are generic (`FUN_00011030`, `FUN_00012525`) and return types sometimes wrong (`void` instead of `int`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals preserved clearly ("/etc/passwd", "BinBench Test Data"), but numeric constants are all magic numbers (0x2a=42, 0xffffffff=-1, 0x1000=4096) without named constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_*`, `deregister_tm_clones`, redundant external function stubs that just call the real function, and `LOCK()/UNLOCK()` macros.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow preserved naturally (if/else, loops), but some awkward patterns like `do-while` with break instead of `while`, and signal handling uses polling loops that are readable but verbose.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions match source structure well with thread helpers properly separated, but `test_standard_library_functions` inlines many calls making it overly large.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with clear loop structures, but has forward references to data (`DAT_00014026`) that disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: External function stubs are completely redundant (each just calls the real function), and atomic operations show repeated `LOCK()/UNLOCK()` patterns that could be abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many generic types (`undefined4`, `int` instead of `int32_t`), pointer types often `void*`, and return types sometimes wrong (`param_strcpy` returns `void` instead of `int`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `stat` struct partially recovered but `ThreadData` struct not recovered (fields accessed as array `param_1[2]`), `sockaddr` shown with raw `sa_data` array access instead of structured fields.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`(undefined4 *)`, `(pthread_mutex_t *)`), pointer arithmetic visible in TLS access (`in_GS_OFFSET[-9]`), and function pointer types often generic.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code - no algorithm explanations, no decompilation confidence indicators, no API contract documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `pthread_create`), but thread patterns and design patterns not explicitly named or documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for indirect calls, no warnings about uncertain decompilation, code silently presents potentially incorrect information without caveats.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"), no postconditions, error returns visible but not explained with contract semantics.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented, global variables used without explanation (`signal_received`, `atomic_counter`), no call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no file organization matching source structure, external functions grouped at top but no logical module separation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External function declarations present but would need significant stubs to compile, some architecture-specific code (`LOCK()/UNLOCK()`) reduces portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (2+5)/2     = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (3+3+5+5+5)/5 = 4.20 × 0.10 = 0.420
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.07/10
+```
+
+**Overall Readability Score: 5.1/10**
+
+### Critical Defects
+- Variable `param_1`, `param_2` should be named `dst`, `src` based on `strcpy` usage pattern
+- Function `param_strcpy` has wrong return type (`void` instead of `int`)
+- Magic numbers throughout (0x2a, 0xffffffff, 0x1000) without named constant recovery
+- No comments explaining algorithm logic or decompilation confidence
+- Struct `ThreadData` not recovered - fields accessed as array indices losing semantic meaning
+- Redundant external function stubs that add noise without value
+- TLS access uses raw pointer arithmetic (`in_GS_OFFSET[-9]`) instead of named variable
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately (`param_strcpy`, `thread_compute`, `param_mutex_lock`), making it easy to map decompiled code back to source.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Virtually no comments exist to explain non-trivial logic, algorithm intent, or decompilation uncertainty, severely limiting understandability.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (e.g., passed to `strcpy` as first argument = destination) to suggest semantic names like `dst`, `src`, `buffer_size`.
+
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions with comments like `// UNCERTAIN: indirect call target not resolved` or `// RECOVERED: loop structure from backward jump pattern`.
+
+3. **Recover named constants from magic numbers** - Detect repeated numeric values (0x2a appears 20+ times = return value 42) and suggest named constants like `TEST_SUCCESS = 42`, `ERROR_INVALID = -1`.

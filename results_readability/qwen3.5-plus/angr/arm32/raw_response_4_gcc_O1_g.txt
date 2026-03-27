@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `a0`, `a1`, `ptr`, `i`) with no semantic meaning. For example, in `func_mixed_args`, parameters `a0-a5` should be `x`, `s`, `d`, `ll` based on source usage.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: User-defined functions preserve original names (`cdecl_func`, `call_cdecl`, `varargs_func`), but helper functions use mechanical names (`sub_103e8`, `sub_10494`). Good preservation where symbols exist.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers abound without explanation (`4294967295` for -1, `0x100000`, `0x80000000`). String literals referenced by address (`0x11594`) instead of showing actual content.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: stack canary checks in every function (`GLIBC_2.4::__stack_chk_guard`), ARM condition calculation calls (`armg_calculate_condition`), and register spill variables cluttering logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` statements with labels (`LABEL_104b8`, `LABEL_1050c`) instead of natural loops/conditionals. The `__aeabi_dadd` function has hundreds of lines of nested conditionals that should be floating-point operations.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Test functions were constant-folded away (`call_cdecl` returns `15` directly instead of calling `cdecl_func(5, 10)`). Helper functions like `__aeabi_dadd` are monolithic (500+ lines) and should be library calls.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. The `varargs_func` has backward jumps that could be recovered as `while` loops but remain as `goto` constructs.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Stack canary checks duplicated in nearly every function. Floating-point helper functions (`__aeabi_dadd`, `__floatsidf`) contain massive redundant condition calculations that should be single library calls.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion - `int`, `long long`, `double` all become `unsigned int`. The `func_mixed_args` signature shows `a0-a5` as `unsigned int` instead of `int`, `char*`, `double`, `long long`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered with generic field names (`struct_0 { field_0, field_4 }`). `LargeStruct` with `data[16]` becomes individual parameters `a0-a15` in `param_struct_byval`, losing the array structure entirely.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer arithmetic throughout (`ptr + 1`, `ptr + 2`). Function pointers treated as `unsigned int*` (`param_func_ptr` takes `unsigned int *a0` instead of proper function pointer type).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled output. No explanation of complex floating-point operations, calling conventions, or varargs handling mechanisms.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not recognized (should show `va_start`/`va_arg`/`va_end`). Struct-by-value passing not identified. Floating-point operations expanded to raw ARM emulation instead of recognized as `__aeabi_*` helpers.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about problematic decompilation. The `__aeabi_dadd` function (500+ lines) should be flagged as "ARM floating-point emulation - consider treating as external library call."
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should note `ptr != NULL`). Null checks exist but aren't documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. `test_calling_conventions` calls hardcoded values instead of actual functions, breaking the call graph. External dependencies (`GLIBC_2.4::__stack_chk_guard`) declared but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order. Runtime initialization functions (`_init`, `_start`, `__do_global_dtors_aux`) mixed with user code. No logical grouping by test category.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone - requires ARM-specific libraries (`__aeabi_*`, `armg_calculate_condition`), GLIBC symbols, and has architecture-specific constructs. Multiple undefined external references.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+3)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (3+5+4+3)/4 = 3.75 × 0.25 = 0.94
+Level 3 (Type):        (3+4+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.38/10
+```
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects:
+- **Variable `a0-a5` should be named** `x`, `s`, `d`, `ll` in `func_mixed_args` based on source signature
+- **Control flow uses `goto`** instead of loop constructs in `varargs_func` and `func_struct_byval`
+- **`__aeabi_dadd` is 500+ lines** of unreadable ARM floating-point emulation that should be a library call
+- **Test functions constant-folded** - `call_cdecl` returns `15` directly, losing actual function call semantics
+- **Struct fields all generic** (`field_0`, `field_1`, `field_4`) losing semantic meaning from source
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - User-defined function names preserved from source symbols where available
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero documentation for complex operations, making reverse engineering extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level control structures** from jump patterns - convert `goto`/`LABEL` loops to `while`/`for` constructs
+2. **Treat ARM ABI helper functions as external calls** - `__aeabi_*` and `armg_calculate_condition` should not be decompiled inline
+3. **Infer variable names from usage context** - parameters used in arithmetic should be named by operation (`sum`, `count`, `index`)

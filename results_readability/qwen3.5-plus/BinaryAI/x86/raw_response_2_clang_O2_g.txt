@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar2`, `local_38c` with zero semantic meaning. Original source had meaningful names like `sum`, `len`, `current` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), but some degraded to `FUN_00011030`, `FUN_00011275`. Core test functions maintain identity well.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`0x20`, `0xbf`, `0x1d93`) without explanation. Test functions show pre-computed constants (e.g., `printf("DT-L1-01...): %c\n",0x61)`) instead of actual function calls, obscuring logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (`unaff_EBX`, `unaff_retaddr`), but not overwhelming. No excessive debug instrumentation, though type casts like `(undefined4 *)` add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops transformed into unrolled patterns with complex conditionals (e.g., `array_1d_stack` has nested do-while with bit masking). Original simple `for` loops become hard-to-follow optimization artifacts.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions properly separated but test functions heavily optimized away (constants instead of calls). `binary_tree_sum` converted from recursive to iterative with `do-while`, losing semantic clarity.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but optimization creates awkward patterns. `volatile_access` correctly shows two reads but `ptr_const_ptr` loses return value (void instead of int).
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive loop unrolling creates massive redundancy (e.g., `array_3d` has 25 explicit array accesses per iteration). No abstraction of repeated patterns.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `long long` → `undefined8`, `long double` → complex `CONCAT44` operations, `bool` → `uint`. `process_ll` signature completely wrong (`uint param_1,int param_2` instead of `long long`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All structs/unions lost. `Point3D`, `Rect`, `Widget` accessed as `int*` with raw offsets (`param_1[1]`, `param_1 + 0x14`). `struct_bitfields` shows bit manipulation but no struct definition recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `ptr_triple` uses `undefined4*` then casts to `int**`, function pointers degraded to `code*`, void pointer operations lack type information. `ptr_offset` returns `undefined4` instead of `int`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled output. No algorithm explanations, no decompiler confidence indicators, no documentation of non-obvious transformations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Linked list traversal pattern in `linked_list` and `doubly_linked_list` not identified. Tree recursion converted to iteration without noting the transformation. No pattern naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about problematic code. `array_oob` (intentional out-of-bounds) not flagged. Type mismatches like `process_long` returning `int` instead of `long` not noted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL` requirements). Return value semantics not explained. Error conditions like `array_complex_index` returning `-1` not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. `test_data_types_l1` calls shown as constants, losing call graph. Callback relationships (`ptr_func_simple`) not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure. Related functions grouped (data types, arrays, pointers, composites). No header file or API documentation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: External functions declared (`printf`, `puts`). Should compile with minimal stubs. Some type mismatches would need fixing (`process_long` return type).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+6)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type System): (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (1+3+3+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.49/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects:
+- **All struct/union types lost** - `Point3D`, `Widget`, `Flags` accessed as raw `int*` with magic offsets
+- **Zero comments** - No documentation of any logic, transformations, or uncertainty
+- **Type signature corruption** - `process_ll(long long)` becomes `(uint, int) → undefined8`, `process_long(long)` returns `int`
+- **Test functions optimized away** - Actual function calls replaced with pre-computed constants, losing semantic meaning
+- **Generic variable naming** - `param_1`, `iVar1`, `uVar2` provide zero semantic information
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), maintaining basic identity across decompilation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding decompiler transformations and uncertain regions impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** - Analyze struct access patterns to reconstruct `struct Point3D { int x, y, z; }` instead of `int*` with offsets
+2. **Add decompiler confidence annotations** - Mark uncertain regions with comments like `// DECOMPILER UNCERTAINTY: type may be long long`
+3. **Preserve test function semantics** - Don't optimize away function calls in test code; show actual invocations to maintain traceability to source behavior

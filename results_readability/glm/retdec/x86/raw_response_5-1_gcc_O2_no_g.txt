@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `result`, `a1`, and `a2`. For example, in `_ZN7Derived12virtual_funcEi`, the `multiplier` member is accessed as `*(int32_t *)((int32_t)result + 4)`, completely losing the semantic name.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: The decompiler successfully demangles C++ symbols (e.g., `_Z20test_cpp_member_funcv` is labeled `test_cpp_member_func()`), which is the strongest point. However, the implementation inside these functions often contradicts the implied complexity of the name (e.g., returning a constant).
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers and hex-encoded strings. For instance, the string "Test" appears as the integer literal `0x74736554`, and the expected result `4704` is hardcoded as `0x125c`, obscuring the source logic.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant compiler artifacts pollute the code, such as frequent `__x86_get_pc_thunk_ax` calls for Position Independent Code (PIC) and stack canary checks (`__readgsdword(20)`), which distract from the program logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow for exception handling (`_Z18test_cpp_exceptionv`) is spaghetti-like, using `_Unwind_Resume` and complex `if/else` chains that obscure the original `try/catch` structure. Simple logic is often lost to constant folding.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While class methods and thunks are correctly separated into individual functions, the high-level test functions (e.g., `test_cpp_member_func`) are reduced to trivial constant returns, failing to decompose the logic that was present in the source.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code generally reads top-to-bottom, but exception handling and RTTI checks introduce jumps and labels (e.g., `lab_0x17f8` in `test_cpp_rtti`) that disrupt the linear flow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is no obvious loop unrolling, but the code contains redundant pointer arithmetic and type casts (e.g., `(int32_t)result + 4`) that could be simplified into member access syntax.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: There is a severe architecture mismatch; the metadata claims ARM64, but the decompiled code contains x86-specific artifacts (`__x86_get_pc_thunk`, `__readgsdword`). Pointers are defined as `int32_t*` (32-bit) while the environment implies 64-bit, leading to confusion.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Zero C++ class structures are recovered. All objects are manipulated as raw pointers and offsets. For example, `SimpleClass` or `Container` are never defined; instead, the code uses raw offsets like `*(int32_t *)(result2 + 40)`.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code relies heavily on unsafe pointer arithmetic and casts. A critical semantic error exists in `template_swap` where the temp variable is missing (`*a1 = *a2; *a2 = *a1;`), resulting in data loss, which is a severe type/logic safety violation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to demangled function names and address ranges. There are no comments explaining the C++ ABI mechanisms (like vtable thunks) or the logic behind complex exception handling flows.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms like RAII, smart pointers, or exception handling are not recognized. They are presented as low-level calls to `__cxa_throw` or `__dynamic_cast` without indicating the original design patterns.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler fails to flag the critical error in `template_swap` or the fact that test functions like `test_cpp_member_func` have been optimized away to constants, presenting the code confidently despite these issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For instance, the requirement for `Container::push` that `size < 10` is present as a raw check but not stated as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: Function calls are visible, but virtual dispatch (polymorphism) is lost in the test functions (which are constant-folded). The relationship between thunks (`_ZThn8_...`) and their parent classes is only visible via mangled names.
+
+**17. Module Organization:** Score: 3/10
+Justification: Functions are organized strictly by memory address, mixing class methods, global constructors, and test functions. There is no logical grouping by class or functionality.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code includes standard headers and might compile if linked against a C++ runtime library, but the logic errors (like the broken swap) and architecture mismatches make the resulting binary behaviorally incorrect compared to the source.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- **Semantic Error in `template_swap`**: The decompiled code `*a1 = *a2; *a2 = *a1;` is missing the temporary variable, causing data loss.
+- **Missing Composite Types**: No C++ structs/classes are defined; all object access is via raw pointer arithmetic (e.g., `*(int32_t *)(this + 4)`).
+- **Logic Loss via Constant Folding**: Test functions like `test_cpp_member_func` are reduced to returning a constant (`0x125c`), completely hiding the source logic.
+- **Architecture Confusion**: Metadata claims ARM64, but code contains x86 artifacts (`__x86_get_pc_thunk`) and 32-bit pointer types (`int32_t*`), creating confusion.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 8/10)
+- The decompiler successfully demangles C++ symbols, making it easy to identify the original function names despite the poor implementation.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 1/10)
+- The failure to reconstruct `struct` or `class` definitions makes the code extremely difficult to read, as data is accessed via meaningless offsets rather than named members.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Implement C++ Class Recovery**: Analyze vtables and member access patterns to reconstruct `struct` and `class` definitions with named fields and correct inheritance hierarchies.
+2.  **Fix Variable Recovery in Swaps**: Ensure that stack variables used as temporary storage in simple swap operations are correctly identified and emitted, rather than optimized away incorrectly.
+3.  **Architecture Validation**: Improve detection of the target architecture to ensure correct pointer sizes (e.g., `int64_t*` for ARM64/x64) and removal of irrelevant architecture-specific artifacts (like x86 thunks on ARM code).

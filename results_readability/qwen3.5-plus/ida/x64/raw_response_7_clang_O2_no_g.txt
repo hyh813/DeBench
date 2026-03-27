@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `v0`, `v1`, `v2`, `temp`) with no semantic meaning recovered. Original variables like `result`, `str`, `encrypted`, `decrypted` are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`). Names accurately reflect original source intent and purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5A`, `0x20u`, `8`, `11` (signal numbers) appear without explanation. The `0xDEADBEEF` from original source is completely eliminated by optimization.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present including redundant casts (`(__sighandler_t)`, `(unsigned int)`), and verbose SIMD intrinsics. Some register variable declarations (`// rax`, `// ecx`) add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_tail_call_optimized` converted to closed-form formula instead of recursion, obscuring algorithm. `param_opaque_predicate` uses confusing condition `!(v5 | v2 ^ 1)` instead of clear boolean logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. `decrypt_string` properly separated from `param_string_encryption`. However, `call_*` functions are constant-folded losing call structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: SIMD code in `param_vectorized_loop` has excessive labels (`LABEL_4`, `LABEL_15`, `LABEL_17`, `LABEL_28`) disrupting linear reading. Most other functions read top-to-bottom reasonably.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive constant folding eliminates actual function calls (`call_fake_branch` returns `10` directly). The obfuscation intent (fake branches) is completely lost, defeating the test purpose.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Original `int` types converted to `__int64` and `unsigned int` inconsistently. `param_fake_branch` takes `unsigned int a1` but original uses `int x`. Signed/unsigned confusion present.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The bitfield struct in `param_implementation_defined` is completely lost—function returns constant `47` instead of computing with struct fields. No struct reconstruction visible.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(__sighandler_t)`, pointer arithmetic on `__int64`). `param_null_pointer_deref` takes `unsigned int *a1` but original uses `int *p`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Only auto-generated register hints (`// rax`, `// ecx`). No explanation of opaque predicates, encryption keys, or optimization transformations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. XOR decryption pattern not labeled. Tail-call optimization transformation not documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about aggressive optimization artifacts. The fact that `param_fake_branch` eliminates the fake branches (the entire test purpose) is not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 != 0` for division). Signal handler contracts not explained. No indication of expected return values or error conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships clear through preserved names. `test_obf_opt_edge` clearly calls all test functions. Global variables (`jmp_buffer`, `div_zero_caught`) referenced but not declared.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source. Related functions grouped together. However, no file/namespace organization visible.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 10 functions marked "FAILED to decompile" including `printf`, `strlen`, `signal`. External dependencies not documented. Would require significant stubbing to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (5+8+6+4)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (5+2+6)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (7+7+4)/3   = 6.00 × 0.10 = 0.600
+
+Overall Score: 5.005/10 ≈ 5.0/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable `a1`, `v0`, `v1`** should be named semantically (e.g., `input_value`, `gcd_result`, `predicate_result`) based on usage patterns
+- **`param_fake_branch`** eliminates the fake branches entirely, destroying the obfuscation test purpose without warning
+- **Bitfield struct** in `param_implementation_defined` completely lost—returns constant `47` instead of computing with struct fields
+- **`param_tail_call_optimized`** converted to closed-form formula, obscuring the recursive algorithm being tested
+- **10 library functions** failed to decompile with no stubs provided, preventing standalone compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names are perfectly preserved from source, making it easy to identify each test's purpose
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover the bitfield struct structure, reducing complex logic to a constant return value
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve obfuscation test structures** - Detect and warn when aggressive optimization eliminates intentional dead code (fake branches, opaque predicates)
+2. **Recover composite types from access patterns** - Analyze struct field access to reconstruct bitfield layouts instead of constant-folding
+3. **Add semantic variable naming** - Use data-flow analysis to infer variable purposes (e.g., `gcd_temp`, `decryption_key`, `buffer_size`) from usage context

@@ -1,0 +1,118 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy`
+
+The original source shows a simple wrapper function:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+The decompiled version shows severe degradation:
+```c
+int32_t param_strcpy(void) {
+    int32_t str;
+    return strlen(strcpy((char *)str, (char *)str));
+}
+```
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: The decompilation completely loses parameter names. Variables `dst` and `src` from the original are replaced with a single generic `str` variable. The function signature shows `param_strcpy(void)` with no parameters, when it should have two char* parameters. This is a critical failure - there's no way to distinguish source from destination.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Function name `param_strcpy` correctly matches the source function name. However, the function signature is completely wrong (takes no parameters when it should take two). The naming is accurate but the signature destruction makes it misleading.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: No magic numbers in this specific function. However, the overall decompiled code contains many unexplained constants like `0x66` (O_RDWR), `0x1000` (4096 bytes), and `66` for file open flags that are not explained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive and unsafe type casts present: `(char *)str` appears multiple times. The decompilation shows `int32_t str` being cast to `char *` which is unsafe and obscures the actual pointer semantics. No compiler artifacts like register spilling visible, but the type casting noise is significant.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: For this simple function, control flow is linear - single return statement. However, the logic is semantically incorrect: `strlen(strcpy(str, str))` treats both parameters as the same variable when they should be distinct `dst` and `src` pointers. The return value calculation is wrong.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: The function is appropriately small (single statement). However, the complete loss of parameters is a severe decomposition failure - the function signature is fundamentally broken. The decompiler failed to recover the parameter list entirely.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with no forward jumps or goto statements. Single return statement at the end. No nesting issues.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or redundant expressions in this function. The strcpy/strlen pattern is a legitimate semantic pattern from the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Critical type precision failure - function parameters are completely missing from the signature (`param_strcpy(void)` instead of `param_strcpy(char *dst, const char *src)`). Uses `int32_t` which is appropriate for ARM64 at -O0, but the parameter types (char pointers) are lost. The `str` variable is declared as `int32_t` when it should be pointer types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No complex struct/union types in this specific function. The decompiled code does show some struct definitions (like `struct _IO_FILE`) with generic field names (`e0`, `e1`, etc.), but these are in helper code, not in the target function.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Multiple unsafe casts: `(char *)str` appears twice. The variable `str` is declared as `int32_t` but cast to `char *` for strcpy/strlen - this is undefined behavior. No const-correctness: original has `const char *src` but decompilation loses this.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments in the decompiled code whatsoever. The original source has clear documentation explaining that strcpy copies including the null terminator and returns the copied length. The decompilation provides zero context about what the function does or any uncertainty.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The strcpy + strlen pattern is not recognized as a "get string length after copy" idiom. The decompilation shows the raw strcpy/strlen calls but doesn't indicate this is a common pattern for getting the length of a copied string. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication whatsoever that the function signature is wrong (missing parameters). The decompiler should flag that it couldn't resolve the function parameters. The semantic error (treating dst and src as the same variable) is not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL, src != NULL"). No postconditions (e.g., "ensures: return == strlen(dst)"). The original implicitly assumes valid pointers - this is completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: The function calls `strcpy` and `strlen` are visible, but the relationship to the call site (`call_strcpy`) is unclear. The decompiled `call_strcpy` shows: `char * str = (char *)0x6c6c6548; return strlen((char *)&str);` - this is completely wrong and doesn't show it calls `param_strcpy`.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped in the output (test functions, param functions, helper functions), but the organization is alphabetical by address rather than logical grouping. The test functions and their corresponding param functions are separated.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code has many standard library includes but some functions have incorrect signatures that would cause compilation failures. The `param_strcpy` function would fail to compile because it declares no parameters but the call site passes arguments.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- Function `param_strcpy` has completely wrong signature - takes no parameters when it should take two (char *dst, const char *src)
+- Variable `str` is used for both source and destination, losing the distinction between `dst` and `src` from the original
+- No comments explaining the function purpose, parameters, or return value semantics
+- Type safety issues: `int32_t str` cast to `char *` is undefined behavior
+- No anomaly indication that parameters were not recovered
+- The call site `call_strcpy` is completely wrong: shows `strlen((char *)&str)` with a hardcoded value instead of calling `param_strcpy`
+
+**Best Quality Aspect:** Code Linearization (scored 8/10)  
+The function has straightforward top-to-bottom flow with no goto statements or complex control structures, making the basic execution path easy to follow.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 1/10)  
+The complete loss of parameter names (`dst`, `src`) and their replacement with a single generic `str` variable is a fundamental failure that makes the code essentially unreadable for analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover function parameters from stack frame analysis** - The ARM64 calling convention uses x0/x1 registers for first two arguments. The decompiler should analyze these to recover `dst` and `src` parameters.
+2. **Detect and flag parameter resolution failures** - When parameters cannot be recovered, add a comment like `// WARNING: Could not resolve parameters` to alert analysts.
+3. **Infer variable names from usage patterns** - When `strcpy(dst, src)` is detected, name the first argument `dest` or `dst` and second `src` based on standard library semantics.

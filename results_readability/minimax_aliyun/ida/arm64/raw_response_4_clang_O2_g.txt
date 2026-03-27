@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v2`, `v3`, `v4`, `v5`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12` throughout. While function parameters like `a`, `b`, `count` are preserved, local variables lack semantic meaning (e.g., `v2` should be `sum` in varargs functions based on usage pattern).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `cdecl_func`, `call_cdecl`, `stdcall_func`, `varargs_func`, `func_no_args`, `func_many_args`. Runtime initialization functions (`init_proc`, `frame_dummy`) have generic but acceptable names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: The decompiler hardcodes return values in caller functions (e.g., `return 15;` instead of `return cdecl_func(5, 10);`), losing the call relationship. Magic number `0xFFFFFF80FFFFFFC8LL` in varargs functions is unexplained. Some literals like `42` in `func_no_args` are self-evident.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. No obvious debug instrumentation or register spilling noise. Type casts like `(unsigned __int8 *)str` are necessary for correctness.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with if-else and return statements. However, varargs functions (`varargs_func`, `param_varargs`) use complex goto-based loops with labels like `LABEL_5` that obscure the simple iteration pattern. At -O0 this is unexpected.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Excellent decomposition matching the original source. Each small function (`cdecl_func`, `call_cdecl`, etc.) is preserved separately. No monolithic functions; all functions have clear single responsibility.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately (e.g., `if (!pp) return -1;` in `param_double_ptr`). The varargs loop is the main disruption but remains traceable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. The varargs functions show some repetitive patterns in the decompilation (multiple `va_arg` calls), but this reflects the actual implementation. Loop unrolling is minimal at -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision - uses `int`, `char *`, `unsigned __int8`, `_QWORD`, `_DWORD`. However, `func_mixed_args` returns `__int64` instead of `int` as in source. Some pointer types are generic. The `ll` parameter should be `long long` not `__int64`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Good struct recovery - `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct` all recovered with field names. The `data` array fields are properly accessed. Union vs. struct distinction maintained.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe. Function pointer cast in `param_func_ptr` uses `(__int64 (__fastcall *)(_QWORD))` which is verbose but correct. No obvious buffer overflow patterns. Minor issues with unsigned/signed mixing.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only the decompiler header comment present. No functional comments explaining algorithm intent, parameter contracts, or return value semantics. The "attributes: thunk" comment on `frame_dummy` is useful but isolated.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard patterns like varargs usage (`va_start`, `va_arg`, `va_end`) are recognizable but not explicitly labeled as such. The cdecl/stdcall/fastcall calling convention annotations are present but inconsistent (some functions marked `__fastcall` that shouldn't be on ARM64).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler correctly marks 7 functions as "FAILED to decompile" (strlen, __libc_start_main, etc.). However, it doesn't flag the calling convention mismatches (ARM64 doesn't have __fastcall/__cdecl/__stdcall in the x86 sense).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The null checks in functions like `func_struct_byptr` and `param_double_ptr` are preserved but not explained as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are preserved within each test function (e.g., `call_cdecl()` calls `cdecl_func()`). However, the caller functions have been optimized to return constant values, losing the actual call chain.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are listed in binary address order, not logical grouping. The test functions (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) are separated from the functions they test. No header/API structure recovered.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code would require linking against libc. External functions (puts, printf, strlen) are referenced but not declared. The "FAILED to decompile" functions would need manual stubs. Basic structure is compilable with moderate patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v2`, `v3`, `v4`) throughout, obscuring semantic purpose (e.g., `v2` is clearly `sum` in varargs functions)
+- Caller functions return hardcoded constants (`return 15;`) instead of actual function calls, losing the call relationship with `cdecl_func(5, 10)`
+- Complex goto-based control flow in varargs functions (`LABEL_5`) instead of natural loop constructs
+- No comments explaining algorithm intent, parameter contracts, or return value semantics
+- Calling convention annotations (`__fastcall`, `__cdecl`) applied incorrectly for ARM64 architecture
+
+**Best Quality Aspect:** Function Decomposition (9/10)  
+The decompiler preserved the fine-grained function structure from the original source, with each small function (cdecl_func, call_cdecl, etc.) remaining separate and cohesive.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+Generic variable names like `v2`-`v12` dominate the varargs and array processing functions, making it difficult to track data flow and understand computation purpose without significant mental effort.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `v2` accumulating values in a loop should be named `sum` or `total`
+2. Recover caller functions to show actual function calls rather than hardcoded return values to preserve the call graph
+3. Convert goto-based loops in varargs functions to natural for/while constructs by analyzing the loop structure
+4. Add semantic comments explaining calling convention handling on ARM64 where x86 annotations are misleading
+5. Detect magic numbers and suggest meaningful constant names where inferable from context

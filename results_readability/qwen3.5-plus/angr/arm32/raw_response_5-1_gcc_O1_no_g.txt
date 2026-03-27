@@ -1,0 +1,103 @@
+## EVALUATION: C++ Object-Oriented Features Decompilation
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `v3`, `v4`) with no semantic meaning. For example, `char v0[31]` in `test_cpp_member_func` should be `name` based on the `strncpy(&v0, "Test", 31)` usage pattern.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: C++ mangled names partially recovered (`_Z20test_cpp_member_funcv`, `_ZN4Base12virtual_funcEi`) but not demangled to human-readable form. Some functions have generic names (`sub_109bc`, `sub_10b40`) with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `71804`, `71828`, `72060`, `72080` (vtable addresses) appear without explanation. String literal `"Test"` recovered but format strings truncated (`"CPP-L3-02: %"` missing full format).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`GLIBC_2.4::__stack_chk_guard`) appear in every function. ARM-specific artifacts (`armg_calculate_condition`) and redundant goto labels (`LABEL_10b64`, `LABEL_10b80`) clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` statements instead of structured loops. Exception handling in `test_cpp_exception` uses deeply nested conditionals instead of try-catch blocks. Many functions end with bare `return;` without completing logic.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Five test functions are empty stubs returning immediately (`test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_smart_ptr`). Thunk functions fragmented excessively.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into exception handling blocks disrupt flow. `test_cpp_exception` has multiple nested goto targets (`LABEL_10ee8`) making execution path difficult to trace.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `frame_dummy` calls `register_tm_clones()` twice redundantly. Stack canary checks duplicated in every function. Some dead code paths in exception handling.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Most types degraded to `unsigned int` or `void*`. Class methods use `void* this` instead of proper `this` pointer. `template_max<double>` signature wrong (no parameters shown). Const-correctness completely lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Class definitions empty (`class Base { } Base;`). No field recovery for `SimpleClass` (missing `value`, `name`), `LifecycleClass` (missing `data`, `size`), or `Point` (missing `x`, `y`). Struct layouts entirely lost.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Numerous unsafe casts (`(int)(*(p))[4]`, `(char *)a0 + (*(a0))[12]`). Pointer arithmetic on `void*` throughout. Type-confused function pointers in virtual call recovery (`(*((int *)*((int *)arg_0)))()`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Only auto-generated decompiler comments present (`/* do not return */`). No algorithm explanations, no C++ feature documentation, no recovery of original source comments explaining test expectations.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns not recognized: vtable calls appear as raw pointer dereferences, exception handling as manual `__cxa_*` calls, templates as separate functions without relationship indication. Lambda expressions completely lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings for incomplete functions (5 test functions empty). No flags for unresolved indirect calls. `thunk to DiamondDerived::func()` syntax indicates uncertainty but no explanation of why.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `idx < size` checks in Container not explained). No postconditions. Exception contracts (`throw`, `catch`) not recovered as structured constructs.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but virtual dispatch relationships unclear. Global variables (`g_1187c`, `g_11894`) not linked to original objects. Inheritance hierarchy not documented.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions listed alphabetically/by address, not logically grouped. Class methods scattered (Base methods at 0x111dc-0x111f0, Derived at 0x111f4-0x11200). No namespace structure recovered.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code does not compile standalone. Missing includes (`<iostream>`, `<memory>`). Undefined external symbols (`operatornew[]`, `__cxa_allocate_exception`). C++ runtime dependencies not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (2+5+4+4)/4 = 3.75
+Level 2 Average: (4+3+4+5)/4 = 4.00
+Level 3 Average: (3+2+2)/3 = 2.33
+Level 4 Average: (1+2+2+1)/4 = 1.50
+Level 5 Average: (4+3+2)/3 = 3.00
+
+Overall = (3.75 × 0.30) + (4.00 × 0.25) + (2.33 × 0.20) + (1.50 × 0.15) + (3.00 × 0.10)
+        = 1.125 + 1.000 + 0.466 + 0.225 + 0.300
+        = 3.116
+```
+
+**Overall Readability Score:** 3.1/10
+
+### Critical Defects:
+- **Five test functions completely empty** (`test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, `test_cpp_template_class`, `test_cpp_lambda`, `test_cpp_smart_ptr` return immediately without logic)
+- **All class field information lost** - `SimpleClass::value`, `SimpleClass::name`, `Point::x`, `Point::y` not recovered
+- **Variable names entirely generic** (`v0`, `v1`, `v2`) with no semantic inference from usage patterns
+- **C++ exception handling decompiled to raw `__cxa_*` calls** instead of try-catch blocks
+- **Template instantiation relationships not preserved** - `template_max<int>` and `template_max<double>` appear as unrelated functions
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - C++ mangled names were at least partially recovered and can be demangled externally to reveal original function names
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero meaningful comments; original source had extensive documentation explaining test expectations and C++ features being tested
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ semantic recovery** - Detect vtable patterns, exception handling structures, and template instantiations to reconstruct high-level C++ constructs instead of raw assembly patterns
+2. **Add variable name inference from usage** - Analyze how variables are used (e.g., `strncpy` destination → `name`, loop counter → `index`) to generate meaningful names
+3. **Flag incomplete decompilation explicitly** - When functions cannot be fully recovered (5 empty test functions), add `// DECOMPILATION INCOMPLETE` warnings with specific missing elements identified

@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and local variables use cryptic patterns (`local_c`, `iVar1`, `piVar1`, `uVar2`, `uVar3`). For example, `varargs_func` uses `local_c` for the va_list and `iVar2` for the sum, completely obscuring their semantic purpose. This is typical Ghidra auto-naming with no semantic inference.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from the original source: `cdecl_func`, `stdcall_func`, `varargs_func`, `call_cdecl`, `test_calling_conventions` all match exactly. Minor deduction for some internal runtime functions with generic names like `call_weak_fn`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout without explanation: `0xf` (15), `0x32` (50), `0x2a` (42), `0xad` (173). String references use opaque addresses like `&DAT_0001170a`. The decompiler correctly computed constant values but provided no symbolic names or comments explaining them.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise from library functions (`__libc_start_main`, `__cxa_finalize`, `printf`, `puts`, `strlen`) and floating-point runtime (`__adddf3`, `__subdf3`, `__floatsidf`, `__floatdidf`, `__fixdfsi`) that clutter the output. These 400+ lines of runtime code obscure the actual test functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural - loops use do-while constructs correctly, conditionals are straightforward. Example: `varargs_func` uses proper `do { ... } while (param_1 != 0)` pattern. Minor awkwardness in some switch-like logic but overall readable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity - each test function is separate and focused. The original source's logical grouping (calling conventions, parameter passing, return values) is preserved. Some test wrapper functions like `test_calling_conventions` are large but that's faithful to source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns used appropriately in functions like `func_struct_byptr` and `param_double_ptr`. No goto statements or computed jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy - each function computes its result directly. Loop unrolling is minimal at -O0. Dead code is absent. The decompilation is clean in this regard.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are correct (`int`, `char*`, `int*`). However, `undefined4` appears frequently (replacing int in many places), `code *` is used for function pointers instead of proper function pointer types, and `byte` is used for char*. Mixed precision reduces clarity.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct types are partially recovered - `SmallStruct` and `LargeData` are named, but field access uses raw pointer arithmetic: `param_1[1] * *param_1` instead of `p->x * p->y`. The 128-byte `LargeStruct` in `func_struct_byval` is completely flattened into 32 separate parameters.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues: implicit `int` to pointer conversions, `undefined4` used generically, function pointer type `code *` lacks signature. The `param_double_ptr` has confusing parameter ordering with 4 parameters when source has 2. Unsafe pointer arithmetic present but limited.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The original source had extensive comments explaining each test case (e.g., "CALL-L1-01: cdecl调用约定"). Zero recovery of this documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns are identified or named. The varargs handling, callback patterns, and struct passing are present but not annotated as idioms. The decompiler doesn't recognize these as common C patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for suspicious code or potential issues. The `<EXTERNAL>` marker on library functions is helpful, but there's no indication of uncertain decompilation decisions or potential undefined behavior (e.g., the `param_order_dep` tests).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had implicit contracts (e.g., `func_struct_byptr` requires non-null pointer) that are not recovered. No null-check documentation or return value meaning.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., `main` calls the three test functions), but there's no documentation of call graphs or callback relationships. The `param_func_ptr` takes a function pointer but no indication of it's a callback pattern.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in roughly the same order as source, grouped by functionality. However, runtime support functions (`__adddf3`, etc.) are interspersed. No clear separation between test code and library code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code uses `<EXTERNAL>` for undefined functions and `undefined4` type, making standalone compilation impossible. No header declarations or dependency documentation. The code cannot compile without significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `local_c`, `iVar1`) with no semantic inference
+- No comments recovered from source - zero documentation of test cases or intent
+- Large struct `func_struct_byval` flattened into 32 individual parameters losing all structure
+- Type precision poor with `undefined4` everywhere and `code *` for function pointers
+- Extensive runtime/library noise (400+ lines) obscuring actual test functions
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names are faithfully preserved from the original source (`cdecl_func`, `varargs_func`, `test_calling_conventions`), making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Comment Quality (1/10)  
+The original source had extensive documentation explaining each test case (calling conventions, parameter passing patterns, return value handling). Zero comments were recovered, making it impossible to understand the intent behind the test cases without referring to the source.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: When a parameter is used as a loop counter or accumulates a sum, name it accordingly (`count`, `sum`, `index`) rather than generic `param_1`, `iVar1`
+2. **Recover struct types from parameter patterns**: When many consecutive int parameters appear, recognize this as a flattened struct and reconstruct the original type with field names
+3. **Add semantic comments for test patterns**: Recognize this as test code and add comments explaining what each test case validates (e.g., "// Test: cdecl calling convention - caller cleans stack")

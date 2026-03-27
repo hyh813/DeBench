@@ -1,0 +1,91 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiled function uses generic parameter names `param_1` and `param_2` instead of the original descriptive names `dst` and `src`. This makes it difficult to understand the function's semantics at a glance.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: The function is correctly named `param_strcpy`, matching the original source function name exactly. The naming accurately reflects its purpose of copying string parameters.
+
+**3. Literal Clarity:** Score: 10/10  
+Justification: This simple function contains no literals or magic numbers. The decompiled version correctly preserves this aspect.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: The decompiled code contains a dead store: `strlen(param_1)` is called but its return value is discarded. This is a compiler artifact from -O0 that wasn't eliminated. The function returns `void` when it should return `int`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: The control flow is straightforward - a simple sequential execution of strcpy followed by strlen. No goto statements or confusing branching.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: The function is appropriately sized (2 statements) and serves a single clear purpose. No decomposition issues.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: The code reads naturally top-to-bottom without any forward jumps or complex control flow disruption.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: The unused `strlen` call result represents dead code. Additionally, the function signature mismatch (returning void vs int) creates semantic redundancy in the caller `call_strcpy` which expects a return value.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: **CRITICAL DEFECT**: Return type is `void` instead of `int`. The original function returns `strlen(dst)` (the string length), but the decompiled version discards this value. Additionally, the second parameter should be `const char *` but is declared as `char *`, losing const-correctness.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types (structs/unions) are used in this function, so none need to be recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: The missing `const` qualifier on the second parameter creates a type safety issue - the function could potentially modify read-only memory if passed a string literal. The discarded return value could lead to undefined behavior if caller expects a value.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments are present in the decompiled code. The original source had a comment explaining the function's purpose. The dead `strlen` call with unused result has no annotation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The classic "strcpy + strlen" pattern for getting string length after copy is not recognized. This is a common idiom that could be documented. The function should be recognized as returning the copied string length.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: **CRITICAL**: The decompiler fails to indicate that the return value is being discarded. This is a significant semantic loss - the function signature says `void` but the caller `call_strcpy` expects an `int` return value. No warning or anomaly flag is present.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or contracts are documented. The function implicitly requires valid pointers and a null-terminated string, but this is not indicated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: The function calls to `strcpy` and `strlen` are clearly visible. The relationship to the caller `call_strcpy` is preserved in the code structure.
+
+**17. Module Organization:** Score: 8/10  
+Justification: The function appears in the appropriate section of the decompiled output, grouped with other string-related functions.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The function will compile but has wrong return type. The caller `call_strcpy` expects a return value but the decompiled `param_strcpy` returns void, causing potential undefined behavior at runtime.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- **Return type loss**: Function returns `void` instead of `int`, completely losing the return value semantics (strlen result)
+- **Parameter naming**: Generic `param_1`/`param_2` instead of `dst`/`src`
+- **Const-correctness lost**: Second parameter should be `const char *` but is `char *`
+- **No anomaly indication**: Discarded return value not flagged as suspicious
+- **No comments**: Original source comments explaining semantics are lost
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The function name `param_strcpy` correctly matches the original source, providing immediate semantic understanding of the function's purpose.
+
+**Most Needs Improvement:** Semantic Transparency (1.25/4)  
+The decompiled code lacks comments, pattern recognition, and anomaly indication. The critical issue of losing the return value is not flagged, making the code misleading rather than helpful for analysis.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Preserve return values**: Detect when function return values are used and ensure they're not silently discarded. The `strlen` result must be returned.
+2. **Recover parameter names from call sites**: Analyze how the function is called to infer parameter names like `dst` and `src`.
+3. **Add anomaly markers**: Flag suspicious patterns like unused function results with comments like "ANOMALY: return value discarded".

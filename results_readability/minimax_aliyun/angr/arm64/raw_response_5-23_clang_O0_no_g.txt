@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` and locals use `v0`, `v1`, `v2` throughout. The original source used meaningful names like `size`, `x`, `y`, `result`, `ptr`, `n` - all lost in decompilation. Even loop iterators like `i` become `v0` or `i`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions like `param_macro_constants`, `call_macro_constants`, `param_asm_basic` correctly match source names. However, utility functions like `sub_4007b4`, `sub_4008a4` remain as generic address-based names. The main API is well-recovered but internal helpers are not.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple magic numbers appear without explanation: `0x400` (should be MAX_SIZE=1024), `0x200` (should be 512), `64` (should be BUFFER_COUNT*4), `30` for sysconf(_SC_PAGESIZE), `7` for PROT_READ|PROT_WRITE|PROT_EXEC, `34` for MAP_PRIVATE|MAP_ANONYMOUS. The preprocessor macro semantics are completely lost.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Some redundant returns like `return memcpy(v0, v1, v2);` appearing twice in `sub_4007b4`, but overall clean decompilation without debug instrumentation or frame pointer manipulation artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Loops properly use `for` constructs (e.g., `for (i = 0; a1 > i; i += 1)`), conditionals are clear with `if/else`. No spurious goto usage. At -O0, control flow should be nearly identical to source, and it is.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-50 lines typical). Good separation between test harness functions and implementation. No 500-line monoliths. Parameter counts are reasonable. Minor issue: some tiny wrapper functions could be inlined.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom without forward jumps into loop bodies. Early returns used appropriately (e.g., in `param_dynamic_code`). No computed jumps disrupting flow. Excellent linearization.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundant code patterns present - `memcpy` called twice with same args in `sub_4007b4`. Loop unrolling not excessive. Minor dead code but overall manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `unsigned int` where source had `int`. `unsigned long` for pointers instead of `uintptr_t` or `void*`. `long long` for 64-bit. Some type erosion: `size_t` from `sysconf()` becomes `unsigned long`. Const correctness lost on string literals (should be `const char*`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union recovery. Arrays like `int arr[] = {1,2,3,4,5}` become `uint128_t v0` with raw pointer arithmetic `ptr + i * 4`. The original `int arr[5]` structure is completely lost.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe pointer arithmetic: `*((int *)(ptr + i * 4))`. No bounds checking visible. Function signatures mostly correct. Minor issues with `uint128_t` used incorrectly for 5-element int arrays. Overall acceptable but could be safer.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in decompiled output. Original source had extensive comments explaining macro behavior, preprocessor transformations, and inline assembly semantics - all completely lost. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like loops and conditionals recognized. The inline assembly blocks are correctly replaced with equivalent C (e.g., `param_asm_basic` becomes `a0 + 10`). However, no recognition of the preprocessor macro patterns that were the core subject of the source.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: One function `__aarch64_ldadd4_acq_rel` failed to decompile but only shows "Failed to decompile" without explanation. No flags for suspicious code patterns, indirect calls, or unusual stack layouts. Silent failures without user guidance.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of error returns (e.g., `MAP_FAILED` check, `mprotect` failure cases). The original source had explicit error handling that is not documented in decompiled form.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in code (e.g., `param_macro_constants` calls from `call_macro_constants`). However, no documentation of call graph, global variable usage, or callback relationships. External dependencies like `printf`, `mmap`, `memcpy` marked as `extern` but not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - preprocessing test functions together, asm test functions together. Static functions properly scoped. However, all in single file with no header separation. Organization matches decompilation output structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses `extern` declarations for external functions. Should compile with minor fixes (missing `uint128_t` type definition, some function prototypes). No compiler-specific hacks. Standalone compilation requires adding includes and type definitions.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable naming uses generic `a0`/`v0` pattern, losing all semantic meaning from source (e.g., `size`, `x`, `result`)
+- Magic numbers everywhere (0x400, 0x200, 30, 7, 34) without constants like MAX_SIZE, BUFFER_COUNT, _SC_PAGESIZE
+- No struct/array recovery - `int arr[5]` becomes `uint128_t` with raw pointer arithmetic
+- Complete loss of preprocessor macro semantics - no indication that code came from macro expansion
+- No comments explaining decompilation decisions or recovered logic
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 9/10)  
+- At -O0 optimization, control flow is nearly identical to source. Loops use `for`, conditionals are clear `if/else`, no spurious goto. This is what decompilers should achieve at debug optimization levels.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Zero comments in output. Original source had extensive documentation about preprocessor behavior, inline assembly semantics, and test expectations. A decompiler should add explanatory comments for macro expansions, assembly replacements, and confidence levels.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `a0` compared to `0x400` should suggest `max_size`. `v0` used in arithmetic with `a0` should suggest `result` or similar.
+2. **Recover preprocessor macro semantics**: Detect constant expressions that match known patterns (e.g., 1024 → MAX_SIZE, 16*4 → BUFFER_COUNT*4) and add comments explaining the macro origin.
+3. **Add decompilation confidence comments**: Flag indirect calls, uncertain type reconstructions, and assembly replacements with // UNCLEAR or // REPLACED annotations to guide analysts.

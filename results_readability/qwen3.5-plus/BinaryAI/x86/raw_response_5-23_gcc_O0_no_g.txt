@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## Executive Summary
+
+This assessment evaluates Ghidra's decompilation of a C source file testing preprocessing features and inline assembly. The code was compiled with `-O0 -g` (debug mode), which should yield high readability. The decompiler preserved function names well but failed significantly on variable naming, comment recovery, and semantic transparency.
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar1`, `local_10` instead of semantic names like `size`, `result`, `exec_mem`, `page_size` from the original source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main function names preserved well (`param_macro_constants`, `call_asm_basic`), but library calls remain as unresolved `FUN_00011100` instead of `printf`, `mmap`, etc.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x401` (1025), `0x200` (512), `0xdef0` appear without macro recovery; original `MAX_SIZE`, `BUFFER_COUNT` definitions lost.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) repeated in many functions; unresolved library calls add noise to logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops and conditionals recovered well (e.g., `param_asm_clobber` assembly loop became C for-loop); some functions have clean if-else structures.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Original function boundaries preserved accurately; each source function maps to one decompiled function with appropriate granularity.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom; initialization functions like `__do_global_dtors_aux` have more complex flow but remain traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary code (`local_10 = *(int *)(in_GS_OFFSET + 0x14)`) duplicated across 15+ functions; could be abstracted.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types (`int`, `void*`) preserved, but degraded to `undefined4`, `undefined*` in places; SIMD uses awkward `undefined (*param_3) [16]`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct recovery visible; arrays shown as individual variables or pointer arithmetic; original composite semantics lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts visible (`(undefined4 *)`, `(char)`, `(func_t)`); no const-correctness or safety annotations recovered.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only SHA256 header comment present; zero function-level, logic, or macro semantics comments despite extensive original documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic patterns (loops, conditionals) visible but macro expansion semantics, conditional compilation branches, and design patterns not identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flags for unresolved calls (`FUN_00011100`), uncertain decompilation regions, or potential issues despite many unknowns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or expected value comments recovered; original "期望：64" annotations completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships preserved, but library calls unresolved; no call graph documentation or callback relationship identification.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat file; original section organization (5.2 preprocessing, 5.3 assembly) lost with no grouping markers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Ghidra-specific types (`undefined4`, `undefined*`) require stubs; unresolved `FUN_` functions need implementation; won't compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Contribution |
+|-------|-----------|---------|--------|--------------|
+| L1: Lexical Clarity | 4 | 5.50 | 30% | 1.65 |
+| L2: Structural Intelligibility | 4 | 7.00 | 25% | 1.75 |
+| L3: Type System Fidelity | 3 | 5.33 | 20% | 1.07 |
+| L4: Semantic Transparency | 4 | 2.75 | 15% | 0.41 |
+| L5: Contextual Coherence | 3 | 4.67 | 10% | 0.47 |
+
+**Overall Readability Score: 5.35/10**
+
+---
+
+### Critical Defects
+
+- **Variable `param_1` should be named `size`** in `param_macro_constants` based on comparison logic (`param_1 < 0x401`)
+- **Zero semantic comments** despite original having extensive documentation explaining macro behavior and expected values
+- **Library calls unresolved** - `FUN_00011100` is clearly `printf`, `FUN_00011120` is `mmap`, but decompiler didn't identify them
+- **Magic numbers without context** - `0x401`, `0x200`, `0x40` should be recovered as `MAX_SIZE+1`, `MAX_SIZE/2`, `BUFFER_COUNT*4`
+- **Stack canary redundancy** - Same 4-line pattern duplicated in 15+ functions without abstraction
+
+---
+
+### Best Quality Aspect
+
+**Function Decomposition (scored 8/10)**  
+- Original function boundaries and single-responsibility design perfectly preserved; each source function maps cleanly to one decompiled function.
+
+---
+
+### Most Needs Improvement
+
+**Comment Quality & Presence (scored 2/10)**  
+- Complete loss of all original documentation including macro explanations, expected values, architecture notes, and section headers.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement semantic comment recovery** - Extract and preserve original source comments from debug symbols (`-g` flag) or infer logic explanations from control patterns.
+
+2. **Add library function signature matching** - Build database of common libc/syscall patterns to resolve `FUN_00011100` → `printf`, `FUN_00011120` → `mmap` automatically.
+
+3. **Variable name inference from usage patterns** - Analyze variable usage (comparisons, arithmetic, pointer operations) to suggest semantic names like `packet_size` instead of `param_1`.

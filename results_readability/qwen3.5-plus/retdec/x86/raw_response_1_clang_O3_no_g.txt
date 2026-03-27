@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `a1`, `a2`, `result`) with no semantic meaning. Original source used meaningful names like `temp1`, `sum`, `count`, `total` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retained original names (`sequential_ops`, `nested_if_2`, `loop_while`), but many helpers are generic (`function_1040`, `function_147f`). Some signatures are incorrect (e.g., `non_local_jump` has extra parameter).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x66666667` (division optimization) and `0x100000000` appear without explanation. String literals referenced by offset rather than content. No named constants recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present (`__x86_get_pc_thunk_*`, `_init`, `__do_global_ctors_aux`). Redundant casts like `(uint32_t)(int32_t)(bool)` clutter expressions. Startup code mixed with application logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (`sequential_ops`) recovered well, but optimized functions show artifacts (`loop_while` uses multiplication instead of division). `switch_fallthrough` has awkward structure with misplaced cases.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but some have wrong parameter counts. Helper functions (`function_147f`, `function_1485`) appear to be switch case handlers extracted incorrectly.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but optimized loops obscure original structure. `goto_backward` converted to complex while loop instead of preserving original goto pattern.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop optimization artifacts create redundancy (e.g., `loop_while` division by constant using multiplication). No obvious dead code, but calculation patterns are verbose.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `uint32_t` consistently, but some mismatches exist (`switch_small` has `uint32_t a2` when original had `int op`). Function pointer types completely lost (`call_func_ptr` takes `int32_t` instead of function pointer).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `struct __jmp_buf_tag` recovered with generic field names (`e0`, `e1`, `e2`). No complex structs from original code. Array handling mostly pointer arithmetic without bounds.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts visible (`(uint32_t)(int32_t)(bool)`). Functions return uninitialized values (`function_1090`, `function_10cc`, `call_func_ptr`). Pointer arithmetic without bounds checking throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: NO comments explaining logic. Original source had extensive documentation for each function's purpose and test cases. Only address ranges and auto-generated headers present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Loop idioms sometimes recognized (for→while), but switch fallthrough not properly indicated. State machine patterns not identified in `state_machine` function.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `UNREACHABLE` markers present, but functions with uninitialized returns not flagged. No warnings about uncertain decompilation or potential issues with indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error conditions documented. Original test validation comments completely lost. No indication of expected input ranges or return value semantics.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`g1`, `g2`, `g3`, `g4`) have no explanation. Callback relationships lost (function pointers treated as integers).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Original source had clear sections (L1, L2, L3 control flow). Startup code mixed with application code arbitrarily.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes standard headers but references external symbols (`__libc_start_main`). Would require significant patching to compile standalone. Some function signatures don't match expected behavior.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50  × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+6)/4 = 5.75  × 0.25 = 1.44
+Level 3 (Type System): (6+5+4)/3   = 5.00  × 0.20 = 1.00
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75  × 0.15 = 0.41
+Level 5 (Contextual):  (5+4+5)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.67/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable `a1`, `a2`, `a3` should be named `a`, `b`, `c`** based on original source and usage patterns
+- **Function `call_func_ptr` returns uninitialized `result`** - completely broken semantics
+- **No comments explaining any logic** - original had extensive documentation for each function
+- **Function pointer types lost** - `call_func_ptr` takes `int32_t` instead of function pointer type
+- **Magic numbers unexplained** - `0x66666667` for division optimization appears without context
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core function names were preserved from original source, allowing identification of purpose
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of semantic documentation makes understanding intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - analyze how variables are used (loop counters, accumulators, flags) to suggest meaningful names
+2. **Recover and preserve original comments** - if debug symbols available, extract and embed documentation in decompiled output
+3. **Flag uncertain decompilations** - add warnings for functions with uninitialized returns, lost type information, or ambiguous control flow

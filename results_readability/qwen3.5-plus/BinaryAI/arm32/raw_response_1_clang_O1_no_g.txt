@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar2` with no semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved (`sequential_ops`, `single_if`, `loop_for_fixed`, `duffs_device`), matching original source exactly and clearly indicating functionality.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x15`, `0x3e9`, `0x65` appear in test functions without explanation. However, return values (0, 1, -1) are contextually clear.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; some `undefined4` types and external stubs at beginning, but core logic is relatively clean without excessive casts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if/else recovered well, but `loop_for_fixed` uses bit manipulation instead of loop, and `loop_multi_exit` uses goto labels (`LAB_00010c44`) instead of structured loops.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; each original function remains separate. Test functions are consolidated but still coherent.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `loop_multi_exit` and `duffs_device` have disruptive goto patterns (`goto switchD_00010d28_caseD_7`).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code; optimization artifacts like `loop_for_fixed`'s formula are compact but obscure original loop intent.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `undefined4`, `int`, `uint` used throughout. Original `volatile int *` partially preserved but function pointers degraded to `code *`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays referenced as `(&DAT_00011974)[iVar1]` with no struct recovery. Matrix in `loop_multi_exit` lost as raw pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: `(&DAT_00011974)[iVar1]` pointer arithmetic, `code *` function pointers without signatures, implicit casts throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original had extensive documentation explaining each function's purpose, test cases, and difficulty levels.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Switch-case and loop patterns recognized structurally, but no explicit pattern naming (e.g., "Duff's device" not identified despite correct recovery).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No anomaly flags for problematic recoveries. `indirect_recursion_a` changed signature (returns void vs int) without warning.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires n>0). Error conditions not explicitly marked.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but globals referenced as `DAT_00011f0d` addresses. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No separation between test functions and core logic. External stubs mixed with application code.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies (`__libc_start_main`, `printf`) declared but require linking.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 (Lexical):     (3×10 + 9×10 + 6×5 + 7×5) / 30  = 6.17/10
+L2 (Structural):  (6×8 + 7×7 + 6×5 + 7×5) / 25    = 6.48/10
+L3 (Type):        (5×8 + 4×7 + 5×5) / 20          = 4.65/10
+L4 (Semantic):    (2×5 + 5×3 + 4×3 + 3×4) / 15    = 3.27/10
+L5 (Contextual):  (5×4 + 5×3 + 7×3) / 10          = 5.60/10
+
+Overall = (6.17×0.30) + (6.48×0.25) + (4.65×0.20) + (3.27×0.15) + (5.60×0.10)
+        = 1.85 + 1.62 + 0.93 + 0.49 + 0.56
+        = 5.45/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects
+- **Variable names completely generic** (`param_1`, `iVar1`) losing all semantic meaning from original (`temp1`, `sum`, `count`)
+- **Zero comments** despite original having extensive documentation explaining purpose and test cases
+- **`loop_for_fixed` optimization artifact** - simple loop transformed into incomprehensible bit manipulation formula
+- **Type degradation** - `undefined4` and `code *` instead of precise types, function pointer signatures lost
+- **`if_else` return type wrong** - returns `bool` instead of `int`, changing semantic meaning
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** - All function names perfectly preserved from source, making navigation and identification trivial
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of comments destroys semantic transparency; original had extensive documentation explaining each function's purpose, difficulty, and test cases
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop bounds should be named `count`, `limit`, `index`)
+2. **Add decompilation confidence annotations** marking optimized/transformed code regions with warnings (e.g., "OPTIMIZED: loop unrolled to formula")
+3. **Recover and preserve original comments** from debug symbols when `-g` flag was used during compilation

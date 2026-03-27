@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: The decompiled code uses IDA's typical generic naming scheme (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`) for most local variables. While some parameters like `size`, `x`, `y`, `arr`, `n`, `dst`, `src` are preserved, the widespread use of generic `v` variables makes tracking purpose difficult. The original source had meaningful names like `MAX_SIZE`, `BUFFER_COUNT` which are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names are preserved accurately from the original source: `param_macro_constants`, `call_macro_constants`, `param_conditional_compile`, `param_builtin_macros`, `param_asm_basic`, etc. The naming is action-oriented and semantically accurate, clearly reflecting their purpose.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most macro expansions are correctly computed to literal values (e.g., `512` for `MAX_SIZE/2`, `64` for `BUFFER_COUNT*4`, `x + 16` for `ADD_16(x)`). However, some magic numbers like `57072` (0xDEF0) and `57122` (0xDF22) lack explanation of their hex origin. The `param_variadic_macro` shows `x + 50` instead of the correct `count * 10 + x`, losing the macro semantics.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The code is relatively clean with minimal compiler artifacts. Some IDA-specific constructs like `LODWORD` and `qmemcpy` (optimized memcpy pattern) are present but don't significantly impede readability. No debug instrumentation or frame pointer manipulation clutter is visible.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural and idiomatic. Simple if-else structures are correctly recovered (e.g., `if (size >= 1025) return 64; else return 512;`). Loops are properly identified as for-loops. No goto statements or spaghetti code patterns observed. The -O0 optimization level means minimal restructuring is expected.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function granularity is appropriate. Each function has a single, clear responsibility matching the original source. Functions like `param_asm_simd` and `param_simd_intrinsics` are correctly separated. No monolithic functions or over-fragmentation observed. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: The code reads top-to-bottom with minimal disruption. No excessive forward jumps. Early returns are used appropriately (e.g., in `param_dynamic_code` when mmap fails). The flow is highly linear and easy to follow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundant expressions observed. Loop unrolling is minimal at -O0. Common subexpressions are not unnecessarily duplicated. The code is clean without redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are reasonably accurate: `int` for integers, `size_t` for sizes, `void*`/`int*` for pointers. However, the original source used specific types like `uint32_t`, `int32_t` which are simplified to generic `int`. The `size_t` is correctly used for `n` parameter in memory functions. Function pointer types are properly declared.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No complex struct types are recovered. Arrays are represented as pointers (e.g., `int *arr` instead of `int arr[]`). The original source had no complex structs anyway, so this is acceptable. The decompiler correctly handles the simple array parameters.
+
+**11. Type Safety:** Score: 8/10  
+Justification: The code appears type-safe with no obvious unsafe casts. Pointer arithmetic is used correctly (e.g., `arr[i]`). No type-confused function pointers observed. The SIMD intrinsics use proper `__m128i` types. Minor issue: some implicit int-to-boolean conversions in conditionals.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: The decompiled output contains absolutely no comments. The original source had extensive comments explaining macro semantics, preprocessing behavior, and inline assembly purpose. This complete absence of documentation severely impacts understanding of why certain computations exist (e.g., why `57072`?).
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Some patterns are well-recognized: `qmemcpy` for optimized memcpy, `_mm_add_epi32` for SIMD vector addition, `_InterlockedExchangeAdd` for atomic operations. However, the decompiler doesn't explicitly name these patterns or explain their significance. The variadic macro `LOG` is correctly reduced to `printf`.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The output lists 8 functions that "FAILED to decompile" at the end (`__libc_start_main`, `mprotect`, `printf`, etc.), which is helpful. However, no in-code flags or warnings indicate suspicious patterns, indirect calls that couldn't be resolved, or potential undefined behavior. The failed functions are just listed without context.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition, postcondition, or invariant documentation is present. The original source had implicit contracts (e.g., `mmap` returns -1 on failure, `mprotect` requires page-aligned addresses) that are not recovered. Error return values are present but not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and direct. The relationship between `call_*` functions and their corresponding `param_*` functions is obvious from naming. However, there's no explicit documentation of call graphs, global variable usage, or callback relationships. The `global_var` usage in `param_memory_clobber_demo` is visible but not explained.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are grouped logically: preprocessing functions together, asm functions together, test functions at the end. Static functions like `my_func` are properly scoped. The organization generally matches the original source's logical grouping.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The decompiled code should compile with standard C compilers. Dependencies are standard library functions (printf, mmap, munmap, mprotect, sysconf). No compiler-specific hacks or non-portable constructs. The code is standalone and should compile with `gcc -c decompiled.c`.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.7/10
+
+**Critical Defects:**
+- Variable naming uses generic `v0`-`v5` patterns instead of semantic names, making local variable purpose unclear
+- Complete absence of comments - the original source's extensive macro explanations and preprocessing semantics are lost
+- Magic numbers like `57072` and `57122` lack explanation of their hex origins (0xDEF0, 0xDF22)
+- `param_variadic_macro` shows incorrect computation (`x + 50` instead of `count * 10 + x`), losing the macro semantics
+- No contract or precondition documentation for functions like `mmap`/`mprotect` that have specific requirements
+
+**Best Quality Aspect:** Structural Intelligibility (scored 9.0/10)  
+Control flow is natural and idiomatic, function decomposition is appropriate, and code reads linearly without spaghetti patterns. At -O0, the decompiler successfully recovered the original program structure.
+
+**Most Needs Improvement:** Semantic Transparency (scored 4.5/10)  
+The complete absence of comments severely impacts understanding. Combined with no anomaly indication or contract recovery, the decompiled code lacks the semantic context needed to understand why certain computations exist or what preconditions apply.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover macro semantics**: Instead of showing computed literal values, add comments explaining the original macro (e.g., `// MAX_SIZE / 2 = 1024 / 2 = 512`)
+2. **Add explanatory comments**: Document non-obvious computations, especially for magic numbers and inline assembly
+3. **Flag anomalies and contracts**: Indicate unresolved indirect calls, suspicious patterns, and recover preconditions/postconditions for functions with specific requirements (like mmap failure handling)

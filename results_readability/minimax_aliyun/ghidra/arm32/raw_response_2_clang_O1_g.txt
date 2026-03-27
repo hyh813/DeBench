@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use systematic but non-semantic names like `iVar1`, `iVar2`, `piVar2`, `param_1`, `local_4e0`. The original source had meaningful names like `sum`, `i`, `arr`, `n`, `c`, `x`, `y`, `z`. While the naming follows a consistent pattern (iVar=int, uVar=unsigned, piVar=pointer), it provides no semantic meaning about variable purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellent and match the original source almost perfectly: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `ptr_double`, `struct_simple`, `enum_switch`, `linked_list`, `binary_tree`. The decompiler correctly preserved all function names from the source.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Mixed results - some literals are clear (0x61='a', 0x62='b', 0x1a=26 for loop bounds, 0 for NULL), but many floating-point constants are unexplained magic numbers (0x3fc00000, 0x3f000000, 0x3fe00000, 0x9999999a, 0x3fb99999). The enum values are not symbolically recovered.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Moderate noise present but manageable. Contains "Unresolved local var" annotations with `???`, warnings about unreachable blocks, unknown calling conventions, and DW_OP register references. However, the core function logic remains readable despite these annotations.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with appropriate do-while loops for iteration. The `array_2d_stack` uses a do-while from 0 to 0x1b8 (0x2c step = 44 bytes = 11 ints, off-by-one from expected 10). Some nested loops in `array_3d` are complex but followable. At -O0, more natural flow would be expected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Excellent decomposition matching the source. All small functions (`process_char`, `process_short`, etc.) are properly separated. The test functions are also correctly decomposed. However, many library functions (`__muldf3`, `__adddf3`, `__mulsf3`, etc.) are included in the output, which adds noise but doesn't affect the main code readability.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns are used appropriately in functions like `array_1d_stack` and `ptr_increment`. The flow is mostly linear and easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. No obvious dead code. Loop unrolling is minimal. The code is relatively clean with no duplicate expressions that would obscure logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate - `char`, `short`, `int`, `long`, `long long`, `float`, `double`, `_Bool` are correctly identified. Function pointer types like `_func_int_int *f` and `_func_int_int_ptr_char_ptr_ptr *f` are properly recovered. Issues: `long double` treated as `double` in some places; `const` and `volatile` qualifiers not consistently preserved (e.g., `const_param` loses the const in the parameter).
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct/union recovery. All types properly reconstructed: `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Edge`, `Graph`, `Flags`, `UnionData`, `State`, `Device`. Field names are accurate: `x`, `y`, `z`, `width`, `height`, `data`, `next`, `left`, `right`, `dest`, `numVertices`, `adjList`, `fill`, `stroke`, `id`, `bounds`, `position`, `size`, `flag1`, `flag2`, `flag3`, `value`, `i`, `f`, `bytes`, `process`. The bitfield handling in `struct_bitfields` is particularly good.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some type safety concerns. The expression `return (int)p1 - (int)p2 >> 2;` in `ptr_diff` has ambiguous operator precedence (is it `((int)p1 - (int)p2) >> 2` or `(int)p1 - ((int)p2 >> 2)`?). The `array_2d_stack` uses pointer casting `*(int *)((int)*arr + iVar2)` which is potentially unsafe. Some pointer arithmetic could lead to undefined behavior if not carefully analyzed.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Minimal useful comments. The decompiler includes auto-generated headers with version info and binary path. Some functions have warnings like "WARNING: Unknown calling convention" and "WARNING: Type propagation algorithm not settling". No comments explain algorithm logic, purpose, or recoverability confidence. The comments are primarily decompilation metadata rather than code documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No explicit pattern recognition. While the code structure reveals patterns like linked list traversal (in `linked_list`), tree traversal (`binary_tree_sum`), and graph traversal (`graph_traverse`), these are not identified or named. The enum switch is implemented as a lookup table which is reasonable but not labeled as a pattern.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The decompiler does flag many anomalies: "Unresolved local var" with `???`, "Unknown calling convention", "Type propagation algorithm not settling", "Removing unreachable block". However, it could be more explicit about suspicious patterns or areas requiring manual analysis. The warnings are present but not always descriptive about what specifically needs attention.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No explicit recovery of preconditions, postconditions, or invariants. The decompiler doesn't document requirements like "requires: ptr != NULL" or expected return value properties. No error handling or boundary condition documentation is provided.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function names indicate some relationships (e.g., `test_data_types_l1` calls `process_char`, `process_short`, etc.), but there's no explicit documentation of call graphs, global variable usage, or data flow between functions. The relationships are implicit in the naming but not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are organized in a reasonable order roughly matching the source file structure. Static functions are properly marked. However, the library functions at the end (like `__muldf3`, `__adddf3`, `__mulsf3`) are included in the main output when they could be separated or excluded. The organization is good but not perfect.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code should compile with minimal issues using standard C. External dependencies are standard library functions (`printf`, `puts`, `memset`). The decompiled code references these as external symbols. The code uses standard C constructs and should be portable with minor adjustments for the specific environment.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.5/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`iVar1`, `param_1`, `local_4e0`) instead of semantic names from source (`sum`, `x`, `arr`)
+- Type qualifiers lost: `const_param` should have `const int *p` but shows `int *p`; `volatile_access` loses `volatile`
+- Ambiguous operator precedence in `ptr_diff`: `(int)p1 - (int)p2 >> 2` is unclear
+- No contract or precondition documentation (e.g., "requires: n > 0")
+- Minimal comments explaining algorithm logic or decompilation confidence
+
+**Best Quality Aspect:** Composite Type Recovery (9/10)  
+The decompiler excellently reconstructed all struct/union types with accurate field names matching the original source exactly.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+The generic variable names (iVar1, uVar1, param_1, local_xxx) provide no semantic meaning about variable purpose, forcing analysts to manually trace usage to understand intent.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., `iVar1` used as loop counter accumulating sum should be named `sum` or `i` based on context
+2. Preserve type qualifiers - `const` and `volatile` should be maintained in parameter types
+3. Add explanatory comments for non-trivial logic, ambiguous expressions, and areas requiring manual verification

@@ -1,0 +1,101 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`a0`, `a1`, `v0`, `v1`, `ptr`) with no semantic meaning. For example, `param_macro_constants(unsigned int a0)` should use `size` to match original intent. Only occasional names like `dst`, `result`, `counter` provide clarity.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Original function names preserved well (`param_macro_constants`, `call_macro_constants`, `param_asm_simd`). However, runtime functions have cryptic names (`sub_4007b4`, `sub_4008a4`, `$x`) and one function is literally named `$x` which is invalid C.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Critical magic numbers replace named constants: `0x400` instead of `MAX_SIZE`, `0x200` instead of `MAX_SIZE/2`, `57072` instead of `0xDEF0`, `282` instead of line number + counter sum. Original semantic meaning completely lost.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant runtime initialization noise (`_init`, `_start`, `deregister_tm_clones`, `register_tm_clones`, `__do_global_dtors_aux`) mixed with user code. Stack frame variables (`v0 = &v1` with bp offsets) add unnecessary clutter to simple functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have clean if-else structures. However, `call_asm_privileged` has excessive conditional chains with `arm64g_calculate_condition` calls that obscure logic. `register_tm_clones` uses goto instead of structured control flow.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Constant folding destroys call relationships—`call_macro_constants()` returns `64` directly instead of calling `param_macro_constants(2048)`. This eliminates the ability to understand the call graph. Runtime functions are fragmented unnecessarily.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom appropriately. However, `call_asm_privileged` has 30+ local variables with complex forward/backward references that disrupt linear reading. Some functions use goto patterns unnecessarily.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `param_asm_clobber` has a complex loop structure with vectorization artifacts (`v1 & 0xfffffff8`, `i -= 8` loop) that should be simplified. Multiple functions duplicate printf calls with identical arguments.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are overly generic (`unsigned long long`, `unsigned int`) instead of specific types (`size_t`, `int32_t`, `ptrdiff_t`). `param_macro_constants` returns `unsigned long long` when original returns `int`. Pointer types often lose const-correctness.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: No structs/unions in this code to recover. Arrays handled as pointer arithmetic (`ptr[1]`, `index[1]`) which is acceptable. `param_asm_clobber` uses `unsigned int *ptr` correctly for array parameter.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present—`mmap` return cast to `void*` without error checking visible. `param_memory_protection` has `mprotect()` call with missing arguments in decompiled output. No buffer overflow protections visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining macro behavior, assembly purpose, expected values, and platform differences. All semantic context lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Macro patterns not recognized at all (constants folded). Assembly patterns partially recovered (`param_asm_simd` as array operations, `param_asm_atomic` as `__aarch64_ldadd4_acq_rel` intrinsic). No algorithm pattern identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: One explicit failure noted ("Failed to decompile function __aarch64_ldadd4_acq_rel"). However, `arm64g_calculate_condition` calls in `call_asm_privileged` are unexplained anomalies that should be flagged. No uncertainty indicators elsewhere.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had clear expected values in comments (e.g., "期望: 64", "期望: 30"). Error conditions not documented (e.g., `mmap` failure returns `-1` but not indicated).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`g_411ff8`, `g_4012d3`, `global_var`) without explanation of purpose. Call graph destroyed by constant folding.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single output file. Runtime initialization functions mixed with user code without separation. No logical grouping of related functions (preprocessing tests vs. assembly tests not distinguished).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies declared (`printf`, `mmap`, `sysconf`, `memcpy`) but would need significant stubs to compile. `arm64g_calculate_condition` is decompiler-specific and won't compile. Architecture-specific intrinsics (`__aarch64_ldadd4_acq_rel`) limit portability.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+3+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (5+6+6)/3   = 5.67 × 0.20 = 1.13
+Level 4 (Semantic):    (1+3+3+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+5+5)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 4.63/10
+```
+
+### Overall Readability Score: **4.6/10**
+
+### Critical Defects:
+- **Magic numbers replace all named constants**: `0x400` should be `MAX_SIZE`, `57072` should be `0xDEF0`, `282` should be documented as line+counter sum
+- **Constant folding destroys call relationships**: `call_macro_constants()` returns `64` directly instead of calling `param_macro_constants(2048)`
+- **Zero comments**: All original documentation about macro behavior, assembly purpose, and expected values completely lost
+- **Generic variable naming**: `a0`, `a1`, `v0`, `v1` provide no semantic information about purpose
+- **Runtime noise pollution**: 20+ initialization functions (`_init`, `_start`, `deregister_tm_clones`) mixed with user code
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Original function names preserved accurately (`param_macro_constants`, `param_asm_simd`, `param_conditional_compile`), maintaining semantic connection to source.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of comments eliminates all context about macro semantics, assembly behavior, expected values, and platform differences that were extensively documented in source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover named constants from usage patterns**: Detect repeated literal values (0x400, 0x200, 64) and suggest named constant definitions with original semantic meaning
+2. **Preserve call relationships despite constant folding**: Even when values are computable at compile-time, maintain the call structure to preserve program understanding
+3. **Generate semantic comments from pattern recognition**: Identify macro-expanded code patterns and add comments indicating original macro semantics (e.g., "// Expanded from: SQUARE(x) + MAX(x, y)")

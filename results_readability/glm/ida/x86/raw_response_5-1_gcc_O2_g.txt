@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Variables are predominantly generic (e.g., `v0`, `v1`, `v2`, `a1`), obscuring the original intent like `capture_by_value` or `result`. However, object instances like `obj` and class members (`data`, `size`) are recovered well.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: C++ name demangling is excellent, perfectly recovering namespaces, class names, and template arguments (e.g., `Container<int>::push`, `Base::virtual_func`).
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Magic numbers are prevalent due to constant propagation (e.g., `4700`, `42`, `22`), replacing the original arithmetic expressions and making the logic harder to trace back to source.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Stack canary checks (`__readgsdword(0x14u)`) and compiler-generated thunks (`non-virtual thunk to`) clutter the output, though they are technically accurate to the binary.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While most functions are linear, `test_cpp_exception` is decompiled as a `__noreturn` function that only throws, completely missing the `try/catch` structure and the return path present in the source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Class methods are correctly separated into individual functions with correct `this` pointer signatures. Thunks are isolated, though they add fragmentation.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal jumping or spaghetti logic, making it easy to follow execution paths within functions.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully presents the optimized results (e.g., `return 42`) rather than the intermediate steps, which is clean, though it hides the source logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are recovered with high precision, including template instantiations (`Container<int>`), standard library types (`std::unique_ptr`), and correct integer sizes.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs and classes are reconstructed accurately with correct field names (`value`, `name`, `data`, `size`) and layout, including vtable pointers (`_vptr_Base`).
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer types are generally preserved. Necessary casts for RTTI (`__dynamic_cast`) and exception handling are present but handled correctly.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments explaining the logic, algorithms, or the significance of recovered constants/magic numbers.
+
+**13. Idiom Recognition:** Score: 9/10
+Justification: C++ idioms are well-recognized; vtable calls are explicit (`(*obj->_vptr_Base)()`), and thunks are clearly labeled (`virtual thunk to`), showing deep understanding of the ABI.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: The `__noreturn` attribute on `test_cpp_exception` is flagged, but there is no explanation that the control flow might be incomplete or that exception handling tables were not fully reconstructed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented (e.g., the non-null requirements for `unique_ptr` or array bounds).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Calls to constructors, destructors, and virtual functions are clear. The relationship between base and derived class methods is evident via the naming and vtable access.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are ordered by address, which groups related class methods somewhat, but thunks and destructors are intermixed, making it harder to browse by class.
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code relies on standard types and compiler intrinsics (`__readgsdword`). It would require stubs for external library calls (like `printf`) to compile standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.8/10
+
+**Critical Defects:**
+- Function `test_cpp_exception` is decompiled as `__noreturn` (only throwing), completely losing the `try/catch` logic and return value calculation present in the source.
+- Variable names are generic (`v0`, `v1`), losing the semantic meaning of parameters like `capture_by_value` or `multiplier`.
+- Magic numbers (e.g., `4700`, `42`, `22`) replace the original arithmetic expressions, obscuring the source logic flow.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- C++ name demangling is perfect, fully recovering namespaces, class hierarchies, and template specializations.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)
+- The lack of comments makes it difficult to understand the intent behind optimized constants and complex control flow structures like exception handling.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Improve exception handling recovery to reconstruct `try/catch` blocks instead of reducing functions to `__noreturn` throws.
+2. Implement heuristic variable renaming based on usage context (e.g., naming a variable `result` if it accumulates return values).
+3. Add optional annotations for magic numbers to indicate they are results of constant propagation (e.g., `/* 4704 (constant folded) */`).

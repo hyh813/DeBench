@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `param_1`, `iVar1`, `uVar1`, and `local_10`, completely obscuring semantic meaning (e.g., `n`, `arr`, `i` in the source).
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: User-defined function names are recovered perfectly (e.g., `double_value`, `vla_stack`), but standard library calls are opaque addresses (e.g., `FUN_000111e0` for `malloc`), significantly hindering readability of heap operations.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Meaningful constants are replaced by magic numbers in hex (e.g., `0x2a` instead of `42`, `0x800` instead of `2048`), requiring manual conversion to understand the logic.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Stack canary checks (`in_GS_OFFSET`) and compiler-generated stack probing loops in `vla_stack`/`alloca_usage` clutter the code, though they accurately reflect the binary's security measures.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Simple functions use natural `do-while` loops, but Variable Length Array (VLA) allocation is obscured by complex compiler-inserted stack probing logic, making the control flow hard to follow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly; helper functions like `create_tree_node` are correctly separated, maintaining the original modular structure.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with appropriate early returns; the non-linear flow in `test_heap_memory` accurately reflects the complex `fork` logic in the source.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: No obvious dead code or redundant variables are present; the decompiler successfully cleaned up typical `-O0` verbosity like register spills.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded to generic `undefined4` and `undefined *`, losing the distinction between `int`, `char`, and specific pointer types found in the source.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs like `Point` and `Node` are not recovered; operations are reduced to raw pointer arithmetic (e.g., `piVar1[1]` instead of `node->next`), destroying the high-level data model.
+
+**11. Type Safety:** Score: 4/10
+Justification: Frequent unsafe casts between `undefined *` and `int *` are present, and the use of `undefined4` for return values removes type safety guarantees.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output, leaving complex logic like stack probing or linked list traversal unexplained.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common patterns like linked list traversal are present but not recognized as such; they appear as generic pointer manipulation rather than semantic data structure operations.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: Suspicious behaviors like the dangling pointer access in `dangling_pointer` or the double free are presented as standard code without any warnings or anomaly flags.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions (e.g., buffer size requirements) or postconditions are documented; error checks for `malloc` failures are visible but not explicitly highlighted as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While user functions call each other clearly, calls to standard libraries are opaque (`FUN_000111e0`), breaking the understanding of I/O and memory management dependencies.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically by address, which roughly correlates with the source sections (stack, heap, global), maintaining a decent organizational structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on Ghidra-specific types (`undefined4`) and unresolved function addresses, making it non-compilable without significant manual modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Standard library functions (`malloc`, `free`, `printf`) are not resolved, appearing as generic `FUN_XXXXXX` addresses.
+- Composite types (`struct Point`, `struct Node`) are completely lost, replaced by raw pointer arithmetic and array indexing.
+- Variable names are entirely generic (`param_1`, `iVar1`), providing no semantic context.
+- Types are defaulted to `undefined4` and `undefined *`, erasing type information and safety.
+- Magic numbers are in hex (e.g., `0x2a`), obscuring simple decimal values used in the source.
+
+**Best Quality Aspect:** Function Decomposition (scored 9/10)
+- The decompiler perfectly identified and separated user-defined function boundaries, preserving the original modular structure of the test suite.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.5/10)
+- The lack of comments, idiom recognition, and anomaly flags makes the code difficult to understand semantically, reducing it to a raw listing of instructions.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement or enhance signature matching for standard library functions (glibc/uClibc) to resolve `malloc`, `printf`, etc.
+2. Improve type propagation algorithms to recover specific integer types (`int`, `char`) instead of defaulting to `undefined4`.
+3. Develop heuristics to reconstruct struct definitions from stack layout and heap access patterns (e.g., detecting `p->x` and `p->y` patterns).

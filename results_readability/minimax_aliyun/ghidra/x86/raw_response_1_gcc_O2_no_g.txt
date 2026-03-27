@@ -1,0 +1,146 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Almost all variables use cryptic generic names like `param_1`, `param_2`, `iVar1`, `iVar2`, `uVar1`, `local_24`, `local_40`. The original source had meaningful names like `a`, `b`, `c`, `temp1`, `temp2`, `temp3`, `sum`, `count` - all completely lost in decompilation.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+Justification: Most function names are correctly preserved from source: `sequential_ops`, `single_if`, `if_else`, `recursion_factorial`, `double_value`, `state_machine`. However, some internal functions have generic names like `FUN_00011030`, and parameter names are uniformly `param_N`.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Multiple magic numbers without explanation: `0x14` (20), `0x1e` (30), `0x28` (40), `0x32` (50), `0x3e9` (1001), `0x65` (101). Test functions have hardcoded values like `0x15` (21) instead of computed results. Some constants like `100` are used directly.
+
+### 4. Noise Reduction
+**Score: 4/10**
+Justification: Significant noise includes: "WARNING: Could not recover jumptable" messages, "WARNING: Removing unreachable block", "WARNING: Subroutine does not return", stack canary checks (`in_GS_OFFSET`), and injected `get_pc_thunk` functions. These artifacts clutter the code significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+Justification: Most control flow is natural - loops use `do-while` constructs correctly, conditionals are clear. However, `goto_forward` and `goto_backward` use goto instead of structured loops. Some switch statements become jump tables (`switch_small`). At -O0, these should be more idiomatic.
+
+### 6. Function Decomposition
+**Score: 7/10**
+Justification: Functions are appropriately sized with clear boundaries. Each test function (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) is separate. Some large functions like `test_control_flow_l2` (100+ lines) could be split, but overall decomposition is reasonable.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately. Some goto patterns in `duffs_device` create non-linear flow, but overall linearization is acceptable.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+Justification: Some loop unrolling present (e.g., `loop_for_fixed` uses manual iteration). Dead code elimination is good (unreachable blocks removed). However, some redundant patterns exist like duplicate array initialization in test functions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Basic types `int`, `uint`, `bool` are used correctly. However, many parameters use `undefined4` instead of `int`. Function pointers are typed as generic `code *` rather than proper function signatures. Signed/unsigned mixing occurs (e.g., `param_1` sometimes treated as signed, sometimes unsigned).
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+Justification: No struct or union recovery. Arrays like `int arr[] = {10, 20, 30, 40, 50}` in `loop_break` are reconstructed as stack arrays with manual element initialization (`local_24[1] = 0x14`). The original `int matrix[3][4]` becomes pointer arithmetic.
+
+### 11. Type Safety
+**Score: 4/10**
+Justification: Multiple type safety issues: generic `code *` function pointers, unsafe pointer arithmetic in `duffs_device`, mixing `int` and `uint` in comparisons. The `in_GS_OFFSET` usage for stack canaries is low-level and error-prone.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Only auto-generated decompiler comments present: "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection", "WARNING: Removing unreachable block". No comments explaining algorithm intent, preconditions, or semantic purpose. The original source had extensive comments completely lost.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+Justification: Some patterns recognized: switch statements identified (though as jump tables), loops identified. However, no explicit naming of patterns like "Duff's device", "state machine", "tail recursion", or "function pointer dispatch". The `duffs_device` is partially recognized but not named.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+Justification: Decompiler does flag some anomalies: "WARNING: Could not recover jumptable at 0x00011e70. Too many branches", "WARNING: Treating indirect jump as call". However, these warnings are generic and don't suggest possible resolutions. Some anomalies like the stack canary checks are silently included.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No recovery of preconditions, postconditions, or invariants. Original source had clear contracts (e.g., "x must be positive", "returns sum of 0 to n-1") completely lost. No documentation of error conditions or edge case handling.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function call relationships are somewhat transparent through direct calls. However, no explicit documentation of "called by X" or "calls Y". Callback relationships (e.g., `process_with_callback` using function pointer) are present but not explained.
+
+### 17. Module Organization
+**Score: 3/10**
+Justification: All functions in single monolithic file. Functions ordered by address (`0x00011000`, `0x00011110`, etc.) rather than logically grouped. Original source had clear section comments (`// CF-L1-01`, `// CF-L2-01`, etc.) completely lost.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+Justification: Code depends on external functions: `__printf_chk`, `__stack_chk_fail`, `puts`, `__libc_start_main`, `__do_global_ctors_aux`. No header declarations or dependency documentation. Stack canary (`__stack_chk_fail_local`) requires specific compilation flags.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 4 + 4) / 4 = 4.25
+L2_avg = (6 + 7 + 7 + 5) / 4 = 6.25
+L3_avg = (5 + 2 + 4) / 3 = 3.67
+L4_avg = (3 + 4 + 6 + 2) / 4 = 3.75
+L5_avg = (5 + 3 + 4) / 3 = 4.00
+
+Overall = (4.25 × 0.30) + (6.25 × 0.25) + (3.67 × 0.20) + 
+          (3.75 × 0.15) + (4.00 × 0.10)
+        = 1.275 + 1.5625 + 0.734 + 0.5625 + 0.4
+        = 4.53/10
+```
+
+**Overall Readability Score: 4.53/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming completely generic**: All parameters are `param_N`, locals are `iVarN`/`uVarN`/`local_N`, losing all semantic meaning from source (`a`, `b`, `c`, `temp1`, `sum`, `count`)
+
+2. **No composite type recovery**: Original `int matrix[3][4]` and `int arr[5]` become raw stack arrays with manual element initialization; struct/union completely lost
+
+3. **No contract/precondition recovery**: Original source had extensive comments explaining preconditions, postconditions, and test cases - all completely lost
+
+4. **Excessive decompiler noise**: Warnings about unrecoverable jump tables, inlined functions, stack canaries, and unreachable blocks clutter every function
+
+5. **Type precision degradation**: Uses `undefined4`, `undefined`, `code *` instead of proper types; function pointer signatures not recovered
+
+---
+
+### Best Quality Aspect (Single Dimension)
+- **Control Flow Naturalness (6/10)** - Loops correctly use `do-while` constructs, conditionals are clear, and most control flow patterns are recognizable despite some optimization artifacts
+
+---
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)** - The decompiler makes no attempt to infer meaningful variable names from usage patterns. Parameters should be named based on semantic role (e.g., `param_1` → `a`, `param_2` → `b` for `sequential_ops`), and locals should reflect their purpose (`iVar1` → `sum`, `iVar2` → `index`)
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparison) to suggest semantically meaningful names. For `param_1 + param_2` in `sequential_ops`, infer `addend1`/`addend2`. For `iVar1 = iVar1 + 1` in loops, infer `index` or `iterator`.
+
+2. **Recover composite types from stack layout**: Detect patterns of consecutive stack allocations and reconstruct structs/unions. The `int matrix[3][4]` in `loop_multi_exit` should be reconstructed as a 2D array, not manual pointer arithmetic.
+
+3. **Add semantic comments for test functions**: When decompiling test functions with hardcoded expected values, include comments showing what the test validates. The original source had "测试验证: 输入5,7,3应返回21 (5+7)*2-3=21" - this should be preserved.

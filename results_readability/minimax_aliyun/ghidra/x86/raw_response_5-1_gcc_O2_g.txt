@@ -1,0 +1,91 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables like `iVar1`, `sVar2`, `puVar1`, `dVar2`, `local_10` are generic decompiler-generated names. The original source uses meaningful names like `value`, `name`, `data`, `size`, `multiplier` which are completely lost. Even stack variables like `a` and `b` in `template_swap` lack descriptive purpose indicators.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions like `test_cpp_member_func`, `test_cpp_constructor`, `call_virtual_func` are correctly named matching source. Member functions like `Base::virtual_func`, `Derived::virtual_func` are properly identified. However, some internal functions like `FUN_00011030` remain unnamed, and template instantiations could be clearer.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers throughout: `0x2a` (42), `0x47` (71), `0x28a` (650), `0x16` (22), `0x55` (85), `0x2bf` (703) appear without explanation. The decompiled code returns these hardcoded values directly rather than showing the computation. Constants like `0x3e9` (1000) and `0x14` (20) are unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Extensive decompiler warnings clutter output: "WARNING: Function: __x86.get_pc_thunk.bx replaced with injection", "WARNING: Unknown calling convention", "WARNING: Removing unreachable block". These 50+ warning comments make reading difficult. Stack canary checks (`__stack_chk_fail_local`) add noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: The exception handling in `test_cpp_exception` is completely broken - it shows only the throw of `0x2a` without catch blocks. The `call_virtual_func` has "WARNING: Could not recover jumptable" indicating lost switch logic. Control flow is significantly degraded from the original try-catch structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized (20-50 lines). Template functions are properly separated (`template_max<int>`, `template_max<double>`, `template_swap<int>`). However, some member functions like destructors are fragmented into multiple "thunk" versions, creating unnecessary complexity.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read reasonably top-to-bottom. However, `test_cpp_member_func` has awkward string initialization spread across many lines (setting each byte of `obj.name` individually), and forward jumps exist in some functions. The linear flow is interrupted by these artifacts.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: The string initialization in `test_cpp_member_func` shows 31 individual assignments (`obj.name[0] = 'T'`, `obj.name[1] = 'e'`, etc.) which is clearly loop unrolling that wasn't recognized. Some dead code warnings indicate the decompiler attempted cleanup but missed many cases.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are correct: `int`, `double`, `int*`, `char*`. However, many uses of `undefined4`, `undefined1` instead of proper types. The `in_GS_OFFSET` usage suggests stack canary but type isn't clear. Some function pointers use generic `code *` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Classes like `SimpleClass`, `Base`, `Derived`, `MultiDerived` are partially reconstructed with field names (`multiplier`, `dataA`, `dataB`). However, virtual inheritance structures like `DiamondDerived` have overlapping field warnings and complex pointer arithmetic obscuring the layout. The `Container` template class is reasonably recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns: pointer arithmetic in virtual function implementations (`*(int *)((int)&this->dataA + (int)this->_vptr_MiddleA[-3])`), unresolved local variables marked with `@[???]`, and indirect virtual calls without proper type checking. The `test_cpp_rtti` function has complex casting that could be unsafe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly decompiler-generated WARNING comments (50+ instances). Some DWARF original prototype comments help ("DWARF original prototype: int virtual_func(Base * this, int x)"). No explanatory comments about algorithm intent or C++ semantics. The "WARNING: Subroutine does not return" on `__cxa_throw` is useful but minimal.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms recognized: `__thiscall` calling convention, virtual function thunks, template instantiation names. However, exception handling idioms are lost, lambda expressions not recognized (just returns constant), and smart pointer patterns not identified - just shows raw memory operations.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Many issues are flagged: "Unresolved local var", "Could not recover jumptable", "Treating indirect jump as call", "Struct overlapping field" warnings. These help identify decompilation limitations. However, some anomalies like the broken exception handling aren't clearly flagged as incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source has clear semantics (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated") that are completely lost. The decompiled code provides no contract information.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible (`test_cpp_constructor()`, `call_virtual_func(pb,5)`). Virtual dispatch is partially shown through vtable access. However, relationships between classes (inheritance hierarchies) aren't clearly documented, and static member access isn't explicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are listed in address order rather than logical grouping. Related member functions (constructors, destructors, virtual functions) are scattered. No namespace or class hierarchy organization. The 76 functions appear as a flat list.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many external dependencies unresolved: `operator_new`, `operator_delete`, `__cxa_allocate_exception`, `__cxa_throw`, `__dynamic_cast`, `builtin_strncpy`. The code would require significant patching to compile. No header declarations or dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming is universally poor (`iVar1`, `sVar2`, `puVar1` instead of semantic names like `result`, `name_length`, `exception_ptr`)
+- Exception handling completely broken - `test_cpp_exception` only shows throw, no catch blocks recovered
+- Magic numbers everywhere without explanation (0x2a, 0x47, 0x28a instead of computed results)
+- String initialization shows 31 individual byte assignments instead of loop recognition
+- Template class `Container` data member type not properly recovered (shows raw array access)
+- No contract/precondition/postcondition recovery despite clear semantics in source
+- Extensive decompiler warning noise (50+ WARNING comments) obscuring actual code
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+Test functions and member functions are correctly named matching the original source. The decompiler preserved the semantic names for the public API functions.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Literal Clarity (3/10)  
+The combination of meaningless generic variable names and unexplained magic numbers makes the code extremely difficult to understand. A reader cannot determine what values represent without manually tracing through the computation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Use data flow analysis to rename `iVar1` to `result` when it's returned, or `name_length` when used with `strlen()`
+2. **Recover exception handling structures**: The try-catch blocks are fundamental to C++ semantics and should be reconstructed from exception table information
+3. **Detect and explain magic numbers**: When a function returns a constant like `0x2a`, add a comment showing the computation that produces this value, or mark it as a computed constant rather than a literal

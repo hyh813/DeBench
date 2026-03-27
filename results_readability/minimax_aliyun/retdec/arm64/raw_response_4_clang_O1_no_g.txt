@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: Every variable uses generic names (v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15). The original source had meaningful names like `count`, `args`, `sum`, `str`, `len`, `p`, `x`, `y`, `result` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most test function names are correctly preserved (cdecl_func, call_cdecl, stdcall_func, varargs_func, func_no_args, func_many_args). However, some helper functions have auto-generated names (function_660, function_670, function_6c0, function_d54).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x40091eb851eb851f`, `0x12345678`, `0x113c`, `1600`, `100` appear without explanation. Some string literals are correctly preserved but contain encoding artifacts (e.g., `\xef\xbc\x9a`). The value 42 in func_no_args is correctly recognized.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive bit manipulation artifacts (e.g., `& 0xffffffff`, `& 0xfffffffe`). Redundant type casts throughout. The varargs functions contain complex goto-based control flow with labels (lab_0x958, lab_0x978) that obscure the loop structure.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses goto statements and labels (lab_0x958, lab_0x978, lab_0x93c, lab_0x948) instead of natural while/for loops in varargs_func and param_varargs. Some simpler functions have natural control flow. At -O0, goto-based control flow is unnecessary.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are separated but many have incorrect or missing parameters. For example, cdecl_func shows no parameters when it should have two int parameters. Test functions inline constant results rather than calling the actual functions.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Many forward jumps in varargs functions disrupt readability. The while(true) with goto pattern in varargs_func creates non-linear flow. Simpler functions like func_no_args read linearly.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code observed. Some loop unrolling present but not excessive. The decompiler correctly inlines simple constant-returning functions like call_cdecl() returning 15.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - most functions return int64_t instead of int. Parameters completely missing from function signatures (e.g., cdecl_func has no parameters, should have int a, int b). Mixed int/int32_t/int64_t usage without consistency.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct types recovered. Original had LargeStruct (128 bytes), SmallStruct, SmallPoint, LargeData, TestIntPair - all lost. All access is raw pointer arithmetic (e.g., `*(int32_t *)(v2 + 4)`). The struct parameter in func_struct_byval is treated as int64_t.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present throughout. Pointer arithmetic without proper type safety (e.g., `*(int32_t *)(v2 + 4)`). Function pointers treated as int64_t. No const correctness. Significant risk of undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only address range comments present (e.g., "// Address range: 0x814 - 0x81c"). No logic explanation comments. No decompilation confidence indicators. No algorithm documentation. Auto-generated metadata provides no semantic value.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The varargs pattern using va_list is not recognized as such - it's decompiled as complex goto-based code. No recognition of calling convention patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of anomalies or uncertain areas. Missing parameters not flagged. Indirect calls not resolved but not indicated. Code confidently presents incorrect information (e.g., cdecl_func with no parameters).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition/invariant documentation. No error condition documentation. The original source had clear contracts (e.g., "requires: ptr != NULL") completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present in the code but relationships not documented. Global variables (g1-g25) have some naming but their usage relationships unclear. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped reasonably - test functions together, parameter functions together, return functions together. However, helper functions (function_660, etc.) scattered arbitrarily. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code includes standard headers (stdio.h, stdlib.h, string.h). However, function signatures are incompatible with original (missing parameters, wrong return types). Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (1 + 8 + 5 + 4) / 4 = 4.50
+L2_avg = (5 + 6 + 5 + 7) / 4 = 5.75
+L3_avg = (3 + 2 + 4) / 3 = 3.00
+L4_avg = (3 + 2 + 2 + 2) / 4 = 2.25
+L5_avg = (5 + 6 + 5) / 3 = 5.33
+
+Overall = (4.50 × 0.30) + (5.75 × 0.25) + (3.00 × 0.20) + (2.25 × 0.15) + (5.33 × 0.10)
+        = 1.35 + 1.4375 + 0.60 + 0.3375 + 0.533
+        = 4.26/10
+```
+
+**Overall Readability Score:** 4.26/10
+
+### Critical Defects (Bullet List)
+- **Variable naming completely generic**: All variables named v1-v15, losing all semantic meaning from original (count, args, sum, str, len, p, x, y)
+- **Function parameters missing**: cdecl_func, stdcall_func, fastcall_func and many others show zero parameters when they should have 2-8 parameters
+- **No struct recovery**: All composite types (LargeStruct, SmallStruct, SmallPoint, LargeData, TestIntPair) lost; replaced with raw pointer arithmetic
+- **Goto-based control flow**: varargs_func uses complex goto/label pattern instead of natural while loop, making the code nearly unreadable
+- **Type precision severely degraded**: Functions return int64_t instead of int; no distinction between signed/unsigned; no const correctness
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (8/10)**: Most test function names are correctly preserved from source (cdecl_func, call_cdecl, stdcall_func, varargs_func, func_no_args)
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (1/10)**: Every variable uses generic names (v1, v2, etc.) making it impossible to track purpose without extensive reverse engineering
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, string functions, arithmetic operations) to suggest meaningful names like `count`, `sum`, `str`, `len`
+2. **Recover function parameters from calling conventions**: Use call site analysis and ABI knowledge to reconstruct parameter lists (e.g., cdecl_func needs int a, int b based on call_cdecl)
+3. **Recognize and reconstruct standard patterns**: Identify varargs (va_list, va_start, va_arg) and recover as natural loop constructs instead of goto-based control flow

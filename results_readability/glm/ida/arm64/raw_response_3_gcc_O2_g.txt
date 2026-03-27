@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most local variables are generic names like `v1`, `v2`, `v3`, or `v4` (e.g., in `heap_basic` and `heap_calloc`), which obscures their purpose as array pointers or loop counters. While parameters like `x` and `n` are recovered, the internal logic is hard to follow due to poor local variable naming.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names are perfectly recovered from debug symbols, matching the original source exactly (e.g., `double_value`, `local_array`, `heap_basic`). The names are semantically accurate and use appropriate verbs.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers are prevalent due to compiler optimizations. For example, in `heap_realloc`, `0x200000001LL` is used to initialize two array elements simultaneously via store merging, and `vla_stack` uses masks like `0xFFFFFFFFFFFF0000LL` without explanation, significantly obscuring the original logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: The code is generally clean, but compiler artifacts like `__printf_chk` instead of `printf` and the packed integer literal `0x200000001LL` in `heap_realloc` introduce noise that distracts from the source logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with recovered `do-while` and `while` loops. However, `tree_heap_traversal` uses a `goto LABEL_7` for error handling, which is less readable than the original structured `if/else` blocks, though this is common in optimized code.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries are preserved perfectly. The decompiler did not inappropriately merge functions, and the granularity matches the source well, even though some function bodies were optimized to constants (e.g., `local_struct`).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code reads mostly top-to-bottom. The `goto` in `tree_heap_traversal` is a minor break in linearity. The setup for Variable Length Arrays (VLA) involves pointer arithmetic that is slightly non-linear but acceptable given the complexity of the underlying assembly.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: The decompiler successfully presents the optimized code without redundant dead stores. However, the *absence* of source-level variables (due to optimization) makes the code feel sparse compared to the original, which is expected for `-O2` but affects readability.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types (`int`, `void*`) are correct, but precision is lost in optimized areas. In `heap_realloc`, the decompiler uses a `__int64` assignment (`*v0 = 0x200000001LL`) to represent two 32-bit integer writes, losing the specific array type information of the original code.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: While structs like `Node` are recognized and used in some places (e.g., `heap_nested`), access in optimized functions like `heap_realloc` reverts to raw pointer arithmetic (`*((_DWORD *)v0 + 4)`), failing to map these accesses back to struct fields.
+
+**11. Type Safety:** Score: 6/10  
+Justification: The code contains type-punning artifacts from the compiler, such as the `__int64` assignment in `heap_realloc` which is technically unsafe in strict C. Casts like `(_DWORD *)v0 + 4` are correct but lack the semantic safety of struct member access.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments in the decompiled code. Complex logic, such as the stack alignment calculations in `vla_stack` or the store merging in `heap_realloc`, is left unexplained.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard loops are recognized, but specific memory idioms are missed. The VLA allocation in `vla_stack` is presented as raw bit-masking and pointer arithmetic rather than a high-level "stack array allocation" idiom.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The decompiler does not flag the aggressive optimizations. For instance, it doesn't warn that `local_struct` was optimized to a constant return `3 * x`, which might confuse a user looking for the struct usage.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: Preconditions like `if ( !v2 ) return -1;` are preserved, but the semantic meaning (e.g., "malloc failed") is lost because the variable `v2` is not named meaningfully (e.g., `ptr` or `buf`).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls and global variable accesses (e.g., `global_counter`) are clear and correctly resolved. The relationships between functions are easy to trace.
+
+**17. Module Organization:** Score: 9/10  
+Justification: The decompiled output maintains the logical grouping of functions (stack, heap, static tests) as they appeared in the source, making it easy to navigate.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code uses Hex-Rays specific types like `__int64` and relies on compiler-optimized constructs (like the packed literal) that might not compile or behave identically if copied to a standard C environment without modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.3/10
+
+**Critical Defects:**
+- Variable naming is extremely generic (`v1`, `v2`...), obscuring the purpose of pointers and loop counters.
+- Compiler optimizations like store merging (`0x200000001LL` in `heap_realloc`) obscure the original array operations.
+- Complex stack manipulations for VLA/alloca are presented as raw pointer arithmetic without comments.
+- No comments are provided to explain the logic or optimization artifacts.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- The debug symbols were preserved, allowing perfect recovery of function names like `double_value` and `test_stack_memory`.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+- The complete absence of comments makes understanding optimized logic (like VLA setup or packed integers) unnecessarily difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Enhance variable renaming heuristics to infer names from usage context (e.g., variables returned by `malloc` should be named `ptr` or `buf`).
+2. Detect and annotate compiler optimization artifacts, specifically store merging (packed integers), to explain the discrepancy with source-level array operations.
+3. Add auto-generated comments for complex stack frame manipulations (VLA/alloca) to explain the alignment and pointer arithmetic logic.

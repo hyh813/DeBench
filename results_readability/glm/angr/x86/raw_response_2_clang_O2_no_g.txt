@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `a0`, `ptr`, or `result`. In `array_1d_stack`, variables like `index` and `idx` are used, but `v2` accumulates the sum, offering no semantic hint about its purpose.
+
+**2. Function Naming Quality:** Score: 5/10
+Justification: High-level semantic names like `process_char`, `process_int`, and `main` are preserved (likely from symbol tables), providing some clarity. However, many functions are reduced to generic addresses like `sub_401030` or `sub_4011f1`, losing all context.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers abound without explanation. For example, `4294967295` is used instead of `-1` or `UINT_MAX` in `array_string`, and pointer arithmetic uses raw offsets like `index * 4` instead of scaling by `sizeof(int)`.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The decompilation failed completely for floating-point operations, leaving raw VEX IR statements like `[D] PutI(72:F64x8)[t3,0] = t6()` and `[D] unsupported_<class 'pyvex.expr.GetI'>()` directly in the C output, rendering the code unreadable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Aggressive loop unrolling (e.g., in `array_1d_stack`) transforms simple loops into massive blocks of arithmetic operations (`v2 = v2 + ... + ...` repeated 8 times). Control flow often relies on `goto` or computed jumps (`goto (int)v1[20]`) rather than structured loops.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: The granularity is acceptable; functions are generally distinct and not monolithic. However, the internal logic is so obfuscated by optimization and decompiler errors that the decomposition doesn't help much.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code is difficult to read linearly due to the presence of unrolled blocks and forward jumps. For instance, `array_1d_stack` has a complex structure checking `a1 & 7` that disrupts the top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: Loop unrolling is present but not abstracted; it results in repetitive code that clutters the output. In `array_1d_stack`, the same addition logic is copied 8 times instead of being represented as a loop body.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Most types are degraded to `unsigned int` or `void*`. The `long long` type in `process_ll` is incorrectly split into two `unsigned int` parameters (`a0`, `a1`), and floating-point types (`float`, `double`) result in decompilation errors.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structures are recovered only as generic layouts like `struct_0` and `struct_1` with fields named `field_0`, `field_4`, etc. In `struct_simple`, the Point3D struct is treated as a raw pointer array (`a0[1] + *(a0) + a0[2]`), losing semantic field names like `x`, `y`, `z`.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code relies heavily on unsafe casts and raw pointer arithmetic. For example, `*((int *)(ptr + index * 4))` is used instead of array indexing, and `void*` is used ubiquitously, erasing type safety guarantees.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no explanatory comments. The only "comments" are decompiler error markers like `[D] Unsupported jumpkind` or `[D] unsupported_<class 'pyvex.expr.GetI'>()`, which indicate failure rather than explaining logic.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms are missed. `array_string` implements `strlen` but is represented as a `do-while` loop with pointer arithmetic and a magic number check, rather than being recognized or annotated as a string length operation.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: The decompiler explicitly marks where it failed (e.g., `[D] unsupported_<class 'pyvex.expr.GetI'>()`), which is honest but destroys readability. It does not provide higher-level explanations for *why* the code is structured oddly (e.g., "Loop unrolled by compiler").
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, `array_complex_index` performs bounds checking, but this logic is buried in bitwise operations and comparisons without explicit documentation of the contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: While function calls are visible, the parameters are so generic (`a0`, `a1`) that the relationship is obscured. The call to `printf` in `test_data_types_l1` passes variables that were clearly computed earlier, but the link is hard to trace due to naming.
+
+**17. Module Organization:** Score: 4/10
+Justification: Functions are listed in address order rather than logical grouping. While `main` is at the end, the helper functions and test functions are intermixed with runtime stubs (`__x86.get_pc_thunk`), making it hard to discern the module structure.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not valid C. It contains VEX IR statements (`PutI`, `GetI`) and debug markers (`[D]`) that will cause any C compiler to fail. It requires significant manual editing to even parse syntactically.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.8/10
+
+**Critical Defects:**
+- **Decompiler Failure:** Floating-point functions (`process_float`, `process_double`) contain raw VEX IR statements (`PutI`, `GetI`) instead of C code.
+- **Type Splitting:** 64-bit integers (`long long`) are incorrectly represented as two separate 32-bit integer parameters.
+- **Loop Unrolling:** Aggressive unrolling (e.g., in `array_1d_stack`) creates massive blocks of repetitive arithmetic that obscure the original loop logic.
+- **Generic Naming:** Variables are universally named `v0`, `v1`, `a0`, etc., providing no semantic context.
+
+**Best Quality Aspect:** Function Naming (Score: 5/10)
+- **Why?** Despite the poor quality, the decompiler managed to preserve symbol names for high-level functions like `process_char` and `main`, which provides at least a basic anchor for understanding.
+
+**Most Needs Improvement:** Noise Reduction (Score: 1/10)
+- **Why?** The inclusion of internal decompiler IR and error messages directly in the output code makes it functionally unreadable and unusable.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Handle Lifting Failures Gracefully:** Instead of dumping VEX IR (`PutI`) into the output, the decompiler should insert a placeholder comment or a generic "unknown_side_effect()" call to maintain C syntax validity.
+2.  **Implement Loop Re-rolling:** Detect patterns of repeated arithmetic operations (unrolled loops) and collapse them back into `for` or `while` loops to improve structural intelligibility.
+3.  **Improve 64-bit Integer Recovery:** Detect when two 32-bit registers/parameters are used together to form a 64-bit integer (common in 32-bit ABIs) and merge them into a single `long long` or `int64_t` variable.

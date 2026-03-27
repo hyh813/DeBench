@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `temp`) with no semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`sequential_ops`, `nested_if_2`, `loop_for_fixed`), but helper functions use generic names (`sub_10454`, `sub_10530`). Mixed recovery quality.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX/-1), `1717986919` (division optimization constant), and `74000` appear without explanation. Original had clear arithmetic expressions.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Pervasive `armg_calculate_condition()` calls obscure logic, stack canary checks (`__stack_chk_guard`) add noise, and redundant variable assignments (`v0 = v1; v1 = v2`) clutter code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Heavy `goto` usage replaces structured if/else (e.g., `if_elseif_long`, `switch_large`). Loops use `do-while` with labels instead of clean `for/while` constructs. Original `-O0` should preserve structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but some functions have excessive parameters (`sequential_ops` shows `a0, a1, a2, a3` when only 3 needed). Helper functions like `double_value` recovered well.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent `LABEL_XXXX` forward jumps disrupt top-to-bottom reading. Functions like `if_elseif_long` have 6+ labels creating spaghetti-like flow instead of linear if-else chains.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate condition checks appear (e.g., `armg_calculate_condition` called multiple times with same arguments). Some redundant variable copies (`v0 = a0; result = v0`) add no value.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Original `int` types converted to `unsigned int` inconsistently. Some `char` types appear where `int` expected (`char a1` in `op_shl`). Signed/unsigned semantics lost in many functions.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Stack arrays shown as individual variables (`v0`, `v1`, `v2`...`v11` in `loop_multi_exit`). No struct recovery visible. Original array `int arr[] = {10,20,30,40,50}` becomes scattered variables.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Implicit casts throughout (`(char)v0 & 1`). Pointer arithmetic visible in `loop_break` (`vvar_2{r64|4b} + 4`). Function pointer calls use `goto` instead of proper call syntax.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original had extensive documentation explaining each function's purpose, test cases, and expected behavior. Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Control flow patterns (switch-case, for-loops, if-else chains) not recognized as idioms. `armg_calculate_condition` calls indicate pattern matching failure. No algorithm identification.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `armg_calculate_condition()` calls are unexplained analysis artifacts. No warnings about uncertain decompilation. `goto a0` in `call_func_ptr` is dangerous but unflagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). Error conditions not explained. Original test validation comments completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g_23008`, `GLIBC_2.4::__stack_chk_guard`) referenced without context. Callback relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by control flow level (L1/L2/L3). Original had clear section headers organizing test categories.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires GLIBC_2.4 stubs, `__stack_chk_guard`, and `armg_calculate_condition` implementations. External dependencies (`__aeabi_idiv`, `__printf_chk`) not documented. Won't compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+6+4+5)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (1+3+3+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.20/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **`armg_calculate_condition()` calls** obscure all conditional logic - these are analysis artifacts that should be converted to standard C comparisons
+- **Variable names are entirely generic** (`v0`, `v1`, `a0`) - no semantic recovery from usage patterns
+- **Goto-based control flow** replaces structured if/else/switch in complex functions like `if_elseif_long` and `switch_large`
+- **Zero comments** - complete loss of original documentation explaining function purpose and test cases
+- **Stack arrays decomposed** to individual variables (`v0` through `v11` in `loop_multi_exit`) instead of recovered as arrays
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test function names were preserved from debug symbols (`sequential_ops`, `nested_if_2`, `loop_for_fixed`), providing some semantic anchor points.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation means readers must reverse-engineer purpose from obfuscated code alone.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Replace `armg_calculate_condition()` with standard C comparisons** - These analysis artifacts should be converted to `if (a > b)` style expressions during final output generation.
+
+2. **Implement usage-based variable naming** - Analyze how variables are used (loop counters, accumulators, flags) to generate semantic names like `i`, `sum`, `is_valid` instead of `v0`, `v1`.
+
+3. **Recover structured control flow from goto patterns** - Implement pattern matching to convert `LABEL` + `goto` sequences back to if/else/switch/for/while constructs, especially at `-O0` where original structure should be preserved.

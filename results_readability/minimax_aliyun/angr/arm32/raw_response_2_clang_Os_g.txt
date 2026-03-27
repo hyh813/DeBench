@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v0`, `v1`, `v2`, `ptr`, `v3`, `v4` with register annotations (e.g., `// r0`, `// r1`, `// [bp-0x4]`). No semantic meaning is conveyed - the original names like `x`, `y`, `z`, `sum`, `i`, `n` are completely lost.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Most functions use address-based names (sub_4003f8, sub_400498, etc.) instead of meaningful names. While some functions like `process_char`, `process_int`, `process_double` retain original names, the majority are unrecognizable. The original function `double_value` at the start is not even decompiled separately.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Some literals like ASCII values (65 for 'A', 32 for lowercase offset) are present but not explained. Magic numbers like 65535 for short masking are used. The decompilation hardcodes test results (e.g., `printf("DT-L1-01 (process_char): %c\n", 97);`) rather than showing the computation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution from register annotations throughout (e.g., `unsigned int v1; // r1`, `unsigned int v0; // [bp-0x4]`). Many redundant intermediate variables and casts obscure the logic. The code contains approximately 3575 lines vs 830 original lines - a 4.3x expansion factor.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive use of goto statements and do-while loops where for loops would be more natural. Example: `do { v1 = v0; v3 = a0 + 1; ... } while (i != 1);` instead of `for` loop. The original simple `for (int i = 0; i < n; i++)` is unrecognizable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but the test functions (test_data_types_l1, test_array_types, etc.) contain massive inlined code blocks with local variable declarations that should be separate functions. The test function at 0x4009ec has over 40 local variables.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but has goto statements disrupting flow. Forward jumps into loop bodies present. Some early returns but overall moderate non-linearity.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy - the same computation patterns are repeated. Loop patterns show common subexpression elimination artifacts. Dead code not eliminated (e.g., unused variable assignments).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type degradation - almost all types are `unsigned int` regardless of original type. Original types like `char`, `short`, `float`, `double`, `long long`, `_Bool` are completely lost. Example: `process_char(unsigned int a0)` should be `char process_char(char c)`. Signed/unsigned distinction often wrong.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs recovered as generic `struct_0`, `struct_1` with field names `field_0`, `field_1`, `field_4`. Original field names like `x`, `y`, `z`, `data`, `next`, `left`, `right` are completely lost. Union types not properly distinguished from structs.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present. Pointer arithmetic not properly typed. Function pointers treated as regular pointers. Example: `goto a0;` in ptr_func_simple is type-unsafe. No const correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated register/stack variable comments present. No algorithm explanation, no decompilation confidence indicators, no API contracts. The comment `// r0`, `// r1` style annotations provide no semantic value.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns like linked list traversal are technically recognizable through the pointer chasing but not explicitly named or documented. No design pattern recognition (State, Strategy, etc.). Original algorithm names lost.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertain calls or unusual patterns. Indirect function calls (like through function pointers) are not flagged. No warnings about potential undefined behavior. The code presents everything as confident when many things are uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions documented. No invariant recognition. Original assertions and error conditions not recovered. The volatile behavior in volatile_access is not indicated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are visible in the code but relationships not documented. No call graph information, no indication of who calls whom. The relationship between test functions and tested functions not clear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are grouped by address but not logically organized by functionality. The original grouping by data types, arrays, pointers, composites is lost. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many `extern` declarations present for undefined symbols (g_413008, g_402453, etc.). Would require significant patching to compile. Dependencies on libc functions visible but not documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.1/10
+
+**Critical Defects:**
+- Variable names are completely generic (v0, v1, v2, ptr) - original names like `sum`, `i`, `n`, `x` lost
+- Type precision severely degraded - all types become `unsigned int`, losing char, short, float, double, long long
+- Struct field names lost - original fields like `x`, `y`, `z`, `data`, `next` become `field_0`, `field_1`, `field_4`
+- Function names mostly address-based (sub_4003f8) instead of semantic names
+- Control flow uses goto/do-while instead of natural for/while loops
+- No comments explaining algorithms or indicating decompilation confidence
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 4/10)  
+- Despite using goto, the basic execution flow is traceable and the logic can be followed with effort
+
+**Most Needs Improvement:** Type System Fidelity (scored 2.7/10)  
+- Types are completely generic, structs/union fields are generic, and type safety is compromised. This is the most severe degradation from the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - Variables used as loop counters should be named `i`, `j`, `k`; variables used as sizes should be `n`, `size`, `len`
+2. **Recover original types** - Use size analysis and instruction patterns to infer char (8-bit), short (16-bit), int (32-bit), long long (64-bit), float, double
+3. **Recover struct field names** - Analyze access patterns and offsets to infer field names like `x`, `y`, `data`, `next` based on typical C struct layouts

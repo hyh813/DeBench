@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `v3`, `a1`, `a2`, and `mem`. There is no semantic recovery; for example, in `local_array`, the array pointer is named `v2`, and the loop counter is `v4`, completely obscuring the original `arr` and `i`.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: The decompiler successfully preserved the original function names (e.g., `double_value`, `local_vars`, `heap_basic`), which accurately reflect the source. However, the readability is significantly hampered by incorrect function signatures that include unused arguments (e.g., `heap_basic(int64_t a1, int64_t a2, ...)`).
+
+**3. Literal Clarity:** Score: 3/10
+Justification: The code is littered with magic numbers and compiler artifacts, such as `0xfffffffe`, `0x100000000`, and `4080`. Most critically, in the `test_...` functions, function calls are replaced by their computed results (e.g., `local_vars(5)` becomes `20`), making the literals misleading and hiding the actual logic flow.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Significant noise is present, including incorrect architecture-specific intrinsics like `__readfsqword(40)` (x86 stack canary on an ARM64 binary) and `__asm_hlt()`. Redundant bitwise operations like `& 0xfffffffe` appear in simple arithmetic (e.g., `2 * a1`), adding confusion.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While simple loops are generally recovered as `while` loops, complex structures like `linked_list_heap` rely on `goto` statements (`lab_0x1877`) instead of natural control flow. The logic for Variable Length Arrays (VLA) is obscured by complex stack pointer arithmetic rather than clear array indexing syntax.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: Although functions are separated, the decomposition quality is poor due to incorrect parameter lists. Functions like `heap_array` are defined with 4 arguments (`a1` through `a4`) when the source only has 1, exposing implementation details or register spilling artifacts as parameters.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but forward jumps and `goto` labels in functions like `linked_list_heap` disrupt the linear flow. The stack setup code in functions like `vla_stack` is verbose and interrupts the logical reading of the function's intent.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: The decompiler performs aggressive constant propagation in the `test_...` functions (e.g., replacing `local_array(2)` with its return value), which eliminates the *logic* rather than just redundancy. This makes the code appear to do nothing but print hardcoded numbers, severely impacting understanding of the program's behavior.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are largely degraded to generic `int64_t` and `int32_t`. Specific types like `size_t` are lost, and pointer types are often generic (e.g., `int64_t *` used for `char *` or struct pointers). Signedness information is inconsistent.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: There is a complete failure to recover composite types. Structs like `Point`, `Node`, and `TreeNode` are completely lost. For example, `heap_struct` allocates 8 bytes and accesses it via raw pointer casts (`*(int32_t *)mem`), completely missing the semantic `p->x` and `p->y` structure.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts, such as casting `int64_t` to function pointers or accessing `malloc`'d memory as raw byte arrays. The use of `__readfsqword` on an ARM64 target represents a type/architecture safety violation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic. The only comments present are address ranges (e.g., `// Address range: 0x1000 - 0x101b`) and auto-generated headers, which provide no semantic value to the reader.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms are not recognized. The linked list traversal in `linked_list_heap` is presented as raw pointer manipulation and `goto` jumps rather than a clear traversal pattern. Memory operations like `memset` are inlined as `__asm_rep_stosb_memset` rather than standard library calls.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag anomalies. For instance, it confidently presents `__readfsqword` usage on ARM64 without warning, and it presents the inlined constants in test functions as normal code, failing to indicate that the control flow has been flattened.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions or postconditions. Checks like `if (arr == NULL) return -1;` are present in the code but are not explicitly documented as contracts or assertions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: While function calls are visible, the aggressive inlining in the `test_...` functions breaks the call graph visibility. It is difficult to see that `test_stack_memory` calls `local_vars` because the call is replaced by the literal `20`.
+
+**17. Module Organization:** Score: 7/10
+Justification: The functions are listed in a logical order (roughly matching the source file order), and prototypes are provided at the top. The organization is acceptable, even if the content within the functions is not.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile without significant modification. The use of x86 intrinsics (`__readfsqword`) in an ARM64 context, non-standard inline assembly (`__asm_hlt`), and undefined references to `g21` make it non-compilable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.5/10
+
+**Critical Defects:**
+- Composite types (structs) are completely unrecovered, replaced by raw `malloc` sizes and pointer arithmetic.
+- Test functions (`test_stack_memory`, etc.) have had their logic inlined away, leaving only hardcoded print statements.
+- Architecture mismatch: uses x86 stack canary intrinsic `__readfsqword` for an ARM64 binary.
+- Variable naming is entirely generic (`v1`, `v2`), providing no semantic context.
+- Function signatures are incorrect, containing numerous unused arguments (`a2`, `a3`, `a4`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)
+- The decompiler successfully preserved the original function names from the source symbols, which is the primary anchor for understanding the code.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The total failure to recover `Point`, `Node`, or `TreeNode` structures reduces complex data manipulation to obscure pointer math, making the code nearly impossible to understand at a high level.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Implement Structure Recovery:** Analyze `malloc` sizes and access patterns (offsets) to reconstruct `struct` definitions instead of using raw pointer arithmetic.
+2.  **Disable Aggressive Constant Propagation for -O0:** When debug symbols or optimization level indicates `-O0`, preserve function calls in test harnesses to maintain the logical flow of the program.
+3.  **Fix Architecture-Specific Intrinsics:** Correctly map stack canary checks and memory barriers to the target architecture (ARM64) instead of defaulting to x86 equivalents like `fs` segment access.

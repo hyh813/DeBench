@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v0`, `v1`, `temp_1`) with zero semantic meaning. For example, `param_macro_constants(int a1)` should have `size` as the parameter name based on source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved accurately (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). Only startup helpers use generic names (`sub_10438`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `1024`, `64`, `512` appear without named constants. String format references use opaque names (`asc_11D6C`, `aPpL201D`) instead of inline strings.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Verbose stack annotations (`// [sp-4h] [bp-4h] BYREF`) clutter every function. Type casting noise like `(_DWORD *)` and `(__int16)` appears frequently.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control structures well-recovered with natural if-else and do-while loops. `param_asm_clobber` shows clear loop pattern matching original assembly logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches original source well. No excessive inlining or fragmentation; each test function remains separate and cohesive.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with minimal forward jumps. Some functions have complex stack variable layouts that slightly disrupt flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: O1 optimization caused constant folding (`call_macro_constants` returns `64` directly instead of calling `param_macro_constants(2048)`). Otherwise clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `void*`, `size_t`) with `__fastcall` calling convention noted. Arrays degrade to pointers; signed/unsigned distinctions sometimes lost.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited structs in this code. Arrays shown as indexed pointer access (`*(_DWORD *)(v3 + 4)`) rather than proper array types.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `param_asm_clobber((int)&v2, 5)` and `param_asm_simd((int)v1, (int)v2, (int)v3)` cast pointers to integers.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments in decompiled code. Original source had extensive documentation (section headers, test descriptions) completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition or algorithm identification. Atomic operations recovered but not identified as synchronization primitives.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External function failures marked (`FAILED to decompile: __imp_sysconf`). No other anomaly indicators for potentially problematic patterns.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Function contracts completely absent despite original having clear expectations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls clear and traceable. Global variable usage shown (`global_var`). Callback relationships not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source structure. Preprocessing tests grouped, then assembly tests, then main.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 10 external functions failed to decompile (`__imp_mmap`, `__imp_printf_chk`, etc.). Requires stubs for all system calls to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+6+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (8+8+7+7)/4 = 7.50 × 0.25 = 1.875
+Level 3 (Type):        (6+6+5)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (7+7+5)/3   = 6.33 × 0.10 = 0.633
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.89/10
+```
+
+**Overall Readability Score: 5.9/10**
+
+### Critical Defects:
+- **Variable `a1` should be named `size`** in `param_macro_constants` based on usage pattern and source comparison
+- **Zero comments** despite original source having extensive documentation (section headers, test descriptions, expected values)
+- **10 external functions failed to decompile** (`__imp_mmap`, `__imp_sysconf`, `__imp_printf_chk`, etc.) requiring manual stubs
+- **Unsafe pointer-to-int casts** throughout assembly recovery functions (`(int)&v2`, `(int)v1`)
+- **String literals replaced with opaque references** (`asc_11D6C`, `aPpL201D`) instead of inline strings
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making code navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation despite original having extensive comments explaining test purposes and expected values
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable name inference** - Analyze usage patterns and cross-reference with debug symbols to recover meaningful names (`a1` → `size`, `a2` → `increment`)
+2. **Recover and preserve source comments** - Extract DWARF debug info comments and embed them in decompiled output, especially for test functions with expected values
+3. **Improve external function resolution** - Better library function recognition to avoid `FAILED to decompile` markers for standard library calls (`mmap`, `printf`, `sysconf`)

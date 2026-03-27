@@ -1,0 +1,114 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `ptr`, `a0`, and `p`. There is no semantic information retained (e.g., `sum`, `index`, `len` are lost).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are successfully recovered from symbols (e.g., `process_char`, `main`, `test_data_types_l1`), accurately reflecting the original source's intent.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Floating-point constants are exposed as raw hex integers (e.g., `0x3fc00000` for 1.5f) and magic numbers like `97` (ASCII 'a') are not converted back to character literals, obscuring meaning.
+
+**4. Noise Reduction:** Score: 1/10  
+Justification: The output is heavily polluted with low-level IR artifacts such as `AddV`, `MulV`, `PutI`, and `[D] Unsupported...` markers, making it difficult to distinguish high-level logic from decompiler internals.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Control flow is unnatural; function pointer calls are represented as `goto a0`, and simple loops are often represented as complex `do-while` structures or unrolled vectorized code that is hard to follow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are correctly separated and correspond to the source structure, maintaining appropriate granularity despite the optimization level.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: The code does not read linearly; it contains forward jumps, nested `do-while` loops representing vectorized operations, and computed jumps that disrupt top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: While the decompiler didn't add redundancy, it faithfully represents compiler optimizations like constant propagation (e.g., printing `97` instead of `process_char('A')`), which obscures the original source logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Types are significantly degraded; floating-point operations are cast to `unsigned long long` or `int`, and SIMD/vector operations are represented as `uint128_t` rather than distinct vector types.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Composite type recovery failed catastrophically in functions like `binary_tree_sum`, where a single recursive structure is exploded into 45 nearly identical generic structs (`struct_0` through `struct_44`).
+
+**11. Type Safety:** Score: 2/10  
+Justification: The code uses unsafe patterns, such as `goto a0` to implement indirect function calls and extensive casting of floating-point registers to integer types (`int v1; // xmm0`).
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are no meaningful comments explaining logic; only decompiler error markers like `[D] Unsupported...` are present, which do not aid understanding.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Standard idioms are not recognized; for example, `array_string` (strlen) is decompiled into a manual pointer arithmetic loop rather than being identified or simplified.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The decompiler explicitly marks unsupported instructions with `[D] Unsupported...`, which is honest, but it fails to explain the impact on the program's logic or provide workarounds.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: There is no recovery of preconditions, postconditions, or invariants; parameter validation logic is obscured by the low-level representation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Cross-references are readable because function names are preserved; calls like `test_data_types_l1()` are clear, even if the parameter passing is obscured.
+
+**17. Module Organization:** Score: 5/10  
+Justification: The output is a flat list of functions in address order; there is no logical grouping or indication of which functions belong to which test modules (e.g., Data Types vs. Arrays).
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: The code is not compilable due to the use of IR intrinsics (`AddV`, `MulV`), `goto` for function calls, and non-standard type constructs.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 3.75
+L2_avg: 4.75
+L3_avg: 2.00
+L4_avg: 2.00
+L5_avg: 4.33
+
+Overall = (3.75 × 0.30) + (4.75 × 0.25) + (2.00 × 0.20) + 
+          (2.00 × 0.15) + (4.33 × 0.10)
+Overall = 1.125 + 1.1875 + 0.4 + 0.3 + 0.433
+Overall = 3.45 / 10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.5/10
+
+### Critical Defects (Bullet Points)
+- **Type Explosion**: Function `binary_tree_sum` generates 45 redundant struct definitions (`struct_0` to `struct_44`) instead of recovering the single recursive `TreeNode` type.
+- **IR Artifacts**: Pervasive use of low-level IR operations like `AddV`, `MulV`, and `PutI` instead of standard C operators (`+`, `*`, `=`).
+- **Unsafe Control Flow**: Function pointer calls are decompiled as `goto label` (e.g., `goto a0`), which is valid in the decompiler's IR but invalid and confusing in C.
+- **Literal Obfuscation**: Floating-point constants are represented as hex integers (e.g., `0x3fc00000`), and character constants are integers (e.g., `97`), removing semantic context.
+- **Struct Field Loss**: All composite types use generic field names (`field_0`, `field_8`), completely losing the semantic meaning of fields like `x`, `y`, `data`, or `next`.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (9/10)**
+- **Why?** The decompiler successfully preserved the original function symbols from the binary, making the high-level flow of the program traceable despite the poor implementation details.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Composite Type Recovery (1/10)**
+- **Why?** The failure to unify recursive or pointer-heavy structures into a single definition results in an explosion of meaningless types, rendering complex data structures like trees and graphs unreadable.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Implement Type Unification**: Aggressively merge struct definitions that share identical layouts or access patterns to prevent the "struct explosion" seen in recursive data structures.
+2.  **Lift IR Operations to C**: Replace pseudo-IR intrinsics (`AddV`, `MulV`) with standard C arithmetic operators (`+`, `*`) and appropriate type casts to improve familiarity.
+3.  **Recover Floating-Point Literals**: Add a pass to detect hex integers that correspond to IEEE 754 floating-point bit patterns and convert them back to `float` or `double` literals.

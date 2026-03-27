@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Despite compilation with `-g`, variables are generic (`a0`, `v0`, `v1`) instead of original names (`x`, `sum`, `i`). While `ptr` and `cur` appear occasionally, the vast majority are meaningless indices.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most user-defined functions like `double_value`, `process_char`, and `test_data_types_l1` are recovered correctly. Runtime stubs are named `sub_...`, which is standard and acceptable.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: Simple arithmetic is obscured by complex bitwise literals; e.g., `4294967294` (0xFFFFFFFE) and `18446744073709551614` appear instead of `* 2` or `<< 1`. Array indexing uses `__ROL__` macros with magic numbers instead of clear multiplication.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is polluted with `__ROL__` (Rotate Left) macros used for simple shifts and multiplications (e.g., `__ROL__(i, 2)` for `i*4`). This is significant noise that obscures the simple logic of the `-O0` source.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Loop structures (`for`, `while`) and `if/else` blocks are generally recovered correctly. However, the logic inside is obfuscated by the bitwise operations mentioned above, making the flow harder to follow than necessary.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function granularity matches the source perfectly. There is no inlining or outlining; every function in the source corresponds to a function in the decompiled output.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads top-to-bottom with appropriate early returns. There are no confusing forward jumps or spaghetti structures, which is expected for `-O0`.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no loop unrolling or dead code. The code structure is clean, with the only redundancy being the decompiler's failure to simplify expressions.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Floating point logic is completely lost; `process_float` takes no arguments and returns uninitialized `v0`, and `process_double` returns a global address `&g_403000` instead of performing division. Pointers are frequently cast to `unsigned long` for arithmetic.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Structures are recovered but with generic names (`struct_0`, `struct_1`) and fields (`field_0`, `field_8`). While the offsets (0, 8) are correct, semantic meaning is lost.
+
+**11. Type Safety:** Score: 3/10
+Justification: Pointer arithmetic is performed on `unsigned long` types (e.g., `a0 + (__ROL__(i, 2)...)`) rather than using pointer types, which is unsafe and idiomatic of raw assembly lifting rather than high-level C recovery.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are sparse and mostly limited to `/* do not return */` markers. There are no comments explaining the complex bitwise operations or the missing floating-point logic.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: The decompiler fails to recognize basic idioms. Left shifts (`x << 1`) are represented as `__ROL__(x, 1) & MASK`, and array indexing (`i * 4`) is represented as `__ROL__(i, 2) & MASK`. This is a severe failure in idiom recognition.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: There are no warnings about the obviously incorrect floating-point functions or the obfuscated integer arithmetic. The decompiler presents the broken code confidently.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the non-null requirement for pointers is not noted.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear (e.g., `main` calls `test_data_types_l1`). The relationships between functions are easy to trace despite the poor internal logic.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a flat order, roughly corresponding to the source. There is no logical grouping or separation of concerns beyond the original order.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to the use of non-standard `__ROL__` macros, undefined global variables (`g_...`), and incorrect function signatures for floating-point operations.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 8 + 2 + 3) / 4 = 4.0
+L2_avg = (6 + 9 + 8 + 9) / 4 = 8.0
+L3_avg = (2 + 5 + 3) / 3 = 3.33
+L4_avg = (2 + 1 + 2 + 1) / 4 = 1.5
+L5_avg = (7 + 6 + 2) / 3 = 5.0
+
+Overall = (4.0 × 0.30) + (8.0 × 0.25) + (3.33 × 0.20) + 
+          (1.5 × 0.15) + (5.0 × 0.10)
+Overall = 1.2 + 2.0 + 0.666 + 0.225 + 0.5
+Overall = 4.59
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 4.6/10
+
+### Critical Defects (Bullet Points)
+- **Floating Point Logic Loss**: `process_float` and `process_double` are decompiled incorrectly; arguments are missing and logic is replaced by returning global addresses or uninitialized registers.
+- **Idiom Misinterpretation**: Simple arithmetic operations like `x * 2` or `i * 4` (array indexing) are obfuscated into complex bitwise expressions involving `__ROL__` (Rotate Left) and large hex masks.
+- **Debug Symbol Ignorance**: Despite compiling with `-g`, variable names are generic (`a0`, `v0`) rather than the original names (`x`, `sum`, `i`).
+- **Unsafe Pointer Arithmetic**: Pointer math is performed on `unsigned long` integers rather than typed pointers, losing type safety and readability.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (Score: 9/10)**
+- **Why?** The decompiler perfectly preserved the function boundaries and granularity of the original source, mapping every source function to a decompiled function without inlining or fragmentation.
+
+### Most Needs Improvement (Single Dimension)
+- **Idiom Recognition (Score: 1/10)**
+- **Why?** The failure to recognize basic shifts and multiplications, replacing them with `__ROL__` macros and masks, makes the code significantly harder to read than the assembly itself.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Fix Constant Folding/Idiom Matching**: Implement a pass to convert patterns like `__ROL__(x, 1) & 0xFF...FE` back into `x * 2` or `x << 1`.
+2.  **Improve Floating Point Lifting**: Investigate why floating-point arguments and operations are dropped or replaced with global references; ensure the IR lifting correctly handles FP registers and ABI conventions.
+3.  **Utilize Debug Symbols**: Ensure that when `-g` is present, the variable names from the symbol table are applied to the decompiled output instead of generic `v0`/`a0` names.

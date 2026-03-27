@@ -1,0 +1,142 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Almost all variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `v10`, `v11`, `v12`, `v13`, `v14`, `v15`, `v16`, `v17`, `v18`, `v19`, `v20`, `v21`, `v22`, `v23`, `v24`, `v25`, `v26`, `v27`, `v28`, `v29`. The original source used meaningful names like `count`, `args`, `sum`, `x`, `y`, `a`, `b`, `ptr`, `str`, `arr`, `n`, `p`, `result`. This makes tracking variable purpose extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+Justification: Most test functions preserve their original names: `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, `func_many_args`, `func_mixed_args`, `func_struct_byval`, `func_struct_byptr`. However, some helper functions like `func_a` and `func_b` are generic, and internal helpers like `call_weak_fn`, `deregister_tm_clones` are compiler-generated.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: The decompiled code shows computed results as literals (e.g., `return 15;`, `return 50;`, `return 42;`) which represent the expected outputs. However, no original constants or enums from the source are recovered. The magic numbers in the original (like array sizes, loop bounds) are not represented as named constants.
+
+### 4. Noise Reduction
+**Score: 7/10**
+Justification: The code is relatively clean with minimal compiler artifacts. Some noise exists from register allocation naming (e.g., `r0`, `r1`, `r2`, `r3`, `r4` in function signatures) and type prefixes like `_DWORD`, `_BYTE`, `__int64`. However, no obvious debug instrumentation or frame pointer manipulation clutter the output significantly.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural and idiomatic. Loops are properly recovered as `do-while` constructs (e.g., `varargs_func` uses `do { ... } while (count != v3)`). Conditionals are clear `if-else` statements. The `-O0` optimization level means minimal restructuring, making the code closely match the original logic flow.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions are appropriately sized with clear single responsibilities. Each test function (`call_cdecl`, `call_stdcall`, etc.) is separate and focused. The original source's function granularity is well preserved. No 500-line monoliths or over-fragmentation observed.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately (e.g., in `func_struct_byptr`: `if (p) return ... else return -1;`). Some complex loops have multiple variables but the flow is traceable.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No obvious dead code or duplicate expressions. Loop constructs are not excessively unrolled (appropriate for `-O0`). Common subexpression elimination artifacts are minimal. The code is clean and maintainable.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Integer types are generic `int` rather than width-specific types (int32_t, uint64_t). Pointers are properly typed (e.g., `int *p`, `char *s`, `char **arr`). Some `void*` usage where original had specific types (e.g., `param_complex_cast` uses `void *p`). Const correctness is partially preserved (`const char *str`). Function pointer types are properly typed with signatures.
+
+### 10. Composite Type Recovery
+**Score: 7/10**
+Justification: Struct types are recovered: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData`. Field names are preserved (`data[0]`, `data[15]`, `x`, `y`). However, some struct definitions are incomplete or use generic names like `struct` with numbered fields in some places. The core structure is clear.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Generally type-safe code with few unsafe casts. Pointer arithmetic is used appropriately (e.g., `p + 1`, `v2 += 8`). Some casts like `(va_list)v2` in varargs are necessary. No major buffer-overflow-prone patterns or type-confused function pointers. Minor issues don't significantly impact safety.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Almost no comments in the decompiled output. Some auto-generated annotations like "BYREF" for reference parameters and "thunk" for attribute markers exist. No explanation of algorithms, preconditions, or postconditions. The original source had extensive comments explaining each test case which are completely lost.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Basic patterns like loops, conditionals, and function calls are recognized. Standard C idioms like varargs (`va_list`, `va_start`, `va_arg`, `va_end`) are properly identified. However, no higher-level patterns (state machines, algorithms) are named or explicitly documented.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+Justification: Some anomalies are flagged: "positive sp value has been detected, the output may be wrong!" and "local variable allocation has failed, the output may be wrong!" However, these warnings are generic and don't explain the root cause. Many uncertainties are silent - the decompiler presents potentially incorrect code without caveats.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear expectations (e.g., "期望: 15", "期望: 50") which are not recovered. No contract information about what functions require or guarantee.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function call relationships are clear through direct calls (e.g., `test_calling_conventions()` calls `puts()`, `printf_chk()`). However, there's no documentation of who calls what, no call graph information, and no indication of callback relationships (e.g., `param_func_ptr` takes a function pointer but the callback relationship isn't documented).
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically: test functions, parameter passing functions, return value functions, helper functions. Related functions are together. However, it's a single monolithic output without any file separation or namespace structure that might match the original source organization.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+Justification: The code uses standard C constructs and should compile with minimal issues. External dependencies (libc functions like `puts`, `printf`, `strlen`, `memcpy`) are referenced. Some stub functions like `__imp_puts` indicate import table references. The code is structurally compilable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 5 + 7) / 4 = 5.25
+L2_avg = (8 + 8 + 7 + 8) / 4 = 7.75
+L3_avg = (6 + 7 + 7) / 3 = 6.67
+L4_avg = (3 + 5 + 5 + 2) / 4 = 3.75
+L5_avg = (6 + 7 + 8) / 3 = 7.00
+
+Overall = (5.25 × 0.30) + (7.75 × 0.25) + (6.67 × 0.20) + (3.75 × 0.15) + (7.00 × 0.10)
+        = 1.575 + 1.9375 + 1.334 + 0.5625 + 0.7
+        = 6.109 ≈ 6.1/10
+```
+
+### Overall Readability Score: 6.1/10
+
+---
+
+### Critical Defects (Bullet List)
+- **Variable naming is nearly unusable**: All variables use generic names (`v0`-`v29`, `r0`-`r4`) making it extremely difficult to track which variable represents what semantic value
+- **No comments recovered**: The original source had extensive documentation explaining each test case, expected values, and calling convention details - all completely lost
+- **No contract/precondition recovery**: Functions like `param_double_ptr` have implicit requirements (null checks) that aren't documented
+- **Anomalies silently presented**: Some functions have "output may be wrong" warnings but the actual uncertainty isn't explained
+- **Type precision lost**: Generic `int` used throughout instead of width-specific types like `int32_t`
+
+---
+
+### Best Quality Aspect: Structural Intelligibility (L2)
+**Score: 7.75/10**
+The control flow is natural, functions are well-decomposed, code is linear, and redundancy is minimal. At `-O0` optimization, the decompiler successfully recovered the original program structure.
+
+---
+
+### Most Needs Improvement: Semantic Transparency (L4)
+**Score: 3.75/10**
+The decompiled code lacks comments, pattern recognition, anomaly explanation, and contract recovery. This dimension scored lowest because the decompiler provides no semantic context about what the code does or any warnings about uncertain interpretations.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `v2++` in a loop context suggests `counter` or `index`; `*p` dereferencing suggests `pointer` or `ptr`). The original source used `count`, `sum`, `args`, `ptr` - these could be inferred.
+
+2. **Recover comments from debug symbols**: Since this binary was compiled with `-g` (debug info), the decompiler should extract line numbers, variable names, and comments from DWARF debugging information to restore meaningful identifiers and documentation.
+
+3. **Add uncertainty indicators with explanations**: When the decompiler detects ambiguous code (like the "positive sp value" warning), it should provide specific explanations of what might be wrong and what the original code could have been, rather than generic warnings.

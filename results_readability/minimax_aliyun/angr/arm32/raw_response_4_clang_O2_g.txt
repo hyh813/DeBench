@@ -1,0 +1,151 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names. Parameters are named `a0`, `a1`, `a2`, etc. (e.g., `int cdecl_func(unsigned int a0, unsigned int a1)`), while local variables use names like `v0`, `v1`, `v2`, `v3`. At -O0 optimization, the original source uses meaningful names like `a`, `b`, `count`, `x`, `y`. The decompiler provides no semantic inference from usage patterns.
+
+### 2. Function Naming Quality
+**Score: 6/10**
+
+Mixed results: User-defined test functions like `cdecl_func`, `stdcall_func`, `varargs_func`, `test_calling_conventions` are correctly named. However, internal/runtime functions use address-based names like `sub_4003f0`, `sub_400490`. The main test entry points preserve their semantic names, but helper functions are not meaningfully named.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+The code is littered with unexplained magic numbers and opaque string references. For example, `return 4294967295;` (which is -1 as unsigned) appears without explanation. String format pointers like `&g_401460` are referenced but not explained. The literal `15`, `50`, `6` are correctly inlined but lack context about what they represent.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+Severe noise pollution throughout. Register annotations clutter every variable (`// r0`, `// r1`, `// [bp-0x4]`, `// [bp-0x10]`). Artificial type definitions like `typedef struct struct_0 { char field_0; } struct_0;` are inserted. Floating-point helper functions (`__adddf3`, `__aeabi_drsub`, `__floatdidf`) are decompiled in extreme detail with hundreds of variables, making the code nearly unusable.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Most functions have natural control flow with proper loops and conditionals. However, `varargs_func` and `param_varargs` contain confusing pointer manipulations (`ptr = v0 + 1; v7 = ptr + 1;`) that obscure the simple loop logic. The `func_struct_byptr` function has convoluted conditional logic with `armg_calculate_condition` calls.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Function boundaries are correctly preserved. Each function maintains appropriate granularity - the test wrapper functions call their targets correctly. No inlining artifacts where separate functions should be combined, and no over-fragmentation. The decomposition matches the original source structure well.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Most functions read top-to-bottom without excessive jumps. Early returns are used appropriately in functions like `param_array_decay`. The `varargs_func` has some backward jumps for loops but these are recognizable. Generally good linearization with minor issues.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+Some redundancy present: `call_varargs_param` calls `param_varargs(4, 10, 20, 30)` twice unnecessarily. The `test_calling_conventions` function has `printf(&g_401525, 50)` called twice at the end. However, most functions are clean. Loop unrolling is minimal at -O0.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+The decompiler uses `unsigned int` for most parameters, losing the signed/unsigned distinction from the original `int` parameters. Pointers are correctly typed (e.g., `char *a1` in `param_string`). However, function pointers like in `param_func_ptr` are typed as `unsigned int *a0` instead of proper function pointer signatures. Mixed results - basic types recovered but precision lost.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+
+Structures are not properly reconstructed. The decompiler creates artificial types like `typedef struct struct_0 { char field_0; } struct_0;` for `param_ptr_array`. Large struct by-value parameters are expanded to individual parameters (e.g., `func_struct_byval` has 30+ parameters `a0` through `a29`). Original struct names like `LargeStruct`, `SmallStruct` are completely lost.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Several type safety issues exist. The `varargs_func` has confusing pointer casts and manipulations. The `func_struct_byptr` has complex conditional logic with `armg_calculate_condition` that suggests incorrect pointer handling. Unnecessary casts between pointer types are present. The code compiles but has potential undefined behavior in complex pointer arithmetic.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+
+Comments are virtually absent except for register annotations (`// r0`, `// [bp-0x4]`). No explanation of what functions do, no algorithm documentation, no recovery confidence indicators. The comment `/* do not return */` appears but provides no context about why. Auto-generated noise dominates over useful content.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+
+No design patterns or algorithms are identified or named. The varargs pattern, callback pattern, and struct passing patterns are not recognized as idioms. The decompiler doesn't identify common C patterns like the varargs usage pattern or the double-pointer modification pattern.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+No suspicious code is flagged. The complex `armg_calculate_condition` calls in `func_struct_byptr` and floating-point functions are presented as normal code without any warning. Indirect calls that couldn't be resolved are not indicated. The decompiler silently produces incorrect or confusing code.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No preconditions, postconditions, or invariants are documented. The original source has implicit contracts (e.g., `func_struct_byptr` requires `p != NULL`) that are not recovered. No null-check documentation or error condition explanations are provided.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Function call relationships are visible through direct calls (e.g., `test_calling_conventions()` calls various test functions). However, no documentation of "called by" or "calls" relationships. Global variable usage is indicated with `extern` but not explained. Some relationships are inferable but not explicit.
+
+### 17. Module Organization
+**Score: 3/10**
+
+Functions are organized by address (e.g., `sub_4003f0`, `cdecl_func`, `call_cdecl`) rather than logically grouped. The original source groups functions by category (calling conventions, parameter passing, return values), but this organization is lost. Runtime helper functions are interspersed with user code.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+
+The code has `extern` declarations for external references. Some functions would compile standalone (simple arithmetic functions), but the floating-point helper functions have severe issues (undefined variables like `v1`, `v3` used uninitialized). Dependencies on libc functions (`printf`, `puts`) are not declared. Partial compilation capability.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+6+3+2)/4 = 3.25
+L2_avg = (6+8+7+6)/4 = 6.75
+L3_avg = (5+3+4)/3 = 4.0
+L4_avg = (2+3+2+2)/4 = 2.25
+L5_avg = (5+3+5)/3 = 4.33
+
+Overall = (3.25 × 0.30) + (6.75 × 0.25) + (4.0 × 0.20) + (2.25 × 0.15) + (4.33 × 0.10)
+        = 0.975 + 1.6875 + 0.8 + 0.3375 + 0.433
+        = 4.23/10
+```
+
+### Overall Readability Score: 4.2/10
+
+### Critical Defects
+
+1. **Variable naming**: All parameters use generic `a0`, `a1`, `a2` instead of semantic names; local variables use `v0`, `v1`, `v2` with no purpose indication
+2. **Noise pollution**: Floating-point functions (`__adddf3`) are decompiled with hundreds of spurious variables and register annotations, making them unreadable
+3. **No struct recovery**: Large structures passed by value are expanded to 30+ individual parameters, losing all semantic meaning
+4. **No comments**: Zero meaningful comments explaining function purpose, algorithm logic, or recovery confidence
+5. **Type precision loss**: All `int` parameters become `unsigned int`, losing signed/unsigned distinction from source
+
+### Best Quality Aspect
+
+**Function Decomposition (8/10)** - Function boundaries are correctly preserved with appropriate granularity matching the original source structure.
+
+### Most Needs Improvement
+
+**Semantic Transparency (2.25/10)** - The decompiler provides virtually no comments, pattern recognition, anomaly indication, or contract recovery. Combined with poor variable naming, the code is semantically opaque.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage**: At -O0, analyze how variables are used (arithmetic, indexing, comparison) to infer semantic names like `packet_size`, `index`, `count`
+2. **Suppress or abstract floating-point helpers**: The `__adddf3` and similar functions should either be omitted, summarized, or presented as compiler intrinsics with minimal detail
+3. **Recover struct types**: Detect sequential parameter patterns (especially for large structs) and reconstruct the original struct type with field names rather than expanding to individual parameters

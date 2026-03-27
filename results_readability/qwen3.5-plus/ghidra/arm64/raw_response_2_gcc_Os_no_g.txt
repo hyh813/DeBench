@@ -1,0 +1,104 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `lVar2`, `uVar1` with zero semantic meaning. Original source had meaningful names (`x`, `arr`, `n`, `sum`, `current`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`double_value`, `process_char`, `array_1d_stack`, `struct_simple`). However, some runtime functions use generic names (`FUN_001006d0`, `FUN_0010087c`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions optimized to print constants directly (`0x61`, `0xb`, `300`) instead of showing actual function calls. Magic numbers like `0x28`, `0x6e` appear without explanation for array strides.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`___stack_chk_guard`), compiler runtime calls (`__printf_chk`, `__cxa_finalize`), and multiple "WARNING: Removing unreachable block" annotations clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Computational functions retain reasonable loop structures, but test functions show constant folding that obscures original logic. Some `for` loops converted to `do-while` patterns (e.g., `array_string`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Test functions bloated with excessive local variables (`local_534`, `uStack_530`, `local_52c`... 30+ locals). Computational functions maintain reasonable granularity but test functions are monolithic.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with clear function boundaries. Some forward references in test function local variable setup disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions contain redundant printf calls with pre-computed values instead of showing actual computation. Array initialization shows duplicate patterns (e.g., `array_3d` unrolled manually).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Critical type errors: `process_ll` returns `long` instead of `long long`, `process_ld` returns `void` instead of `long double`, pointer types degraded to `undefined8*`. Signed/unsigned distinctions lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - all structs represented as `int*` or `long` with no field names. `struct_simple` accesses `param_1[0]`, `param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`, `p->z`. Bitfields converted to manual bit operations.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts throughout (`(int*)0x0`, `(undefined4 *)`). Function pointer signatures degraded (`code *UNRECOVERED_JUMPTABLE`). Pointer arithmetic on generic types without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only decompiler header comments present. No algorithm explanations, no parameter documentation. Original source had extensive comments explaining each test case that are completely absent.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition - linked list traversal (`linked_list`), tree recursion (`binary_tree_sum`), and graph traversal appear as generic loops without identification.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warnings about jumptable recovery failures ("WARNING: Could not recover jumptable at 0x00100fcc. Too many branches"). Stack check warnings and unreachable block warnings present.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions or error condition documentation. Original source had clear test expectations that are lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Callback relationships unclear (`ptr_func_simple` shows `UNRECOVERED_JUMPTABLE`). No call graph information.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. No header file structure. Runtime functions mixed with user code without separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References external functions (`__printf_chk`, `__libc_start_main`, `__multf3`) requiring stubs. Some undefined symbols. Would need significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50
+Level 2 (Structural):  (6+5+7+5)/4 = 5.75
+Level 3 (Type):        (3+2+3)/3   = 2.67
+Level 4 (Semantic):    (2+2+6+2)/4 = 3.00
+Level 5 (Contextual):  (5+4+4)/3   = 4.33
+
+Overall = (4.50 × 0.30) + (5.75 × 0.25) + (2.67 × 0.20) + 
+          (3.00 × 0.15) + (4.33 × 0.10)
+        = 1.35 + 1.44 + 0.53 + 0.45 + 0.43
+        = 4.20/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Complete struct/union type loss** - All composite types degraded to `int*` or `long` with no field names (e.g., `struct_simple` accesses `param_1[0]` instead of `p->x`)
+- **Incorrect return types** - `process_ll` returns `long` instead of `long long`, `process_ld` returns `void` instead of `long double`
+- **Test functions optimized away** - Actual computations replaced with constant values, losing educational value
+- **Generic variable naming** - All parameters named `param_1`, `param_2` with no semantic meaning
+- **Missing documentation** - Original source comments explaining each test case completely absent
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved accurately, allowing identification of purpose despite other degradation.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union definitions with field names, making complex data structure code nearly unreadable.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct/union type inference** - Analyze memory access patterns to recover field names and types (e.g., `param_1[0]`, `param_1[1]`, `param_1[2]` should suggest a 3-field struct)
+2. **Preserve original type signatures** - Don't degrade `long long` to `long` or `long double` to `void`; maintain 64-bit and extended precision type information
+3. **Add semantic comment recovery** - When debug symbols exist (-g flag), extract and preserve original source comments explaining function purpose and test expectations

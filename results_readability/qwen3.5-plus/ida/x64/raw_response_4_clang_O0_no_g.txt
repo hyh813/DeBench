@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `v1`, `v2`, `overflow_arg_area`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `s` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `call_cdecl`, `varargs_func`, `test_calling_conventions`). Only a few generic names like `sub_1020` for initialization code.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x28`, `0xA00000005LL`, `0xC800000064LL` appear without explanation. String literals replaced with references (`aCallL206`, `format`, `asc_31EB`) obscuring printf content.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack variable annotations (`[rsp+Ch] [rbp-4h] BYREF`), redundant casts (`(unsigned int)`), and type qualifiers (`__fastcall`, `__noreturn`) add visual noise but don't completely obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as `for` constructs, conditionals as `if-else`. Some awkward patterns like `ret_multi_branch` using nested if instead of switch, but generally follows source structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly. However, `func_struct_byval` has 14 parameters due to struct decomposition, exposing implementation details that should be abstracted.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Test functions have many temporary variables (`v0` through `v25`) but execution flow remains traceable without excessive jumps.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant variable assignments common (`v1 = ...; v2 = v1 + ...`). Some functions create unnecessary temporaries that could be eliminated for clarity.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `int` becomes `__int64`, `char*` becomes `__int64` or `_DWORD*`. Original `LargeStruct` passed as 14 separate `__int64` parameters instead of single struct type.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure. `LargeStruct` with `data[16]` becomes `__int64 a1...a14, char a7` with access via `*((_QWORD *)&a7 + i)`. `SmallStruct` becomes `_DWORD*` losing field names `x`, `y`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(unsigned int)(__int64)`), pointer arithmetic on generic types (`a1 + 8LL * i`), function pointer signatures degraded (`unsigned int (__fastcall *)(_QWORD)`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only auto-generated function headers with register annotations. No algorithm explanations, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern visible but not identified. No recognition of calling convention tests, parameter passing patterns, or return value handling patterns that were explicit in source.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "FAILED to decompile" notices at end for library functions. Warning about "positive sp value has been detected" in `_start`. No inline anomaly warnings for suspicious patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `a1 != NULL` for pointer params). No postcondition inference. Null checks present but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved and traceable. No explicit call graph documentation. String references (`aCallL206`) obscure relationship between printf format and content.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source order generally. No explicit module boundaries or grouping comments. Initialization/termination functions mixed with test code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 6 external functions marked "FAILED to decompile" (`printf`, `strlen`, `memset`, etc.). Would require significant stubbing and type corrections to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  4.99/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects
+- **Struct decomposition failure**: `LargeStruct` passed as 14 separate `__int64` parameters instead of single struct, making `func_struct_byval` signature incomprehensible
+- **Variable naming completely generic**: All variables are `a1`, `a2`, `v1`, `v2` with zero semantic meaning despite -O0 debug compilation
+- **Type precision loss**: `int` degraded to `__int64`, pointer types lost, causing `func_mixed_args` signature mismatch (double/long long not preserved)
+- **String literal obfuscation**: Printf format strings replaced with references (`aCallL206`, `format`) requiring external lookup
+- **No comment recovery**: Zero documentation of algorithm intent, calling conventions, or decompilation confidence
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Original function names like `cdecl_func`, `varargs_func`, `test_calling_conventions` were preserved, providing immediate semantic context for each function's purpose.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)** - Struct types completely lost; `LargeStruct` with named field `data[16]` became 14 anonymous `__int64` parameters with pointer arithmetic access, destroying all semantic meaning.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct types from stack layouts** - Analyze parameter passing patterns to reconstruct composite types instead of expanding to primitive parameters
+2. **Infer variable names from usage context** - Variables used in loop bounds should be named `count`/`limit`, accumulators should be `sum`/`total`
+3. **Preserve string literals inline** - Keep printf format strings visible rather than replacing with opaque references like `aCallL206`

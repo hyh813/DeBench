@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Variables are generic (`param_1`, `param_2`, `uVar1`, `iVar1`) rather than semantic names (`a`, `b`, `sum`). While `param_1` is standard for decompilers, the extensive use of `uVar` and `iVar` in `test_calling_conventions` obscures the logic (e.g., `iVar1` used as a loop counter and accumulator).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully preserved the original function names for the test cases (e.g., `cdecl_func`, `stdcall_func`, `test_calling_conventions`), which makes the high-level intent immediately clear. Only internal runtime functions like `FUN_00011030` remain unnamed.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals are preserved perfectly (e.g., `"CALL-L1-01: %d\n"`), but integer constants are represented in hex (e.g., `0xf` instead of `15`, `0x32` instead of `50`), which requires mental conversion for readability.
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The code is generally clean, with minimal compiler artifacts. The presence of stack canary checks (`__stack_chk_fail_local`) is expected for modern binaries and does not significantly impede understanding, though `undefined4` casts appear frequently.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is highly natural, using `do-while` loops and `if` statements that match the source structure. The execution path is linear and easy to follow, with no confusing `goto` chains or spaghetti logic.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: The decompiler achieved a perfect 1-to-1 mapping of functions. No functions were inlined or split, and the granularity matches the source exactly, making it easy to navigate the codebase.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code reads linearly from top to bottom. There are no forward jumps or computed branches that disrupt the reading flow within the functions.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no apparent dead code or redundant expressions. The logic is concise, and the decompiler effectively removed the overhead of the debug build (`-O0`) in the control flow presentation.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types are often represented as generic `undefined4` or `undefined8` instead of specific C types like `int` or `void*`. For example, `call_cdecl` returns `undefined4` instead of `int`, and pointers are sometimes typed as raw integers, losing semantic context.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Struct recovery failed significantly. `func_struct_byval` is decompiled as `void func_struct_byval(void)`, completely missing the `LargeStruct` argument. The logic inside is reduced to a counter rather than a sum of struct fields. `SmallStruct` is also lost, replaced by raw pointer parameters.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies on raw pointer arithmetic for stack access, particularly in `varargs_func` where it uses `*(int *)(&stack0x00000008 + iVar1 * 4)`. This bypasses type safety mechanisms present in the source (`va_arg`) and is prone to errors if the stack layout changes.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining the logic, algorithms, or data structures. The decompiler output is devoid of the documentation present in the original source (e.g., "场景: [SCENE-ALL]").
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: While calling conventions are named correctly, standard C idioms like `va_list`/`va_arg` are not recognized. The decompiler exposes the underlying stack manipulation mechanism instead of abstracting it into the standard variable argument idiom.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The decompiler does not flag potential issues, such as the suspicious signature of `func_struct_byval` (taking no arguments but accessing stack data) or the raw stack access in `varargs_func`.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the null check in `func_struct_byptr` is present in code but not documented as a contract requirement.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. The relationship between `main`, `test_calling_conventions`, and the specific test functions is obvious and easy to trace.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped, but they appear to be ordered by memory address rather than logical grouping (e.g., all `test_` functions together). However, the file is still navigable.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code uses Ghidra-specific types like `undefined4` and `undefined8`, which are not valid standard C. It would require significant patching (replacing types, adding headers) to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (5 + 9 + 7 + 8) / 4 = 7.25
+L2_avg = (9 + 10 + 10 + 9) / 4 = 9.50
+L3_avg = (6 + 3 + 5) / 3 = 4.67
+L4_avg = (2 + 4 + 3 + 1) / 4 = 2.50
+L5_avg = (8 + 7 + 4) / 3 = 6.33
+
+Overall = (7.25 × 0.30) + (9.50 × 0.25) + (4.67 × 0.20) + 
+          (2.50 × 0.15) + (6.33 × 0.10)
+Overall = 2.175 + 2.375 + 0.934 + 0.375 + 0.633
+Overall = 6.49
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 6.5/10
+
+### Critical Defects (Bullet List)
+- **Struct Argument Loss**: `func_struct_byval` is decompiled as `void func_struct_byval(void)`, completely dropping the `LargeStruct` parameter and replacing the summation logic with a simple counter.
+- **Varargs Idiom Failure**: `varargs_func` uses raw stack pointer arithmetic (`*(int *)(&stack0x00000008...)`) instead of recovering the `va_list`/`va_arg` pattern.
+- **Generic Types**: Extensive use of `undefined4` and `undefined8` instead of concrete types like `int` or `void*` reduces type safety and readability.
+- **Missing Comments**: Complete absence of semantic comments or documentation explaining the purpose of the test functions.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Decomposition (10/10)**
+- **Why?** The decompiler perfectly preserved the function boundaries and granularity from the source, resulting in a clean, modular structure that is easy to navigate.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Composite Type Recovery (3/10)**
+- **Why?** The decompiler failed to recover structure definitions for both large and small structs passed by value, reducing them to void functions or raw pointers and losing the data model entirely.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhance Struct Argument Recovery**: Implement analysis to detect large stack blocks passed to functions and reconstruct them as `struct` parameters rather than hiding them or treating them as void.
+2.  **Recognize Standard Variadic Idioms**: Detect the specific stack access patterns used for `va_list` (e.g., `va_start`, `va_arg`) and replace the pointer arithmetic with the standard C macros for better readability.
+3.  **Refine Type Inference**: Replace generic `undefined` types with specific standard integer types (`int`, `unsigned int`) based on register usage and context clues to improve compilation readiness and semantic clarity.

@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `local_20` instead of semantic names like `dst`, `src`, `buffer`. Only `__stream` and `__ptr` provide type hints but no purpose clarity.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most functions retain original names (`param_strcpy`, `thread_compute`, `consumer_thread`), but some are generic (`FUN_00102020`). Action verbs are preserved where available.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic hex numbers obscure meaning (`0x2a`=42, `0xc`=12, `0x5a`=90, `0xf`=15). String literals referenced as `&DAT_00105019` instead of inline text in many cases.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks repeated in every function (`local_20 = *(long *)(in_FS_OFFSET + 0x28)`). `LOCK()`/`UNLOCK()` macros and `(undefined8 *)` casts add visual clutter.
+
+**Level 1 Average: 4.75/10**
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs, but `param_strcpy` uses `stpcpy` instead of `strcpy` (compiler optimization artifact). Some functions constant-folded (`call_strcpy` returns 8 directly).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Good separation between `param_*` and `call_*` functions. Thread functions properly isolated. Some test logic inlined into caller functions.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but goto labels disrupt flow (`LAB_0010324b`, `LAB_00103d63`). Stack checks at function end create backward references.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Stack check pattern repeated across functions (expected compiler artifact). No obvious dead code. Thread patterns appropriately similar.
+
+**Level 2 Average: 6.5/10**
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined8`, `undefined4`, `ulong` instead of specific types. `param_strlen` incorrectly returns `void` instead of `int`. Pointer types often degraded to generic `void *`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `stat` struct partially recovered (`sStack_a8.st_size`), but many structures become arrays (`local_60[7]`). No explicit struct definitions visible in output.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout (`(pthread_mutex_t *)`, `(undefined8 *)`). Atomic operations use `LOCK()`/`UNLOCK()` macros instead of proper `_Atomic` types. Pointer arithmetic visible.
+
+**Level 3 Average: 4.33/10**
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated warnings present ("WARNING: Subroutine does not return"). No algorithm explanations, API contracts, or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library functions recognized (`strcpy`, `strcmp`, `pthread_create`). Thread and system call patterns identified but not explicitly documented as patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings for unreachable blocks and non-returning subroutines. Architecture mismatch (ARM64 source → x86 decompiled) not indicated. No uncertainty markers for indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Error return values present but undocumented. No precondition/postcondition information. Stack canary checks present but not explained as safety mechanisms.
+
+**Level 4 Average: 4.0/10**
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear within decompiled code. Thread relationships clear through naming. Global variables (`signal_received`, `shared_counter`) referenced but not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Related `param_*` and `call_*` functions adjacent. No header file separation or namespace structure visible.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires external linking (pthread, libc). Missing includes and type definitions. Architecture mismatch would prevent direct compilation. Dependencies not documented.
+
+**Level 5 Average: 5.0/10**
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Overall = (4.75 × 0.30) + (6.5 × 0.25) + (4.33 × 0.20) + (4.0 × 0.15) + (5.0 × 0.10)
+        = 1.425 + 1.625 + 0.866 + 0.600 + 0.500
+        = 5.016
+```
+
+**Overall Readability Score: 5.0/10**
+
+---
+
+### Critical Defects
+
+- **Variable `param_1`, `param_2` should be named `dst`, `src`** based on `strcpy` usage pattern in `param_strcpy`
+- **Hex literals `0x2a`, `0xc`, `0x5a` obscure expected return values** (42, 12, 90) that are documented in source
+- **Type `undefined8` used extensively** instead of recovering `int`, `size_t`, `void*` from usage context
+- **`param_strlen` returns `void` instead of `int`** - critical type recovery failure
+- **No comments explaining decompilation uncertainty** or architecture mismatch (ARM64→x86)
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (7/10)** - Most functions retain original semantic names (`param_strcpy`, `thread_compute`, `consumer_thread`), making high-level purpose immediately clear despite other issues.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments; only auto-generated warnings. No algorithm explanations, API contracts, or confidence indicators to help analysts understand decompilation quality.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement usage-based variable name inference** - Analyze how `param_1` is used in `param_strcpy` (passed to `stpcpy` as first argument) to infer name `dst` from libc function signatures.
+
+2. **Add semantic literal annotation** - Detect common return values (42, 90, 12) and annotate as `/* expected: 42 */` or recover named constants from debug symbols when `-g` flag was used.
+
+3. **Generate decompilation confidence metadata** - Add comments like `/* CONFIDENCE: HIGH - direct library call */` or `/* UNCERTAIN: indirect call at 0x102xxx */` to help analysts prioritize review effort.

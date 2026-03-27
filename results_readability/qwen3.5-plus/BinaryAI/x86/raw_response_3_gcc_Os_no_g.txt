@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `iVar1`, `uVar2`, `local_10`, `puVar5`) with no semantic meaning. Array names like `aiStack_38` indicate storage location but not purpose (should be `arr` or `buffer`).
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`double_value`, `local_vars`, `heap_basic`), but library calls degraded to `FUN_000111b0` (malloc) and `FUN_00011150` (free), obscuring their purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0xf` (15) appear without explanation. String literals preserved well, but hex constants require manual conversion to understand.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks add significant noise (`local_10 = *(int *)(in_GS_OFFSET + 0x14)` followed by validation). Generic function calls (`FUN_000111c0`) and redundant casts pollute the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops preserved as do-while constructs, but VLA/alloca functions degenerate into complex pointer arithmetic. Original `for` loops often transformed into less readable patterns.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved, but some logic lost entirely (`stack_alias` returns constant `0x14` instead of implementing alias detection). Signatures don't always match original intent.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with clear execution flow. Stack canary checks introduce branching but don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary patterns repeat across functions without consolidation. Some expressions duplicated, but no severe dead code observed.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic `int` and `undefined4` replace specific types. Pointer types lack precision (`undefined4 *` instead of `int *`). Struct types completely lost (`Point` becomes `undefined4`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—structs `Point`, `Node`, `TreeNode` not recovered. All struct access converted to pointer arithmetic. No union or nested structure reconstruction.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(undefined4 *)`, `(int *)`) throughout. Pointer arithmetic on generic types. No const-correctness preserved from original source.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of complex logic, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition—malloc/free sequences not identified as memory management. No algorithm or data structure pattern hints provided.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about potentially incorrect decompilation. `stack_alias` returns constant without explanation (logic lost). No uncertainty markers.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `param_1 > 0`). No postcondition inference. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but library functions have generic names. Global variables referenced but not clearly documented. Callback relationships (`global_func_ptr`) unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in somewhat logical order matching source. No clear module separation. Static functions not properly scoped with visibility indicators.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References external functions (`FUN_000111b0`) requiring stubs. Dependencies not documented. Would require extensive modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        4.50 × 0.30 = 1.350
+Level 2 (Structural):     6.00 × 0.25 = 1.500
+Level 3 (Type System):    3.00 × 0.20 = 0.600
+Level 4 (Semantic):       1.75 × 0.15 = 0.263
+Level 5 (Contextual):     4.33 × 0.10 = 0.433
+─────────────────────────────────────────
+Overall Score:                    4.15/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable `param_1`, `iVar1`, `uVar2`** should be named based on semantic usage (e.g., `input_value`, `array_index`, `result`)
+- **Struct types completely lost** - `Point`, `Node`, `TreeNode` all degraded to `undefined4 *` with pointer arithmetic
+- **Library functions unnamed** - `FUN_000111b0` (malloc), `FUN_00011150` (free) obscure memory operations
+- **`stack_alias` function logic lost** - Returns constant `0x14` instead of implementing alias detection
+- **Zero comments** - No explanation of complex VLA/alloca pointer arithmetic or security checks
+
+### Best Quality Aspect:
+- **Code Linearization (scored 7/10)** - Code generally reads top-to-bottom with clear execution flow despite stack canary branching
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (scored 1/10)** - Completely absent documentation makes complex decompilation artifacts impossible to understand
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from access patterns** - Detect struct field access sequences and reconstruct `Point {x, y}`, `Node {data, next}` definitions
+2. **Identify standard library calls** - Map `FUN_000111b0` → `malloc`, `FUN_00011150` → `free`, `FUN_000111e0` → `printf` based on call signatures
+3. **Add decompilation confidence annotations** - Flag uncertain regions (VLA pointer arithmetic, lost logic in `stack_alias`) with comments indicating manual review needed

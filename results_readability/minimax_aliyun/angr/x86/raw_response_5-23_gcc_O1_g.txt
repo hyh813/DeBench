@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `a0`, `a1`, `v0`, `v1`, `ptr`, `idx` throughout. The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` - all lost in decompilation. For example, in `param_asm_clobber`, parameters should be `arr` and `n` but are `ptr` and `a1`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions correctly named like `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, but many use generic addresses like `sub_401030`, `sub_401040`, `sub_4010b0`. The original source had descriptive names for all functions.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some constants recovered: `0x400` (1024), `0x200` (512), `64` are correctly computed. However, `57072` (0xDEF0) appears as magic number instead of `0xDEF0`. The decompiler computed some values but didn't preserve the symbolic constant names from macros.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some unnecessary struct definitions like `struct_0` with `padding_0` fields in startup code, but main functions are reasonably clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with proper if/else and for loops. In `param_asm_clobber`, the loop is correctly recovered as `for (idx = 0; idx < a1; idx += 1)`. Some goto usage in startup code but that's appropriate for that context.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching original source. Each test function (`param_*`, `call_*`) is separate. The original 700+ line source is properly decomposed into individual functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately (e.g., in `param_macro_constants`). No excessive forward jumps disrupting flow in the main functions.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. Computed constants like `57122` (0xDF22) are inlined appropriately. Loop unrolling from original source is correctly recognized and simplified.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `unsigned int` consistently which matches the 64-bit architecture. Some types like `uint128_t` for SIMD operations are correctly identified. Original had `int*` for arrays, decompiler uses `unsigned int` for pointer (as address). Minor type erosion but acceptable.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct definitions present but with generic names like `struct_0`, `struct_1` with `padding_0` fields. The original had no complex structs in the main functions - mostly primitive types. The decompiler incorrectly created struct definitions for what are just stack variables.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Pointer arithmetic is used correctly in `param_asm_clobber` (`ptr + idx * 4`). Some casts present but nothing dangerous. The atomic operations use proper atomic_exchange_add.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in decompiled output. The original source had extensive comments explaining each test case (PP-L2-01, ASM-L4-01, etc.) and the purpose of each macro/function. All lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized - the atomic operations are identified as such, SIMD uses vector types. However, macro expansions are not recognized as such (e.g., `SQUARE(x)` becomes `v0 * v0` without indicating it was a macro).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: One anomaly message present: `[D] Unsupported jumpkind Ijk_SigTRAP at address 4198747()`. However, many indirect calls and complex patterns lack any uncertainty indicators. The startup code has unusual patterns that should be flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had implicit contracts (e.g., `param_asm_atomic` requires valid pointer) that are not recovered.
+
+### LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear - `test_preprocessing_features` calls all the `call_*` functions. Some extern declarations present for string constants. However, no documentation of who calls whom beyond direct invocation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing tests together, asm tests together, main/test functions at end. Matches original source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Has extern declarations for string constants. Should compile with standard library linkage. Some stubs needed for undefined references like `_ccall`. Basic compilation should work.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable names are all generic (`a0`, `a1`, `v0`, `v1`, `ptr`, `idx`) losing all semantic meaning from original source
+- No comments at all - original source had extensive documentation explaining each test case
+- Function names for many startup/initialization functions use address-based naming (`sub_401030`)
+- Incorrect struct definitions created (`struct_0` with `padding_0`) where none existed in source
+- No indication of uncertainty for complex patterns like indirect calls or unusual control flow
+
+**Best Quality Aspect:** Function Decomposition (8/10)  
+- Functions are properly separated matching original source granularity; each test case has its own function
+
+**Most Needs Improvement:** Comment Quality (1/10)  
+- Zero comments in output; original source had rich documentation explaining preprocessing tests, assembly features, and expected results - all completely lost
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Parameters like `a0` used in size comparisons should be named `size`; array parameters should be named `arr`, `buffer`, etc.
+2. **Recover macro semantics**: Instead of showing computed values like `57122`, indicate the original macro was `x * 5 + 0xDEF0` from `#define` 
+3. **Add semantic comments**: Document what each test case validates (e.g., "Tests macro constant expansion: MAX_SIZE=1024, BUFFER_COUNT=16")

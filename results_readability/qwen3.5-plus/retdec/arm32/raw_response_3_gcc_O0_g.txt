@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`, `temp`, `result`) instead of semantic names like `arr`, `large_buf`, `head`, `current`. Global variables renamed to `g1`, `g2`, `g3` completely lose meaning (e.g., Chinese test strings become `g1`, `g2`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`local_vars`, `heap_basic`, `test_stack_memory`). However, helper functions like `function_ffff0fa0` are generic, and some names don't reflect actual broken functionality.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals shown as hex escapes (`"\xe6\xb5\x8b\xe8\xaf\x95..."`) instead of readable text. Magic numbers like `4 * n`, `8`, `12` appear without explanation of their semantic meaning (struct sizes, array bounds).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive intermediate variables (`v1`, `v2`, `v3`) from register spilling. TLS access shows `__aeabi_read_tp()` artifact. Many redundant casts like `(int32_t)mem` throughout code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `linked_list_heap` uses `goto lab_0x1141c` instead of proper loop construct. `local_array` has broken loop that returns uninitialized `result`. Many while loops use manual counters instead of for loops.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but `linked_list_heap` is fragmented with goto labels. `tree_heap_traversal` logic is broken with incorrect free sequence. Some functions too fragmented with excessive temporaries.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: `linked_list_heap` has severe non-linearity with forward jumps to `lab_0x1141c`. Multiple functions have early returns that disrupt top-to-bottom reading. Loop bodies often split across non-contiguous blocks.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant type casts throughout (`(int32_t)mem`, `(int32_t *)v1`). Multiple variables holding same value (`v1 = (int32_t)mem` then using both). Some dead code patterns visible in error paths.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `uint32_t` consistently. However, pointer types often degraded (`int32_t *` vs proper struct pointers). Function pointer type `int32_t (*f)(int32_t)` preserved but usage broken.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**: `Point` struct completely lost—`global_point = 10` is just an int, not `{x: 10, y: 20}`. `Node` and `TreeNode` structs not recovered; uses raw pointer arithmetic (`*(int32_t *)(v1 + 4)`). Array types often lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`int32_t` to pointer and back). `heap_struct` accesses freed memory (`free(mem); result = *mem + v1;`). `call_global_callback` doesn't actually call the function pointer, just returns `x`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated metadata comments ("From module:", "Address range:"). No algorithm explanations, no documentation of non-obvious logic. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Linked list creation pattern in `linked_list_heap` not recognized. Tree traversal in `tree_heap_traversal` not identified. Memory allocation patterns not annotated.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `linked_list_heap` always returns -1 (broken logic) but not flagged. `call_global_callback` has wrong logic but no warning. `dangling_pointer` use-after-free not indicated as dangerous.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `n > 0` requirements). No postconditions inferred. Error conditions like NULL returns not documented with meaning.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved and visible. Global variable usage visible but renamed (`g1`, `g2`). Callback relationship in `set_global_callback`/`call_global_callback` not clear (latter is broken).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. No logical grouping by memory type (stack/heap/static). Static functions not properly scoped (e.g., `static_helper` should be file-local).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes present but may need adjustment. External functions declared (`extern_function`). Some stubs needed for `__aeabi_read_tp`, `__sync_synchronize`. May compile with modifications.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+5+4+5)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (6+2+4)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (2+3+3+3)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+---------------------------------------------------------
+Overall Score:                                  4.29/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **`Point` struct completely lost**: `global_point = 10` should be `struct {x: 10, y: 20}` - semantic information destroyed
+- **`linked_list_heap` broken control flow**: Uses goto labels and always returns -1 instead of sum (100)
+- **`call_global_callback` logic error**: Returns `x` directly instead of calling `global_func_ptr(x)`
+- **String literals as hex escapes**: Chinese test strings shown as `"\xe6\xb5\x8b..."` instead of readable text
+- **Global variables renamed generically**: `g1`, `g2`, `g3` lose all semantic meaning of original string constants
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), making it possible to identify function purposes despite other degradation.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Struct definitions completely lost; `Point`, `Node`, `TreeNode` all reduced to raw pointer arithmetic, destroying semantic structure and making code nearly unmaintainable.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct layouts from access patterns**: Detect consistent offset patterns (e.g., `+4`, `+8`) and reconstruct struct definitions with field names based on usage context.
+2. **Improve control flow reconstruction**: Replace goto-based loops with proper for/while constructs, especially for linked list traversal patterns that are clearly identifiable.
+3. **Preserve string literal readability**: Decode UTF-8 string literals instead of showing hex escapes, and recover original global variable names from debug symbols when available.

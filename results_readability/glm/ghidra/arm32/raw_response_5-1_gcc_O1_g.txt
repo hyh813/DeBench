@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are predominantly generic types like `iVar1`, `sVar1`, and `pvVar1`, offering little semantic insight. For example, in `test_cpp_constructor`, the object is named `pvVar1` and its members are accessed via raw offsets like `*(undefined4 *)((int)pvVar1 + 4)`, completely obscuring the `data` and `size` fields.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered, including namespaces, class membership, and template instantiations (e.g., `Base::virtual_func`, `DiamondDerived::func`, `template_max<int>`). This is likely due to the presence of DWARF debug information.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers resulting from constant propagation, such as `0x125c` (4704) in `test_cpp_member_func` and `0x47` (71) in `test_cpp_multiple_inheritance`. Additionally, in `test_cpp_template_func`, the double template call uses uninitialized variables `a_00` and `b_00` instead of the literal constants `2.5` and `1.5`.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While the code is generally clean, there are artifacts like `undefined4`, `extraout_r0`, and macro-like calls such as `SUB84(a,0)` in floating-point operations. These compiler and ABI artifacts distract from the high-level logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: The control flow is mostly linear and easy to follow, which is expected. However, the high-level `try-catch` structure in `test_cpp_exception` is entirely lost, reduced to a single `__cxa_throw` call without showing the catch blocks.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Template instantiations are correctly separated into distinct functions. However, constructors (e.g., in `test_cpp_constructor`) are inlined as raw memory operations rather than being called as semantic functions, which fragments the readability of object initialization.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal jumps or spaghetti logic. The decompiler has successfully flattened the control flow graph into a readable sequence.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no obvious dead code or redundant variables cluttering the logic. The compiler's constant folding (e.g., returning `0x47` directly) is the dominant form of redundancy removal, which is clean but opaque.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: While user-defined classes like `SimpleClass` and `Base` are recovered, standard library types like `std::unique_ptr` are degraded to raw pointers or anonymous structs. Floating-point handling is also imprecise, with `double` operations relying on `__aeabi` helper calls and obscure macros like `SUB84`.
+
+**10. Composite Type Recovery:** Score: 7/10
+Justification: Structs for classes are generally present, but complex inheritance layouts cause issues. For `DiamondDerived`, the decompiler warns "ignoring overlapping field" and uses obscure names like `_20_4_` and `field_0x10` instead of the actual `shared_data` or base class subobjects.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code relies heavily on C-style casts and pointer arithmetic, such as `(int)pvVar1 + 4`, to access struct members. This erases type safety and makes the code fragile compared to the original source's member access syntax.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 7/10
+Justification: The decompiler provides useful warnings like "ignoring overlapping field" and "Removing unreachable block". It also includes "DWARF original prototype" comments, which significantly aid in understanding the intended signatures.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: High-level C++ idioms are exposed as low-level mechanisms. Virtual function calls are shown as indirect vtable loads (`(**obj->_vptr_Base)()`), and RTTI checks are explicit calls to `std::type_info::operator==`, rather than being abstracted into `dynamic_cast` or `typeid` syntax.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler clearly flags problematic areas, specifically the "overlapping field" issue in diamond inheritance and "unknown calling convention" warnings, which effectively alerts the analyst to potential decompilation errors.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the bounds checking logic in `Container::get` is preserved as code, but not explicitly documented as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Vtable pointers are resolved to specific function pointers (e.g., `PTR_virtual_func_0001187c`), making the virtual dispatch mechanism traceable. However, the relationship between a `std::unique_ptr` and its deleter is lost.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are presented in memory address order rather than logical grouping. Related class methods are scattered throughout the output (e.g., destructors appear far from their respective class definitions).
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on ARM-specific runtime intrinsics (`__aeabi_dcmpgt`, `__aeabi_d2iz`) and compiler support functions (`__cxa_throw`, `__dynamic_cast`). While accurate to the binary, this requires significant porting effort to compile on a different platform.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.3/10
+
+**Critical Defects:**
+- Variable naming is generic (`iVar1`, `pvVar1`), and object members are accessed via raw pointer arithmetic offsets, obscuring the OOP structure.
+- Constant folding has replaced logic with magic numbers (e.g., `return 0x47`), making the implementation details of several functions unreadable.
+- The `try-catch` exception handling structure is completely lost, reduced to low-level runtime calls.
+- Floating-point template operations are decompiled poorly, using uninitialized variables and obscure macros (`SUB84`).
+- Complex inheritance (Diamond) results in "overlapping field" warnings and confusing field names (`_20_4_`).
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The recovery of full function signatures, including namespaces, classes, and template parameters, is excellent and provides a strong foundation for understanding the code.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 4/10)
+- The heavy use of generic names combined with the exposure of low-level memory access patterns makes it very difficult to track data flow and object state.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhanced Variable Propagation**: Utilize type information to rename local variables based on usage (e.g., renaming `pvVar1` to `lifecycle_obj` when used with `operator_new`/`operator_delete`).
+2.  **STL Type Reconstruction**: Implement specific signatures to recognize and reconstruct standard library types like `std::unique_ptr` and `std::string` rather than falling back to raw pointers/arrays.
+3.  **Exception Handling Recovery**: Attempt to reconstruct `try-catch` blocks using unwind table information (LSDA) to restore the high-level control flow obscured by `__cxa_throw`.

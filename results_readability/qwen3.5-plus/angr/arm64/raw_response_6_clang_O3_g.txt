@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Almost all variables use generic names (`v0`, `v1`, `a0`, `a1`) instead of semantic names like `dst`, `src`, `buffer`, `fp`. Original `char *dst, const char *src` became `char *a0, char *a1` losing all meaning.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions retain original names (`param_strcpy`, `call_strcpy`) but many helpers are generic (`sub_4012f4`, `$x`). Some function names don't match functionality (e.g., `call_strcpy` doesn't call `param_strcpy`).
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Pervasive magic numbers: `4294967295` (appears 50+ times as -1), `18446744073709551608`, `7521977183824144706`. No constants recovered; error codes like `42`, `-1`, `-2` unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack frame setup noise everywhere (`v0 = &v1`), architecture-specific intrinsics (`__ROL__`, `arm64g_calculate_condition`), and `[D] unsupported_Iop_ZeroHI96ofV128()` artifacts pollute code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Complex conditionals replace simple if-else (`if (!((char)(v4 >> 31) & 1))`). Goto labels present (`LABEL_401c90`). Loop structures obscured by vector operations in `param_malloc_free`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but many have incorrect signatures (`param_strlen()` missing parameter, `param_scanf()` missing input). Some functions duplicated unnecessarily (`call_printf` calls printf twice).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps disrupt flow. Deep nesting in `param_signal_handling` with `arm64g_calculate_condition` chains. Return statements scattered making execution path hard to trace.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate function calls in return statements (`return strlen(strcpy(a0, a1));` after already computing `len`). Vector operations in `param_malloc_free` are overly complex for simple loop.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `size_t`, `int`, `char*` degraded to `unsigned long long`. `param_printf` parameters became `unsigned int a0, unsigned long a1` instead of `int x, const char *name`. Const-correctness lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `struct FILE` is empty. `struct sockaddr` partially recovered but `sa_data` generic. `struct_0` with `field_0`, `field_5` loses TLS variable semantics entirely.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer arithmetic (`ptr + 16`, `*(cur) = AddV(...)`). Type-confused operations (`v0 + v1 & 4294967295`). Missing null checks in several functions.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only decompiler artifacts like `[D]` markers and `// Failed to decompile function`. No algorithm explanations or API contract documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`) but higher-level patterns lost. Producer-consumer pattern in `param_condition_variable` not identified. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some failures noted (`Failed to decompile function __aarch64_cas4_acq_rel`). `[D]` markers for unsupported operations. But semantic errors (wrong function bodies) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). Error return values (`4294967295`, `4294967294`, `4294967293`) unexplained. No postcondition inference.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships undocumented. Global variables (`g_4033b4`, `signal_received`) referenced without context. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in source order but test functions mixed with implementations. No logical grouping by category (stdlib vs syscall vs thread).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Multiple compilation issues: undefined symbols (`__gmon_start__`, `call_weak_fn`), failed decompilations, missing headers. Would require significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+2+4)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+5+4+5)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (4+4+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (2+4+4+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.825 ≈ 3.8/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **`call_strcpy` semantic error**: Doesn't call `param_strcpy`; uses `strncpy` on wrong buffer, completely broken logic
+- **Missing function parameters**: `param_strlen()`, `param_scanf()`, `param_fopen_fclose()` missing required parameters
+- **Magic number explosion**: `4294967295` appears 50+ times instead of `-1`; `18446744073709551608` unexplained
+- **Architecture noise pollution**: `arm64g_calculate_condition`, `__ROL__`, `[D] unsupported_Iop_*` obscure logic
+- **Variable naming degradation**: All variables are `v0`, `v1`, `a0`, `a1` with no semantic meaning
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Core test functions retained original names (`param_strcpy`, `param_strcmp`, `param_memcpy`), providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments; decompiler provides no guidance on complex transformations, magic numbers, or semantic intent
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameter semantics** - Analyze call sites to restore missing parameters (e.g., `param_strlen` should have `const char*` parameter)
+2. **Replace magic numbers with named constants** - Detect repeated values like `4294967295` and suggest `#define ERROR_RETURN -1`
+3. **Add confidence annotations** - Flag semantically suspicious code (e.g., `call_strcpy` not calling `param_strcpy`) with warnings for manual review

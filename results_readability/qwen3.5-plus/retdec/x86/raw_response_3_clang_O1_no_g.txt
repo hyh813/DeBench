@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Almost all variables are generic (`v1`, `v2`, `v3`, `temp`, `result`). For example, in `heap_basic`, loop counters are `v1`, `v2`, `v3` instead of meaningful names like `i`, `index`, or `array_size`. No semantic meaning is recovered from usage patterns.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Many original function names are preserved (`local_vars`, `heap_basic`, `test_stack_memory`), which is good. However, helper functions are named `function_1040`, `function_1050`, etc., and some signatures are wrong (e.g., `call_static_func` takes 1 param in source but decompiled version shows different behavior).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x41af`, `0x418f`, `0x174f` appear as global variable offsets without explanation. Array sizes (10, 2048) are preserved but their purpose isn't documented. No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Contains compiler artifacts: `__x86_get_pc_thunk_*` functions, 12 generic global variables (`g1`-`g12`) that are address references, and many redundant casts throughout (e.g., `(int32_t *)a2`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Loops decompiled as while loops with manual increment instead of for loops. `linked_list_heap` uses goto (`lab_0x1880`). At -O0, this should be near-perfect for/while recovery.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Standard library functions wrapped in helpers (`function_1050` for printf) adds noise. Some functions have incorrect parameter counts. Function sizes reasonable but decomposition doesn't match source structure.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but has forward jumps and goto statements disrupting flow. `linked_list_heap` has complex branching with labels that could be structured better.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant variable assignments present (e.g., `v2 = v1` patterns). Loop counters sometimes assigned multiple times. Type casts repeated unnecessarily.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `int32_t` consistently but loses original type information. No signed/unsigned distinction where it matters. Pointer types often just `int32_t*`. No const correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - Struct types (Point, Node, TreeNode) completely lost. `heap_struct` just returns `3 * a1` instead of accessing struct fields. All composite types reduced to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts throughout. Pointer arithmetic without type safety (e.g., `*(int32_t *)(4 * v3 + v1)`). No bounds checking documented. Buffer overflow patterns not flagged.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments** in decompiled code. No explanation of complex logic, algorithms, or anomalies. Original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Linked list traversal, tree traversal, memory allocation patterns not identified or named. Common C idioms not recovered.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. `stack_alias` returns constant 20 (clearly wrong - loses all alias detection logic) but not flagged. `dangling_pointer` unsafe access not warned.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks exist but aren't documented as contracts. Error conditions not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships not documented. No call graph information. Global variable usage not explained (what does `g12` represent?).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in one file with no logical grouping. No separation between test functions and implementation functions. Original source had clear section headers.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Has necessary includes but may need stubs for external functions. Function prototypes present. Could potentially compile with modifications but `extern_function` needs definition.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25  × 0.30 = 1.275
+Level 2 (Structural):  (4+5+5+5)/4 = 4.75  × 0.25 = 1.188
+Level 3 (Type):        (4+2+3)/3   = 3.00  × 0.20 = 0.600
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75  × 0.15 = 0.263
+Level 5 (Contextual):  (4+4+5)/3   = 4.33  × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 3.76/10
+```
+
+**Overall Readability Score: 3.8/10**
+
+### Critical Defects:
+- **Struct types completely lost** - Point, Node, TreeNode all reduced to pointer arithmetic; `heap_struct` returns `3 * a1` instead of accessing fields
+- **`stack_alias` function broken** - Returns constant 20, losing all alias detection logic from original
+- **No comments recovered** - Original had extensive documentation; decompiled has zero comments
+- **Generic variable naming** - All variables are `v1`, `v2`, `v3` with no semantic meaning
+- **Magic number offsets** - Global variable accesses use hex offsets (0x41af, 0x418f) without explanation
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Many original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), making basic navigation possible
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero comments recovered despite original having extensive documentation; no anomaly warnings for obviously broken functions
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types from memory access patterns** - Detect consistent field offsets and reconstruct composite types with meaningful field names
+2. **Add anomaly detection for suspicious simplifications** - Flag functions like `stack_alias` that return constants when source had complex logic
+3. **Infer variable names from usage context** - Loop counters should be `i`, `index`; size variables should be `n`, `count`, `size` based on comparison patterns

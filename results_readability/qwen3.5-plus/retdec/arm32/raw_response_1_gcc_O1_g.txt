@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic (`v1`, `v2`, `v3`, `result`, `temp`) with no semantic meaning. For example, `loop_while` uses `v1` for digit count instead of `count`, and `loop_nested` uses `result` instead of `total`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are preserved from source (`loop_for_fixed`, `recursion_factorial`, `duffs_device`), accurately reflecting purpose. This is one of the few successful recovery aspects.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers abound without explanation (`0x3039`, `0x2694` in test calls). Array initializations are catastrophically wrong (`arr = {10, 0, 0, 0, 0}` instead of `{10, 20, 30, 40, 50}`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts like explicit casts `(int32_t)&arr`, struct initialization noise in `non_local_jump`, and redundant variable assignments that obscure logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: **Critical failures**: `loop_while` and `loop_dowhile` contain infinite loops (`while (true) { v1++; }`). Switch statements are broken (`duffs_device` only has default case). Function pointer calls are eliminated entirely.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but many are semantically broken. `infinite_loop` and `loop_external_state` are reduced to single return statements, losing all original logic.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Some functions read linearly, but others have confusing patterns. `loop_multi_exit` has a dead label `lab_0x10e04` that's never reached, disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `loop_complex_cond` has extremely convoluted logic with redundant variable calculations (`v5 = v3 - 8`, `v6 = v4 & 7 - v3`) that don't match original simple conditions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `uint32_t` consistently, but some mismatches exist (`loop_for_fixed` uses `uint32_t n` when original uses `int`). Custom type `int33_t` is unusual and unnecessary.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Array handling is severely broken. `loop_break` initializes only first element (`arr = {10, 0, 0, 0, 0}`). `loop_multi_exit` matrix initialization is incomplete (`{{1, 0, 0, 0}, {0}, {0}}`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Function pointer calls are eliminated (`call_func_ptr` just returns `x`). Pointer arithmetic is used instead of array indexing (`*(int32_t *)v2`). Multiple unsafe casts throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Zero comments** in decompiled code. No explanation of algorithms, no decompilation confidence indicators, no documentation of non-obvious logic.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Loops aren't identified as loops (some become infinite). State machines, function pointer tables, and Duff's device are not recognized or documented.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: **No warnings** about critical failures. Infinite loops, broken function pointer calls, and incorrect array initializations are presented confidently without any anomaly flags.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `loop_for_fixed`). No postconditions. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but callback relationships are lost. `process_with_callback` doesn't actually call the callback. Function pointer array calls are eliminated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped but test functions are mixed with implementations. Global variables (`g1`, `g2`, `g3`, `jump_buffer`) are poorly named.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has includes and prototypes, but code won't produce correct results. Some functions reference undefined globals (`g4` in `duffs_device`). Function pointer calls won't work.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+8+3+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (2+5+4+5)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type):        (6+4+3)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (1+2+1+2)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):  (4+5+4)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                              = 3.88/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Infinite loops**: `loop_while` and `loop_dowhile` contain `while (true)` with no exit condition, making them unusable
+- **Function pointer calls eliminated**: `call_func_ptr`, `call_func_ptr_array`, `conditional_func_ptr`, and `process_with_callback` don't actually call the function pointers
+- **Array initialization broken**: `loop_break` array is `{10, 0, 0, 0, 0}` instead of `{10, 20, 30, 40, 50}`, breaking search logic
+- **Duff's device destroyed**: Switch statement reduced to default case only, losing the loop unrolling optimization entirely
+- **Zero anomaly warnings**: Critical semantic failures presented without any decompilation confidence indicators
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names were preserved from source, maintaining semantic identity across decompilation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of comments means no guidance for understanding broken logic or decompilation uncertainty
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag infinite loop patterns** - When loop exit conditions are lost, add explicit warnings like `// WARNING: Loop exit condition not recovered`
+2. **Preserve function pointer call semantics** - Even if target is unknown, maintain the call structure: `return (*f)(x)` instead of `return x`
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions with comments indicating which patterns were recognized vs. guessed

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `iVar1`, `uVar2`) with no semantic meaning. Original source had `temp1`, `temp2`, `sum`, `count` which were at least contextually meaningful.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`sequential_ops`, `single_if`, `nested_if_deep`). Some helper functions have generic names (`FUN_00100880`, `FUN_001009fc`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3e9` (1001), `0x65` (101), `0x12` appear without explanation. Test functions show pre-computed hex values (`0x15`, `0x2d`) instead of calling actual functions.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: redundant type casts (`(ulong)(param_1 - 1)`), external function wrappers (`_setjmp`, `__libc_start_main`), and undefined types (`undefined4`, `undefined8`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic structures recovered but with optimization artifacts. `single_if` uses bit shift `param_1 << (0 < param_1)` instead of conditional. `switch_fallthrough` converted to nested if-else losing fall-through semantics.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized and separated. Helper functions (`double_value`, `triple_value`) properly extracted. Some wrapper functions are unnecessary noise.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `duffs_device` uses complex goto labels (`switchD_00101024_caseD_7`). `loop_multi_exit` has nested gotos (`LAB_00100f54`, `LAB_00100f68`) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: `loop_for_fixed` optimized to formula `(param_1 - 1) * (param_1 - 2) >> 1` instead of loop. Some redundant type casts present but no obvious dead code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic `int` used throughout instead of `int32_t`. Mixed signed/unsigned (`uint param_1` vs `int param_1`). Function pointers use `code *` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays referenced as raw pointers (`(&DAT_001018d8)[lVar1]`). `jmp_buf` partially recovered as `__jmp_buf_tag *`. No struct definitions visible.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts (`(ulong)(param_1 - 1)`). Pointer arithmetic without bounds checking. Function pointer calls with generic `code *` type.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty levels.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Recursion patterns visible (`recursion_factorial`, `tail_recursion`) but not identified. State machine pattern in `state_machine` not recognized. Duff's device structure present but unnamed.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings for suspicious patterns. `computed_goto` silently converted to switch. Function pointer arrays not flagged as indirect call sites requiring manual analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n > 0`). No postconditions or error condition documentation. Test validation comments lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`jump_buffer`, `completed_0`) referenced without context. No call graph information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No separation between test functions and implementation. Helper functions mixed with main logic.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies present (`printf`, `puts`, `longjmp`) but not documented. Some stub functions may be needed.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+5+7)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (4+5+5)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (1+4+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+5+7)/3   = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.09/10
+```
+
+**Overall Readability Score: 5.1/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`) - should infer from usage patterns (e.g., `loop_while` counter should be `count`)
+- **Zero documentation** - original source had extensive comments explaining purpose, test cases, and difficulty; all lost
+- **Test functions show pre-computed values** instead of actual function calls, breaking verification capability
+- **Control flow optimizations obscure intent** - `single_if` uses bit shift instead of conditional, `switch_fallthrough` loses fall-through semantics
+- **Type information degraded** - generic `int`/`uint` instead of precise types, function pointers as `code *`
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, making identification and navigation straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of documentation makes understanding non-trivial logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and debug symbols at `-O0` - variables used as counters should be named `count`, `i`, `index`; accumulators should be `sum`, `total`, `result`
+2. **Recover and preserve source comments** from debug information (`-g` flag) - the original documentation explaining test cases and difficulty levels is invaluable for understanding
+3. **Detect and annotate optimization artifacts** - when control flow is transformed (e.g., conditional to bit shift, loop to formula), add comments explaining the original structure

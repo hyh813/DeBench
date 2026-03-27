@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`, `idx`) with no semantic meaning. For example, in `varargs_func`, `v0-v5` should be named based on their role (e.g., `sum`, `count`, `args_ptr`).
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retain original names (`cdecl_func`, `call_cdecl`, `func_a`) which is good, but helper functions are generic (`sub_103e8`, `sub_104ac`). Named functions accurately reflect source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX for -1), `0x100000`, and hardcoded returns (15, 50, 6) appear without explanation. Constant folding removed original literal context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from stack canary checks (`GLIBC_2.4::__stack_chk_guard`), `armg_calculate_condition` calls, and register spill code throughout. The `__aeabi_dadd` function is ~500 lines of noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` usage instead of structured loops/conditionals. Functions like `ret_multi_branch` use nested `armg_calculate_condition` with goto labels instead of clean switch statements.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but many are constant-folded to single returns (`call_cdecl` returns 15 directly). `__aeabi_dadd` is a 500+ line monolith that should be a library call.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies and scattered `LABEL_` targets disrupt top-to-bottom reading. `test_calling_conventions` has multiple goto breaks in the middle of printf sequences.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive redundancy in `__aeabi_dadd` with repeated `armg_calculate_condition` patterns. Dead code from register spilling (`v0 = v1; goto g_22008;`) not eliminated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Nearly everything is `unsigned int` regardless of original type. `func_mixed_args` loses `double` type (becomes `unsigned int a2, a3, a4, a5`). Pointer types degraded to `unsigned int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs mostly lost. `LargeStruct` becomes raw `unsigned int` parameters. `func_struct_byptr` has invalid syntax (`vvar_0 == 0x0<32>`). `struct_0` definitions are circular and meaningless.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe pointer arithmetic throughout (`*((int *)&v0)`). `func_struct_byptr` has invalid C syntax (`Goto None`). Function pointer types lost (`param_func_ptr` takes `unsigned int` not function pointer).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of complex patterns like varargs handling or floating-point operations. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not recognized (should show `va_list` pattern). Struct passing conventions not identified. Floating-point helper calls (`__aeabi_dadd`) not abstracted.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Invalid syntax like `Goto None` and `vvar_0{r64|4b}` appear without warning. `armg_calculate_condition` calls not flagged as decompiler artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` should note `p != NULL`). No error condition documentation. Stack canary checks present but unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. `call_weak_fn` references `g_2202c` without context. External dependencies (`GLIBC_2.4::__stack_chk_guard`) not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions listed but no logical grouping. Test functions mixed with implementation. No header file or API boundary indicated.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone. Missing declarations for `armg_calculate_condition`, `__stack_chk_fail`, `GLIBC_2.4` symbols. Invalid C syntax in multiple functions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (3+5+4+3)/4 = 3.75 × 0.25 = 0.94
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.53
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.37
+
+Overall Score: 3.27/10
+```
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects:
+- **Invalid C syntax**: `func_struct_byptr` contains `Goto None` and `vvar_0{r64|4b}` which are not valid C
+- **Type system collapse**: All types degraded to `unsigned int`, losing `double`, `char*`, struct distinctions
+- **Floating-point disaster**: `__aeabi_dadd` is 500+ lines of nested `armg_calculate_condition` calls instead of simple float operations
+- **Zero documentation**: No comments explaining any non-trivial logic or decompiler uncertainty
+- **Constant folding over-aggressive**: Test functions return hardcoded values (15, 50, 6) instead of showing actual computation
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core function names preserved from source (`cdecl_func`, `call_cdecl`, `func_a`, `func_b`) providing some semantic anchor points
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any comments means analysts have zero guidance on complex patterns, anomalies, or decompiler confidence
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and abstract ARM floating-point helper calls** (`__aeabi_*`) into readable C expressions instead of expanding into hundreds of lines
+2. **Validate output syntax** before emission—invalid constructs like `Goto None` and `vvar_0{r64|4b}` must be caught and either fixed or flagged
+3. **Add confidence annotations** for uncertain reconstructions (e.g., "// DECOMPILER UNCERTAIN: indirect call target") and document stack canary patterns

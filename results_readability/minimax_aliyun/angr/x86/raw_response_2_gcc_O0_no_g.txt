@@ -1,0 +1,121 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `idx`, `ptr`, `a0`, `a1`). The original source had meaningful names like `sum`, `len`, `c`, `x`, `y`, `z`, `a`, `b`, `f`, `d`. Only loop indices like `idx`, `i`, `j`, `k` are somewhat descriptive.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core test functions correctly recovered (`double_value`, `process_char`, `process_short`, `process_int`, `process_long`, `process_ll`, `process_float`, `process_double`, `process_ld`, `process_bool`, `const_param`, `volatile_access`). However, many utility functions use generic names like `sub_401000`, `sub_401030`. The main test functions are well-named but helper/initialization functions are not.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `64`, `90`, `32` in character processing, `4294967295` (0xFFFFFFFF) for error returns, and array size `10`, `5`, `4` appear without explanation. The original source had clear constants like `'A'`, `'Z'`, `'\0'`, `20` for stack canary checks. No enum values recovered (STATE_IDLE, STATE_RUNNING, etc. are just numbers).
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution from:
+- `__x86.get_pc_thunk.ax()` calls in nearly every function (PC-relative addressing thunk)
+- `[D] unsupported_<class 'pyvex.expr.GetI'>()` annotations throughout float handling
+- `[D] PutI(...)` VEX IR annotations cluttering the code
+- Stack canary checking code with `_ccall()` and `__stack_chk_fail_local()`
+- These compiler artifacts make the code nearly unreadable
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - for loops, while loops correctly recovered. The original source's `if (c >= 'A' && c <= 'Z')` becomes `if (a0 > 64 && a0 <= 90)` which is less clear but structurally correct. Some goto statements in initialization code but not in main logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable granularity matching original source. Each test function (`test_data_types_l1`, `test_array_types`, `test_pointer_types`, `test_composite_types`) is separate. Individual processing functions are appropriately sized (10-30 lines each).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present but minimal. No excessive forward jumps into loop bodies. The flow is mostly linear and easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy detected. Loop unrolling is minimal (appropriate for -O0). No obvious dead code. The decompiler didn't introduce redundant expressions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation:
+- All integer types become `unsigned int` (losing `int`, `short`, `char`, `long`, `long long` distinction)
+- `float` and `double` parameters become `unsigned int` (e.g., `process_float(unsigned int a0)`)
+- No `const` qualifier recovery on pointer parameters (original `const int *p` becomes `unsigned int *a0`)
+- No `volatile` qualifier recovery
+- Function pointer types become `unsigned int *` instead of proper function signatures
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Partial struct recovery:
+- Some structs correctly defined with fields (e.g., `struct_0 { unsigned int field_0; }`)
+- Field names are generic (`field_0`, `field_1`, `field_2`, `field_4`)
+- Nested structures partially recovered (e.g., `struct_with_ptr` has `field_0` and `field_4`)
+- Bitfields handled with bit manipulation but original field names lost
+- Unions not clearly distinguished from structs
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple type safety issues:
+- Unsafe pointer arithmetic throughout: `*((int *)(ptr + idx * 4))`
+- Raw memory access without type checking
+- Function pointer calls via `a0(a1)` without type safety
+- Integer overflow potential with unsigned arithmetic
+- No bounds checking on array accesses
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only variable location comments like `// [bp+0x0]`, `// [bp-0xc]` present. No explanation of algorithm logic, no recovery of original variable purposes, no documentation of what functions do.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable:
+- Linked list traversal: `for (v1 = a0; v1; v1 = v1->field_4)` correctly identified
+- Binary tree recursion present
+- Array indexing patterns recovered
+- But no explicit naming of patterns (e.g., "Linked list traversal" not mentioned)
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: The decompiler does flag unsupported operations with `[D] unsupported_<class 'pyvex.expr.GetI'>()` but this is:
+- Too verbose and technical
+- Not actionable for analysts
+- Mixed with actual code rather than clearly separated
+- No explanation of what the anomaly means or its impact
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No recovery of original assertions or validation checks. The original source's bounds checking in functions like `array_complex_index` (checking `x < 0 || x >= w`) is present but not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present and traceable. The main calls `test_data_types_l1() → process_char()`, etc. are clear. However, no documentation of:
+- Which functions call which
+- Global variable usage
+- Callback relationships
+- External dependencies
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in address order rather than logical grouping. The original source organized by test category (data types, arrays, pointers, composite types) but decompiled output mixes them with initialization code. Single monolithic output file.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has `extern` declarations for global variables (`g_403010`, `g_40317c`, etc.) but these are not defined. Requires standard library functions (`printf`, `strncpy`). Some functions reference undefined symbols. Moderate patching needed to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+1. **Severe variable naming degradation**: All meaningful variable names replaced with `v0`, `v1`, `a0`, `a1`, `idx`, making it impossible to track semantic purpose
+2. **Type precision completely lost**: Original `int`, `short`, `char`, `float`, `double`, `const`, `volatile` all become `unsigned int`
+3. **Excessive noise from compiler artifacts**: `__x86.get_pc_thunk.ax()` calls and `[D] unsupported_<class 'pyvex.expr.GetI'>()` annotations clutter every function
+4. **No comments or documentation**: Zero recovery of original variable purposes, algorithm explanations, or semantic context
+5. **Magic numbers without explanation**: Character codes like `64`, `90` instead of `'A'`, `'Z'`; error codes like `4294967295` instead of `-1`
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+The decompiler correctly recovered loop structures (for, while) and conditional logic. The overall program flow is traceable despite other issues.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+The complete loss of meaningful variable names is the most severe readability issue. Even with -O0 (debug) compilation, the decompiler should infer names from usage patterns (e.g., `sum` for accumulating variables, `idx` for loop counters).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (accumulating in sum, indexing arrays, dereferencing as pointers) to suggest semantic names like `sum`, `index`, `ptr`, `count`
+2. **Recover literal meanings**: Detect character literals (65-90 for 'A'-'Z'), common constants (0xFFFFFFFF for -1), and enum values from usage context
+3. **Clean compiler artifacts**: Suppress or abstract `__x86.get_pc_thunk` calls and VEX IR annotations; these add no value for analysts reviewing decompiled code

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `param_1`, `iVar1`, `local_30` with no semantic meaning. Original names like `result`, `str`, `encrypted` are completely lost, making it difficult to understand variable purposes without tracing usage.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names are preserved (`param_fake_branch`, `param_opaque_predicate`), which is excellent. However, some helper functions use generic names like `FUN_00011030`, and return type information isn't reflected in naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout without explanation (0x5a, 0x14, 0xe1, 0x2b). Some are constant-folded results that should be documented. String literals are referenced as `&DAT_00012008` instead of showing actual content.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Ghidra warnings clutter the output ("WARNING: Function: __x86.get_pc_thunk.bx replaced", "Removing unreachable block"). Stack canary checks (`__stack_chk_fail_local`) add noise. However, no excessive register spilling artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural and readable. However, `param_opaque_predicate` uses a do-while loop that's less clear than the original while loop. The fake branch conditions were correctly optimized away (expected at -O1).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical issue: many `call_*` functions return `void` instead of `int` (e.g., `call_opaque_predicate`, `call_tail_call_optimized`). This breaks the call chain semantics. Function sizes are appropriate otherwise.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with clear early returns. Some functions have forward jumps that disrupt flow slightly, but nothing severe. Loop structures are recognizable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding occurred appropriately (e.g., `call_fake_branch` returns 10 directly). However, some redundant patterns remain in `param_buffer_overflow_heap` where the overflow loop was simplified to a counter decrement.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Many functions return `undefined4` instead of `int`. Parameter types sometimes use `uint` when original used `int` (e.g., `param_instruction_substitution(uint param_1)`). Pointer types are sometimes `undefined4*` instead of specific types.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The bitfield struct in `param_implementation_defined` was completely optimized away (returns constant 0x2b). No struct/union recovery is visible in the decompilation. Array parameters lose size information.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts visible (`(undefined4)(10 / (longlong)param_1)`). Stack canary checks are present which is good. Signal handler types use `(__sighandler_t)0x0` which is accurate but verbose.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated Ghidra warnings present ("WARNING: Subroutine does not return"). No semantic comments explaining algorithm purpose, no documentation of the obfuscation techniques being tested.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition visible. The opaque predicate logic isn't identified as such. The GCD algorithm in `param_opaque_predicate` isn't named. String decryption pattern isn't documented.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra does warn about some issues ("Removing unreachable block", "Subroutine does not return"). However, the architecture mismatch (ARM64 source → x86 decompilation) isn't flagged as a potential issue.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions/postconditions documented. The signal handler setup isn't explained. No documentation of expected return values or error conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships aren't documented. Global variables (`encrypted_0`, `div_zero_caught`, `jmp_buffer`) are referenced without declaration context. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions appear in one flat list without logical grouping. Related functions (obfuscation tests, edge case tests) aren't grouped. No header file or API documentation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone - missing global variable declarations (`encrypted_0`, `div_zero_caught`, `segv_caught`, `completed_1`, etc.). External function dependencies not documented. Architecture mismatch issues.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+5+7+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (5+4+6)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (3+4+6+3)/4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 5.21/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects:
+- **Return type corruption**: Multiple `call_*` functions return `void` instead of `int`, breaking semantic correctness (e.g., `call_opaque_predicate`, `call_tail_call_optimized`)
+- **Variable naming**: All variables use generic names (`param_1`, `iVar1`, `local_30`) with zero semantic meaning
+- **Missing global declarations**: Referenced globals (`encrypted_0`, `div_zero_caught`, `jmp_buffer`) have no declarations in output
+- **No semantic comments**: Zero documentation of obfuscation techniques or algorithm purposes
+- **Architecture mismatch**: Original ARM64 compiled to x86 binary without flagging potential issues
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Original function names were preserved for most user functions, maintaining traceability to source code intent.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Complete absence of semantic documentation; only auto-generated warnings present, making it difficult to understand the obfuscation testing purpose.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover return types from call sites** - Analyze how return values are used to infer correct return types (e.g., `call_opaque_predicate` result is printed, so must return int)
+2. **Infer variable names from usage patterns** - Use data flow analysis to suggest semantic names (e.g., variables used in string operations should be named `buffer`, `encrypted`, etc.)
+3. **Generate semantic comments for recognized patterns** - Detect common algorithms (GCD, string decryption, opaque predicates) and add explanatory comments

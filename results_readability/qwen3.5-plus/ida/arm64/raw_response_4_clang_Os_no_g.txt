@@ -1,0 +1,122 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v8`, `v17`) with zero semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `x`, `y` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most functions retained original names (`cdecl_func`, `varargs_func`, `test_calling_conventions`) from debug symbols. This is excellent recovery, though some helpers like `sub_680` remain generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xFFFFFF80FFFFFFC8LL` in varargs function are unexplained. Constant-folded results (15, 50, 6) are clear but hide original computation intent.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Vector operations (`int64x2_t`, `vaddq_s64`) appear where simple loops existed. Type casts like `(unsigned int)` and `(unsigned __int64)` add visual noise throughout.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but varargs functions use goto labels (`LABEL_7`, `LABEL_8`) instead of clean while loops. At -O0 this is unexpected degradation.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. However, many caller functions are constant-folded to single returns, losing call structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but varargs functions have backward jumps and complex label structures that disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code, but vector SIMD operations in `func_struct_byval` are over-complicated compared to original simple loop accumulation.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types (`__int64`, `_DWORD`, `_QWORD`) replace specific types (int, char*, double). Original `double a4` becomes `double a4` in some places but `__int64` in others inconsistently.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct types lost. `LargeStruct`, `SmallStruct`, `TestIntPair` passed as `_DWORD *a1` or `__int64 a1`. Field access becomes array indexing (`a1[15]`, `a1[1]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout (`(unsigned int)`, `(__int64)`, `(_DWORD *)`). Pointer arithmetic on void-like types without safety checks.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Almost no comments** in decompiled output. Original had extensive documentation explaining each test case. Only function headers with parameter names exist.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not identified as such - looks like complex pointer arithmetic. No recognition of common patterns like structure iteration or callback invocation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 8 failed decompilations noted at end (`memcpy`, `strlen`, `printf`, etc.), but no inline warnings about uncertain code regions within functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present (`if (a1)`) but not documented as preconditions. No postcondition inference or error condition documentation recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information or indication of which functions are test harnesses vs. test subjects.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file. Original had logical grouping by section (4.1, 4.2, 4.3) that is not preserved in organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 8 library functions failed to decompile requiring stubs. Type mismatches (`__fastcall` on ARM64) and missing headers would prevent clean compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Weighted |
+|-------|-----------|---------|--------|----------|
+| L1: Lexical Clarity | 4 | 5.50 | 30% | 1.65 |
+| L2: Structural Intelligibility | 4 | 6.50 | 25% | 1.625 |
+| L3: Type System Fidelity | 3 | 3.67 | 20% | 0.734 |
+| L4: Semantic Transparency | 4 | 3.25 | 15% | 0.488 |
+| L5: Contextual Coherence | 3 | 5.00 | 10% | 0.50 |
+| **TOTAL** | **18** | **-** | **100%** | **4.997** |
+
+**Overall Readability Score: 5.0/10**
+
+---
+
+### Critical Defects
+
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct`, `TestIntPair` all degraded to `_DWORD *` or `__int64` pointers with array indexing
+- **Variable names entirely generic** - `a1`, `a2`, `v1`, `v8` convey zero semantic information about purpose
+- **Varargs implementation unreadable** - Complex pointer arithmetic with magic constants (`0xFFFFFF80FFFFFFC8LL`) instead of recognizable `va_list` pattern
+- **No comments recovered** - Original had extensive documentation; decompiled output has none
+- **8 library functions failed** - `memcpy`, `strlen`, `printf`, etc. not decompiled, requiring external stubs
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (8/10)** - Debug symbols preserved, most functions retain original meaningful names like `cdecl_func`, `varargs_func`, `test_calling_conventions`
+
+---
+
+### Most Needs Improvement
+
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union types; all composite data passed as raw pointers with array indexing losing all field semantics
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement struct type inference** - Analyze access patterns (e.g., `a1[0]`, `a1[1]` at consistent offsets) to reconstruct struct definitions with field names based on usage context
+
+2. **Recover variable semantics from usage** - Track how variables are used (loop counters, accumulators, pointers) to suggest meaningful names like `count`, `sum`, `buffer_ptr`
+
+3. **Recognize standard library patterns** - Identify varargs (`va_start`/`va_arg`/`va_end`), string operations, and common idioms to produce recognizable high-level constructs instead of raw pointer arithmetic

@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `a0`, `ptr`, and `result`. Semantic names from the source like `x`, `n`, `arr`, `head`, or `root` are completely lost, requiring significant mental effort to track data flow.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most high-level function names (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`) are successfully recovered from symbols, accurately reflecting the source. However, low-level runtime functions remain generic (`sub_401030`, `sub_401140`).
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals (e.g., `"MEM-L1-01 (local_vars): %d\n"`) are preserved and clear. However, magic numbers used for global variable offsets (e.g., `padding_0[16639]`, `16744`) and stack canary checks obscure the actual data being accessed.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is heavily polluted with Position Independent Code (PIC) artifacts like `__x86.get_pc_thunk.ax()` and stack canary checks (`__stack_chk_fail_local()`). These compiler intrinsics significantly clutter the logic, especially in global variable access.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is frequently expressed using `goto` statements (e.g., `goto ptr[2]`, `goto v1->field_50`) instead of structured loops or switches. While `do-while` loops are present, the overall flow is disjointed and hard to follow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source well; there is no excessive inlining or outlining of logic. Functions like `test_stack_memory` and `heap_basic` maintain their original scope and granularity.
+
+**7. Code Linearization:** Score: 4/10
+Justification: Forward jumps and computed `goto` statements interrupt the top-to-bottom reading flow. For example, `sub_401030` uses a computed jump which breaks linear execution tracing significantly.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: Some simple functions like `local_vars` are optimized to `return a0 * 2 + 10`, which is clean. However, other areas contain redundant pointer arithmetic and stack frame setup that adds no semantic value.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are significantly degraded; `int` is often replaced with `unsigned int` (e.g., `double_value`), and pointers are frequently cast to `unsigned int` for arithmetic (e.g., `(unsigned int)create_tree_node(10)`). This loses signedness and type safety information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are not recovered. `Point`, `Node`, and `TreeNode` are replaced by generic `struct_0` types with numeric fields (`field_0`, `field_4`, `field_8`). Accessing `p->x` becomes `ptr->field_0`, destroying semantic meaning.
+
+**11. Type Safety:** Score: 3/10
+Justification: There are numerous unsafe casts, particularly treating pointers as integers (`unsigned int`) to perform arithmetic or pass them to functions. This mimics the machine code but violates high-level type safety, making the code dangerous to refactor.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex logic, such as the linked list traversal in `linked_list_heap` or the VLA setup in `vla_stack`, is left unexplained.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard patterns are not identified. The linked list creation and traversal in `linked_list_heap` is presented as raw pointer manipulation rather than a recognized data structure pattern.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: Suspicious or low-level constructs, such as the computed jump in `sub_401030` or the PIC thunk calls, are presented as standard code without any warning or annotation about their unusual nature.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the check `if (n <= 0 || n > 1000)` in `vla_stack` is decompiled but not highlighted as a safety contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: Global variable accesses are obscured by PIC offset calculations (e.g., `__x86.get_pc_thunk.ax() + 16744`), making it unclear which global variable is being accessed without manual calculation.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are generally ordered by address, which roughly correlates to the source order in this case. However, the lack of logical grouping (e.g., all heap functions together) reduces navigability.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code relies on undefined symbols (`sub_XXXXX`) and compiler intrinsics (`__x86.get_pc_thunk`). It would not compile without significant stubbing and refactoring.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 4.5
+L2_avg: 5.5
+L3_avg: 2.67
+L4_avg: 1.25
+L5_avg: 3.67
+
+Overall = (4.5 × 0.30) + (5.5 × 0.25) + (2.67 × 0.20) + 
+          (1.25 × 0.15) + (3.67 × 0.10)
+Overall = 1.35 + 1.375 + 0.534 + 0.1875 + 0.367
+Overall ≈ 3.81
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects (Bullet List)
+- **Struct Erasure**: Custom types (`Point`, `Node`, `TreeNode`) are replaced by generic `struct_0` with fields like `field_0`, `field_4`, completely losing data structure semantics.
+- **Variable Naming**: Parameters and locals are renamed to generic `a0`, `v0`, `v1`, making it impossible to distinguish between `x`, `n`, `i`, or `ptr` without tracing the entire function.
+- **PIC Noise**: Position Independent Code artifacts (`__x86.get_pc_thunk`) are inlined into every global access, cluttering the code with low-level address arithmetic.
+- **Architecture Mismatch**: The source metadata specifies `arm64`, but the decompiled code is clearly `x86` (evident from register names and `get_pc_thunk`), indicating a fundamental context error.
+- **Control Flow**: Use of `goto` for computed jumps and loop exits makes the control flow spaghetti-like and difficult to follow.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest?** Function Naming Quality (8/10)
+- **Why?** The decompiler successfully preserved the original function names from the symbol table, allowing the user to identify high-level operations like `heap_basic` or `test_stack_memory` easily.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest?** Semantic Transparency (1.25/10)
+- **Why?** The complete absence of comments, idiom recognition, and anomaly indication means the code is a raw translation of machine logic with no high-level explanation or context.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Composite Type Recovery**: Implement analysis to reconstruct `struct` layouts based on stack offsets and access patterns, restoring names like `Node` and fields like `next`.
+2.  **Variable Renaming Heuristics**: Use data flow analysis to infer variable names (e.g., variables used as loop counters should be named `i` or `counter`; pointers used in `malloc` should be `ptr` or `buf`).
+3.  **Abstract PIC Artifacts**: Detect and abstract away Position Independent Code patterns (like `get_pc_thunk` + offset) into direct global variable references to drastically improve readability.

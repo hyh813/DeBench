@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`, `a4`, `a5`) and globals are `g1` through `g18`. Original had semantic names like `count`, `sum`, `args`, `large`, `test_str` that are completely lost.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Test functions retained names (`test_calling_conventions`) but helper functions got `_constprop_0` suffixes indicating constant propagation. 40+ original functions reduced to 6, losing `cdecl_func`, `varargs_func`, `func_struct_byval`, etc.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: String literals stored as hex-encoded globals (`g1 = "=== \xe6\xb5\x8b..."`) instead of inline. Printf calls use pre-computed magic numbers (15, 50, 6, 33) rather than showing actual computation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Code is clean but only because logic was eliminated. No compiler artifacts visible, but this masks the severe semantic loss from constant propagation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Control flow appears natural only because complex logic was constant-propagated away. Original loops, conditionals, and switch statements are replaced with direct printf calls.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: Catastrophic failure - 50+ original functions collapsed to 6. `test_calling_conventions` is now a monolithic printf sequence instead of calling individual test functions that show actual logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code reads top-to-bottom trivially because there's no real control flow. This is misleading - original had complex branching that's now invisible.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No visible redundancy, but this results from logic elimination rather than proper optimization recovery. Original varargs loops are completely gone.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `int32_t` consistently but loses all rich types. Original had `LargeStruct`, `SmallStruct`, `func_ptr_t`, `va_list`, `char*`, `double` - all flattened to `int32_t`.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: ALL struct definitions missing (LargeStruct, SmallStruct, TestIntPair, BigStruct, SmallPoint, LargeData). Critical failure - cannot understand struct-by-value or struct-by-pointer semantics.
+
+**11. Type Safety:** Score: 5/10  
+Justification: No unsafe casts visible only because type system was flattened. Original had pointer casts, void* conversions, and function pointer calls that are now invisible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining calling conventions, test scenarios, and expected values.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern completely lost (va_start/va_arg/va_end replaced with direct parameters). Function pointer callbacks, struct passing patterns all invisible.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about massive function loss or constant propagation. Should flag that 40+ functions were eliminated and logic was pre-computed.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or expected value documentation. Original had explicit "期望" (expected) comments for each test case.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call graph severely damaged. `test_calling_conventions` should call `call_cdecl()`, `call_stdcall()`, etc. but these are all missing.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Single file with no section organization. Original had clear sections (4.1 Calling Conventions, 4.2 Parameter Passing, 4.3 Return Values) all lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code compiles but doesn't represent original functionality. Missing struct definitions and function prototypes would cause compilation errors if original code patterns were used.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+3+7)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (5+2+6+7)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (4+1+5)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):  (3+4+6)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                              = 3.78/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **40+ functions eliminated** through aggressive constant propagation at -O0 (should preserve all logic)
+- **All struct definitions lost** (LargeStruct, SmallStruct, TestIntPair, etc.) - cannot understand data layouts
+- **Variable names completely generic** (`a1`, `a2`, `g1`, `g2`) with no semantic meaning
+- **Zero comments** despite original having extensive documentation explaining test purposes
+- **Varargs handling invisible** - va_start/va_arg/va_end pattern replaced with direct parameters
+
+### Best Quality Aspect: **Noise Reduction (7/10)**
+- Code is syntactically clean without compiler artifacts, though this masks severe semantic loss
+
+### Most Needs Improvement: **Composite Type Recovery (1/10)**
+- Complete failure to recover any struct/union definitions, making data structure understanding impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Respect -O0 debug builds** - disable aggressive constant propagation when debug symbols indicate source-level recovery is possible
+2. **Recover struct definitions from stack layouts** - analyze function prologues/epilogues to infer composite type structures
+3. **Preserve original function boundaries** - don't inline or eliminate functions when debug information preserves call graph structure

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `a2`, `i`, `ptr`, `cur`, `iter`. No semantic names like `packet_size`, `user_count`, or `checksum` are recovered. This makes tracking variable purpose extremely difficult across all 40+ functions.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: About half the functions have correct names from symbol table (`sequential_ops`, `single_if`, `loop_for_fixed`, `recursion_factorial`, etc.), but the other half retain generic names like `sub_401020`, `sub_40102d`, `sub_401030`. The mixed result prevents reliable function identification.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are clear (e.g., `10`, `20`, `30` in switch cases), but magic numbers like `4294967295` (0xFFFFFFFF) appear frequently as error returns without explanation. The division constant `1717986919` used in `loop_while` and `loop_dowhile` is unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some unnecessary casts present (e.g., `(unsigned int)a0`), but no debug instrumentation or frame pointer manipulation clutter. The code is mostly readable without excessive noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Core control structures (if-else, for/while loops, switch) are mostly preserved naturally. Some goto statements appear in function pointer calls (`goto a0`), which is a decompilation artifact. At -O0, control flow should be nearly identical to source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Each function has a single responsibility. Parameter counts are reasonable. No 500-line monoliths or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist in switch statements and early returns, but these are manageable. No severe disruption to linear reading flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code. Some loop unrolling visible in `loop_for_fixed` and `loop_continue`, but not excessive. Common subexpression elimination artifacts are minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation - `unsigned int` used where `int` should be in many functions (`sequential_ops`, `single_if`, `if_else`). Pointers use `unsigned long` instead of proper pointer types. Signed/unsigned confusion throughout, particularly in return types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Only one struct defined (`struct_0`) with generic field name. Arrays like `CSWTCH.55` for switch tables have no semantic meaning. No struct/union recovery for the matrix arrays in `loop_multi_exit` or `loop_nested`. All composite types are essentially lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (e.g., `(unsigned int)a0` casts). Pointer arithmetic is mostly correct but could be safer. No severe buffer overflow patterns. Function pointer handling uses `goto` instead of proper call, which is a type safety concern.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled code. No algorithm explanations, no decompilation confidence indicators, no @param/@return documentation. The original source had extensive comments (961 LOC) but none are recovered.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly recognized (state machine in `state_machine`, switch tables in `switch_small`) but not explicitly named or documented. Design patterns like "callback", "strategy", "state" are not identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some anomalies noted with "do not return" comments for functions like `_start` and `__libc_start_main`. However, most decompilation uncertainties are silent - indirect calls, unresolved jumps, and potential undefined behavior are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions documented. No invariants recovered. Error conditions like "ptr != NULL" or "n > 0" are not indicated. The function contracts are essentially lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are clear through direct invocation. However, global variable usage is not well documented (e.g., `jump_buffer`, `g_405fe8`). Callback relationships (e.g., `process_with_callback` using function pointer) are not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped somewhat logically by type (test functions, helper functions, control flow functions). However, there's no clear separation into modules or files matching the original source organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Many `extern` declarations required for undefined symbols. Won't compile standalone without significant stubbing. Dependencies on libc functions (`puts`, `__printf_chk`, `__libc_start_main`) are not clearly documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `a0`, `a1`) making code comprehension extremely difficult
+- **Type precision**: `unsigned int` used incorrectly throughout, losing sign semantics from original `int` parameters
+- **Composite type loss**: No struct recovery; all complex data types reduced to raw pointers and arrays
+- **No comments**: Zero algorithm explanations or decompilation confidence indicators
+- **Function pointer handling**: Uses `goto` instead of proper function pointer calls, obscuring callback patterns
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions maintain appropriate granularity matching source. Each function has a single, identifiable purpose with reasonable parameter counts. No excessive inlining or fragmentation.
+
+### Most Needs Improvement: Variable Naming (2/10)
+Nearly all variables use generic names with no semantic meaning. Combined with poor comment quality, the code is nearly impossible to understand without constant reference to the original source.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a0` used in size check → `size`; `v1` accumulates sum → `sum`)
+2. **Recover type signedness**: At -O0, signed/unsigned should match source exactly. Add type inference from comparison operations
+3. **Add structural comments**: Include algorithm explanations, decompilation confidence levels, and function purpose at minimum

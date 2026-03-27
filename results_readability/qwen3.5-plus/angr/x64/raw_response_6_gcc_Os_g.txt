@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. At `-O0` with debug symbols, names like `dst`, `src`, `buffer`, `thread_count` should have been recovered from DWARF info.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results—some original names recovered (`param_strcpy`, `thread_compute`, `signal_handler`) but many remain as `sub_402020`, `sub_402030` placeholders. Critical functions like `test_standard_library_functions` preserved, but helper functions lost.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `4294967295` (unsigned -1), `42` (success code), syscall numbers `2`, `3`, `10`, `14`. String literals preserved well, but numeric constants lack semantic context.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate compiler artifacts present: stack variable annotations (`[bp-0x8]`), unnecessary type casts, register variable comments (`// rax`, `// rdi`). Not severe but adds visual clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops mostly recovered as `for`/`while` constructs, but some use awkward `while(true)` with breaks. Conditionals readable but some nested if-else chains could be cleaner. At `-O0`, flow should match source exactly.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but some functions have inflated parameter lists (e.g., `param_strcmp` has 4 parameters when source has 2). Thread functions properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns. Some forward references disrupt flow. No excessive goto usage, which is good for `-O0` decompilation.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant type casts repeated throughout. Variable assignments like `ptr = ptr;` in `param_malloc_free` serve no purpose. No dead code elimination visible.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types recovered (`int`, `char*`, `unsigned long long`) but precision lost—`size_t` becomes `unsigned long long`, `pid_t` becomes `unsigned int`. Signed/unsigned mismatches present (e.g., `param_strcpy` returns `long long` vs source `int`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Minimal struct recovery—only `FILE`, `sockaddr`, `struct_0` defined with empty or generic fields. `ThreadData` struct from source completely lost, replaced with array indexing. TLS access uses raw pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe implicit casts between signed/unsigned. Pointer arithmetic without proper typing (e.g., `ptr[1 + a0]` in `param_malloc_free` accesses freed memory). No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments in decompiled output. Only auto-generated type annotations (`// rax`, `// [bp-0x8]`). No algorithm explanations, no decompiler confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`, `fork`). Producer-consumer pattern in `param_condition_variable` not explicitly identified. Atomic operations partially recognized but `__atomic_fetch_add` simplified incorrectly.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly flagged: `[D] Unsupported jumpkind Ijk_SigTRAP at address 4204389`. No warnings about type mismatches, potential buffer overflows, or unresolved indirect calls elsewhere.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `dst != NULL` for `strcpy`). Error return values (`4294967295`, `42`) not explained. No postcondition inference for memory allocation functions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible inline but no call graph documentation. Global variables (`signal_received`, `atomic_counter`) referenced without usage context. Callback relationships (thread entry points) not explicitly marked.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file with no logical grouping. Source's clear section organization (6.1 Standard Library, 6.2 System Calls, 6.3 Threads) completely lost. No header file separation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates successful compilation. External dependencies (`pthread`, `libc`) implicitly present. Some platform-specific code (AMD64 vs original ARM64) may cause issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+6)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+6+6+5)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (5+4+5)/3   = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (2+5+4+3)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (5+4+7)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.78/10
+```
+
+**Overall Readability Score: 4.8/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `a0`, `ptr`) despite `-O0 -g` debug symbols that should preserve original names
+- **Zero semantic comments** — no explanation of magic numbers like `4294967295` (unsigned -1) or function purposes
+- **Type precision degraded** — `size_t` → `unsigned long long`, return type mismatches (`long long` vs `int`)
+- **Struct recovery failed** — `ThreadData` struct lost, replaced with raw array indexing
+- **Architecture mismatch** — Source compiled for ARM64, decompilation shows AMD64, causing potential instruction semantic differences
+
+### Best Quality Aspect:
+- **Build System Compatibility (7/10)** — Code compiles successfully with dependencies properly declared, making it at least executable for testing purposes.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** — Complete absence of explanatory comments makes understanding non-trivial logic extremely difficult; even basic function purpose documentation is missing.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage DWARF debug symbols at -O0** — Extract original variable and function names from debug info instead of generating `v0`, `sub_XXXX` placeholders
+2. **Add semantic comment generation** — Automatically document magic numbers, explain error codes, and mark decompiler confidence levels for uncertain recoveries
+3. **Improve struct/union recovery** — Analyze memory access patterns to reconstruct composite types like `ThreadData` instead of leaving raw pointer arithmetic

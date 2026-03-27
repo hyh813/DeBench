@@ -1,0 +1,151 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `a0`, `a1`, `vvar_112{r64|4b}`) with zero semantic meaning. Original variables like `temp1`, `sum`, `count`, `result` were completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`sequential_ops`, `single_if`, `recursion_factorial`) but many are generic (`sub_4004dc`, `$a.16`, `$a.22`, `$a.28`). Inconsistent recovery quality.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `4294967295` (should be `-1`), `1717986919` (division optimization constant), `0x12345678`. No constants recovered or explained.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: `armg_calculate_condition()` calls pollute many functions, redundant variable assignments (`v0 = v1; v1 = v2`), and compiler artifacts visible throughout.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: `single_if` uses bizarre bit manipulation instead of simple `if`; `loop_for_fixed` converted to complex arithmetic formula; `goto_backward` not recovered as loop; `duffs_device` completely garbled.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but `test_control_flow_l2` is a 200+ line monolith that should be simplified. Some helper functions correctly separated.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Excessive `goto` usage (`LABEL_400xxx`), forward jumps into loop bodies, non-linear reading in `nested_if_deep` and `loop_multi_exit`.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate expressions visible (`return v2(); return v2();` in `call_func_ptr`), redundant condition checks, tail duplication in multiple functions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything is `int` or `unsigned int` - no `int32_t`, `size_t`, or precise types. Sign mismatches (original `int` became `unsigned int` in many functions like `single_if`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs defined but with generic field names (`field_0`, `field_4`, `field_8`, `field_c`). Original array structures like `matrix[3][4]` lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts, pointer arithmetic issues (`v9 = &g_401988[0]`), function pointer types degraded to `unsigned int*`. Sign conversion risks throughout.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. No algorithm explanations, no decompilation confidence indicators, no API documentation. Only `/* do not return */` annotations.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No patterns identified - state machines, loops, switch-case fallthrough, Duff's device all unrecognized. `switch_fallthrough` logic obscured.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite obvious issues (`computed_goto` is empty, `armg_calculate_condition` calls unexplained, architecture mismatch ARM64→ARMEL).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`), no postconditions, no error condition documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`g_413008`, `g_401f0d`) without context. Callback relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file, no logical grouping by control flow level (L1/L2/L3). Test functions mixed with implementation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies unresolved (`__libc_start_main`, `__gmon_start__`, `__cxa_finalize`). Architecture mismatch (ARM64 source, ARMEL decompilation) may prevent compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+3)/4 = 3.25
+Level 2 (Structural):  (3+6+4+4)/4 = 4.25
+Level 3 (Type):        (4+4+4)/3   = 4.00
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75
+Level 5 (Contextual):  (5+5+5)/3   = 5.00
+
+Overall = (3.25 × 0.30) + (4.25 × 0.25) + (4.00 × 0.20) + (1.75 × 0.15) + (5.00 × 0.10)
+        = 0.975 + 1.0625 + 0.80 + 0.2625 + 0.50
+        = 3.60/10
+```
+
+**Overall Readability Score: 3.6/10**
+
+---
+
+### Critical Defects
+
+- **Variable `a0`, `a1`, `a2` should be named** `x`, `op`, `n` etc. based on original source semantics
+- **`single_if` uses bit manipulation** (`a0 << ((char)(0 < a0 ? 1 : 0) & 31)`) instead of simple conditional
+- **`armg_calculate_condition()` calls** obscure all conditional logic in complex functions
+- **`computed_goto` function is empty** - complete decompilation failure
+- **`duffs_device` is completely garbled** with nested ternary expressions spanning 20+ lines
+- **Architecture mismatch** (ARM64 source → ARMEL decompilation) indicates wrong binary or configuration error
+- **Magic number `4294967295`** used throughout instead of `-1` (unsigned interpretation of signed value)
+
+---
+
+### Best Quality Aspect
+
+- **Contextual Coherence (5.0/10)** - Function call relationships are at least visible, and some original function names were preserved allowing basic navigation.
+
+---
+
+### Most Needs Improvement
+
+- **Semantic Transparency (1.75/10)** - Zero comments, no pattern recognition, no anomaly flagging despite severe decompilation issues. This makes the code practically unusable for analysis.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover high-level control flow structures** - Convert `armg_calculate_condition` patterns back to native `if/while/for` constructs; recognize loop patterns from backward jumps.
+
+2. **Implement semantic variable naming** - Use data flow analysis to infer variable purposes (e.g., loop counters → `i`, `j`; accumulators → `sum`, `count`; flags → `is_valid`).
+
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions with comments like `// DECOMPILER UNCERTAINTY: indirect call target unresolved` to guide manual review.
+
+---
+
+### Additional Observations
+
+**Architecture Mismatch Concern:** The original source was compiled for ARM64 with `-O0 -g` (debug symbols), which should yield near-perfect decompilation (8-10 range). The ARMEL output with severe degradation suggests either:
+- Wrong binary was decompiled
+- Decompiler configuration error
+- Metadata inconsistency in the task
+
+**Functions That Recovered Well:**
+- `sequential_ops`: Perfect `(a1 + a0) * 2 - a2`
+- `if_else`: Clean `(0 < a0 ? 1 : 0)`
+- `ternary_op`: Proper if-else recovery
+- `recursion_factorial`: Correct recursive structure
+- `obfuscated_cf`/`opaque_predicate`: Correctly simplified
+
+**Functions That Failed Completely:**
+- `computed_goto`: Empty function body
+- `duffs_device`: 20+ line nested ternary nightmare
+- `nested_if_deep`: Lost 5-level nesting, only 4 parameters
+- `switch_fallthrough`: Logic obscured with nested conditionals
+
+This decompilation would require substantial manual reconstruction to be usable for analysis or maintenance.

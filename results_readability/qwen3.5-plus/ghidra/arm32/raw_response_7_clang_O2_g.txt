@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `iVar2`, `pbVar1`, `local_28`) with 30+ "Unresolved local var" comments indicating complete name recovery failure. Original names like `result`, `p1`, `p2`, `a`, `b`, `temp` are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are preserved from source symbols (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`). This is the decompiler's strongest lexical feature, accurately reflecting original intent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`0x5a`, `0x20`, `0x14`, `0x23`, `0xe1`, `0x7a314`) without explanation. Original source had meaningful constants like `0xDEADBEEF` with comments; decompiled shows pre-computed constants obscuring logic.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Frequent "Unresolved local var" and "WARNING: Unknown calling convention" comments clutter code. Compiler runtime functions (`__divsi3`, `__aeabi_idivmod`) included with excessive verbosity.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Original `while` loops converted to `do-while` structures. `param_tail_call_optimized` has bizarre math (`(n-2)*(n-1)` calculations) instead of simple recursion. At `-O0`, this restructuring is unexpected degradation.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved, but some functions optimized to constants (`call_fake_branch` returns `10` directly). `__divsi3` is 300+ lines when it should be a simple library call.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `__divsi3` has 35 sequential boolean checks (bVar5 through bVar35) creating extreme non-linearity. Most user functions maintain reasonable flow.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: `__divsi3` has 35+ boolean variables for bit-by-bit division - extreme redundancy. `test_obf_opt_edge` duplicates logic from individual functions. `call_string_encryption` duplicates `param_string_encryption` entirely.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used instead of `int32_t`. Unsigned/signed confusion present (`uint` vs `int`). Pointer types generally correct but lack const-correctness. Many "Unresolved local var" with unknown types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Bitfield struct shown as `anon_struct_4_3_4e909822 bitfield@[???]` - completely unusable. No struct recovery for `jmp_buf` or other composite types. Arrays shown as generic pointers.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many unsafe casts present (`(byte*)`, `(int*)`, `(char*)`). No const-correctness preserved. Pointer arithmetic visible but not obviously dangerous. No buffer overflow warnings despite original code having intentional overflows.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings ("Unresolved local var", "WARNING: Subroutine does not return"). No semantic comments explaining algorithm purpose. Original source had extensive section comments (7.1, 7.2, 7.3) completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` not recognized. String XOR decryption pattern unidentified. No design pattern naming. The opaque predicate logic is present but not labeled as such.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system - "Unresolved local var", "WARNING: Could not recover jumptable", "WARNING: Subroutine does not return" clearly flag decompilation uncertainty. This is the decompiler's best semantic feature.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "x != 0 for division"). No postconditions. Original had expected values in comments ("期望: 10", "期望: 20") - all lost. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible and traceable. Global variables referenced (`jmp_buffer`, `div_zero_caught`). No call graph documentation or callback relationship indicators.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output without original section organization (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases). No logical grouping comments. Helper functions mixed with user code.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Requires linking compiler runtime (`__divsi3`, `__aeabi_idivmod`, `__aeabi_ldiv0`). External dependencies (signal, strlen, strncpy) need standard library. Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00
+Level 2 (Structural):  (5+6+6+3)/4 = 5.00
+Level 3 (Type):        (5+3+5)/3   = 4.33
+Level 4 (Semantic):    (4+2+7+2)/4 = 3.75
+Level 5 (Contextual):  (6+4+5)/3   = 5.00
+
+Overall = (5.00×0.30) + (5.00×0.25) + (4.33×0.20) + (3.75×0.15) + (5.00×0.10)
+        = 1.50 + 1.25 + 0.87 + 0.56 + 0.50
+        = 4.68/10
+```
+
+**Overall Readability Score: 4.7/10**
+
+### Critical Defects:
+- **Variable names completely generic** - `iVar1`, `iVar2`, `pbVar1` instead of `result`, `p1`, `p2`, `buffer`
+- **`__divsi3` function has 35+ boolean variables** - extreme redundancy making it unreadable
+- **Bitfield struct unrecoverable** - shown as `anon_struct_4_3_4e909822` with no field names
+- **GCD algorithm not recognized** - opaque predicate logic present but unlabeled
+- **All semantic comments lost** - original expected values and section organization gone
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Symbol names preserved from debug info, accurately reflecting original function purposes
+
+### Most Needs Improvement: **Idiom Recognition (2/10)**
+- Common algorithms (GCD, XOR decryption, opaque predicates) completely unrecognized despite being present in code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement pattern-based variable naming** - Detect GCD loops and name variables `a`, `b`, `temp` instead of `iVar1`, `iVar2`, `iVar3`
+2. **Add algorithm detection for common patterns** - Recognize XOR string decryption, Euclidean GCD, and opaque predicate structures with explanatory comments
+3. **Eliminate boolean variable explosion in division routines** - Collapse the 35+ `bVar` variables in `__divsi3` into a single shift-and-subtract loop representation

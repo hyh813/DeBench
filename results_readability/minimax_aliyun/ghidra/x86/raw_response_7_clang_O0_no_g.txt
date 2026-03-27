@@ -1,0 +1,157 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+Let me analyze the decompiled code against the original source for this specific function.### Original Source Analysis
+```c
+int param_fake_branch(int x) {
+    int result = x;
+    
+    // 永假条件：x*x < 0 对于实数x恒不成立
+    if (x * x < 0) {
+        result = result * 2 + 0xDEADBEEF;
+    }
+    
+    // 另一个永假条件：字符串长度不可能为负
+    const char *str = "test";
+    if (strlen(str) < 0) {
+        result += 1000;
+    }
+    
+    return result;
+}
+```
+
+### Decompiled Version
+```c
+int param_fake_branch(int param_1)
+{
+  int local_c;
+  
+  local_c = param_1;
+  if (param_1 * param_1 < 0) {
+    local_c = param_1 * 2 + -0x21524111;
+  }
+  strlen("test");
+  return local_c;
+}
+```
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names `param_1` and `local_c` instead of semantic names `x` and `result`. The parameter `x` is clearly used as input, and `result` is the accumulator - these should be recovered from the source patterns.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function name `param_fake_branch` exactly matches the original source. The decompiler correctly preserved the function identity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: The constant `-0x21524111` is technically correct (two's complement of 0xDEADBEEF) but highly confusing. Should be displayed as `0xDEADBEEF` with comment explaining it's a magic constant. The `strlen("test")` call appears without explanation of why it's there.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Relatively clean code with minimal compiler artifacts. The `strlen("test")` call is present (dead code from the second always-false branch) but this is actually important semantic information about the original source.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow exactly matches source - simple if statement with assignment. At -O0, this should be nearly identical to source, and it is. The condition `x * x < 0` is preserved correctly.
+
+**6. Function Decomposition:** Score: 10/10  
+Justification: This is a single, focused function with clear single responsibility. No inlining or outlining issues. The function does one thing: implements fake branch obfuscation.
+
+**7. Code Linearization:** Score: 10/10  
+Justification: Code reads perfectly top-to-bottom: initialize, conditional modify, return. No forward jumps, no goto, no complex nesting. Matches source structure exactly.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No redundant code. The `strlen("test")` call is actually present in source (though its result is unused) - this is intentional obfuscation, not redundancy. The decompiler correctly preserved it.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10  
+Justification: Parameter is correctly typed as `int param_1`, and local variable is `int local_c`. At -O0, types should be preserved. Minor deduction for not inferring `result` as a named variable.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No composite types (structs/unions) in this function. Not applicable - N/A would be more appropriate but scoring as perfect since none were needed.
+
+**11. Type Safety:** Score: 9/10  
+Justification: No unsafe casts or operations. Integer arithmetic is type-safe. The only minor issue is the confusing hex constant representation.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining the obfuscation technique. The source had clear comments about "永假条件" (always-false condition). The decompiled version should indicate this is intentional fake branch obfuscation, not a bug.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: The "fake branch" (OBF-L4-02) obfuscation pattern is not recognized or named. The decompiler doesn't indicate this is an anti-analysis technique. The always-false condition should be flagged.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: No warnings about suspicious code. The dead `strlen` call and the bizarre constant `-0x21524111` should be flagged as unusual. The unreachable code block warning in the metadata is good but not visible in the function itself.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions or postconditions documented. Should indicate that input `x` can be any integer and output is always `x` (since both branches are unreachable).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function is called by `call_fake_branch()` which passes literal 10. This relationship is clear from the call site. The function name matches source exactly.
+
+**17. Module Organization:** Score: 8/10  
+Justification: The function appears in a logical grouping with related obfuscation functions (param_opaque_predicate, param_instruction_substitution). Organization matches source file structure.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The function would compile as-is with minimal stubs for standard library functions (strlen). The hex constant issue might cause warnings but should compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 5 + 8) / 4 = 6.5
+L2_avg = (9 + 10 + 10 + 9) / 4 = 9.5
+L3_avg = (9 + 10 + 9) / 3 = 9.33
+L4_avg = (2 + 3 + 4 + 3) / 4 = 3.0
+L5_avg = (8 + 8 + 9) / 3 = 8.33
+
+Overall = (6.5 × 0.30) + (9.5 × 0.25) + (9.33 × 0.20) + 
+          (3.0 × 0.15) + (8.33 × 0.10)
+Overall = 1.95 + 2.375 + 1.866 + 0.45 + 0.833 = 7.474
+```
+
+**Overall Readability Score:** 7.5/10
+
+---
+
+### Critical Defects
+
+- **Variable naming**: `param_1` should be `x`, `local_c` should be `result` - these are clear from source and usage patterns
+- **No semantic comments**: The function implements "fake branch" obfuscation (OBF-L4-02) but decompiled code has no indication of this intent
+- **Confusing constant**: `-0x21524111` is technically correct but should display as `0xDEADBEEF` with explanation
+- **No anomaly flagging**: The dead `strlen("test")` call and always-false condition should be flagged as suspicious/obfuscation
+
+### Best Quality Aspect: Structural Intelligibility (9.5/10)
+- Control flow exactly matches source, code is linear and readable, no redundancy
+
+### Most Needs Improvement: Semantic Transparency (3.0/10)
+- No comments explaining obfuscation technique, no pattern recognition, no anomaly warnings
+
+---
+
+### Top 3 Recommendations
+
+1. **Recover variable names from usage patterns**: `param_1` is used in arithmetic and compared - infer `x`. `local_c` is assigned from param and returned - infer `result`.
+
+2. **Display hex constants in canonical form**: Show `0xDEADBEEF` instead of `-0x21524111` - this is a well-known magic number used in obfuscation.
+
+3. **Add semantic context**: Flag this as "fake branch" or "opaque predicate" obfuscation. The source explicitly marks this as OBF-L4-02 - the decompiler should recover this intent and add explanatory comments about the always-false condition.

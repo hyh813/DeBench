@@ -1,0 +1,115 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY (30% weight)
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `ptr`, `v3`, `v4`, `v5`. For -O0 debug compilation, this is extremely poor - debug symbols should enable semantic name recovery. Compare: source uses `c` for char, `n` for array count, but decompiled uses `a0`, `i`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are correctly recovered: `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `struct_simple`. The source function names are preserved almost perfectly. Minor issue: library functions like `__mulsf3` aren't recognized as math library stubs.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like 65 (ASCII 'A'), 32 (case offset) in `process_char` appear without explanation. Source comments indicate these are for uppercase-to-lowercase conversion. Array indices like 99, 88, 77 in `array_2d_stack` are hard-coded but represent `arr[9][9]`, `arr[8][8]` etc.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Float/double library functions (`__mulsf3`, `__adddf3`, `__muldf3`) are massive goto-spaghetti with 1000+ lines of unreadable code. Example: the `__adddf3` function at 0x4017f4 has nested ternary operators and `armg_calculate_condition` calls making it completely opaque. Register annotations like `// r0`, `// r2` clutter every function.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Library functions use excessive goto: `goto LABEL_401809`, `goto LABEL_40180a`, etc. in `__adddf3`. For -O0, this is unacceptable - simple arithmetic should map to natural if/while structures. Even `process_bool` has convoluted expression: `(0 < a0 ? 1 : 0) & v0 + -(v0) + (v0 <= 0)` which obscures the simple `x > 0 && x % 2 == 0` logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are properly extracted - each source function becomes a separate decompiled function. Test functions like `test_data_types_l1` are 80+ lines but this mirrors source. Library functions should ideally be abstracted or marked as library code rather than fully decompiled.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Simple functions read reasonably top-to-bottom. However, library functions have 50+ goto jumps creating impossible linear reading. Example: `__muldf3` has jumps between LABEL_40165d, LABEL_401662, LABEL_401661, etc. forward and backward.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some duplicate code in test function calls (e.g., `printf` called twice with same args). Library functions have repeated patterns but this is inherent to the algorithms. No dead code elimination visible.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+**9. Type Precision:** Score: 2/10  
+Justification: **Critical failure** - ALL types are `unsigned int`. Source uses: char (8-bit), short (16-bit), float, double, long double, long long, _Bool, const int*, volatile int*. Decompiled shows: `unsigned int process_char(unsigned int a0)`, `unsigned int process_short(unsigned short a0, unsigned short a1)` returns `unsigned int`. Float/double functions don't even have proper floating-point types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Partial struct recovery with generic names: `typedef struct struct_0 { unsigned int field_0; } struct_0;`. Source `Point3D {x, y, z}` becomes `a0[1] + *(a0) + a0[2]` (array access, no struct). Self-referential structs in linked lists are partially recovered with `struct struct_0 *field_4`. Union handling in `union_type` incorrectly converts between int/float.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Significant type safety issues: all arithmetic is unsigned (`a1 + a0 & 65535` for shorts), no const correctness (`const_param` takes `unsigned int *a0` not `const unsigned int *`), float operations use integer math. Unsafe pointer arithmetic in array functions. No alignment or overflow annotations.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated register annotations like `// r0`, `// r1`, `// [bp-0x4]`. No explanation of algorithms, no recovery of source comments about test scenarios (e.g., "// DT-L1-01: 字符类型测试").
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Source idioms like "uppercase to lowercase" (`c + 32`), "doubling value" (`x * 2`), "checking even positive number" (`x > 0 && x % 2 == 0`) are completely obscured by arithmetic conversions. No recognition of common C patterns like pointer traversal, linked list iteration, or tree recursion.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of decompilation uncertainties. The code presents everything as definitive even when type information is lost. Could add warnings like "TYPE UNCERTAIN: originally char" or "LIKELY: floating point operation".
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. Source has explicit test expectations (e.g., "// 期望: 15") but these aren't captured. Could recover "requires: n > 0" for array functions, "ensures: return is doubled input".
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are preserved (`test_data_types_l1()` calls `process_char`, etc.), but relationships to external code unclear. Global variables like `g_413008` are unexplained. No documentation of which functions call which, or test dependencies.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - data types together, array functions together, pointer functions together. This matches source organization (test_data_types_l1, test_array_types, test_pointer_types, test_composite_types). Good preservation of test harness structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many `extern` declarations needed (g_413008, g_402483). Test functions need printf/puts stubs. Would require significant patching to compile - missing includes, undefined externs, type mismatches. Library functions shouldn't be decompiled at all - should be marked as imported.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+8+4+2)/4 = 4.0
+L2_avg = (3+7+4+5)/4 = 4.75
+L3_avg = (2+5+4)/3 = 3.67
+L4_avg = (2+3+3+2)/4 = 2.5
+L5_avg = (4+7+3)/3 = 4.67
+
+Overall = (4.0 × 0.30) + (4.75 × 0.25) + (3.67 × 0.20) + (2.5 × 0.15) + (4.67 × 0.10)
+        = 1.20 + 1.19 + 0.73 + 0.38 + 0.47
+        = 3.97/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects
+
+1. **All types lost** - Everything is `unsigned int`; char, short, float, double, long, bool all indistinguishable
+2. **Variable names generic** - v0, v1, a0, a1 provide no semantic meaning
+3. **Library functions decompiled** - __mulsf3, __adddf3, __muldf3 should be marked as imports, not fully decompiled with goto-spaghetti
+4. **No type safety** - All arithmetic unsigned, no const/volatile preservation, no floating-point types
+5. **Magic numbers unexplained** - 65, 32, 99, 88 appear without documentation of their meaning
+
+### Best Quality Aspect: Function Naming (scored 8/10)
+Function names match source almost perfectly - `process_char`, `array_1d_stack`, `ptr_single` correctly recovered
+
+### Most Needs Improvement: Type Precision (scored 2/10)
+Critical failure at -O0 to not recover basic C types (char, short, int, long, float, double, bool) when debug info is available
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Type Recovery Enhancement**: At -O0 with debug info, infer types from variable usage and stack layout. Distinguish char (8-bit ops), short (16-bit), int (32-bit), long long (64-bit), float/double (FP registers).
+
+2. **Library Function Handling**: Don't fully decompile common library functions (__muldf3, __addsf3, etc.). Mark as imports/stubs with annotations like "// Math library: double multiplication".
+
+3. **Variable Name Inference**: Use debug symbol information and stack frame analysis to recover semantic names. `a0` used in bounds check → `array_size`; `ptr` used in string traversal → `string_ptr`.

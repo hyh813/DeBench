@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `a1`, `a2`, `str`) with no semantic meaning. For example, `param_strcpy` uses `str` and `str2` instead of `dst` and `src`, obscuring the copy direction.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main function names preserved well (`param_strcpy`, `call_memcpy`, `thread_compute`), but helper functions are generic (`function_23c0`, `function_24b0`). Original intent is partially recoverable through naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x100000000`, `0xffffffff`, `0x7fffffff8` appear without explanation. Test values (42, 90, 12) are from original code but not documented as expected values.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`) appear in nearly every function. Redundant casts (`& 0xffffffff`) clutter logic throughout.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Extensive `goto` labels (`lab_0x2f0b`, `lab_0x32ba`, `lab_0x4270_2`) replace natural loop/conditional structures. Original `for` loops converted to manual `while` with increment logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity mostly preserved, but some functions bloated (e.g., `param_thread_local_storage` at 300+ lines). Library wrappers created (`function_24b0` for `stpcpy`) add indirection.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Stack canary checks at function ends create backward jumps. Multiple exit points with `goto` disrupt top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary pattern repeated identically in 50+ functions. Thread creation loops have duplicated structure across `param_mutex_lock`, `param_atomic_ops`, `param_thread_local_storage`.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `int64_t` regardless of original type. Lost distinctions between `int`, `size_t`, `ssize_t`, `pid_t`. Pointer types often just `int64_t *`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered (`_IO_FILE`, `stat`, `shmid_ds`) but fields are generic (`e0`, `e1`, `e2`). `ThreadData` struct not recovered—uses raw offsets instead.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout (`(int32_t)a1`, `(int64_t *)mem`). Pointer arithmetic on `int64_t` instead of typed pointers. Function pointer casts lose signature information.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comments present. Zero algorithm explanations, API contracts, or decompilation confidence indicators. No documentation of non-obvious logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `memcpy`, `pthread_create`), but higher-level patterns (producer-consumer, mutex protection) not identified or named.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings for indirect calls, unresolved references, or suspicious patterns. Stack canary checks present but not explained as compiler artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"). Error conditions not documented. No invariant recognition for loops or shared state.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g34`, `g35`, `g41`) used without explanation of purpose or ownership.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file with no logical grouping beyond original function order. No header file separation or namespace structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Standard library includes present. Custom struct definitions may cause conflicts. Should compile with minor fixes but external dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+7+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):   (4+6+5+5)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type System):  (4+5+3)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):     (2+5+3+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):   (5+5+6)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.53/10
+```
+
+### Overall Readability Score: **4.5/10**
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on usage (e.g., `thread_count`, `iterations`, `buffer_size`)
+- **Control flow uses `goto` labels** instead of structured loops for simple iteration patterns
+- **Type degradation to `int64_t`** loses semantic meaning of `size_t`, `pid_t`, `ssize_t`
+- **Zero meaningful comments** - no algorithm explanations or API contracts recovered
+- **Struct fields named `e0`, `e1`, `e2`** instead of semantic names like `st_size`, `sin_family`
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Original function names (`param_strcpy`, `call_memcpy`, `thread_compute`) were preserved, maintaining semantic connection to source code intent.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no comments beyond auto-generated headers; critical logic has zero documentation explaining purpose or behavior.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in loop bounds → `count`, `iterations`; pointer dereferences → `buffer`, `data`)
+2. **Recover structured control flow** - Convert `goto` + label patterns back to `for`/`while` loops when backward jump patterns are detected
+3. **Preserve original type information** - Use debug symbols (`-g` flag present) to recover `size_t`, `pid_t`, `ssize_t` instead of defaulting to `int64_t`

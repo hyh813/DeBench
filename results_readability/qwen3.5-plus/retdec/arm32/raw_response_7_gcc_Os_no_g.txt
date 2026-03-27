@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `a1`, `a2`, `result`) with zero semantic meaning. Original source had meaningful names like `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Function names partially preserved (`param_opaque_predicate`, `call_vectorized_loop`) but many have incorrect signatures (e.g., `param_division_by_zero` takes 3 parameters instead of 1). Names don't reflect actual decompiled functionality.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0x106fc`, `0x10fd8`, `0x4d3c2b1a`) with no symbolic names. String literals are UTF-8 encoded bytes not decoded to readable Chinese text. The `0xDEADBEEF` constant from source is completely lost.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive struct initialization noise for `jmp_buf` (15+ lines of struct literal). Redundant casts throughout (`(int32_t)`, `(char *)`, `(uint32_t)`). Compiler artifacts from stack frame management visible.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Critical semantic errors - `param_opaque_predicate` always returns `3*a1+20` (the "never execute" branch). The GCD loop logic is corrupted. `param_non_tail_call` computes a formula instead of recursion, completely changing semantics.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved but parameter lists are corrupted (e.g., `call_null_pointer_deref` takes 3 parameters when source has 0). `decrypt_string` signature changed from `const char*` to `int32_t*`.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: While loops present but awkwardly structured with manual pointer arithmetic. The `param_vectorized_loop` has nested while loops that don't match source's clean for-loops. Some forward jumps disrupt reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `param_vectorized_loop` has duplicated loop logic (two nearly identical while loops). The tail call optimized function is replaced with a constant (`0x7a314`) losing the algorithm entirely. Some dead code from optimization not eliminated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `int32_t` regardless of original type. `size_t` becomes `int32_t`, `unsigned int` inconsistently applied, pointer types lost (`char*` becomes `int32_t*`). The custom `int33_t` typedef is nonsensical.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `jmp_buf` expanded into verbose struct literal instead of opaque type. No struct recovery for bitfield example. Array parameters lost dimension information. Pointer vs. array distinction completely erased.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts: `(char *)str`, `(int32_t)a1`, `(void (*)(int32_t))&g1`. Pointer arithmetic on `int32_t*` without bounds checking. Function pointer casts lose signature information. Signal handler types incorrectly cast.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of obfuscation patterns, no indication of what opaque predicates do, no documentation of edge case handling. Original source had extensive Chinese comments all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Opaque predicate pattern completely unrecognized (logic inverted). Tail call optimization not identified (replaced with constant). String encryption/decryption pattern not recognized. GCD algorithm not identified by name.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about semantic corruption. The fact that `param_opaque_predicate` always takes the "false" branch is not flagged. Signal handler setup anomalies not documented. No indication of decompilation confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions recovered (e.g., `x != 0` for division). No postconditions documented. Error handling contracts (`return -1` on exception) not explained. Original source's expected values completely lost.
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call graph partially visible but parameter passing unclear. Global variables (`g1`-`g19`) have no semantic names. Callback relationships (signal handlers) not clearly documented. String references not resolved to content.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without logical grouping. No header file separation. Static functions not properly scoped. Original source's section organization (7.1, 7.2, 7.3) completely lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code compiles (metadata confirms) but has semantic errors. External dependencies declared (`__printf_chk`). Some platform-specific constructs may not port. Would require significant patching to match original behavior.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+4)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (3+5+5+5)/4 = 4.50 × 0.25 = 1.13
+Level 3 (Type):        (3+4+3)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Context):     (4+5+6)/3   = 5.00 × 0.10 = 0.50
+
+Overall Score: 3.58/10
+```
+
+**Overall Readability Score:** 3.6/10
+
+### Critical Defects:
+- **Semantic corruption**: `param_opaque_predicate` always returns wrong branch (3x+20 instead of 2x+10)
+- **Variable naming**: All variables are `v1`, `v2`, `a1` with zero semantic meaning
+- **Type degradation**: Everything is `int32_t`, losing `size_t`, `unsigned`, pointer distinctions
+- **Zero comments**: No documentation of obfuscation patterns, edge cases, or expected behavior
+- **Function signature errors**: Multiple functions have wrong parameter counts (e.g., `param_division_by_zero` takes 3 params instead of 1)
+
+### Best Quality Aspect:
+- **Build System Compatibility (6/10)** - The code does compile successfully with declared dependencies, which is the minimum baseline for usability.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding the obfuscation patterns, edge case handling, and intended behavior nearly impossible without the original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic pattern recognition** - Detect opaque predicates, tail call optimization, and string encryption patterns to preserve original intent rather than literal instruction translation.
+
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions (e.g., "// DECOMPILER UNCERTAIN: indirect call resolution") so analysts know which code sections need manual review.
+
+3. **Recover variable names from usage context** - Analyze how variables are used (size checks, array indexing, string operations) to infer meaningful names like `buffer_size`, `encrypted_string`, `canary_value`.

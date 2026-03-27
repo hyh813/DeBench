@@ -1,0 +1,96 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (e.g., `local_c`, `acStack_2c`, `iVar1`, `puVar1`), providing no semantic insight into the original `SimpleClass` members like `value` or `name`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Global test functions like `test_cpp_member_func` are recovered correctly, but class methods suffer from mangled names like `operator__` (instead of `operator==`) or generic labels like `FUN_0001092c`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with unexplained magic numbers such as `0x125c` (4700), `0x2a` (42), and `0x3e9` (1000), which correspond to calculated results but lack named constants or comments.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The code is relatively clean of register spilling noise typical of higher optimizations, but stack canary checks (`__stack_chk_fail`) are present in every function, adding minor clutter.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: While the code is mostly linear, the logic in `test_cpp_member_func` is collapsed into a constant return, and high-level exception handling structures (`try/catch`) are replaced by low-level calls like `__cxa_throw`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Class methods are correctly separated into individual functions (constructors, destructors, virtual methods), but the logic within `test_cpp_oo_features` is somewhat monolithic and inlined.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code reads top-to-bottom with minimal jumps or backward branches, which is expected and helpful for unoptimized (-O0) code.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: There is little code redundancy; however, the decompiler has over-aggressively folded constants in `test_cpp_member_func`, effectively hiding the procedural logic of the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: While some types like `Base*` and `type_info*` are recovered, many are generic (`undefined4`, `int`), and specific class types like `SimpleClass` or `Container` are missing or replaced by raw offsets.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Class structures are not reconstructed; member access is done via raw pointer arithmetic (e.g., `*(int *)(this + 4)` in `Derived::virtual_func`), completely obscuring the object-oriented layout.
+
+**11. Type Safety:** Score: 4/10  
+Justification: The code relies heavily on unsafe pointer arithmetic to access class members (e.g., `this + -0xc` for virtual inheritance offsets), which looks unsafe and lacks type checking.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments explaining the complex C++ constructs, such as the purpose of the pointer arithmetic in virtual inheritance or the RTTI checks.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Virtual inheritance is represented as obscure pointer math (`*(int *)(*(int *)this + -0xc)`) rather than being recognized and abstracted as a C++ idiom.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings are provided for the collapsed logic in `test_cpp_member_func` or the indirect virtual calls, leaving the user to guess why the function returns a constant.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Exception handling contracts (`try/catch` blocks) are completely lost; only the low-level throw mechanism (`__cxa_allocate_exception`) is visible.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible, but the class hierarchy relationships (inheritance) are not explicitly documented in the text, making it hard to understand the polymorphic relationships.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are listed in address order rather than grouped by class or logical module, making it difficult to navigate the object-oriented structure of the original source.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: The code will not compile due to missing class definitions, `undefined` types, and incorrect syntax for recovered C++ features.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Class structures (structs) are not recovered, replaced by raw pointer offsets (e.g., `this + 4`).
+- Variable names are generic (`local_c`, `iVar1`), losing all semantic meaning.
+- Exception handling logic (`try/catch`) is missing, replaced by low-level API calls.
+- Virtual inheritance logic is obscured by complex pointer arithmetic without explanation.
+- Magic numbers are not replaced with constants or explained.
+
+**Best Quality Aspect:** Code Linearization (scored 8/10)  
+- The -O0 code flows naturally top-to-bottom, making it easy to trace execution sequence despite other readability issues.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+- The failure to reconstruct C++ classes into structs with named fields makes the code look like raw C rather than high-level C++.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement C++ class reconstruction using RTTI and vtable analysis to recover struct layouts and field names.
+2. Infer variable names from DWARF debug symbols available in `-g` builds to map `local_c` back to `value`.
+3. Reconstruct high-level exception handling blocks (`try/catch`) from the personality routine and landing pads.
+4. Demangle C++ operator names correctly (e.g., `operator==` instead of `operator__`).

@@ -1,0 +1,89 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic `param_1`, `param_2` naming. For example, `param_macro_constants(int param_1)` should be `param_macro_constants(int size)`. Local variables are often absent or unnamed, making it nearly impossible to track semantic purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately recover the original: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, etc. Minor deduction for some internal symbols like `FUN_001007a0` but overall excellent recovery.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x40` (64), `0x200` (512), `0x401` (1025) appear without explanation. While context allows inference (0x40 = 16*4 = BUFFER_COUNT*4), the decompiler didn't recover the named constants MAX_SIZE or BUFFER_COUNT.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean output with minimal compiler artifacts. Some auto-generated symbols like `__aarch64_ldadd4_acq_rel` are necessary for atomic operations. No redundant casts or debug instrumentation cluttering the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow mirrors source well. Loops use `do-while` constructs appropriately. Conditionals are straightforward. At -O0, the flow should be nearly identical to source, and it is.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. Each function has a single responsibility. Parameter counts are reasonable. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal disruption. Early returns used appropriately. No excessive forward jumps or goto abuse. The flow is easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling in `param_asm_simd` is appropriate for the operation (4-element vector). Common subexpressions properly eliminated.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision. Basic types like `int`, `uint` preserved. However, `size_t` became `ulong`, and specific types like `int32_t` lost. Parameter types like `uint` for `param_2` in `param_asm_clobber` should be `uint32_t` or `size_t`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. The code uses raw pointer arithmetic throughout. For example, `param_asm_simd` uses `long` for pointer arithmetic instead of reconstructing the `int[4]` arrays from source.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe. Minor issues: some pointer arithmetic with `long` offsets (e.g., `param_3 + lVar1`). No major unsafe casts that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments present. The original source has extensive comments explaining macro behavior, inline assembly constraints, and conditional compilation. None of this semantic information was recovered. Critical for understanding preprocessing and assembly.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. The decompiler didn't identify:
+- Macro expansions (SQUARE, MAX, SAFE_ADD)
+- Conditional compilation blocks (#ifdef DEBUG_MODE)
+- Inline assembly patterns (ASM-L4-01 through ASM-L4-06)
+- Include guard behavior
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags. The inline assembly in `param_asm_basic` was reduced to simple `x + 10` without indicating the original used inline assembly. The atomic operations show `__aarch64_ldadd4_acq_rel` but no explanation of why.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No contract information. Preconditions like "arr != NULL, n > 0" for `param_asm_clobber` are not documented. Postconditions not inferred.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present but relationships unclear. No documentation of which functions call which, or the purpose of helper functions like `__aarch64_ldadd4_acq_rel`.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped reasonably. External library functions (printf, memcpy, mmap) separated from application functions. Could be better organized by feature (preprocessing tests vs. asm tests).
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code compiles successfully as noted in metadata ("Compilation Result: Yes"). External dependencies (libc functions) properly declared. Minor issues with some internal symbols but overall compilable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming uses generic `param_N` instead of semantic names (`size`, `arr`, `n`)
+- No comments explaining macro expansions, inline assembly, or conditional compilation
+- No struct/union recovery - all composite types lost to raw pointer arithmetic
+- No idiom recognition for preprocessing patterns (macros, #ifdef, ## token pasting)
+- Type precision degraded (size_t → ulong, int32_t → int)
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+The decompiler accurately recovered most function names from the original source, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+The original source contains extensive semantic information (macro explanations, assembly constraints, conditional compilation logic) that was completely lost in decompilation. This is critical for understanding preprocessing and inline assembly behavior.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Parameters like `param_1` in `param_macro_constants` should be named `size` based on comparison with MAX_SIZE (1024) and the return value pattern.
+2. **Recover macro semantics**: When decompiling preprocessor-heavy code, add comments explaining what macros expanded to (e.g., "// MAX_SIZE = 1024, BUFFER_COUNT = 16").
+3. **Add semantic annotations for inline assembly**: Flag functions that contained inline assembly and explain what the assembly did (e.g., "// Original used x86 inline asm: lock xadd for atomic add").

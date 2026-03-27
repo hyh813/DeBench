@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `index`, `ptr`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `thread_count`, `shared_counter` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved original names (`param_strcpy`, `call_strcpy`, `param_mutex_lock`), but many helper functions use mechanical names (`sub_402020`, `sub_4023e5`). Runtime functions (`_init`, `_start`, `_fini`) correctly identified.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Pervasive magic numbers: `4294967295` (UINT_MAX/-1), `18446744073709551615`, signal numbers as literals (`10`, `14` instead of `SIGUSR1`, `SIGALRM`). String literals preserved well but numeric constants lack semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Register annotations present (`v0; // [bp-0x8]`, `// rax`), some redundant type casts, but no severe dead code. One anomaly marker exists (`[D] Unsupported jumpkind Ijk_SigTRAP`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if-else recovered well, but complex functions use goto labels (`LABEL_4028e8`, `LABEL_40291f`) instead of structured loops. `param_malloc_free` has extremely convoluted control flow from SIMD optimization.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. However, some caller functions are constant-folded (`call_strcpy` returns constant, `call_memcpy` returns 90) losing actual computation logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but goto usage in optimized loops disrupts flow. Deep nesting in `param_malloc_free` and `param_memset` makes tracing difficult.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant loop unrolling artifacts in `param_malloc_free` and `param_memset` with complex SIMD vector operations that obscure the simple original loop logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `size_t`→`unsigned long long`, `pid_t`→`unsigned long`, `ssize_t`→`unsigned long long`. const-correctness completely lost. `pthread_t` treated as `char` or `long long`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Basic structs defined (`FILE`, `sockaddr`) but fields are generic (`field_0`, `field_5`). `ThreadData` struct not recovered—fields accessed via array indexing. TLS variables accessed via raw offset (`p[18446744073709551568]`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts visible. Pointer arithmetic on `pthread_t` (`ptr + v8`). `param_strchr_strstr` reuses variable name `ptr` twice causing confusion. Thread return types inconsistently handled.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments in decompiled output despite original having extensive documentation explaining each function's purpose, test scenarios, and expected values. Critical semantic information completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions recognized (`strcpy`, `strcmp`, `printf`, `pthread_create`). However, concurrency patterns (mutex, condition variable, atomic ops) not identified as such. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`). No indication of unresolved indirect calls, type ambiguities, or decompilation confidence levels throughout the rest of the code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). Error returns visible (`4294967295` = -1) but not explained. No postcondition or invariant recovery.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables (`signal_received`, `shared_counter`, `atomic_counter`) referenced but relationships not explained. No callback relationship documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure. Test functions grouped (`test_standard_library_functions`, `test_system_calls`, `test_thread_concurrency`). No header file or API boundary indication.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies declared (`extern`). Some stubs may be needed for platform-specific functions. Portability issues with architecture-specific code.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+6)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+7+6+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+4+3)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+5+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.61/10
+```
+
+**Overall Readability Score: 4.6/10**
+
+### Critical Defects:
+- **Zero comments** despite original having extensive documentation explaining purpose and test scenarios
+- **Variable names completely generic** (`v0`, `v1`, `ptr`) losing all semantic meaning from original (`dst`, `src`, `buffer`, `thread_count`)
+- **Magic numbers everywhere** (`4294967295`, `18446744073709551615`, signal numbers `10`/`14`) without constant recovery
+- **Type system severely degraded** (`size_t`→`unsigned long long`, `pthread_t`→`char`/`long long`, const-correctness lost)
+- **SIMD optimization artifacts** in `param_malloc_free` and `param_memset` create unreadable vector operations obscuring simple loop logic
+
+### Best Quality Aspect:
+- **Build System Compatibility (7/10)** - Code reportedly compiles with external dependencies properly declared, making it at least usable as a starting point for analysis.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation despite original having extensive comments explaining function purpose, test scenarios, and expected values. This is the single biggest readability failure.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Even if heuristic-based, add comments indicating function purpose based on call patterns and string literals (e.g., "// String copy operation returning length")
+2. **Infer semantic variable names from usage** - Variables used in size contexts should be named `size`/`length`, pointer parameters should indicate purpose (`dst`/`src`, `buffer`)
+3. **Replace magic numbers with named constants** - Detect common patterns (4294967295 = -1 error code, signal numbers) and suggest/recover symbolic names from system headers

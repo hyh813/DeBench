@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `local_38`, `param_1`, and `puVar5`, completely obscuring semantic meaning (e.g., `local_38` represents the array `arr` in `local_array`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the source symbols (e.g., `double_value`, `heap_basic`, `test_stack_memory`), matching the original exactly.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent; for example, `0x2a` is used instead of `42`, and `0x800` instead of `2048`, requiring mental conversion to understand the logic.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Stack canary checks (`*(long *)(in_FS_OFFSET + 0x28)`) are inserted into almost every function, cluttering the logic and distracting from the core algorithm.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Simple loops are rendered as `do-while` (e.g., in `local_array`), which is a common Ghidra artifact but readable. However, `vla_stack` is obfuscated by complex stack probing logic inserted by the compiler.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without arbitrary splitting or merging.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with minimal forward jumps, though some functions like `tree_heap_traversal` use `goto` labels (e.g., `LAB_00101951`) for cleanup paths.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully simplifies expressions (e.g., `local_vars` is reduced to `param_1 * 2 + 10`), removing intermediate variables present in the source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are heavily degraded; parameters and variables are often `undefined4` or `undefined8`, and return types like `undefined [16]` (in `heap_basic`) are confusing and inaccurate.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely lost; `Point` usage in `heap_struct` is reduced to raw pointer arithmetic on an 8-byte malloc block, with no field accessors (`x`, `y`) recovered.
+
+**11. Type Safety:** Score: 3/10
+Justification: Pointer arithmetic is manual and unsafe (e.g., `*(int *)((long)__ptr + lVar1 * 4)`), and casts to `undefined*` are frequent, losing type safety guarantees.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are no meaningful comments explaining logic; only standard decompiler headers are present, leaving complex operations like stack probing unexplained.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard library calls (`malloc`, `free`) are recognized, but higher-level patterns like "Linked List Traversal" or "Tree Creation" are not explicitly identified or annotated.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: Suspicious behaviors like the use-after-free in `dangling_pointer` or the double-free are presented as standard code without any warnings or flags indicating potential bugs.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: Preconditions (e.g., `param_1 > 0` checks) are embedded in the code but not documented as contracts or assertions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls and global variable references are clear and resolved correctly (e.g., `global_counter` access), making the data flow easy to trace.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, and static scope is preserved, though the order follows address mapping rather than source file sections.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile standalone due to `undefined` types, missing struct definitions, and non-standard syntax (e.g., `undefined [16]`).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- Composite types (structs) are completely lost, replaced by raw pointer arithmetic and magic offsets.
+- Variable naming is entirely generic (`local_X`, `param_X`), requiring manual tracking of semantics.
+- Type precision is poor, with frequent use of `undefined` types and incorrect return type signatures (e.g., `undefined [16]`).
+- Stack canary checks pollute almost every function, adding significant noise to the control flow.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved all original function names from the symbol table, making high-level navigation trivial.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover the `Point` struct or `Node` struct reduces complex data structure manipulations to indecipherable pointer math.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement aggressive struct recovery by analyzing pointer offsets and access patterns to rebuild fields like `x` and `y`.
+2. Improve type propagation algorithms to eliminate `undefined` types and correctly identify integer vs. pointer return values.
+3. Add an option to suppress or abstract stack canary checks (`__stack_chk_fail`) to reduce visual noise in the decompiled output.

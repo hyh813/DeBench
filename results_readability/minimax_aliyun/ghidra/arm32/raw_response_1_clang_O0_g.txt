@@ -1,0 +1,161 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+Justification: Variables are named with generic patterns like `local_4`, `local_8`, `local_c`, `local_10` throughout. Ghidra's comments like "Unresolved local var: int temp1@[DW_OP_breg13(sp): +8]" show it attempted to recover names but failed. The original source used clear names like `temp1`, `temp2`, `temp3`, `sum`, `i`, `j`, `count` which are completely lost.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+
+Justification: Function names are perfectly preserved - `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, etc. all match the original source exactly. The decompiler correctly maintained the semantic intent in function naming.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Justification: Magic numbers like `0x3e9` (1001), `0x65` (101), `0x14` (20) appear without explanation. However, some literals like array initialization in `loop_break` (`local_2c[0] = 10; local_2c[1] = 0x14;`) are partially recoverable. The division in `switch_small` shows `__divsi3(10,5)` rather than constant recovery.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Justification: Significant decompiler artifacts pollute the output: "Unresolved local var" comments, "WARNING: Removing unreachable block" messages, "WARNING: Unknown calling convention" warnings, and "WARNING: Could not recover jumptable" errors. These 50+ noise entries severely impact readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Justification: Most control flow is natural - loops use `for`/`do-while`, conditionals use `if-else` chains, and switches are properly recovered. However, `loop_while` is incorrectly rendered as a `for` loop, and `goto_forward` loses the explicit label structure. At -O0, these should be nearly perfect.
+
+### 6. Function Decomposition
+**Score: 9/10**
+
+Justification: Each source function maps to exactly one decompiled function with no inlining or outlining artifacts. Functions like `recursion_factorial`, `tail_recursion`, `indirect_recursion_a/b` are properly separated. Good granularity maintained.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns in `loop_break` and `infinite_loop` are appropriate. The flow is mostly linear and easy to follow.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+Justification: No significant redundancy detected. The decompiled code doesn't introduce duplicate computations or dead code. Loop structures are clean without obvious redundancy from optimizations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Types are generic - uses `int`, `undefined4` throughout. Function pointer types like `_func_int_int *` are partially recovered but lack full signatures. Original had specific `int` but the decompiler adds no precision. Signed/unsigned confusion exists in comparisons like `(uint)(0 < x)`.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: Arrays are recovered as raw indexed access (`local_48[0] = 1; local_48[1] = 2;`) but lose the 2D structure. The original `int matrix[3][4]` becomes flat `local_48[14]` with manual index calculation (`local_4c * 4 + local_50`). No struct recovery.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Heavy use of `undefined4` creates type safety issues. Function pointer type confusion in `call_func_ptr_array` uses `code *` instead of proper function signatures. Unsafe pointer arithmetic in `duffs_device` with `local_c = local_c + 1`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+
+Justification: Comments are mostly auto-generated noise ("Unresolved local var", "WARNING: Removing unreachable block"). No meaningful algorithm explanation or semantic documentation. The original source had extensive comments explaining each function's purpose - none are recovered.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: Some patterns recognized but not named - Duff's device appears as switch-case with goto labels (`switchD_00011658_caseD_7:`), state machines are detected as switch statements. However, no explicit pattern naming or explanation.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+
+Justification: Ghidra does flag anomalies with warnings like "Could not recover jumptable at 0x0001263c. Too many branches" and "Treating indirect jump as call". However, these are generic warnings without specific guidance on what the actual issue is.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No precondition, postcondition, or invariant documentation. The original source had clear test cases and expected behaviors - none of this semantic contract information is recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function calls are correctly maintained (`recursion_factorial(n + -1)`), but there's no documentation of caller/callee relationships. Static functions like `double_value`, `triple_value` used as callbacks aren't documented.
+
+### 17. Module Organization
+**Score: 3/10**
+
+Justification: All 77 functions dumped into single monolithic output. No logical grouping matching the original's test_control_flow_l1/l2/l3 organization. No separation between tested functions and test harness.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+Justification: Code uses standard library (`printf`) and compiler builtins (`__divsi3`, `__aeabi_idivmod`). Should compile with libc. However, `EVP_PKEY_CTX` in `_init` is a misattributed type, and `jmp_buf_tag` is exposed.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 avg: (3+9+5+4)/4 = 5.25
+Level 2 avg: (7+9+8+8)/4 = 8.00
+Level 3 avg: (5+4+4)/3 = 4.33
+Level 4 avg: (4+5+5+2)/4 = 4.00
+Level 5 avg: (5+3+7)/3 = 5.00
+
+Overall = (5.25 × 0.30) + (8.00 × 0.25) + (4.33 × 0.20) + (4.00 × 0.15) + (5.00 × 0.10)
+        = 1.575 + 2.00 + 0.866 + 0.60 + 0.50
+        = 5.54/10
+```
+
+**Overall Readability Score: 5.54/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Variable naming**: All locals use generic names (`local_4`, `local_8`, `local_c`) losing semantic meaning of original `temp1`, `temp2`, `sum`, `i`, `j`, `count`
+- **Type precision**: Uses `undefined4` and generic `int` throughout instead of precise types; function pointers use `code *` instead of proper signatures
+- **Composite type loss**: 2D array `matrix[3][4]` becomes flat `local_48[14]` with manual index calculation
+- **Noise pollution**: 50+ "WARNING" and "Unresolved" comments clutter every function
+- **No semantic recovery**: Original's extensive comments explaining algorithms, test cases, and contracts are completely lost
+
+---
+
+### Best Quality Aspect (Single Dimension)
+
+**Function Decomposition (Score: 9/10)** - Each source function maps to exactly one decompiled function with proper separation. No inlining or outlining artifacts. Functions like recursion and callbacks are correctly isolated.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+
+**Variable Naming Quality (Score: 3/10)** - Generic `local_N` naming makes it extremely difficult to track variable purposes. The decompiler has debug info (`DW_OP_breg13`) showing original names but fails to use them. At -O0, this should be near-perfect.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from debug info**: The DWARF data (`DW_OP_breg13(sp): +8`) clearly shows original names like `temp1`, `temp2`, `sum`, `i`. Ghidra should extract and apply these instead of generating `local_N`.
+
+2. **Recover composite types**: Detect patterns like `local_48[0]`, `local_48[1]`, ... `local_48[11]` and reconstruct `int[3][4]` arrays with proper 2D indexing semantics.
+
+3. **Eliminate auto-generated noise**: Filter out "WARNING: Removing unreachable block" and "Unresolved local var" comments from output, or move them to a separate metadata section. Focus comments on semantic explanation of algorithms.

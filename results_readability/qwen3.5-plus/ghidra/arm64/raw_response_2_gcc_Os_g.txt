@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Simple functions preserve parameter names (`x`, `p`, `arr`), but complex functions use generic names (`iVar1`, `lVar2`, `uVar3`). Test functions show "Unresolved local var" comments indicating lost variable information.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most application functions retain original names (`process_char`, `array_1d_stack`, `struct_simple`), but runtime functions use generic labels (`FUN_001006d0`, `FUN_0010087c`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions show constant folding obscuring original intent (`0x61` for `'a'`, `0x62` for `'b'`). Magic numbers like `0x12345678` appear without explanation of their purpose.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Frequent "Unresolved local var" comments, stack canary checks (`___stack_chk_guard`), and compiler runtime functions (`_init`, `_fini`, `deregister_tm_clones`) add significant noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions use natural `if/else` and `for` loops, but complex functions like `__addtf3` degrade into label-heavy spaghetti code (`LAB_00101a10`, `LAB_00101cc4`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized for their purpose. Test functions are large but cohesive. No inappropriate inlining observed for `-O0` compilation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Simple functions read top-to-bottom naturally, but complex floating-point functions have many forward jumps disrupting linear reading flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding in test functions shows computed values rather than original expressions. Compiler runtime code adds redundancy without clear purpose.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char`, `short`), but `long_double` degrades to `undefined1 auVar1[16]`. Function pointer types use custom typedefs (`_func_int_int`) instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs well recovered (`Point3D`, `Rect`, `Widget`, `Node`) with field names preserved. However, bitfields converted to manual bit operations (`uVar1 & 1`, `uVar1 >> 1 & 3`).
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts visible (`void*` to `int*`, `char*` conversions in `ptr_void`), but pointer arithmetic is mostly correct. No obvious buffer overflow patterns in decompiled code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("WARNING: Could not recover jumptable", "Unresolved local var"). No algorithm explanations or API contract documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design pattern recognition. Common patterns like linked list traversal (`linked_list`), tree recursion (`binary_tree_sum`) not identified or named.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged ("WARNING: Unknown calling convention", "Could not recover jumptable at 0x00100fcc"), but not comprehensive for all uncertain decompilations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. No invariant recognition. Functions like `array_oob` with intentional undefined behavior not flagged.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. No call graph information. Global variable usage (`completed_0`, `__dso_handle`) not clearly explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output. No logical grouping comments. Original source organization (Data Types, Arrays, Pointers, Composite sections) not preserved.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code appears to be decompiled C but may not compile standalone. External dependencies (`__printf_chk`, `__libc_start_main`) not documented. Compiler-specific constructs present.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6 + 7 + 5 + 5) / 4 = 5.75
+Level 2 (Structural):  (6 + 7 + 6 + 6) / 4 = 6.25
+Level 3 (Type):        (6 + 7 + 7) / 3     = 6.67
+Level 4 (Semantic):    (4 + 3 + 6 + 2) / 4 = 3.75
+Level 5 (Contextual):  (5 + 4 + 5) / 3     = 4.67
+
+Overall = (5.75 × 0.30) + (6.25 × 0.25) + (6.67 × 0.20) + (3.75 × 0.15) + (4.67 × 0.10)
+        = 1.725 + 1.5625 + 1.334 + 0.5625 + 0.467
+        = 5.65/10
+```
+
+**Overall Readability Score: 5.7/10**
+
+### Critical Defects:
+- **Variable `iVar1`, `lVar2`, `uVar3`** should be named based on usage context (e.g., `sum`, `index`, `result`)
+- **Test functions show constant-folded values** (`0x61`, `0x62`) instead of original character literals, obscuring test intent
+- **No contract documentation** for functions with preconditions (e.g., `array_complex_index` requires valid bounds)
+- **Bitfield struct converted to manual operations** losing semantic meaning of individual flags
+- **Original source organization lost** - no section headers grouping related functions (Data Types, Arrays, Pointers, Composite)
+
+### Best Quality Aspect:
+- **Type System Fidelity (6.67/10)** - Most struct/union types recovered with field names preserved, pointer types mostly accurate
+
+### Most Needs Improvement:
+- **Semantic Transparency (3.75/10)** - No algorithm explanations, pattern recognition, or contract documentation; only auto-generated warnings present
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how variables are used (accumulators, indices, pointers) to suggest semantic names like `sum`, `index`, `current_node`
+2. **Detect and document common patterns** - Recognize linked list traversal, tree recursion, array iteration patterns and add explanatory comments
+3. **Recover function contracts** - Analyze parameter usage and return value patterns to document preconditions (e.g., "requires: arr != NULL, n > 0") and postconditions

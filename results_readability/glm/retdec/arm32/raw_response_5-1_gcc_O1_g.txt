@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, and `str`, completely losing semantic context from the original source (e.g., `obj`, `result`, `capture_by_value`).
+
+**2. Function Naming Quality:** Score: 4/10
+Justification: The primary function definitions use mangled C++ names (e.g., `_Z20test_cpp_member_funcv`), which are unreadable without the accompanying demangled comments.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals are preserved but often hex-encoded (e.g., `\xe6\xb5\x8b`), and magic numbers like `0x125c` (4704) appear without explanation, though standard strings like "Test" are intact.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is relatively clean of register spilling artifacts, but there are redundant casts like `(int32_t)a1` and `(float64_t)(int64_t)a1` that add clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: The `-O0` optimization level results in very linear, natural control flow that is easy to follow, despite the complex lowering of C++ exceptions into `__cxa` calls.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: C++ methods are correctly split into separate functions (constructors, destructors, virtual methods), which is accurate to the binary but fragments the high-level logic of the original classes.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal forward jumps or spaghetti logic, making it highly linear and easy to trace.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little dead code, but some redundancy exists, such as `int32_t v2 = (int32_t)v1;` followed by usage of `v2`, which is typical of unoptimized code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: While basic types like `int32_t` are used, high-level C++ types are lost; class instances are reduced to `int32_t` or `int32_t *`, and `std::unique_ptr` is completely erased.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Only vtables are recovered as structs (`vtable_1187c_type`); user-defined classes like `SimpleClass` or `Point` are not reconstructed, resulting in raw stack memory access instead of member access.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe pointer arithmetic and casts, such as `*(int32_t *)(v2 + 4) = 10;`, to access class members, losing all type safety guarantees.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 8/10
+Justification: The decompiler provides excellent metadata comments, including demangled function names, class associations (e.g., "From class: Derived"), and source line ranges, which are essential for understanding.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: C++ idioms like vtables, RTTI (`typeid`), and exception handling frames (`__cxa_throw`) are clearly identified, even if the high-level constructs (classes) are not rebuilt.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: There are no explicit warnings about potential issues or uncertainties; the code is presented as-is, even where control flow for exceptions is complex.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: No preconditions, postconditions, or invariants are documented; the logic of the original code (e.g., array bounds checks) is present but not explicitly stated as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Vtables explicitly reference function pointers, and function calls are clear, but the relationship between a "class" and its scattered methods is only visible via comments, not structure.
+
+**17. Module Organization:** Score: 7/10
+Justification: The output is logically grouped into structures, classes (as comments), and functions, maintaining a reasonable order that mirrors the source flow.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The output is C code representing C++ logic; it cannot be compiled as C++ without significant manual restructuring to reintroduce classes and headers.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.5/10
+
+**Critical Defects:**
+- User-defined class structures (e.g., `SimpleClass`, `Point`) are not recovered; members are accessed via raw offsets on generic stack variables.
+- Variable naming is entirely generic (`v1`, `v2`), failing to recover names likely available in debug symbols (`-g` flag was used).
+- High-level C++ logic is fragmented; constructors and destructors are separated from the functions that use them, obscuring object lifecycle.
+
+**Best Quality Aspect:** Comment Quality & Presence (scored 8/10)
+- The inclusion of demangled names, class origins, and source line numbers in comments is the primary saving grace that makes the code decipherable.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 3/10)
+- The failure to reconstruct `struct` or `class` definitions for user types forces the reader to interpret raw pointer arithmetic, which is the biggest barrier to understanding C++ code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Reconstruct C++ class structures by analyzing constructor/destructor member access patterns to group fields into structs.
+2. Leverage DWARF debug information (present due to `-g`) to recover original variable and parameter names instead of defaulting to `v1`, `a1`.
+3. Inline trivial constructor/destructor calls or annotate them clearly within the parent function to preserve the context of object initialization and cleanup.

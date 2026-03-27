@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names: parameters are `a0`, `a1`, `a2`; locals are `v0`, `v1`, `v2`; struct fields are `field_0`, `field_1`, `field_4`. The original names like `x`, `c`, `str`, `arr` are completely lost. This is essentially unusable for analysis.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved: `double_value`, `process_int`, `process_char`, `process_short`, `process_long` match source exactly. However, many utility/startup functions use generic names like `sub_103c4`, `sub_10464`. The function names for the main test scenarios are good but not comprehensive.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation: `65`, `25`, `32` in process_char (should be 'A', 'Z', 32); `65535` in process_short; `4294967295` for -1; no enum names recovered (STATE_IDLE, STATE_RUNNING should replace numeric constants). The decompiler computed values at compile time rather than preserving symbolic constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: unused variables from register spilling (e.g., `v3`, `v4` in many functions), redundant type casts throughout, dead code paths visible in complex functions like `__muldf3` and `__aeabi_dadd`. The floating-point library functions are particularly noisy with register tracking variables.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Control flow uses goto-based loops instead of while/for constructs (e.g., `array_1d_stack` uses do-while with goto labels). The `process_bool` function has extremely convoluted conditional logic with multiple `armg_calculate_condition` calls that obscures the simple `(x > 0 && x % 2 == 0)` logic from the source.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized (not monolithic), and the decomposition matches the source fairly well. However, parameter lists expose too many implementation details (e.g., `unsigned int *a0, unsigned int a1` instead of cleaner signatures). The core test functions are well-separated.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Many forward jumps disrupt flow. Functions like `array_complex_index` have complex nested conditionals with multiple goto labels (`LABEL_10935`, `LABEL_10936`) that make linear reading difficult. The code does not read top-to-bottom naturally.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some loop unrolling present but not clearly commented. The `array_1d_stack` and `array_vla` functions have nearly identical code suggesting some redundancy. Dead code exists but is relatively limited outside the library functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - almost everything is `unsigned int`. The original `char`, `short`, `int`, `long`, `long long`, `float`, `double`, `_Bool` types are all collapsed to `unsigned int`. Pointers are generic `unsigned int*` without proper type distinctions. Const/volatile are lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct fields recovered but with generic names: `struct_0 { unsigned int field_0; }` instead of `Point3D { int x, y, z; }`. Union types partially recognized but not named. Nested structures like `Rect`, `Widget` are flattened to raw pointer arithmetic. Bit-fields are computed manually rather than reconstructed.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations: pointer arithmetic without bounds checking (array functions), raw memory access through void*, no const correctness, function pointers called through generic `unsigned int` type. The code in `ptr_func_complex` has suspicious stack manipulation. Many implicit integer conversions that could overflow.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. What exists is auto-generated register tracking (e.g., `// r0`, `// r3`). No explanation of algorithms, no decompilation confidence indicators, no API contracts. The source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The linked list traversal, binary tree recursion, graph traversal patterns are all present but not named or highlighted. The decompiler doesn't recognize these as common data structure patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `array_oob` function has the intentional off-by-one bug (`i <= n`) from the source but this is not indicated as a potential issue. Indirect calls are not flagged. No indication of undefined behavior areas.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The source had clear semantics (e.g., "returns sum of array elements", "requires: n > 0") that are completely lost. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are present but relationships not documented. No indication of which functions call which, no callback relationships shown, no global variable usage transparency. The test harness calls are just sequential without context.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions appear grouped by address rather than logically. The original had clear sections: data types, arrays, pointers, composite types. The decompiled output is a flat list sorted by address. No static function scoping indicated.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many `extern` declarations for library functions but incomplete. The code would require significant patching to compile standalone. Dependencies on `__stack_chk_guard`, `GLIBC_2.4` symbols not documented. No clear separation between user code and library code.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 3 + 4) / 4 = 3.75
+L2_avg = (4 + 6 + 4 + 5) / 4 = 4.75
+L3_avg = (3 + 4 + 4) / 3 = 3.67
+L4_avg = (3 + 2 + 2 + 2) / 4 = 2.25
+L5_avg = (3 + 3 + 4) / 3 = 3.33
+
+Overall = (3.75 × 0.30) + (4.75 × 0.25) + (3.67 × 0.20) + 
+          (2.25 × 0.15) + (3.33 × 0.10)
+        = 1.125 + 1.1875 + 0.734 + 0.3375 + 0.333
+        = 3.72/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All meaningful variable names lost - `x`, `c`, `str`, `arr`, `n` replaced with `a0`, `v0`, `v1` making code essentially unreadable
+- **Type precision**: All types collapsed to `unsigned int` - original `char`, `short`, `float`, `double`, `_Bool` completely lost
+- **Control flow**: Complex goto-based loops instead of while/for constructs, especially in `array_1d_stack`, `array_string`
+- **Struct field names**: All struct fields named `field_0`, `field_1`, etc. - original `x`, `y`, `z`, `next`, `data` lost
+- **No comments**: Zero useful comments explaining algorithms, contracts, or anomalies
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (6/10)** - Core test function names like `double_value`, `process_int`, `process_char` were preserved from the source, providing some semantic anchor.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)** - This is the most critical issue; without meaningful variable names, the decompiled code is nearly unusable for analysis regardless of other qualities.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparison) to suggest meaningful names like `array_size`, `index`, `checksum` instead of generic `a0`, `v0`
+2. **Recover type information from context**: Use ABI knowledge and runtime behavior to distinguish `char` from `int`, recognize `float`/`double` from floating-point register usage, detect boolean returns
+3. **Reconstruct control flow constructs**: Convert backward jumps to while/for loops, recognize common patterns like linked list traversal rather than emitting goto-heavy code

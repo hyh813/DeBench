@@ -1,0 +1,128 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 4/10**
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `a2` that obscure their semantic purpose. For example, in `param_macro_constants`, the parameter `a0` should be named `size` based on the original source. Only a few variables like `result`, `idx`, `ptr`, `len` have meaningful names.
+
+### 2. Function Naming Quality
+**Score: 10/10**
+Justification: Function names perfectly match the original source - `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_asm_clobber`, etc. All 30+ functions have accurate, action-oriented names that reflect their actual functionality.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Several magic numbers lack semantic meaning: `0x400` (should be MAX_SIZE=1024), `0x200` (should be MAX_SIZE/2=512), `57072` (should be 0xDEF0), `30` (should be _SC_PAGESIZE). However, some literals like `16` (ADD_16 result) and string constants are correctly preserved. The decompiler doesn't recover macro constant names.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: Code is relatively clean with minimal compiler artifacts. Some goto statements in initialization functions (`_init`, `deregister_tm_clones`) are standard CRT code, not actual program logic. No redundant casts or debug instrumentation observed. Minor noise from duplicate return statements in call wrapper functions.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Control flow is natural - loops use `for` constructs, conditionals use ternary operators appropriately. The logic is easy to follow. Minor goto usage in startup functions is standard CRT boilerplate, not decompilation failure. At -O0, control flow should closely match source, which it does.
+
+### 6. Function Decomposition
+**Score: 9/10**
+Justification: Functions are appropriately sized with clear single responsibility. Each function handles one task (e.g., `param_asm_basic` does simple addition, `param_asm_clobber` does array summation). Parameter lists are reasonable (1-3 parameters typical). No 500-line monoliths or over-fragmentation observed.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns used appropriately in error handling (e.g., `param_dynamic_code`, `param_memory_protection`). No deep nesting (>4 levels) observed. Good linear flow throughout.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+Justification: Each `call_*` function invokes its corresponding `param_*` function twice - once to compute and once to return. This is a common decompilation artifact from tail call optimization recovery. The redundancy doesn't significantly impede understanding but is notable.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Most types are `unsigned int` which is appropriate for ARM64 at -O0. However, pointer types are lost - parameters like `int *arr` become `unsigned int ptr`. The decompiler uses `void*` for generic pointers which is acceptable. Some type precision lost but not severe.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+Justification: The code doesn't heavily use structs, so limited opportunity for recovery. Arrays are partially recovered - `int arr[]` in `call_asm_clobber` becomes stack variables `result`, `v1`, `v2`, etc. No struct reconstruction needed for this codebase.
+
+### 11. Type Safety
+**Score: 8/10**
+Justification: No unsafe casts observed. Pointer arithmetic is correct (e.g., `ptr + idx * 4` for int array access). Function signatures are preserved correctly. Minor issue: `param_asm_simd` takes `unsigned int` parameters instead of `int*` but the arithmetic is safe.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+Justification: Comments are sparse and mostly auto-generated register annotations (e.g., "unsigned int v0; // [bp-0x4]"). No explanation of algorithm logic, macro semantics, or assembly behavior. The decompiler provides no documentation for the preprocessing features or inline assembly recovery.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some patterns are implicitly present but not named. The macro expansions are correctly computed but not labeled as such. The conditional compilation branches are correctly resolved but not annotated. No explicit pattern naming (e.g., "This implements X pattern").
+
+### 14. Anomaly Indication
+**Score: 4/10**
+Justification: No explicit flagging of suspicious code or decompilation uncertainties. The inline assembly functions are silently converted to C equivalents without indicating this was assembly in the original. No warnings about indirect calls or unusual patterns.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: No precondition/postcondition documentation. Error return values (-1, -2, -3 in `param_memory_protection`) are not explained. No documentation of what conditions lead to these error paths or what the function guarantees.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 7/10**
+Justification: Function call relationships are clear - `call_*` functions call `param_*` functions. Global variable `global_var` is declared as `extern`. However, no explicit documentation of call graph or usage patterns. Relationships are inferable from code structure.
+
+### 17. Module Organization
+**Score: 8/10**
+Justification: Functions are logically grouped - preprocessing functions first, then assembly functions, then test functions. Static functions like `header_func` are properly scoped. The organization matches the original source structure reasonably well.
+
+### 18. Build System Compatibility
+**Score: 8/10**
+Justification: Code compiles successfully (marked as "Yes" in metadata). External dependencies are declared (e.g., `extern unsigned int g_412008`). Minor stubs needed for some CRT functions. The code is relatively standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (4 + 10 + 5 + 8) / 4 = 6.75
+L2_avg = (8 + 9 + 8 + 6) / 4 = 7.75
+L3_avg = (7 + 6 + 8) / 3 = 7.00
+L4_avg = (3 + 5 + 4 + 3) / 4 = 3.75
+L5_avg = (7 + 8 + 8) / 3 = 7.67
+
+Overall = (6.75 × 0.30) + (7.75 × 0.25) + (7.00 × 0.20) + (3.75 × 0.15) + (7.67 × 0.10)
+        = 2.025 + 1.9375 + 1.4 + 0.5625 + 0.767
+        = 6.69/10
+```
+
+### Overall Readability Score: 6.7/10
+
+### Critical Defects
+- Variable naming uses generic names (`v0`, `v1`, `a0`, `a1`) that completely obscure semantic purpose - e.g., `a0` should be `size` in `param_macro_constants`
+- Magic numbers like `0x400`, `0x200`, `57072`, `30` are not replaced with meaningful constants (MAX_SIZE, _SC_PAGESIZE, etc.)
+- No comments explaining recovered semantics - especially critical for macro expansions, inline assembly conversion, and conditional compilation resolution
+- Inline assembly functions (`param_asm_basic`, `param_asm_clobber`, `param_asm_simd`) are silently converted to C without indicating they were originally assembly
+
+### Best Quality Aspect: Function Naming Quality (10/10)
+Function names perfectly match the original source - every function from `param_macro_constants` to `param_memory_protection` has the exact correct name, enabling immediate recognition of functionality.
+
+### Most Needs Improvement: Semantic Transparency (3.75/10)
+The decompiler provides no comments explaining algorithm logic, macro semantics, assembly behavior, or decompilation confidence. This is especially problematic for a file testing preprocessing features where understanding what macros expanded to is critical.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When a parameter `a0` is compared against `0x400` (1024) and used in size-related calculations, infer the name `size` or `buffer_size`
+2. **Detect magic numbers and suggest constants**: Recognize values like `1024`, `512`, `0xDEF0` as likely macro constants and add comments like `// likely MAX_SIZE`
+3. **Add semantic comments for recovered features**: When converting inline assembly to C, add comments like `// Originally inline assembly: "movl %1, %%eax..."` to preserve the original implementation detail

@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Most variables use generic decompiler names (`v0`, `v1`, `v2`, `v3`) especially in complex functions like `varargs_func`. Some original parameter names preserved from debug info (`count`, `x`, `s`, `d`, `ll` in `func_mixed_args`), but inconsistent across functions.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Some generic names remain (`sub_680`, `frame_dummy`), but core test functions are clearly named matching source intent.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Return constants are clear (15, 50, 6 match expected values), but magic numbers like `0xFFFFFF80FFFFFFC8LL` and `0x80000000` in `varargs_func` lack explanation. Vector constants (`xmmword_11E0`) are opaque.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: vector operations (`int64x2_t`, `vaddq_s64`, `vdupq_n_s64`), architecture-specific annotations (`__fastcall`, `@<X0>`), and 8 failed library function decompilations clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but `varargs_func` uses goto labels (`LABEL_7`, `LABEL_8`) instead of structured loops. `test_calling_conventions` uses do-while with vector operations obscuring original simple printf calls.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved with appropriate granularity. However, constant folding collapsed caller functions (e.g., `call_cdecl()` returns 15 directly instead of `cdecl_func(5, 10)`), losing call relationship clarity.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `varargs_func` has forward jumps disrupting flow. `test_calling_conventions` has complex vector initialization loops that obscure the original simple test sequence.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Vector operation repetition in struct functions (`func_struct_byval`, `ret_large_struct`). Some dead code from optimization present but doesn't severely impact understanding of core logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved but architecture-specific types dominate (`__int64`, `_QWORD`, `_DWORD` instead of `int32_t`, `uint64_t`). Function signatures include calling convention annotations (`__usercall`, `@<X0>`) that obscure original intent.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct definitions preserved (`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`) with field access working correctly (`s->data[i]`, `p->x`, `p->y`). Some types degraded to pointer representations but structure layout intact.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout: `(int64x2_t)`, `(_DWORD *)`, `(unsigned __int8 *)`, `(char *)`. Vector type conversions and pointer arithmetic lack safety guarantees. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments beyond function headers. No algorithm explanations, no decompilation confidence indicators, no documentation of non-obvious logic like variadic argument handling.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Variadic function patterns not identified as such. Vector operations not annotated as SIMD optimizations. Common patterns (struct iteration, null checks) not recognized or named.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations marked ("FAILED to decompile: memcpy") but without explanation. No warnings about unsafe casts or optimization artifacts. Silent about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null checks exist (`if (p)`, `if (!pp)`) but not documented as preconditions. No postconditions inferred. Error conditions not documented (e.g., `func_struct_byptr` returning -1).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. No call graph provided. Callback relationships (`param_func_ptr`) not explicitly marked. Global variable usage unclear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source order but no logical grouping. No file organization or namespace structure. Static functions not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 8 library functions failed to decompile (memcpy, strlen, printf, etc.). External dependencies not declared. Code will not compile without significant manual intervention and stub creation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+6+5)/4 = 6.00 × 0.30 = 1.80
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (5+7+5)/3   = 5.67 × 0.20 = 1.13
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (6+6+3)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.52/10
+```
+
+### Overall Readability Score: **5.5/10**
+
+### Critical Defects:
+- **Variable `v2`, `v3`, `v4`, `v5` in `varargs_func`** should be named based on usage (e.g., `sum`, `offset`, `arg_ptr`, `stack_base`)
+- **Control flow uses goto labels** (`LABEL_7`, `LABEL_8`) instead of structured while/for loops in variadic handling
+- **No comments explaining** complex vector operations or variadic argument iteration logic
+- **8 library functions failed to decompile** without stubs or documentation for manual recovery
+- **Constant folding collapsed test callers** losing the semantic relationship between test functions and tested functions
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Original function names largely preserved from debug symbols, maintaining semantic clarity for core test functions
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no explanatory comments despite complex operations like variadic argument handling and SIMD vector operations that desperately need documentation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer semantic variable names from usage patterns** - Analyze how variables are used (accumulators, pointers, counters) to generate meaningful names instead of `v0`, `v1`, `v2`
+2. **Recover structured control flow from jump patterns** - Convert goto-based loops to while/for constructs, especially for common patterns like variadic argument iteration
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions, failed library calls, and optimization artifacts with comments explaining limitations and suggesting manual review

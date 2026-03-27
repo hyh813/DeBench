@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `sVar1`, `puVar1`, `extraout_r0`), providing no semantic context. While `obj` is used for class instances, the lack of descriptive names for intermediate calculations (like `result` or `capture_by_ref`) significantly hinders understanding.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Excellent recovery of C++ mangled names (e.g., `Base::virtual_func`, `DiamondDerived::~DiamondDerived`). The decompiler correctly identifies and labels complex constructs like `virtual thunk to MultiDerived::funcB()`, which is crucial for understanding polymorphism.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: The code is littered with magic numbers resulting from constant propagation (e.g., `0x2a`, `0x125c`, `0x3e9`). While these represent the correct optimized values, they obscure the original logic (e.g., `0x125c` is the sum of `4704`), making it hard to verify the source intent without manual calculation.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The output contains significant compiler artifacts, such as `undefined4 extraout_r0` (register return values) and repetitive warnings like `/* WARNING: Unknown calling convention -- yet parameter storage is locked */`. While the code structure is clean, these artifacts clutter the listing.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Exception handling logic is completely lost; `test_cpp_exception` is reduced to a single `__cxa_throw` call, omitting the `try/catch` structure. Additionally, virtual inheritance access relies on complex pointer arithmetic (e.g., `*(int *)((int)&this->dataA + (int)this->_vptr_MiddleA[-3])`), which is accurate to the binary but hard to read.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler successfully separates template instantiations (`template_max<int>`, `template_max<double>`) and class methods into distinct functions. The separation of thunks (e.g., `non-virtual thunk to DiamondDerived::func`) is particularly well-handled, maintaining a clean modular structure.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly with minimal jumps, largely due to compiler optimizations inlining and simplifying control flow. However, this linearity comes at the cost of hiding the original branching logic (like `if/else` blocks collapsed into constants).
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler perfectly reflects the optimized binary, showing no dead code or redundant assignments. Functions like `test_cpp_virtual_func` are reduced to a single return statement (`return 0x2a;`), which is the correct representation of the optimized code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Class types (`Base*`, `Derived*`, `SimpleClass`) and standard types (`int`, `double`, `char*`) are recovered accurately. However, register parameters are often typed as `undefined4` (e.g., `undefined4 in_r2` for double parameters), which degrades precision for low-level details.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Structs are recovered with correct field names where accessible (e.g., `obj.name`, `this->size`). The complex layout of `DiamondDerived` (including `super_MiddleA` and `super_MiddleB`) is correctly identified, though the warning about "ignoring overlapping field" highlights the complexity of virtual inheritance.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe pointer arithmetic and casts to access vtable offsets and virtual base members. Expressions like `(int)&this->dataA + (int)this->_vptr_MiddleA[-3]` are technically correct for the ABI but represent a significant loss of type safety compared to the original source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 7/10
+Justification: The inclusion of `/* DWARF original prototype: ... */` comments is excellent, providing ground truth for function signatures. However, the comments are otherwise sparse, consisting mostly of generic warnings rather than explanations of the complex C++ runtime mechanics (like vtable lookups).
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: The decompiler successfully identifies C++ idioms such as RTTI (`std::type_info::operator==`, `__dynamic_cast`), exception handling (`__cxa_throw`), and constructor/destructor patterns. The labeling of "thunks" shows a high level of understanding of compiler-generated code.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Anomalies are flagged with warnings (e.g., "Could not recover jumptable", "Unknown calling convention"). These alerts are accurate and helpful, alerting the user to areas where the decompilation might be unreliable or incomplete.
+
+**15. Assertion & Contract Recovery:** Score: 5/10
+Justification: Standard logic checks (like `idx < size`) are present as `if` statements, but there is no explicit recovery of higher-level contracts or invariants. The code focuses on the "how" rather than the "why" or the "must".
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: The relationship between classes and their virtual methods is clear through the naming convention (e.g., `Base::virtual_func`). Calls to runtime functions (e.g., `operator_new`, `__cxa_allocate_exception`) are explicit, making the dependencies clear.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically by class (e.g., all `DiamondDerived` methods appear together), which aids navigation. However, the overall file is a flat list of functions, lacking the higher-level namespace or file structure of the original source.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on specific compiler intrinsics (`__aeabi_d2iz`) and standard library symbols that would require stubs or a specific environment to compile. It is not standalone compilable C code without significant effort to define dependencies.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.6/10
+
+**Critical Defects:**
+- **Variable Naming:** Heavy use of generic names (`iVar1`, `sVar1`) obscures data flow and logic.
+- **Exception Handling:** The `try/catch` structure in `test_cpp_exception` is completely lost, showing only the throw mechanism.
+- **Virtual Inheritance:** Access to virtual base class members is represented as complex pointer arithmetic rather than semantic field access, making it very hard to read.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler excels at demangling C++ symbols and identifying compiler-generated artifacts like thunks, preserving the semantic structure of the object-oriented hierarchy.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)
+- The reliance on generic, type-based names (`iVar`, `puVar`) instead of semantic names derived from usage or debug info makes tracking the program's intent difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Leverage DWARF for Local Variables:** The decompiler already uses DWARF for function prototypes; extending this to recover local variable names (e.g., `result`, `capture_by_ref`) would significantly improve readability.
+2. **Reconstruct Exception Handling Blocks:** Instead of showing just the runtime calls (`__cxa_throw`), attempt to reconstruct the high-level `try/catch` flow using the personality routine and landing pad tables.
+3. **Simplify Virtual Inheritance Access:** Abstract the complex pointer arithmetic used for virtual base class offsets into semantic field accesses (e.g., `this->VirtualBase::shared_data`) to hide the implementation details.

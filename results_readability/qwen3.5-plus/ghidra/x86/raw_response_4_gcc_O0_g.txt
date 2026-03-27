@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `iVar1`, `iVar2`, `uVar7`, `puVar5` instead of semantic names. Only basic loop counters (`i`, `sum`, `count`) and a few variables (`val`, `ptr`, `result`) have meaningful names, making it difficult to track variable purpose across functions.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`). However, some helper functions use generic names (`FUN_00011030`) and thunk functions have mechanical names (`__x86_get_pc_thunk_bx`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout: `0x15fcc` in `call_fastcall` (should be `1`), `0x51eb851f` for float 3.14, `0x2a` for 42. String literals replaced with `&DAT_00013008` references instead of actual strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) inserted in nearly every function. Repeated "WARNING: Function: __x86.get_pc_thunk.ax replaced with injection" comments clutter the output. Thunk functions add unnecessary noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most simple functions have natural control flow. However, `test_calling_conventions` has severely degraded structure with printf calls missing value arguments. Loop structures are generally preserved but some conditionals are awkwardly expressed.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Each function has clear single responsibility. No monolithic functions or over-fragmentation observed. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Some functions have unusual stack variable initialization patterns that disrupt flow slightly. Early returns used appropriately.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `call_struct_byval` copies struct fields individually (16 separate assignments) instead of struct copy. Stack canary checks add redundant code to every function. Some thunk function calls are redundant.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char*, void*, double). Function pointer type partially recovered as `_func_int_int *`. Some type degradation in varargs handling where `va_list` becomes raw pointer arithmetic.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs (`LargeStruct`, `SmallStruct`, `BigStruct`, `TestIntPair`, `SmallPoint`, `LargeData`) recovered with field names preserved. However, struct passing shows field-by-field copying instead of struct operations in several functions.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe pointer arithmetic in varargs functions (`args = args + 4`). Cast operations present but generally type-safe. Stack canary checks add safety but also complexity. No buffer overflow protections visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are auto-generated warnings ("Unknown calling convention", "Removing unreachable block"). No semantic documentation explaining algorithm purpose or function intent. No API contracts documented.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard C idioms (varargs, struct passing, function pointers) preserved but not explicitly recognized or named. No design pattern identification. Basic patterns visible but not documented.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system for calling convention issues. "WARNING: Unknown calling convention" appears consistently. Stack canary issues noted. Some unreachable block warnings present.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Null checks present (`if (p == (SmallStruct *)0x0)`) but not documented as contracts. No invariant recognition or error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved and visible. No call graph documentation. Global variable references use `&DAT_` notation obscuring purpose. Callback relationships not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output maintaining source order. No logical grouping beyond original sequence. Static functions properly identified. No namespace or package structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies (`__libc_start_main`, `__stack_chk_fail`, `printf`, `strlen`) not clearly documented. Some undefined references require linking.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (6+8+7+5)/4 = 6.50  × 0.25 = 1.625
+Level 3 (Type):        (7+7+6)/3   = 6.67  × 0.20 = 1.334
+Level 4 (Semantic):    (4+5+7+3)/4 = 4.75  × 0.15 = 0.7125
+Level 5 (Contextual):  (6+6+6)/3   = 6.00  × 0.10 = 0.60
+
+Overall Score: 5.92/10 ≈ 5.9/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects:
+- **printf calls missing value arguments** in `test_calling_conventions` - all printf statements show format strings without the actual values being printed
+- **Variable `0x15fcc` in `call_fastcall`** should be `1` based on source - indicates parameter recovery failure
+- **Generic variable names** (`iVar1`, `iVar2`, `uVar7`) throughout obscure semantic meaning
+- **String literals replaced** with `&DAT_` references instead of actual string content
+- **Struct field-by-field copying** in `call_struct_byval` instead of single struct assignment
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names preserved accurately from source, maintaining semantic clarity about purpose
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No precondition/postcondition documentation, null checks present but not documented as contracts, making safety guarantees unclear
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover printf argument values** - Currently format strings are shown without their corresponding values, making test output incomprehensible
+2. **Infer semantic variable names** from usage patterns (e.g., loop counters used with array indices should be named `i` or `index`, not `iVar1`)
+3. **Preserve string literal content** instead of replacing with `&DAT_` references - strings like "Hello", "test", "abc" are recoverable and critical for understanding

@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `a1`, `a2`, `result`) with no semantic meaning. For example, `param_fake_branch` uses unnamed `result` variable instead of preserving the `x` parameter meaning.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retain original names (`param_fake_branch`, `call_opaque_predicate`), but helper functions are generic (`function_4b8`, `function_4c4`). Original intent partially preserved through naming.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: String literals appear as hex escapes (`"\xe6\x9c\x9f\xe6\x9c\x9b: 10"`) instead of readable Chinese text. Magic numbers like `0x100000001` and `90` (XOR key) lack explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler runtime artifacts present (`__do_global_dtors_aux`, `register_tm_clones`). Excessive struct field names (`e0`, `e1`, `e2`) for `jmp_buf_tag` add noise without clarity.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Critical logic corruption: `param_fake_branch` loses its conditional branches entirely. `param_tail_call_optimized` has nonsensical math (`v2 % 0x100000001 != 0`) replacing simple recursion.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but `param_fake_branch` incorrectly shows no parameters while source has `int x`. `param_null_pointer_deref` loses the actual dereference logic.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom, but complex inline struct initializations for `longjmp` calls disrupt flow. While loops present but with confusing variable tracking.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy in `test_obf_opt_edge` where decryption logic is duplicated. No significant dead code, but optimization artifacts create verbose expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently but loses parameter information (`param_fake_branch(void)` vs `param_fake_branch(int x)`). Some functions incorrectly use `uint32_t` where `int` was original.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `jmp_buf_tag` struct recovered but with generic field names (`e0[8]`, `e1`, `e2`). No semantic field names like `__jmpbuf` or `__mask_was_saved` that would aid understanding.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(char *)&str`, `(int32_t)&g25`, `(char *)v1`. Pointer arithmetic on `int32_t` variables without proper type casting creates potential UB.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments in decompiled output. No explanation of obfuscation patterns, no indication of decompiler confidence, no algorithm documentation whatsoever.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition for obvious idioms: setjmp/longjmp exception handling, XOR string decryption, tail recursion optimization. All appear as raw operations.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings despite severe logic corruption. `param_fake_branch` returning uninitialized `result` should be flagged. Signal handler recovery incomplete without indication.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` requires `x != 0` for normal path). No postconditions or error condition documentation present.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables (`g1`-`g25`) have no semantic names. Signal handler connections not explicitly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but arbitrary ordering. Helper functions (`function_4d0`, `function_518`) mixed with application logic. No logical separation of runtime vs. application code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Struct initialization syntax issues (`{(struct {...}){...}}`). Missing standard library function prototypes. Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+5)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (3+5+6+6)/4 = 5.00  × 0.25 = 1.25
+Level 3 (Type):        (5+5+4)/3   = 4.67  × 0.20 = 0.93
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75  × 0.15 = 0.26
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.11/10
+```
+
+### Overall Readability Score: **4.1/10**
+
+### Critical Defects:
+- **`param_fake_branch` loses its `int x` parameter entirely** - function signature corrupted, returns uninitialized value
+- **`param_tail_call_optimized` has completely wrong logic** - complex math replaces simple tail recursion, produces incorrect results
+- **`param_null_pointer_deref` missing actual dereference** - returns -1 unconditionally without attempting the protected access
+- **String literals displayed as hex escapes** - Chinese text unreadable (`\xe6\x9c\x9f` instead of "期望")
+- **Zero semantic comments** - no explanation of obfuscation techniques, no decompiler confidence indicators
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Most original function names preserved (`param_fake_branch`, `call_opaque_predicate`), providing some semantic anchor points for analysis.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any explanatory comments makes understanding obfuscated patterns nearly impossible without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameters from calling conventions** - `param_fake_branch` clearly takes an argument based on call site `param_fake_branch(10)`
+2. **Add confidence annotations for uncertain recovery** - Flag functions like `param_tail_call_optimized` where logic reconstruction is dubious
+3. **Decode string literals using detected encoding** - UTF-8 hex sequences should be rendered as readable text with encoding hint

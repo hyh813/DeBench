@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `v3`, `ptr`, `a0`), providing no semantic hint about their role in the algorithm, such as `v8` in `param_opaque_predicate` which likely represents a GCD intermediate.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the binary symbols, matching the original source exactly (e.g., `param_fake_branch`, `param_vectorized_loop`), which significantly aids high-level navigation.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers are prevalent and undefined, such as `4294967295` (UINT_MAX/-1) and `90` (XOR key), which obscure the intent of operations like error returns or decryption.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is polluted with low-level artifacts like the `CONCAT` macro (e.g., `v8 >> 31 CONCAT v8`) and SIMD intrinsics (`AddV`), which represent register-level operations rather than high-level logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is heavily distorted by compiler optimizations, resulting in complex ternary expressions (e.g., in `param_opaque_predicate`) and spurious `goto` statements (e.g., `goto LABEL_401561` in `param_vectorized_loop`).
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Functions are generally well-separated and match the source structure, though some small functions like `call_fake_branch` are reduced to constant returns due to inlining, which is acceptable for optimized code.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code requires frequent jumping back and forth due to labels and forward jumps (e.g., in `param_vectorized_loop`), making a strict top-to-bottom read impossible.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While the compiler removed redundancy, the decompiler presents loop-unrolled code (e.g., the SIMD loop in `param_vectorized_loop`) without abstracting it back into a loop, creating visual redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types like `unsigned int` and `unsigned long long` are used correctly, and `int128_t` accurately represents SIMD registers, though the return type `char [2]` for `decrypt_string` is confusing and likely incorrect.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Standard library structures like `jmp_buf` are not recovered, appearing instead as raw `unsigned long long` globals, and no user-defined structs are reconstructed.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains numerous unsafe casts and pointer arithmetic, such as `*((int128_t *)(ptr + idx * 4))`, which bypasses type safety and relies on exact byte offsets.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There is a complete absence of meaningful comments explaining the logic; the only comments are auto-generated markers like `/* do not return */`.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level algorithms are lost; the GCD calculation in `param_opaque_predicate` is reduced to a math formula, and the simple loop in `param_vectorized_loop` is obscured by SIMD intrinsics.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: One anomaly is flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`), but the decompiler silently presents heavily optimized code (like the flattened tail recursion) without warning about the structural divergence from typical source.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions or postconditions are documented; for example, the `setjmp`/`longjmp` error handling contract in `param_division_by_zero` is implicit in the control flow rather than explicit.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are explicit and easy to trace (e.g., `test_obf_opt_edge` calling specific test functions), but string references are opaque global addresses (e.g., `&g_402004`).
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions ordered by address, lacking the logical grouping or sections present in the original source file.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses non-standard syntax like `CONCAT` and `AddV` intrinsics, preventing it from compiling without significant modification or defining custom macros.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- The `CONCAT` macro usage (e.g., `v8 >> 31 CONCAT v8`) renders expressions cryptic and non-standard.
+- Standard library types like `jmp_buf` are not recovered, appearing as raw `unsigned long long` arrays.
+- Control flow in `param_vectorized_loop` uses `goto` and manual pointer arithmetic for SIMD, obscuring the simple vector addition logic.
+- Magic numbers like `4294967295` are used instead of named constants like `UINT32_MAX` or `-1`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully preserved all original function names from the binary symbols, making high-level navigation trivial.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.5/10)
+- The decompiler fails to convey the *intent* of the code, presenting optimized low-level implementations (math formulas, intrinsics) instead of the original algorithms (loops, conditionals).
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement pattern matching to replace `CONCAT` operations with standard C type casts or wider integer types (e.g., `long long`) to improve readability.
+2. Recover standard library types (e.g., `jmp_buf`, `FILE`) based on signature matching and global usage context rather than defaulting to raw arrays/ints.
+3. Add logic to detect and annotate loop unrolling and vectorization, potentially offering a "de-optimized" view that re-rolls loops into standard `for` constructs.

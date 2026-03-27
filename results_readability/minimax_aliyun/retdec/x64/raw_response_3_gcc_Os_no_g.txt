@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v1`, `v2`, `v3`, `v4`, `v5` and parameters are `a1`, `a2`, `a3`, `a4`. The original source had meaningful names like `arr`, `i`, `n`, `p`, `head`, `temp` but these are completely lost. For example, in `local_array`, the loop variable should be named `i` but is `v4`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly match source names (`double_value`, `local_vars`, `local_array`, `heap_basic`, `malloc`), but many helper functions use generic patterns like `function_1100`, `function_1110`. The `memop_*` functions are reasonably named. However, the inconsistency between recovered names and generic patterns reduces clarity.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with unexplained magic numbers: `0xfffffffe` (mask for even numbers), `0xffffffff` (error returns), `0x100000000`, `0x40000000`. String literals are shown as hex-encoded UTF-8: `"\xe6\xb5\x8b\xe8\xaf\x95..."` instead of decoded Chinese characters. No named constants replace these values.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts include: inline assembly stubs (`__asm_rep_stosb_memset`, `__asm_rep_movsb_memcpy`, `__asm_mfence`), stack canary checks (`__readfsqword(40)`, `__stack_chk_fail`), and address annotations (`// 0x130a`, `// bp-56`). These obscure the actual logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops are correctly recovered as while loops rather than gotos, which is good for -O0. However, some complex functions like `linked_list_heap` use goto labels (`lab_0x1877`) which disrupts readability. The basic control flow is understandable but not perfectly idiomatic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: The decompiler correctly preserves the many small functions from the original source. Function granularity is appropriate - no 500-line monoliths. However, some parameter lists expose implementation details (e.g., `heap_basic` has 4 parameters when only 1 is needed).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. The `linked_list_heap` function has a goto-based state machine that disrupts linear flow. Early returns are used appropriately in some functions. Overall moderate non-linearity.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop unrolling is minimal - the original simple for loops are preserved as while loops. Some redundant expressions in array index calculations but manageable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int64_t` consistently which is appropriate for arm64 but loses precision from original `int` (which should be 32-bit). Pointers are `int64_t *`. No distinction between `size_t` and `int`. The original `int` variables become 64-bit types unnecessarily.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The original source defines `Point` struct and `Node` struct, but the decompiler completely fails to recover these. Instead, it uses raw pointer arithmetic: `*(int32_t *)mem = 10; *(int64_t *)(v1 + 8) = v2;`. All struct field semantics are lost - should be `p->x`, `p->y`, `node->data`, `node->next`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations: frequent casts between `int64_t` and `int32_t` with masking (`& 0xffffffff`), pointer arithmetic without bounds checking, direct memory manipulation without type safety. The `memcpy` result calculation `(int64_t)a1 - 4 + (a3 & -4)` is confusing and error-prone.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are purely mechanical - address ranges (`// Address range: 0x130a - 0x1350`), stack frame offsets (`// bp-56`), and register annotations. No explanation of algorithm intent, no recovery confidence indicators, no API contracts. The comments add noise rather than clarity.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are identified or named. The linked list creation, tree traversal, and memory pool patterns are not recognized. The code just presents raw operations without indicating these are common data structure patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies are flagged. The code silently presents potentially problematic patterns like the dangling pointer access in `dangling_pointer()`, the double-free in `double_free()`, and the heap overflow in `heap_overflow()` without any warnings about undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had comments like "安全检查" (safety check) for parameter validation, but these are completely lost. No indication that `n <= 0` is invalid input.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function prototypes at the top show call relationships, but there's no documentation of which functions call which, global variable usage, or callback relationships. The `extern_function` and `extern_global_var` are declared but not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically with prototypes at the top and implementations below. However, it's a single monolithic file. Static functions aren't distinguished from externals. The original source's section comments (MEM-L1, HEAP-L2, etc.) are lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code includes necessary headers (`<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`, `<sys/wait.h>`, `<unistd.h>`). It should compile with minimal patching. However, the inline assembly stubs (`__asm_rep_stosb_memset`) may not exist in all decompilers.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.2/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`v1`, `v2`, `a1`, `a2`) - original meaningful names like `arr`, `i`, `head`, `temp` are lost
+- Composite types (Point, Node, TreeNode structs) are not recovered - all replaced with raw pointer arithmetic losing field semantics
+- String literals are hex-encoded Chinese characters instead of decoded text
+- No anomaly warnings for undefined behavior patterns (dangling pointer, double-free, heap overflow)
+- Type precision lost - original `int` becomes `int64_t`, losing 32-bit semantics
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+- The decompiler correctly preserves the many small, focused functions from the original source without inlining or fragmenting excessively
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Generic variable names like `v1`-`v5` and `a1`-`a4` completely obscure the semantic purpose of each variable. The original source had clear names (`arr`, `i`, `n`, `p`, `head`, `temp`, `counter`) that should be recoverable from usage patterns.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array index → `i`/`index`, loop counter → `count`, pointer traversal → `ptr`/`node`) to generate semantically meaningful names instead of generic `v1`, `v2`
+2. **Recover struct/union types**: Detect repeated field access patterns at fixed offsets (e.g., `*(int32_t*)(ptr+0)`, `*(int64_t*)(ptr+8)`) to reconstruct composite types with field names
+3. **Decode string literals**: Convert UTF-8 hex-encoded strings back to readable text and detect magic numbers (common constants like -1, 0, powers of 2) to suggest named constants

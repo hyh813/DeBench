@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Test functions use generic `v0`, `v1`, `v2`, `v3` pattern extensively (e.g., `test_array_types` has 14+ generic variables), while core functions preserve some meaningful names like `arr`, `n`, `p`, `x`. Inconsistent naming obscures variable purposes in complex functions.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`process_char`, `array_1d_stack`, `struct_simple`), accurately reflecting functionality. Some runtime helpers have generic names (`sub_6D0`, `__do_global_dtors_aux`) but core logic is well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `65`, `0x19u`, `32` replace character literals in `process_char`. Test functions show constant-folded values (`97`, `300`, `10000`) instead of actual function calls, losing semantic meaning of test cases.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: `__fastcall`, `__cdecl` calling conventions, architecture-specific types (`__int64`, `_DWORD`), and excessive local variable declarations (`v3`, `v5`, `result`) clutter simple functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: `process_char` uses optimized range check `(unsigned __int8)(c - 65) <= 0x19u` instead of clear `c >= 'A' && c <= 'Z'`. Loops often use `do-while` with manual indexing instead of clean `for` loops from source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well—no inappropriate inlining or fragmentation. Each test function remains separate with appropriate size. Helper functions like `complex_callback` preserved correctly.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom naturally. Some functions use backward-jump patterns converted to `do-while` which is slightly less clear than original `for` loops but still traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions show aggressive constant folding—actual function calls replaced with pre-computed results (e.g., `process_char('A')` becomes direct `97`). This removes semantic information about what's being tested.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`char`, `int`, `float`, `double`, `long double`), but some degradation occurs (`int` becomes `__int64` or `_DWORD *`). Pointer types generally accurate but function signatures show architecture-specific types.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types recovered with field names (`Point3D`, `Rect`, `Widget`, `Node`). Field access uses proper syntax (`p->x`, `r->position.x`). However, `struct_bitfields` shows raw bitwise operations instead of named field access.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (`(unsigned __int8)`, `(_DWORD)`, `(int)(long)handle`). Pointer arithmetic generally safe. No major type confusion but cast verbosity reduces clarity.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled output. Original source had extensive comments explaining each test case (e.g., `// DT-L1-01: 字符类型`). Only minimal function headers present, losing all semantic documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition—linked list traversal, tree recursion, and state machine patterns not identified. `enum_switch` uses lookup table instead of recognizable switch statement, obscuring the pattern.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some functions marked "FAILED to decompile" (`__libc_start_main`, `__printf_chk`). `opaque_handle_create` has warning "local variable allocation has failed". No systematic anomaly flagging for semantic changes.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear test expectations (e.g., `// 期望: 'a'`) completely lost. No contract information for any function.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved and traceable. No call graph documentation or relationship comments. Callback relationships (e.g., `ptr_func_simple` with `double_value`) inferable but not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping comments. Original source had clear section headers (`// 2.1 基础数据类型`, `// 2.2 数组类型`) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Seven functions marked "FAILED to decompile" including critical libc functions. Would require stubs for `__printf_chk`, `puts`, `__libc_start_main`. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+*Calculation:*
+- L1 (Lexical): 6.0 × 0.30 = 1.80
+- L2 (Structural): 6.75 × 0.25 = 1.69
+- L3 (Type System): 7.0 × 0.20 = 1.40
+- L4 (Semantic): 3.0 × 0.15 = 0.45
+- L5 (Contextual): 5.0 × 0.10 = 0.50
+- **Total: 5.84 → 5.7/10**
+
+### Critical Defects:
+- **Test functions constant-folded**: Actual function calls replaced with pre-computed values (e.g., `process_char('A')` → direct `97`), losing test semantics
+- **No comments preserved**: Original source had extensive documentation explaining each test case; decompiled output has zero semantic comments
+- **Volatile semantics lost**: `volatile_access` simplified from two reads to `2 * *p`, losing volatile behavior
+- **Generic variable names**: Test functions use `v0`, `v1`, `v2` pattern obscuring variable purposes
+- **Failed external functions**: 7 libc functions failed to decompile, requiring manual stubs
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Core function names preserved accurately from source (`process_char`, `array_1d_stack`, `struct_simple`), maintaining semantic clarity for the actual logic functions.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete loss of all source comments including test case explanations, section headers, and semantic documentation that made the original code self-explanatory.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve test function call semantics**: Avoid constant-folding test harness code; maintain actual function calls to show what's being tested
+2. **Recover and preserve source comments**: Extract debug info (`-g` flag) to recover original comments and documentation
+3. **Flag semantic transformations**: Add warnings when optimizations change behavior (e.g., volatile access simplification, recursion-to-iteration conversion)

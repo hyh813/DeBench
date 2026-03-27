@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names (`v1`, `v2`, `v3`, `v4`) instead of semantic names like `i`, `index`, or `counter`. Some original names preserved (`large_buf`, `arr`, `mem`) but loop counters consistently degraded to `v2`, `v3`, `v4`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`local_array`, `heap_basic`, `vla_stack`, `test_stack_memory`). However, helper function `function_ffff0fa0` is cryptic and string globals renamed to `g1`, `g2`, `g3`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4 * n`, `8`, `12`, `20`, `40` for malloc sizes lack explanation. String literals encoded as hex escapes in globals (`g1`, `g2`). Constant `65` for 'A' not explained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive redundant casts (`(int32_t)`, `(char *)`, `(uint32_t)`). Explicit pointer arithmetic (`4 * v2 + v1`) instead of array indexing. Frame pointer manipulation visible throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: For-loops converted to while with manual increment. `linked_list_heap` uses goto labels (`lab_0x10cf4`) instead of structured loops. `test_heap_memory` has multiple goto disruptions.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved matching source. However, `linked_list_heap` is severely fragmented with goto-based logic. Test functions preserved but with structural issues.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps in `linked_list_heap` and `test_heap_memory` disrupt top-to-bottom reading. Multiple label targets (`lab_0x11060`, `lab_0x1107c`) create non-linear flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No aggressive loop unrolling (appropriate for -O0). Some redundant pointer arithmetic calculations visible. Duplicate type casts throughout functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently but `size_t` degraded to `int32_t`. Pointer types sometimes wrong (`memop_bcopy` has `int32_t * src, char * dst` vs original `const void *src, void *dst`). Function pointer type preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - `Point` struct completely lost (`heap_struct` uses `malloc(8)` and `3 * x`). `Node` struct lost (raw pointer arithmetic `*(int32_t *)(v1 + 4)`). `TreeNode` struct not recovered. No struct definitions in output.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`(int32_t)mem`, `(char *)v1`). `dangling_pointer` returns `*mem` after free (preserved from source but dangerous). Pointer arithmetic without bounds checking throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments whatsoever** in decompiled code. Original source had extensive comments explaining each test case (MEM-L1-01, HEAP-L2-01, etc.). No decompiler confidence indicators or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: malloc/free patterns visible but not identified as memory management idioms. Loop patterns not recognized. No design pattern identification. String operations not labeled as such.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about `dangling_pointer` undefined behavior. No indication of potential `double_free` issues. Silent on dangerous memory patterns that should be flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null checks preserved but not documented as preconditions. No postcondition inference (e.g., "returns heap-allocated memory"). Error conditions not documented.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variable usage not explained. No call graph information. External symbols (`extern_function`, `extern_global_var`) declared but relationships unclear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped somewhat logically (test functions together). Global variables at top. Test functions separate from implementation. Reasonable but not optimal organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes present. External function declarations exist. Metadata indicates compilation succeeds. Some adjustments needed for string literal handling.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+7+5+4)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):   (4+6+5+6)/4 = 5.25  × 0.25 = 1.31
+Level 3 (Type System):  (5+2+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):     (1+3+2+3)/4 = 2.25  × 0.15 = 0.34
+Level 5 (Contextual):   (5+6+7)/3   = 6.00  × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.48/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects:
+- **Struct types completely lost** - `Point`, `Node`, `TreeNode` structs not recovered; all access via raw pointer arithmetic
+- **`linked_list_heap` function severely broken** - Uses goto labels, incorrect logic flow, returns wrong values
+- **`local_array` doesn't return correct value** - `result` variable declared but never assigned `arr[5]`
+- **Zero comments** - Original source had extensive documentation; decompiled code has none
+- **String literals encoded as hex** - Chinese strings stored as `g1`, `g2` with hex escapes instead of readable text
+
+### Best Quality Aspect:
+- **Build System Compatibility (7/10)** - Code includes necessary headers, declares external symbols, and metadata indicates successful compilation with minimal adjustments needed.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of comments makes understanding intent impossible; original source's extensive documentation (MEM-L1-01, HEAP-L2-01 labels, scenario descriptions) entirely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union definitions** from consistent memory access patterns (e.g., `*(v1+4)` followed by `*(v1+8)` suggests a 3-field struct)
+2. **Preserve or regenerate comments** from debug symbols (-g flag present) or infer from function/test naming patterns
+3. **Convert while+manual-increment patterns back to for-loops** when initialization, condition, and increment are detectable in sequence

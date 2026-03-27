@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `result`) with zero semantic meaning. For example, in `process_char`, variable `v1` should be named `converted_char` based on its usage pattern.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), but some are generic (`function_1030`, `function_1040` for `puts`/`printf`). Good verb choices where preserved.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere without explanation (`65`, `26`, `32`, `0xffffffff`, `0x3fc00000`). String literals stored as hex-encoded globals (`g12`, `g13`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy assembly intrinsics pollution (`__asm_addss`, `__asm_movsd`, `__asm_pxor`). Excessive masking operations (`& 0xffffffff`, `& 0xfffffffe`) throughout all functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Some loops recovered as `while` constructs, but test functions print hardcoded values instead of calling actual functions. `array_3d` has deeply nested manual loop unrolling that obscures the original triple-nested for-loop structure.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but parameter lists are incorrect (e.g., `array_1d_stack` has 3 parameters instead of 2, `process_float` has `void` parameters instead of `float`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with reasonable structure. Some forward jumps in complex functions like `test_array_types` but mostly manageable flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated masking patterns (`& 0xffffffff`) in nearly every return statement. Test functions contain redundant printf calls with hardcoded expected values instead of actual computation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Catastrophic type degradation - all functions use `int64_t` regardless of original types. `process_float` and `process_double` return `int128_t` instead of `float`/`double`. Original `char`, `short`, `bool` types completely lost.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: Zero struct/union/enum definitions recovered. All composite access done via raw pointer arithmetic (e.g., `*(int32_t *)(a1 + 8)` instead of `p->y`). `Point3D`, `Rect`, `Widget`, `Node` structures completely lost.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Numerous unsafe casts throughout (`(int64_t)(*(int32_t *)v4)`). Pointer arithmetic without bounds checking. Function pointer signatures degraded to `int64_t` parameters losing all type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, algorithms, or decompilation confidence. Only auto-generated file header present. No documentation of non-obvious operations like the assembly intrinsics.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No pattern recognition whatsoever. Linked list traversal (`linked_list`), binary tree recursion (`binary_tree_sum`), and graph traversal (`graph_traverse`) all reduced to pointer arithmetic with no structural hints.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation despite obvious issues (missing parameters, assembly intrinsics, type degradation). Code presented confidently despite being semantically incorrect.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks). No postconditions inferred. Error conditions not noted despite functions like `array_complex_index` having bounds checking in source.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but signatures often wrong. Global variables (`g1`-`g20`) referenced without meaningful names. No call graph documentation or callback relationship recovery.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file with functions roughly grouped by category. No header file separation. Function order somewhat logical but no explicit module boundaries.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes standard headers but uses non-portable assembly intrinsics (`__asm_addss`, `__asm_movdqa`). Many function signatures would cause compilation errors due to parameter mismatches.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+3+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+5+6+5)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (2+1+2)/3   = 1.67 × 0.20 = 0.334
+Level 4 (Semantic):    (1+1+2+1)/4 = 1.25 × 0.15 = 0.188
+Level 5 (Contextual):  (4+5+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────
+Overall Score:                                  3.33/10
+```
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects:
+- **Complete type system collapse**: All functions use `int64_t` regardless of original types (char, float, double, structs all lost)
+- **Zero composite type recovery**: No struct/union/enum definitions; all accessed via raw pointer arithmetic (`*(int32_t *)(a1 + 8)`)
+- **Test functions print hardcoded values**: Instead of calling actual functions, test functions print expected results directly
+- **Assembly intrinsic pollution**: Heavy use of `__asm_*` calls instead of proper C operations for floating point
+- **No semantic documentation**: Zero comments explaining logic, algorithms, or decompilation uncertainty
+
+### Best Quality Aspect: Function Naming Quality (scored 7/10)
+- Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`) providing some semantic anchors
+
+### Most Needs Improvement: Type System Fidelity (averaged 1.67/10)
+- Complete loss of type information makes the decompiled code semantically incorrect and practically unusable for understanding original intent
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions**: Analyze memory access patterns to reconstruct struct layouts with field names based on usage context
+2. **Preserve original type signatures**: Use debug symbols (`-g` flag was present) to recover exact parameter and return types instead of defaulting to `int64_t`
+3. **Replace assembly intrinsics with C operations**: Detect common floating-point patterns (`__asm_addss`, `__asm_mulsd`) and emit proper C float/double operations

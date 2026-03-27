@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Mix of descriptive names (`dst`, `src`, `buffer`, `fp`) and generic names (`v0`, `v1`, `v2`, `i_0`, `i_1`). Aliased variables like `tmpfilea`, `filenamea`, `proga` add confusion without semantic value.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match original source exactly (`param_strcpy`, `thread_compute`, `consumer_thread`). Only startup/runtime functions use generic names (`sub_2020`, `deregister_tm_clones`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Many magic numbers without explanation: `syscall(2, pathname, 0)` (2=SYS_open), `signal(10, ...)` (10=SIGUSR1), `socket(2, 1, 0)` (2=AF_INET, 1=SOCK_STREAM), `open(..., 66, 438)` (octal 0666).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present: `__fastcall`, `__cdecl` annotations, stack frame comments `[rsp+10h] [rbp-20h] BYREF`, redundant casts `(_DWORD)`, `(_QWORD *)`, and variable aliasing (`tmpfilea = tmpfile`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as for/while constructs. `param_signal_handling` uses awkward `while(1)` with break instead of condition-based loop. Fork/exec branching in `param_fork_exec` is clear and natural.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions match original source structure well. Thread functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`). No excessive inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward variable declarations disrupt flow. No excessive goto usage. Early returns used appropriately in error paths.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Redundant variable copies present (`tmpfilea = tmpfile`, `xa = x`, `input = x`). No dead code observed. Duplicate `close(sock)` calls in error paths match source logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`, `FILE*`). Some degradation: `__int64` instead of `size_t`, function pointers as `(void *(*)(void *))`. Pointer arithmetic visible: `*((_DWORD *)arg + 2)`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `ThreadData` struct recovered with field names (`start`, `end`, `result`). `sockaddr_in` fields named correctly. TLS variables accessed via `__readfsdword` instead of proper TLS semantics.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many unsafe casts: `(_DWORD)pos1 - (_DWORD)str`, `(_QWORD *)src`. Function pointer casts throughout. No buffer overflow warnings. Atomic operations use `_InterlockedExchangeAdd` appropriately.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in decompiled code. No algorithm explanations or decompilation confidence indicators. Only function header comments from decompiler. 59 failed functions listed without inline warnings.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`). Fork/exec pattern clear in `param_fork_exec`. Producer-consumer pattern in `param_condition_variable` not explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 59 functions listed as "FAILED to decompile" at end of output. No inline warnings about uncertain decompilation within function bodies. No warnings about the many type casts or potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"). No postcondition documentation. Error return values not documented. Original source comments not preserved in decompiled output.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear within decompiled code. Global variables referenced (`signal_received`, `shared_counter`, `atomic_counter`). No call graph documentation. Thread function relationships clear through naming only.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in similar order to source. Test functions grouped logically. Single output file with no header generation. Static functions properly identified with appropriate scoping.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 59 standard library functions failed to decompile. Would need significant stubs to compile. Platform-specific code (`__readfsdword` for TLS) not portable. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (6+8+5+6)/4 = 6.25
+Level 2 Average: (7+8+7+7)/4 = 7.25
+Level 3 Average: (6+7+5)/3 = 6.00
+Level 4 Average: (3+6+5+3)/4 = 4.25
+Level 5 Average: (6+6+4)/3 = 5.33
+
+Overall = (6.25 × 0.30) + (7.25 × 0.25) + (6.00 × 0.20) + 
+          (4.25 × 0.15) + (5.33 × 0.10)
+        = 1.875 + 1.8125 + 1.20 + 0.6375 + 0.533
+        = 6.06/10
+```
+
+**Overall Readability Score: 6.1/10**
+
+### Critical Defects
+- **59 standard library functions failed to decompile** - severely limits standalone compilation and understanding of external dependencies
+- **Magic numbers without explanation** - syscall numbers (2, 3), signal numbers (10, 14), socket constants (2, 1) should be named constants
+- **Excessive generic variable names** - `v0`, `v1`, `v2`, `i_0`, `i_1` obscure semantic meaning compared to original source
+- **No contract documentation** - preconditions, postconditions, and error conditions not documented despite being inferable from source
+- **Unsafe type casts throughout** - `(_DWORD)`, `(_QWORD *)` casts without safety justification or bounds checking
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Function names match original source almost exactly, preserving semantic intent and making code navigation straightforward
+
+### Most Needs Improvement
+- **Comment Quality & Presence (3/10)** - Almost no comments explaining algorithm logic, decompilation confidence, or API contracts despite complex threading and signal handling code
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover named constants from syscall/signal/socket magic numbers** - Map numeric constants to their symbolic names (SYS_open, SIGUSR1, AF_INET) using platform-specific header knowledge
+2. **Add inline decompilation confidence annotations** - Mark uncertain type casts, unresolved indirect calls, and potential optimization artifacts with comments
+3. **Infer variable names from usage patterns and original debug symbols** - Use `-g` debug information to recover original variable names instead of generic `v0`, `v1` naming

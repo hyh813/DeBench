@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic names like `iVar1`, `x_local`, `result` without semantic meaning. The `_local` suffix adds noise without clarity (e.g., `x_local` vs `x` in `param_fake_branch`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved accurately (`param_fake_branch`, `param_opaque_predicate`), but helper functions use cryptic names like `FUN_00101020` and `deregister_tm_clones`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `0x2f`, `0x14`, `0x20`, `0x21`, `0x10`. The encrypted string key `'Z'` (0x5A) is unclear without context from original source.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail`) appear in multiple functions. Unnecessary `_local` variable copies create visual clutter without semantic value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loop structures generally preserved, but `param_fake_branch` lost its fake branch conditions entirely. Condition inversion (`0 < n` vs `n <= 0`) in tail call function creates confusion.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. Each function maintains single responsibility, though some could be more cohesive (e.g., `param_integer_overflow` logic is scattered).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with minimal goto usage. Stack check epilogues at function ends disrupt flow slightly but are recognizable patterns.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary code duplicated across many functions. The `param_fake_branch` decompilation eliminated the fake branches entirely, losing the obfuscation test intent.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, size_t), but some precision lost. Signal handler uses `(__sighandler_t)0x0` instead of `SIG_DFL`. Generic `int` used where `int32_t` would be more precise.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Bitfield struct in `param_implementation_defined` becomes `anon_struct_4_3_4e909822` with no field names. Critical semantic information about the struct layout is completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int)(10 / (long)x)`, `(undefined *)0x0`, `(uint)x >> 1`. Pointer arithmetic in `param_buffer_overflow_heap` uses `(long)__ptr + (long)i` pattern.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining obfuscation intent, algorithm purpose, or decompiler confidence. Only auto-generated warnings like "WARNING: Removing unreachable block" appear.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Obfuscation patterns (fake branches, opaque predicates, instruction substitution) not identified or documented. The decompiler treats obfuscation as regular code without flagging intent.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("WARNING: Removing unreachable block", "Unknown calling convention"), but critical semantic losses (fake branch elimination) go unmentioned.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` requires x≠0 for normal path). Error conditions and expected return values not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear, but relationships between obfuscation test functions not explained. Global variables (`div_zero_caught`, `jmp_buffer`) referenced without context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source order but lack logical grouping comments. No indication which functions are test harnesses vs. obfuscation targets.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External dependencies (signal.h, setjmp.h, malloc) present but not documented. Architecture mismatch (original arm64, decompiled x86) could cause issues.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+7+4+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (6+4+5)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+3+5+3)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (6+6+6)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.29/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects:
+- **`param_fake_branch` completely lost fake branch logic** - Returns `x` directly instead of showing the always-false conditions that are the test's purpose
+- **Bitfield struct reduced to `anon_struct_4_3_4e909822`** - All field names and semantic meaning lost
+- **Zero documentation of obfuscation intent** - No comments explaining why fake branches, opaque predicates, or instruction substitution exist
+- **Magic numbers without context** - `0x2f`, `0x14`, `'Z'` (0x5A) appear without explanation of their purpose
+- **Architecture metadata mismatch** - Original compiled for arm64, decompiled shows x86 processor
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved accurately from source, making it possible to identify which obfuscation technique each function tests
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments means readers cannot understand the obfuscation intent without comparing to original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag obfuscation patterns** - When fake branches (always-false conditions) or opaque predicates are detected, add comments explaining the obfuscation intent rather than silently simplifying
+2. **Preserve struct field semantics** - For composite types like bitfields, attempt to recover field names from debug info or use descriptive names based on usage patterns
+3. **Add confidence indicators** - When code is simplified (like `param_fake_branch`), indicate what was removed and why, so analysts understand the decompiler's transformations

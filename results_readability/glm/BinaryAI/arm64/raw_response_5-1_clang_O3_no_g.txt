@@ -1,0 +1,104 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are generic (e.g., `local_38`, `puVar1`, `uStack_2c`) and do not reflect the original semantic meaning like `obj`, `value`, or `data`. Even with `-g` debug flags, meaningful names were not recovered.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: High-level test functions (e.g., `test_cpp_member_func`, `test_cpp_rtti`) and template instantiations (e.g., `Container<int>::push`) are accurately named, providing a good roadmap, though some internal helpers remain generic (e.g., `FUN_00100d60`).
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers (e.g., `0x125c`, `0x2a`, `0x47`) representing constant-folded calculation results, completely obscuring the original logic and expected values without manual calculation.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: While the control flow is relatively clean, the use of `undefined` types (e.g., `undefined8`, `undefined4`) and generic casts acts as noise, making it difficult to distinguish actual data from padding or unknown regions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Where logic exists (e.g., in `test_cpp_rtti`), the `if` statements and calls are natural. However, many functions are reduced to single `return` statements of constants, which, while simple, represent a failure to preserve the original structural complexity.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: Template functions are correctly separated into distinct instances (e.g., `template_max_int_`), which is good. However, `test_cpp_oo_features` contains inlined logic from `test_cpp_rtti` (or the compiler inlined it), blurring the modular boundaries present in the source.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal jumps or `goto` statements, making the execution path easy to follow in the functions that retain logic.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is no obvious redundant code or dead variables cluttering the logic, though the "elimination" was so aggressive (constant folding) that it removed the intended algorithmic content entirely in several cases.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded; standard C++ objects are represented as `undefined8` or raw integers. Function pointers for vtables are `code ***`, losing the specific method signature information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Class structures (e.g., `SimpleClass`, `Container`) are not recovered. Instead of member access, the code uses raw pointer arithmetic (e.g., `*(int *)(this + 0x28)`) and stack offsets (e.g., `local_38`), forcing the reader to reverse-engineer the layout.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies on unsafe casts and pointer manipulation, such as `(ulong)&local_38 | 4` to access struct fields, which mimics the compiler's behavior but results in unsafe and hard-to-read C code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex C++ mechanisms like vtable lookups or exception handling setup are presented without explanation.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common C++ idioms are not explicitly recognized. Virtual function calls appear as raw indirect calls (`(***(code ***)param_1)`), and RTTI checks are manual `__dynamic_cast` calls without semantic labeling.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents constant-folded functions (e.g., `return 0x2a;`) with high confidence, offering no warning that the source logic has been obliterated by optimization or analysis.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the bounds checking in `Container::get` is visible as an `if` statement but not annotated as a safety check.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Calls to standard library functions (`printf`, `strlen`) and C++ runtime functions (`__cxa_throw`) are clear. However, the relationships between class methods are lost due to the lack of struct recovery.
+
+**17. Module Organization:** Score: 5/10
+Justification: The output is a flat list of functions. While related template functions are grouped by name, there is no higher-level module or namespace structure reflecting the original file organization.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code uses non-standard types like `undefined8` and `code ***`, which will not compile with a standard C/C++ compiler without significant manual modification or type definition files.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 2 + 5) / 4 = 4.25
+L2_avg = (6 + 6 + 8 + 7) / 4 = 6.75
+L3_avg = (3 + 2 + 3) / 3 = 2.67
+L4_avg = (1 + 3 + 1 + 1) / 4 = 1.50
+L5_avg = (6 + 5 + 2) / 3 = 4.33
+
+Overall = (4.25 × 0.30) + (6.75 × 0.25) + (2.67 × 0.20) + 
+          (1.50 × 0.15) + (4.33 × 0.10)
+Overall = 1.275 + 1.6875 + 0.534 + 0.225 + 0.433
+Overall = 4.1545
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects
+- **Logic Loss via Constant Folding**: Functions like `test_cpp_virtual_func` are reduced to `return 0x2a;`, completely hiding the class interaction logic.
+- **Missing Composite Types**: Class structures (e.g., `Container`, `SimpleClass`) are not defined; member access is replaced by unsafe pointer arithmetic (e.g., `this + 0x28`).
+- **Generic Variable Naming**: Variables use generic names like `local_38` and `puVar1` instead of semantic names like `obj` or `data`, even with debug symbols available.
+- **Type Information Loss**: Widespread use of `undefined8` and `undefined4` obscures the actual data types used in the program.
+- **Lack of C++ Semantics**: C++ specific features like virtual calls and RTTI are decompiled to raw memory accesses without high-level annotations.
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)**
+- The decompiler successfully recovered the names of high-level test functions and template instantiations, providing a clear skeleton of the program's functionality.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)**
+- The failure to reconstruct `struct` or `class` definitions forces the reader to interpret raw pointer arithmetic and stack offsets, which is the single biggest barrier to understanding the object-oriented logic of the source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Type Recovery**: Utilize debug information (`-g`) and vtable analysis to reconstruct accurate `struct` and `class` definitions instead of using `undefined` types and raw offsets.
+2.  **Detect and Flag Constant Folding**: When a function body is reduced to a constant return value, add a comment or warning indicating that the source logic was optimized away, or attempt to show the pre-folded logic if debug info permits.
+3.  **Annotate C++ Idioms**: Automatically identify and comment on common C++ patterns, such as "Virtual call via vtable" for indirect calls like `(***(code ***)param_1)`, to improve semantic transparency.

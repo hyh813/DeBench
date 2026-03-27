@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Most parameters use generic single letters (`x`, `y`, `z`, `value`, `n`) or are marked as "Unresolved local var" with `???` storage. For example, `param_asm_clobber` has `sum` and `i` as unresolved, while `param_builtin_macros` has 8 unresolved local variables including `line`, `file`, `func`, `date`, `time`, `counter1/2/3`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source (e.g., `param_macro_constants`, `call_macro_functions`, `param_conditional_compile`, `param_asm_basic`, `param_dynamic_code`). The decompiler preserved the semantic naming from the source almost perfectly.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most numeric literals are meaningful - `0x40` (64), `0x200` (512), `0xdf22` (57122), `0xdef0` correctly represent computed values. However, some magic numbers like `0x1e` (page size query), `7` (mmap PROT flags), `0x22` (mmap flags) lack explanatory comments.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Code is relatively clean with minimal compiler artifacts. However, there are numerous "WARNING" comments about unreachable blocks and unknown calling conventions that add noise. The "Unresolved local var" annotations create visual clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with proper if-else structures. For example, `param_macro_constants` correctly shows `if (size < 0x401) { iVar1 = 0x200; }` matching the original's conditional logic. Loops in `param_asm_clobber` are properly structured.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the original source. Each test function (`param_macro_*`, `param_asm_*`) is separate and cohesive. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. The `param_asm_clobber` function has proper loop structures that read linearly.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious redundant code or dead code. Loop unrolling in `param_asm_clobber` is a legitimate optimization artifact from -O3 and is handled reasonably.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Integer types are generally `int` which is appropriate for ARM64. Pointers are correctly typed (e.g., `int *arr`, `void *dst`, `void *src`). However, `size_t` for `n` in `param_asm_multi_insn` is correct. Minor issues with some generic types.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: The original source didn't define complex structs - only simple arrays and pointers. The decompiled code correctly handles these without needing struct recovery.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Code appears type-safe with no obvious unsafe casts. Pointer arithmetic is used correctly (e.g., `arr + uVar7`). The atomic operations use proper ARM64 intrinsics (`__aarch64_ldadd4_acq_rel`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Ghidra provides mostly auto-generated warnings ("WARNING: Removing unreachable block", "WARNING: Unknown calling convention") rather than semantic comments. No explanation of macro semantics or assembly behavior. The "Unresolved local var" annotations are helpful but not sufficient.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No design patterns or complex algorithms to recognize. The code is straightforward computation. However, the decompiler could have noted that `param_asm_clobber` implements a loop-based sum, and `param_dynamic_code` demonstrates self-modifying code patterns.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra does flag some anomalies with "WARNING" comments about unreachable blocks and unknown calling conventions. However, it doesn't flag the significant transformation from inline assembly to C code as an anomaly that warrants explanation.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: No assertions were in the original source. The decompiler doesn't provide additional contract information (preconditions/postconditions) that would aid understanding.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - `main` calls `test_preprocessing_features` and `test_asm_features`. However, there's no documentation of which functions call which others or global variable usage.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are reasonably organized, grouping related test functions together. However, all functions are in a single flat listing without logical grouping or section headers.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The decompiled code should compile as standard C. External dependencies (standard library functions like `printf`, `mmap`, `sysconf`) are properly declared. The code uses ARM64-specific intrinsics which are appropriate for the target architecture.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.9/10
+
+**Critical Defects:**
+- Variable naming is severely degraded with most locals marked as "Unresolved local var" with `???` storage - cannot track variable purpose
+- Comments are mostly auto-generated warnings rather than semantic explanations of macro/assembly behavior
+- Magic numbers like `0x1e` (page size), `7` (mmap PROT flags) lack explanatory constants
+- No indication that inline assembly was transformed to C code (significant semantic loss)
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Function names almost perfectly match the original source, making it easy to locate specific test functions
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Generic single-letter names and unresolved local variables make it difficult to understand variable purposes without referring to the original source
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - e.g., `param_builtin_macros` should name `counter1/2/3` based on `__COUNTER__` macro expansion
+2. Add semantic comments explaining transformations - particularly when inline assembly is converted to C, or when macro expansion results in specific constant values
+3. Detect magic numbers and suggest named constants - `0x1e` should be documented as `_SC_PAGESIZE`, `7` as `PROT_READ|PROT_WRITE|PROT_EXEC`

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `local_c`, `local_10` instead of semantic names like `temp1`, `sum`, `count` from source. Makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation—function names like `sequential_ops`, `nested_if_deep`, `switch_fallthrough` match original source exactly, clearly indicating purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Decimal constants converted to hex (`0x14` instead of `20`, `0xffffffff` instead of `-1`), obscuring immediate understanding of return values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail()`) appear in multiple functions like `loop_break`, adding compiler artifacts not present in source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as for/while, but `switch_fallthrough` uses goto labels (`LAB_001014b1`) instead of fall-through comments, and `duffs_device` has complex goto structure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity matching source; helper functions (`op_add`, `op_sub`) properly separated, though some have excessive local variable declarations.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `switch_fallthrough` and `loop_break` use goto statements that disrupt natural flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant type casts visible throughout (`(ulong)`, `(int)`, `(long)`), and stack canary checks add repetitive boilerplate code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation—`if_else` returns `bool` instead of `int`, many functions return `undefined8` instead of `int`, pointer types unclear (`code *`, `undefined4 *`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays recovered as `local_28[6]`, `local_48[14]` without semantic meaning; no struct/union reconstruction visible despite source having no complex structs.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout (`(ulong)uVar1`, `(int)param_1`), function pointer calls with unclear signatures, potential type confusion in `call_func_ptr`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated Ghidra headers present; zero semantic comments explaining algorithm purpose, preconditions, or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Duff's device structure recovered but not identified by name; state machine pattern in `state_machine` not recognized; recursion patterns preserved but unlabeled.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present ("WARNING: Removing unreachable block" for `opaque_predicate`, "WARNING: Treating indirect jump as call" for `computed_goto`), but inconsistent coverage.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`), no postconditions inferred, no error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented; global variable `jump_buffer` usage not clearly explained; no call graph information provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 73 functions in single output file; no logical grouping by control flow level (L1/L2/L3); static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Undefined types (`undefined4`, `undefined8`, `code *`), missing headers (`<setjmp.h>`), external dependencies not documented; requires significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+5+5)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25  × 0.25 = 1.56
+Level 3 (Type):        (4+5+4)/3   = 4.33  × 0.20 = 0.87
+Level 4 (Semantic):    (2+3+6+2)/4 = 3.25  × 0.15 = 0.49
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.04/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `local_c`) losing all semantic meaning from source (`temp1`, `sum`, `count`)
+- **Type precision severely degraded** (`undefined8`, `undefined4`, `bool` instead of `int`) making type reasoning difficult
+- **Zero semantic comments** despite complex control flow patterns (Duff's device, state machines, recursion)
+- **Hex literals obscure values** (`0x14` instead of `20`, `0xffffffff` instead of `-1`)
+- **Stack canary artifacts** pollute function bodies with `in_FS_OFFSET` and `__stack_chk_fail()` checks
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Ghidra perfectly preserved all original function names, making function purpose immediately clear despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic documentation means readers must reverse-engineer intent from generic variable names alone.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., `local_c` used as counter → `count`, `local_10` accumulating values → `sum`)
+2. **Add semantic comment generation** for recognized patterns (Duff's device, state machines, recursion) with confidence indicators
+3. **Preserve original literal formats** (decimal vs. hex) and add named constant suggestions for magic numbers like `0xffffffff`

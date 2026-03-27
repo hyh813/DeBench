@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `a1`, `v3`), providing no semantic context about their role in calculations or data structures.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from the original source (e.g., `local_vars`, `heap_basic`, `test_stack_memory`), making the high-level intent immediately clear.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals are perfectly recovered and readable, but magic numbers like `0xffffffff` (for -1) and alignment masks like `0x7fffffff0` are used without named constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: The code is polluted with compiler intrinsics like `__asm_movdqa` and `__asm_paddb` in functions like `large_stack_frame`, which obscure the simple memory operations performed in the source.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally readable with standard `while` loops, though some loop conditions are complex (e.g., `2 * v2 != v6`) and `goto` is used in `linked_list_heap` for error handling.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match the source well; however, the compiler appears to have inlined smaller functions into the `test_*` functions, making them significantly larger and more monolithic than the source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: The code reads mostly top-to-bottom, but the inlining of logic within test functions (e.g., the loop inside `test_stack_memory`) disrupts the linear flow of the main testing logic.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Due to function inlining, logic for `local_array` and `vla_stack` is repeated inside `test_stack_memory`, creating redundancy that wasn't present in the original source structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: While `int64_t` and `int32_t` are used, the decompiler defaults to `int64_t` for parameters and locals even when the source used `int` (32-bit), leading to unnecessary casts and type width confusion.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct types like `Point` and `Node` are completely lost; the decompiler represents them as raw pointer arithmetic (e.g., `*(int32_t *)mem = 10;` and `*(int64_t *)(v1 + 8) = v2;`), destroying semantic meaning.
+
+**11. Type Safety:** Score: 7/10  
+Justification: The generated code is type-safe in that it accurately represents the binary operations, but the lack of struct types forces the use of raw pointer casts which feels unsafe to the reader.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: There are virtually no comments explaining logic; only address ranges are provided, leaving complex algorithms like the linked list traversal unexplained.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls (`malloc`, `free`, `printf`) are recognized, but higher-level patterns like linked list creation or tree traversal are not explicitly identified or annotated.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The decompiler presents code confidently without flagging potential issues, such as the use of SIMD intrinsics for what looks like a standard memory loop or the dangling pointer access.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: There is no indication of preconditions (e.g., buffer size requirements) or postconditions; error checks are present but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls are clearly visible, and the use of recovered names makes it easy to trace the call graph (e.g., `test_stack_memory` calling `local_vars`).
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are ordered by address rather than logical grouping, scattering related test functions and their implementations throughout the file.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code relies on non-standard intrinsics (`__asm_movdqa`, `__asm_mfence`) and specific typedefs (`int128_t`) that would require significant patching to compile on a standard system.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Composite types (`Point`, `Node`) are completely lost, replaced by raw pointer arithmetic offsets.
+- Variable names are generic (`v1`, `v2`), obscuring the logic of stack and heap operations.
+- Compiler intrinsics (`__asm_movdqa`) are used instead of standard memory functions, adding noise.
+- Functions are inlined into test harnesses, making the test functions unnecessarily large and complex.
+- Lack of comments or semantic annotations for complex data structure manipulations.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+- The decompiler successfully preserved the original function names, which is the single most helpful feature for navigating the code.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+- The failure to recover `struct` definitions turns readable data structure code into obscure pointer math.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement struct recovery algorithms to group field accesses (e.g., offset 0 int, offset 8 pointer) into named structures.
+2. Improve variable renaming heuristics to infer names from context (e.g., loop counters should be `i`, pointers `ptr`).
+3. Map SIMD intrinsics back to standard library equivalents (like `memset` or `memcpy`) when the pattern matches a standard block operation.

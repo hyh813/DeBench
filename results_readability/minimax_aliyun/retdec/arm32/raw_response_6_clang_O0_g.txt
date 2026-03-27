@@ -1,0 +1,120 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy`
+
+The original source shows a simple string copy function at line ~1174:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+The decompiled version at address 0x10a8:
+```c
+int32_t param_strcpy(char * dst, char * src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+This is a relatively well-decompiled function, but I must evaluate the entire decompiled output against the full source file.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Parameter names `dst` and `src` are correctly preserved in `param_strcpy`, but most local variables use generic names like `v1`, `v2`, `v3`, `result`. For example, in `call_strcmp` (0x1170), variables `v1` and `v2` hold the comparison results. The global variables `g1` through `g53` are completely non-descriptive.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions like `param_strcpy`, `call_strcpy`, `param_strcmp` correctly match source names. However, all libc wrapper functions use mechanical names: `function_c70` for `strcmp`, `function_d90` for `strcpy`, `function_dfc` for `strlen`. These should be the actual libc function names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear without explanation: `66` for O_CREAT|O_RDWR in `param_shmget_shmat`, `0x1000` for shared memory size, `12` for `sizeof(arr1)`. String literals like Chinese characters are partially decoded but contain escape sequences (`\xe5\x1e`). Constants like `AF_INET`, `SOCK_STREAM` are correctly used.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from 50+ libc wrapper functions (function_c4c through function_ffff0fe0) that just wrap standard library calls. Redundant casts throughout (e.g., `(int32_t *)` casts everywhere). Address range comments add clutter without value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural and matches source. Loops and conditionals are properly structured. However, `param_pthread_join` (0x265c) uses goto statements (`goto lab_0x273c`) that complicate readability. At -O0, such goto usage is a decompilation artifact.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: 137 functions detected - severe fragmentation. Main test functions are properly decomposed, but libc wrappers create unnecessary overhead. Function sizes are reasonable, but the parameter lists sometimes expose implementation details (e.g., passing thread IDs as `int32_t*`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Forward jumps are minimal. The `param_signal_handling` function has complex nested while loops that disrupt linear flow slightly, but overall code is traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling present in `param_malloc_free` (0x1764) with manual loop expansion. Repeated `strlen()` calls in `param_fread_fwrite` could be cached. No dead code elimination issues. Wrapper function redundancy is the main problem.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Integer types consistently use `int32_t` (appropriate for ARM64). However, pointers are often generic `int32_t*` or `char*` instead of specific types. Const correctness is lost - `const char *src` becomes `char *src`. Function pointers like `(int32_t * (*)(int32_t *))` are overly verbose and unclear.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs are partially reconstructed but with meaningless field names: `struct _IO_FILE { int32_t e0; }`, `struct ipc_perm { int32_t e0; ... }`. Should use actual stdio.h types. The `struct stat` has all fields as `e0`-`e19`, losing semantic meaning.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout. In `param_fread_fwrite`: `*(char *)(items_read + (int32_t)&read_buffer) = 0;` is dangerous pointer arithmetic. In `call_memcpy`: `param_memcpy((char *)&result, src, 20)` passes wrong size. Function pointer type confusion in pthread calls.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are purely mechanical - only address ranges like `// Address range: 0x10a8 - 0x10dc` and line numbers. No explanation of algorithm logic, no decompilation confidence indicators, no @param/@return documentation. Auto-generated noise provides no value.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are explicitly identified. The pthread producer-consumer pattern in `consumer_thread`/`producer_thread` is not labeled as such. No recognition of common patterns like mutex lock patterns or condition variable usage.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. Indirect calls like `pthread_create(&thread, NULL, (int32_t * (*)(int32_t *))&g21, &input)` use function pointer casts without indicating uncertainty. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions, postconditions, or invariants. For example, `param_strcpy` should document "requires: dst buffer large enough to hold src" but no such contract exists.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No function call graph documentation. Global variable usage is opaque - `g7`, `g8` used for mutex operations without explanation of their roles. Callback relationships not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped somewhat logically (test functions, libc wrappers, main). However, everything is in one monolithic file. Static function scoping is not indicated. No header file with API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes many headers but has undefined symbols: `g1`-`g53` global variables are declared but not properly initialized. The code states "Compilation Result: Yes" but the decompiled code would require significant patching to compile standalone.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable naming: 50+ global variables named `g1`-`g53` with no semantic meaning
+- Function naming: All libc wrappers use `function_XXXX` pattern instead of actual function names
+- Type safety: Unsafe pointer arithmetic in `param_fread_fwrite` and `call_memcpy`
+- Comments: Only address ranges, no useful documentation
+- Composite types: All struct fields named `e0`, `e1`, etc. losing semantic meaning
+- Noise: 50+ wrapper functions that just wrap libc calls add massive clutter
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+The decompiler correctly recovers loop and conditional structures. The target function `param_strcpy` has natural control flow matching the source exactly.
+
+**Most Needs Improvement:** Comment Quality & Presence (2/10)  
+The decompiled output provides zero useful comments - only address ranges and line numbers. This makes understanding algorithm intent impossible without cross-referencing the source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover libc function names**: Instead of `function_c70`, use `strcmp` - the decompiler clearly knows it's calling strcmp based on the function body
+2. **Name struct fields meaningfully**: Use field offset analysis and common struct patterns to recover names like `st_size` instead of `e13`
+3. **Add semantic comments**: Document preconditions, postconditions, and algorithm purpose rather than just address ranges

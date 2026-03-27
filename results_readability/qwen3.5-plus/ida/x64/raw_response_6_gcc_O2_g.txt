@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `temp_1`) with no semantic meaning. In `param_strcpy`, parameters `dst`/`src` are preserved, but intermediate calculations use `v3`, `v4` obscuring their purpose as length calculations.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions retain original names (`param_strcpy`, `thread_compute`, `signal_handler`), which is excellent. However, 40+ initialization stubs use mechanical names (`sub_2020`, `sub_2030`) with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout: syscall numbers (2, 3), signal numbers (10, 14), socket constants (2, 1, 0) all hardcoded without explanation. String literals preserved but numeric constants unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readfsqword(0x28u)`) appear in nearly every function. Compiler artifacts like `(_DWORD)` casts and frame pointer manipulation clutter the code without adding semantic value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as do-while constructs appropriately. However, `param_strcmp` uses awkward pattern `result = -(v2 != 0)` instead of clean ternary. Fork/exec branches in `param_fork_exec` are clear.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. Some caller functions optimized to constants (`call_strcpy` returns 8 directly), which is compiler behavior not decompiler failure. Thread functions properly separated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. Some functions like `param_fread_fwrite` have nested conditionals but remain traceable. No excessive goto usage.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Compiler constant folding creates redundancy (e.g., `call_memcpy` returns 90 without actual memcpy). Some functions duplicate logic from callers due to inlining decisions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, size_t, FILE*), but heavy use of generic types (`_DWORD`, `__int64`, `void*`). Pointer arithmetic uses explicit casts losing type safety information.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `ThreadData` struct recovered with field names. `sockaddr_in` and `stat` structs present but fields sometimes generic. TLS variables not properly typed as thread-local.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(_DWORD)v5 - (_DWORD)str` in `param_strchr_strstr`, `*(_DWORD *)arg` throughout thread functions. Pointer arithmetic on void* without proper casting.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments beyond function headers. No algorithm explanations, no decompiler confidence indicators, no API contract documentation. Critical for understanding complex concurrency code.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library patterns (strcpy, strcmp, pthread_create) identified through function names. Design patterns (producer-consumer in condition variables) not explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end ("FAILED to decompile: strlen @ 0x81C8"). However, suspicious code patterns not flagged inline. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"). No postconditions or invariants. Error conditions not explained (why return -1 vs -2 vs -3).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible through direct invocation. Global variable usage (`shared_counter`, `atomic_counter`) not documented. Callback relationships (thread entry points) inferable but not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in address order rather than logical grouping. No header file structure. Related functions (test_standard_library_functions and its callees) not grouped together.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 60 functions failed to decompile including critical libc functions (strlen, memcpy, pthread_create). Cannot compile standalone. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+4+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75  × 0.25 = 1.69
+Level 3 (Type):        (6+6+4)/3   = 5.33  × 0.20 = 1.07
+Level 4 (Semantic):    (2+5+5+2)/4 = 3.50  × 0.15 = 0.53
+Level 5 (Contextual):  (6+5+3)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  5.26/10
+```
+
+**Overall Readability Score:** 5.26/10
+
+### Critical Defects:
+- **60 functions failed to decompile** including essential libc functions (strlen, memcpy, pthread_create, malloc, free)
+- **Zero semantic comments** - no explanation of algorithm logic, error conditions, or API contracts
+- **Generic variable names** (`v0`, `v1`, `v2`) throughout obscuring data flow and purpose
+- **Unsafe type casts** pervasive (`(_DWORD)ptr`, `*(_DWORD *)arg`) without safety documentation
+- **Magic numbers unexplained** - syscall numbers, signal constants, socket parameters all hardcoded
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core function names preserved from source (`param_strcpy`, `thread_compute`, `signal_handler`) enabling immediate semantic understanding of program structure.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments makes complex concurrency patterns (condition variables, atomic operations, signal handling) extremely difficult to understand without original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add semantic variable inference** - Analyze usage patterns to suggest names like `packet_size` for variables used in size checks, `iteration_count` for loop counters
+2. **Generate inline documentation** - Auto-generate comments for complex patterns (producer-consumer, signal handlers) and flag decompilation confidence levels
+3. **Recover symbolic constants** - Replace magic numbers (syscall 2→SYS_open, signal 10→SIGUSR1) with named constants from platform headers

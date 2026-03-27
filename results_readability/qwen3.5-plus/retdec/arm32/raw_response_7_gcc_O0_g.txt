@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4` throughout (e.g., `param_vectorized_loop` has 7 generic variables). Original source had semantic names like `result`, `encrypted`, `decrypted`, `p1`, `p2`, `p3` which are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved (`param_fake_branch`, `param_opaque_predicate`, `call_vectorized_loop`). Names accurately reflect functionality and match original source exactly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals stored as hex-encoded globals (g1-g16) with no explanation. Magic number `90` (0x5A decryption key) appears without context. Encrypted string `g16 = "\x1a+<M"` shown raw without indicating it's encrypted data.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains invalid C syntax (`a = {1, 0, 0, 0, 0, 0, 0, 0};` array assignment). Complex `_setjmp` struct initialization is verbose. Some redundant variable assignments like `v5 = 0` inside loops.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_fake_branch` fake branches completely eliminated (semantic loss). `param_vectorized_loop` has unnatural while-loop with manual index management instead of clean for-loop. `param_opaque_predicate` has awkward `if (v1 == 0)` check not in original.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match original source well. Each function has single responsibility. `param_*` and `call_*` pairs properly separated. No monolithic functions or over-fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom reasonably. `param_vectorized_loop` has confusing variable reuse (`v5` reset to 0 mid-loop). Early returns used appropriately in most cases.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `param_vectorized_loop` handles first iteration separately then repeats in loop (loop unrolling artifact). `param_opaque_predicate` recalculates `(x + 2) * x + 1` expression. Optimization artifacts not abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: `param_instruction_substitution` takes `uint32_t x` but original was `int x`. `param_vectorized_loop` takes `uint32_t n` but original was `int n`. Signed/unsigned mismatches could affect semantics. Most types are `int32_t` which is reasonable for ARM64.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `jmp_buf` represented as complex struct initialization which is awkward but functional. Bitfield struct in `param_implementation_defined` completely optimized away (returns constant 44). Limited composite types in original limits assessment.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(int32_t)buffer`, `(char *)((int32_t)v2 + 1)`. Pointer arithmetic like `*(char *)(i + (int32_t)&buffer2)` is error-prone. Invalid C array assignment syntax would fail compilation.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated metadata comments ("// From module: /work/src/7.c", "// Address range: 0x106b0"). Zero semantic comments explaining what obfuscation techniques do or expected behavior.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not recognized. String decryption pattern not identified. Fake branch obfuscation completely lost. No design pattern or algorithm identification whatsoever.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: `param_fake_branch` simplified without noting fake branches disappeared (critical semantic loss). `param_implementation_defined` returns constant 44 without explaining optimization. Invalid C syntax not flagged as problematic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "x must be non-zero for division"). Original comments about expected values (期望：10, 期望：20) completely lost. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function prototype section clearly lists all 33 functions. Global variables (g1-g16, jmp_buffer, segv_buffer) listed but purposes unexplained. `param_*`/`call_*` relationships clear from naming convention.
+
+**17. Module Organization:** Score: 8/10  
+Justification: All functions in single file matching original source structure. Function prototypes separated at top. Global variables grouped together. Organization mirrors original source well.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Metadata claims "Compilation Result: Yes" but contains invalid C (array assignment syntax). `_setjmp` with struct initializer is non-standard. Would require manual patching to actually compile successfully.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+5+6)/4 = 6.00   × 0.30 = 1.80
+Level 2 (Structural):  (5+8+7+5)/4 = 6.25   × 0.25 = 1.56
+Level 3 (Type):        (6+7+4)/3   = 5.67   × 0.20 = 1.13
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50   × 0.15 = 0.38
+Level 5 (Contextual):  (7+8+5)/3   = 6.67   × 0.10 = 0.67
+─────────────────────────────────────────────────────
+Overall Score:                                  5.54/10
+```
+
+### Overall Readability Score: **5.5/10**
+
+### Critical Defects:
+- **`param_fake_branch` completely simplified** - Fake branch obfuscation logic entirely removed, returning just `x` instead of preserving the always-false conditions
+- **Invalid C syntax** - Array assignment `a = {1, 0, 0, 0, 0, 0, 0, 0};` is not valid C and won't compile
+- **Zero semantic comments** - No explanation of obfuscation techniques, expected values, or algorithm purposes
+- **Generic variable naming** - `v1`, `v2`, `v3` throughout obscures variable purposes (e.g., should be `gcd_result`, `loop_index`, `sum`)
+- **Type safety violations** - Multiple unsafe casts and pointer arithmetic without bounds checking
+
+### Best Quality Aspect: **Function Naming Quality (9/10)**
+- Function names perfectly preserved from source, making it easy to identify each function's purpose and relationship to test cases.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of semantic comments means readers cannot understand the obfuscation techniques being tested or expected behavior without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve obfuscation patterns** - Detect and annotate always-false conditions, opaque predicates, and instruction substitutions rather than optimizing them away
+2. **Add semantic comments** - Generate comments explaining algorithm purposes (e.g., "GCD calculation for coprime verification") and expected test values
+3. **Fix C syntax validity** - Replace invalid array assignment syntax with proper `memcpy` or initialization, and simplify complex `_setjmp` struct initializations

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v1`, `v2`, `a1`, `a2`, `result`, `result2`. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier`. These cryptic names make it nearly impossible to track variable purpose without extensive analysis.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: While raw function names are mangled C++ symbols (e.g., `_Z20test_cpp_member_funcv`), the decompiler provides demangled versions in comments that accurately reflect the original function names. However, the demangled names aren't used as the actual function identifiers.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are meaningful (return values like `42`, `71`, `85` matching expected test outputs), but many are confusing: `(int32_t)&g14 + 0x1000`, `(int32_t)&g25 + 1`, and fragmented string constructions like `(char *)((int32_t)"nwind_cpp_pr0" + 3460)`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean code with minimal compiler artifacts. Some unnecessary casts present but not overwhelming. The main noise is the fragmented string literal reconstruction in `test_cpp_oo_features()`.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and straightforward. Simple sequential logic, basic conditionals, and returns. At -O0, no loop unrolling or goto abuse. The exception handling code has some awkward branching but is understandable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Each test function is properly separated. However, class member functions aren't clearly associated with their classes, and template instantiations are separate functions without template context. Function sizes are appropriate.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive forward jumps or deep nesting. The exception handling has some non-linear flow but it's manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Some repeated patterns in template class methods but nothing severe. Loop unrolling not present (expected at -O0).
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` appropriately for ARM64. However, there's confusion between pointers and values - parameters that should be references (like `int&` in template_swap) are treated as pointers. The `float64_t` typedef is present but used incorrectly in template_max (mixes pointer with float).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/class recovery. All access uses raw pointer arithmetic: `*(int32_t *)(result2 + 40)` instead of `result->size`, `*(int32_t *)(4 * v2 + result2)` instead of `data[v2]`. The original `Container<T>` class with its `data` array and `size` field is completely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple serious issues: `template_swap` incorrectly assigns pointers instead of values (`*a1 = (int32_t)a2`), pointer arithmetic without bounds checking, and mixing pointer types in `template_max<double>`. The broken `template_swap` would cause memory corruption.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only basic meta-comments present: function address ranges, demangled names, and detected compiler. No explanatory comments about algorithms, intent, or non-obvious logic. The original source had extensive Chinese comments explaining each feature.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns, algorithms, or C++ idioms are identified or named. The virtual function mechanism, RTTI operations, and exception handling are presented as raw runtime calls without context.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies are flagged. The broken `template_swap` function is presented confidently as correct. Indirect virtual calls and RTTI operations have no uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had clear expectations (e.g., "期望: 4704") that aren't recovered. No bounds checking documentation for array accesses.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes at the top provide some call graph hints, but relationships between classes and their methods aren't documented. No indication of virtual method tables or inheritance relationships.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are listed by address rather than logically grouped. The original had clear sections (CPP-L3-01, CPP-L3-02, etc.) which are lost. No class/namespace structure recovered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Basic includes present but missing C++ standard library. The code has syntax issues (broken template_swap, incorrect pointer usage) that would prevent compilation. Would require significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Variable naming**: All variables use generic names (`v1`, `a1`, `result`) losing all semantic meaning from original (`value`, `name`, `data`)
+- **Type recovery failure**: No struct/class recovery - all access is raw pointer arithmetic like `*(int32_t *)(result2 + 40)` instead of `result->size`
+- **Broken template_swap**: The function incorrectly assigns pointers instead of values (`*a1 = (int32_t)a2`) - this is a semantic error that would cause memory corruption
+- **No class context**: Member functions like `Container<int>::push` aren't associated with recovered class structures
+- **String fragmentation**: String literals are reconstructed as fragmented pieces (e.g., `(char *)((int32_t)"nwind_cpp_pr0" + 3460)`) making output unreadable
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+The decompiled code maintains natural, readable control flow matching the simple sequential logic of the original. At -O0, loops and conditionals are properly structured.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+The decompiler failed to recover any class or struct types. All composite type access uses raw pointer arithmetic, completely losing the semantic structure of the original C++ classes like `Container<T>` with its `data` array and `size` field.
+
+**Top 3 Recommendations:**
+1. **Recover class/struct types**: Analyze object layouts and field offsets to reconstruct composite types with meaningful field names instead of raw pointer arithmetic
+2. **Fix template function semantics**: The `template_swap` function has a critical bug - it's assigning pointer values instead of dereferencing and swapping the actual data
+3. **Improve variable naming**: Use usage pattern analysis to infer meaningful names (e.g., `v1` used as size counter → `size`, `v2` used as index → `index`)

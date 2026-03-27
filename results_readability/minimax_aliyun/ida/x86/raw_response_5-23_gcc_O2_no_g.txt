@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables are `v0`, `v1`, `v2`, `result`, `i`. The original source used meaningful names like `size`, `x`, `y`, `arr`, `n`, `counter`, `increment` - all lost in decompilation.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Excellent recovery - all function names match original exactly: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, `param_memory_protection`, etc. The decompiler preserved the semantic naming from the source.
+
+**3. Literal Clarity:** Score: 8/10  
+Justification: Most literals are meaningful - `512` (MAX_SIZE/2), `64` (BUFFER_COUNT*4), `1024`, `57072` (0xDEF0). However, `282` (line + counter sum) and `50` in variadic_macro lack explanation. The hardcoded line number `279` is correctly recovered but appears as magic number.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts. Stack canary reads (`__readgsdword(0x14u)`) present but expected at -O0. No redundant casts or dead code. The code is relatively clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10  
+Justification: Control flow is natural - proper if-else structures, for loops recognized. Example: `param_asm_clobber` correctly shows `for (i = 0; i < a2; ++i)`. No goto abuse. At -O0, this is excellent.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: The decompiler preserved the fine-grained function decomposition from the original. All 40+ functions remain separate with appropriate granularity. No inlining artifacts or monolithic functions created.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom without forward jumps into loops. Early returns used appropriately (e.g., `param_dynamic_code` returns -1 on mmap failure). No computed jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy. Loop unrolling not present (expected at -O0). Common subexpression elimination minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are mostly accurate - `int` for integers, `size_t` for sysconf results, `volatile signed __int32*` for atomic operations, `__m128i` for SIMD. Minor issue: `char*` used for void* in some places. Overall good type recovery.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: No complex structs in this source code to recover. The code uses only primitive types and arrays, which are correctly handled.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe. Pointer arithmetic `*(_DWORD *)(a1 + 4 * i)` is correct for array access. One minor issue: `param_asm_multi_insn` uses `_BYTE*` and `char*` mixing. No severe type safety violations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **Critical failure** - zero comments in entire decompiled output. Original source had extensive comments explaining macro behavior, assembly constraints, and test scenarios. No documentation of what the functions do or how they relate to preprocessing/assembly features.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: No design patterns or algorithms explicitly named. The code shows atomic operations via `_InterlockedExchangeAdd` and SIMD via `_mm_add_epi32` but doesn't explain these are atomic/SIMD idioms. Some implicit recognition but no explicit naming.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The decompiler correctly reports "FAILED to decompile" for 8 functions (`__libc_start_main`, `mprotect`, `sysconf`, `mmap`, etc.). However, no warnings about indirect calls or unusual stack layouts within successfully decompiled functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had implicit contracts (e.g., `param_asm_atomic` requires valid counter pointer) that are not communicated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No function call relationships documented. The original showed clear caller/callee relationships (e.g., `call_macro_constants` calls `param_macro_constants`). No global variable usage documentation (e.g., `global_var` in `param_memory_clobber_demo`).
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions appear in reasonable order matching source sequence: preprocessing functions first, then asm functions, then test functions. Minor: some startup/CRT functions interleaved.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code shows "Total functions decompiled: 66, failed: 8" - 12% failure rate. Failed functions include critical libc entries. External dependencies (`__printf_chk`, `_mm_add_epi32`, `_InterlockedExchangeAdd`) are correctly referenced but not declared.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.7/10
+
+**Critical Defects:**
+- **No comments whatsoever** - original source had extensive documentation about macro expansion, assembly constraints, and test scenarios
+- **Generic variable names** - all parameters are `a1`, `a2`, `a3`; locals are `v0`, `v1`, `result`, `i`
+- **No cross-reference documentation** - function call relationships not indicated
+- **8 functions failed to decompile** - including critical system calls
+- **No contract/precondition documentation** - atomic operations, memory protection functions lack usage constraints
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+- Every function name matches original exactly - excellent semantic recovery
+
+**Most Needs Improvement:** Comment Quality (1/10)  
+- Zero comments in 725 lines of decompiled code; original had extensive documentation about preprocessing behavior, assembly semantics, and test expectations
+
+**Top 3 Recommendations:**
+1. **Add comments explaining macro expansion results** - e.g., "Macro SQUARE(x) + MAX(x,y) expanded to: ((x)*(x)) + ((x)>(y)?(x):(y))"
+2. **Infer variable names from usage patterns** - `a1` used in size comparison should be `size`; `a2` in array indexing should be `n` or `count`
+3. **Document function relationships** - indicate which functions call which (e.g., "Calls: param_macro_constants" for call_macro_constants)
+4. **Flag anomalies and contracts** - mark indirect calls, document preconditions for atomic/memory functions

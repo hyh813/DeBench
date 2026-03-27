@@ -1,0 +1,99 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar2`, `local_18` instead of semantic names like `size`, `result`, `counter`. Original source had meaningful names (`exec_mem`, `page_size`, `dynamic_func`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation - function names like `param_macro_constants`, `call_asm_basic`, `test_preprocessing_features` match original source exactly. This is rare and valuable for decompiled code.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: All macros evaluated to magic numbers: `0x400` (MAX_SIZE=1024), `0x40` (64), `0xdef0`, `0x117` (line number). No indication these were originally named constants, making code harder to understand.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts since -O0 was used. Some unnecessary casts (`(ulong)`, `(undefined *)`) and Ghidra-specific types present but don't severely impede reading.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loop structures recovered well (e.g., `param_asm_clobber` has proper for loop). Some functions constant-folded entirely (`call_macro_constants` just returns `0x40`), losing original logic visibility.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Function boundaries perfectly preserved with appropriate granularity. Each original function remains separate with correct parameter lists, no monolithic blobs created.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom naturally. Some awkward local variable initialization patterns (e.g., `local_28._0_4_ = 5; uStack_30 = 3;`) disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions contain redundant inline code duplicating called functions (e.g., `test_asm_features` has inline array sum logic duplicating `call_asm_clobber`).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed quality - uses `undefined`, `undefined8`, `undefined4` (Ghidra artifacts) instead of proper C types. Some correct types (`int`, `long`, `size_t`) but inconsistent throughout.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays handled reasonably (`local_18[4]`), pointer arithmetic recovered. Limited complex structs in original code, so adequate recovery for this specific case.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(undefined *)`, `(ulong)`, `(int *)(param_1 + uVar2 * 4)`. Pseudo-functions `LOCK()`/`UNLOCK()` have no type definition, would not compile.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Complete loss of all original comments. No explanation of macro semantics, expected values, or assembly purpose. Only header comment about BinaryAI/SHA256.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Macro patterns completely lost (all evaluated at compile time). Assembly patterns recovered to C but no indication these were originally inline assembly or SIMD operations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: No false claims made, but no warnings about uncertain recovery either. `LOCK()`/`UNLOCK()` pseudo-functions not flagged as decompiler artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or expected value documentation. Original had comments like "期望: 64" completely lost.
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible through code structure, but no explicit call graph documentation. Global variable `global_var` usage not highlighted.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in original order, but section organization comments (e.g., "5.2 预处理与条件编译") completely lost. No logical grouping visible.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile without significant modification. Uses Ghidra-specific types (`undefined`, `undefined8`), undefined pseudo-functions (`LOCK()`, `UNLOCK()`), and missing external declarations.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Weighted |
+|-------|-----------|---------|--------|----------|
+| L1: Lexical Clarity | 4, 9, 3, 7 | 5.75 | 30% | 1.725 |
+| L2: Structural Intelligibility | 8, 9, 7, 6 | 7.50 | 25% | 1.875 |
+| L3: Type System Fidelity | 5, 7, 5 | 5.67 | 20% | 1.134 |
+| L4: Semantic Transparency | 2, 4, 5, 3 | 3.50 | 15% | 0.525 |
+| L5: Contextual Coherence | 6, 6, 3 | 5.00 | 10% | 0.500 |
+
+**Overall Readability Score: 5.76/10**
+
+### Critical Defects:
+- **All macro constants evaluated to magic numbers** - `MAX_SIZE` (1024) becomes `0x400`, `BUFFER_COUNT * 4` (64) becomes `0x40` with no explanation
+- **Complete loss of all comments** - Original had extensive documentation explaining each section, expected values, and assembly purpose
+- **Ghidra-specific types prevent compilation** - `undefined`, `undefined8`, `undefined4` are not valid C types
+- **Pseudo-functions undefined** - `LOCK()` and `UNLOCK()` appear without definition, would cause compilation errors
+- **Variable names completely generic** - `param_1`, `iVar1`, `uVar2` provide no semantic information about purpose
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Function names preserved exactly from source (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`), which is exceptional for decompiled code and greatly aids navigation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation means readers cannot understand the original intent, macro semantics, or expected behavior without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover macro constant names from debug symbols** - When `-g` flag is present, use DWARF info to restore `MAX_SIZE`, `BUFFER_COUNT` instead of raw hex values
+2. **Preserve source comments in debug builds** - Extract and embed original comments when debug information is available
+3. **Generate compilable C output** - Replace Ghidra-specific types (`undefined8`) with standard C types (`uint64_t`) and define pseudo-functions or replace with equivalent C constructs

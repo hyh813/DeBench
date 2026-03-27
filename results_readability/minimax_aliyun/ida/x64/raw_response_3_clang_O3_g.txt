@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `si128`, `v10`, `v11`, `v12`. In functions like `large_stack_frame` and `heap_basic`, there are 15+ generic variable names with no semantic meaning. The original source used meaningful names like `arr`, `n`, `i`, `result`, `p`, `head`, `temp` which are completely lost.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly every function name perfectly matches the original source: `local_vars`, `local_array`, `local_struct`, `address_of_local`, `address_of_array`, `large_stack_frame`, `vla_stack`, `alloca_usage`, `stack_alias`, `heap_basic`, `heap_calloc`, `heap_realloc`, `heap_array`, `heap_struct`, `heap_nested`, `linked_list_heap`, `create_tree_node`, `tree_heap_traversal`, `memory_leak`, `dangling_pointer`, `double_free`, `heap_overflow`, `global_var_access`, `global_var_read`, `global_array_access`, `static_local`, `call_static_func`, `access_extern_global`, `call_extern_func`, `read_const_data`, `access_bss_var`, `access_bss_buffer`, `global_struct_access`, `set_file_static`, `get_file_static`, `set_global_callback`, `call_global_callback`, `global_heap_store`, `static_complex_init`, `tls_access`, `init_order_test`, `double_value`, `memop_memset`, `memop_memcpy`, `memop_memmove`, `memop_memcmp`, `memop_bzero`, `memop_bcopy`, `memop_unaligned_access`, `memop_memory_barrier`, `main`, `extern_function`. This is exceptional recovery.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: The code is littered with unexplained magic numbers: `0x10u`, `0x14u`, `0x18u`, `0x28u` (sizeof operations), `0xFFFFFFF8`, `0xFFFFFC18`, `0xFFFFFFFFFFFFFFF0LL`, `0xFFFFFFFFFFFFFFFELL`, `238`, `85` (shuffle constants). The test functions print hardcoded literal values (`printf("MEM-L1-01 (local_vars): %d\n", 20);`) instead of calling the actual functions with test inputs, losing the dynamic verification capability. Constants like `100` in `access_extern_global()` and array bounds are not explained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant SSE/AVX intrinsic noise pollutes the code: `_mm_load_si128`, `_mm_add_epi8`, `_mm_add_epi32`, `_mm_xor_si128`, `_mm_shuffle_epi32`, `_mm_cvtsi128_si32`, `_mm_mfence`, `_OWORD`, `__m128i`. These compiler-generated artifacts from loop unrolling make the code nearly unreadable. The decompiler also includes failed decompilation notices for 17 library functions (free, malloc, printf, etc.) which creates noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Basic control flow is preserved - loops, conditionals, and returns are recognizable. However, in functions like `vla_stack` and `heap_calloc`, there are complex computed jumps with multiple labels (LABEL_8, LABEL_10, LABEL_12, LABEL_14) that make tracing execution difficult. The `stack_alias` function is completely reduced to a constant return value `return 20;`, losing all the original logic about pointer aliasing.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: The original source has many small, focused functions (each test case is a separate function), and the decompiled code maintains this decomposition. Each function remains separate with clear single responsibility. The only minor issue is some test wrapper functions inline their calls rather than showing the actual function being tested.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code generally reads top-to-bottom without excessive forward jumps. Most functions have a clear entry point and exit. The `vla_stack` and `heap_calloc` functions have some branching complexity but it's manageable. Early returns are used appropriately in error handling paths.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant loop unrolling is present in `large_stack_frame`, `vla_stack`, `alloca_usage`, `heap_basic`, `heap_calloc`, `heap_array`, and `memory_leak` - these show repetitive patterns that should be recognized as loops. At -O0, this unrolling is unexpected and represents a major readability issue. The decompiler did not recognize these patterns and present them as loops.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Most types are correctly identified: `int`, `char*`, `void*`, `size_t`, `unsigned int`, `unsigned __int64`, `volatile int`, `int*`, `_DWORD*`, `_QWORD*`. Function pointer types are properly typed as `int (*f)(int)`. Minor issues: some uses of `long` vs `int` ambiguity and some `unsigned` vs `signed` confusion in loop counters.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: The decompiler correctly identifies `Node` and `TreeNode` structures with their `data` and `next`/`left`/`right` fields. However, the `Point` struct is not recovered - `local_struct` just computes `3 * x` directly instead of showing struct field access. The `Point` typedef is completely lost. Some structure sizes are hardcoded (e.g., `0x10u` for Node, `0x18u` for TreeNode) rather than using `sizeof(Point)`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with proper pointer types. Minor issues: some pointer arithmetic like `*(_DWORD *)((char *)dst + (n & 0xFFFFFFFFFFFFFFFCLL) - 4)` in `memop_memcpy` is complex but correct. The `global_func_ptr` is cast to `__int64` which loses type safety. No major buffer overflow risks are introduced by the decompilation.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled code. The original source had extensive comments explaining each test case (e.g., "// MEM-L1-01: 局部变量（基础类型）⭐"), the scenarios being tested, and expected values. None of this semantic information is preserved. The decompiler provides no guidance to the analyst.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some common patterns are implicitly present (linked list traversal with `while (v10)` loop, tree node creation pattern), but they are not explicitly named or documented. The original source explicitly tests patterns like VLA, alloca, TLS, memory leak, dangling pointer, double-free - these are not flagged as special cases in the decompiled output.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The decompiler does indicate some anomalies: "positive sp value has been detected, the output may be wrong!" in `_start` function. There are "FAILED to decompile" messages for 17 library functions. However, critical anomalies like the completely optimized-away `stack_alias` function (returning constant 20), the hardcoded test output values, and the loop unrolling are not flagged or explained.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had safety checks (e.g., `if (n <= 0 || n > 1000) return -1;` in `vla_stack`, `if (arr == NULL) return -1;` in heap functions) that are preserved in the code but not explained as contracts. No documentation of what the functions require or guarantee.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function names are clear, but there's no documentation of call relationships. The original source shows clear groupings (test_stack_memory calls all stack test functions), but the decompiled code doesn't indicate which functions are test helpers vs. actual test targets. The `extern` declarations for `extern_global_var` and `extern_function` are preserved but not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are organized in the order they appear in the binary, which roughly matches the source file structure (stack functions first, then heap, then static/global, then memory operations). Static functions like `static_helper` are not marked as static. The grouping is reasonable but not optimal.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code references many undefined symbols: `global_counter`, `global_array`, `static_local_counter`, `file_scope_static`, `global_func_ptr`, `global_heap_ptr`, `extern_global_var`, `const_string`, `double_value`, `extern_function`. These would need to be defined or declared for standalone compilation. The test functions print hardcoded values instead of calling functions, so the code cannot actually run or verify behavior.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable names are universally generic (`v0`-`v16`, `si128`, etc.) - the original source's meaningful names like `arr`, `n`, `i`, `result`, `head`, `temp` are completely lost
+- Loop unrolling in 7+ functions (`large_stack_frame`, `vla_stack`, `alloca_usage`, `heap_basic`, `heap_calloc`, `heap_array`, `memory_leak`) makes code nearly unreadable - at -O0 this should not occur
+- Test functions print hardcoded literal values instead of calling actual functions, losing dynamic verification capability
+- No comments or documentation whatsoever - the extensive original source comments explaining test scenarios are completely absent
+- `stack_alias` function completely reduced to `return 20;` - all pointer aliasing logic is lost
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- Every single function name matches the original source exactly, from simple functions like `double_value` to complex ones like `linked_list_heap` and `memop_memory_barrier`. This is exceptional recovery.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- With only generic single-letter variable names (v0-v16, si128, etc.), the code is extremely difficult to analyze. The original source used meaningful names like `arr`, `n`, `i`, `result`, `p`, `head`, `temp`, `new_node`, `sum` that conveyed semantic purpose.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing → likely "arr" or "buffer"; loop counters → "i", "j", "n"; return values → "result", "ret"; pointer parameters → "p", "ptr") to generate semantically meaningful names instead of generic v0-v16
+2. **Recognize and unwind loop unrolling**: Detect repetitive SSE intrinsic patterns (e.g., `_mm_add_epi32` in a loop) and reconstruct the original loop structure with a comment explaining the optimization
+3. **Recover comments from debug symbols**: The source was compiled with `-g` (debug symbols), so line number information and potentially variable names should be available to recover the original comments and intent

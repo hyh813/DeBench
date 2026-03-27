@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `iVar2`, `local_40`. The original source uses meaningful names like `x`, `result`, `str`. The decompilation completely loses semantic meaning - `param_1` should be `x`, and `result` is completely absent.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Function names like `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate` correctly match the original source. However, `param_fake_branch` is incorrectly implemented (returns void instead of int), making the name misleading.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xDEADBEEF` (0xDEADBEEF in original) and `0xAAAAAAAA` are completely absent. The constant `0x5A` for XOR key is preserved. The literal `0x14` appears as 20 in decimal but without explanation. Many meaningful constants are lost.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: While there's minimal compiler noise, the most critical issue is that `param_fake_branch` is essentially empty - it just returns. This is a severe semantic loss where the entire function logic was optimized away by the compiler and not recovered by the decompiler.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: The gcd loop in `param_opaque_predicate` is recognizable as a do-while pattern. However, the complex conditional `if (iVar3 != 1 || (param_1 * 2 | 1U) + param_1 * param_1 != iVar1 * iVar1)` is convoluted and obscures the original three separate opaque predicates combined with `&&`.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is preserved - each original function exists as a separate entity. However, `param_fake_branch` is incorrectly decomposed: it returns void instead of int, losing the function's return type and all logic.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. The `param_vectorized_loop` has some forward jumps but is manageable. Most functions have good linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. Dead code from optimization is minimal. Loop unrolling in `param_vectorized_loop` is present but not excessive.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int` for most integers, which is correct. However, `param_fake_branch` is declared as `void` instead of `int`, which is a critical type error. Some variables use `undefined4`, `undefined8` showing type uncertainty. The original `unsigned int` for `ux` in instruction substitution is correctly recovered as `uint`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in the evaluated functions. Simple types are mostly preserved. Not applicable for significant evaluation here.
+
+**11. Type Safety:** Score: 7/10  
+Justification: No major type safety violations. Some pointer casts are present but not dangerous. The type error in `param_fake_branch` (void return) is the main issue.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments in the decompiled output. The original source has extensive comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.) and their purposes. None of this semantic information is recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: The gcd algorithm in `param_opaque_predicate` is recognizable as a Euclidean algorithm but not explicitly named or commented. The opaque predicates are not identified as such. String decryption loop is recognizable but not explained.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The fact that `param_fake_branch` has no implementation (just returns) should be flagged as suspicious - the original had code that was optimized away.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contracts or preconditions recovered. The original source documents expected behavior (e.g., "期望: 10" for call_fake_branch) but this is completely absent.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are clear (e.g., `call_fake_branch` calls `param_fake_branch`). However, there's no documentation of these relationships or the expected return values.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically in the decompiled output. The test function `test_obf_opt_edge` aggregates all the test calls, similar to the original.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External functions (printf, signal, longjmp, etc.) are declared as external references. However, the code won't compile as-is because `param_fake_branch` returns void instead of int.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **`param_fake_branch` returns void instead of int**: The entire function body is missing. The original implements fake branches with `x*x < 0` and `strlen(str) < 0`, but the decompiled version just returns.
+- **No variable name recovery**: Generic names like `param_1`, `iVar1`, `local_40` replace meaningful names like `x`, `result`, `str`.
+- **No comments recovered**: The extensive documentation explaining obfuscation techniques (OBF-L4-02, etc.) is completely lost.
+- **Magic constants lost**: `0xDEADBEEF` and `0xAAAAAAAA` from the original are absent.
+- **Opaque predicates obscured**: The three separate opaque predicates in `param_opaque_predicate` are combined into one complex, unreadable conditional.
+
+### Best Quality Aspect: Function Naming Quality (7/10)
+Function names like `param_fake_branch`, `param_opaque_predicate` correctly match the original source, providing a foundation for understanding.
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+The decompiled output has zero comments. The original source has rich semantic information explaining obfuscation techniques, expected values, and algorithm purposes - all completely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Flag optimized-away code**: When a function has no implementation (like `param_fake_branch`), add a comment indicating the code was likely optimized away and show what the call sites expect.
+2. **Recover variable names from usage patterns**: Use data flow analysis to infer that `param_1` used in multiplication and comparison should be named `x`, and variables accumulating results should be `result`.
+3. **Detect and document magic numbers**: Identify constants like `0xDEADBEEF` and `0x5A` that appear in the binary and attempt to match them to known patterns or at least flag them as suspicious values.

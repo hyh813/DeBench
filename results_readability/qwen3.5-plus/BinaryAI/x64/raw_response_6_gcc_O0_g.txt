@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `param_1`, `local_38`, `iVar1`, `uVar2` instead of semantic names like `dst`, `src`, `buffer`, `thread_count`. Original source had meaningful names that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test function names preserved accurately (`param_strcpy`, `call_strcpy`, `thread_compute`, `signal_handler`). However, some initialization functions use generic names like `FUN_00102020`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xffffffff` (-1), `0xfffffffe` (-2), signal numbers `10`/`0xe`, socket constants `2`/`1` without explanation. String literals preserved well.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`local_10 = *(long *)(in_FS_OFFSET + 0x28)`) appear in nearly every function, adding repetitive boilerplate. Some redundant type casts present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most if-else structures recovered naturally, but some functions use goto labels (`LAB_00102e4a`, `LAB_00103cac`) where structured loops would be clearer. At `-O0`, this is unexpected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries correctly identified with appropriate granularity. Thread functions properly separated from test harness functions. No obvious inlining issues.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but stack canary checks at function ends create backward-looking patterns. Some forward jumps with goto disrupt flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary code repeated identically across 30+ functions. Some redundant type casts like `(ulong)param_1` where type is already known.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results—`FILE *`, `pthread_t`, `size_t` recovered well, but `undefined8`, `undefined4`, `ulong` used where specific types exist. `int` used where `ssize_t` would be accurate.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `ThreadData` struct not recovered—accessed as `param_1[0]`, `param_1[1]`, `param_1[2]`. `sockaddr` fields accessed as `sa_data[2]`, `sa_data[3]` instead of named fields. No struct definitions visible.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(undefined8 *)`, `(int *)`, `(void **)`. Pointer arithmetic without bounds checking. Example: `local_38 + (long)local_60 * 8` lacks type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments beyond decompiler-generated function headers. No algorithm explanations, no decompilation confidence indicators, no API contract documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls (strcpy, strlen, pthread_create) recognized correctly. Higher-level patterns (producer-consumer, signal handling, mutex protection) not explicitly identified or named.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about indirect calls, unresolved references, or uncertain decompilation. Code presents potentially incorrect information with full confidence.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: param_1 != NULL"). Return values like `0x2a` (success) and `0xffffffff` (error) not explained. Error conditions visible but undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no call graph documentation. Global variables (`shared_counter`, `atomic_counter`, `signal_received`) used without context about their purpose.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file with no logical grouping comments. External functions listed separately but no header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External function declarations present but would need stub implementations. Some type mismatches (`undefined8` vs actual types) would require fixing. Generally compilable with modifications.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (2+5+3+3)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.88/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- Variable `param_1`, `param_2` should be named `dst`, `src` based on strcpy semantics
+- Magic numbers `0x2a`, `0xffffffff`, `0xfffffffe` used without explanation as success/error codes
+- `ThreadData` struct not recovered—fields accessed as array indices `param_1[0]`, `param_1[1]`, `param_1[2]`
+- No comments explaining signal numbers (10=SIGUSR1, 0xe=SIGALRM) or socket constants (2=AF_INET)
+- Stack canary boilerplate repeated in every function without consolidation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately, making it possible to identify test purposes
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation; decompiler provides zero semantic guidance beyond raw code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Infer names from usage patterns (e.g., first parameter to strcpy → `dst`, second → `src`)
+2. **Recover and document magic constants** - Detect repeated values (0x2a, 0xffffffff) and suggest named constants with explanations
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions, indirect calls, and type ambiguities with warnings

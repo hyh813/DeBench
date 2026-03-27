@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, and `result`, providing no semantic context (e.g., `v1` used for loop counters or accumulators instead of `i` or `sum`).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most high-level function names (`cdecl_func`, `test_calling_conventions`, `main`) are accurately preserved from the source, though some library wrappers are reduced to generic names like `function_410`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are extracted as global variables with generic names (e.g., `g6`, `g7`) and often contain hex-encoded characters, while magic numbers like `15` or `50` appear directly in `call_*` functions without context.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The output includes verbose compiler runtime support functions like `__aeabi_drsub` and `__adddf3`, and retains redundant casts typical of `-O0` compilation, cluttering the high-level logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While basic loops are recovered, the `varargs_func` implementation uses manual pointer arithmetic (`v2 += 4`) inside a `while` loop instead of the idiomatic `va_arg` macro, and `param_complex_cast` contains a confusing switch fallthrough.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler successfully maps the binary functions back to the original source's modular structure, maintaining the separation between `test_calling_conventions`, `test_parameter_passing`, and `test_return_values`.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom with minimal forward jumps, though some functions like `param_double_ptr` contain a `.critedge` label that slightly disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: The code reflects the unoptimized nature of `-O0`, preserving redundant variable assignments (e.g., `v3 = v1 + 1` followed by `v1 = v3`) that could have been simplified.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Critical type information is lost; `LargeStruct` is passed as four `int32_t` arguments, and the `double` parameter in `func_mixed_args` is split into two integer arguments (`a5`, `a6`).
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: No structure definitions are recovered; `LargeStruct` and `SmallStruct` are completely absent, replaced by raw pointer arithmetic and integer arguments, obscuring the data layout entirely.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code performs unsafe operations, such as casting `int32_t` stack addresses to `char*` for pointer arithmetic and treating memory regions as integer arrays without proper struct bounds.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no semantic comments explaining the logic, algorithms, or the purpose of the complex pointer arithmetic used for varargs and struct access.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms are missed; the variable argument list implementation is not recognized as `va_list`/`va_arg`, and the string parameter handling is reduced to raw pointer math.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler does not flag the unusual splitting of the `double` type or the struct-by-value corruption as potential anomalies or uncertainties.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement for `varargs_func`'s `count` parameter is not stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are explicit and easy to trace, and global variable usage (like string constants) is clear, even if the variable names are generic.
+
+**17. Module Organization:** Score: 6/10
+Justification: The code is presented in a single file with prototypes at the top, which is standard, but the inclusion of low-level runtime functions (`__aeabi_`) mixes abstraction levels.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: While the code includes headers, the function signatures are incorrect (e.g., `func_struct_byval` takes 4 ints instead of a struct), preventing it from compiling against the original headers without modification.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Struct Corruption:** `func_struct_byval` accepts 4 `int32_t` arguments instead of a `LargeStruct`, completely losing the data structure definition.
+- **Varargs Obfuscation:** `varargs_func` uses manual pointer arithmetic (`v2 += 4`) to access arguments, failing to recover the `va_list` idiom.
+- **Type Splitting:** The `double` parameter in `func_mixed_args` is incorrectly represented as two separate integer arguments (`a5`, `a6`).
+- **Generic Naming:** Variables are universally named `v1`, `v2`, `a1`, etc., stripping all semantic meaning from the logic.
+
+**Best Quality Aspect:** Function Naming (Score: 8/10)
+- The decompiler successfully preserved the names of most high-level test functions (`cdecl_func`, `test_calling_conventions`), likely aided by the presence of debug symbols.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 2/10)
+- The complete failure to recover `LargeStruct` and `SmallStruct` definitions, replacing them with raw integers and pointer offsets, makes the code extremely difficult to understand.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Improve ARM64 Struct Passing Analysis:** Implement logic to detect when multiple register/stack arguments actually represent a large structure passed by value according to AAPCS rules.
+2.  **Recognize Varargs Patterns:** Detect the standard stack frame layout for variadic functions to reconstruct `va_list` usage instead of emitting raw pointer arithmetic.
+3.  **Recover Floating-Point Types:** Enhance type analysis to identify pairs of integer registers or specific floating-point registers that represent 64-bit `double` values.

@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10
+Justification: Variables are a mix of generic names (`a1`, `v1`, `v3`) and context-aware names (`src`, `dest`, `varg_r1`). While `varg_r1` shows good semantic recovery for `va_list`, the majority of local variables use generic decompiler defaults.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the symbol table, matching the original source exactly (e.g., `cdecl_func`, `test_calling_conventions`, `param_by_value_int`).
+
+**3. Literal Clarity:** Score: 8/10
+Justification: String literals are preserved and readable (e.g., `"CALL-L1-01: %d\n"`). Magic numbers like `15` or `50` appear inlined due to compiler optimization (constant propagation), which is expected and semantically clear, though they obscure the original calculation.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but contains some compiler/ABI artifacts like `LODWORD`, `HIDWORD`, and `JUMPOUT` which slightly impede readability. The `__fastcall` attribute is added to many functions, which is accurate for the ABI but adds visual noise compared to the original C source.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow structures are recovered excellently. Loops like `while ( v1 < a1 )` in `varargs_func` and `do...while` in `test_calling_conventions` match the logical intent of the original source very well.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler correctly separates distinct functions. While some small functions like `call_cdecl` were inlined by the compiler (returning a constant `15`), this is a result of the `-Os` optimization visible in the binary path, not a decompiler error.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal confusing jumps. The logic flow in `test_calling_conventions` is easy to follow despite the complexity of the original test harness.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no obvious dead code or redundant variables introduced by the decompiler. The code is concise, reflecting the optimized nature of the binary.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are recovered with high precision. `func_mixed_args` correctly identifies `int`, `const char *`, `double`, and `__int64` (for `long long`). `va_list` is also correctly identified.
+
+**10. Composite Type Recovery:** Score: 4/10
+Justification: This is a significant weakness. Struct types passed by value or by pointer are often degraded to primitive types. For example, `func_struct_byval` takes `int a1...a4` instead of `LargeStruct s`, and `func_struct_byptr` takes `_DWORD *` instead of `SmallStruct *`.
+
+**11. Type Safety:** Score: 7/10
+Justification: Pointer arithmetic and casts are generally safe and accurate. The use of `__int64` and specific casts in `func_mixed_args` is correct, though the explicit `(double)(int)` casts are compiler artifacts that add clutter without adding safety value.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments in the decompiled code explaining the logic, algorithms, or variable purposes. The only comments are the file header and "FAILED to decompile" markers.
+
+**13. Idiom Recognition:** Score: 9/10
+Justification: Standard C idioms are recognized well. The `va_list` usage in `varargs_func` is clearly presented, and `printf` formatting strings are correctly associated with the function calls.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler does not explicitly flag anomalies or uncertain logic, but it also doesn't produce misleading information. It silently presents the code as-is.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the check `if ( a1 )` in `param_complex_cast` is not documented as a type check or precondition.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. The relationship between `test_calling_conventions` and the various `call_*` functions is obvious.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are listed in a logical order, roughly corresponding to their appearance in the source. However, the lack of struct definitions at the top level makes the data organization less coherent than the source.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on standard types and implicit headers. While the logic is sound, recompilation would require adding standard headers (`<stdio.h>`, `<stdarg.h>`, etc.) and manually defining the missing structs.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (6 + 10 + 8 + 7) / 4 = 7.75
+L2_avg = (9 + 8 + 8 + 8) / 4 = 8.25
+L3_avg = (9 + 4 + 7) / 3 = 6.67
+L4_avg = (2 + 9 + 5 + 2) / 4 = 4.50
+L5_avg = (8 + 7 + 6) / 3 = 7.00
+
+Overall = (7.75 × 0.30) + (8.25 × 0.25) + (6.67 × 0.20) + 
+          (4.50 × 0.15) + (7.00 × 0.10)
+Overall = 2.325 + 2.0625 + 1.334 + 0.675 + 0.7
+Overall = 7.0965 ≈ 7.1/10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 7.1/10
+
+### Critical Defects (Bullet List)
+- **Struct Type Loss**: Function signatures for `func_struct_byval` and `func_struct_byptr` use raw integers/pointers (`int a1...`, `_DWORD *`) instead of the original `LargeStruct` and `SmallStruct` types, obscuring the data model.
+- **Missing Comments**: The decompiled output lacks any explanatory comments for complex logic (e.g., the `va_list` iteration or struct initialization loops), forcing the reader to reverse-engineer the intent.
+- **Variable Naming**: While function names are perfect, local variables rely heavily on generic names (`v1`, `a1`), which slows down comprehension of data flow within functions.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (10/10)**
+- **Why?** The decompiler successfully recovered all original function names from the binary symbols, making the high-level purpose of every code block immediately obvious.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Composite Type Recovery (4/10)**
+- **Why?** The failure to reconstruct `LargeStruct` and `SmallStruct` in function signatures and parameters significantly degrades the semantic understanding of the data manipulation code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Enhance Struct Recovery**: Improve the analysis of stack layouts and register usage to reconstruct composite types (structs) passed by value or reference, rather than defaulting to lists of integers or generic pointers.
+2. **Infer Variable Names**: Implement heuristic analysis to rename generic variables (e.g., `v1` used as a loop counter) based on their usage patterns (e.g., rename to `i`, `sum`, or `index`).
+3. **Auto-Document Logic**: Generate comments for standard library usage patterns (e.g., "Iterating over va_list arguments") or complex control flow structures to aid understanding.

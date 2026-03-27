@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `v1`, `v2`, `a1`, and `result`, providing no semantic context about their role in the C++ objects or logic.
+
+**2. Function Naming Quality:** Score: 6/10
+Justification: Functions use mangled C++ symbols (e.g., `_Z20test_cpp_member_funcv`), making them unreadable, though helpful demangled comments are provided for most.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are abstracted into global variables (`g1`, `g2`), and magic numbers like `0x74736554` appear without explanation, obscuring the original string constants.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present, particularly in `test_cpp_member_func` where compiler intrinsics like `__asm_movups_5` and `__asm_movups` are left in the code instead of being abstracted to memory copies.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While some functions like `test_cpp_constructor` retain recognizable `while` loops, others are reduced to single `return` constants, and `test_cpp_member_func` is obfuscated by assembly blocks, disrupting natural flow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler successfully separates the code into distinct functions corresponding to the original methods and test cases, maintaining good granularity.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code generally reads top-to-bottom with minimal forward jumps or spaghetti logic, except where assembly intrinsics interrupt the flow.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: The decompiler (or compiler) aggressively folds logic into constants (e.g., `return 42`), which is clean but removes the implementation details; no obvious redundant code blocks remain.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally accurate for the architecture (e.g., `int64_t`, `float64_t`), and pointer types are correctly identified as `int64_t *`.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: C++ class structures are almost entirely lost; objects are treated as raw memory blobs (e.g., `int128_t v1` for `SimpleClass`) or raw pointers, though vtables are partially recovered as structs.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on casts (e.g., `(int64_t)(int32_t)(float32_t)a2`) and treats class memory as generic integer types, breaking type safety boundaries.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10
+Justification: Comments are primarily limited to demangled function names and metadata; there is no explanation of the complex logic or the assembly intrinsics used.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms like constructors, operator overloading, and smart pointers are reduced to low-level C function calls (e.g., `_Znam`, `_ZdlPv`) and pointer arithmetic, failing to convey the object-oriented design.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The presence of `__asm_` blocks in `test_cpp_member_func` is not flagged as an anomaly or decompilation failure, leaving the user to guess why the code looks like assembly.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants; the logic is presented as raw operations without semantic guards.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: While function calls are visible, the relationships (e.g., inheritance, virtual dispatch) are lost; calls to mangled names make it hard to see the connection to specific class methods without cross-referencing comments.
+
+**17. Module Organization:** Score: 4/10
+Justification: The output is a flat list of functions and global variables; there is no logical grouping by class or namespace, losing the original modular structure.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code includes standard headers and prototypes, but the reliance on custom `__asm_` intrinsics and specific global variable layouts likely prevents clean recompilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v1`, `v2`), stripping all semantic meaning from the logic.
+- C++ class structures are not recovered; objects are represented as raw memory blobs (e.g., `int128_t`) or untyped pointers.
+- The decompilation of `test_cpp_member_func` fails completely, leaving obfuscated assembly intrinsics (`__asm_movups_5`) instead of readable C++ logic.
+- High-level C++ idioms (constructors, virtual calls) are reduced to low-level mangled C function calls, obscuring the object-oriented nature of the code.
+
+**Best Quality Aspect:** Function Decomposition (Score: 8/10)
+- The decompiler successfully identified and separated individual functions, maintaining the granularity of the original source code rather than producing a monolithic binary blob.
+
+**Most Needs Improvement:** Idiom Recognition (Score: 2/10)
+- The decompiler fails to recognize C++ specific patterns, presenting complex object-oriented interactions as raw memory manipulation and obscure mangled function calls.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Enhance C++ Class Recovery:** Reconstruct class definitions with member variables and methods instead of treating objects as raw memory blobs or untyped pointers.
+2.  **Map Mangled Names to Identifiers:** Use demangled C++ names directly in the function definitions and call sites rather than relying solely on comments or using raw mangled symbols.
+3.  **Abstract Compiler Intrinsics:** Detect and replace low-level SIMD/assembly instructions used for structure copying (like `movups`) with standard memory copy operations or assignments to improve readability.

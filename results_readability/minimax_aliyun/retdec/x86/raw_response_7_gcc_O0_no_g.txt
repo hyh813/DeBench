@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables like `a1`, `a2`, `v1`, `v2`, `v3` dominate the decompiled code with no semantic meaning. The parameter `result` in `param_fake_branch` is somewhat descriptive but generic. Compare to original source which uses meaningful names like `x`, `str`, `temp`, `a`, `b`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions like `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate` correctly match original names. However, many CRT and helper functions use generic names like `function_10f0`, `function_1100`, `function_1110` which provide no semantic value.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some constants recovered (e.g., `90` for decryption key 0x5A, `32` for buffer size), but many magic numbers remain unexplained. The original's `0xDEADBEEF` constant is completely lost. String literals are accessed via computed offsets without recovery.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifact pollution includes: `__x86_get_pc_thunk_ax` calls in every function, `__stack_chk_fail_local` stack canaries, complex struct initializations for `jmp_buf`, and `__readgsdword(20)` stack checks. These 50+ lines of noise obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Generally readable control flow, but `param_opaque_predicate` produces an awkward convoluted expression: `(a1 + 2) * a1 + 1 == v2 * v2 == a1 == 1 ? 2 * a1 + 10 : 3 * a1 + 20`. The ternary operator is used but the condition is malformed. Loops are properly recognized.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good preservation of original function boundaries. `param_fake_branch` and `call_fake_branch` remain separate as in source. Function granularity is appropriate - no excessive inlining or outlining. Parameter counts are preserved.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in `param_buffer_overflow_heap` (NULL check) and `param_vectorized_loop` (n<=0) are properly placed. Some forward jumps exist but are manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No severe redundancy. Loop unrolling in `param_vectorized_loop` is present but not excessive. Some duplicate index calculations (`v4 = 4 * v3`) but within acceptable bounds for -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently which is appropriate. However, `param_division_by_zero` takes `uint32_t a1` but original uses `int x`. The `param_instruction_substitution` correctly uses `uint32_t` for unsigned operations. Mixed signed/unsigned handling is imperfect.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Partial struct recovery for `__jmp_buf_tag` with generic fields `e0[8]`, `e1`, `e2`. The original's `jmp_buf` is reconstructed but field semantics are lost. Nested struct `_TYPEDEF___sigset_t` has generic `e0[1]`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations: signal handler casts `(void (*)(int32_t))(...)`, complex jmp_buf struct assignments, pointer arithmetic in buffer overflow functions. The `param_string_encryption` has questionable pointer handling with `str` as stack variable.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining algorithm logic. Only auto-generated address ranges like `// Address range: 0x1321 - 0x1349` present. Original source's detailed comments about obfuscation techniques (OBF-L4-02, OBF-L4-03) are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No recognition of obfuscation patterns. The "fake branch" (always-false condition) in `param_fake_branch` is completely optimized away - the function just returns the input. Opaque predicates in `param_opaque_predicate` are decompiled but not identified as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `call_tail_call_optimized` passes string literal `"2.1.3"` as first argument instead of integer `1000` - this is clearly wrong but not flagged. No indication of potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions, postconditions, or invariants. Original source's error handling (signal handlers, setjmp/longjmp) is present but contracts aren't documented. No indication that `param_division_by_zero(0)` triggers SIGFPE.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are visible - `call_fake_branch` calls `param_fake_branch`. Global variables `g1`-`g8` are declared but their purpose isn't clear. No documentation of which functions call which.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single monolithic output file with 61 functions. Related functions (param_*/call_*) are grouped together. However, CRT startup functions (`_init`, `_start`, `_fini`) are interleaved with test functions, reducing clarity.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile standalone. Missing definitions for `puts`, `printf`, `malloc`, `free`, `signal`, `longjmp`, `setjmp`. Requires linking against libc. Many external function declarations needed.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming is universally generic (`a1`, `a2`, `v1`, `v2`, `v3`) with no semantic recovery
+- `call_tail_call_optimized` passes string `"2.1.3"` instead of integer `1000` - semantic error
+- `param_fake_branch` completely loses the fake branch logic (optimized away at compile time)
+- Severe compiler artifact noise (`__x86_get_pc_thunk_*`, stack canaries) obscures logic
+- No comments explaining obfuscation techniques or algorithm purposes
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+- Function boundaries are well-preserved; core test functions maintain proper separation matching original source structure
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.25/10)  
+- Complete absence of comments, pattern recognition, anomaly flagging, and contract recovery makes the code opaque despite being technically accurate
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `a1` compared against 0 → likely `count` or `n`; `result` returned directly → likely output)
+2. **Detect and flag semantic errors**: The string literal passed as integer in `call_tail_call_optimized` should be flagged as likely decompilation error
+3. **Recover comments from debug symbols**: With `-g` flag in original, source comments should be partially recoverable through DWARF information

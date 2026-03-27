@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `param_1`, `local_38`, `iVar1`, `puVar2`, `uVar3`, `auStack_1c`. The original source uses meaningful names like `arr`, `n`, `head`, `current`, `new_node`, `root`, `left`, `right`. The decompilation completely loses semantic variable names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most functions are correctly named matching the source: `double_value`, `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `linked_list_heap`, `create_tree_node`, `memop_memset`, `memop_memcpy`. Minor issues: `heap_array` is ambiguous, `static_local` should reflect it's managing `counter_1`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0x800` (2048), `0xffffffff` (-1) appear without explanation. String literals are preserved correctly. Some values like `0x50`, `0xc` in PLT stubs are truly opaque. The original source has no magic numbers to begin with, so this is a degradation.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: Clean decompilation with minimal compiler artifacts. No debug instrumentation, no register spilling artifacts. Stack check functions (`__stack_chk_fail_local`) are appropriately shown as they're part of the binary. Very minimal noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper loops (`do-while`, `while`). Some awkwardness in VLA/alloca handling due to complex stack frame manipulation. At -O0, control flow should be nearly perfect, but the VLA code (`vla_stack`, `alloca_usage`) has convoluted pointer arithmetic for stack allocation that obscures the simple logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the source. Each function has single responsibility. Parameter counts are reasonable. The only minor issue is `test_heap_memory` at ~150 lines could be split, but overall decomposition is good.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Most functions read top-to-bottom with minimal forward jumps. Early returns used appropriately for error conditions. The VLA functions have some non-linear flow due to stack allocation loops, but overall readability is good.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code observed. Loop unrolling present in `local_array` and `heap_basic` (using `*2` stride) is straightforward to understand. No significant redundancy that would impede analysis.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types: `undefined4` instead of `int`, `undefined` for chars, `byte*` for memory buffers, `code*` for function pointers. The original uses precise types like `int`, `char`, `size_t`, proper function pointer signatures (`int (*)(int)`). The decompilation loses signed/unsigned distinction and uses `undefined4` throughout.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The `Point` struct in `local_struct` is completely lost - decompiles to simple `param_1 * 3`. The `Node` struct becomes raw pointer arithmetic: `*piVar2 = iVar4; piVar2[1] = 0;` without any struct field names. `TreeNode` similarly lost. No struct recovery whatsoever.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: pointer arithmetic like `iVar1 + iVar2 * 2` instead of proper array indexing, raw pointer arithmetic for struct fields without type safety. Function pointer type `code*` is generic. Some buffer access patterns could lead to undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled output. No function documentation, no algorithm explanations, no decompilation confidence indicators. The original source has extensive comments explaining each test case. The decompilation provides zero context.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns like linked lists, trees, VLAs, alloca are present in the code but not explicitly named or highlighted. A reader would need to recognize these patterns themselves. No bonus for naming the patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of suspicious code or potential issues. The original source has dangerous patterns (dangling_pointer, double_free, heap_overflow) that are commented as such. The decompiled code presents these without any warning flags.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source has explicit checks like `if (arr == NULL) return -1;` but no contract documentation is added by the decompiler.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but not explicitly documented. Global variables like `global_counter`, `global_array`, `file_scope_static` are correctly identified. Callback relationships (e.g., `global_func_ptr`) are visible but not explained. No call graph or usage documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: All functions in single file, which is reasonable for decompiled output. Static functions properly marked. Functions are grouped logically but could be better organized into sections matching the original's test categories.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The code has `// Decompiled by BinaryAI` header. External dependencies (printf, malloc, free, etc.) are implicit. The code compiles as-is with minimal patching needed. Good standalone compatibility.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `local_38`, `iVar1`) losing all semantic meaning from the original source
+- Composite types (structs `Point`, `Node`, `TreeNode`) are completely lost, reduced to raw pointer arithmetic
+- Type precision severely degraded: `undefined4` instead of `int`, losing signed/unsigned distinction
+- No comments or documentation explaining function purposes, algorithms, or test scenarios
+- Anomalies and dangerous patterns (dangling_pointer, double_free, heap_overflow) not flagged
+
+**Best Quality Aspect:** Structural Intelligibility (scored 8.0/10)  
+Control flow is natural with proper loops, function decomposition is appropriate, and code linearization is good. At -O0, the structure closely matches the source.
+
+**Most Needs Improvement:** Semantic Transparency (scored 2.75/10)  
+The decompilation has virtually no comments, doesn't flag anomalies or dangerous patterns, and provides no documentation about what the code does or confidence levels.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct types** from pointer patterns - when seeing `ptr[0]`, `ptr[1]` with consistent offsets, infer struct fields with meaningful names
+2. **Add semantic variable naming** - analyze usage patterns (e.g., loop indices, array sizes, node pointers) to suggest meaningful names
+3. **Generate explanatory comments** - add function documentation, flag suspicious patterns (dangling pointers, buffer overflows), and indicate decompilation confidence for indirect calls

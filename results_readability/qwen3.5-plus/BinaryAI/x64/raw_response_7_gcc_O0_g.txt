@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic decompiler names like `param_1`, `local_20`, `local_1c`, `iVar1` throughout. No semantic meaning is conveyed (e.g., `param_1` should be `x`, `local_38` should be `decrypted` buffer).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names are preserved (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`). This is the strongest aspect - action-oriented names clearly reflect purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x41`, `0x42`, `0x2a` appear without explanation. The original `0xDEADBEEF` constant is completely lost. XOR key `0x5a` should be named `DECRYPTION_KEY`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Library stub functions (`free`, `strlen`, `printf`) that just call themselves add no value. Stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail`) clutter every function with stack protection code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: CRITICAL: `param_fake_branch` completely loses both fake branch conditions - returns `param_1` directly instead of preserving the `if (x*x < 0)` and `if (strlen(str) < 0)` checks. Other functions have reasonable control flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized and match source structure. However, `param_link_time_optimization` doesn't return the value from `lto_target_func`, and `call_*` functions don't return values when source does.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Loop structures recovered as `for`/`while`. Early returns are clear. No excessive goto usage observed.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Library stub functions are completely redundant (each just calls external function). `param_implementation_defined` optimized to constant `0x2f` losing all original logic about char signedness, bitfields, etc.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses Ghidra-specific types `undefined4`, `undefined8`, `ulong` instead of standard C types (`int`, `int32_t`, `size_t`). `param_vectorized_loop` uses `long` for array pointers instead of `int*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct definitions recovered. `__jmp_buf_tag` referenced but not defined. The bitfield struct in `param_implementation_defined` is completely lost (function returns constant). Arrays handled as pointer arithmetic.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts: `(long)param_1`, `(undefined *)0x0`, `(undefined4 *)`. `param_null_pointer_deref` takes `undefined4 *` instead of `int *`. Pointer arithmetic without proper typing throughout.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: ZERO comments explaining logic. No algorithm explanations (GCD, XOR decryption not identified). Only header has SHA256 hash. No decompilation confidence indicators despite obvious logic loss.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No patterns identified. GCD algorithm in `param_opaque_predicate` not recognized. XOR decryption pattern in `decrypt_string` not commented. Tail call optimization not noted.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: CRITICAL: Complete loss of `param_fake_branch` logic is NOT flagged. Signal handler patterns not explained. Setjmp/longjmp usage not documented as unusual. No warnings about potentially incorrect recovery.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != 0` for division). No postconditions. Signal handler behavior not explained. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`encrypted_0`, `jmp_buffer`, `segv_buffer`) referenced without context. No call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Original section comments (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases) completely lost. Library stubs mixed with application code.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External functions declared as stubs that call themselves (circular). Would not compile standalone without significant modification. Missing proper headers and type definitions (`undefined4` is not valid C).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+5)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):  (4+6+7+6)/4 = 5.75  × 0.25 = 1.438
+Level 3 (Type):        (4+3+3)/3   = 3.33  × 0.20 = 0.666
+Level 4 (Semantic):    (2+2+2+2)/4 = 2.00  × 0.15 = 0.300
+Level 5 (Contextual):  (5+4+3)/3   = 4.00  × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.38/10
+```
+
+**Overall Readability Score: 4.4/10**
+
+### Critical Defects:
+- **`param_fake_branch` logic completely lost** - Returns `param_1` directly instead of preserving the two always-false conditional branches (semantic corruption)
+- **`param_implementation_defined` optimized to constant** - Returns `0x2f` instead of computing char signedness, bitfields, sizeof operations
+- **No comments or documentation** - Zero explanation of algorithms, patterns, or decompilation confidence
+- **Ghidra-specific types** - `undefined4`, `undefined8`, `ulong` instead of standard C types prevents compilation
+- **Library stub functions are circular** - Each stub calls itself instead of properly declaring external functions
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved (`param_fake_branch`, `decrypt_string`, `param_opaque_predicate`), making it easy to identify purpose despite other issues.
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.0/10 average)** - Zero comments, no pattern recognition, no anomaly flagging despite obvious logic loss. The decompiler presents incorrect code with full confidence.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Flag semantic loss explicitly** - When control flow is simplified (like `param_fake_branch`), add comments like `// WARNING: Conditional branches may have been optimized away`
+2. **Recover standard C types** - Replace `undefined4`/`undefined8` with `int32_t`/`int64_t` based on usage patterns and architecture
+3. **Identify common algorithms** - Recognize GCD loops, XOR decryption patterns, and add explanatory comments (e.g., `// Euclidean GCD algorithm`)

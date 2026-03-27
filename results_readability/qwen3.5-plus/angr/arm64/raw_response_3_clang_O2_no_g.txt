@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `ptr`, `iter`, `cur`) with no semantic meaning. For example, in `heap_basic`, `v2`, `v4`, `v5` should be named `size`, `element_count`, `aligned_size` based on usage patterns.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retain original names (`local_vars`, `heap_basic`, `linked_list_heap`) which is good, but helper functions use mechanical names (`sub_4008f4`, `sub_400a70`) and some are cryptic (`$x`, `$d.3`).
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Pervasive magic numbers like `4294967295`, `4294967294`, `2147483647`, `17179869180` with no explanation. Complex expressions like `((0 <= a0 ? a0 : a0 + 1) >> 31 & 0x80000000` obscure simple signed/unsigned handling.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Frame pointer manipulation (`v0 = &v1`) appears in nearly every function. Redundant register save/restore patterns (`v1 = v3`) clutter the code without adding clarity.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple loops transformed into complex `do-while` with vector operations. `call_global_callback` uses `goto global_func_ptr` instead of proper function pointer call. Bit-twiddling replaces simple arithmetic throughout.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved with reasonable granularity. However, `test_stack_memory` and `test_heap_memory` are monolithic with duplicated printf patterns that could be abstracted.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple forward jumps disrupt reading flow. `vla_stack` and `alloca_usage` have deeply nested conditionals with 5+ levels. Goto statements in `register_tm_clones` break linear reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Identical complex expressions repeated (e.g., the signed division pattern appears 15+ times). `heap_basic`, `heap_array`, and `memory_leak` share nearly identical loop structures that weren't consolidated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` types degraded to `unsigned long long` or `unsigned int`. `double_value(int x)` became `double_value(unsigned int a0)` with return type `unsigned int`. Pointer types often generic `void*` instead of specific types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_8`, `padding_4`). The `Node` struct for linked lists has `field_0` (data) and `field_8` (next) instead of semantic names. Multiple conflicting `struct_0` definitions exist.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts throughout: `(char *)&v0 - ((__ROL__(v4, 2) & 18446744073709551612)`. Pointer arithmetic on void pointers. `dangling_pointer` returns `*(ptr)` after free with no warning about undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Virtually no comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no documentation of non-obvious logic. Only `/* do not return */` appears on a few functions.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. Linked list creation/traversal in `linked_list_heap` not recognized as such. Memory allocation patterns not labeled. Tree structure in `tree_heap_traversal` completely lost (returns constant 60).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious code. `dangling_pointer` accessing freed memory not flagged. `double_free` logic simplified away (returns immediately if `!a0`). Assembly artifacts `[D] MBusEvent-Imbe_Fence()` present without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a0 > 0` for allocation functions). No postconditions. Error returns (`4294967295` = -1) not explained. NULL checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`$d.3`, `g_412ff8`) without context. `set_global_callback` to `call_global_callback` relationship not indicated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by category (stack/heap/static tests mixed). Static functions not properly scoped. No header file with API declarations.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Multiple undefined symbols (`g_412ff8`, `g_412fc8`, `$d.3`, `extern_global_var`). Assembly directives `[D]` won't compile. `call_weak_fn`, `deregister_tm_clones` are runtime artifacts. Would require extensive patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3+6+2+5)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):   (4+6+5+4)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type System):  (4+5+3)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):     (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):   (5+5+3)/3   = 4.33 × 0.10 = 0.43
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.88/10
+```
+
+**Overall Readability Score: 3.9/10**
+
+### Critical Defects:
+- **Logic Loss**: Functions like `local_array`, `stack_alias`, `tree_heap_traversal` return constants instead of executing original logic
+- **Bit Operation Obscurity**: Simple arithmetic (`x * 2 + 10`) transformed to `((a0 * 2 | a0 >> 31) & 4294967294) + 10`
+- **Generic Struct Fields**: All struct fields named `field_0`, `field_8`, `padding_4` losing semantic meaning (should be `data`, `next`, etc.)
+- **Undefined Symbols**: References to `g_412ff8`, `$d.3`, `extern_global_var` without definitions prevent compilation
+- **No Comments**: Zero documentation for complex bit operations, making reverse engineering extremely difficult
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core test functions retained original names (`local_vars`, `heap_basic`, `linked_list_heap`), providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of comments means readers must reverse-engineer every complex expression without guidance
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level constructs from bit patterns**: Detect signed arithmetic patterns like `(x * 2 | x >> 31) & 0xFFFFFFFE` and simplify to `x * 2` with appropriate type handling
+2. **Infer semantic variable names from usage**: Variables used in size calculations should be named `size`, `count`, `length`; pointers to structs should reflect the struct purpose
+3. **Add decompilation confidence annotations**: Flag uncertain reconstructions with comments like `// DECOMPILER UNCERTAINTY: indirect call target unknown` and warn about potential undefined behavior (use-after-free in `dangling_pointer`)

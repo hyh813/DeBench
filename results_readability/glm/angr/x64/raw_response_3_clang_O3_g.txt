@@ -1,0 +1,113 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `v4`...`v11`), providing no semantic context. While `ptr` and `addr` appear occasionally, names like `vvar_120{r56|8b}` are cryptic and machine-specific.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully preserved the original function names (e.g., `local_vars`, `heap_basic`, `linked_list_heap`), making the high-level intent immediately clear despite the internal obfuscation.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with massive magic numbers, such as `316912650112397582603894390785` in `heap_realloc` (representing struct initialization) and `0xf0e0d0c0b0a09080706050403020100` in `large_stack_frame`, with no named constants to explain them.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The output contains significant noise, including the use of `AddV` intrinsics, `uint128_t` types for simple array operations, and stack pointer comments (e.g., `// [bp-0x8]`) that clutter the high-level view.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Natural loops are frequently replaced by complex pointer arithmetic, `do-while` loops with manual indexing, or `goto` statements (e.g., in `vla_stack`), making the execution path difficult to follow.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Function boundaries are generally respected and map well to the source, with appropriate granularity. The presence of wrapper functions like `sub_401209` is a minor artifact but doesn't significantly disrupt the structure.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code suffers from non-linear flow due to the use of labels (e.g., `LABEL_40142b`) and `goto` jumps for control flow, disrupting the top-to-bottom reading experience.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: The decompiler fails to abstract loop unrolling and vectorization; for example, `large_stack_frame` contains repetitive blocks of `uint128_t` assignments instead of a simple loop, significantly bloating the code.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: While pointer types (`char*`, `int*`) are often correct, the decompiler misuses `uint128_t` to represent SIMD/XMM registers operating on `char` arrays, and `unsigned long long` is used generically for pointers, losing semantic specificity.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Some structures like `Node` in `linked_list_heap` are recovered with reasonable field offsets (`field_0`, `field_8`), but others are accessed via raw pointer casts or magic numbers (e.g., `heap_realloc`), losing the struct abstraction.
+
+**11. Type Safety:** Score: 2/10
+Justification: The code exhibits unsafe patterns, such as casting struct fields to `void*` to assign integers (`*((void*)&ptr->field_0) = ...`) and performing unchecked pointer arithmetic on `uint128_t` arrays.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to low-level assembly details like register names (`// rax`) and stack offsets, providing no insight into the algorithm's logic or purpose.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms like array initialization loops are missed, replaced by unrolled scalar assignments or intrinsics. The decompiler fails to recognize standard patterns, treating optimized code as raw data movement.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler flags specific unsupported instructions like `[D] Unsupported jumpkind Ijk_SigTRAP` and `[D] MBusEvent-Imbe_Fence()`, but it does not flag the unreadable, highly optimized sections as potential anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the check `if (arr == NULL)` in the source is present, but the semantic contract (e.g., "requires non-null size") is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are explicit and global variables are marked `extern`, making the relationships between functions clear, even if the internal logic is obscured.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are grouped roughly by address, which loosely correlates with the source sections (stack, heap, static), though the strict logical grouping of the original source is slightly flattened.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on non-standard intrinsics like `AddV` and GCC-specific `uint128_t` types in ways that likely won't compile without significant modification or a specific runtime environment.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 9 + 2 + 3) / 4 = 4.0
+L2_avg: (3 + 7 + 4 + 2) / 4 = 4.0
+L3_avg: (4 + 5 + 2) / 3 = 3.67
+L4_avg: (3 + 2 + 5 + 1) / 4 = 2.75
+L5_avg: (7 + 6 + 3) / 3 = 5.33
+
+Overall = (4.0 × 0.30) + (4.0 × 0.25) + (3.67 × 0.20) + 
+          (2.75 × 0.15) + (5.33 × 0.10)
+Overall = 1.2 + 1.0 + 0.734 + 0.4125 + 0.533
+Overall = 3.88/10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.9/10
+
+### Critical Defects (Bullet List)
+- **Aggressive Optimization Not Abstracted**: The decompiler presents loop-unrolled and vectorized code (e.g., `large_stack_frame`) as massive blocks of `uint128_t` assignments and `AddV` intrinsics, completely obscuring the original simple loops.
+- **Magic Number Proliferation**: Struct initializations and constants are represented as unreadable 64/128-bit integers (e.g., `316912650112397582603894390785`), making data recovery impossible without manual reverse engineering.
+- **Loss of Semantic Types**: Use of `uint128_t` for `char` arrays and `void*` casts for struct members destroys type safety and semantic meaning.
+- **Generic Variable Naming**: Variables are named `v0` through `v11` consistently, offering no clues about their role in the algorithm.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (9/10)**
+- **Why?** The decompiler successfully preserved the original function names from the source symbols, allowing the user to identify the purpose of each code block despite the poor internal decompilation.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Contract Recovery (1/10)**
+- **Why?** There is a total absence of semantic information regarding preconditions, postconditions, or variable invariants, leaving the user to guess the logic entirely from the obfuscated code.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Pattern Matching for Vectorization**: Implement analysis to detect SIMD and loop-unrolling patterns (e.g., repeated `uint128_t` stores) and collapse them back into high-level `for` loops with standard array types.
+2.  **Struct Constant Propagation**: Improve the recovery of structure initializations by mapping packed integer constants back to their constituent struct fields based on type information.
+3.  **Intrinsic Mapping**: Replace low-level lifter intrinsics like `AddV` with standard C arithmetic operators (`+`, `*`, `&`) to improve readability and standard compliance.

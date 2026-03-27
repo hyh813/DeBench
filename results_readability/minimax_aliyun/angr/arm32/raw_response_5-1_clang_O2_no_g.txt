@@ -1,0 +1,158 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `ptr`, `p`, `result`, `flag1`, `flag2`, `flag3`, `flag4`, `flag5`. These provide no semantic meaning. For example, in `test_cpp_member_func()`, the variable `v0` holds the value 10 (from `setValue(10)`), but this is completely obscured by the generic naming.
+
+### 2. Function Naming Quality
+**Score: 3/10**
+
+Justification: While some function names are partially recovered (e.g., `test_cpp_member_func`, `call_virtual_func`, `template_max<int>`), many use mangled C++ names or mechanical addresses (e.g., `$a.27`, `sub_400854`, `sub_4009cc`). The function `call_virtual_func` shows the correct name, but the class method `getValue()` is completely lost.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Some literals are meaningful (e.g., `strlen(&v1) + 4704` in printf shows expected value), but magic numbers like `4` in `__cxa_allocate_exception(4)` and array sizes like `40` in `ptr[40]` are unexplained. The string "Test" is passed to `strncpy` but the purpose is unclear.
+
+### 4. Noise Reduction
+**Score: 5/10**
+
+Justification: Some compiler artifacts present, including register-related comments (e.g., `// lr`, `// r0`, `// r4`) and unnecessary goto statements. However, at -O0, there should be minimal optimization artifacts. The code is relatively clean of obvious noise like redundant casts.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 3/10**
+
+Justification: The control flow is severely degraded. Functions like `test_cpp_member_func()` have incomplete logic - they set up data but don't compute the return value. The exception handling code uses `armg_calculate_condition` repeatedly creating confusing nested conditionals. Many functions simply `return;` without doing anything.
+
+### 6. Function Decomposition
+**Score: 6/10**
+
+Justification: Functions are mostly appropriately sized. Template instantiations are properly separated (e.g., `template_max<int>`, `template_max<double>`, `Container<int>::push`, `Container<double>::push`). However, some functions like `test_cpp_oo_features` are too large (655 lines total decompiled) and combine multiple test cases.
+
+### 7. Code Linearization
+**Score: 4/10**
+
+Justification: The code has poor linearization with many forward jumps and goto statements. In `test_cpp_exception()`, there are multiple LABEL jumps that make following execution difficult. The indirect jump `goto *((int *)*((int *)arg_0));` in `call_virtual_func` is completely non-linear.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: At -O0, there's minimal optimization redundancy, which is appropriate. No obvious dead code or common subexpression duplication. The code structure is relatively clean from a redundancy perspective.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 4/10**
+
+Justification: Types are often imprecise - using `unsigned int` where `int` should be, `char` for byte buffers, and `void*` for object pointers. The `call_virtual_func` takes `class Base *arg_0` but the class definition is empty. Function parameters often use generic types.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: Some struct recovery exists (e.g., `struct struct_0` with `field_4`), but field names are generic. The `Container` class is partially recovered with array offsets (e.g., `ptr[40]` for int container, `ptr[80]` for double container), but the field names like `size` are lost. Class data members are not properly recovered.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Justification: Some unsafe operations present. The code uses raw pointer arithmetic (e.g., `*((int *)((char *)ptr + 4 * index))`). The indirect call in `call_virtual_func` uses `goto *((int *)*((int *)arg_0));` which is dangerous. However, there are no obvious buffer overflow patterns.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Justification: Minimal comments present. The only comments are register-related (e.g., `// r0`, `// lr`) and some location comments. No explanation of algorithm logic, no recovery of original comments from source. The comment `// ANGR Decompilation of 5-1_clang_O2_no_g` shows this was compiled with clang at O2, not gcc at O0 as stated in metadata.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: Some C++ idioms are partially recognized (virtual function calls, RTTI via `__dynamic_cast`, exceptions via `__cxa_throw`). However, the virtual function table mechanism is not explained, and the exception handling patterns are not identified as C++ try/catch.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+Justification: No anomaly indication. The decompiled code presents incomplete functions (e.g., `test_cpp_member_func` sets up data but doesn't compute the return value) without any warning. The mismatch between expected return type (int) and actual (void) is not flagged.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No contract information recovered. Preconditions, postconditions, and invariants are not documented. The function `Container<int>::get` has bounds checking logic but it's not documented as a precondition.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Justification: Some cross-references are clear (e.g., `test_cpp_oo_features` calls all test functions). However, the virtual function call relationships are not documented, and the class inheritance relationships are not clearly shown.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Justification: Functions are grouped by address but not logically organized. The test functions are scattered throughout the output. Template instantiations are grouped together which is good.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+Justification: The code would not compile as-is. Many functions return void when they should return values. External dependencies (e.g., `__cxa_atexit`, `operator new`, `operator delete`) are declared but the code is incomplete. The metadata says "Compilation Result: Yes" but this appears incorrect.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 3 + 4 + 5) / 4 = 3.5
+L2_avg = (3 + 6 + 4 + 7) / 4 = 5.0
+L3_avg = (4 + 4 + 5) / 3 = 4.33
+L4_avg = (3 + 4 + 2 + 2) / 4 = 2.75
+L5_avg = (4 + 5 + 3) / 3 = 4.0
+
+Overall = (3.5 × 0.30) + (5.0 × 0.25) + (4.33 × 0.20) + 
+          (2.75 × 0.15) + (4.0 × 0.10)
+        = 1.05 + 1.25 + 0.866 + 0.4125 + 0.4
+        = 4.0/10
+```
+
+### Overall Readability Score: 4.0/10
+
+### Critical Defects
+
+- **Return type mismatch**: Multiple functions (test_cpp_member_func, test_cpp_constructor, test_cpp_virtual_func, etc.) return void but should return int, making the code semantically incorrect
+- **Variable naming**: All variables use generic names (v0-v9, ptr, result, flag1-5) providing no semantic meaning
+- **Incomplete implementation**: Many functions like test_cpp_member_func() set up data but don't compute/return the expected result
+- **Missing class members**: Class data members (e.g., SimpleClass::value, SimpleClass::name) are not properly recovered
+- **No anomaly indication**: The decompiler fails to flag the many discrepancies between expected and actual output
+
+### Best Quality Aspect
+
+**Function Decomposition (6/10)** - Template instantiations are properly separated into individual functions (template_max<int>, template_max<double>, Container<int>::push, Container<double>::push), showing good understanding of template specialization.
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - The complete lack of semantic variable names makes the code essentially unreadable. Variables like v0, v1, v2, ptr, result, flag1 provide no insight into their purpose.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `v0 = 10` followed by `strlen` suggests `v0` is the value being set; `result +=` suggests it's an accumulator)
+
+2. **Recover return values**: Functions that should return values are returning void. The decompiler should detect when return values are computed but not returned, and reconstruct the return statement
+
+3. **Flag incomplete/degraded functions**: Add warnings when function logic appears incomplete (e.g., "WARNING: Return value computed but not returned" or "WARNING: Function body appears empty")
+
+---
+
+**Note**: The metadata states this was compiled with `gcc (12.0_PUBLIC) -O0 -g`, but the decompiled code comment shows "Angr Decompilation of 5-1_clang_O2_no_g" suggesting it was actually compiled with clang at -O2, which would explain some of the control flow degradation. However, many issues (missing return values, poor variable names) are decompiler failures rather than optimization artifacts.

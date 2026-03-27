@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `result`) with no semantic meaning. For example, `sequential_ops` uses `a1`, `a2`, `a3` instead of `a`, `b`, `c`, and `loop_for_fixed` uses `a1` instead of `n`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are correctly recovered (`sequential_ops`, `single_if`, `nested_if_deep`, `loop_for_fixed`). However, some runtime functions use generic names (`sub_880`, `init_proc`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xFFFFFFFFLL`, `0x12345678`, `0x100000001LL` appear without explanation. Some constants like `10`, `100` in switch cases are inferable but not documented.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant SIMD noise (`int8x16_t`, `int32x4_t`, `vdupq_n_s32`, `vmulq_s32`) obscures simple logic in functions like `loop_continue` and `tail_recursion`. Excessive type casts (`(unsigned int)`, `(__int64)`) throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions preserve structure (`nested_if_deep` has clear if-chain), but loops are transformed into formulas (`loop_for_fixed` uses arithmetic formula instead of loop) or SIMD operations, losing original semantics.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are correctly identified with appropriate granularity. However, test functions are monolithic (e.g., `test_control_flow_l1` is 50+ lines of printf statements).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but some functions use goto patterns (`switch_fallthrough` has `LABEL_5` and `goto LABEL_5`). Forward jumps disrupt natural flow in several places.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling and vectorization create redundant SIMD operations. `loop_continue` and `goto_backward` have nearly identical SIMD code blocks that could be consolidated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `__int64`, `unsigned int`), but signedness is sometimes wrong (`single_if` returns `bool` instead of `int`). Function pointer types degraded to `__int64 (__fastcall *)(_QWORD)`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays like `dword_1950`, `dword_196C` are referenced but not typed as arrays. Matrix in `loop_multi_exit` becomes `_DWORD *v3` with pointer arithmetic instead of `int matrix[3][4]`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout (`(unsigned int)(result + 1)`, `(__int64 (*)(void))`). Function pointer calls use generic `_QWORD` parameters losing type safety.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Only auto-generated comments like `// attributes: thunk` and `// FAILED to decompile`. No algorithm explanations or purpose documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Control flow patterns (if-else chains, switch statements) are recognized, but higher-level patterns (state machines, recursion) are not identified or named.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations are marked (`FAILED to decompile: _setjmp`), but no warnings about suspicious transformations (SIMD in scalar code, formula substitution for loops).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling contracts documented. Functions like `duffs_device` lose the `n > 0` requirement documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships aren't documented. Test functions don't actually call target functions (hardcoded expected values), breaking call graph clarity.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped but test functions are interleaved with implementation. No header file structure or API boundary documentation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Contains undefined references (`dword_1950`, `xmmword_1920`, `jump_buffer`). 8 functions failed to decompile. Requires significant stubbing to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+7+6+5)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (6+4+5)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.47
+
+Overall Score: 4.82/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `a2`, `v1`) losing all semantic meaning from original (`a`, `b`, `c`, `temp1`, `temp2`)
+- **Test functions print hardcoded values** instead of calling actual functions, breaking semantic verification
+- **SIMD vectorization obscures simple scalar logic** in `loop_continue`, `tail_recursion`, `goto_backward`
+- **Loop structures replaced with formulas** (`loop_for_fixed` uses arithmetic instead of iteration)
+- **No comments or documentation** recovered despite original having extensive comments
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most function names correctly recovered from symbols, preserving semantic identity across decompilation
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Original source had extensive documentation; decompiled output has virtually no explanatory comments
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and debug symbols (e.g., `a1` in `sequential_ops` should be `a` based on parameter position)
+2. **Detect and preserve loop constructs** instead of converting to SIMD or formula equivalents when original structure is recoverable
+3. **Recover and preserve original comments** from debug sections or add decompiler-generated annotations explaining transformations

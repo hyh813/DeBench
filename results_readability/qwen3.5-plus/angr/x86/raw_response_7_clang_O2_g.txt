@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `ptr`, `flag1`, `result`) with no semantic meaning. Original code used descriptive names like `result`, `str`, `encrypted`, `decrypted`, `canary` that clearly indicated purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`) but many functions use address-based names (`sub_401030`, `sub_4010c0`). Wrapper functions like `sub_401241` that just call the real function add confusion.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation: `4294967295` (UINT_MAX for -1), `90` (XOR key 0x5A), `0x80000000`. Original code had clearer context for constants like `0xDEADBEEF` and `0x5A`.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler runtime artifacts pollute output: `_init`, `_start`, `__x86.get_pc_thunk.bx`, `deregister_tm_clones`, `register_tm_clones`, `__do_global_dtors_aux`, `__do_global_ctors_aux`, `_fini`. These obscure actual application logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Complex expressions replace simple logic (e.g., `param_opaque_predicate` uses `_ccall` and CONCAT operations instead of clear GCD loop). Some functions constant-folded entirely (`call_fake_branch` returns 10 directly), losing original structure.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Unnecessary wrapper functions created (`sub_401241` calls `param_fake_branch`, `sub_401255` calls `call_fake_branch`). Some functions over-optimized to single return statements, losing original algorithmic structure.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Multiple forward jumps and complex conditional expressions disrupt reading flow. `param_vectorized_loop` has deeply nested conditionals with manual loop unrolling that's hard to follow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundancy from compiler artifacts, but also problematic over-optimization where original logic is lost (e.g., `param_buffer_overflow_stack` and `param_buffer_overflow_heap` reduced to `return a0;`, losing overflow detection logic entirely).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned int` or `int`, losing original distinctions (`int32_t`, `size_t`, `char*`, `volatile`). Signed/unsigned often incorrect (e.g., `param_fake_branch` takes `unsigned int a0` but original used `int x`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct definitions appear but with generic field names (`field_0`, `padding_0`, `field_2ea7`). Original code had minimal structs but decompiler creates artificial complex types for runtime data.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(char *)&ptr[3017]`, `(int)v1[16]`). Pointer arithmetic without type safety. `param_null_pointer_deref` takes `unsigned int *a0` but original used `int *p`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Original had extensive documentation explaining obfuscation techniques, expected values, and test scenarios. Only auto-generated type definitions present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. GCD calculation in `param_opaque_predicate` not identified. String decryption loop not recognized as XOR decryption pattern. Tail call optimization not noted.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: One anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP at address 4198651`), but most issues silent. Signal handler behavior, setjmp/longjmp semantics not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original code had clear expectations (e.g., "期望: 10", "期望: 20"). Error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships not documented. Global variables have generic names (`g_402008`, `g_402024`). Signal handler relationships unclear.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in one file with no logical grouping. Runtime functions mixed with application code. No separation between obfuscation tests, optimization tests, and edge case tests.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies declared (`signal`, `longjmp`, `printf`, `strlen`, `strncpy`) but would need significant work to compile standalone. Platform mismatch (X86 decompilation of ARM64 original).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+4+4+5)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (4+3+5)/3   = 4.00 × 0.10 = 0.400
+
+Overall Score: 3.87/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `ptr`, `flag1`) losing all semantic meaning from original (`result`, `encrypted`, `decrypted`, `canary`)
+- **Critical logic lost to optimization** - `param_buffer_overflow_stack` and `param_buffer_overflow_heap` reduced to `return a0;`, completely losing overflow detection purpose
+- **Platform mismatch** - Decompiled as X86 but original was ARM64, causing incorrect instruction recovery
+- **No comments or documentation** - Original had extensive explanations of obfuscation techniques; decompiled code has zero semantic guidance
+- **Runtime artifacts pollute output** - 20+ compiler runtime functions (`_init`, `__do_global_dtors_aux`, etc.) mixed with application code
+
+### Best Quality Aspect: **Build System Compatibility (5/10)**
+- External function dependencies are at least declared, making it theoretically possible to link with proper libraries despite other issues.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of any documentation means a reverse engineer must deduce all purpose from code alone, defeating the purpose of decompilation for analysis.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in size checks should be named `size`, `length`, `count`)
+2. **Preserve optimization-aware comments** - When constant folding occurs, add comments showing original logic (e.g., `// Original: x*x < 0 (always false, optimized away)`)
+3. **Separate runtime from application code** - Filter or section compiler runtime functions (`_init`, `__do_global_*`) separately from user application logic to reduce noise

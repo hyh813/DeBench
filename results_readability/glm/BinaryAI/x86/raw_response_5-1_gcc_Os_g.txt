@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `local_30`, `uVar2`, `piVar1`, and `puStack_3c`, completely obscuring the original semantic intent (e.g., `result`, `obj`, `ptr`).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: The decompiler successfully demangled most C++ symbols, recovering names like `test_cpp_exception`, `Base::virtual_func`, and `template_max_int_`, though some runtime support functions remain as `FUN_00011030`.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals like `"Derived"` and `"12RTTIDerivedA"` are preserved, but numeric literals are raw (e.g., `0x2a` instead of `42`, `0x3e9` instead of `1000`) without named constants.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with compiler artifacts, particularly in exception handling (e.g., `puStack_3c`, `uStack_40`) and stack canary checks (`in_GS_OFFSET`), which significantly impedes readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: While simple functions like `template_max_int_` are readable, complex flows like `test_cpp_exception` are reduced to spaghetti code with labels (`LAB_000113b0`) and `goto` statements due to C++ exception handling tables.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler excellently separated class methods, template instantiations, and test functions into distinct, cohesive units with appropriate granularity.
+
+**7. Code Linearization:** Score: 5/10
+Justification: Code generally reads top-to-bottom, but exception handling logic and RTTI checks introduce frequent forward jumps and non-linear execution paths that are hard to follow.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: With `-O0`, there is little loop unrolling or optimization redundancy; however, the verbose exception setup code creates a form of structural redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded; specific types like `int` or class pointers are often replaced with generic `undefined4`, `undefined8`, or `undefined *`, losing critical semantic information.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Template instantiations like `Container<int>` are recovered as `Container_int_`, but local class instances (e.g., `SimpleClass obj`) are often represented as raw byte arrays (`undefined local_30 [31]`) rather than structured objects.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe pointer arithmetic and casts, such as `*(int *)(this + 4)` and `(undefined4 *)0x4`, which obscures the memory safety of the original C++ code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of the complex exception handling structures.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard library types like `std::unique_ptr` and `typeinfo` are recognized in names, but the code fails to explicitly identify higher-level patterns like RAII or virtual dispatch mechanisms.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the confusing exception flow and generic types with high confidence, offering no warnings about potential uncertainties or unreadable sections.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants; for example, the checks in `Container::get` are not documented as bounds checks.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While class methods are grouped, calls to standard library functions (e.g., `printf`, `strlen`) are obfuscated as addresses (e.g., `FUN_00011190`, `FUN_000111d0`), breaking the context.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are ordered by address, which roughly groups related class methods, but there is no logical namespace or header separation visible in the output.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code is not compilable due to `undefined` types, missing headers, and references to non-existent function addresses.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`local_30`, `uVar2`), losing all semantic meaning despite `-g` flags.
+- Types are severely degraded to `undefined4`/`undefined *`, making data flow analysis difficult.
+- C++ Exception handling is decompiled into an unreadable mess of labels and gotos.
+- Standard library calls are not resolved (e.g., `printf` is `FUN_00011190`), obscuring program logic.
+
+**Best Quality Aspect:** Function Decomposition (scored 9/10)
+- The decompiler correctly identified the boundaries of class methods, template instantiations, and test functions, maintaining a clean separation of concerns.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)
+- The failure to recover local variable names (even with debug symbols present) turns the code into a puzzle of `local_X` and `uVarY`, making it nearly impossible to follow the logic of complex functions like `test_cpp_exception`.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Leverage Debug Symbols:** Aggressively use DWARF debug information (from `-g`) to recover original local variable names and types instead of defaulting to `local_X`.
+2. **Model C++ Exceptions:** Implement a specific analysis pass to recognize and abstract C++ exception handling tables into `try-catch` blocks rather than `goto`-laden control flow.
+3. **Resolve External Symbols:** Improve signature matching to identify and label common C++ standard library functions (e.g., `std::printf`, `operator new`) to provide context for the decompiled logic.

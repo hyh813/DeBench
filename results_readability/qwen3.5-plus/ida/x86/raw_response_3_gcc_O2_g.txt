@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `v0`, `v1`, `v2` (e.g., `int v1; // edx` in `heap_basic`), though some context-aware names exist (`arr`, `large_buf`, `head`, `ptr`). Original source had meaningful names like `global_counter`, `file_scope_static` that were partially preserved but many local variables lost semantic meaning.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved well (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`), but many helper/runtime functions use generic names (`sub_1030`, `sub_1040`, `_x86_get_pc_thunk_bx`). Function names generally reflect purpose when preserved.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers prevalent without explanation (e.g., `0x14u` for stack canary, `0xFFFFF000` for alignment). Some constants preserved (`42`, `100`) but no named constants recovered. Test functions show hardcoded expected values instead of actual computation results.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: stack canary checks (`__readgsdword(0x14u)`), frame pointer manipulation (`[esp+0h] [ebp+0h]`), and 17 failed library function decompilations. Assembly blocks remain (`__asm { jmp dword ptr [ebx+8] }`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural loops and conditionals, but `vla_stack` and `alloca_usage` have complex stack alignment code with while-loops that obscure original VLA semantics. Test functions show constant-folded results instead of actual function calls, breaking control flow transparency.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate (no monolithic functions), and original function boundaries preserved. However, `test_stack_memory` and `test_heap_memory` are essentially stubs with hardcoded values rather than actual test execution, losing decomposition intent.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but contains forward references and stack alignment loops that disrupt flow. `linked_list_heap` has nested loops with break conditions that require careful tracing.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some optimization artifacts visible (constant folding in `local_vars`, `local_struct`), but not excessive. Stack canary code appears in multiple functions creating repetition. Test functions show redundant hardcoded values.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `void*`), but many variables use generic `_DWORD`, `_WORD` types. Function pointer types degraded (`int (*)(void)` instead of proper signature). Architecture mismatch (source says arm64, decompiled shows x86 registers).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `Node` struct partially recovered with `data` and `next` fields, `TreeNode` recovered with `left`, `right`, `data`. However, `Point` struct lost (fields accessed via arithmetic in `heap_struct`). Many structs accessed via raw pointer offsets.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(_DWORD *)`, `(_WORD *)`, `(char *)`). Function pointer cast in `call_global_callback` uses wrong signature (`(int (*)(void))` instead of `(int (*)(int))`). Pointer arithmetic common without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. No algorithm explanations, no API contracts, no decompilation confidence indicators. Only auto-generated type comments (`// eax`, `// [esp+0h] [ebp-10h]`). Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (malloc/free, linked list traversal) not identified or named. No design pattern recognition. Memory operation functions (`memset`, `memcpy`) recognized but not annotated as standard library calls.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Some anomalies noted (`// positive sp value has been detected, the output may be wrong!`), but critical semantic losses not flagged. `stack_alias` returning constant 20 instead of actual logic not marked as suspicious. 17 failed decompilations listed but not explained.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks present in code but not documented as contracts. Error return values (-1, -2, -3) not explained. Original source's test expectations completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`global_counter`, `file_scope_static`) referenced but usage patterns not explained. Callback relationships (`set_global_callback` → `call_global_callback`) not annotated.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source structure (stack tests, heap tests, static tests, memory ops). However, runtime initialization functions scattered throughout. No header file or API declarations recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 17 library functions failed to decompile (`malloc`, `free`, `printf`, etc.). External dependencies not documented. Architecture mismatch (x86 decompilation from claimed arm64 source). Would require significant stubbing to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (6+5+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 5.08/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Test functions semantically broken**: `test_stack_memory` and `test_heap_memory` contain hardcoded printf values instead of actual function calls, completely losing test semantics
+- **Architecture mismatch**: Source metadata claims arm64 but decompiled code shows x86 registers (eax, ebx, esp, ebp)
+- **Constant folding obscures logic**: Functions like `local_vars`, `local_struct`, `stack_alias` return computed constants instead of showing original computation
+- **No comments or documentation**: All original source comments (888 LOC with extensive documentation) completely lost
+- **17 library functions failed**: Critical functions like `malloc`, `free`, `printf` not decompiled, requiring external stubs
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core test function names preserved accurately (`double_value`, `heap_basic`, `linked_list_heap`), maintaining semantic connection to original source intent.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of documentation, algorithm explanations, or decompilation confidence indicators makes understanding non-trivial logic extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag semantic loss**: When constant folding replaces actual function calls (as in test functions), add warnings like `// WARNING: Original function call replaced with constant due to optimization`
+2. **Recover and preserve source comments**: Integrate debug symbol information to recover original comments and documentation from `-g` flag compilation
+3. **Improve type recovery for structs**: Instead of `_DWORD` arrays, recover struct definitions with field names based on access patterns (e.g., `node->data`, `node->next` should produce `struct Node { int data; struct Node* next; }`)

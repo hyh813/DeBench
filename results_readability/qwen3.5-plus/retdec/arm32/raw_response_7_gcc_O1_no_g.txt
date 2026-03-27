@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `a1`, `a2`) with no semantic meaning. Original source used descriptive names like `result`, `str`, `buffer`, `decrypted` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names are preserved from source (`param_opaque_predicate`, `call_tail_call_optimized`), but several functions are missing entirely (`param_fake_branch`, `param_instruction_substitution`, `param_integer_overflow`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound (`0x16d2bff0`, `0x4d3c2b1a`, `90`) without explanation. String literals are stored as hex-encoded globals (`g2`, `g3`) instead of readable strings, obscuring their content.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Verbose `setjmp` initialization with struct literals creates significant noise. Redundant type casts (`(char *)str`, `(int32_t)&g18`) and global variable indirection for strings add unnecessary complexity.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loop structures are recovered but awkwardly expressed (e.g., `param_vectorized_loop` uses pointer arithmetic instead of array indexing). The opaque predicate logic in `param_opaque_predicate` is mangled with incorrect condition chaining.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes are reasonable, but 6+ functions from original source are completely missing. Parameter lists sometimes expose implementation details (`int32_t * str2, int32_t * str` instead of `const char* encrypted, char* buffer`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but pointer arithmetic loops (`v4 += 4; v5 += 4;`) disrupt natural reading flow. Early returns are present but not optimally placed.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Pointer increment patterns repeat unnecessarily (`v4 += 4; v5 += 4; v6 += 4;` in loop). The `decrypt_string` function has redundant variable assignments that could be simplified.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t` consistently but loses semantic type information (everything becomes `int32_t` or `int32_t *`). Original `const char *`, `size_t`, `unsigned int` distinctions are erased.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `jmp_buf` handling is present but verbose with struct literals. No complex structs in this code sample limits evaluation opportunity, but `setjmp` recovery shows reasonable type handling.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(char *)str`, `(int32_t)&g18`, `(void (*)(int32_t))&g1`). Function pointer `g1` is cast without type safety verification.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive Chinese documentation explaining obfuscation techniques, expected values, and test scenarios—all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition (GCD algorithm in opaque predicate, XOR decryption, tail recursion). The decompiler treats all code uniformly without identifying algorithmic patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about signal handling, `setjmp/longjmp` usage, or potential undefined behavior. The division by zero and null pointer dereference functions should be flagged as exceptional.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 != 0` for division). Postconditions and expected return values from original comments (期望: 10, 期望: 20) are completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call graph is visible through prototypes, but global variables (`g1` through `g19`) have no semantic names. String globals could be linked to their printf format usage.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Function prototypes grouped at top, then globals, then implementations. Reasonable organization but missing functions break logical grouping from original source sections.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Standard headers included but `__printf_chk` is non-standard. Some functions reference undefined globals (`g1` handler function). Missing functions prevent full compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (6+7+6)/3   = 6.33 × 0.10 = 0.633
+
+Overall Score: 5.01/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3` should be named** based on usage (e.g., `loop_index`, `sum`, `temp`)
+- **6 functions completely missing** from decompilation (`param_fake_branch`, `param_instruction_substitution`, `param_integer_overflow`, `param_undefined_behavior`, `param_implementation_defined`, `param_buffer_overflow_stack`)
+- **String literals stored as hex-encoded globals** instead of readable strings, obscuring printf messages
+- **Zero comments** despite original having extensive documentation about obfuscation techniques and expected values
+- **Signal handler `g1`** is a raw address cast without type safety or explanation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most function names were preserved from source, maintaining semantic connection to original purpose despite other degradations.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation loses all context about obfuscation intent, expected values, and test scenarios that were explicit in source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover string literals inline** instead of converting to hex-encoded global variables, preserving readability of printf format strings and messages.
+2. **Infer variable names from usage patterns** (e.g., variables used in loop counters should be `i`, `index`; accumulators should be `sum`, `result`).
+3. **Add decompilation confidence annotations** for signal handling, setjmp/longjmp, and missing functions to alert analysts to potentially unreliable recovered code.

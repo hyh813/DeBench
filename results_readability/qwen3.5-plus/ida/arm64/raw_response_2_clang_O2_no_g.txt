@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2`, `result`) with zero semantic meaning. For example, `process_char(__int64 result)` should have `c` or `character`, and `array_1d_stack` uses `v5`, `v6`, `v7` instead of `sum`, `i`, `arr`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`process_char`, `array_1d_stack`, `struct_simple`), but some are generic (`sub_620`, `__addtf3`). Action verbs missing from many names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation: `65` and `32` in `process_char` (ASCII conversion), `0x1Au` (26), `0x7FFF` in float operations. No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive SIMD artifacts (`int32x4_t`, `vaddq_s32`, `vaddvq_s32`), register variables (`v1` through `v76` in `__addtf3`), and redundant casts (`(unsigned int)`, `(_DWORD *)`) obscure original logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but complex ones like `__addtf3` (500+ lines) use excessive nested conditionals and goto patterns. Loop unrolling in array functions obscures original `for` loop structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but test functions (`test_data_types_l1`, `test_array_types`) lost all structure through constant folding - they just print pre-computed values instead of calling functions.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple forward jumps disrupt flow (e.g., `LABEL_8`, `LABEL_102` in array functions). Deep nesting in `__addtf3` and `__multf3` makes top-to-bottom reading impossible.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: SIMD loop unrolling creates massive redundancy - `array_1d_stack` has 40+ lines for a 5-line original loop. Same vector operations repeated across multiple functions without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types degraded: `int *` becomes `_DWORD *`, `char` becomes `__int64` then cast. SIMD types (`int32x4_t`, `float32x4x3_t`) appear where simple arrays existed. Signed/unsigned often incorrect.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - structs completely lost. `struct_simple` accesses `a1[0]`, `a1[1]`, `a1[2]` instead of `p->x`, `p->y`, `p->z`. `struct_deep` uses `a1 + 20`, `a1 + 8` offset arithmetic. No struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(unsigned int)(result + 32)`, `(_DWORD **)a1`, `(int32x4_t *)((char *)v6 + 4)`. Pointer arithmetic without bounds checking. Function pointer signatures degraded to `__int64 (__fastcall *a1)(_QWORD)`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No meaningful comments recovered.** Only auto-generated type annotations (`// x0`, `// w8`). Original source had extensive documentation explaining each function's purpose - all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Character conversion (`c >= 'A' && c <= 'Z'`), array summation loops, struct field access, linked list traversal all appear as low-level operations without idiom identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings for critical issues: constant-folded test functions, lost struct types, aggressive SIMD optimization at claimed `-O0`. Six functions marked "FAILED to decompile" without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `arr != NULL`, `n > 0`). No postconditions. Original source's test expectations completely lost through constant folding.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls preserved but relationships not documented. `main` calls test functions, but no call graph. Callback relationships (`ptr_func_simple`, `struct_func_ptr`) unclear due to type degradation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output, no logical grouping recovered. Original source had clear sections (Data Types, Arrays, Pointers, Composite Types) - all lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Six external functions "FAILED to decompile" (`__libc_start_main`, `printf`, `puts`, etc.). Won't compile standalone without significant stubbing. Platform-specific intrinsics (`vaddq_s32`) require ARM NEON.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+7+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):   (5+6+5+4)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type System):  (5+2+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):     (1+2+2+1)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):   (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.81/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Struct types completely lost** - All composite types accessed via pointer arithmetic (`a1[0]`, `a1+20`) instead of field names (`p->x`, `w->bounds.position.z`)
+- **Test functions constant-folded** - `test_data_types_l1` prints pre-computed values instead of actually calling functions, losing all test logic
+- **Zero semantic variable names** - Every variable is `a1`, `v1`, `result` with no indication of purpose
+- **No comments recovered** - Original source had extensive documentation; decompiled code has none
+- **Optimization level mismatch** - Claims `-O0` but shows heavy SIMD optimization, loop unrolling, and constant folding
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), providing some semantic anchor points
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, making it impossible to understand intent without comparing to original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union definitions** from access patterns - detect `a1[0]`, `a1[1]`, `a1[2]` sequences as struct fields and generate proper type definitions with inferred names (`field_x`, `field_y`, `field_z`)
+2. **Preserve test function logic** - Avoid aggressive constant folding in functions that call other project functions; maintain call relationships for analysis
+3. **Add semantic variable naming** - Use usage context to infer names (loop counters → `i`, accumulators → `sum`, pointers → `ptr`, sizes → `n`)

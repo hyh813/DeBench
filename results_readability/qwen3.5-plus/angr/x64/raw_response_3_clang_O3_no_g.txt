@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `ptr`, `index`) with no semantic meaning. Complex functions like `vla_stack` use cryptic names like `vvar_120{r56|8b}`. Only a few globals retain meaningful names (`global_counter`, `file_scope_static`).
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results—original names preserved for test functions (`local_vars`, `heap_basic`, `linked_list_heap`) but many wrapper functions use mechanical names (`sub_401020`, `sub_401145`). The target function `double_value` is correctly named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Littered with unexplained magic numbers like `633825300261688653372387753992`, `18446744073709551614`, and `4294967295` (UINT_MAX for errors). No constants recovered; original expressions like `i * 2` become opaque arithmetic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `[D] Unsupported jumpkind Ijk_SigTRAP`, `[D] MBusEvent-Imbe_Fence()`, numerous `sub_XXXX` wrapper functions that just call other functions, and excessive temporary variables from register spilling.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Heavy use of `goto` with labels (`LABEL_40142b`, `LABEL_401563`) instead of structured loops. Complex functions like `vla_stack` have deeply nested conditionals. Simple functions like `local_vars` are correctly recovered as `return a0 * 2 + 10`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Unnecessary wrapper functions (`sub_401209` just calls `local_vars`). Some functions appropriately sized but `linked_list_heap` has excessive nested error handling. Original single-responsibility design partially lost.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. Deep nesting (>4 levels) in heap functions. Some functions like `double_value` read linearly but complex ones require tracing jumps.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive loop unrolling in `large_stack_frame` creates 8 nearly identical assignment blocks. Similar patterns duplicated across `heap_basic`, `heap_array`, `vla_stack` without abstraction. Dead code from optimization not removed.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `unsigned long long` used where `int` or `size_t` appropriate. Pointer types often `void*` instead of specific types. Some recovery: `unsigned int` for parameters, but const-correctness lost and function pointers degraded to `unsigned long long`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic field names (`field_0`, `field_8`, `padding_4`). Multiple conflicting `struct_0` definitions. `Node` struct partially recovered but nested structures lose semantic meaning. Original `Point {x, y}` becomes opaque fields.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout: `(char *)&v4 + i`, `(uint128_t *)`. Pointer arithmetic prevalent. Function pointer call uses `goto global_func_ptr` instead of proper indirect call. Some null checks present but buffer-overflow patterns not flagged.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining algorithm logic. Only decompiler artifacts like `[D] Unsupported jumpkind`. Original source had extensive documentation (e.g., `// MEM-L1-01: 局部变量（基础类型）⭐`) completely absent.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (linked list traversal, tree operations, malloc/free pairs) not identified or named. Memory allocation patterns visible but unlabeled. No design pattern recognition despite clear data structure usage.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged with `[D]` markers for unsupported operations and memory barriers. However, critical issues like dangling pointer in `dangling_pointer()` and double-free patterns not highlighted as dangerous.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null checks exist but undocumented as preconditions. No postcondition inference (e.g., "returns heap-allocated memory"). Error conditions like `return 4294967295` not explained as error codes.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but callback relationships unclear. Global variable usage somewhat transparent (`global_counter`, `file_scope_static`). No call graph documentation; `set_global_callback` relationship to `call_global_callback` not explicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear roughly in source order but no logical grouping. Static functions not properly scoped (all appear global). No header file structure or namespace organization. Test functions mixed with implementation.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies declared (`malloc`, `free`, `printf`) but some functions won't compile standalone. `extern_function` and `extern_global_var` need stubs. No dependency documentation or portability notes.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+3+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+5+5+4)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+3+5+3)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.07/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `a0` should be named semantically** (e.g., `result`, `input_value`, `array_size`) based on usage patterns
+- **Control flow uses `goto LABEL_XXXX` instead of structured loops** in functions like `vla_stack` and `alloca_usage`
+- **Struct fields all generic (`field_0`, `field_8`) losing semantic meaning** - original `Point {x, y}` and `Node {data, next}` not recovered
+- **Magic numbers like `633825300261688653372387753992` unexplained** - these are loop unrolling artifacts that should be simplified
+- **No comments explaining algorithm logic** despite complex operations like SIMD vectorization in `large_stack_frame`
+
+### Best Quality Aspect:
+- **Function Naming Quality (scored 5/10)** - Core function names like `local_vars`, `heap_basic`, `linked_list_heap`, and `double_value` were correctly recovered from debug symbols, providing semantic anchors in otherwise opaque code.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (scored 2/10)** - Complete absence of explanatory comments means readers must reverse-engineer intent from opaque variable names and control flow, dramatically increasing cognitive load.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable renaming** - Analyze how variables are used (e.g., `v12` incremented by 2 in loop = `multiplier` or `step`) to generate semantic names instead of `v0`, `v1`
+2. **Recover high-level control structures from jump patterns** - Convert `goto` + comparison patterns back to `for`/`while` loops, especially for the unrolled loops that should be simple iterations
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions (e.g., `// DECOMPILER UNCERTAIN: indirect call target`) and explain magic numbers from optimization patterns

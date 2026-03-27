@@ -1,0 +1,130 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (a1, a2, a3, a4) and local variables are v1, v2, v3, result, result2. The original source used meaningful names like `temp1`, `temp2`, `sum`, `count`, `target` - all completely lost. This is the worst-scoring dimension.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Many functions correctly recovered: `sequential_ops`, `single_if`, `if_else`, `goto_forward`, `goto_backward`, `loop_for_fixed`, `loop_while`, `loop_dowhile`, `loop_nested`, `recursion_factorial`, `double_value`, `triple_value`. However, many helper/utility functions have generic names like `function_1040`, `function_1050`, `function_1060`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Littered with unexplained magic numbers: `0x66666667` (division by 10), `0x100000000`, `0x8000000000000000`, `0x41a6`, `0x240b`. No named constants recovered. The original source had clear values like `10`, `5`, `100` for operations - these are now obscured.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present like complex bit manipulation expressions replacing simple operations. Address range comments add noise but are occasionally useful. Overall manageable but not clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Severe degradation of control flow. `single_if` becomes: `a1 << (uint32_t)(int32_t)(bool)(a1 >= 0 == (a1 != 0))` - a simple "if x>0 then x*2" becomes an unreadable bit manipulation. `loop_while` uses magic number division instead of recognizing digit counting. `loop_for_fixed` formula is completely unrecognizable. At -O0, this should be near-perfect.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately separated. Test functions `test_control_flow_l1/2/3` are large but that's expected. Main functions maintain reasonable granularity. Some parameter lists expose too many parameters (e.g., `switch_small` has 2 params when source has 1).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Some complex expressions but no excessive goto or forward jumps. The code flows reasonably well despite complex expressions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant calculations in `loop_continue` with complex nested loops. Loop unrolling not properly recognized - appears as complex while loops with manual index manipulation.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Excellent use of `int32_t`, `uint32_t`, `uint64_t`, `unsigned char`. Signed/unsigned correctly distinguished. Function pointer types mostly preserved. Minor issue: some parameters should be `uint32_t` based on source (e.g., `if_elseif_chain` takes `uint32_t` in source but `uint32_t a1` in decompiled - correct).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct definitions recovered: `struct _TYPEDEF___sigset_t`, `struct __jmp_buf_tag`. Field names are generic (e0, e1, e2) but structure layout is correct. Arrays handled reasonably.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations in division: `(0x100000000 * (int64_t)((int32_t)a1 >> 31) | (int64_t)a1) / (int64_t)a2` - this is trying to handle signed division but is overly complex. Pointer arithmetic present but generally safe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only address range comments present (e.g., "// Address range: 0x1220 - 0x122f"). No algorithm explanations, no decompilation confidence indicators, no API contracts. Original source had extensive comments explaining each function's purpose.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognizable but not named. The switch statements are somewhat recognizable. No explicit "this is a state machine" or "this implements Duff's device" identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. Several functions have clearly wrong logic (e.g., `loop_break` returns boolean instead of index, `infinite_loop` returns address instead of count) but no warnings. The decompiler presents incorrect code confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. Original source had clear semantics (e.g., "returns index or -1 if not found") completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes at top show call relationships but no comments explaining who calls whom or the purpose of relationships. Global variables declared but not their usage patterns.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - utility functions first, then test functions, then main. Static functions properly scoped. Overall organization matches source structure reasonably.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code appears to compile. Header includes present. External dependencies (libc functions) properly declared. Some functions may have issues but basic compilation likely works.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 3 + 6) / 4 = 4.25
+L2_avg = (3 + 7 + 7 + 5) / 4 = 5.50
+L3_avg = (8 + 7 + 6) / 3 = 7.00
+L4_avg = (3 + 4 + 2 + 2) / 4 = 2.75
+L5_avg = (5 + 7 + 7) / 3 = 6.33
+
+Overall = (4.25 × 0.30) + (5.50 × 0.25) + (7.00 × 0.20) + 
+          (2.75 × 0.15) + (6.33 × 0.10)
+        = 1.275 + 1.375 + 1.40 + 0.413 + 0.633
+        = 5.096 ≈ 5.1/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects (Bullet List)
+
+- **Variable naming completely generic**: All parameters are `a1`, `a2`, `a3` and locals are `v1`, `v2`, `result` - original names like `temp1`, `sum`, `count`, `target` completely lost
+
+- **Control flow severely distorted**: `single_if` becomes `a1 << (uint32_t)(int32_t)(bool)(a1 >= 0 == (a1 != 0))` - a simple "if x>0 then x*2" is unrecognizable
+
+- **`loop_break` returns wrong type**: Returns `(uint32_t)(a2 - 10) > 40` (boolean) instead of index or -1
+
+- **`infinite_loop` returns wrong value**: Returns `&g3` (address) instead of count
+
+- **No comments or documentation**: Zero algorithm explanations, no decompilation confidence, no contracts
+
+- **Magic numbers everywhere**: `0x66666667`, `0x100000000`, `0x8000000000000000` without explanation
+
+### Best Quality Aspect (Single Dimension)
+
+- **Type System Fidelity (L3)** scored highest at 7.0/10  
+- **Why?** The decompiler correctly uses `int32_t`, `uint32_t`, distinguishes signed/unsigned, and recovers struct definitions reasonably well
+
+### Most Needs Improvement (Single Dimension)
+
+- **Semantic Transparency (L4)** scored lowest at 2.75/10  
+- **Why?** Zero useful comments, no pattern recognition, no anomaly warnings, no contract recovery. The decompiler presents incorrect logic confidently without any flags.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a variable is used as array index, name it `index` or `i`. When accumulating sum, name it `sum`. Use data flow analysis to recover semantic names.
+
+2. **Recover control flow idioms**: The complex expression in `single_if` should be recognized as `if (a1 > 0) return a1 * 2`. Use pattern matching to identify common idioms like "if positive then double".
+
+3. **Add anomaly detection and warnings**: Flag functions where return type doesn't match pattern (e.g., `loop_break` returning boolean instead of index). Add confidence indicators for uncertain decompilations.
+
+4. **Recover comments from debug symbols**: With `-g` flag, DWARF info contains variable names and inlined source locations - use these to recover meaningful names.
+
+5. **Document magic numbers**: Recognize common constants (0x66666667 = division by 10 multiplier) and add explanatory comments.

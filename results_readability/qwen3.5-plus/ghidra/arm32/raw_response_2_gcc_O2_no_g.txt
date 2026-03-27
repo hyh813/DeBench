@@ -1,0 +1,123 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar2`, `piVar3` with zero semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `head` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most application function names preserved (`process_char`, `array_1d_stack`, `struct_simple`), but helper functions use generic names (`FUN_00011718`) and some runtime functions have opaque names (`call_weak_fn`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Character literals converted to hex (`0x41` instead of `'A'`, `0x20` instead of `0x20` for space). Float constants shown as IEEE 754 hex (`0x3fc00000` instead of `1.5f`). Magic numbers throughout with no explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler runtime helpers (`__muldf3`, `__aeabi_dadd`, `__printf_chk`), stack canary checks (`__stack_chk_fail()`), and multiple "WARNING: Removing unreachable block" comments that clutter the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: For-loops converted to do-while with pointer arithmetic (`piVar3 = piVar3 + 1; iVar1 = iVar1 + *piVar3`). At O2 optimization this is expected, but original array indexing (`arr[i]`) is lost to pointer math.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Test functions became monolithic with inlined code (e.g., `test_array_types` is 200+ lines with all array initialization inlined). Helper functions appropriately separated but application logic overly consolidated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with early returns. Stack canary checks at function ends create minor disruption. Some functions have forward jumps for error paths but remain traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling visible in `array_3d` (unrolled inner loop with `piVar2[1] + piVar2[2] + piVar2[3] + piVar2[4]`). Some redundant pointer arithmetic patterns from optimization but not severe.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `long long` split into two `uint/int` parameters, `float/double` become `undefined4/undefined8`, function pointers become `code*`. Original type information largely lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - all structs shown as `int*` with array indexing (`param_1[1]`, `param_1[2]`). No field names recovered. `Point3D`, `Rect`, `Widget` all reduced to raw pointer arithmetic. Unions and bitfields expanded to bitwise operations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int *)*piVar2`, `(undefined4 *)`), generic pointer types everywhere, function pointers as `code*` without signatures. No const-correctness preserved despite original `const int *` usage.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only compiler-generated warnings ("WARNING: Could not recover jumptable"). Zero semantic comments explaining algorithm purpose. Original source had extensive documentation (e.g., "// 大写转小写") completely absent.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition whatsoever. Linked list traversal (`linked_list`), tree recursion (`binary_tree_sum`), and graph traversal all appear as generic pointer chasing. No identification of common data structure patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some anomalies flagged ("WARNING: Subroutine does not return", "Could not recover jumptable at 0x00010c38"). Stack canary checks noted. However, no explanation of why indirect calls failed or what manual analysis might help.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL` requirements). No postconditions or return value semantics. Original null checks present but not documented as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but global variables shown as `DAT_00012044` addresses. No call graph documentation. Callback relationships (`ptr_func_simple`) show `UNRECOVERED_JUMPTABLE` losing semantic connection.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 81 functions in single output file with no logical grouping. Runtime helpers mixed with application code. No header file or API boundary indication. Original source's clear section organization (Data Types, Arrays, Pointers, Composite) lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires stubs for 20+ runtime functions (`__printf_chk`, `__aeabi_dadd`, `__muldf3`, `puts`). Floating-point helper functions need linking. Would require significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+6+7+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.666
+Level 4 (Semantic):    (3+2+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                              = 4.54/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+---
+
+### Critical Defects
+
+- **Complete struct type loss**: All composite types (`Point3D`, `Rect`, `Widget`, `Node`) reduced to `int*` with array indexing, losing all field semantics
+- **Generic variable naming**: Every variable uses `param_N`, `iVar_N`, `uVar_N` pattern with zero semantic meaning
+- **Magic number proliferation**: Character literals (`'A'`→`0x41`), float constants (`1.5f`→`0x3fc00000`) shown as hex without explanation
+- **No idiom recognition**: Linked list, tree, and graph traversal patterns not identified despite clear structural patterns
+- **Missing contract documentation**: No preconditions (null checks), postconditions, or return value semantics documented
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (7/10)** - Most application function names preserved from source (`process_char`, `array_1d_stack`, `struct_simple`), providing anchor points for understanding despite other degradations.
+
+---
+
+### Most Needs Improvement
+
+**Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions; all composite types reduced to raw pointer arithmetic, making complex data structure code nearly incomprehensible.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement struct type inference**: Analyze consistent field access patterns (e.g., `param[0]`, `param[1]`, `param[2]` always accessed together) to reconstruct struct definitions with inferred field names based on usage context.
+
+2. **Add semantic variable naming**: Use data flow analysis to infer variable purposes (e.g., variables used in loop bounds → `count`/`limit`, accumulators → `sum`/`total`, pointers traversing structures → `current`/`node`).
+
+3. **Recover high-level idioms**: Implement pattern matching for common data structure traversals (linked list iteration, tree recursion, array summation) and annotate with recognized pattern names to aid human understanding.

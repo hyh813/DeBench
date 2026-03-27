@@ -1,0 +1,142 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+Justification: Variables are almost exclusively named with generic patterns like `v0`, `v1`, `v2`, `a0`, `a1`, `a2`, `i`, `ptr`. For example, in `sequential_ops`, parameters are `a0`, `a1`, `a2` instead of `a`, `b`, `c`. The decompiler made no attempt to infer semantic meaning from usage patterns.
+
+### 2. Function Naming Quality
+**Score: 6/10**
+Justification: Test functions like `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed` correctly match source names. However, many helper/wrapper functions use generic names like `sub_400a20`, `sub_4010a8`. The public API is well-named but internal functions lack semantic names.
+
+### 3. Literal Clarity
+**Score: 3/10**
+Justification: The code is saturated with unexplained magic numbers: `4294967295` (0xFFFFFFFF), `4294967294`, `1073741823`, `1717986919` (magic multiplier for division), `0x40000000`. No named constants or enums recovered. The value `100` in `infinite_loop` should be a named constant like `MAX_ITERATIONS`.
+
+### 4. Noise Reduction
+**Score: 2/10**
+Justification: Severe artifact pollution includes: `[D] unsupported_Iop_SliceV128()`, `[D] unsupported_Iop_ZeroHI96ofV128()`, `__ROL__` operations used for simple multiplication, complex bit manipulation masking that obscures simple arithmetic. The decompiler failed to simplify these patterns.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+Justification: Basic control structures (if-else, switch) are reasonably clear. However, loops are poorly recovered - `loop_for_fixed` and `loop_continue` show extensive manual loop unrolling with goto jumps instead of recognizable loop constructs. At -O0, this should be much cleaner.
+
+### 6. Function Decomposition
+**Score: 6/10**
+Justification: Function boundaries generally match source. However, some functions are bloated (e.g., `loop_for_fixed` at 40+ lines due to unrolling), and many wrapper functions like `sub_4010a8` that just call `loop_while()` add unnecessary indirection.
+
+### 7. Code Linearization
+**Score: 5/10**
+Justification: Code generally reads top-to-bottom but forward jumps and goto statements in unrolled loops disrupt flow. The `loop_for_fixed` function has 15+ sequential return statements for different loop iterations, making linear reading impossible.
+
+### 8. Redundancy Elimination
+**Score: 3/10**
+Justification: Massive redundancy from loop unrolling. In `loop_for_fixed`, the same pattern `v3 + 1`, `v3 + 2`, etc. is repeated 15 times. Similar redundancy in `loop_continue` and `goto_backward`. No attempt to abstract these into loops or helper functions.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Uses generic types like `unsigned int`, `unsigned long`, `unsigned long long` instead of precise types. Original `int` parameters become `unsigned int`. No `int32_t`, `uint32_t`, `size_t` recovery. However, signed/unsigned distinction is partially preserved through operations.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+Justification: No struct or union recovery. The original `int arr[] = {10, 20, 30, 40, 50}` in `loop_break` became a switch statement on hardcoded values. The `matrix[3][4]` in `loop_multi_exit` was completely transformed. All composite types lost.
+
+### 11. Type Safety
+**Score: 4/10**
+Justification: Multiple unsafe operations: bit masking `& 4294967294` throughout (signals signedness confusion), function pointer calls via `goto a0` in `call_func_ptr`, indirect calls via computed jumps. The code could cause undefined behavior if used as-is.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: No meaningful comments. Only auto-generated artifacts like `/* do not return */` present. No explanation of algorithms, no documentation of preconditions/postconditions. The code is completely opaque without source reference.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+Justification: Some patterns recognizable: switch statements, if-else chains. But design patterns (state machine, jump table) not explicitly identified. The `switch_large` uses a computed formula instead of recognizing it as a jump table for values 0-9.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No flags for suspicious code. Unsupported operations show as `[D] unsupported_Iop_*` but no explanation of what the decompiler failed to handle or confidence levels. Code that couldn't be resolved is presented as fact.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+Justification: Zero contract information. No preconditions (e.g., "requires: n > 0"), no postconditions, no invariant documentation. The decompiler provides no guidance on expected input ranges or output guarantees.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+Justification: Function calls are present but relationships unclear. No documentation of which functions call which, no global variable usage tracking. The test functions call their targets but this isn't explicitly documented.
+
+### 17. Module Organization
+**Score: 3/10**
+Justification: Functions appear somewhat grouped (test functions together, helper functions scattered) but no clear logical organization. No header declarations, no static vs extern distinction visible. Single flat output.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+Justification: Code contains many external declarations (`extern unsigned long long g_413f78`, `extern char __stack_chk_guard`) and won't compile standalone. Dependencies on libc functions (`__printf_chk`, `_setjmp`, `__longjmp_chk`) not documented. Stack canary checks cause compilation failure.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 6 + 3 + 2) / 4 = 3.5
+L2_avg = (5 + 6 + 5 + 3) / 4 = 4.75
+L3_avg = (5 + 2 + 4) / 3 = 3.67
+L4_avg = (2 + 4 + 2 + 1) / 4 = 2.25
+L5_avg = (4 + 3 + 3) / 3 = 3.33
+
+Overall = (3.5 × 0.30) + (4.75 × 0.25) + (3.67 × 0.20) + 
+          (2.25 × 0.15) + (3.33 × 0.10)
+        = 1.05 + 1.1875 + 0.734 + 0.3375 + 0.333
+        = 3.64/10
+```
+
+**Overall Readability Score: 3.6/10**
+
+---
+
+### Critical Defects
+
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `a0`, `a1`) with no semantic inference from usage patterns
+- **Loop unrolling**: `loop_for_fixed` and `loop_continue` show 15+ repeated code blocks instead of loop constructs - unacceptable for -O0
+- **Magic numbers**: Code flooded with unexplained constants like `4294967295`, `1717986919` without any named constants
+- **Type loss**: All struct/union types lost; `int arr[]` became switch statement, `matrix[3][4]` transformed beyond recognition
+- **No comments**: Zero meaningful documentation; code provides no guidance for understanding
+
+### Best Quality Aspect
+
+**Function Naming (6/10)** - Test functions like `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed` correctly match source names, providing a usable public API.
+
+### Most Needs Improvement
+
+**Variable Naming (3/10)** - The decompiler made no attempt to infer semantic names from usage. Parameters `a0`, `a1`, `a2` should be `a`, `b`, `c`. Loop variables like `i` are fine, but intermediate computation variables need meaningful names.
+
+### Top 3 Recommendations
+
+1. **Infer variable names from usage patterns**: Track how variables are used (array index, size, flag) and assign semantic names. `v0` used as loop counter should become `i` or `index`.
+
+2. **Recognize and collapse loop unrolling**: At -O0, loops should be recovered as for/while constructs. The 15-case unrolled `loop_for_fixed` should be a simple `for` loop.
+
+3. **Replace magic numbers with named constants**: Detect repeated constants and create `#define` or `const` equivalents. `1717986919` is clearly `0x66666667` (division magic), `4294967295` is `UINT_MAX`.
+
+4. **Add decompilation confidence comments**: Flag unsupported operations, indirect calls, and uncertain logic with `// DECOMPILER: uncertain about X` comments.
+
+5. **Recover composite types**: The original `int arr[] = {10, 20, 30, 40, 50}` should be preserved as an array literal, not converted to a switch statement.

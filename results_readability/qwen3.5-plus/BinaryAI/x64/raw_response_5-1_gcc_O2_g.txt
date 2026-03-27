@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Object-Oriented Code
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`local_34`, `local_2c`, `iVar1`, `puVar1`, `param_1`). At `-O0` with debug symbols, original names like `capture_by_value`, `instance_count`, `multiplier` should be preserved but are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names preserved well (`test_cpp_member_func`, `test_cpp_virtual_func`). Class methods retain names (`Base::virtual_func`, `Container<int>::push`), but template instantiations use mangled names (`template_max_int_`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers dominate return values (`0x125c`, `0x2a`, `0x47`, `0x28a`, `0x55`, `0x2bf`) representing computed results that should be expressions. String literals referenced as `&DAT_00102018` without content visibility.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks repeated in every function (`local_10 = *(long *)(in_FS_OFFSET + 0x28)`). External function stubs call themselves recursively (e.g., `strlen` calls `strlen`). Compiler artifacts not filtered.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Most test functions collapsed to constant returns losing all original control flow. Functions with logic (`test_cpp_rtti`, `Container::push`) show reasonable structure but with awkward pointer arithmetic instead of member access.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is appropriate, but multiple destructor variants exist for same class (`DiamondDerived::~DiamondDerived` appears 3 times). Template instantiations properly separated but create redundancy.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code reads top-to-bottom where logic exists. Stack canary checks at function end disrupt flow. No excessive goto usage, but constant-return functions break narrative continuity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple destructor thunks for same class with slight variations. External function stubs are completely redundant (call themselves). Constant folding eliminated actual computation logic from test functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `double`, `size_t`) but many `undefined4`, `undefined8` types used. Class pointers often reduced to `long *` or `void *`. Const-correctness completely lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/class definitions recovered. Object fields accessed via pointer arithmetic (`*(int *)(this + 0x28)`, `*(long *)(*(long *)this + -0x18)`). Virtual table layouts not reconstructed.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(undefined4 *)`, `(long *)`). Pointer arithmetic on class instances without bounds checking. No type safety warnings for potentially dangerous operations like `__dynamic_cast` results.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, algorithms, or decompiler confidence. No documentation of C++ semantics (virtual dispatch, RTTI, exception handling). Original source comments completely absent.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms not recognized: virtual function calls shown as raw vtable dereference (`(***(code ***)param_1)()`), RTTI as `__dynamic_cast` without explanation, exception handling as raw `__cxa_*` calls.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about self-calling external stubs, constant-folded test functions, or unresolved indirect calls. Code presents incorrect information confidently (e.g., `test_cpp_exception` shows throw logic but test function returns void).
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (null checks, bounds). No postconditions or return value semantics. Exception safety contracts completely absent despite exception handling code.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but inheritance relationships unclear. Virtual dispatch not indicated. No call graph documentation. Global variables (`instance_count`) accessed but not declared.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order. Related class methods scattered. No namespace or logical grouping. External stubs mixed with application code.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Will not compile: undefined types (`undefined4`, `Init`, `Container_int_`), self-calling external stubs, missing headers, incomplete class definitions. Requires extensive manual修复.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+6+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (5+4+2)/3   = 3.67 × 0.10 = 0.367
+
+Overall Score: 4.13/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable names completely lost** despite `-O0 -g` compilation (should preserve `value`, `name`, `multiplier`, etc.)
+- **Class structures not recovered** - all member access via pointer arithmetic (`this + 0x28`)
+- **Test functions constant-folded** - actual computation logic eliminated (e.g., `test_cpp_virtual_func` returns `0x2a` instead of showing virtual dispatch)
+- **External function stubs broken** - functions like `strlen` call themselves recursively
+- **Zero semantic documentation** - no comments explaining C++ features (vtables, RTTI, exceptions)
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Test function names and class method names preserved accurately, allowing identification of original functionality
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding C++ semantics (virtual dispatch, exception handling, RTTI) extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols** - At `-O0 -g`, variable names, type information, and structure layouts should be extracted from DWARF debug info rather than inferred from binary patterns
+2. **Recover C++ semantics** - Add specific passes for vtable reconstruction, RTTI typeinfo recovery, and exception table parsing to produce idiomatic C++ rather than C-like pointer arithmetic
+3. **Generate confidence annotations** - Mark uncertain reconstructions (indirect calls, type guesses) with comments indicating decompiler confidence level and suggesting manual verification

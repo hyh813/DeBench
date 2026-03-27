@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a1`, `a2` throughout (e.g., `param_opaque_predicate` uses `v1-v6` instead of `predicate1`, `gcd_result`, `xor_check`). No semantic meaning is conveyed, making it difficult to track variable purpose across the function.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names are preserved from source (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`), which is excellent. However, some are generic (`sub_730`, `init_proc`, `term_proc`) and the empty functions lose their original purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation: signal numbers `8` and `11` instead of `SIGFPE`/`SIGSEGV`, XOR key `0x5A` is unexplained, and `0xDEADBEEF` from the original fake branch is completely lost. Some constants like `0x20u` for buffer size are inferable but not documented.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present throughout: `LOBYTE()` macros, register annotations (`// w8`, `// x10`), stack frame offsets (`[xsp+0h] [xbp-20h]`), and explicit type casts (`(unsigned __int8)`, `(unsigned int)`). These clutter the code without adding semantic value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow uses natural if-else and do-while constructs. However, `param_vectorized_loop` uses excessive goto labels (`LABEL_9`, `LABEL_11`, `LABEL_17`) making it difficult to follow. The fake branch conditions are completely eliminated rather than preserved.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Critical failure: `param_fake_branch`, `param_buffer_overflow_stack`, and `param_buffer_overflow_heap` are completely empty (`{ ; }`). Many caller functions are constant-folded (`call_fake_branch` returns `10` directly instead of calling the function), losing all original logic structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. However, complex functions like `param_vectorized_loop` have multiple forward jumps that disrupt linear reading. The do-while loops are correctly recovered from backward jumps.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: The decompiler successfully eliminated some redundancy through constant folding. However, this is a double-edged sword as it removes the obfuscation logic that was intentionally present in the source code for testing purposes.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types are mostly preserved (`int`, `unsigned int`, `char*`, `size_t`). SIMD types (`int32x4_t`) are correctly recovered for `param_vectorized_loop`. However, some types are overly generic (`__int64`, `__int64` return types where `int` would suffice).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The bitfield struct from `param_implementation_defined` is completely lost—the function just returns constant `48`. No struct definitions are visible in the decompiled output, and the original struct layout with named fields (`a:3`, `b:5`, `c:24`) is unrecoverable.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(unsigned int)(3 * a1 + 20)`, `LOBYTE()` usage, and pointer arithmetic without bounds checking. The `param_null_pointer_deref` function takes `unsigned int *a1` but is called with `0` (NULL), which is correct but the type doesn't convey this intent.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no semantic comments exist. Register annotations (`// w8`, `// x10`) are auto-generated noise, not helpful documentation. No explanation of the obfuscation techniques, opaque predicates, or why certain branches exist. The original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Zero pattern recognition. The opaque predicate pattern (GCD calculation, algebraic identities), fake branch pattern, and instruction substitution patterns are not identified or named. The decompiler treats these as regular code without recognizing the obfuscation intent.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations are listed at the end (`FAILED to decompile: strlen, _setjmp, signal...`), which is helpful. However, there are no inline warnings about the empty functions, constant folding, or the suspicious elimination of the fake branch conditions that should have been preserved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original code had clear expectations (e.g., "期望: 10" comments) that are lost. No indication of what inputs are valid or what error conditions might occur.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships aren't documented. No call graph information, no indication of which functions are test harnesses vs. actual implementation. The `test_obf_opt_edge` function calls are visible but the expected outputs are not documented in the decompiled version.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions appear in a single flat list without logical grouping. The original source had clear section headers (7.1 混淆与保护, 7.2 编译器特有优化, 7.3 异常与边界情况) that are completely lost. No namespace or module structure is preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 11 library functions failed to decompile (`strlen`, `signal`, `printf`, etc.). Would require significant stubbing to compile. External dependencies are not documented, and the decompiled code references undefined symbols like `param_string_encryption_encrypted`.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (3+7+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):     (6+3+6+7)/4 = 5.50  × 0.25 = 1.38
+Level 3 (Type System):    (7+4+6)/3   = 5.67  × 0.20 = 1.13
+Level 4 (Semantic):       (2+2+5+2)/4 = 2.75  × 0.15 = 0.41
+Level 5 (Contextual):     (5+5+4)/3   = 4.67  × 0.10 = 0.47
+
+Overall Score: 4.89/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Empty function bodies**: `param_fake_branch`, `param_buffer_overflow_stack`, `param_buffer_overflow_heap` are completely empty (`{ ; }`), losing all obfuscation logic
+- **Constant folding eliminated test logic**: `call_fake_branch` returns `10` directly instead of calling `param_fake_branch(10)`, defeating the purpose of the test
+- **Generic variable naming**: All variables use `v0`, `v1`, `a1`, `a2` pattern with no semantic meaning
+- **Zero semantic comments**: Original source had extensive documentation explaining obfuscation techniques; none preserved
+- **Struct definitions lost**: The bitfield struct in `param_implementation_defined` is completely unrecoverable
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved (`param_opaque_predicate`, `decrypt_string`, `param_vectorized_loop`), making it possible to identify function purpose from names alone.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic documentation; the decompiler provides zero explanation of the obfuscation patterns, test expectations, or algorithm intent that was clearly documented in the original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve intentional dead code**: Detect and preserve fake branches and opaque predicates rather than optimizing them away, as they may be intentional obfuscation tests
+2. **Infer semantic variable names**: Use usage pattern analysis to name variables (e.g., variables used in GCD loops should be named `gcd_a`, `gcd_b`, `gcd_temp`)
+3. **Recover and annotate obfuscation patterns**: Recognize common obfuscation idioms (fake branches, opaque predicates, instruction substitution) and add explanatory comments when detected

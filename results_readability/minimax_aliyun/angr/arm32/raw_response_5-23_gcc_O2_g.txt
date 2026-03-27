@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `a2`, `ptr`, `index`, `pos`. Parameters are `a0`, `a1` instead of meaningful names like `size`, `x`, `y`, `arr`, `n`. The original source had clear names like `size`, `result`, `x`, `y`, `arr`, `n` which are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellent and match the original source almost perfectly: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, `param_memory_protection`, etc. The decompiler correctly recovered all function names from the source.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are clear (e.g., `return 64` for BUFFER_COUNT*4, `return 30` for macro function result), but magic numbers like `57072` (should be 0xDEF0), `0x400` (should be MAX_SIZE=1024), `0x200` (should be MAX_SIZE/2=512) lack symbolic names. The decompiler correctly computed results but lost the macro constant names.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise artifacts include: register annotations (`// r0`, `// r1`, `// lr`), undefined variable `ptr` in `param_asm_clobber`, spurious `armg_calculate_condition` calls, stack canary checks (`__stack_chk_guard`), and the sync builtins decompiled into infinite loops with `do {} while(4294905792())`. The code is polluted with compiler/runtime artifacts.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with `do-while` loops and `if-else` conditionals. However, some issues: `param_macro_constants` has confusing nested conditionals with `armg_calculate_condition` that don't match the original simple if-else. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized (20-50 lines typically). However, `test_preprocessing_features` and `test_asm_features` are ~100 lines each, slightly large. The sync builtin functions are unnecessarily split into many tiny functions (e.g., `__sync_fetch_and_add_4`, `__sync_add_and_fetch_4`, etc.) instead of being recognized as compiler builtins.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Some goto usage in error handling paths. The `param_asm_clobber` function has confusing pointer arithmetic that disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. Loop unrolling is minimal at -O0. Dead code is mostly eliminated. The decompiled code is relatively clean in this regard.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - all integers are `unsigned int` when original used `int`, `size_t` (via sysconf), `ssize_t`. Pointers like `int *arr` become `unsigned int *a0`. The original had `int` return types but decompiled shows `unsigned int`. Signed/unsigned distinction is lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/union recovery. The original had no complex structs but the decompiler uses raw pointer arithmetic everywhere (e.g., `a0 + 1`, `ptr[1]`) instead of array notation. The `param_asm_clobber` function shows pointer arithmetic mess without proper array semantics.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Most operations are type-safe, but there are issues: undefined variable `ptr` used in `param_asm_clobber` return statement (`return v3 + ptr[1]`), some pointer arithmetic that could overflow. The sync builtin functions have completely broken implementations with infinite loops.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only register annotations like `// r0`, `// r1`, `// lr` which are noise. No explanation of algorithm, no recovery of preprocessor context, no indication of uncertainty. The original had extensive comments explaining each test case which are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No recognition of preprocessor macros (the core purpose of this source). The inline assembly is replaced with C implementations but not labeled as such. The conditional compilation branches are not identified. The stringization, token pasting, and variadic macro patterns are not recognized.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The broken sync builtin functions (`do {} while(4294905792())`) should be flagged as decompilation failures. The undefined `ptr` variable in `param_asm_clobber` should be flagged. No indication that inline assembly was replaced with C code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract recovery. Preconditions like "arr must not be NULL" are not documented. Postconditions like "returns sum of array elements" are not indicated. The mmap/mprotect error handling paths don't have contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear through function names. The `call_*` functions calling `param_*` functions are obvious. Global variable `global_var` is marked as `extern`. However, callback relationships and vtable usage are not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions dumped into single file with no logical grouping. The original had clear sections: preprocessing tests, asm tests, helper functions. The decompiled output mixes everything together without separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code will not compile as-is. Missing declarations for `__printf_chk`, `__stack_chk_guard`, `GLIBC_2.4::__stack_chk_guard`. The sync builtin functions have broken implementations. Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable naming**: All parameters are `a0`, `a1`, local vars are `v0`, `v1` - completely generic
+- **Type precision**: All `int` become `unsigned int`, losing signedness semantics
+- **Noise**: Register annotations (`// r0`, `// lr`), undefined variables, broken sync builtins
+- **No comments**: Original's extensive documentation completely lost
+- **Broken sync builtins**: Infinite loops `do {} while(4294905792())` are unusable
+
+### Best Quality Aspect: Function Naming (9/10)
+Function names are nearly perfect matches to the original source - `param_macro_constants`, `param_asm_basic`, `param_memory_protection` all correctly recovered.
+
+### Most Needs Improvement: Variable Naming (2/10)
+At -O0 debug level, variables should have meaningful names. The decompiler should infer names from usage: `a0` used in size comparison → `size`, `a0 * a0` → `square_x`, `v0 + v1` → `sum`.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `a0 > 0x400` suggests `a0` is `size` or `max_size`. `a0 * a0` suggests `SQUARE(a0)`.
+2. **Recognize and flag sync builtins**: The `__sync_*` functions are compiler builtins, not user code - should be replaced with `__atomic_*` intrinsics or flagged as unresolvable.
+3. **Recover preprocessor context**: Add comments indicating which macros were expanded (e.g., "// MAX_SIZE=1024 expanded here"). The original source's entire purpose was testing preprocessor behavior.

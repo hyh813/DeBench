@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: The decompiled code uses exclusively generic variable names like `iVar1`, `iVar2`, `lVar2`, `param_1`, `local_8`, `plVar3`. These obscure the semantic purpose - for example, `iVar3` should be `sum` in `varargs_func`, and `local_8` should be `guard` for stack protection. Only a few variables like `args` and some struct pointers retain meaningful names.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most function names match the original source exactly: `cdecl_func`, `call_cdecl`, `varargs_func`, `func_no_args`, `callback_func`, `func_a`, `func_b`. This makes it easy to identify the purpose of each function. A few internal functions like `FUN_00100750` are generic, but the core test functions are well-named.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: While magic numbers like `0xf` (15), `0x32` (50), `0x2a` (42) appear, the context from function calls and printf statements makes their values clear. String constants are referenced as `&DAT_00101570` but the format strings reveal their purpose. Minor deduction for hex literals that could be more readable.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Severe noise pollution from compiler artifacts including: "WARNING: Unknown calling convention" (appears 15+ times), "WARNING: Removing unreachable block", "WARNING: Variable defined which should be unmapped", "WARNING: Subroutine does not return". Stack protection code (`___stack_chk_guard`, `__stack_chk_fail`) and complex `va_list` manipulation (`args.__gr_offs`, `args.__stack`) add significant noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally natural with if/else statements and do-while loops. The `ret_multi_branch` function uses a complex chained conditional that could be a switch, but this is a minor issue. Loop structures are correctly recovered. At -O0, the control flow should be nearly identical to source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Good function granularity matching the original source. Each test function (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) is separate, and helper functions like `callback_func`, `func_a`, `func_b` are properly extracted. Functions are reasonably sized and cohesive.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom. Early returns are used appropriately in functions like `func_struct_byptr` and `param_double_ptr`. Some forward jumps exist in complex functions like `varargs_func` but don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: Some redundancy from optimization artifacts - the `test_calling_conventions` function has repeated stack variable setup (`local_88`, `lStack_80`, etc. for LargeStruct initialization). Loop unrolling is minimal at -O0. Overall manageable but not perfectly clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally accurate: `int` for integers, `int*` for pointers, `char*` for strings, `double` for floating point, `longlong` for 64-bit. Function pointer types like `_func_int_int` are inferred. Minor issues: some `void*` where more specific types could be used, and `size_t` should be used instead of `int` for `strlen` result.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Struct types are well recovered: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct` all match the source. Field names like `s->data`, `p->x`, `p->y` are preserved. The `LargeStruct` contains `long long data[16]` correctly. Some DWARF debug info appears in comments showing struct layout.
+
+**11. Type Safety:** Score: 6/10
+Justification: Some unsafe operations present: `(int*)(&stack0x00000000 + args.__gr_offs)` in varargs handling, `(void*)` casts in `ret_opaque_handle`. Pointer arithmetic is explicit but potentially unsafe. Function pointer types are mostly correct. The code is manageable but has some risky patterns.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10
+Justification: Mixed comment quality. The decompiler header is useful. WARNING comments are informative about decompilation issues. However, most comments are auto-generated ("Unresolved local var", "WARNING: Subroutine does not return") rather than explaining the actual logic. No algorithm explanations or semantic documentation.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: Some idioms are recognized: varargs handling shows `va_list`, `va_start`, `va_arg` pattern (though complex). Callback patterns are visible in `param_func_ptr`. The "Unresolved local var" comments hint at DWARF info being used. However, patterns are not explicitly named or documented with explanations.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Good anomaly detection with multiple WARNING types: "Unknown calling convention", "Unresolved local var", "Removing unreachable block", "Variable defined which should be unmapped". These help identify decompilation confidence issues. However, some anomalies like the complex va_list handling could be better explained.
+
+**15. Assertion & Contract Recovery:** Score: 4/10
+Justification: Some contracts are implicit in the code: NULL checks in `func_struct_byptr` and `param_double_ptr` show preconditions. However, no explicit documentation of preconditions, postconditions, or invariants. The "Unresolved local var" comments suggest some contract information is lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Function call relationships are visible through direct calls (e.g., `param_func_ptr(callback_func,5)`). Callback relationships are somewhat clear. However, global variable usage (like `handle1_1`, `handle2_0`) could be better documented. No explicit call graph or relationship documentation.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are grouped logically: test functions first, then helper functions, then main. However, all 80 functions are in one file with no clear separation matching the original source's section comments. Static functions are not explicitly marked as such in output.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code would require significant patching to compile. Many undefined types: `EVP_PKEY_CTX`, `va_list` internal structure, `func_ptr_t`. External dependencies: `puts`, `__printf_chk`, `__stack_chk_fail`, `__libc_start_main`, `__gmon_start__`, `__cxa_finalize`. No header declarations or dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`iVar1`, `lVar2`, `local_8`) losing semantic meaning - `iVar3` should be `sum`, `local_8` should be `stack_guard`
+- **Noise pollution**: 15+ "WARNING: Unknown calling convention" messages and complex va_list internal manipulation (`args.__gr_offs`, `args.__stack`) obscure logic
+- **Build incompatibility**: Undefined types (`EVP_PKEY_CTX`, `func_ptr_t`) and missing external declarations prevent compilation
+- **Comment quality**: Mostly auto-generated warnings rather than semantic explanations of algorithms or intent
+- **Contract loss**: No recovery of preconditions/postconditions documented in comments
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+Function names like `cdecl_func`, `varargs_func`, `callback_func` match the original source exactly, making it easy to identify the purpose of each function and map to source code.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+The decompiled code uses exclusively generic variable names that completely obscure semantic purpose. At -O0 optimization, the decompiler should be able to infer meaningful names from debug symbols or usage patterns.
+
+### Top 3 Recommendations:
+1. **Infer variable names from debug symbols**: At -O0 with debug info (-g), the decompiler should use DWARF variable information to recover names like `sum`, `count`, `args` instead of generating `iVar1`, `iVar2`, `local_8`
+2. **Clean up compiler artifacts**: Suppress or consolidate WARNING messages about calling conventions and unreachable blocks - these add noise without helping understanding
+3. **Recover preconditions from NULL checks**: Document implicit contracts like "requires: p != NULL" when the code contains `if (p == NULL) return -1` patterns

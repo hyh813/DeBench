@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `v3`, `result`) instead of semantic names like `size`, `exec_mem`, `page_size` from the original source. No variable indicates its purpose through naming.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core function names preserved (`param_macro_constants`, `call_asm_basic`) but many helper functions reduced to `function_10d0`, `function_10e0`. Preserved names do reflect original intent reasonably.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xdef0`, `282`, `64` appear without explanation. Original constants (`MAX_SIZE`, `BUFFER_COUNT`) not recovered. String literals referenced via pointer arithmetic (`v2 + (int32_t)&g6 - 0x1f9e`).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Pervasive `__x86_get_pc_thunk_*` calls in nearly every function are compiler artifacts that obscure logic. Architecture mismatch (arm64 source vs x86 decompilation) adds confusion.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if-else and while loops recovered (`param_asm_clobber`), but thunk calls interrupt natural flow. Some expressions are confusing (`v2 == 15 == v3 == 42` in `call_asm_privileged`).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved with appropriate granularity. However, some signatures are incorrect (`param_asm_atomic` shows 4 parameters instead of original 2).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns where appropriate. Thunk calls at function start disrupt linear reading but don't break comprehension entirely.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Thunk calls repeated in every function create significant redundancy. Some expressions could be simplified but no dead code observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently but loses original type semantics. Questionable `int128_t` typedef for SIMD. Pointer distinctions sometimes lost (`int32_t *` vs specific struct pointers).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Original code had minimal struct usage, so limited impact. Array handling preserved reasonably (`int32_t v3 = 1` for array initialization in `call_asm_clobber`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(int32_t *)-1`, `(char *)(v2 + 3015)`). Function signature mismatches (`param_asm_atomic` parameter count). Pointer arithmetic obscures intent.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered from original source. All documentation about macro behavior, test expectations, and assembly explanations completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Macro expansion patterns not identified (e.g., `ADD_16` recursion became `a1 + 16` without explanation). Atomic operations, SIMD patterns not labeled.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Architecture mismatch (arm64→x86) not flagged. Incorrect comparisons (`a1 > (int32_t)"n_start__"` instead of `a1 > 1024`) presented confidently without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `size` validation). Error conditions not explained. Original test expectations (期望 values) completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible but global variables use generic names (`g1`, `g2`, `g3`). No call graph documentation or relationship explanations.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order but no logical grouping. Original section comments (5.2, 5.3) lost. Related functions not clustered.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes necessary headers and should compile. External dependencies (mmap, printf) declared. However, architecture-specific code may not match target platform.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+3)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (5+7+4)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.30
+Level 5 (Contextual):  (5+5+6)/3   = 5.33 × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                              4.48/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Architecture mismatch**: Source compiled for arm64 but decompiled as x86 with `__x86_get_pc_thunk_*` artifacts
+- **Logic corruption**: `param_macro_constants` compares `a1 > (int32_t)"n_start__"` instead of `a1 > 1024`
+- **Zero comment recovery**: All 709 lines of original documentation completely lost
+- **Parameter signature errors**: `param_asm_atomic` shows 4 parameters instead of original 2
+- **Generic variable naming**: All variables use `v1`, `v2`, `v3` pattern losing semantic meaning
+
+### Best Quality Aspect: **Composite Type Recovery (7/10)**
+- Original code had minimal struct usage, and array handling was preserved reasonably without significant degradation.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete loss of all documentation, test expectations, and semantic explanations makes understanding original intent nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Implement debug symbol parsing to extract and retain original documentation
+2. **Flag architecture mismatches** - Detect and warn when decompilation target differs from compilation architecture
+3. **Infer semantic variable names** - Use usage pattern analysis to name variables (e.g., variables compared against 1024 should be named `size` or `max_size`)

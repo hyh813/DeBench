@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables are mostly generic (`v0`, `v1`, `v2`, `result`) obscuring their purpose, though some parameters retain meaningful names like `arr`, `n`, `p`. Test function locals like `arr1`, `matrix`, `cube` are well-preserved but internal loop variables lack semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved accurately (`process_char`, `array_1d_stack`, `struct_simple`), but runtime functions use generic labels (`sub_1020`, `sub_1030`, `sub_1040`). Core test functions maintain descriptive names matching source intent.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers appear without explanation (`0x191D` in bitfield test, `0x200000001LL` for array init, `65` for 'A'). String literals referenced through opaque variables (`s`, `asc_216F`) rather than inline content.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks present throughout (`v29 = __readfsqword(0x28u)`), redundant type casts (`(__int64)`, `(unsigned __int8)`), and `BYREF` annotations add visual clutter. Test functions optimized to print expected values rather than compute, losing semantic fidelity.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loop structures mostly recovered as while/do-while, but `array_2d_stack` uses awkward pointer arithmetic (`arr = (int (*)[10])((char *)arr + 44)`) instead of clean indexing. `array_3d` has particularly complex nested loop reconstruction that obscures the original triple-loop structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity well-preserved with reasonable sizes; helper functions (`complex_callback`, `double_value`) maintained as separate entities. Test functions are large but cohesive, no severe over-fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally with appropriate loop structures. Some forward references in test functions disrupt flow slightly, but no excessive goto usage or spaghetti patterns detected.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Test functions show optimization artifacts (printing pre-computed expected values instead of actual function calls). Some redundant variable assignments exist (`v1 = 0; v1 = ...`), but no severe dead code pollution.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types mostly preserved (int, char, float, double, long double), but `process_float` has erroneous extra parameter `a1`. Some signed/unsigned casting issues (`unsigned __int8`), and pointer types generally correct with minor degradation.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types excellently preserved with field names (`Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`). Union types (`UnionData`) and nested structures recovered correctly. Bitfield struct `Flags` accessed via bit operations rather than direct field access.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(_DWORD *)`, `(char *)`, `(void *)`), particularly in `ptr_void` and `ptr_cast`. Pointer arithmetic in array functions lacks bounds checking. Void pointer handling reasonable but not type-safe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output beyond function headers with addresses. No algorithm explanations, no decompilation confidence indicators, no API contract documentation. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Common patterns (linked list traversal, array sum, tree recursion) not explicitly identified or named. Switch-on-enum pattern partially recovered (`CSWTCH_61[s]`) but not documented. No design pattern recognition evident.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: FAILED decompilation notices for library functions (`__libc_start_main`, `puts`, `__printf_chk`). Stack warning in `_start` ("positive sp value has been detected"). No anomaly flags for suspicious code patterns or indirect call resolution issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: arr != NULL"), no postcondition inference, no invariant recognition. Error conditions and bounds checking not documented despite being present in source.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved with correct signatures, callback relationships maintained (`complex_callback`, `double_value`). Global variable references through opaque names (`s`, `asc_216F`, `CSWTCH_61`). No explicit call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file with no logical grouping comments. Test functions grouped together but no header file structure or namespace organization. Static functions not properly scoped in output.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Six external functions marked as FAILED to decompile requiring stubs. Compiler-specific constructs (`__readfsqword`, `__printf_chk`, `__fastcall`) need platform adaptation. Not immediately compilable without significant modifications.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+6+6)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (6+8+7+7)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (7+8+6)/3   = 7.00 × 0.20 = 1.400
+Level 4 (Semantic):    (2+4+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  6.01/10
+```
+
+**Overall Readability Score: 6.0/10**
+
+### Critical Defects:
+- **Test functions optimized away**: `test_data_types_l1` prints pre-computed expected values instead of actually calling functions, losing semantic verification capability
+- **No comments recovered**: Original source had extensive documentation explaining each test case; all comments completely lost in decompilation
+- **Magic numbers unexplained**: Values like `0x191D`, `0x200000001LL`, `65` appear without context or named constant recovery
+- **Generic local variables**: Variables `v0`, `v1`, `v2`, `result` obscure semantic purpose (e.g., should be `sum`, `index`, `length`)
+- **Bitfield access degraded**: `struct_bitfields` uses manual bit operations instead of clean field access (`f->flag1`, `f->flag2`)
+
+### Best Quality Aspect:
+- **Composite Type Recovery (8/10)** - Struct and union types excellently preserved with accurate field names (`Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`), maintaining semantic structure integrity
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation recovered despite original source having comprehensive comments explaining each test case's purpose and expected behavior
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Integrate debug symbol comment extraction to maintain original documentation alongside decompiled code
+2. **Infer semantic variable names from usage patterns** - Variables used in accumulation should be named `sum`, loop counters should be `i/j/k`, size parameters should be `n`/`count`/`length`
+3. **Detect and document optimization artifacts** - When test functions are optimized to print constants, flag this transformation and optionally reconstruct actual function call sequences for verification

@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_c`, `iVar1`, `uVar1` with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `thread_count` that are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved (`param_strcpy`, `call_strcpy`, `param_mutex_lock`, `thread_compute`). Action-oriented names clearly reflect purpose and match original source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere: `0x2a` (42), `0xffffffff` (-1), `0xfffffffe` (-2), `0x3fffffff` for array indexing. String literals referenced as `&DAT_00014394` instead of inline strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`if (local_c != 0) { __stack_chk_fail(...); }`) appear in every function as compiler artifacts. External function stubs (50+ functions) add significant noise without value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Mostly natural if-else and for loops, but awkward patterns like `local_14 = local_14 + -1` instead of `local_14--`. Some goto usage for error handling (`LAB_000127d4`) disrupts flow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and cohesive. Thread functions properly separated (`thread_compute`, `thread_sum`, `thread_increment`). Good single-responsibility principle.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but has forward jumps for error handling. Deep nesting in some functions (e.g., `param_fread_fwrite` has 4+ levels).
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack check pattern repeated in every function. No dead code removal. Some redundant type casts from compiler promotions remain.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate: `undefined4`, `int`, `void*`. Original `size_t` return type lost in `param_strcpy` (returns `size_t` in decompiled but `int` in source). `char*` vs `byte` confusion in `param_strchr_strstr`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `ThreadData` struct flattened to array access (`apStack_3c[local_40 * 3 + 5]`). `sockaddr` and `stat` structs referenced but fields accessed via magic offsets. TLS accessed via `__aeabi_read_tp()` with hardcoded offsets.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts: `(pthread_mutex_t *)counter_mutex`, `(int *)0x0`. Pointer arithmetic with generic types. Array index `param_1 + 0x3fffffff` in `param_malloc_free` is suspicious and error-prone.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API contracts. Completely bare code.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library calls identified but not explained. Thread patterns (mutex, condition variable, atomic) not recognized or named. No design pattern identification.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags anywhere. Architecture-specific code (`__aeabi_read_tp()` for ARM TLS) not explained. Silent about potential issues with indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: param_1 != NULL"). No postconditions. Error return codes (-1, -2, -3) not explained.
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear through preserved names. Global variables (`shared_counter`, `atomic_counter`, `signal_received`) referenced but not documented. No call graph information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in one file with no logical grouping comments. External functions listed separately but 50+ stubs clutter the output. No header file structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Marked as compilable ("Compilation Result: Yes"). External dependencies listed. Architecture-specific code (`__aeabi_read_tp()`) may need adjustment for non-ARM targets.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+4+5)/4 = 5.25
+Level 2 (Structural):  (6+8+6+6)/4 = 6.50
+Level 3 (Type):        (5+4+4)/3   = 4.33
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00
+Level 5 (Contextual):  (6+5+7)/3   = 6.00
+
+Overall = (5.25 × 0.30) + (6.50 × 0.25) + (4.33 × 0.20) + (2.00 × 0.15) + (6.00 × 0.10)
+        = 1.575 + 1.625 + 0.866 + 0.300 + 0.600
+        = 4.97/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable `param_1`, `param_2` should be named `dst`, `src`** based on `strcpy` usage pattern in `param_strcpy`
+- **Zero comments** throughout 2540 LOC of decompiled code - no semantic guidance for complex threading logic
+- **Magic numbers** like `0x3fffffff` for array indexing in `param_malloc_free` obscures the `size-1` intent
+- **Stack canary checks** (`__stack_chk_fail`) appear in every function as noise from `-O0` compilation
+- **TLS access via `__aeabi_read_tp()`** with hardcoded offsets (+8, +0xc) loses the `__thread` variable semantics
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Original function names perfectly preserved, making navigation and understanding significantly easier despite other deficiencies
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes complex threading and synchronization logic extremely difficult to understand without referring to original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from function semantics** - When `strcpy(dst, src)` is detected, name parameters `dst` and `src` instead of `param_1`, `param_2`
+2. **Add decompilation confidence comments** - Flag architecture-specific code (`__aeabi_read_tp()`), unresolved types, and potential issues with indirect calls
+3. **Recover high-level patterns** - Identify mutex/condition variable patterns, thread-local storage, and atomic operations with explanatory comments about synchronization semantics

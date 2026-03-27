@@ -1,0 +1,90 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_fake_branch`
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: The decompiled function is completely empty - no variables exist to name. The original had `result`, `x`, and `str` variables, all completely lost.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Function name `param_fake_branch` matches source, but the signature is catastrophically wrong - returns `void` instead of `int` and takes no parameters instead of `int x`.
+
+**3. Literal Clarity:** Score: 1/10  
+Justification: All literals from source (0xDEADBEEF, 1000, "test", 2) are completely absent. The decompiled function contains no code to evaluate.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: No noise present because there's no code - but also no meaningful output to evaluate.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 1/10  
+Justification: The original function had two if-statements with never-true conditions. The decompiled version has no control flow at all - just `return;` - completely losing the obfuscation logic.
+
+**6. Function Decomposition:** Score: 1/10  
+Justification: The function is not decomposed - it's been destroyed. The original logic is completely absent. Compare to `call_fake_branch` which correctly returns constant 10.
+
+**7. Code Linearization:** Score: 1/10  
+Justification: There's no code to linearize. The function body is empty, losing all original logic.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Not applicable - there's no code to have redundancy in.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 1/10  
+Justification: Return type is `void` instead of `int`. Parameter list is empty instead of `(int x)`. This is a complete type failure.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No composite types exist in this simple function, so nothing to recover.
+
+**11. Type Safety:** Score: 2/10  
+Justification: The function signature itself is type-unsafe - calling code expects int return but gets void. This would cause undefined behavior at runtime.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments in the function. The original had comments explaining the "永假条件" (always-false conditions) which are completely lost.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: The fake branch obfuscation pattern (OBF-L4-02) is completely lost. The decompiler should recognize never-true conditions but there's nothing to recognize.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that the function is incorrectly decompiled. The decompiler presents an empty function as if it's correct.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contracts recovered. The original had implicit assumptions (x is int, result is initialized to x) that are completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 1/10  
+Justification: The call site `call_fake_branch` returns 10, but `param_fake_branch` is never actually called in the decompiled output. The relationship is broken.
+
+**17. Module Organization:** Score: 5/10  
+Justification: The function appears in the overall output among other functions, but its content is meaningless.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: The function will not compile correctly - it returns void instead of int. Any code calling it expecting an int return would get garbage.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 1.7/10
+
+**Critical Defects:**
+- Function `param_fake_branch` returns `void` instead of `int` - completely wrong return type
+- Function takes no parameters instead of `(int x)` - parameter completely lost
+- Function body is empty - all logic (two never-true if conditions) completely absent
+- No variables recovered (original had `result`, `x`, `str`)
+- No literals recovered (original had 0xDEADBEEF, 1000, "test", 2)
+- No comments explaining the obfuscation pattern
+
+**Best Quality Aspect:** None scored above 5/10. The closest is Noise Reduction at 5/10 simply because there's no code to have noise.
+
+**Most Needs Improvement:** Multiple dimensions scored 1/10 - the entire function decompilation is fundamentally broken. The decompiler failed to recover any meaningful code from this function.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover function signatures accurately** - The parameter list and return type must match the binary's ABI. This function clearly takes an int parameter and returns int.
+2. **Preserve dead/unreachable code** - At -O0, the never-true conditions should still be present in the binary. The decompiler must recognize and display them even if they're optimized away at higher levels.
+3. **Add anomaly warnings** - When a function body is empty or suspiciously simple, flag it with a warning like "WARNING: Function body may be incomplete or optimized away"

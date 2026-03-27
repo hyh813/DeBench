@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `a0`, `a1`, `ptr`). While `ptr` and `idx` appear occasionally, names like `v13` used for stack walking in `varargs_func` provide no semantic context.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: High-level function names like `cdecl_func`, `test_calling_conventions`, and `main` are preserved accurately from the source symbols. However, runtime support functions are reduced to generic names like `sub_401020`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers used for masking and bit-shifting, such as `4294967295` (0xFFFFFFFF) and `0x100000000`, without explanation. String literals like `"d"` in `ret_opaque_handle` are confusing compared to the source's static variable addresses.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The decompilation contains significant noise from Angr's intermediate representation, including intrinsic functions like `ShlNV` (shift left) and `AddV` (add value), which obscure standard C operations like multiplication and addition.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Control flow is generally recognizable with `for` and `do-while` loops, but the logic inside `varargs_func` is expressed as complex pointer arithmetic (`v13 += 2`) rather than idiomatic `va_list` usage, making it hard to follow.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: While functions are separated, the logic within test functions like `test_calling_conventions` has been aggressively optimized away (inlined constants), resulting in a flat list of print statements rather than the original structured logic.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code reads mostly top-to-bottom with appropriate use of loops. There are no confusing `goto` chains in the user logic, though the startup routines contain standard jumps.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The code is free of dead code or redundant assignments within the functions, though this is largely due to compiler optimizations (constant folding) rather than decompiler cleanup.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Pointers are frequently represented as `unsigned long long` or `unsigned long` (e.g., `param_by_value_ptr` takes `long long ptr`), losing the distinction between pointers and integers. Function signatures often use generic integer types for parameters that were specific structs or pointers in the source.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Composite types are poorly recovered. `func_struct_byval` has an empty parameter list in the decompilation despite taking a `LargeStruct` in the source, and `ret_small_struct` returns a `unsigned long long` instead of a `struct SmallPoint`.
+
+**11. Type Safety:** Score: 6/10
+Justification: The code is explicit with its casts and masking (e.g., `& 4294967295`), which prevents ambiguity but results in verbose, type-unsafe-looking C code that relies on the reader understanding bit-widths.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to register annotations (e.g., `// rdi`, `// rax`). There are no comments explaining the logic, the purpose of complex arithmetic, or the use of intrinsics.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms are missed. Variable argument lists (`va_list`) are decompiled to raw stack pointer manipulation. Struct returns via registers are shown as bit-packing operations rather than struct assignments.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No anomalies are flagged. The decompiler confidently presents confusing code, such as the `ShlNV` intrinsic or the mysterious string literal `"d"` in `ret_opaque_handle`, without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the non-null check in `func_struct_byptr` is present but not explicitly documented as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and use the recovered names. The relationship between `main` and the test functions is obvious, even if the test functions' internal logic is optimized away.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in address order, mixing user logic with runtime support (e.g., `__do_global_dtors_aux` appears between user functions). There is no logical grouping.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile as-is due to the use of Angr-specific intrinsics (`ShlNV`, `AddV`) and missing type definitions for recovered structs.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable names are generic (`v1`, `a0`), obscuring the purpose of parameters and local variables.
+- Composite types (structs) are not recovered; `func_struct_byval` loses its argument entirely, and struct returns are flattened into integers.
+- Angr IR intrinsics (`ShlNV`, `AddV`) leak into the output, making the code non-standard and noisy.
+- Variable argument functions (`varargs_func`) are decompiled to raw stack pointer arithmetic instead of `va_list` idioms.
+- Test functions are reduced to constant print statements due to aggressive optimization in the binary, hiding the original logic flow.
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)
+- The decompiler successfully preserved the original function names for the test cases, making it easy to identify the high-level purpose of each code block.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The complete failure to recover struct parameters and return values (e.g., `func_struct_byval` having no arguments) significantly degrades semantic understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Map internal IR operations (like `ShlNV`, `AddV`) to standard C operators (`<<`, `+`) to improve readability and compilability.
+2. Implement robust recovery of struct passing conventions (hidden pointers and register packing) to restore composite type definitions in function signatures.
+3. Detect and abstract variable argument list handling (`va_list`) to replace raw stack pointer arithmetic with standard `va_start`/va_arg` idioms.

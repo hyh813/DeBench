@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Test functions use generic names (v0-v10) that completely obscure their purpose. For example, in `test_calling_conventions`, variables v0-v9 represent call results for different calling conventions, but their semantic meaning is lost. Only parameter names like `a`, `b` in simple functions are preserved.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `cdecl_func`, `call_cdecl`, `stdcall_func`, `varargs_func`, `param_by_value_int`, etc. The decompiler accurately recovered the original function nomenclature, making the code highly recognizable.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are clear - test output strings like "CALL-L1-01: %d\n" are preserved. However, some values like the array size in `param_array_decay` returning hardcoded `8` (pointer size) instead of being explained as sizeof(int*) are unclear. The magic number 305419896 (0x12345678) in `call_complex_cast` is not explained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: The varargs functions (`varargs_func`, `param_varargs`) contain massive register-spilling noise with 20+ unused variables (v1-v7, v8-v15, vars0-vars70, vars88-varsB8). This makes these functions nearly unreadable. The comment "BYREF" appears frequently but adds little value.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most control flow is natural (for loops, if-else), but there are critical anomalies. In `ret_large_struct`, the function returns `&_stack_chk_guard` instead of `retstr` - this is a severe decompilation error. The `call_ret_pointer` uses unusual array initialization with `*(_QWORD *)arr = *(_QWORD *)"\n"` which is confusing.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with good separation of concerns. Test wrapper functions (`call_cdecl`, `call_stdcall`) correctly call implementation functions. No excessive inlining or fragmentation observed at -O0.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in functions like `param_double_ptr` and `func_struct_byptr`. No excessive forward jumps or goto statements disrupt flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or obvious redundancy. Loop constructs are not excessively unrolled at -O0. Some common subexpression patterns exist but are minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are accurate - `int`, `int*`, `char*`, `const char*`. However, `__int64` is overused where `int` would be more precise (e.g., loop counters). Function pointer types in `param_func_ptr` show proper signature recovery. Some precision lost with generic types in complex scenarios.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types are well-recovered: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `TestIntPair`, `LargeData` all have correct names. Field names like `data[]`, `x`, `y`, `a`, `b` are preserved. The 128-byte LargeStruct is correctly identified.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Critical bug in `ret_large_struct` - returns wrong pointer (`&_stack_chk_guard` instead of `retstr`). Unsafe pointer arithmetic in `call_ret_pointer` with `*(_QWORD *)arr = *(_QWORD *)"\n"`. Some unnecessary casts present. The function pointer cast in `param_func_ptr` uses questionable casting.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments whatsoever in the decompiled output. The original source had extensive comments explaining each test case (e.g., "CALL-L1-01: cdecl调用约定"), but these are completely lost. No algorithm explanations or logic documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C idioms are recognizable - varargs handling shows stdarg pattern, function pointers are properly typed. However, patterns like the cdecl/stdcall calling convention differences are not explicitly documented or named. The mixed conventions test (`mixed_conventions_test`) calls three different convention functions but this isn't highlighted.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler correctly marks 8 functions as "FAILED to decompile" (strlen, __libc_start_main, etc.). However, the critical bug in `ret_large_struct` (returning wrong pointer) is not flagged as an anomaly. No warnings about unusual stack layouts or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. Functions like `func_struct_byptr` that check for NULL pointers don't have comments explaining this contract. The original source's intent is not recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships are clear - you can see `call_cdecl()` calls `cdecl_func()`. However, global variable usage (like the static handles in `ret_opaque_handle`) is not documented. Callback relationships (callback_func used by param_func_ptr) could be more explicit.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - all test_calling_conventions related functions are together, parameter passing tests are grouped, return value tests are grouped. However, everything is in one monolithic output file with no namespace or module structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code would not compile as-is due to: (1) missing external functions (strlen, printf, puts, etc. are called but not defined), (2) the critical bug in `ret_large_struct` returning wrong pointer, (3) undefined references to string constants like `asc_1FB0`, `aCallL206`. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- **ret_large_struct returns wrong pointer** - returns `&_stack_chk_guard` instead of `retstr`, completely breaking the function semantics
+- **Variable naming in test functions** - v0-v10 in test functions are meaningless; should be named like `cdecl_result`, `stdcall_result`
+- **No comments** - complete loss of the extensive documentation from original source
+- **Excessive noise in varargs** - 20+ register-spill variables make varargs functions unreadable
+- **call_ret_pointer uses unsafe cast** - `*(_QWORD *)arr = *(_QWORD *)"\n"` is confusing and error-prone
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are almost perfectly preserved from the original source, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Comment Quality & Contract Recovery (2/10)  
+The complete absence of comments and semantic documentation severely impacts understanding. The original source had extensive explanations of calling conventions, parameter passing patterns, and test scenarios - all completely lost.
+
+**Top 3 Recommendations:**
+1. **Fix critical return value bug** in `ret_large_struct` - it returns `&_stack_chk_guard` instead of the `retstr` parameter
+2. **Add semantic variable names** in test functions - infer names from printf strings (v0 should be "cdecl_result" based on `printf("CALL-L1-01: %d\n", v0)`)
+3. **Eliminate varargs noise** - the register-spilling variables (v1-v7, v8-v15, vars0-vars70) should be hidden or abstracted away
+4. **Add decompilation comments** explaining calling convention differences and non-obvious patterns
+5. **Flag anomalies explicitly** - the ret_large_struct bug should be marked as uncertain or potentially incorrect

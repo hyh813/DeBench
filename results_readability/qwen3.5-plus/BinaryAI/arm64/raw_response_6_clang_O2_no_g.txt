@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `param_2`, `local_30`, `iVar1`, `uVar2`) instead of semantic names like `dst`, `src`, `buffer`, `fd`. In `param_strcpy`, parameters should be `dst` and `src` based on usage pattern.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_strcpy`, `call_strcmp`, `param_fork_exec`), but helper functions use generic names (`FUN_001012e0`, `FUN_001017fc`). External functions properly marked with `<EXTERNAL>::` prefix.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0xffffffff` (-1), `0x12` (18), `0x1000` (4096), `0x7f` (127). String literals preserved but numeric constants lack symbolic names. `param_fread_fwrite` uses `0x12` instead of `strlen("BinBench Test Data")`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `extraout_w8`, `tpidr_el0` for TLS access, byte-level stack access (`local_30._0_1_ = 'H'`). External function stubs add ~70 functions of boilerplate. ARM64 atomic intrinsics (`__aarch64_ldadd4_acq_rel`) not abstracted.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most if/else preserved correctly, but `param_malloc_free` and `param_memset` use complex do-while loops with manual unrolling. Signal handling loop uses verbose boolean flags (`bVar1`, `bVar2`) instead of clean condition.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions appropriately sized and separated (thread functions vs. main logic). `test_standard_library_functions` inlines many calls making it large (~100 lines). Thread worker functions properly extracted (`thread_compute`, `thread_sum`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but goto labels present (`LAB_00101c34`, `LAB_00102390`, `LAB_00102ec8`). `param_malloc_free` has complex branching with multiple exit points disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling visible in `param_malloc_free` (8-element unroll) and `param_memset` (byte-by-byte sum accumulation). Redundant variable assignments (`uVar1 = uVar6` then immediate use). No dead code removal.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy type erosion: `undefined`, `undefined4`, `undefined8`, `ulong` instead of precise types. `param_strcpy` returns `void` instead of `int`. Pointer types often `void*` or `char*` losing semantic meaning. Some types preserved (`FILE*`, `pthread_t`, `sockaddr`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `sockaddr` partially recovered with `sa_family` and `sa_data[]` field access. `ThreadData` struct not recovered (accessed as `param_1[0]`, `param_1[1]`, `param_1[2]`). TLS accessed via raw offset (`tpidr_el0 + 0x10`) instead of struct field.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(undefined8 *)`, `(int *)`, `(pthread_mutex_t *)counter_mutex`. Pointer arithmetic without bounds checking. `param_shmget_shmat` casts shmat return to `undefined8 *` then compares to `0xffffffffffffffff`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API contract documentation. Original source had extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`). Thread patterns visible but not named (producer-consumer in `param_condition_variable`). No design pattern identification or algorithm naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for suspicious patterns. TLS access via `tpidr_el0` not explained. Atomic operations shown as architecture-specific intrinsics without context. Indirect calls not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). Error return values visible (`0xffffffff`, `0xfffffffe`) but not documented. No postcondition inference for memory allocation functions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call graph visible through direct calls. Global variables used (`signal_received`, `atomic_counter`, `shared_counter`) but not clearly documented as shared state. Thread callback relationships visible but not annotated.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped by test category (library, syscall, thread). External functions listed separately at top. No header file structure or namespace organization. Related functions not co-located (e.g., `signal_handler` far from `param_signal_handling`).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External function declarations present but would need stubs for ~70 system calls. Architecture-specific code (ARM64 atomics, `tpidr_el0`) requires platform matching. Would need moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4 + 7 + 3 + 5) / 4 = 4.75
+Level 2 (Structural):  (6 + 7 + 6 + 5) / 4 = 6.00
+Level 3 (Type):        (5 + 4 + 4) / 3     = 4.33
+Level 4 (Semantic):    (2 + 5 + 3 + 3) / 4 = 3.25
+Level 5 (Contextual):  (6 + 6 + 5) / 3     = 5.67
+
+Overall = (4.75 × 0.30) + (6.00 × 0.25) + (4.33 × 0.20) + (3.25 × 0.15) + (5.67 × 0.10)
+        = 1.425 + 1.500 + 0.866 + 0.488 + 0.567
+        = 4.846 ≈ 4.8/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable `param_1`, `param_2`** should be named `dst`, `src` in `param_strcpy` based on strcpy semantics
+- **Magic numbers** like `0x2a` (42), `0xffffffff` (-1), `0x12` (18) used without symbolic constants
+- **Zero comments** despite complex logic in signal handling, atomic operations, and TLS access
+- **Type erosion** to `undefined`, `undefined4`, `undefined8` loses semantic meaning
+- **TLS access via `tpidr_el0 + 0x10`** not recovered as thread-local variable access
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`param_strcpy`, `param_fork_exec`, `param_condition_variable`), making function purpose immediately identifiable.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments despite complex concurrency patterns, signal handling, and architecture-specific code that desperately need explanation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from function semantics** - When `strcpy` is called, name parameters `dst`/`src`; when `pthread_create` is called, name thread function parameters appropriately.
+2. **Recover symbolic constants from usage patterns** - Detect repeated values (0x2a=42, 0xffffffff=-1) and suggest named constants; recover string length constants from adjacent `strlen` calls.
+3. **Add decompilation confidence annotations** - Flag architecture-specific code (TLS via `tpidr_el0`, atomic intrinsics), unresolved indirect calls, and type-erased structures with explanatory comments.

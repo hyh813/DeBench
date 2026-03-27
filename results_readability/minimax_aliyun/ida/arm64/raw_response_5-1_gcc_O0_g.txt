@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Mixed results - some variables like `obj`, `capture_by_ref`, `ptr2` are well-named, but many use generic patterns like `v0`, `v1`, `v2` for temporaries and `a`, `b` for parameters. The decompiler fails to infer semantic names from usage patterns (e.g., `a` and `b` in `template_swap<int>` should be `a` and `b` as per source, but `r1`, `r2`, `r3` are acceptable result abbreviations).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Test functions are correctly named (`test_cpp_member_func`, `test_cpp_virtual_func`, etc.) and member functions are properly demangled (`SimpleClass::getValue`, `Base::virtual_func`). Minor deduction for some internal functions like `_Z41__static_initialization_and_destruction_0ii` that remain mangled, though this is acceptable for internal runtime functions.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are clear from context (e.g., `5` for size, `10` for value, `3` for multiplier). The magic number `0x1234` (4660) for `getClassID()` is correctly preserved. Minor issue: some array sizes like `0x1F` (31) in strncpy could be more clearly expressed as `sizeof(name)-1`.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise pollution - 27 functions failed to decompile (listed at end), and the output includes hundreds of internal STL implementation functions (`std::__uniq_ptr_impl`, `std::_Tuple_impl`, `std::_Head_base`, etc.) that obscure the actual test logic. These compiler-generated functions should be filtered or collapsed.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with proper loops and conditionals. Virtual function calls correctly show vtable dispatch (`(*obj->_vptr.Base)(obj, x)`). Exception handling shows as `__cxa_throw` which is expected. The `test_cpp_lambda` function has a note "local variable allocation has failed" indicating decompilation difficulty.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Main test functions are properly decomposed and match source granularity. However, the output includes ~200 internal STL template instantiation functions that should ideally be hidden or collapsed. The core logic functions (12 test functions + member functions) are well-structured.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately. Minor complexity from virtual function thunks (`_ZThn16_N12MultiDerived5funcBEv`) and vtable offset calculations in diamond inheritance.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Core logic has no obvious redundancy. Some template instantiation duplication is unavoidable. Loop unrolling is minimal at -O0. The code is reasonably clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are well-preserved - `int`, `char`, `size_t`, `bool`, `double`, `std::unique_ptr<int>`, `std::unique_ptr<int []>`. Const correctness is maintained in function signatures (`const SimpleClass *const this`). Minor: some internal types use `_BYTE`, `_DWORD`, `_QWORD` instead of specific types.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Class structures are well-recovered with correct field names (`SimpleClass::value`, `SimpleClass::name[32]`, `Base::_vptr.Base`, `Derived::multiplier`). Virtual inheritance layouts are correctly handled with vtable pointers. Some internal STL types remain generic (`struct {_BYTE gap0;}`).
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Virtual calls use proper vtable access. Smart pointer operations are correctly typed. Some raw pointer arithmetic in virtual inheritance (`*((_QWORD *)this->_vptr.MiddleA - 3)`) is complex but accurate.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Minimal comments - only a header indicating IDA Pro decompilation. No explanations of algorithm logic, no uncertainty indicators, no recovery of original source comments. The "local variable allocation has failed" warning in `test_cpp_lambda` is useful but isolated.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: C++ idioms are well-recognized - virtual function calls through vtables, smart pointer operations, RTTI `dynamic_cast` and `typeid`, lambda closures with capture by value/reference. Template instantiation is correctly identified. Design patterns (RAII, virtual dispatch) are clear.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations are listed at the end (27 functions), but not inline. The "local variable allocation has failed" warning is good. However, no inline indicators for uncertain indirect calls or potential issues. The 27 failed functions should have explanations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No explicit preconditions, postconditions, or invariants documented. The decompiler doesn't recover assert statements or contract information from the binary.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear within each test function. However, the massive amount of internal STL functions (200+) makes it difficult to see relationships between the 12 main test functions. Virtual dispatch relationships are clear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are organized by address (linear in binary), not logically grouped as in source. The source groups by feature (member functions, constructors, virtual functions, etc.) but decompiled output is just address-ordered. Related STL functions are scattered.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code uses standard C++ library types but would require significant patching to compile (need to provide stub implementations for runtime functions, handle vtable definitions). Dependencies on libstdc++ are implicit but not documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Excessive noise from 200+ internal STL template instantiation functions obscuring the 12 core test functions
+- Generic variable names (`v0`, `v1`, `a`, `b`) that don't convey semantic meaning
+- 27 functions failed to decompile with no inline explanation
+- No comments explaining algorithm logic or indicating decompilation uncertainty
+- Poor module organization - functions ordered by address rather than logical grouping
+
+**Best Quality Aspect:** Type System Fidelity (scored 7.3/10)  
+- Types are precise, class structures are well-recovered with correct field names, and C++ idioms like virtual dispatch and smart pointers are properly represented
+
+**Most Needs Improvement:** Semantic Transparency (scored 4.5/10)  
+- Lacks comments, uncertainty indicators, and contract recovery. The decompiler presents code as definitive when many areas (exception handling, lambda closures, virtual inheritance) have inherent ambiguity
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Filter or collapse internal template implementations** - The 200+ STL functions should be hidden by default, showing only the user-facing API
+2. **Add uncertainty indicators** - Flag indirect calls, potential decompilation issues, and recovered vs. original constructs
+3. **Improve variable name inference** - Use usage patterns (e.g., loop indices, result variables) to generate more descriptive names than `v0`, `v1`

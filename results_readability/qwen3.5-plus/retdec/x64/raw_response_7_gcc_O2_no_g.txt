@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `a1`, `a2`) instead of semantic names like `result`, `str`, `x` from the original source. No variable indicates purpose or type intent.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retain original names (`param_fake_branch`, `call_fake_branch`), but helper functions use generic names (`function_10d0`, `function_10e0`). Main logic functions are identifiable.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xffffffff`, `0xfffffffe`, `0x100000000` appear without explanation. String literals stored as hex-encoded globals (`g1`, `g2`) with no semantic meaning.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__readfsqword(40)` stack canary checks, `__stack_chk_fail()` calls, and unnecessary wrapper functions for standard library calls (`function_10f0` for `strncpy`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Fake branches completely eliminated (lost obfuscation intent). Some `if` statements converted to `while` loops (e.g., `param_tail_call_optimized`). Control flow is functional but doesn't match original structure.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Excessive fragmentation with wrapper functions for standard library calls. Main functions are reasonable size, but `call_vectorized_loop` has 5 parameters when original had 4.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom, but complex functions like `param_opaque_predicate` have convoluted conditional chains. Some forward references disrupt flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Redundant wrapper functions for every standard library call. Stack canary checks repeated in multiple functions. No consolidation of similar patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `int64_t` regardless of original types (`int`, `unsigned int`, `char*`). Excessive casting (`(int32_t)`, `(char*)`) throughout. Original `int` parameters now `int64_t a1`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `__jmp_buf_tag` structure recovered but with generic field names (`e0`, `e1`, `e2`). No other complex structures recovered. Bit-field information lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout (int64_t to int32_t, pointer arithmetic on int64_t). `param_null_pointer_deref` has undefined behavior with uninitialized `v2` variable.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments in decompiled code. Original had extensive documentation about obfuscation techniques, expected values, and test scenarios. All semantic context lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No obfuscation patterns identified (fake branches, opaque predicates, instruction substitution). These are fundamental to the original code's purpose but completely unrecognized.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged. Fake branch elimination not noted. Signal handler patterns not documented. Stack canary checks present without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or expected values documented. Original had clear expectations (`期望：10`, `期望：20`) all lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function relationships somewhat clear through naming, but global variables are generic (`g1` through `g21`). Call graph inferable but not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file. Helper functions mixed with main logic. No logical grouping by functionality (obfuscation vs. optimization vs. edge cases).
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes necessary headers but has issues: incorrect `int128_t` typedef, assembly instructions (`__asm_hlt`, `__asm_pxor`) may not compile on all platforms.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+5+5+4)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (3+4+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Context):     (5+5+5)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.96/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Zero comments** - All original documentation about obfuscation techniques, expected values, and test scenarios completely lost
+- **Generic variable naming** - All variables are `v1`, `v2`, `a1`, `a2` with no semantic meaning
+- **Type precision loss** - Everything converted to `int64_t` regardless of original types (`int`, `unsigned int`, `char*`)
+- **Fake branches eliminated** - The core obfuscation pattern (永假条件) completely removed without documentation
+- **Opaque predicate logic obscured** - Complex predicate calculations present but not identified as obfuscation technique
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names preserved from source (`param_fake_branch`, `call_fake_branch`, etc.), making basic identification possible
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation; original code had extensive comments explaining obfuscation techniques, expected values, and test scenarios
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve semantic comments** - Detect and retain original source comments, especially for obfuscation/anti-analysis code patterns
+2. **Infer variable names from usage** - Analyze variable usage patterns to suggest semantic names (e.g., variables used in size checks → `buffer_size`)
+3. **Flag optimization artifacts** - When decompiler eliminates code (like fake branches), add comments indicating potential optimization vs. original intent

@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `v0`, `v1`, `a0`, `a1` obscuring semantic meaning. Some better names exist (`ptr`, `fp`, `count`, `idx`, `result`) but original names like `dst`, `src`, `buffer`, `write_data` are lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: User functions preserved original names (`param_strcpy`, `call_strcpy`, `param_mutex_lock`). However, runtime helpers use generic names (`sub_4012f4`, `sub_401770`) and some internal functions lost meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals preserved well ("HelloLib", "BinBench2025"). Numeric constants degraded: `4294967295` for `-1`, `4294967294` for `-2`, syscall numbers as raw integers (`56`, `57`) without symbolic names.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Frame pointer artifacts present (`v0 = &v1` patterns in every function). Architecture-specific helpers like `arm64g_calculate_condition` add noise. Redundant intermediate variables obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow recovered as if/else/while. However, `arm64g_calculate_condition` calls create awkward patterns. Some goto statements in initialization code (`goto g_414ff8`) disrupt natural flow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match original source well. No inappropriate inlining or fragmentation. Function sizes are reasonable and cohesive.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with logical flow. Some forward jumps in runtime initialization code. Most user functions have clean linear structure.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant variable assignments common (`v0 = v1; return v1`). Duplicate expressions in return statements (`return memcpy(...); return memcpy(...);`). Some dead code from register spilling.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types degraded to generic `unsigned int`, `unsigned long long`. Original `char *`, `const char *`, `size_t` distinctions lost. Pointer types often become `void*` or `char*`. Signed/unsigned correctness not preserved.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: FILE struct defined but empty. `sockaddr` partially recovered. `ThreadData` struct lost (accessed via array indexing `(&result)[3 * i]`). Custom structs named generically (`struct_0`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts visible (`(int)v1`, `*((int *)&v0)`). Pointer arithmetic exposed (`ptr[2 * i]`, `&v5->field_10`). Type confusion in memory access patterns. No const-correctness preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining logic. Only auto-generated type hints ("Other Possible Types"). No algorithm explanations or API contract documentation. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`, `pthread_create`). Signal handling and atomic operations visible but not named as patterns. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some functions marked "Failed to decompile" (`__aarch64_cas4_acq_rel`). `arm64g_calculate_condition` calls not explained. No warnings about suspicious patterns or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). Error conditions visible but not documented as contracts. No postcondition inference for return values.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables referenced without context (`signal_number`, `atomic_counter`). No callback relationship documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Related test functions grouped together. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates successful compilation. External dependencies visible (pthread, libc). Some runtime function stubs needed (`__aarch64_ldadd4_acq_rel`).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (4×0.10 + 7×0.10 + 5×0.05 + 5×0.05) / 0.30 = 5.33/10
+Level 2 (25%): (6×0.08 + 8×0.07 + 7×0.05 + 6×0.05) / 0.25 = 6.76/10
+Level 3 (20%): (5×0.08 + 4×0.07 + 4×0.05) / 0.20 = 4.40/10
+Level 4 (15%): (2×0.05 + 5×0.03 + 4×0.03 + 3×0.04) / 0.15 = 3.27/10
+Level 5 (10%): (5×0.04 + 6×0.03 + 7×0.03) / 0.10 = 5.90/10
+
+Overall = (5.33×0.30) + (6.76×0.25) + (4.40×0.20) + (3.27×0.15) + (5.90×0.10)
+        = 1.60 + 1.69 + 0.88 + 0.49 + 0.59
+        = 5.25/10
+```
+
+**Overall Readability Score:** 5.3/10
+
+### Critical Defects
+- **Variable `v0`, `v1`, `a0`, `a1`** should be named based on usage (e.g., `dst`, `src`, `buffer_size`)
+- **Magic numbers** like `4294967295` should be recovered as `-1` error codes
+- **Empty struct definitions** (FILE struct has no fields) lose critical type information
+- **No comments** explaining algorithm logic or function purpose
+- **`arm64g_calculate_condition`** calls obscure simple conditional logic
+
+### Best Quality Aspect
+- **Function Decomposition (8/10)** - Function boundaries and granularity match original source well, with appropriate single-responsibility functions preserved.
+
+### Most Needs Improvement
+- **Comment Quality (2/10)** - Complete absence of meaningful documentation; original source comments entirely lost, making complex logic hard to understand.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in `strcpy` destination should be named `dst` or `buffer`)
+2. **Recover symbolic constants** - Map common error codes (`4294967295` → `-1`), syscall numbers, and errno values to named constants
+3. **Preserve and enhance comments** - Carry forward original source comments where debug symbols exist, and add decompiler confidence indicators for uncertain reconstructions

@@ -1,0 +1,121 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `a1`, `a2`) losing all semantic meaning from original names like `x`, `result`, `str`, `encrypted`, `decrypted`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some original names preserved (`param_fake_branch`, `call_opaque_predicate`) but many helpers are generic (`function_1040`, `function_1050`); several functions have incorrect parameter counts.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x21524111`, `0x3ae4`, `0x1d7c` appear without explanation; original comments explaining obfuscation constants are completely lost.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present including `__x86_get_pc_thunk_*` functions, redundant struct definitions for `jmp_buf`, and unnecessary global variable references (`g1`, `g2`, etc.).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if/while structures preserved but conditions are awkward (e.g., `a2 >= 0 == (a2 != 0)`); original永假 conditions transformed into ternary expressions losing clarity.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved but signatures corrupted with extra parameters; standard library calls fragmented into `function_1050` (printf), `function_10b0` (malloc), etc.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but forward references to globals (`v1 + (int32_t)&g1 - 0x1ff3`) disrupt flow; some loops have awkward initialization patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant variable assignments present (e.g., `v5 = 0` inside loop in `param_vectorized_loop`); no dead code elimination from optimization artifacts.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t`, `uint32_t` consistently but loses original type distinctions (int vs unsigned int); pointer types often generic (`int32_t*` instead of `char*`, `struct jmp_buf*`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `jmp_buf` struct recovered but with meaningless field names (`e0[8]`, `e1`, `e2`); original semantic field purposes completely lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present (`(char *)result`, `(int32_t *)&str`); pointer arithmetic without bounds checking; function pointer types degraded to generic signatures.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comments present; zero documentation of obfuscation techniques, algorithm logic, or decompilation confidence; original extensive comments completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No obfuscation patterns identified (永假 conditions, opaque predicates not flagged); standard library wrappers not recognized as such; no algorithm pattern detection.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious code, incorrect function signatures, or decompilation uncertainty; signal handler patterns not identified as exception handling.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented; error handling paths (setjmp/longjmp) not clearly marked; no contract information for any function.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented; global variables (`g1`-`g9`) referenced without explanation of purpose; no call graph documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 59 functions in single file; original clear section organization (7.1 混淆，7.2 优化，7.3 边界) completely lost; no logical grouping visible.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Standard headers included but function signature mismatches may prevent compilation; external dependencies listed but not clearly documented; may require patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Contribution |
+|-------|--------------|--------|--------------|
+| L1: Lexical Clarity | 4.5/10 | 30% | 1.35 |
+| L2: Structural Intelligibility | 5.25/10 | 25% | 1.31 |
+| L3: Type System Fidelity | 4.33/10 | 20% | 0.87 |
+| L4: Semantic Transparency | 2.25/10 | 15% | 0.34 |
+| L5: Contextual Coherence | 4.33/10 | 10% | 0.43 |
+
+**Overall Readability Score: 4.3/10**
+
+---
+
+### Critical Defects
+
+- **Variable `v1`, `v2`, `a1`, `a2`** should be named based on semantic usage (e.g., `input_value`, `result`, `buffer_ptr`)
+- **Function signatures corrupted** - `param_fake_branch` has 2 parameters instead of 1, `param_division_by_zero` has extra `uint32_t a2` parameter
+- **Zero semantic comments** - Original obfuscation technique documentation completely lost
+- **Magic numbers unexplained** - `0x21524111`, `0x3ae4`, `0x1d7c` appear without constant definitions
+- **Struct fields generic** - `jmp_buf` fields named `e0`, `e1`, `e2` instead of semantic names
+
+---
+
+### Best Quality Aspect
+
+**Function Naming Quality (6/10)** - Some original function names preserved (`param_fake_branch`, `call_opaque_predicate`, `param_vectorized_loop`) providing anchor points for understanding code structure.
+
+---
+
+### Most Needs Improvement
+
+**Semantic Transparency (2.25/10 average)** - Complete absence of comments, no anomaly detection, no contract recovery, and no idiom recognition makes the decompiled code practically unusable for understanding obfuscation techniques.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement semantic variable inference** - Analyze variable usage patterns to suggest meaningful names (e.g., variables used in string operations should be named `buffer`, `str`, etc.)
+
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: indirect call target not resolved` to guide manual review
+
+3. **Recover original documentation from debug symbols** - Since compiled with `-g` flag, extract and preserve original comments, function documentation, and obfuscation technique descriptions in output

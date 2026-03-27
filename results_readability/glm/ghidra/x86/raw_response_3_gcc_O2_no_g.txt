@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `param_1`, `iVar1`, `puVar2`, and `local_38`. There is no semantic recovery of names like `n`, `arr`, or `p` from the source.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly recovered (e.g., `double_value`, `local_vars`, `heap_basic`), likely because debug symbols or symbol table information was preserved in the binary.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent and not replaced with constants. For example, `0x2a` (42) is used in `address_of_local`, and `0x14` (20) appears in `test_stack_memory` without context, requiring manual calculation to understand the values.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: Stack canary checks (`local_10 = *(int *)(in_GS_OFFSET + 0x14)`) are aggressively inlined into almost every function with stack variables, cluttering the logic and obscuring the actual algorithmic flow.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is significantly distorted by compiler optimizations and stack probing. In `vla_stack`, the stack probing loop (`while (puVar7 != auStack_1c + -(uVar5 & 0xfffff000))`) completely obscures the simple VLA allocation logic present in the source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are well-separated and match the source granularity. Even though some logic was inlined by the compiler (e.g., `create_tree_node` logic inside `tree_heap_traversal`), the decompiler presents distinct function boundaries clearly.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Code generally reads top-to-bottom, but error handling paths often introduce jumps. The `do-while` loops used for array iterations are slightly less natural than the `for` loops in the source but are still readable.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully reflects the compiler's optimization. For example, `local_vars` is reduced to `return param_1 * 2 + 10`, eliminating the intermediate variables `a` and `b` cleanly.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded. Specific types like `size_t` or `int**` are often replaced with `undefined4` or generic `void*`. For instance, `heap_basic` uses `void *__ptr` and casts it to `(int)__ptr` for arithmetic, losing the distinction between pointer and integer offset.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are almost entirely lost. The `Point` struct in `local_struct` is optimized away, and the `Node` struct in `linked_list_heap` is accessed via raw pointer arithmetic (e.g., `piVar2[1]` for the `next` pointer) rather than struct member access.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on unsafe casts. For example, in `heap_basic`, the pointer `__ptr` is cast to `int` for offset calculation (`(int)__ptr + iVar1 * 2`), which is dangerous and type-unsafe compared to standard array indexing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are sparse and purely technical, consisting mostly of warnings about `get_pc_thunk` replacements or `stack_chk_fail`. There are no comments explaining the *intent* of the code (e.g., "Allocates a variable length array").
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Common patterns are not recognized. The linked list creation in `linked_list_heap` is presented as raw pointer manipulation (`piVar2[1] = 0`) rather than `node->next = NULL`, failing to convey the data structure idiom.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler correctly flags potential issues like "WARNING: Subroutine does not return" for `__stack_chk_fail_local` and "WARNING: Could not recover jumptable" for indirect calls, which is helpful for security analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: Preconditions and postconditions are not documented. For example, the check `if (n <= 0 || n > 1000)` in `vla_stack` is decompiled, but the contract that `n` must be positive is not explicitly stated or summarized.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the recovered names. Global variables like `global_counter` are accessed correctly, making the relationships between functions easy to trace.
+
+**17. Module Organization:** Score: 8/10
+Justification: The decompiled code maintains the logical grouping of functions (stack, heap, static tests) as they appeared in the source, preserving the module structure.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses Ghidra-specific types like `undefined4` and undefined macros like `LOCK()` and `UNLOCK()` (from `memop_memory_barrier`), preventing it from compiling without significant modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Composite types (structs) are completely lost, replaced by raw pointer arithmetic (e.g., `piVar2[1]`).
+- Stack canary checks are inlined into every stack-using function, severely cluttering the control flow.
+- Variable names are generic (`iVar1`, `puVar2`), providing no semantic context.
+- Variable Length Array (VLA) logic is obscured by complex stack probing code, making it nearly unreadable.
+- Types are imprecise, with `undefined4` and `void*` used extensively instead of specific types.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully recovered the original function names from the binary symbols, making it easy to locate specific logic blocks.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover `struct` definitions (like `Point` or `Node`) turns high-level data structure manipulations into low-level pointer math, which is the biggest barrier to understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Abstract Stack Canaries:** Detect and isolate stack canary checks (e.g., `in_GS_OFFSET` access) into a macro or a separate code block to prevent them from cluttering the main function logic.
+2. **Improve Struct Recovery:** Analyze heap allocation patterns (e.g., `malloc(8)` followed by offset accesses) to reconstruct struct definitions and replace pointer arithmetic with member access (e.g., `ptr->next`).
+3. **Simplify Stack Probing:** Recognize the GCC stack probing pattern used for `alloca`/VLAs and replace the complex loop with a conceptual comment or pseudo-operation like `PROBE_STACK(size)`.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names (`iVar1`, `uVar2`, `local_c`, `piVar6`) obscuring semantic purpose. Original parameter names preserved in some functions (`cdecl_func(int a, int b)`) but locals marked as "Unresolved local var: int sum@[???]" lose all meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names excellently preserved (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Action-oriented names clearly reflect purpose, matching source intent perfectly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Constants folded to hex (`0xf`, `0x32`, `0x2a`, `0x12345678`) instead of decimal values. String literals externalized as `&DAT_0001148c` references rather than inline text, requiring cross-reference lookup.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Multiple warning artifacts ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block"). Runtime library expansion (`__aeabi_dadd`, `__floatsidf`) bloats simple floating-point operations significantly.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered as do-while constructs correctly. However, floating-point operations expand into complex conditional chains that obscure the original simple arithmetic expressions.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match original source well with appropriate granularity. Issue: many test functions constant-folded to single return statements (`call_cdecl` returns `0xf` directly), losing computational structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. Floating-point library functions (`__aeabi_dadd` at 200+ lines) contain excessive branching that disrupts linear reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Floating-point operations show repetitive bit-manipulation patterns across `__aeabi_dadd`, `__subdf3`, `__floatsidf`. Constant folding eliminates some redundancy but library expansion creates new patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `char*`, `longlong`) but function pointers degraded to `code*`. Floating-point uses `undefined8`/`ulonglong` instead of `double`. Struct types named correctly but internal precision lost.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Struct types identified (`LargeStruct`, `SmallStruct`, `BigStruct`) with correct field access (`s.data[i]`, `p->x`, `p->y`). However, field names not recovered—accessed via array indices rather than named members.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple implicit casts in floating-point operations (`__floatsidf`, `__aeabi_l2d`). Pointer casts in `param_complex_cast` present but not flagged as potentially unsafe. Code compiles but type safety concerns unmarked.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Unknown calling convention"). No semantic comments explaining algorithm purpose or non-obvious logic. "Unresolved local var" notes lack contextual meaning.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern visible but not identified as such. Struct passing conventions not documented. Floating-point library calls not recognized as standard conversion idioms.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Calling convention warnings and unreachable block notices present. However, warnings are generic without explaining implications or suggesting manual review actions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: Null checks present (`if (p == (SmallStruct *)0x0)`) but no precondition/postcondition documentation. Error conditions not documented with expected behaviors or guarantees.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible and traceable through code. No explicit call graph documentation. Callback relationships (`param_func_ptr`) visible but not annotated as callback patterns.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical sequence matching source structure. Test functions grouped together appropriately. No header file separation or API boundary documentation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__printf_chk`, `strlen`, `memcpy`) undeclared. Runtime library functions (`__aeabi_dadd`, `__floatundidf`) undefined. Requires significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+4)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (5+6+6)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (3+4+5+3)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.30/10
+```
+
+### Overall Readability Score: **5.3/10**
+
+### Critical Defects:
+- **Variable `iVar1`, `uVar2`, `local_c`** should be named based on usage (e.g., `sum`, `index`, `buffer`)
+- **Floating-point operations** expanded into 200+ line library functions instead of recognized as `double` arithmetic
+- **String literals** externalized as `&DAT_0001148c` requiring cross-reference lookup instead of inline text
+- **Struct field names** lost—accessed via `s.data[0]` instead of named members like `s.value`
+- **No semantic comments** explaining function purpose despite complex test scenarios
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Original function names perfectly preserved, making code navigation and purpose identification straightforward
+
+### Most Needs Improvement: **Comment Quality & Presence (3/10)**
+- Zero semantic documentation; only auto-generated warnings that don't explain code behavior or intent
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (loop counters → `i`, accumulators → `sum`, pointers → `ptr_*`)
+2. **Recognize and collapse floating-point library calls** back to native `double` operations with appropriate type annotations
+3. **Add semantic comment generation** for test functions explaining expected behavior and test purpose based on function naming patterns

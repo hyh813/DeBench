@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named with generic patterns like `local_28`, `local_24`, `param_1`, `iVar1`, `piVar2`. The original source had meaningful names like `value`, `name`, `obj`, `r1`, `capture_by_value`. The decompiler made no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions (`test_cpp_member_func`, `test_cpp_constructor`, etc.) are correctly named matching source. However, many helper functions use generic patterns like `FUN_00011030`, and C++ operators lack proper scope (e.g., `operator_new` instead of `operator new`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `0x74736554` (string "Test" as hex), `0x125c` (4704), `0x2a` (42) are unexplained. The string "Test" should be displayed as a string literal, not encoded as integer hex. No named constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise from recursive external function stubs (e.g., `operator_new` calls itself). Multiple near-identical destructor variants (`Base::~Base` appears at 0x11af0, 0x11c50). Debug/frame functions clutter output. The code contains ~954 LOC vs 540 original - significant bloat.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Test functions have relatively natural control flow matching source logic. However, virtual function calls use convoluted indirect dispatch patterns: `(***(code ***)param_1)(param_1,param_2)` instead of cleaner `obj->virtual_func(x)`. At -O0 this is acceptable but could be better.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Test functions are appropriately sized (20-40 lines). Template instantiations properly separated (`template_max_int_`, `template_max_double_`). Member functions correctly extracted from class definitions. Minor issue: some functions are too fragmented.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns used appropriately in some functions. Some forward jumps exist in complex functions like `test_cpp_rtti` but are manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Multiple destructor variants create redundancy (e.g., `MultiDerived::~MultiDerived` appears 4 times with slight variations). Some dead code from register spilling. Loop unrolling not properly abstracted in `test_cpp_constructor`.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types: `undefined4` instead of `int32_t`, `void*` instead of specific pointer types, `char*` for strings without const. Original had precise types like `size_t`, `int`, `bool`, `std::unique_ptr<int>`. Function pointers use generic `code**` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/class recovery evident. Class members accessed via raw offsets: `*(int *)(this + 4)`, `*(int *)(this + 0x28)`. Original had clear class definitions with named members (`value`, `name`, `data`, `size`). The decompiler treats everything as flat memory.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. Pointer arithmetic directly on `this` pointer: `operator_delete(this + -8)`. No bounds checking in Container::get. Integer type mixing (comparing `undefined4` with `int`). However, no obvious buffer overflow patterns.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only a header comment about decompilation. No functional comments explaining algorithm logic, vtable mechanism, or RAII patterns. No indication of decompilation confidence. Original had extensive Chinese comments explaining each feature.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ idioms not explicitly identified. RAII pattern in `test_cpp_smart_ptr` not recognized. Virtual dispatch mechanism not explained. Template instantiation pattern not named. The decompiler treats C++ as plain C.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged. Indirect virtual calls could have warnings. Multiple destructor variants could be noted. The recursive external function stubs could be flagged as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had implicit contracts (e.g., `getData` requires idx < size). No error condition documentation. No null-check documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships not documented. Virtual dispatch relationships (Base→Derived) not explained. No indication of which functions call which. Static member access (`LifecycleClass::instance_count`) not highlighted.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions loosely grouped by feature (test functions, member functions, template functions). However, external stubs interleaved with user code. No namespace structure recovered. Original had clear section organization with comments.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code would NOT compile. Recursive external function calls create infinite recursion. Missing `#include` statements. C++ operators lack proper namespace. Type mismatches throughout. The "Compilation Result: Yes" in metadata is questionable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`local_28`, `param_1`, `iVar1`) with no semantic inference from usage patterns
+- **Type recovery**: No class/struct reconstruction; all members accessed via raw offsets like `*(int *)(this + 4)`
+- **Noise**: Recursive external function stubs (e.g., `operator_new` calls itself) create uncompilable code
+- **Literal encoding**: String "Test" displayed as hex `0x74736554` instead of string literal
+- **Comments**: No functional comments explaining C++ idioms (RAII, virtual dispatch, templates)
+
+### Best Quality Aspect: Function Decomposition (7/10)
+Test functions are appropriately sized and template instantiations are properly separated. The decompiler correctly extracted member functions from class definitions.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+The decompiler made zero attempt to infer meaningful variable names from usage patterns. Even basic inference (e.g., `local_28` used in `strlen()` call should be named `name` or `buffer`) would dramatically improve readability.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: `local_28` passed to `strlen()` should be named `name` or `str`. Variables used as array indices should indicate their purpose.
+2. **Recover class/struct definitions**: Instead of `*(int *)(this + 4)`, emit `this->value` with reconstructed struct definitions.
+3. **Eliminate recursive external stubs**: External function declarations should not call themselves. Filter out or properly declare standard library functions.

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `a1`, `a2`, `result`) with no semantic meaning. Example: `int32_t v1; // 0x1259` in `process_char` should be `input_char`, and `result` in `array_1d_stack` should be `sum`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`double_value`, `process_char`, `array_1d_stack`), accurately reflecting functionality. However, helper functions have generic names (`function_1080`, `function_1090`, `function_10fc`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers present without explanation (`v2 % 256`, `4 * v2`, `12 * v2` for struct offsets). Some constants inferable (32 for char conversion) but string literals accessed via offset calculations obscure meaning.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts throughout: `__x86_get_pc_thunk_*` calls in nearly every function, `__readgsdword(20)` stack canary checks, and architecture mismatch (arm64 source shows x86 artifacts).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: For loops converted to while loops with manual increment (e.g., `array_1d_stack` uses `while (v2 != a2)` instead of `for (int i = 0; i < n; i++)`). Switch statements converted to if-else chains (`enum_switch`).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved with appropriate granularity. Helper functions properly separated, though some have unnecessary complexity from inlining artifacts.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but forward references disrupt flow. Loop structures could be cleaner with proper for-loop recovery instead of while patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant variable assignments present (`v4 = result` patterns in `pointer_array`). Stack canary checks repeated in every function unnecessarily.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: all integers become `int32_t` (short, long, long long lost), floats become `float80_t`, `_Bool` becomes `int32_t`. const/volatile qualifiers lost (`volatile_access` shows no volatile).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct types completely lost—accessed via pointer arithmetic (`*(int32_t *)(v1 + 4) + *a1 + *(int32_t *)(v1 + 8)` instead of `p->x + p->y + p->z`). No field names recovered, unions not distinguished, bitfields use byte arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present, pointer arithmetic without type safety, void* conversions lose type information, function pointer types degraded to `int32_t`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No meaningful comments—only auto-generated address ranges. No algorithm explanations, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns recognizable (linked list traversal in `linked_list`) but not explicitly identified. No design pattern naming or algorithm identification.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Architecture mismatch not flagged (arm64 source, x86 decompiled). Some UNREACHABLE markers present but no warnings about type degradation or struct recovery failures.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented, no postconditions inferred. NULL checks present but not documented as contracts. `array_oob`'s undefined behavior not flagged.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but global variables have generic names (`g1`, `g2`, `g3`, `g4`, `g5`). Callback relationships not clearly documented, test function relationships not explicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped but not by original categories (data types, arrays, pointers, composite). No header file structure, all in single file, static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Missing includes for some functions, architecture-specific code won't compile on different platforms, undefined functions (`__asm_hlt`, `__asm_rep_stosd_memset`), requires significant modification to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+5+3)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+7+6+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.18/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Complete struct/union type loss**: All composite types accessed via raw pointer arithmetic with hardcoded offsets (e.g., `struct_simple` uses `*(int32_t *)(v1 + 4)` instead of `p->x`)
+- **Architecture mismatch unflagged**: Original specifies arm64 but decompiled code contains x86-specific artifacts (`__x86_get_pc_thunk_*`, `__readgsdword`)
+- **All variables generic**: `v1`, `v2`, `a1`, `a2` throughout—no semantic naming recovered from usage patterns
+- **Type precision destroyed**: `short`, `long`, `long long`, `float`, `double`, `_Bool` all degraded to `int32_t` or `float80_t`
+- **Zero meaningful comments**: No algorithm explanations, no decompilation confidence indicators, no contract documentation
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved accurately (`double_value`, `process_char`, `array_1d_stack`, `struct_simple`), maintaining semantic connection to source.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of meaningful documentation makes understanding non-trivial logic extremely difficult for human analysts.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type structures**: Analyze pointer access patterns to reconstruct struct/union definitions with field names based on access offsets and usage patterns.
+2. **Implement semantic variable naming**: Use data flow analysis to infer variable purposes (e.g., variables used in loop bounds → `count`/`limit`, accumulators → `sum`/`total`).
+3. **Flag architecture and type anomalies**: Explicitly warn when decompiled architecture differs from metadata, and indicate confidence levels for type recovery (especially for volatile, const, and composite types).

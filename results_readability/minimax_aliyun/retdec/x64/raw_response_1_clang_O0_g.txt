@@ -1,0 +1,169 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiler uses generic variable names like `v1`, `v2`, `v3`, `v4` throughout all functions. For example, in `loop_while`: `int32_t v1 = 0;` and `int32_t v2 = x;` with `int32_t v3 = ...`. These provide no semantic meaning about the variable's purpose (count, digit, quotient). Compare to source which uses meaningful names like `count`, `x`, `temp`.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Most function names match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `loop_while`, `recursion_factorial`. However, helper functions like `function_1030`, `function_1040`, `function_1050` use generic numbered names. The core test functions are well-named.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Mixed results. Switch case constants like `100`, `200`, `300` are clear. However, magic numbers like `0x100000000` appear frequently for 32-bit sign-extension operations without explanation. Global variables like `g11 = 0x2700` have unexplained hex values. The decompiler doesn't convert these to meaningful constants.
+
+### 4. Noise Reduction
+**Score: 6/10**
+
+Address comments (`// 0x1180`) and line range comments (`// Line range: 13 - 18`) add metadata but clutter readability. Redundant casts like `(int32_t)(int64_t)(bool)(x > 0)` in `single_if` are present. However, no debug instrumentation or frame pointer manipulation clutter remains.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 7/10**
+
+Most control flow is natural. Loops (`while`, `do-while`) are properly recognized. However, `loop_for_fixed` is reduced to a formula: `result = v1 + (int32_t)((int33_t)v1 * (int33_t)(n - 2) / 2);` instead of a recognizable loop. The `goto_forward` becomes `return 2 * x * (x > 1 ? x : 1);` - semantically correct but loses the goto structure.
+
+### 6. Function Decomposition
+**Score: 9/10**
+
+Functions maintain appropriate granularity matching the source. Each function has a single responsibility. No 500-line monoliths appear. The decomposition closely matches the original 20+ functions in the source file.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Code generally reads top-to-bottom. Early returns are used appropriately. Some forward jumps exist but are manageable. The `goto_backward` function is properly linearized into a while loop structure.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+
+Some redundant calculations exist, particularly in `loop_while` and `loop_dowhile` where division by 10 is repeated. The formula-based loop in `loop_for_fixed` eliminates redundancy but reduces readability. No severe duplication observed.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 7/10**
+
+The decompiler uses `int32_t` and `uint32_t` appropriately in most places. However, `loop_for_fixed` takes `int32_t n` when the source uses `int n` (signed is acceptable). Function pointers like `int32_t (*f)(int32_t)` are properly typed. Minor issues with signed/unsigned in some parameters.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+
+The decompiler recovers `struct __jmp_buf_tag` with fields `e0`, `e1`, `e2` - these are generic names. The `setjmp`/`longjmp` structures are partially reconstructed but lose semantic field names. No struct recovery for the matrix in `loop_multi_exit` - uses raw pointer arithmetic instead.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Several unsafe operations present:
+- `(int32_t)(int64_t)(bool)(x > 0)` in `single_if` - redundant casts
+- `(int64_t)(uint32_t)` casts in test function calls
+- `(int32_t)((0x100000000 * v2 | v2) / 10)` - complex sign-extension hack
+- Function pointer type confusion in `call_func_ptr_array` and `process_with_callback`
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+
+Comments are present but unhelpful: `// Address range: 0x1180 - 0x11ad` and `// Line range: 13 - 18`. These are metadata, not explanations of algorithm or intent. No documentation of what the function does, preconditions, or non-obvious logic.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Basic patterns recognized: switch statements, loops, if-else chains. However, no explicit naming of patterns like "state machine", "jump table", "Duff's device". The `switch_fallthrough` is partially recognized but the fall-through semantics are unclear in the output.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+No anomalies are flagged. The decompiler silently produces incorrect or suboptimal code without warnings. For example, `call_func_ptr` returns `(int64_t)f` instead of calling the function - this is a critical semantic error with no indication.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No preconditions, postconditions, or invariants are documented. The decompiler doesn't recover contracts like "requires: n > 0" or "ensures: return value is factorial result".
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Function calls are present in the code but relationships aren't documented. No indication of which functions call which, or the callback relationships in `process_with_callback`. The test functions call the target functions but relationships aren't explicit.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Functions are grouped logically: control flow L1 functions first, then L2, then L3. Static helper functions (`double_value`, `triple_value`) are placed near their usage. However, everything is in one monolithic file with no header separation.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+
+The code includes standard headers (`<stdio.h>`, `<stdint.h>`, `<setjmp.h>`). Should compile with minor fixes. However, some expressions like `src = {1};` in test code are invalid C. The `int33_t` typedef is non-standard.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 5 + 6) / 4 = 5.25
+L2_avg = (7 + 9 + 7 + 6) / 4 = 7.25
+L3_avg = (7 + 6 + 5) / 3 = 6.00
+L4_avg = (4 + 5 + 2 + 2) / 4 = 3.25
+L5_avg = (5 + 7 + 6) / 3 = 6.00
+
+Overall = (5.25 × 0.30) + (7.25 × 0.25) + (6.00 × 0.20) + (3.25 × 0.15) + (6.00 × 0.10)
+        = 1.575 + 1.8125 + 1.2 + 0.4875 + 0.6
+        = 5.675
+```
+
+**Overall Readability Score: 5.7/10**
+
+---
+
+### Critical Defects
+
+1. **Variable naming is unusable**: All variables use generic `v1`, `v2`, `v3` names with no semantic meaning - makes tracking data flow extremely difficult
+
+2. **`call_func_ptr` is semantically incorrect**: Returns `(int64_t)f` (the function pointer address) instead of calling `f(x)` - completely wrong behavior
+
+3. **No anomaly indication**: Critical errors like indirect calls that couldn't be resolved are silently presented as incorrect code
+
+4. **Comments are useless metadata**: Address and line range comments provide no semantic value about algorithm or intent
+
+5. **Type safety issues**: Unsafe casts throughout, particularly the complex sign-extension hack `(0x100000000 * v2 | v2)` used repeatedly
+
+---
+
+### Best Quality Aspect
+
+**Function Decomposition (Score: 9/10)** - The decompiler maintains excellent function granularity matching the original source. Each function has a clear single responsibility, and the overall structure closely parallels the source file organization.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (Score: 2/10)** - The use of generic `v1`, `v2`, `v3` naming throughout all functions is the most severe readability issue. At -O0, the decompiler should be able to infer semantic meaning from usage patterns (e.g., `v1` used as counter should be named `count` or `i`).
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparison) to suggest meaningful names. A variable used as `v1++` in a loop context should be named `i` or `index`. A variable accumulating sums should be `sum` or `total`.
+
+2. **Add semantic comments and anomaly flags**: Instead of address metadata, provide meaningful comments like "Implements factorial via recursion" or flag uncertain code with "UNCERTAIN: indirect call target could not be resolved".
+
+3. **Fix critical semantic errors**: The `call_func_ptr` returning the function pointer address instead of calling the function is a fundamental decompilation failure. Ensure function pointer calls are properly resolved and emit correct call syntax.

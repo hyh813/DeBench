@@ -1,0 +1,188 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names throughout. Variables like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6` dominate the code, making it nearly impossible to track variable purpose. For example, in `test_cpp_member_func()`: `unsigned int v4; // r1`, `unsigned int v5; // r2` - these register-derived names provide no semantic meaning. Even when descriptive names like `result`, `count`, or `size` appear, they're the exception rather than the rule. The original source had meaningful names like `value`, `name`, `data`, `size` which are completely lost.
+
+### 2. Function Naming Quality
+**Score: 4/10**
+
+Mixed results: C++ mangled names like `test_cpp_member_func`, `SimpleClass::getValue`, `LifecycleClass::getData` are correctly demangled and highly readable. However, many helper functions use generic address-based names like `sub_400d38`, `sub_400f1c`, `sub_40115c`. The pattern `sub_<address>` provides no semantic information about function purpose. Static helper functions and thunks are particularly bad: `_ZThn8_N12MultiDerived5funcBEv` (thunk to MultiDerived::funcB) is technically accurate but unreadable.
+
+### 3. Literal Clarity
+**Score: 3/10**
+
+The code is riddled with unexplained magic numbers. In `test_cpp_diamond_inheritance`: `*((unsigned int *)&result[4 + ptr[12]]) = 50;` - the offsets `4` and `12` are completely opaque. Similarly, `4294967295` (0xFFFFFFFF) appears in `test_cpp_smart_ptr()` without explanation. String literals are replaced with external references like `&g_404221` making the original output messages unreadable. The decompiler makes no attempt to explain these values or suggest named constants.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+Severe noise pollution throughout. The code contains:
+- Register spill comments: `unsigned int v1; // lr`, `unsigned int v0; // [bp-0x4]`
+- Redundant returns: `return register_tm_clones();` followed immediately by identical return
+- Empty stub functions: `sub_4017c1`, `sub_4017c5`, `sub_4017cd` - dozens of these
+- Exception handling infrastructure: `__cxa_allocate_exception`, `__cxa_throw`, `__cxa_begin_catch`, `__cxa_end_cleanup` scattered everywhere
+- Terminate calls: `__clang_call_terminate()` appears repeatedly
+- Duplicate function calls: `$a.0()` calls itself creating infinite recursion pattern
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+The control flow is convoluted with excessive goto statements. In `call_weak_fn()`: `if (g_415088) goto LABEL_400f40;` followed by `LABEL_400f40: __gmon_start__();` - this is readable but not idiomatic. The virtual function call in `call_virtual_func()` is particularly opaque: `(*((int *)*((int *)*((int *)&v0))))(arg_0, arg_1, *((int *)*((int *)arg_0)));` - completely unreadable pointer indirection. Loop constructs are present but buried in the noise. At -O0, this level of obfuscation is unacceptable.
+
+### 6. Function Decomposition
+**Score: 4/10**
+
+The original 540-line source expanded to 3217 lines - a 6x expansion. While some decomposition is expected, the decompiler creates excessive tiny functions. Many are single-line stubs like `sub_4017c1` through `sub_401895` - dozens of empty or near-empty functions. The function granularity is poor: meaningful logic is buried among infrastructure functions. Parameter lists expose implementation details (e.g., `void test_cpp_lambda()::$_1::operator()(int) const` with weird struct parameters).
+
+### 7. Code Linearization
+**Score: 5/10**
+
+The code generally reads top-to-bottom but has several disruptions. Forward jumps exist (e.g., `goto g_415008`). The `test_cpp_multiple_inheritance()` function has complex pointer arithmetic that disrupts linear reading: `v14 = v9 - v8;` followed by conditional assignment. Deep nesting appears in virtual function calls. However, basic control structures (if/else, loops) are somewhat recognizable despite the noise.
+
+### 8. Redundancy Elimination
+**Score: 3/10**
+
+Significant redundancy present. In `$a.0()`: `v1 = __cxa_atexit(...); return __cxa_atexit(...);` - the function call is duplicated. In `frame_dummy()`: identical pattern with `register_tm_clones()`. Dead code is not eliminated - many empty functions remain. The exception handling code has extensive duplication of cleanup paths. Loop unrolling is not recognized or commented.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 3/10**
+
+Severe type degradation. The decompiler uses `unsigned int` for nearly everything instead of specific types like `int32_t`, `size_t`, or `uintptr_t`. In `test_cpp_member_func()`: `unsigned int v4; // r1` - should be `int`. Pointer types are generic `char*` or `void*` throughout. The original `int`, `char`, `size_t` types are lost. Function pointers are particularly bad: `(*((int *)*((int *)*((int *)&v0))))` - completely opaque.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+
+Struct recovery uses generic field names. The decompiler creates:
+```c
+typedef struct struct_1 {
+    struct struct_0 *field_0;
+} struct_1;
+```
+Instead of meaningful names like the original `class BaseA { int dataA; }`. In `test_cpp_multiple_inheritance()`, the struct fields should be `dataA`, `dataB` but are rendered as `field_0`. The `SimpleClass` struct is partially recovered with `field_0` (for `value`) and `padding_4` (for `name` array) - inconsistent and unclear.
+
+### 11. Type Safety
+**Score: 2/10**
+
+Numerous unsafe operations. In `call_virtual_func()`: the virtual call uses deeply nested pointer casts that could easily cause undefined behavior. Pointer arithmetic like `ptr + 1`, `ptr[12]`, `&result[4 + ptr[12]]` appears without bounds checking. The `test_cpp_diamond_inheritance()` has `*((unsigned int *)&result[4 + ptr[12]]) = 50;` - highly unsafe memory access. No `restrict` keywords, no alignment annotations, no bounds checking. The code would be dangerous to use as-is.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+Almost no useful comments. The only comments are register location indicators (`// r0`, `// [bp-0x4]`) which are noise, not helpful. No explanation of algorithm logic, no recovery of original variable purposes, no documentation of preconditions or postconditions. The comment `// ANOMALY: Indirect call could not be resolved` never appears - anomalies are silently presented as fact. The original source had extensive comments explaining each feature that are completely lost.
+
+### 13. Idiom Recognition
+**Score: 1/10**
+
+No C++ idioms are recognized or named. The original code uses:
+- RAII with constructors/destructors
+- Virtual function dispatch (vtable)
+- Smart pointers (unique_ptr)
+- Exception handling
+- Lambda expressions
+- Template instantiation
+
+None of these are identified or explained. The decompiler presents everything as raw assembly semantics without higher-level pattern recognition. A reader would not know this is object-oriented code without the source.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+No anomaly indication whatsoever. The virtual function call in `call_virtual_func()` is presented as confident code when it's actually an indirect call that couldn't be resolved. No warnings about potential undefined behavior in the unsafe pointer arithmetic. No indication of thunks or vtable adjustments in multiple inheritance. The code presents itself as accurate when significant uncertainty exists.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No contract information recovered. The original source had:
+- Preconditions (e.g., `idx < size` in `getData`)
+- Postconditions (e.g., return values)
+- Invariants (e.g., `instance_count` management)
+
+None of this is documented. The decompiler provides no hints about what conditions must hold or what the function guarantees.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Some relationships are visible through function calls but not clearly documented. The call graph is not explicit. Virtual dispatch relationships (Base → Derived) are not clearly indicated. Global variable usage (like `g_415008`) is opaque. There's no documentation of who calls whom or what dependencies exist.
+
+### 17. Module Organization
+**Score: 3/10**
+
+Functions are organized by address (alphabetically by hex address) rather than logically. The original class groupings (SimpleClass, LifecycleClass, Base, Derived, etc.) are not reflected in the organization. Related functions are scattered throughout the 3217-line output. No namespaces, no logical grouping, no file structure recovery.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+The code would not compile standalone. It has extensive dependencies on:
+- `extern` declarations for runtime functions
+- External string constants (`extern char g_404221`)
+- Runtime support functions (`__cxa_atexit`, `operator new`, etc.)
+- No header file structure recovered
+
+Significant patching would be required to compile this code.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 avg: (2+4+3+2)/4 = 2.75
+Level 2 avg: (4+4+5+3)/4 = 4.00
+Level 3 avg: (3+3+2)/3 = 2.67
+Level 4 avg: (1+1+1+1)/4 = 1.00
+Level 5 avg: (3+3+2)/3 = 2.67
+
+Overall = (2.75 × 0.30) + (4.00 × 0.25) + (2.67 × 0.20) + (1.00 × 0.15) + (2.67 × 0.10)
+        = 0.825 + 1.00 + 0.534 + 0.15 + 0.267
+        = 2.78/10
+```
+
+### Overall Readability Score: 2.78/10
+
+### Critical Defects
+
+1. **Variable naming is unusable**: `v0`, `v1`, `v2` etc. provide zero semantic information - original names like `value`, `data`, `size` are completely lost
+
+2. **Virtual function calls are opaque**: `call_virtual_func()` uses nested pointer casts that make the vtable dispatch unreadable
+
+3. **Struct field names are generic**: `field_0`, `field_1` lose all semantic meaning from original `dataA`, `dataB`, `multiplier`
+
+4. **Type precision is severely degraded**: Everything is `unsigned int` or `void*` - original `int`, `size_t`, specific types lost
+
+5. **No semantic annotations**: No comments explaining C++ idioms (RAII, virtual dispatch, templates), no anomaly warnings, no contract documentation
+
+### Best Quality Aspect
+
+**Function Naming (4/10)** - While many functions use address-based names, C++ mangled names are correctly demangled (e.g., `test_cpp_member_func`, `SimpleClass::getValue`, `LifecycleClass::getData`). This is the highest-scoring area but still only mediocre.
+
+### Most Needs Improvement
+
+**Semantic Transparency (1.0/10)** - This dimension scored lowest. The decompiler provides zero useful comments, zero pattern recognition, zero anomaly indication, and zero contract recovery. A reader cannot understand what the code does or why without the source.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a variable is used as an index, name it `index` or `idx`; when used for counting, use `count` or `num`. Analyze data flow to recover meaningful names instead of `v0`, `v1`.
+
+2. **Recognize and annotate C++ idioms**: Add comments explaining when code uses vtable dispatch, RAII patterns, smart pointers, exception handling. Label virtual calls as "virtual dispatch through vtable" with the likely function signature.
+
+3. **Recover struct field names from construction sites**: When `SimpleClass::SimpleClass(&v3, 5, "Test")` is called, the second parameter (5) should map to the `value` field. Use constructor/call sites to infer field names rather than generic `field_0`.

@@ -1,0 +1,96 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`, `param_3`) with no semantic meaning. Local variables use type-encoded names like `iVar1`, `uVar5`, `lVar1`, `piVar2` that indicate type but not purpose. Stack variables like `local_10`, `local_38` are location-based. None of the meaningful names from source (like `count`, `sum`, `args`) were recovered.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test functions are correctly named (`cdecl_func`, `stdcall_func`, `varargs_func`, `test_calling_conventions`). However, some internal functions like `FUN_00101020` remain generic. The core function names from the source are well-preserved.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0xf` (15), `0x32` (50), `0x2a` (42) appear without explanation. The double constant `0x40091eb851eb851f` represents 3.14 but isn't annotated. Format strings are replaced with `&DAT_00102004` references, losing all context. Some values are inferable but require mental calculation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail`) are present but expected at -O0. Type annotations like `undefined8`, `undefined4` are decompiler artifacts. Some redundant constructs exist but are manageable. No debug instrumentation observed.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops are properly recognized as while/do-while constructs. Conditionals use clear if-else patterns. No goto abuse. The varargs processing uses appropriate while loops. At -O0, control flow should closely match source, and it does.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. The test functions (`test_calling_conventions`, etc.) are properly separated. No 500-line monoliths. Parameter lists are reasonable. Function boundaries align well with source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. Some complex functions like `varargs_func` have nested logic but remain traceable. No severe forward jump issues disrupting flow significantly.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Some loop constructs could be cleaner but nothing severe. Common subexpression elimination artifacts are minimal. At -O0, we shouldn't see much optimization-related redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - uses `int`, `long`, `undefined8`, `undefined4`. Pointer types are generally correct. However, the decompiler uses `undefined8` for many values where `int` or `long` would be appropriate. The original `int` parameters become `int param_1` in some places but `undefined4` in others inconsistently.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct recovery is severely lacking. The `LargeStruct` (128 bytes) and `SmallStruct` are not recovered - code accesses raw stack like `*(long *)(&stack0x00000008 + lVar2 * 8)`. The `BigStruct` in `param_struct_byval` uses `in_stack_00000040._4_4_` accessing raw memory. No struct field names recovered at all.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. The `param_complex_cast` function uses `int *param_1` when source uses `void *p`. Pointer arithmetic in struct functions is manual and error-prone. Function pointer types are somewhat preserved (`code *param_1`). No severe buffer overflow patterns but some risky constructs.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining algorithm logic. Only external function markers like `<EXTERNAL>::puts`. No documentation of what functions do, parameter meanings, or return value expectations. The rich comments from source (like "// CALL-L1-01: cdecl调用约定") are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns are somewhat recognizable - varargs processing has the loop structure, struct by-value has the stack access pattern. However, no explicit pattern naming or recognition (e.g., "This implements varargs processing"). Design patterns or algorithm patterns not identified.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of suspicious code or potential issues. The indirect function pointer calls in `param_func_ptr` aren't flagged. No warnings about undefined behavior possibilities. The decompiler presents everything as confident output without uncertainty markers.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. The source had no explicit assertions but semantic contracts (e.g., "ptr != NULL" for `func_struct_byptr`) are not documented. No invariant recognition.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. The relationship between `call_cdecl` → `cdecl_func` is obvious from code. However, no documentation of call graphs, global usage, or callback relationships. The source's grouping by test scenario is lost.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - test functions together, implementation functions together. Static functions properly scoped. The overall organization mirrors source reasonably well with functions appearing in roughly source order.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will NOT compile as-is. Uses `undefined8`, `undefined4`, `undefined` types which are decompiler-specific. External dependencies (`puts`, `strlen`, `__printf_chk`) not declared. Stack variable syntax (`&stack0x00000008`) is non-standard. Would require significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `iVar1`, `local_38`) with no semantic recovery
+- Composite types (structs) completely lost - all struct access is raw pointer arithmetic
+- No comments or documentation explaining any function's purpose
+- Type precision severely mixed - uses `undefined8`/`undefined4` instead of proper types
+- Code won't compile due to decompiler-specific types and syntax
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- At -O0, the decompiler correctly recovered loop constructs and conditional logic matching the source structure
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Composite Type Recovery (2/10)  
+- Variable names are completely non-semantic, making code extremely difficult to follow
+- Struct types are entirely lost, forcing analysis of raw memory accesses
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1` used in addition → name it `addend` or `value`; `local_38` used as array index → name it `index`)
+2. **Recover struct definitions from stack access patterns**: Detect sequential memory accesses and reconstruct struct layouts with field names based on usage context
+3. **Add semantic comments automatically**: Generate comments explaining function purpose, parameter meanings, and return value semantics based on analysis

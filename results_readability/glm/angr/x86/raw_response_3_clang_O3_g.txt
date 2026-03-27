@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, `ptr12`, and `addr`. For example, in `linked_list_heap`, `ptr12`, `ptr5`, and `ptr4` are used for list nodes, completely obscuring the semantic meaning of `head`, `current`, or `new_node`.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most high-level function names like `local_vars`, `heap_basic`, and `global_var_access` are preserved accurately from the source. However, some wrapper functions are named generically (e.g., `sub_401030`, `sub_4012b1`).
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers are prevalent; for instance, `4294967295` is used instead of `-1` or `UINT_MAX`, and `0x800` is used instead of `2048`. While string literals like `"MEM-L1-01 (local_vars): %d\n"` are recovered well, the numeric literals lack semantic context.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is cluttered with compiler artifacts and optimization noise. Examples include `__x86.get_pc_thunk` calls, aggressive loop unrolling (e.g., in `large_stack_frame` and `heap_basic`), and redundant casts like `(char *)ptr + 2 * index`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Control flow is heavily distorted by optimization. Loops are often unrolled into repetitive blocks (e.g., `heap_basic` uses a `do-while` with 4 assignments per iteration), and logic is inverted (e.g., `static_local` calculates the increment before checking the reset condition).
+
+**6. Function Decomposition:** Score: 3/10
+Justification: Function boundaries are poorly preserved due to inlining. In `test_stack_memory`, calls to `local_vars` and `local_array` are inlined into constant assignments (`v0 = 20;`), destroying the high-level structure of the test harness.
+
+**7. Code Linearization:** Score: 4/10
+Justification: The code reads poorly due to unrolled loops and complex pointer arithmetic. For example, `vla_stack` uses pointer arithmetic `(&v0)[-1 * (a0 * 4 + 15 & 0xfffffff0)]` which disrupts the top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: There is massive redundancy from loop unrolling. In `large_stack_frame`, the loop body is manually expanded 8 times (`(&v3)[i]`, `(&v4)[i]`...), making the code significantly longer and harder to read than the original source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types are often generic (e.g., `unsigned int` used for `size_t` and array indices). Pointers are frequently cast to `char*` or `void*` for arithmetic, losing the original type intent (e.g., `struct Node` becomes `struct_0`).
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structs are recovered but with meaningless field names. The `Node` struct becomes `struct_0` with `field_0` (data) and `field_4` (next), and `Point` becomes `struct_2` with `field_0` and `field_4`, losing semantic field names like `x`, `y`, `data`, or `next`.
+
+**11. Type Safety:** Score: 5/10
+Justification: The code contains unsafe casts and potential misinterpretations. In `memop_memory_barrier`, an `atomic_exchange` is hallucinated on a stack variable `v0` instead of representing the barrier, and `memop_memcmp` contains a logic error regarding sign handling.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code. Complex logic, such as the unrolled loops or the pointer arithmetic in `vla_stack`, is left unexplained.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard patterns are not recognized. The linked list creation in `linked_list_heap` is presented as a sequence of `malloc` calls and assignments rather than an identifiable list construction idiom.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents incorrect logic confidently without warning. For example, `memop_memcmp` returns `-(v2)` (magnitude) instead of `-1` (sign), and `global_var_access` returns `global_counter + 1` instead of `global_counter`, with no indication of potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions or postconditions are recovered. Checks like `if (arr == NULL)` are present but not documented as contracts (e.g., "requires: arr != NULL").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While function calls are visible, the inlining of constants in `test_stack_memory` obscures the relationships between the test functions and their implementations. Global variables are accessed directly but lack semantic context.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are generally grouped by their original order (stack, heap, static), but the presence of many generic `sub_` functions and runtime artifacts (`_init`, `frame_dummy`) clutters the module view.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on specific compiler intrinsics like `__x86.get_pc_thunk` and non-standard struct definitions, making it difficult to compile without significant modification or stubbing.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- **Logic Error in `memop_memcmp`**: Returns the magnitude of the difference (`-(v2)`) instead of the normalized sign (`-1`), completely breaking the function's contract.
+- **Logic Error in `global_var_access`**: Returns `global_counter + 1` instead of `global_counter`, introducing an off-by-one error not present in the source.
+- **Variable Naming**: Variables are universally generic (`v0`, `ptr`, `ptr12`), making it nearly impossible to track data flow without cross-referencing the source.
+- **Loop Unrolling**: Aggressive unrolling (e.g., in `heap_basic` and `large_stack_frame`) creates massive code bloat and obscures the original loop logic.
+- **Inlining in Test Functions**: `test_stack_memory` inlines function results into constants (e.g., `v0 = 20`), hiding the fact that functions were called.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 8/10)
+- Despite the poor code quality, the decompiler successfully preserved the names of most high-level functions (e.g., `local_vars`, `heap_basic`), which helps in navigating the output.
+
+**Most Needs Improvement:** Semantic Transparency (Score: 1.25/10)
+- The decompiler fails to convey the correct meaning of the code, presenting logic errors confidently and providing no comments or idiom recognition to aid understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Fix Pattern Matching for Standard Library Functions**: Correctly recover the logic for `memcmp` to return -1/0/1 instead of the raw comparison result.
+2.  **Implement Loop Rolling**: Detect and collapse aggressively unrolled loops back into `for` or `while` constructs to improve readability and reduce code size.
+3.  **Enhanced Variable Renaming**: Heuristically rename variables based on usage context (e.g., variables used in `return` statements should be named `result` or `ret`).

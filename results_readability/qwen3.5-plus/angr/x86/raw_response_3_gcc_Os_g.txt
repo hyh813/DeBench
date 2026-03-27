@@ -1,0 +1,110 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `ptr`, `idx`) obscuring semantic purpose. For example, `local_array`'s `arr[10]` becomes `v8`, `v0`, `v1` with no indication of array semantics.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results—core functions like `double_value`, `local_vars`, `heap_basic` preserved, but many runtime functions use `sub_401030` format. Original test functions (`test_stack_memory`) retained but helper functions lost.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (unsigned -1), `4294967294` (-2) appear without explanation. Bitwise operations (`v6 & 0xfffff000`) lack semantic context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe compiler artifacts: stack canary checks (`__stack_chk_fail_local`), `__x86.get_pc_thunk.*` helpers, padding structs (`char padding_0[16951]`), and `[D] Unsupported jumpkind Ijk_SigTRAP` markers throughout.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` usage instead of structured constructs. `call_global_callback` uses `goto *((int *)(...))` for function pointer calls. `test_heap_memory` has multiple labeled jumps (`LABEL_401dbc`, `LABEL_401d7c`) disrupting flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes are reasonable and some original structure preserved. However, runtime initialization functions (`register_tm_clones`, `__do_global_dtors_aux`) are fragmented into many small pieces.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Poor linear reading due to forward jumps and goto statements. `test_heap_memory` function has complex branching with labels that break top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks repeat in nearly every function. Struct definitions duplicate with varying padding sizes. `register_tm_clones` contains convoluted redundant calculations.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type erosion—most types degraded to `unsigned int` losing `int`, `size_t`, `void*` distinctions. Pointer arithmetic becomes opaque. Function pointer signatures lost.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs partially recovered but with generic field names (`field_0`, `field_4` instead of `data`, `next`). Multiple conflicting `struct_0` definitions with different padding sizes appear throughout.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts pervasive: `(unsigned int)create_tree_node(10)`. Function pointer calls use `goto` instead of proper call syntax. Buffer overflow patterns in `heap_overflow` not flagged.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments explaining logic or algorithms. Only auto-generated function headers present. No decompilation confidence indicators or uncertainty markers.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (linked list traversal, tree operations, malloc/free pairs) completely unrecognized. No design pattern identification or algorithm naming.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged (`[D] Unsupported jumpkind`) but critical issues silent: `stack_alias` returns constant 20 instead of actual logic, `dangling_pointer` use-after-free not warned.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks exist in code but not documented as preconditions. No postconditions, invariants, or error condition documentation recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables appear as raw addresses (`g_403008`, `g_403151`) without semantic meaning. Callback relationships not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Static functions not properly scoped. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Does not compile standalone—undefined externals (`extern_function`, `g_405ff4`), compiler-specific constructs (`__x86.get_pc_thunk.*`) require stubs, dependencies undocumented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+5+5+3)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+6+4+5)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (4+5+3)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (2+3+4+3)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+---------------------------------------------------------
+Overall Score:                                  4.15/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v8`** should be named based on usage (e.g., `arr`, `local`, `canary`)
+- **Control flow uses `goto`** for function pointer calls instead of proper call syntax
+- **Struct fields all generic** (`field_0`, `field_4`) losing semantic meaning like `data`, `next`
+- **`stack_alias` function** returns constant 20 instead of implementing actual aliasing logic
+- **No comments** explaining any non-trivial logic or decompilation uncertainty
+- **Platform mismatch**: Original ARM64, decompiled shows X86 constructs
+
+### Best Quality Aspect:
+- **Function Decomposition (6/10)** - Core function boundaries mostly preserved with reasonable granularity; original function names like `double_value`, `heap_basic`, `linked_list_heap` retained where recoverable
+
+### Most Needs Improvement:
+- **Comment Quality (2/10)** - Zero semantic documentation; no algorithm explanations, no confidence indicators, no recovery uncertainty markers despite obvious decompilation challenges
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Infer names from usage patterns (e.g., variables used in array indexing should be `idx`, `i`; variables passed to `malloc` should be `size`, `count`)
+2. **Recover structured control flow** - Replace `goto` patterns with proper loop/conditional constructs; detect function pointer calls and use call syntax instead of indirect jumps
+3. **Add decompilation confidence annotations** - Flag uncertain recoveries (e.g., `// DECOMPILER_UNCERTAIN: indirect call target not resolved`), document magic numbers, and indicate potential undefined behavior

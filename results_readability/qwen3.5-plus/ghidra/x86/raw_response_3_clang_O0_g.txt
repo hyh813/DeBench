@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Most variables use generic names like `local_c`, `iVar1`, `pNVar1` instead of semantic names (e.g., `arr` should be `heap_array`, `leak` preserved but `__ptr` is generic). Some good names exist (`head`, `current`, `sum`) but inconsistent.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`local_vars`, `heap_basic`, `linked_list_heap`). Some auto-generated names exist (`FUN_00011030`) but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in hex without explanation (`0x2a` for 42, `0x14` for 20, `0x1e` for 30). Original decimal constants converted to hex obscures intent (e.g., `0x800` instead of 2048).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple "WARNING: Unknown calling convention" annotations clutter output. Compiler thunk functions (`__x86_get_pc_thunk_bx`) included but marked as inlined. Moderate noise level.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as for/while constructs. However, `stack_alias` has completely broken logic (`if (&stack0x00000000 == (undefined1 *)0xc)`). `linked_list_heap` uses `while(true)` with break instead of clean for-loop.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Helper functions preserved (`create_tree_node`, `static_helper`). No monolithic functions; each has single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Some functions have unnecessary complexity (`vla_stack` has complex stack offset calculations). Early returns used appropriately in most cases.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some redundant casts visible (`(int *)((int)__ptr + i * 4)`). At -O0, minimal optimization artifacts as expected.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved but many `void*` and `int*` where specific types expected. Function pointer type `_func_int_int` is awkward. TLS access uses `in_GS_OFFSET` instead of proper `__thread` variable.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `Point`, `Node`, `TreeNode` structs recovered with field names (`x`, `y`, `data`, `next`). VLA not properly recovered (`Unresolved local var: int[821] vla@[???]`). Array indexing often becomes pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Extensive unsafe casts: `(int *)((int)__ptr + i * 4)` throughout heap functions. Pointer arithmetic instead of array indexing. `dangling_pointer` use-after-free preserved but not flagged as dangerous.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated warnings present ("WARNING: Unknown calling convention"). No semantic comments explaining algorithm intent. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns visible (malloc/free pairs, linked list traversal) but not explicitly identified. No design pattern naming. Memory leak pattern in `memory_leak` not flagged.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: VLA noted as unresolved. However, critical bugs not flagged: `stack_alias` completely wrong logic, `dangling_pointer` use-after-free, `double_free` not warned. Some calling convention warnings present.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: NULL checks preserved but not documented as preconditions. No postcondition inference (e.g., "returns heap index value"). Error return values (-1, -2, -3) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved correctly. Global variables visible (`global_counter`, `global_array`). No explicit call graph documentation. External symbols (`extern_global_var`, `extern_function`) referenced but not contextualized.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source. Test functions grouped together. Static functions properly marked. No explicit file/module boundaries in output.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: External dependencies visible (printf, malloc, free). Would need stubs for `extern_global_var`, `extern_function`. Architecture mismatch (source arm64, decompiled x86) may cause issues.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (5×0.10 + 8×0.10 + 5×0.05 + 6×0.05) / 0.30 = 5.17
+Level 2 (25%): (6×0.08 + 8×0.07 + 7×0.05 + 7×0.05) / 0.25 = 6.96
+Level 3 (20%): (6×0.08 + 7×0.07 + 4×0.05) / 0.20 = 5.85
+Level 4 (15%): (4×0.05 + 5×0.03 + 5×0.03 + 4×0.04) / 0.15 = 4.40
+Level 5 (10%): (6×0.04 + 7×0.03 + 6×0.03) / 0.10 = 6.30
+
+Overall = (5.17×0.30) + (6.96×0.25) + (5.85×0.20) + (4.40×0.15) + (6.30×0.10)
+        = 1.55 + 1.74 + 1.17 + 0.66 + 0.63
+        = 5.75/10
+```
+
+**Overall Readability Score: 5.8/10**
+
+### Critical Defects:
+- **`stack_alias` function completely broken** - Logic transformed to nonsensical comparison (`&stack0x00000000 == (undefined1 *)0xc`) instead of pointer aliasing check
+- **Variable names mostly generic** - `local_c`, `iVar1`, `pNVar1` obscure semantic meaning throughout
+- **Hex literals without context** - `0x2a`, `0x14`, `0x800` instead of decimal constants from source
+- **Unsafe pointer arithmetic pervasive** - `(int *)((int)__ptr + i * 4)` instead of array indexing `arr[i]`
+- **VLA not properly recovered** - Marked as "Unresolved local var" with complex offset calculations
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most function names preserved from source, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (4/10)** - Zero semantic comments; all original documentation lost, only auto-generated warnings remain
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names from usage patterns** - Analyze how variables are used (e.g., `local_c` storing return values should be `result`)
+2. **Flag dangerous patterns explicitly** - Use-after-free (`dangling_pointer`), double-free, and memory leaks should have WARNING annotations
+3. **Preserve original literal formats** - Keep decimal constants as decimal, add named constant suggestions for magic numbers

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic single letters (`a0`, `v0`, `v1`, `v2`) or simple names like `ptr`, `i`, `j`. The original source uses meaningful names like `arr`, `n`, `out`, `head`, but these are lost in decompilation. Even loop indices lack descriptive names.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions correctly recovered (`local_vars`, `heap_basic`, `test_stack_memory`, `double_value`) while others use generic addresses (`sub_400b54`, `sub_400b60`). The original source function names like `local_array`, `vla_stack`, `alloca_usage` are replaced with addresses or lost entirely.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals are clear (e.g., `printf("MEM-L1-01 (local_vars): %d\n", 20)` shows expected value), but many magic numbers remain unexplained like `0x80000000`, `4294967295` (used as -1), and complex bit manipulation expressions without comments explaining their purpose.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant decompilation artifacts present: unnecessary stack frame variables (`char v1; // [bp+0x0]`), synthetic constructs like `AddV()`, `MulV()`, `ShlNV()`, `__ROL__()`, and `CONCAT` macros. The VLA/alloca functions show particularly severe artifacts with complex pointer arithmetic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions maintain readable control flow with proper loops and conditionals. However, some functions like `vla_stack` and `alloca_usage` have convoluted flow with computed jumps. At -O0, more natural constructs like `for` loops should be recoverable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes are generally appropriate, but many small test functions are inlined into `test_stack_memory` and `test_heap_memory` (e.g., `local_vars(5)` replaced with constant `20`). This loses the function abstraction that exists in the original source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom without excessive jumps. However, some functions like `heap_basic` have complex nested conditions with early returns that slightly disrupt linear flow. The VLA functions have goto-like patterns.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Loop unrolling is present in `large_stack_frame` and memory functions but is manageable. Some redundant expressions in complex index calculations but not severe.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - original `int` becomes `unsigned int` or `unsigned long`, pointers become `void*`, size_t is often wrong. The original uses `int` for most variables but decompilation shows `unsigned int` which changes semantics for negative values.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct recovery is attempted with synthetic names (`struct_0`, `struct_1`), but field names are generic (`field_0`, `field_8`). The original `Point` struct is somewhat recovered but `Node` and `TreeNode` structures have lost meaningful field names like `data`, `next`, `left`, `right`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns - extensive unchecked pointer arithmetic (e.g., `ptr + v5 * 4`), no bounds checking on array accesses, and raw pointer arithmetic in VLA functions. The original source has safety checks (e.g., `if (arr == NULL) return -1`) that are sometimes missing or obscured.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only decompiler-generated annotations like `// [bp-0x20]` for stack frame locations. No explanation of algorithm intent, no recovery of original comments from debug symbols, no indication of uncertainty.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls like `malloc`, `free`, `memset`, `memcpy`, `printf` are correctly identified. However, no design patterns or algorithms are named or highlighted. The linked list and tree structures could be annotated but aren't.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `dangling_pointer` function returns `*(ptr)` after `free(ptr)` - undefined behavior - but there's no warning. No indication of indirect calls that couldn't be resolved or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source has safety checks like `if (n <= 0 || n > 1000) return -1;` but these are sometimes embedded in complex conditional expressions without clear documentation of the contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships aren't documented. The original source has clear groupings (test_stack_memory calls local_vars, local_array, etc.) but this hierarchy isn't explicitly shown. No indication of who calls whom or global variable usage patterns.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. The original source clearly separates stack memory, heap memory, static/global, and memory operations into sections with comments - this organization is completely lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code uses standard library functions but external declarations are incomplete (`extern unsigned long long g_412ff8;`). Would require additional stubs to compile. No clear dependency documentation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`a0`, `v0`, `v1`, `ptr`) losing all semantic meaning from source
+- Complex decompilation artifacts in VLA/alloca functions make code nearly incomprehensible (`AddV`, `MulV`, `__ROL__`, synthetic structs)
+- Type precision severely degraded - `int` becomes `unsigned int`, losing sign semantics
+- No comments explaining any logic, algorithms, or contracts
+- Anomaly indication completely absent - dangerous patterns like dangling pointers shown without warnings
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 6/10)  
+Most functions maintain readable loop and conditional structures despite some complexity. Standard library functions are correctly identified.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+The complete loss of descriptive variable names makes tracking data flow extremely difficult. Even simple functions like `local_vars` use `a0` instead of the original `x`.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a0` used in arithmetic should be named `n` or `size` based on context
+2. Clean up synthetic constructs - replace `AddV()`, `MulV()`, `__ROL__()` with readable C expressions or add comments explaining they're SIMD operations
+3. Add anomaly warnings for undefined behavior patterns like the dangling pointer dereference after free

@@ -1,0 +1,125 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and local variables use cryptic patterns (`iVar1`, `uVar2`, `lVar2`, `puVar1`). No semantic meaning conveyed - e.g., `param_1` in `process_char` should be named `c`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source: `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `struct_simple`, `linked_list`, etc. Excellent recovery of function semantics through naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x20`, `0x19`, `0xbf` in `process_char` are unexplained. However, test functions show computed values (e.g., `0xb` for 11) rather than hardcoded results. Mixed clarity - some constants inferable, others opaque.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts. Some Ghidra warnings about unreachable blocks (`ram,0x001010a3`) but these are informational. Main functions are clean without redundant casts or debug instrumentation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops are correctly identified but use do-while with manual index rather than idiomatic for-loops (e.g., `array_1d_stack` uses `uVar2` counter). At -O0, this is unexpected - should preserve for-loop structure. Control flow is correct but less readable than source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function maintains single responsibility matching source. Functions are appropriately sized (20-50 lines max). Parameter counts match original signatures. Excellent decomposition preserving source granularity.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `array_1d_stack` (returns 0 for empty case). No excessive forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or significant redundancy. Loop unrolling not present (correct for -O0). Common subexpressions not duplicated. Clean decompilation.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types accurate: `int`, `long`, `float`, `double`, `bool` all match. Some `undefined4`/`undefined8` for uninitialized locals. Function pointer types use `code *` which is generic but functional. Minor signed/unsigned confusion in some comparisons.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: **Critical failure**. Structs completely lost:
+- `struct_simple(Point3D *p)` → `int *param_1` with array-style access `param_1[1]`, `param_1[2]`
+- `struct_nested(Rect *r)` → `int *param_1` accessing `param_1[3]`
+- `struct_with_ptr(Node *node)` → loses Node structure, uses `int **` manually
+- Union types partially recovered but field names lost
+- Bitfields partially reconstructed with shifts but no field names
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns introduced by decompilation:
+- Pointer arithmetic in `array_2d_stack` uses hardcoded `0x2c` stride without bounds
+- `ptr_diff` uses shift `>> 2` for division - correct but unexplained
+- No NULL checks documented despite presence in source
+- Function pointers use generic `code *` type losing signature safety
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only file header comment present ("Decompiled by Ghidra 12.0"). No logic explanations, no decompilation confidence indicators, no @param/@return documentation. Auto-generated function signatures lack semantic context.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms explicitly identified. Linked list traversal (`linked_list`) is correctly decompiled but not labeled as "linked list traversal pattern". No recognition of tree recursion, graph traversal, or state machine patterns.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra includes warnings about "Removing unreachable block" and "UNCERTAIN: indirect call not resolved" in some places. However, critical anomalies like the broken `process_ld` function (returns void instead of long double) are not flagged. Mixed coverage.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Source had no explicit contracts either, but decompiler could infer: "requires: str != NULL" for `array_string`, "ensures: return >= 0" for array functions. Not present.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in `main()` and test functions, but no documentation of:
+- Which functions call `double_value` (used as callback)
+- Global variable dependencies
+- Callback relationships (e.g., `complex_callback` used by `ptr_func_complex`)
+- Static function visibility
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions logically grouped: data type functions first, then arrays, pointers, composites. Matches source organization where `test_data_types_l1()`, `test_array_types()`, etc. group related functions. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Uses standard C library functions (`puts`, `printf`) with string references (`&DAT_001025bf`). Should compile with libc. No obvious compiler-specific hacks. Minor issues: some functions return wrong types (e.g., `process_ld` returns void).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 5 + 8) / 4 = 6.0
+L2_avg = (6 + 9 + 8 + 9) / 4 = 8.0
+L3_avg = (7 + 3 + 5) / 3 = 5.0
+L4_avg = (4 + 4 + 6 + 2) / 4 = 4.0
+L5_avg = (5 + 8 + 8) / 3 = 7.0
+
+Overall = (6.0 × 0.30) + (8.0 × 0.25) + (5.0 × 0.20) + (4.0 × 0.15) + (7.0 × 0.10)
+        = 1.8 + 2.0 + 1.0 + 0.6 + 0.7 = 6.1/10
+```
+
+**Overall Readability Score:** 6.1/10
+
+### Critical Defects (Bullet List)
+- **Struct/union type recovery completely failed**: All composite types decompiled as raw pointers with array-style access (`param_1[1]`, `param_1[2]`) losing field semantics entirely
+- **Variable naming is unusable**: All parameters use `param_N` and locals use `iVar1`, `uVar2` patterns - zero semantic inference
+- **`process_ld` function broken**: Returns `void` instead of `long double`, losing the entire function's return value
+- **No comments explaining logic**: Only file header present, no algorithm explanations or decompilation confidence indicators
+- **Type safety issues**: Hardcoded stride values like `0x2c`, `0x28` without explanation; generic `code *` function pointer type
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (score: 9/10)**  
+- Function names almost perfectly match the original source (`process_char`, `array_1d_stack`, `ptr_single`, `linked_list`, etc.), making it easy to identify which source function was decompiled.
+
+### Most Needs Improvement (Single Dimension)
+- **Composite Type Recovery (score: 3/10)**  
+- Struct and union types are completely lost. The decompiler treats all composite types as raw memory pointers with array indexing, losing all field names and structural semantics. This is the most severe readability issue.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer struct layouts from field access patterns**: When seeing repeated accesses at fixed offsets (e.g., `param_1[0]`, `param_1[1]`, `param_1[2]`), attempt to reconstruct struct with named fields like `{x, y, z}` based on usage context
+2. **Generate semantic variable names from usage**: Analyze how parameters are used (e.g., `param_1 + 32` in char processing → name it `c`; `param_1 * 2 + 1` → name it `x` or `value`)
+3. **Add explanatory comments for magic numbers**: When encountering constants like `0x20`, `0x2c`, `0x28`, check if they match common patterns (ASCII offset 32, struct sizes) and add comments explaining them

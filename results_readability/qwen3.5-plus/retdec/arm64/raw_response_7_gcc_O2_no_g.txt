@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables are generic (`v1`, `v2`, `v3`, `result`) with no semantic meaning. Original source had meaningful names like `result`, `str`, `encrypted`, `decrypted`, `p1`, `p2`, `p3` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions retained original names (`param_fake_branch`, `call_fake_branch`), but many are generic (`function_880`, `function_890`). Wrapper functions for standard library calls should be recognized as `strlen`, `signal`, etc.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: String literals shown as hex-encoded UTF-8 (e.g., `g9 = "=== \xe6\xb5\x8b..."`) instead of decoded Chinese text. Magic numbers like `90` for XOR key appear without context; `0xDEADBEEF` from original is lost.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) add noise throughout. Unnecessary type casts like `(int32_t)v1` appear frequently. Compiler artifacts not cleaned up despite -O0 debug build.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Original `param_fake_branch` had simple if statements that are completely lost (returns uninitialized `result`). `param_opaque_predicate` shows complex while loops that don't match the original's clear predicate logic structure.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Excessive fragmentation with wrapper functions (`function_880` for `strlen`, `function_890` for `_setjmp`). Some functions are trivial single-call wrappers that should be inlined or recognized as library thunks.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom without excessive goto usage. However, while loops in `param_opaque_predicate` and `decrypt_string` disrupt natural flow compared to original's cleaner structure.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Redundant type casts throughout (e.g., `(int32_t)v1 & 0xffffffff`). Stack canary checks duplicated in multiple functions. `call_*` functions often just call `param_*` functions with no added value.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `int64_t` regardless of original type. Original `int x` becomes `int64_t v1`, `char*` becomes `int64_t`. Signed/unsigned distinctions lost (original had `unsigned int ux`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some structs recovered (`__jmp_buf_tag`, `_TYPEDEF___sigset_t`) but field names are generic (`e0`, `e1`, `e2`). Original bitfield struct in `param_implementation_defined` not properly reconstructed.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts throughout (e.g., `(int32_t)v1`, `(char *)str`). Pointer arithmetic without type safety. Example: `*(int32_t *)(v4 + v1)` in `param_vectorized_loop` loses array semantics.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No meaningful comments whatsoever. Only address ranges and auto-generated headers present. No explanation of obfuscation techniques, algorithm purpose, or decompilation confidence.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` not recognized as such. XOR decryption pattern in `decrypt_string` not identified. No pattern documentation for any obfuscation techniques.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about lost parameters (`param_fake_branch(void)` should have `int x`). No indication that function logic is missing or incorrect. Silent failures throughout decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `x` parameter requirements). No postconditions. No error condition documentation for signal handlers or exception paths.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Global variables (`g1`, `g2`, `g5`, etc.) have no semantic meaning. Some call relationships preserved but without context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but not logically organized. No header file structure. Mixed library wrapper functions with user code without clear separation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes standard headers (`stdio.h`, `stdlib.h`, etc.). Would require significant patching to compile (missing parameter definitions, type mismatches). External dependencies partially declared.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+4)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (3+4+5+4)/4 = 4.00 × 0.25 = 1.00
+Level 3 (Type):        (3+4+3)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.23
+Level 5 (Contextual):  (4+5+6)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────
+Overall Score:                              3.45/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects:
+- **`param_fake_branch` loses its parameter entirely** - Original `int param_fake_branch(int x)` became `int64_t param_fake_branch(void)`, returning uninitialized `result` instead of `x`
+- **All variables are generic** (`v1`, `v2`, `v3`) with no semantic meaning despite -O0 debug build
+- **String literals remain hex-encoded** - Chinese text shown as `\xe6\xb5\x8b...` instead of decoded characters
+- **Type information collapsed** - Everything is `int64_t` regardless of original type (int, char*, unsigned int)
+- **No comments or anomaly warnings** - Zero documentation of obfuscation techniques or decompilation uncertainties
+
+### Best Quality Aspect:
+- **Build System Compatibility (6/10)** - Standard headers are included and external function declarations are present, providing a foundation for potential recovery
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any meaningful documentation, algorithm explanations, or decompilation confidence indicators
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Preserve function parameters** - Critical failure where `param_fake_branch(int x)` lost its parameter; analyze calling conventions to recover parameter information
+2. **Decode string literals automatically** - UTF-8 encoded strings should be displayed as readable text, not hex escape sequences
+3. **Add anomaly detection warnings** - Flag functions where logic appears missing or parameters are lost (e.g., "WARNING: Function body may be incomplete")

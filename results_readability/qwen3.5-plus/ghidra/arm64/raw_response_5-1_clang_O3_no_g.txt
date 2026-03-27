@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `local_38`, `uStack_2c`, `iVar1`, `puVar1` with zero semantic meaning. Original variables like `value`, `name`, `capture_by_value` are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test function names preserved (`test_cpp_member_func`, `test_cpp_virtual_func`) but helper functions are generic (`FUN_00100d60`, `FUN_00100fbc`). Class methods partially recovered (`Container<int>::push`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0x125c`, `0x3e9`, `0x2a`, `0x47`) with no explanation. Original constants like `0x1234` for `getClassID()` are buried in computed expressions.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Runtime initialization code included (`_init`, `_GLOBAL__sub_I_5_1_cpp`, `deregister_tm_clones`) that isn't part of original source. Stack variables like `uStack_2c`, `uStack_25` are compiler artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most test functions constant-folded to single return statements (e.g., `test_cpp_virtual_func` returns `0x2a` directly). Original loops, conditionals, and object lifecycle completely lost.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Template functions recovered separately (`template_max<int>`, `template_swap<int>`) but class methods flattened. Exception handling collapsed into raw `__cxa_throw` calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Functions that remain read top-to-bottom without excessive jumps. However, this is because logic was optimized away rather than well-structured.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Aggressive optimization eliminated redundant code but also eliminated semantic content. `test_cpp_oo_features` duplicates RTTI logic from `test_cpp_rtti`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Extensive use of `undefined4`, `undefined8`, `undefined1` instead of proper types. Original `int`, `size_t`, `double` types degraded. Pointer types often just `void*` equivalents.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No class/struct definitions recovered. `SimpleClass`, `LifecycleClass`, `Base`, `Derived` all lost. Access via raw offsets (`this + 0x28`, `this + 0x50`) instead of field names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(undefined4 *)`, `(long *)`). Raw pointer arithmetic for object field access. No const-correctness preserved despite original `const` methods.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings ("WARNING: Unknown calling convention", "WARNING: Could not recover jumptable"). No semantic comments explaining algorithm intent or C++ feature being tested.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely lost - no recognition of RAII, virtual dispatch patterns, template instantiation, or lambda capture semantics. Exception handling shown as raw `__cxa_*` calls.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Treating indirect jump as call", "WARNING: Subroutine does not return") but inconsistent. Doesn't flag the severe optimization mismatch.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original test expectations (e.g., "期望: 4704") completely lost. No null checks or bounds validation comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but virtual dispatch obscured (`(*(code *)**(undefined8 **)param_1)`). Inheritance relationships not documented. Template instantiations shown but not linked to original templates.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped but runtime initialization code mixed with test functions. No separation between user code and compiler runtime. Class methods scattered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References undefined symbols (`operator_new`, `__cxa_allocate_exception`, `std::__ioinit`). Requires C++ runtime linkage. Won't compile standalone without significant stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (3+5+6+7)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (3+2+4)/3   = 3.00 × 0.20 = 0.600
+Level 4 (Semantic):    (3+2+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.400
+
+Overall Score: 3.89/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Severe optimization mismatch**: Metadata claims `-O0 -g` but binary shows `-O3` optimization (functions constant-folded to return values)
+- **Zero class/struct recovery**: All C++ class definitions (`SimpleClass`, `Base`, `Derived`, `Container`) lost, accessed via raw pointer offsets
+- **Generic variable naming**: All 50+ local variables use meaningless names (`local_38`, `uStack_2c`, `iVar1`)
+- **Type erosion**: Extensive `undefined4/8/1` types instead of recovered `int`, `size_t`, `double`
+- **C++ semantics lost**: Virtual dispatch, exceptions, templates shown as raw runtime calls (`__cxa_*`, `operator_new`)
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Test function names preserved from debug symbols, allowing identification of test purposes despite logic loss.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover any C++ class definitions, making object-oriented code unintelligible as raw pointer arithmetic.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement C++ class/struct recovery**: Analyze vtable layouts and object field access patterns to reconstruct class definitions with field names.
+2. **Add optimization level detection**: Detect actual optimization level from code patterns and adjust readability expectations/warnings accordingly.
+3. **Recover semantic variable names**: Use debug symbols when available (`-g` flag) to restore original variable names instead of `local_XX` placeholders.

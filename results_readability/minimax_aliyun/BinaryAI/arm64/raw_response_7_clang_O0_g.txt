@@ -1,0 +1,116 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `local_18`, `local_14` that completely obscure their semantic purpose. In `param_fake_branch`, `param_1` should be `x` and `local_18` should be `result`. The pattern `param_N` and `local_N` provides no indication of variable intent.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are accurately recovered from symbols - `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate` all match source exactly. External library functions (`strlen`, `malloc`, `signal`) correctly identified.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `-0x21524111` in `param_fake_branch` is actually `0xDEADBEEF` displayed as negative two's complement, but not explained. The `strlen("test")` call result is unused - dead store not flagged. Many constants like `0x11`, `0x21` in buffer overflow functions lack explanation.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Generally clean output with minimal compiler artifacts. However, `strlen("test")` in `param_fake_branch` appears as a dead store - result unused. Some type mismatches create noise (e.g., `undefined4` vs `int`).
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and matches source closely. The if-else structures in `param_fake_branch`, `param_opaque_predicate` are correctly recovered. At `-O0`, expect near-original structure, and decompiler delivers this.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (10-30 lines typically). `param_fake_branch` is 8 lines - good granularity. `param_opaque_predicate` at ~25 lines is reasonable. No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: Code reads top-to-bottom with minimal disruption. No goto statements or confusing jumps. Early returns used appropriately in functions like `param_division_by_zero`.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: The dead `strlen("test")` call in `param_fake_branch` is a minor redundancy. Loop structures in `param_vectorized_loop` show some redundancy in the two separate loops that could be combined. Overall manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types recovered correctly (`int param_1`, `int local_18`). However, uses `undefined4` in some places instead of `int`. The `param_instruction_substitution` uses `uint` which is good. Mixed results - some precision loss but mostly usable.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: No complex structs in the target function, but in `param_vectorized_loop`, pointer arithmetic is handled reasonably with `(long)local_20 * 4` offsets. No struct recovery needed for this specific function.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Minor issues: `param_string_encryption` returns `ulong` but source shows `int`. Some `undefined4` vs `int` mismatches. No unsafe pointer casts in the target function.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in any decompiled function. The source contains rich comments explaining obfuscation techniques (e.g., "永假条件分支"), but these are completely lost. Zero documentation of the fake branch pattern.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: The always-false condition `x * x < 0` in `param_fake_branch` is not identified as an obfuscation idiom. The opaque predicate pattern in `param_opaque_predicate` (gcd calculation) is not flagged as a known pattern. No pattern recognition whatsoever.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The dead `strlen("test")` result not flagged. The `0xDEADBEEF` constant displayed as negative not explained. No indication of potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postconditions or invariants documented. The source has implicit contracts (e.g., `param_1 != 0` for division) not recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code (e.g., `call_fake_branch` calls `param_fake_branch`). However, no explicit documentation of call graph or relationships. External dependencies not listed.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are in a single large file (577 LOC). Related functions grouped together (obfuscation functions, edge case functions) but no logical separation or headers.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Several compilation issues: `call_fake_branch` returns `void` but is used in expression `call_fake_branch(iVar1)` in `test_obf_opt_edge`. `param_string_encryption` returns `ulong` vs expected `int`. External declarations missing for standard functions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3+9+4+7)/4 = 5.75
+L2_avg = (8+8+9+6)/4 = 7.75
+L3_avg = (7+8+7)/3 = 7.33
+L4_avg = (2+2+1+2)/4 = 1.75
+L5_avg = (5+6+4)/3 = 5.00
+
+Overall = (5.75 × 0.30) + (7.75 × 0.25) + (7.33 × 0.20) + 
+          (1.75 × 0.15) + (5.00 × 0.10)
+        = 1.725 + 1.9375 + 1.466 + 0.2625 + 0.5
+        = 5.89/10
+```
+
+**Overall Readability Score:** 5.89/10
+
+### Critical Defects (Bullet List)
+- Variable names `param_1`, `local_18`, `local_14` are generic and completely obscure semantic purpose (should be `x`, `result`, `a`/`b`)
+- Magic number `-0x21524111` is actually `0xDEADBEEF` displayed incorrectly without explanation
+- No comments whatsoever - source's rich documentation about obfuscation patterns completely lost
+- Dead store `strlen("test")` result unused - not flagged as anomaly
+- Idiom recognition completely absent - always-false condition and opaque predicates not identified
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (L2)** scored highest at 8/10
+- **Why?** Functions are appropriately sized with good granularity. No over-fragmentation or monoliths. Control flow structures match source at `-O0` level.
+
+### Most Needs Improvement (Single Dimension)
+- **Anomaly Indication (L4)** scored lowest at 1/10
+- **Why?** Zero anomaly detection - dead stores, suspicious constants, and potential issues are not flagged. Combined with poor comment quality (2/10), the decompiled code provides no guidance for understanding the obfuscation patterns present in the source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Use data flow analysis to rename `local_18` to `result` when it's assigned from `param_1` and returned. Pattern: variable assigned from parameter and returned → likely "result" or "output".
+
+2. **Detect and explain magic numbers**: Recognize common constants like `0xDEADBEEF`, `0xCAFEBABE` and display them as positive hex with comment explaining their origin. Flag suspicious negative representations.
+
+3. **Add idiom recognition for obfuscation patterns**: Identify always-false conditions (`x*x < 0`, `strlen(str) < 0`) and flag them as "obfuscation: always-false branch". Recognize opaque predicates (gcd calculations, bit manipulation identities) and document them.

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are universally generic (`v0`, `v1`, `v2`, `v3`), obscuring semantic meaning; for example, `v1` in `param_fake_branch` represents `result` and `v0` represents the string pointer `str`, but these names provide no hint of their purpose.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly preserved from the source (e.g., `param_fake_branch`, `param_opaque_predicate`), accurately reflecting the original intent and making the high-level flow easy to follow.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Meaningful hexadecimal constants are converted to opaque decimal integers, significantly reducing readability; `0xDEADBEEF` appears as `3735928559`, and `0xAAAAAAAA` appears as `2863311530`, losing the immediate recognition of bit patterns.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The decompiled code contains pervasive compiler artifacts, specifically the redundant stack pointer assignment `v2 = &v3;` found in almost every function, which clutters the function prologues without adding value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally readable with standard `if` and `for` constructs, though some logic is slightly inverted (e.g., `if (0 <= strlen(v0))` instead of `if (strlen < 0)`), which is semantically correct but requires a mental double-take.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source code; there is no inlining or outlining, maintaining the original architectural boundaries and cohesion perfectly.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads largely top-to-bottom with minimal jumps; early returns are used effectively, and the flow is not disrupted by spaghetti logic or excessive goto statements.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: While the core logic is preserved, redundant assignments like `v2 = &v3;` and `v0 = &v1[0]` (in `param_string_encryption`) are present, adding minor clutter to the reading experience.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Signedness information is frequently lost or incorrect; `int x` in the source is decompiled as `unsigned int a0` in `param_fake_branch` and `param_opaque_predicate`, which fundamentally changes the semantic interpretation of the arithmetic operations.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are completely flattened; the bitfield struct in `param_implementation_defined` is reduced to raw bitwise operations on a single integer `v0` (e.g., `v0 = v0 & 0xfffffff8 | 7`), completely losing the high-level structure and field semantics.
+
+**11. Type Safety:** Score: 7/10
+Justification: Pointer types are generally respected (e.g., `char *`), and casts are mostly logical, though the use of magic numbers for signal constants (e.g., `signal(8, ...)` instead of `SIGFPE`) reduces type safety and clarity.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output; complex logic like the opaque predicates or the purpose of fake branches is left unexplained, forcing the reader to reverse-engineer the intent.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Common patterns are not explicitly identified; the GCD algorithm in `param_opaque_predicate` is rendered as a generic `while` loop without recognizing the mathematical idiom, and the instruction substitutions are just shown as complex math.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the fake branches (e.g., `if (x * x < 0)`) as standard, executable code without flagging them as always-false conditions or suspicious constructs, missing a key semantic insight.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions, postconditions, or invariants; for example, the non-null requirement for pointers or the expected behavior of the signal handlers is not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are direct and use the recovered names, making the call graph easy to understand; the relationship between `main`, `test_obf_opt_edge`, and the specific test functions is clear.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are presented in a logical order that matches the source file structure, grouping related tests (obfuscation, optimization, edge cases) together effectively.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code would likely fail to compile standalone due to artifacts like `uint128_t` usage for stack arrays in `call_vectorized_loop` and unresolved `extern` global references (e.g., `g_411ff8`).
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable names are generic (`v0`, `v1`) instead of semantic names (`result`, `str`).
+- Hex literals converted to decimal (`0xDEADBEEF` -> `3735928559`), obscuring bit patterns.
+- Composite types (structs) are not recovered; bitfields are flattened to bitwise operations.
+- Type signedness is incorrect (`int` -> `unsigned int`), altering semantic meaning.
+- Pervasive noise (`v2 = &v3;`) clutters function prologues.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved the original function names from the binary symbols, making high-level navigation trivial.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.75/10)
+- The lack of comments, idiom recognition, and anomaly indication means the code is syntactically readable but semantically opaque, requiring significant effort to understand *why* the code exists.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Preserve Hexadecimal Literals**: Detect constants that look like bit patterns or memory addresses and format them as hexadecimal (e.g., `0xDEADBEEF`) instead of decimal to maintain semantic context.
+2. **Recover Composite Types**: Utilize stack layout analysis and debug information (available via `-g`) to reconstruct structs and bitfields rather than flattening them into integer bitwise operations.
+3. **Eliminate Stack Noise**: Aggressively filter out redundant stack pointer assignments (e.g., `v2 = &v3;`) that are artifacts of the compiler's prologue/epilogue generation, especially at `-O0`.

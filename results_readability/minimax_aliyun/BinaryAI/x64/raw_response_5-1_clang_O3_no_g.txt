@@ -1,0 +1,96 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: All stack variables use cryptic names like `local_24`, `uStack_20`, `sVar1`, `iVar1`, `puVar2`, `plVar3`, `lVar4`. The original source uses meaningful names like `value`, `name`, `data`, `size`, `instance_count`, `capture_by_value`, `capture_by_ref`. Zero semantic recovery.
+
+**2. Function Naming Quality:** Score: 5/10Justification: Test functions correctly named (`test_cpp_member_func`, `test_cpp_constructor`), but template instantiations use mechanical names (`template_max_int_`, `template_swap_int_`) and class methods use `__thiscall` with mangled names (`Container_int_`). Template functions should be `template_max<int>`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `0x74736554` (should be "Test"), `0x125c` (4704), `0x3e9` (1000), `0x2a` (42). No constants or explanatory comments. The string "Test" is encoded as integer `0x74736554` with no explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive type noise: `undefined4`, `undefined8`, `undefined3`, `undefined`, `ulong`, `uint`. These non-standard types clutter every function. However, no register spilling artifacts or debug instrumentation present.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions return constants directly, which is natural for -O0. However, `call_virtual_func` uses triple-indirect vtable call `(***(code ***)param_1)()` which is confusing. The `test_cpp_exception` throws but has no catch handling visible.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are appropriately separated, but `test_cpp_oo_features` (60+ lines) mixes printing with actual logic. Template instantiations properly separated. Some granularity issues but acceptable.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal jumps. Most functions are simple returns. Early returns used appropriately. No forward jumps into loops.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some dead code in `test_cpp_oo_features` - the RTTI test code is duplicated inline rather than calling `test_cpp_rtti`. Magic number repetition (`0x82`, `0x1e`, `0xe`) could be consolidated.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation. All integers become `undefined4` or `undefined8` instead of `int`/`size_t`. Pointers use `long*` or `undefined8*`. The original uses `int`, `char`, `size_t`, `bool`, `double` - all lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery. `Container<T>` class is completely lost - accessed via raw pointer arithmetic (`this + 0x28`, `this + (long)iVar1 * 4`). Original `struct Container { T data[10]; int size; }` not reconstructed at all.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `(ulong)((int)sVar1 + 0x125c)` casts, `(ulong)(uint)param_1` in Container::get, indirect function calls without proper signatures. The `call_virtual_func` uses `code ***` which is non-standard.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of what functions do, no recovery of original comments like "// 期望: 4704". No indication of uncertainty or confidence levels.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Virtual function calls appear as raw vtable indirect calls without indicating polymorphism. Exception handling shows throw but not catch logic. RAII patterns not identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The indirect vtable call in `call_virtual_func` `(***(code ***)param_1)()` is presented without warning. The duplicated RTTI code in `test_cpp_oo_features` not flagged as potential issue.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contracts recovered. Original preconditions like "requires: idx < size" not documented. Postconditions like "ensures: return is heap-allocated" for smart pointers not indicated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: `test_cpp_oo_features` clearly calls other test functions. Template instantiations properly linked to their generic definitions. However, virtual dispatch relationships not clear - `call_virtual_func` doesn't indicate it's calling Base::virtual_func.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions ordered by address (0x101240, 0x101280, etc.) rather than logically grouped. Original source groups by feature (CPP-L3-01, CPP-L3-02). No namespace recovery (`std::` not present).
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Would not compile. Uses non-standard types (`undefined4`, `undefined8`, `ulong`, `uint`). Missing standard library includes. External declarations for `printf`, `strlen` present but incomplete.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- All variables use cryptic names (`local_24`, `uStack_20`, `sVar1`) with zero semantic recovery
+- Type system completely degraded: `undefined4`/`undefined8` instead of `int`/`double`
+- No struct/class recovery - `Container<T>` accessed via raw pointer arithmetic
+- Zero comments - original documentation completely lost
+- Non-standard types (`undefined4`, `ulong`, `uint`) prevent compilation
+
+**Best Quality Aspect:** Code Linearization (scored 8/10)  
+- Functions read top-to-bottom with minimal jumps; control flow is straightforward
+
+**Most Needs Improvement:** Variable Naming Quality (scored 1/10)  
+- Every stack variable uses cryptic names; original semantic meaning completely lost
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `local_24` used with `strlen` should be named `name_buffer`)
+2. Recover struct/class types from pointer arithmetic patterns (e.g., `this + 0x28` accessing `size` field indicates Container struct)
+3. Replace non-standard types (`undefined4`, `ulong`) with standard C types (`int`, `unsigned long`) for compilation compatibility

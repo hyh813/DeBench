@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names `a0`, `a1`, `a2` and locals use `v0`, `v1`, `v2`. While loop variables like `i`, `j` are good, the overwhelming use of generic names obscures purpose. Compare: original `temp1`, `temp2`, `temp3` became `v2`, `v1`, `v0`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results - some functions correctly recovered (`sequential_ops`, `single_if`, `if_else`), but many use address-based names like `sub_401020`, `sub_40102c`. The inconsistency between recovered and mechanical names creates confusion.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently for -1 in unsigned arithmetic without explanation. Some constants like `10`, `5` in `switch_small` are clear, but the pattern is inconsistent.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Minimal compiler artifacts, but wrapper functions like `sub_401179` that just call `sequential_ops()` add noise. No redundant casts or debug instrumentation observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Good recovery of loops (`for (i = 0; i < a0; i += 1)`), if-else chains, and ternary operators. Some goto usage in switch statements is acceptable at O0. Minor awkwardness in `loop_while` with complex division expressions.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions properly separated with appropriate granularity. Each function handles its specific task without over-fragmentation. Parameter lists reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Some forward jumps in switch implementations via `goto` labels. Early returns present and appropriate.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions. Loop constructs are clean without excessive unrolling at O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - original `int` consistently decompiled as `unsigned int`. Function parameters like `int x` become `unsigned int a0`. Pointer types vary between `unsigned long`, `unsigned long long`, and `unsigned int*` inconsistently.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery visible. The `loop_break` function uses raw pointer arithmetic with `*((int *)((char *)&v2 + 4 * i))` instead of array access. `memcpy` used to copy data without struct reconstruction.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe operations present. The `loop_while` uses complex bit manipulation `(result >> 31 CONCAT result)` which is confusing. Function pointer calls like `a0(a1)` lack proper type signatures. Some pointer arithmetic could overflow.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in decompiled code. Only auto-generated annotations like "/* do not return */" for `longjmp` calls. No explanation of algorithm logic, no recovery of original comments.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized - ternary operators recovered in `if_else`, `nested_if_2`. But no explicit pattern naming (e.g., "State machine pattern", "Duff's device"). The `duffs_device` is decompiled but not identified as such.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Limited anomaly indication. Some indirect calls flagged but no precise descriptions. The `call_func_ptr` function shows `a0(a1)` without explaining it's a function pointer call.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of error conditions or input validation requirements. The original source had no assertions but decompiler provides no inferred contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible within code. External dependencies noted via `extern` declarations. But no documentation of call graph relationships or callback patterns.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped by address rather than functionality. The original had clear sections (CF-L1, CF-L2, CF-L3) but decompiled output is flat. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Uses `extern` declarations for external references. Should compile with minimal changes. Some type mismatches need fixing (unsigned vs signed).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Type precision failure**: All `int` types converted to `unsigned int`, losing sign semantics
+- **Variable naming**: Generic names `a0`, `v0` obscure variable purpose
+- **No comments**: Zero recovery of algorithm explanations or intent
+- **Poor struct recovery**: Raw pointer arithmetic instead of struct/array access
+- **Inconsistent function naming**: Mix of recovered names and address-based names
+
+### Best Quality Aspect: Control Flow Naturalness (7/10)
+- Loop structures properly recovered as `for` loops
+- If-else and ternary operators largely accurate
+- At O0 optimization, control flow closely matches source
+
+### Most Needs Improvement: Variable Naming Quality (3/10)
+- Generic parameter names `a0`, `a1`, `a2` and local variables `v0`, `v1`, `v2` dominate
+- Should infer names from usage patterns (e.g., `temp1` used as sum accumulator)
+- Loop variables `i`, `j` are good examples that should be extended
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: Analyze how variables are used (arithmetic, indexing, comparison) to suggest semantic names like `packet_size`, `index`, `result`
+2. **Recover struct types**: Instead of raw pointer arithmetic like `*((int *)((char *)&v2 + 4 * i))`, reconstruct array/struct access
+3. **Add semantic comments**: Document algorithm intent, flag indirect calls, explain complex expressions like the `CONCAT` operations

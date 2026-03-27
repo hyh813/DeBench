@@ -1,0 +1,159 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 3/10**
+
+Justification: Variables use generic names like `a1`, `a2` for parameters and `v7`, `v8`, `v9` for locals. For example, in `cdecl_func(int a1, int a2)`, parameters should be `a` and `b` based on source. The `varargs_func` has numerous unnamed locals (`v7`, `v8`, `v9`, `v10`, etc.) making the variable purposes nearly impossible to track without cross-referencing the source.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: Most function names match the original source exactly: `cdecl_func`, `stdcall_func`, `fastcall_func`, `test_calling_conventions`, `test_parameter_passing`, `test_return_values`. However, some compiler/runtime functions have generic names like `sub_1020`, `sub_1030` which are clearly artifacts. The core test functions are well-named.
+
+### 3. Literal Clarity
+**Score: 7/10**
+
+Justification: Most literals are meaningful - the call wrapper functions return correct constant results (15, 50, 6, 21, etc.) matching expected values. However, some magic numbers like `0x28` for stack canary and `0x2F` threshold in varargs lack explanation. The format strings are referenced by placeholder names (`aCallL206`) rather than being readable.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+Justification: Minimal compiler artifacts interfere with readability. The `JUMPOUT(0)` in `sub_1020` is a minor artifact. Stack canary reads (`__readfsqword(0x28u)`) are visible but don't significantly impede understanding. Overall, the code is relatively clean compared to highly optimized binaries.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+
+Justification: Control flow is natural and idiomatic. Loops are properly recognized (e.g., `while (v8 < a1)` in varargs_func). Conditionals are clear. At `-O0`, the decompiled flow closely matches source structure. The `mixed_conventions_test` correctly shows sequential function calls without unnecessary restructuring.
+
+### 6. Function Decomposition
+**Score: 8/10**
+
+Justification: Function granularity closely matches the original source. Each test case has its own wrapper function (`call_cdecl`, `call_stdcall`, etc.). The callback function `callback_func` is properly extracted as a separate static function. Some inlining occurred appropriately (e.g., `call_cdecl` returns constant 15 instead of calling `cdecl_func(5, 10)`).
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Justification: Code generally reads top-to-bottom without excessive jumps. The `varargs_func` loop is straightforward. Early returns in functions like `param_struct_byptr` checking for NULL are appropriate. No severe forward jump issues that would disrupt comprehension.
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+
+Justification: No significant redundancy observed. The code is clean without duplicate expressions or dead code. Loop constructs are not excessively unrolled. The decompiler appropriately simplified the constant-returning wrapper functions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 6/10**
+
+Justification: Most types are reasonably accurate - `int` for parameters, `char*` for strings, `unsigned int` for results. However, function pointers have issues: `(unsigned int (__fastcall *)(_QWORD))callback_func` uses `_QWORD` instead of proper `int` signature. Some parameters use `__int64` where `int` would be more precise. The `param_double_ptr` correctly uses `_DWORD**`.
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+Justification: Struct recovery is poor. `SmallStruct` is not recovered - `func_struct_byptr` takes `_DWORD *a1` instead of `SmallStruct *p`. `LargeStruct` parameters are spread across multiple register parameters (`a1` through `a7`) losing the composite type entirely. The original source's `LargeStruct` with `data[16]` array is completely lost.
+
+### 11. Type Safety
+**Score: 6/10**
+
+Justification: Some unsafe operations present. The function pointer cast `(unsigned int (__fastcall *)(_QWORD))callback_func` is incorrect - should be `(unsigned int (*)(int))`. Raw pointer arithmetic in `ret_pointer` returning `a1 + 4` is correct but could benefit from explicit casting. No bounds checking visible in array operations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 5/10**
+
+Justification: Sparse comments, mostly auto-generated. The decompiler adds useful notes like "positive sp value has been detected, the output may be wrong!" for `_start`. No source code comments were recovered. The function headers are minimal - just the function signature without documentation of purpose or parameters.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Justification: No design patterns or algorithms are explicitly identified. The code is straightforward implementation of calling convention tests. While the varargs handling is correctly decompiled, there's no comment explaining the stdarg usage pattern. The code doesn't highlight that this is testing various ABIs.
+
+### 14. Anomaly Indication
+**Score: 7/10**
+
+Justification: Some anomalies are flagged. The `_start` function has a warning about positive sp value. Library functions that failed to decompile are clearly marked: "FAILED to decompile: __libc_start_main @ 0x4028", "FAILED to decompile: puts @ 0x4030", etc. However, some subtle issues like the incorrect function pointer cast aren't flagged.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+
+Justification: No implicit preconditions, postconditions, or invariants are documented. Functions like `func_struct_byptr` that check for NULL don't have comments explaining this as a precondition. The return value semantics (e.g., -1 for error) aren't documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+
+Justification: Function call relationships are mostly clear through naming. `main` clearly calls the three test functions. The callback relationship between `param_func_ptr` and `callback_func` is visible but not explicitly documented. No explicit call graph or usage documentation.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Justification: All functions are in a single flat output file. No header files or logical grouping recovered. The original source's clear separation into sections (calling conventions, parameter passing, return values) isn't reflected in the decompiled output organization.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+
+Justification: The code would require moderate patching to compile. External functions like `puts`, `__printf_chk`, `strlen`, `_mm_cvtsi128_si32` need declarations. The stack canary and SIMD intrinsics add dependencies. The format strings are referenced by placeholder names requiring recovery.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 8 + 7 + 7) / 4 = 6.25
+L2_avg = (8 + 8 + 8 + 8) / 4 = 8.00
+L3_avg = (6 + 4 + 6) / 3 = 5.33
+L4_avg = (5 + 5 + 7 + 3) / 4 = 5.00
+L5_avg = (6 + 5 + 6) / 3 = 5.67
+
+Overall = (6.25 × 0.30) + (8.00 × 0.25) + (5.33 × 0.20) + 
+          (5.00 × 0.15) + (5.67 × 0.10)
+        = 1.875 + 2.0 + 1.066 + 0.75 + 0.567 = 6.26/10
+```
+
+**Overall Readability Score: 6.3/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Variable naming**: Parameters use generic names (`a1`, `a2`) instead of semantic names (`a`, `b`), making it difficult to track purpose without source reference
+- **Composite type loss**: Struct types `SmallStruct` and `LargeStruct` are not recovered - fields are flattened into individual parameters or raw pointers
+- **Function pointer type error**: `param_func_ptr` uses incorrect signature `(unsigned int (__fastcall *)(_QWORD))` instead of proper `(unsigned int (*)(int))`
+- **No struct field names**: `func_struct_byptr` takes `_DWORD *a1` losing the original `SmallStruct` with fields `x` and `y`
+- **Missing semantic context**: No comments explaining this tests calling conventions, parameter passing patterns, or return value handling
+
+---
+
+### Best Quality Aspect
+**Function Naming Quality (8/10)** - Most function names match the original source exactly (`cdecl_func`, `stdcall_func`, `test_calling_conventions`), making it easy to identify the purpose of each function.
+
+---
+
+### Most Needs Improvement
+**Variable Naming Quality (3/10)** - Generic parameter names (`a1`, `a2`, `a3`) and local variables (`v7`, `v8`, `v9`) severely impede understanding. At `-O0`, the decompiler should be able to infer semantic names from usage patterns.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: At `-O0`, analyze how parameters are used to suggest semantic names. For example, `a1 + a2` in `cdecl_func` suggests parameters should be named `a` and `b`.
+
+2. **Recover composite types**: When multiple sequential parameters share related data (like struct fields), attempt to reconstruct the struct type rather than flattening to individual parameters.
+
+3. **Fix function pointer type signatures**: The callback in `param_func_ptr` should preserve the original signature. The decompiler knows it's calling `callback_func` with known signature - use that information.

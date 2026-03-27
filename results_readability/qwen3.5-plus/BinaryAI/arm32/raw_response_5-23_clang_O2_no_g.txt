@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1`, `local_c` with no semantic meaning. Original source had meaningful names like `size`, `x`, `y`, `result`, `counter`, `exec_mem` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved from source (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). This is exceptional recovery that maintains semantic clarity.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x200`, `0x400`, `0xdef0`, `0x117` replace original constants (`MAX_SIZE`, `BUFFER_COUNT`, platform-specific values). String format references use opaque `DAT_000111ab` instead of readable strings.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Code is relatively clean without register spilling artifacts. However, external function stubs are problematic (e.g., `printf` calls `printf` recursively), which is compiler/decompiler noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with proper if/else and loop constructs. The `param_asm_clobber` loop uses a clean do-while pattern. Some constant-folded functions lose original branching logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries are correctly preserved with appropriate granularity. Each function maintains single responsibility. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally with minimal forward jumps. Loop structures are properly linearized. Early returns are used appropriately.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or duplicate expressions visible. Constant folding has removed some redundancy but at the cost of semantic transparency.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` instead of `int32_t`, `undefined4` for return types inconsistently. Original had `size_t`, `uint8_t`, proper pointer types. `param_asm_atomic` uses `undefined4` for pointer parameter which is incorrect.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Array handling is correct (`int *param_1`). No complex structs in this code sample. Pointer arithmetic is preserved adequately for the code's complexity.
+
+**11. Type Safety:** Score: 6/10  
+Justification: `param_asm_atomic` and `param_atomic_c11` use `undefined4` for pointer parameters instead of `int*`. Atomic operation signature `__atomic_fetch_add_4(param_1,param_2,5)` loses type clarity for memory order constant.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments in decompiled code. Original had extensive documentation explaining macro behavior, preprocessing effects, assembly semantics, and expected values. All semantic context is lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Macro patterns are evaluated but not identified (e.g., `ADD_16(x)` became `x + 0x10` without noting it was macro recursion). Assembly patterns converted silently without labeling.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about transformations. Assembly code silently converted to C without noting original was `__asm__ volatile`. No uncertainty indicators for potentially incorrect decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions or error condition documentation. Original had expected return values in comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are visible but relationships not documented. Global variables (`global_var`, `DAT_000111ab`) referenced without context. Call graph inferable but not explicit.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. No clear separation between preprocessing tests and assembly tests.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: External function stubs are broken (e.g., `printf` calls itself recursively). Would not compile standalone. Dependencies not documented. `undefined4` types are Ghidra-specific.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+5+7)/4 = 6.25 × 0.30 = 1.875
+Level 2 (Structural):  (7+8+8+8)/4 = 7.75 × 0.25 = 1.938
+Level 3 (Type):        (5+7+6)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (1+4+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Context):     (6+6+2)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.82/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects:
+- **External function stubs are broken**: `printf`, `mmap`, `memcpy` etc. call themselves recursively instead of being properly declared as extern
+- **Zero comments**: All original documentation about macro semantics, preprocessing behavior, and assembly intent is completely lost
+- **Parameter loss**: `param_stringize(int value)` became `param_stringize(void)` losing the parameter entirely
+- **Magic numbers everywhere**: `0x200`, `0x400`, `0xdef0` replace named constants like `MAX_SIZE`, `BUFFER_COUNT`
+- **Type degradation**: `undefined4` used for pointer parameters in atomic functions, losing type safety
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Original function names perfectly preserved, making it easy to identify each function's purpose and match to source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of comments loses all semantic context about macro expansion, preprocessing decisions, and assembly intent that the original source carefully documented.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve comments from debug symbols** - When `-g` flag is present, extract and embed original source comments into decompiled output
+2. **Generate proper extern declarations** - Instead of recursive stubs, declare external functions as `extern` with proper signatures
+3. **Detect and annotate constant origins** - When constants result from macro expansion (e.g., `0x40` from `BUFFER_COUNT * 4`), add comments showing the original expression

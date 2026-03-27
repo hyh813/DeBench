@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1` instead of semantic names (`a`, `b`, `c`, `sum`, `count`). Original `temp1 = a + b` becomes opaque `(param_2 + param_1) * 2 - param_3`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved (`sequential_ops`, `single_if`, `nested_if_2`), but helper functions use generic names (`FUN_00100880`, `FUN_001009fc`). Test functions correctly named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions replaced actual computations with hardcoded hex values (`0x15`, `0x14`, `0xfffffffb`). Magic numbers like `0x3e9` (1001) and `0x65` (101) appear without explanation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive temporary variables in vectorized functions (`loop_continue` has 30+ `iVar`, `uVar`, `auVar` variables). NEON intrinsics (`NEON_cmeq`, `NEON_ext`) appear despite `-O0` compilation claim.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions recovered well (`sequential_ops`), but `single_if` uses bit-shift trick `param_1 << (0 < param_1)` instead of if-statement. `switch_fallthrough` uses nested ifs instead of switch with fall-through.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions properly separated, but some have incorrect signatures (`loop_break` returns `undefined8` instead of `int`, `if_else` returns `bool` instead of `int`). Helper functions preserved.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but `duffs_device` uses goto labels (appropriate for pattern). Vectorized loops have complex do-while structures obscuring simple iteration logic.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy in optimized functions. `loop_continue` (simple odd-sum) expanded to 200+ lines with vector operations. `recursion_factorial` shows massive loop unrolling not in source.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed int/uint usage (`nested_if_2` has `uint param_2` when source uses `int`). Ghidra-specific types (`undefined4`, `undefined8`, `code *`) reduce portability. Some return types wrong.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited opportunity in this code. `jmp_buf` recovered as `__jmp_buf_tag *`. Arrays handled reasonably. No struct recovery issues since source has minimal composite types.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Function pointers degraded to `code *` without proper signatures. Some signed/unsigned mismatches (`param_1 < 0` compared against unsigned). Casts present but not egregious.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining each function's purpose, test cases, and difficulty levels. Complete semantic loss.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Duff's device structure preserved but not identified. State machine patterns not recognized. No algorithm identification (factorial, digit counting, etc.).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `UNRECOVERED_JUMPTABLE` markers present in `call_func_ptr`. Vectorization anomalies not flagged despite being unexpected for `-O0`. No decompilation confidence indicators.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). Test validation comments completely lost. Error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global `jump_buffer` referenced without context. Callback relationships not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. No clear module boundaries or namespace structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Ghidra-specific types (`undefined4`, `code *`, `__jmp_buf_tag`) require stubs. Test functions hardcoded - won't actually test functionality. External dependencies undocumented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+6+6+3)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (5+6+5)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (1+3+4+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.52/10
+```
+
+### Overall Readability Score: **4.5/10**
+
+### Critical Defects:
+- **Variable names completely generic**: `param_1`, `param_2`, `iVar1` instead of `a`, `b`, `sum`, `count`
+- **Test functions broken**: Hardcoded expected values instead of actual function calls (cannot verify correctness)
+- **Unexpected optimization artifacts**: NEON vectorization in `loop_continue`, `recursion_factorial` despite `-O0` claim
+- **Zero semantic documentation**: All original comments explaining purpose, test cases, and difficulty lost
+- **Type signature errors**: `if_else` returns `bool` instead of `int`, `loop_break` returns `undefined8`
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core function names preserved accurately (`sequential_ops`, `nested_if_deep`, `switch_fallthrough`)
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation; original had extensive comments explaining each function's purpose and test validation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Analyze parameter usage to suggest `divisor`, `counter`, `accumulator` instead of `param_1`, `iVar1`
+2. **Preserve or regenerate test harnesses**: Instead of hardcoding expected values, maintain actual function calls for verification
+3. **Flag optimization anomalies**: When decompiled code shows vectorization/unrolling inconsistent with claimed optimization level, add confidence warnings

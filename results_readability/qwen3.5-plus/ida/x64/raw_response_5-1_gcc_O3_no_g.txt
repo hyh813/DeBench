@@ -1,0 +1,101 @@
+## EVALUATION: C++ Object-Oriented Features Decompiled Code
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `exception`, `result`) with no semantic meaning. In `test_cpp_rtti`, variables `v5`, `v6`, `v7`, `v9` obscure their roles as type info pointers and result accumulators.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: C++ mangled names partially recovered (`_Z20test_cpp_member_funcv`), but 18 stub functions named `sub_1020` through `sub_1120` provide zero semantic information. Class methods like `_ZN4Base12virtual_funcEi` are recoverable but not human-readable.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic number `1953719636` (little-endian "Test") unexplained, `4700`, `1001`, `0x28u` for stack canary offset all lack context. String literals like `"12RTTIDerivedA"` appear without type info explanation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`__readfsqword(0x28u)`) in every function, 18 stub functions calling `sub_1020()`, and 21 "FAILED to decompile" markers clutter the output without value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Functions that retain logic (`test_cpp_template_func`, `test_cpp_rtti`) show natural flow, but 8+ test functions are constant-folded to single `return` statements, destroying original control structure.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical failure: `test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_lambda`, `test_cpp_smart_ptr` all return constants instead of showing actual computation logic, eliminating function purpose.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code that remains reads top-to-bottom reasonably well, but constant-folded functions provide no linear execution path to analyze.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack frame setup repeated in every function, but aggressive constant folding has eliminated too much legitimate code rather than just redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic `__int64`, `_DWORD`, `_QWORD` types replace specific C++ types. `template_max<int>` shows `unsigned int` parameters instead of signed `int`, losing original type semantics.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure: No class structures recovered. `Container<int>::push` uses `*(_DWORD *)(a1 + 40)` instead of `this->size`. `SimpleClass` fields accessed via raw offsets, not named members.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(__int64 (**)(void))`, `(_QWORD *)`), pointer arithmetic on `char*` for this-adjustment, and `void*` comparisons in RTTI code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated function headers present. Zero comments explaining C++ mechanisms (vtable, this-adjustment, virtual inheritance). No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Virtual thunks identified (`virtual thunk to'MultiDerived::funcB`) but not explained. Vtable dispatch visible but not documented as C++ polymorphism pattern.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 21 "FAILED to decompile" entries listed at end, but no inline warnings at call sites. `__dynamic_cast` and exception handling failures not flagged where used.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception safety, null pointer checks, and object lifetime contracts completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch relationships unclear. Inheritance hierarchy not documented. Static member `LifecycleClass::instance_count` referenced but not defined.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions scattered without logical grouping. Stub functions (`sub_1020`-`sub_1120`) interspersed with actual code. No namespace or class grouping visible.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: 21 failed decompilations prevent standalone compilation. External dependencies (`__cxa_throw`, `__dynamic_cast`, `operator new`) undeclared. Architecture mismatch (arm64 source vs x64 decompile).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+4)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (5+4+6+5)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (2+3+5+1)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (5+4+2)/3   = 3.67 × 0.10 = 0.37
+─────────────────────────────────────────────────────────
+Overall Score:                              3.75/10
+```
+
+**Overall Readability Score:** 3.75/10
+
+### Critical Defects:
+- **Constant folding eliminated actual computation**: 8+ test functions return hardcoded constants (42, 71, 650, etc.) instead of showing original logic
+- **No C++ class structure recovery**: All member access via pointer arithmetic (`*(a1 + 40)`) instead of named fields
+- **Generic variable naming**: `v0`, `v1`, `v2` throughout obscures semantic purpose
+- **21 failed decompilations**: Critical runtime functions (`__cxa_throw`, `__dynamic_cast`, `strlen`) not recovered
+- **Architecture mismatch**: Source compiled for arm64, decompiled as x64/pc
+
+### Best Quality Aspect:
+- **Control Flow Naturalness (5/10)** - Functions that retain logic show reasonable top-to-bottom flow without excessive gotos
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (1/10)** - Zero documentation of preconditions, exception safety, or object lifetime contracts critical for C++ code
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Disable aggressive constant folding for analysis mode** - Preserve computational logic even when result is statically determinable
+2. **Recover C++ class layouts from vtable and RTTI data** - Map field offsets to named members using debug symbols or type reconstruction
+3. **Infer variable names from usage context** - Variables used in size comparisons should be named `size`/`count`, pointers to objects should reference class names

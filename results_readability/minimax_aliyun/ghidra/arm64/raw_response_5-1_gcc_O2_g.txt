@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled code contains extensive "Unresolved local var" annotations throughout (e.g., `int result@[???]`, `int r1@[???]`, `SimpleClass obj@[???]`). Nearly all local variables in test functions are unresolved, making it impossible to track data flow or understand variable purposes.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions like `test_cpp_member_func`, `test_cpp_constructor` are correctly named, but many internal functions use generic names like `FUN_00100eb0`. Member functions lose their class context in some cases (e.g., `virtual_func` instead of `Base::virtual_func`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x2a` for 42, `0x125c` for 4704, `0x3e9` for 1000). The decompiler uses raw constants instead of recovering meaningful constant names from the source.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: The output is cluttered with warnings ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block") and "Unresolved local var" annotations. These artifacts significantly impede readability and make it difficult to distinguish actual code from metadata.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Several functions like `test_cpp_exception` show only partial logic (throws exception then appears to exit). Functions like `test_cpp_virtual_func` return hardcoded values (0x2a = 42) without showing the actual computation, making control flow assessment impossible.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are extracted but many are incomplete. For example, `test_cpp_member_func` shows only object construction and a return statement, missing the actual method calls (`obj.setValue(10)`, `obj.getValue()`). Template functions are properly separated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The code generally reads top-to-bottom without excessive forward jumps. Most functions have straightforward linear flow, though some virtual function thunks have complex pointer arithmetic that disrupts readability.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `test_cpp_member_func` shows duplicate `strncpy` and `strlen` operations that don't match the source logic. Some dead code warnings are present but not fully eliminated. The code shows both correct and incorrect patterns mixed together.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types are recovered (int, double, char*), but many variables remain unresolved. The decompiler uses generic types like `undefined4*` for exception pointers. Some type information is lost, particularly in complex expressions.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Classes like `SimpleClass`, `Base`, `Derived`, `Container<T>` are partially recovered with field names (e.g., `obj.name`, `this->size`, `this->multiplier`). However, some fields are generic or missing. The `DiamondDerived` struct has a warning about "ignoring overlapping field."
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns exist: virtual function calls use indirect jumps (`(**obj->_vptr_Base)(obj,...))`), pointer arithmetic in virtual inheritance functions is complex and error-prone. The RTTI code has raw pointer manipulations without safety checks.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Some DWARF original prototypes are recovered (e.g., "DWARF original prototype: int virtual_func(Base * this, int x)"), but most comments are auto-generated warnings. No explanation of algorithm logic or intent. The "Unresolved local var" comments are not helpful for understanding.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ idioms are partially recognized but not clearly identified. Virtual function calls show vtable access patterns, but the decompiler doesn't explicitly label them as "virtual dispatch." Template instantiation is recognized but not explained. Exception handling is poorly recovered.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The decompiler does flag some issues with warnings ("WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call"). However, many functions returning hardcoded values don't indicate that the actual logic was not recovered.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler doesn't recover any contracts or assertions from the source code. Empty destructors are just shown as `return;` without explaining they're no-ops.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in the code, but relationships aren't documented. It's unclear which functions call which, and the virtual function relationships (vtable layout) are not clearly explained. The test function `test_cpp_oo_features` shows calls but without clear documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped by class (member functions together) and by test function. However, the organization is somewhat arbitrary - initialization functions, test functions, and class methods are mixed. Static functions aren't clearly distinguished.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code uses internal function names like `operator_new`, `operator_delete`, `__cxa_throw` which are compiler-specific. Many unresolved references would prevent standalone compilation. No clear dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 4 + 3) / 4 = 3.5
+L2_avg = (4 + 5 + 7 + 5) / 4 = 5.25
+L3_avg = (5 + 6 + 5) / 3 = 5.33
+L4_avg = (5 + 4 + 6 + 2) / 4 = 4.25
+L5_avg = (4 + 6 + 4) / 3 = 4.67
+
+Overall = (3.5 × 0.30) + (5.25 × 0.25) + (5.33 × 0.20) + (4.25 × 0.15) + (4.67 × 0.10)
+        = 1.05 + 1.3125 + 1.066 + 0.6375 + 0.467
+        = 4.53/10
+```
+
+**Overall Readability Score:** 4.53/10
+
+### Critical Defects (Bullet List)
+- **Unresolved local variables**: Nearly all local variables in test functions are marked `@[???]`, making data flow analysis impossible
+- **Missing logic in test functions**: Functions like `test_cpp_virtual_func`, `test_cpp_exception` return hardcoded values (0x2a, 0x47) without showing actual computation
+- **Poor exception handling recovery**: `test_cpp_exception` only shows `__cxa_throw` without the try-catch logic
+- **Magic numbers without explanation**: Constants like 0x125c (4704), 0x3e9 (1000) appear without semantic meaning
+- **Class context lost**: Member functions like `virtual_func` don't consistently show their class namespace (should be `Base::virtual_func`)
+
+### Best Quality Aspect (Single Dimension)
+- **Code Linearization (7/10)**: The decompiled code generally reads top-to-bottom without excessive jumps or goto statements. Most functions have straightforward linear control flow.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)**: The pervasive "Unresolved local var" annotations make the code practically unusable for analysis. Every meaningful variable in the test functions is unresolved.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: Variables used as array indices should be named `idx` or `index`, loop counters should be `i`, `j`, etc. The current approach leaves all variables unresolved.
+2. **Recover exception handling constructs**: The decompiler should recognize `__cxa_throw`, `__cxa_allocate_exception` and reconstruct try-catch blocks rather than showing only the throw site.
+3. **Detect and explain hardcoded return values**: When a function returns a constant that matches an expected test output (like 0x2a = 42), flag this as "likely optimized to constant" so analysts know the logic was not recovered.

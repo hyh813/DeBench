@@ -1,0 +1,132 @@
+### LEVEL 1: LEXICAL CLARITY (30% weight)
+
+#### 1. Variable Naming Quality (10% weight)
+**Score: 2/10**
+**Justification:** Variables are almost exclusively generic names like `v0`, `v1`, `a0`, and `a1`, providing no semantic context (e.g., `process_char` uses `a0` for the input char `c`). Struct fields are named generically as `field_0`, `field_4`, etc., completely obscuring the original field names like `x`, `y`, or `data`.
+
+#### 2. Function Naming Quality (10% weight)
+**Score: 8/10**
+**Justification:** The decompiler successfully recovered the original function names for the test suite (e.g., `process_char`, `test_data_types_l1`, `array_1d_stack`), which accurately reflects their purpose. However, some library or helper functions are named generically (e.g., `sub_103a0`).
+
+#### 3. Literal Clarity (5% weight)
+**Score: 4/10**
+**Justification:** The code contains many "magic numbers" resulting from compiler optimizations that are not explained or replaced with constants, such as `97` (ASCII 'a') in `test_data_types_l1` or `25` in `process_char`. String literals like `"=== 测试基础数据类型 ==="` are preserved, but numeric logic is opaque.
+
+#### 4. Noise Reduction (5% weight)
+**Score: 1/10**
+**Justification:** The output is heavily polluted with compiler and lifter artifacts, most notably the pervasive `armg_calculate_condition` calls which obscure logic. Additionally, large sections of soft-float library code (e.g., `__muldf3`, `__addsf3`) are included in the decompilation, adding massive amounts of irrelevant noise.
+
+---
+
+### LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+#### 5. Control Flow Naturalness (8% weight)
+**Score: 2/10**
+**Justification:** Control flow is highly unnatural, relying heavily on `goto` statements and complex conditional checks wrapped in `armg_calculate_condition` rather than standard `if/else` or `loop` constructs. For example, `process_char` uses a range check optimization (`v0 <= 25`) that is not simplified back to a readable character comparison.
+
+#### 6. Function Decomposition (7% weight)
+**Score: 3/10**
+**Justification:** The decompilation fails to manage granularity; it includes massive library functions (hundreds of lines for `__muldf3`) alongside user code. User functions like `binary_tree_sum` are monolithic and fail to outline inlined logic, resulting in a single, massive, unreadable function.
+
+#### 7. Code Linearization (5% weight)
+**Score: 2/10**
+**Justification:** The code does not read linearly; execution jumps frequently via labels (e.g., `LABEL_11c80`, `LABEL_11c8a`) and forward jumps, making it difficult to follow the logic from top to bottom.
+
+#### 8. Redundancy Elimination (5% weight)
+**Score: 3/10**
+**Justification:** There is significant redundancy, such as repeated `armg_calculate_condition` calls that could be simplified. The decompiler also presents the results of constant propagation (e.g., pre-calculated printf arguments) without explaining that the original logic was optimized away, leading to confusing redundancy between the source intent and binary reality.
+
+---
+
+### LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+#### 9. Type Precision (8% weight)
+**Score: 6/10**
+**Justification:** Basic types like `unsigned int` and `int` are generally correct, and pointer types are often preserved. However, the decompiler struggles with specific types, often defaulting to generic `unsigned int` where `char` or specific sized integers might be more appropriate (e.g., `process_char` takes `unsigned int` instead of `char`).
+
+#### 10. Composite Type Recovery (7% weight)
+**Score: 4/10**
+**Justification:** While structures are recognized, they are reconstructed with generic names (`struct_0`, `struct_1`) and fields (`field_0`, `field_4`). Recursive structures like `TreeNode` are exploded into dozens of nearly identical struct definitions (`struct_28`, `struct_33`, etc.) rather than being unified, destroying the semantic model.
+
+#### 11. Type Safety (5% weight)
+**Score: 5/10**
+**Justification:** The code contains numerous casts, such as `*(int *)&v0` and `(char *)ptr`, which are often artifacts of the lifting process or aggressive optimization. While they might be technically correct for the binary state, they imply unsafe operations that weren't in the original source.
+
+---
+
+### LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+#### 12. Comment Quality & Presence (5% weight)
+**Score: 1/10**
+**Justification:** There are virtually no comments in the decompiled output. Complex logic, such as the floating-point emulation in `__muldf3` or the recursive tree traversal, is left entirely undocumented.
+
+#### 13. Idiom Recognition (3% weight)
+**Score: 2/10**
+**Justification:** Standard C idioms are not recognized. For instance, the `for` loop in `array_1d_stack` is represented as a `do-while` loop with pointer arithmetic and `goto` labels, failing to identify the iteration pattern.
+
+#### 14. Anomaly Indication (3% weight)
+**Score: 1/10**
+**Justification:** The decompiler presents the code confidently without flagging anomalies. For example, the massive `binary_tree_sum` function with its hundreds of lines of nested structs is presented as valid code without any warning that it might be a decompilation failure or an artifact of optimization.
+
+#### 15. Assertion & Contract Recovery (4% weight)
+**Score: 1/10**
+**Justification:** No preconditions, postconditions, or invariants are recovered or documented. For example, `array_complex_index` has bounds checking logic in the source, but the decompiled version's complex condition checks are not explained as such.
+
+---
+
+### LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+#### 16. Cross-Reference Clarity (4% weight)
+**Score: 3/10**
+**Justification:** While direct function calls are visible, indirect calls (e.g., `goto a0` in `ptr_func_simple`) are not resolved or annotated, making it impossible to know the target without manual analysis. The relationship between the exploded struct definitions is also unclear.
+
+#### 17. Module Organization (3% weight)
+**Score: 4/10**
+**Justification:** The output is a flat list of functions. While user functions are grouped, they are intermixed with low-level system library functions (`__aeabi_dadd`, `__stack_chk_fail`), making it difficult to discern the module boundaries of the original source.
+
+#### 18. Build System Compatibility (3% weight)
+**Score: 1/10**
+**Justification:** The code will not compile in its current state. It relies on non-standard functions like `armg_calculate_condition` and external symbols that are not declared or defined in the snippet.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (2 + 8 + 4 + 1) / 4 = 3.75
+L2_avg: (2 + 3 + 2 + 3) / 4 = 2.50
+L3_avg: (6 + 4 + 5) / 3 = 5.00
+L4_avg: (1 + 2 + 1 + 1) / 4 = 1.25
+L5_avg: (3 + 4 + 1) / 3 = 2.67
+
+Overall = (3.75 × 0.30) + (2.50 × 0.25) + (5.00 × 0.20) + 
+          (1.25 × 0.15) + (2.67 × 0.10)
+Overall = 1.125 + 0.625 + 1.00 + 0.1875 + 0.267
+Overall ≈ 3.2/10
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 3.2/10
+
+### Critical Defects (Bullet List)
+- **Lifter Artifacts:** The pervasive use of `armg_calculate_condition` completely obscures boolean logic and control flow.
+- **Generic Naming:** Variables (`v0`, `a0`) and struct fields (`field_0`) lack semantic meaning, making data tracking nearly impossible.
+- **Struct Explosion:** Recursive structures like `TreeNode` are incorrectly split into dozens of generic struct definitions (`struct_28`, `struct_33`), destroying the data model.
+- **Library Code Inclusion:** Massive soft-float library functions (`__muldf3`, `__addsf3`) are included in the output, burying the user code.
+- **Optimization Confusion:** The decompiler presents optimized artifacts (e.g., constant propagation in `test_data_types_l1`) without simplifying them back to the source logic.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (8/10)**
+- **Why?** The decompiler successfully recovered the original function names for the test cases, which is the only feature that allows a user to map the decompiled code back to the source.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Noise Reduction (1/10)**
+- **Why?** The inclusion of non-standard lifter intrinsics (`armg_calculate_condition`) and entire library implementations renders the output practically unusable for human analysis.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Intrinsics Simplification:** Implement a post-processing pass to replace `armg_calculate_condition` calls with standard C comparison operators (`<`, `<=`, `==`, etc.) to restore readable boolean logic.
+2.  **Struct Unification:** Improve type recovery to recognize and unify recursive struct definitions, preventing the explosion of nearly identical generic structs.
+3.  **Library Filtering:** Add a robust mechanism to identify and exclude standard library functions (like soft-float implementations) from the main decompilation view or mark them clearly as external.

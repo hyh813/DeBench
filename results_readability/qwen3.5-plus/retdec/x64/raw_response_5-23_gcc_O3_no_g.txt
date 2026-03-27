@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `result`) with no semantic meaning. Original source had meaningful names like `result`, `sum`, `counter`, `exec_mem` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_macro_constants`, `call_asm_basic`), but helper functions use mechanical names (`function_1090`, `function_10a0`). Action verbs are absent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xdef0`, `0xffffc305`, `0x5341206f6c6c6548` appear without explanation. String literals stored as hex-encoded globals (`g1`, `g2`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`) pollute every function. Compiler runtime functions (`frame_dummy`, `deregister_tm_clones`) included unnecessarily.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: While loops recovered in some functions (`param_asm_clobber`), but many functions simplified to direct returns losing original logic. Assembly represented as opaque function calls (`__asm_movaps`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Several functions have incorrect parameter counts (`param_dynamic_code` has 6 parameters instead of 1, `call_asm_clobber` has 4 instead of 0). System call wrappers created but not needed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with while loops instead of gotos. No excessive forward jumps disrupting flow, which is good for -O0 compilation.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding applied aggressively (call functions return constants directly), losing original computation logic. Some redundant type casts remain throughout.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy overuse of `int64_t` even for `int` values. Custom typedef `int128_t` for SIMD registers is non-standard. Pointer types often `int64_t*` instead of proper types like `void*` or `char*`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Original code had minimal struct usage, so limited impact. Arrays represented as pointer arithmetic (`*(int32_t *)(4 * v1 + a1)`) instead of array syntax.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many implicit casts between `int32_t` and `int64_t` with `& 0xffffffff` masking. Pointer arithmetic with generic types creates potential undefined behavior patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive Chinese comments explaining preprocessing behavior, macro expansion, and expected values—all lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Assembly patterns represented as `__asm_*` function calls but not identified as SIMD, atomic, or memory operations. No algorithm pattern recognition.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `UNREACHABLE` markers present but no explanation of decompilation uncertainty. Stack check failures present but not contextualized as compiler artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `size > 0` expectations). Error return values (`0xffffffff`, `-1`) not explained. No postcondition inference.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved and global variable usage visible (`g1`, `g2`). No call graph documentation or relationship explanations between test functions.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Original had section comments (`5.2 预处理`, `5.3 内联汇编`) completely lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Missing standard headers (`stdio.h`, `string.h`). Custom `int128_t` typedef and `__asm_*` intrinsics are non-portable. May not compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+5+7+6)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type):        (4+6+5)/3 = 5.00    × 0.20 = 1.00
+Level 4 (Semantic):    (2+4+4+3)/4 = 3.25  × 0.15 = 0.49
+Level 5 (Contextual):  (6+5+5)/3 = 5.33    × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  5.02/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v1`, `v2`, `v3`) losing all semantic meaning from original (`result`, `counter`, `exec_mem`)
+- **Function signatures corrupted** - `param_dynamic_code` has 6 parameters instead of 1, `call_macro_constants` takes no arguments but should accept none (correct but many others wrong)
+- **Zero comments** - Original had extensive documentation explaining preprocessing behavior, macro expansion, and expected values
+- **String literals hex-encoded** in globals (`g1`, `g2`) instead of readable strings, requiring manual decoding
+- **Stack canary noise** (`__readfsqword(40)`, `__stack_chk_fail()`) in every function obscuring actual logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`param_macro_constants`, `call_asm_basic`), making basic navigation possible despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation loses all context about preprocessing behavior, macro semantics, and expected values that were extensively documented in source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (size comparisons, loop counters, pointers) to infer semantic names like `packet_size`, `index`, `buffer_ptr`
+2. **Preserve or reconstruct source comments** - When debug symbols (`-g`) are available, extract and embed original comments or generate explanatory comments for non-obvious logic
+3. **Reduce compiler artifact noise** - Filter out stack canary checks, frame setup code, and runtime initialization functions from main logic unless explicitly requested

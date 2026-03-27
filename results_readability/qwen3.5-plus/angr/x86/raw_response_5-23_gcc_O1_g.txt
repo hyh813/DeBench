@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source used meaningful names like `size`, `counter`, `increment`, `result` which are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: User-defined functions preserved original names (`param_macro_constants`, `call_asm_basic`), but runtime helpers use mechanical names (`sub_401030`, `sub_401040`). Mixed recovery quality.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound without explanation (`0x400`, `0x200`, `57072`, `57122`). Original `MAX_SIZE`, `BUFFER_COUNT` constants were folded into literals, losing semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86.get_pc_thunk.*` stubs, nonsensical struct padding (`char padding_0[11895]`), and stack check failure handlers clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some loops recovered correctly (`param_asm_clobber` uses for-loop), but other functions use goto patterns (`goto v1->field_2c`) that should be structured control flow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity is reasonable, but many are constant-folded entirely (`call_macro_constants` just returns 64), losing the original call relationship structure.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom, but stack check failures create non-linear exit paths and some functions have awkward forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Constant folding appropriately removed computation redundancy. However, struct definitions are repeated with different padding values across functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are mostly generic (`unsigned int`, `int`, `char*`). Original `size_t`, specific pointer types lost. SIMD recovery used `uint128_t` which is good, but inconsistent.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions are nonsensical artifacts (`char padding_0[11895]`, `field_2e77`). No meaningful field names recovered; appears to be decompilation errors rather than actual structures.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple implicit pointer casts present. Stack canary checks (`__stack_chk_fail_local`) indicate potential issues. Atomic operations recovered but with generic pointer types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Essentially no useful comments. One anomaly marker (`[D] Unsupported jumpkind Ijk_SigTRAP`) but no algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic loop patterns recognized in assembly functions. No design pattern identification. Atomic operations partially recognized as `atomic_exchange_add`.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Single anomaly noted for SIGTRAP. Stack check failures not explained. No warnings about uncertain indirect calls or unresolved symbols.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error condition documentation. Original parameter validation logic (`if (size > MAX_SIZE)`) preserved but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables have generic names (`g_402041`, `g_4021f4`). No call graph documentation or relationship explanations.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Original source had clear section organization (PP-L2-01, ASM-L4-01, etc.) completely lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References undefined symbols (`_ccall`, `atomic_exchange_add`, `AddV`). External globals undeclared. Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+6+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):   (5+6+6+7)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type System):  (5+3+5)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):     (2+4+4+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):   (5+4+3)/3   = 4.00 × 0.10 = 0.400
+---------------------------------------------------------
+Overall Score:                                  4.64/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects
+- **Variable names completely generic** (`v0`, `v1`, `a0`, `a1`) losing all semantic meaning from original `size`, `counter`, `increment`
+- **Struct definitions are decompilation artifacts** with nonsensical padding arrays (`char padding_0[11895]`) rather than recovered types
+- **Magic numbers replace named constants** (`0x400` instead of `MAX_SIZE`, `57072` instead of `0xDEF0`)
+- **No comments or documentation** explaining algorithm intent or decompilation confidence
+- **External dependencies unresolved** (`_ccall`, `AddV`, `atomic_exchange_add`) preventing standalone compilation
+
+### Best Quality Aspect
+- **Redundancy Elimination (7/10)** - Constant folding appropriately simplified computations without introducing dead code loops
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding decompilation decisions impossible
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in size comparisons should be named `size` or `length`)
+2. **Add decompilation confidence annotations** - Mark uncertain recoveries with comments like `// DECOMPILE_UNCERTAIN: indirect call target unknown`
+3. **Recover constant definitions from usage** - Detect repeated literals and suggest named constants (e.g., `0x400` → `#define MAX_SIZE 1024`)

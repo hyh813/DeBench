@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `iVar2`, `uVar1`, `bVar1`, `pbVar3`) with no semantic meaning. Many locals marked as "Unresolved local var" with DW_OP references, making tracking impossible.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions retained original names (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`), but helper functions like `FUN_00100730`, `FUN_001008bc` are generic address-based names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many unexplained hex literals (`0x14`, `0x23`, `0xe1`, `0x7a314`, `0x13ba`) replace meaningful constants. The XOR key `0x5A` is visible but not documented as a decryption key.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Cluttered with "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", and "Unresolved local var" annotations throughout function bodies.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple for-loops converted to do-while with manual counter management. `param_vectorized_loop` uses complex pointer arithmetic with `CONCAT44` operations instead of clean array indexing.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but `param_fake_branch` is oversimplified (just returns `x`, losing the永假 branch logic). `test_obf_opt_edge` contains inlined decryption code duplicating `param_string_encryption`.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `param_vectorized_loop` has `LAB_00100c50` labels and multiple exit paths that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `param_vectorized_loop` shows significant loop unrolling redundancy with 8 parallel accumulators (`iVar10`, `iVar12`, `iVar13`...). `test_obf_opt_edge` duplicates decryption logic from other functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed generic types (`int`, `uint`, `ulong`, `byte`) with excessive casts (`(ulong)`, `(uint)`, `(int)`). Some `size_t` preserved in `decrypt_string`, but most type information lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Bitfield struct shows as "anon_struct_4_3_4e909822 bitfield@[???]" with no field names. Arrays shown as `byte local_40 [31]` instead of `char decrypted[32]`. `jmp_buf` partially recovered as `__jmp_buf_tag *`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout (`(byte *)`, `(int *)`, `(ulong)`). `param_null_pointer_deref` shows direct pointer dereference without visible null check. Signal handlers cast to `(__sighandler_t)0x0`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated warnings present ("WARNING:", "Unresolved local var"). No algorithm explanations, no documentation of function purpose. Original's extensive obfuscation technique comments completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` appears as raw arithmetic loop without recognition. XOR decryption pattern not identified. Vectorization patterns shown as complex pointer math without explanation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good: "WARNING: Removing unreachable block", "Unresolved local var", "WARNING: Subroutine does not return" for longjmp. However,永假 (always-false) conditions being optimized away is not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original's "期望：10" (expected: 10) comments completely absent. No error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code, global variables referenced (`div_zero_caught`, `jmp_buffer`), but no call graph documentation or relationship indicators between functions.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in address order with no logical grouping. Original's clear section headers (7.1 混淆，7.2 优化，7.3 边界) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires significant stubbing to compile. Ghidra-specific types (`__jmp_buf_tag`, `EVP_PKEY_CTX`), external dependencies (`__libc_start_main`, `__gmon_start__`) not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+6+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (2+2+6+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+---------------------------------------------------------
+Overall Score:                                  4.487 ≈ 4.5/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects
+- **Variable names are entirely generic** (`iVar1`, `iVar2`, `uVar1`) with no semantic meaning; original names like `result`, `p1`, `p2`, `p3`, `encrypted`, `decrypted` completely lost
+- **永假 (always-false) branch conditions optimized away** in `param_fake_branch` without any warning that logic was eliminated
+- **No semantic comments** - original's extensive documentation about obfuscation techniques completely absent
+- **Complex vectorization code** in `param_vectorized_loop` uses `CONCAT44` and pointer arithmetic instead of recognizable array operations
+- **Bitfield struct recovery failed** - shows as "anon_struct_4_3_4e909822" with no field names
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Main test functions retained their original semantic names (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`), making function identification straightforward.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Only auto-generated warnings exist; no algorithm explanations, no purpose documentation, no recovery of original's extensive obfuscation technique comments.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable name inference** - Analyze usage patterns to suggest names like `result`, `packet_size`, `encryption_key` instead of `iVar1`, `iVar2`
+2. **Add optimization artifact warnings** - Flag when compiler optimizations eliminate code paths (like永假 conditions) so analysts know logic was removed
+3. **Recover algorithm patterns** - Recognize common patterns (GCD, XOR decryption, vectorization) and add explanatory comments identifying the algorithm

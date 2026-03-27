@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3`; local variables use `v1`-`v14`. The original had meaningful names like `x`, `arr`, `n`, `p1`, `p2`, `head`, `temp`. Only `mem` and `result` are descriptive.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions like `double_value`, `local_vars`, `heap_basic`, `heap_calloc`, `linked_list_heap` match source exactly. However, many wrapper functions have generic names like `function_1120`, `function_1130` which are compiler-generated stubs.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Global variables initialized with meaningless hex values (e.g., `g1 = -0x7cbbfaf3` should be `global_counter`). String literals not resolved (e.g., `(char *)(v1 + 0x1a56)`). Some constants like `10`, `20`, `42` correctly recovered.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution: 8 `__x86_get_pc_thunk_*` functions, multiple `__stack_chk_fail` calls, assembly intrinsics like `__asm_rep_stosb_memset`, `__asm_rep_movsb_memcpy`. Many wrapper functions (function_1120 through function_126c) are pure noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (if/while). However, `linked_list_heap` uses goto statements (`goto lab_0x1988`) instead of proper loop constructs. The `local_array` uses a while loop instead of for loop, which is less idiomatic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. `linked_list_heap` at ~100 lines is large but necessary. Test functions properly separated. Some compiler-generated functions (frame_dummy, register_tm_clones) incorrectly included.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but `linked_list_heap` has goto-based control flow that disrupts linear reading. Early returns present but appropriate.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code. Loop unrolling present in `local_array`, `heap_basic` but logically correct. Some repeated calculations (e.g., `4 * a1` computed multiple times).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently, but loses `size_t` (becomes `uint32_t`), loses `char*` vs `int32_t*` distinction. Pointers represented as `int32_t` rather than proper pointer types. Function parameters like `int32_t a1` lose original `int` semantics.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: `Point` struct not recovered - uses `malloc(8)` with manual field access. `Node` and `TreeNode` structs lost - raw pointer arithmetic throughout. The original had clear struct definitions; decompiled code uses void* style access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe integer-to-pointer casts. Pointer arithmetic done with integer types. The `mem` variable is used after free in `heap_struct` (actually a bug in decompilation - frees before using). No const correctness.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address range comments present. No algorithm explanations. No recovery confidence indicators. Auto-generated "// UNRETAINABLE" comments but no useful documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Linked list and tree patterns are structurally recognizable but not explicitly named or documented as patterns. No mention of "linked list", "binary tree", "VLA", or "alloca" in comments.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flagging of suspicious code. The dangling pointer in `dangling_pointer` (access after free) not flagged. No warnings about undefined behavior. No indication of indirect call resolution failures.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Error handling (NULL checks) present but no explanation of what they guard against.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function prototypes at top show relationships but no documentation of call graph. No indication of which functions use which globals. Callback relationships not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped somewhat logically (heap functions together, stack functions together) but mixed with compiler-generated code. No clear separation into logical modules matching source sections.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes headers but many undefined functions (`__cxa_finalize`, `__libc_start_main`, etc.). Would require significant stubs to compile. No dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use `a1`, `a2`, `a3`; locals use `v1`-`v14` - completely loses semantic meaning
+- **Struct recovery failure**: `Point`, `Node`, `TreeNode` structs not recovered - uses raw pointer arithmetic with magic offsets
+- **Noise pollution**: 8 `__x86_get_pc_thunk_*` functions, many `function_NNNN` wrappers, assembly intrinsics clutter output
+- **No anomaly indication**: Dangerous patterns like dangling pointer access not flagged
+- **Global variables**: Meaningless hex values like `g1 = -0x7cbbfaf3` instead of `global_counter = 0`
+
+### Best Quality Aspect: Function Naming (7/10)
+Core test functions (`heap_basic`, `heap_calloc`, `linked_list_heap`, `tree_heap_traversal`) are named correctly and match source.
+
+### Most Needs Improvement: Variable Naming (2/10)
+Every parameter and local variable uses generic names, making it nearly impossible to track data flow without extensive cross-referencing.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `a1` used in arithmetic → `n` or `count`; `a1` used as pointer → `ptr` or `buffer`
+2. **Recover struct types**: Detect malloc(size) patterns matching struct sizes and reconstruct field layouts
+3. **Filter compiler artifacts**: Remove or isolate `__x86_get_pc_thunk_*`, `frame_dummy`, and similar functions not present in original source

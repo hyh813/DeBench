@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use mechanical names (`a0`, `a1`, `a2`) and local variables use cryptic names (`v0`, `v1`, `v2`). The original source uses meaningful names like `a`, `b`, `count`, `str`, but these are completely lost. Even register hints like `// x0` don't help identify semantic purpose.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly preserve original names (`cdecl_func`, `stdcall_func`, `call_cdecl`), but many utility functions have cryptic addresses (`sub_400654`, `sub_400730`). The mix is inconsistent - test wrapper functions are named well but infrastructure functions are not.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: The decompiler constant-folded function calls (e.g., `call_cdecl()` becomes `return 15`), which is useful but removes the ability to see the computation. Magic numbers like `4294967295` (0xFFFFFFFF) appear without explanation. The value `18446743528248704968` in varargs functions is completely opaque.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some register location comments (`// x0`, `// x9`) are present but don't significantly impede reading. No debug instrumentation or frame pointer manipulation clutter visible.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - simple if-else, for loops, and return statements. The varargs functions have some goto-based loops that are harder to follow, but basic arithmetic and conditional logic is clear. At -O0, this is acceptable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - each test function and callee is separate. No 500-line monoliths. The decomposition matches the original source structure well, with caller/callee pairs preserved.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No deep nesting (>4 levels) observed. The varargs loop structure is the main area of complexity but remains traceable.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or obvious redundancy. Constant folding is appropriate for -O0. Functions don't have duplicate expressions. Very clean in this dimension.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Parameters use `unsigned int` where original has `int`, losing sign information. Function pointers incorrectly typed as `unsigned long long *a0` instead of proper function pointer types. Mixed precision - some pointers correctly typed, others use generic types.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct recovery attempted - `param_ptr_array` shows struct definitions with `field_0`, `field_8`. However, field names are generic and lose semantic meaning. The original `SmallStruct` with `x`, `y` becomes `unsigned int *a0` with pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues: function pointer called via `a0(a1)` without proper type; pointer arithmetic in `func_struct_byptr` using `a0[1]`; unsafe casts in `ret_large_struct` with CONCAT operations. The code compiles but has undefined behavior risks.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only register location hints like `// x0` present. No algorithm explanations, no decompilation confidence indicators, no API contracts. The original source has extensive comments explaining each test case - completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The varargs handling (va_list, va_start, va_arg pattern) is not recognized as such - just appears as complex pointer manipulation. No pattern naming or explanation.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The `ret_large_struct` function has unsupported operations (`unsupported_Iop_ZeroHI64ofV128`) but no warning. Indirect function calls not flagged. Potential undefined behavior in `param_order_dep` not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source has clear expectations (e.g., "ptr != NULL" checks) but these aren't recovered or explained. The decompiled code just shows the raw logic.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible in the code (e.g., `call_cdecl()` calls `cdecl_func`), but relationships aren't documented. No call graph, no global variable usage explanation. The test functions call the right functions but the connections aren't explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Some logical grouping visible (calling convention tests, parameter tests, return tests) but not explicitly organized. Original source's section comments (`// ============================================================================`) completely lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has `extern` declarations for external references but many are unresolved (`extern unsigned long long g_412ff8`). Would require significant patching to compile. Missing standard library headers. The constant-folded test functions won't actually call the tested functions.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic `a0`, `a1`, `a2` instead of semantic names like `count`, `str`, `ptr`
+- **Type safety**: Function pointers called via `a0(a1)` without proper type signatures - dangerous
+- **No comments**: Zero algorithm explanations or decompilation confidence indicators
+- **Struct field loss**: Composite types recovered with generic `field_0`, `field_1` names losing semantic meaning
+- **Anomaly silent**: Unsupported operations in `ret_large_struct` not flagged to user
+
+### Best Quality Aspect: Structural Intelligibility (scored 8.0/10)
+Control flow is natural, functions are well-decomposed, and code reads linearly. At -O0, the decompiler preserved the original code structure well.
+
+### Most Needs Improvement: Semantic Transparency (scored 2.0/10)
+No comments, no pattern recognition, no anomaly indication, and no contract recovery. The decompiled code provides zero context about what it's doing or confidence in the accuracy.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: `a0` used as `count` in loop `for (int i = 0; i < a0; i++)` should be named `count`
+2. **Recover function pointer types**: Instead of `unsigned long long *a0`, detect callback patterns and emit `int (*callback)(int)`
+3. **Add decompilation confidence comments**: Flag indirect calls, unsupported operations, and potential undefined behavior like `param_order_dep(++i, ++i)`

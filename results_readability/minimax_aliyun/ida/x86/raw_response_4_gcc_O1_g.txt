@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Local variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4` throughout (e.g., in `varargs_func`, `test_calling_conventions`). Function parameters like `a`, `b`, `c`, `x`, `y` are preserved, but at -O0 debug level, local variables should have more semantic names based on their usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most user-defined functions are correctly named: `cdecl_func`, `stdcall_func`, `fastcall_func`, `callback_func`, `func_a`, `func_b`. Internal compiler functions use generic names (`sub_1030`, `sub_1040`) which is expected. The naming accurately reflects the source function names.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Computed constants like `15`, `50`, `6`, `21` are correct return values but lack explanation of their origin. String literals are referenced as `asc_2008`, `unk_202C` - placeholders without content. Magic numbers like `0x14u` for stack canary offset are unexplained.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Significant compiler artifact noise present: `init_proc`, multiple `__x86.get_pc_thunk.*` functions, `frame_dummy`, `_do_global_dtors_aux`, and various thunk stubs. At -O0 this is expected but creates 949 LOC vs 665 source LOC. Some redundant stack frame manipulation present.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with standard if-else and loop constructs. The `varargs_func` uses do-while loop correctly. Some awkward patterns like the computed goto in `ret_multi_branch` but overall readable. At -O0, minimal optimization distortion.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. Each test function (`call_cdecl`, `call_stdcall`, etc.) is separate. No 500-line monoliths. Function granularity matches source well.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns used appropriately (e.g., in `func_no_args`, `param_by_value_ptr`). No goto abuse. Good linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy detected. Dead code is minimal. Loop unrolling not present at -O0. Code is clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate: `int`, `char*`, `int*`, `double`, `__int64`. However, `va_list` handling shows generic `_DWORD*` casting. Some `void*` could be more specific (e.g., in `param_complex_cast`). Const correctness partially preserved (`const char *str`).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types correctly recovered: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData`. Field names preserved (`data[]`, `x`, `y`). The `LargeStruct` with `long long data[16]` is correctly identified.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with minor issues. Unsafe casts present: `*(_DWORD *)p` in `param_complex_cast`, `*(void**)(obj + 8)` pattern not seen here. Pointer arithmetic is correct. Function pointer types properly typed (`int (*callback)(int)`).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are minimal - mostly just function name headers. No explanation of algorithm logic, parameter contracts, or return value semantics. The source had extensive comments (Chinese annotations) which are completely lost. Auto-generated function headers present but not informative.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Common idioms recognized: varargs (`va_list`, `va_start`, `va_arg`), function pointers, struct by value/pointer. The AAPCS/stdcall/fastcall calling conventions are annotated. However, no explicit pattern naming (e.g., "This implements varargs pattern").
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed functions are clearly marked: "FAILED to decompile: __libc_start_main @ 0x5020". Stack canary usage (`__readgsdword(0x14u)`) is present but not explained. Some uncertainty indicators present but sparse.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks in functions like `func_struct_byptr` and `param_double_ptr` are present but not explained as contracts. The source had explicit NULL checks that are preserved but not annotated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear from code structure. `main` calls `test_calling_conventions`, `test_parameter_passing`, `test_return_values`. However, no explicit documentation of call graph or callback relationships. Static functions properly marked.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped: calling convention functions first, then parameter passing, then return values. Matches source organization. Static functions correctly scoped. Related functions grouped together.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Marked as "Compilation Result: Yes" in metadata. External dependencies (`puts`, `strlen`, `__printf_chk`) are referenced but not declared. Would require linking against libc. Minimal stubs needed.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.6/10
+
+### Critical Defects:
+- **Variable naming**: Local variables use generic names (`v0`, `v1`, `v2`) instead of semantic names, making code harder to trace
+- **Comment loss**: Source had extensive Chinese documentation explaining each test case - completely lost in decompilation
+- **No contract recovery**: Preconditions/postconditions not documented despite NULL checks being present in code
+- **String literal placeholders**: `asc_2008`, `unk_202C` hide actual string content
+- **Architecture mismatch**: Source states ARM64 but decompiled code shows x86/x64 instructions (ebx, edx, etc.)
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions are well-separated with appropriate granularity matching the source. Each test case function is correctly isolated. No excessive inlining or fragmentation.
+
+### Most Needs Improvement: Variable Naming Quality (5/10)
+At -O0 debug level, local variables should have semantic names based on usage. Generic `v0`-`v6` naming forces readers to trace variable lifecycles manually.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: `v3` used as sum accumulator in `varargs_func` should be named `sum` or `total`
+2. **Recover string literals**: Replace `asc_2008` with actual string content for readability
+3. **Add contract documentation**: Document NULL checks as implicit preconditions (e.g., "requires: p != NULL")

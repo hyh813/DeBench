@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables like `acStack_2c`, `local_d`, `local_c`, `puVar1`, `iVar1`, `sVar1` are generic and meaningless. The original source had clear names like `value`, `name`, `data`, `size`, `instance_count`, but the decompiled version uses generic register/stack variable names that convey no semantic meaning.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions are correctly named (test_cpp_member_func, test_cpp_constructor), but `call_virtual_func` has wrong return type (void instead of int). Template functions have descriptive suffixes (`_int_`, `_double_`) but virtual function handling shows inconsistent naming patterns.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Magic numbers like `0x2a` (42), `0x47` (71), `0x28a` (650), `0x125c` (4704) appear without explanation. The original source clearly uses `0x1234` for getClassID, but the decompiled version provides no context for these computed values.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Stack canary checks (`__stack_chk_fail`) appear but are expected at -O0. Some redundant virtual function definitions exist (likely different vtable entries) but don't significantly impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: `test_cpp_exception` only shows the throw logic, missing catch blocks entirely - this is a critical control flow loss. Some functions like `call_virtual_func` have incorrect signatures affecting flow understanding. Basic if-else structures are preserved but exception handling is severely broken.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are mostly separated but `test_cpp_exception` is incomplete (only shows throw, not try-catch structure). Template instantiations are present but some virtual function implementations are duplicated unnecessarily.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. The `test_cpp_oo_features` function is linear and follows execution order. Some complex pointer arithmetic in virtual inheritance disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some duplicate virtual function definitions exist (e.g., multiple `MultiDerived::funcB`, `MiddleA::func` versions) likely representing different vtable offsets, but these are manageable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Uses `undefined4`, `undefined8`, `undefined1` instead of proper types like `int`, `size_t`, `char`. No const correctness. Function parameters use generic types. The original had precise types (int, size_t, char*) but these are lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct/class recovery with meaningful field names. Uses raw pointer arithmetic like `*(int *)(this + 4)` instead of `this->multiplier`. Virtual inheritance handling shows complex pointer dereferencing (`*(int *)(*(int *)this + -0xc)`) that obscures the actual data structure.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts through pointer arithmetic. No bounds checking on array access (e.g., `Container<int>::push`). Type confusion between base and derived classes in virtual function calls. Raw memory operations without safety guarantees.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Almost no comments explaining code logic. No algorithm documentation. No indication of uncertainty or incomplete decompilation. The original source had extensive comments explaining each feature, but the decompiled version provides none.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Virtual function calls use complex pointer dereferencing (`(***(code ***)param_1)()`) instead of clear method call syntax. Exception handling is incomplete. RTTI (`typeid`, `dynamic_cast`) is present but not clearly explained as C++ idioms. Templates are somewhat recognized but not clearly presented.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that `test_cpp_exception` is incomplete. No warnings about missing catch block recovery. No flags for indirect virtual calls that couldn't be fully resolved. The decompiler presents incomplete information as if it were complete.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No pre/postcondition recovery. No invariant documentation. No error condition explanation. The original source had clear semantics (e.g., "requires: ptr != NULL") but these are completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No clear documentation of function relationships. Virtual dispatch through vtables is not explained. No call graph information. The relationship between Base/Derived classes and their virtual functions is obscured by raw pointer manipulation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are listed in address order rather than logical grouping. No class structure or namespace recovery. Related functions (like all Container methods) are separated by other unrelated functions.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Multiple compilation errors: `call_virtual_func` returns void instead of int. `test_cpp_exception` is incomplete. Template functions have mangled names. Missing function bodies for catch blocks. The code cannot compile as-is.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.1/10
+
+**Critical Defects:**
+- `test_cpp_exception` is severely incomplete - only shows throw, missing all catch blocks and try logic
+- `call_virtual_func` has wrong return type (void instead of int), breaking semantic accuracy
+- Variable names are all generic (`acStack_2c`, `puVar1`, `iVar1`) with no semantic meaning
+- No struct/class field recovery - all access is raw pointer arithmetic (`*(int *)(this + 4)`)
+- Magic numbers like `0x2a`, `0x47`, `0x28a` appear without explanation of what they represent
+- Virtual function calls use cryptic pointer dereferencing instead of method call syntax
+
+**Best Quality Aspect:** Noise Reduction (scored 7/10)  
+- Minimal compiler artifacts; stack canaries and basic runtime checks are expected at -O0 and don't significantly impede readability.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+- Zero meaningful comments explaining algorithms, recovered semantics, or uncertainties. The original source had extensive documentation explaining each C++ feature, but the decompiled version provides no guidance to the analyst.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover exception handling structures** - The try-catch blocks in `test_cpp_exception` are completely missing. The decompiler should recognize `__cxa_throw`/`__cxa_begin_catch` patterns and reconstruct the full exception flow.
+2. **Infer variable names from usage patterns** - Variables like `acStack_2c` used in `strncpy` with "Test" should be named `name` or `class_name`. Stack variables used as array indices should be named `size` or `index`.
+3. **Recover class member access** - Replace `*(int *)(this + 4)` with `this->multiplier` by analyzing vtable offsets and constructor initialization patterns to identify field names and types.

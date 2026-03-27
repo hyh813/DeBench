@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `param_2`, `iVar1`, `local_28`, `uVar4`) with no semantic meaning. For example, in `param_strcpy`, parameters should be `dst` and `src` but are `param_1`/`param_2`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-recovered matching source (`param_strcpy`, `call_strcpy`, `thread_compute`, `signal_handler`, `param_mutex_lock`). This is the strongest lexical aspect.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers: `0x2a` (42), `0xffffffff` (-1), `0x12` (18), `0x1b6` (file mode). String literals often shown as `&DAT_00104069` instead of actual content.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `LOCK()`/`UNLOCK()` macros for atomics, excessive casts like `(ulong)(uint)`, and awkward boolean expressions `-(uint)(iVar1 != 0)`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow preserved but boolean normalization is awkward (`iVar2 = -(uint)(iVar1 != 0)` instead of ternary). At -O0 this should be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries correctly identified matching source. Thread functions properly separated (`thread_compute`, `consumer_thread`, `producer_thread`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but some functions have excessive nesting. `param_fread_fwrite` has deeply nested conditionals that could be flattened.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Character-by-character string comparison in `param_fread_fwrite` (16 individual comparisons) instead of `strcmp()`. Loop patterns sometimes duplicated.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types dominate: `undefined8`, `ulong`, `undefined4` instead of `size_t`, `ssize_t`, `pid_t`. Return type of `param_strcpy` is `void` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct fields accessed individually (`local_20.sa_data[6]`, `local_20.sa_family`) instead of proper `struct sockaddr_in` with named fields. `stat` struct partially recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Many implicit casts present (`param_1 & 0xffffffff`), pointer arithmetic without clear types. Some operations like `local_18._4_4_` indicate type confusion.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality:** Score: 1/10  
+Justification: Zero comments in decompiled code. No explanation of algorithm logic, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Atomic operations shown as `LOCK()`/`UNLOCK()` instead of `__atomic_*` intrinsics. No pattern recognition for producer-consumer, mutex protection, or signal handling patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertain decompilation. External functions marked `<EXTERNAL>` but no warnings about potential issues or unresolved calls.
+
+**15. Assertion Recovery:** Score: 1/10  
+Justification: No precondition/postcondition documentation. Error conditions not explained (e.g., what `-1`, `-2`, `-3` return values mean in each function).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables (`signal_received`, `atomic_counter`, `shared_counter`) used without declaration context.
+
+**17. Module Organization:** Score: 7/10  
+Justification: All functions in single file matching source organization. Related functions grouped (test functions near their param functions). External stubs at top.
+
+**18. Build Compatibility:** Score: 6/10  
+Justification: Metadata claims "Compilation Result: Yes" but code has issues: external function stubs, undefined types, platform-specific assumptions not handled.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+3+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (4+3+5)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (5+7+6)/3   = 6.00 × 0.10 = 0.60
+
+Overall Score: 4.625/10 ≈ 4.6/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Variable naming**: All parameters named `param_1`, `param_2` instead of semantic names like `dst`, `src`, `buffer`, `size`
+- **Return type error**: `param_strcpy` returns `void` but source returns `int` (strlen result)
+- **Magic numbers**: `0x2a`, `0xffffffff`, `0x12` throughout without explanation
+- **Zero documentation**: No comments explaining logic, error codes, or decompilation confidence
+- **Type degradation**: `undefined8`, `ulong` instead of `size_t`, `ssize_t`, `pid_t`
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately (`param_strcpy`, `thread_compute`, `signal_handler`)
+
+### Most Needs Improvement:
+- **Comment Quality (1/10)** - Complete absence of any documentation or explanatory comments
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer semantic variable names from usage patterns** - Analyze how variables are used (e.g., passed to `strlen` → `string_length`, used in loop bound → `count`)
+2. **Recover and document magic numbers** - Detect common constants (42, -1, file modes) and suggest named constants or add inline comments
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions, unresolved calls, and potential type ambiguities with comments

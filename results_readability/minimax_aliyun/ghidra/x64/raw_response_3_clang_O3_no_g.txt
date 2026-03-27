@@ -1,0 +1,164 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiler uses completely generic variable names like `param_1`, `lVar1`, `iVar2`, `bVar2`, `uVar1`, `piVar1`, `puVar2`. The original source had meaningful names like `x`, `a`, `b`, `c`, `arr`, `n`, `p1`, `p2`, `leak`, `temp`. The naming provides only type hints (prefixes like `b`=byte, `i`=int, `u`=unsigned) but no semantic meaning. This makes tracking variable purpose across the 1989 lines extremely difficult.
+
+### 2. Function Naming Quality
+**Score:9/10**
+
+Function names are correctly preserved from the original source: `local_vars`, `local_array`, `local_struct`, `heap_basic`, `heap_calloc`, `linked_list_heap`, `tree_heap_traversal`, `memop_memset`, `memop_memcpy`, etc. The names accurately reflect their functionality and match the source exactly. This is excellent recovery.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Magic numbers like `0x2a` (42), `0x14` (20), `0xf` (15), `0x3c` (60) are used without explanation. The hex notation is consistent but obscures the semantic meaning. For example, `0x2a` should be explained as the value 42 (the answer to life). Some constants like array sizes (10, 2048) are not clearly documented.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+Significant noise artifacts include: "WARNING: Removing unreachable block" messages scattered throughout, auto-generated symbols like `__gmon_start__`, placeholder functions like `FUN_00101020`, and debug-related functions (`_init`, `deregister_tm_clones`, `register_tm_clones`). The `large_stack_frame` function has 128 lines of repetitive code from loop unrolling that could be abstracted.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+The control flow is severely degraded. The `large_stack_frame` function uses an unusual loop with XOR operations (`bVar2 = bVar2 ^ 0x80`) that doesn't map to the original for-loop. Functions like `vla_stack` and `alloca_usage` have complex loop unrolling with multiple jump labels (`LAB_0010142b`, `LAB_0010145f`) that make execution flow difficult to trace. At -O0, this level of transformation is unexpected and problematic.
+
+### 6. Function Decomposition
+**Score: 6/10**
+
+Most functions are reasonably sized, but `large_stack_frame` is ~100 lines due to loop unrolling. The `test_stack_memory` and `test_heap_memory` functions are large but represent test harnesses. Function granularity is generally acceptable, though some could benefit from extraction of common patterns.
+
+### 7. Code Linearization
+**Score: 5/10**
+
+The code has multiple forward jumps and labels (e.g., `LAB_0010142b`, `LAB_0010145f`, `LAB_0010187f`) that disrupt linear reading. The `vla_stack` and `alloca_usage` functions are particularly non-linear with multiple loop exit points and computed goto patterns.
+
+### 8. Redundancy Elimination
+**Score: 2/10**
+
+The `large_stack_frame` function contains extreme redundancy - the same 16-element array assignment pattern repeats 128 times with only the index changing. This is loop unrolling at its worst and makes the function nearly unreadable. Similar redundancy exists in `vla_stack`, `alloca_usage`, and heap initialization functions.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+
+Mixed type precision: uses `int`, `undefined4`, `uint`, `ulong`, `byte`, `char` inconsistently. Parameter types like `param_1` are often generic. The decompiler shows awareness of different sizes (`undefined4` vs `undefined8`) but loses signed/unsigned distinction in many places. Function pointers are typed as `code *` or `undefined8` rather than proper function signatures.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+Structures like `Point` {int x, y} and `Node` {int data, struct Node *next} are completely lost. The code uses raw pointer arithmetic: `*(undefined4 **)(__ptr + 2)` instead of `node->next`. The linked list code accesses fields via offsets like `*(int **)(__ptr + 2)` which is unreadable. No struct recovery whatsoever.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Multiple unsafe operations: raw pointer arithmetic (`(long)__ptr + uVar7 * 4`), unsafe casts (`undefined4 *` to `int *`), and memory access patterns that could cause issues. The `dangling_pointer` function correctly shows the undefined behavior of accessing freed memory. However, many heap operations lack proper type safety.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+
+Only auto-generated warnings present: "WARNING: Removing unreachable block", "WARNING: Globals starting with '_' overlap smaller symbols". No meaningful comments explaining algorithm intent, preconditions, or non-obvious logic. The decompiled code lacks any documentation that would help understand the original programmer's intent.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Some patterns are implicitly recognizable (linked list traversal, tree node creation) but not explicitly named or documented. The decompiler doesn't identify "this is a linked list" or "this implements a binary tree" - the analyst must infer this from the pointer chasing code.
+
+### 14. Anomaly Indication
+**Score: 6/10**
+
+The decompiler does flag some issues: "WARNING: Could not recover jumptable at 0x0010234c. Too many branches" for indirect function calls, and "WARNING: Treating indirect jump as call". However, these warnings are generic and don't explain the actual semantics (e.g., that `global_func_ptr` is a function pointer being called).
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No precondition/postcondition recovery. The original source had explicit checks like `if (arr == NULL) return -1;` which are preserved structurally but not documented as contracts. No "requires: ptr != NULL" or "ensures: return is heap-allocated" annotations.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Function calls are clear (`malloc`, `free`, `memset`, `memcpy`), but relationships aren't documented. There's no indication which functions call which, or the role of global variables like `global_counter`, `global_array`, `global_func_ptr` across functions. The call graph must be inferred manually.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Functions are logically grouped: stack memory functions first, then heap, then static/global, then memory operations. This matches the original source organization reasonably well. Static functions like `double_value` are placed appropriately. The overall structure is coherent.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+The code has multiple compilation issues: missing `#include <stdio.h>` (uses `puts`, `printf` without includes), undefined types like `EVP_PKEY_CTX` in `_init`, incorrect format strings (e.g., `printf("STM-L1-01 (global_var_access): %d\n");` missing the value argument), and undefined symbols like `__libc_start_main`. The code would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 5 + 4) / 4 = 5.0
+L2_avg = (4 + 6 + 5 + 2) / 4 = 4.25
+L3_avg = (5 + 2 + 4) / 3 = 3.67
+L4_avg = (4 + 5 + 6 + 2) / 4 = 4.25
+L5_avg = (5 + 7 + 2) / 3 = 4.67
+
+Overall = (5.0 × 0.30) + (4.25 × 0.25) + (3.67 × 0.20) + 
+          (4.25 × 0.15) + (4.67 × 0.10)
+        = 1.5 + 1.0625 + 0.734 + 0.6375 + 0.467
+        = 4.40/10
+```
+
+**Overall Readability Score: 4.4/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming is completely generic** - `param_1`, `lVar1`, `iVar2` provide no semantic meaning; original names like `x`, `arr`, `n`, `p1` were lost
+
+2. **No struct/union recovery** - `Point` and `Node` types completely lost; replaced with raw pointer arithmetic like `*(undefined4 **)(__ptr + 2)`
+
+3. **Extreme loop unrolling** - `large_stack_frame` has 128 repetitive lines that could be a simple for-loop; makes function nearly unreadable
+
+4. **Non-linear control flow** - Multiple labels and forward jumps in `vla_stack`, `alloca_usage` with `LAB_0010142b`, `LAB_0010145f` patterns
+
+5. **Code doesn't compile** - Missing includes, incorrect printf format strings, undefined types; would require extensive patching
+
+---
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (9/10)** - Function names are perfectly preserved from the original source, making it easy to identify each function's purpose at a glance.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)** - The generic naming scheme (`param_1`, `lVar1`, `iVar2`) makes it extremely difficult to track variable purpose across the 1989-line decompiled output. This is the primary readability blocker.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: When a variable is used as array index, name it `index` or `i`. When used to store size, name it `size` or `count`. When passed as parameter and returned, recognize it's an input-output value. The original source had clear names that should be recoverable from semantic usage.
+
+2. **Detect and abstract loop unrolling**: When a loop body is repeated with sequential indices (as in `large_stack_frame`), recognize this as unrolled loop and reconstruct the original for-loop. Use a comment like "// Loop unrolled 16x" if reconstruction isn't possible.
+
+3. **Recover struct layouts from allocation patterns**: When `malloc(sizeof(Point))` or `malloc(0x10)` is followed by field assignments at fixed offsets, recognize this as struct allocation. Reconstruct the struct definition and use field names instead of raw offsets.

@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are consistently generic (e.g., `param_1`, `iVar1`, `uVar2`), providing no semantic hint about their purpose like `a`, `b`, or `sum` found in the source.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `param_by_value_int` are perfectly recovered, matching the original source exactly.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Magic numbers like `0xf` (15) and `0x32` (50) are used directly instead of the original computed values or named constants, requiring mental conversion.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code contains low-level noise such as `__printf_chk` instead of `printf` and `__aeabi_dadd` for floating-point arithmetic, which obscures the high-level intent.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: The control flow for simple functions like `cdecl_func` is perfectly natural (`return param_1 + param_2`), though complex logic like varargs is misrepresented as a simple counter loop.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are decomposed correctly with appropriate granularity, matching the source structure (e.g., `cdecl_func` is separate from `call_cdecl`).
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly from top to bottom with minimal jumps or confusing forward references, especially in the simple arithmetic functions.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little dead code, but the `test_calling_conventions` function contains verbose sequences of `__printf_chk` calls that mirror the source's verbosity without simplification.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Critical failure on ARM64: 64-bit types like `double` and `long long` are incorrectly split into pairs of `undefined4` (32-bit) parameters (e.g., `func_mixed_args`), losing type information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct parameters are completely flattened; `LargeStruct` in `func_struct_byval` is represented as four separate integers (`param_1` to `param_4`) rather than a struct object.
+
+**11. Type Safety:** Score: 3/10
+Justification: The extensive use of `undefined4` and `undefined8` types, along with the splitting of 64-bit registers, creates significant type confusion and potential safety risks.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are no meaningful comments explaining the logic, algorithms, or the purpose of the "calling convention" tests; only basic function headers exist.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The decompiler failed to recognize the `varargs` idiom; `varargs_func` logic is reduced to a counter increment (`iVar1 = iVar1 + 1`) instead of summing arguments.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No warnings or flags are present to indicate the loss of varargs logic or the incorrect splitting of 64-bit types on a 64-bit architecture.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants (e.g., the requirement for `count` in `varargs_func`).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and reference the correct targets (e.g., `call_cdecl` calls `cdecl_func`), maintaining the call graph structure.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically in the output, maintaining the separation between calling convention tests, parameter tests, and return value tests.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code will not compile due to `undefined` types, missing struct definitions, and the use of compiler intrinsics like `__aeabi_dadd` without headers.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- 64-bit scalar types (`double`, `long long`) are incorrectly split into 32-bit `undefined4` pairs on ARM64.
+- Varargs logic (`va_arg`) is completely lost, replaced by a meaningless counter loop.
+- Large structure parameters are flattened into separate integer parameters, losing the struct abstraction.
+- Variable names are entirely generic (`param_1`, `iVar1`), obscuring semantic meaning.
+
+**Best Quality Aspect:** Function Naming (scored 10/10)
+- The decompiler successfully recovered all original function names from the symbol table, making the high-level purpose of each block immediately identifiable.
+
+**Most Needs Improvement:** Type Precision (scored 2/10)
+- The failure to recognize 64-bit types on a 64-bit architecture (splitting them into 32-bit halves) fundamentally breaks the readability of arithmetic and data handling functions.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Enhance ARM64 type analysis to correctly pair 32-bit registers into 64-bit scalars (long long, double, pointers) instead of leaving them as `undefined4` pairs.
+2. Implement pattern matching for `va_list`/varargs conventions to recover the logic of iterating through variable arguments instead of reducing it to a loop counter.
+3. Improve aggregate type recovery to identify when multiple register parameters actually represent a single struct passed by value.

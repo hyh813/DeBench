@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`iVar1`, `local_30`, `local_24`, `uVar1`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `len`, `thread_count`. Many "Unresolved local var" comments indicate complete naming loss.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved original names (`param_strcpy`, `call_strcpy`, `param_mutex_lock`). However, helper functions like `FUN_001012e0` and `FUN_001017fc` are cryptic. Thread functions (`thread_compute`, `consumer_thread`) retained good names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0x5a` (90), `0xf` (15), `0x38` (syscall number), `10` and `0xe` for signal numbers. Socket constants shown as raw integers (`2`, `1`, `0`) instead of `AF_INET`, `SOCK_STREAM`. No constant recovery.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Repeated "Unresolved local var" comments clutter every function. "WARNING: Unknown calling convention" appears frequently. Some compiler artifacts visible but not overwhelming.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Signal handling uses awkward boolean logic (`bVar1 = iVar4 != 0; bVar2 = iVar4 != 1`) instead of clean while loops. `param_malloc_free` shows loop unrolling artifacts with 8-element unrolled blocks. Some functions constant-folded entirely (`call_strcpy` returns constant).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function sizes reasonable, but caller functions optimized away (`call_strcpy`, `call_strlen`, `call_memcmp` return constants). Thread functions properly decomposed. No inappropriate inlining observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Some functions have deep nesting (signal handling ~8 levels). No excessive goto usage. Forward jumps minimal.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `param_malloc_free` shows aggressive loop unrolling (8-element blocks). `param_memset` has redundant byte-summing logic. Constant folding eliminated actual test logic in caller functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`). pthread types partially recovered (`pthread_t`, `pthread_mutex_t`). Signal handler type degraded to `__sighandler_t`. Some void* where specific types expected.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `sockaddr` shown with raw `sa_data[0]` through `sa_data[0xd]` array access instead of `sin_port`, `sin_addr`. `ThreadData` struct not recovered (fields accessed via offset). `stat` struct accessed as raw `local_60` long value.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts visible (`(ulong)(uint)x`, `(int)pcVar3 - (int)str`). Pointer arithmetic on void* in atomic operations. No buffer overflow warnings despite `strcpy` usage.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated "Unresolved local var" comments present. No algorithm explanations, no API contracts, no decompilation confidence indicators. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`). Signal handling pattern visible but not named. Producer-consumer pattern in condition variables not identified.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "WARNING: Subroutine does not return" for `_exit` calls. "WARNING: Unknown calling convention" flags potential issues. "WARNING: Removing unreachable block" indicates dead code detection. Some anomalies properly flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"). Error return values visible but not documented. No postcondition inference for memory allocation functions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code. Global variables (`signal_received`, `atomic_counter`, `shared_counter`) referenced but not grouped. No call graph documentation. Callback relationships implicit only.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 75 functions in single output file. No header file separation. Static variables not properly scoped. Original 3-section organization (library, syscall, thread) lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies visible (pthread, libc). Some platform-specific code (`__aarch64_have_lse_atomics`) present but functional.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (6+4+5)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (3+5+6+3)/4 = 4.25 × 0.15 = 0.638
+Level 5 (Contextual):  (5+4+7)/3   = 5.33 × 0.10 = 0.533
+
+Overall Score: 4.97/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable names completely generic** (`iVar1`, `local_30`) losing all semantic meaning from original (`dst`, `src`, `buffer`, `len`)
+- **Magic numbers everywhere** (`0x2a`, `0x5a`, `0x38`, `10`, `0xe`) with no constant recovery
+- **Caller functions constant-folded** (`call_strcpy`, `call_strlen` return constants instead of actual logic)
+- **Struct fields not recovered** (`sockaddr.sa_data[0-13]` instead of `sin_port`, `sin_addr`)
+- **All original comments lost** including algorithm explanations and API documentation
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Core test functions preserved original semantic names (`param_strcpy`, `param_mutex_lock`, `thread_compute`) enabling function identification.
+
+### Most Needs Improvement: **Variable Naming Quality (3/10)**
+- Generic names (`iVar1`, `local_30`, `uVar1`) make tracking data flow extremely difficult compared to original's descriptive names.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable renaming** - Analyze how variables are used (e.g., `local_30` passed to `strlen` should be `string` or `buffer`)
+2. **Recover symbolic constants** - Map magic numbers to known constants (0x2a→42→SUCCESS, signal numbers, socket constants)
+3. **Preserve caller function logic** - Avoid aggressive constant folding that eliminates test verification logic, keeping semantic intent visible

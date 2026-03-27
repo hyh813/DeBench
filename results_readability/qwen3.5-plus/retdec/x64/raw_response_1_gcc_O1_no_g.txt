@@ -1,0 +1,102 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic (`v1`, `v2`, `v3`, `result`, `temp`) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `total` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some original function names preserved (`sequential_ops`, `single_if`, `nested_if_2`), but many helper functions are mechanical (`function_1080`, `function_1090`). Names that exist accurately reflect functionality.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Pervasive magic numbers (`0xffffffff`, `0x100000000`, `0x66666667`) without explanation. String literals stored in hex-encoded globals (`g4`, `g5`, `g6`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive bitwise masking (`& 0xffffffff`) throughout all functions. Stack canary checks (`__readfsqword`, `__stack_chk_fail`) add noise. Redundant type casts obscure simple arithmetic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple sequential operations converted to complex expressions (`2 * (a2 + a1) - a3 & 0xffffffff`). If-else chains often become boolean arithmetic. Some switch statements recovered but many degraded to if-chains.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but parameter lists often incorrect (e.g., `duffs_device` has 5 parameters instead of 3). Helper functions created for library calls (`function_10b0` for `_setjmp`).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Uses goto labels (`lab_0x1583`, `lab_0x19e6`) disrupting flow. For-loops converted to while-loops with manual increment. Generally reads top-to-bottom but with awkward jumps.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repetitive masking operations on every arithmetic result. Multiple variable assignments for same value (`v2 = v3 & 0xffffffff; v3 = v2 + 1`). No dead code removal visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All `int` parameters became `int64_t` regardless of original type. Excessive casting between `int32_t` and `int64_t`. Pointer types often wrong (`loop_while` takes `int64_t*` instead of `int`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery for `jmp_buf` and `sigset_t`, but most composite types lost. Array handling poor (`matrix` in `loop_multi_exit` becomes pointer arithmetic with `4 * v5 + v3`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`int64_t` to `int32_t` and back). Function pointer calls have wrong signatures. Pointer arithmetic without proper typing throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining each function's purpose, test cases, and difficulty level. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. State machines not identified. Loop patterns not recognized. Duff's device completely lost (simplified to trivial check).
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about uncertain decompilation. Functions clearly wrong (e.g., `computed_goto` returns address `0x22f3` instead of executing goto) but not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented. No postconditions inferred. No error condition documentation. Original test validation comments completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships not documented. Global variables (`g1`, `g2`, `g3`) used without explanation. No call graph information provided.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in one file with no logical grouping. Static functions not properly scoped. Original three-level organization (L1/L2/L3) lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes present but some functions missing proper implementations. External dependencies not clearly documented. Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        4.25 × 0.30 = 1.275
+Level 2 (Structural):     4.75 × 0.25 = 1.1875
+Level 3 (Type System):    4.00 × 0.20 = 0.800
+Level 4 (Semantic):       2.50 × 0.15 = 0.375
+Level 5 (Contextual):     4.33 × 0.10 = 0.433
+─────────────────────────────────────────
+Overall Score:                    4.07/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on semantic usage (e.g., `sum`, `count`, `result`)
+- **Excessive masking** (`& 0xffffffff`) on every arithmetic operation obscures simple math
+- **Zero comments** despite original having extensive documentation for each function
+- **Type degradation** - all `int` became `int64_t` with constant casting
+- **Control flow loss** - simple for-loops converted to complex while-loops with manual increments
+- **Duff's device completely lost** - reduced to trivial bounds check instead of unrolled loop
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Original function names were preserved for most test functions, allowing identification of purpose despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation, confidence indicators, or semantic hints makes understanding extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in accumulation should be named `sum`, counters should be `count`/`i`)
+2. **Add decompiler confidence annotations** to flag uncertain reconstructions (e.g., `// DECOMPILER_UNCERTAIN: computed goto may be incorrect`)
+3. **Reduce type casting noise** by tracking original type widths and eliminating unnecessary `& 0xffffffff` masks on operations that don't overflow

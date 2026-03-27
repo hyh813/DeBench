@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v0`, `v1`, `v2` with register hints (`r0`, `lr`) that provide no semantic meaning. Original source had meaningful names like `result`, `encrypted`, `decrypted`, `canary` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original function names preserved (`param_fake_branch`, `call_opaque_predicate`), but signatures are wrong (e.g., `param_fake_branch()` takes no parameters when it should take `int x`). Helper functions use mechanical names (`sub_400498`, `sub_400574`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `4294967295` (should be `-1` or `UINT_MAX`), `90` (XOR key), `0x77359400`. Original had `0xDEADBEEF` with clear context. No constants recovered.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Extensive compiler artifacts: register spilling variables (`v4 = v5; v3 = v6;`), `armg_calculate_condition()` calls obscuring logic, unnecessary goto labels (`LABEL_4005c4`, `LABEL_4005d4`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` usage instead of structured control flow. Loops expressed as `do-while` with manual increments instead of `for` loops. Original `if (x * x < 0)` dead code completely eliminated rather than preserved.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries mostly preserved, but some are broken (`param_fake_branch` loses its parameter entirely). Constant folding eliminated logic (`call_fake_branch` just returns `10`).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps disrupt reading flow. Multiple exit points via goto labels. Original linear structure replaced with jump-heavy assembly-like patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant assignments from register preservation (`v1 = v2; v0 = v3;`). However, some optimization artifacts like constant folding went too far, losing original logic structure.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types degraded to `unsigned int` regardless of original signedness. Pointer types often shown as `unsigned int*`. Original `int`, `char*`, `size_t` distinctions lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays incorrectly sized (`char[2]` when should be larger). No struct recovery for bitfield example. `char dst[2]` should be `char decrypted[32]`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`(unsigned int)v0`, `(char)result`). Pointer arithmetic without proper typing. Signal handler signatures incorrect.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of complex logic like GCD algorithm, string decryption, or opaque predicates. Original had extensive documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption not labeled. Tail call optimization not noted.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about potentially incorrect decompilation. `armg_calculate_condition()` calls unexplained. Broken function signatures not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a0 != 0` for division). No error handling contracts. Signal handler behavior not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables have cryptic names (`g_412008`, `g_412044`). No call graph information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output. No logical grouping by category (obfuscation vs. optimization vs. edge cases). Original had clear section headers.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Multiple compilation issues: undefined functions (`__aeabi_idivmod`, `armg_calculate_condition`), wrong function signatures, missing includes. Would require extensive patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (2+5+4+3)/4 = 3.50
+Level 2 Average: (3+5+4+5)/4 = 4.25
+Level 3 Average: (4+3+4)/3 = 3.67
+Level 4 Average: (1+2+2+2)/4 = 1.75
+Level 5 Average: (4+5+3)/3 = 4.00
+
+Overall = (3.50 × 0.30) + (4.25 × 0.25) + (3.67 × 0.20) + (1.75 × 0.15) + (4.00 × 0.10)
+        = 1.05 + 1.0625 + 0.734 + 0.2625 + 0.40
+        = 3.51/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects:
+- **Function signature corruption**: `param_fake_branch()` lost its `int x` parameter entirely, making the function semantically incorrect
+- **Zero semantic comments**: No documentation explaining obfuscation techniques, GCD algorithm, or string decryption logic
+- **Excessive goto usage**: Control flow uses `goto LABEL_xxx` instead of structured if/while constructs throughout
+- **Generic variable naming**: All variables are `v0`, `v1`, `v2` with no semantic meaning (should be `result`, `encrypted`, `decrypted`)
+- **Magic numbers unexplained**: Values like `4294967295`, `90`, `0x77359400` have no context or constant names
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Some original function names were preserved (`param_opaque_predicate`, `call_vectorized_loop`), providing minimal semantic anchors for navigation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding obfuscation techniques, algorithm purposes, and decompilation confidence impossible without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (e.g., `v0` used in return position after assignment from parameter should be named `result`)
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions like `armg_calculate_condition()` calls with warnings about potential inaccuracies
+3. **Preserve dead code at -O0** - At debug optimization level,永假 (always-false) conditions should be preserved rather than optimized away, as they're intentional obfuscation

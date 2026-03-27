@@ -1,0 +1,98 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a0`, `a1`, `result`, `flag1`, `flag2`. The original source uses meaningful names like `x`, `result`, `str`, `p1`, `p2`, `p3`. The decompiled version provides no semantic hints about variable purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Most function names match the original source exactly: `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `param_string_encryption`, `param_tail_call_optimized`. The naming is excellent and preserves the original function semantics.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Some literals like `10`, `20`, `225` are used directly without explanation. The magic number `0xDEADBEEF` from the original source doesn't appear (optimized out since the branch is never taken). Constants like `90` (0x5A) for XOR key are present but unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present including: goto-based loops instead of while/for constructs, unusual variable assignments like `v1 = v2; v0 = v3;` that appear to be register saves, and redundant code patterns. The decompilation shows 937 LOC vs 464 original, indicating substantial noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: The decompiled code uses excessive goto statements for loop constructs. For example, in `param_opaque_predicate`, the GCD calculation loop uses goto instead of while. In `param_tail_call_optimized`, there's a goto-based loop. The control flow is difficult to follow due to these patterns.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized and decomposed. Each function has a single responsibility matching the original. The parameter lists are reasonable, though some implementation details leak through (e.g., `a0`, `a1` instead of meaningful parameter names).
+
+**7. Code Linearization:** Score: 3/10  
+Justification: The code has numerous forward jumps and goto statements that disrupt linear reading. For example, `LABEL_10776`, `LABEL_10775` jumps in `param_opaque_predicate` make the code flow difficult to trace. The code does not read naturally from top to bottom.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Some redundancy exists - for example, in `call_string_encryption`, `param_string_encryption()` is called twice with the result discarded the first time. Loop unrolling is present but not commented. Some dead code patterns from register spilling are visible.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: The decompiler uses `unsigned int` for most variables, but the original source uses signed `int`. The original has `int result`, `int x`, but decompiled shows `unsigned int v0`, `unsigned int a0`. This loses sign information critical for understanding the logic (especially in `param_integer_overflow`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct types are recovered. The original source has bitfields in `param_implementation_defined` but these are not reconstructed. Simple types are used throughout. The encrypted string handling uses raw char arrays without structure recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe patterns present: mixing signed/unsigned in comparisons, pointer arithmetic without bounds checking. The `param_null_pointer_deref` function dereferences `a0` without null check indication. Some casts between pointer and integer types are implicit.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments are present in the decompiled output. The original source has extensive comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.), algorithm purposes, and expected values. This critical semantic information is completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: The decompiler does not recognize patterns like "opaque predicate", "fake branch", or "instruction substitution". The GCD algorithm in `param_opaque_predicate` is decompiled as a goto loop without recognizing it as greatest common divisor computation. The string decryption loop is not identified as XOR decryption.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags or warnings for suspicious code. The fake branches (x*x < 0, strlen(str) < 0) that are always false are not flagged. The buffer overflow patterns in `param_buffer_overflow_stack` and `param_buffer_overflow_heap` are not indicated as intentional test cases.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source has clear expectations (e.g., "期望: 10", "期望: 225") that are not recovered. No documentation of error handling behavior or function contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible (e.g., `call_fake_branch` calls `param_fake_branch`), but global variable usage is unclear. The `extern` declarations show dependencies but not the purpose of those globals (e.g., `div_zero_caught`, `jmp_buffer`).
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically and the file contains all related functions from the original source. The test function `test_obf_opt_edge` is present and organizes the calls appropriately. Some library functions are interleaved but that's expected.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code has many `extern` declarations for library functions but some are incomplete or incorrect (e.g., `extern unsigned int g_22008`). The code would require significant patching to compile, including: fixing function signatures, adding includes, and resolving external dependencies.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable names are all generic (`v0`, `v1`, `a0`, `result`, `flag1`) with no semantic meaning
+- Control flow uses goto statements instead of natural loop constructs (while/for)
+- No comments explaining the obfuscation techniques or expected behavior
+- Type information lost - all `int` converted to `unsigned int`
+- Fake branch logic (always-false conditions) not flagged as anomaly
+- The decompiled code is 937 LOC vs 464 original - significant bloat from noise
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+The decompiler preserved almost all original function names exactly, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+The decompiled output has zero comments, losing all the semantic information about obfuscation techniques, expected values, and algorithm explanations present in the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Variables like `v0` used in arithmetic with `a0` (parameter) should be named `result` or `sum`. Loop counters should be `i`, `j`, or `index`.
+2. **Recover natural loop constructs**: The goto-based loops should be converted to while/for loops. The GCD calculation in `param_opaque_predicate` should be a clear while loop.
+3. **Add semantic comments**: Flag fake branches as "always false condition", annotate opaque predicates, and document expected return values based on test cases.

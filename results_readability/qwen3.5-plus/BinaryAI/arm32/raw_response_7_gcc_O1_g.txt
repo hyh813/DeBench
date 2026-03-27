@@ -1,0 +1,117 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `iVar2`, `param_1`, `local_2c`, `uStack_68`) with no semantic meaning. Original variables like `result`, `str`, `p1`, `p2`, `encrypted`, `decrypted` are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Original function names are preserved (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`), which is excellent. However, some signatures are incorrect (e.g., `param_fake_branch` returns `void` instead of `int`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0xe1`, `0x2c` appear without explanation. Critical literals from original code (`0xDEADBEEF`, `1000`) are lost due to constant folding in caller functions.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from external function stubs that call themselves (`raise`, `__libc_start_main`, `free`). ARM-specific division functions (`__aeabi_idiv`, `__aeabi_idivmod`) add 300+ lines of clutter. Stack canary checks disrupt function endings.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_opaque_predicate` recovers the GCD loop but with awkward variable tracking (`extraout_r1`). Critical functions like `param_fake_branch` are completely empty (logic lost). `param_vectorized_loop` uses verbose pointer arithmetic instead of array indexing.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries are preserved, but `param_fake_branch` and `param_buffer_overflow_stack` are empty shells losing all original logic. Helper functions (`div_zero_handler`, `segv_handler`) are correctly extracted.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably. However, stack canary checks at function ends (`if (local_c == 0) { return; } __stack_chk_fail(...)`) disrupt flow. The 35+ boolean variable chain in `__aeabi_idiv` is extremely hard to follow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `__aeabi_idiv` and `_divsi3_skip_div0_test` are nearly identical (300+ lines each). Constant folding in caller functions means actual computation logic is lost and cannot be recovered.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used instead of specific widths. `param_instruction_substitution` takes `uint` but original was `int`. `undefined4` used for return types in many functions. Some signedness mismatches (`param_integer_overflow` uses `uint` for signed overflow detection).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `jmp_buf` referenced as `__jmp_buf_tag *` but never defined. Bit-field struct from `param_implementation_defined` completely lost (function just returns `0x2c`). Arrays handled as raw stack variables (`local_2c [32]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`(char *)`, `(int *)`, `(unsigned int)`). `param_null_pointer_deref` takes `undefined4 *param_1` which is unsafe. Signal handlers have incorrect signatures (missing `int sig` parameter). `__stack_chk_fail` called inconsistently.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining obfuscation techniques, test scenarios, and expected values. No decompilation confidence indicators present.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. XOR decryption pattern in `decrypt_string` not labeled. Tail recursion pattern not recognized. No algorithm or design pattern annotations whatsoever.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: `param_fake_branch` is empty but no warning that logic was lost. `param_buffer_overflow_stack` similarly empty without indication. Silent failures throughout—decompiler presents incorrect code confidently.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note x≠0 for normal path). No postconditions. Error conditions not documented. Original comments about expected values completely absent.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`jmp_buffer`, `div_zero_caught`, `encrypted_0`) referenced but not defined in output. Signal handler callback relationships not clearly indicated.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. External runtime functions mixed with application code. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External function stubs call themselves (infinite recursion if used). Dependencies on ARM-specific functions (`__aeabi_idiv`). Many functions have incorrect signatures requiring manual fixes. Would need extensive modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Contribution |
+|-------|-----------|---------|--------|--------------|
+| L1: Lexical Clarity | 4 dims | 4.50 | 30% | 1.35 |
+| L2: Structural Intelligibility | 4 dims | 5.00 | 25% | 1.25 |
+| L3: Type System Fidelity | 3 dims | 4.00 | 20% | 0.80 |
+| L4: Semantic Transparency | 3 dims | 1.67 | 15% | 0.25 |
+| L5: Contextual Coherence | 4 dims | 3.75 | 10% | 0.38 |
+
+**Overall Readability Score: 4.03/10**
+
+---
+
+### Critical Defects
+
+- **`param_fake_branch` completely empty** - Original had two fake branch conditions with logic; decompiled version is `void param_fake_branch(void) { return; }`
+- **`param_buffer_overflow_stack` completely empty** - All buffer overflow logic lost
+- **Zero comments** - Original had extensive documentation; decompiled has none
+- **Generic variable names everywhere** - `iVar1`, `iVar2`, `param_1` obscure all semantic meaning
+- **Signal handler signatures incorrect** - Missing `int sig` parameter breaks semantic understanding
+
+### Best Quality Aspect
+
+- **Function Naming Quality (7/10)** - Original function names preserved accurately, making it possible to identify which function is which despite other degradation.
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, confidence indicators, or algorithm explanations makes understanding the decompiled code extremely difficult.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Detect and warn about lost logic** - When a function body is significantly smaller than expected (e.g., `param_fake_branch` went from 15 lines to 1 line), emit a warning flag indicating potential decompilation failure.
+
+2. **Infer variable names from usage patterns** - Variables used in length checks should be named `len` or `size`; variables used in cryptographic contexts should hint at their role (`key`, `buffer`, `encrypted`).
+
+3. **Recover and annotate common algorithms** - GCD loops, XOR decryption patterns, and tail recursion should be identified and commented (e.g., `// GCD computation using Euclidean algorithm`).

@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: Every variable uses generic names like `v0`, `v1`, `v2`, `ptr`, `result`, `flag1`, `flag2`, `i`, `cur`. No semantic meaning whatsoever - completely unusable for understanding. Compare to source where variables like `x`, `result`, `str`, `encrypted` are meaningful.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Most functions use address-based naming (`sub_401030`, `sub_401040`, etc.). Some original names recovered (`param_fake_branch`, `param_opaque_predicate`, `call_fake_branch`) but majority are generic. No action verbs, no semantic meaning for wrapper functions.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Some constants like `10`, `225`, `500500` appear directly in return statements, but the key obfuscation literals from source (like `0xDEADBEEF`, `0x5A` for XOR key, `0xFFFFFFFF`) are absent. The fake branch conditions (`x*x < 0`, `strlen(str) < 0`) are completely eliminated.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with `CONCAT` operations everywhere (e.g., `v2 >> 31 CONCAT v2`), generic struct definitions with `padding_0[60]`, `field_3c`, `_ccall` invocations. The decompiled output is cluttered with compiler artifacts that obscure logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops and conditionals are present and recognizable. However, some computed jumps using `goto` with struct field offsets (e.g., `goto v1->field_3c`) are unnatural. At -O0, this should be cleaner.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Functions maintain reasonable size (not monolithic). However, many small wrapper functions like `sub_40103c` calling `sub_401040` suggest poor inlining decisions. Some functions like `param_division_by_zero` have `.constprop.0` and `.constprop.1` variants showing optimization artifacts.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom with sequential logic. Some forward jumps exist (e.g., `goto LABEL_0x4013e6`) but don't severely disrupt flow. The computed goto pattern is the main issue.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code. Some loop unrolling present in functions like `param_tail_call_optimized` (converted to iterative form). The duplication between `param_string_encryption` and `call_string_encryption` is minor redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Almost all types are generic `unsigned int` or `int`. No `int32_t`, `uint64_t`, `size_t`, or `char*` precision. The source used `unsigned int` for some variables but the decompiler lost this distinction consistently.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Generic struct definitions like `struct_0 { char padding_0[60]; unsigned int field_3c; }` with meaningless field names. No recovery of actual data structures like `jmp_buffer`, `setjmp` context, or the encrypted string array.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Some unsafe patterns present - the `CONCAT` operations are essentially unsafe casts. Pointer arithmetic in string functions (`cur += 1`, `&cur[1]`) is present but not type-safe. No `restrict` or alignment annotations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The source had extensive comments explaining obfuscation techniques (OBF-L4-02, OBF-L4-03, etc.) and their purposes. Zero recovery of this documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The opaque predicates from source (complex but always-true conditions) are reduced to simple conditionals. The GCD algorithm for `p2` is barely recognizable in the decompiled loop.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flags for suspicious code, indirect calls, or potential issues. The decompiler silently produces incorrect or incomplete code without warning. The `[D] Unsupported jumpkind Ijk_SigTRAP` error appears but is buried.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The source had explicit behavior (e.g., "期望: 10", "期望: 20") that could be recovered as postconditions but nothing is present.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: Function calls are present in the code but relationships are not documented. No indication of which functions call which, no call graph, no global variable usage documentation.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are grouped by address proximity but not logically organized. The source had clear sections (7.1 混淆与保护, 7.2 编译器特有优化, 7.3 异常与边界情况) that are completely lost.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code definitely doesn't compile - many undefined symbols (`extern unsigned int jmp_buffer`, `extern unsigned int encrypted.0`, `extern unsigned int g_402008`). No dependency documentation or stub implementations provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.7/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`v0`, `v1`, `ptr`, `result`) making code flow impossible to trace
+- Function names use address-based pattern (`sub_401030`) instead of semantic names
+- All comments and documentation from source are lost - zero recovery
+- Type precision severely degraded - everything is `int` or `unsigned int`
+- Composite types use generic struct definitions with meaningless field names
+- No anomaly indication or uncertainty flags for problematic decompilation
+- Build system compatibility completely absent - many undefined extern symbols
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 5/10)  
+- Basic loops and conditionals are recognizable, though not perfect
+
+**Most Needs Improvement:** Lexical Clarity (scored 1.75/10)  
+- Variable and function naming is completely unusable; every identifier is generic or address-based
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Track how variables are used (e.g., `v0` used in `strlen()` call → name it `str` or `string_ptr`)
+2. **Recover function names from debug symbols or common patterns**: The source had `-g` debug info; leverage it for symbol recovery
+3. **Add semantic comments for obfuscation detection**: When fake branches or opaque predicates are detected, add comments explaining what was removed and why

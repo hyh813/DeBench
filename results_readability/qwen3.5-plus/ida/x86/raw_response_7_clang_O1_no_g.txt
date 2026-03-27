@@ -1,0 +1,109 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`v0`, `v1`, `v2`, `a1`, `a2`) with no semantic meaning. In `param_opaque_predicate`, variables that should be `p1`, `p2`, `p3` for predicates are just `v5`, `v6`, `v2`, making the opaque predicate logic nearly impossible to understand without tracing.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved original names (`param_fake_branch`, `call_opaque_predicate`), but helper functions use mechanical names (`sub_1030`, `sub_10C0`). Function names accurately reflect functionality where preserved.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x5A` (XOR key), signal numbers `8` and `11` (SIGFPE/SIGSEGV), and `0x20u` appear without explanation. No constants recovered from original source definitions.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Relatively clean output without excessive compiler artifacts, but contains unnecessary type casts like `(__sighandler_t)` and register variable annotations (`// eax`, `// ecx`) that add visual noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops properly reconstructed as `do-while` and `for` constructs, but `param_opaque_predicate` has awkward conditional logic with `!(v5 ^ ((a1 + 1) * (a1 + 1)) | v2 ^ 1)` instead of clear boolean expressions.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized with clear single responsibility. `decrypt_string` properly extracted as separate function. Caller functions like `call_fake_branch` correctly isolated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. Some functions like `test_obf_opt_edge` have excessive local variable declarations at function start disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding loses semantic relationships - `call_fake_branch` returns constant `10` instead of calling `param_fake_branch(10)`, obscuring the test structure. `call_string_encryption` duplicates entire `param_string_encryption` body.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most variables are generic `int` instead of `int32_t`, `size_t`, or `unsigned int`. Some correct usage like `size_t` for `strlen` return, but `param_instruction_substitution` incorrectly uses `unsigned int a1` when source used `int x`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The bitfield struct in `param_implementation_defined` completely lost - function just returns constant `43`. No struct definitions recovered despite original having explicit struct with named fields (`a`, `b`, `c`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe pointer casts like `*(_DWORD *)(a3 + 4 * i)` and `*(_DWORD *)a1` without bounds checking. Function pointer casts `(__sighandler_t)` present but necessary for signal handlers.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero explanatory comments in decompiled code. Original source had extensive comments explaining obfuscation techniques, test scenarios, and expected values - all lost. Only auto-generated register annotations present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: XOR string decryption pattern not identified or named. Signal-based exception handling with `setjmp`/`longjmp` not documented as exception handling idiom. Opaque predicate pattern completely obscured.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations listed at end (9 functions) but no explanation why. Architecture mismatch (ARM64 source vs x86 decompiled) not flagged. Optimization level difference not noted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note `a1 != 0` for normal path). Expected return values from original comments completely absent. No postcondition inference.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible through code but no call graph documentation. Global variables like `param_string_encryption_encrypted` referenced without definition context. Test function relationships to expected outputs lost.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file without original section headers (7.1, 7.2, 7.3). No logical grouping of obfuscation vs optimization vs edge case tests. Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 9 library functions failed to decompile (`printf`, `strlen`, `signal`, etc.) requiring external linking. No dependency documentation. Would need significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3+7+4+6)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):   (6+8+7+5)/4 = 6.50  × 0.25 = 1.625
+Level 3 (Type System):  (5+3+4)/3   = 4.00  × 0.20 = 0.80
+Level 4 (Semantic):     (2+3+4+2)/4 = 2.75  × 0.15 = 0.4125
+Level 5 (Contextual):   (5+4+3)/3   = 4.00  × 0.10 = 0.40
+
+Overall Score: 4.74/10
+```
+
+### Overall Readability Score: **4.7/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a1`) - should recover semantic names like `predicate_result`, `encrypted_buffer`, `xor_key`
+- **Zero comments** - original had extensive documentation explaining obfuscation techniques and expected values
+- **Composite types lost** - bitfield struct in `param_implementation_defined` reduced to constant return value
+- **Aggressive constant folding** - `call_fake_branch` returns `10` directly instead of calling `param_fake_branch(10)`, losing test structure
+- **Architecture/optimization mismatch unflagged** - ARM64/-O0 source vs x86/-O1 binary not documented
+
+### Best Quality Aspect: **Function Decomposition (8/10)**
+- Functions properly sized with clear boundaries; `decrypt_string` correctly extracted as separate reusable function matching original structure.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of explanatory comments loses all semantic context about obfuscation techniques, test scenarios, and expected behavior that made original source understandable.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in XOR operations should be named `key`, buffer variables named `dest`/`src`)
+2. **Recover and preserve source comments** - When debug symbols available (`-g` flag), extract and embed original comments in decompiled output
+3. **Flag optimization artifacts explicitly** - Add annotations when constant folding, dead code elimination, or inlining has occurred, with option to show original call structure

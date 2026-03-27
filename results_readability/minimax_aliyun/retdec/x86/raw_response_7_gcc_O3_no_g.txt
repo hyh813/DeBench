@@ -1,0 +1,128 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+The original source contains multiple test functions for obfuscation, optimization, and edge case testing. The primary function of interest is `param_fake_branch`, which demonstrates "永假条件" (always-false conditions) - a common obfuscation technique.
+
+**Original `param_fake_branch`:**
+```c
+int param_fake_branch(int x) {
+    int result = x;
+    if (x * x < 0) {  // Always false for real numbers
+        result = result * 2 + 0xDEADBEEF;
+    }
+    const char *str = "test";
+    if (strlen(str) < 0) {  // Always false
+        result += 1000;
+    }
+    return result;
+}
+```
+
+**Decompiled `param_fake_branch`:**
+```c
+int32_t param_fake_branch(int32_t result) {
+    // 0x1440
+    return result;
+}
+```
+
+**CRITICAL ISSUE**: The decompiler has completely eliminated the fake branches, making the obfuscation invisible. This is a fundamental failure for obfuscated code analysis.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `a1`, `result` throughout. The parameter `result` in `param_fake_branch` should be `x` to match source. No semantic meaning conveyed - e.g., `v3` used for PC-relative addressing has no indication of its purpose.
+
+**2. Function Naming Quality:** Score: 2/10  
+Justification: Most functions use cryptic mechanical names like `function_10f0`, `function_1100`, `function_1110` instead of meaningful names. Even standard library functions like `signal` are wrapped through `function_1130`. The source function `param_fake_branch` is preserved but most others are not.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `0xDEADBEEF`, `0x12345678`, `0xFFFFFFFF` appear without explanation. The value `90` (0x5A) used for XOR decryption is not identified as a key. Some constants like `SIGFPE`, `SIGSEGV` are properly named, but most numeric literals lack context.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: address annotations (`// 0x1440`), `__x86_get_pc_thunk_bx` calls for PC-relative addressing, unreachable code markers, artificial struct definitions for `jmp_buf`, and redundant casts throughout. The decompiled output is nearly double the source LOC (884 vs 464).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control structures (if/while) are recognizable. However, the tail recursion in `param_tail_call_optimized` has been converted to a loop (expected at -O0 but still a transformation). The opaque predicate in `param_opaque_predicate` has convoluted boolean expressions that are difficult to follow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized and separated. However, the decompiler created spurious functions like `param_division_by_zero_constprop_0` and `param_division_by_zero_constprop_1` that don't exist in source - these appear to be dead code elimination artifacts. The original `call_fake_branch` is correctly inlined to return 10.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive goto. Early returns used appropriately. Some forward jumps exist in complex functions like `param_opaque_predicate` but are manageable.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: The decompiler eliminated the fake branches in `param_fake_branch` entirely - this is a critical loss for obfuscation analysis. Dead code from unreachable paths creates spurious functions. Loop unrolling in `param_tail_call_optimized` was partially recognized but converted to iterative form.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t` consistently which is appropriate for 32-bit. However, `uint32_t` is used for some parameters (e.g., `param_division_by_zero(uint32_t a1)`) when source uses `int`. The distinction between signed/unsigned is inconsistent. Function pointers are often cast to `void (*)(int32_t)` losing signature information.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The `jmp_buf` is partially reconstructed with artificial struct definitions (`struct __jmp_buf_tag`). However, field names are generic (`e0`, `e1`, `e2`). The signal set structure is similarly degraded. No attempt to recover the original `setjmp`/`longjmp` semantics properly.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations present: `(void (*)(int32_t))(v3 - 102)` - casting integers to function pointers; pointer arithmetic like `*(int32_t *)(v2 + a1)` without bounds checking; `(char *)result` treating integers as pointers. The decompiler frequently uses C-style casts that hide potential issues.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Comments are almost entirely address annotations (`// 0x1440`) and "UNREACHABLE" markers. No explanation of algorithms, obfuscation techniques, or intent. The source code's detailed Chinese comments explaining obfuscation purposes are completely lost. No indication of decompilation confidence.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns recognized: setjmp/longjmp for exception handling, signal handlers. However, the opaque predicates in `param_opaque_predicate` are not identified as such - the complex boolean logic is presented without explanation that it's an "不透明谓词" (opaque predicate). No design patterns identified.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Only "UNREACHABLE" marker present. No warnings about eliminated dead code (the fake branches). No indication of potential undefined behavior. No flags for indirect calls that couldn't be resolved. The decompiler presents everything with equal confidence.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. The source's error handling patterns (division by zero, null pointer) are present but their contracts are not documented. No indication that these functions expect to handle signal-based exceptions.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function call relationships are present in the code but not documented. No indication which functions call `param_fake_branch`. Global variable usage (`g1`-`g6`) is present but their purpose is unclear. No call graph or relationship documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file. Related functions (obfuscation, optimization, edge cases) not grouped. Static functions not properly scoped - all declared as external. No header file or API separation.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code does not compile - multiple undefined symbols: `__x86_get_pc_thunk_bx`, `__x86_get_pc_thunk_di`, `__x86_get_pc_thunk_dx`, `__do_global_ctors_aux`, `frame_dummy`, `register_tm_clones`, `deregister_tm_clones`. These are x86-specific PIC helpers that shouldn't appear in arm64 code. Dependencies not documented.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+**Critical Defects:**
+- **Fake branches eliminated**: `param_fake_branch` shows only `return result;` - the obfuscation technique is completely invisible
+- **Architecture mismatch**: Code shows x86 artifacts (`__x86_get_pc_thunk_bx`) but source was arm64
+- **Variable naming**: Generic names like `v1`, `v2`, `a1` provide no semantic meaning
+- **No comments**: Only address annotations, no explanation of obfuscation or algorithms
+- **Compilation failure**: Multiple undefined symbols prevent standalone compilation
+
+**Best Quality Aspect:** Type System Fidelity (scored 5.3/10)  
+- Types are reasonably precise with `int32_t` usage, though not perfect
+
+**Most Needs Improvement:** Lexical Clarity (scored 2.3/10)  
+- Variable and function naming is completely inadequate, making the code nearly incomprehensible
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Preserve dead code**: Don't eliminate always-false branches in obfuscated code - these are intentional and critical for analysis. Add a "dead code" annotation instead of removing entirely.
+2. **Recover semantic names**: Use data flow analysis to infer meaningful variable names from usage patterns (e.g., if `a1` is used as array index, name it `index` or `i`)
+3. **Add algorithm documentation**: Recognize and document obfuscation patterns (opaque predicates, fake branches) with explanations rather than presenting them as opaque boolean expressions

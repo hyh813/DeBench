@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `a1`, `result`). In `param_buffer_overflow_stack`, the local `buffer` and `canary` variables are lost, replaced by raw stack arithmetic relative to `v1`, severely obscuring the code's intent.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly preserved (e.g., `param_fake_branch`, `call_opaque_predicate`), likely due to the presence of debug symbols (`-g`), which provides excellent semantic context for the high-level flow.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are often represented as hex integers (e.g., `g16 = 0x4d3c2b1a` instead of the encrypted char array) or escaped bytes. Magic numbers like `65` (ASCII 'A') and `90` (XOR key) are used without character notation or explanation.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The reconstruction of `_setjmp` in `param_division_by_zero` dumps a massive, anonymous struct literal directly into the function call, creating significant visual noise. Function addresses are used for signal handlers (e.g., `signal(SIGFPE, 0x10cec)`) instead of resolved names.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The decompiler applied aggressive dead code elimination, removing the fake branches in `param_fake_branch` entirely (reducing it to `return result`). While semantically correct, this hides the source structure. `param_vectorized_loop` has a confusing reconstruction with initialization mixed into the loop condition.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source code well. The decompiler correctly identified separate functions for the various test cases (`param_...`, `call_...`) rather than inlining them or merging them incorrectly.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Most functions read top-to-bottom, but the massive struct literal in `param_division_by_zero` and the pointer arithmetic in `param_buffer_overflow_stack` disrupt the linear reading flow significantly.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: The decompiler successfully simplified the instruction substitution in `param_instruction_substitution` (e.g., bit shifts to multiplication), which aids understanding. However, it also eliminated the "fake" branches in `param_fake_branch`, which is arguably over-optimization for a readability assessment of obfuscated code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Significant type degradation occurs. `char*` parameters are often typed as `int32_t*` (e.g., in `decrypt_string`). The encrypted string `g16` is typed as `int32_t` instead of a character array, and the `setjmp` buffer is a raw struct rather than `jmp_buf`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Composite types are largely lost. The `bitfield` struct in `param_implementation_defined` is completely missing (the function was constant-folded to `return 44`). The `jmp_buf` is not recovered as a named type, resulting in an inline struct definition.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains unsafe casts, such as passing an `int32_t*` (`&g16`) to `strncpy` (which expects `char*`) and casting `int32_t` to `char*` for pointer arithmetic in `param_buffer_overflow_stack`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic. The only comments are memory addresses (e.g., `// 0x106b0`), which offer no semantic value to a human reader.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: The decompiler failed to recognize standard idioms. The `setjmp`/`longjmp` pattern is obscured by the struct literal. The bit manipulation in `param_implementation_defined` was optimized away rather than displayed as a bitfield operation.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: No warnings or flags are present regarding the suspicious stack smashing in `param_buffer_overflow_stack` or the unusual `setjmp` reconstruction. The code is presented confidently despite these oddities.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., buffer sizes) or postconditions. For example, the contract for `decrypt_string` (input/output buffer relationship) is not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and use the recovered names. Global variables like `g1` through `g16` are referenced, though their semantic meaning (format strings, data) is obscured by their generic names and encoding.
+
+**17. Module Organization:** Score: 8/10
+Justification: The file structure mirrors the original source well, with helper functions and test functions grouped logically. The inclusion of standard headers at the top is correct.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code is unlikely to compile without modification. The `_setjmp` call uses a complex nested struct literal that is not valid standard C syntax for a function call in this context, and the use of raw function addresses for `signal` would require linking with a specific map.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable `v1` in `param_buffer_overflow_stack` represents a stack frame base, obscuring the `buffer` and `canary` variables.
+- Function `param_implementation_defined` was constant-folded to `return 44`, completely erasing the bitfield and implementation-defined logic.
+- The `_setjmp` call in `param_division_by_zero` is reconstructed as a massive, invalid struct literal, breaking readability and compilation.
+- Fake branches in `param_fake_branch` were removed by the decompiler's optimizer, hiding the source code's obfuscation structure.
+- String data is often typed as `int32_t` (e.g., `g16`) instead of `char[]`, leading to unsafe casts in function calls.
+
+**Best Quality Aspect:** Function Naming (scored 9/10)
+- The decompiler successfully leveraged debug symbols to preserve the original function names, which is the strongest anchor for understanding the code.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.75/10)
+- The lack of comments, failure to recognize idioms (like `setjmp`), and absence of anomaly warnings make the code very difficult to analyze semantically.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Disable Aggressive Constant Folding for `-O0`**: When analyzing unoptimized code, preserve the original structure (like fake branches and bitfields) even if they are semantically reducible, to aid in source recovery.
+2. **Improve Stack Variable Recovery**: Enhance the analysis of stack frames to recover local arrays and structs (like `buffer[8]`) instead of defaulting to raw pointer arithmetic from a base pointer.
+3. **Standard Library Type Recognition**: Recognize and properly format standard library types like `jmp_buf` and `sigjmp_buf` rather than dumping their raw struct layout into the function call.

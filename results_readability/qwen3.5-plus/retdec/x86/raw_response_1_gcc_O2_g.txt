@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `a3`, `v1`, `v2`, `result`) instead of semantic names like `temp1`, `sum`, `count`, `target` from original source. No variable indicates purpose (e.g., `loop_break` uses `v2` instead of `index`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main function names preserved well (`sequential_ops`, `nested_if_2`, `loop_for_fixed`), but helper functions are generic (`function_10a0`, `function_115c`). Original function names mostly retained which aids identification.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (`0x100000000`, `0x80000000` in `op_div`). Some constants like `100`, `10` are inferable from context, but no named constants recovered from original.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86_get_pc_thunk_*`, `__readgsdword(20)`, `__stack_chk_fail_local` in nearly every function. Stack canary checks disrupt reading flow throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Mixed recovery—`sequential_ops` is clean, but `recursion_factorial` converted to while loop losing recursive semantics. `switch_fallthrough` broken (case 3 returns immediately instead of falling through). `if_elseif_chain` converted to switch incorrectly.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved correctly. No inappropriate inlining observed. Helper functions for compiler runtime are separate (`deregister_tm_clones`, `register_tm_clones`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but goto labels appear (`lab_0x1ba5`, `lab_0x1fe6`). Stack canary checks at function ends create artificial jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks repeated in ~20 functions creating redundancy. Some functions have duplicate condition checks (`v1 == v2` comparisons in `call_func_ptr_array`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`/`uint32_t` consistently, but sign mismatches exist (`nested_if_2` takes `uint32_t a1` when original used `int a`). Pointer types sometimes generic (`char* obj` in `call_virtual_func`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `jmp_buf` struct recovered with fields (`e0[8]`, `e1`, `e2`), though field names are generic. Limited opportunity as original had few complex structs.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present (`(int64_t)(a / 0x80000000)` in `op_div`). Pointer arithmetic in `loop_break` (`*(int32_t *)((int32_t)&v3 + 8 + 4 * v2)`). Stack canary adds safety but also complexity.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: ZERO comments recovered from original source which had extensive documentation. Only compiler metadata present ("From module: /work/1.c", "Line range: 955-960"). No algorithm explanations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Control flow patterns preserved but not identified (no "state machine" or "recursive factorial" labels). `duffs_device` completely broken—decompiler didn't recognize the optimization pattern.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged despite broken functions. `computed_goto` returns constant instead of indicating indirect jump. `call_func_ptr_array` returns pointer arithmetic result without warning about unresolved calls.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Original had test validation comments (e.g., "输入5,7,3应返回21") completely lost. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but global variables have generic names (`g1` through `g8`). No call graph documentation. Callback relationships unclear (`process_with_callback` parameter `a3` should be `cb`).
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file. Test functions grouped (`test_control_flow_l1/l2/l3`). Original section comments ("基础控制流特征", "高级控制流特征") lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". Standard headers included (`stdio.h`, `stdlib.h`, `setjmp.h`). External function declarations present. May need stubs for `__printf_chk`, `__readgsdword`.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+7+6+6)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.14/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable `a1`, `a2`, `a3` should be named `a`, `b`, `c`** based on original source parameter names
+- **`recursion_factorial` converted to iterative loop** losing recursive semantics entirely
+- **`switch_fallthrough` broken**—case 3 returns immediately instead of falling through to cases 2 and 1
+- **Zero comments recovered** from original source which had extensive documentation for each function
+- **Stack canary checks (`__stack_chk_fail_local`)** inserted in ~20 functions creating noise pollution
+- **`computed_goto` returns constant** instead of indicating indirect jump could not be resolved
+- **`duffs_device` completely broken**—returns `(int32_t)dst` instead of implementing the unrolled loop
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)**—Main function names preserved accurately from original source, enabling easy identification and cross-reference with documentation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)**—Complete loss of all original source comments including algorithm explanations, test validation notes, and function purpose documentation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve original source comments** from debug symbols (-g flag) when available, especially function-level documentation and test cases.
+2. **Detect and flag unresolved control flow patterns** (computed goto, Duff's device, fall-through switches) with explicit ANOMALY comments instead of producing incorrect code.
+3. **Infer semantic variable names from usage patterns** and debug symbols—`v1` used as loop counter should be `i`, `result` accumulating values should be `sum`.

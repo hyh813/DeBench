@@ -1,0 +1,113 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use completely generic names like `local_38`, `local_34`, `uStack_2c`, `puVar1`, `plVar5`, `lVar6`, `iVar1`, `sVar1`. These provide zero semantic meaning - compare to source's meaningful names like `value`, `name`, `data`, `size`, `instance_count`, `multiplier`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some function names are correctly recovered (`test_cpp_member_func`, `call_virtual_func`, `template_max_int_`), but many are missing or reduced to constants. Some names are mangled like `FUN_00100d60`, `Container_int_`, `Container_double_`.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Extensive magic numbers without explanation: `0x125c` (4704), `0x3e9` (1001), `0x15` (21), `0x2a` (42), `0x47` (71), `0x28a` (650). The decompiler computed results at compile time rather than preserving the computation logic.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some type-related noise (`undefined4`, `undefined8`) but no significant register spilling or debug instrumentation clutter.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most functions have no control flow - they're reduced to single return statements with computed constants. The few functions that retain structure (like `call_virtual_func`) show reasonably natural flow, but the loss of control flow in most functions is severe.
+
+**6. Function Decomposition:** Score: 2/10  
+Justification: The decompiler has collapsed most functions to single return statements, completely losing the original decomposition. Functions like `test_cpp_member_func` that should contain object creation, method calls, and arithmetic are reduced to `return (int)sVar1 + 0x125c;`.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: The reduced functions that remain are linear (single return statements). No forward jumps or complex control flow to linearize.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy in the output. The constant-folding that occurred eliminated any redundant code.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Heavy reliance on imprecise types: `undefined4`, `undefined8`, `undefined7`, `undefined`. Proper C++ types like `int`, `size_t`, `char*`, `bool` are not recovered. Function signatures use `undefined8` for return types that should be `int`.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct/class recovery whatsoever. All class members accessed via raw memory offsets like `*(int *)(this + 0x28)`. The `SimpleClass` with `value` and `name[32]` members is completely lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate type safety issues. Pointer arithmetic with raw offsets (`this + 0x28`), unsafe casts to `undefined*` types. Not catastrophic but significant type information lost.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No useful comments explaining the code. Only auto-generated function headers like `// Function: test_cpp_member_func @ 0x101014`. No explanation of what the function does, the logic, or the C++ idioms used.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: Zero recognition of C++ idioms. No indication of RAII patterns, virtual dispatch mechanism, constructor/destructor semantics, lambda capture, or smart pointer usage. The `call_virtual_func` shows `***(code ***)param_1` which is technically a vtable call but not labeled as such.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication that functions are returning computed constants instead of implementing logic. The decompiler should flag that `test_cpp_virtual_func` returning `0x2a` is suspicious - it means the entire function body was constant-folded.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information recovered. No preconditions, postconditions, or invariants documented. The complex logic in original functions is completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Some function call relationships visible (e.g., `test_cpp_oo_features` calls other test functions), but not well documented. No indication of class relationships, inheritance hierarchies, or vtable connections.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are grouped by address but not logically organized. The original source's clear separation by feature (CPP-L3-01, CPP-L3-02, etc.) is not reflected.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Many functions won't compile as-is. Missing class definitions, undefined types like `undefined4`, mangled names like `Container_int_`. The code requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 2 + 7) / 4 = 4.0
+L2_avg = (3 + 2 + 6 + 8) / 4 = 4.75
+L3_avg = (3 + 1 + 5) / 3 = 3.0
+L4_avg = (2 + 1 + 1 + 1) / 4 = 1.25
+L5_avg = (3 + 4 + 2) / 3 = 3.0
+
+Overall = (4.0 × 0.30) + (4.75 × 0.25) + (3.0 × 0.20) + (1.25 × 0.15) + (3.0 × 0.10)
+        = 1.20 + 1.1875 + 0.60 + 0.1875 + 0.30
+        = 3.475 ≈ 3.5/10
+```
+
+**Overall Readability Score:** 3.5/10
+
+### Critical Defects (Bullet List)
+- **Variable names are completely generic** (`local_38`, `puVar1`, `lVar6`) providing zero semantic meaning about their purpose
+- **Most functions reduced to constant returns** - `test_cpp_virtual_func` returns `0x2a` instead of implementing the virtual function call logic
+- **No class/struct recovery** - all class members accessed via raw memory offsets like `*(int *)(this + 0x28)` instead of named fields
+- **Type precision severely degraded** - using `undefined4`, `undefined8` instead of proper types like `int`, `size_t`, `bool`
+- **No C++ idiom recognition** - virtual dispatch, RAII, lambdas, exceptions all completely lost
+
+### Best Quality Aspect (Single Dimension)
+- **Redundancy Elimination (scored 8/10)**  
+- The decompiled code has no redundant code or dead paths. The constant folding that occurred eliminated any redundancy.
+
+### Most Needs Improvement (Single Dimension)
+- **Semantic Transparency (scored 1.25/10)**  
+- Zero recognition of C++ idioms, no comments explaining logic, no anomaly indication that functions were constant-folded, no contract recovery. The decompiler completely failed to convey what the original C++ code was doing.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Detect constant-folding optimization and preserve original logic** - When a function body is completely folded to a constant, flag this as an anomaly and attempt to recover the original computation
+2. **Recover class/struct layouts with field names** - Use type information and vtable analysis to reconstruct class members with meaningful names instead of raw offsets
+3. **Add semantic annotations for C++ idioms** - Label virtual dispatch calls, RAII patterns, lambda captures, and exception handling rather than showing raw `__cxa_throw` calls

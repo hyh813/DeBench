@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiler marks most local variables as "Unresolved local var" with `@[???]` notation (e.g., `int temp1@[???]`, `int sum@[???]`, `int i@[???]`). Parameters use generic single letters (a, b, c, x) which is acceptable but provides no semantic meaning beyond the function scope.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: All target functions retain their original names (`sequential_ops`, `single_if`, `nested_if_2`, `loop_for_fixed`, etc.). However, internal/runtime functions have auto-generated names like `FUN_00101020`, `_init`. The main decompilation target functions are well-named.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervade the code - `0x14` (20), `0x1e` (30), `0x32` (50) in `loop_break` without explanation. The condition `0x12 < uVar2` in `loop_while` obscures the original `x != 0`. Some values are explained in comments (e.g., `0x3e9` = 1001) but the actual code retains hex literals.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: (1) "WARNING: Removing unreachable block" comments throughout, (2) "Unresolved local var" annotations on nearly every function, (3) massive undefined1 array declarations in `goto_backward` and `recursion_factorial` (e.g., `undefined1 auVar5 [16]`), (4) "WARNING: Could not recover jumptable" messages.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Control flow is heavily distorted: (1) `single_if` uses `x << (0 < x)` instead of if-statement, (2) `if_else` uses `(int)(0 < x)` instead of ternary, (3) `loop_for_fixed` uses formula `(n-2)*(n-1)/2 + n - 1` instead of loop, (4) `loop_while` uses `while (0x12 < uVar2)` instead of `while (x != 0)`. At -O0 this transformation is unacceptable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions remain separate as in source, which is good. However, `goto_backward` is 200+ lines due to unrolled computation, and `loop_continue` is similarly bloated. Some functions could be reasonably split, but the basic decomposition matches source.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: The code has poor linearization due to: (1) massive unrolled loops that span hundreds of lines (`goto_backward`, `recursion_factorial`), (2) forward jumps in switch handling, (3) deeply nested ternary expressions that replace if-else chains. Reading top-to-bottom is difficult.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Severe redundancy from aggressive loop unrolling: (1) `loop_continue` has 100+ lines of unrolled code with duplicate calculations, (2) `goto_backward` and `recursion_factorial` contain massive repeated computation patterns, (3) no comments explaining these are unrolled loops. This makes the code essentially unreadable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - parameters correctly use `int`, but function pointer types are sometimes generic `_func_int_int *`. The `volatile` qualifier is lost (e.g., `int *flag` instead of `volatile int *flag` in `infinite_loop`). Most integers are generic `int` rather than specific widths.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No composite type recovery. The `matrix[3][4]` in `loop_multi_exit` is marked as "Unresolved local var: int[3][4] matrix@[???]". The `arr[5]` in `loop_break` is similarly unresolved. All arrays and structures are either unresolved or reduced to raw pointer arithmetic.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with minor issues. No obvious unsafe casts. Function pointer calls use proper signature types in most cases. The main safety issue is the loss of `const` and `volatile` qualifiers, but no dangerous operations like incorrect pointer arithmetic.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are mostly auto-generated noise: "WARNING: Removing unreachable block", "Unresolved local var", "WARNING: Could not recover jumptable". No explanatory comments about algorithms, no documentation of preconditions/postconditions. The few useful comments are hex-to-decimal conversions in test functions.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some patterns recognized but not named or explained. Duff's device in `duffs_device` is partially recognized with `switchD_00101a96_caseD_*` labels but not identified as Duff's device. State machines are partially recovered but not named. Most complex idioms (goto loops, recursion patterns) are unrolled beyond recognition.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Decompiler does flag issues: (1) "WARNING: Could not recover jumptable" for `call_func_ptr`, (2) "Unresolved local var" annotations, (3) "WARNING: Removing unreachable block". However, it presents the unrolled code confidently without indicating this is an optimization artifact that should be recognized as a loop.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract recovery whatsoever. No preconditions (e.g., "requires: n > 0"), no postconditions, no invariant documentation. The decompiler provides no guidance on what conditions must hold for functions to behave correctly.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible (e.g., `(*f)(x)` in `call_func_ptr`), but relationships are not documented. No comments indicating "called by" or "calls" functions. The test functions show what gets called but not the broader call graph.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are in a single large file (2262 lines). Some logical grouping exists (test functions grouped together, helper functions near their users), but there's no file structure, no namespace/grouping annotations, and no separation of public API from internal functions.
+
+**18. Build System Compatibility:** Score: 1/10  
+Justification: The code would not compile: (1) `undefined1`, `undefined4`, `undefined8` types are not defined, (2) `EVP_PKEY_CTX` is undefined, (3) `__jmp_buf_tag` and `jmp_buf` need includes, (4) `puts` and `printf` need stdio.h. The decompiled code is not standalone compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+1. Variable names are almost entirely unresolved (`@[???]`), making local variable tracking impossible
+2. Loop unrolling in `goto_backward`, `recursion_factorial`, `loop_continue` creates 100+ line functions that are unreadable
+3. Control flow expressions like `x << (0 < x)` and `(int)(0 < x)` replace natural if/ternary constructs
+4. No composite type recovery - all arrays/structs marked as unresolved
+5. Code contains massive `undefined1 auVar[N]` arrays that are compiler artifacts, not real code
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+The target function names are preserved accurately from the source (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`), making it easy to locate specific functions.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The decompiler failed to recover any local variable names, marking everything as "Unresolved local var". This makes it impossible to track data flow within functions.
+
+**Top 3 Recommendations:**
+1. **Recover variable names from usage patterns** - Analyze how variables are used (arithmetic, indexing, comparison) to infer semantic names like `sum`, `index`, `count`
+2. **Detect and annotate loop unrolling** - When loops are unrolled, add comments like "Loop unrolled by compiler" and optionally provide the original loop form
+3. **Replace obfuscated expressions with natural constructs** - Convert `x << (0 < x)` back to `if (x > 0) x = x * 2;` and `(int)(0 < x)` to ternary or if-else

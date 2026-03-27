@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy` (and related test functions)
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_10`, `local_14`, `local_18`, `local_1c`. Library functions are named `FUN_xxxxx` (e.g., `FUN_00011510` for strcpy) instead of actual function names. Only global variables like `signal_received`, `shared_counter`, `atomic_counter` are properly named.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Test/caller functions like `call_strcpy`, `call_strcmp`, `param_strcpy` match source names exactly. However, all libc functions are unnamed (`FUN_00011510`, `FUN_00011440`, etc.) instead of `strcpy`, `strcmp`, `strlen`. Thread functions like `signal_handler`, `thread_sum`, `thread_compute` are correctly identified.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like `"Value: %d, Name: %s\n"`, `"/etc/passwd"`, `"BinBench Test Data"` are preserved correctly. However, numeric constants like `0x2a` (42), `0x10` (16), `0xc` (12) appear without explanation. Some return values like `0xffffffff` (-1) for errors are clear from context.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise from stack canary checks (`__stack_chk_fail_local()` calls with `in_GS_OFFSET` comparisons). GOT/PLT references like `_GLOBAL_OFFSET_TABLE_` are exposed. Many `FUN_xxxxx` placeholder functions for libc. The decompiled output is cluttered with compiler-generated code that obscures the actual logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops are properly recognized as `do-while` constructs. Conditionals use idiomatic `if` statements. At `-O0` optimization, control flow should be nearly source-equivalent, and the decompiler achieves this for most functions. Minor issues with some complex nested conditions in functions like `param_fork_exec`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-80 lines each). The test functions properly call the target functions. Library function calls are isolated. However, libc functions are not decomposed - they're just `FUN_xxxxx` placeholders. Function parameters are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately. Some forward references exist in complex functions like `param_pipe_communication` but are manageable. The code flow is mostly linear.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or redundant expressions. Loop unrolling is not excessive. Common subexpression elimination artifacts are minimal. The code is clean from a redundancy perspective.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `undefined4` instead of proper types like `int32_t` or `size_t`. Pointers are often `undefined4` or `int` instead of typed pointers. No `const` correctness. Function parameters use `undefined4` instead of `char*`, `const char*`. The type system is significantly degraded.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery visible. The `ThreadData` structure used in `thread_sum` is flattened into separate array elements (`local_50[3]`, `local_40`, etc.) losing the semantic grouping. All composite types are raw pointer arithmetic with no struct layouts.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate type safety issues. Many unsafe casts from `undefined4` to `int*`. Pointer arithmetic is manual without safety bounds. Function pointers are properly typed in some places (e.g., `thread_compute` as function pointer) but not consistently. Some buffer operations could be unsafe.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments in the decompiled output whatsoever. No explanation of algorithm intent, no documentation of what functions do, no indication of uncertainty. The code is completely devoid of explanatory comments.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns like pthread usage (`pthread_create`, `pthread_join`, `pthread_mutex_lock`) are recognized as function calls. However, patterns are not explicitly named or documented. The "producer-consumer" pattern in condition variables is not identified as such.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. Indirect calls that couldn't be resolved are not flagged. Unusual stack layouts are not documented. The decompiler presents all code with equal confidence regardless of resolution certainty.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information recovered. Preconditions like "ptr != NULL" are not documented. Postconditions are not inferred. Error conditions are handled but not explained. No invariant recognition.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in the code. Global variable usage is apparent. However, relationships with external code are not documented. There's no indication of who calls these functions or what they call (except through direct invocation).
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are in a single large file. Some logical grouping exists (test functions, pthread functions, syscall functions) but it's not explicit. Static functions are not distinguished from external ones.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code has compilation issues - uses `undefined4` which is not a valid C type. Missing proper declarations for libc functions (they're `FUN_xxxxx` stubs). Stack canary code references `__stack_chk_fail_local()` which needs linking. Would require significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Library functions (`strcpy`, `strcmp`, `strlen`, `memcpy`, etc.) are not recognized and replaced with `FUN_xxxxx` placeholders
+- All variables use generic names (`param_1`, `local_10`, etc.) making semantic purpose unclear
+- No comments whatsoever - zero documentation of intent or algorithm explanation
+- Type precision severely degraded - uses `undefined4` instead of proper types like `char*`, `int32_t`
+- No struct recovery - `ThreadData` is flattened into separate array elements
+- No anomaly indication for unresolved indirect calls or uncertain decompilation
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+- At `-O0` optimization, control flow structures (loops, conditionals) are properly recovered and read naturally
+
+**Most Needs Improvement:** Lexical Clarity (2.8/10 avg)  
+- Variable and function naming is severely degraded with generic `FUN_xxxxx` and `param_X` names that completely obscure semantic meaning
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Symbol Recovery**: Implement library function signature matching to recognize standard library calls (strcpy, strcmp, printf, etc.) by analyzing call signatures and string format constants
+2. **Variable Name Inference**: Use usage pattern analysis to infer semantic names - e.g., if `param_1` is passed to `strlen()`, name it `str` or `input_string`
+3. **Comment Generation**: Add auto-generated comments explaining function purpose, parameter semantics, and any decompilation uncertainty (e.g., "Likely strcpy - copies string")

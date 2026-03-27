@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `iVar1`, `uVar1`, `sVar1`, `x_local`, `y_local`, `n_local`. The original source used meaningful names like `size`, `x`, `y`, `arr`, `n`, `counter`, `increment`. The "_local" suffix is a decompilation artifact that adds noise without semantic value.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions like `param_macro_constants`, `call_macro_constants`, `param_asm_basic` correctly match source names. However, some internal functions use cryptic names like `FUN_00100880`, `FUN_00100a7c`. The main API functions are well-named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple magic numbers replace meaningful constants: `0x401` (1025) for MAX_SIZE+1, `0x200` (512) for MAX_SIZE/2, `0x40` (64) for BUFFER_COUNT*4, `0xdef0` for default platform constant, `0x117` for __LINE__. The original source comments explicitly showed these macro values, but the decompiled version loses this semantic information.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Moderate compiler artifacts present: `___stack_chk_guard` and `__stack_chk_fail` for stack protection, weak function references (`call_weak_fn`), and auxiliary functions (`init_have_lse_atomics`). These are legitimate compiler additions but add noise. The core logic is relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and idiomatic. Simple if-else statements are preserved correctly (e.g., `if (size < 0x401)`), loops use proper for constructs, and the overall execution flow is easy to follow. At -O0, there's no optimization distortion.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The decompiler correctly preserves the function granularity from the source. Each test function (`call_macro_constants`, `param_asm_basic`, etc.) remains separate. Functions are cohesive with reasonable parameter lists. No over-fragmentation or monolith formation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom without excessive jumps. Early returns are used appropriately (e.g., in `param_dynamic_code` when mmap fails). No forward jumps into loop bodies or computed goto disruption. Good linear flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy. Dead code from optimization is minimal. Loop unrolling is not present at -O0. The decompiled code is clean without duplicate expressions or unnecessary code paths.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are generally precise: `int` for integers, `int*` for pointers, `size_t` for memory sizes, `void*` for generic pointers. Minor issues: some `long` usage for stack guard (`long lVar1`) instead of appropriate platform-specific types. Overall good type preservation.
+
+**10. Composite Type Recovery:** Score: 10/10  
+Justification: Not applicable for this source - the original code uses only primitive types (int, char, void*) with no custom structs or unions. The decompiled code correctly uses primitive types throughout.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No obvious unsafe casts. Pointer arithmetic is correct (e.g., `arr[i]`, `result[i]`). Function pointers are properly typed. Minor issue: some implicit int-to-uint conversions in printf arguments but nothing dangerous.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated header comments present ("Decompiled by Ghidra 12.0"). No comments explaining macro semantics, conditional compilation branches, or inline assembly behavior. The original source had extensive comments about preprocessing behavior that are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. The decompiler doesn't identify: (1) macro constants being used (shows as magic numbers), (2) conditional compilation branches (just shows the active path), (3) inline assembly replaced with C equivalents, (4) token pasting/stringizing operations. These preprocessing idioms are completely opaque.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Globals starting with '_' overlap smaller symbols". However, critical anomalies are not flagged: the conditional compilation that produced different code paths isn't indicated, and the inline assembly replacement isn't noted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract or precondition/postcondition recovery. The original source had implicit contracts (e.g., "requires: x > 0" for some functions) that are completely lost. No documentation of error conditions or return value semantics.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear through direct calls (e.g., `param_macro_constants` calls from `call_macro_constants`). However, no documentation of: which functions call which, global variable usage patterns, or callback relationships. The call graph must be inferred manually.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing test functions together, asm test functions together. Static functions like `header_func` are properly scoped. Minor issue: some internal functions (`FUN_00100880`, etc.) are interleaved with user functions disrupting logical flow.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The decompiled code should compile with standard libc includes. External dependencies (printf, memcpy, mmap, sysconf) are standard. Minor issues: `__stack_chk_fail` may need linking flags, and some compiler intrinsics like `__aarch64_ldadd4_acq_rel` are inlined rather than called.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`iVar1`, `x_local`, `y_local`) instead of source names (`size`, `x`, `y`)
+- Magic numbers replace all macro constants (`0x401` for MAX_SIZE+1, `0xdef0` for default platform constant)
+- Complete loss of macro semantics - no indication which values came from #define
+- No comment recovery for preprocessing behavior, conditional compilation, or inline assembly
+- Conditional compilation branches not flagged - only shows active path, losing the information that alternatives existed
+
+**Best Quality Aspect:** Type System Fidelity (scored 8.7/10)  
+Types are precise and match the original source well. Integer types, pointers, and sizes are correctly represented. No significant type degradation observed.
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.5/10)  
+The decompiler fails to recover any semantic information about macros, conditional compilation, or inline assembly. Comments are minimal, idioms are not recognized, and contracts are not documented. This is the core purpose of the test file (preprocessing features), but the decompiled version is essentially opaque about these features.
+
+**Top 3 Recommendations:**
+1. Infer macro constant values from usage patterns and suggest named constants (e.g., `0x401` → `MAX_SIZE + 1`)
+2. Add comments indicating conditional compilation branches that were compiled out (e.g., "DEBUG_MODE was not defined")
+3. Recover variable names from parameter passing patterns - `x_local` should be `x` when it's clearly the parameter

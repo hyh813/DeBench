@@ -1,0 +1,102 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `v0`, `v1`, `v2`, `ptr`, `a0`, `a1` instead of semantic names (e.g., `dst`, `src`, `buffer_size`). Some exceptions exist (`fp`, `pid`, `sock`, `count`) but are inconsistent across functions.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions like `param_strcpy`, `param_memcpy`, `thread_compute` retain original names, but many helpers use mechanical names (`sub_4013b4`, `sub_401804`). Thread functions are reasonably named but wrapper functions are not.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound: `4294967295` (UINT_MAX/-1), `42` (success code), `18446744073709551612` (bitmask). String literals like `"Value: %d, Name: %s\n"` are preserved but numeric constants lack explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: stack canary checks (`__stack_chk_guard`), architecture intrinsics (`__aarch64_ldadd4_acq_rel`), redundant variable assignments (`v0 = &v1`), and `[D] MBusEvent-Imbe_Fence()` noise throughout atomic operations.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive use of `goto` labels (`LABEL_401d79`, `LABEL_40347d`) instead of structured loops. Complex nested conditionals with `arm64g_calculate_condition` obscure simple comparisons. At -O0, this level of transformation is unexpected.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Many unnecessary wrapper functions exist (`sub_401c3c` just calls `param_strcmp`). Some functions are well-sized but fragmentation creates navigation overhead. Thread functions are appropriately separated.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. Multiple exit points with goto labels (`LABEL_4023d8`, `LABEL_401d7a`) break natural flow. Stack canary checks at function end add non-linear epilogue code.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate function calls appear (`return memcpy(v0, v1, v2); return memcpy(v0, v1, v2);` in `sub_4013b4`). Call functions are constant-folded (`call_strcpy` returns 8 directly) losing original logic visibility.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision: `unsigned long long` used where `int` or `size_t` would be clearer. Some types recovered (`FILE*`, `pthread_t`) but many pointers are generic `void*` or `char*`. Signed/unsigned confusion in return values.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs partially recovered (`struct_0`, `struct sockaddr`) but with generic field names (`field_0`, `field_5`, `padding_0`). TLS struct has meaningless field access (`ptr->padding_0[0]`). Union types not distinguished.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts visible (`(volatile int*)&atomic_counter`). Pointer arithmetic on void pointers. Stack canary comparisons use incorrect types. No const-correctness preserved on string parameters.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only auto-generated annotations like `// [bp-0x20]` and `// do not return`. No algorithm explanations, no decompilation confidence indicators, no API contracts.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Standard library calls recognized (`strcpy`, `memcpy`, `pthread_create`) but not annotated as patterns. Producer-consumer pattern in condition variables not identified. No design pattern naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Two functions marked "Failed to decompile" (`__aarch64_cas4_acq_rel`, `__aarch64_ldadd4_acq_rel`) but no explanation of why. No warnings about indirect calls or unresolved references elsewhere.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: a0 != NULL"). Return value semantics not explained. Error codes (42, -1, -2, -3) have no documented meaning. Stack canary checks not explained as security features.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (`signal_received`, `atomic_counter`) declared extern but usage context unclear. No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. Related functions (test_* and call_*) scattered. No header file structure or API/implementation separation visible.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies declared (`extern char __stack_chk_guard`) but not documented. Architecture-specific intrinsics require special headers. Would need significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+4+3)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+5+4+4)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 4.05/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- Variable `v0`, `v1`, `v2` should be named based on semantic usage (e.g., `dst`, `src`, `length`)
+- Control flow uses `goto LABEL_*` instead of structured loops and conditionals
+- Magic numbers like `4294967295` should be represented as `-1` or `UINT_MAX`
+- Stack canary checks (`__stack_chk_guard`) add noise without explanation
+- Struct fields use generic names (`field_0`, `padding_0`) losing semantic meaning
+- No comments explain algorithm purpose or decompilation confidence
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core library wrapper functions retained original names (`param_strcpy`, `param_memcpy`, `thread_compute`), making key functionality identifiable despite other issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation exists; even basic function purpose comments are absent, forcing readers to reverse-engineer intent from code alone.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze variable usage patterns to infer names (e.g., variables passed to `strlen` should be named `string` or `str`)
+2. **Recover structured control flow** - Convert `goto` patterns back to `for`/`while` loops and `if`/`else` blocks, especially at -O0 optimization level
+3. **Add decompilation confidence annotations** - Mark uncertain reconstructions with comments explaining what couldn't be recovered and why (e.g., "UNCERTAIN: indirect call target unknown")

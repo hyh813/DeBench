@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `local_10`, `iVar1`, `uVar3` with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `large`, `s` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `test_calling_conventions`), but some helpers are generic (`FUN_00101020`). Names accurately reflect functionality where preserved.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers in hex obscure simple values: `0xf` (15), `0x32` (50), `0x2a` (42), `0x15` (21). Original source used clear decimal literals like `5, 10` for function calls.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail()`) present in most functions. Compiler artifacts like frame pointer manipulation add noise but don't completely obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but varargs handling uses complex manual stack traversal loops. Many caller functions constant-folded to direct returns, losing call structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved, but aggressive constant folding collapsed wrapper functions (`call_cdecl` returns `0xf` instead of calling `cdecl_func(5, 10)`). Varargs logic should be extracted.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom naturally. Varargs and struct handling introduce loop complexity but no problematic forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `test_calling_conventions` shows 16 repetitive element-by-element struct copy assignments. Constant folding eliminated some redundancy but created new opacity.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic `int` used where specific widths matter. Return types mismatch (`undefined8` instead of `int`). Double pointers degraded (`long *` instead of `int **`). Pointer types often `undefined8 *`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All struct definitions lost. `LargeStruct`, `SmallStruct`, `BigStruct` passed as raw pointers. Field access becomes `param_1[1]` instead of `p->y`. No struct type information recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int *)`, `(long *)`, `(undefined8 *)`). Varargs handling uses unsafe pointer arithmetic. Stack manipulation without type guarantees throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only compiler metadata header present. No algorithm explanations, no logic documentation, no decompilation confidence indicators. Original source had extensive comments.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not identified as stdarg usage. Struct passing conventions unrecognized. Function pointer callbacks not labeled as such. No pattern hints provided.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Subroutine does not return", "Removing unreachable block"). No indication of constant folding or optimization artifacts that changed semantics.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented. Null checks present but not explained as contracts. No postconditions inferred. Original had clear test expectations documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph information. Global variables (`handle1_1`, `handle2_0`) appear without context or declaration.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping comments. Static functions not properly scoped. No header file or API declarations recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References undefined symbols (`__gmon_start__`, `__libc_start_main`, `__printf_chk`). External dependencies not documented. Would require significant stubbing to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+6+7+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.666
+Level 4 (Semantic):    (2+3+5+3)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.61/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct`, `BigStruct` all degraded to raw pointer arithmetic with no field names
+- **Variable names entirely generic** - `param_1`, `local_10`, `iVar1` convey no semantic meaning about purpose
+- **Constant folding obscures call relationships** - `call_cdecl()` returns `0xf` directly instead of showing `cdecl_func(5, 10)` call
+- **Magic numbers in hex** - `0x2a`, `0x32`, `0x15` instead of decimal `42`, `50`, `21` making values harder to recognize
+- **No comments recovered** - Original source had extensive documentation; decompiled code has zero explanatory comments
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately, allowing identification of purpose despite other degradation
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions, forcing all composite data through raw pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct definitions from stack layouts** - Analyze consistent field access patterns (`param_1[0]`, `param_1[1]`) to reconstruct struct types with field names
+2. **Preserve call relationships over constant folding** - Show original function calls even when compiler optimized them, with optional "constant-folded" annotations
+3. **Infer variable names from usage context** - Variables used in loop counters should be named `i`, `count`; sum accumulators should be `sum`; pointers should indicate target type

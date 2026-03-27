@@ -1,0 +1,189 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses extremely generic variable names throughout. Local variables are named `v1`, `v2`, `v3`, `v4` (e.g., lines 0x1cd4, 0x1d4c), function parameters are `a1`, `a2`, `a3`, and global variables are `g1`, `g2`, `g3`. The original source has meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value`, `capture_by_ref` that are completely lost. This makes tracking variable purpose across the 3004-line output extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 6/10**
+
+The test functions are properly named using demangled C++ names (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func()`), and class member functions are correctly identified (e.g., `_ZN11SimpleClass8getValueEv` → `SimpleClass::getValue()`). However, many internal helper functions retain generic names like `function_19c0`, `function_1a00`, `function_1a50`. The main API functions are clear, but implementation details are obscured.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Some constants are properly named (e.g., `g1 = 0x17c7800000000 // 0x1234`), but the decompiler uses the full 64-bit value instead of the meaningful 0x1234. Magic numbers like `0x4000000000000000` in the LifecycleClass constructor (line 0x30c4) are unexplained. String literals show Chinese characters but are encoded as hex escape sequences. The original source uses meaningful constants like `sizeof(name)-1` which are lost.
+
+### 4. Noise Reduction
+**Score: 4/10**
+
+The output contains significant compiler artifacts including:
+- Redundant casts throughout (e.g., `(int64_t)(int32_t)&g41`)
+- Frame pointer manipulation (`*(int32_t *)(v1 - 36) = (int32_t)v1`)
+- Many `__clang_call_terminate()` stubs
+- Thunk functions for virtual inheritance (`_ZThn16_`, `_ZTv0_n24_`)
+- The output is 5.5x larger than source (3004 vs 540 LOC) due to noise
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Control flow is generally readable with proper loops and conditionals. The exception handling uses goto patterns which is expected. At -O0, the control flow should be closer to source, and it mostly is - you can see proper while loops (e.g., LifecycleClass constructor at 0x30ec). However, some patterns like `while (v4 != v2)` could be more clearly presented as for-loops.
+
+### 6. Function Decomposition
+**Score: 4/10**
+
+The code is severely over-fragmented. The original 12 test functions became hundreds of tiny functions. For example, `test_cpp_smart_ptr()` is spread across 30+ functions including `_ZNSt15__uniq_ptr_implIiZ18test_cpp_smart_ptrvE3_24__2E6_M_ptrEv`, `_ZSt3getILm0EJPiZ18test_cpp_smart_ptrvE3_24__2EERNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERS6_`. This makes it nearly impossible to follow the original logic.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+The code generally reads top-to-bottom with minimal forward jumps. Exception handling creates some non-linear flow (e.g., `_Unwind_Resume` calls), but overall the linear reading experience is acceptable. Most functions can be understood in sequence.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+
+Some loop unrolling is present but minimal. The main issue is the massive amount of template/STL infrastructure code that obscures the actual logic. For example, smart pointer operations are buried under layers of tuple, unique_ptr_impl, and __uniq_ptr_data functions.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+
+The decompiler uses `int64_t` and `int32_t` appropriately, which is good. However, there are issues:
+- Many pointers are generic `int64_t *` instead of proper types
+- Function pointers are often not properly typed
+- The original `size_t` is sometimes `uint64_t`, sometimes `int64_t`
+- Const correctness is partially preserved in some `const` methods but inconsistent
+
+### 10. Composite Type Recovery
+**Score: 4/10**
+
+The decompiler recovered vtable structures (e.g., `struct vtable_17858_type`), but class structures themselves are not properly recovered. The original classes like `SimpleClass`, `LifecycleClass`, `Base`, `Derived` are not reconstructed - their members are accessed via raw pointer arithmetic (e.g., `*(int32_t *)result = a2` for SimpleClass::value). The original `char name[32]` is just `*(char *)(v1 + 4)` with offset arithmetic.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Significant type safety issues exist:
+- Many unsafe casts like `(int64_t)(int32_t)&g41`
+- Pointer arithmetic without bounds checking
+- Raw memory access patterns (e.g., `*(int32_t *)(4 * v3 + result) = 10 * (int32_t)v3`)
+- The original RAII patterns (smart pointers) are deconstructed into unsafe manual memory management
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 5/10**
+
+The decompiler adds some useful comments:
+- "// Demangled: function_name" for main functions
+- "// Address range: 0xXXXX - 0xXXXX" headers
+- "// From class: ClassName" comments
+
+However, these are mechanical and don't explain the actual logic. No comments on algorithm intent, preconditions, or non-obvious operations. The original source comments explaining the C++ features are completely lost.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+
+Some C++ idioms are implicitly recognized:
+- Virtual tables are reconstructed as struct vtables
+- Some smart pointer patterns are partially recovered
+- Exception handling infrastructure is present
+
+But these aren't explicitly named or documented as patterns. The original source's use of RAII, polymorphism, templates, and lambdas is deconstructed into low-level operations.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+
+No explicit marking of suspicious or uncertain code. The decompiler doesn't indicate:
+- Indirect calls that couldn't be resolved
+- Unusual stack layouts
+- Potential undefined behavior
+- Confidence levels in type recovery
+
+The code is presented as definitive when many interpretations are uncertain.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+No contract information recovered. The original source has clear semantics (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated") that are completely lost. The decompiled code provides no hints about preconditions, postconditions, or invariants.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Function calls are technically visible, but relationships aren't documented. You can see that `test_cpp_oo_features()` calls other test functions, but there's no explicit documentation of:
+- Call graphs
+- Global variable usage
+- Virtual dispatch relationships
+- Callback patterns
+
+### 17. Module Organization
+**Score: 4/10**
+
+All 3004 lines are in a single file. While functions are somewhat grouped (test functions first, then class methods, then STL infrastructure), the organization is arbitrary. The original source's clear separation into test functions is lost under layers of infrastructure code.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+
+The code includes standard headers (`<stdint.h>`, `<stdio.h>`, `<stdlib.h>`, `<string.h>`) and appears compilable. The "// Compilation Result: Yes" metadata confirms it compiles. However, it requires significant linking against libstdc++ and would need the original runtime.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 avg: (2+6+5+4)/4 = 4.25
+Level 2 avg: (6+4+7+5)/4 = 5.50
+Level 3 avg: (6+4+4)/3 = 4.67
+Level 4 avg: (5+5+3+2)/4 = 3.75
+Level 5 avg: (5+4+7)/3 = 5.33
+
+Overall = (4.25 × 0.30) + (5.50 × 0.25) + (4.67 × 0.20) + 
+          (3.75 × 0.15) + (5.33 × 0.10)
+        = 1.275 + 1.375 + 0.934 + 0.5625 + 0.533
+        = 4.68/10
+```
+
+### Overall Readability Score: 4.7/10
+
+### Critical Defects
+
+1. **Variable naming is unusable**: `v1`, `v2`, `v3`, `a1`, `a2`, `g1`, `g2` provide no semantic meaning - the original `value`, `name`, `data`, `size`, `multiplier` are completely lost
+
+2. **Severe function over-fragmentation**: The 12 test functions are decomposed into 275 functions, making it impossible to follow original logic
+
+3. **Class structures not recovered**: Original classes like `SimpleClass`, `LifecycleClass`, `Base`, `Derived` are deconstructed into raw pointer arithmetic with offsets
+
+4. **No semantic annotations**: No comments explaining algorithm intent, no pre/postconditions, no pattern recognition
+
+5. **Massive noise inflation**: 3004 LOC output vs 540 LOC source (5.5x expansion) due to template instantiation explosion, thunk functions, and infrastructure code
+
+### Best Quality Aspect: Build System Compatibility (7/10)
+The code includes proper headers and is marked as compilable. Type precision using int32_t/int64_t is mostly correct.
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+The generic single-letter variable names make the code practically unusable for analysis. Even a simple variable like "packet_size" becomes untrackable across the massive output.
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Track how variables are used (e.g., `v1` used as array index → name it `index`; `v1` used in string operations → name it `string_length`)
+
+2. **Preserve class structure**: Instead of raw pointer arithmetic, reconstruct the original class layout with named fields. The original `obj.value` should be `obj->value`, not `*(int32_t *)result`
+
+3. **Collapse template/STL infrastructure**: The 275 functions include massive template expansion - group these into logical units or provide abstraction layers to show the intent rather than implementation details

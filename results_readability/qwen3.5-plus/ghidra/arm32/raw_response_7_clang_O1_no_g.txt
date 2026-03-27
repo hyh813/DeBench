@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `iVar2`, `uVar3`, `pbVar2`, `bVar1`) with no semantic meaning. No variable names like `result`, `packet_size`, or `encryption_key` were recovered from usage patterns.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Function names are preserved from source symbols (`param_fake_branch`, `call_opaque_predicate`), which is good. However, many functions have incorrect implementations despite correct names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a`, `0x14`, `0x23`, `0xe1` appear without explanation. Some are constant-folded results (e.g., `0x14` = 20) but no named constants were recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `undefined4` types throughout, `__aeabi_idivmod` calls, and the `__divsi3` function has 35+ boolean variables (`bVar1` through `bVar35`) creating extreme noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loops recovered as do-while constructs, but `param_opaque_predicate` has awkward conditional logic. The division function's 35+ boolean chain is extremely unnatural.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical failure: `param_fake_branch` decompiles to `void param_fake_branch(void) { return; }` - completely empty despite source having logic. `param_buffer_overflow_stack` and `param_buffer_overflow_heap` similarly empty.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with appropriate loop structures. However, the `__divsi3` function's boolean cascade creates severe non-linearity.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `param_string_encryption` and `call_string_encryption` have identical decompiled code (duplication). The `__divsi3` function has massive redundancy with 35+ similar boolean checks.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4` instead of `int`, `byte *` instead of `char *`. `param_integer_overflow` takes `uint` parameters but source uses `int`. Signed/unsigned confusion throughout.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The bitfield struct in `param_implementation_defined` is completely optimized away. No struct recovery visible; arrays shown as pointer arithmetic (`(&DAT_00011190)[iVar1]`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts: `(byte *)`, `(char *)`, `(undefined4 *)`. `param_null_pointer_deref` takes `undefined4 *` which loses pointer semantics. No bounds checking visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only compiler warnings present ("WARNING: Subroutine does not return", "WARNING: Removing unreachable block"). No semantic comments explaining function purpose or algorithm logic.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: The GCD algorithm in `param_opaque_predicate` is not recognized. No design patterns, algorithm names, or data structure patterns identified anywhere.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present for unreachable blocks and jumptable recovery failures. However, the critical anomaly of `param_fake_branch` being empty is NOT flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: x != 0" for division). No postconditions inferred. No error condition documentation for signal handlers.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible, global variables referenced (`jmp_buffer`, `div_zero_caught`). However, no call graph documentation or callback relationship explanations.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. No logical grouping by category (obfuscation vs. optimization vs. edge cases). Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`signal`, `strlen`, `__libc_start_main`) require stubbing. Type mismatches (`undefined4` vs `int`) would prevent clean compilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+4+6+4)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (3+3+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.34/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **`param_fake_branch` completely empty** - Source has 15 lines of logic with dead code branches; decompiled version is `void param_fake_branch(void) { return; }`
+- **`param_buffer_overflow_stack` and `param_buffer_overflow_heap` empty** - Both return immediately instead of containing overflow logic
+- **35+ boolean variables in `__divsi3`** - Extreme noise making division logic unreadable
+- **`undefined4` type throughout** - Loses semantic meaning of `int`, `size_t`, pointer types
+- **No anomaly flagging for optimized-away functions** - Critical functions eliminated without warning
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Source symbol names preserved accurately (`param_fake_branch`, `call_opaque_predicate`, etc.)
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- Zero documentation of preconditions, postconditions, or error handling contracts
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Flag optimized-away functions** - When source symbols exist but function body is empty, add `// DECOMPILER: Function body optimized away at compile time` warning
+2. **Recover semantic variable names from usage patterns** - Variables used in size checks should be named `size`, `length`; loop counters should be `i`, `index`
+3. **Simplify compiler helper functions** - The `__divsi3` with 35+ booleans should be recognized as standard library and replaced with `return param_1 / param_2;` with a comment noting it's a compiler intrinsic

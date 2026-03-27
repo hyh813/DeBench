@@ -1,0 +1,125 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `iVar2`, `pbVar3`, `bVar2`) with no semantic meaning. Original names like `decrypted`, `buffer`, `valid` are preserved in some functions, but most local variables lost their intent.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Main function names preserved accurately (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`). Helper functions use generic names (`FUN_00011030`) but core logic functions retain semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `0x5a` (XOR key), `0x1f` (buffer size), `signal(8,...)` instead of `SIGFPE`. Return values constant-folded to hex (`0xe1`, `0x14`) obscuring original calculations.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86.get_pc_thunk.bx` warnings, `__stack_chk_fail_local()` calls, and "Unresolved local var" comments throughout. Three duplicate definitions of `param_division_by_zero` create confusion.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while constructs appropriately. However, `param_fake_branch` lost its fake branch logic entirely (just returns `x`), and `call_fake_branch` constant-folded to `return 10`, losing original structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity reasonable, but caller functions collapsed due to constant folding (`call_opaque_predicate` inlines the GCD loop). Multiple versions of same function (`param_division_by_zero` x3) indicate decomposition issues.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Do-while loops instead of for-loops slightly disrupt flow but remain comprehensible.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy: `test_obf_opt_edge` duplicates code from individual call functions. Three versions of `param_division_by_zero` with different implementations. No dead code removal for unreachable branches.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `char`, `size_t`), but degradation present: `undefined4` for some return types, `(longlong)x` casts appear inconsistently. Pointer types generally correct.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited composite types in source. `jmp_buf` used as opaque type correctly. Bitfield struct in `param_implementation_defined` not visible in decompiled output (constant-folded).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present: `(code *)`, `(undefined *)`, `(int *)0x0`. Signal handler casts `(__sighandler_t)0x0` lose type safety. Stack canary checks present but cast-heavy.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only technical warnings present ("WARNING: Unknown calling convention", "Unresolved local var"). No semantic comments explaining algorithm purpose or obfuscation intent from original source.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: XOR decryption pattern visible but not identified. GCD algorithm in `param_opaque_predicate` recovered but not named. No pattern recognition for opaque predicates or fake branches.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly indication: "WARNING: Subroutine does not return", "Removing unreachable block", "Unresolved local var" comments flag issues. Multiple function versions noted implicitly.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Signal handler contracts not documented. Original comments about "永假条件" (always-false conditions) completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables (`div_zero_caught`, `jmp_buffer`) referenced without declaration context. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 49 functions in flat output. Helper functions (`deregister_tm_clones`, `__do_global_dtors_aux`) mixed with application logic. No logical grouping by obfuscation/optimization/edge categories.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Architecture mismatch (source arm64, decompiled x86). External dependencies (`signal`, `malloc`, `strlen`) undeclared. Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+6+7+4)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (4+5+7+3)/4 = 4.75 × 0.15 = 0.71
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                              5.47/10
+```
+
+**Overall Readability Score: 5.5/10**
+
+---
+
+### Critical Defects
+
+- **`param_fake_branch` logic lost**: Function reduced to `return x`, completely eliminating the fake branch obfuscation that was the core purpose
+- **Variable names generic**: `iVar1`, `iVar2`, `pbVar3` provide no semantic information about their role (should be `result`, `gcd_temp`, `buffer_ptr`)
+- **Magic numbers unexplained**: `0x5a`, `0x1f`, `signal(8)` instead of named constants (`XOR_KEY`, `BUFFER_SIZE`, `SIGFPE`)
+- **Duplicate function definitions**: Three versions of `param_division_by_zero` with different implementations create confusion about which is correct
+- **Architecture mismatch**: Source compiled for arm64 but decompiled as x86, indicating potential binary mismatch
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (8/10)**
+- Core function names preserved accurately from source, maintaining semantic connection to original purpose (`param_opaque_predicate`, `decrypt_string`, `param_tail_call_optimized`)
+
+---
+
+### Most Needs Improvement
+
+- **Assertion & Contract Recovery (3/10)**
+- No documentation of preconditions, postconditions, or the obfuscation intent (e.g., "永假条件" always-false conditions completely undocumented)
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Preserve obfuscation patterns**: Detect and annotate fake branches, opaque predicates, and instruction substitution patterns rather than optimizing them away during decompilation
+
+2. **Infer semantic variable names**: Use data flow analysis to rename `iVar1` → `result`, `pbVar3` → `buffer_ptr` based on usage patterns and function context
+
+3. **Recover named constants**: Replace magic numbers (`0x5a`, `signal(8)`) with symbolic constants by cross-referencing standard library definitions and detecting encryption keys from usage patterns

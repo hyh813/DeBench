@@ -1,0 +1,166 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY (30% weight)
+
+### 1. Variable Naming Quality (10%)
+**Score: 2/10**
+
+Justification: All variables use generic names like `v0`, `v1`, `v2`, `ptr`, `a0`, `i` with no semantic meaning. In `local_vars`, parameter `a0` should be `x`, and in `heap_basic`, variables like `ptr` and `i` obscure their roles as array pointer and loop index. No variable name reflects its actual purpose (e.g., `packet_size`, `user_count`, `buffer_ptr`).
+
+### 2. Function Naming Quality (10%)
+**Score: 4/10**
+
+Justification: Mixed results - some functions correctly named (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`) but many use mechanical address-based names like `sub_10598`, `sub_106d8`. The test functions are reasonably named, but helper functions like `alloca_usage.constprop.0` reveal compiler artifacts rather than semantic intent.
+
+### 3. Literal Clarity (5%)
+**Score: 3/10**
+
+Justification: Magic number `4294967295` (unsigned -1) appears frequently without explanation. String literals referenced by address (e.g., `0x1297c`) instead of content. Constants like `42` in `address_of_local` are clear, but most error return values and array indices lack meaningful constant names.
+
+### 4. Noise Reduction (5%)
+**Score: 2/10**
+
+Justification: Severe compiler artifact pollution. Stack canary checks (`GLIBC_2.4::__stack_chk_guard`) clutter functions. Register annotations (r0, r1, r2, r3, lr) pollute variable declarations. Multiple `armg_calculate_condition` calls for simple conditionals. Dead code from register spilling visible throughout.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+### 5. Control Flow Naturalness (8%)
+**Score: 5/10**
+
+Justification: At -O0, control flow should be nearly perfect, but the decompilation shows excessive goto statements and confusing conditional expressions. The `armg_calculate_condition` function calls obscure simple boolean logic. Loop constructs are present but expressed awkwardly with pointer comparisons instead of idiomatic for/while loops.
+
+### 6. Function Decomposition (7%)
+**Score: 6/10**
+
+Justification: Functions are reasonably sized (not monolithic). The test functions appropriately call sub-functions. However, some functions like `test_heap_memory` are large (2160 LOC total) and could benefit from decomposition. Parameter lists expose implementation details (e.g., `global_array_access` takes 4 unused parameters).
+
+### 7. Code Linearization (5%)
+**Score: 5/10**
+
+Justification: Generally reads top-to-bottom with some forward jumps. The `large_stack_frame` function has confusing pointer arithmetic that disrupts linear flow. Early returns present but not excessive. Some computed jumps interrupt readability.
+
+### 8. Redundancy Elimination (5%)
+**Score: 4/10**
+
+Justification: Significant redundancy from loop unrolling not commented or abstracted. In `heap_basic`, the loop is manually unrolled with pointer arithmetic that could be a simple for-loop. Duplicate expressions visible (e.g., `extern_function(5)` called twice in `call_extern_func`). Dead code from optimization passes present.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+### 9. Type Precision (8%)
+**Score: 3/10**
+
+Justification: Severe type degradation - all integers are `unsigned int` regardless of actual type. No `int32_t`, `size_t`, or `ssize_t` recovered. Pointers are generic `unsigned int*` or `void*`. No distinction between signed/unsigned, different pointer types, or const correctness. Function signatures use `unsigned int` for parameters that should be `int`.
+
+### 10. Composite Type Recovery (7%)
+**Score: 2/10**
+
+Justification: Poor struct recovery - generic names like `struct_0`, `struct_1`, `struct_2`, `struct_3` with fields `field_0`, `field_4` lose all semantic meaning. The `Node` struct becomes `struct_2 { unsigned int field_0; struct struct_3 *field_4; }`. No union recovery. Nested structures unclear. Original `Point` struct completely lost.
+
+### 11. Type Safety (5%)
+**Score: 3/10**
+
+Justification: Multiple unsafe operations - pointer arithmetic without bounds checking, incorrect pointer arithmetic in loops (e.g., `ptr = ptr + 1` then `ptr[1]`). In `heap_basic`, the free() is called on wrong pointer (`ptr` was incremented). Dangling pointer access in `dangling_pointer()` not flagged as dangerous. No const correctness. Multiple implicit casts between pointer and integer types.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+### 12. Comment Quality & Presence (5%)
+**Score: 2/10**
+
+Justification: Almost no useful comments. Register-related comments ("r0", "r2", "lr") provide no semantic value. No algorithm explanations, no decompilation confidence indicators. The comment `// ANGR Decompilation of 3_gcc_O3_g` is the only header. No documentation of preconditions, postconditions, or non-obvious logic.
+
+### 13. Idiom Recognition (3%)
+**Score: 3/10**
+
+Justification: Some patterns visible but not named or explained. Memory allocation patterns (malloc/calloc/realloc) recognized but not identified as such. Linked list traversal visible but not labeled. No design pattern recognition (state machine, strategy, etc.). The test framework pattern is not identified.
+
+### 14. Anomaly Indication (3%)
+**Score: 1/10**
+
+Justification: No flagging of suspicious code. The dangling pointer access in `dangling_pointer()` that returns `*(ptr)` after `free(ptr)` is not flagged. Double-free in `double_free()` not indicated. Heap overflow in `heap_overflow()` not flagged. No warnings about undefined behavior. Code confidently presents incorrect information.
+
+### 15. Assertion & Contract Recovery (4%)
+**Score: 2/10**
+
+Justification: No precondition detection (e.g., "requires: ptr != NULL"). No postcondition inference (e.g., "ensures: return is heap-allocated"). Error conditions not documented. The safety checks in original source (e.g., `if (arr == NULL) return -1;`) are present but not explained as contracts.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+### 16. Cross-Reference Clarity (4%)
+**Score: 3/10**
+
+Justification: Function calls visible but relationships not documented. No indication of who calls whom. Global variable usage visible (`extern unsigned int global_counter`) but not explained. Callback relationships not clear. The `global_func_ptr` usage could benefit from cross-reference documentation.
+
+### 17. Module Organization (3%)
+**Score: 5/10**
+
+Justification: Functions grouped somewhat logically (stack functions, heap functions, static functions, memory ops). Test functions separated. However, all functions in single file with no logical section headers. Static vs extern functions not clearly distinguished in organization.
+
+### 18. Build System Compatibility (3%)
+**Score: 3/10**
+
+Justification: Would not compile standalone. Missing `#include` statements. External dependencies (puts, printf, malloc, free, etc.) not declared. Many syntax issues: `unsigned int [5] heap_realloc()` is invalid C syntax. The `typedef struct` definitions inside functions are unusual. Requires significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 4 + 3 + 2) / 4 = 2.75
+L2_avg = (5 + 6 + 5 + 4) / 4 = 5.0
+L3_avg = (3 + 2 + 3) / 3 = 2.67
+L4_avg = (2 + 3 + 1 + 2) / 4 = 2.0
+L5_avg = (3 + 5 + 3) / 3 = 3.67
+
+Overall = (2.75 × 0.30) + (5.0 × 0.25) + (2.67 × 0.20) + 
+          (2.0 × 0.15) + (3.67 × 0.10)
+        = 0.825 + 1.25 + 0.534 + 0.30 + 0.367
+        = 3.276 / 10
+```
+
+**Overall Readability Score: 3.3/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+1. **Variable naming completely generic**: All variables use names like `v0`, `v1`, `ptr`, `a0` with no semantic meaning - makes tracking data flow nearly impossible
+
+2. **Type precision severely degraded**: All types are `unsigned int` or `void*` - original `int`, `size_t`, `Point*`, `Node*` completely lost
+
+3. **Struct/union recovery failed**: Original `Point`, `Node`, `TreeNode` structs become meaningless `struct_0`, `struct_1` with generic `field_0`, `field_4` names
+
+4. **No anomaly flagging**: Dangerous code like dangling pointer access (`return *(ptr)` after `free(ptr)`) and double-free not flagged or warned
+
+5. **Severe compiler artifact pollution**: Stack canary checks, register annotations, `armg_calculate_condition` calls clutter every function
+
+---
+
+### Best Quality Aspect (Single Dimension)
+
+**Function Decomposition (6/10)** - Functions are reasonably sized and not monolithic. The test framework appropriately calls sub-functions. At -O0, the basic function boundaries are preserved.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+
+**Variable Naming Quality (2/10)** - This is the most critical failure. Every variable uses generic names like `v0`, `v1`, `ptr`, `a0` that provide no semantic information about its purpose. Compare original `int arr[10]` becoming `unsigned int *ptr` with no indication it's an array.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, pointer dereferencing, arithmetic) to suggest names like `array_ptr`, `loop_index`, `buffer_size`. The decompiler should detect `ptr[i] = i * n` pattern and suggest `arr` or `index`.
+
+2. **Recover struct types with semantic field names**: Use data flow analysis to identify field purposes. The original `Node { int data; struct Node *next; }` should be recovered as `struct Node { int data; struct Node *next; }` not `struct_2 { unsigned int field_0; struct struct_3 *field_4; }`.
+
+3. **Flag undefined behavior and anomalies**: Add warnings for dangling pointer access (read after free), double-free, buffer overflow patterns, and other dangerous operations. The `dangling_pointer()` function clearly shows `free(ptr); return *(ptr);` which is undefined behavior that must be flagged.

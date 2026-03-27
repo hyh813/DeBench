@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `v1`, `v2`, `v3`, `result`, `a1`, `a2`. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value` - all completely lost in decompilation.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions are properly demangled (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func()`), but many helper/utility functions remain as `function_1490`, `function_14a0` with no semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many magic numbers appear without explanation (e.g., `0x125c`, `21`, `1000`). Some constants like `0x1234` for class ID are recoverable, but most numeric literals are opaque. UTF-8 encoded Chinese strings in global variables are not decoded.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe pollution from compiler artifacts including: vtable structures (`vtable_13958_type`), thunk functions (`_ZThn16_N12MultiDerived5funcBEv`), exception handling infrastructure, and 40+ unnamed utility functions that obscure the actual application logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures (if/else, loops) are recognizable. However, exception handling uses goto-based flow with labels (`lab_0x1a84`) that obscures the try-catch structure. Virtual function calls are indirect through vtables.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Main test functions are reasonably sized (20-50 lines). However, the decompiled output contains ~95 functions vs. ~12 in original - the difference is compiler-generated thunks and infrastructure that should be filtered or grouped separately.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with few forward jumps. Exception handling code has complex goto-based flow that disrupts linear reading. Otherwise, reasonable linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns exist, particularly in exception handling where similar catch blocks are duplicated. Template instantiation code shows some repeated patterns. Not severe but noticeable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int64_t`/`int32_t` appropriately for arm64. However, many pointers are generic `int64_t*` rather than typed pointers. Original `int` vs `size_t` distinctions are sometimes lost. Mixed precision.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Vtable structures are partially reconstructed but with generic field names (`e0`, `e1`, `e2`). Class member data is accessed via raw pointer arithmetic (e.g., `*(int32_t *)(v1 + 4)`) rather than named struct fields. No struct recovery for class data members.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present: `(int64_t)a1`, `(int32_t)v1`, `(int64_t *)result`. Pointer arithmetic without bounds checking (e.g., `*(int32_t *)((4 * (int64_t)v3 & 0xfffffffc) + v1)`). Function pointers use generic signatures. Significant type safety concerns.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Some source file/line information present (e.g., "From module: /work/5-1.cpp"). Demangled names provided. However, no explanatory comments about algorithms, intent, or non-obvious logic. Comments are metadata, not semantic guidance.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or idioms explicitly identified. Virtual function dispatch, exception handling, RAII patterns, and template instantiation are all present but not labeled or explained as recognizable C++ patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. The code presents everything with equal confidence regardless of decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No recovery of assert statements or API contracts from the original source.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible in code. Some vtable relationships shown in global structures. However, no explicit documentation of call graphs, callback relationships, or global variable usage patterns.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All code in single monolithic file. No logical grouping of related functions. No separation between application code and compiler-generated infrastructure. Original class groupings lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code includes necessary headers and appears syntactically valid. However, it's clearly decompiled output not organized as proper source with headers. Contains many non-compiling elements (unresolved externals).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+7+4+3)/4 = 4.0
+L2_avg = (6+5+6+5)/4 = 5.5
+L3_avg = (6+4+4)/3 = 4.67
+L4_avg = (5+3+2+1)/4 = 2.75
+L5_avg = (4+3+5)/3 = 4.0
+
+Overall = (4.0 × 0.30) + (5.5 × 0.25) + (4.67 × 0.20) + 
+          (2.75 × 0.15) + (4.0 × 0.10)
+        = 1.20 + 1.375 + 0.934 + 0.4125 + 0.4
+        = 4.34/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All semantic variable names lost - `value`, `name`, `size`, `multiplier` become `v1`, `v2`, `result`, `a1`
+- **Struct recovery failure**: Class data members accessed via raw pointer arithmetic (`*(int32_t *)(v1 + 4)`) instead of named struct fields
+- **Noise pollution**: ~40+ unnamed utility functions (`function_1490`, `function_14a0`, etc.) and vtable structures obscure actual application code
+- **No contract recovery**: Zero preconditions, postconditions, or invariants documented from original source
+- **Exception flow obfuscation**: Try-catch blocks rendered as goto-based spaghetti code with labels
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming (scored 7/10)**: Main test functions are properly demangled from C++ name mangling scheme, preserving original function names like `test_cpp_member_func()`, `call_virtual_func()`, etc.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming (scored 2/10)**: Critical failure to infer meaningful names from usage patterns. Variables like `v1` used as `data` pointer, `v2` as `size`, should be named based on how they're used throughout the function.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Track how variables are used (array indexing, string operations, size calculations) to assign semantic names like `data_ptr`, `buffer_size`, `name_string`
+2. **Recover struct layouts for class members**: Instead of raw pointer arithmetic, reconstruct struct definitions with field names and types based on field offset analysis
+3. **Filter or separate compiler-generated code**: Move vtable structures, thunk functions, and runtime infrastructure into separate sections or mark clearly to reduce noise in application code view

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `v1`, `v2`, `v3`, `a1`, `a2`, `a3`, `v4`, `v5`, `v6`, `v7`. Only `Value` and `InstanceCount` in a few places have semantic meaning. In `test_cpp_member_func`, variables `v1`, `v2`, `Value`, `v4` provide no indication they represent object instance, result, or computed value.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Main test functions like `test_cpp_member_func`, `test_cpp_constructor` are correctly named. Class methods use proper C++ naming (`SimpleClass::getValue`). However, many helper functions use cryptic patterns like `sub_1030`, `sub_1190`, and mangled names like `_Z20test_cpp_member_funcv` remain instead of being demangled.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some constants like `0x1F` (31) for string buffer size and `4660` (0x1234) for class ID appear without explanation. However, array sizes like `10` for Container and loop bounds are generally clear. The magic number `50` in diamond inheritance test is unexplained.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean output with minimal compiler artifacts. Some redundant casts like `(int)v2` in template functions, but overall manageable. No excessive debug instrumentation or frame pointer manipulation clutter.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Standard control structures (if/else, loops) are preserved correctly. The `test_cpp_exception` function is marked `__noreturn` which is accurate for the throw behavior. Some complex virtual function dispatch uses indirect calls which is expected. Minor awkwardness in multiple inheritance this-pointer adjustments.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity - member functions are properly separated from test functions. Template instantiations generate separate functions as expected. Some std::tuple internal functions are exposed but this is unavoidable. No excessive fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive forward jumps. Early returns used appropriately in functions like `LifecycleClass::getData`. Some computed jumps in virtual function tables but these are data, not code flow issues.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Template instantiations generate separate code but this is necessary. Some duplicate patterns in smart pointer implementations across different types but unavoidable given template expansion.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types like `int`, `_DWORD`, `_BYTE`, `void*`. Loses specific types like `size_t`, `uint32_t`, `bool`. Function parameters often just `int` when they should be specific types. Example: `test_cpp_lambda` uses `int` for lambda parameters instead of proper types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs are not recovered with field names. Instead uses raw pointer arithmetic like `*(_DWORD *)this`, `*((_DWORD *)this + 1)`, `*(_DWORD *)(a1 + 40)`. No struct definitions like `struct SimpleClass { int value; char name[32]; }` are provided. Container class uses offset `40` and `80` instead of named fields.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present throughout - `(int)v2`, `(int)v4`, `(int*)a1`. Pointer arithmetic like `*(_DWORD *)(*(_DWORD *)this + 4 * a2)` is error-prone. Function pointer types often just generic `int` instead of proper function signatures. Some type-confused operations in virtual dispatch.
+
+### LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Very sparse comments - only basic function headers like `/* Function: test_cpp_member_func @ 0x1390 */`. No explanation of complex logic, algorithm documentation, or decompilation confidence indicators. No inline comments explaining virtual table mechanics or this-pointer adjustments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ idioms like constructors (`SimpleClass::SimpleClass`), destructors, virtual function tables are recognized but not explicitly named or explained. RAII patterns in smart pointers not highlighted. Lambda capture patterns not identified as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No inline flags for uncertain decompilation. The "FAILED to decompile" list at the end is helpful but not integrated into the code. No warnings about indirect calls that couldn't be resolved, unusual stack layouts, or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication of null checks, bounds checking, or error conditions that exist in the original source. The `__cxa_bad_typeid()` calls in RTTI code not explained.
+
+### LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are clear within each test function. But relationships to external code (who calls these functions, what globals they use) not documented. Virtual dispatch relationships not explained. No call graph information.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped by class which is logical. But all 221 functions in one massive output with no file separation. No namespace structure visible. Static vs. non-static not distinguished in organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone - many undefined symbols (`operator new`, `std::ios_base::Init`, `printf`, etc.). No header declarations or dependency documentation. Would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`v1`, `v2`, `a1`, `a2`) with no semantic meaning
+- No struct/union recovery - all composite types use raw pointer arithmetic (`*(_DWORD *)this + offset`)
+- No comments explaining complex C++ mechanics (virtual tables, this-pointer adjustment, diamond inheritance)
+- Type precision severely degraded - uses generic `int`, `_DWORD` instead of specific types
+- No pre/postcondition or contract recovery despite clear contracts in source
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 6/10)  
+- Standard control structures preserved correctly; loops and conditionals are readable
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- Nearly all variables use generic names like `v1`, `v2`, `a1`, making it extremely difficult to track data flow and understand function logic
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, string operations, arithmetic) to suggest semantic names like `packet_size`, `buffer_ptr`, `index`
+2. **Recover struct definitions**: Instead of `*(_DWORD *)(a1 + 40)`, detect repeated access patterns and suggest `a1->size` with struct field recovery
+3. **Add explanatory comments for C++ idioms**: Document virtual table mechanics, this-pointer adjustments, and RTTI operations that are non-obvious from raw decompilation

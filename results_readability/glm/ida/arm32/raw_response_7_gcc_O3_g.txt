@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Despite `-g` compilation flags, variables are overwhelmingly generic (`v1`, `v2`, `v5`). In `param_opaque_predicate`, `v1` and `v2` obscure the original `a` and `b` GCD variables, significantly hindering comprehension.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are recovered perfectly from symbols (e.g., `param_fake_branch`, `call_opaque_predicate`), matching the source exactly and providing clear semantic intent.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Key constants like `0x5A` (XOR key) and `0x1F` (buffer length) are visible, but magic numbers like `8` (SIGFPE) and `11` (SIGSEGV) lack the named constants found in the source (`SIGFPE`, `SIGSEGV`).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains Hex-Rays artifacts like `__und(0)` (undefined instruction) and `LOBYTE(v0) = v2`, which add syntactic noise. The `JUMPOUT(0)` in `sub_104F0` is also confusing.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: `param_tail_call_optimized` is correctly represented as a loop (TCO recovery), which is good. However, `param_vectorized_loop` uses complex pointer arithmetic (`v8[1]`, `++v8`) instead of the source's simple array indexing, making it harder to read.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: `test_obf_opt_edge` is a monolithic 100+ line function with inlined logic (e.g., the GCD calculation is pasted directly), destroying the source's modularity. Additionally, `param_division_by_zero` is split into `_0` and `_1` clones, confusing the original structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. While `param_integer_overflow` has complex conditional logic, it flows linearly without excessive jumping or spaghetti code.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: The decompiler accurately reflects the compiler's work; `call_fake_branch` is reduced to `return 10`, and `param_instruction_substitution` is simplified to arithmetic, removing the source's intentional redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types like `int`, `char`, `size_t`, and `bool` are generally correct. The use of `__int64` for 64-bit returns and `unsigned int` casts is accurate to the binary.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The bitfield struct in `param_implementation_defined` is completely lost; the function is reduced to `return 44`. No struct fields or layout were recovered, likely due to aggressive optimization.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Explicit casts like `(unsigned int)x >> 1` are preserved. Pointer arithmetic in `param_vectorized_loop` is type-safe, though hard to read.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost entirely devoid of comments. The only comment is a Hex-Rays warning about stack pointer detection. No explanation of algorithms (e.g., GCD) or optimization artifacts is provided.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: The Tail Call Optimization (recursion -> loop) is recognized. The GCD algorithm is structurally visible as a loop, but the "Opaque Predicate" intent is lost (optimized away).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `__und(0)` in `param_division_by_zero_0` indicates an anomaly (likely a trap for division by zero), but it is not explained. `JUMPOUT(0)` is flagged but opaque.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions or postconditions are documented. The `setjmp`/`longjmp` error handling contract is visible in code but not explicitly described.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls are clear. `signal` handler registration is explicit. The relationship between `call_*` and `param_*` functions is preserved.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are listed in a logical order that roughly follows the source file structure. Helper functions like `div_zero_handler` are grouped near their usage.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: External dependencies are clearly marked as imports (e.g., `__imp_malloc`, `__imp_signal`). The code would require standard headers and stubs for `__und` to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 9 + 6 + 6) / 4 = 6.0
+L2_avg: (6 + 4 + 7 + 8) / 4 = 6.25
+L3_avg: (7 + 2 + 7) / 3 = 5.33
+L4_avg: (2 + 6 + 5 + 1) / 4 = 3.5
+L5_avg: (8 + 8 + 7) / 3 = 7.66
+
+Overall = (6.0 × 0.30) + (6.25 × 0.25) + (5.33 × 0.20) + 
+          (3.5 × 0.15) + (7.66 × 0.10)
+Overall = 1.8 + 1.5625 + 1.066 + 0.525 + 0.766
+Overall = 5.72
+```
+
+### Overall Readability Score: **5.7/10**
+
+### Critical Defects
+- **Variable Naming**: Extensive use of generic names (`v1`, `v2`) despite debug symbols being available, obscuring logic in functions like `param_opaque_predicate`.
+- **Function Decomposition**: `test_obf_opt_edge` is a massive monolith due to inlining, and `param_division_by_zero` is confusingly split into `_0` and `_1` clones.
+- **Struct Loss**: The bitfield struct in `param_implementation_defined` was completely optimized away without recovery, leaving a magic number `44`.
+- **Control Flow**: `param_vectorized_loop` uses pointer arithmetic instead of array indexing, reducing readability compared to the source.
+- **Semantic Loss**: The "Opaque Predicate" logic (e.g., `p3`) was optimized out, removing the obfuscation context present in the source.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: The decompiler successfully recovered symbol names, making the high-level purpose of functions immediately obvious.
+
+### Most Needs Improvement
+- **Semantic Transparency (3.5/10)**: The lack of comments and the failure to recover high-level structures (like the bitfield) or explain optimization artifacts (like `__und`) makes understanding the "why" behind the code very difficult.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhanced Variable Recovery**: Utilize debug information (DWARF) more aggressively to map register variables back to original source names, especially for parameters and locals in optimized code.
+2.  **Outlining Support**: Provide an option or automatic detection to "outline" inlined code blocks back into separate functions to restore the original modularity lost during compilation.
+3.  **Struct Recovery from Constants**: Attempt to reverse-engineer composite types (structs/unions) even when they are optimized into constants, or at least annotate that a struct access was optimized away.

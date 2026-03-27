@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `local_30`, `local_14`, `param_1`, `uVar1`, `aiStack_2c`. The original source had meaningful names like `arr`, `p`, `head`, `temp` - these are completely lost. Even stack arrays are named `acStack_804` instead of descriptive names.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions are correctly named (`local_vars`, `heap_basic`, `double_value`, `memop_memset`), but many internal functions use generic patterns like `FUN_00011030`, `FUN_00011130`. External library functions are properly prefixed with `<EXTERNAL>::`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0x800` (2048) appear without explanation. String literals are replaced with `&DAT_00014008` references. Some constants like `0xffffffff` (error return) are consistent but unexplained.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No debug instrumentation, register spilling code, or redundant casts observed. The decompiled code is relatively clean from noise artifacts.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow structures are generally preserved - for loops, while loops, if-else chains all map correctly. At `-O0` optimization, the flow should be nearly identical to source. Minor awkwardness in some complex functions like `vla_stack` with pointer arithmetic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity matching the source. Each test function (`test_stack_memory`, `test_heap_memory`) is properly separated. Static helper functions like `static_helper` are correctly extracted. Minor issues with some large functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately for error conditions. Some complex functions like `linked_list_heap` have nested structures but are traceable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy detected. At `-O0`, dead code elimination is minimal which is expected. Loop constructs are not unrolled, matching the source structure.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - `undefined4` replaces `int`, `byte*` replaces `char*`, `void*` replaces specific pointer types. Original `int`, `size_t`, `char*` types are lost. Function pointers use `code*` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The `Point` struct is completely lost - `heap_struct` uses raw pointer arithmetic `*__ptr` and `__ptr[1]` instead of `p->x` and `p->y`. The `Node` struct for linked lists is similarly reduced to `int*` with manual offset calculations. No struct field names recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Significant unsafe pointer arithmetic throughout (e.g., `(int)__ptr + local_14 * 4`). Many casts between `void*` and typed pointers. No bounds checking on array accesses. However, no obviously dangerous operations like buffer overflows are introduced by decompilation.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output whatsoever. The original source had extensive comments explaining each test case (e.g., "MEM-L1-01: 局部变量（基础类型）"). This critical context is completely missing.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like linked list traversal (`while( local_28 != (int *)0x0)`) and tree traversal are recognizable but not explicitly named or documented. The decompiler doesn't identify these as common data structures.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of suspicious code or potential issues. The `dangling_pointer` function has undefined behavior (accessing freed memory) but no warning is generated. Similarly, `double_free` and `memory_leak` have no annotations.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. The original source had implicit contracts (e.g., "requires: ptr != NULL", "ensures: return is heap-allocated") that are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are technically present in the code but not documented. There's no indication of which functions call which, or the relationship between `static_helper` and `call_static_func`.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (stack functions together, heap functions together, static functions together) matching the source organization. However, the file-level organization (headers, source files) is not reflected.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The code should compile with standard C library linkage. External functions like `malloc`, `printf`, `memcpy` are properly declared. Minor patching needed for some undefined types like `undefined4`.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Critical Defects:**
+- Variable naming is nearly unusable - `local_14`, `param_1`, `uVar1` provide no semantic meaning
+- Composite types (structs Point, Node, TreeNode) completely lost - replaced with raw pointer arithmetic
+- No comments whatsoever - all source code explanations and test case identifiers are missing
+- Type precision severely degraded - `undefined4`, `void*`, `byte*` everywhere instead of `int`, `char*`
+- No anomaly indication for dangerous patterns like dangling pointers, memory leaks, double-free
+
+**Best Quality Aspect:** Noise Reduction (scored 8/10)  
+The decompiled code is clean from compiler artifacts - no debug instrumentation, register spilling, or redundant casts clutter the output.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+The complete absence of comments is devastating for readability. The original source had extensive documentation explaining each test case's purpose, scene classification, and expected behavior - all completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover variable names from usage patterns** - `local_14` used in loop `local_14 < param_1` should be inferred as loop counter `i`
+2. **Reconstruct struct types from pointer arithmetic** - When seeing `*(int*)((int*)ptr + offset)`, recognize this as struct field access and attempt struct layout recovery
+3. **Add semantic comments for test functions** - Detect test patterns (expected values in printf) and annotate with test case identifiers from string literals

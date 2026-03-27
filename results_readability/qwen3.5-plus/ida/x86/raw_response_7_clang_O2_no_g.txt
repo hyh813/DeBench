@@ -1,0 +1,125 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`a1`, `v0`, `v1`, `v2`) with zero semantic meaning recovered. Original names like `result`, `str`, `encrypted` are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some original function names preserved (`param_fake_branch`, `call_opaque_predicate`), but runtime functions are generic (`sub_1030`, `sub_10C0`). Core logic names are recoverable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5A`, `0xAAAAAAAA`, `0xDEADBEEF` appear without explanation. Some constants like `0x20u` for buffer size could be named constants.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__usercall`, register hints (`@<eax>`, `@<ebx>`), `BYREF` annotations, and `__cdecl` calling conventions clutter the code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Optimization transformed simple conditionals into complex expressions (e.g., `param_opaque_predicate` uses `!(v5 ^ ((a1 + 1) * (a1 + 1)) | v2 ^ 1)` instead of clear boolean logic).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Aggressive optimization collapsed many functions to constant returns (`call_fake_branch` returns `10` directly). Original call structure is lost.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but loop unrolling in `param_vectorized_loop` creates repetitive blocks that obscure the original simple loop structure.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling in `param_vectorized_loop` creates 4x and 8x redundant code blocks. No abstraction or comments explain this optimization artifact.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Some type degradation: `param_instruction_substitution` takes `unsigned int` instead of `int`; `param_string_encryption` returns `size_t` instead of `int`. Mixed precision throughout.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited structs in source code. The bitfield struct in `param_implementation_defined` was completely optimized away to constant return `43`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present: `(__sighandler_t)div_zero_handler`, `*(_DWORD *)a1` for pointer dereference. No type safety annotations recovered.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments except function headers. Original source had extensive documentation explaining obfuscation techniques—all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Zero pattern recognition. Opaque predicates, instruction substitution, and string encryption patterns are not identified or documented.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags despite intentional obfuscation and edge cases. Code presents optimized results confidently without warning about transformations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original comments about expected values (e.g., "期望: 10") are completely absent.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible through naming, but optimized-away calls (like `call_fake_branch` not actually calling `param_fake_branch`) obscure true relationships.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order, but no logical grouping comments. Original section headers (7.1, 7.2, 7.3) are lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 9 library functions failed to decompile (`printf`, `strlen`, `longjmp`, `signal`, etc.). Would require stubs or linking to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (6+7+5)/3 = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (2+2+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (6+6+5)/3 = 5.67 × 0.10 = 0.567
+─────────────────────────────────────────────────────
+Overall Score:                                  4.87/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+---
+
+### Critical Defects
+
+- **Variable names completely generic**: All variables are `a1`, `v0`, `v1`, `v2` with no semantic meaning recovered from usage patterns
+- **Optimization artifacts unexplained**: Aggressive O2 optimization transformed simple logic into complex expressions without documentation
+- **Zero semantic comments**: Original source had extensive documentation about obfuscation techniques—all lost in decompilation
+- **Function call structure collapsed**: Many `call_*` functions return constants directly instead of showing actual function calls
+- **9 library functions failed**: Critical functions like `printf`, `strlen`, `longjmp`, `signal` could not be decompiled
+
+---
+
+### Best Quality Aspect
+
+- **Type System Fidelity (Level 3): 6.0/10**
+- Basic type information (int, unsigned int, size_t, char*) is mostly preserved even if not perfectly accurate
+
+---
+
+### Most Needs Improvement
+
+- **Semantic Transparency (Level 4): 2.0/10**
+- Complete absence of comments, pattern recognition, anomaly flags, and contract documentation makes understanding the obfuscation intent impossible
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement semantic pattern detection**: Recognize common obfuscation patterns (opaque predicates, instruction substitution, dead code) and add explanatory comments like `// OBFUSCATION: Always-false condition`
+
+2. **Recover variable names from usage context**: Analyze how variables are used (e.g., `v2` in division context should be `divisor`, `v5` in string operations should be `buffer`)
+
+3. **Flag optimization transformations**: When aggressive optimization collapses functions to constants, add warnings like `// OPTIMIZED: Original function call eliminated by compiler`

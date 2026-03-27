@@ -1,0 +1,29 @@
+# Limactl configuration for BinBench x86_64 Environment
+# Usage: limactl start --name=binbench-x64 ./binbench-x64.yaml
+
+# Explicitly use qemu for emulation on ARM64 host
+vmType: "qemu"
+
+# Target architecture
+arch: "x86_64"
+
+# Use a standard Ubuntu 24.04 image
+images:
+- location: "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img"
+  arch: "x86_64"
+
+# Resources
+cpus: 4
+memory: "8GiB"
+disk: "50GiB"
+
+# Mounts
+mounts:
+- location: "~"
+  writable: true
+
+# Network
+# Use default user-mode networking (slirp) to avoid 'socket_vmnet' requirement
+# This works out-of-the-box and is sufficient for package installation.
+# networks:
+# - lima: shared

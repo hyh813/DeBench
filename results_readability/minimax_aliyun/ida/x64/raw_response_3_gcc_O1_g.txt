@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10). Only loop counters occasionally use `i`. This makes tracking variable purpose extremely difficult across all 79 functions.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source (double_value, local_vars, local_array, heap_basic, heap_calloc, linked_list_heap, tree_heap_traversal, etc.). Static functions like `static_local` and `call_static_func` are correctly identified.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals correctly recovered (42 in address_of_local, 20 in stack_alias result), but many magic numbers remain unexplained (0x28u for stack canary, 0x14u for memcpy size, 0x10u for Node allocation). The hardcoded "20" in stack_alias hides the actual logic.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. No redundant casts, debug instrumentation, or frame pointer manipulation cluttering the output. Clean decompilation overall.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At -O0, control flow largely matches source. Loops use while/do-while constructs correctly. Minor awkwardness in some switch statements but overall readable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity. No 500-line monoliths. Helper functions like `create_tree_node` properly extracted. Parameter lists reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom. Early returns used appropriately. Some forward jumps in complex functions but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling present in array operations but not excessive. Common subexpressions handled reasonably.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char, void*). However, size_t used as generic, no int32_t vs int distinction. Function pointers properly typed in callback functions. Some pointer/array distinction lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs Node, TreeNode, Point correctly recovered with field names (data, next, left, right, x, y). However, Point typedef missing - uses raw struct inline. Some nested structures handled well.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. In `memop_memcpy`, the return calculation uses complex pointer arithmetic: `*(_DWORD *)((char *)dst + (n & 0xFFFFFFFFFFFFFFFCLL) - 4)`. Multiple void* casts throughout. No restrict keywords.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments present. Only auto-generated function headers. No explanation of algorithm logic, no @param/@return documentation, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable (linked list traversal, tree traversal) but not explicitly named or commented. Memory allocation patterns (malloc/free pairs) visible but not highlighted.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The `stack_alias` function is completely wrong (just returns 20 instead of implementing pointer aliasing logic) with no indication. The `dangling_pointer` function shows dangerous code without warnings.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No "requires: ptr != NULL" or "ensures: return is heap-allocated" documentation. Error handling visible but not explained.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls within test functions are clear. Global variable usage visible (global_counter, global_array). Callback relationships in set_global_callback/call_global_callback clear. But no explicit call graph documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped by category (stack, heap, static, memory ops). Static functions properly scoped. However, all in single file with no header separation.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with minimal stubs. External functions (malloc, free, printf, fork) are standard library. No compiler-specific hacks. Would need extern declarations for some globals.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 5 + 8) / 4 = 6.0
+L2_avg = (7 + 8 + 7 + 7) / 4 = 7.25
+L3_avg = (6 + 7 + 6) / 3 = 6.33
+L4_avg = (3 + 5 + 2 + 2) / 4 = 3.0
+L5_avg = (6 + 7 + 7) / 3 = 6.67
+
+Overall = (6.0 × 0.30) + (7.25 × 0.25) + (6.33 × 0.20) + 
+          (3.0 × 0.15) + (6.67 × 0.10)
+Overall = 1.80 + 1.81 + 1.27 + 0.45 + 0.67 = 6.0/10
+```
+
+**Overall Readability Score:** 6.0/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use generic names (v0-v10, i) making semantic tracking nearly impossible across 79 functions
+- **stack_alias function**: Completely wrong - returns hardcoded 20 instead of implementing pointer aliasing logic (p1 and p2 both pointing to local)
+- **No comments**: Zero algorithm explanations, no @param/@return, no decompilation confidence indicators
+- **Anomaly indication**: Dangerous code like dangling_pointer and double_free presented without any warnings
+- **Literal clarity**: Many magic numbers (0x28u, 0x14u, 0x10u) unexplained
+
+### Best Quality Aspect: Function Naming Quality (9/10)
+- Nearly all function names perfectly match the original source code, making it easy to locate specific functions
+
+### Most Needs Improvement: Semantic Transparency (3.0/10)
+- Complete lack of comments, no anomaly warnings for dangerous code, no pattern recognition, and no contract recovery
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (array indexing, pointer dereferencing, arithmetic) to suggest semantic names like `packet_size` instead of `v1`
+2. **Add anomaly flags for dangerous patterns**: Flag dangling pointers, double-free, buffer overflows, and incorrect implementations with warnings
+3. **Recover comments from debug symbols**: Since -g flag was used, extract DWARF information to recover parameter names, function descriptions, and variable annotations

@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `local_28`, `uStack_24`, `iVar1`, `puVar1` with zero semantic meaning. No variable names reflect their purpose (e.g., `capture_by_value` became `local_28`).
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test function names preserved from source (`test_cpp_member_func`, `test_cpp_virtual_func`), and some template instantiations recovered (`template_max<int>`, `Container<int>::push`). However, helper functions use generic patterns.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers dominate (`0x125c`, `0x3e9`, `0x2a`, `0x47`, `0x28a`) with no explanation. These are pre-computed constants from compiler optimization that completely obscure original logic (e.g., `0x125c` = 4704 expected result).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack variable initialization (`local_28 = 0x74736554; uStack_24 = 0;`), redundant zeroing, and platform-specific calls (`__aeabi_dcmpgt`) that clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Most test functions collapsed to single `return` statements due to constant folding, losing all original control flow. Exception handling shows raw `__cxa_throw` instead of try-catch blocks.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Functions are appropriately sized but misleading—complex logic optimized away to constant returns. Class methods exist separately but without proper class structure binding them together.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code reads top-to-bottom linearly, but this is deceptive since actual computation logic has been stripped. No problematic goto patterns, but also no meaningful flow to follow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack initialization code is redundant (`local_c = 0; local_a = 0; local_9 = 0;`). No dead code removal, but constant folding removed too much meaningful structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Extensive use of `undefined4`, `undefined8`, `void*` instead of proper C++ types. Class types mostly lost—`Base*` preserved but `SimpleClass`, `LifecycleClass` types erased to generic pointers.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Classes NOT reconstructed as proper C++ structs—no `struct SimpleClass { int value; char name[32]; }`. Only function signatures with mangled names remain. Object access via raw offsets (`this + 0x28`).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts throughout: `(undefined4 **)param_1`, `(undefined4 *)__cxa_allocate_exception(4)`. Raw pointer arithmetic (`this + iVar1 * 4`) without bounds checking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated Ghidra warnings present ("WARNING: Unknown calling convention", "WARNING: Could not recover jumptable"). Zero semantic comments explaining what code does or why.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely unrecognized—virtual dispatch appears as raw vtable dereference (`(*(code *)**(undefined4 **)param_1)()`), exceptions as `__cxa_throw`, no pattern identification.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Ghidra does flag some issues ("WARNING: Could not recover jumptable at 0x00010b88. Too many branches", "WARNING: Treating indirect jump as call"), but warnings are generic without actionable guidance.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: Zero preconditions, postconditions, or invariants documented. Exception handling contracts completely lost. No indication of expected parameter ranges or return value semantics.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but class relationships unclear. Inheritance hierarchies (`Base` → `Derived`, `MiddleA`/`MiddleB` → `DiamondDerived`) not documented. Virtual dispatch relationships lost.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions in flat list without logical grouping by class or feature. No namespace structure. Related methods (`Container::push`, `Container::get`) not visually grouped.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Will NOT compile—undefined types (`undefined4`, `Init`, `Base`), missing headers, platform-specific calls (`__aeabi_dcmpgt`, `__libc_start_main`), and incomplete class definitions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (3+4+5+5)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.533
+Level 4 (Semantic):    (2+2+5+1)/4 = 2.50 × 0.15 = 0.375
+Level 5 (Contextual):  (4+4+2)/3   = 3.33 × 0.10 = 0.333
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.43/10
+```
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects:
+- **Variable `local_28`, `iVar1`, `puVar1`** should be named based on semantic usage (e.g., `string_buffer`, `result`, `exception_ptr`)
+- **No class/struct definitions recovered**—`SimpleClass`, `LifecycleClass`, `Base`, `Derived` all lost as composite types
+- **Magic numbers everywhere** (`0x125c`, `0x3e9`, `0x28a`) are pre-computed results that hide original computation logic
+- **C++ constructs degraded to C runtime calls**—try-catch became `__cxa_throw`, virtual calls became raw vtable dereferences
+- **Code will not compile** due to `undefined4`, `undefined8` types and missing class definitions
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Test function names preserved from source (`test_cpp_member_func`, `test_cpp_virtual_func`), providing some semantic anchor points for understanding code purpose.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (1/10)** - Zero documentation of preconditions, postconditions, or exception contracts makes it impossible to understand function requirements and guarantees.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover class/struct definitions from vtable layouts and object access patterns** - Analyze `this + offset` patterns to reconstruct field names and types for `SimpleClass`, `Container`, etc.
+2. **Detect constant-folded computations and annotate with original expressions** - When a function returns only a constant, add comments showing the original computation (e.g., `// Original: 10 + 34 + 4660 = 4704`)
+3. **Recognize C++ exception handling patterns** - Map `__cxa_allocate_exception`/`__cxa_throw` sequences back to try-catch blocks with proper exception type information.

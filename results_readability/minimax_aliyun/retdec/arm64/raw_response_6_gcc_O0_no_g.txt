@@ -1,0 +1,150 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+Let me analyze the decompiled code against the original source, focusing on the specific function and its caller.
+
+### Original Source (param_strcpy):
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+### Decompiled Version:
+```c
+int64_t param_strcpy(void) {
+    int64_t str2;
+    char * str = (char *)str2;
+    strcpy(str, (char *)str2);
+    return strlen(str);
+}
+```
+
+---
+
+## Detailed Evaluation
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled function uses `str2` and `str` as variable names, which are generic and meaningless. The original has `dst` and `src` which clearly indicate purpose. The decompiler failed to recover parameter names, instead using local variable storage locations.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: The function is correctly named `param_strcpy`, matching the original source function name exactly. This is one of the few aspects done well.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: No magic numbers present in this function. The string literals "HelloLib" are preserved in the caller. Minor issue: the `& 0xffffffff` mask in the return statement is a compiler artifact that obscures the actual return value.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: The decompiled function contains several noise elements: unnecessary casts `(char *)str2`, the mysterious `str2` variable that should be parameters, and the address comments `// 0x1954` that add clutter. The function signature `int64_t param_strcpy(void)` is incorrect - it should have parameters.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: The control flow is straightforward - a simple function with sequential statements. No goto abuse or confusing conditionals. At -O0, the flow should closely match source, which it does structurally (strcpy then strlen).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: The function is appropriately sized (4 lines). However, the decompiler failed to properly decompose the function signature - parameters should be separate, not collapsed into local variables.
+
+**7. Code Linearization:** Score: 9/10  
+Justification: The code reads linearly from top to bottom with no forward jumps or complex branching. This matches the simple sequential nature of the original.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No redundant code or dead code elimination issues. The function is clean in terms of duplication.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type degradation. The original function signature is `int param_strcpy(char *dst, const char *src)` but decompiled as `int64_t param_strcpy(void)`. Parameters are completely lost. Return type should be `int` not `int64_t`. The `const` qualifier on src is missing.
+
+**10. Composite Type Recovery:** Score: N/A  
+Justification: This function doesn't use composite types (structs/unions), so this dimension isn't applicable for evaluation.
+
+**11. Type Safety:** Score: 4/10  
+Justification: The cast `(char *)str2` is unsafe - str2 is an uninitialized local variable being used as a pointer. The function uses the same variable for both source and destination in strcpy, which is semantically wrong. Multiple type safety issues present.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only address comments present (`// 0x1954`). No explanation of what the function does, what parameters mean, or the algorithm. The original has clear comments explaining strcpy behavior.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: The strcpy and strlen standard library calls are recognized. However, the decompiler didn't identify this as a "string copy with length return" pattern that could be named more descriptively.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication that parameters are missing. The function signature is presented as correct when it's fundamentally broken. A competent decompiler should flag "WARNING: function parameters could not be recovered" or similar.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: dst buffer large enough"). No postconditions (e.g., "ensures: returns strlen(dst)"). The original source has clear implicit contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Looking at the caller `call_strcpy`, we see it calls `param_strcpy()` with no arguments, but the original calls `param_strcpy(buffer, "HelloLib")`. The cross-reference relationship is broken due to parameter loss.
+
+**17. Module Organization:** Score: 7/10  
+Justification: The function appears in a reasonable location among other param_* functions. The overall file structure groups related functions together.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The function would not compile as-is because `str2` is an uninitialized local variable being used as a pointer destination. It would cause a compilation error or undefined behavior.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 7 + 3) / 4 = 5.0
+L2_avg = (7 + 5 + 9 + 9) / 4 = 7.5
+L3_avg = (2 + N/A + 4) / 3 = 3.0 (using 2+4=3 for 2 dims)
+L4_avg = (3 + 6 + 2 + 2) / 4 = 3.25
+L5_avg = (3 + 7 + 6) / 3 = 5.33
+
+Overall = (5.0 × 0.30) + (7.5 × 0.25) + (3.0 × 0.20) + 
+          (3.25 × 0.15) + (5.33 × 0.10)
+        = 1.5 + 1.875 + 0.6 + 0.4875 + 0.533
+        = 4.9955 ≈ 5.0/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Parameter loss**: `param_strcpy` should have two parameters (`char *dst, const char *src`) but decompiles as `void` - completely losing the function interface
+- **Uninitialized pointer use**: `int64_t str2` is used as a pointer destination without initialization, causing undefined behavior
+- **Type degradation**: Return type is `int64_t` instead of `int`; `const` qualifier lost on source parameter
+- **No parameter recovery**: The decompiler failed to identify that local variable storage locations should be function parameters
+- **Missing anomaly flag**: No indication that the function signature is incomplete or uncertain
+
+---
+
+### Best Quality Aspect: Function Naming Quality (Score: 8/10)
+The function is correctly named `param_strcpy`, matching the original source exactly. This is one of the few elements that was properly recovered.
+
+---
+
+### Most Needs Improvement: Type Precision (Score: 2/10)
+The complete loss of function parameters is a fundamental decompilation failure. At -O0, parameters should be perfectly recoverable through standard calling convention analysis. This broke the entire function's semantic meaning.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover function parameters from calling conventions**: For ARM64 at -O0, parameters are passed in x0-x7 (or on stack for more than 8). The decompiler should identify parameter locations and reconstruct the function signature instead of collapsing them into local variables.
+
+2. **Flag uncertain decompilation**: When parameters cannot be recovered, add comments like `// WARNING: function parameters could not be determined` or `// LIKELY: char *dst, const char *src based on strcpy usage`.
+
+3. **Preserve type qualifiers**: The `const` qualifier on the source parameter should be preserved. Use type inference from how the parameter is used (passed to const-correct functions) to recover qualifiers.

@@ -1,0 +1,109 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `a1`, `result`), obscuring semantic meaning like `this`, `size`, or `index`. In `_ZN9ContainerIiE4pushEi`, `v2` points to the size member and `v3` holds the size value, but these relationships are not reflected in the names.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: The decompiler successfully demangles C++ symbols (e.g., `_Z20test_cpp_member_funcv` is commented as `test_cpp_member_func()`), which is excellent for readability. However, internal wrappers like `function_1030` lack semantic context.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with magic numbers and offsets (e.g., `40`, `4`, `0x125c`, `0x74736554`) without named constants or explanations. For instance, `*(int32_t *)((int64_t)result + 40)` uses a hard-coded offset for the `size` member instead of a struct field access.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code contains significant compiler artifacts and pseudo-assembly intrinsics that clutter the logic, such as `__asm_movups_5`, `__asm_movups`, and `__asm_hlt()`. These make the code look like low-level assembly rather than high-level C++.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While functions like `Container::push` have recognizable `if` statements, the overall flow is disrupted by inline assembly blocks (e.g., in `test_cpp_member_func`) and abrupt constant returns in test functions that replace complex logic with single values.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: The decompiler correctly separates methods like `Container::push` and `Container::get`, maintaining reasonable granularity. However, the main test functions (e.g., `test_cpp_virtual_func`) are reduced to trivial stubs (`return 42`), losing the internal structure of the original logic.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom where logic exists, but forward jumps or assembly intrinsics in functions like `_Z20test_cpp_member_funcv` disrupt the linear reading flow.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: The decompiler shows aggressive constant folding (e.g., `return 42`), which eliminates redundancy but at the cost of hiding the algorithmic steps. In `Container` methods, redundancy is low, but the logic is sparse.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally precise, correctly distinguishing between `int32_t`, `int64_t`, and `float64_t`. Pointer types are recovered as `int64_t *` or `void *`, which is accurate for the architecture, though higher-level semantic types (like class pointers) are lost.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: This is a critical failure. Despite the source defining classes like `SimpleClass`, `Container`, and `Base`, the decompiled output contains **no** struct definitions for these user-defined types. Access to class members is done via raw pointer arithmetic (e.g., `(int64_t)result + 40`), making the data structure opaque.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies heavily on C-style casts and pointer arithmetic (e.g., `(int32_t *)(v1 + 40)`), which erases type safety boundaries present in the original C++ source. There are no `const` qualifiers preserved.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10
+Justification: Comments are primarily limited to demangled function names and address ranges. There are no comments explaining the *logic* (e.g., why `0x74736554` is used) or documenting the purpose of complex assembly blocks.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: The decompiler identifies C++ templates (e.g., `template_max<int>`) and RTTI mechanisms (`__dynamic_cast`), but it fails to recognize higher-level patterns like RAII or the specific logic within the test functions, reducing them to constants.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The presence of `__asm_...` blocks and the reduction of complex functions to constants are not flagged as anomalies or potential decompilation failures/optimizations. The code presents these as standard C logic without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the bounds check in `Container::get` (`if (a2 < 0)`) is present but not documented as a contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: The decompiler provides a comprehensive list of function prototypes and global variables, making it easy to see relationships. The vtable structures (`g18`, `g19`) are explicitly defined, aiding in understanding virtual dispatch.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are grouped logically (constructors, tests, templates), and the file includes standard headers. However, the lack of struct definitions scatters the data layout understanding throughout the function bodies rather than centralizing it.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses non-standard intrinsics (`__asm_movups_5`, `__asm_hlt`) that would prevent compilation with a standard C/C++ compiler without significant modification or defining custom macros for these instructions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 8 + 2 + 3) / 4 = 4.0
+L2_avg: (5 + 6 + 6 + 6) / 4 = 5.75
+L3_avg: (8 + 1 + 4) / 3 = 4.33
+L4_avg: (4 + 5 + 2 + 1) / 4 = 3.0
+L5_avg: (7 + 6 + 3) / 3 = 5.33
+
+Overall = (4.0 × 0.30) + (5.75 × 0.25) + (4.33 × 0.20) + 
+          (3.0 × 0.15) + (5.33 × 0.10)
+Overall = 1.2 + 1.4375 + 0.866 + 0.45 + 0.533
+Overall = 4.4865
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects
+- **Missing Struct Definitions**: User-defined classes (`Container`, `SimpleClass`) are completely absent; members are accessed via raw pointer offsets (e.g., `+40`).
+- **Logic Elimination**: Complex test functions (e.g., `test_cpp_virtual_func`) are reduced to constant returns (`return 42`), hiding the source logic entirely.
+- **Intrusive Assembly Intrinsics**: Logic is cluttered with non-standard `__asm_...` blocks (e.g., `__asm_movups_5`) that impede readability.
+- **Generic Variable Naming**: Variables are named `v1`, `v2`, `a1`, providing no semantic context about their role in the algorithm.
+
+### Best Quality Aspect
+- **Function Naming (Score: 8/10)**: The decompiler successfully demangles C++ mangled names and provides them in comments, making it easy to identify the original function signatures.
+
+### Most Needs Improvement
+- **Composite Type Recovery (Score: 1/10)**: The complete absence of recovered struct definitions for the classes used in the source code makes the data model nearly impossible to understand without manual reverse engineering of offsets.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover Class Layouts**: Analyze member access patterns (e.g., consistent access to `this + 40`) to synthesize struct definitions with field names and types.
+2.  **Handle Optimization Artifacts**: When functions are reduced to constants due to compiler optimization, flag this clearly (e.g., "Function body optimized out by compiler") rather than presenting it as standard logic.
+3.  **Abstract Assembly Intrinsics**: Replace architecture-specific pseudo-assembly intrinsics (like `__asm_movups`) with equivalent standard C operations or comments explaining the memory transfer.

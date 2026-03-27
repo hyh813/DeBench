@@ -1,0 +1,115 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `iVar2`, `piVar1`, `uVar3`, `local_c`) with no semantic meaning. Many marked as "Unresolved local var" indicating decompiler failed to recover names. Original parameter names (`a`, `b`, `count`, `x`) are preserved only in function signatures.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are excellently preserved matching original source (`cdecl_func`, `varargs_func`, `func_struct_byval`, `test_calling_conventions`). Action-oriented test functions clearly indicate purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Constant folding replaced computations with hex literals (`0xf`, `0x32`, `0x2a`) losing semantic meaning. String literals shown as `&DAT_0001170a` instead of actual text. Original magic numbers from source are now opaque hex values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Repeated warnings clutter output ("WARNING: Unknown calling convention -- yet parameter storage is locked", "Unresolved local var"). Floating-point library functions (`__adddf3`, `__floatsidf`) expanded with 200+ lines of bit manipulation code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but complex functions like `func_mixed_args` expand floating-point operations into unreadable bit-level manipulation. Varargs loops use do-while pattern correctly but with generic counters.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Test functions are constant-folded losing call structure (`call_cdecl` returns `0xf` directly instead of calling `cdecl_func(5,10)`). Helper functions like `__adddf3` are 200+ line monoliths that should be library calls.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom but floating-point functions have numerous jump labels (`LAB_0001102c`, `LAB_00011184`, `LAB_000110ac`) disrupting flow. Early returns used appropriately in null-check functions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding eliminated actual computation semantics. `func_struct_byval` shows redundant field access patterns (`s.data[0]._0_4_ = (int)s.data[2] + (int)s.data[1] + (int)s.data[0]` then immediately overwritten). Floating-point functions have extreme bit-level redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved correctly (`int`, `char*`, `double`, `longlong`). Function pointer partially recovered as `_func_int_int*`. Some degradation to `undefined4`, `undefined8` for internal operations.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Struct names recovered (`LargeStruct`, `SmallStruct`, `BigStruct`, `SmallPoint`, `LargeData`). Field access shows awkward notation (`s.data[2]._0_4_`, `s.data[0xb]._0_4_`). Hidden return pointer (`__return_storage_ptr__`) correctly identified for large struct returns.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Null checks preserved (`if (p == (SmallStruct *)0x0)`). Some unsafe casts in `param_complex_cast` but match original source. Pointer arithmetic generally correct. No new type safety violations introduced.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are auto-generated warnings ("Unresolved local var", "WARNING: Removing unreachable block"). No algorithm explanations or semantic documentation. Original source comments completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern recognized but implementation unclear (stack-based iteration). Struct passing conventions visible but not named. No design pattern identification.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good anomaly flagging through warnings ("Unknown calling convention", "Unresolved local var", "Removing unreachable block"). Helps analyst identify decompiler uncertainty areas.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Null checks exist in code but not documented as contracts. No error condition explanations.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but many constant-folded losing call relationships. Global references shown as `&DAT_0001170a` without symbol names. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. Helper functions (`__adddf3`, `__floatsidf`) mixed with application code. No namespace or module separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires linking floating-point library functions. Some undefined references (`EVP_PKEY_CTX` in `_init`). String data as `&DAT_` references need resolution. Would need significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Average Score | Weight | Weighted |
+|-------|--------------|--------|----------|
+| L1: Lexical Clarity | 5.50 | 30% | 1.65 |
+| L2: Structural Intelligibility | 5.75 | 25% | 1.44 |
+| L3: Type System Fidelity | 6.67 | 20% | 1.33 |
+| L4: Semantic Transparency | 4.25 | 15% | 0.64 |
+| L5: Contextual Coherence | 4.67 | 10% | 0.47 |
+| **TOTAL** | | **100%** | **5.53/10** |
+
+### Overall Readability Score: **5.5/10**
+
+---
+
+### Critical Defects:
+- **Constant folding destroyed call semantics**: `call_cdecl()` returns `0xf` directly instead of showing `cdecl_func(5, 10)` call, losing test structure
+- **Variable names completely generic**: `iVar1`, `piVar1`, `uVar3` provide zero semantic information about purpose
+- **String literals unrecovered**: All printf format strings shown as `&DAT_0001170a` instead of actual text
+- **Floating-point expansion unreadable**: `__adddf3` and related functions are 200+ lines of bit manipulation that should be library calls
+- **Struct field access notation confusing**: `s.data[0xb]._0_4_` notation obscures actual field semantics
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names are excellently preserved matching original source exactly, making high-level navigation straightforward
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No precondition/postcondition documentation exists, making it difficult to understand function requirements and guarantees
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement:
+
+1. **Preserve call structure over constant folding**: Even at -O0, Ghidra constant-folded test functions. Option to disable aggressive constant propagation would preserve semantic call relationships for analysis.
+
+2. **Recover string literals from data section**: String references like `&DAT_0001170a` should be automatically resolved to actual string content ("=== 测试基础调用约定 ===") from the binary's data section.
+
+3. **Improve local variable name inference**: Use usage patterns to suggest semantic names (e.g., `local_c` in varargs functions iterates as counter → suggest `i`; accumulator pattern → suggest `sum`).

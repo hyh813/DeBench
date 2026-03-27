@@ -1,0 +1,106 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`) with no semantic meaning. For example, `param_macro_constants(unsigned int a0)` should have `a0` named `size` based on source. Stack variables like `v0 = &v1` with `[bp-0x10]` annotations provide no insight into purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions retained original names (`param_macro_constants`, `call_macro_functions`, `test_preprocessing_features`), which is excellent. However, helper functions use mechanical names (`sub_400824`, `sub_40091c`) and runtime functions (`_init`, `_start`) add noise.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `0x400` (should be `MAX_SIZE`), `0x200` (should be `MAX_SIZE/2`), `57072` (should be `0xDEF0`). Some values like `64` for `BUFFER_COUNT * 4` are inferable but not documented.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: repeated stack frame setup (`v0 = &v1`), stack canary checks (`__stack_chk_guard`), and redundant operations (`memcpy` called twice in `sub_400824`). Architecture-specific calls like `arm64g_calculate_condition` clutter logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered well (e.g., `param_asm_clobber` uses `while(true)` with break). However, `call_asm_privileged` has convoluted nested conditionals with `arm64g_calculate_condition` that obscure the simple `if (r1 == 15 && r2 == 42 && r3 == 20)` logic from source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. Test functions properly separated from implementation. However, compiler runtime functions (`deregister_tm_clones`, `register_tm_clones`) are mixed with user code without clear separation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. Loop constructs use standard `do-while` patterns. The `call_asm_privileged` function has disruptive branching with multiple condition calculations that break linear reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Notable redundancy: `sub_400824` and `param_asm_multi_insn` both call `memcpy` twice with identical arguments. Stack canary checks repeated in every function with stack variables. No dead code removal evident.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Inconsistent type usage: `unsigned int`, `unsigned long long`, and `int` used interchangeably. Pointer types degraded to generic `void*` and `char*`. Function `param_asm_clobber(unsigned long ptr, unsigned int a1)` loses array semantics from source `int *arr, int n`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union definitions recovered. Array access uses pointer arithmetic (`*((int *)(ptr + v2 * 4))`) instead of proper array indexing. The source's `char src[] = "Hello ASM"` becomes raw stack bytes with no type structure.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(unsigned int)ptr`, `(char)arm64g_calculate_condition(2, ptr, 1, 0)`. Pointer arithmetic without bounds checking throughout. No const-correctness preserved. Type confusion in `param_simd_intrinsics()` with uninitialized `v0`, `v1`, `v2`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no meaningful comments. Only stack offset annotations (`// [bp-0x10]`) present. One useful note: `// Failed to decompile function __aarch64_ldadd4_acq_rel at 0x401200`. No algorithm explanations or logic documentation anywhere.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm idioms identified. Atomic operations (`__aarch64_ldadd4_acq_rel`) not labeled as such. Common patterns like macro expansion results not documented. The decompiler shows no semantic understanding of recovered code.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one explicit failure noted (the `__aarch64_ldadd4_acq_rel` function). The complex `arm64g_calculate_condition` calls in `call_asm_privileged` suggest unresolved analysis but aren't flagged as anomalies. Silent failures throughout complex control flow.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` for array functions). No postconditions inferred. Stack canary checks present but not explained as safety mechanisms. Error conditions like `mmap` failure returns not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced as `g_4012ae`, `g_4012d6` without meaning. No call graph documentation. The `test_preprocessing_features` to individual test function relationships not explicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in address order, not logical groups. Compiler runtime functions mixed with user code. Test functions (`test_preprocessing_features`, `test_asm_features`) grouped but not clearly separated from implementation functions.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies declared but undefined (`__printf_chk`, `__aarch64_ldadd4_acq_rel`, `g_4012ae`). Platform-specific AARCH64 code not portable. Would require significant stubbing and external library linking to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4 + 7 + 5 + 5) / 4 = 5.25
+Level 2 (Structural):  (6 + 7 + 6 + 5) / 4 = 6.00
+Level 3 (Type):        (5 + 3 + 4) / 3     = 4.00
+Level 4 (Semantic):    (2 + 3 + 4 + 2) / 4 = 2.75
+Level 5 (Contextual):  (4 + 4 + 4) / 3     = 4.00
+
+Overall = (5.25 × 0.30) + (6.00 × 0.25) + (4.00 × 0.20) + 
+          (2.75 × 0.15) + (4.00 × 0.10)
+        = 1.575 + 1.50 + 0.80 + 0.4125 + 0.40
+        = 4.6875 ≈ 4.7/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- Variable `a0` in `param_macro_constants` should be named `size` based on usage pattern and source comparison
+- No struct/union type recovery; all composite types lost to pointer arithmetic
+- Magic numbers like `0x400`, `0x200`, `57072` not replaced with named constants
+- `arm64g_calculate_condition` calls in `call_asm_privileged` obscure simple conditional logic
+- No comments explaining algorithm purpose or non-obvious logic anywhere
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core test functions retained original semantic names (`param_macro_constants`, `call_macro_functions`), preserving the most important identification information for reverse engineering.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation beyond stack offsets; at `-O0` debug level, the decompiler should recover and preserve source comments or generate explanatory annotations.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference from usage patterns** - Analyze how parameters are used (e.g., `a0 > 0x400` comparison suggests `size`) and suggest semantic names rather than `a0`, `a1`.
+
+2. **Recover composite type structures from access patterns** - Detect array indexing patterns (`ptr + index * 4`) and reconstruct proper array/struct types instead of raw pointer arithmetic.
+
+3. **Add semantic annotation pass for common patterns** - Recognize atomic operations, macro expansion results, and standard library calls, then add explanatory comments (e.g., "// Atomic fetch-add operation").

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `a0`, `a1`, `ptr`, `iter`) with no semantic meaning. For example, `loop_while` uses `result`, `v1`, `v2`, `v3` instead of meaningful names like `count` or `digits`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retain original names (`sequential_ops`, `single_if`, `nested_if_2`) which is good, but many wrapper functions use mechanical naming (`sub_401211`, `sub_40122f`). Thunk functions (`__x86.get_pc_thunk.bx`) are appropriately named.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Pervasive magic numbers without explanation: `1717986919` (division by 10 optimization), `4294967295` (-1 as unsigned), `0x2900`, `12024`. No constants recovered despite -O0 compilation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts remain: thunk functions, struct padding (`padding_0[20183]`), unsupported jumpkind errors, and redundant wrapper functions that just call the real function.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Critical failures: `loop_for_fixed` uses bit manipulation instead of a for loop, `loop_while`/`loop_dowhile` have broken logic with magic constants, `switch_fallthrough` doesn't represent fall-through semantics correctly.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Unnecessary wrapper functions created (`sub_401211` just calls `sequential_ops`). Original function boundaries preserved but with fragmentation. Test functions don't actually pass arguments to tested functions.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but `duffs_device` uses goto labels (`LABEL_40194c`) instead of structured fall-through. Some functions have excessive nesting from failed pattern recovery.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Optimization artifacts not cleaned up (multiplication by reciprocal instead of division). Duplicate conditional checks in `infinite_loop` and `loop_external_state` (multiple `if (*(ptr) == 1)` branches).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Systematic type degradation: `int` changed to `unsigned int` throughout (e.g., `sequential_ops` parameters). Signed/unsigned confusion causes semantic errors (negative number handling broken in `single_if`, `multi_return`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery but with generic field names (`field_0`, `field_4ed7`, `padding_0[20183]`). Struct definitions appear in wrong functions. No union recovery attempted.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns: function pointer called without proper signature (`v4()` in `conditional_func_ptr`), pointer arithmetic without bounds checking, implicit casts throughout (`(char)_ccall(...)`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only auto-generated headers ("Function: X at 0xXXXXX"). No algorithm explanations, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Loop idioms not recognized (converted to arithmetic). Switch-case fall-through not identified. State machine patterns in `state_machine` partially recovered but not labeled. Duff's device structure mangled.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies noted (`[D] Unsupported jumpkind Ijk_SigTRAP`) but inconsistent. No warnings about semantic mismatches, type conversions, or potentially incorrect recoveries.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions that require non-null pointers have no annotations. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Test functions (`test_control_flow_l1/2/3`) don't actually call functions with arguments—they just print strings. Function call graph exists but semantic relationships lost.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped somewhat logically but interspersed with thunk functions and wrappers. No header file structure. External dependencies (`_GLOBAL_OFFSET_TABLE_`) exposed inline.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code references undefined symbols (`_ccall`, `jump_buffer`, `g_403691`). Architecture mismatch (source: arm64, decompiled: x86). Multiple `extern` declarations without definitions.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+6+2+3)/4 = 3.25 × 0.30 = 0.975
+Level 2 (Structural):   (3+4+5+4)/4 = 4.00 × 0.25 = 1.000
+Level 3 (Type System):  (3+4+3)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):     (1+2+4+1)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):   (3+5+3)/3   = 3.67 × 0.10 = 0.367
+
+Overall Score: 3.31/10
+```
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects:
+- **Test functions broken**: `test_control_flow_l1/2/3` print strings but don't actually call functions with arguments (semantic failure)
+- **Loop recovery failed**: `loop_for_fixed`, `loop_while`, `loop_dowhile` converted to complex arithmetic instead of recognizable loops
+- **Type signature corruption**: `int` systematically changed to `unsigned int`, breaking negative number handling
+- **Magic numbers everywhere**: Division by 10 optimized to multiplication by 1717986919 without explanation
+- **Architecture mismatch**: Source compiled for arm64 but decompiled as x86, indicating wrong binary analyzed
+
+### Best Quality Aspect: **Function Naming Quality (6/10)**
+- Core function names were preserved correctly (`sequential_ops`, `single_if`, `nested_if_2`), providing some anchor points for understanding
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero meaningful comments despite complex transformations; no explanation of optimization artifacts or decompilation uncertainty
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level control structures**: Detect loop patterns from backward jumps and restore for/while/do-while instead of leaving arithmetic equivalents
+2. **Preserve type signatures**: Maintain signed/unsigned distinction from debug symbols (-g flag present) to prevent semantic corruption
+3. **Add decompilation confidence annotations**: Mark uncertain recoveries (e.g., "OPTIMIZED: division converted to multiplication") and flag potential semantic mismatches

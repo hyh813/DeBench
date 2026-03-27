@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `a0`, `ptr`), providing no semantic context. While `ptr` or `iter` appear in some contexts, the majority are stack variables named `vN` or offsets like `bp-0x10`, making it difficult to track data flow.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Function names are perfectly preserved from the original source (e.g., `local_vars`, `heap_basic`, `test_stack_memory`), likely due to the presence of debug symbols. This provides excellent high-level navigation.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with magic numbers resulting from compiler optimizations, such as `4294967294` (likely `*2` with masking) and `0x800`, which obscure the simple arithmetic logic of the original source (e.g., `x * 2`).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts pollute the code, such as redundant stack pointer assignments (`v0 = &v1`), register spilling (`v1 = v3`), and pseudo-operations like `AddV` or `ShlNV`, which impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Control flow is heavily distorted by optimization. Simple loops (e.g., in `local_array`) are often reduced to single expressions or complex vectorized `do-while` blocks (e.g., in `vla_stack`), making the original logic difficult to discern.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: While user-defined functions are preserved, aggressive inlining has occurred within the `test_...` functions. For example, `test_stack_memory` contains the logic of `large_stack_frame` inlined, creating monolithic functions that mix testing logic with implementation details.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: The code generally reads top-to-bottom within functions. However, the presence of unrolled loops and pointer arithmetic blocks disrupts the linear flow, requiring the reader to jump back and forth to understand array initialization.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: The compiler has eliminated the "redundant" source structure (like intermediate variables `a`, `b`, `c` in `local_vars`), collapsing them into single complex expressions. While efficient for the machine, this reduces semantic clarity for the human reader.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are generally accurate (e.g., `unsigned int`, `void*`), though `unsigned long long` is frequently used for pointers on ARM64 where `void*` or `uint64_t` might be more idiomatic. Signedness is mostly preserved.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structures are detected and defined (e.g., `struct struct_0`), but field names are generic (`field_0`, `field_8`, `padding_4`). The layout is correct, but the semantic meaning of fields (e.g., `x`, `y`, `next`) is lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: The code relies heavily on explicit pointer arithmetic and casts (e.g., `(char *)v5 + 4 * ...`) rather than array indexing. While this accurately reflects the binary, it is less type-safe and harder to read than the original array access patterns.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures. The output is devoid of any semantic annotation beyond auto-generated headers.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library calls (`malloc`, `free`, `memcpy`) are recognized. However, common algorithmic patterns like simple array initialization loops are obscured by vectorization or unrolling, making them unrecognizable as standard C idioms.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies are flagged with markers like `[D] unsupported_Iop_ZeroHI96ofV128()` or `[D] MBusEvent-Imbe_Fence()`, which is helpful. However, the complex bit-manipulation expressions are not flagged as potential optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: Error checks (e.g., `if (!ptr) return 4294967295;`) are present in the code, but there is no explicit documentation of preconditions or postconditions (e.g., "requires: n > 0").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10  
+Justification: Because function names are preserved, cross-referencing is excellent. It is easy to see that `test_stack_memory` calls `local_vars` (or rather, has it inlined), and global variables are accessed via their (mangled) names.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are presented in address order, which is standard for decompilation. While not grouped by "Stack" or "Heap" as in the source, the order is deterministic and predictable.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code uses pseudo-operations and macros (e.g., `AddV`, `ShlNV`, `__ROL__`) that are not standard C, preventing compilation without significant modification or a specific runtime library.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`v0`, `v1`), obscuring data flow.
+- Optimized control flow (unrolled/vectorized loops) makes simple logic hard to follow.
+- Magic numbers (e.g., `4294967294`) replace clear arithmetic operations.
+- Composite types use generic field names (`field_0`, `field_8`), losing semantic meaning.
+- Pseudo-operations (`AddV`, `ShlNV`) render the code non-compilable.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+- The preservation of original function names (likely via symbols) makes high-level navigation and understanding of the program's structure significantly easier.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)  
+- The complete lack of comments forces the user to reverse-engineer the intent of complex, optimized expressions from scratch.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement "de-optimization" or pattern matching to re-roll unrolled loops and simplify complex bit-masking expressions back into standard arithmetic (e.g., `x * 2`).
+2. Heuristically infer variable names from usage context (e.g., variables used in `malloc` size arguments could be named `size` or `count`).
+3. Replace pseudo-operations (like `AddV`, `ShlNV`) with standard C operators or intrinsic functions to ensure the output is valid, compilable C code.

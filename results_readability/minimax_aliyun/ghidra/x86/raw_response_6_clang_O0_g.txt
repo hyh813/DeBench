@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## Function Under Evaluation: `param_strcpy` and related test functions
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables like `sVar1`, `local_10`, `local_c` are generic and uninformative. The variable `sVar1` clearly holds the result of `strlen(dst)` but is named generically. Only a few variables like `buffer` in `call_strcpy` are well-named.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names like `param_strcpy`, `call_strcpy`, `param_strlen` perfectly match the original source. The naming is action-oriented and semantically accurate, clearly reflecting their purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like "HelloLib" are correctly preserved, but numeric constants lack clarity. The value `0x2a` (42) appears frequently without explanation, and `0xc` (12) for sizeof(arr1) is a magic number. Some literals like `0x1b6` for file permissions are completely opaque.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: The code is relatively clean without excessive compiler artifacts. However, there are numerous "WARNING" comments about unknown calling conventions and unreachable blocks that add noise. The core logic is readable despite these warnings.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural and matches the source closely. Standard library calls (strcpy, strlen, pthread_create) are correctly identified. Loops in `param_malloc_free` and `param_memset` are properly structured. At -O0, the flow should be nearly identical to source, which is achieved here.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized - `param_strcpy` is 6 lines, matching the source. The decomposition is logical with separate functions for each test case (call_strcpy, call_strcmp, etc.). No over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code reads top-to-bottom with minimal disruption. Early returns in error handling (e.g., `param_fopen_fclose`) are appropriate. No excessive forward jumps or goto statements that would disrupt flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. The decompiled code doesn't have obvious dead code or duplicate expressions. Loop constructs are properly formed without excessive unrolling artifacts.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types are correct (char*, void*, size_t). However, const qualifiers are missing - `param_strcpy` has `char *src` instead of `const char *src`. The `const` qualifier is critical for API correctness and is lost in decompilation. Some parameter types like `char *filename` should indicate read-only intent.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery. `ThreadData` struct is properly reconstructed with fields `start`, `end`, `result`. The decompiler correctly identified the structure layout and field names. This is a strong aspect of the decompilation.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues exist. In `thread_sum`, direct pointer arithmetic like `*(int *)((int)arg + 8)` is unsafe. In `thread_tls_test`, the TLS access via `in_GS_OFFSET[-9]` is cryptic and potentially dangerous. The atomic operations use `LOCK()/UNLOCK()` macros instead of proper atomic primitives, losing type safety.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No meaningful comments explaining algorithm or intent. Only generic "WARNING" comments about calling conventions. The original source had detailed comments about each function's purpose, but these are completely lost. No documentation of preconditions, postconditions, or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library functions are correctly identified (strcpy, strlen, pthread_create). However, higher-level idioms are not recognized. The atomic operations pattern is reduced to LOCK/UNLOCK macros instead of being recognized as C11 atomics. Thread-local storage access via GS segment is not identified as TLS idiom.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Ghidra provides "WARNING" comments about unknown calling conventions, which is helpful but generic. The indirect function calls are not flagged as potentially unresolved. No indication of uncertainty where the decompiler might have made assumptions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear return value semantics (e.g., "returns copy length", "returns -1 on error") that are completely lost. Error handling paths exist but aren't explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are implicit in the code structure but not documented. There's no indication of which functions call `param_strcpy` or what callbacks are used. The `signal_handler` is used by `signal()` but this relationship isn't explicitly noted.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (standard library tests, system calls, thread tests). However, the organization is flat with no clear separation between test harness and tested functions. Static functions like `signal_handler` are properly scoped.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code compiles successfully (marked as "Compilation Result: Yes" in metadata). Standard library functions are implicitly declared. No explicit dependencies documented, but the code is self-contained enough to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Calculation:**
+- L1 (30%): (4+9+5+7)/4 = 6.25 × 0.30 = 1.875
+- L2 (25%): (8+8+8+8)/4 = 8.00 × 0.25 = 2.0
+- L3 (20%): (5+9+5)/3 = 6.33 × 0.20 = 1.267
+- L4 (15%): (3+4+5+2)/4 = 3.50 × 0.15 = 0.525
+- L5 (10%): (4+6+8)/3 = 6.00 × 0.10 = 0.6
+- **Total: 6.267 → 6.3/10**
+
+---
+
+### Critical Defects:
+- **Missing const qualifiers**: `param_strcpy(char *dst, char *src)` should be `param_strcpy(char *dst, const char *src)` - critical for API correctness
+- **No comments or documentation**: All semantic information from source comments is lost
+- **Type safety issues**: Unsafe pointer arithmetic in `thread_sum` and `thread_tls_test` functions
+- **Magic numbers**: Values like `0x2a`, `0xc`, `0x1b6` appear without explanation
+- **Idiom loss**: Atomic operations reduced to LOCK/UNLOCK, TLS not recognized
+
+### Best Quality Aspect: Composite Type Recovery (9/10)
+The decompiler excellently recovered the `ThreadData` struct with accurate field names (start, end, result), preserving the semantic structure from the original source.
+
+### Most Needs Improvement: Assertion & Contract Recovery (2/10)
+The decompilation provides no documentation of function contracts - preconditions, postconditions, return value meanings, and error handling semantics are completely absent, making it difficult to understand function behavior without cross-referencing the source.
+
+### Top 3 Recommendations:
+1. **Recover const qualifiers**: Add `const` to string source parameters (e.g., `const char *src`) based on usage patterns with strcpy/strcmp
+2. **Add semantic comments**: Document return value meanings, error conditions, and parameter expectations
+3. **Explain magic numbers**: Replace `0x2a` with `42` and add comments for file permissions like `0x1b6` (0666)

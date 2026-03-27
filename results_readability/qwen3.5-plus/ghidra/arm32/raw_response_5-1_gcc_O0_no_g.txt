@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`local_c`, `iVar1`, `local_20`, `param_1`) with no semantic meaning recovered. Original variables like `capture_by_value`, `result`, `multiplier` are completely lost, replaced by position-based stack variable names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Excellent recovery of original function names (`test_cpp_member_func`, `SimpleClass::getValue`, `template_max<int>`). Class methods preserve full signatures. Only internal helpers like `FUN_00010a68` are generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers present without explanation (`0x1234`, `0x32`, `0x1f`). String literals referenced as `&DAT_0001426c` instead of showing actual content. Array bounds shown as hex rather than decimal constants.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Significant template instantiation bloat (203 functions for ~540 LOC source). Stack canary checks (`__stack_chk_fail`) add noise. However, no register spilling artifacts or debug instrumentation present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Exception handling uses goto labels (`LAB_00011954`, `LAB_00011994`) instead of try-catch blocks. Regular functions use natural if-else structures. At -O0, exception handling should be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Original test functions preserved as separate units. Lambda closures properly extracted. However, template helpers create excessive fragmentation (e.g., 20+ functions for `unique_ptr` operations).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom naturally. Exception handling in `test_cpp_rtti` has multiple forward jumps disrupting flow. Early returns are clear where present.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Template instantiation creates massive redundancy (similar `__uniq_ptr_impl` functions for each deleter type). This is inherent to C++ templates but decompiler doesn't consolidate or comment on the pattern.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Class types preserved well (`SimpleClass*`, `Base*`, `unique_ptr<int>`). However, many values degrade to `undefined4`, `undefined8`. Integer sizes not distinguished (all `int` rather than `int32_t`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Class structures visible through offset access (`this + 4`, `this + 8`) but field names completely lost. Inheritance visible through vtable setup. No struct definitions recovered—only pointer arithmetic.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Numerous casts present (`(undefined4 *)`, `(Base *)`, `(type *)`) but mostly necessary for decompilation. Some unsafe pointer arithmetic visible in virtual inheritance code. No buffer overflow patterns detected.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Basic function signature comments present (`/* SimpleClass::getValue() const */`). Warning comments for issues (`WARNING: Unknown calling convention`). No algorithm explanations or semantic documentation.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: C++ patterns recognized (constructors, destructors, virtual functions, lambdas). Template instantiation patterns visible. However, no explicit pattern naming (e.g., "RAII pattern", "virtual dispatch").
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly flagging: unreachable blocks warned, calling convention issues noted, stack check failures marked. `test_cpp_exception` properly shows exception allocation but doesn't explain the mechanism.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation recovered. Stack canary checks visible but not explained as security features. No null checks documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clearly visible through naming. Virtual dispatch visible through vtable access patterns (`(*(code *)**(undefined4 **)param_1)`). No explicit call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 203 functions in single output. Related class methods grouped together. No header file separation or namespace organization. Template instantiations scattered throughout.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Uses Ghidra-specific types (`undefined4`, `undefined8`) that won't compile. External dependencies (`__cxa_throw`, `operator_new`) not declared. Would require extensive modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25 × 0.25 = 1.563
+Level 3 (Type):        (7+5+6)/3 = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (5+6+7+3)/4 = 5.25 × 0.15 = 0.788
+Level 5 (Contextual):  (6+5+3)/3 = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.74/10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects:
+- **Variable names completely generic**: `local_20`, `iVar1`, `param_1` instead of `capture_by_value`, `result`, `multiplier`
+- **String literals not recovered**: Referenced as `&DAT_0001426c` instead of showing "Test", "Base", "Derived"
+- **Struct field names lost**: All class fields accessed via offset (`this + 4`) with no field name recovery
+- **Exception handling uses goto**: `LAB_00011954` labels instead of try-catch blocks
+- **Not compilation-ready**: Ghidra-specific types (`undefined4`) require extensive modification
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function and class method names preserved accurately with full C++ signature information including template parameters.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No preconditions, postconditions, or invariants documented despite -O0 debug compilation that should preserve this information.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from debug symbols**: At -O0 with `-g` flag, DWARF debug info should provide original variable names (`capture_by_value`, `result`) instead of `local_20`, `iVar1`.
+
+2. **Recover string literal content**: String references like `&DAT_0001426c` should be dereferenced to show actual content ("=== 测试 C++ 面向对象特性 ===") for immediate readability.
+
+3. **Recover struct/class field names**: Use debug type information to name class fields (`value`, `name`, `multiplier`) instead of offset-based access (`this + 4`, `this + 8`).

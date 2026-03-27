@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: All parameters use generic names (`param_1`, `param_2`, `param_3`) instead of semantic names like `a`, `b`, `c`. Local variables use type-hinted generics (`iVar1`, `uVar1`, `puVar2`) that indicate type but not purpose. Stack variables like `local_28`, `local_48` are pure stack offsets with no semantic meaning.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Nearly all function names perfectly match the original source (`sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `recursion_factorial`, `loop_for_fixed`, etc.). The decompiler preserved the original function names almost perfectly, which is excellent for readability.
+
+### 3. Literal Clarity
+**Score: 5/10**
+Justification: Some literals are decoded (e.g., `0xfffffffb` for -5), but many magic numbers remain unexplained (e.g., `0x14` = 20, `0x1e` = 30, `0x3e9` = 1001). The test functions hardcode expected values without explaining what they represent.
+
+### 4. Noise Reduction
+**Score: 6/10**
+Justification: Contains stack canary checks (`__stack_chk_fail`), some "unreachable block" warnings, and FS register offset references (`in_FS_OFFSET`). However, these are typical decompilation artifacts and don't severely impede readability. Some "WARNING: Subroutine does not return" annotations add noise.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+Justification: Most control flow is natural (if-else, loops), but some constructs are awkward. The `loop_for_fixed` uses a do-while with manual index comparison instead of a for loop. The `switch_fallthrough` has confusing goto labels. At -O0, more natural constructs should be recoverable.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Functions maintain appropriate granularity - none are monolithic. Each function has a single clear purpose. The decomposition matches the original source well, with no artificial outlining of basic blocks.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately. Some goto-based jumps in `duffs_device` and `switch_fallthrough` disrupt linearity but are necessary for those patterns.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No significant dead code observed. Some loop unrolling in `duffs_device` is present but that's the original algorithm. Common subexpression elimination is minimal, appropriate for -O0.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 6/10**
+Justification: Uses generic `int` and `uint` instead of fixed-width types like `int32_t`. Function pointer types use `code *` which is generic. Some type precision is lost - original used `int` but decompiler could use `int32_t` for clarity. Signed/unsigned is sometimes unclear.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+Justification: No struct types are recovered. Arrays like `local_28[6]` in `loop_break` are just stack allocations without struct semantics. The original's `int matrix[3][4]` becomes inline stack initialization without type recovery.
+
+### 11. Type Safety
+**Score: 7/10**
+Justification: Generally type-safe code with appropriate casts. Some unsafe patterns exist (pointer arithmetic in `loop_nested` with `puVar2 = (undefined4 *)((long)puVar2 + 0x10)`). No major type confusion issues that would cause undefined behavior.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 4/10**
+Justification: Ghidra adds auto-generated comments like "WARNING: Removing unreachable block" and "WARNING: Subroutine does not return" which are noise. No meaningful algorithm explanations or semantic comments. The function headers mention "Decompiled by Ghidra" but provide no value.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+Justification: No design patterns or algorithms are identified or named. Duff's device (`duffs_device`) is recovered but not recognized as a known idiom. State machines are just switch statements without pattern identification. The complex `goto_forward` and `goto_backward` are not identified as equivalent to structured code.
+
+### 14. Anomaly Indication
+**Score: 5/10**
+Justification: Some warnings present for unresolved indirect calls ("WARNING: Could not recover jumptable") and stack canaries. However, these are generic and don't explain the actual semantic issues. No indication of decompilation confidence levels.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants are documented. The original's defensive programming (e.g., `if (x < 0) return -1`) is not annotated with contract information. Error handling is not distinguished from normal flow.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+Justification: Function calls are present and can be traced. However, there's no documentation of which functions call which, callback relationships, or global variable usage. The relationship between `indirect_recursion_a` and `indirect_recursion_b` is not explained.
+
+### 17. Module Organization
+**Score: 6/10**
+Justification: Functions are grouped logically (test functions together, helper functions together). Static functions are properly scoped. However, the original's clear section comments (CF-L1, CF-L2, CF-L3) are lost. Organization is reasonable but not optimal.
+
+### 18. Build System Compatibility
+**Score: 7/10**
+Justification: Code uses standard library functions (`puts`, `__printf_chk`) and should compile with minimal stubs. Dependencies are implicit. The architecture mismatch (original arm64 vs decompiled x86) suggests this is a different binary than expected, but the C code is portable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 5 + 6) / 4 = 5.50
+L2_avg = (5 + 8 + 7 + 7) / 4 = 6.75
+L3_avg = (6 + 3 + 7) / 3 = 5.33
+L4_avg = (4 + 3 + 5 + 2) / 4 = 3.50
+L5_avg = (5 + 6 + 7) / 3 = 6.00
+
+Overall = (5.50 × 0.30) + (6.75 × 0.25) + (5.33 × 0.20) + 
+          (3.50 × 0.15) + (6.00 × 0.10)
+Overall = 1.65 + 1.69 + 1.07 + 0.53 + 0.60 = 5.54/10
+```
+
+### Overall Readability Score: 5.54/10
+
+### Critical Defects
+- **Variable naming**: All parameters use generic `param_N` instead of semantic names (`a`, `b`, `c`, `x`, `n`)
+- **No struct recovery**: Original's `int matrix[3][4]` and `int arr[]` are lost; only stack allocations remain
+- **No idiom recognition**: Duff's device, state machines, and goto patterns not identified as known idioms
+- **No contract documentation**: Preconditions, postconditions, and invariants not recovered
+- **Architecture mismatch**: Original states arm64, but decompiled binary shows x86 - indicates possible wrong binary
+
+### Best Quality Aspect
+**Function Naming Quality (9/10)** - The decompiler preserved almost all original function names perfectly, making it easy to identify which function is being analyzed.
+
+### Most Needs Improvement
+**Variable Naming Quality (2/10)** - Generic parameter names (`param_1`, `param_2`) and type-hinted locals (`iVar1`, `uVar1`) completely obscure variable purpose. This is the single biggest readability barrier.
+
+### Top 3 Recommendations
+1. **Infer variable names from usage patterns**: `param_1` used in `param_1 + param_2` in `sequential_ops` should suggest `a`, `b`. Variables used as loop counters should be named `i`, `j`, `n`.
+2. **Recover composite types**: Detect array initializations like `{10, 20, 30, 40, 50}` and reconstruct `int arr[] = {...}` with proper type.
+3. **Add semantic comments**: Identify known idioms (Duff's device, state machine pattern) and add explanatory comments. Document function contracts where obvious from control flow.

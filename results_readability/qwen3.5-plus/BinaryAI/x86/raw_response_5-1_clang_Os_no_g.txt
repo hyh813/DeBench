@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`local_28`, `local_9`, `iVar1`, `piVar1`, `puVar1`) with no semantic meaning. Original source had meaningful names like `capture_by_value`, `instance_count`, `multiplier` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test function names preserved well (`test_cpp_member_func`, `test_cpp_constructor`), and template instantiations are clear (`template_max_int_`). However, helper functions use generic names (`FUN_00011030`, `FUN_00011160`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers dominate return values (`0x2a`, `0x47`, `0x28a`, `0x125c`) without explanation. These are computed results from original code but appear as unexplained constants. String data referenced as `&DAT_000121d8` without clarity.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: External function stubs have infinite recursion patterns (e.g., `operator_new` calls `operator_new`). Compiler artifacts present (`__x86_get_pc_thunk_bx`, `deregister_tm_clones`). Architecture mismatch (source says arm64, decompiled shows x86 thunks).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Many test functions optimized to constant returns with no recoverable control flow (`test_cpp_virtual_func` returns `0x2a` directly). `test_cpp_exception` is completely wrong—just throws without catch blocks. `test_cpp_constructor` has reasonable do-while loop.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized and template instantiations properly separated by type. Class methods correctly separated (`Container<int>::push`, `Container<double>::push`). However, many functions that should have logic are just constant returns.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. `test_cpp_constructor` has clear loop structure. Some functions have forward jumps that could be cleaner but generally acceptable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: External stubs have redundant self-calls (infinite recursion pattern). Over-optimization elsewhere eliminated actual logic. No obvious dead code in recovered functions but significant logic loss.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `char`, `size_t`, `double`) but many generic types (`void*`, `undefined4`). Class types partially recovered (`Container_int_`, `RTTIDerivedA`). Const-correctness completely lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Classes partially recovered with method names but struct layouts not visible—fields accessed via offset (`this + 0x28`, `this + 0x50`). No field names recovered. Virtual table structure not recovered at all.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts: `(int *)`, `(undefined4 *)`, `(char *)`. Pointer arithmetic on class objects (`this + 0x28`). Function pointer calls through void* in `call_virtual_func`. Significant type safety violations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. No explanation of magic numbers, algorithms, or uncertain decompilation. Only a SHA256 hash at top. Original source had extensive documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. Exception handling not recognized properly (`test_cpp_exception` loses all catch logic). RAII patterns (smart pointers) completely lost. Virtual dispatch visible but not named.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. External function stubs with infinite recursion not flagged. Constant-return functions not explained. No indication of what couldn't be recovered or confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts completely lost. Original source had clear expected return values in comments that are absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Virtual dispatch visible in `call_virtual_func` but not explained. No call graph documentation. Global variable usage (`LifecycleClass::instance_count`) visible but not contextualized.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in somewhat logical order with test functions grouped together. Template instantiations separate from class definitions. However, no clear module boundaries or namespace structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile as-is due to infinite recursion in external stubs. Dependencies not documented. Architecture mismatch (arm64 source vs x86 decompiled code). Many external functions have broken implementations.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):   (4+6+6+5)/4 = 5.25 × 0.25 = 1.3125
+Level 3 (Type System):  (5+3+3)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):     (2+3+2+2)/4 = 2.25 × 0.15 = 0.3375
+Level 5 (Contextual):   (4+5+3)/3   = 4.00 × 0.10 = 0.400
+
+Overall Score: 4.06/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **External function stubs have infinite recursion** (e.g., `operator_new` calls itself) making code non-functional
+- **Most test functions return constants** instead of actual logic (`test_cpp_virtual_func` returns `0x2a` directly)
+- **Exception handling completely lost** (`test_cpp_exception` has no catch blocks, just throws)
+- **No struct/class field names recovered**—all accessed via offset arithmetic (`this + 0x28`)
+- **Architecture mismatch**—source says arm64 but decompiled code contains x86 thunk functions
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Test function names preserved accurately from source, and template instantiations are clearly differentiated by type suffix
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation, no explanation of magic numbers, no confidence indicators for uncertain decompilation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Fix external function stub generation** - Instead of infinite recursion, declare external functions properly without self-calling implementations
+2. **Add decompilation confidence annotations** - Flag functions where logic was optimized away or uncertain (e.g., "OPTIMIZED: constant propagation applied")
+3. **Recover struct/class field names** - Use type analysis and access patterns to infer field names instead of raw offset arithmetic

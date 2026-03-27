@@ -1,0 +1,88 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `v1`, `v2`, `v3`, `a1`, `a2`, `result`, `result2` throughout. In `_Z20test_cpp_member_funcv`, the original had meaningful names like `r1`, `r2`, `r3` but decompiled uses `v1`, `v2` with no semantic indication of their purpose (getting value, computing result, class ID).
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions like `_Z20test_cpp_member_funcv` are properly demangled to readable names, but many internal functions retain cryptic mangled names like `_ZN11SimpleClass8getValueEv` (should be `SimpleClass::getValue`). The demangling is inconsistent - some functions readable, others not.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers appear throughout: `0x40040000` in template_max, `31` in strncpy (should be sizeof(name)-1), `14` multiplier in loop (should be 10*v2), `0x1000` in getClassID. These constants lack semantic meaning and obscure the original logic.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: The decompiled output is 2909 LOC vs 540 original (5.4x expansion), indicating significant code bloat. Many small helper functions that should be inlined remain as separate functions. However, no compiler artifacts like asm blocks or debug instrumentation are present.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with proper loops and conditionals. However, some awkward patterns exist like in `_Z26test_cpp_operator_overloadv` using `v2 % 2 == 0 ? v4 + 10 : v4` instead of clearer boolean logic. At -O0, control flow should closely match source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are reasonably sized and well-separated. The test functions are properly isolated. However, some std::unique_ptr internal functions are over-fragmented (dozens of tiny helper functions for move semantics).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Some computed jumps exist in exception handling but are manageable. The code flow is mostly linear.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Some loop unrolling in LifecycleClass constructor but it's minimal. Code is relatively clean without obvious redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: The decompiler uses `int32_t` for almost everything, losing type precision. Original `int` becomes `int32_t`, `size_t` becomes `uint32_t`, `bool` becomes `int32_t`. The original had `const` correctness (e.g., `getValue() const`) but decompiled shows `int32_t _ZNK11SimpleClass8getValueEv(int32_t * result)` without const.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Class types are completely lost - `SimpleClass obj` becomes `int32_t obj`. The decompiler treats objects as raw memory (int32_t) rather than reconstructing the class structure. No struct field names recovered; all accessed via pointer arithmetic like `*(int32_t *)(v1 + 4)`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present throughout: `(int32_t *)`, `(int32_t)`, `(char *)` conversions. Pointer arithmetic like `*(int32_t *)(v1 + 4)` is common without bounds checking. Function pointers are handled but not type-safe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are minimal and mostly auto-generated like "// Line range: 41 - 0". No explanation of algorithm logic, no documentation of preconditions/postconditions. The demangled names provide some context but no substantive comments.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic C++ idioms like constructors (`_ZN11SimpleClassC2EiPKc`) and destructors are recognized and named. However, higher-level patterns like RAII for unique_ptr or exception handling patterns are not explicitly identified or named.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No explicit flagging of suspicious code or uncertain decompilation. The exception handling in `test_cpp_exception` is completely mangled - it calls `function_d70`, `function_e48` with no indication these are try/catch blocks. No warnings about indirect calls or unusual patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No recovery of preconditions, postconditions, or invariants. The original had clear semantics like "requires: ptr != NULL" for getData but no such documentation in decompiled code. Error handling is completely opaque.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships aren't documented. No indication of who calls whom, no callback relationships shown, no virtual dispatch explanation. The vtable mechanism is present but not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped somewhat logically (test functions together, class methods together) but the massive file (2909 lines) makes navigation difficult. No clear separation into logical sections or files.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: The metadata indicates "Compilation Result: Yes" - the code compiles. However, it requires extensive standard library stubs (std::unique_ptr, std::tuple, etc.) which are not provided. Dependencies on C++ runtime are implicit but not documented.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.7/10
+
+**Critical Defects:**
+- Variable names are completely generic (`v1`, `v2`, `a1`, `result`) providing no semantic meaning about their purpose
+- Class types completely lost - `SimpleClass obj` becomes `int32_t obj`, losing all OOP semantics
+- Exception handling completely mangled - `test_cpp_exception` calls obscure functions with no try/catch structure visible
+- Magic numbers everywhere without explanation (31, 14, 0x40040000, 0x1000)
+- No const correctness preserved - member functions that should be const lose this qualifier
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+- Despite some awkward expressions, the basic control flow structure (loops, conditionals, returns) matches the original source reasonably well at -O0
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Type System Fidelity (averaged 4.7/10)  
+- Generic variable names make the code nearly impossible to understand without constant reference to source
+- Complete loss of class types and poor type precision severely impacts analysis
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns** - `v1` used as result of getValue() should be named `value` or `result`
+2. **Recover class/struct types** - Instead of `int32_t obj`, reconstruct `SimpleClass obj` with proper member access
+3. **Add semantic comments** - Explain what magic numbers mean, flag exception handling structures, document vtable dispatch patterns

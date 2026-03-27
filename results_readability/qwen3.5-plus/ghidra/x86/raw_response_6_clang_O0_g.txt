@@ -1,0 +1,104 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Parameter names preserved well (`dst`, `src`, `filename`) but locals use generic decompiler names (`local_c`, `iVar1`, `sVar1`, `piVar1`) that obscure semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`param_strcpy`, `call_malloc_free`, `param_signal_handling`), though some helpers use generic names (`FUN_00011030`, `thread_compute`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42), `0x7f` (127), `0x14` (20) appear throughout without explanation; signal numbers as `10`, `0xe` instead of `SIGUSR1`, `SIGALRM` reduce clarity.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Multiple WARNING comments about calling conventions and unreachable blocks add noise; some are informative but many are repetitive compiler artifacts.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural (if-else, for loops) matching -O0 expectations; `param_signal_handling` has complex nested while loops that could be cleaner.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are well-separated with clear purposes; thread functions properly isolated from main logic; good granularity throughout.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom with appropriate early returns; signal handling code has nested loops that disrupt linear reading slightly.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code; some repeated patterns in thread functions are legitimate; generally clean without excessive duplication.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`, `FILE*`); pthread types recovered (`pthread_t`, `pthread_mutex_t`); some void* usage where specific types could help.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: `ThreadData` struct recovered with field names; `sockaddr_in` and `stat` structures visible; field names partially preserved but some generic.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present: `(int)pcVar1 - (int)str`, `(pthread_mutex_t *)&counter_mutex`; pointer arithmetic visible but generally safe for -O0.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Original source comments completely lost; only auto-generated WARNING comments remain; no semantic explanation of algorithm purpose or logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (strcpy, strlen, malloc); thread patterns visible but not explicitly named as producer-consumer or mutex patterns.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: WARNING comments flag calling convention issues and unreachable blocks; warnings are generic rather than specific about potential problems.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation; error return values visible but not documented; no contract recovery from original source.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls are clear; global variables visible (`signal_received`, `shared_counter`); thread relationships visible through function naming.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions grouped by test category (library, system, thread); related functions near each other; organization matches source structure well.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears compilable but WARNING comments about calling conventions may cause issues; external dependencies (pthread) visible but not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (6+8+5+6)/4 = 6.25
+L2 Average: (7+8+7+8)/4 = 7.50
+L3 Average: (7+7+6)/3 = 6.67
+L4 Average: (3+5+6+3)/4 = 4.25
+L5 Average: (7+8+6)/3 = 7.00
+
+Overall = (6.25 × 0.30) + (7.50 × 0.25) + (6.67 × 0.20) + 
+          (4.25 × 0.15) + (7.00 × 0.10)
+        = 1.875 + 1.875 + 1.334 + 0.638 + 0.700
+        = 6.42/10
+```
+
+**Overall Readability Score:** 6.4/10
+
+### Critical Defects:
+- **Variable `local_c`, `iVar1`, `sVar1`** should be named based on semantic usage (e.g., `return_value`, `string_length`, `file_descriptor`)
+- **Magic numbers `0x2a`, `0x7f`** should be replaced with decimal or named constants (42, 127)
+- **Original source comments completely lost** - no algorithm explanations or purpose documentation recovered
+- **Signal constants as raw numbers** (10, 0xe) instead of SIGUSR1, SIGALRM reduce semantic clarity
+- **Unsafe pointer casts** like `(int)pcVar1 - (int)str` lose type safety information
+
+### Best Quality Aspect: **Module Organization (8/10)**
+- Functions are logically grouped by test category matching source structure, making navigation intuitive.
+
+### Most Needs Improvement: **Comment Quality & Presence (3/10)**
+- All original semantic comments lost; only auto-generated WARNING comments remain, providing no algorithmic insight.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve original source comments** - integrate debug symbol comment data when available (-g flag)
+2. **Infer semantic variable names from usage patterns** - `local_c` used as return value should be `result` or `return_value`
+3. **Replace magic numbers with named constants** - detect common values (42, 127, signal numbers) and suggest symbolic names

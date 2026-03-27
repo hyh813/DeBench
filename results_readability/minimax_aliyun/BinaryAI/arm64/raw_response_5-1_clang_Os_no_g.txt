@@ -1,0 +1,154 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables use generic names like `local_38`, `uStack_2c`, `uStack_1d`, `puVar1`, `plVar2`, `lVar3`, `iVar4`, `sVar1`, `sVar2`, `uVar1`. These provide no semantic meaning - `local_38` should be `obj` or `SimpleClass`, `sVar1` should be `name_length` based on its use with `strlen`. The decompiler made no effort to infer purpose from usage patterns.
+
+### 2. Function Naming Quality
+**Score: 6/10**
+
+Justification: Most function names correctly match the original (`test_cpp_member_func`, `test_cpp_constructor`, `template_max_int_`). However, some are problematic: `call_virtual_func` returns `void` instead of `int`, and template instantiations use awkward suffixes (`Container_int_`). The core function names are recovered but with inconsistencies.
+
+### 3. Literal Clarity
+**Score: 2/10**
+
+Justification: Magic numbers everywhere without explanation: `0x125c` (should be constant for expected return), `0x3e9` (=1001, unexplained), `0x15` (=21), `0x2a` (=42), `0x47` (=71), `0x28a` (=650). The string literals like `&DAT_00101680` are completely opaque. No effort to replace with meaningful constants or explain the values.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+Justification: Relatively clean output with minimal compiler artifacts. No obvious register spilling noise or debug instrumentation. The external function stubs are appropriately marked as `<EXTERNAL>`. Minor noise from return type mismatches (some functions return `undefined8` when they should return `int`).
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+Justification: Many functions reduced to single return statements with constant values, losing all control flow structure. For example, `test_cpp_virtual_func` should create objects, call virtual functions, demonstrate polymorphism - but decompiles to just `return 0x2a`. The `call_virtual_func` uses triple-indirect call `(***(code ***)param_1)` which is unreadable. At -O0, this loss of structure is unacceptable.
+
+### 6. Function Decomposition
+**Score: 5/10**
+
+Justification: Functions are properly separated, but many are trivialized to single return statements. The template functions (`template_max_int_`, `template_swap_int_`) are correctly extracted. However, complex logic like `test_cpp_exception` is incomplete - it shows the throw but not the catch blocks. The decomposition exists but loses implementation detail.
+
+### 7. Code Linearization
+**Score: 8/10**
+
+Justification: Code generally reads top-to-bottom without excessive jumps. The few functions with logic (like `Container<int>::push`) have clear sequential flow. Early returns are used appropriately in `Container<int>::get`. No goto abuse or spaghetti code patterns observed.
+
+### 8. Redundancy Elimination
+**Score: 9/10**
+
+Justification: No obvious dead code or redundant expressions. Loop unrolling is not present (expected at -O0). Common subexpression elimination artifacts are minimal. The code is clean in this dimension.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 2/10**
+
+Justification: Severe type degradation throughout. Uses `undefined4`, `undefined8`, `undefined7`, `undefined` instead of proper types. Should be `int`, `size_t`, `bool`, `char*`. The `call_virtual_func` returns `void` when it should return `int`. Function parameters use generic types. At -O0, types should be nearly perfect.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+
+Justification: The `Container<int>` and `Container<double>` template classes are partially recovered with correct field offsets (0x28 for size, 0x50 for double). However, field names are lost - should be `data[]` and `size`. The `SimpleClass` in `test_cpp_member_func` is not recovered at all - appears as raw stack variables with no struct definition.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Several unsafe patterns: `(char *)((ulong)&local_38 | 4)` is a hacky cast to access object fields. The triple-indirect vtable call `(***(code ***)param_1)` is dangerous and unclear. Pointer arithmetic in `Container` functions uses raw offsets without safety. The `test_cpp_rtti` function has proper `operator_new`/`operator_delete` but no size validation.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+Justification: No useful comments anywhere. The only comments are the auto-generated "Decompiled by BinaryAI" header and function location markers. No explanation of what `0x125c` means, no indication that `test_cpp_virtual_func` should contain object creation and polymorphic calls, no documentation of the vtable mechanism. Completely absent.
+
+### 13. Idiom Recognition
+**Score: 2/10**
+
+Justification: No design patterns or algorithms identified. The virtual function call mechanism is not explained - it's just cryptic triple-indirect call syntax. Template instantiation is recognized but not explained. RAII patterns in smart pointers are lost. Exception handling mechanism is not documented.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+Justification: No anomaly indication. The decompiler presents wrong code confidently - `test_cpp_member_func` adds `strlen` to the result which is incorrect (should just return 4704). Functions returning wrong types are not flagged. The incomplete `test_cpp_exception` (shows throw but not catch) is not flagged as partial.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No contract information recovered. Preconditions like "ptr != NULL" not documented. Postconditions not inferred. No error condition documentation. The function semantics are completely opaque.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Justification: Function calls are present but relationships are unclear. The `call_virtual_func` is correctly identified as calling a virtual function, but the vtable mechanism is not explained. No documentation of which functions call which, or the inheritance relationships. The `LifecycleClass::instance_count` static member is referenced but not explained.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Justification: Functions are grouped by test case, which roughly matches source organization. External stubs are separated. Template instantiations are grouped together. However, the organization is arbitrary - no namespaces recovered, no class groupings beyond template instances. The logical structure of the original (classes, inheritance hierarchies) is lost.
+
+### 18. Build System Compatibility
+**Score: 3/10**
+
+Justification: The code would not compile as-is. Many functions have wrong return types (`undefined8` instead of `int`). External dependencies (`puts`, `strlen`, `printf`, `operator_new`, `operator_delete`) are declared but some incorrectly (e.g., `puts` calling itself). The `call_virtual_func` has invalid syntax with triple indirection. Requires significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+6+2+7)/4 = 4.25
+L2_avg = (4+5+8+9)/4 = 6.50
+L3_avg = (2+3+4)/3 = 3.00
+L4_avg = (1+2+1+1)/4 = 1.25
+L5_avg = (3+5+3)/3 = 3.67
+
+Overall = (4.25 × 0.30) + (6.50 × 0.25) + (3.00 × 0.20) + 
+          (1.25 × 0.15) + (3.67 × 0.10)
+        = 1.275 + 1.625 + 0.60 + 0.1875 + 0.367
+        = 4.05/10
+```
+
+### Overall Readability Score: 4.0/10
+
+### Critical Defects
+
+1. **Variable names are completely opaque**: `local_38`, `uStack_2c`, `puVar1` provide zero semantic information about their purpose
+2. **Type precision severely degraded**: Uses `undefined4`/`undefined8` instead of `int`/`size_t` - at -O0 this is unacceptable
+3. **Functions reduced to constant returns**: `test_cpp_virtual_func`, `test_cpp_multiple_inheritance`, etc. lose all implementation logic, just returning expected values
+4. **No comments or documentation**: Zero explanation of vtable mechanism, template instantiation, exception handling, or any semantic context
+5. **Incorrect return types**: `call_virtual_func` returns `void` instead of `int`, breaking the interface
+
+### Best Quality Aspect
+
+**Function Decomposition (5/10)** - Functions are properly separated and template instantiations are correctly extracted as separate functions. The basic code organization is sound.
+
+### Most Needs Improvement
+
+**Semantic Transparency (1.25/10)** - The decompiled code provides zero insight into what the code does. No comments, no pattern recognition, no anomaly indication, no contracts. The code is semantically opaque.
+
+### Top 3 Recommendations
+
+1. **Recover variable names from usage patterns**: `local_38` used with value 10 and passed to `setValue` should be named `obj` or `value`. `sVar1` used in `strlen` should be `name_length`.
+
+2. **Restore type information**: At -O0, types should be nearly perfect. Replace `undefined4` with `int`, `undefined8` with `long` or `void*`, `undefined` with `bool` or `char`.
+
+3. **Add semantic comments**: Document vtable calls, explain template instantiation, describe exception handling flow. Add markers for unresolvable indirect calls.

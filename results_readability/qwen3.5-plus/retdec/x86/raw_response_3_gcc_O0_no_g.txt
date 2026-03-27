@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names like `v1`, `v2`, `v3`, `a1` with no semantic meaning. Original names like `arr`, `local`, `p` are completely lost, making it difficult to track variable purposes across functions.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original function names preserved (`double_value`, `local_vars`, `heap_basic`), but many helpers are named `function_1140`, `function_1150`. Test functions retain names but lack descriptive prefixes.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound (`4`, `8`, `10`, `20`, `40`) without explanation. Global variables use cryptic hex addresses (`0x1880404`, `0x388e`). No constants recovered for array sizes or buffer lengths.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifacts: `__x86_get_pc_thunk_*` calls in every function, `__readgsdword(20)` stack canary checks, unnecessary casts like `(int32_t *)v2`. These obscure actual logic significantly.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Original `for` loops converted to manual `while` loops with explicit increment (`v4 = v3 + 1`). `large_stack_frame` has an infinite `while(true)` loop instead of bounded iteration. `linked_list_heap` uses goto labels (`lab_0x1e02`).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but helper functions like `__x86_get_pc_thunk_*` and `function_1140-1240` are compiler/runtime artifacts that clutter the output.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple goto labels disrupt flow (`lab_0x1e02`, `lab_0x1e1b`, `lab_0x1e41` in `linked_list_heap`). Stack canary checks at function ends create repetitive epilogue patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary check pattern (`if (v2 != __readgsdword(20))`) repeats in ~20 functions. Similar malloc/free patterns duplicated without abstraction.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Everything degraded to `int32_t` or `int32_t *`. Original `size_t`, `char *`, `void *` distinctions lost. No `const` correctness preserved. Function pointers become generic `int32_t`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `Point` struct becomes raw pointer arithmetic (`*mem = a1; *(int32_t *)((int32_t)mem + 4) = v2`). `Node` linked list struct completely lost, accessed via offset calculations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `(int32_t *)v2`, `(char *)`, `(int32_t)mem`. Pointer arithmetic on `int32_t` instead of proper typed pointers. No bounds checking recovered.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining functionality. Original source had extensive comments (e.g., "// MEM-L1-01: 局部变量（基础类型）⭐") - all lost. No decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Memory allocation patterns (`malloc` + loop + `free`) not identified. Linked list traversal in `linked_list_heap` not recognized as such. Tree structure in `tree_heap_traversal` opaque.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Dangerous code like `dangling_pointer` (use-after-free) and `double_free` presented without warnings. `stack_alias` returns constant `20` instead of actual alias logic - no anomaly flag.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 >= 1 && a1 <= 1000` in `vla_stack` not explained). Null checks present but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships unclear. Global variables (`g1`-`g21`) have no semantic connection to original names (`global_counter`, `global_array`). Callback relationships opaque.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file without logical grouping. Original sections (Stack/Heap/Static/Memory Operations) not preserved. Global variables listed without categorization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes necessary headers (`stdio.h`, `stdlib.h`, `string.h`). However, contains compiler-specific artifacts (`__readgsdword`, `__x86_get_pc_thunk_*`) that won't compile cleanly without stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+3)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+6+5+5)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.263
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.80/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on usage (e.g., `stack_canary`, `loop_index`, `array_base`)
+- **Struct types completely lost** - `Point`, `Node`, `TreeNode` accessed via raw pointer arithmetic
+- **Infinite loop in `large_stack_frame`** - original bounded for-loop became `while(true)` without exit condition
+- **`stack_alias` logic corrupted** - returns constant `20` instead of implementing pointer alias detection
+- **Zero comments** - all original documentation and section headers stripped
+
+### Best Quality Aspect: **Function Decomposition (6/10)**
+- Original function boundaries mostly preserved with recognizable names for user-defined functions
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding intent nearly impossible without original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types** from consistent memory access patterns (e.g., `*(ptr)` and `*(ptr+4)` should suggest a 2-field struct)
+2. **Add semantic comments** for recognized patterns (malloc+loop+free = "heap array initialization", linked list traversal = "list summation")
+3. **Eliminate compiler artifacts** - remove or comment `__x86_get_pc_thunk_*` calls and consolidate stack canary checks into a single function epilogue pattern

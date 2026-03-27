@@ -1,0 +1,107 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use numbered scheme (`v0`, `v1`, `v2`, `i`, `v4`, `v5`, `v7`). No semantic meaning is recovered - e.g., `a1` should be `a` (first parameter), `a2` should be `b` based on `cdecl_func(int a1, int a2) { return a1 + a2; }`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly named like `cdecl_func`, `stdcall_func`, `fastcall_func` matching source. However, many utility functions use generic names like `sub_1030`, `sub_1040`, `sub_1050`. Test functions like `test_calling_conventions` are preserved but lack descriptive purpose.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: String literals in printf are clear (`"CALL-L1-01: %d\n"`). Magic number `42` is self-evident. However, stack canary `__readgsdword(0x14u)` appears repeatedly without explanation. The value `0x14` (20) for stack canary offset is unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from stack canary checks (`__readgsdword(0x14u)`) appearing in nearly every function. IDA-specific constructs like `LODWORD()` and `HIDWORD()` for 64-bit manipulation clutter the code. Register annotations like `@<eax>` add noise. Multiple "failed to decompile" functions at the end pollute the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions use natural for/while loops and if-else constructs matching source. However, `call_order_dep()` shows semantic loss - original had `param_order_dep(++i, ++i)` (undefined behavior), decompiled shows `param_order_dep(2, 2)` - the increment behavior is lost.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good function granularity - each function has single responsibility. Test functions (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) properly separated from implementation. No 500-line monoliths. Parameter lists are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without forward jumps. `test_calling_conventions` has some variable declarations at bottom but doesn't severely disrupt flow. No deep nesting (>4 levels) observed. Generally clean linear reading.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: At -O0, no loop unrolling expected or present. No dead code observed. Common subexpression elimination minimal. Stack canary pattern repeated but that's compiler-inserted, not decompiler artifact.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used throughout instead of `int32_t`. Pointers are reasonably typed (`_DWORD *` for int*, `char *` for strings). Function pointers show signature but without const: `int (__cdecl *a1)(int)`. No `const` correctness recovered anywhere.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Severe degradation - all structs lost. `LargeStruct` (128 bytes) becomes single `int a1` parameter in `func_struct_byval`. `SmallStruct` becomes `_DWORD v1[2]` without field names. Original had `struct BigStruct { int data[16]; }` but decompiled shows 16 separate int parameters in `param_struct_byval`.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Few unsafe casts. Pointer arithmetic is correct in `param_ptr_array` (`4 * i + a1`). Function pointer types are mostly preserved. No buffer overflow patterns. Minor issue: `ret_pointer` returns `int` instead of `int*` - loses pointer type.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated header comments from IDA Pro ("Decompiled by IDA Pro 9.1"). No algorithm explanations, no decompilation confidence indicators, no API contracts. The comment `// positive sp value has been detected, the output may be wrong!` shows some anomaly detection but is rare.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Varargs handling is recognizable (`va_start`, `va_arg` pattern via manual pointer arithmetic). Struct by-value passing is identifiable but not named as pattern. No explicit pattern naming (e.g., "This implements strategy pattern").
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: "FAILED to decompile" messages for `__libc_start_main`, `printf`, etc. One warning about "positive sp value" in `_start`. However, no flagging of `call_order_dep` semantic loss (undefined behavior in source). No indication of calling convention mismatches.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of expected NULL checks, buffer sizes, or return value guarantees. Functions like `func_struct_byptr` that check `if (!p) return -1` don't have comments explaining the contract.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships clear - `call_cdecl()` calls `cdecl_func()`. Global variables like `_gmon_start__`, `_CTOR_LIST__` visible. However, callback relationships not explicitly documented (e.g., `callback_func` used by `param_func_ptr`).
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions logically grouped: calling convention functions together, parameter passing tests together, return value tests together. Static functions properly scoped. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone - missing declarations for `puts`, `printf`, `strlen`, `__libc_start_main`, `__stack_chk_fail`, etc. Uses IDA-specific extensions like `__usercall`, `__userpurge`. Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Calculation:**
+- L1 avg: 4.25 × 0.30 = 1.275
+- L2 avg: 7.50 × 0.25 = 1.875
+- L3 avg: 5.00 × 0.20 = 1.000
+- L4 avg: 3.50 × 0.15 = 0.525
+- L5 avg: 6.00 × 0.10 = 0.600
+- **Total: 5.275 → 5.3/10**
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic `a1`, `a2`, etc.; locals use `v0`, `v1`, `i` - no semantic recovery
+- **Struct recovery completely failed**: `LargeStruct` (128 bytes) becomes single `int`, `SmallStruct` becomes `_DWORD[2]` without field names
+- **Type precision lost**: All `int` instead of specific types; no `const` correctness recovered
+- **Semantic loss in `call_order_dep`**: Original `param_order_dep(++i, ++i)` (undefined behavior) becomes `param_order_dep(2, 2)` - the increment behavior is lost
+- **No comments or contracts**: Zero useful comments explaining algorithm, preconditions, or decompilation confidence
+
+### Best Quality Aspect: Control Flow Naturalness (7/10)
+- Most functions use natural loops and conditionals matching source structure
+- At -O0, control flow transformations are minimal
+
+### Most Needs Improvement: Variable Naming Quality (2/10)
+- Every parameter and local variable uses generic numbered names with zero semantic meaning
+- Should infer names from usage: `a1` + `a2` in `cdecl_func` suggests `first` and `second` or `x` and `y`
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: `a1 + a2` suggests parameters should be named `a` and `b`; `*a1 *= 2` in pointer function suggests `value` or `ptr`
+2. **Recover struct types from stack layout**: `func_struct_byval` accesses `*(&a1 + 2 * i)` for 16 iterations - this clearly indicates a struct with 16 int fields, not a single int
+3. **Add semantic comments for non-obvious patterns**: Document varargs handling, stack canary insertion, and flag semantic differences from source (like the `++i` behavior loss)

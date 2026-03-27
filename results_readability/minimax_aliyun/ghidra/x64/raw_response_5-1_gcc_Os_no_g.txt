@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `local_30`, `local_10`, `puVar1`, `iVar1`, `sVar1`, `param_1`, `param_2`. The original source has meaningful names like `value`, `name`, `data`, `size`, `capture_by_value`, but these are completely lost. The decompiler provides no semantic mapping from generic stack variable names to their intended purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Test functions are correctly named (`test_cpp_member_func`, `test_cpp_constructor`, `test_cpp_virtual_func`, etc.) matching the original source exactly. Member functions like `Base::virtual_func`, `Derived::virtual_func`, `Container<int>::push` are properly identified. Minor deduction for some internal functions lacking descriptive names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Extensive use of unexplained magic numbers throughout: `0x2a` (42), `0x1f` (31), `0x125c` (4704), `0x3e9` (1001), `0x14` (20), `0x47` (71), `0x55` (85), `0x2bf` (703), `0x32` (50), `0x96` (150), `0xfa` (250). These constants represent meaningful values from the source but are presented as raw hex without explanation.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Moderate noise includes "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "WARNING: Could not recover jumptable", stack canary checks (`__stack_chk_fail`), and try-catch annotations. While some warnings are useful, the volume of auto-generated messages obscures the actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with standard if-else and loop structures. At `-O0`, the decompiler correctly avoids introducing goto-based control flow. Some complexity from virtual dispatch through vtables is unavoidable. The `call_virtual_func` function shows the typical indirect call pattern for polymorphic calls.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately separated, with member functions extracted as individual units. Template instantiations like `template_max<int>` and `template_max<double>` are correctly distinguished. However, some functions like `test_cpp_oo_features` are quite long (40+ lines) and could benefit from decomposition.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. Early returns are used appropriately in functions like `template_max`. Some non-linearity exists in exception handling code but is manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious redundant code blocks or dead code observed. The decompiler has eliminated duplicate code sequences. Loop unrolling is minimal at `-O0` optimization level.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types: `undefined4`, `undefined8`, `undefined1`, `undefined**`. The original `int`, `size_t`, `double` types are not recovered. Function parameters use generic types rather than the original `int`, `char*`, etc. Only `int` is consistently used; other types are erased.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct definitions are recovered. The decompiler uses raw pointer arithmetic: `*(int *)(this + 0x28)` instead of `this->size`. Class layouts are not reconstructed with field names. The `Container<int>` class shows raw array access without field recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations present: `*(undefined ***)this`, `(undefined **)in_RDX`, casting through `undefined8*`. Pointer arithmetic like `this + *(long *)(*(long *)this + -0x18)` is error-prone. However, some basic type safety is maintained (e.g., checking for null pointers in unique_ptr destructors).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Basic comments present: "WARNING: Unknown calling convention", "try { // try from... has its CatchHandler", "WARNING: Subroutine does not return". These are auto-generated and don't explain the actual logic. No comments explaining what the functions do or how they relate to the original source.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ idioms are partially recognized: virtual function calls through vtables are identified, exception handling try-catch blocks are annotated. However, no explicit naming of patterns like "RAII", "virtual dispatch", "template instantiation". The decompiler doesn't explain the design patterns present.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly detection with warnings for: unreachable blocks, unknown calling conventions, unrecovered jumptables, treating indirect jumps as calls. These help identify decompilation limitations. However, some anomalies like the architecture mismatch (arm64 source vs x86 output) aren't flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler doesn't recover any contracts or assertions from the original source. No documentation of expected parameter ranges or return value guarantees.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function names allow tracing call relationships (e.g., `test_cpp_oo_features` calls other test functions). However, no explicit documentation of call graphs, global variable usage, or callback relationships. Virtual dispatch relationships are not clearly explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are listed in address order, not matching the original source organization. The original file groups related classes and tests together, but the decompiled output scatters them. No namespace or class grouping is visually indicated beyond function names.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code would not compile due to: `undefined1`, `undefined4`, `undefined8` types; missing standard library includes; missing type definitions for `std::unique_ptr`, `operator_new`, etc. Extensive patching would be required to make this compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable naming**: All stack variables use generic names (`local_30`, `puVar1`) losing all semantic meaning from the original source
+- **Type precision**: Heavy use of `undefined4`, `undefined8`, `undefined**` instead of recovered types like `int`, `size_t`, `char*`
+- **Composite type loss**: No struct/class field recovery; all accessed through raw pointer arithmetic (`*(int*)(this+0x28)`)
+- **Magic numbers**: Extensive unexplained hex values (`0x125c`, `0x3e9`, `0x2bf`) instead of meaningful constants
+- **Build incompatibility**: Code uses undefined types that prevent compilation
+
+### Best Quality Aspect: Function Naming (scored 8/10)
+Test functions and member functions are correctly named, matching the original source exactly. This is the strongest area where the decompiler performed well.
+
+### Most Needs Improvement: Variable Naming & Type Recovery (scored 2-4/10)
+The combination of generic variable names and complete loss of type information makes the code extremely difficult to understand. A reader cannot determine what data structures are being manipulated or what values variables represent.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: Analyze how variables are used (e.g., `*(int*)(this+0x28)` being compared to 10 suggests it's `size` or `count`) and assign semantic names
+2. **Recover struct layouts**: Group related pointer offsets into struct definitions with field names based on offset patterns and usage
+3. **Replace magic numbers with constants**: Detect constants that appear multiple times and suggest meaningful names based on context (e.g., `0x3e9` = 1001 appears as multiplier for `instance_count`)

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `ptr`, `v4`-`v10` throughout. For example, in `test_cpp_exception()`, variables `v2`-`v8` are used for exception handling parameters with no semantic meaning. The name `ptr` is somewhat descriptive but inconsistent with source's `obj1`, `obj2`.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Mixed results - some C++ mangled names like `_Z20test_cpp_member_funcv` correctly recover source names, but most functions use cryptic address-based names like `sub_401020`, `sub_40102d`. The thunk functions like `_ZThn16_N12MultiDerived5funcBEv` are correctly named but many helper functions remain generic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Some literals like `0x1234` (class ID) and `42` (thrown exception) appear but without explanatory comments. The magic number `4700` in the printf format string is unexplained. Most numeric literals lack context.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution - dozens of small stub functions (sub_40102d through sub_40112f) that just call other functions, redundant empty return statements throughout, and dead variable initializations like `v0 = g_403f40` in `sub_401020`.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive use of `goto` statements (e.g., `goto g_403f48` in sub_401020) makes control flow confusing. Many functions have empty bodies with just `return;` statements. The exception handling code in `test_cpp_exception()` has convoluted branching that obscures the try-catch structure.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Some C++ functions like `template_max<int>` are properly decomposed, but `test_cpp_member_func()` is incomplete - it only does `strncpy` and `strlen` but missing the actual computation (`obj.setValue(10)`, `obj.getValue()`, etc.). Many tiny wrapper functions exist.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: The code generally reads top-to-bottom but forward jumps and goto statements disrupt flow. The `call_virtual_func` uses `goto *((long long *)*((long long *)&arg_0))` which is a computed jump that breaks linear reading.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Significant redundancy - many functions contain only `return;` with no useful computation. The sequence of small functions (sub_40103f calls sub_401040 which sets v0=1) represents dead code that should have been eliminated.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - some class names recovered (`class Base`, `class Derived`), but types are often generic: `unsigned long` instead of `int`, `unsigned long long` for pointers. The `template_swap<int>` uses `unsigned int *ptr` but source uses `int&`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Some struct recovery attempted (`struct_0`, `struct_2`, `struct_3`) but with generic field names like `field_0`, `field_8`. The RTTI structures in `test_cpp_rtti()` show padding and pointers but lose the original class hierarchy information.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate type safety issues - numerous casts like `(unsigned long long)` in printf calls, pointer arithmetic in virtual function thunks (`(char *)a0 + (*(a0))[24]`). The `call_virtual_func` uses raw pointer manipulation without type safety.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The only comments are auto-generated like "// Function: sub_401020 at 0x401020". No explanation of algorithms, no uncertainty indicators, no recovered documentation from source.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some C++ patterns recognized - virtual function thunks are properly identified with `_ZThn16_` prefix, the vtable dispatch in `call_virtual_func` is partially recovered. However, the try-catch exception structure is not recognized as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The decompilation presents the confusing `goto *((long long *)...)` in `call_virtual_func` without warning about the indirect call resolution issue. The unsupported jumpkind in `sub_401385` is not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. The bounds checking in `Container<int>::push()` (`if ((unsigned int)index <= 9)`) is present but not documented as an invariant.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Some function call relationships visible (e.g., `test_cpp_oo_features()` calls other test functions), but no documentation of who calls whom. The virtual function call targets are not clearly documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are roughly grouped by class (Base, Derived, MultiDerived methods together) but the organization is inconsistent. Many unrelated small functions interleaved with meaningful ones.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code will not compile - many undefined extern symbols (`g_403fe8`, `CXXABI_1.3::_ZTIi`, etc.), missing standard library includes, and incorrect function signatures (e.g., `template_max<double>` calls undefined `MaxV`).
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.2/10
+
+### Critical Defects:
+- **Variable naming**: All variables use generic names (`v0`-`v10`, `ptr`, `p`) making code comprehension extremely difficult
+- **Missing function body**: `test_cpp_member_func()` only contains `strncpy` and `strlen`, missing all the actual method calls and computations
+- **Excessive noise**: Dozens of meaningless stub functions (sub_40102d through sub_40112f) clutter the output
+- **No comments**: Zero useful comments explaining algorithms, contracts, or uncertainties
+- **Control flow obfuscation**: goto statements and computed jumps break natural code flow
+
+### Best Quality Aspect: Type System Fidelity (scored 4.7/10)  
+Some class names and C++ mangled function names are correctly recovered, showing the decompiler can handle C++ name mangling.
+
+### Most Needs Improvement: Lexical Clarity (scored 2.8/10)  
+Variable and function naming is nearly unusable - almost all names are generic or cryptic, severely hindering basic comprehension.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: When a variable is used as an index into an array with bounds checking, name it `index` or `i`. When used for string length, name it `length`.
+2. **Recover complete function bodies**: `test_cpp_member_func()` is missing critical operations - the decompiler failed to recover the full function logic
+3. **Eliminate noise functions**: Filter out or consolidate the dozens of trivial wrapper functions that add no value to the analysis

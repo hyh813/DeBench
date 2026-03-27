@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `local_34`, `iVar1`, and `puVar1`, providing no semantic hint about their role (e.g., `local_34` is actually the `SimpleClass` object buffer).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Ghidra successfully recovered symbol names for most functions, including class methods like `Base::virtual_func` and template instantiations like `template_max<int>`, which aligns perfectly with the source.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code is littered with magic numbers resulting from constant folding (e.g., `0x125c` for the result of `test_cpp_member_func` and `0x2a` for `test_cpp_virtual_func`), obscuring the original logic completely.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While stack canary checks (`in_FS_OFFSET`) are necessary, the pervasive use of `undefined` types (`undefined8`, `undefined4`) and explicit casts like `*(code *)` adds significant visual noise that impedes readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Many test functions (e.g., `test_cpp_virtual_func`, `test_cpp_constructor`) are reduced to simple `return constant` statements due to high optimization levels (likely -O2/O3 despite metadata), making the control flow trivial but semantically empty compared to the source.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler successfully separates class methods and identifies compiler-generated artifacts like "non-virtual thunk to MultiDerived::funcB", maintaining good granularity and cohesion.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads linearly with minimal jumps; however, the inlined constructor logic inside `test_cpp_member_func` (mixing `strncpy` and `strlen`) disrupts the high-level flow of the original test.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is no obvious dead code, but the compiler's optimization has eliminated the *logic* (replacing it with constants), which while efficient, makes the decompiled code redundant in terms of explaining *how* the result was achieved.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are heavily degraded; C++ objects are represented as raw buffers (`char local_34[36]`), and member access is done via integer offsets (`*(int *)(this + 8)`) rather than member names.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: No class or struct definitions (e.g., `SimpleClass`, `Base`, `Derived`) are reconstructed in the output; the user is forced to interpret raw pointer arithmetic to understand data layouts.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts, such as `(*(code *)**(undefined8 **)param_1)()` for virtual calls and casting `undefined8` to function pointers, which is dangerous and hard to follow.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to compiler warnings (e.g., "Unknown calling convention") and do not explain the high-level intent of the code, such as the purpose of the RTTI checks or exception handling.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: The decompiler correctly identifies low-level C++ idioms like "virtual thunk", "non-virtual thunk", and `__cxa_throw` for exceptions, but fails to abstract them into high-level concepts like "polymorphism" or "error handling".
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Ghidra explicitly warns about "Unknown calling convention" and "Could not recover jumptable", which accurately reflects the complexity of the C++ ABI and indirect calls.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (like array bounds checks in `Container::get` other than the raw `if` statement) or class invariants; the logic is presented as raw operations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function names are preserved well enough to see the relationships (e.g., `test_cpp_oo_features` calling specific test functions), and vtable references are visible even if not fully resolved.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped logically in the output, with related class methods (like `Container<int>` and `Container<double>`) appearing in proximity, maintaining a reasonable structure.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile as-is due to `undefined` types, missing struct definitions, and references to external symbols like `__gmon_start__` without headers.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- **Composite Type Loss**: No structs/classes defined (e.g., `SimpleClass`, `Base`), forcing interpretation of raw pointer arithmetic like `*(int *)(this + 8)`.
+- **Variable Naming**: Generic names (`local_34`, `iVar1`) completely obscure the semantic meaning of variables representing objects or calculations.
+- **Optimization Artifacts**: Logic is replaced by magic constants (e.g., `return 0x125c`), making it impossible to understand the algorithm from the decompiled code alone.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- Ghidra successfully demangled and recovered the C++ function symbols, including template specializations and class methods, which is crucial for navigation.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)
+- The failure to reconstruct class definitions is the single biggest barrier to understanding; without `struct` definitions, the code is just a stream of pointer offsets.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Reconstruct C++ Class Hierarchies**: Analyze vtables and member access patterns to generate `struct` or `class` definitions with correct field names and inheritance relationships.
+2. **Variable Type Inference**: Replace `undefined` types with concrete types (e.g., `int`, `char*`) based on usage context and function signatures to reduce casting noise.
+3. **Annotate Optimized Constants**: When a function returns a compile-time constant, insert a comment indicating the original expression (e.g., `/* 4704 = 10 + 34 + 4660 */`) to preserve semantic meaning.

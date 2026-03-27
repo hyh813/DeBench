@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `param_1`, `local_4`, and `local_8`, providing no semantic hint about their purpose (e.g., `sum`, `i`, `n` in `loop_for_fixed`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names from the source (e.g., `sequential_ops`, `duffs_device`, `state_machine`) are preserved perfectly, making the high-level intent immediately obvious.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: Stack-allocated arrays are initialized with obscure hex constants (e.g., `local_20 = 0x140000000a` in `loop_break`) instead of readable array syntax, though simple arithmetic constants are clear.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise is present, including verbose stack canary checks (`___stack_chk_guard`) and a critical artifact `tmp_ldXn` appearing in functions like `fsm_func_table`, which obscures the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: While loops are recovered well, switch statements (e.g., `switch_small`, `switch_large`) are flattened into deep nested `if` trees, and fall-through logic (`switch_fallthrough`) relies on `goto` labels rather than structured flow.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion without artificial splitting or merging.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom, but the nested `if` trees replacing switches and the use of forward `goto` labels in `switch_fallthrough` disrupt the linear flow.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: Mostly clean, though some redundant checks persist, such as in `op_div` where `if (param_2 == 0)` is followed immediately by `if (param_2 != 0)`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types are correct, but the decompiler frequently defaults to generic types like `undefined8` and `undefined4` (e.g., in `switch_large`), losing the specific `int` semantics of the original source.
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Stack-allocated arrays (e.g., in `loop_break`) are not recovered as arrays; instead, the decompiler represents them as a series of scalar stack variables initialized with packed hex values.
+
+**11. Type Safety:** Score: 6/10
+Justification: The use of `undefined` types and casts to `code *` for function pointers reduces the perceived safety and clarity of the code, though the operations themselves are generally correct.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output; complex algorithms like Duff's device or state machines are presented without explanation.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The decompiler fails to recognize standard patterns; Duff's device (`duffs_device`) is decompiled into a mess of `goto` labels, and computed gotos (`computed_goto`) are not identified as such.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The bizarre `tmp_ldXn` variable usage in `fsm_func_table` and `computed_goto` is presented as normal code without any warning that it represents a decompilation failure or artifact.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred (e.g., the requirement that `n > 0` in `duffs_device` is not stated).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Because function names are preserved, the call graph is extremely clear and easy to navigate despite the poor variable naming within functions.
+
+**17. Module Organization:** Score: 8/10
+Justification: The output maintains the original file's logical grouping of functions (Control Flow L1, L2, L3), making it easy to locate specific test cases.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to the `tmp_ldXn` variable (which appears to be an internal decompiler temporary leaked into the output) and the use of `undefined` types.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.4/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`param_1`, `local_4`), obscuring data flow.
+- Switch statements are decompiled into deeply nested `if` trees instead of `switch` cases.
+- The `tmp_ldXn` artifact in `fsm_func_table` and `computed_goto` renders those functions unreadable.
+- Stack-allocated arrays are flattened into hex-initialized scalars, hiding the data structure.
+- Zero comments or idiom recognition for complex patterns like Duff's device.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The preservation of original function names provides a high-level map that is essential for navigating the code.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.75/10)
+- The lack of comments, failure to recognize idioms, and silent presentation of decompilation artifacts make understanding the "why" and "how" of the code very difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic naming for loop counters (e.g., `i`, `j`) and accumulator variables (e.g., `sum`) based on usage patterns.
+2. Improve switch statement recovery to identify jump tables or binary search trees and reconstruct the original `switch-case` structure.
+3. Fix the internal variable leakage issue (e.g., `tmp_ldXn`) that corrupts the output of functions involving complex pointer arithmetic or computed jumps.

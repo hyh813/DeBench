@@ -1,0 +1,164 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables use generic auto-generated names like `param_1`, `iVar1`, `local_38`, `local_10` throughout. The original source used meaningful names like `x`, `result`, `str` which are completely lost. For example, in `param_fake_branch`, the parameter should be named `x` based on source, but is `param_1`.
+
+### 2. Function Naming Quality
+**Score: 8/10**
+
+Justification: Most function names match the original source exactly: `param_fake_branch`, `param_opaque_predicate`, `param_instruction_substitution`, `call_fake_branch`. However, some internal functions like `FUN_00101020` and `<EXTERNAL>` functions have generic or placeholder names.
+
+### 3. Literal Clarity
+**Score: 5/10**
+
+Justification: Some literals like `0x5A` (XOR key) and `0xDEADBEEF` appear but are not explained. Magic numbers like `0x14` (20), `0x1f` (31), `0xfffffffc` are used without named constants. The original source had clear comments explaining these values.
+
+### 4. Noise Reduction
+**Score: 7/10**
+
+Justification: Minimal compiler artifacts present. Stack canary checks (`__stack_chk_fail`) are visible but necessary. No redundant casts or debug instrumentation clutter the code significantly.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Justification: Most control flow is natural with proper loops and conditionals. However, `param_tail_call_optimized` shows significant loop unrolling with nested conditionals that obscure the original recursive structure. The fake branches in `param_fake_branch` were completely optimized away (compiler behavior), making the decompiled version trivially simple.
+
+### 6. Function Decomposition
+**Score: 7/10**
+
+Justification: Functions are reasonably sized (20-80 lines). Some functions like `param_tail_call_optimized` are large (80+ lines) due to loop unrolling, but this is compiler behavior at -O0. Function boundaries are clear and match source organization.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Most code reads top-to-bottom with minimal jumps. Complex functions like `param_vectorized_loop` have some forward jumps and computed goto patterns, but overall flow is traceable.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+
+Justification: No obvious dead code. Loop unrolling in tail call functions is present but represents compiler transformation, not decompilation failure. Code is otherwise clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 5/10**
+
+Justification: Types are imprecise - uses `undefined4` instead of `int`, `uint` instead of `unsigned int`, `long` for pointers on arm64. The original had `int`, `unsigned int`, `size_t` which are more precise. Function parameters often use generic types.
+
+### 10. Composite Type Recovery
+**Score: 8/10**
+
+Justification: This code doesn't heavily use complex structs, but the decompiler correctly handles simple types. No struct reconstruction needed for this particular binary.
+
+### 11. Type Safety
+**Score: 6/10**
+
+Justification: Some unsafe operations present - pointer arithmetic in string functions, casts between `byte*` and `char*`. No major type safety violations that would cause undefined behavior, but the code could be safer.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+Justification: No comments whatsoever in the decompiled output. The original source had extensive comments explaining obfuscation techniques, expected outputs, and algorithm purposes. This is a critical loss for understandability.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Justification: Some patterns like loop unrolling are visible but not named or commented. The opaque predicates and fake branches (key obfuscation techniques) are either optimized away or not recognized as special patterns.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+Justification: No anomaly flags or warnings. The decompiled code presents everything as confident, even where the original had intentional obfuscation or undefined behavior. No indication of the fake branch technique or potential issues.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants documented. The original source had clear expectations (e.g., "期望: 10") that are completely lost.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 5/10**
+
+Justification: Function calls are visible in the code, but relationships with external code, callers, and callees are not documented. No indication of which functions call `param_fake_branch` or its role in the larger program.
+
+### 17. Module Organization
+**Score: 7/10**
+
+Justification: Functions are grouped logically - test functions, handler functions, main function. Static functions are properly scoped. Overall organization matches source structure reasonably well.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+
+Justification: Code has some compilation issues - external functions like `__printf_chk` need declarations, some type mismatches. Would require moderate patching to compile standalone. Dependencies on libc functions are implicit, not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 5 + 7) / 4 = 5.5
+L2_avg = (6 + 7 + 7 + 7) / 4 = 6.75
+L3_avg = (5 + 8 + 6) / 3 = 6.33
+L4_avg = (1 + 4 + 2 + 2) / 4 = 2.25
+L5_avg = (5 + 7 + 5) / 3 = 5.67
+
+Overall = (5.5 × 0.30) + (6.75 × 0.25) + (6.33 × 0.20) + 
+          (2.25 × 0.15) + (5.67 × 0.10)
+        = 1.65 + 1.6875 + 1.266 + 0.3375 + 0.567
+        = 5.51/10
+```
+
+**Overall Readability Score: 5.51/10**
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Variable naming completely generic**: All variables use `param_1`, `iVar1`, `local_38` style names instead of semantic names like `x`, `result`, `packet_size` from source
+- **No comments at all**: Complete loss of explanatory comments that documented obfuscation techniques, expected outputs, and algorithm purposes
+- **Type precision lost**: Uses `undefined4`, `uint`, `long` instead of precise types like `int`, `unsigned int`, `size_t`
+- **No anomaly indication**: Fake branches (key obfuscation technique) are either optimized away or not flagged as suspicious
+- **No contract recovery**: Expected outputs and preconditions from source comments are completely lost
+
+---
+
+### Best Quality Aspect (Single Dimension)
+
+**Function Naming Quality (8/10)**  
+Function names like `param_fake_branch`, `param_opaque_predicate`, `call_fake_branch` match the original source exactly, making it easy to identify which function is being analyzed.
+
+---
+
+### Most Needs Improvement (Single Dimension)
+
+**Comment Quality & Presence (1/10)**  
+The complete absence of comments is the most severe readability issue. The original source had extensive documentation explaining obfuscation techniques, expected outputs, and algorithm purposes - all completely lost in decompilation.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1 * param_1 < 0` suggests it's a numeric parameter like `x`) to generate semantic names instead of generic `param_1`
+
+2. **Add explanatory comments for obfuscation techniques**: When detecting patterns like fake branches, opaque predicates, or instruction substitution, add comments explaining what the technique is and its purpose
+
+3. **Recover type precision**: Use arm64 ABI knowledge to infer precise types - `int` for 32-bit, `long` for 64-bit, `size_t` for size operations, rather than generic `undefined4` or `uint`

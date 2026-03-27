@@ -1,0 +1,104 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `result`, `temp`) with no semantic meaning. For example, `sequential_ops` uses parameters `a, b, c` instead of descriptive names like `operand1, operand2, operand3`. The decompiler failed to infer variable purposes from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names are preserved from source (`sequential_ops`, `single_if`, `nested_if_deep`), accurately reflecting functionality. However, some helper functions like `sub_4DC` remain cryptic, and test functions could be more descriptive.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `0x65` in `non_local_jump`, `0x12` in `loop_while`). Some literals are recoverable (10, 100 in switch cases), but many lack context about their semantic meaning.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present (e.g., `__fastcall` calling conventions, `__int64` type casts). The `duffs_device` function contains inline assembly `__asm { ADD PC, LR, R3 }` that wasn't decompiled. However, most dead code was eliminated.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Significant optimization artifacts disrupt natural flow. `loop_for_fixed` uses a mathematical formula instead of a loop, `single_if` uses bit shift `x << (x > 0)` instead of conditional. `switch_fallthrough` uses goto labels (`LABEL_5`) obscuring the fall-through semantics. At `-O0` source, this transformation is unexpected and harmful.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; each function handles a single responsibility. However, test functions (`test_control_flow_l1/2/3`) were constant-folded to print expected values instead of actually calling functions, losing verification capability.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `switch_fallthrough` and `goto_backward` use explicit goto statements that disrupt linear reading. The `state_machine` function has label jumps (`goto LABEL_4`) that could be structured as if-else.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code, but aggressive optimization created redundancy in understanding. `loop_while` and `loop_dowhile` have nearly identical decompiled code with a confusing condition `v3 = (unsigned int)(x + 9) > 0x12` that obscures the simple `x != 0` check.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (int, void*), but no recovery of specific types like `int32_t`, `size_t`, or const-correctness. Function pointers use generic signatures (`int (__fastcall *)(int)`). The `volatile int *flag` parameter is correctly preserved in some functions.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Array structures are mostly lost. `loop_break`'s static array `{10, 20, 30, 40, 50}` was transformed into a switch statement. `loop_multi_exit`'s 2D matrix became table lookups (`dword_1E6C[v1] + dword_1E3C[v1]`). No struct/union recovery attempted.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present. Function pointer calls use generic casts (`(int (__fastcall *)(int))off_12EBC[idx]`). The `duffs_device` function has inline assembly that bypasses type checking. No buffer overflow protections visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no meaningful comments. Only auto-generated decompiler comments exist (e.g., `// positive sp value has been detected, the output may be wrong!`). No algorithm explanations, no parameter documentation, no recovery of original source comments.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not recognized. The state machine pattern in `state_machine` and `fsm_func_table` wasn't identified. Loop-to-formula optimizations (`loop_for_fixed`, `loop_nested`) weren't explained as such. No design pattern naming.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some anomalies flagged (`// positive sp value has been detected`), but most issues silent. The `duffs_device` inline assembly wasn't explained. Failed decompilations listed at end (`FAILED to decompile: __imp_raise`) but not integrated into function bodies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `recursion_factorial` don't indicate `n >= 0` requirement. Error conditions (e.g., `non_local_jump` returning -1) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible but not documented. Global variables (`jump_buffer`, `dword_1E2C`) referenced without context. The test functions don't show actual function calls (constant-folded), breaking call graph visibility.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in logical order matching source, but no file/module structure recovered. Related functions (e.g., `op_add`, `op_sub`, `op_mul`) are grouped but not marked as a module. No header file recovery.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 9 functions failed to decompile (`__imp_raise`, `__imp_printf`, etc.). External dependencies not documented. The inline assembly in `duffs_device` won't compile on all platforms. Would require significant stubbing to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3 + 8 + 5 + 6) / 4 = 5.50
+Level 2 (Structural):  (5 + 7 + 6 + 7) / 4 = 6.25
+Level 3 (Type):        (5 + 4 + 6) / 3     = 5.00
+Level 4 (Semantic):    (2 + 3 + 4 + 2) / 4 = 2.75
+Level 5 (Contextual):  (5 + 6 + 4) / 3     = 5.00
+
+Overall = (5.50 × 0.30) + (6.25 × 0.25) + (5.00 × 0.20) + 
+          (2.75 × 0.15) + (5.00 × 0.10)
+        = 1.65 + 1.56 + 1.00 + 0.41 + 0.50
+        = 5.12/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v1`, `v2`, `result`) with no semantic inference from usage patterns
+- **Test functions constant-folded** - print expected values instead of calling actual functions, destroying verification capability
+- **Control flow over-optimized** - loops converted to formulas (`loop_for_fixed`), conditionals to bit operations (`single_if`) without explanation
+- **Zero comment recovery** - original source comments completely lost, no decompiler-generated documentation
+- **Failed decompilations** - 9 external functions failed to decompile, breaking build compatibility
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names were preserved from source symbols, accurately reflecting each function's purpose and maintaining semantic continuity with original code.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of meaningful comments makes understanding optimized transformations nearly impossible; even basic algorithm descriptions are missing.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop bounds should be named `count`, `limit`, `index`)
+2. **Add optimization transformation annotations** explaining when loops are converted to formulas or conditionals to bit operations
+3. **Recover and preserve source comments** from debug symbols when `-g` flag was used during compilation

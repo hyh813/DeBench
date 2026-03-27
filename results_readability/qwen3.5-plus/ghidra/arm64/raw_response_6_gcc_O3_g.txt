@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `iVar2`, `uVar3`, `lVar4`, `__ptr`, `pvVar4`) obscuring semantic meaning. Original source had meaningful names like `dst`, `src`, `thread_count`, `iterations` that are lost. Many "Unresolved local var" comments indicate the decompiler couldn't recover variable semantics.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions retain original names (`param_strcpy`, `param_strcmp`, `thread_sum`, `signal_handler`), but helper functions are generic (`FUN_001013a0`, `FUN_0010218c`). Test functions are correctly named (`call_strcpy`, `test_standard_library_functions`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers pervasive without explanation: `0x2a` (42), `0x5a` (90), `0xc` (12), `0xffffff9c` (-100 for AT_FDCWD), signal numbers `10`/`0xe` instead of `SIGUSR1`/`SIGALRM`. Original constants completely lost.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`, `__stack_chk_fail`) appear in nearly every function. "WARNING: Unknown calling convention" and "Unresolved local var" comments clutter output. Compiler artifacts from optimization are visible throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Aggressive loop unrolling in `thread_sum`, `param_memset`, `param_malloc_free` creates deeply nested if-chains instead of simple for-loops. Labels like `LAB_00101a64` disrupt flow. At -O3 this is expected but significantly reduces readability.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but `param_thread_local_storage` and `test_standard_library_functions` are monolithic with inlined logic. Thread helper functions (`thread_compute`, `thread_sum`) remain appropriately separated.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps to labels (`LAB_00101a64`, `LAB_0010270c`, `LAB_00103ba0`) interrupt top-to-bottom reading. Stack check code at function ends creates non-linear return patterns. Generally traceable but awkward.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Loop unrolling creates massive code duplication (see `param_memset` with 16+ nested if-statements for remainder handling). Stack checking boilerplate repeats identically across 40+ functions without abstraction.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char*, size_t, pthread_t), but `atomic_int` degrades to `int` in `thread_atomic_load_store`. Some void* usage where specific types would help. Signed/unsigned generally correct.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `ThreadData` struct recognized in `param_pthread_join`, `stat` struct recovered in `param_win32_api`. However, `sockaddr_in` fields accessed directly (`addr.sin_family`, `addr.sin_port`) rather than through proper struct typing. TLS accessed via `tpidr_el0` offset instead of named TLS variables.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(int)pcVar1 - (int)dst` in `param_strcpy`, pointer arithmetic visible throughout. Code compiles but type erasure creates potential issues. No buffer overflow warnings despite obvious risks.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: "Unresolved local var" comments indicate limitations but provide no semantic help. "WARNING:" comments about calling conventions are generic. No algorithm explanations, no decompilation confidence indicators beyond uncertainty markers.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library functions recognized (`strcpy`, `strcmp`, `memcpy`, `pthread_create`). Atomic operations identified as `__aarch64_ldadd4_acq_rel`. No design pattern identification (producer-consumer, mutex protection patterns not named).
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "WARNING: Unknown calling convention" and "WARNING: Subroutine does not return" appear appropriately. "Unresolved local var" flags uncertainty. However, no explanation of why resolution failed or manual analysis suggestions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"). No postcondition inference. Error conditions visible through return values (-1, -2, -3) but never documented. Complete absence of contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and traceable. Global variables referenced by name (`signal_received`, `atomic_counter`, `shared_counter`). No call graph documentation. Thread callback relationships inferable but not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 87 functions in single output file. No logical grouping by section (standard library vs. system calls vs. threading). Static variables preserved but no namespace organization. Original 3-section structure lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies visible (pthread, libc). Platform-specific ARM64 atomics present. Would need proper headers and linking but structurally compilable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+3+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+5+4)/4 = 5.00 × 0.25 = 1.250
+Level 3 (Type):        (6+5+6)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (4+6+6+2)/4 = 4.50 × 0.15 = 0.675
+Level 5 (Contextual):  (6+5+7)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────
+Overall Score:                                  5.08/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Magic numbers everywhere**: `0x2a`, `0x5a`, `0xc`, `0xffffff9c` replace all original constants (42, 90, 12, AT_FDCWD)
+- **Generic variable naming**: `iVar1`, `iVar2`, `uVar3`, `lVar4` obscure all semantic meaning
+- **Loop unrolling destroys structure**: `param_memset` has 16+ nested if-statements instead of a simple for-loop
+- **No contract documentation**: Zero precondition/postcondition information despite complex error handling
+- **TLS access via raw offset**: `tpidr_el0` register access instead of named `__thread` variables
+
+### Best Quality Aspect: **Build System Compatibility (7/10)**
+- Code successfully compiles with visible dependencies and proper function signatures preserved.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- Complete absence of any precondition, postcondition, or invariant documentation despite complex error handling patterns throughout.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover constant semantics**: Map magic numbers back to original constants (0x2a→42, signal numbers→SIGUSR1/SIGALRM) using pattern analysis and string proximity.
+2. **Infer variable names from usage**: Analyze variable roles (loop counters, pointers, sizes) to generate semantic names instead of `iVar1`/`uVar3`.
+3. **Document function contracts**: Auto-generate precondition/postcondition comments from error handling patterns (null checks, return value meanings).

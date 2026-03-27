@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `v1`, `v2`, `a1`, and `result`. The use of `g24` (a global variable address) as a constant value in `param_macro_constants` instead of the macro name `MAX_SIZE` or the literal `1024` is confusing and misleading.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names match the original source exactly (e.g., `param_macro_constants`, `test_preprocessing_features`). Standard library functions like `puts`, `mmap`, and `printf` are correctly identified and used.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers obscure the logic; for example, `0x100000000` is used to implement `SQUARE(x)`, and the constant `1024` is represented as `(int32_t)&g24`. String literals are preserved well, but numeric constants are not recovered to their symbolic macro definitions.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with redundant casts like `& 0xffffffff` on almost every arithmetic operation. SIMD operations are represented as non-standard pseudo-intrinsic calls (e.g., `__asm_movaps`, `__asm_paddd`) rather than clean C code or standard intrinsics.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The simple comparison `size > 1024` is decompiled into a complex ternary expression involving XOR and bit shifts (`v2 < 0 == ((v2 ^ v1) & (v1 ^ (int32_t)&g24)) < 0`), which mimics assembly flag checks but is unreadable as high-level logic.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions map 1:1 with the source code, maintaining correct granularity and cohesion. No artificial outlining or merging of unrelated logic occurred, preserving the original structure well.
+
+**7. Code Linearization:** Score: 6/10
+Justification: The code generally reads top-to-bottom, but the complex conditional expressions in `param_macro_constants` and `param_macro_functions` disrupt the flow, requiring significant mental effort to parse simple logic.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is unnecessary verbosity in variable assignments (e.g., `v1 = a1; v2 = v1 - ...`) and arithmetic operations. The `SQUARE` macro expansion resulted in verbose shift/mask logic instead of the simple `a1 * a1`.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Types are generally accurate for the target architecture (using `int64_t` for registers). `int128_t` is correctly used for SIMD registers (XMM), though this is a low-level representation rather than the source's vector types.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Arrays are handled correctly as pointers with appropriate indexing. No complex structs were present in the source to challenge the decompiler, but the existing composite data usage is accurate.
+
+**11. Type Safety:** Score: 6/10
+Justification: The code contains many explicit casts (`& 0xffffffff`, `(int32_t)a1`) which, while safe, add noise. The `__asm_...` pseudo-functions act as untyped intrinsics, reducing type safety clarity.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, the recovered macros, or the complex arithmetic expressions. Only memory addresses are provided in the comments.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: The decompiler failed to recognize standard C idioms. `SQUARE(x)` became a shift/mask sequence, and `x > 1024` became a bit-hack comparison. It did not identify the `COUNT_ARGS` macro pattern, though it correctly displayed the constant result.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The suspicious use of `&g24` as a constant value is not flagged. The non-standard `__asm_...` calls are introduced without explanation that they represent SIMD instructions.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions (e.g., buffer sizes) or postconditions are documented, even for functions involving memory operations like `mmap` or `memcpy`.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function prototypes are clearly listed at the top of the file. Calls to standard library functions and internal functions are explicit and easy to trace.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source flow. Helper functions, test functions, and main entry points are grouped correctly.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on non-standard `__asm_...` functions (e.g., `__asm_movaps`) which are not part of standard C or common intrinsic headers, making it unlikely to compile without manual stubbing or a specific runtime.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 9 + 4 + 4) / 4 = 5.0
+L2_avg = (4 + 8 + 6 + 5) / 4 = 5.75
+L3_avg = (7 + 8 + 6 + 6) / 4 = 6.75
+L4_avg = (1 + 2 + 2 + 1) / 4 = 1.5
+L5_avg = (8 + 8 + 4) / 3 = 6.67
+
+Overall = (5.0 × 0.30) + (5.75 × 0.25) + (6.75 × 0.20) + 
+          (1.5 × 0.15) + (6.67 × 0.10)
+Overall = 1.5 + 1.4375 + 1.35 + 0.225 + 0.667
+Overall = 5.18
+```
+
+### Overall Readability Score: 5.2/10
+
+### Critical Defects
+- **Control Flow Obfuscation**: The simple comparison `size > 1024` in `param_macro_constants` is decompiled into a complex ternary expression involving XOR and bit checks (`v2 < 0 == ...`), making basic logic unreadable.
+- **Literal/Constant Recovery Failure**: The constant `1024` is represented as `(int32_t)&g24` (address of a global variable), and `SQUARE(x)` is implemented as `0x100000000 * a1 >> 32`, completely losing the original semantic intent.
+- **Non-Standard Intrinsics**: SIMD operations are emitted as non-standard `__asm_movaps`/`__asm_paddd` calls instead of standard C code or recognized intrinsics, breaking readability and portability.
+- **Excessive Casting**: Almost every arithmetic operation is masked with `& 0xffffffff`, creating significant visual noise that impedes understanding.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**
+- The decompiler perfectly preserved the original function names from the source code, making it easy to locate specific logic blocks despite the poor internal variable naming.
+
+### Most Needs Improvement
+- **Semantic Transparency (1.5/10)**
+- The decompiler failed to explain the logic, recognize idioms, or provide comments. The transformation of simple math and comparisons into low-level bit-manipulation expressions makes the code semantically opaque.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Constant Propagation**: Fix the issue where immediate constants (like `1024`) are misinterpreted as global variable addresses (`&g24`) or complex shift sequences.
+2.  **Simplify Arithmetic Expressions**: Implement pattern matching to recognize standard multiplication (`x*x`) and comparison (`x > y`) idioms instead of emitting the raw assembly logic (flags/shifts) in C.
+3.  **Lift SIMD Instructions**: Instead of emitting pseudo-assembly calls (`__asm_movaps`), attempt to represent vector operations using standard C loops or widely supported compiler intrinsics (e.g., `<immintrin.h>`).

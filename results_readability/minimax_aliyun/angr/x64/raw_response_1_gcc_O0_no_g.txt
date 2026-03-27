@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names `a0`, `a1`, `a2` instead of original names like `a`, `b`, `c`. Local variables are named `v0`, `v1`, `v2`, `i`, `cur`, `result` - while `i` and `result` are acceptable, the numbered `v*` variables completely obscure their semantic purpose (e.g., `temp1`, `temp2`, `temp3` in `sequential_ops`).
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions like `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed` correctly match source names. However, many helper/initialization functions use address-based names like `sub_401020`, `sub_40102d`. The main functions under test are well-named, but infrastructure functions are not.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears frequently for error returns but is unexplained. Some literals like `10` and `5` in `switch_small` are used directly. The decompiler doesn't attempt to name constants or explain the semantic meaning of return values.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from initialization code (`_init`, `frame_dummy`, `register_tm_clones`, etc.) that isn't part of the original source. Redundant mask operations like `& 4294967295` appear throughout printing code. Some compiler artifacts like `CONCAT` in division operations add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops are correctly recognized as `for` constructs (e.g., `for (i = 0; i < a0; i += 1)`). Switch statements are properly recovered in `switch_large` and `switch_small`. The `duffs_device` shows goto-based control flow correctly. At -O0, control flow should be nearly perfect, and it largely is.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each test function is correctly separated. Function sizes are appropriate (not monolithic). The decompilation correctly keeps each function independent. Minor issue: some infrastructure functions from CRT could be grouped separately.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in `if_else` and ternary expressions are handled well. Some forward jumps in `duffs_device` are necessary but interrupt flow slightly. Overall good linearity.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some loop unrolling in `duffs_device` is correctly represented. The `& 4294967295` masks in printf calls are redundant but don't severely impact readability.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `unsigned int` for most parameters which matches the 32-bit semantics. Some functions return `unsigned long long` while others return `unsigned int` inconsistently (e.g., `if_else` returns `unsigned long long` but source returns `int`). Signed/unsigned handling is mostly correct but not perfect.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs were needed since the source uses mostly primitives. Arrays are handled correctly (e.g., `int arr[]` becomes pointer arithmetic). The decompilation correctly avoids inventing fake structs where none exist.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Few unsafe casts. Function pointer types are reasonably accurate (though `call_func_ptr` takes `unsigned long long*` instead of function pointer type). Pointer arithmetic is handled correctly. Some minor issues but generally safe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments in the decompiled output. The original source has extensive comments explaining each function's purpose and test cases. The decompilation provides zero of this context. This is a major readability failure.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns like `switch` and `for` loops are recognized. The `duffs_device` pattern is partially recognized but not identified by name. No explicit naming of patterns like "Duff's device" or "state machine" even when they're clearly present.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: One instance of `[D] Unsupported jumpkind Ijk_SigTRAP` appears but without explanation. No flags for suspicious code patterns. The `indirect_recursion_a` has confusing parameter passing that could warrant a warning but none is present.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source has clear semantics (e.g., "returns -1 on error", "requires n > 0") that are completely lost. This dimension has severe degradation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. External dependencies like `printf`, `puts` are declared. However, the relationship between test functions and the functions they test is not documented. Static functions aren't marked as such consistently.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are roughly grouped by type (test functions, helper functions, CRT stubs). However, the organization is somewhat arbitrary - all functions appear in one flat namespace. The original's clear separation into CF-L1, CF-L2, CF-L3 sections is lost.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code should compile with minor modifications. External declarations are present for libc functions. Some issues: `conditional_func_ptr` passes wrong arguments to recursive calls, and `indirect_recursion_a` has extra parameters. Overall compilable but not correct.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming uses generic `v0`, `v1`, `v2`, `a0`, `a1`, `a2` instead of semantic names from source
+- No comments whatsoever - complete loss of documentation explaining function purpose and test cases
+- `indirect_recursion_a` has incorrect parameter passing in decompilation (4 arguments passed but function takes 2)
+- `conditional_func_ptr` passes wrong arguments to recursive call in `large_jump_table`
+- Magic number `4294967295` used for error returns without explanation
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- Loops, switches, and conditionals are correctly recognized and structured. At -O0, the control flow graph should closely match source, and it does.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Comment Quality (2/10)  
+- Variable names completely lose semantic meaning (v0/v1/v2 vs temp1/temp2/temp3)
+- All documentation from the original source is completely lost in decompilation
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When a variable is used as loop counter, name it `i` or `index`. When it's accumulated, name it `sum` or `result`. The original source provides clear semantic hints.
+2. **Recover comments from debug symbols**: Since `-g` flag was used, DWARF information may contain variable names and could be leveraged to improve name recovery.
+3. **Add semantic annotations**: Document function purposes, expected inputs/outputs, and flag suspicious patterns. The original source's extensive comments (e.g., "CF-L1-01: 线性顺序执行") could be partially recovered.

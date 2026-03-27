@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2`, `a3` and local variables use `v1`, `v2`, `v3`, etc. In `double_value`, parameter `a1` should be `x`. In `local_vars`, parameter `a1` should be `x`, and local variables `a`, `b`, `c` are completely lost. This is severe naming degradation.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly named: `double_value`, `local_vars`, `local_array`, `heap_basic`, `malloc`, etc. However, many helper functions use generic names like `sub_1030`, `sub_1040`, `sub_1120`. The test functions are correctly named but internal helpers are not.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Simple literals like `42`, `10`, `20` are clear. However, stack canary checks use unexplained magic number `0x14u` (`__readgsdword(0x14u)`). Some constants like array sizes are embedded in loops without named constants.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack canary checks (`__readgsdword(0x14u)`) are present as compiler artifacts. Some redundant variable initializations. Overall relatively clean for -O0 compilation. Minor noise from register saving conventions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow generally matches source well. Loops use `for` constructs appropriately. Conditionals are clear. At -O0, minimal restructuring expected. Some minor awkwardness in complex functions like `vla_stack` but overall natural.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (not monolithic). `create_tree_node` properly extracted as helper. Some test functions could be split but overall good decomposition. Parameter counts reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Early returns used appropriately in error handling. Some forward jumps in complex functions like `linked_list_heap` but manageable. Good overall flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some loop unrolling present in `local_array` and `large_stack_frame` but commented appropriately. Some duplicate patterns in heap functions. Not severe but could be cleaner.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed precision - uses `_DWORD` (32-bit), `int`, `void*` inconsistently. Function parameters sometimes `int`, sometimes `_DWORD`. Pointer types often `void*` instead of specific types. Const correctness not preserved. At -O0, should be better.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor. In `heap_struct`, uses `malloc(8u)` for Point but accesses as `*v1 = 10; v1[1] = 20;` instead of proper struct fields. In `linked_list_heap`, Node struct accessed via raw pointer arithmetic: `*v0 = v1; v0[1] = 0;`. Should be `node->data`, `node->next`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations: raw pointer arithmetic in struct access, no bounds checking in array operations, function pointer casts like `global_func_ptr` treated as `int`. Some risk of undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no useful comments. Only auto-generated function headers. No explanation of algorithm logic, no @param/@return documentation. Missing comments for non-obvious operations like stack canary checks.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns hinted but not named. Linked list traversal is recognizable but not labeled. Memory allocation patterns not identified as idioms. No explicit pattern naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present: "positive sp value has been detected", "bad sp value at call", "FAILED to decompile" for some functions. However, many suspicious operations (like dangling pointer in `dangling_pointer`) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No error condition documentation. Function contracts completely absent. Should document things like "requires: n > 0" or "ensures: returns heap-allocated value".
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. No indication of who calls whom. Global variable usage visible but not explained. Callback relationships not clear.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped by category (stack, heap, static, memory ops). Test functions grouped together. Static functions properly indicated. Overall good organization matching source structure.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies (libc functions) properly declared. Some minor issues but overall compilable with standard libraries.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming is severely degraded: all parameters use `a1`, `a2`, `a3` and locals use `v1`, `v2`, etc. - should infer semantic names from usage
+- Composite type recovery is poor: struct fields accessed via raw pointer arithmetic (`v0[1] = 0` instead of `node->next = NULL`)
+- No comments explaining algorithm logic, preconditions, or postconditions
+- Function pointer types not properly typed (stored as `int` instead of function pointer signature)
+- Magic number `0x14u` for stack canary not explained
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- At -O0, control flow closely matches source with natural loops and conditionals
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- Generic single-letter variable names completely obscure semantic meaning; decompiler should infer names from usage patterns (e.g., `a1` used in multiplication in `double_value` should be `x`)
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, function calls) to suggest semantic names like `x` for multiplication operand, `arr` for array subscript operations
+2. **Recover struct types from allocation sizes**: When seeing `malloc(8)` followed by `ptr[0] = x; ptr[1] = y;`, recognize this as struct initialization and reconstruct the struct definition with field names
+3. **Add semantic comments for compiler artifacts**: Explain stack canary checks (`__readgsdword(0x14u)`), memory barriers, and other compiler-generated code that obscures logic

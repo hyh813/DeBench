@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`iVar1`, `sVar1`, `local_24`, `uStack_20`, `puVar1`, `plVar3`) with zero semantic meaning. Original source had meaningful names like `value`, `name`, `data`, `size`, `capture_by_value` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test function names preserved (`test_cpp_member_func`, `test_cpp_constructor`), but template functions are mangled (`template_max_int_`, `template_max_double_`) and some functions use generic names (`FUN_00101020`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers (`0x125c`, `0x3e9`, `0x2a`, `0x47`, `0x28a`, `0x82`, `0x1e`) with no explanation. String literals referenced as `&DAT_001021d4` instead of showing actual content.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `undefined4`, `undefined3`, `undefined8` types throughout. Stack variables like `uStack_14`, `uStack_11`, `uStack_d` clutter the code without semantic value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Most test functions reduced to constant returns (`return 0x2a`, `return 0x47`), losing original logic. Exception handling uses raw `__cxa_throw` calls instead of try-catch constructs.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Template instantiations properly separated (`template_max_int_`, `Container<int>::push`), but test functions collapsed to trivial returns, losing the cohesive test logic structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom without excessive jumps. However, this simplicity comes from logic elimination rather than good structure recovery.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code, but aggressive constant folding eliminated original computation logic. `test_cpp_oo_features` duplicates RTTI code from `test_cpp_rtti` instead of calling the function.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `undefined4`, `undefined8`, `undefined3` replace specific C++ types. No distinction between `int`, `size_t`, `long`. Pointer types often just `void*` or `undefined8*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Class structures completely lost. Field access via pointer arithmetic (`*(int *)(this + 0x28)`, `*(int *)(this + 0x50)`) instead of named members. No struct definitions for `SimpleClass`, `LifecycleClass`, `Point`, etc.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Pervasive unsafe casts: `(undefined4 *)`, `(long *)`, `(undefined8 *)`. RTTI operations use raw `__dynamic_cast` with pointer parameters. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, algorithms, or decompilation uncertainty. No documentation of C++ semantics (vtable calls, exception handling, template instantiation).
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms present but not identified: virtual dispatch shown as `(***(code ***)param_1)()`, exception handling as raw `__cxa_*` calls, no pattern recognition comments.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for uncertain decompilation. Indirect calls, vtable access, and typeinfo operations presented confidently without warning about potential inaccuracies.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had clear expected values (e.g., "期望: 4704") completely absent from decompiled output.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Virtual dispatch not indicated. `test_cpp_oo_features` duplicates RTTI logic instead of calling `test_cpp_rtti`, obscuring the call graph.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order but no logical grouping. External functions scattered throughout. No namespace or class scope organization visible.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires C++ runtime (`__cxa_*`, `operator_new`, `operator_delete`). Type definitions missing would prevent compilation. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+3+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+5+7+6)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.533
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (4+5+4)/3   = 4.33 × 0.10 = 0.433
+---------------------------------------------------------
+Overall Score:                                  3.69/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **Class structures completely lost**: All C++ classes (`SimpleClass`, `LifecycleClass`, `Point`, `Container`) reduced to pointer arithmetic with no struct definitions
+- **Test logic eliminated**: Most test functions return pre-computed constants instead of executing original computation logic
+- **Zero semantic comments**: No explanation of C++ mechanisms (vtables, exceptions, templates, RTTI)
+- **Type system degraded**: `undefined4/8` types replace all specific C++ types, losing type safety
+- **Magic numbers unexplained**: Return values like `0x125c`, `0x28a`, `0x2bf` have no connection to original expected values documented
+
+### Best Quality Aspect: **Code Linearization (7/10)**
+- Code reads top-to-bottom without excessive jumps, though this simplicity comes from logic elimination rather than good structure recovery
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation explaining C++ semantics, decompilation uncertainty, or algorithm purpose makes the code nearly unusable for understanding
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts**: Analyze vtable pointers to reconstruct class definitions with field names and offsets
+2. **Add decompilation confidence annotations**: Flag uncertain constructs (indirect calls, typeinfo operations) with comments indicating manual review needed
+3. **Preserve computation logic over constant folding**: Even at -O0, avoid replacing executable test logic with pre-computed constants; show the actual operations

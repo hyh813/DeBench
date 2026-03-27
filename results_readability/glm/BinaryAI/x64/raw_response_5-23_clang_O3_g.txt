@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are consistently generic (e.g., `param_1`, `param_2`, `uVar1`, `iVar1`), providing no semantic hint about their original purpose like `size`, `counter`, or `result`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function symbols from the original source (e.g., `param_macro_constants`, `param_asm_basic`) are perfectly preserved, making the high-level structure immediately identifiable.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers replace named constants; for example, `MAX_SIZE` (1024) appears as `0x400`, and `BUFFER_COUNT * 4` (64) appears as `0x40`, obscuring the original macro semantics.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: The code is generally clean but contains decompiler-specific artifacts like `undefined8`, `ZEXT816`, and `CONCAT22` which slightly impede native readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent; `if` statements and `for` loops (e.g., in `param_asm_clobber`) are naturally reconstructed without confusing jumps or gotos, consistent with `-O0` compilation.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source, maintaining appropriate granularity and cohesion; even small helper functions like `my_func` are recovered as separate units.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps or structural disruptions, making it easy to follow the execution path.
+
+**8. Redundancy Elimination:** Score: 10/10
+Justification: There is no dead code or redundant logic; the decompiled code is concise and matches the compiled logic exactly without unnecessary bloat.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Types are often generic; for instance, functions returning `int` are typed as returning `undefined8`, and `size_t` is mapped to `long`, which loses the specific semantic intent of the original types.
+
+**10. Composite Type Recovery:** Score: 10/10
+Justification: While the source primarily uses primitives and arrays, the decompiler correctly handles pointer arithmetic and array accesses without inventing incorrect structures.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is generally safe, though the use of `undefined*` pointers and casts in low-level functions like `param_dynamic_code` reflects the loss of strict type information rather than unsafe behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output; all explanatory text from the source regarding macro behavior and assembly logic is lost.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Macro logic is flattened into standard C (e.g., `SQUARE(x) + MAX(x, y)` becomes `param_1 * param_1 + param_2`), but the decompiler does not identify or label these patterns as specific idioms.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: The self-modifying code in `param_dynamic_code` (writing machine bytes to memory) is presented as standard pointer arithmetic without any warning or annotation about its unusual nature.
+
+**15. Assertion & Contract Recovery:** Score: 5/10
+Justification: No explicit contracts or assertions are recovered, which is expected given the lack of source annotations, but also means no extra semantic safety info is provided.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: External function calls are clearly marked with `<EXTERNAL>` tags (e.g., `<EXTERNAL>::printf`), and the call graph is easily navigable due to preserved function names.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are ordered by address, which roughly preserves the source's logical grouping (preprocessing vs. assembly), though explicit section headers are lost.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on Ghidra-specific types (`undefined8`, `code`) and macros (`ZEXT816`), preventing it from compiling without a compatibility header.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.7/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`param_1`, `uVar1`), obscuring the logic's intent.
+- Named constants are replaced by magic numbers (e.g., `0x400` instead of `MAX_SIZE`).
+- Type information is degraded to generic `undefined` types, reducing precision.
+- Complete absence of comments removes all context regarding macro usage and assembly logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved all original function symbols, allowing for immediate mapping between the binary and source logic.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 1/10)
+- The total lack of comments or annotations makes understanding complex macro expansions and low-level assembly manipulations unnecessarily difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic analysis to recover named constants from magic numbers (e.g., detecting `1024` as `MAX_SIZE`).
+2. Improve type inference to avoid generic `undefined` types when standard types (`int`, `uint32_t`) are clearly applicable.
+3. Add annotations or comments for suspicious patterns like self-modifying code or inline assembly blocks to alert the analyst.

@@ -1,0 +1,109 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are exclusively generic names like `v1`, `v2`, `v3`, and `result`. For example, in `process_char`, the input parameter is lost, and logic operates on uninitialized `v1`, making it impossible to track data flow without mapping registers manually.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully recovered symbol names for almost all functions (e.g., `process_char`, `array_1d_stack`, `binary_tree_sum`), which accurately reflect the original source's intent and significantly aid navigation.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Logic is obscured by magic numbers and arithmetic transformations. In `process_char`, the condition `c >= 'A' && c <= 'Z'` is transformed into `((int32_t)v2 + 191) % 256` and `v3 >= 25`, which completely hides the ASCII comparison logic.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is polluted with compiler intrinsics and redundant masking. For instance, `process_int` contains `2 * v1 & 0xfffffffe | 1` and `process_long` uses `__asm_ubfx` and `__asm_mrs`, which are low-level artifacts that impede high-level understanding.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is highly unnatural, particularly in recursive functions. `binary_tree_sum` is decompiled into a massive spaghetti of `goto` labels (e.g., `lab_0x1488`, `lab_0x1498`) instead of the original recursive structure, making it unreadable.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: While the decompiler preserved the function boundaries matching the source, the internal logic of complex functions like `binary_tree_sum` was not decomposed into manageable blocks, resulting in a monolithic, unstructured mess.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code fails to read linearly due to excessive use of forward and backward jumps. The `binary_tree_sum` function jumps between over 20 labels, completely destroying the top-to-bottom reading flow expected in high-level code.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: There is significant redundancy from type handling. Almost every integer operation is followed by a mask like `& 0xffffffff` (e.g., in `ptr_single` and `ptr_double`), which is visual noise that clutters the logic without adding semantic value at `-O0`.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Type information is severely degraded. Function signatures are incorrect; for example, `process_char` is defined as `int64_t process_char(void)` instead of `char process_char(char c)`, and `struct_simple` takes `void` instead of `Point3D *p`.
+
+**10. Composite Type Recovery:** Score: 1/10
+Justification: Structs and classes are completely unrecovered. In `struct_simple`, the access `p->x + p->y + p->z` is decompiled to raw pointer arithmetic: `*(int32_t *)(v2 + 4) + (int32_t)v2 + *(int32_t *)(v2 + 8)`, losing all semantic type information.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on unsafe casts. Pointers are treated as `int64_t` and cast back, such as in `ptr_void` where `v2` is cast to `int32_t` or masked with `% 256` without type checks, violating the type safety of the original source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to metadata like address ranges (e.g., `// Address range: 0x8e0 - 0x900`) and offer no explanation of the algorithm's logic or the purpose of the complex arithmetic transformations.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common idioms are missed. The recursion in `binary_tree_sum` is not recognized, nor is the simple loop in `array_1d_stack` (which is a manual pointer increment loop rather than a clear `for` loop).
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents incorrect code confidently without flagging anomalies. For instance, it does not warn that `process_char` takes no arguments despite clearly reading from a register, nor does it flag the failure to recover the `Point3D` struct.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions or postconditions. For example, `array_complex_index` has bounds checks in the source, but the decompiled code's logic `if ((int32_t)(v1 || v1) < 0)` is opaque and does not convey the contract that `x` and `y` must be within bounds.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: While function names are preserved, the incorrect signatures (missing arguments) make cross-referencing difficult. One cannot easily determine how `test_data_types_l1` calls `process_char` because the argument passing is invisible in the decompiled callee.
+
+**17. Module Organization:** Score: 8/10
+Justification: The file is organized linearly, roughly matching the source order of functions (data types, arrays, pointers, composites), which helps in locating specific test functions despite the poor internal quality.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile. Functions like `process_char` are defined with `void` arguments but called with arguments in `test_data_types_l1` (implied by context), and references to undefined intrinsics like `__asm_ubfx` will cause compilation errors.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 3 + 3) / 4 = 4.25
+L2_avg = (2 + 6 + 3 + 4) / 4 = 3.75
+L3_avg = (2 + 1 + 3) / 3 = 2.00
+L4_avg = (2 + 2 + 1 + 1) / 4 = 1.50
+L5_avg = (5 + 8 + 1) / 3 = 4.67
+
+Overall = (4.25 * 0.30) + (3.75 * 0.25) + (2.00 * 0.20) + 
+          (1.50 * 0.15) + (4.67 * 0.10)
+Overall = 1.275 + 0.9375 + 0.40 + 0.225 + 0.467
+Overall = 3.30
+```
+
+### Overall Readability Score: **3.3/10**
+
+### Critical Defects
+- **Function Arguments Missing**: Functions like `process_char` and `struct_simple` are decompiled as taking `void` arguments, completely losing the interface definition.
+- **Structs Not Recovered**: Composite types like `Point3D` and `Rect` are accessed via raw pointer offsets (e.g., `v2 + 8`) instead of field names, destroying semantic meaning.
+- **Recursion Flattened**: The recursive function `binary_tree_sum` is decompiled into a non-terminating-looking "goto-spaghetti" mess, rendering the algorithm unrecognizable.
+- **Excessive Intrinsics**: Use of `__asm_ubfx`, `__asm_mrs`, and `__asm_fmov` exposes low-level architecture details that should be abstracted away.
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)**: The decompiler successfully imported symbol names from the binary, allowing the user to identify the high-level purpose of functions (e.g., `process_int`, `linked_list`) even if the implementation is wrong.
+
+### Most Needs Improvement
+- **Composite Type Recovery (1/10)**: The failure to recover `struct` definitions is a critical failure that turns readable data structure access into obscure pointer arithmetic, making the code nearly useless for understanding the program's logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Improve Argument Recovery**: At `-O0`, arguments should be trivial to recover from the stack or register calling convention; failing to do so suggests a fundamental issue in the prologue analysis.
+2.  **Implement Struct Type Recovery**: Utilize type propagation or debug information (if available, as `-g` was used) to reconstruct `struct` layouts and replace pointer offsets with member access syntax.
+3.  **Enhance Control Flow Analysis**: Implement pattern matching for recursion to prevent flattening recursive functions into goto-labels; preserve the logical structure of the code.

@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic (`v1`, `v2`, `v3`, `result`, `temp`) with no semantic meaning. Original names like `temp1`, `sum`, `count`, `i`, `j` are completely lost, making it impossible to track variable purpose across functions like `sequential_ops` and `loop_for_fixed`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`sequential_ops`, `loop_for_fixed`, `recursion_factorial`) but many critical functions renamed to `function_960`, `function_970`. Several functions have incorrect signatures (e.g., `sequential_ops(void)` instead of `sequential_ops(int a, int b, int c)`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive throughout (`0xffffffff`, `0xfffffffe`, `0x12345678`) with no named constants. String literals are hex-encoded (`g7 = "=== \xe6\xb5\x8b..."`) rather than readable. No enum recovery for switch cases.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive redundant casts (`& 0xffffffff`, `& 0xfffffffe`) on nearly every arithmetic operation. Stack check calls (`__stack_chk_fail()`) inserted throughout. Assembly intrusions (`__asm_ld1`, `__asm_st1`) in `fsm_func_table` and `computed_goto`.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Natural loops converted to while-with-goto patterns (e.g., `loop_break` uses `goto lab_0xe88`). Switch statements sometimes recovered but often as complex if-else chains. `goto_forward` and `goto_backward` lose their original goto semantics entirely.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Helper functions properly separated (`op_add`, `op_sub`, `state_idle`) but many have wrong signatures. Test functions (`test_control_flow_l1`) are monolithic with hardcoded expected values instead of actual function calls.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Frequent forward jumps with labels (`lab_0x11d4`, `lab_0x11ec`, `lab_0x120c`) disrupt top-to-bottom reading. `loop_multi_exit` has nested infinite while loops with goto breaks that obscure the original nested for-loop structure.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Bit-masking redundancy on every operation (`v1 & 0xffffffff`). Type widening/narrowing repeated unnecessarily. `recursion_factorial` converted from recursive to iterative with redundant variable tracking (`v1`, `v2`, `v3`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` parameters degraded to `int64_t` or `uint32_t` inconsistently. `sequential_ops(void)` loses all three parameters. Function pointers often reduced to generic types (`int32_t (*f)(int32_t)` loses const/volatile qualifiers).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered (`__jmp_buf_tag`, `_TYPEDEF___sigset_t`) but with generic field names (`e0`, `e1`, `e2`). Array structures lost (e.g., `int arr[] = {10, 20, 30, 40, 50}` becomes pointer arithmetic).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout (`(int64_t)v1`, `(int32_t)v2`). Pointer arithmetic unclear in `loop_break` (`*(int32_t *)(4 * v4 + v2)`). Function pointer calls often have mismatched signatures (`call_func_ptr((int32_t (*)(int32_t))2932, 5)`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. Only auto-generated metadata ("From module: /work/1.c", "Line range: 546-551"). No algorithm explanations or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop patterns sometimes recognized but not named. State machine pattern in `state_machine` not identified. Duff's device in `duffs_device` partially recovered but fall-through semantics unclear.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Incorrect code presented confidently (e.g., `ternary_op(void)` with no parameters). No indication that `computed_goto` uses GCC-specific extensions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `loop_for_fixed`). No postconditions inferred. Error conditions not documented (e.g., return -1 meanings).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls present but relationships not documented. Global variables (`g1`, `g2`, `g7`) used without explanation. No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with some grouping by test functions. No header file structure. Static functions not properly scoped (`indirect_recursion_b` should be static).
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Missing headers for some functions. Assembly intrusions (`__asm_ld1`, `__asm_st1`) are non-portable. Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (3 + 5 + 4 + 4) / 4 = 4.00
+Level 2 Average: (4 + 5 + 4 + 4) / 4 = 4.25
+Level 3 Average: (4 + 5 + 4) / 3 = 4.33
+Level 4 Average: (2 + 3 + 2 + 2) / 4 = 2.25
+Level 5 Average: (4 + 5 + 4) / 3 = 4.33
+
+Overall = (4.00 × 0.30) + (4.25 × 0.25) + (4.33 × 0.20) + (2.25 × 0.15) + (4.33 × 0.10)
+        = 1.20 + 1.06 + 0.87 + 0.34 + 0.43
+        = 3.90/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **Parameter loss**: Functions like `sequential_ops(void)`, `single_if(void)`, `if_else(void)` lost all parameters, making them semantically broken
+- **Generic variable naming**: All variables named `v1`, `v2`, `v3`, `result` with no semantic meaning
+- **Excessive bit-masking noise**: Every arithmetic operation has `& 0xffffffff` or `& 0xfffffffe` cluttering the code
+- **Control flow degradation**: Natural for/while loops converted to goto-based patterns with labels (`lab_0xe88`, `lab_0x11d4`)
+- **No semantic documentation**: Zero comments explaining algorithm purpose, preconditions, or decompilation uncertainty
+
+### Best Quality Aspect:
+- **Type System Fidelity (Level 3, 4.33/10)** - Some struct types recovered (`__jmp_buf_tag`) and function pointer signatures partially preserved, though still significantly degraded from original.
+
+### Most Needs Improvement:
+- **Semantic Transparency (Level 4, 2.25/10)** - Complete absence of comments, no pattern recognition, no anomaly warnings, and no contract recovery makes the code practically unusable for understanding original intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Parameter recovery**: Analyze calling conventions and stack usage to recover lost function parameters (e.g., `sequential_ops` should have 3 int parameters, not 0)
+2. **Variable name inference**: Use data flow analysis to infer semantic names from usage patterns (e.g., loop counters → `i`, `j`; accumulators → `sum`, `count`)
+3. **Control flow restructuring**: Detect backward-jump patterns and recover them as natural for/while/do-while loops instead of goto-based constructs with labels

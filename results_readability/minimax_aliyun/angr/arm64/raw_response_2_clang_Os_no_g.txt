@@ -1,0 +1,161 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: Variables are named with generic patterns (v0, v1, v2, v3, i, idx, ptr, cur) that provide no semantic meaning. For example, in `process_int`, variable `v0` should be named `x` based on the source. The decompiled code uses the same generic names across all functions, making it impossible to track variable purpose without extensive cross-referencing.
+
+### 2. Function Naming Quality
+**Score: 5/10**
+
+Justification: Some functions correctly preserve original names (process_char, process_short, array_1d_stack, ptr_single), but many are named with mechanical addresses (sub_400634, sub_4006f0, sub_40077c). The test functions maintain their names (test_data_types_l1, test_array_types), but helper/runtime functions like __addtf3 and __multf3 are incorrectly decompiled as user code rather than recognized as compiler intrinsics.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Justification: Magic numbers like 65 (for 'A'), 32 (for case conversion), and 10 (multiplier) appear without explanation. The literal 255 appears in bit manipulation (a0 - 65 & 255) without comment. However, some printf format strings correctly reference test labels (DT-L1-01). The enum values in enum_switch correctly reference g_402980 array.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+Justification: Severe noise includes incorrect implementations: process_int uses `__ROL__(a0, 1)` instead of simple multiplication by 2, process_long uses `__ROL__` instead of left shift, and process_float/process_double return uninitialized values (v0 without assignment). The __addtf3 and __multf3 functions are 600+ lines of compiler-generated code that shouldn't appear in user-level decompilation. Register-related variables (x0, x9, x10) leak into the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+
+Justification: Most control flow is natural with proper loops (for, while, do-while). However, register_tm_clones contains confusing conditional logic with goto statements that don't map cleanly to source. The array_2d_stack uses a do-while with manual index calculation (i += 44) instead of the original nested for loops, which is an optimization artifact at -O0 that shouldn't appear.
+
+### 6. Function Decomposition
+**Score: 5/10**
+
+Justification: Functions are appropriately separated, but __addtf3 (600+ lines) and __multf3 (500+ lines) are compiler runtime functions that should be recognized and excluded or labeled as intrinsics. The test functions correctly call sub-functions. Some functions like binary_tree_sum are correctly extracted but contain confusing variable manipulation.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: Most code reads top-to-bottom without excessive jumps. The test functions have straightforward linear execution. Minor issues include forward jumps in register_tm_clones and complex nested loops in array_3d that are harder to follow than the original nested for loops.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+
+Justification: No significant dead code, but some redundancy in test functions where values are computed at compile time (e.g., 15, 5, 300) rather than showing the actual function calls. The array_pointer function has confusing pointer arithmetic (cur += 10) that appears redundant compared to the original arr[i][0] access.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 3/10**
+
+Justification: Significant type degradation throughout. process_char takes unsigned int instead of char. process_long returns unsigned long long instead of long. process_bool uses unsigned int parameters. const_param takes unsigned int* instead of const int*. volatile_access takes unsigned int* instead of volatile int*. The type system has lost significant precision from the original source.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+Justification: Struct types are reconstructed but with generic names (struct_0, struct_1, struct_2). The linked_list function shows struct_0 with field_0 (data), field_8 (next pointer), which is a reasonable reconstruction but loses the original Node typedef name. Nested structures like Rect and Widget are flattened to array access (a0[3], a0[5]) losing the semantic field names.
+
+### 11. Type Safety
+**Score: 4/10**
+
+Justification: Multiple type safety issues: unsigned/signed mismatches throughout, incorrect bit operations using __ROL__ for simple arithmetic, pointer arithmetic confusion in array_pointer (cur += 10 instead of arr[i][0]), and the process_float/process_double functions return uninitialized values. The struct_bitfields function has complex bit manipulation that doesn't match the original simple field access.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining each test case (DT-L1-01, ARR-L1-01, etc.) but these are completely absent. No explanation of algorithm logic, no uncertainty indicators, no decompilation notes.
+
+### 13. Idiom Recognition
+**Score: 2/10**
+
+Justification: No design patterns or idioms are identified or named. The linked list traversal, binary tree recursion, and graph traversal are present but not labeled as such. The enum switch pattern in enum_switch is implemented but not identified as a state machine or command pattern.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+Justification: No anomalies are flagged. The incorrect implementations (process_int using __ROL__, process_float returning uninitialized) are presented as confident decompilation without any warning. The __addtf3 and __multf3 functions are decompiled as regular functions without indicating they are compiler intrinsics.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The original source had clear expectations (e.g., "期望: 15", "期望: 'a'") but these are not recovered. No documentation of NULL checks, bounds checking, or error conditions.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 3/10**
+
+Justification: Function call relationships are visible (main calls test functions, test functions call process_* functions), but not explicitly documented. The callback relationships in ptr_func_simple and ptr_func_complex are not clearly explained. No indication of which functions are static vs. external.
+
+### 17. Module Organization
+**Score: 2/10**
+
+Justification: The output is a single monolithic listing without logical grouping. The original source had clear sections (Data Types, Array Types, Pointer Types, Composite Types) but these are lost. Runtime functions (__addtf3, __multf3) are interleaved with user code inappropriately.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+
+Justification: The code would not compile due to: undefined __ROL__ function, undefined arm64g_calculate_condition, undefined __gmon_start__, undefined external globals (g_413ff8, g_413fd0), and the process_float/process_double returning uninitialized values. No header declarations or dependency documentation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 5 + 4 + 2) / 4 = 3.25
+L2_avg = (6 + 5 + 7 + 6) / 4 = 6.0
+L3_avg = (3 + 5 + 4) / 3 = 4.0
+L4_avg = (1 + 2 + 1 + 1) / 4 = 1.25
+L5_avg = (3 + 2 + 2) / 3 = 2.33
+
+Overall = (3.25 × 0.30) + (6.0 × 0.25) + (4.0 × 0.20) + (1.25 × 0.15) + (2.33 × 0.10)
+        = 0.975 + 1.5 + 0.8 + 0.1875 + 0.233
+        = 3.70/10
+```
+
+**Overall Readability Score: 3.70/10**
+
+---
+
+### Critical Defects
+
+- **process_int uses `__ROL__(a0, 1)` instead of `x * 2`**: The decompiler incorrectly interprets a simple multiplication as a rotate-left operation, completely changing the function semantics
+- **process_float and process_double return uninitialized values**: Both functions reference variable `v0` without assigning it, making the output meaningless
+- **All variable names are generic (v0, v1, v2, i, idx, ptr)**: Cannot track variable purpose without extensive cross-referencing
+- **Type precision severely degraded**: Original char, short, const int, volatile int types all converted to unsigned int
+- **No comments or documentation**: Original source had extensive test case labels and expectations, completely lost in decompilation
+
+---
+
+### Best Quality Aspect
+
+**Control Flow Naturalness (6/10)** - Most control structures (loops, conditionals) are correctly recovered and readable, even if variable names are poor.
+
+---
+
+### Most Needs Improvement
+
+**Variable Naming Quality (2/10)** - The pervasive use of generic single-letter variable names (v0, v1, v2) makes the code practically unusable for analysis. Every variable should be inferred from usage patterns.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Infer variable names from usage patterns**: Variables used as array indices should be named `i`, `j`, `k`; variables used as sizes should be `n`, `size`, `count`; pointers should indicate type (e.g., `ptr` → `char* ptr`)
+
+2. **Recognize and exclude compiler runtime functions**: __addtf3, __multf3, and similar floating-point intrinsics should be labeled as compiler built-ins or excluded from user-level decompilation
+
+3. **Recover type information from debug symbols**: At -O0 with -g, type information is available; the decompiler should recover char, short, const, volatile qualifiers and preserve struct/union field names from DWARF data

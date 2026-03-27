@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Mixed quality - parameters like `dst`, `src`, `filename`, `thread_count` are meaningful, but temporaries use generic names (`v0`, `v1`, `v2`, `i_0`, `i_1`). For example, `param_fread_fwrite` uses `v1`, `v2`, `v4` instead of `write_len`, `read_len`, `match_result`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`param_strcpy`, `call_strcmp`, `thread_compute`, `consumer_thread`). However, helper functions like `sub_1030`, `sub_13D0` remain cryptic, and `thread_tls_test` uses architecture-specific `__readgsdword` without semantic naming.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Significant magic numbers throughout - syscall numbers `5`, `6` instead of `SYS_open`, `SYS_close`; socket constants `2`, `1`, `0` instead of `AF_INET`, `SOCK_STREAM`, `0`; signal numbers `10`, `14` instead of `SIGUSR1`, `SIGALRM`. String literals preserved but numeric constants unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Architecture-specific artifacts present: `__readgsdword(0xFFFFFFDC)` for TLS, `(Elf32_Dyn *)` casts for global variables, stack frame annotations `[esp+1Ch] [ebp-Ch]`. 58 external functions marked "FAILED to decompile" clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control structures recovered well (if-else, for, while loops). Signal handling uses awkward `while(1)` with break instead of cleaner condition. Nested conditionals in `param_socket_create` are verbose but follow source logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source well. Thread helpers (`thread_compute`, `thread_sum`, `thread_increment`) properly separated. No monolithic functions; each has single responsibility matching original design.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with early returns for error cases. Some functions like `param_fread_fwrite` have nested if-else that could be flattened. No spurious goto statements observed.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Pattern like `v2 = -3; if (v4) return 42; return v2;` in `param_fread_fwrite` is verbose. Some temporary variables (`v3`, `v4` as bool flags) could be eliminated. No dead code but unnecessary indirection present.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `char*`, `size_t`) but significant degradation: global variables cast to `(Elf32_Dyn *)`, thread-local access uses `__readgsdword` returning generic types. `param_shmget_shmat` returns `size_t` instead of `int` (source returns `int`).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `ThreadData` struct recovered with field names (`start`, `end`, `result`). `sockaddr_in` fields accessible. However, global variables accessed via GOT offsets lose struct identity (`*(&GLOBAL_OFFSET_TABLE_ + 66)` instead of `shared_counter`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `*(_DWORD *)arg` dereferences without null checks, `(Elf32_Dyn *)` casts for integer globals, `__readgsdword` architecture-specific intrinsics. Thread synchronization primitives accessed through GOT offsets without type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. Original source had extensive documentation (function purposes, expected values, test scenarios). No decompiler confidence indicators or uncertainty warnings for failed decompilations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `malloc`, `pthread_create`). Producer-consumer pattern in `param_condition_variable` not explicitly identified. Signal handling pattern not annotated as async-signal-safe context.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: 58 functions marked "FAILED to decompile" at end but no inline warnings. TLS access via `__readgsdword` not flagged as architecture-specific. GOT-based global access not marked as unusual. No uncertainty indicators in problematic code regions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `dst != NULL` for `param_strcpy`). Return value semantics not explained (what does -1, -2, -3 mean in each function?). Error conditions not annotated with meaning.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but call graph not documented. Global variable relationships obscured by GOT access (`*(&GLOBAL_OFFSET_TABLE_ + 66)` for `shared_counter`). Thread callback relationships not explicitly noted.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source order. Related functions grouped (test functions near their implementations). No logical module boundaries beyond original file structure. No header-like API documentation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 58 external functions failed to decompile requiring stubs. Architecture-specific code (`__readgsdword`, GOT access) not portable. Would need significant modification to compile standalone. Missing type definitions for structs accessed via offsets.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+8+4+5)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (5+6+4)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 5.39/10
+```
+
+**Overall Readability Score:** 5.4/10
+
+### Critical Defects:
+- **Magic numbers everywhere**: Syscall numbers (5, 6), socket constants (2, 1, 0), signal numbers (10, 14) instead of named constants
+- **58 external functions failed to decompile**: No stubs or type signatures provided for library functions
+- **GOT-based global access**: Variables like `shared_counter` accessed as `*(&GLOBAL_OFFSET_TABLE_ + 66)` losing semantic meaning
+- **Zero comments**: Original source had extensive documentation; decompiled output has none
+- **Architecture-specific intrinsics**: `__readgsdword`, `__writegsdword` for TLS not abstracted to portable constructs
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Most function names preserved from source code, maintaining semantic intent and making navigation straightforward.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of documentation means readers must infer all semantics from code alone, significantly increasing cognitive load.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover named constants from debug symbols**: Replace magic numbers (5→SYS_open, 10→SIGUSR1) using `-g` debug information that was compiled in.
+2. **Generate inline uncertainty annotations**: Mark GOT-based accesses, TLS intrinsics, and failed external calls with confidence indicators at point-of-use.
+3. **Preserve source comments from debug info**: Extract and embed original function documentation, parameter descriptions, and expected return values from DWARF debug sections.

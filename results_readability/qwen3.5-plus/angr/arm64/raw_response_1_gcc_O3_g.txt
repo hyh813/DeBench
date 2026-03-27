@@ -1,0 +1,100 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named `v0`, `v1`, `a0`, `a1` with no semantic meaning. Original source used meaningful names like `temp1`, `sum`, `count`, `result` which are completely lost (e.g., `loop_for_fixed` uses `v0-v10` instead of `sum`, `i`).
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retain original names (`sequential_ops`, `single_if`, `nested_if_2`), but many helper functions use generic `sub_400954` naming and some have compiler artifacts like `non_local_jump.constprop.0`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `4294967295` (UINT_MAX), `1717986919` (division constant), `0x40000000` appear throughout. Original return values like `-1` become `4294967295` obscuring intent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: runtime init functions (`_init`, `_start`, `__do_global_dtors_aux`), wrapper functions (`sub_400e3c` just calls `nested_if_2`), unsupported operations marked `[D]`, and stack canary checks throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic conditionals preserved (`if_else`, `if_elseif_chain`), but loops transformed into complex unrolled code (`loop_for_fixed`, `goto_backward`). Switch statements become jump tables (`CSWTCH.55[a0]`) or computed gotos despite -O0 compilation.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Over-fragmented with ~80+ functions vs ~40 in source. Many `sub_*` wrapper functions add no value. Core logic functions reasonable size but mixed with runtime code.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but jump tables introduce labels (`LABEL_4016f0`, `LABEL_4016dc`) and computed gotos (`goto (&v1)[a0]`) disrupt flow in `loop_multi_exit`, `call_func_ptr_array`.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe loop unrolling in `loop_for_fixed` (8+ similar conditional blocks), `goto_backward` has 12+ nearly identical factorial branches, `duffs_device` shows extensive code duplication.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Inconsistent types: `unsigned int`, `unsigned long`, `unsigned long long` mixed without justification. Original `int` becomes various unsigned types. Exotic types like `uint128_t` and `char*` appear without clear purpose.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union definitions recovered. Jump tables represented as raw arrays (`CSWTCH.55[4]`, `g_414028`). Function pointer arrays lose type information entirely.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout: `(unsigned int)v0`, `(char)arm64g_calculate_condition()`. Function pointers called via `goto v2` instead of proper invocation. No bounds checking on array accesses.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments explaining logic, purpose, or decompilation confidence. Original source had extensive documentation (e.g., "难度依据", "测试验证") completely absent. Only `[D]` markers indicate unsupported operations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. State machines (`state_machine`, `fsm_func_table`) not identified as such. Loop patterns, recursion, and switch-case idioms not labeled or explained.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Unsupported operations marked `[D] unsupported_Iop_SliceV128()` but no explanation of impact. Indirect calls not flagged as potentially problematic. Some anomalies detected but inconsistently reported.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original test validation comments (e.g., "输入5,7,3应返回21") completely lost. Error conditions unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`g_413f78`, `jump_buffer`) used without context. Callback relationships in `process_with_callback` unclear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with no logical grouping. Runtime startup code mixed with application logic. No header files, no API declarations, no namespace structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Metadata claims "Compilation Result: Yes" but `[D] unsupported_` operations would prevent actual compilation. External dependencies undocumented. Computed goto is GCC-specific extension.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.3/10
+
+**Weighted Calculation:**
+```
+L1 (30%): (3×0.10 + 6×0.10 + 4×0.05 + 4×0.05) = 1.30
+L2 (25%): (5×0.08 + 5×0.07 + 6×0.05 + 4×0.05) = 1.25
+L3 (20%): (5×0.08 + 3×0.07 + 4×0.05) = 0.81
+L4 (15%): (2×0.05 + 3×0.03 + 5×0.03 + 2×0.04) = 0.42
+L5 (10%): (5×0.04 + 4×0.03 + 5×0.03) = 0.47
+Total: 4.25 ≈ 4.3/10
+```
+
+**Critical Defects:**
+- Variable names `v0`, `v1`, `a0` provide zero semantic information (should be `sum`, `count`, `result`)
+- Magic numbers like `4294967295` obscure original `-1` error returns
+- Loop unrolling in `loop_for_fixed` and `goto_backward` creates 10+ line conditional chains
+- Zero comments despite complex control flow patterns
+- Unsupported operations `[D]` without explanation of impact
+- Runtime initialization code mixed with application logic
+
+**Best Quality Aspect:** Function Naming Quality (scored 6/10)  
+- Core function names preserved from source (`sequential_ops`, `nested_if_2`, `switch_fallthrough`)
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Complete absence of documentation makes understanding complex control flow extremely difficult
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Variable name inference**: Analyze usage patterns to suggest semantic names (e.g., accumulator variables → `sum`, loop counters → `i`, `count`)
+2. **Control flow pattern recognition**: Detect loop unrolling and present as original loop construct with optimization annotation
+3. **Magic number resolution**: Replace constants like `4294967295` with `UINT_MAX` or original source values like `-1` with explanatory comments

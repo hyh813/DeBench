@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `v1`, `v2`, `v3`, `v4` throughout the code. For example, in `double_value`, the parameter should be named `x` (as in source) but is `int64_t v1`. This pattern repeats in every function, making it nearly impossible to track variable purpose without constant cross-referencing.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main functions correctly recovered: `double_value`, `process_char`, `process_int`, `array_1d_stack`, etc. match source exactly. However, some internal helper functions have generic names like `function_15a0`, `function_15f0`, `function_1cbc` which don't convey purpose.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Extensive use of magic numbers without explanation: `0x100000000` (for 32-bit operations), `0xfffffffe` (masking), `0xffffffff`, `0x3000` (in process_double returning 12288 instead of 2.1). The string literals are UTF-8 encoded but not displayed properly: `"=== \xe6\xb5\x8b\xe8\xaf\x95..."` instead of readable Chinese.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts including `__asm_movi`, `__asm_ubfx`, `__asm_bfi` for bitfield operations, and float helper functions `__addtf3`, `__multf3`. Stack canary checks present. Some redundant casts like `(int64_t)(int32_t)v1. However, these are typical for -O0 decompilation and don't severely impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loop structures are generally recognizable (while loops for array traversal). However, some conditions are convoluted, e.g., in `process_char`: `v5 = v6 >= 90 == (v6 != 90) ? v3 : v3 + 32` which should be a simple if-else for uppercase check. The control flow is traceable but requires mental reconstruction.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-50 lines typical). Test functions separated from implementations. No obvious outline artifacts. Good single responsibility - each function does one thing (e.g., `array_string` computes length, `ptr_increment` sums array elements).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Early returns present in null-check patterns. Some forward jumps in complex functions like `array_3d` but manageable. No severe spaghetti code disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some loop unrolling visible in `array_3d` with nested while loops inside for loops. Common subexpression patterns present but not excessive. At -O0, minimal optimization artifacts expected anyway.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int64_t` for most parameters even when source uses `int`, `short`, or `char`. For example, `process_short` takes `int64_t v1` instead of `short a, short b`. Some `int32_t` used for loop counters. `const` and `volatile` qualifiers lost - `const_param` shows no const preservation. Mixed precision degrades type safety.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Zero struct/union recovery. All composite types accessed via raw pointer arithmetic. Example: `struct_simple` uses `*(int32_t *)(v2 + 8)` instead of `p->z`. The source has `Point3D`, `Rect`, `Widget`, `Node`, `DNode`, `TreeNode`, `Graph` - all completely lost. No typedef recovery whatsoever.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts: `(int32_t)v1`, `(int64_t)*(int32_t*)`, etc. Pointer arithmetic without bounds checks throughout array functions. Function pointer types not properly recovered - `ptr_func_simple` just returns `v1 & 0xffffffff` instead of calling the function pointer. No `restrict`, `_Atomic`, or alignment annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only address comments present (e.g., `// 0x894`, `// 0x8ac`). No algorithm explanations, no decompilation confidence indicators, no @param/@return documentation. The comments are purely positional metadata, not semantic guidance.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic C patterns like loops, conditionals, pointer traversal are present but not explicitly named or highlighted. No recognition of patterns like "string length calculation", "linked list traversal", "binary tree recursion". The code is readable but the idioms aren't named or explained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertain decompilation, indirect calls that couldn't be resolved, or potential undefined behavior. The `array_oob` function (which has intentional out-of-bounds access in source) shows no warning. Code confidently presents potentially incorrect information.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero pre/postcondition recovery. No documentation of expected input ranges, return value guarantees, or error conditions. The source has explicit behavior (e.g., "returns -1 on invalid bounds" in `array_complex_index`) but this is lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear (e.g., `test_data_types_l1()` calls `process_char()`, `process_short()`). Global variables `g1-g12` declared. But no documentation of call graph, who calls what, or callback relationships. The `complex_callback` used by `ptr_func_complex` is present but relationship not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically: data type functions first, then array, pointer, composite, then test functions. Static functions properly scoped. However, all in single file - no header separation. Related functionality generally together.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has `#include <stdbool.h>`, `#include <stdint.h>`, `#include <stdio.h>`, `#include <stdlib.h>`. Function prototypes declared. Should compile with minor fixes. However, uses non-standard `int80_t`, `int128_t` typedefs. External dependencies on libc functions documented.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Variable naming uses only generic `v1`, `v2`, `v3` etc. - completely loses semantic meaning of source variables like `x`, `c`, `arr`, `n`, `p`
+- Zero composite type recovery - all structs/unions accessed via raw pointer arithmetic losing field names like `p->x`, `p->y`, `p->z`, `node->data`, `node->next`
+- Type precision severely degraded - everything is `int64_t` even when source uses `char`, `short`, `int`, losing distinction between 8/16/32-bit types
+- No const/volatile qualifier recovery - `const_param` and `volatile_access` lose their semantic modifiers
+- Magic numbers everywhere without explanation - `0x100000000`, `0xfffffffe`, `0xffffffff` obscure operations like "multiply by 2" or "convert to 32-bit"
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions are appropriately sized with good separation of concerns. Test functions grouped together, implementations separate. Each function has clear single responsibility matching source intent.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+The decompiler completely failed to recover any struct or union types. All composite types are accessed via raw pointer arithmetic with offsets, losing all field names and type information. This is the most severe readability degradation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/union layouts** - Analyze memory access patterns to identify field offsets and reconstruct struct definitions with meaningful field names (e.g., `*(int32_t*)(v2+8)` → `p->z`)
+2. **Infer variable names from usage** - Use data flow analysis: a variable used in size calculations should be named `size` or `length`; a pointer dereferenced as `->next` should be named `node`
+3. **Preserve type precision** - Match original types: `char` not `int64_t`, `short` not `int64_t`, recover `const`/`volatile` qualifiers, distinguish pointer types from array types

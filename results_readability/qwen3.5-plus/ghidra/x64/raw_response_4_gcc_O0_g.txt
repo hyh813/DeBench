@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables use generic patterns like `iVar1`, `uVar2`, `lVar1` instead of semantic names; redundant `_local` suffixes (e.g., `a_local`, `b_local`) add noise without meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `param_by_value_int`); only runtime helpers use generic names (`FUN_00101020`, `_init`).
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0x1e` (30) used without decimal equivalents; string literals preserved but format strings replaced with `&DAT_` references.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive register variables (`in_RCX`, `in_RDX`, `in_RSI`, `in_XMM0_Qa` through `in_XMM7_Qa`); stack canary checks repeated in nearly every function; `-O0` should not produce this much artifact noise.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops correctly recovered as `for` constructs; conditionals match source logic; stack check blocks at function exits disrupt natural flow.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source exactly; appropriate granularity maintained; no inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom; stack canary checks at function ends create minor disruption; no problematic forward jumps into loop bodies.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Struct copying expanded to element-by-element assignment (16+ lines for `LargeStruct`); `_local` variable pattern creates redundant declarations for every parameter.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Non-standard type `longlong` used instead of `long long`; function pointers degraded to `code *` or `_func_int_int *`; basic types (`int`, `char*`, `double`) preserved correctly.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct definitions (`LargeStruct`, `SmallStruct`, `TestIntPair`) recovered with field names intact; struct passing generates verbose copy code instead of clean value semantics.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple implicit casts (`(int)`, `(ulong)`, `(void*)`) throughout; varargs implementation exposes internal `va_list` structure details; no dangerous pointer arithmetic detected.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Unknown calling convention"); no semantic comments explaining algorithm purpose or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern not identified as standard C idiom; struct passing conventions not explained; no recognition of common patterns like callback functions.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Generic warnings present for calling conventions and stack checks; warnings don't explain root cause or suggest manual analysis steps.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., `p != NULL`); null checks exist in code but not documented as contracts; no postcondition inference.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships preserved through direct calls; no call graph documentation; global variable references use opaque `&DAT_` labels.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source order; no header file structure; runtime initialization functions (`_init`, `_start`, `_fini`) mixed with application code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile standalone—missing includes, undefined types (`EVP_PKEY_CTX`, `longlong`), external functions (`__gmon_start__`, `__libc_start_main`) not declared.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+6+4)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+8+7+5)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (6+7+6)/3   = 6.33 × 0.20 = 1.266
+Level 4 (Semantic):    (3+4+6+3)/4 = 4.00 × 0.15 = 0.600
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.81/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects:
+- **Architecture mismatch**: Original compiled for ARM64 but decompiled as x86, causing fundamental representation issues
+- **Variable naming**: Generic `iVar1`, `uVar2`, `lVar1` pattern obscures semantic meaning throughout
+- **Noise pollution**: Register spill variables (`in_RCX`, `in_XMM0_Qa`, etc.) and stack canary checks in every function
+- **Non-compilable output**: Uses non-standard type `longlong`, missing includes, undefined external symbols
+- **No semantic documentation**: Zero comments explaining algorithm purpose or non-obvious logic patterns
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names preserved accurately from source, maintaining semantic clarity for entry points
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (3/10)** - Only auto-generated warnings present; no semantic documentation to aid human understanding
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage context** - Analyze parameter usage patterns to suggest semantic names (e.g., `count` for loop bounds, `sum` for accumulators)
+2. **Suppress low-level artifacts at -O0** - Eliminate register spill variables and stack canary checks when debug symbols indicate they're not semantically relevant
+3. **Add semantic comment generation** - Detect common patterns (varargs, struct passing, callbacks) and add explanatory comments describing the idiom being implemented

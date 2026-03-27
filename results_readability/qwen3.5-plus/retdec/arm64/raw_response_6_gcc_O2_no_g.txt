@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `str`, `str2`, `mem`, `result`). For example, `param_strcpy` uses `str` and `str2` instead of `dst` and `src`, completely obscuring the copy direction semantics.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Mixed results—some original names recovered (`param_strcpy`, `call_strcpy`, `thread_sum`) but many degraded to `function_13c0`, `function_13d0` pattern. Thread functions like `thread_atomic_increment` are well-named, but wrapper functions lose meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive (`0xffffffff`, `0x100000000`, `0x200000001`). String literals stored as hex-encoded globals (`g17 = "=== \xe6\xb5\x8b..."`). No named constants recovered for values like buffer sizes or error codes.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`__stack_chk_fail()`) inserted in nearly every function. Assembly intrinsics (`__asm_ubfx`, `__asm_stlr`, `__aarch64_cas4_acq_rel`) clutter atomic operations. Redundant `& 0xffffffff` masking throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` labels (`lab_0x2440`, `lab_0x3418`) instead of structured loops. `param_thread_local_storage` uses 6+ goto labels for what should be simple for-loops. At `-O0`, this restructuring is unjustified.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function granularity is reasonable but decomposition is inconsistent. `test_standard_library_functions` is monolithic (100+ lines). Thread worker functions properly separated but parameter passing is broken (e.g., `param_strcpy` takes no parameters).
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps into loop bodies disrupt reading flow. `param_pthread_join` has nested goto patterns that require tracing multiple label targets. Early returns exist but are obscured by stack canary epilogues.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Stack canary check `if (*(int64_t *)g2 == *(int64_t *)g2)` repeated in every function. Type masking (`& 0xffffffff`) appears redundantly. No dead code elimination for unreachable paths after `_exit()`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion—everything is `int64_t`, `int32_t`, or `char*`. Original types lost: `FILE*` becomes `struct _IO_FILE*`, `size_t` becomes `int32_t`, `pthread_t` becomes `int32_t`. `param_strcpy` signature shows `void` parameters instead of `char* dst, const char* src`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs defined with generic fields (`e0`, `e1`, `e2`...). `struct stat` has 20 fields all named `e0`-`e19`. `struct sockaddr` loses `sin_family`, `sin_port` semantics. ThreadData struct completely lost—passed as raw pointer arithmetic.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts everywhere: `(int64_t *)v1`, `(char *)str2`, `(int32_t)v1`. Pointer arithmetic on `int64_t*` instead of typed pointers. `param_shmget_shmat` writes raw integers to shared memory without proper `char*` casting.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero explanatory comments. Only auto-generated headers ("Address range: 0x1388 - 0x13a0"). No documentation of algorithm intent, error conditions, or decompilation uncertainty. Original source had extensive comments; none recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Library calls identified (`strcpy`, `pthread_create`) but idioms not recognized. Producer-consumer pattern in `param_condition_variable` not labeled. Atomic operations shown as `__aarch64_*` intrinsics without explaining CAS/LL-SC semantics.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No uncertainty markers. `param_strcpy` has broken signature (no parameters) but no warning. Indirect calls through `g1` function pointer table not flagged. Stack canary failures silently return `&g48` without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: dst != NULL"). Return value semantics lost (what does -1 vs 42 mean?). Error paths return magic values (`0xfffffffd`, `0xfffffffe`) without explanation of meaning.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call graph visible through direct calls. Global variables (`g6`, `g7` for signal handling) used without documentation of purpose. Thread function relationships unclear—`consumer_thread` and `producer_thread` connection not explicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 136 functions in single file. No logical grouping by test category (library vs. syscall vs. thread). Original source had clear section headers; decompiled code has none. Static variables scattered without namespace organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates successful compilation. Proper includes present (`pthread.h`, `stdio.h`, etc.). Function prototypes declared. However, architecture-specific intrinsics (`__aarch64_*`) may limit portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+4+4)/4 = 4.00  × 0.30 = 1.20
+Level 2 (Structural):  (4+5+4+4)/4 = 4.25  × 0.25 = 1.06
+Level 3 (Type):        (3+3+3)/3   = 3.00  × 0.20 = 0.60
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25  × 0.15 = 0.34
+Level 5 (Contextual):  (5+4+7)/3   = 5.33  × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  3.73/10
+```
+
+**Overall Readability Score:** 3.7/10
+
+### Critical Defects:
+- **`param_strcpy` has broken signature** - takes no parameters but should be `int param_strcpy(char *dst, const char *src)`
+- **All variables are generic** (`v1`, `v2`, `str`, `mem`) losing semantic meaning entirely
+- **Control flow uses goto labels** instead of natural loop/conditional constructs despite `-O0` compilation
+- **Zero comments recovered** from original source's extensive documentation
+- **Type system collapsed** to `int64_t`/`int32_t` losing `FILE*`, `size_t`, `pthread_t` distinctions
+
+### Best Quality Aspect:
+- **Build System Compatibility (7/10)** - Code compiles successfully with proper includes and function declarations, making it at least executable despite readability issues.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments is the most severe deficit; original source had extensive documentation that was entirely lost.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameter semantics** - Analyze call sites to infer parameter names and types (e.g., `param_strcpy` call shows two arguments)
+2. **Preserve source comments in debug builds** - At `-O0 -g`, DWARF debug info should enable comment/annotation recovery
+3. **Replace goto patterns with structured control flow** - Detect loop back-edges and conditional branches to emit `for`/`while`/`if` instead of labels

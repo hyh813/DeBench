@@ -1,0 +1,112 @@
+## EVALUATION: C++ Object-Oriented Features Decompilation
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables are generic (`v1`, `v2`, `result`, `temp`) with no semantic meaning. For example, `test_cpp_member_func` uses `v1` and `str` instead of `obj`, `r1`, `r2`, `r3` as in source.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions use mangled C++ names (`_Z20test_cpp_member_funcv`) with demangled comments. Some helper functions are named `function_1030` with no semantic meaning.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (e.g., `40`, `80` for Container offsets). String literals stored as hex-encoded globals (`g1`, `g2`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Excessive assembly intrinsics (`__asm_movups`, `__asm_maxsd`, `__asm_xorps`), compiler startup code (`_init`, `_start`, `__do_global_dtors_aux`), and unnecessary casts throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Most test functions just return hardcoded constants (e.g., `test_cpp_virtual_func` returns `42` directly). Actual computation logic is completely missing.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Functions are identified but many are incorrect. Template instantiations are separate functions, but class methods aren't properly grouped with their classes.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code reads top-to-bottom but assembly intrinsics and pointer arithmetic disrupt natural flow. Some functions have unreachable code paths.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate function prototypes for library functions. Global variables for string literals could be consolidated. Some dead code from compiler initialization.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Everything degraded to `int64_t`, `int32_t`, `void*`. No C++ class types recovered. `Container<int>` and `Container<double>` both use generic pointer types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Only vtable structs recovered (`vtable_3d78_type`). Class structures (`SimpleClass`, `LifecycleClass`, `Base`, `Derived`) completely lost. No field names.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Numerous unsafe casts (`(int64_t *)v1`, `(int32_t *)v1`). Pointer arithmetic without bounds checking. `template_swap` implementation is completely broken (both values set to uninitialized `v1`).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only demangled function names in comments. No logic explanations, no algorithm documentation. Critical failures not flagged.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms completely lost - no RAII patterns, no virtual dispatch recognition, no template instantiation patterns identified. Exception handling not recovered.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged despite obvious decompilation failures. Functions returning constants instead of computing values should be marked as suspicious.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception contracts not recovered. Class invariants lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls present but virtual dispatch relationships unclear. Inheritance hierarchy not visible. Callback relationships not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file. No logical grouping by class or feature. Global variables scattered without organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Has includes and prototypes but won't compile correctly. Missing C++ standard library headers. Assembly intrinsics are compiler-specific.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+4+3+3)/4 = 3.00  × 0.30 = 0.90
+Level 2 (Structural):  (2+4+5+5)/4 = 4.00  × 0.25 = 1.00
+Level 3 (Type):        (2+2+2)/3   = 2.00  × 0.20 = 0.40
+Level 4 (Semantic):    (3+2+2+2)/4 = 2.25  × 0.15 = 0.34
+Level 5 (Contextual):  (3+4+3)/3   = 3.33  × 0.10 = 0.33
+─────────────────────────────────────────────────────
+Overall Score:                                  2.97/10
+```
+
+**Overall Readability Score:** 3.0/10
+
+### Critical Defects:
+- **Functions return hardcoded constants** instead of actual computation (e.g., `test_cpp_virtual_func` returns `42` directly, `test_cpp_smart_ptr` returns `703`)
+- **`template_swap` implementation is completely broken** - both parameters set to uninitialized variable `v1`
+- **All C++ class structures lost** - no `SimpleClass`, `LifecycleClass`, `Base`, `Derived` type recovery
+- **Assembly intrinsics pollute code** (`__asm_movups`, `__asm_maxsd`) making it non-portable and unreadable
+- **Exception handling not recovered** - `test_cpp_exception` just throws without catch blocks
+
+### Best Quality Aspect:
+- **Function Naming Quality (4/10)** - At least demangled function names are provided in comments, allowing identification of test functions
+
+### Most Needs Improvement:
+- **Type System Fidelity (2/10)** - Complete loss of C++ type information; all classes, templates, and smart pointers degraded to primitive types
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts** - Use vtable information to reconstruct class hierarchies and member function relationships
+2. **Detect constant-returning functions as decompilation failures** - Flag functions that return expected test values without actual computation logic
+3. **Replace assembly intrinsics with portable C equivalents** - Convert `__asm_movups`, `__asm_maxsd` to standard C operations or library calls
+
+---
+
+## Analysis Notes
+
+This decompilation represents a **critical failure** for C++ code recovery. The decompiler appears to have:
+1. Analyzed the binary to find expected return values
+2. Generated stub functions that return those constants
+3. Failed to recover any actual computation logic
+
+At `-O0` (debug) optimization level, this quality is **unacceptable**. The original source had clear, well-commented code that should have been largely recoverable. The presence of assembly intrinsics and the complete loss of C++ semantics (classes, templates, exceptions, smart pointers) makes this decompilation practically unusable for understanding or modifying the original code.

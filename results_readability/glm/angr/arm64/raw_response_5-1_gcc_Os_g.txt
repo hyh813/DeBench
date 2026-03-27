@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `ptr`, and `result`. For example, in `test_cpp_virtual_func`, `v3` holds the constructor argument `3` and `v1`/`v2` are the `Base` and `Derived` objects, but these semantic meanings are lost.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: The decompiler successfully demangled C++ symbols, recovering readable names like `test_cpp_member_func`, `Base::virtual_func`, and `std::unique_ptr<int, std::default_delete<int>>::~unique_ptr`. This is the strongest aspect of the decompilation.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals like `"Test"` are preserved, and magic numbers like `42` in `test_cpp_exception` are visible. However, addresses like `g_413868` (vtable pointers) are opaque, and the context for literals is often lost due to missing logic.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with stack canary checks (`__stack_chk_guard`) in almost every function. While this is a security feature, the decompiler did not abstract it away, significantly cluttering the logic flow (e.g., `if (v4 == *((long long *)&__stack_chk_guard)) return;`).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is often unnatural or broken. `call_virtual_func` uses a computed `goto` for vtable dispatch (`goto *((long long *)*((long long *)&arg_0));`), which is accurate but low-level. More critically, several functions like `test_cpp_constructor` are completely empty (`return;`), indicating a failure to recover the basic block structure.
+
+**6. Function Decomposition:** Score: 2/10
+Justification: The decompiler failed to recover the body logic for multiple key functions (`test_cpp_constructor`, `test_cpp_multiple_inheritance`, `test_cpp_operator_overload`, `test_cpp_lambda`). While thunks and template instantiations are separated, the main logic is missing, rendering the decomposition useless for those sections.
+
+**7. Code Linearization:** Score: 4/10
+Justification: Where code exists, it is often interrupted by stack checks or redundant assignments. The linear flow is hard to establish in functions like `test_cpp_rtti` due to pointer arithmetic and indirect calls mixed with data access.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: There is little obvious redundancy like loop unrolling, but this is largely because the logic itself is missing or reduced to ABI calls. The stack canary checks are repetitive and not abstracted.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Class methods consistently use `void* this` instead of the specific class type (e.g., `Base::virtual_func(void* this, int arg_0)`). Template types are recovered in function names (`template_max<int>`), but local variables often lose their specific types, defaulting to generic integers or pointers.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: The decompiler failed to recover the definitions of core classes like `SimpleClass`, `Point`, or `LifecycleClass`. Instead, it uses generic structs like `struct_0` with fields named `field_0`, `field_8`, etc. The semantic structure of the objects is completely lost.
+
+**11. Type Safety:** Score: 3/10
+Justification: The code relies heavily on `void*` casts and raw pointer arithmetic. For example, in `test_cpp_smart_ptr`, the `unique_ptr` internals are accessed via a raw `struct_0*` and manual field assignment (`ptr->field_0 = 8589934593`), which is unsafe and obscures the RAII pattern.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output. Complex logic like exception handling mechanisms or vtable thunks is presented without explanation.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: High-level C++ idioms are not recognized. Exceptions are shown as raw `__cxa_allocate_exception` and `__cxa_throw` calls rather than `try/catch` blocks. Smart pointers are shown as raw memory allocations and struct manipulations rather than object ownership semantics.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents empty functions (e.g., `test_cpp_constructor`) as valid, complete functions with a simple `return;`. It does not flag this as a potential analysis failure or missing code, leading the user to believe the function does nothing.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For instance, the bounds checking in `Container::get` is reduced to raw integer comparisons without indicating it represents a safety check.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: Calls to global operators like `operatornew` and `operatordelete` are visible. Vtable references (e.g., `g_413868`) are present but opaque. The relationship between the empty test functions and the logic they should contain is broken.
+
+**17. Module Organization:** Score: 4/10
+Justification: Functions are listed in address order. While related functions (like constructors/destructors of the same class) are often close, the lack of class definitions or namespaces makes the organization feel flat and arbitrary.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code is not valid C++. It mixes C++ syntax (class names in function signatures) with C-style struct definitions and `void*` usage. It would require significant manual refactoring to compile, specifically defining the missing structs and fixing the `this` pointers.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.2/10
+
+**Critical Defects:**
+- **Missing Function Bodies**: Critical logic in `test_cpp_constructor`, `test_cpp_multiple_inheritance`, and `test_cpp_lambda` is completely absent (functions just return).
+- **Lost Class Definitions**: No recovery of `SimpleClass`, `Point`, or `LifecycleClass` structures; replaced with generic `struct_0`/`struct_2`.
+- **Raw ABI Exposure**: C++ exceptions and RTTI are exposed as low-level library calls (`__cxa_throw`, `typeid` struct access) rather than language constructs.
+- **Generic `this` Pointer**: Member functions use `void* this` instead of typed class pointers, destroying type context.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- **Why?** The decompiler successfully demangled the C++ mangled names, making the API surface (function names) readable even if the implementation was not.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- **Why?** The failure to reconstruct class definitions (fields, types) turns the code into a collection of generic memory manipulations, making it impossible to understand the data model.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Implement C++ Class Recovery**: Analyze vtables and constructor usage to reconstruct class layouts with correct field names and types, rather than outputting generic `struct_0`.
+2.  **Fix CFG Analysis for Empty Functions**: Investigate why functions with clear logic in the source (at `-O0`) are being decompiled as empty; this suggests a failure in basic block lifting or stack frame analysis.
+3.  **Lift C++ Exceptions**: Implement pattern matching to detect `__cxa_throw`/`__cxa_begin_catch` pairs and reconstruct them into high-level `try`/`catch` / `throw` statements.

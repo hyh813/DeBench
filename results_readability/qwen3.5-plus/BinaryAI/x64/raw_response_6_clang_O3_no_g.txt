@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `param_2`, `iVar1`, `local_28`, `uVar3`) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `fd`, `shm` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_strcpy`, `call_strcpy`, `param_fork_exec`), matching source intent. However, some helper functions use generic names (`FUN_00102020`) and thread functions lack descriptive prefixes.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0x2a` (42), `0x5a` (90), `0xffffffff` (-1), `0x12` (18 bytes). String literals sometimes referenced as `&DAT_001040d9` instead of inline. No constant recovery attempted.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: External function stubs create clutter (50+ `<EXTERNAL>::` wrappers). Some compiler artifacts visible but not severe. Frame pointer manipulation mostly eliminated at -O0.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions (`param_strcpy`, `param_strcmp`) have natural flow. Complex functions like `param_fread_fwrite` use bizarre vector operations (`auVar3`, `auVar4`) instead of simple `strcmp`. At -O0, this restructuring is unexpected.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions properly separated but some are monolithic (`param_fread_fwrite` ~100 lines with inline character comparison). Thread functions appropriately extracted. No inappropriate inlining observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but complex functions have forward jumps disrupting flow. `param_malloc_free` has multiple labeled blocks (`LAB_00102904`, `LAB_00102921`) breaking linearity.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy in `param_fread_fwrite` with 16+ character-by-character comparisons instead of `strcmp`. `param_memset` has excessive vector operations for simple byte summation. Loop unrolling not recognized.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `size_t` becomes `ulong`, `int` becomes `undefined4`, pointers often `void*`. `param_strcpy` returns `void` instead of `int`. `pthread_t` properly typed but many types generic.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `stat` struct recovered with `st_size` field visible. `sockaddr` partially recovered as `local_20` with `sa_data` array. Thread data structures not recovered (inline struct initialization instead).
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(undefined8 *)`, `(long)&local_8 + 4`. Pointer arithmetic visible throughout. `param_1 & 0xffffffff` patterns indicate sign-extension issues not properly handled.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No algorithm explanations, no decompilation confidence indicators, no API contract documentation. Completely bare code.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library functions recognized (`strcpy`, `strlen`, `pthread_create`). Thread patterns partially identified. No design pattern recognition (producer-consumer in `param_condition_variable` not noted).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags despite questionable code. `param_fread_fwrite` vector comparison is anomalous but not flagged. No uncertainty indicators for indirect calls or unresolved references.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions. Error return values (`0xffffffff`, `0xfffffffe`) not explained. No invariant recognition.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables (`signal_received`, `shared_counter`, `atomic_counter`) used without declaration context. No callback relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. External functions listed separately but not organized by library. No header file separation. Source file structure not preserved.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies listed (pthread, libc). Some stubs would be needed for globals. Portability reasonable for Linux ARM64.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+6)/4 = 5.0 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (4+5+5)/3 = 4.67 × 0.20 = 0.93
+Level 4 (Semantic):    (1+4+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+5+7)/3 = 5.67 × 0.10 = 0.57
+
+Overall = 1.50 + 1.31 + 0.93 + 0.34 + 0.57 = 4.65/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable `param_1`, `param_2`** should be named `dst`, `src` based on `strcpy` usage pattern
+- **`param_fread_fwrite`** uses 16 vector comparisons instead of recognizing `strcmp` call
+- **Zero comments** despite complex logic in signal handling and thread synchronization
+- **Magic numbers** (`0x2a`, `0x5a`, `0xffffffff`) not replaced with named constants
+- **Return type error**: `param_strcpy` returns `void` but source returns `int` (strlen result)
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved from source (`param_strcpy`, `param_fork_exec`, `param_mutex_lock`), making basic navigation possible
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, explanations, or decompilation confidence indicators makes understanding complex logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from function context (e.g., parameters to `strcpy` should be `dst`/`src`, file operations should use `fd`/`fp`)
+2. **Recognize standard library patterns** - the vector character comparison in `param_fread_fwrite` should be identified as `strcmp` and recovered as such
+3. **Add decompilation confidence annotations** - flag uncertain reconstructions, document magic numbers, and explain non-obvious control flow transformations

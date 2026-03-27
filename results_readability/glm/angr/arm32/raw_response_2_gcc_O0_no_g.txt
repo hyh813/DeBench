@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `a0`, `a1` (arguments) and `v0`, `v1` (locals). For example, in `process_char`, the input is `a0` instead of `c`, and in `array_1d_stack`, the array pointer is `ptr` but the index is `idx` (which is acceptable) while the sum is `v0`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are perfectly recovered from the debug symbols, matching the original source exactly (e.g., `double_value`, `process_char`, `struct_simple`). This provides excellent high-level navigation.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers are used extensively without semantic context. In `process_char`, ASCII checks are `a0 > 64 && 90 >= a0` instead of `>= 'A' && <= 'Z'`. In `process_float`, constants like `0x3fc00000` (1.5) and `0x3f000000` (0.5) are used in hex instead of floating-point literals.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The decompiled output is heavily polluted with library code. Massive software floating-point implementations like `__aeabi_dadd` and `__mulsf3` (hundreds of lines of bit manipulation) are intermixed with user code, making it extremely difficult to locate the actual logic of the source program.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Because the source was compiled with `-O0`, the control flow is preserved faithfully. Loops appear as `for` loops (e.g., `array_1d_stack`) and conditionals as `if` statements, matching the source structure perfectly without optimization artifacts.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: The user's functions are correctly separated and maintain their original boundaries. However, the file organization is poor because it includes every single library function called by the program, turning a simple source file into a massive monolithic dump.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom within functions. There are no confusing backward jumps or `goto` chains obscuring the logic, which is typical for unoptimized code decompilation.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: While there is no dead code within the user functions, the explicit expansion of floating-point operations into library calls (e.g., `__addsf3(__mulsf3(...))`) introduces a form of redundancy where simple arithmetic (`f * 1.5f + 0.5f`) is buried in complex function calls.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: Basic types are mostly correct (e.g., `char`, `short`), but 64-bit integers (`long long`) are split into two `unsigned int` arguments (`a0`, `a1`) reflecting the ARM64 calling convention, which loses the semantic type. Pointers to structs are demoted to generic `unsigned int *`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct definitions are completely lost. In `struct_simple`, the parameter is `unsigned int *a0` instead of `Point3D *p`, and field access is flattened to array indexing: `*(a0) + a0[1] + a0[2]` instead of `p->x + p->y + p->z`.
+
+**11. Type Safety:** Score: 7/10
+Justification: Pointer arithmetic is generally safe and accurate. `ptr_void` correctly casts to `int*` or `char*` based on the logic. However, the loss of struct types means type safety regarding field access is non-existent.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are no meaningful comments explaining the logic. The only comments are function headers (e.g., `// Function: process_char at 0x10548`), which provide no semantic value about the algorithm or data flow.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard loops and conditionals are recognized, but higher-level idioms are not. For example, `array_string` implements a `strlen` check but is not identified as such; it is just presented as a loop incrementing an index until a null byte is found.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: There are no explicit flags for anomalies, but the code is presented confidently. The massive inclusion of library code could be considered an anomaly of the decompilation process itself, but it is not flagged as such.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For instance, `array_complex_index` checks bounds but does not explicitly state the contract that `x` and `y` must be within width/height.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear. `test_data_types_l1` explicitly calls `process_char`, `printf`, etc., making the call graph easy to follow despite the noise.
+
+**17. Module Organization:** Score: 2/10
+Justification: The output fails to distinguish between user code and standard library/runtime code. Helper functions like `__aeabi_dadd` are intermixed with `main` and `process_int`, destroying the logical module structure of the original source.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code is syntactically valid C. However, it relies on the presence of the specific `__aeabi` soft-float functions which are defined in the same dump. To compile this standalone, one would need to extract the user functions or link against a compatible soft-float library.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- **Struct Flattening**: Composite types like `Point3D` are completely lost, replaced by raw pointer arithmetic (e.g., `a0[1]` instead of `p->y`).
+- **Magic Literals**: Character constants and floating-point values are represented as raw integers/hex (e.g., `64` instead of `'A'`, `0x3fc00000` instead of `1.5f`).
+- **Library Code Pollution**: The output is bloated with hundreds of lines of soft-float implementation (`__aeabi_dadd`, etc.), obscuring the user's actual logic.
+- **Generic Naming**: Variables use generic names (`a0`, `v0`) that provide no semantic context.
+
+**Best Quality Aspect:** Function Naming (scored 10/10)
+- The decompiler perfectly preserved the original function names from the debug symbols, allowing for easy identification of the target logic amidst the noise.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The complete failure to recover `struct` and `union` definitions reduces complex data manipulation to confusing pointer arithmetic, significantly degrading semantic understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Struct Recovery**: Implement type propagation to recover struct definitions and replace pointer arithmetic with member access (e.g., `ptr->field`).
+2.  **Library Filtering**: Add an option to filter out or hide standard library/runtime functions (like soft-float implementations) to focus the output on user-defined code.
+3.  **Literal Enhancement**: Convert integer constants back to character literals (e.g., `65` -> `'A'`) and hex floats back to decimal floats where context allows.

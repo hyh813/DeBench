@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `ptr`, `flag1`). In `test_cpp_member_func`, the `SimpleClass` object is reduced to `char v0[31]`, completely losing the semantic context of the object instance.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: The decompiler successfully demangles C++ symbols, recovering accurate names like `test_cpp_virtual_func` and `Container<int>::push`. Template instantiations are also clearly distinguished (e.g., `template_max<int>` vs `template_max<double>`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals like `"Test"` are preserved, but vtable pointers appear as obscure magic numbers (e.g., `72736`, `72432`) which obscure the object-oriented setup logic without comments.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Compiler artifacts like stack canary checks (`GLIBC_2.4::__stack_chk_guard`) and redundant assignments appear in almost every function, cluttering the core logic significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Critical logic is missing; functions like `test_cpp_constructor` and `test_cpp_lambda` are decompiled as empty `return;` statements. Virtual function calls are represented as raw `goto` jumps (e.g., `goto *((int *)*((int *)arg_0))`), which is accurate assembly but unreadable C++.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: While class methods are correctly identified and separated (e.g., `Base::virtual_func`), the main test functions often lack their implementation bodies entirely, appearing as stubs rather than cohesive logic units.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: The code that is present reads linearly, but the absence of logic in key functions makes the flow disjointed. Exception handling code (`test_cpp_exception`) is non-linear and difficult to follow due to low-level `__cxa` calls.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: There is little obvious redundancy like loop unrolling, but this is largely because the logic itself is missing or abstracted away into library calls.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Template types like `Container<int>` are recovered with high precision. However, user-defined classes like `SimpleClass` and `Point` are lost, treated as raw buffers (`char v0[31]`) or generic integers.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs are generally not reconstructed. For example, `SimpleClass` members (`value`, `name`) are accessed via raw offsets or buffer operations rather than a reconstructed struct with named fields.
+
+**11. Type Safety:** Score: 4/10  
+Justification: The code relies heavily on `void*` for `this` pointers and casts for vtable access. The lack of struct recovery forces unsafe buffer access patterns (e.g., `strncpy(&v0, ...)` on a class object).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are no comments explaining the high-level logic, the C++ constructs being used (like vtables or thunks), or the purpose of the magic numbers.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: High-level C++ idioms are not recognized. RAII (smart pointers) is decompiled to manual `operatornew`/`operatordelete` calls, and exceptions are raw `__cxa_throw` invocations rather than `try/catch` blocks.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: The decompiler presents empty function bodies (e.g., `test_cpp_lambda`) confidently without any warning that the analysis might have failed or that code is missing.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: There is no indication of preconditions (e.g., buffer sizes) or postconditions. The logic is too low-level to infer contracts from the decompiled output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Calls to standard library functions (`std::ios_base::Init::Init`) and class methods are visible and named, which helps establish relationships between components.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are listed in a logical order, and related class methods (constructors, destructors, virtual functions) are grouped together by name mangling patterns.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code is not standalone. It relies on magic numbers for vtables and missing type definitions (structs), making it impossible to compile without significant manual reconstruction.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.0/10
+
+**Critical Defects:**
+- Functions like `test_cpp_constructor` and `test_cpp_lambda` are decompiled as empty stubs, completely losing the source logic.
+- C++ classes (e.g., `SimpleClass`, `Point`) are not reconstructed; objects are treated as raw byte arrays (`char v0[31]`).
+- High-level C++ idioms (exceptions, smart pointers, lambdas) are reduced to low-level library calls (`__cxa_throw`, `operatornew`), obscuring the original intent.
+- Virtual function calls are represented as raw pointer dereferences and `goto` statements (`goto *((int *)*((int *)arg_0))`), which is hard to map back to polymorphism.
+
+**Best Quality Aspect:** Function Naming (scored 9/10)  
+- The decompiler excels at demangling C++ symbols, accurately recovering function names and template instantiations.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+- The failure to reconstruct user-defined structs and classes is the biggest barrier to understanding the code, as data is manipulated as anonymous buffers.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  Implement robust C++ class reconstruction to aggregate member variables into structs based on access patterns.
+2.  Improve control flow analysis for `-O0` binaries to prevent functions from being decompiled as empty stubs when logic exists.
+3.  Pattern match for C++ Standard Library types (e.g., `std::unique_ptr`, `std::string`) to lift them back to high-level types rather than raw memory allocations.

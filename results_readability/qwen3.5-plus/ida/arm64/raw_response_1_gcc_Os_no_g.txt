@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `a1`, `a2`, `v1`, `v2`, `result` instead of semantic names (e.g., `temp1`, `sum`, `count` from source). No inference from usage patterns—`v2` in `loop_for_fixed` should be `i` (loop counter).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`sequential_ops`, `nested_if_2`, `loop_for_fixed`). Minor issues: `sub_940` is unnamed, and some state handlers lack context.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xFFFFFFFFLL` (-1), `4294967294LL` (-2), `100`, `101` appear without explanation. No constant recovery despite clear patterns (e.g., `100 * a1 + 100` in `if_elseif_long`).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive type casts (`(unsigned int)`, `(unsigned __int64)`), register annotations (`// x0`, `// w1`), and architecture-specific types (`__int64`, `_QWORD`, `_OWORD`) clutter the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic structures recovered well (`sequential_ops` → single expression, loops → while). However, `switch_fallthrough` degrades to goto labels (LABEL_4, LABEL_5), and `duffs_device` becomes complex goto chains.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable granularity. Helper functions (`double_value`, `triple_value`) properly separated. Test functions bloated with repeated printf calls but still cohesive.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom. `switch_fallthrough` and `duffs_device` use forward jumps disrupting flow. `computed_goto` contains inline assembly breaking linearity.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some redundant type casts repeated throughout. `loop_nested` has unnecessary branching for negative check that could be simplified.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `__int64`/`int` instead of fixed-width types. Signed/unsigned inconsistencies (`op_div` uses `unsigned int a2` vs source `int b`). Function pointers degraded to `__int64 (__fastcall *)(_QWORD)`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays represented as raw `_QWORD v4[2]`, `_OWORD v5[3]` without struct recovery. `loop_break`'s static array `arr[]` becomes opaque `v4[2]` with hex initialization. No named structs recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(unsigned int)(result * a1--)`). Pointer arithmetic in `loop_break` (`*((_DWORD *)v4 + v2)`). Function pointer calls cast through generic types without validation.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only metadata headers (addresses, processor). No algorithm explanations, decompilation confidence indicators, or API contracts. Critical semantic loss.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: State machine pattern in `state_machine`/`fsm_func_table` not identified. Loop idioms (sum accumulation, digit counting) unrecognized. No design pattern documentation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: 9 failed decompilations marked ("FAILED to decompile: _setjmp"). However, suspicious code (inline assembly in `computed_goto`, indirect calls) lacks warnings or uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., `n > 0` for `duffs_device`). Test functions print hardcoded expected values instead of actual computations—major semantic loss indicating contract recovery failure.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but undocumented. Global `jump_buffer` usage unexplained. Callback relationships in `process_with_callback` unclear. No call graph or relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Single flat file with no logical grouping. Related functions not clustered. No header file structure or static function scoping documentation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 9 external functions failed to decompile requiring stubs. Architecture-specific types (`__int64`, `_QWORD`, `__fastcall`) reduce portability. Cannot compile standalone without significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (4+8+5+5)/4 = 5.50
+Level 2 (Structural):     (6+7+6+7)/4 = 6.50
+Level 3 (Type System):    (5+4+4)/3   = 4.33
+Level 4 (Semantic):       (2+3+5+3)/4 = 3.25
+Level 5 (Contextual):     (5+5+4)/3   = 4.67
+
+Overall = (5.50×0.30) + (6.50×0.25) + (4.33×0.20) + (3.25×0.15) + (4.67×0.10)
+        = 1.65 + 1.625 + 0.866 + 0.4875 + 0.467
+        = 5.0955 ≈ 5.1/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects
+- **Test functions print hardcoded values** instead of calling actual functions—complete semantic loss of test logic
+- **Zero meaningful comments**—no explanation of algorithm intent, non-obvious logic, or decompilation uncertainty
+- **Generic variable names** (`a1`, `a2`, `v1`, `result`) obscure semantic purpose throughout
+- **Composite types lost**—arrays become raw `_QWORD`/`_OWORD` buffers without struct recovery
+- **Type safety violations**—multiple unsafe casts and pointer arithmetic without bounds checking
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)**—Most original function names preserved accurately, enabling quick identification of purpose
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)**—Virtually no explanatory comments; decompiler provides no semantic guidance for understanding recovered logic
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover test function semantics**—Instead of hardcoding expected values, reconstruct actual function calls with computed arguments
+2. **Infer variable names from usage patterns**—Analyze how variables are used (loop counters, accumulators, indices) to suggest semantic names
+3. **Add decompilation confidence annotations**—Mark uncertain reconstructions (indirect calls, optimized patterns) with comments indicating analysis limitations

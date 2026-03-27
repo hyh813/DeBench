@@ -1,0 +1,103 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `flag1`, `result`) with no semantic meaning. Original source had meaningful names like `result`, `str`, `encrypted`, `decrypted` that are completely lost.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Target functions preserved original names (`param_fake_branch`, `call_opaque_predicate`), but many runtime functions use mechanical names (`sub_400744`, `$x`, `sub_400830`). Mixed quality overall.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (4294967295, 9223372036854775807, 90 for XOR key) with no named constants. Original source's `0xDEADBEEF`, `0x5A` are lost or unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: frame pointer manipulation (`v0 = &v1`), redundant casts, runtime initialization functions (`_init`, `register_tm_clones`) mixed with application code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses `arm64g_calculate_condition` for conditionals instead of natural comparisons. Loops use do-while patterns; `param_opaque_predicate` has convoluted branching that obscures the original simple logic.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical failure: `param_fake_branch` loses its parameter entirely and returns uninitialized `v0`. Some functions constant-folded correctly (`call_fake_branch` returns 10), but decomposition is inconsistent.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but contains goto statements (`goto g_411fe0` in `register_tm_clones`). Most functions use standard control flow without excessive jumps.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `call_non_tail_call` calls `param_non_tail_call(100)` twice unnecessarily. Some functions have duplicate return statements. Loop patterns show redundancy from optimization artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy type degradation: original `int` becomes `unsigned long long`, `long long`, or `unsigned int` inconsistently. `param_fake_branch` returns `long long` but should return `int`. Pointer types often degraded to `char*` or `void*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Bitfield struct in `param_implementation_defined` completely lost (function returns constant 48). No struct definitions visible. Arrays sometimes recovered (`char v0[31]`) but without semantic meaning.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many implicit casts between signed/unsigned throughout. `param_fake_branch` returns uninitialized value (undefined behavior). Pointer arithmetic visible without safety checks.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Only auto-generated function headers. Original source's extensive documentation about obfuscation techniques, expected values, and test scenarios completely absent.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: GCD algorithm in `param_opaque_predicate` is visible but not identified. String decryption pattern present but not labeled. No design patterns or algorithm names recovered.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged despite critical failures. `param_fake_branch` is completely broken (no parameters, returns garbage) but no warning. `param_buffer_overflow_stack` and `param_buffer_overflow_heap` similarly broken without indication.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note x≠0 for normal path). No postconditions inferred. Error conditions not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but global variables poorly documented (`g_4010d8`, `$d.1`, `$d.2`). No call graph documentation. String references lost to opaque globals.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output with no logical grouping. Runtime initialization functions mixed with application functions. No separation between test harness and target functions.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: References undefined globals (`$d.1`, `g_411ff8`, `jmp_buffer`). External dependencies (signal, strlen, printf) not declared. Would require extensive patching and stub creation to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25
+Level 3 (Type):        (4+3+4)/3   = 3.67
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75
+Level 5 (Contextual):  (5+4+4)/3   = 4.33
+
+Overall = (4.25 × 0.30) + (5.25 × 0.25) + (3.67 × 0.20) + (2.75 × 0.15) + (4.33 × 0.10)
+        = 1.275 + 1.3125 + 0.734 + 0.4125 + 0.433
+        = 4.17/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **`param_fake_branch` completely broken**: Loses parameter `x`, returns uninitialized `v0` instead of preserving input value
+- **`param_buffer_overflow_stack` and `param_buffer_overflow_heap`**: Both return uninitialized values, losing all original logic
+- **Variable names all generic**: `v0`, `v1`, `v2` throughout with no semantic meaning recoverable
+- **Magic numbers unexplained**: 4294967295, 9223372036854775807, 90 appear without context
+- **No comments or documentation**: Original source's extensive explanations of obfuscation techniques completely lost
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Target function names were preserved from original source (`param_fake_branch`, `call_opaque_predicate`, etc.), providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments; decompiler provides no insight into algorithm purpose, obfuscation intent, or confidence levels in recovery
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameters from calling conventions**: `param_fake_branch` should have `int x` parameter recovered from ARM64 calling convention (w0 register usage)
+2. **Add confidence annotations for uncertain recoveries**: Flag functions like `param_fake_branch` where parameter recovery failed or return values are uninitialized
+3. **Infer variable names from usage patterns**: Variables used in string operations should be named `buffer`, `ptr`; loop counters should be `i`, `idx`; condition flags should reflect their purpose

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`, `result`) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count` that are completely lost. Even simple functions like `sequential_ops` lost intermediate variable names.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`sequential_ops`, `single_if`, `nested_if_deep`, `test_control_flow_l1`). Some helper references are generic (`funcs_1967`, `sub_1020`) but core functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x12`, `0x12345678`, `1001` appear without explanation. Some literals are inferable from context (e.g., `10` in digit counting), but no constants were recovered or documented.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts: `__fastcall` calling conventions, register hints (`// rax`, `// esi`), type annotations (`__int64`, `_DWORD`), and `BYREF` markers that clutter readability without adding value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions recovered well, but loops show optimization artifacts (`loop_for_fixed` became a formula). `switch_fallthrough` became convoluted nested ifs. `loop_while` has suspicious condition `(v2 + 9) > 0x12` instead of clean `x != 0`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. Helper functions like `double_value`, `triple_value` recovered as separate functions. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: `loop_multi_exit` uses goto labels (`LABEL_8`, `LABEL_11`) disrupting flow. `duffs_device` has excessive goto patterns. Simple functions read linearly but complex ones have jump-heavy structures.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Multiple temporary variables (`v1` through `v13` in `duffs_device`) store related values redundantly. No dead code observed, but optimization artifacts create unnecessary variable proliferation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic `int` used instead of precise `int32_t`. `volatile` qualifier lost in `infinite_loop` and `loop_external_state`. Function pointer arrays become opaque (`funcs_1967`). Signed/unsigned casts present but mostly accurate.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited structs in source code. Arrays handled reasonably (`loop_break`). Function pointer arrays lose clarity becoming `funcs_1967[idx]` instead of named dispatch tables.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Standard casts present (`(unsigned int)`, `(__int64)`) but mostly compiler-generated. Pointer arithmetic in `loop_break` uses `_DWORD *` appropriately. No obvious buffer overflow patterns introduced.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic, algorithms, or non-obvious operations. Only decompiler identification in header. No API contracts, parameter documentation, or confidence indicators present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: State machine patterns in `state_machine` and `fsm_func_table` not identified. `duffs_device` optimization pattern not recognized. Loop and recursion patterns visible but unnamed.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External function failures marked ("FAILED to decompile"). However, suspicious transformations (like `loop_while`'s odd condition) not flagged. No warnings for potentially incorrect decompilations.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`). Return value semantics unexplained. No loop invariants or error condition documentation recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible in code but call graph not documented. Global variables like `jump_buffer` appear without context. Callback relationships through function pointers not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order with test functions grouped. No file organization or header structure. Static functions marked appropriately but no namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External function declarations missing (`printf`, `puts`, `_setjmp`). Seven functions failed to decompile. Won't compile without significant stubbing and dependency resolution.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (5+7+5+6)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (6+7+7)/3   = 6.67 × 0.20 = 1.33
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.53
+
+Overall Score: 5.48/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3` should be named semantically** (e.g., `digit_count`, `loop_result`) based on usage patterns
+- **`loop_while` has incorrect condition** `(v2 + 9) > 0x12` instead of original `x != 0` - potential decompilation error
+- **`switch_fallthrough` logic obscured** - nested ifs instead of clean fall-through structure
+- **No comments documenting algorithm intent** - even simple functions lack explanation
+- **`loop_for_fixed` optimized to formula** - original iterative structure lost, reducing understandability
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source, making function identification straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation makes understanding non-trivial logic extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and data flow analysis (e.g., variables used in counting should be named `count`, `index`, etc.)
+2. **Add confidence annotations** for potentially incorrect decompilations (flag suspicious conditions like `(v2 + 9) > 0x12`)
+3. **Recover and insert semantic comments** for recognized patterns (loops, state machines, switch fall-through) to document original intent

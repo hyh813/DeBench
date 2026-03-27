@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `a1`, `a2`, `v2`, `v3` instead of semantic names (`sum`, `count`, `total`, `result`). For example, `loop_for_fixed` uses `v3` for what should be `sum`, and `loop_nested` uses `v5` for `total`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`sequential_ops`, `single_if`, `nested_if_deep`, `loop_for_fixed`). However, some helper functions like `sub_4BC` remain unnamed, and `state_done` lost its parameter signature.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x12345678` in `opaque_predicate` and threshold values (`100`, `1000`) lack explanation. Loop bounds (`5`, `10`) are clear from context but not documented.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack annotations like `[sp+0h] [bp-4h]` and type markers (`_DWORD`, `__fastcall`) create visual clutter. Eight functions failed to decompile entirely, leaving gaps in the output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control structures recovered well (if-else, switch, for/while loops). However, `duffs_device` retains goto labels instead of structured loops, and `computed_goto` contains inline assembly (`__asm { BX R0 }`).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. No inappropriate inlining or fragmentation. Each test function remains separate and cohesive.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally. Early returns used appropriately. `duffs_device` has label jumps that disrupt flow, but most functions are well-linearized.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code. The `duffs_device` repetition is algorithmic (intentional), not decompiler artifact. No duplicate expressions observed.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic `int` used instead of sized types (`int32_t`). `if_else` incorrectly returns `bool` instead of `int`. Pointer types sometimes shown as `_DWORD *`. Function pointer signatures mostly preserved.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays recovered as `_DWORD v3[5]` but no struct/union definitions. Stack arrays lack semantic meaning. No bit-field or nested structure recovery attempted.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Function pointer casts present (`((int (__fastcall *)(int))v3[v5])(v4)`). `state_done` signature mismatch (missing parameter). Pointer arithmetic in `process_with_callback` uses raw offsets.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic or purpose. Only decompiler header comments present. No algorithm explanations, API contracts, or decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: State machine patterns in `state_machine`/`fsm_func_table` not identified. Duff's device in `duffs_device` not recognized. Recursion patterns preserved but unlabeled.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Eight functions marked "FAILED to decompile" at end. `computed_goto` inline assembly noted but not explained. No warnings about potential undefined behavior or stack layout issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Parameter validation requirements not indicated. Error conditions not explained.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variable `jump_buffer` usage not explained. Callback relationships in `process_with_callback` not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file without logical grouping. Static functions properly scoped. No header file or namespace structure provided.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Eight external functions failed to decompile (`printf`, `setjmp`, `longjmp`, etc.). Requires stubs for compilation. Inline assembly in `computed_goto` not portable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+6+6)/4 = 6.00  × 0.30 = 1.80
+Level 2 (Structural):  (7+8+8+8)/4 = 7.75  × 0.25 = 1.94
+Level 3 (Type):        (6+5+6)/3   = 5.67  × 0.20 = 1.13
+Level 4 (Semantic):    (2+4)/2     = 3.00  × 0.15 = 0.45
+Level 5 (Contextual):  (5+5+4+2+5)/5 = 4.20 × 0.10 = 0.42
+
+Overall Score: 5.74/10
+```
+
+**Overall Readability Score:** 5.7/10
+
+### Critical Defects
+- **Variable names are generic** (`a1`, `v2`, `v3`) instead of semantic (`sum`, `count`, `result`), requiring manual inference
+- **No comments or documentation** explaining algorithm purpose, preconditions, or non-obvious logic
+- **Type precision degraded** - `if_else` returns `bool` instead of `int`, generic `int` instead of sized types
+- **Eight functions failed to decompile** including critical runtime functions (`printf`, `setjmp`, `longjmp`)
+- **Duff's device not recognized** - retains goto labels instead of structured loop representation
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Function names preserved accurately from source, making identification and navigation straightforward
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding algorithm intent require reverse engineering
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** from usage patterns (e.g., accumulator variables in loops should be named `sum`, `count`, `total`)
+2. **Add semantic comment generation** for recognized patterns (state machines, Duff's device, recursion) with confidence indicators
+3. **Improve type recovery** by analyzing function return usage and parameter constraints to infer correct types (int vs bool, sized integers)

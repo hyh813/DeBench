@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_28`, `iVar1`, `uVar1` with no semantic meaning. For example, in `varargs_func`, `local_28` should be `arg_pointer` and `local_24` should be `sum`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names preserved excellently (`cdecl_func`, `call_cdecl`, `test_calling_conventions`). However, helper functions like `__aeabi_dadd` and `__floatsidf` are cryptic ABI runtime names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x10`, `0x20`, `0x100000` appear without explanation. String literals reference external data (`&DAT_00012400`) instead of showing actual content. Hex values like `0x12345678` are preserved but unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`if (local_c != 0) { __stack_chk_fail(...); }`) appear in nearly every function. Redundant temporaries like `uVar1 = ...; return uVar1;` add noise without value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural with standard if/else and for loops. However, some functions like `ret_multi_branch` use chained if statements instead of switch, and floating-point helpers have extremely complex control flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. However, `func_struct_byval` incorrectly splits struct into 4 parameters, and floating-point operations are expanded into massive helper functions (200+ lines each).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom, but stack canary checks at function ends disrupt flow. Forward references to data (`&DAT_00012400`) require scrolling to understand.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant temporary variables throughout (`uVar1`, `iVar1` used only for return). Stack canary pattern repeated identically across 30+ functions. Floating-point helpers contain massive duplicated bit-manipulation logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined4`, `undefined8`, `undefined` used extensively. `func_mixed_args` loses `double` and `long long` types (becomes `undefined4 param_3, param_4, param_5, param_6`). Function pointers become `code *` without signatures.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Complete failure - no struct definitions recovered. `LargeStruct` passed as 4 separate `int` parameters in `func_struct_byval`. `SmallStruct` becomes `int *param_1` with field access as `param_1[1] * *param_1`. No struct/union type declarations exist.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(undefined4 *)ret_pointer(&local_18)`, `(code *)ret_func_ptr(1)`. Pointer arithmetic on generic `int *` types. Varargs handled as raw pointer iteration without type safety.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API documentation. Only header comment shows SHA256 hash.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not recognized - implemented as raw pointer iteration instead of `va_list` abstraction. No design patterns identified. Floating-point operations expanded to bit-level helpers instead of recognized as arithmetic.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged despite critical issues: varargs signature incorrect, struct types lost, floating-point expanded. Silent failures where decompiler confidently presents incorrect type information.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL` for pointer functions). Null checks exist but not documented as contracts. No postcondition inference for return values.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear with original names preserved. Global data references shown (`DAT_00012400`) but content not visible. No call graph documentation or callback relationship indicators.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable source order. Related test functions grouped together. No header file structure, no static function scoping indicators, no namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would not compile standalone - missing struct definitions, incorrect function signatures for varargs, external `__aeabi_*` helpers need proper declarations. Requires extensive patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+5)/4 = 5.25  × 0.30 = 1.58
+Level 2 (Structural):  (7+7+6+5)/4 = 6.25  × 0.25 = 1.56
+Level 3 (Type):        (4+3+4)/3   = 3.67  × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+3+3)/4 = 2.75  × 0.15 = 0.41
+Level 5 (Contextual):  (6+6+4)/3   = 5.33  × 0.10 = 0.53
+─────────────────────────────────────────────────────
+Overall Score:                                  4.81/10
+```
+
+**Overall Readability Score: 4.8/10**
+
+### Critical Defects:
+- **Variable `param_1`, `param_2`** should be named based on semantic usage (e.g., `count`, `value`, `pointer`)
+- **Struct types completely lost** - `LargeStruct` and `SmallStruct` degraded to raw int parameters/pointers
+- **Varargs signature incorrect** - `varargs_func(int param_1)` loses `...` declaration, implemented as pointer iteration
+- **Type precision degraded** - `double` and `long long` become `undefined4`, losing semantic meaning
+- **Zero comments** - No documentation for non-trivial logic, floating-point helpers, or anomaly warnings
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making it easy to correlate decompiled code with source intent
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments makes understanding complex operations (especially floating-point helpers) extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack layouts** - Analyze parameter access patterns to reconstruct struct definitions instead of splitting into multiple parameters
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions (varargs, type conversions) with comments like `// DECOMPILER UNCERTAINTY: varargs handling`
+3. **Infer semantic variable names from usage** - Use data flow analysis to name variables based on role (e.g., loop counters, accumulators, pointers) rather than `local_XX`

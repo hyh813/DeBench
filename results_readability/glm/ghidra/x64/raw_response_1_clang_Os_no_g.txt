@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are exclusively generic names like `param_1`, `iVar1`, and `uVar2`, providing no semantic hint about their original purpose (e.g., `a`, `b`, `sum`, `count`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`sequential_ops`, `loop_for_fixed`, `duffs_device`) exactly match the original source, indicating excellent symbol recovery or preservation.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers like `0x12` (18) in `loop_while` and `0x3e9` (1001) in `infinite_loop` appear without explanation, obscuring the original logic (e.g., loop limits or timeout values).
+
+**4. Noise Reduction:** Score: 6/10
+Justification: While standard compiler artifacts are mostly absent, the code contains `undefined` types and redundant casts (e.g., `(ulong)(param_1 - 2)`) that add noise without adding clarity.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: The decompiled code exposes aggressive compiler optimizations (e.g., `recursion_factorial` turned into a vectorized unrolled loop, `loop_for_fixed` turned into a closed-form formula), making the control flow vastly different and harder to follow than the original source.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Functions are correctly separated and boundaries match the source, though some test functions like `test_control_flow_l1` are large due to inlining of constant arguments.
+
+**7. Code Linearization:** Score: 6/10
+Justification: Code generally reads top-to-bottom, but constructs like `duffs_device` rely on explicit `goto` labels (`switchD_00101717_caseD_1`) which disrupts linear reading compared to the original switch fall-through.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler accurately reflects the compiler's removal of redundancy (e.g., eliminating the loop in `loop_for_fixed`), presenting the optimized mathematical result rather than redundant iterative code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `int` and `uint` are used, but complex data structures often degrade to generic `undefined1 [16]` (for SIMD vectors) or `undefined4`, losing specific type information.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structs and arrays are frequently accessed via raw pointer arithmetic (e.g., `puVar3[lVar1]` in `loop_multi_exit`) or treated as byte arrays (`undefined1 auVar13 [16]`), failing to recover the original `matrix` or vector types.
+
+**11. Type Safety:** Score: 5/10
+Justification: Numerous implicit casts and usage of `undefined` types weaken type safety, though this is largely a reflection of the optimized binary rather than decompiler error.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 7/10
+Justification: Ghidra provides useful warnings where analysis failed (e.g., `/* WARNING: Could not recover jumptable... */`), but lacks high-level semantic comments explaining the algorithm's purpose.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level patterns are missed; `recursion_factorial` is not recognized as factorial, and `loop_continue` is not identified as a summation, appearing instead as complex bitwise arithmetic.
+
+**14. Anomaly Indication:** Score: 8/10
+Justification: The decompiler clearly flags issues like "Removing unreachable block" and "Treating indirect jump as call," effectively communicating uncertainty to the user.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants (e.g., the requirement that `n > 0` in `duffs_device` is not explicitly documented).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and named, making the call graph easy to understand despite the internal complexity of the optimized functions.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are grouped logically and appear in the same relative order as the source, maintaining good module organization.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on undefined data types (`DAT_00102090`) and `undefined` type definitions, preventing standalone compilation without significant manual patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`param_1`, `iVar1`), obscuring the logic.
+- `recursion_factorial` is decompiled into an unrolled vectorized loop, completely hiding the recursive algorithm.
+- Composite types (structs/arrays) are accessed via raw pointer arithmetic or undefined byte arrays.
+- Optimized control flow (e.g., loops converted to math formulas) deviates significantly from the source structure.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler perfectly preserved all original function names, making navigation and high-level understanding trivial.
+
+**Most Needs Improvement:** Idiom Recognition (scored 3/10)
+- The decompiler failed to recognize standard algorithms (factorial, summation) amidst the compiler optimizations, presenting low-level arithmetic instead of the intended logic.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement "de-optimization" or pattern matching to re-roll unrolled loops (like in `recursion_factorial`) back into iterative or recursive structures.
+2. Infer variable names from context or usage patterns (e.g., `param_1` used in a loop counter could be named `n` or `count`).
+3. Improve composite type recovery to identify stack-allocated arrays and structs instead of defaulting to `undefined1` arrays or pointer arithmetic.

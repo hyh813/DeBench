@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar1`, `local_4e8` with zero semantic meaning. For example, `array_1d_stack` uses `param_1` for array pointer and `param_2` for count instead of `arr` and `n`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`process_char`, `array_1d_stack`, `struct_simple`). Names accurately reflect functionality, though some runtime functions like `_init` and `FUN_00011594` are generic.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `0xbfU`, `0x1a`, `0x2c`, `0x1b8` in array functions. Floating-point constants appear as hex (`0x3fc00000` for 1.5f). Test functions print pre-computed constants instead of calling actual functions.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "WARNING: Removing unreachable block" comments. Floating-point operations expanded into verbose bit-manipulation code (`__muldf3`, `__adddf3` with 100+ lines each). Frame manipulation artifacts present.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: For-loops converted to do-while with decrement patterns (`param_2 = param_2 + -1`). Indirect calls show "WARNING: Treating indirect jump as call". Logic traceable but unnatural.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but test functions inlined with constant results. Floating-point helpers excessively verbose (150+ lines each). Original function granularity mostly maintained.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but nested loops create depth. Array functions use backward iteration disrupting natural flow. Some forward jumps in complex index calculations.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions compute values at compile-time then print constants (redundant setup code remains). Floating-point helpers duplicate similar bit-manipulation patterns across multiple functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Critical type errors: `process_int` returns `uint` instead of `int`, `process_long` returns `int` instead of `long`, `process_float/double/ld` return `void` instead of proper types. All structs degraded to `int*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - all structs become `int*` with array indexing (`param_1[0]`, `param_1[1]` instead of `p->x`, `p->y`). No field names recovered. Unions become `uint*`. Bitfields reduced to shift/mask operations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout: `(int *)(param_1 + iVar3)`, `(undefined4 *)param_1`. Function pointers become `code*` or `undefined4*`. Pointer arithmetic on void pointers without explicit casts.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated compiler warnings present. No algorithm explanations. Missing documentation for complex bit-manipulation in floating-point helpers. No parameter/return documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop idioms not recognized (for→do-while). Linked list traversal pattern present but not identified. No design pattern recognition. Tree recursion preserved but unnamed.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present ("WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call"). Unreachable block warnings helpful. But no explanation of why anomalies occur.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`). No postconditions. No error condition documentation. Null checks present but not explained as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. No call graph. Global variable references (`DAT_00012453`) unclear. Callback relationships obscured by type degradation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear roughly in source order. No logical grouping visible. No header file structure. Runtime functions mixed with application code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__libc_start_main`, `printf`, `puts`) undeclared. Floating-point helpers included but complex. Would need significant stubs and type corrections to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (3+2+4)/3   = 3.00 × 0.20 = 0.60
+Level 4 (Semantic):    (4+3+6+2)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                              4.51/10
+```
+
+**Overall Readability Score: 4.5/10**
+
+### Critical Defects:
+- **Complete struct type loss**: All composite types (`Point3D`, `Rect`, `Widget`, `Node`) degraded to `int*` with array indexing, losing all field semantics
+- **Floating-point function signature errors**: `process_float`, `process_double`, `process_ld` return `void` instead of their proper types, making return values inaccessible
+- **Test functions optimized away**: Test functions print pre-computed constants instead of calling actual functions, breaking verification capability
+- **Generic variable naming**: All 200+ variables use `param_N`, `iVarN`, `uVarN`, `local_XXX` with zero semantic meaning
+- **Magic numbers unexplained**: Critical constants like `0x2c` (struct stride), `0x1b8` (array bounds) appear without explanation
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately, allowing immediate identification of purpose despite other degradation
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions, forcing all composite access through raw pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct pattern recognition** - Detect consistent offset patterns (e.g., `param_1[0]`, `param_1[1]`, `param_1[2]` accessed together) and propose struct definitions with field names
+2. **Preserve floating-point return types** - Track FPU register usage to correctly identify functions that return float/double values instead of marking them as void
+3. **Add semantic variable inference** - Use usage context (loop bounds, array indexing, comparison patterns) to suggest meaningful variable names like `array_ptr`, `count`, `index`

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Function-level names are excellent (`cdecl_func`, `varargs_func`), but internal variables in complex functions like `varargs_func` use cryptic names (`v1`, `v2`, `v3`, `v6`, `v9`, `v12`, `v14`-`v19`). The `va` variable is appropriately named. Mixed result - external APIs clear, internals obscure.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly perfect match to source function names - `cdecl_func`, `call_cdecl`, `varargs_func`, `func_no_args`, `func_many_args`, `param_by_value_int`, etc. All names accurately reflect their semantic purpose with appropriate action verbs.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Most literals are computed at compile time (e.g., `return 15` instead of function call), which is excellent. However, some magic numbers remain unclear: `0xFFFFFFFE` in bit operations, threshold values `0x28`/`0x29` in varargs handling. These are inferable but not documented.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean code with minimal compiler artifacts. The `va_copy(va, va)` in varargs functions appears unnecessary. Some redundant register movements but nothing severe. Overall manageable noise level.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural with standard loops and conditionals. However, `varargs_func` and `param_varargs` show significant loop unrolling that obscures the original simple loop structure. The do-while with manual index management is harder to follow than the original `for` loop.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with good granularity. Each function has single responsibility. No 500-line monoliths observed. The decomposition matches the source organization well.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `param_by_value_ptr` and `func_struct_byptr`. Some complexity in varargs functions due to optimization, but traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling in varargs functions creates visible redundancy (paired element processing). This is an optimization artifact at -O2 but makes the code longer. Not severe enough to impede understanding significantly.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Types are mostly accurate - `int`, `char*`, `double`, `va_list` correctly identified. Some over-use of `__int64` where `int` would suffice (e.g., some varargs internal variables). Function pointer types properly preserved. Const correctness mostly maintained.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery - `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData` all reconstructed with correct field names from source. The `data` array fields preserved. Only minor issue is some SIMD type exposure (`__m128i`) in `func_struct_byval`.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally safe code with proper pointer handling. Some unsafe casts in `param_complex_cast`: `*(_DWORD *)p` and `*((_DWORD *)p + 1)` for type punning. These are necessary for the functionality but could be better documented. No severe violations.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments present in the decompiled output.** This is a critical deficiency. The source code has extensive comments explaining each test case (e.g., "CALL-L1-01: cdecl调用约定"), but none were recovered. Even basic explanations of complex logic are absent.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C idioms are recognizable (va_list usage pattern, struct initialization). However, no explicit pattern naming or recognition (e.g., "This implements varargs pattern"). The complex varargs handling could have been abstracted or annotated.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Some useful warnings present: "positive sp value has been detected" in `_start`, "local variable allocation has failed" in `ret_small_struct`. These help identify decompilation uncertainties. However, not all anomalies are flagged (e.g., the unusual `va_copy(va, va)`).
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No explicit preconditions/postconditions recovered. Basic null-check patterns in `func_struct_byptr` and `param_double_ptr` are clear from code structure, but no formal contract documentation. Could have added "requires: p != NULL" style annotations.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear from code structure - `main` calls `test_calling_conventions`, `test_parameter_passing`, `test_return_values`. However, no explicit cross-reference documentation (comments showing caller/callee relationships). Static functions properly marked.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions are logically grouped - all calling convention tests together, parameter passing tests together, return value tests together. Matches source organization. Static functions appropriately scoped. Good logical grouping.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: **Critical issue**: Multiple undefined identifiers: `s`, `aCallL206`, `aCallL207`, `aCallL208`, `aCallL209`, `aCallL210`, `aCallL211`, `asc_23AB`, `asc_23CC`, `aRetL101D`, `aRetL102D`, etc. These are string format constants that weren't properly recovered. Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.2/10
+
+**Critical Defects:**
+- **No comments recovered** - source had extensive documentation explaining each test case, but decompiled output has zero comments
+- **Undefined string constants** - `s`, `aCallL2*`, `asc_23*`, `aRetL*` are referenced but not defined, preventing compilation
+- **Generic internal variable names** - `v1`-`v19` in varargs functions obscure loop control logic
+- **Loop unrolling obscures intent** - the simple `for` loop in varargs functions is expanded into complex manual iteration
+- **Magic numbers unexplained** - `0x28`, `0x29`, `0xFFFFFFFE` thresholds lack documentation
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Function names almost perfectly match the original source, making it easy to identify each test case's purpose
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+- Zero comments in the entire decompiled output is a severe deficiency, especially given the source had extensive documentation
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover string constants properly** - the format strings like `"CALL-L1-01: %d\n"` should be extracted and defined, not left as undefined identifiers
+2. **Add explanatory comments** - at minimum, document complex control flow transformations (like loop unrolling) and flag decompilation uncertainties
+3. **Improve internal variable naming** - infer names from usage patterns (e.g., `v6` as `index` or `offset` based on how it's incremented in the loop)

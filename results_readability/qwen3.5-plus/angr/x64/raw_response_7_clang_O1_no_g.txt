@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `result`) with no semantic meaning. Original source had meaningful names like `encrypted`, `decrypted`, `canary` that were completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_fake_branch`, `param_opaque_predicate`), but cluttered with many `sub_XXXXXX` wrapper functions that add noise without value.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (UINT_MAX) and `90` (XOR key) appear without explanation. Original constants like `0xDEADBEEF` were eliminated during optimization.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `_init`, `_start`, `_fini`, `deregister_tm_clones`, and numerous `sub_XXXXXX` wrapper functions that serve no analytical purpose.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `param_fake_branch` collapsed to single return (lost fake branches entirely). `param_opaque_predicate` uses confusing `_ccall` and `CONCAT` operations instead of clean conditionals.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Over-fragmented with unnecessary wrapper functions (`sub_401199`, `sub_4011a3`, etc.) that just call real functions. Core functions appropriately sized but organization is poor.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom reasonably, but complex expressions in `param_opaque_predicate` and do-while patterns disrupt natural flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Wrapper functions create significant redundancy. Some functions like `call_string_encryption` duplicate `param_string_encryption` logic unnecessarily.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types are generic (`unsigned int`, `unsigned long long`) rather than precise C types. Original `int`, `char*`, `size_t` distinctions often lost or widened.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Only one minimal struct recovered (`struct_0`). Original bitfield structure in `param_implementation_defined` completely lost, represented as raw operations.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe `CONCAT` operations and bit manipulations obscure type safety. Pointer arithmetic present without clear bounds, multiple implicit casts.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled code. Original had extensive documentation explaining obfuscation techniques, test scenarios, and expected values—all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (XOR string decryption, opaque predicates, fake branches) appear as raw operations without pattern identification or naming.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Only one anomaly noted (`[D] Unsupported jumpkind Ijk_SigTRAP`). Most uncertainties about recovered logic go unflagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original expected values in comments (e.g., "期望: 10") completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables referenced (`g_403fe8`, `jmp_buffer`) without purpose explanation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions listed sequentially without logical grouping. Original section headers (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases) not preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`__libc_start_main`, `signal`, `longjmp`) not fully resolved. Would require significant modification to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+
+Overall Score: 4.45/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable `a0`, `v0`, `v1`** should be named based on semantic usage (e.g., `input_value`, `temp_result`)
+- **Fake branch logic completely eliminated** in `param_fake_branch` - decompiler optimized away the obfuscation being tested
+- **No comments recovered** from original source documentation explaining obfuscation techniques
+- **Excessive wrapper functions** (`sub_401199`, `sub_4011a3`, etc.) create noise without analytical value
+- **Complex `_ccall` and `CONCAT` operations** in `param_opaque_predicate` obscure simple predicate logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved accurately from source, making it possible to identify which function is which despite other readability issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation means analysts must reverse-engineer intent that was clearly documented in original source
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Integrate debug symbols (`-g` flag) to restore original documentation explaining obfuscation intent
+2. **Eliminate wrapper function noise** - Detect and collapse trivial wrapper functions (`sub_XXXXXX` that just call another function) into direct references
+3. **Simplify complex expressions** - Replace `_ccall` and `CONCAT` patterns with equivalent readable C constructs when semantic equivalence can be proven

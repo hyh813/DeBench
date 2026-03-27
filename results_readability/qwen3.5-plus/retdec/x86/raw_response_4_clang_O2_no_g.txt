@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `result`, `temp`) with no semantic meaning. For example, `func_mixed_args` uses `a1`, `a2`, `str` instead of `x`, `s`, `d`, `ll` from source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`cdecl_func`, `call_cdecl`, `varargs_func`, `test_calling_conventions`). Only library wrappers degraded to `function_1050`, `function_1060`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals replaced with pointer arithmetic (`v1 + &g6 - 0x1cae`). Magic hex offsets everywhere. Some constants preserved (`return 15`, `return 42`) but unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler runtime artifacts present (`__do_global_ctors_aux`, `register_tm_clones`, `__x86_get_pc_thunk_bx`). 87 functions detected vs. ~50 in source.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions natural, but `varargs_func` uses while loops that should be for loops. Constant folding removes actual calls (`call_cdecl` returns 15 directly).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries mostly preserved. Library wrappers created (`function_1050` for printf). Some functions too small due to constant folding.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Global variable offset calculations (`v1 + &g5 - 0x1c8d`) disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding creates redundancy (caller functions return constants instead of calling). Varargs handling code duplicated in `varargs_func` and `param_varargs`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `uint32_t`, `float64_t` appropriately. However, pointer parameters degraded to `int32_t` (`func_struct_byptr(int32_t a1)` instead of `SmallStruct*`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - All structs lost. `LargeStruct` (128 bytes) became 16 separate `int32_t` parameters in `func_struct_byval`. `SmallStruct` pointer became `int32_t a1`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int32_t *)a1`, `(char *)str`). Pointer arithmetic on integers throughout. Function pointer types completely lost (`ret_func_ptr` returns `int32_t` not function pointer).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: **Zero comments** in decompiled output. No explanation of complex varargs logic, no decompiler confidence indicators, no algorithm documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not identified. No recognition of calling convention patterns. No design pattern naming.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for uncertain decompilation. Unusual stack layouts not highlighted. No warnings about type degradation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `func_struct_byptr` requires non-NULL). No postconditions. Error conditions undocumented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables `g1-g7` used without explanation. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. Runtime functions mixed with user code. No logical grouping or namespace structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes standard headers. Has function prototypes. Would need significant work to compile standalone (missing struct definitions, incorrect signatures).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.63
+Level 3 (Type):        (6+2+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+5+5)/3   = 5.00 × 0.10 = 0.50
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.96/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct` became 16 separate `int32_t` parameters instead of single struct parameter
+- **Zero comments** - No explanation of complex varargs handling logic or calling convention behavior
+- **Pointer types degraded to integers** - `func_struct_byptr(int32_t a1)` loses pointer semantics
+- **String literals replaced with offset arithmetic** - `printf((char *)(v1 + &g6 - 0x1f58))` instead of readable strings
+- **Compiler runtime artifacts pollute output** - 87 functions including `__x86_get_pc_thunk_bx`, `register_tm_clones`
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`)
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union types, converting structured data to primitive parameters
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack/register usage patterns** - Analyze parameter access patterns to reconstruct struct layouts instead of flattening to primitives
+2. **Add decompiler confidence annotations** - Mark uncertain decompilations with comments like `// UNCERTAIN: varargs handling may be incomplete`
+3. **Preserve string literals and global references** - Instead of offset arithmetic, recover actual string content and name global variables meaningfully

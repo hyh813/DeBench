@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`, `flag1`), providing no semantic hint about their purpose (e.g., `result` vs `v0`).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most high-level function names (`param_fake_branch`, `param_opaque_predicate`) are preserved accurately from the source symbols, though runtime helpers are generic (`sub_10514`).
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Magic numbers like `4294967295` (representing -1) and `90` (the XOR key) are used directly without named constants, and addresses like `0x22058` replace string references.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is polluted with intermediate representation artifacts like `armg_calculate_condition` and `vvar_33{r64|4b}`, which severely obscure the underlying logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10
+Justification: Control flow is heavily disrupted by `goto` statements (e.g., `goto LABEL_10638`) and helper calls for condition checks, making it read like assembly rather than C.
+
+**6. Function Decomposition:** Score: 5/10
+Justification: While functions are generally separated, some are reduced to empty shells (e.g., `param_buffer_overflow_stack`), and others contain duplicated logic (e.g., double call in `param_tail_call_optimized`).
+
+**7. Code Linearization:** Score: 3/10
+Justification: Frequent forward jumps (`goto LABEL_...`) break the top-to-bottom reading flow, requiring constant cross-referencing to understand execution order.
+
+**8. Redundancy Elimination:** Score: 3/10
+Justification: There is significant redundancy in the form of repeated `armg_calculate_condition` calls and variable moves (`v0 = v1`) that add no semantic value.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Types are generally degraded to `unsigned int` regardless of source signedness (e.g., `int x` becomes `unsigned int a0`), and return types like `char [2]` are incorrect.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct recovery is poor; `struct struct_0` is generic with `field_4`, and complex stack layouts are represented as invalid syntax like `vvar_33{r64|4b}`.
+
+**11. Type Safety:** Score: 3/10
+Justification: Implicit casts between signed and unsigned integers are frequent and unmarked, and pointer arithmetic is often obscured by the generic `unsigned int` usage.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of the obscure `armg_calculate_condition` calls.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard C idioms like loops and conditionals are obscured by IR-level artifacts; for example, the GCD algorithm in `param_opaque_predicate` is unrecognizable.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents invalid syntax and IR artifacts as valid code without any warning flags or comments indicating potential decompilation errors.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; the logic of `setjmp`/`longjmp` is condensed into a ternary operator without explanation.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10
+Justification: While function calls are visible, arguments are often hard-coded addresses or obscure variables, making the data flow difficult to trace (e.g., `decrypt_string(0x22058, ...)`).
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are listed in a roughly logical order matching the source, but the lack of separation between user code and runtime glue reduces clarity.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The output contains invalid C syntax (e.g., `vvar_33{r64|4b}`) and undefined functions (`armg_calculate_condition`), making it impossible to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 3.50
+L2_avg: 3.25
+L3_avg: 2.67
+L4_avg: 1.25
+L5_avg: 3.67
+
+Overall = (3.50 × 0.30) + (3.25 × 0.25) + (2.67 × 0.20) + 
+          (1.25 × 0.15) + (3.67 × 0.10)
+Overall = 1.05 + 0.8125 + 0.534 + 0.1875 + 0.367
+Overall = 2.95 / 10
+```
+
+### Overall Readability Score: **2.9/10**
+
+### Critical Defects
+- **IR Leakage**: The code is littered with `armg_calculate_condition` calls and VEX IR artifacts (`vvar_33{r64|4b}`), making it unreadable as C.
+- **Variable Naming**: Almost all variables are generic (`v0`, `v1`), losing all semantic information from the source.
+- **Invalid Syntax**: The output contains syntax errors (e.g., curly braces in variable names) that prevent compilation.
+- **Type Erasure**: All specific types are reduced to `unsigned int`, obscuring signed logic and pointer types.
+- **Control Flow Obfuscation**: Simple logic is replaced by complex webs of `goto` labels and helper calls.
+
+### Best Quality Aspect
+- **Function Naming (8/10)**: The decompiler successfully preserved the original function names from the binary symbols, which is the only remaining link to the source code's intent.
+
+### Most Needs Improvement
+- **Noise Reduction (1/10)**: The presence of low-level intermediate representation artifacts is the single biggest barrier to readability. The decompiler must abstract these away to produce valid, high-level C.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **IR-to-High-Level Translation**: Implement a pattern-matching pass to replace sequences of `armg_calculate_condition` and flag checks with native C logical operators (`&&`, `||`, `==`, `<`).
+2.  **Syntax Validation**: Ensure the output conforms to standard C syntax, specifically removing invalid identifier characters like `{` and `}` in variable names.
+3.  **Type Inference Enhancement**: Improve the type recovery engine to distinguish between `signed int` and `unsigned int` based on usage context (e.g., comparison with zero, right shifts) rather than defaulting to `unsigned int`.

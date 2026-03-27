@@ -1,0 +1,103 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `iVar1`, `iVar2`, `uVar4`, `pbVar1` instead of semantic names like `result`, `encrypted`, `signed_sum`. Many marked as "Unresolved local var" indicating complete name recovery failure.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names preserved from debug symbols (e.g., `param_fake_branch`, `call_opaque_predicate`). Names accurately reflect original source intent with proper verb-noun structure.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14` (20), `0xe1` (225), `0x7a314` (500500) obscure meaning. Original expressions like `x * 2 + 10` replaced with hex constants losing semantic clarity.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive "Unresolved local var" comments clutter code. "WARNING: Unknown calling convention" appears repeatedly. `__divsi3` has 35 boolean variables (`bVar1`-`bVar35`) creating visual noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions use do-while loops where for-loops would be clearer. `param_opaque_predicate` has complex nested conditions obscuring the original simple if-else structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but some logic collapsed (e.g., `call_fake_branch` returns constant 10, losing the call to `param_fake_branch`). `__divsi3` is excessively large at 200+ lines.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom reasonably well. Loop structures generally recovered as do-while constructs. Some forward jumps in `param_vectorized_loop` disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `__divsi3` and `_divsi3_skip_div0_test` are nearly identical (code duplication). Constant folding in caller functions (`call_fake_branch`, `call_opaque_predicate`) loses original call structure.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char, size_t) but unsigned/signed distinctions sometimes lost. `param_instruction_substitution` shows `(uint)x >> 1` indicating some type awareness.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Bitfield struct in `param_implementation_defined` marked as "Unresolved local var: anon_struct_4_3_4e909822 bitfield". No struct definitions recovered; all composite types lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present (`(byte *)buffer`, `(int *)0x0`). Pointer arithmetic visible in `param_vectorized_loop`. No const-correctness preserved from original source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are auto-generated warnings ("Unresolved local var", "WARNING: Subroutine does not return"). No semantic comments explaining algorithm purpose or obfuscation intent.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` visible but not identified. String XOR decryption pattern not recognized. No design pattern or algorithm naming.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good anomaly flagging: "WARNING: Subroutine does not return" for longjmp, "Could not recover jumptable" in `__divsi3`. "Unresolved local var" indicates recovery failures transparently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation recovered. Signal handler contracts (SIGFPE, SIGSEGV) not documented. Error conditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables (`div_zero_caught`, `jmp_buffer`) referenced but not explained. No callback relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file. Original section organization (7.1 Obfuscation, 7.2 Optimization, 7.3 Edge Cases) completely lost. No logical grouping beyond function boundaries.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Requires external dependencies (`__aeabi_idivmod`, `__divsi3`, `strncpy`). Architecture mismatch (original arm64, decompiled ARM). Would need significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (5+6+7+4)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (6+3+5)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (4+2+6+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.88/10
+```
+
+**Overall Readability Score: 4.9/10**
+
+### Critical Defects
+- **Variable names completely generic** (`iVar1`, `iVar2`) despite `-g` debug symbols being available
+- **Composite types lost** - bitfield struct marked as "Unresolved local var" with no field recovery
+- **Constant folding obscures logic** - `call_fake_branch` returns `10` directly instead of showing `param_fake_branch(10)` call
+- **Architecture mismatch** - Original compiled for arm64, decompiled as ARM (32-bit)
+- **No idiom recognition** - GCD algorithm, XOR decryption, and opaque predicates not identified
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Debug symbols preserved original function names accurately, making navigation and identification straightforward.
+
+### Most Needs Improvement
+- **Idiom Recognition (2/10)** - Common patterns (GCD, XOR decryption, opaque predicates) completely unrecognized despite being well-known algorithms.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Leverage debug symbols for variable names** - With `-g` flag present, DWARF debug info should recover original variable names like `result`, `encrypted`, `signed_sum` instead of `iVar1`, `iVar2`.
+
+2. **Implement pattern recognition for common algorithms** - Add detection for GCD (Euclidean algorithm), XOR decryption loops, and opaque predicate patterns to add explanatory comments.
+
+3. **Preserve call relationships over constant folding** - When callers pass constant arguments, show the original call structure with a comment showing the folded result, rather than eliminating the call entirely.

@@ -1,0 +1,97 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_14`, `local_20`, `local_40` throughout. The original source had meaningful names like `a`, `b`, `count`, `args`, `sum`, but these are completely lost. Even loop indices like `local_c` and `local_c4` provide no semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (cdecl_func, stdcall_func, varargs_func, func_no_args, func_many_args, func_mixed_args, func_struct_byval, func_struct_byptr). Minor differences exist (call_cdecl vs call_cdecl) but overall preservation is excellent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x2a` (42), `0x14` (20), `0x1e` (30) appear without explanation. Some literals like `0x10` (16) for loop bounds are used. The decompiler inconsistently shows hex vs decimal - function returns show decimal in printf but hex in call sites.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts observed. However, some type-related noise exists: `undefined4`, `undefined8` types pollute the output, and some functions have incorrect return types (call_cdecl returns void instead of int).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural control flow matching source. However, `call_order_dep()` incorrectly calls `param_order_dep()` with no arguments when source passed `++i, ++i`. Also `call_ret_complex_expr()` calls with no arguments first time. Loop structures are preserved correctly.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: The original source's function granularity is well preserved. Each small test function remains separate (cdecl_func, stdcall_func, etc.). Parameter lists are reasonable - not exposing excessive implementation details. No 500-line monoliths present.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in functions like `func_struct_byptr` and `param_double_ptr`. No goto statements or severe disruption to flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code or duplicate expressions observed. Loop unrolling is minimal at -O0. The decompiler successfully eliminated redundant computations that would exist in raw assembly.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Integer types are generic `int` rather than int32_t. Function pointers use `code *` instead of proper function signatures. Some type errors: `call_cdecl` returns void instead of int, `call_ret_basic` returns undefined4. Pointers are reasonably typed (int*, char*, long*).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct definitions are recovered. LargeStruct (128 bytes), SmallStruct, BigStruct, SmallPoint, LargeData, TestIntPair are all lost. The decompiler uses raw pointer arithmetic: `*(long *)(param_1 + (long)local_c * 8)` instead of `s.data[i]`. This is the most severe degradation.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe pointer arithmetic exists (e.g., `param_1 + (long)local_c * 8`). Pointer arithmetic without bounds checking visible. No alignment annotations or _Atomic. However, basic type compatibility is maintained in most operations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining logic, algorithm purpose, or non-obvious operations. The original source had extensive comments (CALL-L1-01, PARAM-L1-01, etc.) explaining test scenarios - completely lost. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms explicitly identified. The varargs handling uses standard stdarg pattern but isn't labeled as such. No recognition of calling convention patterns (cdecl, stdcall, etc.) beyond function names.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of suspicious code. The incorrect function calls (call_order_dep, call_ret_complex_expr) are presented confidently without warning. No indication of potential undefined behavior from the order dependency test.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had clear expectations (e.g., "期望: 15") which are completely lost. No documentation of error conditions or null checks.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in the code (e.g., call_cdecl calls cdecl_func). However, no documentation of call graphs, global variable usage, or callback relationships. The original's test organization (test_calling_conventions, test_parameter_passing, test_return_values) is preserved in function names but relationships aren't explicit.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. The original source had clear sections (4.1 Calling Conventions, 4.2 Parameter Passing, 4.3 Return Values) completely lost. Static vs global function distinction not clear.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Several compilation issues: incorrect return types (call_cdecl void vs int), undefined types (undefined4, undefined8), incorrect function calls (missing arguments in call_order_dep, call_ret_complex_expr). Would require significant patching to compile.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`param_1`, `local_14`, `local_20`) - original names like `a`, `b`, `count`, `sum` completely lost
+- No struct recovery - all composite types (LargeStruct, SmallStruct, BigStruct) reduced to raw pointer arithmetic
+- Incorrect function calls - `call_order_dep()` calls `param_order_dep()` with no arguments, `call_ret_complex_expr()` first call has no arguments
+- No comments or documentation - original source's extensive explanatory comments completely absent
+- Type errors - some functions have wrong return types (call_cdecl returns void instead of int)
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names are well-preserved from the original source (cdecl_func, stdcall_func, varargs_func, etc.), making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Composite Type Recovery (2/10)  
+All struct definitions are lost. The decompiler uses raw pointer arithmetic like `*(long *)(param_1 + (long)local_c * 8)` instead of recovering `s.data[i]` with proper struct definitions. This severely impacts understanding of data structure usage.
+
+**Top 3 Recommendations:**
+1. Recover struct/union definitions from memory access patterns - the original had clear struct types (LargeStruct, SmallStruct, BigStruct) that should be reconstructed
+2. Add semantic variable naming based on usage analysis - `param_1` used in addition should be `a`, loop variables should reflect their purpose
+3. Fix incorrect function calls - `call_order_dep()` and `call_ret_complex_expr()` have wrong argument patterns that don't match the original source logic
+4. Add comments explaining test expectations - original source had "期望: 15" values that help verify correctness
+5. Fix return type errors - several functions have incorrect return types (void vs int) that would prevent compilation

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `local_4`, `local_8` with no semantic meaning. Original source had meaningful names (`temp1`, `temp2`, `sum`, `count`, `result`) that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved correctly (`sequential_ops`, `single_if`, `nested_if_deep`). Some helper functions have generic names (`FUN_00100880`, `FUN_001009fc`) but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Hex literals used inconsistently (`0x14` instead of `20`, `0xffffffff` instead of `-1`). Original decimal values are obscured, requiring mental conversion to understand return values.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts for -O0 build. Some `undefined4`/`undefined8` type noise present but doesn't significantly impede reading. No dead code from register spilling.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control structures recovered (if-else, for, while, switch). Duff's device recovered with awkward goto labels (`switchD_00101924_caseD_7`). Test functions have broken call patterns (missing arguments).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity preserved well. Each original function remains separate. Test functions are monolithic but match source structure appropriately.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom. Duff's device uses goto labels that disrupt flow (expected for this pattern). Test functions have awkward parameter passing that breaks linearity.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some redundant type assignments (`local_4 = param_1` then immediate use) but manageable. No loop unrolling artifacts at -O0.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types dominate (`undefined4`, `undefined8`, `int`). Critical type errors: `if_else` returns `bool` instead of `int`, `call_func_ptr` returns `void` instead of `int`. Original type information degraded.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered correctly (`local_20 [6]` in `loop_break`, `aiStack_48 [12]` in `loop_multi_exit`). No complex structs in this codebase to evaluate. Pointer arithmetic visible but understandable.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: function pointer calls with `code *` type, implicit casts in test functions, `long` arithmetic in array indexing (`(long)local_4c * 4`). No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero semantic comments in decompiled output. Original had extensive documentation explaining purpose, test cases, and difficulty levels. Only decompiler warnings present ("WARNING: Subroutine does not return").
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Control flow patterns recognized (loops, switches, conditionals). Duff's device partially recognized but not named. No algorithm pattern identification (factorial, digit counting, etc.).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Could not recover jumptable", "Subroutine does not return"). Inconsistent coverage - test function argument mismatches not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Original test validation comments completely lost. No parameter validation hints (e.g., "n must be > 0" for `duffs_device`).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but test functions have broken argument passing (`sequential_ops()` called without arguments). Callback relationships visible but not documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 75 functions in single output file. No logical grouping by control flow level (L1/L2/L3). Original section comments lost.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. Type mismatches would need fixing for standalone use. External dependencies (`printf`, `memcpy`, `__libc_start_main`) properly declared.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (3×0.10 + 7×0.10 + 5×0.05 + 7×0.05) = 1.60 → 1.60 × 0.30 = 0.48
+Level 2 (25%): (6×0.08 + 7×0.07 + 6×0.05 + 7×0.05) = 1.62 → 1.62 × 0.25 = 0.405
+Level 3 (20%): (5×0.08 + 7×0.07 + 5×0.05) = 1.14 → 1.14 × 0.20 = 0.228
+Level 4 (15%): (2×0.05 + 5×0.03 + 5×0.03 + 2×0.04) = 0.48 → 0.48 × 0.15 = 0.072
+Level 5 (10%): (5×0.04 + 5×0.03 + 6×0.03) = 0.53 → 0.53 × 0.10 = 0.053
+
+Overall = 0.48 + 0.405 + 0.228 + 0.072 + 0.053 = 5.57/10
+```
+
+**Overall Readability Score: 5.6/10**
+
+### Critical Defects
+- **Variable names completely generic** (`param_1`, `local_4`) - original semantic names (`temp1`, `sum`, `count`) entirely lost
+- **Test functions have broken call signatures** - `sequential_ops()` called without 3 required arguments in `test_control_flow_l1`
+- **Type signature errors** - `if_else` returns `bool` instead of `int`, `call_func_ptr` returns `void` instead of `int`
+- **Zero semantic comments** - all original documentation about purpose, test cases, and difficulty levels removed
+- **Hex literals obscure values** - `0x14`, `0x1e`, `0xffffffff` instead of decimal `20`, `30`, `-1`
+
+### Best Quality Aspect
+- **Function Naming Quality (8/10)** - Core function names preserved accurately, making it possible to identify which decompiled function corresponds to which source function
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic documentation makes understanding function purpose require reverse-engineering from code alone
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop bounds should be named `count`, `index`, `limit`)
+2. **Preserve original function signatures** - validate return types and parameter counts against call sites to catch type mismatches like `if_else` returning `bool`
+3. **Generate semantic comments** for recognized patterns (e.g., "Computes factorial recursively", "Counts decimal digits") based on control flow analysis

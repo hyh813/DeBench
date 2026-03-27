@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `result`, `a1`, `a2`, `a3`, `a4` throughout. Compare to source: should be `capture_by_value`, `capture_by_ref`, `data`, `size`, `instance_count`. The decompiled code provides no semantic information about variable purpose.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: Some test functions have mangled C++ names partially readable (e.g., `_Z20test_cpp_member_funcv`), but internal functions use generic names like `sub_109BC`, `init_proc`, `call_weak_fn`. The core issue is that class methods and member functions are not properly named - compare to source: `SimpleClass::getValue`, `LifecycleClass::getData`, `Base::virtual_func`.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Some literals are unexplained magic numbers (e.g., `0x1Fu` for strncpy length, `4u` for exception allocation). However, the decompiler does show some constants like `1074003968` (which is 0x3F800000, the float 1.0). Mixed results - most numeric literals lack symbolic names.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Moderate compiler artifacts present: `JUMPOUT(0)` statements, `__noreturn` attributes on some functions, and some thunk function indicators. The `test_cpp_exception` function is incorrectly marked `__noreturn` when it should return. Overall noise level is moderate but manageable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: **Critical defect**: `test_cpp_exception()` is completely broken - it throws exception and never returns, making the function unusable. Many control flow patterns are obscured by the decompiler showing raw assembly patterns. The noreturn attribute is incorrectly applied, hiding the actual exception handling logic from source.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are separated but with significant issues: some have incorrect parameter counts (e.g., `test_cpp_virtual_func` has 4 parameters but source has 0). Template functions are properly separated but lack proper instantiation context. Some functions like `call_virtual_func` have confusing signatures.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom with some forward jumps. The `test_cpp_exception` function is a complete failure of linearization - it just throws and exits. Other functions are reasonably linear but lack clear structure due to poor type recovery.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: At -O0, minimal optimization is expected, and the decompiled code reflects this. No significant dead code or obvious redundancy. Loop unrolling is minimal, as expected for debug build. Some duplicate vtable setup code in destructors but acceptable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Severe type degradation - uses generic types like `_DWORD`, `_QWORD`, `void**`, `int*`. Compare to source: should use `int`, `size_t`, `std::unique_ptr<int[]>`, `RTTIBase*`. Function pointer types are completely wrong (e.g., `int (__fastcall **)(_DWORD)` instead of proper member function pointers). No const correctness preserved.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: **Critical defect**: No struct/class recovery at all. All composite types are lost. Compare to source which has `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `Container<T>`, `DiamondDerived` - the decompiled code shows only raw pointer arithmetic like `*(_DWORD *)(result + 40)` instead of `data[size++] = value`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations: extensive raw pointer arithmetic (e.g., `*(_DWORD *)((char *)this + *(_DWORD *)(*(_DWORD *)this - 12) + 4)`), incorrect function pointer casts, no bounds checking visible. The virtual function call pattern `(**a1)(a1)` is dangerous without proper type information.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Almost no useful comments. The decompiled output contains only function signatures and basic control flow. No explanation of algorithms, no decompilation confidence indicators, no @param/@return documentation. Compare to source which has extensive comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Some C++ patterns partially visible (virtual function calls through vtable, `operator new`, `std::unique_ptr` destructor calls) but not explicitly named or explained. The decompiler shows raw assembly patterns like `*(_DWORD *)v0 = off_11C68` without explaining it's vtable setup for RTTIDerivedA.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: **Critical defect**: 27 functions failed to decompile but are only listed at the end with "FAILED to decompile". The `test_cpp_exception` function is completely wrong (throws and never returns) but no warning is given. No indication of suspicious code or decompilation confidence levels.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contract information recovered. No preconditions, postconditions, or invariants documented. Compare to source which has clear expectations like "result should be 21", "ptr should not be null" - none of this is preserved.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Some function call relationships visible (e.g., `test_cpp_oo_features` calls other test functions) but not clearly documented. Virtual dispatch relationships are obscured by raw vtable manipulation. No call graph or usage documentation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are grouped somewhat logically (test functions together, class methods together) but there's no clear module or namespace structure. Compare to source which has clear sections: "CPP-L3-01", "CPP-L3-02", etc. - this organization is completely lost.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Would not compile without significant patching. Many external dependencies unresolved (e.g., `std::ios_base::Init`, `_cxa_throw`, `_dynamic_cast`). Function signatures are incorrect (wrong parameter counts, missing this pointers). Would require extensive manual修复.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.8/10
+
+**Critical Defects:**
+- `test_cpp_exception()` is completely broken - throws exception and never returns, losing all exception handling logic
+- No class/struct recovery - all composite types lost, replaced with raw pointer arithmetic
+- Variable names are completely generic (v0, v1, a1, a2) providing no semantic meaning
+- 27 functions failed to decompile with no clear indication in context
+- Type precision severely degraded - uses _DWORD, _QWORD, void** instead of proper C++ types
+- Function signatures incorrect (e.g., test_cpp_virtual_func has 4 parameters but source has 0)
+- No comments explaining any logic or algorithm
+
+**Best Quality Aspect:** Noise Reduction (scored 5/10)  
+At -O0, there is minimal optimization-related code distortion. The control flow generally matches source structure aside from the exception handling failure.
+
+**Most Needs Improvement:** Type System Fidelity (scored 2.0/10)  
+The decompiler completely failed to recover C++ class types, templates, and proper type information. All class structures are lost, replaced with raw memory offsets that make the code nearly incomprehensible.
+
+**Top 3 Recommendations:**
+1. Recover C++ class structures with proper field names from vtable analysis and constructor patterns
+2. Fix exception handling decompilation - the current output loses all try-catch logic
+3. Infer variable names from usage patterns (e.g., variables used as array indices should be named based on the array's semantic purpose)
+4. Add comments explaining vtable layout, virtual inheritance offsets, and thunk functions
+5. Correct function signatures - many have wrong parameter counts due to this pointer handling issues

@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v7`, `s`, `a1`, `a2`. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value`, `capture_by_ref`. Only `retaddr` and `exception` are descriptive.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: C++ test functions are correctly demangled (`test_cpp_member_func`, `test_cpp_virtual_func`, etc.), and template functions preserve their names. However, helper functions use generic address-based names like `sub_1030`, `sub_1130`, `sub_11AC`. The core test functions are well-named but utility functions lack semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some computed expressions like `1001 * LifecycleClass::instance_count + 21` correctly reflect source logic, but magic numbers like `42` in the exception test lack explanation. The value `4700` appears instead of the expected `4704`, suggesting incomplete constant recovery. Many numeric literals remain unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains `__asm { jmp dword ptr [ebx+8] }` assembly blocks, extensive `__usercall` and `__noreturn` annotations, and empty thunk functions like `__x86.get_pc_thunk.bx`. While some annotations are useful, the assembly blocks and calling convention markers add noise that impedes readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions are simple computed returns (e.g., `return 42;`, `return 71;`) which are natural. The `test_cpp_oo_features` function has sequential printf calls which read naturally. The exception handling function shows throw logic clearly. At O2 optimization, the simplification is expected and appropriate.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Template functions are properly separated into individual instantiations (`template_max<int>`, `template_max<double>`, `template_swap<int>`). Class member functions are extracted correctly (`Container<int>::push`, `Container<int>::get`, etc.). The decomposition matches the source structure well.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive jumps. The `test_cpp_oo_features` function has straightforward sequential calls. Only minor forward references exist. The code generally flows well without spaghetti control structures.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: `test_cpp_member_func` has some redundant initialization (memset of v6, then strcpy over same buffer), but this appears to be compiler-generated setup code rather than significant redundancy. No severe duplicate expressions or dead code that would impede understanding.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int` for most integers, `size_t` in some places, `char*` for strings, `void*` for generic pointers. The `_DWORD*` notation suggests 32-bit understanding. Some type precision is lost compared to the original `int`, `size_t`, `bool` distinctions. Function signatures like `int __cdecl call_virtual_func(Base *obj, int x)` are accurate.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Class vtable pointers are visible (`_vptr$Base`), and class names are preserved (`Base`, `Derived`, `Container<int>`, `RTTIBase`). However, struct-like local variables in functions like `test_cpp_member_func` use generic buffer declarations (`_WORD s[4]`, `_BYTE v6[8]`) without meaningful field names. The class hierarchy is reasonably recovered but internal structure is generic.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code with proper pointer usage. Some casts present like `*(_DWORD *)v2` but these are necessary for the decompiled representation. No obvious type-confused function pointers or buffer-overflow-prone patterns. Minor unsafe operations but nothing severe.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only the header comment indicating IDA Pro decompilation exists. No function-level comments explaining purpose, algorithm, or logic. No indication of uncertainty for indirect calls or complex logic. The decompiled code provides zero documentation about what each function does or how it relates to the source.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Virtual function calls are recognized through vtable access (`*obj->_vptr$Base`), template instantiation is properly separated, and exception handling shows `__cxa_throw`. However, lambda expressions are not explicitly identified (the test just returns a constant). Some C++ idioms are recovered but not named or explicitly documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The note "positive sp value has been detected, the output may be wrong!" appears for the `start` function. "FAILED to decompile" is shown for 18 functions. However, individual functions don't have uncertainty indicators for indirect calls or complex patterns. The anomaly communication is inconsistent.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. No recovery of assertions from the source code. The decompiled code provides zero contract information about what functions expect or guarantee.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible in the code (e.g., `call_virtual_func(pb, 5)`). Static member access like `LifecycleClass::instance_count` is shown. However, there's no explicit documentation of call graphs, caller/callee relationships, or global variable usage. Relationships must be inferred from the code itself.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are reasonably grouped: test functions together, template instantiations together, class member functions grouped by class. However, the file is essentially flat with no namespace or module structure recovery. The organization is logical but basic.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code will not compile as-is. Missing includes (`<cstdio>`, `<cstring>`, `<memory>`, `<typeinfo>`), undefined identifiers for standard library functions, and missing class definitions for `LifecycleClass` static member. Requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming is nearly all generic single-letter names (`v0`-`v7`, `a1`, `a2`, `s`) losing all semantic meaning from the original source
+- No comments whatsoever explaining function purpose, algorithm logic, or providing context
+- No contract/precondition/postcondition recovery despite the source having clear semantics
+- Build system compatibility is poor - code won't compile without extensive patching
+- Lambda expression test function (`test_cpp_lambda`) returns constant `85` without recovering the lambda capture and computation logic
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+The decompiled code maintains natural, readable control flow. Most functions are simple computed returns that read top-to-bottom. At O2 optimization, the simplification is appropriate and doesn't obscure the logic.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Nearly every variable in the decompiled code uses generic names (`v0`, `v1`, `v2`, etc.) that completely obscure the semantic purpose. The original source had meaningful names like `capture_by_value`, `capture_by_ref`, `multiplier`, `data`, `size` that conveyed intent. Without meaningful names, tracking data flow becomes extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `capture_by_ref += 5` suggests a reference-captured variable, `strlen(name)` suggests a string buffer) to generate semantically meaningful names instead of generic `v0`, `v1`.
+2. **Add function-level documentation**: Generate comments explaining what each function does based on its behavior, call patterns, and return values. At minimum, document the function's purpose and any non-obvious logic.
+3. **Recover contracts and assertions**: Analyze preconditions (null checks, bounds checks) and postconditions (return value patterns) to document expected behavior, especially for public API functions.

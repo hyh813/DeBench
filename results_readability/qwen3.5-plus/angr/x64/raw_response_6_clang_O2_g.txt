@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, v2, ptr, result) with no semantic meaning. Original source had meaningful names like `dst`, `src`, `buffer`, `fp`, `shm` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core functions preserved original names (param_strcpy, call_strcpy), but many helper functions use mechanical names (sub_402020, sub_40202c). Some function names don't match functionality (param_strlen takes no parameters).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: 4294967295 (-1), 42 (success), 18446744073709551615 (error). No constants recovered. Signal numbers (10, 14) instead of SIGUSR1/SIGALRM.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Compiler artifacts visible throughout: redundant assignments (v0 = v2), stack frame manipulation, unnecessary type casts. param_malloc_free contains massive SIMD-like code that shouldn't exist at -O0.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses goto for loops (LABEL_4028e8, LABEL_40291f). param_malloc_free has extremely complex nested conditionals instead of simple for-loop. Some functions use if-else chains that could be cleaner.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical semantic errors: call_strcpy doesn't call param_strcpy (returns constant), param_strlen missing parameter. Helper functions (sub_402xxx) add noise without purpose.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with early returns. Some forward jumps disrupt flow but most functions maintain reasonable linearity.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Significant redundancy from compiler artifacts. param_malloc_free and param_memset contain massive unrolled SIMD code that obscures simple loop logic. Duplicate variable assignments throughout.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Many types degraded to generic unsigned long long. param_strlen signature wrong (no parameters). pthread_t treated as char. Function pointers often void* instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered (FILE, sockaddr, struct_0) but fields are generic (field_0, field_5). TLS variables not properly recovered (accessed via fs segment arithmetic).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts visible. Pointer arithmetic on void*. param_scanf has both output variables pointing to same stack location (&v0, &v0) - critical bug. pthread_t cast to long long.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No explanation of complex logic, no decompilation confidence indicators, no API documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard library functions recognized (strcpy, strlen, memcpy). Threading patterns (pthread_create/join) visible but not identified as concurrency patterns. No algorithm pattern recognition.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only one anomaly flagged: "[D] Unsupported jumpkind Ijk_SigTRAP". Incorrect code (param_malloc_free SIMD mess) presented confidently without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., ptr != NULL). No postconditions. Error return values (4294967295) not explained. No invariant documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables (signal_received, atomic_counter) referenced without context. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure. Related functions somewhat grouped. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies declared (pthread, libc). Some type definitions incomplete but generally compilable with stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+3+4)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):  (4+4+6+3)/4 = 4.25 × 0.25 = 1.06
+Level 3 (Type):        (4+5+3)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (1+4+3+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (5+6+6)/3   = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.86/10
+```
+
+**Overall Readability Score: 3.9/10**
+
+### Critical Defects:
+- **param_strlen missing parameter** - Function signature completely wrong (takes no arguments but should take `const char*`)
+- **call_strcpy semantic error** - Returns constant instead of calling param_strcpy, breaking function relationship
+- **param_malloc_free catastrophic failure** - Contains nonsensical SIMD code instead of simple loop; completely unreadable
+- **param_scanf type safety bug** - Both sscanf output pointers point to same stack location (&v0, &v0)
+- **Zero documentation** - No comments explaining any logic, magic numbers, or decompilation confidence
+
+### Best Quality Aspect: **Module Organization (6/10)**
+- Functions maintain reasonable ordering that roughly matches source file structure, making navigation somewhat predictable.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding complex functions like param_malloc_free nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameter types from calling conventions** - param_strlen and other functions lose critical parameter information
+2. **Add decompilation confidence annotations** - Flag uncertain reconstructions (like param_malloc_free's SIMD code) with warnings
+3. **Infer variable names from usage patterns and string literals** - Variables used with "HelloLib" should be named `buffer`, not `v0`

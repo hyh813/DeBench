@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables like `obj`, `base`, `derived` are meaningful, but the majority use generic names (`v0`, `v1`, `v2`, `a`, `b`, `a1-a6`) that obscure semantic purpose. The original had descriptive names like `value`, `name`, `data`, `size`, `multiplier` which are lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions are well-named (`call_virtual_func`, `Base::virtual_func`, `template_max<int>`), but many retain mangled C++ names (`_Z20test_cpp_member_funcv`) or use generic address-based names (`sub_109BC`), making purpose unclear.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x1Fu` (should be sizeof(name)-1), `0x14u` (should be 20), `21`, `1000` appear without explanation. The original source had clear constants; these are lost in decompilation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: register annotations (`// r0`, `// r3`, `// r4`), stack frame comments (`// [sp+0h] [bp-30h] BYREF`), compiler attributes (`__fastcall`, `__noreturn`), and thunk function markers pollute readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Control flow is mostly natural with if-else and loops preserved. However, `test_cpp_exception` shows incomplete recovery - it throws but catch blocks aren't decompiled (marked `__noreturn`). At -O0 this should be fully recoverable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable boundaries. Template class methods (`Container<int>::push`, `Container<double>::get`) are properly separated. Some inlining occurred in `test_cpp_member_func` but decomposition is acceptable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in template functions. Some virtual thunk functions interrupt flow but overall good linearity.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy detected. No obvious dead code or duplicate expressions. Loop unrolling is minimal at -O0. Clean code in this dimension.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Template instantiations correctly recovered (`Container<int>`, `Container<double>`), but generic `int` used instead of specific types. Function pointers shown as `int (**)(...)` lack precision. Const correctness partially preserved.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs like `SimpleClass` (with `value`, `name[32]`, `vptr`), `Base`, `Derived` (with `multiplier`) are recovered with field names. However, some fields like in vtable access use raw pointer arithmetic obscuring structure.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe operations present: `_DWORD *` casts for pointer arithmetic, `*(_DWORD *)v0` direct memory access, complex virtual thunk pointer math. These create potential undefined behavior. No `restrict` or safety annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Some useful comments like `// positive sp value has been detected, the output may be wrong!` and `// attributes: thunk`, but most are auto-generated noise. No algorithm explanations or semantic documentation of what code accomplishes.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms explicitly identified. Virtual function dispatch, RTTI, exception handling are present but not named or explained as patterns. Missed opportunity to label vtable mechanism.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations are listed at the end, but successfully decompiled functions don't flag suspicious patterns. No warnings about indirect calls that couldn't be resolved or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original source had implicit contracts (e.g., `getData` requires idx < size) not documented. Error conditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but relationships not explicitly documented. No comments indicating who calls what or callback relationships. Virtual dispatch through vtables partially shown but not fully explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions somewhat logically grouped (test functions, class methods, template instantiations) but not perfectly organized. Static functions not clearly scoped. Some arbitrary ordering present.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has many unresolved external references (`operator new`, `operator delete`, `_cxa_throw`, etc.) and wouldn't compile standalone. Dependencies on standard library not documented. Requires significant patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v0`, `v1`, `a`, `b`) obscuring semantic purpose
+- Many function names remain mangled (`_Z20test_cpp_member_funcv`) or use address-based names (`sub_109BC`)
+- Magic numbers like `0x1F`, `0x14`, `21`, `1000` lack explanation; original constants lost
+- Exception handling not fully recovered (`test_cpp_exception` marked `__noreturn` losing catch blocks)
+- Significant compiler artifacts (register annotations, stack frame comments, `__fastcall` attributes) pollute code
+
+**Best Quality Aspect:** Redundancy Elimination (scored 8/10)  
+- No dead code or duplicate expressions; clean code without optimization artifacts
+
+**Most Needs Improvement:** Lexical Clarity (scored 4.25/10)  
+- Variable and function naming is poor with generic names and mangled C++ symbols; literal clarity suffers from unexplained magic numbers
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `v0` used as `instance_count++` result should be named `count`)
+2. Demangle C++ names and convert address-based names (`sub_XXXX`) to semantic names based on cross-references
+3. Detect magic numbers and suggest named constants (e.g., `0x14u` → `sizeof(int) * 5`)
+4. Recover exception handling structures fully at -O0 (catch blocks should be decompiled)
+5. Add semantic comments explaining vtable mechanism, RTTI, and virtual inheritance patterns

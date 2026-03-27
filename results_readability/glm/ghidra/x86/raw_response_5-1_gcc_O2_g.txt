@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `iVar1`, `puVar1`, `sVar2`, `piVar2`). While `obj` is used for class instances, most local variables lose all semantic meaning, requiring significant effort to track their purpose.
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are excellent, accurately reflecting the original source (e.g., `test_cpp_member_func`, `Base::virtual_func`). This is likely due to preserved symbols/DWARF info, providing high-level context despite the optimization.
+
+**3. Literal Clarity:** Score: 2/10
+Justification: The code is littered with opaque magic numbers resulting from constant folding (e.g., `0x125c`, `0x2a`, `0x3e9`) without decimal conversions or comments explaining their origin, making the logic extremely difficult to follow.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: While the core logic is visible, there is significant noise from compiler-generated thunks (e.g., `virtual thunk to...`) and injected `get_pc_thunk` functions. Although these are real artifacts, they clutter the navigation of the decompiled output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: Control flow is generally readable where logic exists, but suffers from critical errors in virtual dispatch recovery (e.g., `call_virtual_func` fails to pass the argument `x`) and aggressive constant folding that replaces entire algorithms with single return statements.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler successfully separates complex C++ constructs like thunks, template instantiations, and implicit constructors into distinct functions. This granularity helps manage the complexity of the object-oriented structures.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with minimal spaghetti logic. Even complex pointer arithmetic for `this` adjustment in inheritance is presented as sequential expressions rather than tangled jumps.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: The decompiler presents the optimized code cleanly; there is no dead code or obvious redundancy within the function bodies, as the compiler has already stripped it away.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: While high-level types like `Base*` are recovered, the code frequently degrades to generic `int` or `undefined4` for pointer arithmetic and return values (e.g., casting pointers to `int` for vtable access), losing type safety.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Struct recovery is strong, particularly for inheritance. The decompiler correctly identifies base class sub-objects (e.g., `super_MiddleA` inside `DiamondDerived`) and handles field access, even if some field names are generic.
+
+**11. Type Safety:** Score: 6/10
+Justification: There are unsafe casts present, such as casting `int*` to `int` or accessing vtable offsets via raw integer arithmetic (`*(int *)(iVar1 + -4)`). While this reflects the binary reality, it obscures the type safety of the original C++ source.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 8/10
+Justification: Comments are very helpful, specifically the `DWARF original prototype` annotations and warnings about `jumptable` recovery issues. These provide crucial context for understanding the mangled C++ constructs.
+
+**13. Idiom Recognition:** Score: 8/10
+Justification: The decompiler successfully identifies and labels complex C++ idioms like "virtual thunk to", "non-virtual thunk to", and RTTI mechanisms (`__dynamic_cast`), which is essential for analyzing object-oriented binaries.
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: Anomalies like unknown calling conventions and unresolved jumptables are clearly flagged with `WARNING` comments, alerting the user to potential inaccuracies in the decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: There is no recovery of preconditions or invariants. For example, the checks in `test_cpp_rtti` are presented as raw logic rather than semantic contracts like "requires obj is instance of RTTIDerivedA".
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: The relationship between classes and their virtual methods is clear through the naming convention (e.g., `Base::virtual_func`). The use of mangled names in the disassembly view (implied) maps well to the demangled C++ names.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically by class or test case (e.g., all `test_cpp_...` functions are adjacent). The separation of thunks and constructors aids in navigating the module structure.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on standard types but uses `undefined4` and specific compiler intrinsics (`__builtin_strncpy`). It would require significant massaging (typedefs, headers) to compile, largely due to the low-level representation of vtables and RTTI.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.4/10
+
+**Critical Defects:**
+- **Virtual Call Argument Loss**: In `call_virtual_func`, the decompiler fails to pass the argument `x` to the virtual function (`(**obj->_vptr_Base)();`), completely breaking the function's logic.
+- **Opaque Magic Numbers**: Constant folding results in unreadable hex literals (e.g., `0x125c` for `4704`) without decimal conversion or comments explaining the calculation.
+- **Generic Variable Naming**: Critical variables like pointers to derived objects are named `piVar2` or `iVar1`, obscuring the data flow in complex functions like `test_cpp_rtti`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The preservation of symbol names and DWARF info provides excellent high-level context, making it easy to locate specific classes and test functions despite the optimization.
+
+**Most Needs Improvement:** Literal Clarity (scored 2/10)
+- The reliance on raw hex constants for folded calculations makes the optimized functions semantically meaningless; converting these to decimal or annotating the original expression would significantly improve understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Enhance Virtual Call Recovery**: Ensure arguments are correctly mapped to indirect calls via vtables, specifically checking register/stack usage relative to the `this` pointer.
+2. **Annotate Constant Folding**: When a function returns a constant due to optimization, append a comment showing the original expression or the decimal value (e.g., `/* 4704 (0x125c) */`).
+3. **Infer Semantic Variable Names**: Utilize type information (e.g., `RTTIDerivedA*`) to generate more meaningful names than `piVar2`, such as `derived_ptr` or `rtti_obj`.

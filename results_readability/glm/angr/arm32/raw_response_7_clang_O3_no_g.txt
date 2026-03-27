@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `a0`), and memory references are cryptic (`vvar_60{r64|4b}`). While `dst` and `cur` appear in `decrypt_string`, most identifiers like `flag1` and `flag2` in `test_obf_opt_edge` do not reflect their semantic purpose (format string pointers).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most high-level function names (`param_fake_branch`, `call_opaque_predicate`) are preserved accurately from the source symbols. However, low-level runtime functions are reduced to addresses (`sub_400498`), and `__divsi3` is a compiler intrinsic name, which is acceptable but not descriptive of the algorithm.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: The decryption key `0x5A` (90) is visible, and constants like `4294967295` (UINT_MAX/-1) are used correctly. However, magic numbers like `32` (buffer size) and `8` (SIGFPE) appear without context or named constants, reducing clarity.
+
+**4. Noise Reduction:** Score: 2/10
+Justification: The code is heavily polluted with `armg_calculate_condition` calls, which abstract ARM condition flags but make the C code unreadable. Variables like `vvar_60{r64|4b}` represent internal lifting artifacts that should have been abstracted into clean pointer arithmetic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: While loops (e.g., in `param_opaque_predicate`) are recovered as `do-while`, conditional logic is obscured by `armg_calculate_condition` calls instead of native C comparison operators. The control flow is technically accurate but syntactically foreign to C developers.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are mapped 1:1 with the source, maintaining appropriate granularity. The separation of logic (e.g., `decrypt_string` vs `param_string_encryption`) is preserved well, avoiding monolithic inlining where the compiler didn't force it.
+
+**7. Code Linearization:** Score: 5/10
+Justification: The code generally reads top-to-bottom, but complex functions like `param_integer_overflow` are difficult to follow due to nested `armg_calculate_condition` calls interrupting the visual flow of logic.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The decompiler successfully represents the compiler's optimizations (e.g., `param_tail_call_optimized` is a math formula, `param_fake_branch` is just `return v0`). It does not introduce artificial redundancy, accurately reflecting the optimized binary.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `unsigned int` and `char` are used, but pointer types are inconsistent. The function `decrypt_string` returns `char [2]`, which is syntactically incorrect and semantically confusing (should be `char*`). Signedness is generally preserved but defaults to `unsigned` aggressively.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: No structs or unions are recovered. The bitfield logic in `param_implementation_defined` is completely lost, reduced to a constant return value `44`. Stack variables are treated as raw offsets or generic arrays rather than structured objects.
+
+**11. Type Safety:** Score: 4/10
+Justification: The return type `char [2]` for `decrypt_string` is a severe type safety issue. Additionally, the use of `armg_calculate_condition` with integer arguments bypasses standard C type checking for boolean conditions, making the logic fragile.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of obscure functions like `armg_calculate_condition`. The output is raw code without semantic annotation.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: Standard loops (GCD algorithm, string decryption) are recognizable as `do-while` structures. However, the "Opaque Predicate" logic is obscured by the condition calculation calls, and the "Tail Call Optimization" is presented as raw math rather than a recognized pattern.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: There are no warnings about the `armg_calculate_condition` artifacts or the invalid return type `char [2]`. The decompiler presents these anomalies as standard code, failing to flag potential lifting errors or compiler optimizations that might confuse the user.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. For example, the requirement that `decrypt_string`'s buffer be null-terminated or the signal handler setup in `param_division_by_zero` is not explicitly stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are accurate, and `extern` declarations for global variables (e.g., `param_string_encryption.encrypted`) are present. The call graph is implicitly clear through the function names and calls.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are ordered by memory address (standard for decompilers) rather than logical grouping. This scatters related test functions (e.g., `param_*` and `call_*` pairs) throughout the file, though they are usually close.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile as-is. `armg_calculate_condition` is an undefined symbol specific to the decompiler's internal representation, and `char [2]` as a return type is invalid C syntax. Significant manual patching would be required.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- **Noise Pollution**: Extensive use of `armg_calculate_condition` obscures simple boolean logic (e.g., `if (a < b)` becomes a function call).
+- **Type Errors**: Function `decrypt_string` returns `char [2]`, which is invalid C and misrepresents the pointer return type.
+- **Variable Naming**: Memory references use cryptic names like `vvar_60{r64|4b}` instead of descriptive pointer names.
+- **Missing Structs**: Composite types (bitfields, structs) are completely flattened into raw integers/arrays.
+
+**Best Quality Aspect:** Function Decomposition (Score: 8/10)
+- The decompiler successfully mapped the binary's functions back to the source's logical boundaries, preserving the separation of concerns (e.g., separating the encryption logic from the test harness).
+
+**Most Needs Improvement:** Noise Reduction (Score: 2/10)
+- The pervasive `armg_calculate_condition` calls are the single biggest barrier to readability. Translating ARM condition flags back to native C comparison operators is essential for human-readable output.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Condition Flag Lifting**: Replace `armg_calculate_condition` calls with native C comparison operators (e.g., `==`, `<`, `>`) to restore natural control flow.
+2.  **Type System Correction**: Fix the lifting of return types for pointer-returning functions; ensure `char*` is recovered instead of array types or invalid syntax.
+3.  **Struct Recovery**: Implement stack frame analysis to recover local struct definitions and bitfields, rather than treating all stack memory as generic byte arrays or integers.

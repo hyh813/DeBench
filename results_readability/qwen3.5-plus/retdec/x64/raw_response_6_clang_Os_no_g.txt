@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `a1`, `a2`, `str`, `str2`). In `param_strcpy`, the source parameter becomes uninitialized `str2` losing the `src` semantics. `param_malloc_free` uses `a1, a2, a3, a4` instead of meaningful `size`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved (`param_strcpy`, `call_strcpy`, `thread_compute`), but 80+ helper functions use mechanical names (`function_2030`, `function_2040`). Library wrappers like `function_2090` (strcpy) should be named semantically.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals stored as hex escapes in globals (`g4 = "LIB-L1-01: %d (\xe6\x9c\x9f..."`). Error codes use magic numbers (`0xffffffff`, `0xfffffffe`, `0xfffffffd`) without named constants explaining their meaning.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive type casts (`(int64_t)`, `(int32_t)`, `(char *)`) throughout. Temporary variable chains (`v1`, `v2`, `v3` just passing values) add clutter. Some `__asm_` intrinsics (`__asm_movdqa`, `__asm_pcmpeqb`) in `param_fread_fwrite` obscure logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Heavy goto usage with labels (`lab_0x3031`, `lab_0x312d`, `lab_0x3537_2`) instead of structured loops. `param_pthread_join` and `param_mutex_lock` have particularly convoluted control flow that should be while/for loops.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries mostly preserved, but helper functions are over-fragmented (one function per library call). `param_signal_handling` is 120+ lines and should be decomposed into signal registration and waiting logic.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps disrupt top-to-bottom reading. `param_thread_local_storage` has 3 separate label sections (`lab_0x3572`, `lab_0x3537_2`) making it impossible to read linearly. Loop bodies split across multiple labels.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant variable assignments (`v1 = a1; v2 = v1` chains). Type casts repeated unnecessarily. `param_fread_fwrite` has SIMD comparison code that could be simplified to `strcmp`.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion—everything becomes `int64_t`. Lost distinctions: `pid_t`, `size_t`, `ssize_t`, `pthread_t`, `FILE*`. Boolean values represented as integers. Function pointers use generic `int64_t * (*)(int64_t *)` signatures.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs partially recovered (`struct _IO_FILE`, `struct stat`, `struct shmid_ds`) but all fields are generic (`e0`, `e1`, `e2`...). No semantic field names like `st_size`, `sin_family`, or `shm_nattch`.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(char *)str2`, `(int64_t *)mem`, `(int32_t)a1`. Pointer arithmetic on `int64_t` types. `param_strcpy` has uninitialized variable `str2` used in `strcpy` call—critical safety bug not flagged.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: ZERO comments in decompiled code. No explanation of complex logic (signal handling, thread synchronization). No decompiler confidence indicators for uncertain reconstructions.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `pthread_create`). However, threading patterns (producer-consumer, mutex protection) not identified. No algorithm pattern recognition.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical bugs silent: `param_strcpy` uses uninitialized `str2`. `param_linux_syscall` incorrectly uses `SYS_fork` instead of `SYS_open`. No warnings about these obvious decompilation errors.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"). Error return values (`0xffffffff`) unexplained. No postcondition inference for memory allocation functions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`g32`, `g33`, `g34` for signal handling) have no semantic names. No call graph or callback relationship documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file. Functions loosely grouped (library/syscall/thread sections visible through naming). No header file separation. Static variables not properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes present but function signatures don't match standard library exactly. `param_strcpy` signature wrong (1 param vs 2). Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (4+6+4+5)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type):        (3+4+3)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (1+5+2+2)/4 = 2.50 × 0.15 = 0.38
+Level 5 (Contextual):  (4+5+5)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.06/10
+```
+
+**Overall Readability Score: 4.1/10**
+
+### Critical Defects
+- **Variable `str2` in `param_strcpy` is uninitialized** — critical bug where source parameter is lost
+- **Function `param_linux_syscall` uses wrong syscall** — `SYS_fork` instead of `SYS_open`, completely wrong semantics
+- **All struct fields named generically** (`e0`, `e1`, `e2`) losing all semantic meaning
+- **Zero comments** — no explanation of complex threading/synchronization logic
+- **Excessive goto labels** — `lab_0x3031`, `lab_0x312d`, etc. instead of structured loops
+
+### Best Quality Aspect
+- **Function Naming Quality (6/10)** — Core test function names preserved (`param_strcpy`, `call_strcpy`, `thread_compute`), showing the decompiler can recover some semantic information from debug symbols.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (1/10)** — Completely absent. Even basic decompiler confidence indicators or algorithm explanations would dramatically improve usability.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover parameter semantics from debug symbols** — The `-g` flag was present but `param_strcpy` lost its `src` parameter entirely; leverage DWARF info for variable names.
+2. **Add anomaly detection for uninitialized variables** — Flag cases like `str2` in `param_strcpy` where variables are used before assignment.
+3. **Replace goto chains with structured control flow** — Detect loop patterns from backward jumps and recover while/for constructs instead of label-based branching.

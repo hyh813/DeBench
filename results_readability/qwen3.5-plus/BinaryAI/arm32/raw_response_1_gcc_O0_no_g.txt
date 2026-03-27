@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `local_c`, `local_10` instead of semantic names (`a`, `b`, `c`, `sum`, `count`). Original source had meaningful names like `temp1`, `temp2`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are perfectly preserved (`sequential_ops`, `single_if`, `nested_if_deep`, `duffs_device`) due to debug symbols (-g flag). Names accurately reflect functionality.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x66666667` (division optimization constant) appear unexplained in `loop_while`/`loop_dowhile`. Hex values `0xffffffff`, `0x14`, `0x32` obscure simple integers (-1, 20, 50).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: External function wrappers (`<EXTERNAL>::printf`, `<EXTERNAL>::raise`) add noise. Stack canary checks (`__stack_chk_fail`) and startup code (`_init`, `_start`, `call_weak_fn`) clutter output unnecessarily.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered well (for/while/do-while), but `switch_fallthrough` uses goto labels (`LAB_00010a64`, `LAB_00010a78`) instead of proper fall-through. `duffs_device` has complex goto-based switch that obscures the elegant original pattern.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Each function is appropriately sized. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but `switch_fallthrough` and `duffs_device` have disruptive goto jumps. `switch_default` restructures to if-else chain which is acceptable but less clear than switch.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Some switch cases show duplicated assignment patterns (`uVar1 = value; break;`) that could be cleaner, but this is minor.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: `undefined4` instead of `int`, `undefined8` instead of `int`, `code *` instead of function pointer types. `if_else` returns `bool` instead of `int`. `call_func_ptr_array` returns `code *` instead of `int`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays recover adequately (`local_20[4]`, `apcStack_18[3]`), but field names are generic (`local_20[0]` vs `arr[0]`). No struct recovery issues since source had minimal structs.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(code *)0xffffffff`, `(int)local_c`, `CONCAT44` macro usage. `loop_while` returns `CONCAT44(param_2,local_c)` which is non-standard and type-confused.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Complex patterns like Duff's device, opaque predicates, and computed gotos have no explanation. Original source had extensive documentation that is completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Duff's device appears as complex goto switch without identification. State machine patterns (`state_machine`, `fsm_func_table`) not labeled. Fall-through switch not annotated.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about suspicious patterns. `CONCAT44` usage in `loop_while`/`loop_dowhile` is anomalous but unflagged. Type mismatches (`bool` vs `int`) not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or error handling documentation. Functions like `duffs_device` (requires n>0) have no contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Test functions call target functions but no call graph documentation. Callback relationships (`process_with_callback`) not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically but mixed with external wrappers and startup code. No separation between test code and target functions.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone. `CONCAT44` is Ghidra-specific macro. `undefined4`, `undefined8`, `code *` types need resolution. `__aeabi_idiv` is ARM-specific runtime function.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+4+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+8+6+7)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (3+6+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 4.82/10
+```
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Type system collapse**: `undefined4`, `undefined8`, `code *` types make code non-compilable and hard to understand
+- **`CONCAT44` macro in `loop_while`/`loop_dowhile`**: Non-standard operation that breaks semantics and compilation
+- **Zero comments**: Complex patterns (Duff's device, opaque predicates, computed goto) completely undocumented
+- **Generic variable names**: `param_1`, `local_c` instead of `a`, `b`, `sum`, `count` obscures intent
+- **`switch_fallthrough` uses goto labels**: Original fall-through semantics lost, replaced with `LAB_00010a64` style jumps
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Debug symbols preserved all function names perfectly, making navigation and identification straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation means analysts must reverse-engineer intent for every complex pattern.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., loop counters should be `i`, `j`; accumulators should be `sum`, `count`)
+2. **Add confidence annotations and comments** for complex patterns (Duff's device, fall-through switches, opaque predicates) with decompiler certainty levels
+3. **Use standard C types** instead of `undefined4/8` and avoid Ghidra-specific macros like `CONCAT44` that prevent standalone compilation

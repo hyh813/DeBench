@@ -1,0 +1,103 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`param_1`, `uVar1`, `piVar1`) and struct fields are accessed as array indices (e.g., `param_1[1]` instead of `p->y`), completely obscuring semantic meaning.
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: Most function names (`process_int`, `array_1d_stack`) are recovered accurately from symbols, though `FUN_00101020` and `double_value` (missing) are exceptions.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: Float literals appear as raw hex (`0x400c000000000000` for 3.5) and characters as hex (`0x61` for 'a') in test functions; magic numbers like `0x19` and `0xbf` in `process_char` lack context.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: Code is mostly clean of register spills, but generic types like `undefined8` and `undefined4` act as noise, and `/* WARNING: ... */` comments occasionally clutter the flow.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10
+Justification: Aggressive loop unrolling (e.g., `array_3d` is a single line summing 125 elements) transforms simple loops into massive, unreadable arithmetic expressions, though this reflects the `-O2` optimization.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly; there is no inlining or outlining of code blocks, maintaining the original modularity.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While mostly linear, functions like `array_1d_stack` contain complex nested logic for unrolled loops that disrupt top-to-bottom readability.
+
+**8. Redundancy Elimination:** Score: 4/10
+Justification: The decompiler presents the unrolled loops literally (e.g., 8 separate additions in `array_1d_stack`), resulting in massive code redundancy compared to the original concise loop.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: `process_ld` is incorrectly decompiled as `void` instead of returning `long double`, and `union_type` returns `float` instead of `int`; pointer types are often generic `undefined8`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs and unions are not recovered; `struct_simple` treats the struct as an `int*` array, and `struct_bitfields` uses manual bit shifting (`uVar1 >> 6`) instead of field access.
+
+**11. Type Safety:** Score: 4/10
+Justification: Struct field access relies on unsafe pointer arithmetic (e.g., `*(int **)(param_1 + 2)`), and `undefined4` casts are frequent, losing type safety guarantees.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10
+Justification: Comments are limited to compiler warnings (e.g., "Removing unreachable block") and offer no explanation of the algorithm's logic or purpose.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Basic loops like `array_string` are recognized, but complex idioms like the 3D array traversal are flattened into raw arithmetic, failing to convey the nested loop structure.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: Indirect jumps are flagged with "WARNING: Could not recover jumptable", but the incorrect return type of `process_ld` is not flagged as an anomaly.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no documentation of preconditions (e.g., array non-null) or postconditions; the logic stands alone without semantic contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are readable because names are preserved, allowing the reader to trace the flow between `test_...` functions and their implementations.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, matching the source file's structure (Data Types -> Arrays -> Pointers -> Composites), which aids navigation.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on non-standard types like `undefined8` and `code *`, requiring manual definition or Ghidra-specific headers to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 5.25
+L2_avg: 5.50
+L3_avg: 3.67
+L4_avg: 4.50
+L5_avg: 6.67
+
+Overall = (5.25 × 0.30) + (5.50 × 0.25) + (3.67 × 0.20) + 
+          (4.50 × 0.15) + (6.67 × 0.10)
+Overall = 1.575 + 1.375 + 0.734 + 0.675 + 0.667
+Overall = 5.026
+```
+
+### Overall Readability Score: **5.0/10**
+
+### Critical Defects
+- **Struct/Union Loss**: Composite types are completely lost, accessed via raw pointer arithmetic (e.g., `param_1[1]` instead of `p->y`).
+- **Loop Unrolling**: Simple loops (e.g., `array_3d`) are flattened into massive single-line expressions, destroying algorithmic clarity.
+- **Type Errors**: `process_ld` is decompiled as `void` (missing return value), and `union_type` has the wrong return type.
+- **Literal Obfuscation**: Floating-point constants and characters are represented as raw hex values (e.g., `0x400c000000000000`), making test logic hard to verify.
+
+### Best Quality Aspect
+- **Function Decomposition (9/10)**
+- **Why?** The decompiler perfectly preserved the original function boundaries and modularity, avoiding inlining or outlining artifacts.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)**
+- **Why?** The failure to recover struct definitions, forcing the use of array indexing and bit shifts, makes data structure manipulation nearly impossible to understand.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover Struct Definitions**: Analyze stack usage and access patterns to reconstruct `struct` layouts with field names instead of flattening to arrays.
+2. **Pattern Matching for Unrolled Loops**: Detect arithmetic patterns resulting from loop unrolling (e.g., `sum += arr[i] + arr[i+1]...`) and re-roll them into `for` loops for readability.
+3. **Improve Floating-Point Literal Analysis**: Convert raw IEEE-754 hex representations back to human-readable decimal floats in the decompilation view.

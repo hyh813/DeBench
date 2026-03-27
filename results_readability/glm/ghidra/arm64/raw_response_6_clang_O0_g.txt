@@ -1,0 +1,110 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: While function parameters like `dst` and `src` are recovered (likely from DWARF debug info), local variables are overwhelmingly generic (`local_XX`, `iVar1`, `uVar1`). Thread-local storage variables like `tls_counter` are completely lost, replaced by raw pointer arithmetic on the `tpidr_el0` register (`*(int *)(lVar3 + 0x10)`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names are perfectly recovered from the binary symbols (e.g., `param_strcpy`, `param_linux_syscall`), matching the original source exactly. This provides excellent high-level navigation.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Semantic constants are replaced by magic numbers, significantly harming readability. For example, `syscall(0x38, 0xffffff9c, ...)` is used instead of `syscall(SYS_open, AT_FDCWD, ...)`, and `0x2a` (42) appears directly instead of a named constant or the original return value.
+
+**4. Noise Reduction:** Score: 8/10
+Justification: The code is generally clean with minimal compiler artifacts, typical of `-O0` compilation. However, there are frequent "WARNING: Unknown calling convention" messages and "Unresolved local var" comments that clutter the output without adding value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: Control flow is excellent; loops and conditionals match the source structure perfectly. The ternary operator in `param_strcmp` is expanded into `if/else` blocks, which is a standard, readable decompilation pattern.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source. There is no inlining or outlining that obscures the original architecture. The granularity is exactly as intended by the developer.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom. There are no confusing jumps or goto-based loops; the flow is straightforward and easy to trace.
+
+**8. Redundancy Elimination:** Score: 9/10
+Justification: There is no apparent redundancy or dead code. The logic is concise and directly reflects the operations performed by the compiled binary.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Standard types (`int`, `char *`, `FILE *`, `size_t`) are recovered accurately. However, Thread-Local Storage (TLS) variables are demoted to raw pointer offsets from the `tpidr_el0` register, losing the specific `__thread` type and semantic context.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Standard structs like `stat` and `sockaddr` are recognized. However, in `param_socket_create`, the `sockaddr_in` setup is verbose, assigning individual bytes/fields to offsets (e.g., `local_30.sa_data[6] = '\0'`) rather than presenting a clean struct initialization or `memset` usage.
+
+**11. Type Safety:** Score: 8/10
+Justification: Pointer types are generally respected. There are some unnecessary casts like `(ulong)(uint)x` in `param_printf`, but these do not represent unsafe operations, just verbose type handling.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are almost no explanatory comments. The output relies heavily on auto-generated warnings like "WARNING: Unknown calling convention" and "Unresolved local var," which add noise rather than explaining the code's purpose (e.g., the logic behind `param_linux_syscall`).
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library calls are recognized, but low-level idioms are not abstracted. Atomic operations are shown as ARM64 intrinsics (`__aarch64_ldadd4_acq_rel`) rather than the original C11 `__atomic_fetch_add`, and syscalls are raw numbers rather than named constants.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: The "Unknown calling convention" warning appears on almost every function, including simple ones like `call_strcpy`. This is likely a false positive or a quirk of the ARM64 analysis, which desensitizes the user to actual anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the requirement that `param_malloc_free` receives a valid size is not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are clear and use the recovered names. Global variables like `signal_received` are accessed directly, making the data flow visible, though the lack of comments on *why* they are accessed is missed.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are presented in a logical order that roughly follows the source file structure. Helper functions (like atomic intrinsics) are placed at the end, keeping the main logic clean.
+
+**18. Build System Compatibility:** Score: 6/10
+Justification: The code relies on standard headers, but the raw TLS access (`tpidr_el0`) and specific atomic helper functions would require significant patching or inline assembly to compile and run correctly as C source.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 6.5
+L2_avg: 9.0
+L3_avg: 7.0
+L4_avg: 3.0
+L5_avg: 7.0
+
+Overall = (6.5 × 0.30) + (9.0 × 0.25) + (7.0 × 0.20) + (3.0 × 0.15) + (7.0 × 0.10)
+Overall = 1.95 + 2.25 + 1.40 + 0.45 + 0.70
+Overall = 6.75
+```
+
+**Overall Readability Score:** 6.8/10
+
+### Critical Defects (Bullet List)
+- **TLS Variable Loss**: Thread-local variable `tls_counter` is decompiled as raw register arithmetic `*(int *)(lVar3 + 0x10)`, completely obscuring the high-level intent.
+- **Magic Numbers**: System call numbers (e.g., `0x38` for `SYS_open`) and flags (e.g., `0xffffff9c` for `AT_FDCWD`) are not mapped to their named constants.
+- **Atomic Intrinsics**: C11 atomic operations are represented as low-level ARM64 intrinsics (`__aarch64_ldadd4_acq_rel`) rather than standard C builtins.
+- **Generic Local Variables**: Despite debug info being present, local variables are mostly named `local_XX` or `iVar1`, requiring manual tracking of their purpose.
+
+### Best Quality Aspect (Single Dimension)
+- **Control Flow Naturalness (Score: 9/10)**
+- **Why?** The `-O0` optimization level allowed Ghidra to perfectly reconstruct the original loops and conditional logic without any structural distortion.
+
+### Most Needs Improvement (Single Dimension)
+- **Comment Quality & Presence (Score: 2/10)**
+- **Why?** The decompiled output lacks semantic explanations for complex logic (like syscalls or atomics) and is cluttered with repetitive, unhelpful warnings.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Map Syscall Numbers**: Create a mapping table for common system call numbers (e.g., `0x38` -> `SYS_open`) and constants (`AT_FDCWD`) to improve literal clarity.
+2.  **Recover TLS Variables**: Implement logic to detect Thread-Local Storage access patterns (via `tpidr_el0` on ARM64) and symbolize them back to their original variable names.
+3.  **Filter False Positive Warnings**: Suppress the "Unknown calling convention" warning for standard functions or simple cases where the default calling convention is clearly correct, as it currently adds significant noise.

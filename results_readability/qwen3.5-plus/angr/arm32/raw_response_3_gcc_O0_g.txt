@@ -1,0 +1,102 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`v0`, `v1`, `v2`, `ptr`, `idx`) instead of semantic names like `local`, `arr`, `head`, `current` from source. Example: `local_vars` uses `v0`, `v1` instead of `a`, `b`, `c`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions preserved (`double_value`, `local_vars`, `heap_basic`), but many helpers are address-based (`sub_105b4`, `sub_106d8`). About 60% of functions have meaningful names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive: `4294967295` (should be `-1`), `0x800` (should be `2048`), `40` (should be `10 * sizeof(int)`). No constants recovered from source.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Stack canary checks (`__stack_chk_guard`) injected into nearly every function, creating repetitive boilerplate. Compiler runtime functions (`__sync_*` variants) bloating output significantly.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as `for` constructs, but stack canary checks add artificial conditionals at function exits. Some functions use `goto` patterns unnecessarily.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity mostly matches source. However, compiler runtime functions (`__sync_fetch_and_*`) are extracted as separate functions, creating fragmentation.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but stack canary checks create exit branches that disrupt flow. Example: `local_array` has canary check interrupting return path.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Stack canary code repeated identically across 20+ functions. No consolidation of common patterns. Type casts repeated unnecessarily.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Widespread type degradation: `int` → `unsigned int`, `size_t` → `unsigned int`, `char*` → `unsigned int`. Example: `double_value(unsigned int a0)` should be `int`. Pointer types often lost.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some structs recovered (`Node`, `TreeNode`) but with generic field names (`field_0`, `field_4`). `Point` struct lost entirely. Some struct definitions incorrect (e.g., `heap_nested` has wrong struct layout).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe pointer arithmetic throughout: `*((unsigned int *)(ptr + idx * 4))`. Many implicit casts between pointer and integer types without warnings.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each test case, expected values, and scenarios.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition. Memory allocation patterns, linked list operations, and tree traversals not identified. Stack canary pattern not explained.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about potentially incorrect recovery. `tls_access` shows `__aeabi_read_tp()` with `/* do not return */` but no explanation of why TLS recovery failed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL` checks not annotated). Error return values (`4294967295`) not explained as `-1`.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships not documented. Global variables referenced as `extern` but no usage context. Callback relationships unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output without logical grouping. Original source had clear sections (Stack, Heap, Static, Memory Ops) not preserved.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`GLIBC_2.4::__stack_chk_guard`, `__aeabi_read_tp`) not documented. Many functions reference undefined globals. Won't compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+4+3)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (6+7+6+4)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+5+4)/3   = 4.33 × 0.20 = 0.867
+Level 4 (Semantic):    (1+2+3+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 4.35/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `v2`** should be named based on usage (e.g., `local`, `result`, `counter`)
+- **Stack canary checks** repeated in every function create significant noise for -O0 compilation
+- **Magic number `4294967295`** used throughout instead of `-1` error constant
+- **Struct field names** all generic (`field_0`, `field_4`) losing semantic meaning from `Point`, `Node`
+- **Zero comments** despite original source having extensive documentation for each test case
+- **Type degradation** from `int`/`size_t`/`char*` to generic `unsigned int` throughout
+
+### Best Quality Aspect:
+- **Function Decomposition (7/10)** - Function granularity mostly preserved; individual functions match source structure reasonably well despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, explanations, or decompiler confidence indicators makes understanding intent extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover semantic variable names** from usage patterns (e.g., variables used in loop bounds should be named `count`, `size`, `length`)
+2. **Eliminate or annotate stack canary boilerplate** - either remove security instrumentation or clearly mark it as compiler-added with a single comment per function
+3. **Add decompiler confidence annotations** indicating which recoveries are certain vs. uncertain, especially for type information and struct layouts

@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3` instead of source names (`a`, `b`, `c`). Local variables are `v2`, `v3`, `i`, `j` - completely generic. For example, `sequential_ops(int a1, int a2, int a3)` should preserve original parameter names. This is the worst-scoring dimension.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `recursion_factorial`. Minor issues with startup functions (`sub_930`, `init_proc`) which are compiler-generated.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0xFFFFFFFFLL` (representing -1) and `1000` (loop limit) are used without explanation. However, array literals in `loop_break` are correctly reconstructed as `{0x140000000ALL, 0x280000001ELL}`. Mixed results.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. No redundant casts, no debug instrumentation, no frame pointer manipulation visible. The code is readable without significant noise.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow is natural - `for` loops, `while` loops, `if-else` chains correctly recovered. However, `duffs_device` uses goto labels (`LABEL_13`, `LABEL_14`) instead of recognizing the switch-do pattern. At -O0, this could be better.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. No 500-line monoliths. Test functions properly separated from implementation. Parameter counts preserved correctly.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive forward jumps disrupting flow. The `duffs_device` is the main exception with its label-based structure.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. No obvious common subexpression elimination artifacts. Loop unrolling is minimal (appropriate for -O0). Clean code without duplication.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - all parameters use generic `int` instead of specific types. Return types are `__int64` or `unsigned int` inconsistently. Function pointers use `__int64 (__fastcall *)(_QWORD)` instead of proper signatures. At -O0, we should expect `int` not `__int64`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays reconstructed as `_QWORD v3[2]` or `_OWORD` with hardcoded values, losing original type information. The matrix in `loop_multi_exit` becomes `_OWORD v4[3]` with embedded values. Struct recovery is minimal.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Few unsafe casts present. Pointer arithmetic is straightforward. Function pointer types are imprecise but not dangerous. No obvious buffer overflow patterns. Minor issues with unsigned/signed mixing.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No useful comments in decompiled functions. Only the file header mentions "Decompiled by IDA Pro 9.1 with Hex-Rays". No algorithm explanations, no decompilation confidence indicators, no API contracts. This is a major deficiency.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (loops, conditionals, switch). However, `duffs_device` is not identified as such - uses goto labels. State machine patterns not explicitly named. Callback patterns not labeled. Some recognition but no naming.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed functions listed at end ("FAILED to decompile: _setjmp, __libc_start_main, etc."). However, no explanation of why they failed or what they do. No warnings about indirect calls or unusual patterns in the working code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented anywhere. Zero contract information recovered. This dimension has the second-lowest score.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible in test functions (`v0 = sequential_ops(5, 7, 3)`), but relationships to external code are not documented. No indication of who calls whom or global variable usage.
+
+**17. Module Organization:** Score: 8/10  
+Justification: Functions appear in source order (sequential_ops, single_if, if_else... test functions at end). Logical grouping matches original. Static functions properly scoped. Good organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code would require significant patching to compile - external functions like `puts`, `printf`, `__gmon_start__` are referenced but not defined. However, the structure is compilable with stubs. No compiler-specific hacks visible.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+8+6+8)/4 = 6.0
+L2_avg = (7+8+8+8)/4 = 7.75
+L3_avg = (4+4+7)/3 = 5.0
+L4_avg = (2+5+4+1)/4 = 3.0
+L5_avg = (5+8+6)/3 = 6.33
+
+Overall = (6.0 × 0.30) + (7.75 × 0.25) + (5.0 × 0.20) + (3.0 × 0.15) + (6.33 × 0.10)
+Overall = 1.80 + 1.94 + 1.00 + 0.45 + 0.63 = 5.82/10
+```
+
+**Overall Readability Score:** 5.8/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic names (`a1`, `a2`, `a3`) instead of source names (`a`, `b`, `c`)
+- **No comments**: Zero useful comments explaining algorithms, contracts, or decompilation confidence
+- **Type precision**: All parameters are `int` or `__int64` instead of precise types; function pointers use `_QWORD` signatures
+- **No contract recovery**: No preconditions, postconditions, or invariants documented anywhere
+- **Idiom loss**: `duffs_device` uses goto labels instead of being recognized as the classic pattern
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (Level 2)** scored highest at 8/10
+- **Why?** Functions maintain appropriate granularity matching source exactly. No fragmentation or monoliths. Test functions properly separated.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (Level 1)** scored lowest at 2/10
+- **Why?** Every parameter uses generic names (`a1`, `a2`, `a3`) that completely obscure semantic meaning. At -O0, there's no excuse for not preserving parameter names from debug symbols.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from debug symbols**: At -O0, parameter names like `a`, `b`, `c` are available in DWARF info. The decompiler should use them instead of `a1`, `a2`, `a3`.
+2. **Add algorithm recognition comments**: Identify patterns like Duff's device, state machines, and callback patterns with explanatory comments.
+3. **Recover type information**: Use debug symbols to recover precise integer types and function pointer signatures instead of defaulting to `__int64` or `_QWORD`.

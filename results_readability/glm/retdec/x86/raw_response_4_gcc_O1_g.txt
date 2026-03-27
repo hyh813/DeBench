@@ -1,0 +1,94 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `a1`, `a2`), providing no semantic hint about their purpose (e.g., `sum`, `args`, `count` are lost).
+
+**2. Function Naming Quality:** Score: 8/10
+Justification: High-level function names like `cdecl_func`, `varargs_func`, and `test_calling_conventions` are accurately recovered from symbols, though runtime wrappers like `function_1090` remain generic.
+
+**3. Literal Clarity:** Score: 3/10
+Justification: String literals are completely lost, replaced by opaque pointer arithmetic offsets (e.g., `(char *)(v1 + 2885)`), making it impossible to read output messages without cross-referencing addresses.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code is cluttered with Position Independent Code (PIC) artifacts like `__x86_get_pc_thunk_bx(v1)` and stack canary checks (`__readgsdword(20)`), which significantly obscure the core logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow constructs like `while` loops in `varargs_func` and `switch` statements in `ret_multi_branch` are correctly identified, preserving the logical structure despite the noise.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source well; complex functions like `test_calling_conventions` are not inlined or fragmented, maintaining the original modularity.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with appropriate early returns; there are no confusing spaghetti-like jumps or computed gotos disrupting the flow.
+
+**8. Redundancy Elimination:** Score: 5/10
+Justification: Due to `-O0` compilation, redundant variable moves (e.g., `int32_t v1; return v1;`) are preserved, and the decompiler does not abstract these away, cluttering the logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10
+Justification: Basic types like `int32_t` and `float64_t` are correct, but pointer types are often degraded (e.g., `int32_t str` instead of `char*` in `func_mixed_args`), and `func_struct_byval` completely loses its struct parameter.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct definitions are entirely missing; `LargeStruct` and `SmallStruct` are accessed via raw pointer arithmetic (e.g., `*(int32_t *)(a1 + 4)`) rather than field access, destroying data structure context.
+
+**11. Type Safety:** Score: 6/10
+Justification: While the code contains necessary casts for low-level access, the lack of recovered struct types forces unsafe-looking pointer arithmetic that was originally safe member access.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: Comments are limited to metadata like address ranges and compiler detection; there are no comments explaining the logic, algorithms, or the purpose of the complex pointer arithmetic.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard patterns like loops are recognized, but specific idioms like `va_list`/`va_arg` are decompiled into manual pointer incrementation (`v2 += 4`), obscuring the "varargs" intent.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: No warnings are provided for the unusual stack layouts or the missing struct parameters; the code presents the PIC setup and stack checks as standard logic without annotation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., non-null pointers) or postconditions; the logic is presented flatly without semantic contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls are explicit and use the recovered names, making the call graph easy to follow, even if the data being passed is obscured.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are grouped in a single file roughly corresponding to the source, but the lack of struct definitions at the top level makes the module feel incomplete.
+
+**18. Build System Compatibility:** Score: 7/10
+Justification: The code includes necessary headers and prototypes, allowing for compilation, though inline assembly like `__asm_hlt()` and specific compiler intrinsics may require specific toolchains.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- String literals are replaced by pointer arithmetic offsets (e.g., `v1 + 2885`), making print statements unreadable.
+- Composite types (structs) are not recovered; `LargeStruct` is accessed via raw offsets, losing all semantic meaning of fields.
+- Variable naming is entirely generic (`v1`, `v2`), requiring the analyst to manually track data flow.
+- Significant noise from Position Independent Code (`__x86_get_pc_thunk`) obscures the business logic.
+
+**Best Quality Aspect:** Function Naming Quality (Score: 8/10)
+- The decompiler successfully preserved the original function names for the core logic, making it easy to locate specific routines like `cdecl_func` or `test_calling_conventions`.
+
+**Most Needs Improvement:** Composite Type Recovery (Score: 2/10)
+- The failure to recover `LargeStruct` and `SmallStruct` definitions, instead rendering them as raw pointer math, is the single biggest barrier to understanding the data manipulation in this code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **String Literal Recovery:** Map read-only data section references back to string literals in the decompiled output to restore `printf` messages.
+2. **Struct Reconstruction:** Analyze stack layout and access patterns (e.g., `a1 + 4`, `a1 + 8`) to synthesize struct definitions with named fields.
+3. **Noise Filtering:** Identify and abstract or hide standard PIC setup patterns (like `__x86_get_pc_thunk`) behind a macro or helper function to clean up the control flow.

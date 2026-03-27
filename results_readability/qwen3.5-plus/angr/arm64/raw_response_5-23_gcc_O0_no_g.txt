@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `v2`, `temp_1`) with no semantic meaning. For example, `param_macro_constants` uses `a0` instead of `size`, and `param_stringize` uses `v2`, `v3`, `v4` instead of `str1`, `str2`, `str3`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved original names (`param_macro_constants`, `call_macro_constants`), but runtime functions have cryptic names (`sub_400894`, `$x`, `sub_400a08`). The meaningful function names help navigation significantly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `0x400` (should be `MAX_SIZE`), `0x200` (should be `MAX_SIZE/2`), `4278190081` (unexplained bitmask), `57072` (should be `0xDEF0`). Some are recoverable (64 = `BUFFER_COUNT * 4`) but not indicated.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present throughout: frame pointer setup (`v0 = &v1`), stack canary checks (`__stack_chk_guard`), and redundant variable assignments. These add ~30% visual noise but don't break comprehension.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural if-else and loop structures, but `param_conditional_compile` uses complex bit manipulation (`(v0 * 2 | v0 >> 31) & 4294967294`) instead of clear conditional branches, obscuring the DEBUG_MODE logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well—each test function is separate and appropriately sized. `param_macro_constants` (5 lines) and `call_macro_constants` (6 lines) maintain proper single-responsibility structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. However, unnecessary intermediate variables (`v0 = &v1` followed by immediate return) disrupt linear reading in many caller functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant patterns include duplicate return statements (`return memcpy(...); return memcpy(...);` in `sub_400894`), repeated stack canary checks in every function, and unnecessary variable copies throughout.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Types are generic (`unsigned long long`, `unsigned int`, `int`) instead of precise types (`size_t`, `uint32_t`). Pointer types often degrade to `void*` or `char*`. However, signed/unsigned distinction is mostly preserved.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in this code to evaluate. Array access is recovered correctly (e.g., `param_asm_clobber` shows `*((int *)(a0 + ...))` pattern). Pointer arithmetic is visible but understandable.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe pointer arithmetic visible (`a0 + (__ROL__(i, 2) & 18446744073709551612)`), but no egregious casts. Stack canary checks provide some safety. No buffer overflow patterns detected in decompiled output.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining macros, conditionals, and expected values. No decompilation confidence indicators or algorithm explanations present.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition visible. Macro expansions (SQUARE, MAX, ADD_16) are flattened to arithmetic without indicating original macro semantics. Atomic operations shown as `__aarch64_ldadd4_acq_rel` without explanation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: One function explicitly marked as failed: `// Failed to decompile function __aarch64_ldadd4_acq_rel at 0x401750`. However, other potential issues (architecture mismatch x86→ARM) are not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or expected value documentation. Original comments like `// 期望：64` (expected: 64) are completely lost. No error condition documentation present.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. Global variables referenced (`g_401840`, `global_var`) but without semantic names. External dependencies (`printf`, `mmap`, `sysconf`) are properly declared.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source structure (preprocessing tests first, then assembly tests). Test harness functions (`test_preprocessing_features`, `test_asm_features`) properly grouped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". External function declarations present. However, architecture-specific intrinsics (`__aarch64_ldadd4_acq_rel`) may require specific toolchain support.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (6+8+7+6)/4 = 6.75 × 0.25 = 1.69
+Level 3 (Type):        (6+7+7)/3   = 6.67 × 0.20 = 1.33
+Level 4 (Semantic):    (2+4+6+3)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (6+7+7)/3   = 6.67 × 0.10 = 0.67
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.90/10
+```
+
+**Overall Readability Score:** 5.9/10
+
+### Critical Defects
+- **Variable names are entirely generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original (`size`, `str1`, `counter`)
+- **Zero comments** despite original having extensive documentation explaining macro behavior and expected values
+- **Magic numbers everywhere** (0x400, 57072, 4278190081) without recovery of original constant names (MAX_SIZE, 0xDEF0)
+- **Compiler noise artifacts** (stack canary checks, frame pointer setup) in every function adding ~30% visual clutter
+- **Architecture mismatch unexplained** (source x86_64, decompiled AARCH64) with no indication of transformation differences
+
+### Best Quality Aspect
+- **Function Decomposition (8/10)** - Function boundaries and granularity preserved excellently; each test function remains separate with appropriate size and single responsibility.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation loses all semantic context about macro expansions, expected values, and preprocessing behavior that was central to the original code's purpose.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., parameter used in size comparison → `size`, string passed to strlen → `str1`)
+2. **Recover and annotate magic numbers** - Detect constants that match source patterns (1024, 64, 512) and add comments like `// MAX_SIZE (1024)` or `// BUFFER_COUNT * 4`
+3. **Preserve source comments in debug builds** - When `-g` flag is present, extract and embed original comments at function and block level to maintain semantic documentation

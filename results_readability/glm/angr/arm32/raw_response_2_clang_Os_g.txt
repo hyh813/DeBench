@@ -1,0 +1,83 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `a0`, `ptr`), providing no semantic hint about their purpose, such as `sum` or `index` in `array_1d_stack`.
+
+**2. Function Naming Quality:** Score: 5/10
+Justification: While high-level test functions like `process_char` and `main` are recovered correctly, many runtime and helper functions are left with generic names like `sub_4003f8` or `sub_400498`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Magic numbers are prevalent; for example, `process_char` uses `65` and `32` instead of `'A'` and `32` (or a named constant), and `process_float` uses raw hex constants like `0x3f000000`.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The code is heavily polluted with compiler/lifter artifacts, specifically the `armg_calculate_condition` macro and virtual variable syntax like `vvar_36{r64|4b}`, which obscures the underlying logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is unnatural, relying heavily on `goto` statements (e.g., `goto LABEL_4004bc`) and `do-while` loops even where simple `for` loops or `if` statements would suffice in the source.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: User-defined functions are present, but the output is cluttered with massive, inlined library implementations (e.g., `__muldf3` is hundreds of lines of bit manipulation), disrupting the modularity of the user code.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code does not read linearly; execution frequently jumps to labels like `LABEL_401038` or `LABEL_401064` inside `linked_list`, making it difficult to follow the top-to-bottom flow.
+
+**8. Redundancy Elimination:** Score: 2/10
+Justification: There is significant redundancy in condition checking; for instance, `armg_calculate_condition` is called repeatedly with similar arguments to simulate flag checks that would be implicit in high-level code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10
+Justification: Type information is severely degraded; pointers are consistently typed as `unsigned int *` (e.g., in `const_param`), and 64-bit integers like `long long` are split into two `unsigned int` parameters.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Structs are not recovered; instead, fields are accessed via array indexing on a pointer, such as `a0[1] + *(a0) + a0[2]` in `struct_simple` instead of `p->x + p->y + p->z`.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code relies on explicit casts like `(char *)a0` in `ptr_void` and treats memory as raw byte arrays, losing the type safety guarantees present in the original source.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code to explain the logic, algorithms, or the purpose of complex bit-manipulation sequences found in floating-point functions.
+
+**13. Idiom Recognition:** Score: 1/10
+Justification: High-level patterns are not recognized; for example, the string length calculation in `array_string` is a raw loop with pointer arithmetic rather than being identified as a standard `strlen` idiom.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents complex or potentially incorrect logic (e.g., the massive `__muldf3` function body) with absolute confidence, offering no warnings or uncertainty indicators.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., non-null pointers) or postconditions; functions like `ptr_double` are presented as raw operations without any safety context.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10
+Justification: While function calls are visible, the relationships are obscured by the inclusion of low-level runtime functions (e.g., `__aeabi_drsub`) without context, making the call graph noisy.
+
+**17. Module Organization:** Score: 5/10
+Justification: The functions are listed in a flat file, roughly in address order, which provides some logical grouping of test functions, but lacks the semantic separation of the original source sections.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile as-is due to the use of lifter-specific syntax like `armg_calculate_condition`, `vvar_...`, and `goto` labels that are not valid C identifiers in all contexts.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 2.7/10
+
+**Critical Defects:**
+- The pervasive use of `armg_calculate_condition` and `vvar_` syntax renders the code unreadable as C.
+- Composite types (structs) are completely flattened into array accesses (e.g., `a0[1]`), losing all semantic field information.
+- Floating-point operations are obscured by the inclusion of massive software implementation routines (e.g., `__muldf3`) instead of simple operators.
+
+**Best Quality Aspect:** Function Naming (scored 5/10)
+- Despite the noise, the decompiler successfully recovered the names of high-level test functions like `process_char` and `main`, which anchors the analysis.
+
+**Most Needs Improvement:** Noise Reduction (scored 1/10)
+- The lifter artifacts (`armg_calculate_condition`, virtual variables) are the primary barrier to readability; removing or abstracting these into standard C operators is essential.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement a pattern-matching pass to replace `armg_calculate_condition` sequences with standard high-level conditional operators (`&&`, `||`, `!`).
+2. Recover struct types by analyzing access patterns (e.g., `a0[0]`, `a0[1]`, `a0[2]`) and replacing array indexing with member access (`->x`, `->y`).
+3. Detect and exclude or abstract standard library/compiler-rt functions (like `__muldf3`) to focus the output on the user's logic.

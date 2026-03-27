@@ -1,0 +1,136 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_strcpy`
+
+### Original Source:
+```c
+int param_strcpy(char *dst, const char *src) {
+    strcpy(dst, src);
+    return strlen(dst);
+}
+```
+
+### Decompiled:
+```c
+int param_strcpy(char *param_1, char *param_2)
+{
+  char *pcVar1;
+  pcVar1 = stpcpy(param_1,param_2);
+  return (int)pcVar1 - (int)param_1;
+}
+```
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names like `param_1`, `param_2`, `local_10`, `local_20`, `pcVar1`, `iVar1`. The original `dst` and `src` parameters are completely lost. This makes tracking variable purpose extremely difficult across the 1859-line decompiled output.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions retain their original names (`param_strcpy`, `call_strcpy`, `test_standard_library_functions`). However, internal helper functions use cryptic names like `FUN_00102020`. The function names are action-oriented but lack parameter type hints.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers are prevalent without explanation (e.g., `0x2a` for 42, `0xffffffff` for -1). String literals are referenced as `DAT_00105019` addresses rather than actual content. The decompiler shows `signal(10,signal_handler)` where 10 should be SIGUSR1.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; stack canary checks (`__stack_chk_fail`) are present but expected at -O0. The code is relatively clean of redundant casts or debug instrumentation. Some type mismatches like `(pthread_mutex_t *)counter_mutex` are present.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow closely matches source. Loops use `do-while` constructs correctly. The `param_strcpy` uses `stpcpy` (a compiler optimization) but the logic remains readable. Some complex nested conditions in `param_fork_exec` are slightly awkward but traceable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - each test function (`call_strcpy`, `call_strcmp`) is separate. The `param_*` wrapper functions correctly isolate library call logic. No 500-line monoliths; all functions are reasonably sized (20-80 lines).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns in error handling (`if (__stream == NULL) return -1`) are used appropriately. No excessive forward jumps or goto statements. The flow is easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Common subexpression elimination is minimal at -O0. Some loop unrolling in `call_memcmp` but it's the compiler's direct translation, not excessive.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results - `char *param_1` is correct, but `int` is used where `size_t` would be more appropriate (e.g., `param_3` in `param_memcpy`). `undefined8` and `undefined4` appear for uncertain types. Const-correctness is lost (`const char *src` becomes `char *param_2`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery. The `ThreadData` struct in source is completely lost - decompiled shows raw offset calculations like `*(int *)((long)&local_60 + lVar3 * 0xc)`. Global variables like `signal_received`, `shared_counter` are correctly identified as globals but their types are imprecise.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present: `(pthread_mutex_t *)counter_mutex`, `(pthread_attr_t *)0x0`. Pointer arithmetic is sometimes unsafe: `*(undefined4 *)(__shmaddr + 1)`. However, most operations are type-consistent within functions.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments whatsoever in the decompiled output. The source had extensive comments explaining each test case, but these are completely absent. No documentation of what functions do or why certain operations occur.
+
+**13. Idiom Recognition:** Score: 8/10  
+Justification: Standard library functions are correctly identified (`strcmp`, `strlen`, `pthread_create`, `fork`, etc.). Threading patterns (producer-consumer with condition variables) are recognizable. The `stpcpy` optimization is correctly identified.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly warnings. The decompiler silently transforms `strcpy` to `stpcpy` without noting this optimization. Indirect calls and uncertain patterns are not flagged. The output presents everything as definitive.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values (-1, -2, etc.) are not explained. The contract that `param_strcpy` returns the string length is not indicated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are implicit in the code structure. `main` calls the three test functions. However, no explicit documentation of who calls whom or global variable usage. The `signal_handler` callback relationship is not documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - standard library tests, system calls, thread tests. Static functions like `signal_handler`, `thread_sum` are properly scoped. However, all in one file without header separation.
+
+**18. Build System Compatibility:** Score: 9/10  
+Justification: The decompiled code compiles successfully (as noted in metadata). External declarations are present for all libc functions. Dependencies are implicit but standard. Very little patching needed.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+7+3+7)/4 = 4.75
+L2_avg = (8+8+8+8)/4 = 8.00
+L3_avg = (5+4+6)/3 = 5.00
+L4_avg = (1+8+1+1)/4 = 2.75
+L5_avg = (6+7+9)/3 = 7.33
+
+Overall = (4.75 × 0.30) + (8.00 × 0.25) + (5.00 × 0.20) + 
+          (2.75 × 0.15) + (7.33 × 0.10)
+        = 1.425 + 2.0 + 1.0 + 0.4125 + 0.733
+        = 5.57/10
+```
+
+**Overall Readability Score:** 5.57/10
+
+---
+
+### Critical Defects:
+- **Variable naming**: All parameters use generic names (`param_1`, `param_2`) losing semantic meaning of `dst`/`src`
+- **No comments**: Complete absence of documentation explaining function purpose or logic
+- **Type degradation**: `const char *` becomes `char *`, losing const-correctness; structs not recovered
+- **Magic numbers**: Signal numbers like `10` (SIGUSR1) and `0xe` (SIGALRM) not resolved to constants
+- **Anomaly silence**: Compiler optimization (`strcpy`→`stpcpy`) not flagged; no uncertainty indicators
+
+### Best Quality Aspect: Structural Intelligibility (8.0/10)
+Control flow is natural and matches source closely at -O0. Functions are well-decomposed with appropriate granularity. Code linearizes well with minimal jumps.
+
+### Most Needs Improvement: Semantic Transparency (2.75/10)
+No comments, no pattern recognition documentation, no anomaly warnings, and no contract recovery. The decompiler provides zero semantic context about what the code does or any uncertainties.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage**: `param_1` used as destination in string functions should be named `dst` or `dest`
+2. **Add basic comments**: At minimum, document what each `param_*` function tests (e.g., "// Tests strcpy behavior")
+3. **Resolve magic numbers**: Signal numbers, error codes, and constants should be resolved to named constants where possible

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a0`, `a1`, `a2` with no semantic meaning. Local variables are `v0`, `v1`, `v2`, etc. For example, in `sequential_ops`, the parameters should be `a`, `b`, `c` but are `a0`, `a1`, `a2`. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `loop_dowhile`, `loop_nested`, `loop_break`, `loop_continue`, `goto_forward`, `goto_backward`, `ternary_op`, etc. The decompiler recovered function names with high accuracy.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with unexplained magic numbers: `4294967295` (0xFFFFFFFF, used as -1), `1717986919` (0x66666667, division optimization), `0x8000000000000000`, `1073741823`. For example, in `loop_while`, the condition `while (18 < a0 + 9)` uses magic numbers without explanation. No named constants replace these values.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant artifacts include: `unsupported_Iop_ZeroHI96ofV128()` indicating decompilation failure, excessive `__ROL__` intrinsics for rotate operations, stack frame comments like `// [bp-0x10]`, and weird type casts throughout. The `loop_continue` function contains completely broken code with `[D] unsupported_Iop_ZeroHI96ofV128()`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Control flow is severely degraded. `loop_while` uses a do-while with nonsensical condition `while (18 < a0 + 9)` instead of checking `x != 0`. `loop_for_fixed` is transformed into an unrecognizable form with `__ROL__` operations. `loop_continue` has broken goto-based structure. The original simple loops are nearly impossible to recognize.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each original function is correctly separated into its own decompiled function. Function granularity is appropriate - no obvious inlining or outlining issues at -O0. Parameter counts match original (e.g., `sequential_ops` has 3 parameters, `nested_if_deep` has 5).
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Code readability is severely disrupted by goto statements in `loop_continue`, `goto_forward`, and `goto_backward`. Forward jumps interrupt flow. The `loop_while` and `loop_dowhile` have identical broken implementations that don't match the source logic. Deep nesting in nested_if functions is somewhat preserved but flattened.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some dead code exists but is not excessive. The main issue is not redundancy but transformation artifacts - loop structures are replaced with arithmetic operations that obscure intent. No loop unrolling comments present.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed results - parameters are `unsigned int` or `unsigned long` which loses signedness (original used `int`). Return types vary between `int`, `long long`, `unsigned long long`. The `loop_break` function returns `unsigned long long` but should return `int`. Function pointer types are not properly typed (e.g., `goto a0` in `call_func_ptr`).
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: No struct or array recovery whatsoever. The `loop_break` function's array `arr[] = {10, 20, 30, 40, 50}` is completely lost - it's replaced with a switch statement over the target value directly. All composite types are reduced to primitive operations.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Excessive casting throughout: `(unsigned int)`, `(unsigned long long)`, `(char)`. Bit manipulation with masks like `& 4294967294` (0xFFFFFFFE) is common. The `call_func_ptr` uses `goto a0` which is dangerous. Some pointer arithmetic in `process_with_callback` could be unsafe. However, no buffer overflows are obvious.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only stack frame annotations like `// [bp-0x10]`, `// x8`, `// w9` appear. No algorithm explanations, no decompilation confidence indicators, no @param/@return documentation. The comment `/* do not return */` appears for `longjmp` calls which is helpful.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized: switch statements for `switch_small`, `switch_large`, `switch_default`. The Duff's device in `duffs_device` is partially recognized with labels. However, no pattern naming (e.g., "State machine pattern", "Duff's device") and the loop patterns are not recognized as such.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The `unsupported_Iop_ZeroHI96ofV128()` in `loop_continue` and `goto_backward` indicates a failure but provides no explanation. No indication of uncertainty in indirect calls or unusual stack layouts. The code presents broken logic as if correct.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. No documentation of error conditions from the original source (e.g., "x must be non-negative for loop_while"). The multi-return functions have no contract information.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Some external functions declared with `extern` (e.g., `extern unsigned long long g_412ff8;`). However, no clear documentation of function call relationships. The test functions call other functions but this isn't documented. Callback relationships in `process_with_callback` are unclear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are in one large file but appear somewhat grouped (test functions together, helper functions together). Static functions like `double_value`, `triple_value` are properly scoped. However, no header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code will NOT compile as-is. Major issues: `unsupported_Iop_ZeroHI96ofV128()` is not a valid function, `goto a0` is invalid C, `goto *targets[idx]` in computed_goto uses GCC extensions. Many `extern` declarations needed for globals. Would require extensive patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- Variable names are all generic (`a0`, `a1`, `v0`, `v1`) with no semantic meaning - completely unusable for analysis
+- Loop structures (`loop_while`, `loop_for_fixed`, `loop_continue`) are transformed beyond recognition using bit manipulation and rotate intrinsics
+- `loop_break` array lookup is replaced with a switch statement, losing the original array semantics entirely
+- Type system uses wrong signedness (`unsigned int` instead of `int`), causing semantic differences
+- `unsupported_Iop_ZeroHI96ofV128()` indicates complete decompilation failure in multiple functions but no explanation provided
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The decompiler almost perfectly recovered function names from the original source, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Despite -O0 (debug) compilation where variables should be easily recoverable, the decompiler used generic register-based names (`a0`, `v0`) instead of inferring semantic names from usage. This is the most impactful degradation for readability.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: At -O0, stack variables should map directly to source. Use data flow analysis to determine semantic names (e.g., `temp1` used as `a+b` should be named `sum_ab`)
+2. **Recover loop constructs from control flow**: The do-while with backward jump in `loop_while` should be recognized as a loop. Don't replace with arithmetic equivalents at -O0
+3. **Flag unsupported operations clearly**: Instead of `unsupported_Iop_ZeroHI96ofV128()`, provide a comment like `// DECOMPILATION ERROR: SIMD operation not supported - manual analysis required`

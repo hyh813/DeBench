@@ -1,0 +1,101 @@
+## EVALUATION: C++ Object-Oriented Features Decompilation
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `v3`, `result`, `a1`, `a2`) with no semantic meaning. For example, in `_Z20test_cpp_member_funcv`, `str` should be `obj_name` based on the `"Test"` string usage.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Function names are C++ mangled (e.g., `_Z20test_cpp_member_funcv`) with demangled comments. Original names like `test_cpp_member_func` are recoverable but not used as actual identifiers.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x125c`, `21`, `1000` appear without explanation. String literals are stored as hex-encoded globals (`g1`, `g2`) rather than readable strings.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some redundant casts (`(int32_t)`, `(float64_t)`) present but not excessive. Frame pointer manipulation is minimal at -O0.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Exception handling uses explicit `goto` labels (`lab_0x10b60`, `lab_0x10b5c`) instead of try-catch blocks. At -O0, this should recover to natural C++ constructs.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical failure: many functions return constants instead of logic (e.g., `_Z29test_cpp_multiple_inheritancev` returns `71` directly). This loses all semantic information.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Goto-based exception handling creates non-linear flow. Multiple label jumps in `_Z18test_cpp_exceptionv` disrupt top-to-bottom reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No significant dead code, but constant-folding went too far (entire function bodies replaced with return values).
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t`, `float64_t` consistently, but all object pointers are `int32_t *` losing class type information. No const-correctness recovery.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Vtables recovered as structs with generic fields (`e0`, `e1`, `e2`). Class relationships noted in comments but not as actual C++ class definitions.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(int32_t)result`, `(int32_t)a1`). Pointer arithmetic on `int32_t *` without proper object typing creates undefined behavior risk.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Demangled function names in comments are helpful. Class inheritance noted (`Derived (base classes: Base)`). No algorithm or logic explanations.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns (vtables, exceptions, smart pointers) visible but not explicitly identified. No recognition of RAII, polymorphism patterns.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No uncertainty flags for problematic decompilations. Functions returning constants should be marked as "optimization artifact" or "logic lost."
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception safety contracts completely missing.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Vtable connections shown through struct initialization (`g17`, `g18`). Function call graph visible but class hierarchy not explicit in code.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in single file. Functions grouped by address rather than logical relationship. No header separation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has includes and declarations but won't compile standalone. Missing C++ runtime support, incorrect function signatures for methods.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+4+4+6)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+5+4+6)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (5+4+3+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+
+Overall Score: 4.32/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Functions return constants instead of logic**: `_Z29test_cpp_multiple_inheritancev`, `_Z26test_cpp_operator_overloadv`, `_Z15test_cpp_lambdav` all return hardcoded values, losing all semantic information
+- **Variable names are entirely generic**: `v1`, `v2`, `v3` throughout with no semantic meaning inferable from context
+- **Exception handling uses goto labels**: Should recover to try-catch blocks at -O0 optimization level
+- **C++ class structures not recovered**: Classes noted in comments but not as actual C++ definitions with members
+- **Mangled function names as identifiers**: Human-readable names only in comments, not actual function names
+
+### Best Quality Aspect:
+- **Noise Reduction (6/10)** - Minimal compiler artifacts and debug instrumentation; code is relatively clean without excessive redundant operations
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (2/10)** - No preconditions, postconditions, or exception safety contracts documented; critical for C++ code understanding
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures as actual class definitions** with member variables and methods instead of flat functions with vtable structs
+2. **Infer semantic variable names from usage patterns** (e.g., variables holding string literals should be named after their content purpose)
+3. **Flag optimization artifacts explicitly** when functions are constant-folded, indicating original logic was lost rather than presenting constants as the actual implementation

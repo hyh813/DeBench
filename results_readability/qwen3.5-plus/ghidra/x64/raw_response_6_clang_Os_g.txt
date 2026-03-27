@@ -1,0 +1,99 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`iVar1`, `iVar2`, `local_28`, `local_38`) with numerous "Unresolved local var" comments indicating lost semantic information. Only function parameters occasionally retain meaning (`dst`, `src`, `filename`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions preserved well (`param_strcpy`, `test_standard_library_functions`), but some functions like `FUN_00102020` remain completely generic. Action verbs are present where names were recovered.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers: `0x2a` (42), `0x1f`, `0x10`, signal numbers as `10` and `0xe` instead of `SIGUSR1`/`SIGALRM`. No constants recovered despite `-g` debug symbols being available.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Frequent "Unresolved local var" comments, register artifacts (`in_RAX`, `in_FS_OFFSET`), and type casting noise (`(ulong)(uint)`, `(long)&local_18 + 4`) clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops recovered as do-while instead of for-loops. `param_fread_fwrite` has extremely complex nested conditionals with vector operations obscuring the simple `strcmp` logic from source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries correctly identified with appropriate granularity. However, `call_*` functions often duplicate logic that should just call `param_*` functions directly.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `param_fread_fwrite` has deeply nested conditionals (6+ levels) that disrupt linear reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `test_standard_library_functions` inlines calls that should reference `call_*` functions. `call_strcmp`, `call_strlen`, `call_memcmp` return constants instead of showing actual computation logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types recovered (`int`, `char*`, `size_t`, `pthread_t`) but significant degradation with `void*` where specific types expected. Signed/unsigned sometimes incorrect (`uint` vs `int`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: `struct stat` partially recovered but `ThreadData` struct completely lost (fields accessed via offset: `*(uint *)arg`, `*(int *)((long)arg + 4)`). `sockaddr` fields accessed individually rather than as structured type.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(long)&local_18 + 4`, pointer arithmetic on `void*`). `atomic_counter` operations use `LOCK()/UNLOCK()` macros that may not be accurate representations of `__atomic_*` builtins.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only auto-generated "Unresolved local var" and "WARNING" comments present. No algorithm explanations, no API contract documentation, no decompilation confidence indicators beyond warnings.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `printf`, `pthread_create`) but threading patterns (mutex, condition variable, atomic ops) not explicitly identified as concurrency idioms.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "WARNING: Unknown calling convention" and "WARNING: Subroutine does not return" appear appropriately. However, architecture mismatch (ARM64 source → x86 decompilation) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"). Error return values (`-1`, `-2`, `-3`, `0x2a`) not explained. No postcondition inference present.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but call graph not documented. Global variables (`signal_received`, `shared_counter`, `atomic_counter`) visible but relationships not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source structure. However, all code in single output without header file separation or logical module grouping.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External functions referenced without declarations. `LOCK()/UNLOCK()` macros undefined. Would require significant stubbing and type definitions to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Contribution |
+|-------|-----------|---------|--------|--------------|
+| L1: Lexical Clarity | 4 | 4.75 | 30% | 1.425 |
+| L2: Structural | 4 | 6.00 | 25% | 1.500 |
+| L3: Type System | 3 | 5.00 | 20% | 1.000 |
+| L4: Semantic | 4 | 4.50 | 15% | 0.675 |
+| L5: Contextual | 3 | 5.00 | 10% | 0.500 |
+
+**Overall Readability Score: 5.1/10**
+
+### Critical Defects:
+- **Architecture mismatch**: Source compiled for ARM64 but decompiled as x86, causing potential instruction interpretation errors
+- **Variable `local_28`, `local_38`** should be named `read_buffer`, `pipefd` based on usage context
+- **Magic number `0x2a`** (42) appears 30+ times without explanation as test success code
+- **ThreadData struct completely lost** - fields accessed via raw offset arithmetic instead of structured access
+- **`param_fread_fwrite`** string comparison logic transformed into incomprehensible vector operations instead of simple `strcmp`
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core test function names preserved accurately from debug symbols, maintaining semantic connection to original source intent
+
+### Most Needs Improvement:
+- **Literal Clarity (3/10)** - Pervasive magic numbers throughout with no constant recovery despite `-g` debug symbols being available during compilation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols more aggressively** - With `-g` flag present, variable names, struct definitions, and constants should be recovered from DWARF information rather than showing "Unresolved local var"
+2. **Recognize standard library patterns** - Transform vector comparison operations back to `strcmp` calls when the pattern matches known library function behavior
+3. **Add architecture validation** - Flag when decompilation architecture doesn't match binary metadata to prevent silent misinterpretation of instructions

@@ -1,0 +1,112 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`a1`, `a2`, `v1`, `v2`, `v3`, `v4`). Parameters like `param_macro_constants(int64_t a1)` should be `size`. Local variables like `v1`, `v2` in `param_macro_functions` obscure their roles as intermediate computation values.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main test functions like `param_macro_constants`, `call_asm_basic` correctly preserve original names. However, internal functions like `function_1030` (puts), `function_1040` (mmap), `function_1050` (printf) use mechanical numbering instead of semantic names. Mixed result - public API preserved, internal helpers not.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0xdef0` (default platform offset), `0xdf22` (expected output) appear without explanation. The decompiler correctly computed constant results (64, 512, 30) but didn't explain their origins. String literals have encoding issues (`\xe6\x9c\x9f` for Chinese characters).
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some uninitialized variable declarations like `int64_t v1;` without immediate assignment create noise. Complex bitwise expressions like `v2 < 0 == ((v2 ^ v1) & (v1 ^ (int32_t)&g24)) < 0` are decompilation artifacts. However, no obvious debug instrumentation or frame pointer manipulation.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: At `-O0`, control flow is well preserved. Loops use while constructs correctly (e.g., `param_asm_clobber`). Conditional expressions like ternary operators are properly recovered. Minor awkwardness in `param_macro_constants` where the comparison logic is convoluted.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity - each test function is separate and focused. The decompiler correctly kept `param_asm_basic` and `call_asm_basic` as distinct functions. No over-fragmentation or monoliths observed. Parameter counts are reasonable.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Early returns used appropriately in `param_dynamic_code` and `param_memory_protection`. Some forward jumps in `param_asm_multi_insn` but manageable. Good linearity overall.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns like `v1 = v1 + 1 & 0xffffffff;` appearing in multiple loops. The decompiler didn't simplify these to `v1++`. However, no obvious dead code. Loop unrolling not present at -O0, which is correct.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int64_t` for most values which is appropriate for ARM64. `uint64_t` correctly used for `a2` in `param_asm_clobber`. `int32_t` used for some results. Minor issue: `param_asm_basic` returns `int64_t` but should be `int32_t` based on original `int result`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery attempted. Arrays like `int arr[]` in original become raw pointer arithmetic (`*(int32_t *)(4 * v1 + a1)`). The decompiler didn't recover the array parameter semantics. No union or bit-field reconstruction.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(int32_t)&g24` treating address as integer, `(int64_t)v3` in pointer contexts. Pointer arithmetic like `4 * v1 + a1` is raw without bounds. Some type confusion between pointers and integers (e.g., `v2` used as both in `param_asm_multi_insn`).
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only address range comments present (e.g., `// Address range: 0x1190 - 0x11a4`). No explanation of algorithm logic, macro expansion semantics, or inline assembly behavior. The decompiler provides no guidance on what the code does.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like the conditional compilation ternary in `param_macro_constants` are recognized but not named. The inline assembly patterns (`__asm_movaps`, `__asm_paddd`) are identified but not explained as SIMD operations. No pattern naming (e.g., "Implements: vector addition").
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The decompiler silently produces incorrect-looking code in `param_asm_simd` where `v1` and `v3` are uninitialized but used. No warnings about unresolved indirect calls or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The `param_asm_clobber` function has implicit requirements (valid pointer, positive count) that aren't indicated. No error condition documentation.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible in `test_preprocessing_features` and `test_asm_features`. However, no documentation of who calls whom. Global variables like `g20`, `g21`, `g22` used for SIMD test data without explaining their purpose.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - preprocessing tests together, asm tests together. Static functions properly scoped. However, all in single file with no header separation. Related functions like `param_asm_*` and `call_asm_*` grouped well.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Uses standard library functions (printf, mmap, munmap, mprotect, sysconf). Should compile with `-lrt` on Linux. Missing `#include <string.h>` for memcpy referenced in original. Some dependency on system calls documented but not explicit.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 5 + 6) / 4 = 4.75
+L2_avg = (7 + 8 + 7 + 6) / 4 = 7.00
+L3_avg = (7 + 4 + 5) / 3 = 5.33
+L4_avg = (2 + 4 + 2 + 2) / 4 = 2.50
+L5_avg = (5 + 7 + 6) / 3 = 6.00
+
+Overall = (4.75 × 0.30) + (7.00 × 0.25) + (5.33 × 0.20) + 
+          (2.50 × 0.15) + (6.00 × 0.10)
+        = 1.425 + 1.75 + 1.066 + 0.375 + 0.6
+        = 5.216 / 10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects (Bullet List)
+- Variable naming is nearly unusable - all parameters use `a1`, `a2` etc. and locals use `v1`, `v2` without semantic meaning
+- No comments explaining macro expansion, inline assembly semantics, or algorithm logic
+- Complex bitwise expressions in `param_macro_constants` are decompilation artifacts that obscure the simple `if (size > 1024) return 64;` logic
+- No struct/array recovery - all composite types lost to raw pointer arithmetic
+- Uninitialized variables used directly in `param_asm_simd` (`v1`, `v3` used before assignment)
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (8/10)** - Functions are appropriately sized and separated. The decompiler maintained good granularity with distinct functions for each test case.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (2/10)** - Nearly all meaningful variable names lost. Parameters like `size` became `a1`, making it impossible to understand function purpose without cross-referencing source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When `a1` is compared to constant 1024 and used in size-related calculations, infer `size` or `buffer_size` as the parameter name
+2. **Add semantic comments for preprocessor macros**: Explain that `param_macro_constants` implements `if (size > MAX_SIZE) return BUFFER_COUNT * 4;` with actual constant values
+3. **Recover composite types from pointer arithmetic**: Recognize `*(int32_t *)(4 * i + arr)` as array access and annotate as `arr[i]` with type `int arr[]`

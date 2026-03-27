@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar2` instead of semantic names (`a`, `b`, `sum`, `count`). For example, `sequential_ops` uses `param_1`, `param_2`, `param_3` instead of `a`, `b`, `c`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Original function names preserved well (`sequential_ops`, `single_if`, `nested_if_deep`). Some helper functions have generic names (`FUN_00101020`) but core functions are identifiable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions contain hardcoded expected values (`0x15`, `0x14`) instead of actual function calls. Magic numbers like `0xfffffff8` appear without explanation in loop unrolling code.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler initialization artifacts present (`_init`, `_start`, `deregister_tm_clones`). External function wrappers add noise (`puts` wrapper with redundant `iVar1` assignment).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions like `sequential_ops` recover well, but `goto_backward` and `recursion_factorial` become unreadable with hundreds of lines of vector operations. Loops converted to mathematical formulas (`loop_for_fixed` uses formula instead of iteration).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved, but test functions are corrupted with hardcoded values instead of actual function calls. Helper functions (`double_value`, `triple_value`) preserved correctly.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Simple functions read top-to-bottom, but complex functions like `goto_backward` have excessive forward jumps and temporary variable assignments disrupting flow.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe loop unrolling in `recursion_factorial` and `goto_backward` creates hundreds of lines of redundant temporary variables (`auVar5`, `auVar7`, `auVar18`, etc.) that obscure the simple factorial logic.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used throughout. Some return types incorrect (`goto_backward` returns `ulong` instead of `int`). Function pointers degraded to `code *` or `undefined`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Limited composite types in source. Arrays handled reasonably in `loop_break` (switch on values). No struct/union recovery needed for this codebase.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout (`undefined4 *`, `undefined8`). Functions return `undefined [16]` instead of proper types (`large_jump_table`, `op_div`). Function pointer calls use `code *` without signatures.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive comments explaining each function's purpose, difficulty level, and test cases. Complete loss of semantic documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some loop patterns recognized (`loop_while`, `loop_dowhile`). Recursion patterns completely lost (converted to complex iterative code). Switch-case patterns sometimes recognized, sometimes converted to if-chains.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Minimal anomaly flags. Some functions marked `UNRECOVERED_JUMPTABLE` which is helpful. No warnings about potential undefined behavior or optimization artifacts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original had test validation comments with expected values. No error condition documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved in most cases. Test functions heavily modified with hardcoded values instead of actual calls. Global variables (`jump_buffer`) referenced but not clearly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped together. No header file organization or proper scoping indicators.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates compilation succeeds. External dependencies declared. Some functions use compiler-specific constructs that may need adjustment for portability.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (4+6+5+3)/4 = 4.50 × 0.25 = 1.125
+Level 3 (Type):        (5+7+4)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (1+4+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.600
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.82/10
+```
+
+**Overall Readability Score: 4.8/10**
+
+### Critical Defects:
+- **Variable `param_1`, `param_2`, `param_3`** should be named `a`, `b`, `c` based on original source semantics
+- **Recursion functions (`recursion_factorial`, `tail_recursion`)** completely destroyed - converted to 300+ line vector operation mess instead of simple recursive calls
+- **Test functions** contain hardcoded expected values instead of actual function calls, making verification impossible
+- **Zero comments** - all original documentation about function purpose, difficulty, and test cases lost
+- **Loop unrolling artifacts** in `goto_backward` create hundreds of lines of `auVar*` temporary variables obscuring simple factorial logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names preserved accurately, making it possible to identify which decompiled function corresponds to which source function
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation; original source had extensive comments explaining purpose, difficulty level, and test validation for every function
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns and parameter positions (e.g., first three int params in arithmetic function → `a`, `b`, `c`)
+2. **Preserve recursion patterns** - detect tail recursion and standard recursion, output as recursive calls rather than unrolled vector operations
+3. **Recover and preserve source comments** from debug symbols (`-g` flag was used) or generate semantic comments based on control flow pattern analysis

@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar2`, `lVar3`) with zero semantic meaning. For example, `array_1d_stack` uses 20+ variables like `piVar1` through `piVar7` instead of meaningful names like `array_ptr` or `sum_accumulator`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core processing functions retained original names (`process_char`, `process_int`, `array_1d_stack`) which is good, but `process_ld` is broken (void return, no params) and test functions lost their calling structure entirely.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`0x20`, `0xff`, `0xbf`, `0x140`) without explanation. Test functions print pre-computed constants (`0x61`, `0x62`) instead of showing actual function calls, obscuring the test logic.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present including redundant accumulator variables (`iVar8` through `iVar21` in loop unrolling), unnecessary type casts, and frame pointer manipulation in test functions.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple for-loops transformed into complex unrolled versions with 8+ parallel accumulators. `array_1d_stack` original 5-line loop becomes 80+ lines of unrolled code with manual index management.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions exist but test functions are heavily optimized away—they print constants instead of calling actual functions. `test_data_types_l1` doesn't call `process_char()` at all, just prints 'a' and 'b'.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but complex loop unrolling with multiple `do-while` constructs and forward jumps disrupts natural flow significantly.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy from loop unrolling—`array_1d_stack`, `array_vla`, `ptr_increment`, `union_array` all have nearly identical 80+ line unrolled loops that should be one simple for-loop.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical type degradations: `process_ll` returns `long` instead of `long long`, `ptr_triple` uses `undefined8 *` instead of `int ***`, `volatile_access` loses volatile qualifier entirely, `process_ld` is completely broken (void/no params).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—all structs accessed via pointer arithmetic (`param_1[1]`, `param_1[2]`) instead of field names. No struct definitions recovered for `Point3D`, `Rect`, `Widget`, `Node`, `Graph`, etc.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: `ptr_void` takes `int *` instead of `void *`, `struct_bitfields` uses `ushort *` instead of proper bitfield struct, `union_type` returns `float` instead of `int`.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No explanation of algorithm intent, no decompilation confidence indicators, no documentation of non-obvious logic like the loop unrolling.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition evident. Linked list traversal, tree recursion, and graph traversal patterns are present but not identified or named.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags despite critical issues: `process_ld` is empty (should be flagged), `ptr_func_simple` shows `UNRECOVERED_JUMPTABLE` but no explanation, type mismatches not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL`), no postconditions, no error condition documentation despite many functions having implicit contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls exist but relationships unclear. Test functions don't actually call the functions they're testing—they print pre-computed results, breaking the call graph.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single file with no logical grouping. No header file, no separation between test code and implementation, no namespace organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears compilable with stubs for external functions (`puts`, `printf`), but type mismatches and missing struct definitions would require significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+4+5)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (4+5+5+3)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00 × 0.15 = 0.300
+Level 5 (Contextual):  (5+4+6)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  3.8/10
+```
+
+**Overall Readability Score:** 3.8/10
+
+### Critical Defects:
+- **`process_ld` completely broken**: Returns `void` with no parameters instead of `long double` function—total semantic loss
+- **All struct types lost**: `Point3D`, `Rect`, `Widget`, `Node`, `Graph` accessed via raw pointer arithmetic (`param_1[1]`, `param_1[2]`)
+- **Test functions don't test**: `test_data_types_l1` prints constants instead of calling actual functions, breaking verification
+- **Loop unrolling obscures logic**: Simple 5-line loops become 80+ lines with 8+ accumulator variables (`iVar8` through `iVar21`)
+- **Type degradations**: `long long` → `long`, `int ***` → `undefined8 *`, `void *` → `int *`
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)**: Core processing functions retained original names (`process_char`, `process_int`, `array_1d_stack`), providing some semantic anchor points.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)**: Zero comments despite complex loop unrolling, type transformations, and broken functions that desperately need explanation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union definitions from access patterns**: Detect consistent offset patterns (`param_1[0]`, `param_1[1]`, `param_1[2]`) and generate named struct types instead of raw pointer arithmetic.
+2. **Detect and simplify loop unrolling**: Recognize compiler unrolling patterns and collapse multiple accumulator variables back into single loop constructs with comments noting optimization.
+3. **Add decompilation confidence indicators**: Flag uncertain reconstructions (like `process_ld` being empty, `UNRECOVERED_JUMPTABLE`) with explicit warnings so analysts know where manual review is needed.

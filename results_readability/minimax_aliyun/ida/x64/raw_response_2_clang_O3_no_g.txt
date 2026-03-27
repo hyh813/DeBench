@@ -1,0 +1,105 @@
+# Decompilation Readability Assessment
+
+## Analysis Overview
+
+The original source is a comprehensive C test suite (830 LOC) testing data types, arrays, pointers, and composite types at -O0. The decompiled output (1370 LOC) shows characteristics of -O3 optimization (SIMD instructions, loop unrolling) despite metadata indicating -O0. This mismatch significantly impacts readability.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) and local variables use cryptic names (`v2`, `v3`, `v5`, `v6`, `v7`). Compare: source uses `x`, `a`, `b`, `p`, `n` while decompiled uses `__int64 a1, int a2`. No semantic meaning recovered.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names perfectly match source: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. Excellent recovery of original identifiers.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Test functions hardcode expected results (e.g., `printf("DT-L1-01 (process_char): %c\n", 97)`) instead of showing actual computation. Magic numbers like `0x1Au`, `0xFFFFFFF8`, `238`, `85` (shuffle masks) unexplained. The `32` in `c + 32` for case conversion is not explained.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe SIMD noise throughout array functions: `_mm_add_epi32`, `_mm_loadu_si128`, `_mm_shuffle_epi32`, `_mm_unpacklo_epi64`. Loop unrolling creates massive redundant code blocks. Compare simple source `for (i=0; i<n; i++) sum += arr[i]` to 50+ lines of SSE intrinsics.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops preserved but heavily obfuscated by SIMD. The `array_1d_stack` uses do-while with goto labels instead of for-loops. At -O3, some restructuring is expected but the SIMD obscures the simple summation logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions properly separated matching source granularity. Each test function (`test_data_types_l1`, `test_array_types`) calls individual test cases. No over-fragmentation or monoliths.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but goto statements (`goto LABEL_13`) interrupt flow. Deep nesting in SIMD blocks (6+ levels) makes linear reading difficult.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Massive loop unrolling in `array_1d_stack`, `array_3d`, `array_vla`, `ptr_increment` - identical SIMD patterns repeated. No comments indicating unrolling. Dead code paths from optimization remain.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses generic types: `__int64` instead of `long`, `_DWORD` instead of `int`, `unsigned int` for all returns. Function pointers use `__int64 (__fastcall *)(_QWORD)` instead of proper signatures. `char*` used for `void*`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs completely lost. Source `Point3D p; return p.x + p.y + p.z;` becomes `a1[2] + *a1 + a1[1]`. Nested structs like `Widget` with `Style`, `Color`, `Rect` become raw pointer arithmetic: `*(_DWORD *)(a1 + 8) + *(_DWORD *)(a1 + 20)`. No field names recovered.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Frequent unsafe casts: `(unsigned int)(*a1 + 10)`, `(unsigned int)(2 * *a1)`. Pointer arithmetic not type-safe: `a1 + 4 * v3++`. Function pointer type mismatches in `ptr_func_complex`.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments anywhere in decompiled output. Original source has extensive comments explaining each test case (e.g., "// DT-L1-01: 字符类型（char）⭐"). Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns partially recognized (linked list traversal in `linked_list` function), but no naming or explanation. The binary tree uses manual pointer chasing without recognizing the tree pattern.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The "FAILED to decompile" functions at the end (`__libc_start_main`, `puts`, `printf`) are listed without explanation. No warnings about indirect calls or undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. The source has implicit contracts (e.g., `const_param` requires valid pointer) not recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear (`main` calls `test_data_types_l1()`, etc.). Callback relationships partially visible in `ptr_func_simple` but function pointer types incorrect. No documentation of who calls whom.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically by type (data types, arrays, pointers, composites). Static functions properly identified. Single file output is reasonable for decompilation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Multiple compilation failures: undefined `s`, `asc_3690`, `asc_36AB`, `asc_36C6`, `xmmword_30C0`, `off_5DE0`, `dword_30D0`. External dependencies (`puts`, `printf`) not declared. Would require significant patching.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable naming uses only generic `a1`, `a2`, `v2`, `v3` - zero semantic recovery
+- Composite types completely lost - structs become `a1[0]`, `a1[1]`, `a1[2]` with no field names
+- Severe SIMD noise in array functions makes 50-line functions from 5-line source
+- No comments or documentation recovered from source
+- Test functions hardcode results instead of showing computation
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Function names match original source exactly: `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+- All parameters and locals use generic names with no semantic meaning recovered from usage patterns
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage: `a1` in `process_char` should be `c` (char parameter), `a1[2] + *a1 + a1[1]` in struct access should show field names
+2. Add loop unrolling comments: "// Loop unrolled 8x with SIMD" before SSE blocks
+3. Recover struct layouts: Use offset analysis to name fields `x`, `y`, `z` instead of array indices
+4. Add comments explaining SIMD: Document that `_mm_add_epi32` implements parallel addition
+5. Recover string literals: `asc_3690` should be `"=== 测试基础数据类型 ==="`

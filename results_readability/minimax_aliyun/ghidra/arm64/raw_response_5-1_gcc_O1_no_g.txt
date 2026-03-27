@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `acStack_2c`, `local_d`, `local_8`, `pvVar2`, `local_20`, `local_18`, `local_10`. The buffer `acStack_2c` should be named `name` based on the source, and `sVar1` should be `name_length`. Most variables are uninterpretable without cross-referencing the source.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered like `test_cpp_member_func`, `test_cpp_constructor`, `call_virtual_func`, `template_max<int>`. However, many are generic like `FUN_00101470`, `FUN_001016fc`. The virtual function thunks are named generically as `virtual_func` without class context (should be `Base::virtual_func`, `Derived::virtual_func`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x14` (size 20), `0x1e` (30), `0x28` (40), `0xfa` (250) appear without explanation. The value `0x125c` in test_cpp_member_func should be recognized as `0x1234 + 10` (getClassID + setValue). Stack canary `___stack_chk_guard` is present as noise.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Heavy compiler artifacts present: stack canary checks (`local_8 - ___stack_chk_guard == 0`), `__stack_chk_fail` calls, unreachable block warnings, "WARNING: Unknown calling convention" comments. Many functions have "WARNING: Subroutine does not return" annotations. Template instantiations are duplicated (e.g., Container<int> and Container<double> both have separate decompilations).
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is preserved (if/else, returns). However, the stack canary checks create confusing conditional branches that obscure the actual logic. The `test_cpp_exception` function shows the throw mechanism but doesn't recover the try-catch structure properly.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably decomposed. Template functions are properly separated (`template_max<int>`, `template_max<double>`). However, the decompiler didn't recover the class member functions as part of their classes - they're scattered as standalone functions. The `Container` class methods are properly extracted.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read linearly from top to bottom. Early returns are used appropriately. The stack canary checks add some non-linearity but don't severely disrupt readability for the core logic.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code. Some redundancy in template instantiation (both Container<int> and Container<double> have identical method patterns). The virtual thunk functions create duplication but are necessary for correct behavior.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Many types are imprecise: `undefined1`, `undefined4`, `undefined8`, `undefined **`. The return type `undefined8` appears for functions that should return `int`. Function parameters use generic types. The stack canary is typed as `long local_8` but should be `uintptr_t`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery is evident. The `SimpleClass` object in `test_cpp_member_func` is completely lost - the constructor logic is missing entirely. The `LifecycleClass` is partially seen through manual memory operations but not as a struct. The `Base`, `Derived`, `MultiDerived` classes are not reconstructed as structs - only their vtable pointers are visible.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Significant type safety issues: raw pointer arithmetic everywhere (e.g., `*(undefined4 *)((long)pvVar2 + 4)`), void pointer casts, incorrect this pointer arithmetic in virtual functions. The `call_virtual_func` uses `**(undefined8 **)param_1` which loses type safety. Many functions return `undefined8` when they should return specific types.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Some useful comments like `/* test_cpp_member_func() */`, `/* Base::virtual_func(int) */`. However, many comments are auto-generated warnings ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block"). No explanation of the algorithm or intent. The try-catch structure in `test_cpp_exception` is not documented.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some C++ idioms recognized: virtual function calls through vtable (`*(code *)**param_1`), template instantiation. However, the constructor/destructor patterns are not identified as such. The RAII pattern for smart pointers is completely lost. Exception handling is shown as `__cxa_throw` but the try-catch structure isn't recovered.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler does flag some issues with "WARNING" comments. However, the indirect virtual calls could be better flagged. The missing constructor implementation for SimpleClass isn't flagged as an anomaly. The stack canary insertion isn't documented as compiler-added.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The function `test_cpp_member_func` should document that it creates a SimpleClass object and returns the sum of three operations, but no such contract exists.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible (`call_virtual_func` calls `Base::virtual_func`). However, the relationship between `test_cpp_member_func` and the `SimpleClass` constructor is completely lost. The static member `LifecycleClass::instance_count` is visible but its purpose isn't documented. Virtual inheritance relationships aren't clearly documented.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are somewhat grouped by test function. Template functions are together. However, class methods are scattered throughout rather than being organized by class. The decompiled output is a single flat list rather than organized by class/namespace.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: The code would not compile as-is. Many undefined symbols: `operator_new__`, `operator_delete__`, `operator_new`, `operator_delete`, `__cxa_allocate_exception`, `__cxa_throw`, `__dynamic_cast`. The stack canary functions require linking with standard library. The return type `undefined8` for many functions would cause compilation failures.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+1. **SimpleClass completely missing**: The `test_cpp_member_func` doesn't create or use SimpleClass at all - the constructor logic is entirely absent, making the function semantically wrong
+2. **No struct/class recovery**: All class types are lost - fields are accessed via raw pointer arithmetic without struct definitions
+3. **Constructor/destructor logic missing**: `test_cpp_constructor` manually allocates memory instead of calling the constructor, and the destructor isn't called at the right time
+4. **Type precision severely degraded**: Heavy use of `undefined1`, `undefined4`, `undefined8` makes the code unsafe and hard to understand
+5. **Virtual function dispatch broken**: `test_cpp_virtual_func` doesn't properly create Base and Derived objects - it uses vtable pointers directly as objects
+
+**Best Quality Aspect:** Function Decomposition (scored 6/10)  
+Template functions are properly separated into individual instantiations, and basic function boundaries are maintained.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+The decompiler failed to recover any class/struct definitions. All C++ objects are represented as raw memory allocations with pointer arithmetic, completely losing the type information that makes C++ readable.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover class/struct definitions**: Analyze vtable layouts and constructor patterns to reconstruct C++ class definitions with proper field names and types
+2. **Fix constructor/destructor recovery**: Detect constructor patterns (vtable initialization, member initialization) and generate proper constructor calls instead of raw memory operations
+3. **Improve type precision**: Replace `undefined*` types with inferred concrete types based on usage patterns, and recover `const` correctness

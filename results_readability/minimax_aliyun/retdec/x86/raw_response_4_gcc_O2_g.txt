@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `a1`, `a2`, `a3` and local variables use `v1`, `v2`, `v3`. Compare to source where parameters are meaningfully named like `count`, `args`, `str`, `x`, `y`. The decompiled code makes it nearly impossible to track variable purpose without analyzing every usage.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test functions like `test_calling_conventions`, `test_parameter_passing`, `test_return_values` match source exactly. However, many helper functions use generic names like `function_1090`, `function_10a0`. The core testee functions (`cdecl_func`, `stdcall_func`) are correctly named, but the mix is inconsistent.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals like `0x12345678` are preserved correctly, and return values like `15`, `50`, `6` are accurate. However, magic numbers like stack canary offset `20` (`__readgsdword(20)`) and string offsets like `v1 + 2700` are unexplained. The decompiler doesn't recover format string constants.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_bx/dx/di/ax` functions (x86 PIC code), stack canary checks (`__readgsdword(20)`), `__stack_chk_fail_local` calls. These obscure the actual logic. The architecture mismatch (source says arm64, decompiled is x86) adds confusion. Dead code from register spilling is present.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most loops are correctly reconstructed as while loops (e.g., `while (v1 != count)` in `varargs_func`). However, some control flow is awkward - the `param_complex_cast` uses nested if-else that could be clearer. At -O0, control flow should be nearly 1:1 with source, but some transformations occurred.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized (20-80 lines typical). The `call_*` wrapper functions are correctly separated from their implementations. However, some functions like `test_calling_conventions` (200+ lines) are monolithic - this matches the source but could be better decomposed for readability.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom with early returns in some functions (e.g., `varargs_func` returns 0 if count < 1). However, complex functions like `test_calling_conventions` have multiple nested loops and conditional branches that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code observed. Loop unrolling is minimal (matching -O0 expectation). Some common patterns like `result += *(int32_t *)(4 * v1 + (int32_t)&v2)` appear in varargs functions but are necessary for the pattern.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `int32_t` consistently which is good. However, all pointers are represented as `int32_t` without proper pointer types (e.g., `int32_t a1` should be `int32_t *p` for pointer parameters). The `float64_t` and `float80_t` typedefs are good. Const correctness is lost - all pointers are mutable.
+
+**10. Composite Type Recovery:** Score: 1/10  
+Justification: **Critical failure** - no struct types are recovered. The source defines `SmallStruct`, `LargeStruct`, `BigStruct`, `SmallPoint`, `LargeData` with meaningful fields, but the decompiled code accesses everything via raw pointer arithmetic: `*(int32_t *)(a1 + 4) * *(int32_t *)a1`. This completely loses semantic meaning.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe casts present: `(int32_t *)a1`, `(char *)str`, `(char *)(v1 + 2700)`. Pointer arithmetic like `4 * v1 + (int32_t)&v2` has no bounds checking. Function pointer types are lost - `param_func_ptr` takes `int32_t a1` instead of proper function pointer signature. The code is riddled with type safety issues.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only minimal auto-generated comments present: "// Line range: 660 - 665", "// From module: /work/4.c", address ranges. No explanation of algorithm logic, no recovery of original comments from source. The source had extensive Chinese comments explaining each test case - none are recovered.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithm patterns are identified. The varargs pattern (`va_list`, `va_start`, `va_arg`, `va_end`) is not recognized - it's rendered as raw pointer arithmetic. The calling convention tests (cdecl, stdcall, fastcall) aren't flagged as testing specific ABIs.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies are flagged. The architecture mismatch (arm64 source vs x86 decompiled) isn't noted. Indirect calls that couldn't be resolved aren't marked. The `__x86_get_pc_thunk_*` functions aren't identified as compiler-generated PIC code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The source had explicit null checks (e.g., `if (!p) return -1;`) that could indicate preconditions, but these aren't highlighted. No contracts are recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are somewhat clear from code structure (e.g., `test_calling_conventions` calls `call_cdecl`, `call_stdcall`, etc.). However, no explicit documentation of call graph or callback relationships. The `callback_func` static function isn't identified as a callback.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped somewhat logically: test functions together, calling convention functions together, parameter passing functions together. However, all 90 functions are in one massive file with no separation. Static functions aren't clearly distinguished from public API.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code has many undefined external functions: `__printf_chk`, `__stack_chk_fail`, `__libc_start_main`, `__cxa_finalize`, `frame_dummy`, `register_tm_clones`, etc. Would require significant stubbing to compile. No header file or dependency documentation provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- **Struct recovery completely failed** - all composite types lost, accessed via raw pointer arithmetic (e.g., `*(int32_t *)(a1 + 4) * *(int32_t *)a1` should be `p->x * p->y`)
+- **All parameter variables use generic names** (`a1`, `a2`, `v1`, `v2`) making semantic tracking impossible
+- **Pointer types erased** - all pointers represented as `int32_t`, losing type safety
+- **Architecture mismatch not flagged** - source says arm64, decompiled is clearly x86
+- **No struct type recovery** - source defines 5+ meaningful structs, decompiled has zero
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 6/10)  
+- Loops are correctly reconstructed as while/for constructs, matching -O0 expectations
+
+**Most Needs Improvement:** Composite Type Recovery (scored 1/10)  
+- Zero struct types recovered; all composite data accessed through raw pointer arithmetic, completely losing semantic meaning of the original data structures
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover struct/union types** from stack layout and memory access patterns - this is the most critical failure
+2. **Infer variable names from usage** - parameters like `a1` used as `strlen((char*)a1)` should suggest `str` or `string`
+3. **Add pointer type inference** - detect when `int32_t a1` is used as `*(int32_t*)a1` and promote to proper pointer type

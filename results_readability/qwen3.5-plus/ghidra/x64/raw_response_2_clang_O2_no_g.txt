@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar8`, `uVar10`, `piVar7` with zero semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `head` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core function names preserved excellently (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`). Only startup helpers use generic names (`FUN_00101020`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers in hex obscure meaning: `0x61` instead of `'a'`, `0x400c000000000000` instead of `3.50f`, array indices like `param_1[0xb]` instead of `param_1[11]`. Test functions show constant-folded results instead of actual computations.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler startup code present (`_init`, `deregister_tm_clones`). Loop unrolling creates 8+ accumulator variables (`iVar8`, `iVar14`-`iVar21`) for simple sum operations. Redundant type casts throughout.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions have natural flow, but array functions show aggressive loop unrolling transforming simple `for` loops into complex multi-accumulator patterns. Test functions have constant folding eliminating actual function calls.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but test functions are monolithic with all test cases combined. `process_ld` incorrectly reduced to void return. Original modular structure partially lost.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but loop unrolling creates complex nested structures with multiple parallel accumulation paths that disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Significant redundancy from loop unrolling: 8 parallel sum variables for single logical operation. No consolidation of repeated patterns in array processing functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical type degradations: `char`→`uint`, `long long`→`long`, `long double`→`void` (complete loss). `volatile` qualifier lost in `volatile_access`. Pointer types often degraded to `long`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs completely lost—`Point3D` accessed as `param_1[0]`, `param_1[1]`, `param_1[2]`. No struct definitions recovered. Unions represented as `float*` with type confusion. Bitfields reduced to bit operations on `ushort`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present. Function pointers degraded to `code*` with "UNRECOVERED_JUMPTABLE" warnings. Pointer arithmetic on generic `long` types obscures safety guarantees.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only compiler metadata at top. WARNING comments for unrecovered jumps exist but no algorithm explanations. Original source's extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Loop unrolling not identified as optimization pattern. Linked list traversal recognized as loop but not named. No pattern recognition for common algorithms like string length or array sum.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warning messages for unrecovered jumptables ("WARNING: Treating indirect jump as call"). "WARNING: Removing unreachable block" messages present. Inconsistent coverage across all anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `ptr != NULL`). NULL checks present in code but not documented as contracts. No postcondition or invariant recognition.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but no call graph documentation. Global variables shown as `&DAT_001035df` without meaning. No callback relationship documentation for function pointers.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in single output with no logical grouping. Original source's clear section headers (2.1 Data Types, 2.2 Arrays, etc.) completely lost. Arbitrary function ordering.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Ghidra-specific types (`undefined8`, `undefined4`, `code*`) not standard C. Would require significant modification to compile. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25  × 0.25 = 1.31
+Level 3 (Type):        (4+2+4)/3   = 3.33  × 0.20 = 0.67
+Level 4 (Semantic):    (3+4+6+2)/4 = 3.75  × 0.15 = 0.56
+Level 5 (Contextual):  (4+3+3)/3   = 3.33  × 0.10 = 0.33
+─────────────────────────────────────────────────────
+Overall Score:                                  4.37/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Type system collapse**: `long double` function `process_ld` returns `void` instead of `long double`—complete semantic loss
+- **Composite types lost**: All structs/unions represented as `int*` with array indexing; no struct definitions recovered
+- **Variable naming**: All 100+ variables use generic names (`param_1`, `iVar8`, `uVar10`) with zero semantic meaning
+- **Test function constant folding**: Test functions show pre-computed results instead of actual function calls, losing test logic
+- **Loop unrolling obscures logic**: Simple sum loops expanded to 8+ parallel accumulators making intent unclear
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source (`process_char`, `array_1d_stack`, `ptr_single`), enabling quick function identification despite other issues.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union definitions; all composite types reduced to pointer arithmetic, making data structure understanding impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct definitions from access patterns** - Detect consistent offset patterns (e.g., `[0]`, `[1]`, `[2]` for Point3D) and propose struct definitions with field names
+2. **Preserve type information from debug symbols** - When `-g` flag is present, use DWARF info to recover exact types including `long double`, `volatile`, and bitfield specifications
+3. **Detect and annotate loop unrolling** - Recognize unrolled loops and add comments explaining the optimization, or optionally de-unroll to original loop structure for readability

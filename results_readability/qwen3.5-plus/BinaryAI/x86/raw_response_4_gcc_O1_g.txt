@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `param_2`, `iVar1`, `local_10` with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `x`, `y` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions retained original names (`cdecl_func`, `varargs_func`, `test_calling_conventions`, `callback_func`). However, helper functions use generic names (`FUN_00011030`, `FUN_00011090`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic hex numbers everywhere (`0xf`, `0x32`, `0x2a`, `0x12345678`) without explanation. String literals referenced as `&DAT_00012008` instead of actual string content, obscuring printf format strings.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail_local`) appear in most functions. Compiler helpers (`__x86.get_pc_thunk.*`, `__do_global_dtors_aux`) clutter the output without being separated from user code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural flow, but `varargs_func` uses do-while with manual pointer arithmetic instead of clean for-loop. `test_calling_conventions` has complex loop structure that's harder to follow than original.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Aggressive constant folding collapsed many test functions into constant returns (`call_cdecl` returns `0xf` directly instead of calling `cdecl_func(5, 10)`). This loses the actual function call structure from source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but stack canary checks at function ends disrupt flow. Some functions like `ret_multi_branch` use complex conditional expressions instead of clear switch statements.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding created artificial redundancy—multiple functions return pre-computed values instead of showing actual computation. `call_cdecl`, `call_stdcall`, `call_fastcall` all just return constants.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used where original had specific types. `undefined4`, `undefined8` appear frequently. `func_mixed_args` shows `double param_3` correctly but `undefined4 param_4, param_5` for the `long long` is imprecise.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure—`LargeStruct` and `SmallStruct` completely lost. `func_struct_byval` accesses stack directly (`&stack0x00000004`) instead of struct fields. `func_struct_byptr` uses `int *` instead of `SmallStruct *`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present. `param_double_ptr` has type confusion with `(undefined4 *)*param_1`. `func_mixed_args` uses `CONCAT44` macro for 64-bit value reconstruction, indicating type recovery issues.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of optimization artifacts, constant folding, or why test functions return pre-computed values. Original source had extensive documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Varargs pattern not identified—`varargs_func` shows raw stack pointer arithmetic instead of recognizing `va_list` pattern. No algorithm or design pattern recognition anywhere.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags despite significant issues. Stack canary checks present but unexplained. No indication that constant folding occurred or that struct types were lost.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL` checks exist but aren't documented as contracts). No postconditions or error condition documentation anywhere.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced as `DAT_00012008`, `handle1_1`, `handle2_0` without context. Callback relationship between `param_func_ptr` and `callback_func` not explicitly noted.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in roughly logical order but no file organization. No header declarations. Compiler runtime functions mixed with user code without separation.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile standalone—undefined references (`handle1_1`, `handle2_0`, `FUN_000110c0`, `FUN_000110e0`). External dependencies not documented. Requires significant patching.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+5+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (5+5+3)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.19/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct` not recovered; stack access used instead of field access
+- **Zero comments** - No documentation explaining optimization artifacts, constant folding, or decompiler confidence
+- **Constant folding obscures logic** - Test functions return pre-computed constants (`0xf`, `0x32`) instead of showing actual function calls
+- **Generic variable naming** - All variables are `param_N`, `iVarN`, `local_N` with no semantic meaning
+- **Build failures** - Undefined references (`handle1_1`, `FUN_000110e0`) prevent standalone compilation
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names like `cdecl_func`, `varargs_func`, `test_calling_conventions` were preserved from original source, maintaining semantic identity.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any comments means readers cannot understand why constant folding occurred, what optimization level was used, or where decompiler confidence is low.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite types from stack access patterns** - Detect struct field access patterns (`[rsp+4]`, `[rsp+8]`) and reconstruct struct definitions with field names based on usage context.
+
+2. **Add decompiler confidence annotations** - Insert comments indicating optimization artifacts (e.g., `// OPTIMIZED: constant-folded from cdecl_func(5, 10)`) and uncertain recoveries.
+
+3. **Preserve function call structure over constant folding** - When original function calls exist in binary, show them even if compiler optimized them, with optional annotation showing the optimized result.

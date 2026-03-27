@@ -1,0 +1,112 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are reduced to generic names like `param_1`, `iVar1`, and `local_24`, completely losing the semantic intent of original names like `a`, `b`, `sum`, or `target`. This forces the reader to reverse-engineer variable purposes from usage.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names are recovered perfectly from the symbol table (e.g., `sequential_ops`, `loop_break`, `duffs_device`), matching the original source exactly and providing immediate context for the code's purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: The decompiler consistently uses hexadecimal notation for simple arithmetic values (e.g., `0x15` instead of `21`, `0x1e` instead of `30`), which obscures the simple mathematical logic present in the source. Magic numbers like `0x3e9` (1001) are not explained.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: Compiler artifacts such as stack canary checks (`if (local_10 == *(int *)(in_GS_OFFSET + 0x14))`) and Position Independent Code thunks (`__x86_get_pc_thunk_di`) are present in the function bodies, cluttering the logic and distracting from the core algorithm.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Control flow is generally readable; `switch` statements are recovered for larger tables (e.g., `switch_large`), and loops are mostly intact. However, `for` loops are often represented as `do-while` with pre-checks (e.g., `loop_for_fixed`), and some conditionals use awkward comma operators (e.g., `nested_if_2`).
+
+**6. Function Decomposition:** Score: 9/10
+Justification: The decompiler maintains a 1-to-1 mapping with the source functions; there is no inlining or outlining of code, preserving the original modularity and granularity intended by the developer.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom. While `goto` statements are used for breaks or fall-throughs (e.g., `LAB_000115a7` in `switch_fallthrough`), they accurately reflect the control flow without excessive spaghetti code.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no obvious dead code or loop unrolling artifacts. The logic is concise, though the expression of that logic (e.g., initializing arrays element-by-element) is slightly more verbose than the source's aggregate initialization.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10
+Justification: While basic types like `int` and `uint` are used correctly, the decompiler defaults to generic types like `undefined4` for parameters and variables in several places (e.g., `if_elseif_chain`), and function pointers are typed as generic `code *` rather than specific signatures.
+
+**10. Composite Type Recovery:** Score: 6/10
+Justification: Stack-allocated arrays are recovered as flat arrays (e.g., `local_24[5]`), but the initialization is expanded into individual assignments rather than the original `{10, 20, 30...}` syntax, losing the visual grouping of the data structure.
+
+**11. Type Safety:** Score: 7/10
+Justification: The code is generally safe, though the use of `undefined4` and `code *` requires the user to trust the decompiler's implicit casting. Pointer arithmetic is handled correctly, but the lack of specific types (e.g., `int*` vs `uint*`) reduces the explicit safety documentation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled code explaining the logic, algorithms, or the purpose of specific code blocks (e.g., the complex logic in `duffs_device` is uncommented).
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Standard idioms like `switch` are recognized, but complex patterns like "Duff's Device" are completely missed, resulting in a garbled mess of pointer arithmetic and indirect calls (`(*(code *)(unaff_EDI + ...))()`) rather than the structured `switch` inside a `do-while`.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The decompiler presents the obfuscated output of `duffs_device` and `computed_goto` with confidence, offering no warning that these constructs are unusual or that the decompilation might be structurally unsound for those specific functions.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no documentation of preconditions (e.g., `n > 0` for `duffs_device`) or postconditions. The user must infer all contracts from the code logic.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are explicit and use the recovered names (e.g., calls to `double_value`, `triple_value`), making the relationships between functions clear and easy to trace.
+
+**17. Module Organization:** Score: 9/10
+Justification: Functions are listed in a logical order that roughly follows the source, and helper functions are grouped near their callers (e.g., the `op_add`, `op_sub` group), maintaining good module coherence.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on Ghidra-specific types (`undefined4`, `code *`) and runtime functions (`__stack_chk_fail_local`), so it will not compile without significant modification and stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (3 + 10 + 5 + 5) / 4 = 5.75
+L2_avg = (7 + 9 + 8 + 8) / 4 = 8.00
+L3_avg = (6 + 6 + 7) / 3 = 6.33
+L4_avg = (1 + 4 + 2 + 1) / 4 = 2.00
+L5_avg = (8 + 9 + 4) / 3 = 7.00
+
+Overall = (5.75 × 0.30) + (8.00 × 0.25) + (6.33 × 0.20) + 
+          (2.00 × 0.15) + (7.00 × 0.10)
+Overall = 1.725 + 2.00 + 1.266 + 0.30 + 0.70 = 5.99
+```
+
+### Your Final Assessment
+
+- **Overall Readability Score:** 6.0/10
+
+### Critical Defects (Bullet List)
+- **Variable Naming**: Generic names like `param_1` and `iVar1` obscure the semantic meaning of inputs and accumulators found in the source.
+- **Idiom Recognition Failure**: The "Duff's Device" pattern in `duffs_device` is decompiled into unreadable pointer arithmetic and indirect calls rather than a structured loop/switch.
+- **Literal Representation**: Simple integer constants are represented in Hex (e.g., `0x15`), making arithmetic verification harder than necessary.
+- **Noise Pollution**: Stack canary checks (`in_GS_OFFSET`) are inlined in functions like `loop_break`, cluttering the core logic.
+
+### Best Quality Aspect (Single Dimension)
+- **Function Naming Quality (10/10)**
+- **Why?** The decompiler successfully recovered all original function names from the binary symbols, providing immediate high-level context for every code block.
+
+### Most Needs Improvement (Single Dimension)
+- **Semantic Transparency (2/10)**
+- **Why?** The complete lack of comments, failure to annotate complex idioms like Duff's Device, and absence of contract documentation makes understanding the "why" behind the code difficult.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Heuristic Variable Renaming**: Implement simple heuristics to rename generic `param_1`/`param_2` to `a`/`b` or `x`/`y` in simple arithmetic functions to improve readability.
+2.  **Idiom Pattern Matching**: Add specific pattern recognition for known C idioms like "Duff's Device" to reconstruct the original `switch`-inside-`do-while` structure instead of falling back to raw assembly translation.
+3.  **Literal Formatting**: Automatically format small integer literals (e.g., < 1000) as decimal instead of hexadecimal to reduce cognitive load when verifying math logic.

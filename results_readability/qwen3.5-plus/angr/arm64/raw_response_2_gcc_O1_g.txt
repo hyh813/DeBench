@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`, `cur`) with no semantic meaning. Original source had descriptive names like `sum`, `len`, `position`, but decompiled code loses all intent (e.g., `array_1d_stack` uses `v0`, `v1` instead of `index`, `sum`).
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test function names preserved well (`double_value`, `process_char`, `array_1d_stack`), but runtime functions use mechanical names (`sub_4006e4`, `sub_4007b0`). Function names match source for user code but not compiler artifacts.
+
+**3. Literal Clarity:** Score: 2/10  
+Justification: Pervasive magic numbers obscure logic: `4294967295` (UINT_MAX), `18446744073709551614`, `0x10000`. Simple operation `x * 2` becomes `(a0 * 2 | a0 >> 31) & 4294967294`. No constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Compiler runtime code pollutes output (`_init`, `_start`, `deregister_tm_clones`, `__do_global_dtors_aux`). Frame pointer manipulation (`v0 = &v1`) appears in every function. Stack canary checks add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple loops become do-while with pointer arithmetic. `double_value` uses complex bit manipulation instead of `return x * 2`. Goto labels (`LABEL_401898`, `LABEL_4018ec`) disrupt flow in `__addtf3`.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: User functions have reasonable granularity, but `__addtf3` and `__multf3` are monolithic (500+ lines each) with excessive branching. Runtime functions shouldn't be intermixed with application code.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Heavy use of goto and forward jumps (`goto g_413f88`, `goto LABEL_401ce4`). `__addtf3` has dozens of labels creating spaghetti control flow. Simple conditionals become nested if-else chains.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Repeated bit manipulation patterns (`__ROL__`, shifts, masks) appear throughout. `__addtf3` has massive code duplication across branches. No common subexpression elimination visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Critical type loss: `process_float()` and `process_double()` have NO parameters in decompiled version! `volatile_access` loses volatile semantics. Pointers become `unsigned long`. `long double` operations call `__addtf3` without proper type.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs become `struct_0`, `struct_1` with `field_0`, `field_8` names. `Point3D {x,y,z}` becomes `unsigned int *a0` with `a0[0] + a0[1] + a0[2]`. Bitfields completely lost to bitwise operations. Unions not recovered.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Unsafe casts everywhere (`(int*)`, `(char*)`, `(long long*)`). `ptr_double` incorrectly types `int**` as `struct_0**`. Function pointer signatures mismatch (`ptr_func_simple` takes `unsigned long long*` instead of function pointer).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. No explanation of complex bit manipulation, no algorithm descriptions, no decompiler confidence indicators. Original source had extensive comments that are completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Common patterns not recognized: character case conversion (`c >= 'A' && c <= 'Z'`) becomes opaque comparison. Array summation loops not identified. String length calculation not recognized as `strlen` pattern.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Critical anomalies unflagged: `process_double` returns string literal `"PTR-L2-07 (ptr_void): %d\n"` instead of double. `process_float()` has no parameters but should have one. No warnings about type mismatches.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions. No error handling documentation. Array bounds checks lost or obscured.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. `test_data_types_l1` calls known functions but no call graph documentation. Callback relationships (`ptr_func_simple`, `complex_callback`) not explicitly marked.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions ordered by address, not logical grouping. Runtime code mixed with application code. No separation between test functions and implementation. Original source had clear section headers lost.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies undeclared (`__libc_start_main`, `__printf_chk`, `__addtf3`). Struct typedefs incomplete. Would require significant stubbing to compile. Some functions reference undefined globals (`g_413f88`).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+2+4)/4 = 3.75 × 0.30 = 1.125
+Level 2 (Structural):  (4+5+4+4)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (3+2+3)/3   = 2.67 × 0.20 = 0.533
+Level 4 (Semantic):    (1+2+2+1)/4 = 1.50 × 0.15 = 0.225
+Level 5 (Contextual):  (4+3+3)/3   = 3.33 × 0.10 = 0.333
+
+Overall Score: 3.28/10
+```
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects:
+- **`process_float()` and `process_double()` have NO parameters** - complete signature loss for floating-point functions
+- **`process_double` returns string literal** `"PTR-L2-07 (ptr_void): %d\n"` instead of performing computation
+- **All struct field names lost** - `Point3D.x`, `Point3D.y`, `Point3D.z` become `field_0`, `field_8`, `field_10`
+- **Simple arithmetic obscured** - `x * 2` becomes `(a0 * 2 | a0 >> 31) & 4294967294`
+- **`__addtf3` and `__multf3` are 500+ line monoliths** with excessive goto statements making them practically unreadable
+
+### Best Quality Aspect: Function Naming Quality (scored 6/10)
+- User-defined function names like `double_value`, `process_char`, `array_1d_stack` were preserved from debug symbols, maintaining semantic connection to original source.
+
+### Most Needs Improvement: Comment Quality & Presence (scored 1/10)
+- Zero comments exist in decompiled output despite complex bit manipulation and type conversions that desperately need explanation.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover function parameter types from calling conventions** - `process_float(float)` and `process_double(double)` must not lose their parameters
+2. **Detect and simplify common arithmetic patterns** - Recognize `x * 2` patterns instead of emitting complex bit manipulation with masks and shifts
+3. **Add confidence annotations for uncertain recoveries** - Flag anomalies like `process_double` returning a string literal with warnings for manual review

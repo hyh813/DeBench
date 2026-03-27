@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `iVar1`, `uVar1`, `pcVar2`, `ppcVar1` throughout. For example, in `cdecl_func(int param_1, int param_2)`, the parameters should be named `a` and `b` based on the source. Loop counters like `iVar1` and `iVar2` in `varargs_func` don't indicate they're iterating over argument count.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly retain original names (`cdecl_func`, `stdcall_func`, `func_a`, `func_b`, `varargs_func`, `main`). However, many functions use generic patterns like `FUN_00011030`, `FUN_00011080`, or mangled names like `param_varargs_constprop_0`. The inconsistency between recovered and auto-generated names is significant.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers appear throughout (e.g., `0xf`=15, `0x32`=50, `0x2a`=42, `0x15`=21) without explanation. While these can be inferred from context in test functions, the original constants like `5` and `10` are lost. The literal `0x12345678` in `call_complex_cast` is correctly preserved but unexplained.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: The decompilation is relatively clean with minimal compiler artifacts. The `constprop.0` suffix on functions like `param_varargs_constprop_0` represents legitimate constant propagation at -O0, not noise. No redundant casts or debug instrumentation observed.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is natural with proper loops using do-while constructs (e.g., `varargs_func`). The conditional in `ret_multi_branch` uses arithmetic `(param_1 * 5 + 5) * 2` instead of switch-case, which is an optimization artifact but readable. No goto abuse observed.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching the source. Each function has a single responsibility. Parameter lists are reasonable, though `func_struct_byval` has 21 parameters due to struct flattening - this is an ABI artifact, not a decomposition failure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in `varargs_func` and `param_ptr_array` are appropriate. No forward jumps into loop bodies or excessive nesting (>4 levels) observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. The constant-folded wrapper functions (`param_varargs_constprop_0`) represent compiler optimizations, not redundancy. Loop unrolling is minimal and appropriate for -O0.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types like `int` and `char*` are correctly identified. However, there's heavy use of `undefined4` and `undefined8` for return types and parameters. Function pointers use generic `code *` instead of proper function signatures. The `double` parameter in `func_mixed_args` is split into two `undefined4` parameters (`param_4`, `param_5`), losing type precision.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Struct recovery is poor. `LargeStruct` in `func_struct_byval` is completely flattened into 21 individual parameters, losing all structure. `SmallStruct` in `func_struct_byptr` becomes just `int *param_1` with no field access semantics. The `SmallPoint` struct in `ret_small_struct` is partially recovered but fields are unnamed.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several type safety issues exist. In `param_double_ptr`, the code uses `undefined4 *` instead of `int *` for pointer dereferencing. The `param_complex_cast` function performs unsafe pointer casting between `int*` and `char*` without proper type guards. The `ret_large_struct` returns `int *` but should return a struct pointer.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only the standard decompilation header comment is present. No comments explain algorithm logic, document preconditions/postconditions, or indicate uncertainty. The original source had extensive comments (CALL-L1-01, PARAM-L2-06, etc.) that are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms are explicitly identified. The varargs handling in `varargs_func` uses standard stdarg patterns but isn't labeled as such. No recognition of calling convention patterns (cdecl, stdcall, etc.).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags or warnings for suspicious code. The indirect function pointer call in `param_func_ptr` uses `code *` type without warning about potential resolution issues. No indication of the hidden pointer parameter in `ret_small_struct`.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The null-check in `func_struct_byptr` (`if (param_1 != (int *)0x0)`) is present but not documented as a precondition. Error return values (-1) aren't explained as contract elements.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit but not documented. `main` clearly calls test functions, but the relationships between helper functions (e.g., `callback_func` used by `param_func_ptr`) aren't explicitly stated. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear somewhat grouped by type (test functions, parameter functions, return functions) but without clear section markers. The organization is reasonable but could be improved with explicit grouping comments.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: The code should compile with minor modifications. The types `undefined4` and `undefined8` need definitions (typically `#define undefined4 int`). External function dependencies (printf, strlen) are handled via placeholder functions. The code is close to standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Variable naming**: Generic names like `param_1`, `iVar1` throughout; should infer semantic names from usage (e.g., `param_1` in `cdecl_func` → `a`)
+- **Struct recovery failure**: `func_struct_byval` has 21 parameters instead of a struct parameter; `SmallStruct` fields lost
+- **No comments**: Complete absence of explanatory comments; original source's extensive documentation lost
+- **Type precision loss**: Heavy use of `undefined4`/`undefined8`; function pointers as `code *`; `double` split into two parameters
+- **Anomaly indication**: No flags for indirect calls, hidden pointers, or potential undefined behavior
+
+### Best Quality Aspect: Structural Intelligibility (scored 7.5/10)
+Control flow is natural with proper loops and conditionals. Function decomposition is appropriate with good granularity. No spaghetti code or excessive goto abuse.
+
+### Most Needs Improvement: Semantic Transparency (scored 2.25/10)
+Comments are nearly absent, no pattern recognition, no anomaly indication, and no contract recovery. The decompiled code provides no guidance for understanding the logic.
+
+### Top 3 Recommendations:
+1. **Infer variable names from usage patterns**: Use data flow analysis to rename `param_1` → `a`, `iVar1` → `arg_index` based on how variables are used in loops and arithmetic
+2. **Recover composite types**: Implement struct recovery to consolidate the 21 parameters in `func_struct_byval` back into a struct parameter with meaningful field names
+3. **Add explanatory comments**: Document calling convention attributes, algorithm logic, and flag uncertain decompilations (e.g., "UNCERTAIN: indirect call")

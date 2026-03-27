@@ -1,0 +1,109 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10
+Justification: Parameters `dst` and `src` are preserved in `param_strcpy`, which is good, but local variables are consistently generic (e.g., `v1`, `v2`, `v3`), obscuring their purpose in complex functions like `param_malloc_free`.
+
+**2. Function Naming Quality:** Score: 5/10
+Justification: High-level function names like `param_strcpy` and `call_strcpy` are recovered accurately, but standard library calls are obfuscated into meaningless names like `function_10e10` (strcpy) and `function_10e7c` (strlen), severely impacting readability.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: String literals like "HelloLib" are preserved and readable, but magic numbers such as syscall numbers `5` (open) and `6` (close) in `param_linux_syscall` are not replaced with named constants.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: The code contains significant noise, including redundant casts like `int32_t v1 = (int32_t)dst` and a large list of unresolved stub functions (e.g., `function_e12fff1e`) at the end of the file that clutter the output.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: The target function `param_strcpy` is linear and natural, but other functions like `param_pthread_join` utilize `goto` statements (e.g., `lab_0x12754_2`) to implement loops, which disrupts the natural reading flow.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: The decompiler successfully maintains the original function granularity and boundaries; functions like `param_strcpy` are not inlined or merged, preserving the source structure well.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Most code reads top-to-bottom effectively, though the use of `goto` in loop constructs in functions like `param_pthread_join` introduces non-linearity that requires mental jumping.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: There is little obvious dead code or loop unrolling artifacts, which is expected for `-O0`, though the redundant variable `v1` in `param_strcpy` represents minor inefficiency.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Pointer types are frequently cast to integers (e.g., `int32_t v1 = (int32_t)dst`) and passed as `int32_t` to helper functions, losing the semantic distinction between pointers and integers.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Composite types are not recovered; for example, `struct stat` in `param_win32_api` is represented merely as `int32_t st;` (stack allocation), and `struct sockaddr_in` is treated as a raw integer `addr`.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code exhibits unsafe type practices, specifically casting pointers to `int32_t` for function arguments, which erases type safety and makes the code harder to reason about.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: Comments are limited to auto-generated metadata like address ranges (e.g., `// Address range: 0x110a8 - 0x110e0`) and source file names, providing no semantic explanation of the logic.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Standard library idioms are completely missed; `strcpy` and `strlen` are not recognized, appearing instead as generic memory or function calls, which is a critical failure for semantic transparency.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: There is no indication that `function_10e10` represents an unresolved or opaque library call; the decompiler presents the code confidently despite the lack of semantic resolution.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented or inferred in the decompiled output.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10
+Justification: Calls to library functions are opaque (e.g., `function_10e10`), making it impossible to understand the relationship between the caller and standard library APIs without manual analysis.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are organized by address, which roughly correlates with the source order, but the lack of logical grouping or separation of utility functions makes navigation slightly difficult.
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile as-is because the "library" functions (e.g., `function_10e10`) are declared but only defined as stubs returning uninitialized values, lacking actual implementations or headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (5 + 5 + 6 + 4) / 4 = 5.0
+L2_avg: (7 + 8 + 7 + 7) / 4 = 7.25
+L3_avg: (4 + 2 + 4) / 3 = 3.33
+L4_avg: (3 + 2 + 2 + 1 + 1) / 5 = 1.8
+L5_avg: (3 + 6 + 1) / 3 = 3.33
+
+Overall = (5.0 * 0.30) + (7.25 * 0.25) + (3.33 * 0.20) + (1.8 * 0.15) + (3.33 * 0.10)
+Overall = 1.5 + 1.8125 + 0.666 + 0.27 + 0.333
+Overall = 4.58
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects
+- **Standard Library Obfuscation**: `strcpy` and `strlen` are replaced with generic names `function_10e10` and `function_10e7c`, destroying semantic meaning.
+- **Type Degradation**: Pointers are cast to `int32_t` (e.g., `int32_t v1 = (int32_t)dst`), losing type safety and clarity.
+- **Struct Recovery Failure**: Composite types like `struct stat` and `struct sockaddr_in` are flattened into raw stack integers (`int32_t st`).
+- **Unresolved Stubs**: The output includes numerous undefined stub functions (e.g., `function_e12fff1e`) that act as noise.
+- **Magic Numbers**: System call numbers (5, 6) and constants are used directly without symbolic names.
+
+### Best Quality Aspect
+- **Function Decomposition (8/10)**: The decompiler successfully preserved the original function boundaries and granularity, avoiding inlining or merging that would have complicated the structure.
+
+### Most Needs Improvement
+- **Idiom Recognition (2/10)**: The failure to identify standard library functions is the single biggest issue; recognizing `strcpy` would instantly make the code readable.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Implement Signature Matching**: Integrate a signature database (e.g., FLIRT) to recognize and rename common standard library functions like `strcpy`, `strlen`, and `printf`.
+2.  **Improve Type Propagation**: Enhance the type analysis engine to avoid casting pointers to integers for function parameters, preserving `char*` types where appropriate.
+3.  **Recover Composite Types**: Develop logic to identify stack-allocated structures based on access patterns (e.g., field offsets) to recover `struct` definitions instead of raw integer variables.

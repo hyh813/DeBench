@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a1`, `a2`, `a3` and local variables use cryptic `v0`-`v14` patterns. The source used meaningful names like `count`, `args`, `sum`, `str`, `ptr`. Only `result`, `src`, `dest` are descriptive.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately match source: `cdecl_func`, `stdcall_func`, `varargs_func`, `test_calling_conventions`. Some internal functions like `sub_103E8` are generic, but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Computed results like `15`, `50`, `6` are shown directly (these are call results). Format strings like `"CALL-L1-01: %d\n"` are preserved. Magic numbers like `42` for `func_no_args` are correct.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains `JUMPOUT(0)` artifacts for unreachable code, compiler-generated functions like `init_proc`, `deregister_tm_clones`. Some `__fastcall` annotations present. Manageable but not clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops use `do-while` constructs correctly. Conditionals are clear. The `varargs_func` loop is readable. At `-O0` (debug), control flow should be nearly 1:1 with source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well - many small functions preserved: `cdecl_func`, `call_cdecl`, `varargs_func`, etc. Each function has single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns present in `varargs_func` when `a1 <= 0`. Some complexity in `test_calling_conventions` but traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Test functions like `test_calling_conventions` have repetitive printf patterns matching source structure. No obvious dead code, but some loop unrolling in `ret_large_struct`.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Parameters use generic `int` instead of specific types. Pointers are `_DWORD *` (32-bit). `const char *a2` in `func_mixed_args` is correct. Some type erosion but basics preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure**: `LargeStruct` (128 bytes) is decomposed into 33 individual parameters (`a1` through `a33`) in `func_struct_byval`. Struct pointers like `SmallStruct *` become `_DWORD *`. No struct field recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Some unsafe pointer operations present. `param_string` uses `unsigned __int8 *` which is slightly wrong (should be `char *`). Function pointers properly typed in `param_func_ptr`. Mixed results.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Function headers with names present. Some `// BYREF` annotations for parameters. No algorithm explanations or decompilation confidence indicators. Auto-generated noise minimal but useful content also minimal.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Calling conventions recognized (`__fastcall`). Variable argument functions (`va_list`, `va_start`) handled. No explicit pattern naming (e.g., "State machine" or "Strategy pattern").
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: "FAILED to decompile" messages for 8 functions (`__imp_puts`, `__imp_strlen`, etc.). Some functions marked as "thunk". No warnings about unusual stack layouts or potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of error conditions or invariants. The source had no explicit contracts either, but decompiler could infer some.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. No explicit documentation of caller/callee relationships. Static functions not marked as such.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed in address order, not logical grouping. Source had clear sections (Calling Conventions, Parameter Passing, Return Values) but decompiled output doesn't reflect this.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External functions marked as "FAILED to decompile" (`puts`, `memcpy`, `__printf_chk`). Requires stubs to compile. Not standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Struct decomposition failure**: `func_struct_byval` takes 33 individual parameters instead of a struct, losing all semantic meaning of `LargeStruct`
+- **Generic variable naming**: Parameters `a1`-`a33` and locals `v0`-`v14` provide no semantic information
+- **No struct recovery**: Original struct types `LargeStruct`, `SmallStruct`, `SmallPoint`, `LargeData` are completely lost
+- **External dependencies unresolved**: 8 functions failed to decompile, breaking compilation
+- **No cross-reference documentation**: Caller/callee relationships not documented
+
+### Best Quality Aspect: Function Naming (8/10)
+- Core function names accurately match source: `cdecl_func`, `varargs_func`, `test_calling_conventions`
+
+### Most Needs Improvement: Composite Type Recovery (2/10)
+- Large structs decomposed into individual parameters, losing all semantic structure. This is the most severe readability failure.
+
+### Top 3 Recommendations:
+1. **Recover composite types**: Instead of decomposing `LargeStruct` into 33 parameters, reconstruct the struct definition and pass by reference
+2. **Infer variable names from usage**: `a1` used as `count` in `varargs_func` should be named `count` based on `va_start(args, count)`
+3. **Resolve external dependencies**: Provide stub declarations for `puts`, `memcpy`, `__printf_chk` to enable standalone compilation

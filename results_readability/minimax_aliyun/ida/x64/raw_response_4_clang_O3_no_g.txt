@@ -1,0 +1,110 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use extremely generic names like `a1`, `a2`, `a3` for parameters and `v3`, `v4`, `v5`, `v7`, `v9`, `v10` for locals. These convey no semantic meaning - e.g., `a1` and `a2` in `cdecl_func` should be `a` and `b` to match source.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names correctly recovered from source: `cdecl_func`, `call_cdecl`, `stdcall_func`, `varargs_func`, `ret_basic_type`. Minor issues with some internal functions like `sub_1020`.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The decompiled code shows computed results (15, 50, 6) instead of original constants. Magic numbers like `0x29`, `0x28`, `0xFFFFFFFF` lack explanation. No named constants recovered from source.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts - some `JUMPOUT` statements and `LODWORD` macros present but manageable. No debug instrumentation or frame pointer manipulation clutter.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Uses goto statements with labels (`LABEL_11`, `LABEL_12`) for loop control in `varargs_func`. At -O0, this should use natural while/for loops. Some loop unrolling present but expected at higher optimizations.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions appropriately sized (20-50 lines). Good separation between caller stubs (e.g., `call_cdecl`) and actual implementations (`cdecl_func`). No 500-line monoliths.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple forward jumps with goto labels disrupt top-to-bottom reading. The `varargs_func` has complex branching that makes linear traversal difficult.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Loop unrolling in `param_ptr_array` is present but manageable. Some common subexpression patterns but not severe.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` for most integers, `__int64` for 64-bit. Original `int` correctly preserved but `char*`, `double`, `long long` not precisely recovered. Function pointer types use generic signatures.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Large struct `func_struct_byval` shows raw parameters (a1-a14) with SIMD types (`__m128i`) but loses field names entirely. Small struct return uses bit manipulation instead of `struct SmallPoint` recovery.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: `(unsigned int)` casts throughout, pointer arithmetic in `ret_pointer` returns `a1 + 4` without type context. No buffer overflow patterns detected.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only decompiler header comments present. No explanation of algorithm logic, no recovery of original comments from debug symbols. The source had extensive comments explaining each test case - none recovered.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns like varargs handling visible but not named as "variadic function". No recognition of calling convention patterns (cdecl, stdcall). The test structure (calling convention tests) not identified.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Failed decompilations noted for `__libc_start_main`, `puts`, `strlen`, `printf`, `__imp___cxa_finalize`, `__gmon_start__`. However, no warnings about indirect calls or unusual stack layouts.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had no assertions, but semantic contracts (e.g., "ptr != NULL" for `func_struct_byptr`) not inferred.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships clear (e.g., `call_cdecl` calls `cdecl_func`). However, no documentation of call graph or global variable usage. Static functions not explicitly marked as internal.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped by feature (calling convention functions, parameter passing functions, return value functions). Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears compilable with minimal stubs. External dependencies (`puts`, `printf`, `strlen`) not declared but obvious. No compiler-specific portability issues noted.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 8 + 3 + 7) / 4 = 5.0
+L2_avg = (5 + 8 + 5 + 7) / 4 = 6.25
+L3_avg = (5 + 4 + 6) / 3 = 5.0
+L4_avg = (2 + 4 + 6 + 2) / 4 = 3.5
+L5_avg = (6 + 7 + 6) / 3 = 6.33
+
+Overall = (5.0 × 0.30) + (6.25 × 0.25) + (5.0 × 0.20) + (3.5 × 0.15) + (6.33 × 0.10)
+        = 1.5 + 1.5625 + 1.0 + 0.525 + 0.633 = 5.22/10
+```
+
+**Overall Readability Score:** 5.2/10
+
+### Critical Defects (Bullet List)
+- Variable naming uses generic `a1`-`a14` and `v3`-`v21` instead of semantic names from source
+- No comments recovered despite debug symbols (-g flag); original 100+ lines of explanatory comments completely lost
+- Control flow uses goto/LABEL patterns instead of natural loops at -O0 optimization
+- Composite types (structs) not recovered - `LargeStruct` and `SmallStruct` become raw parameters
+- Literal values are computed results (15, 50) rather than original constants (5, 10)
+
+### Best Quality Aspect: Function Naming Quality (8/10)
+Function names like `cdecl_func`, `varargs_func`, `ret_pointer` accurately match the original source, making it easy to locate specific functions.
+
+### Most Needs Improvement: Comment Quality & Presence (2/10)
+The original source contained extensive comments explaining each test case (CALL-L1-01, PARAM-L2-06, etc.) with场景 descriptions and difficulty ratings. None of this semantic information was recovered, making it difficult to understand the purpose of each function without the source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from debug symbols**: The binary was compiled with `-g`, so variable names like `a`, `b`, `count`, `str` should be extracted from DWARF info instead of generic `a1`, `a2`
+2. **Recover comments from debug info**: Extract line comments and structure comments from debug sections to explain function purpose
+3. **Transform goto/label to natural loops**: At -O0, backward jumps should be decompiled as while/for loops, not goto statements

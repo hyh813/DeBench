@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Almost all variables use generic names like `iVar1`, `iVar2`, `uVar1`, `uVar2`, `bVar3`, `lVar1`. Many have "Unresolved local var" markers. The original variables like `temp1`, `temp2`, `temp3`, `sum`, `i`, `count` are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly (e.g., `sequential_ops`, `single_if`, `loop_for_fixed`, `recursion_factorial`). Minor deduction for not including parameter type hints in names.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Multiple magic numbers without explanation: `0x15` (21), `0x14` (20), `0x3e9` (1001), `0x33` (51), `0x65` (101). The decompiler evaluates constants but doesn't explain what they represent.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise including "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "Unresolved local var" markers, and "WARNING: Subroutine does not return" messages clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is preserved correctly (sequential ops, if-else, loops). However, some idioms are non-standard: `single_if` uses `x << (0 < x)` instead of if-statement, `if_else` uses `(uint)(0 < x)` instead of ternary. At -O0, these should be more idiomatic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions remain properly decomposed matching the original. Each test function is separate. Some internal functions like `FUN_00011030` are artifacts but don't affect the main functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately. Minor issues with complex conditions like `0x12 < uVar2` in loop conditions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `loop_for_fixed` shows complex formula that appears to be loop unrolling but isn't clearly commented. Some dead code in test functions. Not severely problematic but could be cleaner.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic `int` throughout instead of more specific types. Function pointers shown as `_func_int_int` or `code *` which is somewhat generic. No `int32_t`, `uint32_t`, or `size_t` recovery.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays like `arr[5]`, `matrix[3][4]` are marked as "Unresolved local var" and accessed via raw pointers like `&DAT_00013038`. No struct field names recovered.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present: function pointer casts to `code *`, pointer arithmetic in array access. No severe violations but room for improvement.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Mostly decompiler metadata ("WARNING", "Unresolved") rather than explanatory comments. No algorithm documentation or intent explanation. Test functions have hardcoded expected values but no context.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns like Duff's device (`duffs_device`) are recognized and shown with switch-case structure. However, no explicit naming or explanation of why this pattern is used.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged with "WARNING: Subroutine does not return" for longjmp. However, indirect calls and unresolved references could be better highlighted.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had no explicit contracts either, but decompiler could infer some (e.g., "n > 0" for loops).
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present but relationships aren't documented. No indication of which functions call which, or callback relationships.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file. Related functions (state machine, operators) grouped together. Static functions properly scoped.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code has many undefined symbols: `__gmon_start__`, `frame_dummy`, `main`, `DAT_` references, `PTR_` references. Requires extensive patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`iVar1`, `uVar2`, `lVar1`) with "Unresolved local var" markers
+- Magic numbers everywhere without explanation (`0x3e9` for 1001, `0x65` for 101)
+- Composite types (arrays, structs) not recovered - marked as unresolved
+- Heavy decompiler noise ("WARNING" messages, unreachable block notices)
+- No contract or precondition recovery despite -O0 compilation
+
+**Best Quality Aspect:** Function Naming Quality (scored 8/10)  
+- Function names accurately match the original source, making it easy to identify each function's purpose
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+- At -O0, variables should have been easily recoverable. The decompiler failed to infer names from usage patterns, leaving almost all variables as generic identifiers or "unresolved"
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `temp1` used as `a + b` should be named `sum_ab`)
+2. Detect magic numbers and suggest named constants or add explanatory comments
+3. Recover array/struct layouts from stack frame analysis and data flow, rather than marking as "unresolved"

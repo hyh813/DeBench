@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables like `v1`, `v2`, `v3` through `v11` in `loop_multi_exit` and `loop_break` are completely generic, obscuring their roles as loop counters, array indices, and temporary results. Only `result` provides minimal semantic hint.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most original function names preserved (`sequential_ops`, `nested_if_2`, `switch_fallthrough`), accurately reflecting purpose. Only helper functions like `function_950`, `function_1d18` use generic naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x140000000a`, `0x100000002` appear without explanation. Loop bounds (5, 10, 8) are contextually clear, but no named constants were recovered from the original source.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack canary checks (`if (*v2 != *v2) { __stack_chk_fail(); }`), redundant casts (`(int64_t)(uint32_t)`), and assembly blocks (`__asm_ld1`, `__asm_st1`) pollute the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `switch_fallthrough` uses explicit `goto lab_0xfec` instead of proper fall-through semantics. `if_elseif_chain` converted to switch with incorrect fall-through behavior. However, `goto_backward` successfully recovered as while loop.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved appropriately; helper functions (`double_value`, `triple_value`) remain separate. No inappropriate inlining, though `call_func_ptr_array` implementation is broken.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Frequent goto labels (`lab_0x16f0`, `lab_0x1748`, `lab_0xfec`) disrupt top-to-bottom reading. `loop_multi_exit` has nested gotos that obscure the nested loop structure.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks repeated in nearly every function. Type casts like `(int64_t)(uint32_t)(int32_t)(bool)` are excessively verbose but don't create logical redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t`, `uint32_t`, `int64_t` appropriately. However, `nested_if_deep` has `uint32_t d` instead of `int32_t`, and `loop_continue` uses `uint32_t n` inconsistently with source.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `struct __jmp_buf_tag` recovered but with generic field names (`e0`, `e1`, `e2`). Array handling in `loop_break` degenerates to complex pointer arithmetic instead of clean array access.
+
+**11. Type Safety:** Score: 4/10  
+Justification: `call_func_ptr` returns `x` instead of calling `f(x)` - critical type confusion. `call_func_ptr_array` completely broken, returning `*(int32_t *)&funcs` instead of function call. Multiple unsafe pointer casts.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only metadata comments (address ranges, line ranges). No algorithm explanations or decompilation confidence indicators except `// UNREACHABLE`.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Basic loop patterns recognized. Duff's device completely unrecognizable. State machine pattern in `state_machine` not identified. Function pointer dispatch patterns poorly recovered.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Only `// UNREACHABLE` in `non_local_jump`. Broken functions like `call_func_ptr_array` presented confidently without warning. No indication of uncertain decompilation regions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`). No postconditions or invariants. Error conditions not documented despite being present in source comments.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear through preserved names. Global variables (`g1`, `g2`, `g7`) have no semantic meaning. Callback relationships partially preserved but function pointer types degraded.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file with prototypes at top. Global variables grouped together. No logical grouping comments separating control flow levels (L1/L2/L3) as in source.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Standard headers included. Non-standard assembly blocks (`__asm_ld1`, `__asm_st1`) may not compile on all platforms. Metadata claims compilation success but assembly blocks are platform-specific.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+4)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (5+7+5+6)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (7+5+4)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+6+5)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.03/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Function pointer calls broken**: `call_func_ptr` returns `x` instead of `f(x)`, `call_func_ptr_array` returns pointer value instead of calling function
+- **Variable names completely generic**: `v1` through `v11` in complex functions make data flow impossible to trace
+- **Duff's device unrecognizable**: Complex loop unrolling pattern completely lost, returns only `n`
+- **No semantic comments**: Original source had extensive documentation; decompiled code has zero explanatory comments
+- **Goto labels instead of structured control**: `switch_fallthrough` and `loop_multi_exit` use explicit gotos instead of proper C constructs
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names were preserved accurately, maintaining semantic connection to source code purpose.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding non-trivial logic extremely difficult, especially for optimized patterns.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable naming**: Analyze variable usage patterns to infer names (e.g., loop counters → `i`, `j`; accumulators → `sum`, `count`; array indices → `idx`)
+2. **Add decompilation confidence annotations**: Mark uncertain regions with comments like `// DECOMPILER UNCERTAINTY: indirect call target not resolved`
+3. **Recognize common optimization patterns**: Implement pattern matching for Duff's device, loop unrolling, and switch jump tables to recover higher-level semantics

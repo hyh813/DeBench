@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `local_14`, `local_24`, `aiStack_2c` throughout. In `heap_basic`, original `arr` and `i` become `__ptr` and `local_24`, losing semantic meaning entirely.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most test function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), but helper functions use generic names like `FUN_00100920`, `FUN_00100b3c`. Core functionality names match source well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in hex obscure meaning: `0x2a` (42), `0xffffffff` (-1), `0x14` (20), `0x280000001e`. Some inferable from context but no named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: External function wrappers add noise (e.g., `memcpy` just calls `memcpy`). Unnecessary casts like `(long)param_1 << 2` and stack variables like `aiStack_2c [11]` clutter code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops and conditionals preserved, but VLA/alloca functions use complex pointer arithmetic instead of clean array access. `while(true)` with break in `linked_list_heap` is awkward.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved with reasonable granularity. However, `test_stack_memory` calls functions with wrong argument counts (e.g., `local_vars()` with no args vs `local_vars(int x)`).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive gotos. Some forward references in test functions but overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: External function stubs are pure redundancy (18 wrapper functions that just call through). Stack frame setup variables like `lVar1` for alignment calculations add noise.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation with `undefined4`, `undefined`, `undefined8` throughout. `int` sometimes becomes `uint` (`vla_stack(uint param_1)`). Pointer types often just `void*` or `undefined4*`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: `Point` struct completely lost—accessed via `__ptr[1]` instead of `p->y`. `Node` linked list uses `*(int **)(local_20 + 2)` instead of `node->next`. No struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(undefined4 *)malloc(4)`, `(int *)0x0`. Extensive pointer arithmetic without type safety. `dangling_pointer` returns use-after-free value without warning.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation (e.g., "// MEM-L1-01: 局部变量（基础类型）⭐"). No algorithm explanations or decompiler confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Linked list creation/traversal pattern in `linked_list_heap` not identified. Tree operations in `tree_heap_traversal` presented as raw pointer ops without pattern recognition.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Dangerous patterns (`dangling_pointer`, `double_free`, `heap_overflow`) presented without warnings. No indication of undefined behavior or potential crashes.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks exist but not documented as preconditions. No postcondition inference (e.g., "returns heap-allocated memory"). Error conditions not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`global_counter`, `file_scope_static`) appear without usage context. Callback mechanism in `call_global_callback` unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped somewhat logically but test functions mixed with implementations. Static functions (`static_helper`) not properly scoped. No header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies declared but would need significant stubs to compile. `DataMemoryBarrier` undefined. Thread-local storage (`tpidr_el0`) is ARM-specific without portability notes.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+6+7+5)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.734
+Level 4 (Semantic):    (1+3+2+3)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Context):     (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.46/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects:
+- **Variable `param_1`, `local_14`, `local_24`** should be named based on semantic usage (e.g., `input_value`, `result`, `loop_index`)
+- **Struct types completely lost** - `Point` and `Node` accessed via raw pointer arithmetic instead of field names
+- **Zero comments** despite original having extensive documentation explaining each test case
+- **Type degradation** with `undefined4`, `undefined8` instead of proper `int`, `void*`, `size_t`
+- **Dangerous patterns unflagged** - `dangling_pointer`, `double_free` presented without undefined behavior warnings
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), making it possible to correlate decompiled code with source.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of comments is unacceptable, especially at `-O0` optimization where semantic information should be recoverable.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., loop counters, array pointers, return values) instead of `local_N` generics.
+2. **Recover composite type definitions** - Detect struct access patterns and reconstruct type definitions with field names based on access consistency.
+3. **Add anomaly detection and warnings** - Flag dangerous patterns (use-after-free, double-free, buffer overflow) with explicit warnings for analyst attention.

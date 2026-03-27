@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic auto-generated names like `param_1`, `param_2`, `iVar1`, `uVar1`, `piVar1`, `lVar11`. None of the meaningful names from source (like `sum`, `i`, `c`, `x`, `y`, `z`, `arr`, `str`) are preserved. This makes tracking variable purpose extremely difficult.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names perfectly match the original source: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `array_string`, `ptr_single`, `ptr_double`, `struct_simple`, `linked_list`, `binary_tree_sum`, etc. The decompiler correctly recovered the semantic intent in function naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Test functions show expected values clearly (e.g., `printf("...: %d\n",0xf)` for expected 15). However, implementation code contains unexplained magic numbers like `0x20` (32), `0x19`, `0xbf` for character conversion, and `0xfffffff8` for bit manipulation without documentation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Some compiler artifacts present. The most significant is aggressive loop unrolling in functions like `array_1d_stack`, `array_3d`, `array_vla`, and `ptr_increment` which create massive redundant code (dozens of lines of repeated additions). This is excessive for -O0 compilation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most simple functions have natural control flow. However, `array_2d_stack` is completely unrolled into a single 10-term addition expression, and `array_3d` is unrolled into 125 separate array accesses. This makes the control flow completely unrecognizable compared to the original for loops.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function maintains appropriate granularity - none are monolithic. Functions like `array_1d_stack` could be split but the current decomposition is reasonable. Parameter counts match original (e.g., `ptr_func_complex` correctly has 2 parameters).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without forward jumps. The main disruption is in heavily unrolled functions where the linear flow is lost. Early returns are used appropriately in functions like `array_1d_stack`.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy from loop unrolling. `array_3d` contains 125 separate array element accesses instead of a loop. `array_1d_stack` has 8+ parallel accumulators (`iVar8`, `iVar14`-`iVar20`) that could be a simple loop. This redundancy makes the code extremely verbose and hard to follow.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are mostly accurate - `int`, `uint`, `long`, `float`, `double`, `bool`, `short` are correctly used. Function pointers use `code *` which is non-standard but understandable. Minor issues: `ptr_triple` uses `undefined8` instead of `int ***`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs are not recovered as named types. Instead, they're accessed as raw arrays: `param_1[0]`, `param_1[1]`, `param_1[2]` for Point3D fields. No struct/union type definitions are generated. The code uses pointer arithmetic like `param_1 + 8` for nested struct access without recovering the original structure layout.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present. The `ptr_triple` function uses `undefined8 *` parameter type. Extensive raw pointer arithmetic in array functions (e.g., `param_1 + lVar11 * 4`). Function pointer type `code *` is non-standard and loses signature information. However, no obviously dangerous operations like buffer overflows.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in any decompiled function. The code provides no explanation of algorithms, no documentation of non-obvious logic, and no indication of decompilation confidence levels.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common patterns like linked list traversal (`while (param_1 != (int *)0x0)`) and tree recursion are recognizable but not explicitly named or labeled. The decompiler doesn't identify "this is a linked list" or "this is a binary tree traversal."
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly indication. The `process_ld` function is completely empty (returns void with no implementation) but there's no warning about this. Indirect function calls like `ptr_func_simple` use `UNRECOVERED_JUMPTABLE` without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented. No error condition documentation. The code provides no guidance on what conditions must hold before function calls.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 1/10  
+Justification: No cross-references documented. There's no indication of which functions call which, no information about global variable usage, and no callback relationship documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are reasonably ordered, roughly matching the source file structure (data types → arrays → pointers → composites → tests → main). However, all functions are in a single flat namespace without any grouping or section headers.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Several compilation issues: non-standard types (`undefined4`, `undefined8`, `code *`), external function declarations needed (`puts`, `printf`), and the `process_ld` function is empty. The code would require significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `iVar1`, `uVar10`) with no semantic meaning preserved
+- Loop unrolling in array functions (`array_3d` has 125 separate accesses) makes control flow unrecognizable
+- No struct/union type recovery - all composite types accessed as raw pointer arithmetic
+- Complete absence of comments explaining algorithms or intent
+- No anomaly indication for broken functions like `process_ld` (empty body)
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)  
+The decompiler perfectly recovered function names from the original source, making it easy to identify which function does what.
+
+**Most Needs Improvement:** Variable Naming Quality + Comment Quality (both scored 1-2/10)  
+The combination of generic variable names and zero comments makes the code extremely difficult to understand despite correct function names.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1 + param_2 * 4` suggests array indexing → name as `array` or `arr`)
+2. **Add loop structure recovery comments**: When loop unrolling is detected, add a comment like "// Original: for(i=0; i<125; i++) sum += arr[i][j][k]"
+3. **Recover struct/union definitions**: Use field access patterns to reconstruct struct layouts with inferred field names based on offset patterns

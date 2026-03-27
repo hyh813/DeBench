@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All parameters use generic names (`a1`, `a2`, `a3`) instead of semantic names like `a`, `b`, `c` or `x`, `op`, `n`. Local variables are uniformly named `v2`, `v3`, `v4`, `v5` with no indication of purpose (e.g., `v2` in `sequential_ops` should be `temp1` or `sum`).
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent preservation of original function names (`sequential_ops`, `single_if`, `nested_if_deep`, `duffs_device`). Only a few helper functions like `sub_1020` remain unnamed, but all test functions retain their semantic names.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `10`, `100`, `1000`, `8` appear without named constants, but their purposes are mostly inferable from context (e.g., `10` in digit counting, `8` in Duff's device). No constant recovery from debug info.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive unnecessary casts throughout (`(unsigned int)(2 * a1)`, `(unsigned int)-1`). Stack variable annotations in comments (`[rsp+0h] [rbp-4h]`) add visual clutter. Some redundant intermediate variables like `v2 = a1` before immediate use.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: For `-O0` compilation, control flow is excellently recovered. Loops appear as proper `for`/`while` constructs, switch statements preserved, and if-else chains are structured. `duffs_device` uses goto labels but this reflects the original pattern.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries correctly match source. However, `call_func_ptr_array` has corrupted signature with 6 parameters instead of 2 (`a3`, `a4`, `a5`, `a6` are artifacts). Most functions maintain appropriate granularity.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with appropriate early returns. Some functions like `duffs_device` use goto labels (`LABEL_6`, `LABEL_8`) that disrupt linear reading, but this is inherent to the original pattern.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Type casts repeat unnecessarily throughout all functions. Some functions have redundant intermediate variables (e.g., `v2 = a1` then immediately use `a1`). No major dead code, but no consolidation of repeated patterns.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic `int` and `__int64` used instead of precise types (`int32_t`, `size_t`). Function pointer types severely degraded to `__int64 (__fastcall *)()` instead of proper signatures. Signed/unsigned distinctions often lost with excessive `(unsigned int)` casts.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays sometimes recovered (`v3[2]` in `loop_break`, `dest[3]` in `loop_multi_exit`), but struct layouts not visible. `jmp_buf` treated as opaque global without type information. No field name recovery for any composite types.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout (`(unsigned int)-1`, pointer-to-int conversions). Function pointer calls use generic types risking type confusion. Array access via pointer arithmetic (`*((_DWORD *)v3 + i)`) loses bounds safety information.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Virtually no comments in decompiled output. Original source had extensive documentation for each function (purpose, test cases, difficulty ratings) - all completely lost. Only decompiler-generated function headers present with no semantic value.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Basic loops and conditionals recognized, but no high-level pattern identification. State machine in `state_machine` not labeled as such. Duff's device in `duffs_device` not recognized as an optimization idiom. No algorithm naming.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Failed decompilations noted at end (`FAILED to decompile: __libc_start_main`), but no warnings about suspicious code within successfully decompiled functions. Computed gotos and function pointer calls not flagged as potentially problematic.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source had test validation comments (e.g., "输入5,7,3应返回21") - all lost. No error condition documentation or parameter validation hints.
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no call graph documentation. No indication of which functions call which. Global variable usage (`jump_buffer`, `off_5D60`) visible but not explained or contextualized.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file without logical grouping. Original source had clear sections (L1, L2, L3 control flow features with headers) - structure not preserved. No namespace or package organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 8 functions failed to decompile (library functions). External dependencies (`printf`, `memcpy`, `setjmp`, `longjmp`) not properly declared with headers. Would require significant work to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+9+6+5)/4 = 5.75  × 0.30 = 1.725
+Level 2 (Structural):  (8+7+7+6)/4 = 7.00  × 0.25 = 1.750
+Level 3 (Type):        (4+5+5)/3 = 4.67    × 0.20 = 0.934
+Level 4 (Semantic):    (1+3+4+1)/4 = 2.25  × 0.15 = 0.338
+Level 5 (Contextual):  (5+4+4)/3 = 4.33    × 0.10 = 0.433
+---------------------------------------------------------
+Overall Score:                                  5.18/10
+```
+
+**Overall Readability Score: 5.2/10**
+
+### Critical Defects:
+- **Variable names completely generic**: `a1`, `a2`, `v2`, `v3` provide zero semantic information despite `-O0 -g` debug compilation
+- **Zero comment recovery**: All original documentation (function purposes, test cases, difficulty ratings) completely lost
+- **Type degradation**: Function pointers reduced to generic `__int64 (__fastcall *)()` signatures losing all parameter information
+- **No contract recovery**: Preconditions, postconditions, and test validation comments entirely absent
+- **Corrupted function signatures**: `call_func_ptr_array` has 6 parameters instead of original 2
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Nearly all function names preserved from source, making function identification and navigation straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete loss of all semantic documentation despite debug symbols being available; this is the most critical failure for readability
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Leverage debug symbols for variable naming**: At `-O0 -g`, DWARF debug info contains original variable names that should be recovered instead of generic `a1`, `v2` patterns
+2. **Preserve source comments in decompilation output**: Extract and embed original source comments alongside decompiled code, especially for function documentation and test cases
+3. **Recover precise function pointer signatures**: Analyze call sites to reconstruct accurate function pointer types instead of degrading to generic `__int64 (*)()` signatures

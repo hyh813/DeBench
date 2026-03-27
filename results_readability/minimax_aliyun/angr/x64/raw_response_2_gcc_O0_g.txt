@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2`, `ptr` while local variables are `v0`, `v1`, `i`, `cur`. The decompiler makes no attempt to infer semantic meaning - e.g., `ptr` in `volatile_access` is the only semi-meaningful name. Most variables are indistinguishable from each other.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test functions correctly named (`double_value`, `process_char`, `process_short`, `test_data_types_l1`, etc.) matching source exactly. However, initialization functions use generic names like `sub_401020`, `sub_40102d`. The main API functions are well-recovered.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `4294967295` (0xFFFFFFFF) appears repeatedly as unsigned int mask without explanation. ASCII constants like `65` and `90` in `process_char` are unexplained. However, string literals like `"test"` in `ptr_func_complex` are preserved. Mixed clarity.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from repeated `& 4294967295` casts throughout. Unsupported operations appear as `[D] PutI(904:F64x8)[t4,0] = t7()` in `process_ld` and `process_float`. The decompiled output contains VEX IR artifacts that obscure the actual logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops correctly use `for` construct (`for (i = 0; i < a1; i += 1)`). Some goto usage in initialization code (`goto g_405fb8`). At -O0, control flow should be nearly 1:1 with source - mostly achieved except for some spurious jumps in startup code.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized (20-80 lines). Main functions call test helpers correctly. Some small wrapper functions exist. Parameter counts match original - no over-fragmentation or monoliths observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom. Early returns present in some functions. Minor forward jumps in complex functions like `enum_switch` with nested if-else chains. No severe disruption to reading flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: The `& 4294967295` mask is repeated in nearly every printf statement - this is a major redundancy. Otherwise, no significant dead code or duplicate expressions. Loop constructs are clean.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `unsigned int`, `unsigned long`, `unsigned long long` correctly. Some signed/unsigned confusion - `process_short` uses `unsigned short`. Function pointers treated as `unsigned long long *` rather than proper function pointer types. `void*` used appropriately in `ptr_void`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs recovered with generic names `struct_0`, `struct_1`. Fields are `field_0`, `field_8` (offset-based). Self-referential structures in linked lists partially recovered. Union vs. struct distinction maintained. Bitfields show manual bit manipulation rather than proper field recovery.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present - `*(int *)(ptr + i * 4)` for array access. Pointer arithmetic is explicit but potentially unsafe. Function pointer calls like `a0(a1)` lack type safety. No alignment annotations or restrict keywords. Overall manageable but not type-safe.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no comments in decompiled output. No explanation of algorithm logic. No indication of decompilation confidence. The source had extensive comments (DT-L1-01, ARR-L1-01, etc.) which are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns like loops, conditionals, function calls recognized. Linked list traversal (`while (cur)`) is clear. However, no explicit naming of patterns (e.g., "implements linked list traversal"). Some algorithm intent is recoverable from structure but not named.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Unsupported operations show as `[D] PutI...` and `[D] unsupported_<class 'pyvex.expr.GetI'>()` - these are flagged but not explained. No indication of potential undefined behavior (e.g., array_oob has `i <= a1` which is an off-by-one error in source). Anomalies are shown but not clearly communicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No detection of the intentional out-of-bounds access in `array_oob`. No invariant documentation. The decompiler provides zero contract information.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear (`test_data_types_l1()` calls `process_char`, etc.). External functions declared with `extern`. However, no documentation of call graph or relationships. Callback relationships not explicitly marked.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped logically by type (data types, arrays, pointers, composites). Static functions properly scoped. Single file output is reasonable. Somewhat matches source organization (test functions grouped together).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has `extern` declarations for external functions. Uses standard C types. Would require stubs for `puts`, `printf`, `__libc_start_main`. The `& 4294967295` masks would need removal for clean compilation. Basic compilation possible with moderate patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming is uniformly generic (`a0`, `a1`, `v0`, `v1`) with no semantic inference
+- Magic number `4294967295` mask repeated ~30 times without explanation - major readability blocker
+- Complete loss of source code comments (the source had extensive documentation)
+- Struct fields are offset-based names (`field_0`, `field_8`) losing all semantic meaning
+- VEX IR artifacts (`[D] PutI...`) in float/long double functions make code unreadable
+
+**Best Quality Aspect:** Control Flow Naturalness (7/10)  
+- Loops correctly use `for` construct, conditionals are clear, execution flow is mostly natural
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Every parameter and local variable uses generic names; at -O0 with debug symbols, the decompiler should infer meaningful names from usage patterns
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage**: At -O0 with debug symbols, analyze how variables are used (array index → `i`/`index`, pointer dereference → `ptr`/`data`, size parameter → `size`/`count`) to generate semantic names
+2. **Eliminate redundant masks**: The `& 4294967295` appears in every printf - detect this pattern and either remove it or add a comment explaining it's an unsigned cast artifact
+3. **Recover struct field names**: Use debug symbols and type information to name fields meaningfully (e.g., `field_0` → `data`, `field_8` → `next` for linked list nodes)

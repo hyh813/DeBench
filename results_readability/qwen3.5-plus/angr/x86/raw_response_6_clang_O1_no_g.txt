@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `ptr`, `idx`) with no semantic meaning. For example, in `param_strcpy`, parameters `a0` and `a1` should be `dst` and `src` based on usage pattern.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retained original names (`param_strcpy`, `call_strcpy`, `param_mutex_lock`), but many wrapper functions use mechanical names (`sub_401561`, `sub_4015a3`). The naming is inconsistent across the codebase.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers abound: `4294967295` (should be `-1`), `4294967294` (should be `-2`), syscall numbers `5`, `6`, `10`, `14` without explanation. String literals preserved but numeric constants are opaque.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive wrapper functions (`sub_401561` just calls `param_strcpy`), redundant variable assignments (`v0 = v1; v1 = v2`), and compiler artifacts like `__x86.get_pc_thunk.*` functions pollute the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Some functions use natural if-else patterns, but others have awkward constructs like `return v5 >> 31 | 42` instead of ternary. At `-O0`, control flow should match source closely but shows optimization artifacts.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Severe over-fragmentation with unnecessary wrapper functions for every call site. `param_strcpy` is correctly sized, but `sub_401561` adds no value. Thread functions are fragmented beyond recognition.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but has awkward patterns like nested conditionals that could be flattened. Some functions use `goto` patterns that disrupt natural flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate wrapper functions for each call site, redundant variable initializations (`result = 0; v0 = a0;`), and repeated type casts throughout the codebase.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion—everything becomes `unsigned int` or `void*`. Original `char*`, `size_t`, `pid_t`, `pthread_t` all collapsed to generic types. `param_strcpy` shows `char *a0, char *a1` but should be `char *dst, const char *src`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs recovered with generic field names (`field_0`, `field_4`, `field_8`, `field_c`). The `sockaddr` struct is partially recovered but `ThreadData` struct completely lost—fields accessed via array indexing instead.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts like `(char *)&v2`, `*((int *)&v1)`, and pointer arithmetic on void pointers. `param_malloc_free` returns `ptr[1 + i]` after `free(ptr)`—use-after-free pattern not flagged.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only auto-generated annotations like `/* do not return */` and `// Other Possible Types`. No algorithm explanations or API contract documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition—producer-consumer pattern in `param_condition_variable` not identified, mutex protection pattern not named, atomic operations not recognized as synchronization primitives.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: One anomaly flagged (`[D] Unsupported jumpkind Ijk_SigTRAP`), but critical issues like use-after-free in `param_malloc_free`, incorrect signal number constants, and architecture mismatch not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`), no postconditions, no error condition explanations. Return values like `4294967295` should indicate `-1` error but not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear. Global variables like `signal_received`, `shared_counter` declared as `extern` but no usage context. Callback relationships in threading code not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order, not grouped by functionality. Related functions (`param_strcpy`/`call_strcpy`) separated by wrapper functions. No logical module boundaries.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code compiles but requires many external declarations. Architecture mismatch (original ARM64, decompiled X86) would cause runtime issues. Dependencies on pthread, libc not clearly documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+4+5+5)/4 = 4.75 × 0.25 = 1.188
+Level 3 (Type):        (3+3+4)/3   = 3.33 × 0.20 = 0.667
+Level 4 (Semantic):    (2+2+5+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (4+4+6)/3   = 4.67 × 0.10 = 0.467
+
+Overall = 1.275 + 1.188 + 0.667 + 0.413 + 0.467 = 4.01/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects:
+- **Variable names completely generic** (`v0`, `v1`, `a0`, `a1`) obscuring semantic meaning—`a0`/`a1` in `param_strcpy` should be `dst`/`src`
+- **Type erosion to `unsigned int`** loses all original type information (`pid_t`, `size_t`, `pthread_t` all collapsed)
+- **Magic error codes** (`4294967295`, `4294967294`) instead of `-1`, `-2` making error handling unreadable
+- **Excessive wrapper functions** (`sub_401561`, `sub_4015a3`) that add no value and fragment the codebase
+- **Architecture mismatch** (original ARM64, decompiled X86) indicates wrong binary was processed
+
+### Best Quality Aspect:
+- **Build System Compatibility (6/10)** - Code does compile with external dependencies, showing basic structural integrity despite other issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation explaining logic, algorithms, or error conditions; completely lacks semantic guidance for reverse engineers
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., parameters used in `strcpy` destination position should be named `dst`)
+2. **Recover original type information** - Use debug symbols (`-g` flag present) to restore `size_t`, `pid_t`, `pthread_t` instead of collapsing to `unsigned int`
+3. **Eliminate redundant wrapper functions** - Detect and remove call-site wrappers that add no semantic value, consolidating to original function structure

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Internal variables use generic names like `v1`, `v2`, `v4`, `v5`, `v6`, `va` in functions such as `varargs_func` and `param_ptr_array`. While function names are preserved from debug symbols, the parameter and local variable names lack semantic meaning.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names exactly match the source: `cdecl_func`, `stdcall_func`, `varargs_func`, `param_by_value_int`, `ret_small_struct`. The -g flag enabled excellent function name recovery. Minor deduction for some helper functions lacking descriptive names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `printf("CALL-L1-01: %d\n", 15)`). The calculation `10 * op + 10` in `ret_multi_branch` is unclear. String format arrays like `asc_2352` are referenced but not defined in the output.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Contains register annotations (`@<eax>`, `@<ebx>`), `__usercall`/`__userpurge` decorators, and `LODWORD()` assembly macros. "FAILED to decompile" messages for external functions add noise. However, these are manageable and don't severely impede readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is natural with proper `if/else`, `while` loops, and `switch` statements. Loop unrolling in `varargs_func` and `param_ptr_array` is an expected -O3 artifact. The flow is easy to follow despite optimization patterns.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions have appropriate granularity - each handles a single responsibility (e.g., `cdecl_func` adds two ints, `varargs_func` sums variadic args). No 500-line monoliths. Static functions properly scoped. Good decomposition matching source structure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in `varargs_func` (when count <= 0) and `param_double_ptr` (NULL checks) are appropriate. Loop structures create minor non-linearity but nothing severe.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Loop unrolling in `varargs_func` (processes 4 ints per iteration) and `param_ptr_array` creates redundant-looking code. This is optimization-aware but not explicitly commented. No dead code elimination issues.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are precise - `int`, `int*`, `char*`, `char**`, `int (*callback)(int)`, `__int64` for long long. Const correctness preserved in `param_string(const char *str)`. Minor generic types in some internal variables but overall accurate.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery: `LargeStruct`, `SmallStruct`, `SmallPoint`, `BigStruct`, `LargeData` all named correctly. Field names preserved: `s.data[15]`, `p->x * p->y`, `retstr->x`, `retstr->y`. The struct return pointer pattern (`__return_ptr`) is correctly identified.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Several unsafe casts present: `*(_DWORD *)p` in `param_complex_cast` reinterprets void* as int*. `call_ret_opaque` uses `ret_opaque_handle_handle1[0]` without type safety. These patterns could cause undefined behavior if misused.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only the standard IDA Pro banner comment present. No algorithm explanations, no decompilation confidence indicators, no API contracts. Functions like `varargs_func` lack comments explaining the va_list processing logic.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Calling convention decorators (`__cdecl`, `__stdcall`, `__fastcall`) correctly identified but not highlighted as significant. Varargs processing and struct return via hidden pointer are handled correctly but not labeled as notable patterns.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: "positive sp value has been detected, the output may be wrong!" warning for `_start` function. "FAILED to decompile" messages for `__libc_start_main`, `printf`, `puts`, `strlen`. However, no explanation of why decompilation failed or guidance for manual analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks in `func_struct_byptr` and `param_double_ptr` could be documented as preconditions but aren't. No contract information recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are implicit in the code structure (e.g., `main` calls test functions). No explicit documentation of call graphs, global variable usage, or callback relationships. Reader must infer relationships.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Related functions grouped logically (calling convention pairs like `cdecl_func`/`call_cdecl` together). However, all functions in single file with no explicit sections or module boundaries. No header file recovery.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code uses standard C constructs and should compile with libc linking. References to external functions (`printf`, `puts`, `strlen`) require linking. Global variables from the binary environment aren't available standalone.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.0/10
+
+**Critical Defects:**
+- Internal variables use generic names (`v1`, `v2`, `v4`, `va`) obscuring semantic purpose
+- No comments explaining algorithm logic, especially for complex functions like `varargs_func`
+- Unsafe type casts (`*(_DWORD *)p`) without safety documentation
+- Magic numbers throughout without named constants (e.g., `15`, `50`, `6` in test outputs)
+- No preconditions/postconditions recovered for functions with complex contracts
+
+**Best Quality Aspect:** Type System Fidelity (scored 7.67/10)  
+Composite types and function signatures are precisely recovered. Struct names and field names match source exactly, and calling convention decorators are correctly applied.
+
+**Most Needs Improvement:** Semantic Transparency (scored 4.0/10)  
+The decompilation lacks comments, pattern recognition, anomaly explanations, and contract documentation. While the code is structurally correct, a reader has no guidance on algorithm intent or decompilation confidence.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `v4` used as loop counter in `varargs_func` should be named `sum` or `iteration_count`)
+2. Add algorithm explanation comments for complex patterns like varargs processing and struct return mechanisms
+3. Recover preconditions/postconditions from NULL checks and boundary conditions (e.g., document "requires: pp != NULL && *pp != NULL" for `param_double_ptr`)

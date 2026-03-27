@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`, `v9`, `ptr`, `result`, `flag1`, `flag2`, `flag3`, `flag4`, `flag5`). The decompiler made no attempt to infer semantic meaning from usage patterns—for example, `v0 = 10` clearly represents setting a value but remains unnamed.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: While some C++ mangled names are partially demangled (e.g., `_Z20test_cpp_member_funcv` → `test_cpp_member_func`), helper functions remain cryptic with mechanical names like `sub_400854`, `sub_4009cc`, `call_weak_fn`. The test functions are correctly named but utility functions lack semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some string literals are preserved (e.g., `"Test"` in `strncpy`), but magic numbers like `4` in `__cxa_allocate_exception(4)` and `40` in array indexing are unexplained. The code does use some meaningful values but lacks constant definitions.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant noise from register annotations (`// r0`, `// lr`, `// [bp-0x4]`), redundant variable assignments like `v0 = v1; goto g_412008;`, and excessive goto statements. The code contains substantial compiler artifacts that obscure the actual logic.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: The exception handling code (`test_cpp_exception`) uses excessive goto statements with labels like `LABEL_400c69`, `LABEL_400c6a`, creating spaghetti code. The virtual function call uses `goto *((int *)*((int *)arg_0));` which is completely unnatural. At -O0, this level of goto usage is unacceptable.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized and separated. However, many test functions are empty stubs (e.g., `test_cpp_constructor()` returns immediately), and some template functions are correctly separated. The decomposition is adequate but not excellent.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: The code is highly non-linear due to excessive goto statements and forward jumps. Reading `test_cpp_exception` requires jumping between multiple labels, making top-to-bottom reading impossible. The control flow is fragmented and hard to trace.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant patterns exist, like `register_tm_clones()` being called twice in `frame_dummy()`. However, the redundancy is not severe enough to completely obscure the logic.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Most types are generic `unsigned int`, `char`, or `void*`. The code uses raw pointer arithmetic extensively (e.g., `*((int *)ptr[40])`). Const correctness is not preserved. Some specific types like `int` and `double` are used but not precisely (e.g., should be `int32_t`, `size_t`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The decompiler attempts struct recovery with `struct_0` and `struct_1`, but field names are generic (`field_0`, `field_4`). The vtable structure is partially recognized but not properly typed. The struct definitions are incomplete and don't capture the original class layouts.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations exist: raw pointer arithmetic (`ptr[40]`, `(char *)ptr + 4 * index`), void pointer casts (`*((char **)p)`), and indirect function calls through void pointers. However, these are typical of decompiled C++ code and not dangerously incorrect.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments exist. The only comments are register annotations (`// r0`, `// [bp-0x4]`) and occasional external declarations. No algorithm explanation, no decompilation confidence indicators, no API contracts. The code is essentially uncommented.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Some C++ idioms are partially visible (virtual function calls through vtable, exception throw/catch) but not explicitly named or documented. The `goto *((int *)*((int *)arg_0));` pattern is a virtual call but not labeled as such. Templates are recognized but not explained.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies are flagged. The indirect virtual call, the complex exception handling, and the unusual control flow patterns are presented without any warnings or uncertainty indicators. The code confidently presents potentially incorrect interpretations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The code provides no hints about expected input ranges, return value meanings, or error conditions. This is a complete failure to recover semantic contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls are visible but relationships are not documented. There's no indication of who calls whom, no global variable usage transparency, and no callback relationships. The code exists in isolation without context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are grouped somewhat logically (test functions together, template functions together), but the file is a single monolithic output. No namespace structure, no header declarations, no logical grouping beyond alphabetical ordering.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code requires many external declarations (`extern unsigned int`, `extern char`) and cannot compile standalone. Dependencies on standard library functions (`__cxa_atexit`, `operator new`, `operator delete`) are not clearly documented. Significant patching would be required to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.4/10
+
+### Critical Defects:
+- Variable naming is entirely generic (`v0`-`v9`, `flag1`-`flag5`, `ptr`, `result`) with no semantic inference
+- Control flow uses excessive goto statements, especially in exception handling, creating spaghetti code
+- No comments explaining algorithms, contracts, or decompilation confidence
+- Type precision is poor with generic `unsigned int`, `char`, `void*` throughout
+- Indirect virtual calls not flagged as potentially uncertain
+
+### Best Quality Aspect: Function Decomposition (6/10)
+- Functions are reasonably separated and sized; test functions are correctly isolated from helper functions
+
+### Most Needs Improvement: Semantic Transparency (2.25/10)
+- Almost no comments, no idiom recognition, no anomaly indication, and no contract recovery—completely opaque semantics
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns**: When `v0 = 10` is assigned and later returned as a value, name it `value` or `result`; when `ptr` is used for array indexing, name it `array` or `buffer`
+2. **Recover natural control flow constructs**: Replace goto-based exception handling with try-catch blocks; convert indirect vtable calls to virtual method invocations with proper type information
+3. **Add semantic annotations**: Include comments explaining virtual dispatch, exception handling patterns, and flag any uncertain indirect calls with confidence indicators

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v0`, `v1`, `a0`, `a1`) obscuring purpose. Only test functions have occasional semantic names like `flag1`, `idx`, `result`. Original source used meaningful names like `temp1`, `sum`, `count`, `target`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core functions retained original names (`sequential_ops`, `single_if`, `loop_for_fixed`, `recursion_factorial`). However, wrapper functions use mechanical names (`sub_400954`, `sub_400a20`) and `$x` is cryptic.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Pervasive magic numbers without explanation: `4294967295` (UINT_MAX), `1717986919` (division optimization), `85899345930` (array init). Original constants like return values (-1, 0, 1) are buried in bit operations.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts: stack canary checks (`__stack_chk_guard`) in every function, frame pointer setup (`v0 = &v5`), architecture-specific calls (`arm64g_calculate_condition`, `__ROL__`), and redundant operations (`v0 = _setjmp(); return _setjmp();`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if-else structures preserved (`if_else`, `if_elseif_chain`), but `sequential_ops` uses bit operations instead of simple arithmetic, `loop_while` uses complex division magic instead of `/10`, and `switch_fallthrough` becomes nested conditionals.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Core functions have appropriate granularity, but unnecessary wrapper functions exist (`sub_400b54` just calls `recursion_factorial()`). Test functions are excessively long (100+ lines of printf calls).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps disrupt flow (`goto LABEL_40123c` in test functions). `computed_goto` uses `goto *((long long *)...)` which breaks linear reading. Some functions have do-while with complex exit conditions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Duplicate expressions in test functions (repeated `__printf_chk` patterns). Stack canary checks repeated in every function. Some functions call same operation twice (`v0 = frame_dummy(); return frame_dummy();`).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Generic types (`unsigned int`, `unsigned long long`) instead of precise `int32_t`. Signed/unsigned mismatches (original `int a` becomes `unsigned int a0`). Pointer types lack specificity (`char *v0` for stack frame).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays become raw pointers (`char v6[4]` for `int arr[]`). Function pointer arrays become raw memory with goto (`goto (&v1)[a0]`). No struct recovery for `jmp_buf` or matrix data.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Unsafe casts throughout (`(char)arm64g_calculate_condition(...)`). Pointer arithmetic for array access. Function pointers called via `goto` bypassing type checking. Multiple implicit conversions between `unsigned int` and `unsigned long long`.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, algorithms, or decompiler confidence. No documentation of non-obvious transformations (e.g., why `1717986919` is used for division).
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: State machine pattern exists structurally (`state_machine`, `fsm_func_table`) but not identified. `duffs_device` not recognized. Loop patterns present but unnamed. Function pointer dispatch not labeled as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Unusual constructs appear without warnings: `goto *targets[idx]` (computed goto), `arm64g_calculate_condition` calls, indirect function calls via `goto a0`. No indication these require manual analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions or error handling documentation. Return value semantics not explained (e.g., `-1` for error cases).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible through direct calls. Global variables unclear (`g_413f78`, `g_414018` with no context). Callback relationships not documented (function pointer parameters).
+
+**17. Module Organization:** Score: 4/10  
+Justification: Flat function list with no logical grouping. Related functions not organized together (test functions scattered). No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies declared but undocumented (`__libc_start_main`, `__printf_chk`). Won't compile standalone without significant stubbing. Architecture-specific code (AARCH64) not portable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+3+3)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+6+5+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.733
+Level 4 (Semantic):    (1+3+3+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+4+4)/3   = 4.33 × 0.10 = 0.433
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.09/10
+```
+
+**Overall Readability Score:** 4.1/10
+
+### Critical Defects:
+- **Variable `v0`, `v1`, `a0`, `a1`** should be named based on semantic usage (e.g., `result`, `counter`, `input_value`)
+- **Magic numbers** like `4294967295`, `1717986919`, `85899345930` need constant definitions or comments
+- **Control flow degradation**: `sequential_ops` uses bit operations `|` and `>>` instead of simple arithmetic `+` and `*`
+- **Zero comments** throughout entire decompilation output
+- **Stack canary noise** (`__stack_chk_guard`) clutters every function without being collapsible
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core algorithmic functions retained their original semantic names, making it possible to identify function purpose at a glance.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding non-obvious transformations (like division by multiplication) nearly impossible.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze variable usage patterns to infer names (e.g., variables used in loop bounds should be named `count`, `limit`, `index`)
+2. **Add confidence annotations** - Mark transformed code regions with comments explaining optimization recovery (e.g., "// Recovered: division by constant using multiplication")
+3. **Collapse compiler artifacts** - Make stack canary checks, frame setup, and architecture-specific calls collapsible or removable for cleaner output

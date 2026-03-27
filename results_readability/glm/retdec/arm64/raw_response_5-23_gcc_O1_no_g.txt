@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10
+Justification: Variables are universally named `v1`, `v2`, `v3`, etc., completely stripping semantic meaning (e.g., `size` becomes `v1`, `x` and `y` become `v2` and `v3`), making it difficult to track data flow.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Function names like `param_macro_constants` and `call_macro_functions` are perfectly recovered from the symbol table, matching the source exactly and preserving high-level intent.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Macro constants like `MAX_SIZE` are expanded to magic numbers (e.g., `512`, `64`), and string literals are preserved, but pervasive `& 0xffffffff` masking obscures the original 32-bit integer intent on this 64-bit architecture.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is cluttered with truncation artifacts (`& 0xffffffff`) and redundant casts (e.g., `int32_t v2 = v1`) typical of unoptimized ARM64 code, which significantly impedes readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10
+Justification: Simple comparisons like `size > 1024` are decompiled into complex boolean expressions involving overflow checks (e.g., `v3 == 0 | v3 < 0 != ...`), which are hard to read, though loop structures are generally preserved.
+
+**6. Function Decomposition:** Score: 7/10
+Justification: Function granularity matches the source well with no inlining (due to `-O0`), but `param_asm_clobber` lost its parameters in the signature, reducing the score for interface accuracy.
+
+**7. Code Linearization:** Score: 8/10
+Justification: The code reads mostly top-to-bottom with natural loop constructs (`for`, `while`) and appropriate early returns, requiring minimal jumping around to understand the flow.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: As expected with `-O0`, there is verbosity in variable assignments (e.g., `int32_t v2 = v1;`), but no dead code or loop unrolling artifacts are present.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: The decompiler correctly distinguishes between 32-bit (`int32_t`) and 64-bit (`int64_t`) types, which is crucial for ARM64, though it failed to recover the parameter types for `param_asm_clobber`.
+
+**10. Composite Type Recovery:** Score: 8/10
+Justification: Arrays and pointers are handled correctly (e.g., `int32_t *` for `int arr[]`), and pointer arithmetic (`4 * i + v1`) is accurately represented despite the lack of explicit struct types in the source.
+
+**11. Type Safety:** Score: 7/10
+Justification: Pointer arithmetic is safe, and the frequent `& 0xffffffff` masks, while noisy, correctly represent the implicit truncations of the original 32-bit operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of the complex boolean expressions; only address ranges are provided.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard library calls like `memcpy`, `mmap`, and `printf` are recognized, but higher-level patterns like the "Macro Recursion" or "Token Pasting" are lost (as expected) and not annotated.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: The decompiler presents the complex boolean logic in `param_macro_constants` confidently without flagging it as a potential decompilation artifact or a recovered comparison.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., buffer sizes) or postconditions; for example, the contract for `param_dynamic_code` regarding memory allocation is not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are direct and clear, but the use of global variables (`g1`, `g2`) is opaque, and it is not immediately clear which globals correspond to source-level variables like `global_var`.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in address order rather than logical groupings (e.g., all "Preprocessing" tests together), making it harder to navigate the file compared to the source structure.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: While standard headers are included, the use of specific intrinsics like `__aarch64_ldadd4_acq_rel` and `__asm_hint` without proper attribute definitions might cause compilation errors without manual patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming is universally generic (`v1`, `v2`), completely obscuring the semantic meaning of parameters like `size`, `arr`, or `n`.
+- Simple comparison logic (e.g., `size > 1024`) is obfuscated into complex, unreadable boolean expressions involving overflow checks.
+- Function signature recovery failed for `param_asm_clobber`, losing the `arr` and `n` parameters and rendering the function body confusing.
+- Pervasive `& 0xffffffff` masking noise clutters the code, distracting from the actual logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully recovered all original function names from the symbol table, which is the strongest anchor for understanding the code.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)
+- The reliance on sequential generic names (`v1`, `v2`) instead of inferring names from usage or using parameter-based names (`param_1`) makes tracking data flow extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic-based variable renaming to infer names like `size`, `index`, or `result` based on usage patterns (e.g., comparison against constants, loop counters).
+2. Simplify complex boolean expressions that represent standard comparisons (e.g., `a > b`) into their idiomatic C forms to improve readability.
+3. Improve parameter recovery analysis for functions accessing arrays or memory to ensure signatures match the calling convention (fixing the `param_asm_clobber` issue).

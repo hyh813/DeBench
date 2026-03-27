@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic auto-generated names like `param_1`, `param_2`, `iVar1`, `iVar2`, `uVar1`, `puVar2`. The original source used meaningful names like `temp1`, `temp2`, `sum`, `count` which are completely lost. For example, `sequential_ops` uses `param_1/2/3` instead of `a/b/c`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names exactly match the original source (`sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `recursion_factorial`). However, some compiler-generated functions like `call_weak_fn`, `__do_global_dtors_aux` are included that weren't in the original source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Many magic numbers appear without explanation, especially in test functions (e.g., `0x15` for 21, `0x14` for 20). The constant `0x3e9` (1001) in `infinite_loop` is unexplained. Some values like `0x2694` (9876) are hardcoded test inputs.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise from `undefined4`/`undefined8` types throughout. Stack frame variables like `uStack_38`, `uStack_34`, `local_20[4]` create clutter. The compiler helper functions `__aeabi_idiv` and `_divsi3_skip_div0_test` add 200+ lines of noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural, but `loop_for_fixed` uses do-while instead of for-loop semantics. The `switch_fallthrough` uses goto labels (`LAB_00010908`) which is less readable than the original fallthrough comment. At -O0, these transformations are unexpected.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries largely match the original source. However, the massive `__aeabi_idiv` (200+ lines) and `_divsi3_skip_div0_test` (200+ lines) are compiler-generated artifacts that shouldn't be included in decompiled output.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom with minimal disruption. The `switch_fallthrough` has a forward goto that slightly disrupts flow, but it's necessary for the fallthrough semantics. Generally good linearity.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: The `__aeabi_idiv` and `_divsi3_skip_div0_test` functions are nearly identical (significant code duplication). Some loop unrolling in `duffs_device` is present but the structure is preserved.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Heavy use of `undefined4` and `undefined8` instead of proper types. Function parameters use generic types. Some correct types like `bool` for `if_else` and `uint` for bitwise operations. The `code *` type for function pointers is generic but functional.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct/union recovery visible. Arrays are represented as consecutive local variables (e.g., `int local_20[4]` in `loop_break`). The original `int arr[] = {10, 20, 30, 40, 50}` becomes scattered local variables.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally type-safe code with no obvious unsafe casts. Pointer arithmetic is present but appears correct. Function pointer calls use `(*func)(args)` pattern which is safe. Some minor issues with signed/unsigned mixing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in the decompiled code. Only auto-generated function headers with addresses. No explanation of algorithms, intent, or non-obvious logic. The original source had extensive comments explaining each function's purpose.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic control flow patterns (switch, loops, if-else) are recognized. However, no explicit naming of patterns like "Duff's device" for `duffs_device` or "state machine" for `state_machine`. The decompiler doesn't identify these as known patterns.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No indication of uncertain or anomalous code. The `computed_goto` function uses `code *` array with `DAT_` addresses but there's no warning about indirect call resolution. No flags for potential issues.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No pre/postcondition recovery. No documentation of function contracts (e.g., "requires: n > 0" for factorial). No invariant recognition. The original source had clear semantics that are completely undocumented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and traceable. However, there's no documentation of call relationships (who calls whom). The callback patterns in `call_func_ptr_array` and `process_with_callback` work but aren't documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in a single file with no logical grouping. No header file recovery. The original had clear sections (Control Flow Level 1, 2, 3) which are lost. Static functions aren't distinguished from public API.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The code uses some standard C constructs but heavily relies on `undefined4`/`undefined8` types which won't compile. External dependencies like `__printf_chk`, `puts`, `memset` are declared but may need stubs. Won't compile as-is.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.5/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`param_1`, `iVar1`, `uVar1`) losing all semantic meaning from original source
+- No comments or documentation explaining algorithms, intent, or contracts
+- Type precision severely degraded with `undefined4`/`undefined8` replacing proper types
+- No struct/array recovery - original `int arr[] = {10,20,30,40,50}` becomes scattered local variables
+- 400+ lines of compiler helper code (`__aeabi_idiv`, `_divsi3_skip_div0_test`) pollute the output
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names mostly match the original source exactly, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Comment Quality (2/10)  
+The combination of generic variable names and complete lack of comments makes the code extremely difficult to understand and analyze. A human reader cannot determine what `iVar1` or `param_2` represents without significant reverse engineering effort.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (arithmetic, indexing, comparison) to suggest semantic names like `sum`, `index`, `count`, `buffer_size`
+2. **Add meaningful comments**: Include algorithm explanations, especially for complex patterns like Duff's device, state machines, and recursive functions
+3. **Recover composite types**: Instead of scattered local variables, reconstruct arrays and structs with field names based on access patterns

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: All variables use generic names like `param_1`, `local_c`, `local_10` with no semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`sequential_ops`, `nested_if_2`, `loop_for_fixed`). This is a strength of the decompilation, making functions easily identifiable.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear in hex (`0xffffffff` for -1, `0x3e9` for 1001, `0x65` for 101) obscuring intent. Original used clear decimal constants that were self-documenting.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Compiler artifacts present including `undefined4`, `undefined8`, `auVar1` return types, and spurious parameters (`loop_while` has extra `param_2`, `param_3` that don't exist in source).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flow recovered well (if-else, for, while loops). However, `switch_default` converted to if-else chain, and `duffs_device` has complex goto structure that's hard to follow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. However, some signatures are corrupted with extra parameters, and `switch_small` has incorrect return type `undefined [16]`.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. The `duffs_device` function is an exception with its complex label structure, but this is inherent to the pattern.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant variable assignments common (`local_c = param_1` then immediately used). Some type casting redundancy with `(ulong)uVar1` casts in printf calls throughout test functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation with `undefined4`, `undefined8`, `undefined [16]` throughout. `if_else` incorrectly returns `bool` instead of `int`. Function pointer types partially recovered as `code *`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays partially recovered (`local_48 [14]`, `local_68 [10]`) but no struct/union definitions. Stack arrays used instead of proper composite types, losing semantic structure.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(long)local_c`, `(ulong)uVar1`). Return type mismatches (`undefined [16]` vs `int`). Function pointer calls have uncertain signatures without proper type information.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. Original had extensive documentation explaining purpose, test cases, and difficulty levels. No decompilation confidence indicators provided.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic control flow patterns recognized (loops, conditionals). Duff's device partially recognized but produces complex output. No design pattern identification or algorithm naming.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly warnings despite clear issues (type mismatches, extra parameters, incorrect return types). Silent failures make it hard to identify decompilation uncertainties.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error condition documentation. Original had explicit test validation comments that are completely absent.
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`jump_buffer`, `DAT_*`) without context. Callback relationships partially visible through `code *` parameters.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file with no logical grouping. Static functions not properly scoped. No header file structure or namespace organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has compilation issues (`undefined` types, missing headers like `<setjmp.h>`). External function declarations incomplete. Would require significant patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+5+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+7+8+6)/4 = 7.00 × 0.25 = 1.750
+Level 3 (Type):        (5+5+5)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+5+3+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.43/10
+```
+
+**Overall Readability Score: 5.4/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `local_c`, `local_10`) with no semantic meaning, making code tracking difficult
+- **Type system severely degraded** with `undefined4`, `undefined8`, `undefined [16]` throughout, losing type safety
+- **Zero comments** despite original having extensive documentation explaining purpose and test cases
+- **Incorrect function signatures** (`if_else` returns `bool` instead of `int`, `switch_small` returns `undefined [16]`)
+- **Spurious parameters** in some functions (`loop_while` has extra `param_2`, `param_3` that don't exist in source)
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Function names are accurately preserved from source code, making each function's purpose immediately identifiable despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments loses all semantic documentation from original source, including test cases, purpose explanations, and difficulty annotations.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop counters should be named `i`, `j`; accumulators should be named `sum`, `count`)
+2. **Add decompilation confidence annotations** to flag uncertain type recoveries, extra parameters, and potential signature mismatches
+3. **Recover and preserve source comments** where debug symbols (`-g` flag) are available, or generate semantic comments based on pattern recognition

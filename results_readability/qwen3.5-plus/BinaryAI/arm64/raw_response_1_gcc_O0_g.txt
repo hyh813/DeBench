@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `local_4`, `uVar1`, `iVar1`) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`sequential_ops`, `nested_if_2`, `loop_for_fixed`), but some are generic (`FUN_00100930`, `FUN_00100abc`) and return types sometimes mismatch (e.g., `if_else` returns `bool` instead of `int`).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear in hex without explanation (`0xffffffff` for -1, `0x3e9` for 1001, `0x65` for 101). Original used clear decimal constants. No named constants recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Runtime initialization code (`_init`, `_start`, `__do_global_dtors_aux`) included. Stack canary checks (`___stack_chk_guard`) appear in many functions. External function stubs add clutter.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic if/else and loops recovered well, but switch statements degrade to nested if-else chains (`switch_small`, `switch_large`). `switch_fallthrough` uses goto labels instead of proper fall-through semantics.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Original function boundaries preserved, but some functions have excessive local variables (`fsm_func_table` declares `uVar1` through `uVar36`). Helper functions like `double_value` remain intact.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `switch_fallthrough` and `duffs_device` use goto labels. `switch_large` has deeply nested if-else (8+ levels) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy in `fsm_func_table` and `computed_goto` with 30+ nearly identical variable initialization blocks. Stack canary checks duplicated across functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used instead of specific widths. Return type errors (`if_else` returns `bool`, `nested_if_deep` returns `undefined8`). Signed/unsigned inconsistent (`multi_return` uses `uint param_1`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays become opaque stack variables (`local_20`, `uStack_18` in `loop_break`). No struct/union definitions recovered. Matrix initialization in `loop_multi_exit` is unreadable pointer arithmetic.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Implicit casts throughout (`(int)local_4`, `(ulong)param_2`). Function pointers use generic `code *` type. Pointer arithmetic in array access lacks clarity but is functionally correct.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty level. Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Control flow patterns not identified. `duffs_device` decompiles to confusing nested if statements instead of recognizing the unrolled loop pattern. State machine functions lack pattern annotation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Problematic code receives no warnings. `computed_goto` and `fsm_func_table` show unusual patterns (30+ variables) without explanation. No confidence indicators for uncertain decompilation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling documentation. Original had test validation comments (e.g., "输入5,7,3应返回21") completely absent.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Test functions call control flow functions without clear grouping. Callback relationships exist but not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file without logical grouping. Original organized by control flow level (L1, L2, L3). Runtime and external functions mix with application code.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External function declarations present but type mismatches exist. Stack canary references need resolution. Some return type errors would cause compilation warnings.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (3×0.10 + 7×0.10 + 5×0.05 + 5×0.05) / 0.30 = 5.0/10
+Level 2 (25%): (6×0.08 + 6×0.07 + 6×0.05 + 4×0.05) / 0.25 = 5.6/10
+Level 3 (20%): (5×0.08 + 4×0.07 + 5×0.05) / 0.20 = 4.65/10
+Level 4 (15%): (1×0.05 + 3×0.03 + 3×0.03 + 2×0.04) / 0.15 = 2.07/10
+Level 5 (10%): (5×0.04 + 4×0.03 + 5×0.03) / 0.10 = 4.7/10
+
+Overall = (5.0×0.30) + (5.6×0.25) + (4.65×0.20) + (2.07×0.15) + (4.7×0.10)
+        = 1.50 + 1.40 + 0.93 + 0.31 + 0.47
+        = 4.61/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Variable `param_1`, `local_4` should be named semantically** (e.g., `input_value`, `counter`, `sum`) based on usage patterns
+- **Zero comments** despite original having extensive documentation explaining purpose and test cases
+- **Switch statements degraded to nested if-else** chains losing structural clarity (`switch_small`, `switch_large`)
+- **Massive redundancy in `fsm_func_table` and `computed_goto`** with 30+ nearly identical variable declarations
+- **Return type mismatches** (`if_else` returns `bool` instead of `int`, `nested_if_deep` returns `undefined8`)
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately, making it possible to identify function purpose despite other readability issues
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, losing all semantic context that made the original source understandable
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., variables used in loop counters should be named `i`, `j`, `count`; accumulators should be `sum`, `total`, `result`)
+2. **Recover and preserve source comments** from debug symbols when available (`-g` flag was used), or generate semantic annotations based on control flow pattern recognition
+3. **Recognize and reconstruct high-level patterns** like switch-case fall-through, Duff's device, and state machines instead of outputting raw goto-based control flow

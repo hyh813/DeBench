@@ -1,0 +1,103 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names (`v1`, `v2`, `v3`, `mem`, `mem2`) instead of semantic names like `local`, `arr`, `head`. Global variables are cryptically named `g1` through `g10` instead of descriptive names like `stack_test_header` or `heap_test_header`.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some functions retain meaningful names (`test_stack_memory`, `heap_realloc`, `tree_heap_traversal`), but others are degraded (`alloca_usage_constprop_0` from constant propagation, `function_ffff0fa0` for helper functions).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: String literals are hex-encoded in globals (`g1 = "=== \xe6\xb5\x8b..."`). Printf statements contain hardcoded values (20, 10, 15) from constant propagation, obscuring original computations.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains compiler artifacts: `__stack_chk_fail()` calls, `__printf_chk` instead of `printf`, goto labels (`lab_0x110fc`), and `UNREACHABLE` comments that clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Excessive `goto` usage replaces natural loops, especially in `test_heap_memory` where linked list operations use labels (`lab_0x110e4`, `lab_0x110fc`) instead of `while` constructs present in source.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: `test_heap_memory` is a monolithic function (hundreds of lines) that should be decomposed. Some functions like `alloca_usage` were constant-folded to single returns, losing original structure.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Multiple forward jumps and goto labels disrupt reading flow. `test_heap_memory` has at least 4 label targets requiring non-linear reading to understand execution paths.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy from optimization artifacts exists but is manageable. No severe dead code duplication observed beyond expected compiler transformations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses `int32_t` consistently but loses original type semantics. Pointer types are generic (`int32_t *`) without proper struct types. Original `Point`, `Node`, `TreeNode` types are completely lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - NO struct recovery. `Point`, `Node`, `TreeNode` structs are not reconstructed. All access is through pointer arithmetic: `*(int32_t *)(v2 + 4)` instead of `node->data`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present: `(int32_t)mem`, `(char *)v3`, `(uint32_t)v5 % 256`. Pointer arithmetic without type safety throughout heap operations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated decompiler comments (line ranges, address ranges). No semantic comments explaining what code does or why certain patterns exist.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: **No pattern recognition** - linked list creation/traversal in `test_heap_memory` is not identified as such. Tree operations in `tree_heap_traversal` appear as raw malloc/free without structure indication.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: Some `UNREACHABLE` markers present, but no warnings about constant propagation removing actual logic or about the severe struct type loss that occurred.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks exist in code but are not documented as preconditions. No postconditions or invariants are inferred or documented anywhere.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships not documented. Global variable usage is opaque (`g1`, `g2`...). No call graph or data flow documentation provided.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped somewhat logically (test functions together). Some organization visible through naming conventions, but static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes standard libraries, has external function declarations. Metadata indicates "Compilation Result: Yes". Would need minimal stubs for some functions to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):        (3+6+4+5)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):     (4+5+4+6)/4 = 4.75 × 0.25 = 1.19
+Level 3 (Type System):    (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):       (3+2+4+3)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):     (4+6+7)/3   = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                                    4.23/10
+```
+
+**Overall Readability Score: 4.2/10**
+
+### Critical Defects:
+- **Struct types completely lost** - `Point`, `Node`, `TreeNode` not recovered; all access via pointer arithmetic (`*(int32_t *)(v2 + 4)`)
+- **Excessive goto usage** - `test_heap_memory` uses 4+ goto labels instead of natural while/for loops
+- **Generic variable naming** - `v1`, `v2`, `g1`, `g2` obscure semantic meaning throughout
+- **String literals hex-encoded** - Chinese test headers stored as escape sequences in globals
+- **Constant propagation removed logic** - Functions like `local_vars` completely optimized away, showing only results
+
+### Best Quality Aspect:
+- **Build System Compatibility (7/10)** - The decompiled code includes proper headers and external declarations, and metadata confirms it can compile with minimal modifications.
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any struct/union types, forcing all composite data access through opaque pointer arithmetic that destroys semantic clarity.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** - Analyze consistent offset patterns (e.g., `+4`, `+8` from base pointer) to reconstruct struct definitions with field names based on usage context.
+
+2. **Recover high-level control structures** - Detect backward jump patterns that represent loops and convert goto-based iteration into `for`/`while` constructs, especially for linked list traversal patterns.
+
+3. **Preserve string literal readability** - Decode and display UTF-8 string literals directly instead of storing as hex-encoded global variables, particularly for non-ASCII content.

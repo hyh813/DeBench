@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `a0`, `a1`, `a2` for parameters and `v0`, `v1`, `v2` for locals. Struct fields are named `field_0`, `field_1`, `padding_0` - completely losing semantic meaning. Even loop indices like `idx` lack context about what they're indexing.
+
+**2. Function Naming Quality:** Score: 3/10  
+Justification: While some functions correctly recovered names like `cdecl_func`, `func_a`, `func_b`, `main`, the majority use address-based mechanical names like `sub_401030`, `sub_401040`. The original function names like `call_cdecl`, `varargs_func`, `param_by_value_int` are lost.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Return value constants like 15, 50, 6 are correctly inlined. However, magic numbers like `4294967295` (0xFFFFFFFF) for error returns lack explanation. String format specifiers are referenced via external globals without context.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution with extensive `[D] Unsupported_<class 'pyvex.expr.GetI'>()` annotations, incomplete code fragments like `ptr[15] = a1 + 15; ptr[14] = a1 + 14;` with wrong ordering, and multiple struct definitions with meaningless padding fields. The decompilation appears incomplete/broken.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow (if/else, loops) is present but some functions use goto inappropriately (e.g., `sub_401030` uses `goto ptr[2]`). At -O0 optimization, this should be much cleaner. The `ret_large_struct` shows scrambled statement ordering suggesting decompilation failure.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is reasonable - most functions are focused and single-purpose. The original test functions (`test_calling_conventions`, `test_parameter_passing`, `test_return_values`) are correctly identified. No excessive inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. However, some functions like `register_tm_clones` have complex nested conditionals that disrupt linear reading. The `ret_large_struct` shows明显的语句顺序错误.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some constant propagation is present (e.g., `call_cdecl()` returns constant 15). However, the decompilation shows artifacts like `param_varargs.constprop.0` suggesting the decompiler detected constant-propagated variants but didn't properly integrate them.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - almost all types are `unsigned int`. Original `int` parameters became `unsigned int`. Pointers are often just `unsigned int *`. The original `char*`, `double`, `long long` types are lost or incorrectly represented.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Structs are recovered with generic names (`struct_0`, `struct_1`) and field names like `field_0`, `padding_0`. The original `LargeStruct`, `SmallStruct`, `TestIntPair` are completely lost. The `param_ptr_array` function shows a bizarre single-byte struct definition.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe patterns - pointer arithmetic without bounds checking (e.g., `a0 + 4` for pointer return), function pointer called directly as `a0(a1)` without type safety. The `ret_small_struct` returns `unsigned int [2]` which is incorrect.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining algorithm intent or purpose. The only comments are auto-generated `[D] Unsupported` markers. Original source comments about calling conventions (CALL-L1-01, etc.) are completely lost.
+
+**13. Idiom Recognition:** Score: 1/10  
+Justification: No design patterns or algorithm idioms recognized. The original test scenarios (calling conventions, parameter passing patterns) are not identified. The varargs handling shows as raw pointer arithmetic without recognizing the stdarg pattern.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The `[D] Unsupported` markers do indicate decompilation failures, but they're generic and don't explain what specifically failed or provide workarounds. The scrambled `ret_large_struct` ordering isn't flagged as anomalous.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants recovered. Original function contracts like "requires: ptr != NULL" for `func_struct_byptr` are not documented. Error return values (like -1 for NULL pointer) aren't explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: Function call relationships are present but not documented. The caller functions (e.g., `call_cdecl` calling `cdecl_func`) are identified but there's no comment explaining the call graph or relationships to the test functions.
+
+**17. Module Organization:** Score: 2/10  
+Justification: Functions appear in arbitrary address order rather than logical grouping. The original source organization (calling conventions section, parameter passing section, return values section) is completely lost. No static vs. extern distinction is meaningful.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External declarations are present (`extern unsigned int g_402008;`) but incomplete. The code has multiple compilation-blocking issues: incomplete statements, unsupported operations, and missing definitions. Would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.1/10
+
+**Critical Defects:**
+- **Architecture mismatch**: Original compiled for arm64, but decompiled as X86 - completely wrong target
+- **Variable naming**: All parameters use generic `a0`, `a1`, etc.; locals use `v0`, `v1` - no semantic meaning recovered
+- **Type precision**: All types degraded to `unsigned int`; original `int`, `char*`, `double`, `long long` lost
+- **Struct recovery**: Original struct names (`LargeStruct`, `SmallStruct`) replaced with `struct_0`, `struct_1`
+- **Incomplete decompilation**: Multiple `[D] Unsupported` annotations and scrambled statement ordering in `ret_large_struct`
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+- Functions maintain reasonable granularity and single responsibility; test entry points correctly identified
+
+**Most Needs Improvement:** Idiom Recognition (scored 1/10)  
+- No patterns identified; the varargs, calling convention, and parameter passing patterns from the original source are completely lost
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover semantic variable names** from usage patterns - e.g., `a0` used as count in loop should be named `count` or `num_elements`
+2. **Preserve type precision** - detect original types from debug info or stack frame analysis; don't default to `unsigned int` for everything
+3. **Fix incomplete decompilation** - the `[D] Unsupported` annotations and scrambled code in functions like `ret_large_struct` indicate the decompiler is failing on certain constructs rather than gracefully handling them

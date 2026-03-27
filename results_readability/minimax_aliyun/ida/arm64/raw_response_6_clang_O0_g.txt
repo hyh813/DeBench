@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function: `param_strcpy`
+
+After analyzing both the original source code and the decompiled output, I will now provide a comprehensive evaluation across all 18 dimensions.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: The decompiled code uses generic variable names like `v1`, `v2`, `v3`, `v4`, `v5`, `v6` throughout (e.g., in `call_strcmp`, `param_strcmp`, `param_memcpy`). While parameters `dst` and `src` in `param_strcpy` are appropriately named, most other functions use non-descriptive names that obscure purpose.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Standard library wrapper functions are correctly named (`param_strcpy`, `param_strcmp`, `param_strlen`, `param_printf`). However, internal functions like `sub_12E0`, `init_proc` lack semantic meaning, and some helper functions use generic patterns.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers appear throughout without explanation (e.g., `syscall(56, 4294967196LL, pathname, 0)` for openat, `signal(10, ...)` for SIGUSR1, `signal(14, ...)` for SIGALRM). The decompiler shows 61 "FAILED to decompile" functions, indicating significant literal ambiguity.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution includes 61 failed decompilation messages for standard library functions (memcpy, strlen, strcpy, pthread functions, etc.). These appear at the end of the output, making it unclear what is code vs. unresolved imports.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0 optimization, control flow is largely natural. The `param_strcpy` function shows straightforward sequential execution. Loop constructs in functions like `param_malloc_free` and `param_memset` are properly recognized as for-loops, not goto-based structures.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and decomposed. `param_strcpy` is a simple 3-line function as expected. The test wrapper functions (`call_strcpy`, etc.) properly separate concerns. Minor issue: some static helper functions could be better organized.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom without excessive forward jumps. The `param_strcpy` function is perfectly linear. Early returns in error-handling code (e.g., `param_fopen_fclose`) are appropriately used.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant redundancy in `param_strcpy`. Some loop unrolling present in `call_memcpy` but it's minimal. Dead code is minimal in the decompiled output.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: `param_strcpy` correctly shows `size_t` return type and proper `char*`/`const char*` parameter types. However, many functions use generic `int` where `size_t` or `ssize_t` would be more precise (e.g., `param_fread_fwrite` return type).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Struct usage is partially recovered (e.g., `struct stat` in `param_win32_api`, `struct sockaddr` in `param_socket_create`). However, field access uses raw offsets like `*(_QWORD *)&v1.sa_data[6]` instead of named fields.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. `param_strcpy` shows proper const-correctness. Some unsafe casts present (e.g., `(void *(*)(void *))thread_compute` cast in pthread_create calls), but these are minor.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated function headers present (e.g., "Function: param_strcpy @ 0x1854"). No algorithmic comments, no explanation of non-obvious logic, no decompilation confidence indicators. The 61 "FAILED to decompile" messages are noise, not useful comments.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard library function calls are correctly identified (strcpy, strlen, strcmp, etc.). Some patterns like pthread usage are recognized but not explicitly named as patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The 61 "FAILED to decompile" messages for standard library functions are present but not explained - they appear as raw output without context. No indication of why these failed or what they mean for analysis.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No explicit preconditions or postconditions documented. Error return values are preserved (e.g., -1, -2, -3) but their meaning is not explained. The contract of `param_strcpy` (returns string length) is implicit, not documented.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are somewhat clear through the naming pattern (param_* and call_*). However, no explicit documentation of who calls whom or global variable usage.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (standard library calls, system calls, thread functions). However, the organization is flat with no clear separation or namespace structure.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: The decompiled code shows function signatures but lacks necessary includes and external declarations. The "FAILED to decompile" messages indicate unresolved external dependencies that would prevent compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Generic variable names (`v1`-`v6`) obscure variable purpose throughout
+- 61 standard library functions "FAILED to decompile" - severe noise pollution
+- Magic numbers (syscall numbers, signal numbers) lack symbolic constant names
+- No comments explaining algorithm intent or decompilation confidence
+- Type precision issues: many `int` where `size_t`/`ssize_t` would be correct
+
+**Best Quality Aspect:** Control Flow Naturalness (8/10)  
+- At -O0 optimization, control flow structures (loops, conditionals) are correctly recovered as idiomatic C constructs
+
+**Most Needs Improvement:** Anomaly Indication (2/10)  
+- The 61 "FAILED to decompile" messages are presented without context, explanation, or actionable guidance for the analyst
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Variables used as loop counters should be named `i`, `j`, `iterations`; variables used for sizes should be `size`, `len`, `count`
+2. **Resolve or explain failed decompilations**: Instead of raw "FAILED" messages, provide context (e.g., "External libc function - stub generated") and optionally generate stub declarations
+3. **Replace magic numbers with symbolic constants**: Detect common patterns (syscall numbers, signal numbers, socket parameters) and generate `#define` or `const` equivalents

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are consistently generic (e.g., `param_1`, `param_2`, `uVar1`, `local_c`), providing no semantic hint about their purpose like `a` and `b` in the source.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names like `cdecl_func`, `stdcall_func`, and `test_calling_conventions` are perfectly preserved from the source symbols, making the API clear.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Integer constants are represented in hex (e.g., `0xf` instead of `15`, `0x2a` instead of `42`), and string literals are replaced with pointers to global data (e.g., `&DAT_0001170a`), obscuring the actual text.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: While `cdecl_func` is clean, the output is cluttered with compiler-generated soft-float helper functions (`__adddf3`, `__floatsidf`) and pervasive `undefined4`/`undefined8` types that act as noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: The control flow for `cdecl_func` is perfectly linear. In other functions like `varargs_func`, loops are represented as `do-while` constructs which, while accurate, are slightly less idiomatic than the original `for` loops.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Functions are correctly separated into distinct units. The granularity matches the source, with no artificial inlining or outlining observed in the main logic.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: The code reads top-to-bottom effectively. `cdecl_func` is a single return statement. More complex functions like `param_ptr_array` use `do-while` loops that maintain reasonable linearity.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: There is no obvious dead code or redundant expressions in the decompiled logic. The code is concise relative to the binary instructions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: While `cdecl_func` correctly uses `int`, many other functions suffer from type erasure, using `undefined4` instead of concrete types like `int` or `unsigned int`. Floating point operations in `func_mixed_args` are reduced to library calls rather than retaining `double` types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: The decompiler completely failed to recover the `LargeStruct` in `func_struct_byval`, flattening the struct into 21 separate integer parameters (`param_1` through `param_21`), which destroys the data structure abstraction.
+
+**11. Type Safety:** Score: 9/10  
+Justification: The code does not contain dangerous or misleading pointer casts. The use of generic types like `undefined4` is safe but imprecise.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: There are absolutely no comments in the decompiled output. Complex logic, such as the soft-float arithmetic or varargs handling, is left unexplained.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Standard patterns like `cdecl` calling conventions are recognized. However, the varargs idiom is represented as raw stack array access (`local_c`) rather than the `va_list` abstraction, and floating-point math is obscured by library calls.
+
+**14. Anomaly Indication:** Score: 10/10  
+Justification: There are no anomalies to report in `cdecl_func`, and the decompiler does not hallucinate incorrect behavior.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants are documented or inferred in the output.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10  
+Justification: Function calls are explicit and easy to trace. External functions are marked with `<EXTERNAL>`, providing clear context about library dependencies.
+
+**17. Module Organization:** Score: 7/10  
+Justification: The functions are listed in a logical order, generally matching the source flow. However, the inclusion of massive low-level math libraries (`__adddf3`) interleaved with user code disrupts the module organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code uses Ghidra-specific types (`undefined4`, `undefined8`) which are not valid standard C. String references to `DAT_` addresses would also require significant manual patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.3/10
+
+**Critical Defects:**
+- Variable `param_1` should be named `a` (or `arg1`) to match source intent.
+- Struct `LargeStruct` in `func_struct_byval` is completely flattened into 21 scalar parameters.
+- Floating point arithmetic in `func_mixed_args` is obscured by soft-float library calls (`__adddf3`) instead of operators.
+- String literals are replaced with global data pointers (e.g., `&DAT_0001170a`), hiding the actual strings.
+- Pervasive use of `undefined4` types instead of standard `int` or `unsigned int`.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+- The decompiler successfully preserved all original function symbols from the debug information, making the high-level structure easy to navigate.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)  
+- The failure to re-aggregate structure parameters (e.g., in `func_struct_byval`) turns a clean interface into a parameter list nightmare, severely impacting readability.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement structure parameter re-aggregation based on stack/register usage patterns to recover `LargeStruct` instead of flattening.
+2. Lift soft-float ABI calls (like `__adddf3`) back to high-level arithmetic operators (`+`, `-`) to improve semantic transparency.
+3. Replace global data references (e.g., `&DAT_0001170a`) with inline string literals where the data content is clearly ASCII text.

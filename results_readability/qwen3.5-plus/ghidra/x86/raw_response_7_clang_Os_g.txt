@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named (`iVar1`, `iVar2`, `uVar1`, `lVar2`, `pbVar2`) with no semantic meaning. Many show "Unresolved local var" comments indicating the decompiler couldn't recover original names like `result`, `p1`, `p2`, `sum`, `decrypted`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names preserved from source (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`), but helper functions use generic names (`FUN_00011030`) and architecture warnings indicate mismatch.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `0x14` (20), `0x23` (35), `0xe1` (225), `0x7a314` (500500), `0x13ba` (5050). Original constants like `0xDEADBEEF` not recovered in context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: `__x86.get_pc_thunk.bx` warnings, "Removing unreachable block" messages, infinite loop in `_start`, and architecture mismatch warnings (ARM64 source vs x86 decompilation).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Critical functions have broken control flow: `param_fake_branch` returns just `x` (lost all conditionals), `param_tail_call_optimized` shows multiplication instead of recursion. Some loops recovered as do-while but awkwardly structured.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved with reasonable sizes, but `param_fake_branch` is oversimplified (lost logic) while `test_obf_opt_edge` is bloated with inlined computation code.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with do-while loops, but nested conditionals in `param_vectorized_loop` and `param_opaque_predicate` create awkward flow that disrupts linear reading.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant array initialization in `call_vectorized_loop` (local_24[0-7] = 0), duplicated GCD logic across three functions (`param_opaque_predicate`, `call_opaque_predicate`, `test_obf_opt_edge`), and compiler artifact code.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic `int` used throughout instead of `int32_t`, `size_t`, `uint`. Many implicit casts (`(ulonglong)`, `(uint)`, `(longlong)`). Pointer types sometimes correct (`char *`) but often generic (`undefined4`, `undefined1`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Bitfield struct shows as "Unresolved local var: anon_struct_4_3_4e909822 bitfield@[???]". Arrays sometimes recognized (`local_24 [8]`) but often unresolved. No struct definitions recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts: `(undefined *)0x0`, `(byte *)buffer`, `(__sighandler_t)0x0`. Pointer arithmetic without bounds checking. Function pointers use generic `code *` types losing signature information.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are auto-generated warnings ("WARNING: Function...replaced", "Unresolved local var") with zero semantic explanation. No algorithm documentation, API contracts, or logic explanations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String decryption pattern in `decrypt_string` unlabeled. Tail call optimization not noted. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "Unresolved local var" and "Unknown calling convention" warnings present, but critical semantic anomalies not flagged (e.g., `param_fake_branch` logic completely lost, `param_tail_call_optimized` has wrong algorithm).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero precondition comments (e.g., "x != 0 for division"), no postcondition documentation, signal handler behavior unexplained, no error condition documentation.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships undocumented. Global variables (`div_zero_caught`, `jmp_buffer`, `segv_caught`) usage unclear. Signal handler callback relationships not explicitly noted.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All 46 functions in single output with no logical grouping. No header file structure. Static functions not properly scoped. No namespace organization.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Architecture mismatch (ARM64 source → x86 decompilation). Missing includes (`<stdio.h>`, `<signal.h>`, `<setjmp.h>`). Undefined externals (`__libc_start_main`, `__gmon_start__`). Won't compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (4+6+6+5)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.866
+Level 4 (Semantic):    (3+3+5+2)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (5+4+3)/3   = 4.00 × 0.10 = 0.400
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.49/10
+```
+
+**Overall Readability Score:** 4.5/10
+
+### Critical Defects
+- **`param_fake_branch` completely broken**: Returns just `x`, losing both fake branch conditionals (`x*x < 0` and `strlen(str) < 0`)
+- **`param_tail_call_optimized` has wrong algorithm**: Shows multiplication formula instead of tail-recursive accumulation
+- **All variables use generic names**: `iVar1`, `iVar2`, `uVar1` instead of semantic names like `result`, `p1`, `sum`
+- **No struct/type recovery**: Bitfield shows as "anon_struct_4_3_4e909822" with unresolved fields
+- **Architecture mismatch**: ARM64 source decompiled as x86, causing potential instruction interpretation errors
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most original function names preserved (`param_fake_branch`, `decrypt_string`, `param_vectorized_loop`), making basic navigation possible despite other issues.
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (2/10)** - Zero documentation of preconditions, postconditions, or error handling behavior, making it impossible to understand function contracts without source reference.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover semantic variable names from usage patterns** - Analyze how variables are used (e.g., loop counters, accumulators, pointers) to suggest meaningful names instead of `iVar1`, `iVar2`
+2. **Flag semantic anomalies when logic appears simplified** - When conditionals disappear (like in `param_fake_branch`), add warnings like "ANOMALY: Conditional branches may have been optimized away"
+3. **Recover algorithm patterns and add explanatory comments** - Recognize common patterns (GCD, string decryption, tail recursion) and add comments like "// GCD computation for coprime check"

@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ OOP Features Code
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `temp`, `exception`) with no semantic meaning. For example, `v1[4]` in `test_cpp_oo_features` should be `test_output_buffer` based on its use with `printf`.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: C++ mangled names are partially recovered (e.g., `_Z20test_cpp_member_funcv` demangles to `test_cpp_member_func`), but some functions remain as `sub_854`. Class methods like `Container<int>::push` are well-named.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers dominate (`4700`, `1001`, `130`, `14`) without explanation. These are optimized constants from original computations but lack context (e.g., `4700` should be `EXPECTED_MEMBER_FUNC_RESULT - 4`).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts remain: unused stack variables initialized to 0 (`v2 = 0; v3 = 0; ... v9 = 0;`), redundant `HIBYTE` operations, and dead stack frame setup in optimized functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most test functions collapsed to `return constant;` due to compiler optimization, losing all original logic. Where logic exists (Container methods, `template_max`), control flow is natural and idiomatic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate; class methods are properly separated (e.g., `Container<int>::push`, `Container<int>::get`). However, test functions are over-optimized into single-return stubs.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom with minimal jumps. Exception handling in `test_cpp_exception` uses proper `_cxa_throw` calls rather than goto chains.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant stack variable initialization (`v2 = 0; v3 = 0; ... v9 = 0;`) serves no purpose. Some functions have duplicate prologue/epilogue patterns from compiler artifacts.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types recovered (`int`, `double`, `char*`), but class types sometimes degrade to `void*`. The `template_max<double>` incorrectly returns `int` instead of `double` (type erosion bug).
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Container<int>` and `Container<double>` structures partially recovered with `size` and `data` fields. RTTI vtables (`_vptr$RTTIBase`) are identified but class layouts lack field names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts present: `(RTTIDerivedA *)operator new(4u)`, `(void *)v1`, `(int (**)(void))&off_11ED8`. No const-correctness preserved on member function pointers.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated metadata comments exist (e.g., `// attributes: thunk`). No algorithm explanations, no documentation of C++ semantics (vtable, RAII, exception handling).
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ patterns visible but not identified: vtable calls shown as `(*obj->_vptr$Base)(obj, x)` without noting "virtual dispatch", `dynamic_cast` shown as `_dynamic_cast` without RTTI explanation.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations explicitly marked (`/* FAILED to decompile: __imp__Znwj */`), but no warnings about optimization-induced constant folding or type erosion issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `Container::get` requires `idx >= 0`). Exception contracts, RAII guarantees, and ownership semantics completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch relationships unclear. Inheritance hierarchy (Base → Derived, DiamondDerived) not documented. 22 external functions failed to resolve.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in arbitrary order without logical grouping. Related class methods scattered (constructors, destructors, virtual functions not grouped). No namespace structure recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 22 functions failed to decompile (marked `FAILED`), preventing standalone compilation. External dependencies (`_cxa_throw`, `operator new`) unresolved. Cannot compile without significant stubbing.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+5+3+4)/4 = 3.50 × 0.30 = 1.05
+Level 2 (Structural):   (5+7+7+5)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type System):  (5+6+4)/3   = 5.00 × 0.20 = 1.00
+Level 4 (Semantic):     (2+3+5+2)/4 = 3.00 × 0.15 = 0.45
+Level 5 (Contextual):   (5+4+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.40/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects
+- **Variable names completely generic** (`v0`, `v1`, `v2`) losing all semantic meaning from original source
+- **22 functions failed to decompile** including critical runtime functions (`operator new`, `_cxa_throw`, `printf`)
+- **Test functions optimized to constants** (`return 42;`, `return 703;`) losing all original computation logic
+- **Type erosion in templates** (`template_max<double>` returns `int` instead of `double`)
+- **No C++ semantic documentation** (vtables, RAII, exception handling, virtual dispatch not explained)
+
+### Best Quality Aspect
+- **Function Decomposition (7/10)** - Class methods properly separated with appropriate granularity; `Container<int>::push`, `Container<int>::get` are well-structured and match source intent.
+
+### Most Needs Improvement
+- **Variable Naming Quality (2/10)** - Generic names (`v0`, `v1`, `temp`) make code nearly unusable for understanding; decompiler should infer names from usage patterns and C++ context.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement C++ semantic analysis** - Detect class methods, vtable calls, and template instantiations to provide meaningful names and comments (e.g., "virtual dispatch via vtable")
+2. **Recover variable names from debug symbols** - The `-g` flag was used; DWARF debug info should provide original variable names instead of `v0`, `v1`
+3. **Flag optimization-induced transformations** - When functions collapse to constants, add comments explaining "Compiler optimized: original computation was X + Y + Z = result"

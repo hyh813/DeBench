@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`param_1`, `iVar1`, `puVar2`, `aiStack_30`) with no semantic meaning. Original names like `arr`, `local`, `out`, `p` are completely lost, making it difficult to track variable purpose across functions.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some function names preserved correctly (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`), but many critical functions degraded to `FUN_00100c7c`, `FUN_0010120c`. Test harness functions retained names but implementation functions suffered.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive throughout (`0x2a` for 42, `0x14` for 20, `0x3c` for 60, `0xffffffff` for -1). Hex representation obscures decimal intent, and no constants are recovered despite `-g` debug symbols being available.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: stack canary checks (`___stack_chk_guard`), excessive type casts (`(undefined4 *)`, `(undefined8 *)`), and redundant pointer arithmetic. Debug compilation (`-O0 -g`) should have produced cleaner output.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Original `for` loops transformed into `do-while` with pointer iteration (`piVar2 = piVar2 + 1`). Some functions incorrectly return `void` instead of values (e.g., `local_array`, `vla_stack`). Execution flow requires mental reconstruction.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Test functions inline expected results instead of calling actual functions (`test_stack_memory` prints `0x14` instead of calling `local_vars(5)`). Some functions merged incorrectly, losing modular structure present in source.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but pointer arithmetic and stack operations create cognitive overhead. No excessive goto usage, but the low-level memory manipulation disrupts natural reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant type casts throughout (`(undefined4 *)`, `(long)`). Stack canary code duplicated in multiple functions. No dead code elimination despite debug build should have minimal optimization artifacts.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined4`, `undefined8`, `void*` replace specific types. Return types incorrect (`void` instead of `int` for `local_array`, `address_of_local`). Original `Point*`, `Node*` types completely lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs (`Point`, `Node`, `TreeNode`) completely lost. Access becomes pointer arithmetic (`*(undefined4 **)(__ptr + 2)`). Field names absent, requiring manual reverse engineering to understand structure layout.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout. Pointer arithmetic without bounds checking. Function pointer types degraded to `undefined8`. Original type safety guarantees from C type system completely erased.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each test case purpose, expected values, and scenarios. No decompilation confidence indicators or algorithm explanations.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition evident. Memory allocation patterns, linked list traversal, tree operations all appear as raw pointer manipulation. No identification of common C idioms like "allocate-initialize-use-free" patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about potential issues. Functions with undefined behavior (`dangling_pointer`, `double_free`, `heap_overflow`) presented without any caution. No indication of decompilation uncertainty despite obvious type mismatches.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1 != NULL` checks exist but aren't labeled as contracts). No postconditions or invariants. Error return values (`-1`, `-2`, `0xffffffff`) unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. Global variables referenced (`global_counter`, `file_scope_static`) without context. Callback relationships (`global_func_ptr`) not explained.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output without logical grouping. Original source had clear sections (Stack, Heap, Static, Memory Ops) with section headers. No namespace or file organization preserved.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions declared but many use incorrect signatures. Would require significant patching to compile standalone. Dependencies on libc functions present but not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+5+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (5+5+6+5)/4 = 5.25 × 0.25 = 1.31
+Level 3 (Type):        (4+3+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (5+4+5)/3   = 4.67 × 0.10 = 0.47
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.20/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `iVar1`, `puVar2`) losing all semantic meaning from original source
+- **Struct types completely lost** - `Point`, `Node`, `TreeNode` accessed via raw pointer arithmetic instead of field names
+- **Incorrect return types** - functions like `local_array`, `vla_stack`, `address_of_local` return `void` instead of `int`
+- **Test functions inline constants** instead of calling actual functions, breaking the test harness structure
+- **Zero comments** despite original having extensive documentation explaining each test case purpose
+
+### Best Quality Aspect:
+- **Function Naming Quality (6/10)** - Core function names like `double_value`, `local_vars`, `heap_basic`, `test_stack_memory` were preserved correctly, providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of any documentation, explanations, or decompilation confidence indicators makes understanding intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct/union types from debug symbols** - With `-g` flag available, field names and structure layouts should be recoverable instead of raw pointer arithmetic
+2. **Preserve original return types** - Functions returning values should not be typed as `void`; use debug info to restore correct signatures
+3. **Generate semantic comments from debug metadata** - Source file comments and function documentation should be extracted and included in decompiled output when `-g` is present

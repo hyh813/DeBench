@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use cryptic Ghidra-generated names like `iVar1`, `uVar2`, `local_d8`, `local_d0`, `local_b8` instead of meaningful names like `count`, `sum`, `args` from the original source. The decompiler makes no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names correctly match the source: `cdecl_func`, `stdcall_func`, `fastcall_func`, `varargs_func`, `func_no_args`, etc. However, some internal functions like `FUN_00101020` use generic naming. The primary test function names are well-recovered.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear without explanation (e.g., `0xf` for 15, `0x2a` for 42, `0x12345678`). While the values are correct, the original source uses decimal and includes comments explaining expected values. The decompiled version provides no such context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Extensive compiler artifacts pollute the output: "WARNING: Unknown calling convention", "WARNING: Removing unreachable block", "Unresolved local var" annotations appear throughout. The `varargs_func` shows complex stack manipulation that obscures the simple `va_list` pattern.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow structures are natural and match source well. Loops in `varargs_func` and `func_struct_byval` use do-while constructs that are readable. The `-O0` optimization level means minimal restructuring, which is correctly reflected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source closely. Each small test function (`call_cdecl`, `call_stdcall`, etc.) is properly separated. The 77 functions decompiled represent good decomposition matching the original's modular structure.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately in functions like `param_double_ptr` and `func_struct_byptr`. No excessive goto or computed jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some loop unrolling visible in `func_struct_byval` (processes two elements per iteration) and `varargs_func`, but these are manageable optimization artifacts. No significant dead code observed.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are correct (`int`, `char*`, `double`, `longlong`). However, generic `int` is used instead of platform-specific types. Function pointer types like `_func_int_int` are imprecise compared to proper typedefs. Const correctness is not preserved.
+
+**10. Composite Type Recovery:** Score: 9/10  
+Justification: Excellent struct recovery: `LargeStruct`, `SmallStruct`, `SmallPoint`, `LargeData` all correctly identified with field names (`data`, `x`, `y`). The `LargeStruct` with its 128-byte `data[16]` array is properly reconstructed.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns present: pointer arithmetic in `ret_pointer` returning `p + 1`, cast from `void*` in `param_complex_cast` without validation. The varargs handling uses raw pointer arithmetic (`local_d0 = local_d0 + 2`). No bounds checking visible.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are primarily auto-generated warnings ("WARNING: Unknown calling convention", "Unresolved local var") rather than useful documentation. No explanation of algorithm intent, preconditions, or the purpose of complex constructs like the varargs handling.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns are recognizable (varargs handling, struct by-value) but not explicitly labeled. The decompiler doesn't identify "this is a varargs function using va_list" or "this is AAPCS calling convention" as the source comments do.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Ghidra appropriately flags "Unknown calling convention" warnings and "Unresolved local var" annotations. However, the complex varargs stack manipulation isn't flagged as potentially problematic. Some indirect calls could be better documented.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original source has no explicit assertions, but the decompiled code doesn't add any helpful contracts (e.g., "requires: count >= 0" for varargs functions).
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are present but relationships aren't documented. No indication which functions call `cdecl_func` or the callback relationships. The `callback_func` static function isn't clearly linked to `param_func_ptr`.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped reasonably - all test functions together, all parameter passing functions together. However, it's a single flat output file without any logical section markers matching the original's "4.1 Calling Conventions", "4.2 Parameter Passing" organization.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code uses standard library functions (`puts`, `printf`, `strlen`) but external dependencies aren't documented. The `EVP_PKEY_CTX` in `_init` suggests OpenSSL dependency but isn't explained. Some functions like `ret_opaque_handle` reference static variables in non-standard ways.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable naming uses cryptic auto-generated names (`iVar1`, `local_d8`, `local_b8`) instead of semantic names (`count`, `sum`, `args`)
+- Extensive noise from "WARNING" and "Unresolved local var" annotations obscuring logic
+- No meaningful comments explaining algorithm intent or contracts
+- Magic numbers like `0xf`, `0x2a` lack explanation; original source comments showing expected values are lost
+- Type precision lacking - uses generic `int` instead of more specific types; const correctness not preserved
+
+**Best Quality Aspect:** Composite Type Recovery (9/10)  
+Structures like `LargeStruct`, `SmallPoint`, `LargeData` are excellently recovered with accurate field names and proper nesting. The decompiler correctly identified the 128-byte structure and its array member.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+The decompiler makes no attempt to infer meaningful variable names from usage patterns. Even at `-O0` where variables are preserved, names like `iVar1`, `uVar2`, `local_d8` provide no semantic value compared to source names like `count`, `sum`, `i`, `args`.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage**: Analyze how variables are used (e.g., `count` used in comparison, `sum` accumulated in loop) to generate semantic names instead of `local_d8`, `iVar1`
+2. **Reduce noise artifacts**: Filter or consolidate "WARNING" and "Unresolved local var" messages; only show when they impact understanding
+3. **Add semantic comments**: Document calling convention observations, algorithm patterns (varargs, struct by-value), and flag magic numbers with likely meanings

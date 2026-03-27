@@ -1,0 +1,91 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `a0`, `a1`, `ptr`, `idx` throughout. The original source had meaningful names like `MAX_SIZE`, `BUFFER_COUNT` which are completely lost - now appear as magic numbers `0x400` and `64`. No semantic connection to original variable purposes.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions retain original names (param_macro_constants, call_asm_basic, param_asm_atomic). However, many helper/initialization functions use generic names like `sub_401020`, `deregister_tm_clones`. The core functionality functions are well-named, matching source closely.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Preprocessor macros are unrecoverable - constants like `MAX_SIZE` (1024) appear as `0x400`, `BUFFER_COUNT*4` (64) appears as raw `64`. Magic numbers like `30` (page_size), `7` (PROT flags), `34` (MAP flags) lack explanation. String literals preserved but macro origins lost.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. No redundant casts, frame pointer manipulation, or debug instrumentation visible. One minor anomaly in `param_asm_multi_insn` where `v1` is initialized to 0 then used in bitwise operation - likely decompilation artifact.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow is natural with standard loops and conditionals. The `param_conditional_compile` correctly shows the release branch (x*3+2) since DEBUG_MODE wasn't defined. At -O0, control flow closely matches source.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Test functions properly separated from implementation. No 500-line monoliths; each function has single responsibility. Parameter lists reasonable.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive forward jumps or deep nesting (>4 levels). Flow is easy to trace.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Loop unrolling in `param_asm_clobber` is appropriate for -O0. No significant duplicate expressions. Clean code.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `unsigned int` and `unsigned long long` but loses platform-specific types. Original `size_t` becomes `unsigned long`. Original `int` often becomes `unsigned int`. Some type erosion but generally usable.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Basic recognition of SIMD types (`uint128_t`). Struct field names lost but layout preserved. The `param_asm_simd` correctly shows vector operation. No complex struct recovery needed in this code.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe pointer handling. Some potentially unsafe operations in `param_asm_multi_insn` (bitwise on v1). No obvious buffer overflows. Minor issues that don't cause immediate danger.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments present. Original source had extensive comments explaining macro behavior, assembly constraints, and test expectations - all completely lost. Only function names provide minimal semantic hints.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable: atomic operations (`atomic_exchange_add`), SIMD (`AddV`), memory protection patterns. However, macro expansion patterns and conditional compilation branches not clearly distinguished from regular code.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: One "Unsupported jumpkind Ijk_SigTRAP" mentioned but not clearly flagged in main code. No warnings about indirect calls, unusual stack layouts, or potential undefined behavior. Silent on most anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Function contracts are completely implicit. Original source had clear expectations (e.g., "期望: 64") not recovered.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible but not explicitly documented. External functions like `puts`, `printf`, `mmap`, `mprotect` recognized as extern. No call graph or usage documentation.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - preprocessing tests together, asm tests together. Static functions properly scoped. Matches source organization reasonably well.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code would compile with some fixes needed. Missing `uint128_t` definition, some type mismatches. External declarations present but incomplete. Moderate patching required.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`v0`, `v1`, `a0`, `ptr`) losing all semantic meaning from source
+- All preprocessor macro information lost - constants like `MAX_SIZE` appear as magic numbers (`0x400`)
+- No comments explaining macro behavior, assembly constraints, or test expectations
+- Type precision degraded - `size_t` becomes `unsigned long`, `int` often becomes `unsigned int`
+- Function contracts and preconditions completely undocumented
+
+**Best Quality Aspect:** Structural Intelligibility (scored 8.0/10)  
+Control flow is natural, functions are well-decomposed, and code reads linearly without excessive jumps or redundancy.
+
+**Most Needs Improvement:** Semantic Transparency (scored 3.0/10)  
+Comments are nearly absent, patterns are not clearly identified, anomalies are not flagged, and function contracts are not documented.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `a0 > 0x400` should suggest `size > MAX_SIZE`
+2. Add comments explaining preprocessor behavior - document which branch was taken in conditional compilation
+3. Recover type information from debug symbols - `size_t`, `int32_t`, `uintptr_t` should be preserved
+4. Add cross-reference documentation - show which functions call which, and what external dependencies are needed
+5. Flag anomalies and uncertainties - indicate where indirect calls couldn't be resolved or where behavior is undefined

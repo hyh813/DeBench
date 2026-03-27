@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `v2`, `temp`, `result`) with no semantic meaning. For example, `param_opaque_predicate` uses `v1`, `v2`, `v3`, `v4` instead of meaningful names like `predicate_result`, `gcd_temp`, etc.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery - original function names preserved (`param_fake_branch`, `param_opaque_predicate`, `decrypt_string`). Action-oriented naming clearly indicates purpose and matches source exactly.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `0x5A` (encryption key) and `0x28u` (stack canary offset) appear without explanation. However, some constants like `0x1Fu` (31) for buffer sizing are inferable from context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Stack canary checks (`__readfsqword(0x28u)`) and some compiler artifacts present but not overwhelming. The `LOBYTE` macro usage is noise that could be cleaned up.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control flows are natural (if/else, for/while), but `param_opaque_predicate` has awkward restructuring with the GCD loop. At `-O2` optimization level, the tail-call-to-loop transformation in `param_tail_call_optimized` is acceptable.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is appropriate - no monolithic functions. Helper functions like `decrypt_string` remain separate. Some caller functions are constant-folded entirely (`call_fake_branch` returns 10 directly).
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Some functions like `test_obf_opt_edge` have excessive sequential variable declarations that disrupt flow slightly.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: Aggressive constant folding eliminated redundant computations (caller functions return constants). No obvious dead code or duplicate expressions in recovered functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision - uses `__int64`, `__fastcall`, `size_t` appropriately, but also generic `int` where `int32_t` would be clearer. Pointer types preserved well (`const char*`, `int*`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: The bitfield struct in `param_implementation_defined` was completely optimized away (returns constant 47). Array parameters like `int a[8]` recovered but struct layouts not visible in decompilation.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (`(__sighandler_t)`, `(__int64)`), but mostly justified by API requirements. No obvious buffer-overflow-prone patterns in recovered code.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. No explanation of optimization transformations, algorithm intent, or decompiler confidence. Only function headers with addresses.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: GCD algorithm in `param_opaque_predicate` recognizable but not named. XOR decryption pattern in `decrypt_string` not identified. No design pattern documentation.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Failed decompilations listed at end (`FAILED to decompile: free`, etc.) but no inline warnings. The `param_buffer_overflow_stack` function lost all overflow logic silently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Signal handler contracts not documented. No indication that `param_division_by_zero` requires signal setup.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function call relationships clear through direct calls. Global variables like `encrypted_0`, `jmp_buffer` referenced but not defined in output. Call graph inferable.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order but no logical grouping comments. Related functions (`param_*` and `call_*` pairs) are adjacent but not explicitly grouped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 13 library functions failed to decompile. Would require significant stubbing to compile standalone. External dependencies (`signal`, `malloc`, `strlen`) not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+9+6+7)/4 = 6.50 × 0.30 = 1.95
+Level 2 (Structural):  (7+8+7+8)/4 = 7.50 × 0.25 = 1.88
+Level 3 (Type):        (6+5+7)/3   = 6.00 × 0.20 = 1.20
+Level 4 (Semantic):    (2+4+3+2)/4 = 2.75 × 0.15 = 0.41
+Level 5 (Contextual):  (7+6+4)/3   = 5.67 × 0.10 = 0.57
+
+Overall Score: 6.01/10
+```
+
+**Overall Readability Score:** 6.0/10
+
+### Critical Defects:
+- **Variable names are entirely generic** (`v0`, `v1`, `v2`) losing all semantic meaning from original source
+- **Zero comments** explaining optimization transformations, algorithm intent, or decompiler confidence
+- **Silent logic loss** in `param_buffer_overflow_stack` - overflow code completely eliminated without warning
+- **13 library functions failed** to decompile with no inline stubs or documentation
+- **No contract documentation** for signal handlers, buffer requirements, or preconditions
+
+### Best Quality Aspect:
+- **Function Naming Quality (9/10)** - Original function names perfectly preserved, making navigation and identification trivial
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of explanatory comments makes understanding optimization transformations and algorithm intent extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Add semantic variable name inference** - Use usage patterns to suggest names (e.g., variables in loop counters → `i`, `index`; variables in size checks → `length`, `size`)
+2. **Insert decompiler confidence annotations** - Mark optimized/transformed code with comments like `// OPTIMIZED: tail recursion converted to loop` or `// UNCERTAIN: indirect call resolution`
+3. **Generate stub declarations for failed functions** - Instead of just listing failures, provide usable function prototypes with `// STUB: requires external implementation` comments

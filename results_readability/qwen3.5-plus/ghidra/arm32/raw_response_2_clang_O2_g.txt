@@ -1,0 +1,99 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are generically named (`iVar1`, `uVar2`, `piVar2`, `bVar3`) with no semantic meaning. Original variables like `sum`, `len`, `i` are lost to `iVar1` patterns. Many show "Unresolved local var" comments indicating complete name recovery failure.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User function names are excellently preserved (`process_char`, `array_1d_stack`, `struct_simple`, `binary_tree_sum`). This matches original source names perfectly. Only compiler runtime functions (`__muldf3`, `FUN_000115c4`) use generic naming.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Floating point constants appear as hex (`0x3fc00000`, `0x3f000000`) instead of `1.5f`, `0.5f`. Test functions show computed constants (`0x61`, `0xb`, `0x14`) instead of actual function calls, obscuring the computation being tested.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Numerous "Unresolved local var" comments, "WARNING: Removing unreachable block" messages, and "Unknown calling convention" warnings clutter the output. Compiler runtime functions (`__mulsf3`, `__adddf3`) are exposed rather than abstracted.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `binary_tree_sum` incorrectly transforms recursion into a do-while loop, fundamentally breaking the algorithm semantics. `array_2d_stack` unrolls into 10 explicit additions instead of a loop. Some functions use do-while where for-loops would be clearer.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are well-preserved with reasonable sizes. However, test functions are optimized to print constants rather than execute actual computations, losing the testing logic entirely.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. However, `test_array_types` has complex inline initialization code that's difficult to follow. Do-while loops could be cleaner as for-loops.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `array_2d_stack` and `array_3d` are fully unrolled creating repetitive code. Floating point functions contain significant redundancy from software emulation. Constant folding in test functions eliminates actual computation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic integer types preserved well (int, char, short, long, longlong). However, float/double operations degrade to `undefined4`/`undefined8`. `volatile` qualifier lost in `volatile_access` (shows `int *p` not `volatile int *p`). `const` qualifiers also lost.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Struct types well recovered with field names (`Point3D`, `Rect`, `Widget`, `Node`). Nested struct access works (`r->position.x`, `w->style.fill.r`). However, bitfields accessed via manual bit operations (`uVar1 & 1`, `uVar1 >> 6`) instead of field names.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts present (`(int *)0x0`, `(void *)size`). Function pointer calls show warnings ("Could not recover jumptable"). Void pointer handling requires explicit casts. No buffer overflow warnings despite `array_oob` existing.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are almost entirely auto-generated warnings ("WARNING:", "Unresolved local var"). No algorithm explanations, no API documentation, no decompilation confidence indicators beyond generic warnings.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns preserved (linked list traversal, struct field access) but not explicitly identified. No design pattern recognition. The tree traversal idiom is broken by incorrect recursion transformation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies flagged ("Could not recover jumptable", "Unresolved local var", "Removing unreachable block"). However, critical issues like recursion-to-loop transformation in `binary_tree_sum` are NOT flagged.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. NULL checks exist in code but aren't explained as contracts. No error condition documentation despite functions returning -1 on error.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and visible. Global variable references shown. However, callback relationships not documented (e.g., `ptr_func_simple` callback usage). No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions logically grouped (data types, arrays, pointers, composites) matching source structure. However, all code in single output without header separation. Static functions not clearly marked.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Requires linking compiler runtime libraries (`__muldf3`, `__adddf3`, etc.). Some type issues need fixes (`undefined4`, `undefined8`). External dependencies not documented. Metadata claims "Compilation Result: Yes" but requires significant stubbing.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Contribution |
+|-------|-----------|---------|--------|--------------|
+| L1: Lexical Clarity | 4 | 5.50 | 30% | 1.65 |
+| L2: Structural Intelligibility | 4 | 5.75 | 25% | 1.44 |
+| L3: Type System Fidelity | 3 | 6.33 | 20% | 1.27 |
+| L4: Semantic Transparency | 4 | 4.50 | 15% | 0.68 |
+| L5: Contextual Coherence | 3 | 5.67 | 10% | 0.57 |
+
+**Overall Readability Score: 5.6/10**
+
+### Critical Defects:
+- **`binary_tree_sum` recursion incorrectly transformed to do-while loop** - fundamentally breaks tree traversal algorithm semantics
+- **Test functions optimized to print constants** - actual computation eliminated, losing test verification logic
+- **Variable names all generic** (`iVar1`, `uVar2`, `piVar2`) - no semantic meaning recovered from usage patterns
+- **Floating point constants as hex** (`0x3fc00000`) instead of readable values (`1.5f`)
+- **`volatile` and `const` qualifiers lost** - `volatile_access` shows `int *p` not `volatile int *p`
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Original function names perfectly preserved (`process_char`, `array_1d_stack`, `struct_simple`), making navigation and identification straightforward.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No preconditions, postconditions, or error contracts documented despite functions having clear error paths (return -1) and NULL checks.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement recursion pattern detection** - Identify recursive call patterns and preserve them as recursion rather than transforming to loops (critical for tree/graph algorithms)
+2. **Add semantic variable name inference** - Analyze variable usage patterns to suggest names (e.g., accumulator variables → `sum`, loop counters → `i`, length variables → `len`)
+3. **Recover floating point literal representation** - Convert IEEE 754 hex constants back to readable decimal form (`0x3fc00000` → `1.5f`) with confidence indicators

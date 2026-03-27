@@ -1,0 +1,107 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v1`, `v2`, `v3`, `str`, `result`) with no semantic meaning. Original meaningful names like `value`, `name`, `data`, `size`, `capture_by_value` are completely lost.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions have mangled names (`_Z20test_cpp_member_funcv`) with demangled comments, but many are generic (`function_1000`, `function_1010`). Some original names recoverable from symbols but not consistently applied.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (42, 31, 8, 16, 24, 32, 40, 48, 80) without explanation. String literals stored in globals with generic names (`g17`, `g18`, `g19`) instead of meaningful constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Unnecessary casts (`(int64_t)&g33`), redundant variable assignments (`v1 = v2`), and compiler wrapper functions (`function_f00` through `function_ff0`) add significant noise without value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Excessive `goto` statements and labels (`lab_0x10e0`, `lab_0x10e4`) replace natural constructs. Exception handling in `_Z18test_cpp_exceptionv` is spaghetti code with nested conditionals that don't match source try/catch blocks.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Critical failure - many test functions return constant values instead of actual logic (`_Z21test_cpp_virtual_funcv` returns 42, `_Z29test_cpp_multiple_inheritancev` returns 71). Actual computation is completely lost.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps disrupt reading flow. Exception handling creates complex branching. Stack canary checks (`__stack_chk_fail()`) appear at function ends unnecessarily.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant patterns exist but the bigger problem is missing logic rather than duplication. Multiple wrapper functions for same libc calls add redundancy.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Most types degrade to `int64_t` or `int32_t`. C++ class types, templates, smart pointers (`std::unique_ptr`), and references are lost. Pointer vs. value distinctions are blurred.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Class structures not recovered at all. Vtables appear as generic structs (`vtable_12c28_type` with `e0`, `e1`, `e2` fields). No field names, proper layouts, or inheritance relationships preserved.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Many unsafe casts (`(int64_t *)v1`, `(int32_t *)v1`). Pointer arithmetic obscures actual operations. No const-correctness preserved from original `const` member functions.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated demangled name comments exist ("Demangled: test_cpp_exception()"). No logic explanations, no decompilation confidence indicators, no algorithm documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ idioms (RAII, virtual dispatch, templates, lambdas, exceptions, smart pointers) not recognized or documented. Lambda captures completely lost. Template instantiation not shown.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about broken logic, missing recovery, or uncertain decompilation. Functions returning constants should be flagged as "LOGIC_NOT_RECOVERED".
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original comments about expected values (期望：4704) not preserved in decompiled code logic.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: Function calls exist but relationships aren't documented. Virtual dispatch through vtables not clearly shown. Inheritance relationships lost in decompilation.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are in one file but not logically grouped by class or feature. No header separation. Global variables (`g1` through `g33`) not organized meaningfully.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Won't compile standalone. Missing C++ standard library dependencies, incorrect function signatures, undefined symbols (`__asm_fcmpe`), and type mismatches throughout.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (2+4+3+4)/4 = 3.25
+Level 2 Average: (3+3+4+5)/4 = 3.75
+Level 3 Average: (3+2+3)/3 = 2.67
+Level 4 Average: (2+2+2+2)/4 = 2.00
+Level 5 Average: (3+4+3)/3 = 3.33
+
+Overall = (3.25 × 0.30) + (3.75 × 0.25) + (2.67 × 0.20) + (2.00 × 0.15) + (3.33 × 0.10)
+        = 0.975 + 0.9375 + 0.534 + 0.30 + 0.333
+        = 3.08/10
+```
+
+**Overall Readability Score:** 3.1/10
+
+### Critical Defects:
+- **Test functions return hardcoded constants** instead of actual logic (e.g., `_Z21test_cpp_virtual_funcv` returns 42 directly)
+- **Variable names are all generic** (`v1`, `v2`, `v3`) with zero semantic meaning
+- **Class structures completely lost** - no recovery of `SimpleClass`, `LifecycleClass`, `Container<T>`, etc.
+- **Exception handling is broken** - try/catch blocks converted to incomprehensible goto chains
+- **Template instantiation not recovered** - `template_max<int>` and `Container<int>` logic lost
+- **Lambda expressions not recognized** - capture semantics completely missing
+- **Virtual dispatch obscured** - vtable calls not clearly identified as polymorphic
+
+### Best Quality Aspect:
+- **Function Naming Quality (4/10)** - At least mangled names contain demangled comments showing original function names, providing some traceability to source.
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.0/10 average)** - No comments explain logic, no idioms recognized, no anomalies flagged, no contracts recovered. The decompiler presents broken code with false confidence.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag unrecovered logic** - When functions reduce to constant returns, add `// DECOMPILATION_FAILED: Logic not recovered` comments instead of presenting broken code as valid.
+
+2. **Recover C++ class structures from vtables** - Analyze vtable layouts to reconstruct class hierarchies, field offsets, and virtual function relationships with meaningful field names.
+
+3. **Preserve semantic information from debug symbols** - At `-O0 -g`, variable names, types, and structure layouts should be recoverable from DWARF debug information rather than generic `v1`, `v2` naming.

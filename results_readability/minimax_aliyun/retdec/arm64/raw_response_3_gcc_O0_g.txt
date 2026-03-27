@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost exclusively generic numbered names like `v1`, `v2`, `v3`, `v4` throughout all functions. For example, in `local_array`: `int64_t v1; // bp-40, 0xca0` and `int64_t v3 = 0;` - these provide no semantic meaning about their purpose (array pointer, index, etc.). Only `mem` for malloc results and `result` for return values are descriptive.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: The test functions (`local_vars`, `heap_basic`, `global_array_access`) are correctly named matching the source. However, standard library wrappers are named generically (`function_a00` for memcpy, `function_a10` for memmove, `function_a70` for malloc). These mechanical names provide no semantic value.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (e.g., `42` in `address_of_local`, array sizes like `10`, `5`). However, magic numbers like `0x140000000a` for `global_point` (should be `{10, 20}` struct), `1000` in VLA check without constant name, and `0xfff0`, `0xfc00` bitmask operations are unexplained.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: excessive casting `(int32_t)`, `(int64_t)`, `(int32_t *)` throughout; stack check calls `__stack_chk_fail()` inserted by compiler; address comments like `// bp-40, 0xca0` are decompiler metadata, not code; redundant pointer arithmetic expressions like `(0x100000000 * v2 >> 30)` instead of simple `v2`.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops are rendered as while constructs with manual counter management (e.g., `while (v4 != 10)` instead of idiomatic `for` loop). The `linked_list_heap` function uses goto-style labels (`lab_0x1830`, `lab_0x1860`, `lab_0x188c`) which disrupts readability. At -O0, these patterns are less acceptable than at higher optimization levels.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain appropriate granularity - no 500-line monoliths. The test functions appropriately call sub-functions. Some complex functions like `linked_list_heap` (150+ lines) are inherently complex due to the algorithm, not decomposition failure.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in error checking. Some forward jumps in complex control flow but manageable. The `linked_list_heap` has multiple exit points which is acceptable for cleanup code.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No significant dead code. Loop unrolling is minimal. Some redundant expressions in pointer arithmetic but not severe. The `(0x100000000 * v2 >> 30)` pattern appears repeatedly but is a decompilation artifact, not source redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Uses `int32_t`, `int64_t`, `uint32_t` appropriately. Function pointer types are properly declared. However, malloc returns `int64_t *` instead of `int32_t *`, and some pointer types are generic `void*` equivalents. The `size_t` should be used for memory sizes but is often `int64_t`.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: The `Point` struct is completely lost - `global_point` is rendered as `int64_t 0x140000000a` instead of `Point {x: 10, y: 20}`. The `Node` and `TreeNode` structures are not recovered - code uses raw pointer arithmetic like `*(int32_t *)mem`, `*(int64_t *)((int64_t)mem + 8)` instead of `node->data`, `node->next`. Arrays like `global_array[10]` are properly preserved.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(int32_t *)mem` cast from malloc result, `(int64_t *)&new_p` for pointer-to-pointer. Pointer arithmetic is explicit and error-prone: `*(int32_t *)(4 * (int64_t)v1 + v1)`. Function pointer stored as `(int32_t *)3156` in test which is concerning. No `restrict` or alignment annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only decompiler-generated comments present: `// From module: /work/3.c`, `// Line range: 18 - 23`, `// Address range: 0xc6c - 0xca0`. No algorithm explanations, no documentation of non-obvious logic, no pre/post conditions. The line number comments are noise, not useful documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Standard patterns like linked list traversal, tree operations are visible in the code structure but not explicitly identified or named. No comments indicating "linked list creation", "binary tree traversal", etc. The decompiler doesn't recognize and label these patterns.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The `dangling_pointer` function accesses memory after free - this dangerous pattern is not flagged. The `double_free` function is not identified as problematic. No warnings about potential undefined behavior. The decompiler presents all code with equal confidence.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants recovered. Functions like `vla_stack` with bounds checking `if (n < 1 || n > 1000)` don't have comments explaining the validation. No documentation of error return meanings (e.g., "-1 means allocation failure").
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are visible through direct calls. Global variable usage is clear (`global_counter`, `global_array`, etc.). However, no explicit documentation of "called by X" or "calls Y" comments. The callback pattern in `set_global_callback`/`call_global_callback` works but relationship isn't documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped - stack functions together, heap functions together, static/global functions together. Static functions like `static_helper` are properly scoped. However, there's no header file structure or API boundary separation. All in single file.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: Code includes necessary headers (`<stdio.h>`, `<stdlib.h>`, `<string.h>`, `<sys/wait.h>`, `<unistd.h>`). Standard library functions are declared. Should compile with standard GCC. Minor issues: some implicit declarations might need fixes, but overall buildable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable naming is universally generic (`v1`, `v2`, `v3`) providing zero semantic information about purpose
+- Composite types completely lost - `Point` struct rendered as `int64_t 0x140000000a`, `Node`/`TreeNode` as raw pointer arithmetic
+- No anomaly indication for dangerous patterns like dangling pointer access and double-free
+- No comments explaining algorithms, contracts, or non-obvious logic
+- Excessive casting noise and compiler artifacts (`__stack_chk_fail`, address comments)
+
+**Best Quality Aspect:** Build System Compatibility (8/10)  
+The decompiled code includes proper headers and should compile with standard toolchains with minimal fixes needed.
+
+**Most Needs Improvement:** Semantic Transparency (2.25/10)  
+The decompiler provides no meaningful semantic information - no comments, no pattern recognition, no anomaly flags, no contract recovery. The code is syntactically correct but semantically opaque.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `v1` used as array base pointer should be named `arr` or `array_base`; `v3` as loop index should be `i` or `index`
+2. **Recover composite types**: Detect struct layouts from field access patterns; `*(int32_t *)mem` and `*(int32_t *)((int64_t)mem + 4)` should reconstruct `Point {x, y}`
+3. **Add semantic annotations**: Flag dangerous patterns (dangling pointer, double-free), label recognized patterns (linked list, binary tree), add basic contract comments for validation functions

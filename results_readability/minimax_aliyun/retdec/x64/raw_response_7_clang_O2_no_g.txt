@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis: `param_fake_branch`
+
+The original source implements a function with always-false conditional branches (obfuscation technique OBF-L4-02). The decompiled version shows significant simplification - the dead code branches were completely eliminated by the compiler, which is expected behavior. However, the decompilation quality varies across dimensions.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`a1`, `v1`, `v2`, `v3`). The original source used meaningful names like `x`, `result`, `str`. The decompiled `param_fake_branch` shows `int64_t a1` with no semantic indication it's the input parameter.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions like `param_fake_branch`, `call_fake_branch`, `param_opaque_predicate` are correctly named. However, standard library wrappers are generic (`function_1030` = strncpy, `function_1050` = strlen). The core function names match source well.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic number `90` appears in string decryption (XOR key) without explanation. The constant `0xDEADBEEF` from source is lost (dead code eliminated). Some literals like `0xffffffff` for truncation appear frequently without context.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive bit manipulation artifacts like `0x100000000 * v2 >> 32` for division emulation clutter the code. The `param_opaque_predicate` function contains massive redundant expressions that obscure the simple gcd algorithm. Type casts are over-abundant.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions like `param_fake_branch` are straightforward. However, `param_opaque_predicate` uses goto-style jumps (`lab_0x1403`, `lab_0x1590`) instead of structured loops. The original source had clean while loops; the decompiled version has spaghetti control flow.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries are preserved correctly. `param_fake_branch` and `call_fake_branch` are separate as in source. However, parameter lists expose implementation details (e.g., `param_division_by_zero` has 3 parameters when source uses 1).
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but `param_vectorized_loop` has extensive goto jumps between labels (`lab_0x1403`, `lab_0x1561`, `lab_0x1590`, `lab_0x159d`) making linear reading impossible. The original had clean for loops.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy in `param_opaque_predicate`: the expression `0x100000000 * (int64_t)((int32_t)v2 >> 31) | v2` appears dozens of times. The gcd computation is buried in incomprehensible arithmetic. Loop unrolling in `param_vectorized_loop` is not abstracted.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int64_t` consistently, but original source used `int` (32-bit). The truncation `& 0xffffffff` appears everywhere suggesting 32-bit semantics. Function signatures have wrong parameter counts (e.g., `call_division_by_zero` takes 2 params but source takes 0).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: The decompiler reconstructs `struct __jmp_buf_tag` with field names `e0`, `e1`, `e2` - generic and unhelpful. The original source used `jmp_buf` directly. Signal handler types are partially reconstructed but verbose.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: `(int32_t)a1` casts in division operations, pointer arithmetic like `v3 + 1` without bounds, mixing signed/unsigned in comparisons. The `param_null_pointer_deref` has `int32_t *a1` but source used `int *p`.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments anywhere in the decompiled output. The original source had extensive comments explaining obfuscation techniques. Zero recovery of documentation.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or algorithms identified. The gcd algorithm in `param_opaque_predicate` is completely obscured. String decryption loop not labeled. No recognition of opaque predicates or fake branches.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flags for suspicious code. The dead code elimination (fake branches removed) should be flagged as "compiler optimized away". No indication of potential undefined behavior in signal handlers.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. The original source had clear expectations (e.g., "期望: 10" for call_fake_branch). No documentation of what functions return or require.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships not documented. The test harness `test_obf_opt_edge` calls many functions but there's no indication which functions belong together or the expected relationships.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (obfuscation, optimization, edge cases sections in original). However, all 49 functions in single file with no clear section boundaries in decompiled output.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code includes proper headers (`#include <setjmp.h>`, etc.) and should compile. However, some functions have incorrect signatures that would cause link errors (parameter count mismatches).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming is universally generic (`a1`, `v1`, `v2`) - impossible to track semantic purpose
+- The gcd algorithm in `param_opaque_predicate` is buried under massive redundant arithmetic expressions
+- No comments recovered from source - complete loss of documentation
+- Control flow uses goto labels instead of structured loops, making execution flow unreadable
+- Type precision issues: uses `int64_t` everywhere but source used `int`, with constant truncation masks
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+- Core test function names like `param_fake_branch`, `call_opaque_predicate` match source exactly
+
+**Most Needs Improvement:** Comment Quality & Presence (1/10)  
+- Zero comments recovered; the original source had extensive documentation explaining each obfuscation technique that is completely lost
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: The parameter `a1` in `param_fake_branch` is used as input - name it `input` or `x`. The variable `v1` in gcd computation is clearly the divisor - name it `divisor`.
+2. **Recognize and abstract redundant arithmetic**: The expression `0x100000000 * v >> 32` is division emulation - replace with `v1 / v5` or add comment "emulates 64-bit division".
+3. **Recover comments from debug symbols**: The source was compiled with `-g` - extract DWARF debug info to recover source comments and variable names.

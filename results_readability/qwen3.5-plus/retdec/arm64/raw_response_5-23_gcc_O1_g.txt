@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`v1`, `v2`, `v3`, `result`) with zero semantic meaning. Original parameters like `size`, `counter`, `increment`, `x`, `y` are completely lost, making it impossible to understand variable purposes without cross-referencing source.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Main function names are preserved (`param_macro_constants`, `call_asm_basic`), but helper functions use mechanical names (`function_830`, `function_840`). Critical issue: function signatures are broken (e.g., `param_macro_constants(void)` should be `param_macro_constants(int size)`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`0xdef0`, `0xdf22`, `512`, `64`, `282`) with no explanation. Original macros (`MAX_SIZE=1024`, `BUFFER_COUNT=16`) are lost. String literals stored as hex-encoded globals (`g8`, `g9`) instead of readable text.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__stack_chk_fail()`), compiler-generated globals (`g1`-`g28`), and architecture-specific functions (`__aarch64_ldadd4_acq_rel`) clutter the code. Unnecessary type casts throughout (`(int64_t)`, `(int32_t)`).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Mixed quality—`param_asm_clobber` has a proper while loop, but `param_macro_constants` logic is obscured by complex boolean expressions. At `-O0`, control flow should match source exactly but doesn't.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Function boundaries preserved but many functions are constant-folded (`call_macro_constants` just returns 64). Parameter loss makes functions appear to take no input when they should, destroying semantic meaning.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. While loops are properly structured. No excessive goto usage disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant type casts present. Constant folding removed actual logic in caller functions (losing the test semantics). No dead code from register spilling observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t`, `int64_t` appropriately in some places, but function signatures are frequently wrong (missing parameters). Pointer types sometimes incorrect (`int64_t *` vs `int32_t *`).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No structs/unions in this code to recover. Array handling is reasonable. Score reflects N/A situation with adequate primitive type handling.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout (`(int64_t)`, `(int32_t *)`). Pointer arithmetic sometimes unclear. No buffer overflow protections visible in decompiled output.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments except auto-generated "From module" and "Line range" markers. Original had extensive documentation explaining each test case, macro behavior, and expected values—all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition visible. Macro patterns completely lost (preprocessing happens at compile time). Inline assembly converted to generic C without indicating original intent.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: Zero warnings about lost information. No indication that parameters were lost or that decompilation is uncertain. Code presents incorrect signatures confidently.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or error handling documentation. Original comments specifying expected return values (e.g., "期望: 64") are completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but global variable usage is opaque (`g1`, `g2`, `g27`). No call graph documentation. String literal references through globals are unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no logical grouping. Original had clear section organization (5.2 Preprocessing, 5.3 Assembly) that is lost.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Has includes but architecture-specific functions (`__aarch64_ldadd4_acq_rel`) may not exist on target. Many external function declarations. Likely won't compile standalone without significant modification.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+6+4+5)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (5+5+7+6)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (5+7+5)/3   = 5.67 × 0.20 = 1.134
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.338
+Level 5 (Contextual):  (5+5+4)/3   = 4.67 × 0.10 = 0.467
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.72/10
+```
+
+**Overall Readability Score: 4.7/10**
+
+### Critical Defects:
+- **Function signatures broken**: `param_macro_constants(void)` should be `param_macro_constants(int size)` - parameters completely lost
+- **Variable names meaningless**: All variables named `v1`, `v2`, `v3` with no semantic indication of purpose
+- **Zero documentation**: Original extensive comments explaining test cases, macros, and expected values are entirely absent
+- **Macro information lost**: `MAX_SIZE`, `BUFFER_COUNT`, `SQUARE(x)` macros replaced with magic numbers (1024, 16, inline multiplication)
+- **No anomaly warnings**: Decompiler presents incorrect information confidently without flagging uncertainty about lost parameters
+
+### Best Quality Aspect:
+- **Code Linearization (7/10)** - Code reads top-to-bottom with proper loop constructs and minimal disruptive jumps, making basic execution flow traceable despite other issues.
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.25/10 average)** - Complete absence of comments, no idiom recognition, no anomaly indication, and no contract recovery makes the decompiled code practically unusable for understanding original intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover parameter information from stack frame analysis** - Even at `-O0`, parameter passing conventions should allow recovery of function signatures with correct parameter names inferred from usage patterns.
+
+2. **Add uncertainty annotations for lost information** - When macros, comments, or parameters cannot be recovered, explicitly mark these gaps (e.g., `// DECOMPILER: Original parameter name unknown`, `// DECOMPILER: Macro definition lost`).
+
+3. **Preserve string literals as readable text** - Instead of storing strings as hex-encoded globals (`g8`, `g9`), emit them as readable string constants with comments indicating their original context (printf format strings, test labels).

@@ -1,0 +1,129 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Variables use extremely generic names like `a0`, `a1`, `v0`-`v98` throughout. For example, in `process_char`, parameter `a0` should be named `c` based on source. The decompiler makes no attempt to infer semantic meaning from usage patterns - all variables are opaque.
+
+### 2. Function Naming Quality
+**Score: 4/10**
+Justification: Some functions correctly preserve original names (e.g., `process_char`, `process_int`, `array_1d_stack`), but most use mechanical names like `sub_400634`, `sub_4006f0`. The naming is inconsistent - test functions are named but internal/runtime functions are not.
+
+### 3. Literal Clarity
+**Score: 4/10**
+Justification: Magic numbers like `4294967295` (representing -1) appear without explanation. Enum values like `STATE_IDLE`, `STATE_RUNNING` are lost - replaced with array access `g_402920[a0]`. Some computed values are hardcoded which is acceptable, but symbolic constants are not recovered.
+
+### 4. Noise Reduction
+**Score: 3/10**
+Justification: Significant noise from undefined functions (`__ROL__`, `arm64g_calculate_condition`, `__addtf3`, `__multf3`). The `__addtf3` function at 0x4014a0 contains massive amounts of incomprehensible code with meaningless variable names like `vvar_785{r336|16b}`. Frame pointer manipulation and register artifacts pollute the output.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+Justification: At -O0, control flow is mostly preserved. Loops use do-while constructs correctly. However, `process_bool` uses confusing conditional expressions, and `register_tm_clones` has an extremely convoluted boolean expression that obscures logic.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Each function maintains appropriate granularity matching the source. Functions like `process_char`, `array_1d_stack`, `linked_list` are properly separated. No over-fragmentation or monoliths observed.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `array_1d_stack` and `array_complex_index`. Minor forward jumps but flow is traceable.
+
+### 8. Redundancy Elimination
+**Score: 7/10**
+Justification: No significant dead code. Loop unrolling is minimal at -O0. Some redundant expressions in complex functions but manageable.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 3/10**
+Justification: Severe type degradation. `process_char` returns `long long` instead of `char`. `process_short` uses `unsigned int` instead of `short`. All signed types frequently become unsigned. `process_float` and `process_double` return uninitialized `unsigned long` - completely wrong.
+
+### 10. Composite Type Recovery
+**Score: 6/10**
+Justification: Structs are partially reconstructed with generic field names (`field_0`, `field_1`, `field_8`). Nested structures like `Rect` and `Widget` are flattened to arrays. Linked list nodes correctly identified with `field_8` as next pointer. Unions completely lost - `union_type` treats everything as void pointers.
+
+### 11. Type Safety
+**Score: 3/10**
+Justification: Multiple unsafe operations. `ptr_func_simple` calls function pointer via `a0(a1)` with wrong type signature. `ptr_diff` uses `__ROL__` for pointer subtraction - semantically wrong. `opaque_handle_create` has bizarre bit manipulation that doesn't match source. Signed/unsigned mismatches throughout.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: Almost no useful comments. Functions like `process_char` have zero documentation. The only comments are auto-generated ("// Function: process_char at 0x4007d4"). No explanation of algorithms, preconditions, or intent.
+
+### 13. Idiom Recognition
+**Score: 3/10**
+Justification: No design patterns or algorithms identified. Linked list traversal in `linked_list` is not labeled as such. State machine in `enum_switch` is not recognized. No pattern names or explanations provided.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No flags for suspicious code. The `array_oob` function has intentional out-of-bounds access (loop `i <= n`) but no warning. Indirect calls not resolved are not flagged. Unusual stack layouts not documented.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+Justification: No preconditions, postconditions, or invariants recovered. Functions like `ptr_increment` require non-null pointer but no contract documented. Return value expectations not specified.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+Justification: External function calls are declared (`extern`) but relationships unclear. `main` calling test functions is visible but not documented. No call graph or usage documentation. Global variable `g_402920` used by enum_switch has no explanation.
+
+### 17. Module Organization
+**Score: 5/10**
+Justification: Functions appear in address order, not logical grouping. All 2502 lines in single file. No header declarations. Static functions not properly scoped as static.
+
+### 18. Build System Compatibility
+**Score: 2/10**
+Justification: Code will not compile. Undefined functions: `__ROL__`, `arm64g_calculate_condition`, `__addtf3`, `__multf3`, `puts`, `printf`. Requires extensive patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 4 + 4 + 3) / 4 = 3.25
+L2_avg = (6 + 8 + 7 + 7) / 4 = 7.0
+L3_avg = (3 + 6 + 3) / 3 = 4.0
+L4_avg = (2 + 3 + 2 + 2) / 4 = 2.25
+L5_avg = (4 + 5 + 2) / 3 = 3.67
+
+Overall = (3.25 × 0.30) + (7.0 × 0.25) + (4.0 × 0.20) + (2.25 × 0.15) + (3.67 × 0.10)
+        = 0.975 + 1.75 + 0.8 + 0.3375 + 0.367
+        = 4.23/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects
+- **Variable naming**: All variables use generic names (`a0`, `v0`-`v98`) with no semantic inference
+- **Type precision**: `process_float` and `process_double` return wrong types (uninitialized unsigned long)
+- **Function pointer safety**: `ptr_func_simple` uses unsafe function pointer call with wrong type signature
+- **Composite type loss**: Unions completely lost; treated as void pointers
+- **No comments**: Zero useful documentation for any function
+
+### Best Quality Aspect: Function Decomposition (8/10)
+Functions maintain appropriate granularity matching source - each function does one thing. No over-fragmentation or monoliths.
+
+### Most Needs Improvement: Semantic Transparency (2.25/10)
+No comments, no pattern recognition, no anomaly indication, no contract recovery. The code is a raw translation with no added value.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage**: Analyze how variables are used (e.g., `a0` compared to 'A' and 'Z' bounds → should be `c` or `input_char`)
+2. **Recover type precision**: Use sign extension analysis and size tracking to restore `char`, `short`, `float`, `double` types
+3. **Add semantic annotations**: Include comments explaining algorithms, flag suspicious code (like the OOB access in `array_oob`), and document function contracts

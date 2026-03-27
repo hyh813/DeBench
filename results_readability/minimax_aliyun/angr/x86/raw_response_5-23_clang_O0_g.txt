@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Parameters are named `a0`, `a1`, `a2` and local variables `v0`, `v1`, `v2` - completely generic. The original source uses meaningful names like `size`, `x`, `y`, `result`, `counter`. The decompiler made no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some functions correctly recovered: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, etc. However, many wrapper functions use generic names like `sub_401030`, `sub_4010d0`. The original source has 20+ functions with descriptive names; only about half were recovered.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: String literals like "Hello World", "1.2.3" preserved correctly. Magic numbers `0x400` (1024), `0x200` (512), `64` used but not explained. The decompiler correctly identified `0x800` as the call argument but didn't explain the macro expansion semantics.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts observed. No obvious frame pointer manipulation or debug instrumentation. Some unnecessary variable assignments (e.g., `v1 = v0; v0 = v1;`) but nothing severe. Clean enough for analysis.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is natural - uses `if` statements and ternary operators appropriately. The ternary in `param_macro_constants`: `(a0 <= 0x400 ? 0x200 : 64)` correctly represents the original conditional logic. Some loops use goto labels but these are legitimate.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity preserved well. Original source has ~20 small functions (20-30 LOC each). Decompiled version maintains this decomposition - `param_macro_constants` and `call_macro_constants` remain separate, etc. Good separation of concerns.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. No deep nesting (>4 levels) observed. Early returns used appropriately in error handling (e.g., `param_dynamic_code`). Good flow.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy or dead code. Some minor redundant assignments (e.g., `v1 = v0; v0 = v1;` in `param_asm_basic`) but these don't obscure logic. Loop unrolling in `param_asm_clobber` is appropriately represented as a for loop.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision - uses `unsigned int` for most things which is reasonable for 64-bit. Original source uses `int` for parameters. Some type confusion: `param_stringize` returns `unsigned int` but should be `int`. Pointer types generally correct (`char*`, `void*`).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Poor struct recovery. The original source defines `struct_0` and `struct_1` in some places but fields are generic (`padding_0`, `field_3e97`). The `header_func` in `param_include_guard` has incorrect signature - takes 3 parameters instead of 1. No union recovery.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe patterns. In `param_include_guard`: `header_func(5, *((int *)&v0), &v1)` - passing stack garbage as parameters. Pointer arithmetic in `param_asm_clobber`: `ptr + idx * 4` is correct but could be clearer. No alignment annotations.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **ZERO comments** in the entire decompiled output. The original source has extensive comments explaining each test case (PP-L2-01, PP-L3-04, ASM-L4-01, etc.). No explanation of what each function does, no macro expansion notes, no algorithm documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms explicitly identified. The original source tests specific patterns (macro recursion, token pasting, include guards, SIMD, atomic operations) but these are not flagged or named in the decompiled output.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly flags. The `param_include_guard` has a clear bug (wrong parameter count to `header_func`) but no warning. Indirect calls and uncertain areas not flagged. The metadata says "Compilation Result: Yes" but some functions clearly have issues.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original source has implicit contracts (e.g., `param_asm_atomic` requires valid pointer, `mmap` result checking). Not recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible - `call_macro_constants()` calls `param_macro_constants()`. But no documentation of call graphs, global variable usage, or callbacks. External dependencies like `_GLOBAL_OFFSET_TABLE_` not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped reasonably (preprocessing functions together, asm functions together) but no explicit module structure. Original source has clear sections: "5.2 Preprocessing", "5.3 Inline Assembly". Not reflected in decompiled output.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Has `extern` declarations for `_GLOBAL_OFFSET_TABLE_`, `g_403099`, etc. These would need linking against libc. Metadata indicates "Compilation Result: Yes" so it apparently compiles. Some functions have wrong signatures (e.g., `param_include_guard`).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- **No comments whatsoever** - original source has extensive documentation explaining each test case (PP-L2-01, ASM-L4-01, etc.) completely lost
+- **Generic variable names** (`a0`, `a1`, `v0`, `v1`, `v2`) provide zero semantic information about variable purpose
+- **Wrong function signature** in `param_include_guard` - calls `header_func(5, *((int *)&v0), &v1)` with 3 arguments but source expects 1
+- **No anomaly indication** - the `param_include_guard` bug and other issues not flagged
+- **Poor struct recovery** - generic field names like `padding_0`, `field_3e97` lose all semantic meaning
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+Control flow structures (if/else, ternary operators, loops) are correctly recovered and readable. The decompiler preserved the logical structure well.
+
+**Most Needs Improvement:** Comment Quality (scored 1/10)  
+The complete absence of comments is the most severe readability issue. At -O0 with debug symbols, the decompiler should have access to source line information that could be used to recover documentation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover comments from debug info** - Use DWARF line information to associate source comments with decompiled functions
+2. **Infer variable names from usage patterns** - `a0` used in comparison with `0x400` should be named `size` or `max_size`
+3. **Flag semantic anomalies** - The `param_include_guard` call has wrong parameter count; this should be flagged as a potential decompilation error

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `a0`, `a1`, `a2` for parameters and `v0`, `v1`, `v2` for locals. The source used meaningful names like `x`, `arr`, `n`, `ptr`, `idx`. The decompiler adds register hints (`// r0`, `// r1`) but these are noise, not helpful naming.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly: `local_vars`, `local_array`, `heap_basic`, `heap_calloc`, `linked_list_heap`, `tree_heap_traversal`. Minor issues: `$a.30` for `double_value` (inlined function), and some test functions inlined into `test_stack_memory`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `4294967295` (unsigned -1), `0x800` (2048), `40`, `100` appear without explanation. Some values like `0x2a` (42) are partially explained in context. The test case strings from source (`"MEM-L1-01"`) are preserved but provide limited value.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution includes: register annotations (`// r0`, `// r1`, `// r4`), stack frame comments (`// [bp-0x4]`, `// [bp-0x8]`), conversion artifacts like `(Not Conv(32I->1I, ...))`, `Goto None` statements, and `armg_calculate_condition` function calls cluttering the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops and conditionals are recognizable, but complex indexing in `vla_stack` and `alloca_usage` uses obfuscated expressions like `*((int *)&(&v0)[(4294967293 & (a0 + (a0 >> 31)) * 2) + -1 * (7 + a0 * 4 & 0xfffffff8)])`. At -O0 this should be cleaner.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are properly separated with reasonable granularity. `create_tree_node` correctly extracted as helper. Main calls four test functions. Some small functions like `double_value` got inlined to `$a.30` which is auto-generated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps exist but are manageable. The main disruption is complex pointer arithmetic in VLA/alloca functions that makes tracing difficult.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundant computation in test functions (computing values then printing constants). Loop unrolling present in `local_array` and `heap_basic` but not excessively commented. Dead code is minimal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `unsigned int` extensively when source used `int`. Pointer types generally correct but confused between `int*` and `unsigned int*`. Size calculations like `a0 * 4` for `sizeof(int)` are present. No `const` correctness recovered.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Struct recovery uses generic names: `struct_0`, `struct_1`, `struct_2`. Original names like `Node`, `TreeNode`, `Point` are lost. Field names become `field_0`, `field_4`, `padding_0`. Some typedefs created but incomplete.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(char *)ptr`, `(unsigned int *)`, `(int *)`. Pointer arithmetic like `ptr + 2 * idx` is confusing and error-prone. The `heap_overflow` function has dangerous patterns: `ptr[-1 * i] = v1` which is backwards indexing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only register/stack location comments present (`// r0`, `// [bp-0x4]`). No logic explanation, algorithm documentation, or decompilation confidence indicators. Comments are noise, not useful analysis.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Common operations like malloc/free, memset, memcpy are recognized. Linked list traversal patterns somewhat visible but not named. No explicit pattern identification (e.g., "this is a linked list").
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No flagging of dangerous code. The `dangling_pointer` function accesses memory after free, `double_free` has double-free vulnerability, `heap_overflow` has buffer overflow - none are indicated as problematic. Code presents everything as normal.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. No documentation of error handling expectations. Null checks are present in code but not explained as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible (test functions call sub-functions). Global variables declared as `extern`. But no explicit call graph documentation or usage relationship summaries.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions ordered by address, roughly matching source file structure. Static functions properly scoped. No clear logical grouping beyond alphabetical/address order.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Code would not compile standalone. Missing: standard library headers, complete struct definitions, proper extern declarations. Requires extensive patching: adding includes, fixing type declarations, resolving undefined references.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+**Critical Defects:**
+- Variable naming uses generic `a0`, `v0`, `v1` instead of semantic names like `x`, `arr`, `n`, `ptr`
+- Severe noise from register annotations (`// r0`, `// r1`) and stack frame comments (`// [bp-0x4]`)
+- Struct field names lost: `Node`, `TreeNode`, `Point` become `struct_0`, `struct_1` with `field_0`, `field_4`
+- No anomaly indication for dangerous patterns (dangling pointer, double-free, heap overflow)
+- Complex pointer arithmetic in VLA/alloca functions makes code nearly incomprehensible
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names mostly match source exactly, making it easy to locate specific test cases.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+Generic single-letter names with register hints provide no semantic value and make tracking data flow extremely difficult.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns (e.g., `a0` used in loop bound → `n` or `count`; `ptr` used with malloc → `buffer` or `array`)
+2. Eliminate register/stack annotation noise - these are compiler artifacts, not useful analysis
+3. Recover struct type names from debug symbols or common patterns (e.g., `struct with field_0, field_4` → likely a linked list node)

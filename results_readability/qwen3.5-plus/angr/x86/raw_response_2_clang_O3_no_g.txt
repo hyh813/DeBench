@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Overwhelmingly generic names (`v0`, `v1`, `a0`, `a1`, `ptr`) with no semantic meaning. Original source had meaningful names like `sum`, `len`, `current`, `head` that are completely lost. Loop counters sometimes use `i`, `index`, `idx` but most variables are uninformative.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions retained original names (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`), but ~50% of functions have generic names (`sub_401030`, `sub_401216`). System functions (`_init`, `_start`, `_fini`) are correctly identified.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers present without explanation (`65`, `32`, `26` in char conversion). Format strings preserved from original. Floating point constants completely lost in broken functions (`process_float`, `process_double` show `[D]` errors instead of `1.5f`, `0.5f`).
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Extensive `[D]` markers indicating decompilation failures throughout floating point functions. Compiler thunk functions present (`__x86.get_pc_thunk.bx`, `__x86.get_pc_thunk.dx`). Struct padding arrays add noise (`padding_0[20211]`, `padding_0[14435]`).
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions use natural constructs (if/else, while, do-while). Loop unrolling present in array functions but recognizable. Some awkward patterns exist (`goto ptr[2]` in `sub_401030`, `goto (int)v1[20]` in `sub_401070`).
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Core functions appropriately sized, but unnecessary wrapper functions created (`sub_401216` just calls `process_short`, `sub_40122b` just calls `process_int`). This fragmentation adds noise without value.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom naturally. Some forward jumps in complex functions (`graph_traverse` has `LABEL_4023f0`, `LABEL_4023f9`). Generally acceptable linearity for decompiled code.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling creates verbose code (8-element unrolled loops in `array_1d_stack`, `array_vla`). Some redundant variable assignments (`v0 = v1`, `v1 = v2` patterns). Optimization patterns recognizable but not abstracted.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - `char`, `short`, `long`, `float`, `double` all become `unsigned int`. `process_float` and `process_double` completely fail to recover floating point types. Pointer types generic (`unsigned int *` instead of `int *`, `char *`, specific struct pointers).
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs recovered but with generic names (`struct_0`, `struct_1`) and fields (`field_0`, `field_4`, `padding_0`). Original semantic meaning lost (`Point3D` with `x,y,z` → `struct_0` with `field_0,field_4`). Bitfields converted to bit operations. Unions not properly recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present (`(char *)a0`, `(int *)a0`). Void pointer handling generic. Function pointer types degraded to `unsigned int *`. `ptr_const_ptr` incorrectly returns `*(ptr) + 5` instead of just `*(ptr)` after modification.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments in decompiled code. Original had extensive documentation explaining each test case. Only `[D]` failure markers present with no explanatory content about what the code does.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns identified. No algorithm explanations. Test patterns not recognized (e.g., linked list traversal, binary tree recursion not labeled as such).
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `[D]` markers indicate decompilation failures but provide no explanation of what went wrong or how to fix. Floating point functions show `unsupported_<class 'pyvex.expr.GetI'>` without guidance.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `ptr != NULL`). No postconditions inferred. No error condition documentation. Original test expectations completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code. No call graph documentation. Global variable usage not clearly documented (`g_4035bf`, `g_4035e0`, `g_4035fb`, `g_403616` are string constants but not labeled).
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions in one file with no logical grouping. Original had clear sections (Data Types, Arrays, Pointers, Composite Types) that are lost. No header file structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: External dependencies present (`_GLOBAL_OFFSET_TABLE_`, `puts`, `printf`, `memset`). Would require significant work to compile standalone. Some `extern` declarations present but incomplete.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3 + 6 + 5 + 3) / 4 = 4.25
+L2 Average: (6 + 5 + 6 + 5) / 4 = 5.50
+L3 Average: (3 + 4 + 4) / 3 = 3.67
+L4 Average: (2 + 2 + 4 + 2) / 4 = 2.50
+L5 Average: (5 + 3 + 3) / 3 = 3.67
+
+Overall = (4.25 × 0.30) + (5.50 × 0.25) + (3.67 × 0.20) + (2.50 × 0.15) + (3.67 × 0.10)
+        = 1.275 + 1.375 + 0.734 + 0.375 + 0.367
+        = 4.126
+```
+
+**Overall Readability Score: 4.1/10**
+
+### Critical Defects:
+- **Floating point functions completely broken** - `process_float`, `process_double`, `process_ld` contain `[D]` unsupported operation markers instead of actual code
+- **Type information severely degraded** - All numeric types (`char`, `short`, `int`, `long`, `float`, `double`) collapsed to `unsigned int`
+- **Struct field names lost** - `Point3D.x/y/z`, `Rect.position/size`, `Widget.bounds/style/id` all became `field_0`, `field_4`, etc.
+- **Test functions lost structure** - `test_data_types_l1`, `test_array_types` etc. just print pre-computed values instead of calling functions with test data
+- **Platform mismatch** - Original was arm64, decompilation shows X86, indicating wrong binary was analyzed
+
+### Best Quality Aspect:
+- **Structural Intelligibility (5.5/10)** - Control flow is mostly natural with recognizable loop constructs and conditional logic, despite optimization artifacts
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.5/10)** - Complete absence of comments, no idiom recognition, minimal anomaly explanation, and no contract recovery makes understanding the code's purpose extremely difficult
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover floating point operations** - The complete failure of `process_float`, `process_double`, and `process_ld` indicates the decompiler cannot handle SSE/AVX instructions; add proper FPU instruction support
+2. **Preserve type information from debug symbols** - Since `-g` flag was used, type information should be recoverable; currently all types degrade to `unsigned int`
+3. **Add semantic annotation for test patterns** - Recognize common test idioms (linked list traversal, tree recursion, array summation) and add explanatory comments indicating the pattern being tested

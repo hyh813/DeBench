@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Function parameters preserve original names (`size`, `x`, `y`, `arr`, `n`), but local variables are generic (`iVar1`, `iVar2`, `local_1c`, `local_2c`). Many "Unresolved local var" annotations with `@[???]` indicate lost semantic information.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately from source (`param_macro_constants`, `param_asm_basic`, `test_preprocessing_features`). Internal runtime functions use generic names (`FUN_00011030`, `__i686_get_pc_thunk_bx`) but these are expected boilerplate.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: All named constants lost—`MAX_SIZE` became `0x200`, `BUFFER_COUNT * 4` became `0x40`, `0xdef0` replaces platform-specific constant. String literals reference `&DAT_000122c9` instead of actual content in test functions.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Repeated "WARNING: Unknown calling convention -- yet parameter storage is locked" appears on 20+ functions. "Unresolved local var" comments clutter output. Runtime functions (`_init`, `_start`, `_fini`, `deregister_tm_clones`) add 10+ irrelevant functions.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered well (`for (iVar2 = 0; iVar2 < n; iVar2 = iVar2 + 1)`). Conditional compilation branches collapsed to single paths (expected). Some functions over-optimized to constants (`call_macro_constants` returns `0x40` directly).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source structure. However, `test_asm_features` is 100+ lines with excessive local variable declarations (`uStack_5c`, `uStack_58`, etc.). Helper functions appropriately separated.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom naturally. No goto statements in main logic. Early returns used appropriately. `test_asm_features` has complex interleaved initialization that disrupts flow slightly.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: `call_asm_multi_insn` has verbose zero-initialization (20+ lines of `local_2c[0] = '\0'`). `test_asm_features` duplicates variable setup. Constant folding reduced some redundancy but created oversimplified functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (`int`, `void*`, `size_t`, `char*`). Pointer arithmetic on void* (`(void *)((int)src + 1)`) is non-standard C. `__regparm1` calling convention annotation present. No const-correctness visible.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Stack arrays declared correctly (`char local_38 [12]`, `int local_1c [6]`). No complex structs in source to recover. Array indexing preserved. Some arrays shown as individual element assignments losing array semantics.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts present: `(void *)((int)src + 1)`, `(int *)0xffffffff`. `LOCK()` and `UNLOCK()` macros undefined—won't compile. `builtin_strncpy` is compiler-specific intrinsic. No buffer overflow protections visible.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only decompiler warnings present ("WARNING:", "Unresolved local var"). No algorithm explanations, no API contracts, no function purpose documentation. Comments indicate uncertainty but don't explain semantics.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Assembly loops converted to C for-loops (good pattern recognition). Atomic operations shown as `LOCK()`/`UNLOCK()` but loses `__atomic_fetch_add` semantics. No explicit pattern naming or documentation.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: "Unresolved local var@[???]" honestly indicates decompilation uncertainty. "WARNING: Removing unreachable block" flags optimization artifacts. "Unknown calling convention" warnings present. Decompiler admits limitations rather than false confidence.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., `arr != NULL`). No postcondition inference. Error conditions not documented (mmap failure returns `-1` but no comment). No invariant recognition for atomic operations.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear and traceable. Global variable `global_var` referenced but not defined in decompilation output. No call graph documentation. No callback relationship identification.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single file matching source. No header file separation. Static functions not clearly marked. Organization mirrors source but no additional structural hints provided.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Won't compile without modifications. `LOCK()`/`UNLOCK()` undefined. `builtin_strncpy` is GCC intrinsic. `&DAT_000122c9` references need string resolution. Requires significant patching for standalone compilation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (5+8+4+6)/4 = 5.75 × 0.30 = 1.725
+Level 2 (Structural):  (7+7+7+6)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (6+7+5)/3   = 6.00 × 0.20 = 1.200
+Level 4 (Semantic):    (4+5+7+3)/4 = 4.75 × 0.15 = 0.713
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.533
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.86/10
+```
+
+### Overall Readability Score: **5.9/10**
+
+### Critical Defects:
+- **Magic numbers everywhere**: `0x200`, `0x400`, `0x40`, `0xdef0` replace all original named constants (`MAX_SIZE`, `BUFFER_COUNT`, etc.)
+- **Undefined macros**: `LOCK()` and `UNLOCK()` appear without definition, preventing compilation
+- **Unresolved variables**: 30+ "Unresolved local var@[???]" annotations indicate lost stack variable semantics
+- **String literal indirection**: Test functions reference `&DAT_000122c9` instead of actual string content
+- **Architecture mismatch**: Source claims ARM64 but decompilation shows x86, suggesting binary/source mismatch
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names preserved accurately from source, maintaining semantic clarity for entry points and test functions.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (3/10)**
+- No precondition, postcondition, or error condition documentation recovered; critical for understanding function contracts.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover named constants from debug symbols**: When `-g` flag is present, map magic numbers back to original `#define` names using DWARF information.
+2. **Generate stub definitions for intrinsics**: Instead of undefined `LOCK()`/`UNLOCK()`, emit `#define LOCK() __asm__("lock; nop")` or document required headers.
+3. **Inline string literal content**: Resolve `&DAT_000122c9` references to actual string values in decompiled output for immediate readability.

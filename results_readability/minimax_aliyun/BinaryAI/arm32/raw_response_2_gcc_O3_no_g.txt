@@ -1,0 +1,91 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 1/10  
+Justification: All parameters use generic names (`param_1`, `param_2`) and local variables use cryptic patterns (`iVar1`, `piVar2`, `puVar3`, `uVar1`). The original source uses meaningful names like `x`, `arr`, `n`, `c`, but these are completely lost in decompilation. This is the worst-scoring dimension.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellent - they directly match the original source names (`process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc.). The decompiler correctly recovered all function names from debug symbols or symbol table.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers are prevalent without explanation. For example, `process_char` uses `0x41`, `0x1a`, `0x20` without comments explaining ASCII conversion. The `array_2d_stack` function uses hardcoded offsets like `0xb`, `0x16`, `0x21` instead of loop indices. No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise present including: unused local variables (`local_64`, `local_60`, `local_5c` in `binary_tree_sum`), undefined types (`undefined4`, `undefined8`, `undefined2`), and frame pointer manipulation. However, no debug instrumentation or register spilling artifacts cluttering the main logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0, control flow closely matches source. Loops are properly formed (while/do-while), conditionals are clear. Minor issue: `array_3d` is fully unrolled into 125 individual array accesses instead of showing the triple-nested loop structure from source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function from the original source is preserved as a separate function with appropriate granularity. The test helper functions (`test_data_types_l1`, `test_array_types`, etc.) are correctly extracted. No inlining artifacts at -O0.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns are present for null checks. The `array_string` function has slight awkwardness with pointer arithmetic but remains followable. No forward jumps into loop bodies.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Significant loop unrolling in `array_3d` (125 array accesses expanded from triple loop) and `array_2d_stack` (10 diagonal elements). The `pointer_array` function has repetitive if-else chains that could be a loop. However, no dead code observed.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Generic `int` used throughout. The original uses `char`, `short`, `long`, `long long`, `float`, `double`, `long double`, `_Bool` but these are not distinguished. `undefined4` appears for untyped values. However, pointer types (`int*`, `int**`) are correctly inferred.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Structs are partially recovered as raw pointer arithmetic. `struct_simple` correctly accesses three fields as `*param_1 + param_1[1] + param_1[2]`, but field names (`x`, `y`, `z`) are lost. Nested structures use hardcoded offsets (`struct_nested`: `*param_1 + param_1[3]`). No typedef recovery.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe operations present. Pointer arithmetic is used extensively (e.g., `param_1 + param_2 * 4` for array indexing). The `ptr_void` function uses type punning through `(uint)*(byte *)param_1`. However, no obvious buffer overflow patterns or completely unsafe casts.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in the decompiled output. The original source has extensive comments explaining each test case (e.g., "DT-L1-01: 字符类型", "场景: [SCENE-ALL]"), but none are recovered. No decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly present but not named. Linked list traversal (`while (param_1 != (int *)0x0)`) is recognizable. Binary tree recursive traversal is somewhat apparent. However, no explicit pattern naming or documentation (e.g., "Implements: singly-linked list traversal").
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags. The `ptr_func_simple` and `ptr_func_complex` use `code *UNRECOVERED_JUMPTABLE` which hints at unresolved function pointer, but no explicit warning. No indication of potential undefined behavior in `array_oob` (the intentional out-of-bounds access).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source has clear expectations (e.g., "期望: 15", "期望: 'a'") but these are not recovered. No null-check documentation or bounds-checking expectations.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are present but relationships not documented. The `main` function calls the four test functions, but there's no comment indicating this is a test harness. Callback relationships (e.g., `ptr_func_simple` calling `double_value`) are not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped by type (data types, arrays, pointers, composite types). Static functions are correctly marked. However, all in one file with no header separation. The original source has clear section comments (// ============================================================================) that are not represented.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External functions (`puts`, `__printf_chk`, `__stack_chk_fail`) are declared but as `<EXTERNAL>`. Some type definitions needed (`EVP_PKEY_CTX` in `_init`). The code would require moderate patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects (Bullet List)
+- **Variable naming is completely generic**: All parameters use `param_N` and locals use `iVar1`, `piVar2` patterns - zero semantic meaning recovered
+- **No comments recovered**: Original source has extensive documentation (830 LOC with comments) but decompiled output has none
+- **Struct field names lost**: All struct fields accessed as array indices (`param_1[1]`, `param_1[2]`) losing semantic field names like `x`, `y`, `z`
+- **Magic numbers everywhere**: Hardcoded values like `0x41`, `0x20`, `0xb`, `0x16` without explanation; original uses named operations
+- **Loop unrolling not abstracted**: `array_3d` expanded to 125 individual array accesses instead of showing the triple-nested loop
+
+### Best Quality Aspect: Function Naming (scored 9/10)
+Function names are nearly perfect - they directly match the original source function names, indicating the decompiler successfully extracted debug symbols or retained the symbol table.
+
+### Most Needs Improvement: Variable Naming (scored 1/10)
+Variable naming is completely unusable - every parameter and local variable uses generic auto-generated names. This single dimension severely impacts the ability to understand the code's purpose.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how parameters and locals are used (e.g., `param_1` used in size check → `array_size` or `length`; `param_1[1]` for field access → struct field)
+2. **Recover struct/union field names**: Use type information and field access patterns to reconstruct field names instead of raw array indices
+3. **Add comment generation for magic numbers**: Detect common patterns (ASCII values like 0x41, array offsets) and add explanatory comments
+4. **Abstract loop unrolling**: Recognize fully unrolled loops and reconstruct the original loop structure with a comment indicating unrolling
+5. **Recover source comments from debug info**: At -g, DWARF sections contain source line information that could be used to add context comments

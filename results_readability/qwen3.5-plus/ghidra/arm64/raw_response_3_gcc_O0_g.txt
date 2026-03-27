@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Heavy use of generic names like `iVar1`, `uVar2`, `pNVar1`, `pTVar2` obscures semantic meaning; however, some variables retain original names (`head`, `current`, `sum`, `result`) providing partial clarity.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`); only runtime functions like `FUN_001009e0` lack semantic meaning.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation: `0x2a` (42), `0x14` (20), `0x800` (2048), `0x41` ('A'); string literals referenced as `&DAT_001028f8` instead of actual content.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`) appear in nearly every function; multiple "WARNING: Removing unreachable block" annotations clutter output; redundant `_local` suffixes on parameters.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loop structures generally recovered (for/while), but some functions show semantic simplification errors (`local_struct` returns `x * 3` instead of `p.x + p.y`); stack_alias logic collapsed incorrectly.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries match source well; helper functions like `create_tree_node` properly separated; no monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom; stack canary epilogues at function ends create minor disruption; no excessive goto usage.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks duplicated across all functions; pointer arithmetic with explicit casts repeated (`(long)__ptr + (long)i * 4`); no dead code removal.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, char, void*); `size_t` often becomes `long`; function pointer types recovered as `_func_int_int *`; some precision loss in pointer arithmetic.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Structs recovered with field access (`p->x`, `head->next`, `root->left`); `Point`, `Node`, `TreeNode` types recognized; struct definitions not shown in output.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Excessive unsafe casts: `(int *)`, `(void *)`, `(long)` throughout; pointer arithmetic patterns like `*(int *)((long)__ptr + (long)i * 4)` obscure type intent; original unsafe patterns (dangling pointer) preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warnings present ("WARNING: Subroutine does not return"); no semantic comments explaining algorithm purpose; function comments show only address and name.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition for common structures (linked list creation, tree traversal); memory allocation patterns not identified; algorithms not named or explained.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good warning system for unreachable blocks and stack canary checks; "Unknown calling convention" warnings present; but semantic anomalies (like `local_struct` simplification) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 5/10  
+Justification: NULL checks preserved from source; error return values (-1, -2) maintained; no explicit precondition/postcondition documentation generated.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls clear and traceable; global variables referenced by name (`global_counter`, `global_array`); no call graph documentation provided.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output file; no file organization matching source structure; static functions preserved but no namespace grouping.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates successful compilation; external dependencies noted (malloc, free, printf); platform-specific TLS code (`tpidr_el0`) may limit portability.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (30%): (5+8+4+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (25%): (6+8+7+6)/4 = 6.75 × 0.25 = 1.69
+Level 3 (20%): (7+7+5)/3  = 6.33 × 0.20 = 1.27
+Level 4 (15%): (3+4+6+5)/4 = 4.50 × 0.15 = 0.68
+Level 5 (10%): (7+6+7)/3  = 6.67 × 0.10 = 0.67
+
+Overall = 1.65 + 1.69 + 1.27 + 0.68 + 0.67 = 5.96/10
+```
+
+**Overall Readability Score:** 6.0/10
+
+### Critical Defects:
+- **Variable `iVar1`, `uVar2`, `pNVar1`** should be named based on usage (e.g., `result`, `return_value`, `new_node`)
+- **Magic numbers** like `0x2a`, `0x14`, `0x800` lack semantic meaning or constant definitions
+- **`local_struct` function** incorrectly simplified to `x * 3` instead of preserving struct field access `p.x + p.y`
+- **`stack_alias` function** logic collapsed incorrectly, losing the pointer aliasing semantics
+- **String literals** referenced as `&DAT_001028f8` instead of showing actual string content
+
+### Best Quality Aspect:
+- **Function Naming Quality (scored 8/10)** - Original function names preserved accurately, making navigation and identification straightforward
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (scored 3/10)** - Virtually no semantic comments; only auto-generated warnings without algorithm explanations or intent documentation
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Infer variable names from usage patterns** - Analyze how variables are used (e.g., `iVar1` returned from function should be `result`, loop counters should be `i`, `j`, `index`)
+2. **Recover and display string literals inline** - Instead of `&DAT_001028f8`, show actual string content `"=== 测试栈内存操作 ==="` for immediate comprehension
+3. **Add semantic comments for optimized/simplified code** - When decompiler simplifies logic (like `local_struct`), add comments explaining the transformation and original intent

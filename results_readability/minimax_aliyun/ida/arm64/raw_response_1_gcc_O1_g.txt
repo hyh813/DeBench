@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v1`, `v2`, `v3`, `v4`, `result` throughout. Compare to source where variables have meaningful names like `temp1`, `temp2`, `sum`, `count`, `target`. The decompiler makes no effort to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `recursion_factorial`, `duffs_device` all match source exactly. Action verbs and purpose are clear.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `1001` in `infinite_loop` and array initialization values like `*(_QWORD *)"\n"` are unexplained. However, some constants like loop bounds are inferable. The decompiler doesn't detect or name constants.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Some register annotations like `// w0`, `// x1` appear but don't significantly impede reading. No redundant casts or debug instrumentation clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Switch statements are incorrectly expanded to if-else chains (e.g., `switch_small`, `switch_large`, `switch_default`). The `switch_fallthrough` uses goto labels (LABEL_7, etc.) instead of recognizing fall-through semantics. At -O0, these should be preserved as switch constructs.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches source well. Functions like `sequential_ops` (~3 lines), `duffs_device` (~40 lines) maintain appropriate size. No over-fragmentation or inlining artifacts at -O0.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Minor goto usage in `switch_fallthrough` and `duffs_device` creates slight non-linearity, but overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or significant redundancy. At -O0, loop unrolling is minimal. Code is clean without duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10  
+Justification: Types are mostly accurate: `int` for parameters, proper function pointer signatures like `int (*f)(int)`. Some unsigned/signed mixing in loop conditions but overall appropriate for arm64.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Arrays are properly recognized: `int arr[5]`, `int matrix[3][4]`, `int (*funcs[3])(int)`. No struct recovery needed for this source code. Good pointer/array distinction.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No obvious unsafe casts. Pointer arithmetic in loops (`v1 += 4`) is correct. Function pointer usage is type-safe. No significant type safety violations observed.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. Only auto-generated function headers like `/* Function: sequential_ops @ 0xC04 */`. No algorithm explanations, no documentation of non-obvious logic, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Patterns like Duff's device, state machines, and function pointer arrays are structurally present but not explicitly named or documented. A reader must recognize them manually.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The decompiler appropriately flags "FAILED to decompile" for external library functions (_setjmp, __libc_start_main, __printf_chk, etc.). However, no warnings about indirect calls or unusual patterns in the recovered code.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants are documented. The decompiler doesn't recover implicit contracts like "requires: n > 0" for factorial or "ensures: return is heap-allocated" patterns.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function names are descriptive enough to infer some relationships (e.g., `call_func_ptr` calls the function pointer). However, no explicit documentation of call graphs, global usage, or callback relationships.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions appear in address order (sub_940, start, call_weak_fn, etc.) rather than logical grouping. Related functions like all operator functions (op_add, op_sub, op_mul, etc.) are scattered throughout the listing.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The code should compile as standard C with minimal libc dependencies. External functions are declared. No compiler-specific hacks. Should compile with: `gcc -c decompiled.c`.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.7/10
+
+**Critical Defects:**
+- Variable naming uses generic names (`v1`, `v2`, `v3`, `result`) instead of inferring semantic meaning from usage
+- Switch statements incorrectly expanded to if-else chains, losing original control flow structure
+- No comments explaining algorithms, contracts, or decompilation confidence
+- Poor module organization with functions in address order rather than logical grouping
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+Function names are excellently preserved and match the original source exactly, making it easy to identify each function's purpose.
+
+**Most Needs Improvement:** Comment Quality (2/10)  
+The decompiled code has almost no useful comments. At -O0 with debug symbols, the decompiler could recover significantly more context about algorithm intent and decompilation confidence.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns (e.g., `v2` used as loop counter in `loop_for_fixed` should be named `i` or `index`)
+2. Preserve switch-case constructs instead of expanding to if-else chains; recognize fall-through semantics
+3. Add algorithm documentation comments explaining purpose and any decompilation confidence issues

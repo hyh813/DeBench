@@ -1,0 +1,86 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v1, v2, v3, v4, v5, v6, result, i, j). The original source used descriptive names like `temp1`, `temp2`, `sum`, `count`, `target` - all lost in decompilation. Only `result` and loop counters `i`, `j` are somewhat meaningful.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved - sequential_ops, single_if, if_else, nested_if_2, nested_if_deep, if_elseif_chain, loop_for_fixed, loop_while, loop_dowhile, loop_nested, recursion_factorial, tail_recursion all match source exactly. Minor issue: some internal functions like `sub_4DC` remain unnamed.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation: `0xA` (10), `0x65` (101), `0x12` (18), `9` in loop_while. The source had meaningful constants like `n=5` for array size, `1001` for timeout - these are just raw numbers in decompiled code. Test functions hardcode expected values (21, 20, -5) instead of calling functions.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Clean decompilation with minimal compiler artifacts. No obvious register spills, redundant casts, or debug instrumentation. Some `__fastcall` annotations present but acceptable. The duffs_device function shows `__asm { ADD PC, LR, R3 }` which is a compiler artifact but unavoidable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most control flow is natural (if/else, switch statements). However, several functions show optimization artifacts: `loop_for_fixed` uses a mathematical formula instead of loop structure, `loop_while` has inverted logic with `(unsigned int)(v2 + 9) > 0x12`, `goto_backward` uses a confusing for-loop with manual variable manipulation. At -O0, these should be more recognizable as loops.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-50 lines each), well-separated, and maintain single responsibility. Each test function is self-contained. The decompiler correctly kept functions separate rather than inlining everything. Minor issue: some large functions like `test_control_flow_l2` could be split.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with minimal forward jumps. However, `loop_complex_cond` has complex nested do-while with multiple break conditions that are hard to follow. Some switch statements have non-linear case ordering (e.g., switch_fallthrough jumps around).
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code. Loop unrolling is present in `loop_for_fixed` (converted to formula) but this is expected at any optimization level. Some common subexpression elimination visible but not excessive.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Most parameters use generic `int` type. The source had `volatile int *flag` for external state - correctly preserved. However, function pointer types are generic `int (*)(int)` rather than proper signatures. No `int32_t`/`uint64_t` specificity. Some signed/unsigned mismatches visible (e.g., `(unsigned int)x <= 0x32`).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No complex structs recovered. The source had `int matrix[3][4]` and `int arr[]` - these are lost, appearing as raw pointer arithmetic in `loop_multi_exit` (using `dword_1E9C` and `dword_1E6C` arrays). Simple types only.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally safe code with no obvious buffer overflows. Some concerning patterns: `goto_backward` has `v2 *= i` where `i` is modified in the loop, potentially causing issues. Function pointer casts in `call_func_ptr_array` use generic signatures. No `restrict` or `_Atomic` annotations.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no useful comments. The decompiled code has only function headers from the binary's metadata. No explanation of algorithms, no documentation of non-obvious logic, no @param/@return annotations. The source had extensive Chinese comments explaining test scenarios - completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognized: switch statements for dispatch, do-while for loops. But no explicit naming of patterns like "state machine", "callback pattern", "Duff's device". The duffs_device is completely mangled with inline assembly. No recognition of the Collatz sequence in indirect_recursion.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of decompilation uncertainties. The test functions show hardcoded expected values instead of actual function calls - this is a major semantic loss. No warnings about indirect calls that couldn't be resolved. The binary shows "FAILED to decompile" for some imports but not flagged in code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/post conditions or invariants documented. The source had explicit test scenarios (e.g., "输入10应返回20") - completely lost. No documentation of error conditions or edge case handling.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships not documented. The source had clear test entry points (`test_control_flow_l1`, `test_control_flow_l2`, `test_control_flow_l3`) showing which functions relate to which tests. No indication of which functions call which (e.g., `call_func_ptr` calls `double_value`).
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically: control flow L1 functions first, then L2, then L3, then test functions, then runtime support. Static functions properly scoped. However, runtime functions like `__divsi3` are interspersed.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code should compile with standard C compiler. External dependencies are standard libc functions (printf, puts, setjmp, longjmp). Some issues: hardcoded string references (`asc_1DED`, `asc_1E11`, `asc_1E35`) for test output labels would need to be defined.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.0/10
+
+**Critical Defects:**
+- Variable names are universally generic (v1, v2, v3) - original meaningful names like `temp1`, `sum`, `count`, `target` completely lost
+- Test functions hardcode expected values instead of calling the actual functions - loses semantic connection to implementation
+- No comments explaining algorithms, test scenarios, or expected behavior - source had extensive documentation
+- Loop constructs converted to mathematical formulas (loop_for_fixed) or confusing logic (loop_while) making control flow hard to follow
+- Composite types (arrays) lost - `int arr[]` and `int matrix[3][4]` become raw pointer arithmetic with magic array indices
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+- Nearly all function names match the original source exactly, making it easy to locate specific functions
+
+**Most Needs Improvement:** Variable Naming Quality (2/10) and Comment Quality (2/10)  
+- Generic variable names (v1, v2, v3) make it nearly impossible to understand variable purpose without cross-referencing source
+- Complete absence of comments means algorithms, test scenarios, and edge cases are undocumented
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Variables used as array indices should be named `index`/`i`/`j`, accumulators should be `sum`/`result`, boolean flags should be `found`/`valid`
+2. **Recover test function semantics**: Instead of hardcoding expected values, generate actual function calls to verify behavior
+3. **Add semantic comments**: Document what each function tests, the expected inputs/outputs, and any non-obvious transformations applied by the compiler

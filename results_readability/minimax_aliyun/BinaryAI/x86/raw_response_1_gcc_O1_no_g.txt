@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `param_1`, `param_2`, `param_3` throughout. Local variables use cryptic names like `iVar1`, `iVar2`, `uVar1`, `puVar2`. For example, in `sequential_ops`, the parameters should be `a`, `b`, `c` but are `param_1`, `param_2`, `param_3`. Only a few well-named functions like `recursion_factorial` have semantic parameter names.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Many functions correctly named: `recursion_factorial`, `double_value`, `triple_value`, `op_add`, `op_sub`, `op_mul`, `switch_small`, `loop_for_fixed`, `loop_while`. However, numerous internal functions use auto-generated names like `FUN_00011030`, `FUN_000110a0`, and the critical test functions are correctly named but lack semantic grouping indicators.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14` (20), `0x1e` (30), `0x32` (50), `0x3e9` (1001), `0x65` (101) appear without explanation. Test function calls show hardcoded expected values like `0x15` (21) without constant names. However, some literals like `0` and `1` are used appropriately as boolean equivalents.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts present. Stack canary checks (`__stack_chk_fail_local()`) and GS_OFFSET references add some noise but are expected at -O0. No redundant casts or debug instrumentation clutter the code significantly. The decompiled output is relatively clean compared to typical Ghidra output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops properly recognized as `while`/`do-while` constructs (e.g., `loop_for_fixed`, `loop_while`). Switch statements partially recovered - `if_elseif_long` and `switch_large` use proper switch syntax, while `switch_small` and `switch_default` use if-else chains. Control flow generally matches source intent at -O0.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions properly separated with appropriate granularity. Each function handles one logical operation - no 500-line monoliths. Parameter lists are reasonable, though they expose implementation details through generic names. No obvious outline artifacts; functions maintain single responsibility.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `single_if`, `if_else`. Some forward jumps exist in complex functions like `loop_break` but don't severely disrupt readability. Nesting depth manageable.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code observed. Common subexpressions not excessively duplicated. Loop unrolling present in `loop_for_fixed` but logically correct. Tail duplication minimal. Clean code without obvious redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int` for most integers, some `uint` for unsigned operations (e.g., `op_and`, `op_or`). `bool` used for boolean returns. Function pointers use generic `code *` type. `byte` used for shift amounts in `op_shl`, `op_shr`. Type precision adequate but not optimal - original `int` vs `uint32_t` distinction lost.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery visible. Arrays inlined as local variables (e.g., `local_24[5]` in `loop_break`). The 2D matrix in `loop_multi_exit` reconstructed as flat array with manual index calculation. No struct/union types reconstructed from the source.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally type-safe with minor issues. Function pointer calls use `(*local_1c[param_1])(param_2)` pattern which is safe but could be more explicit. Some pointer arithmetic in array access (e.g., `param_1 + iVar2 * 4`). No major unsafe casts that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments present in decompiled output beyond the auto-generated header. No algorithm explanations, no non-obvious logic documentation, no decompilation confidence indicators. The source code's extensive comments (CF-L1-01, CF-L1-02, etc.) are completely lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized but not explicitly named or documented. State machine pattern visible in `state_machine` and `fsm_func_table`. Function pointer arrays recognized in `call_func_ptr_array`, `large_jump_table`. However, no explicit naming like "State Machine" or "Strategy Pattern".
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags or warnings. Uncertain items presented confidently as fact. The `duffs_device` function shows complex indirect call pattern but no indication of potential issues. Indirect recursion in `indirect_recursion_a` not flagged as complex pattern.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. Preconditions like "n must be > 0" in `duffs_device` not documented. Postconditions not inferred. Error conditions from source (e.g., division by zero checks in `op_div`) present but not explained as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible through direct calls (e.g., `recursion_factorial` calls itself). Callback relationships in `process_with_callback` clear from function pointer parameter. However, no documentation of who calls whom or global usage patterns.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped - arithmetic operations (`op_add`, `op_sub`, etc.) together, state handlers together, test functions grouped. Static functions properly scoped. However, no header file structure or namespace organization visible.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code should compile with minimal changes. External dependencies: `printf` (via `FUN_000110f0`), `setjmp`/`longjmp` for `non_local_jump`. Some undefined references to runtime functions. No compiler-specific hacks that would prevent compilation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- Variable naming uses generic `param_N` and `iVarN` patterns throughout, obscuring semantic meaning (e.g., `param_1` should be `a` in `sequential_ops`)
+- Complete absence of comments - source code's extensive documentation (CF-L1-xx labels, test scenarios) completely lost
+- No struct/union type recovery - composite types from source lost, replaced with flat arrays or raw pointer arithmetic
+- Magic numbers like `0x3e9` (1001), `0x65` (101) appear without explanation or constant names
+- No anomaly indication for complex patterns like Duff's device, indirect recursion, or computed goto
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions maintain proper granularity with single responsibility. No monoliths or over-fragmentation. Control flow structures (loops, conditionals) properly recognized and reconstructed.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+Zero useful comments in output. Source code's rich documentation (test scenarios, difficulty ratings, verification comments) completely lost. No algorithm explanations, no decompilation confidence markers, no contract documentation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how parameters and locals are used (arithmetic operations suggest numeric roles, array indexing suggests collection/traversal, string operations suggest text processing) to generate semantically meaningful names instead of `param_N`
+2. **Recover and preserve comments**: Parse debug symbols (-g flag) for variable/function descriptions. Generate comments for complex patterns (state machines, jump tables, recursion) indicating what was recognized
+3. **Detect magic numbers and suggest constants**: Identify repeated numeric literals and offer to name them based on context (e.g., `0x3e9` → `MAX_COUNT` based on loop bound usage)

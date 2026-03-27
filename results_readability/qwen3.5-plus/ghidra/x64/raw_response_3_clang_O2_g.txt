@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `iVar1`, `lVar2`, `bVar3`, `uVar10` with no semantic meaning. Original code had meaningful names like `arr`, `local`, `head`, `sum` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`local_vars`, `heap_basic`, `test_stack_memory`), but runtime functions like `FUN_00101020` are generic. Good recovery of user-defined function names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic hex numbers everywhere (`0x2a` instead of 42, `0x14` instead of 20, `0x3c` instead of 60). No named constants recovered; original decimal literals converted to obscure hex.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive "Unresolved local var" comments throughout, numerous temporary variables from loop unrolling (`bVar2` through `bVar17`), and compiler artifacts pollute the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Simple for-loops transformed into massive unrolled blocks with 100+ lines of repetitive code. Original clean loop structures (`for (int i = 0; i < 10; i++)`) completely lost.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved correctly, but internal complexity exploded. `large_stack_frame` became 200+ lines from a simple 10-line function.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Code reads top-to-bottom but unrolled loops create massive blocks that disrupt logical flow. Some functions have confusing jump patterns.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Severe redundancy from loop unrolling—same operations repeated 16+ times with minor offset changes. No abstraction or consolidation attempted.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, long, void*), but excessive casting (`(ulong)(uint)n`, `(int *)`). Pointer arithmetic obscures array semantics.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `Node` and `TreeNode` structs partially recovered with field names (`data`, `next`, `left`, `right`), but many accesses use raw pointer arithmetic instead of struct notation.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout (`(undefined8 *)`, `(undefined4 *)`). Pointer arithmetic on void pointers without proper type information.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated "Unresolved local var" and "WARNING" comments. No algorithm explanations, no documentation of function purpose or behavior.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: Zero pattern recognition. Linked list creation, tree traversal, and memory allocation patterns not identified or labeled despite being obvious.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("Removing unreachable block", "Unknown calling convention"), but inconsistent coverage. Many issues go unflagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Null checks present but not explained as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but data structure relationships unclear. Global variable usage not documented; callback relationships opaque.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped but original test organization lost. No header file structure or API documentation recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Missing type definitions (`_func_int_int`, `EVP_PKEY_CTX`), undefined globals, and platform-specific constructs prevent standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+7+4+4)/4 = 4.25 × 0.30 = 1.275
+Level 2 (Structural):  (3+6+5+3)/4 = 4.25 × 0.25 = 1.063
+Level 3 (Type):        (6+5+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (3+2+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.36/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Variable names completely generic** (`iVar1`, `lVar2`, `bVar3`) losing all semantic meaning from original (`arr`, `local`, `head`)
+- **Aggressive loop unrolling** transformed simple 5-line loops into 100+ line repetitive blocks despite `-O0` compilation claim
+- **Hex literals everywhere** (`0x2a`, `0x14`, `0x3c`) instead of readable decimal values from source
+- **Zero idiom recognition** for obvious patterns (linked list creation, tree traversal, memory allocation)
+- **Missing struct field access** in many places, using raw pointer arithmetic instead of `node->data`
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved accurately (`local_vars`, `heap_basic`, `test_stack_memory`), providing crucial semantic anchors.
+
+### Most Needs Improvement: **Idiom Recognition (2/10)**
+- Complete failure to identify common programming patterns despite obvious structures like linked lists and trees being present.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement loop pattern detection** to recover for/while constructs from unrolled code blocks, especially when optimization level indicates `-O0`
+2. **Add semantic variable naming** using usage pattern analysis (e.g., variables used in size checks should be named `size`, `count`, `length`)
+3. **Integrate idiom recognition library** to detect and label common patterns (linked list traversal, tree operations, memory allocation patterns) with explanatory comments

@@ -1,0 +1,113 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names like `param_1`, `param_2`; local variables use cryptic patterns like `iVar1`, `uVar2`, `pcVar1`, `piVar2`. The original source had meaningful names like `x`, `c`, `arr`, `n`, `str` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Many functions correctly recovered: `process_char`, `process_short`, `array_1d_stack`, `ptr_single`, `linked_list`. However, some remain generic like `FUN_00011275`, `FUN_00011295`, `FUN_00011f15` for complex cases like long double and switch handling.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers: `0x20`, `0xbfU` in char processing; `0x1d93`, `0x1d97` for float constants; `0x28` for array stride. No recovery of named constants from source (STATE_IDLE, STATE_RUNNING, etc.).
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant noise includes: undefined types (`undefined4`, `undefined8`, `EVP_PKEY_CTX`); boilerplate functions (`_init`, `_start`, `deregister_tm_clones`); `__gmon_start__()` calls. However, core test functions are relatively clean.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops and conditionals are properly formed. Some loop unrolling in `array_1d_stack` and `array_3d` (8-element chunks), which is acceptable at -O0. Switch statement in `enum_switch` became a computed jump table.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good granularity maintained - many small functions from source preserved. Test functions are large but that's expected. Parameter lists are reasonable, though some expose implementation details.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately. No excessive goto or forward jumps disrupting flow. Minor computed jumps in switch handling.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Loop unrolling creates visible redundancy in array functions (8-element batch processing). Some duplicate expressions in pointer arithmetic. Not severely problematic but could be cleaner.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types recovered (`int`, `uint`, `short`, `ushort`, `bool`). However, missing platform-specific types (int32_t, uint64_t). Function pointers use generic `code *` instead of proper signatures. `long double` handled as `longdouble`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct fields completely lost - accessed as `param_1[0]`, `param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`, `p->z`. Original Point3D, Node, Rect, Widget, DNode, TreeNode structures not recovered. Union partially handled but loses type semantics.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: pointer arithmetic without bounds (`param_1 + uVar2 * 4`); function pointers as generic `code *`; raw memory access patterns. Some casts between int/pointer types. Moderate risk of undefined behavior.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments explaining algorithm logic. No parameter documentation. No uncertainty indicators for indirect calls. Only auto-generated function headers like "Decompiled by BinaryAI".
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognizable: linked list traversal (`while (param_1 != NULL)`), binary tree recursion, array indexing. However, no explicit naming of patterns (e.g., "Implements: linked list traversal").
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No flags for suspicious code. No warnings about indirect calls that couldn't be resolved. No indication of potential undefined behavior (array_oob has intentional out-of-bounds access). Silent on all anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: ptr != NULL"). No postconditions. No invariant recognition. Error conditions not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: External functions marked as `<EXTERNAL>` (printf, puts). Internal call relationships not documented. Callback relationships unclear (ptr_func_simple, ptr_func_complex).
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file. No logical grouping matching source sections (data types, arrays, pointers, composites). Static functions not distinguished from public API.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile standalone - uses undefined types (`undefined4`, `undefined8`, `EVP_PKEY_CTX`, `code`). External dependencies not declared. Requires significant patching.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 4 + 5) / 4 = 4.5
+L2_avg = (7 + 8 + 8 + 5) / 4 = 7.0
+L3_avg = (6 + 3 + 5) / 3 = 4.67
+L4_avg = (2 + 5 + 1 + 2) / 4 = 2.5
+L5_avg = (4 + 5 + 3) / 3 = 4.0
+
+Overall = (4.5 × 0.30) + (7.0 × 0.25) + (4.67 × 0.20) + (2.5 × 0.15) + (4.0 × 0.10)
+        = 1.35 + 1.75 + 0.934 + 0.375 + 0.4
+        = 4.81/10
+```
+
+**Overall Readability Score:** 4.81/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All parameters use generic `param_N` and locals use cryptic `iVar1`, `uVar2` patterns - original semantic names completely lost
+- **Struct recovery failure**: All struct fields accessed as array indices (`param_1[0]`, `param_1[1]`) instead of named fields (`p->x`, `p->y`), losing all semantic meaning of Point3D, Node, Rect, Widget, etc.
+- **No comments**: Zero meaningful comments explaining algorithms, parameters, or uncertainty
+- **No anomaly indication**: Silent on indirect calls, potential undefined behavior, and decompilation confidence issues
+- **Type safety issues**: Function pointers as generic `code *`, raw pointer arithmetic without bounds, unsafe casts
+
+### Best Quality Aspect (Single Dimension)
+- **Function Decomposition (L2, scored 8/10)**  
+- Good function granularity preserved from source; most small functions maintained as separate units with reasonable parameter lists
+
+### Most Needs Improvement (Single Dimension)
+- **Anomaly Indication (L4, scored 1/10)**  
+- Completely silent on suspicious code, indirect calls that couldn't be resolved, and potential undefined behavior - provides no confidence indicators to analysts
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how parameters are used (e.g., `param_1 + offset * 4` suggests array indexing → name as `arr` or `array`)
+2. **Recover struct/union layouts**: Detect regular memory access patterns and reconstruct struct field names and types rather than exposing raw offsets
+3. **Add confidence indicators**: Flag indirect calls, uncertain type reconstructions, and potential undefined behavior with comments like "UNCERTAIN: indirect call" or "WARNING: potential OOB access"

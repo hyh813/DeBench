@@ -1,0 +1,108 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Parameters are universally generic (`a1`, `a2`), and local variables are mostly `v` prefixes (`v2`, `v3`), offering no semantic insight into their roles (e.g., `sum`, `i`, `ptr`).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source perfectly (e.g., `process_int`, `array_1d_stack`), providing clear semantic context for the operations performed.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Magic numbers like `32` (for case conversion) and `65` ('A') are used directly without named constants, though the arithmetic is clear enough to infer intent.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: Code is generally clean, but `__fastcall` annotations and compiler intrinsics like `COERCE_FLOAT` appear occasionally, adding minor syntactic noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is highly readable with recovered `switch` statements and structured loops; range checks like `(result - 65) <= 0x19` are compact but understandable.
+
+**6. Function Decomposition:** Score: 10/10
+Justification: Functions map 1:1 with the source code without inlining or outlining, maintaining the original logical boundaries perfectly.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads top-to-bottom with minimal jumps; loops are clearly defined, and there is no confusing control flow transfer.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The code is concise with no obvious dead code or redundant assignments, though the `volatile_access` simplification to `2 * *a1` is surprisingly aggressive for `-O0`.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Significant type degradation is present; `long long` in `process_ll` is demoted to `int`, and `long double` in `process_ld` becomes `double`, fundamentally altering the operation's precision and overflow behavior.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Composite types are completely lost; structs are accessed as flattened arrays of integers (e.g., `a1[1]`, `a1[2]`) with no field names or structure definitions visible in the code.
+
+**11. Type Safety:** Score: 4/10
+Justification: While necessary casts for `void*` are present, the flattening of structs to raw integer arrays creates unsafe-looking pointer arithmetic that bypasses type checking.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: The output lacks comments explaining logic or algorithms; only a single compiler warning about stack pointer detection is present.
+
+**13. Idiom Recognition:** Score: 7/10
+Justification: Standard idioms like linked list traversal and switch-case structures are clearly recognizable, despite the lack of semantic variable names.
+
+**14. Anomaly Indication:** Score: 4/10
+Justification: The aggressive simplification of `volatile_access` (combining two reads into one multiplication) is not flagged, potentially misleading the analyst about the volatile behavior.
+
+**15. Assertion & Contract Recovery:** Score: 5/10
+Justification: Preconditions like bounds checks are visible in the control flow (e.g., `if (a4 >= a2)`), but there are no explicit comments or annotations documenting these contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are direct and easy to trace (e.g., `ptr_func_simple` calling `double_value`), providing good cross-reference clarity.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, matching the source file's organization (e.g., data types, arrays, pointers sections).
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on non-standard types (`_DWORD`, `__int64`) and macros (`COERCE_FLOAT`, `JUMPOUT`), making it non-compilable without a compatibility layer.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: 6.5
+L2_avg: 8.75
+L3_avg: 3.0
+L4_avg: 4.5
+L5_avg: 6.33
+
+Overall = (6.5 × 0.30) + (8.75 × 0.25) + (3.0 × 0.20) + 
+          (4.5 × 0.15) + (6.33 × 0.10)
+Overall = 1.95 + 2.1875 + 0.6 + 0.675 + 0.633
+Overall = 6.0455
+```
+
+### Overall Readability Score: **6.0/10**
+
+### Critical Defects
+- **Type Precision Failure**: `process_ll` (source: `long long`) decompiled as `int`, causing incorrect overflow behavior and loss of 64-bit precision.
+- **Struct Flattening**: `struct_simple` and `struct_nested` lose all semantic field names, accessing memory as raw integer arrays (`a1[0]`, `a1[1]`) instead of `p->x`, `p->y`.
+- **Volatile Semantics Lost**: `volatile_access` is simplified to `2 * *a1`, obscuring the source's intent to perform two distinct memory reads to prevent optimization.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**: The decompiler perfectly recovered all function symbols from the binary, making the high-level flow of the program immediately understandable.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)**: The complete failure to recover struct definitions, reducing complex data structures to flat integer arrays, severely hinders understanding of data manipulation.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover 64-bit Integer Types**: Fix the type propagation logic to correctly identify `long long` and `long` (on 64-bit) as 64-bit integers rather than defaulting to `int`.
+2.  **Struct Definition Recovery**: Implement or improve analysis to recover struct layouts and apply them to the decompilation, replacing array indexing (`a1[1]`) with field access (`a1->y`).
+3.  **Preserve Volatile Semantics**: Ensure that accesses to volatile variables are not folded or optimized away in the decompiled output, even if the underlying assembly suggests optimization, to reflect source-level intent.

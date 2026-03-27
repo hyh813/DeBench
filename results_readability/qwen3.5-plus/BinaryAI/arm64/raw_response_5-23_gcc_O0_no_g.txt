@@ -1,0 +1,123 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `iVar1`, `uVar1`, `local_8` instead of semantic names like `size`, `result`, `counter`. For example, `param_macro_constants` uses `param_1` instead of `size`, completely obscuring the parameter's purpose.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved from debug symbols (`param_macro_constants`, `call_macro_constants`, `test_preprocessing_features`). This is the decompiler's strongest aspect, maintaining original semantic intent.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `0x401` (should be `MAX_SIZE+1`), `0x200` (should be `MAX_SIZE/2`), `0xdef0` (platform constant). String literals like `"155"` for `__LINE__` are hardcoded without context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`) appear in every function despite not being in original source. Unnecessary casts like `(ulong)param_1` and `(undefined4 *)` clutter the code.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural (if-else, for loops recovered), but `param_macro_constants` has inverted logic (`< 0x401` instead of `> 1024`). Loop structures in `param_asm_clobber` are correctly recovered from assembly.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved correctly, but return types are wrong (`call_macro_constants` returns `void` instead of `int`). Some functions like `param_stringize` lost their parameter (`int value` became `void`).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Code generally reads top-to-bottom, but stack canary checks at function ends disrupt flow. The pattern `if (local_8 - ___stack_chk_guard != 0) { __stack_chk_fail... }` repeats unnecessarily.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack protection code is duplicated in every function. `call_*` wrapper functions don't return values that original source returned, losing semantic information.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `undefined8`, `undefined4`, `ulong` instead of `int`, `size_t`. `param_macro_constants` returns `undefined8` instead of `int`. Pointer types often become `long` or `undefined8`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Limited struct usage in source, but array handling degrades to pointer arithmetic (`*(int *)(param_1 + (long)local_4 * 4)`). Stack arrays like `local_20`, `uStack_18` lose semantic meaning.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(ulong)param_1`, `(undefined4 *)mmap(...)`. Pointer arithmetic without proper typing in `param_asm_clobber` and `param_asm_simd`. No const-correctness preserved.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining macros, expected values, and test purposes. No decompilation confidence indicators present.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Macro expansions like `SQUARE(x) + MAX(x, y)` become `param_1 * param_1 + param_2` without indicating the original macro semantics. Atomic operations recognized as `__aarch64_ldadd4_acq_rel` but not explained.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of decompilation uncertainty. Architecture-specific code (x86 vs ARM) silently collapsed to ARM equivalents without warning. Stack canary artifacts not flagged as compiler additions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_1` range in `param_macro_constants`). No postconditions or error condition documentation. Original comments about expected return values completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear through preserved names. Global variables visible (`global_var`, `__aarch64_have_lse_atomics`) but usage context not explained. External library calls marked `<EXTERNAL>`.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source, but no file organization. Helper functions like `deregister_tm_clones` mixed with application logic. No separation between test functions and implementation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Would require significant modification to compile. External dependencies (`___stack_chk_guard`, `__aarch64_ldadd4_acq_rel`) not documented. Type mismatches (`undefined8` returns) would cause compilation errors.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+| Level | Dimensions | Average | Weight | Contribution |
+|-------|-----------|---------|--------|--------------|
+| L1: Lexical Clarity | 4 dims | 5.25 | 30% | 1.575 |
+| L2: Structural Intelligibility | 4 dims | 5.75 | 25% | 1.438 |
+| L3: Type System Fidelity | 3 dims | 4.67 | 20% | 0.934 |
+| L4: Semantic Transparency | 4 dims | 2.25 | 15% | 0.338 |
+| L5: Contextual Coherence | 3 dims | 5.00 | 10% | 0.500 |
+
+**Overall Readability Score: 4.78/10**
+
+---
+
+### Critical Defects
+
+- **Variable names completely generic**: `param_1`, `iVar1`, `local_8` obscure semantic meaning (e.g., `size` parameter becomes `param_1`)
+- **Zero comments**: Original source had extensive documentation; decompiled output has none
+- **Magic numbers without context**: `0x401`, `0x200`, `0xdef0` replace named constants like `MAX_SIZE`
+- **Type degradation**: `undefined8`, `undefined4` instead of proper C types; return types incorrect (`void` vs `int`)
+- **Stack canary noise**: Every function has `___stack_chk_guard` checks not present in original source
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (9/10)**
+- Debug symbols were successfully recovered, preserving all original function names with semantic meaning intact
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (1/10)**
+- Complete absence of comments makes understanding macro expansions, expected values, and test purposes impossible without referencing original source
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Recover macro semantics from constant patterns**: Detect when constants like `1024`, `16`, `0xdef0` match common patterns and suggest named constant recovery with comments
+
+2. **Add decompilation confidence annotations**: Mark uncertain reconstructions (e.g., `// DECOMPILED: architecture-specific code collapsed to ARM equivalent`) and flag compiler artifacts like stack canaries
+
+3. **Infer variable names from usage context**: Analyze how variables are used (e.g., `param_1` compared against `0x401` suggests `size` or `length`) and generate semantic names automatically

@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `a1`, `v1`, `v2`, and `v4`, providing no semantic context about their purpose (e.g., `sum`, `i`, `ptr`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `cdecl_func`, `test_calling_conventions`, and `param_by_value_int` are perfectly preserved from the source symbols, accurately reflecting their purpose.
+
+**3. Literal Clarity:** Score: 5/10
+Justification: String literals are replaced with opaque global pointers (e.g., `asc_3008`, `aCallL206`), making it impossible to understand the output messages without cross-referencing the data section.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Stack canary checks (`__readgsdword(0x14u)`) and their associated variable assignments appear in almost every function, significantly cluttering the logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is natural, correctly recovering `for` loops and `if/else` chains that match the source structure, despite the `-O0` verbosity.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Function boundaries match the source perfectly; there is no artificial splitting or merging of functions, maintaining the original modularity.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps or confusing control flow transfers, making it easy to follow.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: Simple constant folding is effective (e.g., `param_array_decay` returns `4`), but verbose assignments in struct handling remain, which is accurate for `-O0`.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Struct types are significantly degraded; `LargeStruct` and `SmallStruct` are replaced by `int` or `_DWORD*`, and `char*[]` becomes `int`, losing type safety.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Structs are completely unrecovered; `func_struct_byval` takes a single `int` and accesses fields via pointer arithmetic (`*(&a1 + 2 * i)`) rather than struct member access.
+
+**11. Type Safety:** Score: 5/10
+Justification: The loss of struct types leads to unsafe pointer arithmetic and casts, such as `**(char **)(4 * i + a1)`, which are prone to errors if misinterpreted.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are virtually no comments explaining the logic, algorithms, or the purpose of the complex pointer arithmetic used for struct access.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: Standard idioms like `va_list` in varargs functions are not recognized; instead, the decompiler shows manual stack walking (`v4 += 4`).
+
+**14. Anomaly Indication:** Score: 7/10
+Justification: The decompiler correctly flags potential issues, such as the "positive sp value" warning in `_start` and listing failed decompilations at the end.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the null check in `func_struct_byptr` is present but not explicitly highlighted as a contract.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10
+Justification: Function calls are clear and use the correct names, but string references are opaque pointers, breaking the semantic link to the data being printed.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are ordered by memory address, which loosely groups related code, but lacks the logical grouping of the source file sections.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code uses non-standard extensions like `__usercall`, `__userpurge`, `LODWORD`, and `HIDWORD`, preventing compilation with a standard C compiler without modification.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Composite types (structs) are completely lost, replaced by raw integers and pointer arithmetic.
+- String literals are replaced with opaque global pointers (e.g., `asc_3008`), obscuring output messages.
+- Stack canary checks (`__readgsdword`) clutter every function, adding significant noise.
+- Variable names are generic (`a1`, `v1`), providing no semantic context.
+- Varargs functions are decompiled to manual stack walking rather than using `va_list` types.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- The decompiler successfully preserved the original function names from the binary symbols, making the high-level purpose of each function immediately clear.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to recover `LargeStruct` and `SmallStruct` definitions turns simple data access into confusing pointer math, severely impacting understanding.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement heuristic-based struct recovery to identify stack layouts that correspond to source-level structs.
+2. Replace references to global string pointers with inline string literals or a side-by-side view to improve context.
+3. Abstract stack protection code (canaries) into macros or comments to reduce visual noise in the decompiled output.

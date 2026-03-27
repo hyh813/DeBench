@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `iVar1`, `piVar2`, `__ptr`, `uVar5` throughout. Many locals marked as "Unresolved local var: [???]" lose all semantic meaning (e.g., `arr`, `local`, `head` become unnamed).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well-preserved from source (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`). Action-oriented names clearly reflect purpose.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive without explanation: `0x2a` (42), `0x14` (20), `0x32` (50), `0x1e` (30). Original constants like `2048`, `10` become hex literals obscuring intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive "Unresolved local var" comments clutter code. Multiple "WARNING: Removing unreachable block" and "WARNING: Unknown calling convention" warnings add noise without value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Original `for` loops converted to `do-while` with manual pointer arithmetic (e.g., `local_array`, `heap_basic`). At -O2 this is expected but reduces readability significantly.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly. Test functions became monolithic but maintain cohesion. No inappropriate inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but pointer arithmetic loops disrupt flow. Some functions have early returns that help linearity (`heap_nested`).
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding applied aggressively (`local_vars` returns `x * 2 + 10` directly). Some redundancy in test functions where computed values are hardcoded.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `void*`, `undefined4`, `int*` used where specific types existed. `size_t` becomes `int`. Function pointers use `_func_int_int` generic type.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `Node` struct partially recovered with `data` and `next` fields. `Point` struct lost—accessed via `malloc(8)` and `x * 3` optimization. `TreeNode` fields recovered but traversal logic lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts: `(int *)((int)__ptr + -4)`, `(byte)const_string[4]`. Pointer arithmetic on void pointers without proper casting in several locations.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are auto-generated warnings ("Unresolved local var", "WARNING: Subroutine does not return"). No semantic comments explaining algorithm intent or non-obvious logic.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Linked list creation/traversal (`linked_list_heap`) not identified. Memory allocation patterns not annotated. Tree traversal logic completely lost.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Good anomaly flagging with "Unresolved local var" and "WARNING" messages. However, these indicate decompiler uncertainty rather than code anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition recovery. NULL checks preserved but not documented as contracts. Error return values (-1, -2, -3) not explained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls clearly visible. Global variables (`global_counter`, `file_scope_static`) properly referenced. Callback mechanism (`global_func_ptr`) recovered.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically matching source structure. Static functions properly scoped. Test functions separated from implementation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`extern_global_var`, `extern_function`) declared but undefined. Many library calls (`malloc`, `printf`) need linking. Won't compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+8+5+5)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):   (5+7+6+6)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type System):  (5+6+6)/3   = 5.67 × 0.20 = 1.13
+Level 4 (Semantic):     (4+3+6+3)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):   (7+7+4)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.48/10
+```
+
+**Overall Readability Score:** 5.5/10
+
+### Critical Defects:
+- **Variable names completely generic**: `iVar1`, `piVar2`, `__ptr` instead of `arr`, `local`, `head`
+- **Magic numbers throughout**: `0x2a`, `0x14`, `0x32` should be named constants (42, 20, 50)
+- **Struct type information lost**: `Point` struct accessed as `malloc(8)` with `x * 3` optimization
+- **Loop constructs degraded**: All `for` loops converted to `do-while` with pointer arithmetic
+- **Test functions constant-folded**: Expected values hardcoded instead of showing actual function calls
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names preserved accurately from source, making navigation and identification straightforward
+
+### Most Needs Improvement: **Idiom Recognition (3/10)**
+- No design patterns, data structures, or algorithm patterns identified despite clear linked list and tree operations
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Variable name inference from usage patterns**: Analyze how variables are used (array indexing, pointer dereference, loop counters) to suggest semantic names like `arr`, `index`, `sum`
+2. **Pattern recognition for common data structures**: Detect linked list traversal, tree operations, and memory allocation patterns to add explanatory comments
+3. **Magic number detection and constant recovery**: Identify repeated literals and suggest named constants, especially for test expected values and buffer sizes

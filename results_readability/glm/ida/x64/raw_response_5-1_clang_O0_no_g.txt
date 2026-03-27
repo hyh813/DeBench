@@ -1,0 +1,108 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are generic (`v1`, `v2`, `a1`, `a2`) because debug symbols were likely stripped (binary name `no_g`). No semantic names like `result` or `obj` are recovered, forcing the reader to track usage manually.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Excellent demangling of C++ symbols; complex names like `test_cpp_lambda(void)::$_1::operator()` and `std::unique_ptr<int,test_cpp_smart_ptr(void)::$_2>::~unique_ptr` are preserved perfectly, matching the source structure exactly.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Magic numbers like `4660` (0x1234) and `0x1F` (31) appear without context, though string literals like `"Test"` are preserved. The intent of constants is not abstracted into named enums or defines.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Significant noise from standard library template expansion; `std::unique_ptr` internals (tuples, impl pointers) are fully exposed, obscuring the simple RAII logic present in the source.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: The `test_cpp_exception` function is decompiled as a `__noreturn` function that only throws, completely losing the `try/catch` logic and the return value calculation. Virtual inheritance uses raw pointer arithmetic (`v4[0] - 24LL`) instead of natural member access.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Template instantiations (`Container<int>`, `Container<double>`) and lambda functors are correctly separated into distinct functions. The granularity matches the binary layout well, though the sheer volume of STL helper functions is overwhelming.
+
+**7. Code Linearization:** Score: 7/10
+Justification: Most functions read top-to-bottom, but complex initialization logic (e.g., in `test_cpp_smart_ptr`) involves many temporary variables and helper calls that disrupt the linear flow of the original source.
+
+**8. Redundancy Elimination:** Score: 7/10
+Justification: No obvious dead code or loop unrolling artifacts (expected for `-O0`). However, the verbose expansion of `std::move` and `std::forward` creates functional redundancy that clutters the logic.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 8/10
+Justification: Types are generally precise; `std::unique_ptr`, `std::type_info`, and lambda closure types are correctly identified with full template arguments, even if the internal structure is complex.
+
+**10. Composite Type Recovery:** Score: 3/10
+Justification: Class members are accessed via raw offsets (e.g., `*(_DWORD *)this`, `strncpy((char *)this + 4...)`) instead of member names (`value`, `name`). The decompiler failed to reconstruct the class layouts for `SimpleClass`, `Point`, etc.
+
+**11. Type Safety:** Score: 7/10
+Justification: Standard C++ casts are used. There are no obviously dangerous pointer casts, though the heavy use of `void*` and `char*` for buffer manipulation in `test_cpp_diamond_inheritance` reflects the compiler's implementation rather than unsafe user code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: No comments explaining the logic, algorithms, or complex C++ constructs (like virtual inheritance thunks). Only function headers are present.
+
+**13. Idiom Recognition:** Score: 4/10
+Justification: Virtual function calls are shown as raw vtable dereferences (`(**(__int64 (__fastcall ***)(...))a1)(a1, a2)`) rather than being labeled as "Virtual Call". The RAII pattern in smart pointers is obscured by implementation details.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: No specific warnings about the missing exception handling logic or the complex pointer arithmetic for virtual bases. The code is presented confidently despite being difficult to interpret.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented. The logic of `test_cpp_exception` (which relies on specific catch blocks) is completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Calls to constructors, destructors, and member functions are explicit (e.g., `SimpleClass::SimpleClass`). The relationship between template instantiations is clear.
+
+**17. Module Organization:** Score: 7/10
+Justification: Functions are grouped by address, which roughly correlates with class definitions. However, the interleaving of verbose STL helper functions makes navigation difficult.
+
+**18. Build System Compatibility:** Score: 3/10
+Justification: The code relies on missing struct definitions (classes are accessed via offsets) and expanded standard library headers, making it impossible to recompile without significant manual reconstruction of types.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 10 + 6 + 4) / 4 = 5.75
+L2_avg: (3 + 8 + 7 + 7) / 4 = 6.25
+L3_avg: (8 + 3 + 7) / 3 = 6.00
+L4_avg: (2 + 4 + 5 + 1) / 4 = 3.00
+L5_avg: (8 + 7 + 3) / 3 = 6.00
+
+Overall = (5.75 × 0.30) + (6.25 × 0.25) + (6.00 × 0.20) + 
+          (3.00 × 0.15) + (6.00 × 0.10)
+Overall = 1.725 + 1.5625 + 1.2 + 0.45 + 0.6 = 5.54
+```
+
+### Overall Readability Score: **5.5/10**
+
+### Critical Defects
+- **Exception Logic Loss**: `test_cpp_exception` is decompiled as a simple `throw`, completely omitting the `try/catch` blocks and the return value calculation logic found in the source.
+- **Missing Class Layouts**: Class members are accessed via raw pointer arithmetic (e.g., `this + 4`) instead of semantic member names (e.g., `this->name`), destroying the object-oriented context.
+- **Virtual Inheritance Obfuscation**: Accessing `shared_data` in `test_cpp_diamond_inheritance` requires manual offset calculation (`v4[0] - 24LL`), which is unreadable compared to the source's direct member access.
+- **STL Boilerplate Noise**: The logic of `std::unique_ptr` is buried under verbose expansions of `std::tuple`, `std::__uniq_ptr_impl`, and move semantics, obscuring the simple resource management intent.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**: The decompiler perfectly demangled complex C++ symbols, including template instantiations and lambda closure types, preserving the exact semantic names from the original compilation.
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (1/10)**: The decompiler failed to recover the high-level control flow contracts, specifically the exception handling logic, resulting in a function that behaves fundamentally differently in the decompiled view than in the source.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Recover C++ Class Layouts**: Analyze constructors and member access patterns to reconstruct `struct` definitions with correct field names and offsets, replacing raw `*(int*)(this+4)` with `this->field_name`.
+2.  **Implement Exception Handling Analysis**: Parse LSDA (Language-Specific Data Area) and unwind tables to reconstruct `try/catch` blocks instead of reducing functions to just their `throw` statements.
+3.  **Abstract Standard Library Patterns**: Recognize common STL implementations (like `std::unique_ptr` or `std::tuple`) and replace their verbose internal expansions with high-level semantic types or simplified pseudo-code.

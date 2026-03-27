@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v0`, `v1`, `a0`, `ptr`), and the code is polluted with symbolic execution artifacts like `vvar_4` which obscure the actual data flow.
+
+**2. Function Naming Quality:** Score: 7/10
+Justification: User-defined function names like `local_vars` and `heap_basic` are preserved accurately, but runtime and helper functions are reduced to generic names like `sub_400568` or `frame_dummy`.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: The code relies heavily on magic numbers, such as `4294967295` (representing -1) and `0xfffffff8` (for stack alignment), without named constants or explanatory comments.
+
+**4. Noise Reduction:** Score: 1/10
+Justification: The decompiled output contains severe noise pollution, specifically the insertion of `armg_calculate_condition` calls and `vvar_4` references, which are internal symbolic execution artifacts that render the code unreadable and non-compilable.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10
+Justification: Control flow is highly unnatural, relying heavily on `goto` statements and labels (e.g., `LABEL_4006b0`) instead of standard loop constructs, making execution paths difficult to follow.
+
+**6. Function Decomposition:** Score: 6/10
+Justification: Function boundaries generally correspond to the source, and granularity is acceptable, but the internal logic is so obfuscated by artifacts that the decomposition feels fragmented.
+
+**7. Code Linearization:** Score: 3/10
+Justification: The code reads poorly due to frequent forward jumps to labels and non-linear execution paths caused by the symbolic execution engine's output structure.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: Some compiler optimizations are visible (e.g., `local_vars` is reduced to a single expression), but the code is cluttered with redundant checks and symbolic condition calls that add no semantic value.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are significantly degraded; most integers are generic `unsigned int`, pointers are often `void*`, and signed/unsigned distinctions are lost (e.g., loop counters using unsigned underflow logic).
+
+**10. Composite Type Recovery:** Score: 5/10
+Justification: Structures are recovered but with generic field names like `field_0` and `field_4` (e.g., `struct struct_0`), losing the semantic meaning of members like `data` or `next`.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains unsafe pointer arithmetic and casts, such as `*((unsigned int *)((char *)ptr + 2 * idx))`, which bypasses type safety and makes the code prone to errors.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments in the decompiled output, leaving complex logic and symbolic artifacts unexplained.
+
+**13. Idiom Recognition:** Score: 2/10
+Justification: Common patterns like linked list traversal or heap allocation are present but not recognized or abstracted; they remain as raw pointer manipulations and loops.
+
+**14. Anomaly Indication:** Score: 2/10
+Justification: The code silently presents symbolic execution artifacts (like `armg_calculate_condition`) as valid C code without flagging them as anomalies or uncertainties, misleading the user.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the null checks in `heap_basic` are not explicitly highlighted as safety contracts.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10
+Justification: External function calls and global variable accesses are visible, but the relationship between functions is obscured by the noise and lack of context.
+
+**17. Module Organization:** Score: 5/10
+Justification: Functions are listed in a linear order roughly corresponding to the binary, but there is no logical grouping or separation of concerns (e.g., stack vs. heap operations).
+
+**18. Build System Compatibility:** Score: 1/10
+Justification: The code will not compile because it references undefined internal functions like `armg_calculate_condition` and variables like `vvar_4`.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.7/10
+
+**Critical Defects:**
+- **Symbolic Artifacts:** The code is polluted with `armg_calculate_condition` and `vvar_4`, making it non-compilable and unreadable.
+- **Control Flow:** Excessive use of `goto` and labels instead of structured loops (`for`, `while`).
+- **Variable Naming:** Generic names (`v0`, `v1`) and loss of struct field semantics (`field_0`, `field_4`).
+- **Type Precision:** Overuse of `unsigned int` and `void*` obscures the original data types.
+- **Noise:** Lack of comments or explanation for magic numbers and complex pointer arithmetic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 7/10)
+- **Why?** The decompiler successfully preserved the names of high-level user-defined functions (e.g., `local_vars`, `heap_basic`), which helps identify the general purpose of the code blocks despite the internal mess.
+
+**Most Needs Improvement:** Noise Reduction (scored 1/10)
+- **Why?** The presence of symbolic execution engine artifacts (`armg_calculate_condition`) is the single biggest barrier to readability, rendering the output useless as C source code.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1.  **Remove Symbolic Artifacts:** Implement a post-processing pass to strip out internal symbolic execution calls (like `armg_calculate_condition`) and replace them with the resolved concrete conditions or standard C boolean logic.
+2.  **Structured Control Flow Recovery:** Enhance the control flow graph analysis to convert `goto`-heavy patterns and backward jumps into standard `for`, `while`, and `do-while` loops.
+3.  **Type Inference Enhancement:** Improve type recovery to distinguish between `int` and `unsigned int` where appropriate and recover struct field names from debug symbols or standard library layouts (e.g., `Node` struct fields).

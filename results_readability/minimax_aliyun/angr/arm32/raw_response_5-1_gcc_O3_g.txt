@@ -1,0 +1,96 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are almost exclusively generic names like `v0`, `v1`, `v2`, `v3`, `ptr`, `result`, `cur`. The original source had meaningful names like `value`, `name`, `data`, `size`, `multiplier`, `capture_by_value` - all lost in decompilation. Even struct field names are generic (`field_0`, `field_4`).
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Mixed results - some functions correctly demangled (`test_cpp_member_func`, `call_virtual_func`, `template_max<int>`) but many use generic addresses (`sub_1092c`, `sub_10b90`) or mangled names (`_Z18test_cpp_exceptionv`). The original source had clear, descriptive function names that are inconsistently recovered.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation: `42` (exception value), `0x21e98` (type info), `71348`, `71368` (RTTI type info). Expected values like `4700`, `21`, `42` appear in printf but aren't named as constants. The `31` in strncpy is unexplained (should be buffer size constant).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: excessive `goto` statements, stack_chk_guard checks visible, redundant register manipulations, computed goto `goto *((int *)*((int *)arg_0))` for vtable dispatch. Many functions are empty stubs with just `return;`. At -O0, this noise should be minimal.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Highly unnatural flow with many `goto` statements and labels (`LABEL_10a90`, `LABEL_10e25`, etc.). Computed goto for virtual dispatch instead of proper virtual call syntax. Some functions like `test_cpp_constructor` are completely empty. At -O0, control flow should closely match source.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are preserved but many are empty stubs (`test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_lambda` all just `return;`). Template functions properly extracted. The original had 12 test functions plus many class methods - decomposition exists but many implementations are missing.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Poor linearity with frequent goto jumps disrupting flow. The `test_cpp_exception` function has complex branching with multiple labels. Forward jumps visible throughout. Code does not read top-to-bottom naturally.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundancy visible - stack_chk_guard checks repeated in multiple functions. Template instantiations called multiple times. No dead code elimination attempted. Moderate redundancy from optimizations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - almost everything is `unsigned int` or `void*`. No `int32_t`, `size_t`, or specific pointer types. Parameters use generic `unsigned int` instead of proper types. The original had `int`, `size_t`, `bool`, `char*` - all lost.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Poor struct recovery - only `struct_0` and `struct_1` with generic fields (`field_0`, `field_4`). Class definitions like `class Base {}` are empty with no members. The original had `SimpleClass` with `value`, `name[32]`, `LifecycleClass` with `data`, `size` - all lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Multiple unsafe operations: raw pointer arithmetic `*(ptr)`, cast-heavy code `(int)(*(ptr))[4]`, no bounds checking in container access. Function pointers handled unsafely. Significant risk of undefined behavior.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments present. Only function headers and extern declarations. No explanation of logic, algorithm, or intent. Original source had extensive Chinese comments explaining each feature - completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No design patterns or C++ idioms identified. Virtual function calls shown as computed goto instead of polymorphic dispatch. Templates shown as regular functions. Smart pointers not recognized. Lambdas completely absent.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of uncertain or anomalous areas. Empty functions presented confidently. Indirect calls not flagged. The decompiler presents all code with equal confidence regardless of resolution quality.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No bounds checking annotations. No null-pointer requirement indicators. Original source had none to recover, but decompiler could add common C++ contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. No indication of who calls whom. Virtual dispatch relationships unclear. Some extern declarations show dependencies but no call graph.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions listed in address order, not logically grouped. Original grouped by feature (member_func, constructor, virtual_func, etc.). No namespace or class grouping. Arbitrary ordering makes understanding relationships difficult.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has extern declarations but no clear dependency documentation. Would require significant patching to compile. Missing standard library includes. No build instructions or dependency list.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.3/10
+
+### Critical Defects (Bullet List)
+- **Variable naming**: All variables use generic names (`v0`, `v1`, `ptr`, `result`) losing semantic meaning from original (`value`, `name`, `data`, `size`)
+- **Empty function stubs**: Many test functions (`test_cpp_constructor`, `test_cpp_virtual_func`, `test_cpp_lambda`) are completely empty with just `return;`
+- **Type precision**: Everything degraded to `unsigned int` or `void*` - original `int`, `size_t`, `bool` types lost
+- **Struct recovery**: No struct field names recovered - `struct_0`, `struct_1` with generic `field_0`, `field_4`
+- **Control flow**: Excessive `goto` statements and computed gotos instead of natural loops/conditionals
+
+### Best Quality Aspect: Function Decomposition (5/10)
+- Template functions properly extracted as separate functions (`template_max<int>`, `template_swap<int>`)
+- Class methods kept with class scope notation
+- Most original functions preserved even if empty
+
+### Most Needs Improvement: Semantic Transparency (2.0/10)
+- No comments explaining any logic
+- No design pattern recognition (virtual dispatch, RAII, templates)
+- No anomaly indication for uncertain decompilation
+- Code presented as confident when many functions are empty stubs
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Variable name inference**: Analyze usage patterns to infer semantic names (e.g., `v0` used in strncpy should be `name` buffer)
+2. **Empty function handling**: Flag functions that are empty stubs with explanation (likely optimized out or inlined)
+3. **Type precision recovery**: Use debug symbols and vtable analysis to recover precise types instead of defaulting to `unsigned int`
+4. **Control flow naturalization**: Convert computed gotos back to virtual dispatch syntax; use proper loop constructs
+5. **Comment generation**: Add auto-generated comments explaining what each function does based on analysis

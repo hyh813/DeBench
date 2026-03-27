@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables are named with generic patterns like `v0`, `v1`, `v2`, `ptr`, `result`. In `test_cpp_member_func()`, the variables should be `r1`, `r2`, `r3` to match source, but instead use `v0`, `v1`, `v2`. The name `v3` is used for the object itself (`SimpleClass`), losing the semantic meaning of `obj`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions are correctly named (`test_cpp_member_func`, `test_cpp_constructor`, etc.), and member functions are properly recovered (`SimpleClass::getValue`, `LifecycleClass::getData`). However, many internal functions use generic names like `sub_402020`, `sub_40202d` with no semantic value.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear throughout without explanation. In `test_cpp_constructor`, the value `5` (array size) and `2` (index) are unexplained. The constant `65535` in `__static_initialization_and_destruction_0` appears without comment. The value `40` used in stack canary checks (`*((long long *)(40 + ptr))`) is completely opaque.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Many empty stub functions present (e.g., `sub_4023b5`, `sub_402d90`). Redundant register variable declarations clutter the output (e.g., `unsigned long v5; // rdi` in `test_cpp_member_func`). Some functions have incomplete parameter lists with unused register annotations.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control structures (if-else, loops) are correctly recovered. However, in `test_cpp_exception`, the exception handling logic is convoluted with direct `__cxa_throw` calls instead of try-catch blocks. At `-O0`, this should be more readable.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are extracted but with excessive granularity - many tiny wrapper functions exist. Some functions like `test_cpp_member_func` are 80+ lines with mixed responsibilities. The decompiler didn't recover the inline template instantiations as part of their calling functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately. Some forward jumps exist in exception handling code but are manageable.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant code patterns visible, particularly in template instantiations where similar code is repeated. The `Container<int>` and `Container<double>` instantiations have separate but similar implementations. Dead code is minimal.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed type precision - uses `unsigned int`, `unsigned long`, `unsigned long long` inconsistently. In `test_cpp_member_func`, the return type is `void` instead of `int`, losing the function's return value semantics. The `result` variable in `test_cpp_operator_overload` is `char` instead of `bool`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Some struct recovery exists - `struct_0` for SimpleClass with `field_0`, `field_23`, and padding. However, field names are generic. The `LifecycleClass` struct is not recovered; instead uses raw pointer arithmetic. The `Container` template class has partial struct recovery with `field_28`/`field_50` for size.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe operations present. In `test_cpp_virtual_func`, the virtual call `(*((long long *)*((long long *)&arg_0)))(arg_0, arg_1, arg_1, *((long long *)*((long long *)&arg_0)))` is convoluted. Pointer arithmetic like `v1 * 4 + *(v2)` in `Container::get` is error-prone. Many casts between `void*` and typed pointers.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments explaining logic. The only comments are auto-generated (e.g., `// rdi`, `// [bp-0x8]`). No explanation of algorithm intent, no documentation of preconditions/postconditions. The comment `/* do not return */` appears but is auto-generated.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are implicitly recognized - virtual function calls through vtable, operator overloads (`Point::operator+`, `Point::operator==`), template instantiations. However, these are not explicitly named or documented as patterns. The RAII pattern in smart pointers is visible but not identified.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomalies are flagged. The decompiled code presents indirect virtual calls as resolved when they're actually indirected through vtable. No warnings about uncertain calls or potential undefined behavior. The code confidently presents potentially incorrect information.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No contracts, preconditions, or postconditions are recovered. No documentation of requirements (e.g., "requires: ptr != NULL") or guarantees (e.g., "ensures: return is heap-allocated"). Error conditions are not documented.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships aren't documented. No indication of who calls whom. Virtual dispatch relationships aren't explicitly marked. The callback relationship in lambda expressions is obscured.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions are organized by address (sub_402020, sub_40202d, etc.) rather than logically. Related functions (all SimpleClass methods) are scattered. No namespace or class grouping is visually indicated.
+
+**18. Build System Compatibility:** Score: 2/10  
+Justification: Code has many compilation issues - missing extern declarations for standard library functions, incomplete type definitions, undefined references to global variables like `g_408fe8`. Won't compile as standalone. Dependencies on libstdc++ are not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.8/10
+
+**Critical Defects:**
+- Variable names are entirely generic (`v0`, `v1`, `v2`, `ptr`, `result`) - should reflect semantic purpose like `r1`, `r2`, `obj`, `size`
+- `test_cpp_member_func` returns `void` instead of `int`, losing the function's return value that the source computes as 4704
+- No comments explaining any logic - reader must infer all intent from raw code
+- Exception handling is decompiled as direct `__cxa_throw` calls rather than try-catch blocks
+- No struct field names recovered - all use generic `field_0`, `field_1`, etc.
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+The test functions and class member functions are correctly named, matching the source almost exactly. This is the strongest area.
+
+**Most Needs Improvement:** Anomaly Indication & Assertion Recovery (both 1/10)  
+The decompiler provides no warnings about uncertain calls, doesn't flag potential issues, and recovers no contracts or assertions. This leaves analysts without critical context for understanding code behavior.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns** - `v0` used in arithmetic with `v1` and `v2` should be named `r1`, `r2`, `r3` based on the source's pattern of result variables
+2. **Recover try-catch blocks from exception handling** - The `__cxa_throw`/`__cxa_begin_catch` sequences should be reconstructed into try-catch syntax
+3. **Add struct field name recovery** - Use type information and field access patterns to name fields like `field_0` → `value`, `field_28` → `size`

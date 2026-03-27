@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `iVar1`, `uVar2`) instead of semantic names like `a`, `b`, `c`, `sum`, `count` from original source. No variable indicates purpose or type intent.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`sequential_ops`, `single_if`, `nested_if_deep`), but helper functions have generic names (`FUN_00100940`, `FUN_0010167c`). Good recovery of test function names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout (`0x3e9`, `0x65`, `0x14`, `0x2d`) without explanation. Test functions hardcode expected values instead of calling actual functions, obscuring test intent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`___stack_chk_guard`) present in most functions. External function wrappers (`_setjmp`, `__libc_start_main`) call themselves redundantly. Excessive local variables for stack operations.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions recovered well (`sequential_ops` as single expression), but loops converted to `do-while` instead of `for`. Switch statements converted to if-else chains or jump table lookups. `duffs_device` has excessive goto labels.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved but test functions have excessive local variables (20+ stack variables). Helper functions (`op_add`, `op_sub`) properly extracted. `fsm_func_table` has unreasonable local variable count.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom but `duffs_device` and `fsm_func_table` have many goto labels disrupting flow. Test functions have inline array initialization instead of function calls.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions duplicate array initialization code multiple times. `fsm_func_table` and `computed_goto` have extensive repeated byte-copy patterns. Stack protection code duplicated in every function.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `char`, `switch_small` returns `undefined4`. Many `undefined4`/`undefined8` types instead of proper `int`. Function pointers use generic `code *`.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Limited structs in sample. Arrays handled as pointer arithmetic. `jmp_buf` referenced but not properly typed. Function pointer arrays present but with generic element types.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts visible (`(ulong)`, `(int)`, `(undefined *)`). Signed/unsigned confusion (`uint` vs `int` in `op_shl`). Stack canary checks present but function pointer calls lack proper signatures.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: ZERO comments in decompiled code. Original had extensive comments explaining each function's purpose, test cases, and expected behavior. Only header comment about BinaryAI and SHA256 hash.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified. State machine pattern in `state_machine` not recognized. Duff's device not identified as such. Loop patterns not commented. No algorithm names recovered.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: `UNRECOVERED_JUMPTABLE` appears in `call_func_ptr` and `conditional_func_ptr` showing some anomaly detection. However, no detailed explanations of what couldn't be recovered or why.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions inferred. Original test validation comments completely lost. Error conditions not documented.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`jump_buffer`, `completed_0`) used without explanation. Callback relationships in `process_with_callback` not documented.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single output file. Original section comments (`// === Control Flow Level 1 ===`) completely lost. Static functions not properly scoped. No header file declarations.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Metadata indicates compilation succeeds. External dependencies visible (`__printf_chk`, `__stack_chk_fail`). Would need stubs for external functions and stack protection runtime.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+6+6+5)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (4+5+5)/3   = 4.67 × 0.20 = 0.933
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00 × 0.15 = 0.450
+Level 5 (Context):     (5+4+6)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.75/10
+```
+
+**Overall Readability Score:** 4.75/10
+
+### Critical Defects:
+- **Zero comments** - Original had extensive documentation explaining each function's purpose and test cases; decompiled code has none
+- **Generic variable names** - `param_1`, `iVar1`, `uVar2` obscure semantic meaning (should be `a`, `b`, `sum`, `count`)
+- **Type degradation** - `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `char`, many `undefined4/8` types
+- **Test function corruption** - `test_control_flow_l1` hardcodes expected values instead of calling actual functions, breaking test semantics
+- **Excessive stack variables** - `fsm_func_table` and `computed_goto` have 30+ local variables for byte copying instead of `memcpy`
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Most original function names were preserved (`sequential_ops`, `nested_if_deep`, `duffs_device`), making function identification straightforward.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of comments loses all semantic context from original source, making understanding intent nearly impossible without comparing to original.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from debug symbols** - With `-g` flag compilation, original variable names (`a`, `b`, `c`, `sum`, `count`) should be recoverable from DWARF debug info
+2. **Preserve test function semantics** - Test functions should call actual functions with parameters, not hardcode expected return values
+3. **Add decompiler confidence annotations** - Mark uncertain recoveries (e.g., `// DECOMPILER: type inferred, may be incorrect`) and document unrecoverable patterns

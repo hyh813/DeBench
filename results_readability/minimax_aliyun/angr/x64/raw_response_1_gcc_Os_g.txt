@@ -1,0 +1,122 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Nearly all variables use generic names like `a0`, `a1`, `a2` for parameters and `v1`, `v2`, `v3` for locals. The original source used meaningful names like `temp1`, `temp2`, `sum`, `count`, `i`, `j`. Only loop iterators like `i` and `j` are preserved. This is a severe degradation making it nearly impossible to track variable purpose without analyzing every usage.
+
+### 2. Function Naming Quality
+**Score: 9/10**
+Justification: Nearly all function names perfectly match the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `nested_if_deep`, `loop_for_fixed`, `loop_while`, `goto_forward`, `goto_backward`, `ternary_op`, `recursion_factorial`, `duffs_device`, etc. The decompiler correctly recovered all 40+ function names. Minor deduction for some helper functions being unnamed.
+
+### 3. Literal Clarity
+**Score: 3/10**
+Justification: Multiple unexplained magic numbers appear throughout: `4294967295` (representing -1 as unsigned), `85899345930` and `171798691870` (encoding array {10,20,30,40,50}), `34359738375` (loop bound). The original source had clear literals like `10, 20, 30, 40, 50` in arrays. No constants or enums recovered. The `CONCAT` operator appearing in arithmetic operations adds further obfuscation.
+
+### 4. Noise Reduction
+**Score: 3/10**
+Justification: Significant noise from the decompilation process. The `CONCAT` operator appears repeatedly (e.g., `(a0 >> 31 CONCAT a0) / 10`) making division/modulo operations nearly unreadable. Many `extern` declarations for undefined symbols like `g_405fe8`, `g_403004`, `CSWTCH.55`. Some unused variables and frame pointer manipulations present. The code is 31% larger than source (1277 vs 961 LOC) partly due to these artifacts.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 6/10**
+Justification: Most control flow structures are correctly recovered - if/else, switches, for/while loops. However, `loop_while` is rendered as a for-loop, `loop_break` uses manual pointer arithmetic instead of array syntax, and `goto_backward` uses do-while with goto instead of proper loop. The `call_func_ptr` uses goto as computed goto which is non-idiomatic. At -O0, these transformations are unexpected.
+
+### 6. Function Decomposition
+**Score: 8/10**
+Justification: Each source function is correctly separated in the decompiled output. Function sizes are appropriate (no 500-line monoliths). Test wrapper functions (`test_control_flow_l1/2/3`) are properly isolated. Minor issue: some static helper functions like `double_value`, `triple_value` could be better organized.
+
+### 7. Code Linearization
+**Score: 7/10**
+Justification: Most functions read top-to-bottom without excessive jumps. Early returns are preserved. Some forward jumps exist in switch statements but are manageable. The `switch_fallthrough` has some gotos that disrupt linear flow. Overall reasonable given the complexity of some patterns.
+
+### 8. Redundancy Elimination
+**Score: 5/10**
+Justification: Some redundant computations present. In `loop_for_fixed`, variable `i` is used both as loop counter and for comparison. The `loop_while` has complex expression `(i >> 31 CONCAT i) / 10` repeated. Dead code is minimal but the `CONCAT` operations create visual redundancy. Loop unrolling is not excessive.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+Justification: Most parameters use `unsigned int` or `unsigned long long` when original used signed `int`. The original had `int` parameters but decompiler consistently uses unsigned types. Function pointers are properly typed as function pointers rather than void*. However, the signed/unsigned mismatch could cause issues when analyzing the code. No `const` correctness recovered.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+Justification: Only one struct `struct_0` is defined and it's unused. The original source had arrays like `int arr[] = {10, 20, 30, 40, 50}` and `int matrix[3][4]` which are not recovered as arrays - instead they're reconstructed as scattered variables (`v0 = 85899345930`). No struct recovery for any of the original code. This is a major deficiency.
+
+### 11. Type Safety
+**Score: 5/10**
+Justification: Several type safety issues exist. The `call_func_ptr` uses goto to transfer control to a function pointer - this is dangerous and non-standard. The `loop_break` function manually computes array offsets (`*((int *)((char *)&v0 + 4 * v4))`) which is error-prone. Some pointer arithmetic without bounds checking. However, no obvious buffer overflows or undefined behavior patterns are present.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+Justification: Almost no comments present in the decompiled code. The original source had extensive comments explaining each function's purpose, test scenarios, and difficulty ratings. Zero recovery of these comments. No explanation of algorithm logic, no @param/@return documentation. Only auto-generated function signatures.
+
+### 13. Idiom Recognition
+**Score: 7/10**
+Justification: The decompiler correctly identifies many idioms: switch statements (including fallthrough), for/while loops, ternary operators, if-else chains. Duff's device is partially recognized (the switch statement structure). State machine patterns in `state_machine` and `fsm_func_table` are identifiable. However, the computed goto pattern in `call_func_ptr` is not recognized as a callback pattern.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+Justification: No flags or warnings for suspicious code. The `call_func_ptr` using goto is not flagged as unusual. The `duffs_device` function has incomplete decompilation (ends abruptly with just `v3 = a2 + 7 >> 3;`) but no indication of the problem. No warnings about indirect calls that couldn't be resolved. The decompiler presents all code with equal confidence regardless of accuracy.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+Justification: No recovery of preconditions, postconditions, or invariants. The original source had implicit contracts (e.g., "n must be > 0" for duffs_device, "ptr != NULL" checks). None of this semantic information is recovered. No documentation of error conditions or return value meanings.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function calls are clearly visible (e.g., `test_control_flow_l1()` calls `puts`, `loop_for_fixed`). Global variable usage is indicated with `extern` declarations. However, the relationships between functions (who calls whom) are not explicitly documented. The callback relationships in `process_with_callback` are somewhat obscured by the function pointer syntax.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are grouped logically - initialization functions first, then test functions, then the various control flow test functions in order. Static helper functions are placed near their usage. However, there's no clear separation into "modules" or files as the original might have had. The organization is mostly alphabetical by address.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+Justification: The code will not compile as-is. Many undefined extern symbols: `g_405fe8`, `g_403004`, `g_403271`, `g_403464`, `CSWTCH.55`, `g_406020`, `jump_buffer`. The `call_func_ptr` function using goto to a function pointer is not valid C. Some functions like `duffs_device` are incomplete. Requires significant patching to compile.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 9 + 3 + 3) / 4 = 4.25
+L2_avg = (6 + 8 + 7 + 5) / 4 = 6.50
+L3_avg = (5 + 2 + 5) / 3 = 4.00
+L4_avg = (1 + 7 + 2 + 1) / 4 = 2.75
+L5_avg = (6 + 7 + 4) / 3 = 5.67
+
+Overall = (4.25 × 0.30) + (6.50 × 0.25) + (4.00 × 0.20) + 
+          (2.75 × 0.15) + (5.67 × 0.10)
+        = 1.275 + 1.625 + 0.80 + 0.4125 + 0.567
+        = 4.68/10
+```
+
+### Overall Readability Score: 4.68/10
+
+### Critical Defects
+- **Variable naming**: All parameters use generic `a0`, `a1`, `a2` and locals use `v1`, `v2`, `v3` - completely losing semantic meaning from original `temp1`, `sum`, `count`, etc.
+- **No comments**: Zero recovery of the extensive documentation from original source explaining each function's purpose and test scenarios
+- **Composite type loss**: Arrays like `{10,20,30,40,50}` are reconstructed as magic numbers (`85899345930`) instead of proper array literals
+- **Type precision**: Original `int` parameters become `unsigned int`, losing sign semantics
+- **Incomplete functions**: `duffs_device` and some test functions are truncated or malformed
+
+### Best Quality Aspect
+**Function Naming Quality (9/10)** - The decompiler almost perfectly recovered all 40+ function names from the original source, including test functions and helper utilities. This is the standout success.
+
+### Most Needs Improvement
+**Comment Quality & Presence (1/10)** - The original source had extensive comments explaining control flow patterns, test scenarios, and difficulty ratings. Zero recovery of this documentation severely impacts understandability.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `temp1 = a + b; temp2 = temp1 * 2`) to suggest meaningful names like `sum`, `product`
+2. **Recover array literals**: Instead of encoding arrays as magic numbers (`85899345930`), detect sequential memory patterns and reconstruct as `{10, 20, 30, 40, 50}`
+3. **Add semantic comments**: When recovering test functions with known outputs, add comments like `// Expected: 21 (sequential_ops(5,7,3))` to aid analysis

@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `param_2`, `local_c`, `local_10`) with no semantic meaning. Original source had descriptive names like `temp1`, `sum`, `count`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`sequential_ops`, `single_if`, `nested_if_deep`). Some helper functions have generic names (`FUN_00101020`) but core test functions retain original names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers in hex notation (`0xffffffff` for -1, `0x3e9` for 1001, `0x65` for 101) obscure meaning. Original used clear decimal constants. Some return values (0-5 in `nested_if_deep`) remain clear.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail()`) appear in many functions despite -O0 compilation. Redundant type casts (`(ulong)`, `(int)`) add visual noise throughout.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control structures recovered well (for/while/do-while loops). However, `switch_fallthrough` uses goto labels instead of proper fall-through, and `switch_small` has awkward goto structure instead of clean switch-case.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity matches original source well. Each test function remains separate with appropriate size. No excessive inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `switch_fallthrough` and `switch_small` use goto labels that disrupt flow. Stack canary checks at function ends create non-linear return paths.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary code repeated identically across 20+ functions. Redundant type casts (`(ulong)uVar1`) appear in every printf call. No dead code but significant repetition.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Critical type errors: `if_else` returns `bool` instead of `int`, `nested_if_deep` returns `undefined8` instead of `int`. Many parameters use `undefined4`/`undefined8` instead of precise `int32_t`/`int64_t`.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays recovered as individual locals (`local_28[4]`) in some cases. Function pointer arrays recovered but with generic `code*` types. No struct/union issues as original used primitives.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts throughout (`(ulong)`, `(int)`, `(long)`). Function pointer calls use generic `code*` type. Parameter type mismatches (`uint param_1` vs `int` in original) create potential issues.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled output. Original source had extensive documentation explaining each function's purpose, test cases, and difficulty level. No decompilation confidence indicators present.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Duff's device recovered with switch-case structure showing pattern recognition. State machine patterns (`state_machine`, `fsm_func_table`) not explicitly identified. No algorithm pattern naming.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**14. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls preserved with original names. Global variables referenced correctly (`jump_buffer`). Callback relationships visible through code structure but not explicitly documented.
+
+**15. Module Organization:** Score: 6/10  
+Justification: All functions in single output file. No header file separation. External functions marked `<EXTERNAL>` but no API documentation. Static functions not properly scoped.
+
+**16. Build System Compatibility:** Score: 7/10  
+Justification: Code compiles successfully per metadata. External dependencies declared (printf, puts, _setjmp, longjmp). Some GCC-specific constructs (computed goto) may limit portability.
+
+**17. Anomaly Indication:** Score: 4/10  
+Justification: No anomaly warnings for computed goto or indirect calls. `computed_goto` handled but not flagged as unusual compiler extension. Silent handling of potential issues.
+
+**18. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `n > 0` for `duffs_device`). No postconditions inferred. Error conditions not documented despite multiple return paths.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+8+6+6)/4 = 6.75 × 0.25 = 1.688
+Level 3 (Type):        (4+6+5)/3   = 5.00 × 0.20 = 1.000
+Level 4 (Semantic):    (2+5)/2     = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (7+6+7+4+3)/5 = 5.40 × 0.10 = 0.540
+
+Overall Score: 5.33/10
+```
+
+### Overall Readability Score: **5.3/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`param_1`, `local_c`) losing all semantic meaning from original (`temp1`, `sum`, `count`)
+- **Type precision degraded** - `if_else` returns `bool` instead of `int`, many functions return `undefined8`
+- **Zero comments** despite original having extensive documentation for each function's purpose and test cases
+- **Stack canary noise** in every function despite -O0 debug compilation (should be minimal)
+- **Hex literals** (`0xffffffff`, `0x3e9`) instead of clear decimal values from original source
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Core function names preserved accurately from original source, maintaining semantic identity across decompilation.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of documentation despite original having extensive comments explaining purpose, test cases, and difficulty levels for each function.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement variable name inference** from usage patterns (e.g., `local_c` used as counter should be `count` or `i`)
+2. **Add decompilation confidence comments** indicating recovered structures vs. uncertain analysis (especially for switch fall-through, computed goto)
+3. **Preserve original type signatures** more accurately - avoid `undefined8` when `int` is clearly intended from context and return value usage

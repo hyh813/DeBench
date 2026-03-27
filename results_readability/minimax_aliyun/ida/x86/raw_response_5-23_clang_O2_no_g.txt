@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Function parameters use generic names like `a1`, `a2`, `a3` instead of semantic names like `size`, `x`, `y`. Local variables are `result`, `i`, `v2`, `v3` - completely generic. For example, `param_macro_constants(int a1)` should have `size` as parameter name based on usage pattern `if (a1 >= 1025)`.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names perfectly match the original source: `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `param_asm_clobber`, `param_dynamic_code`, `param_memory_protection`. The decompiler preserved the semantic naming from the source code.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are correct but lack semantic meaning. The value `57072` in `param_multi_branch_compile` should be annotated as `0xDEF0`. The return value `19` in `param_stringize` is correct but doesn't reflect it's computing string lengths. Magic numbers like `30` (for sysconf _SC_PAGESIZE) are unexplained.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts present. Some type cast noise like `LODWORD(v15) = 5;` and unusual constructs in `call_asm_clobber` with `__int128 v2` for array handling, but overall clean code without excessive register spilling or debug instrumentation.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most control flow is natural - simple if-else in `param_macro_constants`, for loops in `param_asm_clobber`, while loops in `param_asm_multi_insn`. However, `call_asm_multi_insn` uses obfuscated bit manipulation `!(LOBYTE(v2[0]) ^ 0x48 | BYTE4(v2[0]) ^ 0x6F)` to check string prefix "He" instead of using `strncmp` or similar idiom.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Good decomposition maintained from source. Each test function (`call_macro_constants`, `call_asm_basic`, etc.) remains separate. Helper functions like `my_func` preserved as static. Function sizes are appropriate - no monolithic functions created.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom with minimal forward jumps. Early returns used appropriately in error handling (e.g., `param_dynamic_code` returns -1 on mmap failure). No excessive nesting or computed jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundancy in `call_asm_clobber` where array initialization `v2 = xmmword_231C` is followed by manual loop summation. Loop unrolling is minimal. No significant dead code observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are appropriate - `size_t len` for memory sizes, `volatile signed __int32 *` for atomic operations, `__m128i` for SIMD. However, `char *a2` in `param_asm_multi_insn` should be `const char*` to match source. Generic `int` used for most parameters but acceptable for 32-bit compatibility.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: No complex structs in the source code to recover. Simple types used throughout. The decompiler correctly avoided creating fake struct definitions where none exist. Arrays accessed via pointer arithmetic `*(_DWORD *)(a1 + 4 * i)` which is appropriate.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Pointer arithmetic in array access is correct. Minor issue: `param_asm_multi_insn` takes `char *a2` instead of `const char *a2`. No unsafe casts observed. Atomic operations use proper volatile-qualified types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No useful comments in the decompiled code. Only the header indicates decompilation by IDA Pro. No explanation of algorithm logic, no recovery of macro semantics, no indication of uncertainty. The preprocessing feature recovery (e.g., macro expansion) is not documented.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some idioms recognized - atomic operations use `_InterlockedExchangeAdd`, SIMD uses proper intrinsics `_mm_add_epi32`. However, the string prefix check in `call_asm_multi_insn` using bit manipulation is not recognized as a string comparison idiom. The LOG macro expansion is not identified as such.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: The decompiler correctly indicates "FAILED to decompile" for 8 functions including `__libc_start_main`, `mprotect`, `printf`, `sysconf`, etc. This is appropriate. However, no warnings about indirect calls or unusual stack layouts in the successfully decompiled functions.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Error return values (-1, -2, -3 in `param_memory_protection`) are not explained. The contract of mmap (returns -1 on failure) is not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: No cross-reference information present. No indication of which functions call which, no documentation of global variable usage (`global_var` in `param_memory_clobber_demo`), no callback relationships shown.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in some logical order (preprocessing functions first, then asm functions, then test functions) but not clearly grouped by module. Static functions like `my_func` are placed arbitrarily. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The metadata indicates "Compilation Result: Yes" - the code compiles successfully. External dependencies (printf, mmap, sysconf, mprotect) are implicitly available through standard library. Minor issues with some constructs but overall compilable.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.8/10
+
+**Critical Defects:**
+- Variable naming is completely generic (`a1`, `a2`, `a3`, `result`, `v2`, `v3`) making it difficult to track semantic purpose
+- No comments explaining recovered macro semantics or preprocessing transformations
+- The string comparison in `call_asm_multi_insn` uses obfuscated bit manipulation instead of recognizable string idiom
+- Magic number `57072` (should be `0xDEF0`) is unexplained
+- No cross-reference documentation showing function call relationships
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)  
+Function names are almost perfectly preserved from the original source, making it easy to identify the purpose of each function.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+The decompiled code has zero useful comments. Given this is a preprocessing and inline assembly test suite, the decompiler should document: (1) which macros were expanded, (2) what inline assembly does, (3) the semantic meaning of computed constants.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Parameter `a1` used in `if (a1 >= 1025)` should be named `size`; variable `result` accumulating array elements should be `sum`
+2. **Add semantic comments for macro expansion**: Document that `param_macro_constants` returns computed values from expanded macros (512 from MAX_SIZE/2, 64 from BUFFER_COUNT*4)
+3. **Recognize and name idioms**: The string prefix check `!(LOBYTE(v2[0]) ^ 0x48 | BYTE4(v2[0]) ^ 0x6F)` should be commented as "check if string starts with 'He'" or better, use `strncmp` semantics

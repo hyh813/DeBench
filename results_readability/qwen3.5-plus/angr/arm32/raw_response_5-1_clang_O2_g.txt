@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`v0`, `v1`, `v2`, `ptr`, `result`, `flag1`) with no semantic meaning. For example, `v0 = 10` in `test_cpp_member_func` should be `value` based on source context.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Functions retain mangled names (`_Z20test_cpp_member_funcv`) which is better than `sub_400854`, but most function bodies are empty (`return;`) despite containing substantial logic in source.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers appear throughout (42, 100, 200, 4700) without explanation. Printf format strings reference opaque globals (`&g_4011f5`) instead of readable strings.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Significant compiler artifacts including `armg_calculate_condition` calls, register save patterns (`v12 = v13; v11 = v14;`), and goto labels (`LABEL_400c6a`) obscure logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 2/10  
+Justification: Excessive goto usage throughout, `armg_calculate_condition` obscures simple conditionals, and most test functions are just `return;` losing all original control flow.
+
+**6. Function Decomposition:** Score: 3/10  
+Justification: Most test functions are empty shells despite 20-50 lines of source logic. Class methods use `void* this` pointers instead of proper object representation.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Goto statements disrupt flow with forward/backward jumps. Register save prologues (`v4 = v5; v3 = v6; v2 = v7;`) interrupt readability at function start.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Register save patterns repeat identically across functions. `armg_calculate_condition` calls appear duplicated in exception handling code without simplification.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 2/10  
+Justification: Heavy reliance on `void*`, `unsigned int`, and `char*` instead of proper C++ types. Class members accessed through offset arithmetic (`ptr[40]`) instead of typed fields.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Generic struct definitions (`struct_0`, `struct_1` with `field_4`) lose all semantic meaning. Original classes (`SimpleClass`, `LifecycleClass`) not recovered as proper types.
+
+**11. Type Safety:** Score: 2/10  
+Justification: Unsafe casts throughout (`(char *)ptr`, `(int *)ptr`), void* arithmetic, no const-correctness. `Container<int>::get` returns void instead of int.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments explaining logic, decompilation uncertainty, or algorithm purpose. No indication of what recovered code actually does.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns (RAII, virtual dispatch, templates) not recognized. Exception handling appears as raw `__cxa_*` calls without try/catch structure recovery.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about unresolved calls, uncertain decompilation, or potential issues. Broken functions (`template_max<double>`) presented confidently.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Function contracts completely absent despite complex C++ semantics.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 3/10  
+Justification: External references exist (`_ZTI8RTTIBase`, `g_411ed8`) but relationships unclear. Virtual dispatch not properly recovered as method calls.
+
+**17. Module Organization:** Score: 3/10  
+Justification: Functions appear in arbitrary order without logical grouping. No header file structure or namespace organization recovered.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Many undefined external globals (`g_4011f5`, `g_411ed8`), requires significant stubbing. `armg_calculate_condition` is decompiler-specific artifact.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+LEVEL 1 (Lexical):      (2+4+3+3)/4 = 3.0  × 0.30 = 0.90
+LEVEL 2 (Structural):   (2+3+3+4)/4 = 3.0  × 0.25 = 0.75
+LEVEL 3 (Type System):  (2+2+2)/3   = 2.0  × 0.20 = 0.40
+LEVEL 4 (Semantic):     (1+2+2+1)/4 = 1.5  × 0.15 = 0.225
+LEVEL 5 (Contextual):   (3+3+3)/3   = 3.0  × 0.10 = 0.30
+─────────────────────────────────────────────────────────
+OVERALL SCORE:                                  = 2.58/10
+```
+
+### Overall Readability Score: **2.6/10**
+
+### Critical Defects:
+- **9 of 12 test functions are completely empty** (`return;`) despite containing 20-50 lines of source logic each
+- **Variable names are entirely generic** (`v0`, `v1`, `ptr`) with no semantic recovery from usage patterns
+- **C++ class structures lost** - all objects represented as `void*` with offset arithmetic instead of proper types
+- **Exception handling unrecoverable** - raw `__cxa_*` calls with `armg_calculate_condition` obscuring try/catch logic
+- **Template instantiation broken** - `template_max<double>` returns nothing and has corrupted control flow
+
+### Best Quality Aspect: **Function Naming Quality (4/10)**
+- Mangled names (`_Z20test_cpp_member_funcv`) at least preserve original function identity, enabling manual correlation with source.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Zero explanatory comments despite massive semantic loss; even basic decompilation confidence indicators are absent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class structures from vtable layouts** - analyze virtual function tables to reconstruct proper class definitions with field names instead of `void*` arithmetic
+2. **Implement semantic variable naming** - use data flow analysis to infer names from usage patterns (e.g., variables used in size comparisons should be named `size`, `length`, `count`)
+3. **Add decompilation confidence annotations** - flag uncertain recoveries (empty functions, complex exception handling) with comments indicating manual review needed

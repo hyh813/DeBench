@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## Evaluation Summary
+
+After analyzing the decompiled code against the original source, I've identified significant issues, particularly with the `param_strcpy` function which has critical semantic errors.
+
+---
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v1`, `v2`, `str`, `result` throughout. The `param_strcpy` function declares `char * str;` which is uninitialized and used incorrectly. These names provide no semantic meaning about variable purpose (e.g., should be `dst_buffer`, `src_string`).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions retain original names (param_strcpy, call_strcpy, param_pthread_create). However, many internal wrapper functions use generic names like function_1040, function_1050. The naming is inconsistent between user functions and library wrappers.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers like `0x25f9`, `0x2706` appear as string offsets without explanation. The code uses `(int32_t)(char *)-1` for error returns instead of named constants. Constants like `42` for success are unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Address comments (// 0x1560) add clutter. Frame pointer manipulation is visible. Some redundant operations exist, though not severe. The decompilation includes many auto-generated wrapper functions that add noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic if/else and while loops are recognizable. However, some control flow is convoluted - e.g., param_pthread_join uses complex goto patterns (lab_0x2e25). At -O0, control flow should be more straightforward.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized (30-100 lines typically). Some functions like param_pthread_join are overly complex with 200+ lines. The decomposition is reasonable but not optimal.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Generally reads top-to-bottom but has forward jumps and complex nesting in places. The param_signal_handling function has deeply nested conditionals making flow hard to follow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Some redundant calculations visible (e.g., repeated strlen calls). No significant dead code elimination comments. Loop constructs could be better recognized.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Uses int32_t consistently but loses const correctness (param_strcpy has `char * src` instead of `const char * src`). Many pointers use generic char* instead of specific types. Function pointers have unclear signatures.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: The decompiler creates struct definitions with generic field names (e.g., struct ipc_perm has fields e0-e6). The original's meaningful struct names (like struct ThreadData) are lost, replaced with raw pointer arithmetic.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe operations present. In param_strcpy: `strcpy(src, str)` where `str` is uninitialized - this is a critical bug. Many int32_t casts that could overflow. Function pointer type confusion throughout.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only address comments (// 0x1560) and line references present. No explanation of algorithm logic, parameter purposes, or return value semantics. The critical bug in param_strcpy has no warning comment.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library functions (strcpy, strlen, pthread_create) are recognized and named correctly. Some patterns like mutex lock/unlock are identified. But no high-level pattern naming (e.g., "producer-consumer pattern").
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: The critical semantic error in param_strcpy (wrong argument order to strcpy) is not flagged. No indication of uninitialized variable usage. No warnings about potential undefined behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition recovery. No documentation of error handling expectations. The function contracts are completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls are visible but relationships aren't documented. No indication of which functions call which. Global variable usage is unclear.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically (test_standard_library_functions, test_system_calls, test_thread_concurrency). Static functions properly scoped. But the file is a single monolithic output.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Proper #include statements present. Function prototypes declared. Code should compile with minimal patching. Dependencies on libc are implicit but not documented.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- **param_strcpy is semantically incorrect**: Calls `strcpy(src, str)` with uninitialized `str` instead of `strcpy(dst, src)` - this is a critical decompilation failure
+- **Variable naming is unusable**: Generic names like `v1`, `v2`, `str` provide no semantic meaning
+- **Type safety violations**: Uninitialized variables used without warning, const correctness lost
+- **No anomaly indication**: The broken param_strcpy has no warning about potential issues
+- **Composite types lost**: Structs like ThreadData reduced to raw pointer arithmetic
+
+**Best Quality Aspect:** Function Naming Quality (7/10)  
+The main test functions retain their original names from the source, making them immediately recognizable.
+
+**Most Needs Improvement:** Anomaly Indication (2/10)  
+The decompiler fails to flag the critical semantic error in param_strcpy where the function logic is fundamentally wrong. This misleads analysts into thinking the code is correct when it produces undefined behavior.
+
+**Top 3 Recommendations:**
+1. **Fix parameter order inference**: The decompiler incorrectly swapped dst/src in strcpy call - verify argument roles from usage patterns
+2. **Add semantic warnings**: Flag uninitialized variables and suspicious function calls with // WARNING comments
+3. **Recover meaningful variable names**: Use data flow analysis to infer names like `dst_buffer` from strcpy(dst, ...) patterns

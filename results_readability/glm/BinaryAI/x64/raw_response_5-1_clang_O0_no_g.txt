@@ -1,0 +1,93 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10
+Justification: Variables are generic (`iVar1`, `local_30`, `param_1`) and class members are accessed via raw offsets (`*(int *)this`, `*(int *)(this + 4)`) rather than semantic names like `value` or `name`, significantly obscuring the object-oriented logic.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: Excellent recovery of mangled C++ symbols; function names like `SimpleClass::SimpleClass`, `test_cpp_virtual_func`, and `test_cpp_lambda()::$_1::operator()` accurately reflect the original source structure.
+
+**3. Literal Clarity:** Score: 7/10
+Justification: String literals ("Test", "Derived") are perfectly recovered, but magic numbers like `0x1f` (representing `sizeof(name)-1`) and `0x2a` (42) are used without the named constants or context found in the source.
+
+**4. Noise Reduction:** Score: 3/10
+Justification: The code is heavily polluted by expanded standard library template internals (e.g., `std::_Tuple_impl`, `std::_Head_base`, `__uniq_ptr_impl`), which bury the high-level logic of `std::unique_ptr` and `std::tuple` in low-level implementation details.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Most control flow is natural due to `-O0`, but exception handling logic in `test_cpp_exception` is broken; the decompiled function ends at `__cxa_throw` without showing the `catch` blocks or the return logic, failing to reconstruct the control flow.
+
+**6. Function Decomposition:** Score: 4/10
+Justification: High-level logic is fragmented into dozens of tiny template functions (e.g., `std::unique_ptr` construction spans 4-5 internal functions), making it difficult to follow the simple intent of "create a smart pointer" without jumping between definitions.
+
+**7. Code Linearization:** Score: 10/10
+Justification: The code reads linearly from top to bottom within functions, with no complex goto spaghetti or computed jumps disrupting the flow, which is expected for unoptimized code.
+
+**8. Redundancy Elimination:** Score: 10/10
+Justification: No loop unrolling or dead code artifacts are present; the code is clean of compiler optimizations that typically introduce redundancy.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10
+Justification: Basic types (`int`, `char *`, `bool`) are correct, but pointers are often generic (`undefined8`, `undefined4`) and class types are treated as raw memory blocks rather than structured objects, losing semantic type information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct/class fields are not recovered; member access is performed via pointer arithmetic (e.g., `*(int *)(this + 8)`) rather than field names (`this->multiplier`), effectively reducing C++ classes to raw byte arrays.
+
+**11. Type Safety:** Score: 8/10
+Justification: Inheritance casts (e.g., `(Base *)local_20`) are correctly applied, and there are no obviously dangerous or incorrect pointer casts that would lead to undefined behavior in the decompiled view.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are virtually no comments in the decompiled output; complex logic like vtable lookups, exception handling setup, or template metaprogramming is left unexplained.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Virtual function calls are presented as raw vtable dereferences (`(***(code ***)param_1)(param_1,param_2)`) rather than high-level virtual calls, and RAII patterns are obscured by the expanded template code.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler does not explicitly flag the missing control flow in `test_cpp_exception` or the complexity of the template expansions, presenting them as standard code.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants (e.g., array bounds checks in `Container::get`) are documented or highlighted.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 9/10
+Justification: Function calls are explicit and use the recovered mangled names (e.g., `SimpleClass::getValue(local_30)`), making the relationships between classes and methods very clear.
+
+**17. Module Organization:** Score: 6/10
+Justification: Functions are ordered by address, which intermixes user test functions with low-level standard library implementations, making it hard to locate the high-level logic amidst the noise.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on external symbols and specific compiler-generated types (`undefined8`) that would require significant patching and header definitions to compile standalone.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.1/10
+
+**Critical Defects:**
+- Class member access uses raw pointer offsets (`*(int *)(this + 4)`) instead of field names (`this->name`), destroying the object-oriented readability.
+- Standard library templates (`std::unique_ptr`, `std::tuple`) are fully expanded into dozens of internal functions, creating massive noise that obscures simple logic.
+- Exception handling control flow is broken in `test_cpp_exception`, showing only the `throw` and missing the `catch` blocks and return path.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- The decompiler successfully demangled all C++ symbols, perfectly preserving the original class and function names.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- The failure to reconstruct class structures and map member offsets to field names makes the code look like C pointer manipulation rather than C++.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Implement aggressive struct field recovery for `this` pointers in class methods to map offsets to semantic member names.
+2. Add a "Simplify STL" feature to collapse or hide standard library template implementations (like `std::tuple` internals) behind high-level abstractions.
+3. Improve exception handling recovery to merge landing pads and `try/catch` blocks into a single coherent control flow graph.

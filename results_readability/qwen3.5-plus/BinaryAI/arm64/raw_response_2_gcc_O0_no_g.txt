@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `local_8`, `uVar1`, `iVar3`) with zero semantic meaning. For example, `array_1d_stack` uses `local_8` for sum and `local_4` for loop counter instead of `sum` and `i`.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are well preserved (`double_value`, `process_char`, `array_1d_stack`, `ptr_single`, `struct_simple`) matching original source. This is the decompiler's strongest lexical feature.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Character literals converted to hex (`0x41` instead of `'A'`, `0x20` instead of `32` for lowercase conversion). Magic numbers like `0x28` (struct offset) and `0xc` appear without explanation.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`___stack_chk_guard`) repeated in every function. Long double operations expanded into verbose library calls (`__multf3`, `__addtf3`) with hundreds of lines of unintelligible code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: For/while loops mostly recovered, but `enum_switch` uses nested if-else chains instead of switch statement. `volatile_access` lost volatile semantics (reads `*param_1 + *param_1` instead of two separate volatile reads).
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly, but some signatures degraded (e.g., `ptr_func_simple` returns `void` instead of `int`, `binary_tree` returns `void` instead of calling and returning result).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but excessive local variable declarations (`local_1a8`, `local_1a0`, `local_198`...) at function start obscure the actual logic flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks duplicated across all functions. Long double library functions (`__addtf3`, `__multf3`) are 400+ lines each with massive redundancy from floating-point bit manipulation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation: `char`→`byte`, `short`→`int` with cast, `long long`→`long`, `long double`→`undefined8`, `_Bool`→`undefined4`. All `const` and `volatile` qualifiers completely lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure—all structs accessed via pointer arithmetic (`param_1[0]`, `param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`, `p->z`). No struct/union/enum definitions recovered. `struct_simple` takes `int *` instead of `Point3D *`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: pointer arithmetic replacing struct access, void* conversions without justification, `ptr_triple` uses `undefined8 *` instead of `int ***`. Type-confused function pointers throughout.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered. Original source had extensive documentation explaining each test case; decompiled code has no algorithm explanations, no API contracts, no decompilation confidence indicators.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Linked list traversal (`linked_list`), tree recursion (`binary_tree_sum`), and graph traversal patterns are present but not identified or named.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings about lost volatile semantics, no indication of type conversion uncertainty, no flags for unresolved indirect calls. `volatile_access` silently loses critical semantics.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `param_1 != NULL`), no postcondition inference, no error condition documentation. Array bounds checks present but not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships not documented. No call graph information, no callback relationship documentation (e.g., `ptr_func_simple` calling `double_value` not indicated).
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file with no logical grouping. Original source had clear sections (Data Types, Arrays, Pointers, Composite Types); decompiled code is flat with no organization.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Requires external function stubs (`__libc_start_main`, `__cxa_finalize`), long double operations need special libraries (`__multf3`, `__addtf3`). External dependencies not documented.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (6+7+6+6)/4 = 6.25  × 0.25 = 1.56
+Level 3 (Type System): (4+2+4)/3   = 3.33  × 0.20 = 0.67
+Level 4 (Semantic):    (1+3+3+2)/4 = 2.25  × 0.15 = 0.34
+Level 5 (Contextual):  (5+4+5)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.69/10
+```
+
+### Overall Readability Score: **4.7/10**
+
+### Critical Defects:
+- **Complete composite type loss**: All structs/unions/enums converted to pointer arithmetic (`struct_simple` uses `param_1[0]` instead of `p->x`)
+- **Zero comment recovery**: Original had extensive documentation; decompiled code has none
+- **Type qualifier loss**: All `const` and `volatile` modifiers stripped (critical for `volatile_access`)
+- **Generic variable naming**: Every variable is `param_N`, `local_N`, `uVarN`, `iVarN` with no semantic meaning
+- **Long double bloat**: `process_ld` expanded into 400+ line library call instead of simple arithmetic
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names preserved accurately from original source, making high-level navigation possible despite other degradations.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete absence of any documentation makes understanding non-trivial logic extremely difficult.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type definitions** from stack layout patterns and field access offsets to restore struct/union/enum declarations
+2. **Preserve type qualifiers** (`const`, `volatile`) from debug symbols at `-O0` compilation level
+3. **Infer variable names** from usage patterns (loop counters, accumulators, pointers) and recover original comments from debug sections

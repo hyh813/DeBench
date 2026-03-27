@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (`a1`, `a2`, `v1`, `v2` through `v40+`) with zero semantic meaning. Original names like `local`, `large_buf`, `arr`, `p` are completely lost, making it impossible to track variable purpose without manual analysis.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Core function names preserved (`local_vars`, `heap_basic`, `vla_stack`) but helper functions use mechanical names (`function_1030`, `function_1040`). Some signatures are wrong (e.g., `stack_alias` takes no parameters but original takes two pointers).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (`0xffffffff`, `0xfffffffe`, `0x7fffffff0`) without explanation. String literals stored in opaque globals (`g22`, `g23`, `g24`) with UTF-8 encoded Chinese text that's unreadable without decoding.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe assembly intrinsic pollution (`__asm_movdqa`, `__asm_paddd`, `__asm_pxor`, `__asm_movdqu`) throughout. Vector operations that should be simple loops create massive visual noise. Frame pointer manipulation visible in many functions.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 3/10  
+Justification: Extensive `goto` labels (`lab_0x1442`, `lab_0x1447`, `lab_0x1586`) replace natural loop constructs. Loop unrolling not recognized as such, creating confusing branching patterns. At `-O0` this is unacceptable degradation.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Original function boundaries mostly preserved, but some functions merged incorrectly. Helper functions (`function_1030` through `function_1110`) are just library wrappers that should be inlined or use proper names.
+
+**7. Code Linearization:** Score: 3/10  
+Justification: Heavy forward and backward jumps disrupt top-to-bottom reading. Functions like `vla_stack` and `alloca_usage` have multiple label targets making execution flow difficult to trace without careful analysis.
+
+**8. Redundancy Elimination:** Score: 3/10  
+Justification: Loop unrolling creates massive code duplication (same SIMD operations repeated 10+ times in `large_stack_frame`). No abstraction of repeated patterns. Vector initialization code duplicated across multiple functions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Everything degraded to `int64_t` or `int32_t`. No `size_t`, `ptrdiff_t`, or proper pointer types. Original `int` parameters become `int64_t a1`. Boolean conditions use integer comparisons instead of proper bool types.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - `Point` struct not recovered (`local_struct` returns `3 * a1` directly). `Node` linked list struct lost (raw pointer arithmetic `v1 + 8`). `TreeNode` struct completely absent. No struct definitions in output.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts (`(int64_t)mem`, `(int32_t)a1`). Pointer arithmetic without proper typing (`*(int32_t *)(4 * v40 + v2)`). Function pointer types degraded to `int64_t` (`g39 = a1` in `set_global_callback`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero meaningful comments. Only auto-generated file header present. No explanation of algorithm logic, no decompilation confidence indicators, no documentation of non-obvious patterns.
+
+**13. Semantic Transparency (Idioms + Anomalies + Contracts):** Score: 2/10  
+Justification: No idiom recognition (memory allocation patterns, linked list traversal not identified). No anomaly warnings for dangerous code (`dangling_pointer`, `double_free`). No precondition/postcondition documentation. Constant-folding hides original logic (`tree_heap_traversal` returns `60` directly).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**14. Cross-Reference Clarity:** Score: 3/10  
+Justification: Global variables named `g1` through `g43` with no semantic meaning. Function call relationships not documented. Callback mechanism (`set_global_callback`/`call_global_callback`) not clearly linked.
+
+**15. Module Organization:** Score: 4/10  
+Justification: All functions in single file without logical grouping. Static functions not properly scoped. No header file with API declarations. Test functions mixed with implementation.
+
+**16. Build System Compatibility:** Score: 4/10  
+Justification: Includes present but function signatures mismatch (e.g., `test_heap_memory` takes 3 parameters but original takes none). Assembly intrinsics may not compile on all platforms. Some external dependencies unclear.
+
+**17. Optimization Awareness:** Score: 2/10  
+Justification: Compiled at `-O0` (debug) but decompiler produced heavily optimized-looking output with loop unrolling and constant folding. This suggests decompiler is reconstructing from optimized binary despite debug flags, or binary was mislabeled.
+
+**18. Decompiler Confidence:** Score: 2/10  
+Justification: No uncertainty markers where decompilation is ambiguous. Confidently presents incorrect information (e.g., `stack_alias` returns `20` directly, losing the pointer aliasing logic entirely).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (2+5+3+2)/4 = 3.00  × 0.30 = 0.90
+Level 2 (Structural):   (3+5+3+3)/4 = 3.50  × 0.25 = 0.875
+Level 3 (Type System):  (3+2+3)/3   = 2.67  × 0.20 = 0.534
+Level 4 (Semantic):     (1+2)/2     = 1.50  × 0.15 = 0.225
+Level 5 (Contextual):   (3+4+4+2+2)/5 = 3.00 × 0.10 = 0.30
+
+Overall Score: 2.83/10
+```
+
+**Overall Readability Score:** 2.8/10
+
+### Critical Defects:
+- **Variable names completely lost**: All parameters are `a1`, `a2`, `a3` and locals are `v1`, `v2`... with no semantic meaning
+- **Assembly intrinsics pollute code**: `__asm_movdqa`, `__asm_paddd`, `__asm_pxor` make code unreadable to C programmers
+- **Struct types not recovered**: `Point`, `Node`, `TreeNode` all lost; raw pointer arithmetic instead
+- **Control flow uses goto**: Natural loops replaced with `lab_0xXXXX` labels and jumps
+- **Constant folding hides logic**: Functions like `tree_heap_traversal` return constants instead of showing tree traversal
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Core function names like `local_vars`, `heap_basic`, `vla_stack` were preserved from debug symbols, providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Zero documentation, no explanation of complex patterns, no decompilation confidence indicators whatsoever
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from debug symbols**: At `-O0 -g`, DWARF debug info should provide original variable names (`local`, `arr`, `p`) instead of generic `v1`, `v2`
+2. **Recognize and suppress assembly intrinsics**: Convert `__asm_movdqa`/`__asm_paddd` patterns back to simple C loops rather than exposing SIMD operations
+3. **Recover struct types from type information**: Use debug type info to reconstruct `Point`, `Node`, `TreeNode` structs with proper field names instead of raw pointer arithmetic

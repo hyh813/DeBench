@@ -1,0 +1,153 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY (30% weight)
+
+### 1. Variable Naming Quality (10%)
+**Score: 2/10**
+
+The decompiled code uses exclusively generic variable names like `v0`, `v1`, `v2`, `a0`, `a1`, `ptr`, `i`, `result`. For example, in `double_value` at 0x4008d4, the parameter is named `a0` and the return uses implicit register naming. There is no semantic recovery - variables that should be named `x`, `sum`, `index` are all generic. This makes tracking variable purpose across the 2403 lines extremely difficult.
+
+### 2. Function Naming Quality (10%)
+**Score: 2/10**
+
+Functions are named with address-based identifiers like `sub_4008d4`, `sub_400904`, `sub_400924` instead of their original names (`process_char`, `process_short`, etc.). The only exceptions are a few functions that happen to match (like `double_value` at 0x4008d4 and `main`). This is a fundamental failure to recover semantic function names from debug symbols or pattern matching.
+
+### 3. Literal Clarity (5%)
+**Score: 3/10**
+
+Magic numbers are prevalent without explanation. For example, in `process_short`: `(a0 & 65535)` uses 65535 without explaining it's 0xFFFF for 16-bit masking. The constant `4294967295` (0xFFFFFFFF) appears repeatedly without being named. Some printf format strings are partially recovered (e.g., `"DT-L1-01 (process_char): %c\n"`), but most computed values are unexplained.
+
+### 4. Noise Reduction (5%)
+**Score: 3/10**
+
+Significant compiler artifacts pollute the code. Stack frame setup like `v0 = &v1;` appears frequently. The `__stack_chk_guard` handling adds noise. In `process_long`: `__ROL__(a0, 1) & 18446744073709551614` is a complex bit manipulation that obscures the simple `x << 1` operation. The `process_float` function at 0x400940 returns uninitialized `v0` - this is a decompilation failure. Float/double handling shows severe issues with `__addtf3` and `__multf3` being inlined as massive functions.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight)
+
+### 5. Control Flow Naturalness (8%)
+**Score: 5/10**
+
+Basic control flow is preserved - loops use while constructs, conditionals are if-else. However, some patterns are awkward. The `array_2d_stack` function uses pointer arithmetic `ptr += 11` which is non-idiomatic. The `array_complex_index` function at 0x400c54 has extremely convoluted condition checking with `arm64g_calculate_condition` calls that make the simple bounds check nearly incomprehensible. At -O0, this should be much cleaner.
+
+### 6. Function Decomposition (7%)
+**Score: 6/10**
+
+Functions are correctly separated and maintain reasonable granularity. The test functions call their respective test targets properly. However, the massive `__addtf3` function (starting at 0x4016f0) is over 1000 lines of decompiled code - this is a library function that should either be stubbed or properly abstracted. Parameter counts are preserved but parameter types are generic.
+
+### 7. Code Linearization (5%)
+**Score: 6/10**
+
+Most code reads top-to-bottom with minimal forward jumps. Early returns are used appropriately in some functions like `ptr_void`. However, the `array_complex_index` has deeply nested conditionals that disrupt linear reading. The `test_array_types` function has very long variable declaration sections that make it hard to find the actual logic.
+
+### 8. Redundancy Elimination (5%)
+**Score: 5/10**
+
+Some redundant patterns exist. In `test_pointer_types`, values like `15` are computed inline rather than showing the function call. The `ptr_const` function shows: `(*(a0) * 2 | *(a0) >> 31) & 4294967294` which is an overly complex way to express doubling with sign handling. Dead code is minimal but some expressions could be simplified for readability.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY (20% weight)
+
+### 9. Type Precision (8%)
+**Score: 4/10**
+
+Major type issues exist. Many functions use `unsigned int` or `unsigned long` where `int` or `long` should be used (e.g., `process_int` returns `int` but decompiled as `unsigned int`). The `process_bool` returns `unsigned long long` instead of `_Bool`. Pointers are often `unsigned long` instead of proper pointer types. The `volatile_access` function doesn't preserve the `volatile` qualifier on the pointer parameter.
+
+### 10. Composite Type Recovery (7%)
+**Score: 4/10**
+
+Some struct recovery exists but with generic names. In `ptr_double`, a typedef `struct_0` is created with `field_0`. In `struct_with_ptr`, we see `struct struct_0` and `struct struct_1` with proper field offsets but generic names. The `linked_list` function recovers the Node structure but names it `struct_0`. Union types are partially recognized in `union_type` but use `void*` casts. Bitfield handling in `struct_bitfields` shows manual bit extraction rather than proper bitfield syntax.
+
+### 11. Type Safety (5%)
+**Score: 4/10**
+
+Multiple unsafe casts present. The `ptr_void` function uses unchecked casts `*((int *)a0)` and `*((char *)a0)`. Pointer arithmetic like `ptr + v2 * 4` assumes int size without validation. The `array_pointer` function uses `40 * v2` assuming 10-element arrays without bounds checking. Function pointer handling in `ptr_func_simple` uses `goto a0` which is dangerous and loses type safety. The `struct_func_ptr` similarly uses `goto a0->field_8`.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY (15% weight)
+
+### 12. Comment Quality & Presence (5%)
+**Score: 2/10**
+
+Almost no useful comments exist. The only comments are auto-generated like `/* do not return */` for functions like `__libc_start_main`. No explanation of algorithm logic, no recovery of original variable names, no indication of decompilation confidence. The code presents itself as "correct" without any uncertainty markers.
+
+### 13. Idiom Recognition (3%)
+**Score: 2/10**
+
+No design patterns or algorithms are identified. The linked list traversal in `linked_list` is just code without noting it's a linked list. The binary tree functions don't indicate this is a tree traversal. No recognition of the state machine pattern in `enum_switch`. The test functions aren't identified as test scaffolding.
+
+### 14. Anomaly Indication (3%)
+**Score: 1/10**
+
+No anomaly indication whatsoever. The `process_float` returning uninitialized `v0` is presented as normal code. The `process_double` returning a string literal `"06 (struct_bitfields): %d\n"` is clearly wrong but not flagged. Indirect function calls like `ptr_func_simple` using `goto` are not marked as uncertain. The massive library functions aren't identified as such.
+
+### 15. Assertion & Contract Recovery (4%)
+**Score: 2/10**
+
+No precondition or postcondition recovery. The bounds checking in `array_complex_index` is convoluted but not documented as such. No recovery of `NULL` checks, no documentation of expected valid ranges. The `volatile_access` function doesn't document the volatile semantics.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE (10% weight)
+
+### 16. Cross-Reference Clarity (4%)
+**Score: 3/10**
+
+Function calls are present but relationships aren't documented. The test functions call their targets but there's no comment showing which functions are being tested. The callback relationships (e.g., `complex_callback` passed to `ptr_func_complex`) aren't documented. Global variables like `g_413f88` are referenced but not explained.
+
+### 17. Module Organization (3%)
+**Score: 4/10**
+
+Functions are roughly grouped by address but not logically organized. The test functions appear in the middle of the code. Library functions like `__addtf3` are mixed with user code. Static functions aren't identified as static. No header file structure or API grouping is recovered.
+
+### 18. Build System Compatibility (3%)
+**Score: 3/10**
+
+The code would not compile as-is. Many extern declarations are missing or incorrect. The `process_float` and `process_double` functions have severe issues that would cause compilation failures. Function signatures don't match (e.g., `unsigned int` vs `int`). No build instructions or dependency documentation.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 2 + 3 + 3) / 4 = 2.5
+L2_avg = (5 + 6 + 6 + 5) / 4 = 5.5
+L3_avg = (4 + 4 + 4) / 3 = 4.0
+L4_avg = (2 + 2 + 1 + 2) / 4 = 1.75
+L5_avg = (3 + 4 + 3) / 3 = 3.33
+
+Overall = (2.5 × 0.30) + (5.5 × 0.25) + (4.0 × 0.20) + (1.75 × 0.15) + (3.33 × 0.10)
+        = 0.75 + 1.375 + 0.8 + 0.2625 + 0.333
+        = 3.52/10
+```
+
+### Overall Readability Score: 3.5/10
+
+### Critical Defects (Bullet List)
+- **Function names**: All functions use address-based names (`sub_4008d4`) instead of semantic names (`process_char`, `process_short`)
+- **Variable names**: Exclusively generic names (`v0`, `v1`, `a0`, `ptr`) with no semantic recovery
+- **Type precision**: Wrong signedness throughout (unsigned vs signed), lost volatile qualifier, generic pointer types
+- **No anomaly flagging**: `process_float` returns uninitialized value, `process_double` returns string literal - both presented as normal
+- **No comments**: Zero useful comments explaining algorithms, contracts, or decompilation confidence
+
+### Best Quality Aspect: Control Flow Naturalness (5/10)
+- Basic loop and conditional structures are preserved and readable
+- While loops correctly represent for-loops
+- Simple functions like `ptr_single` are structurally clear
+
+### Most Needs Improvement: Semantic Transparency (1.75/10)
+- No comments, no pattern recognition, no anomaly indication
+- Code presents itself as authoritative when it contains clear errors
+- Zero recovery of original intent or algorithm explanations
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover function names from debug symbols**: Use debug info (-g flag present) to recover `process_char`, `process_short`, etc. instead of `sub_400904`, `sub_400924`
+2. **Infer variable names from usage patterns**: Analyze how variables are used (array index → `i`/`index`, sum accumulator → `sum`/`total`, pointer → `ptr`/`p`)
+3. **Flag anomalies and uncertain decompilation**: Mark functions like `process_float` with "DECOMPILATION ERROR: uninitialized return" and indirect calls with "UNCERTAIN: indirect call target"
+4. **Add type precision**: Use signed types where appropriate, preserve volatile/const qualifiers, use proper pointer types instead of `unsigned long`
+5. **Generate meaningful comments**: Add "Test function for data type handling" to test functions, "Linked list traversal" to linked_list, etc.

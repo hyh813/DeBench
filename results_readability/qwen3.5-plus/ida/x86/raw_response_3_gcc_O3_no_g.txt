@@ -1,0 +1,104 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (`a1`, `a2`, `v0`, `v1`, `v2`) with zero semantic meaning recovered. For example, `heap_basic` uses `v1`, `v2`, `v4` instead of `arr`, `ptr`, `result` which would match the source's `arr` and `result` variables.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some original names preserved (`double_value`, `local_vars`, `heap_basic`), but many are generic (`sub_1030`, `sub_1040`) or compiler-modified (`alloca_usage.constprop.0`). Test functions like `test_stack_memory` are preserved but their internal logic is constant-folded.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers throughout without explanation (`0x14u`, `0x28u`, `0xCu` for struct sizes). Some recognizable values like `42` in `address_of_local` are preserved, but allocation sizes like `0x28u` (40 bytes) aren't annotated.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack canary checks (`__readgsdword(0x14u)`), unnecessary register variables (`v2`, `v3`), and redundant casts (`(_DWORD *)`, `(_WORD *)`). The `large_stack_frame` function includes stack cookie validation that obscures the simple logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic loops recovered in some functions (`heap_basic` has a proper for-loop), but many functions are constant-folded to direct returns (`stack_alias` returns 20 directly, losing the alias logic). The `vla_stack` function has confusing stack alignment code that obscures the VLA logic.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are properly separated, but aggressive optimization created artifacts like `alloca_usage.constprop.0` (a constant-propagated version). Some functions are too simplified (`static_local` loses the reset logic clarity).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. However, `linked_list_heap` has complex label-based jumps (`LABEL_7`, `LABEL_19`) that disrupt flow instead of using structured control.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy from optimization (stack canary checks in every function), but no severe dead code. The `test_heap_memory` function has redundant malloc/free patterns that were constant-folded from the original loops.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of generic types (`_DWORD`, `void*`, `int`) instead of precise types. `heap_struct` uses `void*` instead of `Point*`, and `set_global_callback` returns `Elf32_Dyn**` instead of `void`. No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Critical failure - `Point` struct (with `x`, `y` fields) is completely lost, treated as raw memory (`malloc(8u)`). `Node` struct (linked list) is reduced to `_DWORD*` with index access (`v3[1]` for `next` pointer) instead of named fields.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts throughout: `*(_DWORD *)ptr` in `dangling_pointer`, `(_DWORD *)v4[1]` for linked list traversal. Function pointer `global_func_ptr` is cast to `(int (*)(void))` losing parameter type information.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only auto-generated header comment present. Zero comments explaining algorithm logic, non-obvious operations, or decompilation confidence. The original source's extensive comments (e.g., "// MEM-L1-01: 局部变量（基础类型）") are completely lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. Linked list creation/traversal in `linked_list_heap` is not identified as a list pattern. Tree operations in `tree_heap_traversal` show no recognition of tree traversal idiom.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Library functions marked as "FAILED to decompile" (17 functions), but no warnings for suspicious patterns like the intentional memory leak in `memory_leak` or dangling pointer access in `dangling_pointer`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 > 0` checks exist but aren't annotated as contracts). No postconditions or invariants. The null checks (`if (!v1) return -1`) are present but not documented as error contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but relationships not documented. `call_global_callback` calls `global_func_ptr` but the callback relationship isn't explained. Global variable usage (`global_counter`, `file_scope_static`) visible but not annotated.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in reasonable order matching source structure (stack tests, heap tests, static tests, memory ops). However, no file/module boundaries indicated, and helper functions like `create_tree_node` aren't grouped with related functions.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 17 library functions failed to decompile (`malloc`, `free`, `printf`, etc.), requiring external stubs. The code references undefined symbols (`GLOBAL_OFFSET_TABLE_`, `extern_global_var`) that need resolution.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (2+5+4+4)/4 = 3.75
+Level 2 (Structural):  (5+6+6+6)/4 = 5.75
+Level 3 (Type):        (4+2+4)/3   = 3.33
+Level 4 (Semantic):    (2+3+5+2)/4 = 3.00
+Level 5 (Contextual):  (5+5+4)/3   = 4.67
+
+Overall = (3.75 × 0.30) + (5.75 × 0.25) + (3.33 × 0.20) + 
+          (3.00 × 0.15) + (4.67 × 0.10)
+        = 1.125 + 1.4375 + 0.666 + 0.45 + 0.467
+        = 4.15/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects:
+- **Variable `a1`, `v0`, `v1` should be named semantically** (e.g., `input_value`, `arr_ptr`, `result`) based on usage patterns
+- **Struct types `Point` and `Node` completely lost** - treated as raw `_DWORD*` arrays instead of named structures with `x`, `y`, `data`, `next` fields
+- **Aggressive constant folding destroyed original logic** - functions like `stack_alias`, `alloca_usage_constprop_0` return constants instead of showing actual computation
+- **Zero comments recovered** from extensive original source documentation explaining each test case
+- **Metadata mismatch** - source claims `-O0` but decompiled binary shows `-O3` optimization (constant propagation, inlining)
+
+### Best Quality Aspect:
+- **Structural Intelligibility (5.75/10)** - Function boundaries are preserved and control flow is mostly recoverable despite optimization artifacts
+
+### Most Needs Improvement:
+- **Semantic Transparency (3.00/10)** - Complete absence of comments, no pattern recognition, and no contract documentation makes understanding intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover struct types from memory access patterns** - Detect consistent offset access (e.g., `[0]` and `[1]` for `x`/`y`) and propose named struct definitions
+2. **Preserve original function names from debug symbols** - The `-g` flag should provide symbol names that are currently only partially utilized
+3. **Add confidence annotations for optimized code** - Flag constant-folded functions with warnings like "OPTIMIZED: Original computation replaced with constant result"

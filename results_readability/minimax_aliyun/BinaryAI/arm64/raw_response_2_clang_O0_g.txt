@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `param_1`, `param_2`, `local_14`, `local_10`, `uVar1`, `iVar2`. While function parameter names are preserved in some cases (e.e., `process_char(byte param_1)`), local variables are almost entirely generic, making it difficult to track their semantic purpose without significant analysis.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Nearly all function names match the original source exactly: `process_char`, `process_short`, `process_int`, `process_long`, `process_ll`, `process_float`, `process_double`, `process_bool`, `const_param`, `volatile_access`, `array_1d_stack`, `array_string`, `ptr_single`, `ptr_double`, `ptr_triple`, `struct_simple`, `struct_array`, `linked_list`, `binary_tree`, etc. Excellent recovery of function semantics through naming.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x40`, `0x5b`, `0x20` for ASCII conversion, `0x28` (40 bytes for 10-element int array), `0xc` (12 bytes for 3-field struct) are used without explanation. Float constants `0x3fc00000`, `0x3f000000` for NEON_fmadd are opaque. No named constants recovered from the original source comments.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise present including: massive 700+ line function `FUN_001021cc` (floating point helper), extensive use of `undefined8`, `undefined4`, `undefined` types, redundant type casts like `(ulong)(uVar2 & 0xffffffff)`. The compiler-generated floating point library functions (`__addtf3`, `__multf3`, `__sfp_handle_exceptions`) pollute the output significantly.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: At -O0 optimization, control flow is nearly natural. Loops are properly recognized as `for` loops, conditionals are clear with `if/else`, and switch statements are handled appropriately. Minor awkwardness in some array access patterns but overall flow matches source structure well.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are properly separated and maintain single responsibility. Test functions (`test_data_types_l1`, `test_array_types`, etc.) are appropriately large (as in source). Some helper functions like `complex_callback` are correctly identified. Minor issue: `binary_tree` wrapper function adds unnecessary indirection.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns are used appropriately. Some complex index calculations in array functions create visual noise but don't severely disrupt linear reading. The nested loops in `array_3d` and `binary_tree_sum` are well-structured.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some redundancy visible in test functions where the same pattern is repeated for different test cases. Array initialization in test functions shows some duplication. No major dead code, but the compiler-generated functions add substantial redundant-looking code that isn't from the original source.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are reasonable: `int`, `long`, `short`, `byte`, `bool`. However, extensive use of `undefined8`, `undefined4`, `undefined` for uninitialized or unknown data. Function pointers use generic `code *` instead of proper function signatures. Some precision loss compared to original `size_t`, `uintptr_t` types.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct recovery is poor. Instead of named fields like `p->x + p->y + p->z`, we see `*param_1 + param_1[1] + param_1[2]`. Nested structs like `Rect` and `Widget` are accessed via raw pointer arithmetic losing all semantic field names. Union types partially recovered but field names lost. Bitfields handled reasonably with shifts.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Moderate type safety issues: extensive use of raw pointer arithmetic (e.g., `*(int *)(param_1 + (long)local_14 * 4)`), unsafe casts between pointer types, no `const` correctness in many places despite source having `const int *`. Function pointer calls use generic `code *` type. Some buffer overflow patterns visible in array_oob (matching source's intentional bug).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No comments present in the decompiled output. The original source had extensive comments explaining each test case (e.g., "// DT-L1-01: 字符类型（char）", "// 场景: [SCENE-ALL]"). None of this semantic information was recovered. Auto-generated headers like "// Decompiled by BinaryAI" present but no useful code comments.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic C idioms recognized: loops, conditionals, function pointers. Some patterns like linked list traversal (`while (local_18 != (int *)0x0)`) are clear. However, no explicit naming of design patterns or algorithms. The tree traversal idiom is recognizable but not labeled.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly indication. The massive `FUN_001021cc` function (700+ lines of floating point math) is presented without warning or explanation. Indirect calls that couldn't be resolved are not flagged. The intentional buffer overflow in `array_oob` (`local_14 <= param_2` instead of `<`) is not flagged as potentially problematic.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had clear expectations (e.g., "期望: 15", "期望: 'a'") but these are not recovered. No documentation of error conditions or return value semantics.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear and direct. The call graph can be traced: `main` calls `test_data_types_l1`, `test_array_types`, etc. However, no explicit documentation of who calls what or global variable usage. Callback relationships (e.g., `ptr_func_simple(double_value, 5)`) are visible but not explicitly documented.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are logically grouped matching source organization: data type functions first, then array functions, pointer functions, composite type functions, then test functions. Static functions properly scoped. External library functions (`printf`, `memcpy`, `memset`) marked as `<EXTERNAL>`. Minor issue: compiler helper functions interspersed.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has `<EXTERNAL>` markers for library functions indicating dependencies. Would require standard C library linkage. Some type definitions needed (`byte`, `bool` - may need stdbool.h). The `undefined*` types would need resolution. Moderate patching needed for standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+### Critical Defects:
+- **Variable naming**: All local variables use generic names (`local_14`, `local_10`, `uVar1`) making semantic tracking difficult
+- **Struct field recovery**: Composite types reduced to raw pointer arithmetic (`param_1[1]`, `param_1[2]`) losing all field semantics
+- **No comments**: Complete loss of extensive source code documentation explaining test scenarios and expected values
+- **Anomaly silence**: Intentional bugs (array_oob) and massive compiler-generated functions presented without warning
+- **Type precision loss**: Extensive use of `undefined4`, `undefined8` types instead of recovered types
+
+### Best Quality Aspect: Function Naming (scored 9/10)
+Function names are almost perfectly preserved from the source, making it immediately clear what each function does. Names like `process_char`, `array_1d_stack`, `ptr_double`, `struct_simple` directly match the original and provide excellent semantic grounding.
+
+### Most Needs Improvement: Comment Quality (scored 1/10)
+The decompilation has zero code comments. The original had 830 lines of well-documented test cases with expected values, scenario tags, and explanations. None of this semantic information was recovered, making it impossible to understand the purpose of test cases without reference to the source.
+
+### Top 3 Recommendations:
+1. **Recover struct field names** from layout analysis - instead of `param_1[1]`, emit `p->y` based on offset analysis
+2. **Add decompiler-generated comments** explaining test case purposes, expected values, and scenario tags from source
+3. **Flag anomalies** - mark the 700+ line floating point helper as compiler-generated, flag the intentional buffer overflow in `array_oob`

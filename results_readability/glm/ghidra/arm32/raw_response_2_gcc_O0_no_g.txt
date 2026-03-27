@@ -1,0 +1,107 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `param_1`, `local_10`, and `local_c`, completely losing semantic meaning (e.g., `x`, `sum`, `arr` from the source).
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names match the original source exactly (e.g., `process_char`, `struct_simple`, `binary_tree_sum`), likely due to preserved symbol table information.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Character constants like `'A'` and `'Z'` are replaced with hex values `0x40` and `0x5b`, and floating-point constants like `1.5f` appear as `0x3fc00000`, obscuring the original logic.
+
+**4. Noise Reduction:** Score: 7/10
+Justification: The code is generally clean, but contains Ghidra-specific artifacts like the `CONCAT44` macro in `process_ll` and stack canary checks (`__stack_chk_fail`) which add minor noise.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 9/10
+Justification: The `-O0` optimization level preserves the original structure perfectly; loops are represented as `for` loops and conditionals as `if/else`, matching the source exactly.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions map 1:1 with the source; there is no inlining or outlining, maintaining the original granularity and cohesion (e.g., `test_data_types_l1` remains a distinct function).
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with no unexpected jumps or computed branches, making execution paths easy to follow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no loop unrolling or dead code; the logic is straightforward, though the decompiler sometimes expands simple operations (like `volatile_access`) slightly differently than the source.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Critical type information is lost; `long long` becomes `undefined8` split into two `int` parameters, `float` and `double` become `undefined4`, and `long` is demoted to `int`.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Struct types are completely lost; `struct_simple` takes `int *` instead of `Point3D*`, accessing fields via array indices (`param_1[0]`, `param_1[1]`) rather than member names (`p->x`, `p->y`).
+
+**11. Type Safety:** Score: 5/10
+Justification: While the generated code is technically valid for the ABI, the reliance on `undefined` types and the splitting of 64-bit integers into two 32-bit registers (`param_1`, `param_2`) creates a fragile and unsafe representation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10
+Justification: There are no meaningful comments explaining logic; only auto-generated headers like "Decompiled by Ghidra 12.0" and generic warnings are present.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: Standard control flow idioms (loops, switches) are recognized, but data structure idioms like struct field access or array indexing are flattened into pointer arithmetic, losing the idiom.
+
+**14. Anomaly Indication:** Score: 5/10
+Justification: The decompiler correctly flags non-returning functions like `abort` with "WARNING: Subroutine does not return," but fails to flag the loss of struct types or the use of soft-float intrinsics as anomalies.
+
+**15. Assertion & Contract Recovery:** Score: 3/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the requirement for non-NULL pointers in `ptr_single` is not stated.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are clear and use the correct recovered names; indirect calls via function pointers (e.g., in `ptr_func_simple`) are represented accurately as `(*param_1)(param_2)`.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered by address, which in this `-O0` build corresponds closely to the source file order, maintaining logical grouping of related tests.
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code will not compile standalone due to Ghidra-specific macros (`CONCAT44`), non-standard types (`undefined4`), and direct calls to compiler intrinsics (`__mulsf3`).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+- **L1 (Lexical):** (3 + 10 + 4 + 7) / 4 = 6.0
+- **L2 (Structural):** (9 + 9 + 9 + 8) / 4 = 8.75
+- **L3 (Type):** (4 + 2 + 5) / 3 = 3.67
+- **L4 (Semantic):** (2 + 5 + 5 + 3) / 4 = 3.75
+- **L5 (Context):** (8 + 8 + 4) / 3 = 6.67
+
+**Overall = (6.0 × 0.30) + (8.75 × 0.25) + (3.67 × 0.20) + (3.75 × 0.15) + (6.67 × 0.10)**
+**Overall = 1.8 + 2.1875 + 0.734 + 0.5625 + 0.667 = 5.95**
+
+### Overall Readability Score: **6.0/10**
+
+### Critical Defects
+- **Composite Type Loss:** Structs like `Point3D` and `Rect` are completely lost, replaced by raw pointer arithmetic (e.g., `param_1[1]` instead of `p->y`).
+- **Floating Point Obfuscation:** Float operations are replaced by soft-float library calls (`__mulsf3`) and hex literals (`0x3fc00000`), making math logic unreadable.
+- **64-bit Integer Splitting:** `long long` parameters are split into two 32-bit registers (`uint param_1, int param_2`) instead of being recovered as a single 64-bit type.
+- **Literal Degradation:** Character constants like `'A'` are replaced by magic hex numbers (`0x40`), removing semantic context.
+
+### Best Quality Aspect
+- **Function Naming Quality (10/10)**
+- **Why?** The decompiler perfectly preserved all original function names from the symbol table, making the high-level purpose of every block immediately obvious.
+
+### Most Needs Improvement
+- **Composite Type Recovery (2/10)**
+- **Why?** The failure to recover `struct` definitions forces the reader to manually reverse-engineer memory layouts from pointer arithmetic offsets, which is the single biggest barrier to understanding.
+
+### Top 3 Recommendations for Decompiler Improvement
+1.  **Enhance Struct Recovery:** Implement pattern matching to detect sequential pointer arithmetic offsets (e.g., `p[0]`, `p[4]`, `p[8]`) and reconstruct them as struct field accesses.
+2.  **Soft-Float ABI Handling:** Detect and map compiler intrinsics (like `__mulsf3`, `__aeabi_dadd`) back to standard C operators (`*`, `+`) and recover floating-point constants from their hex representations.
+3.  **Register Pair Coalescing:** For 32-bit architectures, identify adjacent register parameters that form 64-bit values (e.g., `param_1` (R0) and `param_2` (R1)) and merge them into `long long` or `double` types.

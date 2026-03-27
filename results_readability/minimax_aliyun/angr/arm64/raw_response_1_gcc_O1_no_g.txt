@@ -1,0 +1,88 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `a0`, `a1`, `a2` for parameters and `v0`, `v1`, `v2`, `v3`, `v4` for locals. The original had meaningful names like `temp1`, `temp2`, `a`, `b`, `c` but these are completely lost. No semantic meaning can be inferred from the variable names.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Every function name perfectly matches the original source: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `nested_if_deep`, `if_elseif_chain`, `switch_small`, `loop_for_fixed`, `loop_while`, `goto_forward`, `goto_backward`, etc. The decompiler preserved all function names exactly.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is littered with unexplained magic numbers: `4294967295` (0xFFFFFFFF) appears constantly as a mask, `1717986919` is the division-by-10 constant, `85899345930` and `171798691870` are array data. Original had clear values like `10`, `20`, `30`, `100`, `200` but these became masked/transformed values without explanation.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__ROL__` rotate operations used unnecessarily (`__ROL__(a0, 1)` for simple multiplication by 2), `arm64g_calculate_condition` helper function in switch statements, constant bit-masking `& 4294967294` everywhere, stack canary checks `__stack_chk_guard` cluttering logic. These obscure the actual algorithm.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow is preserved (if-else, loops), but switch statements are poorly recovered. Functions like `switch_small` and `switch_large` use `arm64g_calculate_condition` instead of clean switch-case constructs. The original had clear `switch(op)` statements but these became convoluted if-else chains with condition calculation helpers.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function granularity is excellent - each function maintains single responsibility. The original had 20+ small functions, and the decompiled version preserves this decomposition. Functions are appropriately sized (10-30 lines each) with clear boundaries.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom without excessive jumps. Early returns are used appropriately in `single_if`, `if_else`. Minor issues in complex switch statements where control flow branches significantly. The do-while representation of for-loops is acceptable at -O0.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: In `loop_for_fixed`, variable `v2` is returned but never assigned (dead code). Test functions use hardcoded expected values instead of calling functions (e.g., `__printf_chk(1, "CF-L1-01 (sequential_ops): %d\n", 21)` instead of `sequential_ops(5,7,3)`). Some redundant register spills present.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation - original used `int` (signed) but decompiler uses `unsigned int`, `unsigned long`, `unsigned long long` throughout. Function `sequential_ops(int a, int b, int c)` became `int sequential_ops(unsigned int a0, unsigned int a1, unsigned int a2)`. Return types frequently wrong (e.g., `long long` when should be `int`). Signed/unsigned distinction completely lost.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct or array recovery. The array in `loop_break` (`int arr[] = {10, 20, 30, 40, 50}`) became raw numbers `v1 = 85899345930; v2 = 171798691870; v3 = 50;`. The 3x4 matrix in `loop_multi_exit` became three large integers. All composite types are lost - no field names, no array bounds.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: excessive casting `(unsigned int)`, `(char)`, `(unsigned long long)` throughout; pointer arithmetic without bounds in `loop_break` (`v6 += 1`), `loop_multi_exit` (`v6 += 16`); array access `*((int *)&v6[4 * v8])` without bounds checking. Function pointer calls have incorrect signatures.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No useful comments. Only minimal register hints like `// x0`, `// x1` appear occasionally. No explanation of what functions do, no algorithm documentation, no pre/postconditions. A function like `sequential_ops` computing `(a+b)*2-c` has zero comments explaining the logic.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithms identified. State machine functions (`state_machine`, `fsm_func_table`) are just flat code without recognition. Callback patterns (`process_with_callback`) not identified. The Duff's device in `duffs_device` is present but not flagged as a known idiom.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: Zero anomaly indication. No warnings about indirect calls that couldn't be resolved, no flags for unusual stack layouts, no indication of potential undefined behavior. The code presents everything with equal confidence even when decompilation is uncertain.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication of what functions expect (e.g., "requires: ptr != NULL") or guarantee (e.g., "ensures: return value >= 0"). Error conditions not documented.完全没有合同恢复。
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 2/10  
+Justification: No information about who calls each function or what they call. No documentation of global variable usage. Functions are completely isolated with no relationship information. Should have comments like "// Called by: main, test_control_flow_l1" or "// Calls: recursion_factorial".
+
+**17. Module Organization:** Score: 7/10  
+Justification: Single file organization matches original source file. Functions are roughly in the same order as source. Static functions properly scoped. Minor reordering but overall logical structure preserved.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code would compile with standard libc linkage. Uses external declarations for `__printf_chk`, `puts`, `memset`, `__stack_chk_fail`. Dependencies are standard (libc). No compiler-specific hacks that would prevent compilation.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.9/10
+
+**Critical Defects:**
+- Variable names are all generic (`a0`, `a1`, `v0`, `v1`) with zero semantic meaning - original had `temp1`, `temp2`, `a`, `b`, `c`
+- Type precision severely degraded: all `int` became `unsigned int`/`unsigned long long`, losing signed/unsigned distinction
+- No comments whatsoever - zero explanation of algorithm logic, preconditions, or purpose
+- Composite types completely lost - arrays like `{10,20,30,40,50}` became raw magic numbers
+- Switch statements poorly recovered using `arm64g_calculate_condition` instead of clean switch-case
+- Excessive noise from bit-masking (`& 4294967294`), rotate operations (`__ROL__`), and condition helpers
+
+**Best Quality Aspect:** Function Naming (scored 10/10)  
+- Every single function name matches the original source exactly: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `goto_forward`, etc. This is exceptional and makes it easy to locate specific functions.
+
+**Most Needs Improvement:** Semantic Transparency (scored 1.75/10)  
+- The code has zero comments, no pattern recognition, no anomaly warnings, and no contract recovery. Combined with poor variable naming, the code is essentially unreadable without constant reference to the original source.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: When `a0 + a1` is computed and multiplied by 2, name it `sum` or `temp1`. When `v0` is used as loop counter, name it `i` or `index`.
+2. **Recover switch-case from condition chains**: When multiple sequential comparisons on same variable exist (like `a0 == 2`, `a0 == 3`, `a0 == 0`, `a0 == 1`), reconstruct as switch statement instead of if-else chain with condition helpers.
+3. **Add semantic comments**: Include basic description of what each function computes, e.g., "// Computes: (a + b) * 2 - c" for sequential_ops. Add markers for known idioms like "// Duff's device pattern".

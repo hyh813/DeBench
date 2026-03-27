@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `a1`, `a2`) obscuring semantic meaning. Original source used meaningful names like `x`, `result`, `str`, `encrypted`, `decrypted` which are lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved from source (`param_fake_branch`, `call_opaque_predicate`), but helper functions use generic names (`function_10f0`, `function_1150` for malloc).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `90` (XOR key), `0x2a6d`, `0x2da2` appear without explanation. Some constants preserved (SIGFPE, SIGSEGV) but address offsets are opaque.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: `__x86_get_pc_thunk_bx` calls, `__readgsdword(20)` stack canary checks, and architecture-specific intrinsics clutter the code.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as while constructs (good), but aggressive optimization eliminated dead code (`param_fake_branch` returns just `result`). Some functions constant-folded (`call_fake_branch` returns 10 directly).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Reasonable function sizes, but optimization created duplicate functions (`param_division_by_zero_constprop_0`, `param_division_by_zero_constprop_1`). Standard library wrappers fragmented unnecessarily.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with appropriate early returns. Loop structures are clear without excessive jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant propagation creates redundant function variants. Wrapper functions for standard library calls (`function_1150` for malloc) add unnecessary indirection.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int32_t`, `uint32_t` appropriately, but some type information degraded (parameter `x` becomes `result` in `param_fake_branch`). Pointer types generally preserved.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: `struct __jmp_buf_tag` recovered but with generic field names (`e0`, `e1`, `e2`). Basic struct layout preserved but semantic field names lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Unsafe casts visible (`(void (*)(int32_t))` for signal handlers). Pointer arithmetic exposed in several places. Stack canary checks present but not explained.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. Original source had extensive documentation explaining obfuscation techniques, all lost in decompilation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition for obfuscation techniques (fake branches, opaque predicates, instruction substitution). Algorithms not identified or named.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomalies flagged despite architecture mismatch (ARM64 source → x86 decompilation). Constant folding and dead code elimination not indicated.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions/postconditions documented. Signal handler contracts, exception handling behavior not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variables (`g1`-`g6`) referenced by address without semantic meaning.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single file without logical grouping. Original source had section comments (7.1, 7.2, 7.3) completely lost.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Includes standard headers but contains architecture-specific intrinsics (`__readgsdword`). May require modifications to compile on different platforms.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+4)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+6+7+5)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type):        (6+6+5)/3   = 5.67  × 0.20 = 1.13
+Level 4 (Semantic):    (2+3+3+2)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):  (5+4+5)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.98/10
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects:
+- **Architecture mismatch**: Source compiled for ARM64 but decompiled as x86 (evident from `__x86_get_pc_thunk_bx`, `__readgsdword`)
+- **Variable `v1`, `v2`, `v3`** should be named based on usage (e.g., `loop_counter`, `temp_result`, `buffer_ptr`)
+- **No comments** explaining obfuscation patterns that were the entire purpose of the source code
+- **Dead code elimination** obscures the fake branch testing purpose (`param_fake_branch` simplified to `return result`)
+- **Magic numbers** like `90`, `0x2a6d`, `0x2da2` appear without explanation of their purpose
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved from source, making it possible to identify which decompiled function corresponds to which original function.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Complete absence of documentation means the obfuscation techniques being tested are entirely opaque to readers.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and flag architecture mismatches** - Warn when decompilation target differs from binary architecture to prevent confusion.
+2. **Recover variable names from usage patterns** - Analyze how variables are used (loop counters, buffer pointers, accumulators) to suggest semantic names.
+3. **Preserve or infer documentation** - When source symbols are available, recover comments; otherwise, add decompilation confidence indicators for optimized/transformed code.

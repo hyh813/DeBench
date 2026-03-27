@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables like `param_1`, `param_2`, `uVar1`, `iVar1`, `puVar1`, `extraout_var` are auto-generated generic names. The original source used meaningful names like `size`, `x`, `y`, `result`, `arr`, `n`, `counter`, `increment`. Only `__len` and `__addr` provide slight semantic hints.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions like `param_macro_constants`, `call_macro_constants`, `param_asm_basic`, `test_preprocessing_features` correctly match original names. However, several functions use address-based naming (`FUN_00100810`, `FUN_00100bcc`, `FUN_0010122c`) and some internal helper functions lack semantic names.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like `"LOG: Values: %d, %d, %d\n"` are preserved clearly. However, magic numbers like `0x200` (512), `0x40` (64), `0xdef0`, `0xdf22`, `0x10`, `0x1e` appear without explanation. The original source had named constants (MAX_SIZE=1024, BUFFER_COUNT=16) that are lost.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple compiler/decompiler artifacts present: `undefined4`/`undefined8` types, `__printf_chk` wrapper, `__aarch64_ldadd4_acq_rel` intrinsic, warnings about unreachable blocks and overlapping symbols. These obscure the actual logic but are manageable.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most functions have natural control flow matching the source. The `param_asm_clobber` function shows complex pointer arithmetic that obscures the original loop structure, but this is expected given the inline assembly transformation. Overall flow is readable.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is preserved - each original function exists as a separate entity. The original source had well-separated functions (param_*, call_*, test_*) and these are maintained. Some internal functions like `param_asm_clobber` are larger but still cohesive.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns in `param_dynamic_code` and `param_memory_protection` are appropriate. Some complexity in `param_asm_clobber` with pointer arithmetic but doesn't severely disrupt linear reading.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No significant dead code. Some loop unrolling visible in `param_asm_simd` and `param_asm_clobber` but these reflect the compiled output. The `param_asm_simd` and `param_simd_intrinsics` are nearly identical - this may reflect the source having both implementations.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `int` for most integers, `undefined4`/`undefined8` for uncertain returns, `uint` for unsigned. The original had specific types like `size_t`, `int*`, `int`. Some type information is lost, but the basic integer types are reasonable.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: No struct/union reconstruction visible. The original source used simple types (int, int*, char[]) without custom structs. Arrays are accessed via pointer arithmetic. This is acceptable given the source simplicity.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe patterns: pointer arithmetic in `param_asm_clobber` (`puVar1 + 2`, `(long)param_1 + (long)iVar5 * 4`), casting between pointer types (`undefined8 *param_1`), memory access through void pointers. These are common in decompiled code but represent type safety risks.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Ghidra adds file header comments identifying the binary and decompiler version. Function comments are minimal or absent. The original source had extensive comments explaining each test case (e.g., "PP-L2-01: 宏定义常量") that are completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No explicit pattern recognition. The original source demonstrated specific preprocessor patterns (macro recursion, stringization, token pasting, variadic macros) and assembly patterns (inline asm, SIMD, atomic operations). These are not identified or labeled in the decompiled output.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Ghidra does flag some anomalies with WARNING comments: unreachable blocks, globals overlapping symbols, subroutines that don't return. However, it doesn't flag the loss of macro semantics or the transformation of inline assembly to intrinsics.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition/invariant recovery. The original source had implicit contracts (e.g., `param_asm_atomic` requires valid pointer, `param_memory_protection` returns specific error codes) that are not documented.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible (e.g., `main` calls `test_preprocessing_features`). However, there's no documentation of which functions are internal helpers vs. public API, or the relationship between `call_*` wrapper functions and their `param_*` implementations.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions are listed in address order, not logically grouped. The original source had clear sections: "5.2 预处理与条件编译" and "5.3 内联汇编与底层特性". This organization is completely lost - all functions appear in a flat list.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code uses standard library functions (`mmap`, `mprotect`, `munmap`, `sysconf`, `printf`) that are widely available. However, `undefined4`/`undefined8` types and ARM64-specific intrinsics (`__aarch64_ldadd4_acq_rel`) would require typedefs to compile cleanly.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`param_1`, `uVar1`, `iVar1`) - original semantic names like `size`, `counter`, `increment` are lost
+- All preprocessor macro semantics are lost - macros are expanded but not identified (e.g., `ADD_16(x)` becomes `x + 0x10` without indicating it was a macro)
+- Inline assembly transformed to intrinsics (`__aarch64_ldadd4_acq_rel`) without explanation of the original asm structure
+- No comments explaining the test scenarios from the original source (PP-L2-01, ASM-L4-01, etc.)
+- Function organization is flat address-based listing, losing the logical grouping from the original source
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 7/10)  
+The decompiled code maintains readable control flow structures that match the original logic. Loops, conditionals, and early returns are properly structured.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 3/10)  
+Nearly all variables use generic auto-generated names that provide no semantic meaning. This severely impedes understanding of what each variable represents and its role in the computation.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `param_1 > 0x400` suggests a size check; `*param_2` in atomic operation suggests a counter) to generate semantically meaningful names
+2. **Recover preprocessor macro semantics**: Detect when constants are derived from macros (e.g., `0x10` from `ADD_16`) and add comments indicating the original macro expansion
+3. **Preserve logical organization**: Group functions based on comments or section markers in the original source, rather than purely address-based ordering

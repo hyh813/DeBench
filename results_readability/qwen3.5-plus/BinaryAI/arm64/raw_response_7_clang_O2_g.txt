@@ -1,0 +1,103 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`iVar1`, `iVar2`, `uVar5`, `param_1`, `local_40`) with no semantic meaning. Original names like `result`, `encrypted`, `decrypted`, `buffer` are completely lost, making it difficult to track data flow.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Original function names are preserved well (`param_fake_branch`, `param_opaque_predicate`, `param_vectorized_loop`). However, some functions have generic names (`FUN_00100730`, `FUN_001008bc`) and external functions are marked awkwardly as `<EXTERNAL>::`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x5a` (XOR key), `0x14`, `0x23`, `0xe1` appear without explanation. The original `0xDEADBEEF` is not visible (function simplified). Hex literals in return values (`0x7a314`, `0x13ba`) obscure expected decimal results.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Compiler artifacts present: external function stubs that call themselves (`strlen`, `signal`), TM clone functions (`deregister_tm_clones`), and initialization code (`_init`, `_start`). Some functions reduced to empty `return;` statements.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: GCD loops recovered but use awkward `do-while` patterns. `param_vectorized_loop` has extremely complex branching with goto label `LAB_00100c50`. Tail recursion converted to formula instead of natural recursive structure despite `-O0` compilation.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical functions lost entirely (`param_fake_branch` is just `return;`, `param_buffer_overflow_stack/heap` are empty). `call_*` functions constant-folded to return values instead of calling underlying functions, losing call relationships.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom reasonably well. However, `param_vectorized_loop` has complex forward jumps and `param_opaque_predicate` has nested conditionals that disrupt flow. Goto usage in vectorized loop is jarring.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: `test_obf_opt_edge` duplicates decryption logic from `param_string_encryption`. Constant folding in `call_*` functions creates redundancy between caller and callee representations. Vectorized loop has significant code duplication for SIMD paths.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mixed type degradation: `param_instruction_substitution` takes `uint` instead of `int`, `param_integer_overflow` parameters changed from `int` to `uint`. Generic types like `undefined8`, `undefined4` appear frequently. Original `size_t`, `char*` distinctions often lost.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Limited structs in original code. `__jmp_buf_tag` used for `jmp_buf` is reasonable. The bitfield struct in `param_implementation_defined` is completely lost (function returns constant `0x30`). No field name recovery visible.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(undefined8 *)`, `(ulong)`, `(int)((ulong)... >> 0x20)`. `param_null_pointer_deref` takes `undefined4 *` instead of `int *`. Signal handler casts `(__sighandler_t)0x0` are opaque. Pointer arithmetic on `undefined8 *` is dangerous.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero comments in decompiled code. No algorithm explanations (GCD, XOR decryption not identified). No decompilation confidence indicators. Original source had extensive comments explaining obfuscation techniques—all lost.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. XOR decryption pattern in `decrypt_string` not labeled. Tail call optimization transformation not noted. No design pattern recognition whatsoever.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No warnings that `param_fake_branch` lost all logic (reduced to `return;`). No indication that `param_buffer_overflow_*` functions are empty. Silent failures on functions that should have complex behavior.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `param_division_by_zero` should note `param_1 != 0` for normal path). No postconditions. Error handling via `setjmp/longjmp` not explained. No contract information recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but not documented. Global variables (`jmp_buffer`, `div_zero_caught`, `segv_caught`) used without explanation. No call graph documentation. `test_obf_opt_edge` calls many functions without indicating relationships.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output, reasonable for decompiled code. External functions grouped at top. No logical grouping comments separating obfuscation/optimization/edge case sections (present in original). Static functions not properly scoped.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies (`signal`, `strlen`, `printf`, `longjmp`) require stubs. Type mismatches (`undefined8`, `undefined4`) would prevent clean compilation. Would need significant modification to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+7+5+5)/4 = 5.0
+L2 Average: (5+5+6+5)/4 = 5.25
+L3 Average: (5+6+4)/3 = 5.0
+L4 Average: (2+3+3+2)/4 = 2.5
+L5 Average: (5+6+5)/3 = 5.33
+
+Overall = (5.0 × 0.30) + (5.25 × 0.25) + (5.0 × 0.20) + (2.5 × 0.15) + (5.33 × 0.10)
+        = 1.50 + 1.31 + 1.00 + 0.38 + 0.53
+        = 4.72/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects
+- **Function `param_fake_branch` completely lost**: Reduced to `return;` when original had two conditional branches with `x*x<0` and `strlen(str)<0` checks
+- **Variable names universally generic**: `iVar1`, `iVar2`, `uVar5`, `param_1` provide zero semantic information about purpose
+- **Zero comments or documentation**: No algorithm identification, no decompilation confidence indicators, no explanation of transformations
+- **Type degradation throughout**: `undefined8`, `undefined4`, `uint` instead of `int` obscures original type intent
+- **Buffer overflow functions empty**: `param_buffer_overflow_stack` and `param_buffer_overflow_heap` both just `return;` losing all overflow logic
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)**: Original function names like `param_opaque_predicate`, `param_vectorized_loop`, `param_tail_call_optimized` were preserved, maintaining semantic connection to source.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)**: Complete absence of comments means no algorithm identification, no transformation notes, and no guidance for understanding recovered logic—critical for decompiled code analysis.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement semantic variable naming**: Analyze usage patterns to infer names (e.g., variables in loop bounds → `count`, `limit`; XOR operations → `key`, `mask`)
+2. **Add decompilation confidence annotations**: Flag functions where logic was simplified/lost (e.g., `// WARNING: Original conditional branches eliminated`)
+3. **Recover algorithm patterns**: Identify common patterns (GCD, XOR decryption, tail recursion) and add explanatory comments with original intent

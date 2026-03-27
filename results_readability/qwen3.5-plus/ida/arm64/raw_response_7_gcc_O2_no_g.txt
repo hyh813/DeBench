@@ -1,0 +1,109 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (v0, v1, v2, a1, a2, result) with zero semantic recovery. For example, `param_opaque_predicate` uses `v1`, `v2`, `v3`, `v4` instead of meaningful names like `predicate_result`, `gcd_temp`, etc.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (param_fake_branch, call_opaque_predicate, param_vectorized_loop), but some are generic (sub_860, init_proc). Function names accurately reflect source intent where preserved.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers present without explanation (0x5A, 0xF, 0x10u). Some constants folded away entirely (call_fake_branch returns literal 10 instead of showing computation). No named constant recovery.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Moderate compiler artifacts present: redundant casts `(unsigned int)`, `(unsigned __int8)`, and type annotations like `// x0`, `// w1`. Some functions show optimization noise (LOBYTE, LODWORD macros).
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loops recovered as do-while instead of for loops. Tail recursion converted to iterative loops (param_tail_call_optimized). At O2 this is expected, but structure differs from source's clean if/return patterns.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Critical failure: `param_fake_branch` and `param_buffer_overflow_stack` decompile to empty functions `{ ; }`. `call_fake_branch` returns constant 10 instead of calling param_fake_branch(10), losing call relationship.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with reasonable structure. Some functions use do-while patterns that could be cleaner for-loops, but execution flow is traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding creates redundancy (call_opaque_predicate duplicates GCD logic instead of calling param_opaque_predicate). Some expressions computed multiple times in test_obf_opt_edge.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Generic types throughout (__int64, unsigned int) instead of specific types (int32_t, size_t). Pointer types often unclear (void* vs char*). Original `int` parameters become `unsigned int` in some cases (param_instruction_substitution).
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Limited struct recovery visible. The bitfield struct in param_implementation_defined is completely optimized away (returns constant 48). Array parameters decay to pointers without size information.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(unsigned int)(result + v4)`, `(__sighandler_t)div_zero_handler`. Pointer arithmetic visible (`a3 + 4 * v4`) without bounds checking indicators.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Almost no meaningful comments. Only auto-generated type annotations (`// x0`, `// BYREF`). No algorithm explanations, no indication of optimization transformations, no semantic documentation.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No pattern recognition visible. GCD algorithm in param_opaque_predicate not identified. Tail-call optimization not noted. String decryption pattern not labeled as such.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (14 functions) but no explanation why. Empty functions (param_fake_branch) not flagged as suspicious. No confidence indicators on uncertain recoveries.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero contract information recovered. No preconditions (e.g., "a1 != 0" for division), no postconditions, no error condition documentation. Signal handler contracts completely lost.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented. test_obf_opt_edge shows call sequence but no call graph. Global variables (encrypted_0, jmp_buffer) referenced without context.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order matching source structure. Related functions grouped (param_* followed by call_*). Startup/teardown functions appropriately separated.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: 14 external functions failed to decompile (strlen, signal, malloc, etc.). Would require significant stubbing to compile. No dependency documentation or header declarations provided.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+5+7+6)/4 = 6.00 × 0.25 = 1.500
+Level 3 (Type):        (5+5+6)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (3+4+5+2)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+7+4)/3   = 5.67 × 0.10 = 0.567
+
+Overall Score: 5.23/10
+```
+
+### Overall Readability Score: **5.2/10**
+
+### Critical Defects:
+- **`param_fake_branch` decompiles to empty function** `{ ; }` - complete semantic loss of fake branch logic
+- **`param_buffer_overflow_stack` decompiles to empty function** - buffer overflow test logic completely lost
+- **All variables use generic names** (v0, v1, a1, a2) with zero semantic recovery despite clear usage patterns
+- **Constant folding hides actual logic** - call_* functions return constants instead of showing computation flow
+- **14 library functions failed to decompile** with no stubs or documentation provided
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved accurately, maintaining semantic connection to source code purpose
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- Zero precondition/postcondition documentation despite functions having clear contracts (e.g., division requires non-zero divisor)
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (e.g., `a1` in division context should be `divisor`, loop counters should be `i`)
+2. **Flag semantic loss explicitly** - When functions decompile to empty or constants, add warnings like `// WARNING: Original logic optimized away, actual behavior may differ`
+3. **Recover function contracts from signal/error handling** - Detect signal handlers and setjmp/longjmp patterns to document error conditions and preconditions

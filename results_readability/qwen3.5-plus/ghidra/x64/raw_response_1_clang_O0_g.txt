@@ -1,0 +1,120 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30%) ===
+
+**1. Variable Naming Quality:** Score: 6/10  
+Justification: Parameter names preserved well (a, b, c, x, op), but local variables use generic patterns like `local_c`, `iVar1`, `x_local` that obscure semantic meaning. Original `temp1`, `temp2`, `temp3` in sequential_ops were optimized away entirely.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Excellent recovery—all 20+ test functions retain original names (sequential_ops, nested_if_deep, duffs_device). Only runtime functions use generic names (_init, FUN_00101020).
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Decimal constants converted to hex (0x14 instead of 20, 0x32 instead of 50) without explanation. No named constants recovered; magic numbers like 0x3e9 (1001) appear without context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts; `_local` suffixes on parameters add clutter. Warning comments like "WARNING: Unknown calling convention" appear but don't significantly impede reading.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25%) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops (for/while/do-while) recovered excellently. However, switch_default and switch_fallthrough converted to if-else chains, losing switch semantics. Goto patterns successfully restructured to conditionals.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Appropriate function granularity maintained; no excessive inlining. Helper functions (double_value, triple_value) remain separate. No monolithic functions observed.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with early returns. Duff's device uses goto labels (switchD_00101e40_caseD_7) disrupting flow, but this is inherent to the pattern.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code. Duff's device shows expected case duplication from fall-through logic. No loop unrolling artifacts observed at -O0.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20%) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic int types preserved, but `undefined4` used for some returns. Function pointers use custom typedef `_func_int_int` instead of standard syntax. Array types correctly recovered (int arr[5], int matrix[3][4]).
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays well-recovered with proper dimensions. No complex structs in this code to evaluate. jmp_buf cast to `(__jmp_buf_tag *)` shows type awareness.
+
+**11. Type Safety:** Score: 8/10  
+Justification: No unsafe casts observed. Function pointer calls properly typed. Pointer arithmetic minimal and correct. No buffer-overflow-prone patterns introduced.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15%) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no semantic comments. Only auto-generated warnings present ("WARNING: Subroutine does not return", "WARNING: Could not recover jumptable"). Original source's extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Duff's device structure partially recovered but not named/identified. State machine pattern in state_machine function not labeled. No algorithm pattern documentation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some warnings present ("Removing unreachable block", "Could not recover jumptable at 0x00102b6d"). computed_goto flagged as "Treating indirect jump as call". Inconsistent coverage across functions.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like duffs_device (requires n>0) have no contract hints. Error conditions not explained.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10%) ===
+
+**16. Cross-Reference Clarity:** Score: 7/10  
+Justification: Function calls clearly visible. Global variables referenced (jump_buffer, DAT_*). Function pointer arrays (funcs[], ops[]) properly shown with assignments.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. Test functions grouped (test_control_flow_l1/l2/l3). Single output file with no header separation.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code appears structurally compilable. External dependencies (printf, memcpy, memset, longjmp) need linking. Custom typedefs (_func_int_int) require definition.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (6+9+5+7)/4 = 6.75 × 0.30 = 2.025
+Level 2 (Structural):  (7+8+7+8)/4 = 7.50 × 0.25 = 1.875
+Level 3 (Type):        (6+7+8)/3 = 7.00 × 0.20 = 1.400
+Level 4 (Semantic):    (2+4+6+1)/4 = 3.25 × 0.15 = 0.488
+Level 5 (Contextual):  (7+6+6)/3 = 6.33 × 0.10 = 0.633
+─────────────────────────────────────────────────────
+Overall Score:                                  6.42/10
+```
+
+### Overall Readability Score: **6.4/10**
+
+---
+
+### Critical Defects
+- **Variable `local_c`, `iVar1`** should be named based on semantic usage (e.g., `result`, `return_value`)
+- **Hex literals** (0x14, 0x32, 0x3e9) should be converted to decimal or named constants
+- **No semantic comments** recovered despite extensive original documentation
+- **Switch statements** degraded to if-else chains in switch_default and switch_fallthrough
+- **No contract documentation** for functions with preconditions (duffs_device requires n>0)
+
+---
+
+### Best Quality Aspect
+- **Function Naming Quality (9/10)** — All 20+ test functions retained original meaningful names, enabling immediate recognition of purpose without analysis.
+
+---
+
+### Most Needs Improvement
+- **Assertion & Contract Recovery (1/10)** — Zero preconditions, postconditions, or error handling documentation recovered, making API usage unclear without source reference.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement semantic comment recovery** — Detect and preserve original source comments, or generate explanatory comments for non-trivial logic patterns (e.g., "Duff's device: loop unrolling optimization").
+
+2. **Add contract inference engine** — Analyze parameter validation patterns (null checks, range checks) and generate @requires/@ensures documentation automatically.
+
+3. **Improve switch statement recovery** — Better detect switch patterns from if-else chains, especially for fall-through cases, and restore switch-case syntax with proper break annotations.

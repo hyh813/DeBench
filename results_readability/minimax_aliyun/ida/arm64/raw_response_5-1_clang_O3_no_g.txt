@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `a1`, `a2`, `result` throughout. For example, in `test_cpp_rtti`, variables `v0`, `v1`, `v2`, `v3` obscure their roles as object pointers and result values. The original source used meaningful names like `obj1`, `obj2`, `result`.
+
+**2. Function Naming Quality:** Score: 4/10  
+Justification: Some functions like `call_virtual_func` and `test_cpp_member_func` are properly named, but most use mangled C++ symbols (e.g., `_Z20test_cpp_member_funcv`, `_ZN9ContainerIiEC2Ev`). The decompiler should demangle these to match source names like `Container<int>::Container`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Some literals are clear (e.g., `42` for thrown exception value), but magic numbers like `1001` in `1001 * LifecycleClass::instance_count + 21` are unexplained. The value `1001` is actually `1000 + 1` from the original `instance_count * 1000 + 1` but this relationship is lost.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution includes 20 "FAILED to decompile" messages for standard library functions, JUMPOUT statements, thunk attributes, and raw data references like `xmmword_1767`. This clutter significantly impedes readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural control flow. However, `test_cpp_member_func` uses awkward array initialization patterns (`*(_OWORD *)v1 = *(_OWORD *)"Test"`) that obscure the original simple constructor call `SimpleClass obj(5, "Test")`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries match source well. Each test function (`test_cpp_member_func`, `test_cpp_constructor`, etc.) is properly separated. Template instantiations are correctly identified as separate functions.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. The `test_cpp_oo_features` function has sequential calls that are easy to follow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Some optimization artifacts exist but are manageable. The `test_cpp_member_func` shows some redundancy in string handling that could be cleaner.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses generic types like `__int64`, `_BYTE`, `_DWORD`, `_QWORD` which are architecture-specific rather than semantic. Function pointer types like `__int64 (__fastcall ***a1)(_QWORD)` for virtual calls are unclear. The original used clear types like `Base*`, `int`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: No struct recovery - all composite types use raw pointer arithmetic. For example, `*(_DWORD *)(result + 40)` instead of `container.size`. The original `Container<int>` class with its `data[10]` array and `size` member is completely lost.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Moderate type safety issues. The virtual function call `(**a1)(a1)` uses triple indirection that's hard to verify. Some casts like `*(_OWORD *)v1` for string handling are potentially unsafe but not severe.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No useful comments explaining the logic. The only comments are decompiler-generated headers and "FAILED to decompile" messages. Original source had detailed comments explaining each test case.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some C++ idioms are partially recognized - virtual function calls through vtable (`**a1`) and `__dynamic_cast` are identified. However, the patterns are not explicitly named or documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: The "FAILED to decompile" messages indicate problems but provide no resolution guidance. No flags for indirect calls that couldn't be resolved or unusual stack patterns.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No contract information recovered. Preconditions like "ptr != NULL" or postconditions are not documented. The original source had clear expectations for each function.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are somewhat clear through function names, but not explicitly documented. Virtual dispatch relationships and inheritance hierarchies are not clearly indicated.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are grouped logically - test functions together, template instantiations together, class methods together. However, the organization is flat without namespace or class structure.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: The code has "F" markers indicating compilation will fail. Many external functions are referenced but not defined (puts, strlen, __cxa_throw, etc.). Requires significant patching to compile.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.1/10
+
+**Critical Defects:**
+- Variable naming uses only generic names (`v0`, `v1`, `a1`, `result`) losing all semantic meaning from source
+- Composite type recovery completely failed - all structs/classes reduced to raw pointer arithmetic (`*(_DWORD *)(result + 40)`)
+- No struct field names recovered - original `Container.size` becomes meaningless offset calculation
+- 20 functions failed to decompile, leaving gaps in the code
+- Mangled C++ names not demangled, making it difficult to identify original functions
+
+**Best Quality Aspect:** Function Decomposition (scored 7/10)  
+Function boundaries are well-preserved, matching the original source's modular structure with separate functions for each test case.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Every variable uses generic names like `v0`, `v1`, `v2`, `result`, `a1`, `a2` that completely obscure their semantic purpose. The original source had clear names like `obj`, `ptr1`, `ptr2`, `data`, `size` that immediately conveyed intent.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `*(_DWORD *)(x + 40)` for size field → name it `size` or `count`)
+2. **Recover struct/class definitions**: Instead of raw pointer arithmetic, reconstruct the composite types with field names and offsets
+3. **Demangle C++ symbols**: Convert `_ZN9ContainerIiEC2Ev` to `Container<int>::Container` automatically

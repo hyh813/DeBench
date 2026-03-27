@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `v1`, `v2`, `v3` (e.g., `int64_t v1 = __readfsqword(40)` in `call_strcpy`), obscuring their semantic purpose. Some names like `strcmp_rc` and `thread_ret` are preserved, but globals use cryptic `g1`, `g2`, `g3` naming.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core functions retain original names (`param_strcpy`, `call_strcpy`, `thread_compute`), but 50+ helper functions use address-based names (`function_23a0`, `function_23b0`). This mixed approach partially preserves semantic meaning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `42`, `100`, `500` appear without explanation. Chinese string literals are shown as hex escapes (`"\xe6\xb5\x8b\xe8\xaf\x95..."`), reducing readability. Some constants like `AF_INET`, `SOCK_STREAM` are preserved.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`__readfsqword(40)`, `__stack_chk_fail()`) appear in nearly every function. Assembly intrinsics like `__asm_rep_movsb_memcpy` and `__asm_rep_stosd_memset` add noise without semantic value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Multiple functions use goto labels (`lab_0x3770`, `lab_0x3856`, `lab_0x3b52`) instead of structured loops. `param_pthread_join` has complex goto-based loop reconstruction that obscures the original for-loop structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are reasonably sized, but some have excessive parameters (`param_linux_syscall` has `a1, a2, a3, a4` where only `a1` is used). Thread functions are properly separated but wrapper functions expose implementation details.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Forward jumps into loop bodies disrupt top-to-bottom reading. `param_thread_local_storage` has multiple goto targets that require backtracking to understand control flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Stack canary checks are duplicated across 30+ functions. Some redundant variable assignments exist (`int64_t v1 = v1 & 0xffffffff`), but no obvious dead code blocks.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Mix of `int32_t`, `int64_t`, `char*` with inconsistent usage. `param_strlen` returns `int64_t` but original returns `int`. Many pointers cast to `int64_t*` losing semantic type information.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Structs defined (`struct _IO_FILE`, `struct ipc_perm`) but all fields use generic names (`e0`, `e1`, `e2`...). No semantic field names recovered, making struct usage opaque (e.g., `struct stat` has 20 fields named `e0` through `e19`).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(int64_t *)thread_ret`, `(char *)&v2`, `(int32_t *)(4 * v2 + v1)`. Pointer arithmetic visible throughout. `param_fork_exec` casts `pid_t` to `uint32_t` then compares with signed values.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only line range comments present (`// Line range: 1169 - 1174`). No algorithm explanations, no decompilation confidence indicators. Comments are auto-generated metadata, not semantic documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strlen`, `malloc`, `pthread_create`). Thread patterns partially identified but no design pattern naming. Atomic operations degraded to `__atomic_fetch_add` without explanation.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: `UNREACHABLE` markers present after `_exit()` calls. No warnings about indirect calls that couldn't be resolved. `param_linux_syscall` signature degraded (4 params vs 1 in source) without anomaly flag.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: dst != NULL"). No postcondition inference. Error conditions not documented. Return value semantics lost (e.g., `param_strcmp` normalization to -1/0/1 not explained).
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variable usage not documented (e.g., `atomic_counter`, `shared_counter` used across multiple functions without context). No callback relationship indicators.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All 126 functions in single file. No logical grouping comments separating standard library tests from system calls from threading. Functions somewhat grouped by type but no explicit organization.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Includes present for most dependencies. Metadata indicates successful compilation. Some functions may need stubs for `__libc_start_main`, `__printf_chk`. Portability issues with `__readfsqword` (x86-specific on ARM64 binary).
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+6+5+5)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+6+5+6)/4 = 5.50 × 0.25 = 1.38
+Level 3 (Type):        (5+4+4)/3   = 4.33 × 0.20 = 0.87
+Level 4 (Semantic):    (4+5+4+3)/4 = 4.00 × 0.15 = 0.60
+Level 5 (Contextual):  (5+5+7)/3   = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 4.92/10
+```
+
+**Overall Readability Score:** 4.9/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on usage (e.g., `stack_canary`, `loop_counter`, `thread_id`)
+- **Struct fields all generic** (`e0`, `e1`, `e2`...) losing all semantic meaning for `struct stat`, `struct ipc_perm`
+- **Global variables `g1`-`g36`** have no semantic names despite being string constants for test output
+- **Control flow uses goto** (`lab_0x3770`, `lab_0x3856`) instead of recovering original for/while loops
+- **Function signature degradation**: `param_linux_syscall` has 4 parameters when source has 1, `param_strlen` has 0 parameters when source has 1
+
+### Best Quality Aspect:
+- **Build System Compatibility (7/10)** - The decompiled code includes necessary headers and metadata indicates successful compilation, requiring minimal stubs to build.
+
+### Most Needs Improvement:
+- **Assertion & Contract Recovery (3/10)** - No preconditions, postconditions, or error condition documentation recovered, making it difficult to understand function contracts and failure modes.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable naming** - Analyze how variables are used (loop counters, pointers, sizes) to infer semantic names like `iteration_count`, `buffer_ptr`, `array_length`
+2. **Recover struct field semantics** - Use type propagation and access patterns to name struct fields (e.g., `st_size`, `st_mode` for `struct stat`) instead of `e0`, `e1`, `e2`
+3. **Add decompilation confidence annotations** - Flag uncertain reconstructions with comments like `// DECOMPILER UNCERTAIN: indirect call target` and document parameter signature mismatches

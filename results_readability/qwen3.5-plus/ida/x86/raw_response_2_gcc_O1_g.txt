@@ -1,0 +1,102 @@
+## EVALUATION OF DECOMPILED CODE READABILITY
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 5/10  
+Justification: Variables like `v0`, `v1`, `v2`, `a1` through `a15` in `test_array_types` are generic and obscure purpose. However, some variables like `next`, `data`, `args`, `matrix`, `cube` are meaningful, creating inconsistent naming quality.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Core functions preserved original names (`process_char`, `array_1d_stack`, `struct_simple`, `linked_list`). Only runtime helpers use generic names (`sub_1030`, `sub_1040`), and `main` failed to decompile.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `65`, `0x1Au`, `0x14u` (stack canary offset), `0xFFF00000` (bitfield mask) lack explanation. Floating-point literals (`1.5`, `0.5`, `2.0`) are clear in context.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts: `__readgsdword(0x14u)` stack canaries, `__printf_chk` instead of `printf`, register annotations (`// eax`, `// edx`), and 6 failed decompilations pollute the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: `process_char` uses `(unsigned __int8)(c - 65) < 0x1Au` instead of `c >= 'A' && c <= 'Z'`. `enum_switch` uses chained `if` instead of `switch`. Loop constructs use pointer comparison (`v2 != &arr[n]`) instead of index-based conditions.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity matches source well. However, `test_array_types` has absurd parameter list (`a1` through `a15`, `char a15`) indicating decompilation failure. Most other functions have appropriate cohesion.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some `do-while` loops with pointer arithmetic (`v2 != &arr[n]`) are less natural than `for` loops. No excessive goto usage in recovered functions.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: `array_3d` shows loop unrolling (`v3[4] + v3[3] + v3[2] + v3[1] + *v3`). `struct_bitfields` has redundant bit manipulation. No significant dead code observed in recovered functions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `char`, `float`, `double`, `__int64`). `long` degraded to `int` (platform difference). `const` qualifiers lost in some cases (`volatile_access` shows `2 * *p` instead of two separate reads). Function pointer signatures preserved correctly.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: All structs recovered with field names (`Point3D`, `Rect`, `Widget`, `Node`, `Flags`, `UnionData`, `Graph`). Bitfield access in `struct_bitfields` uses raw shifts/masks instead of named bitfield syntax, losing semantic clarity.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts: `(_DWORD *)p`, `(char *)p`, `(int*)p` in `ptr_void` and `ptr_cast`. `opaque_handle_op` casts `void*` to `_DWORD` without validation. No bounds checking on array access in `array_oob`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments explaining logic. Only register annotations (`// eax`, `// [esp+0h]`) and decompilation failure markers. No algorithm explanations, API contracts, or confidence indicators.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Linked list traversal (`linked_list`), binary tree recursion (`binary_tree_sum`), and state machine (`enum_switch`) patterns present but unnamed. No design pattern identification or algorithm naming.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Six functions marked "FAILED to decompile" which is honest. Stack canary checks (`__readgsdword`) present without explanation. No warnings about potential undefined behavior in `array_oob` or type-unsafe casts.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition documentation (e.g., "requires: p != NULL"). NULL checks exist in code (`if (!head) return 0`) but not documented as contracts. No postcondition or invariant recovery.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships undocumented. `complex_callback` called by `ptr_func_complex` but no call graph. Global variables (`_bss_start`, `GLOBAL_OFFSET_TABLE_`) used without context.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in source-order grouping (data types → arrays → pointers → composites). No header file structure, no namespace organization, no static function scoping documentation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Will not compile standalone. External functions (`puts`, `__printf_chk`, `__libc_start_main`) undeclared. Six functions failed decompilation. Architecture-specific constructs (`__readgsdword`, `__asm` blocks) present.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (5 + 8 + 6 + 5) / 4 = 6.00
+Level 2 Average: (6 + 7 + 7 + 7) / 4 = 6.75
+Level 3 Average: (7 + 8 + 5) / 3 = 6.67
+Level 4 Average: (2 + 4 + 5 + 3) / 4 = 3.50
+Level 5 Average: (6 + 6 + 4) / 3 = 5.33
+
+Overall = (6.00 × 0.30) + (6.75 × 0.25) + (6.67 × 0.20) + (3.50 × 0.15) + (5.33 × 0.10)
+Overall = 1.80 + 1.69 + 1.33 + 0.53 + 0.53 = 5.88
+```
+
+**Overall Readability Score: 5.9/10**
+
+### Critical Defects:
+- **Variable `a1` through `a15` in `test_array_types`** should reflect actual parameter purposes (array data, loop counters, etc.)
+- **`process_char` uses `(c - 65) < 0x1Au`** instead of readable `c >= 'A' && c <= 'Z'`
+- **`volatile_access` optimized to `2 * *p`** losing the semantic meaning of two separate volatile reads
+- **`struct_bitfields` uses raw bit shifts** instead of named bitfield access, obscuring the flag structure
+- **No comments explaining any non-trivial logic** despite complex operations like bitfield extraction and pointer arithmetic
+
+### Best Quality Aspect:
+- **Composite Type Recovery (8/10)** - All struct/union definitions recovered with accurate field names and nesting, enabling clear understanding of data structures like `Widget`, `Graph`, and `TreeNode`.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (2/10)** - Virtually no documentation exists; even simple explanations of magic numbers, algorithm intent, or decompilation confidence would dramatically improve readability.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover high-level control flow patterns** - Transform `(c - 65) < 0x1Au` back to `c >= 'A' && c <= 'Z'` and restore `switch` statements from chained conditionals.
+2. **Add semantic comments for non-obvious operations** - Document bitfield layouts, explain stack canary checks, and flag potential undefined behavior like `array_oob`.
+3. **Infer variable names from usage context** - Variables used in loop bounds should be named `count`/`limit`, pointer arithmetic variables should indicate `offset`/`index`, and test function parameters should reflect their actual roles.

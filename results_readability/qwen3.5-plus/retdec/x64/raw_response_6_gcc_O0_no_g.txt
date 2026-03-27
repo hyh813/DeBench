@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are predominantly generic (`v1`, `v2`, `v3`, `temp`, `result`) obscuring semantic purpose. For example, in `param_strcpy`, parameters are `int64_t * str, int64_t str2` instead of `char *dst, const char *src`. Loop counters become `v8`, `v12` instead of `i`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Main test functions preserved well (`param_strcpy`, `call_strcmp`, `thread_compute`). However, 80+ helper functions use mechanical names (`function_23d0`, `function_2400`) for standard library wrappers that should be named `strcpy_wrapper`, `unlink_wrapper`.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers pervasive: `0xffffffff` for -1, `42` as success code, `0xfffffffe`/`0xfffffffd` for error codes. String literals preserved but global variables use hex-encoded UTF-8 (`g4 = "=== \xe6\xb5\x8b..."`). System constants like `SYS_fork`, `AF_INET` recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks inserted in nearly every function (`__readfsqword(40)`, `__stack_chk_fail()`). Redundant type casts throughout (`(int64_t)`, `(int32_t)`, `(char *)`). Frame pointer manipulation visible. These artifacts add ~15% code bloat.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Extensive goto usage disrupts natural flow (`lab_0x2e4a`, `lab_0x3c5e`, `lab_0x447b_2`). In `param_thread_local_storage`, complex label-based branching replaces clean if-else. Loops often use `while` with manual increments instead of `for` constructs.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved from source. However, `param_thread_local_storage` is 200+ lines with nested logic that should be split. Helper functions for library calls (`function_2440` for `strcpy`) are appropriate but numerous.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Forward jumps with goto labels break top-to-bottom reading. `param_fread_fwrite` has 4 goto targets consolidating exit paths. `param_pthread_join` uses labels (`lab_0x3cac`, `lab_0x3c5e`) instead of structured returns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks repeated identically in 50+ functions. Type cast patterns duplicated (`(int64_t)`, `(int32_t)`). Some dead code paths visible in signal handling (`param_signal_handling` has unreachable branches).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type degradation: everything is `int64_t`, `int32_t`, or `char *`. Original types lost (`size_t`, `FILE *`, `pthread_t`, `pid_t`, `socklen_t`). Function `param_memcpy` uses `int64_t * a1, int64_t * a2` instead of `void *dst, const void *src`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Structs defined but with meaningless field names (`e0`, `e1`, `e2`...). `struct stat` has 20 fields all named `e0`-`e19`. `struct _IO_FILE` has single field `int32_t e0`. No semantic field recovery despite debug symbols (-g flag).
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(char *)str`, `(int64_t *)-1`, `(struct sockaddr *)&addr`. Pointer arithmetic on generic `int64_t` (`4 * v3 + v1`). No const correctness preserved. Buffer operations lack bounds checking indicators.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No algorithm explanations, no decompilation confidence indicators, no API contracts. Original source had extensive Chinese/English comments explaining each test case - all lost.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Standard library calls recognized (`strcpy`, `strcmp`, `pthread_create`). However, higher-level patterns not identified: producer-consumer pattern in `param_condition_variable`, mutex-protected counter in `param_mutex_lock`, TLS pattern in `thread_tls_test`.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Stack canary checks not explained. Signal handling (`param_signal_handling`) has complex logic with no indication of potential issues. Silent about type-unsafe operations.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., "requires: str != NULL"). No postconditions inferred. Error return codes (`0xffffffff`, `42`) not explained. Original source had clear `// 期望: 8` comments - all lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function prototypes listed at top (129 functions). Global variables declared (`g1`-`g45`) but with no usage documentation. Call relationships not documented. Thread function callbacks not explicitly linked to creation sites.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Single file with all functions. Functions grouped somewhat logically (library tests, syscall tests, thread tests). No header file separation. Global variables mixed with function code. Original 3-section organization partially visible.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". Includes present (`pthread.h`, `stdio.h`, `stdlib.h`). Some undefined references possible (`__asm_hlt()`, `__readfsqword`). Minor patching needed for full compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):      (4+7+5+4)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):   (4+6+4+5)/4 = 4.75  × 0.25 = 1.19
+Level 3 (Type System):  (3+3+3)/3   = 3.00  × 0.20 = 0.60
+Level 4 (Semantic):     (1+5+2+2)/4 = 2.50  × 0.15 = 0.38
+Level 5 (Contextual):   (5+6+7)/3   = 6.00  × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                                  4.27/10
+```
+
+**Overall Readability Score: 4.3/10**
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `v3`** should be named based on usage (e.g., `file_descriptor`, `bytes_read`, `thread_id`)
+- **Control flow uses goto** (`lab_0x2e4a`, `lab_0x3c5e`) instead of structured if-else and loops
+- **Struct fields all generic** (`e0`, `e1`, `e2`) losing all semantic meaning despite -g debug symbols
+- **Zero comments** in decompiled output despite extensive original documentation
+- **Type degradation** - everything is `int64_t`/`int32_t` instead of proper types (`FILE*`, `pthread_t`, `size_t`)
+
+### Best Quality Aspect:
+- **Build System Compatibility (7/10)** - Code appears compilable with includes present and metadata confirming successful compilation
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation, explanations, or decompilation confidence indicators despite original source having extensive comments
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from debug symbols** - The -g flag was used but variable names (`dst`, `src`, `buffer`, `file_path`) were not recovered
+2. **Replace goto patterns with structured control flow** - Detect label-based exit consolidation and convert to proper if-else/return statements
+3. **Add decompilation confidence annotations** - Flag uncertain type conversions, unresolved indirect calls, and potential optimization artifacts

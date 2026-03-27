@@ -1,0 +1,4920 @@
+source_filename = "test"
+target datalayout = "e-p:32:32-f64:32:64-f80:32-n8:16:32-S128"
+
+%_Unwind_Exception = type { i32 }
+
+@global_var_3b97 = local_unnamed_addr constant i32 -402068349
+@global_var_7397 = constant i32 1863680
+@global_var_724e = local_unnamed_addr constant i32 42272782
+@global_var_7211 = local_unnamed_addr constant i32 1342177228
+@global_var_1f4 = global i32 5
+@global_var_7034 = constant i32 32
+@global_var_6e86 = constant i32 1835008
+@global_var_6d39 = local_unnamed_addr constant i32 -2063069631
+@global_var_6d1d = local_unnamed_addr constant i32 84754946
+@global_var_6cf3 = local_unnamed_addr constant i32 239140864
+@global_var_6cca = local_unnamed_addr constant i32 -846266368
+@global_var_6c63 = local_unnamed_addr constant i32 7168
+@global_var_6c3a = local_unnamed_addr constant i32 1560612162
+@global_var_6c01 = local_unnamed_addr constant i32 469762052
+@global_var_6bdf = local_unnamed_addr constant i32 263180
+@global_var_6bbd = local_unnamed_addr constant i32 67945823
+@global_var_6b9f = local_unnamed_addr constant i32 263180
+@global_var_6b8a = local_unnamed_addr constant i32 -1195114496
+@global_var_6b46 = local_unnamed_addr constant i32 -2013003776
+@global_var_6b25 = local_unnamed_addr constant i32 0
+@global_var_6b03 = local_unnamed_addr constant i32 10239
+@global_var_6ade = local_unnamed_addr constant i32 -840302592
+@global_var_404 = global i32 17
+@global_var_6a90 = local_unnamed_addr constant i32* @global_var_404
+@global_var_6a70 = local_unnamed_addr constant i32* @global_var_404
+@global_var_6a50 = local_unnamed_addr constant i32* @global_var_404
+@global_var_6a2f = local_unnamed_addr constant i32 263180
+@global_var_6a0b = local_unnamed_addr constant i32 263180
+@global_var_69ea = local_unnamed_addr constant i32 67374277
+@global_var_69ca = local_unnamed_addr constant i32 67374277
+@global_var_69ac = constant i32* @global_var_404
+@global_var_6999 = local_unnamed_addr constant i32 0
+@global_var_6979 = local_unnamed_addr constant i32 0
+@global_var_695b = local_unnamed_addr constant i32 1107461384
+@global_var_6941 = constant i32 67945821
+@global_var_68e5 = local_unnamed_addr constant i32 -1610612736
+@global_var_68c0 = local_unnamed_addr constant i32* @global_var_404
+@global_var_688a = local_unnamed_addr constant i32 -836370432
+@global_var_6826 = local_unnamed_addr constant i32 -837156864
+@global_var_67e6 = local_unnamed_addr constant i32 4063231
+@global_var_67ce = local_unnamed_addr constant i32 42272782
+@global_var_67b0 = local_unnamed_addr constant i32 58934277
+@global_var_6777 = local_unnamed_addr constant i32 710656
+@global_var_675a = constant i32 -1157890048
+@global_var_66cc = constant i32 263180
+@global_var_668a = local_unnamed_addr constant i32 1835008
+@global_var_6656 = constant i32 1507327
+@global_var_663c = local_unnamed_addr constant i32 135152896
+@global_var_6622 = constant i32 1610744707
+@global_var_6608 = constant i32 32
+@global_var_65e4 = local_unnamed_addr constant i32 32
+@global_var_65ae = constant i32 2162687
+@global_var_658a = constant i32 21954559
+@global_var_654e = local_unnamed_addr constant i32 67374275
+@global_var_6530 = constant i32 32
+@global_var_6516 = local_unnamed_addr constant i32 3604479
+@global_var_64fe = constant i32 1141181762
+@global_var_64da = local_unnamed_addr constant i32 42272782
+@global_var_64a4 = local_unnamed_addr constant i32* @global_var_404
+@global_var_900c = global i32 36320
+@global_var_b44 = global i32* @global_var_900c
+@global_var_648c = constant i32** @global_var_b44
+@global_var_6468 = local_unnamed_addr constant i32 28
+@global_var_6432 = local_unnamed_addr constant i32 1638399
+@global_var_641a = local_unnamed_addr constant i32 42272782
+@global_var_63f6 = constant i32 271485442
+@global_var_63d6 = constant i32 121110528
+@global_var_63b2 = constant i32 174850048
+@global_var_6362 = local_unnamed_addr constant i32 1103324930
+@global_var_634a = constant i32 42272782
+@global_var_6326 = local_unnamed_addr constant i32 42272782
+@global_var_62f0 = local_unnamed_addr constant i32 67374275
+@global_var_62b0 = local_unnamed_addr constant i32 28
+@global_var_6270 = local_unnamed_addr constant i32 28
+@global_var_6226 = constant i32 1812270402
+@global_var_6206 = local_unnamed_addr constant i32 -982383741
+@global_var_61ce = local_unnamed_addr constant i32 143130624
+@global_var_6196 = local_unnamed_addr constant i32 1157627904
+@global_var_615e = local_unnamed_addr constant i32 1527057730
+@global_var_6122 = constant i32 67374277
+@global_var_60a4 = local_unnamed_addr constant i32 67374277
+@global_var_607b = local_unnamed_addr constant i32 252928
+@global_var_6f0 = constant [12 x i8] c"GLIBC_2.1.3\00"
+@global_var_6038 = local_unnamed_addr constant [12 x i8]* @global_var_6f0
+@global_var_5ffa = local_unnamed_addr constant i32 -844496896
+@global_var_5fc8 = local_unnamed_addr constant i32 222429829
+@global_var_5fa2 = local_unnamed_addr constant i32 106692608
+@global_var_5f60 = local_unnamed_addr constant i32 -12912
+@global_var_5f32 = local_unnamed_addr constant i32 0
+@global_var_5f13 = local_unnamed_addr constant i32 239403008
+@global_var_5ed8 = local_unnamed_addr constant i32 214259461
+@global_var_55c = constant [23 x i8] c"ZNSt8ios_base4InitD1Ev\00"
+@global_var_5ea4 = local_unnamed_addr constant [23 x i8]* @global_var_55c
+@global_var_5e8a = local_unnamed_addr constant i32 1157958978
+@global_var_5e69 = local_unnamed_addr constant i32 214156616
+@global_var_5e26 = constant i32 67374277
+@global_var_5df4 = local_unnamed_addr constant i32* @global_var_404
+@global_var_5dd7 = local_unnamed_addr constant i32 7168
+@global_var_5dad = local_unnamed_addr constant i32 1828946756
+@global_var_5d86 = local_unnamed_addr constant i32 42272782
+@global_var_5d6e = local_unnamed_addr constant i32 67374277
+@global_var_5d56 = local_unnamed_addr constant i32 68157440
+@global_var_5d3e = local_unnamed_addr constant i32 1157627904
+@global_var_5d26 = local_unnamed_addr constant i32 1459948866
+@global_var_5d0e = constant i32 1835008
+@global_var_5cee = constant i32 1836036
+@global_var_5cca = local_unnamed_addr constant i32 18153471
+@global_var_5c90 = constant i32 135152896
+@global_var_5c5a = constant i32 67374277
+@global_var_5c25 = local_unnamed_addr constant i32 1073741773
+@global_var_5bfb = local_unnamed_addr constant i32 7168
+@global_var_5bd0 = local_unnamed_addr constant i32 214259461
+@global_var_5b65 = local_unnamed_addr constant i32 0
+@global_var_5b3d = local_unnamed_addr constant i32 -570425343
+@global_var_5b23 = local_unnamed_addr constant i32 13567
+@global_var_5af1 = local_unnamed_addr constant i32 536871940
+@global_var_5ac6 = local_unnamed_addr constant i32 33885506
+@global_var_5a79 = local_unnamed_addr constant i32 -2063069627
+@global_var_5a4f = local_unnamed_addr constant i32 -3320320
+@global_var_5a25 = local_unnamed_addr constant i32 469762052
+@global_var_59c9 = local_unnamed_addr constant i32 838860748
+@global_var_5992 = local_unnamed_addr constant i32 841627930
+@global_var_5955 = local_unnamed_addr constant i32 453052540
+@global_var_592f = local_unnamed_addr constant i32 -1249536
+@global_var_590d = local_unnamed_addr constant i32 1073741855
+@global_var_58f2 = local_unnamed_addr constant i32 519897087
+@global_var_58bf = local_unnamed_addr constant i32 -1410048
+@global_var_589d = local_unnamed_addr constant i32 -486539235
+@global_var_5886 = constant i32 -377225216
+@global_var_586e = local_unnamed_addr constant i32 -383385600
+@global_var_5831 = local_unnamed_addr constant i32 83886056
+@global_var_580b = local_unnamed_addr constant i32 1695999
+@global_var_57e4 = constant i32 6464
+@global_var_57b3 = local_unnamed_addr constant i32 1561855
+@global_var_578d = local_unnamed_addr constant i32 637534231
+@global_var_5767 = local_unnamed_addr constant i32 -1811456
+@global_var_5741 = local_unnamed_addr constant i32 2097151971
+@global_var_571b = local_unnamed_addr constant i32 1331455
+@global_var_56f3 = local_unnamed_addr constant i32 1288447
+@global_var_56cd = local_unnamed_addr constant i32 -1140850669
+@global_var_56a7 = local_unnamed_addr constant i32 -2113024
+@global_var_5681 = local_unnamed_addr constant i32 1694498783
+@global_var_5659 = local_unnamed_addr constant i32 -855638050
+@global_var_5625 = local_unnamed_addr constant i32 2080374798
+@global_var_5601 = local_unnamed_addr constant i32 620756956
+@global_var_55dd = local_unnamed_addr constant i32 1778384909
+@global_var_55b7 = local_unnamed_addr constant i32 -2463232
+@global_var_5583 = local_unnamed_addr constant i32 794879
+@global_var_555f = local_unnamed_addr constant i32 -2565632
+@global_var_553b = local_unnamed_addr constant i32 709887
+@global_var_5519 = local_unnamed_addr constant i32 1291845591
+@global_var_54ff = local_unnamed_addr constant i32 -2662400
+@global_var_8c7c = global i32 16043
+@global_var_8d4 = global i32* @global_var_8c7c
+@global_var_54dc = local_unnamed_addr constant i32** @global_var_8d4
+@global_var_8c00 = global i32 9868
+@global_var_834 = global i32* @global_var_8c00
+@global_var_54bc = local_unnamed_addr constant i32** @global_var_834
+@global_var_5497 = local_unnamed_addr constant i32 -2826752
+@global_var_5473 = local_unnamed_addr constant i32 449791
+@global_var_544f = local_unnamed_addr constant i32 -2942976
+@global_var_542a = local_unnamed_addr constant i32 467992575
+@global_var_5405 = local_unnamed_addr constant i32 16777242
+@global_var_53e1 = local_unnamed_addr constant i32 1426063313
+@global_var_53bd = local_unnamed_addr constant i32 -1879048170
+@global_var_5394 = constant i32 4800
+@global_var_5380 = local_unnamed_addr constant i32 -13225
+@global_var_5367 = local_unnamed_addr constant i32 -3607808
+@global_var_5343 = local_unnamed_addr constant i32 935167
+@global_var_5320 = constant i32 -15685
+@global_var_5309 = local_unnamed_addr constant i32 2097151936
+@global_var_52e5 = local_unnamed_addr constant i32 1614480155
+@global_var_52c3 = local_unnamed_addr constant [4 x i8] c"seB\00"
+@global_var_52ad = local_unnamed_addr constant i32 822083584
+@global_var_5297 = local_unnamed_addr constant [6 x i8] c"ddleA\00"
+@global_var_527d = constant [8 x i8] c"Derived\00"
+@global_var_524a = local_unnamed_addr constant [13 x i8] c"RTTIDerivedB\00"
+@global_var_5211 = constant [26 x i8] c"ptionvE16DerivedException\00"
+@global_var_51de = local_unnamed_addr constant [10 x i8] c"Exception\00"
+@global_var_51a4 = constant i32 673211429
+@global_var_50fe = local_unnamed_addr constant i32 -425747226
+@global_var_50a7 = constant i32 -1662638048
+@global_var_504c = local_unnamed_addr constant i32 -443445019
+@global_var_5009 = constant i32 0
+@0 = external global i32
+@global_var_3e8 = global i64 176
+
+define i32 @_init() local_unnamed_addr {
+dec_label_pc_1000:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !0
+  %3 = call i32 @frame_dummy(), !insn.addr !1
+  %4 = call i32 @__do_global_ctors_aux(), !insn.addr !2
+  ret i32 %4, !insn.addr !3
+}
+
+define void @function_11a0(i32* %d) local_unnamed_addr {
+dec_label_pc_11a0:
+  call void @__cxa_finalize(i32* %d), !insn.addr !4
+  ret void, !insn.addr !4
+}
+
+define i32* @function_11b0(i32 %size) local_unnamed_addr {
+dec_label_pc_11b0:
+  %0 = call i32* @_Znwj(i32 %size), !insn.addr !5
+  ret i32* %0, !insn.addr !5
+}
+
+define i32 @function_11c0(i32 %arg1) local_unnamed_addr {
+dec_label_pc_11c0:
+  %0 = call i32 @__cxa_begin_catch(i32 %arg1), !insn.addr !6
+  ret i32 %0, !insn.addr !6
+}
+
+define i32 @function_11d0(i32 %arg1) local_unnamed_addr {
+dec_label_pc_11d0:
+  %0 = call i32 @__cxa_allocate_exception(i32 %arg1), !insn.addr !7
+  ret i32 %0, !insn.addr !7
+}
+
+define i32 @function_11e0(i8* %s) local_unnamed_addr {
+dec_label_pc_11e0:
+  %0 = call i32 @strlen(i8* %s), !insn.addr !8
+  ret i32 %0, !insn.addr !8
+}
+
+define i32 @function_11f0(void (i32*)* %func, i32* %arg, i32* %dso_handle) local_unnamed_addr {
+dec_label_pc_11f0:
+  %0 = call i32 @__cxa_atexit(void (i32*)* %func, i32* %arg, i32* %dso_handle), !insn.addr !9
+  ret i32 %0, !insn.addr !9
+}
+
+define i32 @function_1200(i32* %arg1, i32 %arg2) local_unnamed_addr {
+dec_label_pc_1200:
+  %0 = call i32 @_ZdlPvj(i32* %arg1, i32 %arg2), !insn.addr !10
+  ret i32 %0, !insn.addr !10
+}
+
+define i32 @function_1210(i8* %s1, i8* %s2) local_unnamed_addr {
+dec_label_pc_1210:
+  %0 = call i32 @strcmp(i8* %s1, i8* %s2), !insn.addr !11
+  ret i32 %0, !insn.addr !11
+}
+
+define i32 @function_1220(i32 %main, i32 %argc, i8** %ubp_av, void ()* %init, void ()* %fini, void ()* %rtld_fini) local_unnamed_addr {
+dec_label_pc_1220:
+  %0 = call i32 @__libc_start_main(i32 %main, i32 %argc, i8** %ubp_av, void ()* %init, void ()* %fini, void ()* %rtld_fini), !insn.addr !12
+  ret i32 %0, !insn.addr !12
+}
+
+define i32* @function_1230(i32 %size) local_unnamed_addr {
+dec_label_pc_1230:
+  %0 = call i32* @_Znaj(i32 %size), !insn.addr !13
+  ret i32* %0, !insn.addr !13
+}
+
+define i8* @function_1240(i8* %dest, i8* %src, i32 %n) local_unnamed_addr {
+dec_label_pc_1240:
+  %0 = call i8* @strncpy(i8* %dest, i8* %src, i32 %n), !insn.addr !14
+  ret i8* %0, !insn.addr !14
+}
+
+define i32 @function_1250() local_unnamed_addr {
+dec_label_pc_1250:
+  %0 = call i32 @__cxa_bad_typeid(), !insn.addr !15
+  ret i32 %0, !insn.addr !15
+}
+
+define void @function_1260() local_unnamed_addr {
+dec_label_pc_1260:
+  call void @__stack_chk_fail(), !insn.addr !16
+  ret void, !insn.addr !16
+}
+
+define i32 @function_1270() local_unnamed_addr {
+dec_label_pc_1270:
+  %0 = call i32 @__dynamic_cast(), !insn.addr !17
+  ret i32 %0, !insn.addr !17
+}
+
+define void @function_1280(i32* %ptr, i32 %size) local_unnamed_addr {
+dec_label_pc_1280:
+  %0 = inttoptr i32 %size to i32*, !insn.addr !18
+  call void @_ZdaPv(i32* %ptr, i32* %0), !insn.addr !18
+  ret void, !insn.addr !18
+}
+
+define i32 @function_1290() local_unnamed_addr {
+dec_label_pc_1290:
+  %0 = call i32 @__cxa_throw_bad_array_new_length(), !insn.addr !19
+  ret i32 %0, !insn.addr !19
+}
+
+define i32 @function_12a0(i8* %format, ...) local_unnamed_addr {
+dec_label_pc_12a0:
+  %0 = call i32 (i8*, ...) @printf(i8* %format), !insn.addr !20
+  ret i32 %0, !insn.addr !20
+}
+
+define i32 @function_12b0() local_unnamed_addr {
+dec_label_pc_12b0:
+  %0 = call i32 @__cxa_rethrow(), !insn.addr !21
+  ret i32 %0, !insn.addr !21
+}
+
+define i32 @function_12c0(i8* %s) local_unnamed_addr {
+dec_label_pc_12c0:
+  %0 = call i32 @puts(i8* %s), !insn.addr !22
+  ret i32 %0, !insn.addr !22
+}
+
+define i32 @function_12d0() local_unnamed_addr {
+dec_label_pc_12d0:
+  %0 = call i32 @_ZNSt8ios_base4InitC1Ev(), !insn.addr !23
+  ret i32 %0, !insn.addr !23
+}
+
+define i32 @function_12e0() local_unnamed_addr {
+dec_label_pc_12e0:
+  %0 = call i32 @__cxa_end_catch(), !insn.addr !24
+  ret i32 %0, !insn.addr !24
+}
+
+define i32 @function_12f0(i32 %arg1, i32 %arg2, i32 %arg3) local_unnamed_addr {
+dec_label_pc_12f0:
+  %0 = call i32 @__cxa_throw(i32 %arg1, i32 %arg2, i32 %arg3), !insn.addr !25
+  ret i32 %0, !insn.addr !25
+}
+
+define void @function_1300(%_Unwind_Exception* %object) local_unnamed_addr {
+dec_label_pc_1300:
+  call void @_Unwind_Resume(%_Unwind_Exception* %object), !insn.addr !26
+  ret void, !insn.addr !26
+}
+
+define i32 @_start(i32 %arg1) local_unnamed_addr {
+dec_label_pc_1310:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = load i32, i32* %0
+  %stack_var_4 = alloca i32, align 4
+  %3 = call i32 @function_133c(i32 %2), !insn.addr !27
+  %4 = bitcast i32* %stack_var_4 to i8**
+  %5 = add i32 %1, 31944, !insn.addr !28
+  %6 = inttoptr i32 %5 to i32*, !insn.addr !28
+  %7 = load i32, i32* %6, align 4, !insn.addr !28
+  %8 = call i32 @__libc_start_main(i32 %7, i32 %arg1, i8** nonnull %4, void ()* null, void ()* null, void ()* bitcast (i32* @0 to void ()*)), !insn.addr !29
+  %9 = call i32 @__asm_hlt(), !insn.addr !30
+  unreachable, !insn.addr !30
+
+; uselistorder directives
+  uselistorder i32* %0, { 1, 0 }
+}
+
+define i32 @function_133c(i32 %arg1) local_unnamed_addr {
+dec_label_pc_133c:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  ret i32 %1, !insn.addr !31
+}
+
+define i32 @__x86.get_pc_thunk.bx(i32 %arg1) local_unnamed_addr {
+dec_label_pc_1340:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  ret i32 %1, !insn.addr !32
+}
+
+define i32 @deregister_tm_clones() local_unnamed_addr {
+dec_label_pc_1350:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.dx(i32 ptrtoint (i32* @0 to i32)), !insn.addr !33
+  %3 = add i32 %1, 31939, !insn.addr !34
+  ret i32 %3, !insn.addr !35
+}
+
+define i32 @register_tm_clones() local_unnamed_addr {
+dec_label_pc_1390:
+  %0 = call i32 @__x86.get_pc_thunk.dx(i32 ptrtoint (i32* @0 to i32)), !insn.addr !36
+  ret i32 0, !insn.addr !37
+}
+
+define i32 @__do_global_dtors_aux() local_unnamed_addr {
+dec_label_pc_13e0:
+  %0 = alloca i32
+  %eax.0.reg2mem = alloca i32, !insn.addr !38
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.di(i32 %1), !insn.addr !39
+  %3 = add i32 %1, 31787, !insn.addr !40
+  %4 = inttoptr i32 %3 to i8*, !insn.addr !40
+  %5 = load i8, i8* %4, align 1, !insn.addr !40
+  %6 = icmp eq i8 %5, 0, !insn.addr !40
+  %7 = icmp eq i1 %6, false, !insn.addr !41
+  store i32 %2, i32* %eax.0.reg2mem, !insn.addr !41
+  br i1 %7, label %dec_label_pc_1462, label %dec_label_pc_1401, !insn.addr !41
+
+dec_label_pc_1401:                                ; preds = %dec_label_pc_13e0
+  %8 = add i32 %1, 31739, !insn.addr !42
+  %9 = inttoptr i32 %8 to i32*, !insn.addr !42
+  %10 = load i32, i32* %9, align 4, !insn.addr !42
+  %11 = icmp eq i32 %10, 0, !insn.addr !43
+  br i1 %11, label %dec_label_pc_141e, label %dec_label_pc_140b, !insn.addr !44
+
+dec_label_pc_140b:                                ; preds = %dec_label_pc_1401
+  %12 = add i32 %1, 31767, !insn.addr !45
+  %13 = inttoptr i32 %12 to i32*, !insn.addr !45
+  %14 = load i32, i32* %13, align 4, !insn.addr !45
+  %15 = inttoptr i32 %14 to i32*, !insn.addr !46
+  call void @__cxa_finalize(i32* %15), !insn.addr !46
+  br label %dec_label_pc_141e, !insn.addr !47
+
+dec_label_pc_141e:                                ; preds = %dec_label_pc_140b, %dec_label_pc_1401
+  %16 = call i32 @deregister_tm_clones(), !insn.addr !48
+  store i8 1, i8* %4, align 1, !insn.addr !49
+  store i32 %16, i32* %eax.0.reg2mem, !insn.addr !49
+  br label %dec_label_pc_1462, !insn.addr !49
+
+dec_label_pc_1462:                                ; preds = %dec_label_pc_141e, %dec_label_pc_13e0
+  %eax.0.reload = load i32, i32* %eax.0.reg2mem
+  ret i32 %eax.0.reload, !insn.addr !50
+
+; uselistorder directives
+  uselistorder i32 %1, { 3, 2, 0, 1 }
+}
+
+define i32 @frame_dummy() local_unnamed_addr {
+dec_label_pc_1470:
+  %0 = call i32 @register_tm_clones(), !insn.addr !51
+  ret i32 %0, !insn.addr !51
+}
+
+define i32 @__x86.get_pc_thunk.dx(i32 %arg1) local_unnamed_addr {
+dec_label_pc_1479:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  ret i32 %1, !insn.addr !52
+}
+
+define i32 @__x86.get_pc_thunk.di(i32 %arg1) local_unnamed_addr {
+dec_label_pc_147d:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  ret i32 %1, !insn.addr !53
+}
+
+define i32 @_Z20test_cpp_member_funcv() local_unnamed_addr {
+dec_label_pc_1482:
+  %0 = alloca i32
+  %eax.0.reg2mem = alloca i32, !insn.addr !54
+  %1 = load i32, i32* %0
+  %stack_var_-52 = alloca i32, align 4
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !55
+  %3 = call i32 @__readgsdword(i32 20), !insn.addr !56
+  %4 = add i32 %2, 15255, !insn.addr !57
+  %5 = inttoptr i32 %4 to i8*, !insn.addr !58
+  %6 = call i32 @_ZN11SimpleClassC1EiPKc(i32* nonnull %stack_var_-52, i32 5, i8* %5), !insn.addr !59
+  %7 = call i32 @_ZN11SimpleClass8setValueEi(i32* nonnull %stack_var_-52, i32 10), !insn.addr !60
+  %8 = call i32 @_ZNK11SimpleClass8getValueEv(i32* nonnull %stack_var_-52), !insn.addr !61
+  %9 = call i32 @_ZNK11SimpleClass7computeEi(i32* nonnull %stack_var_-52, i32 3), !insn.addr !62
+  %10 = inttoptr i32 %9 to i32*, !insn.addr !63
+  %11 = call i32 @_ZN11SimpleClass10getClassIDEv(i32* %10), !insn.addr !63
+  %12 = add i32 %9, %8, !insn.addr !64
+  %13 = add i32 %12, %11, !insn.addr !65
+  %14 = call i32 @__readgsdword(i32 20), !insn.addr !66
+  %15 = icmp eq i32 %3, %14, !insn.addr !66
+  store i32 %13, i32* %eax.0.reg2mem, !insn.addr !67
+  br i1 %15, label %dec_label_pc_1517, label %dec_label_pc_1512, !insn.addr !67
+
+dec_label_pc_1512:                                ; preds = %dec_label_pc_1482
+  %16 = call i32 @__stack_chk_fail_local(), !insn.addr !68
+  store i32 %16, i32* %eax.0.reg2mem, !insn.addr !68
+  br label %dec_label_pc_1517, !insn.addr !68
+
+dec_label_pc_1517:                                ; preds = %dec_label_pc_1512, %dec_label_pc_1482
+  %eax.0.reload = load i32, i32* %eax.0.reg2mem
+  ret i32 %eax.0.reload, !insn.addr !69
+}
+
+define i32 @_Z20test_cpp_constructorv() local_unnamed_addr {
+dec_label_pc_1519:
+  %0 = alloca i32
+  %eax.0.reg2mem = alloca i32, !insn.addr !70
+  %1 = load i32, i32* %0
+  %stack_var_-24 = alloca i32, align 4
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !71
+  %3 = call i32 @__readgsdword(i32 20), !insn.addr !72
+  %4 = call i32 @_ZN14LifecycleClassC1Ej(i32* nonnull %stack_var_-24, i32 5), !insn.addr !73
+  %5 = call i32 @_ZNK14LifecycleClass7getDataEj(i32* nonnull %stack_var_-24, i32 2), !insn.addr !74
+  %6 = call i32 @_ZN14LifecycleClass16getInstanceCountEv(), !insn.addr !75
+  %7 = add i32 %6, %5, !insn.addr !76
+  %8 = call i32 @_ZN14LifecycleClassD1Ev(i32* nonnull %stack_var_-24), !insn.addr !77
+  %9 = call i32 @_ZN14LifecycleClass16getInstanceCountEv(), !insn.addr !78
+  %10 = mul i32 %9, ptrtoint (i64* @global_var_3e8 to i32), !insn.addr !79
+  %11 = add i32 %7, %10, !insn.addr !80
+  %12 = call i32 @__readgsdword(i32 20), !insn.addr !81
+  %13 = icmp eq i32 %3, %12, !insn.addr !81
+  store i32 %11, i32* %eax.0.reg2mem, !insn.addr !82
+  br i1 %13, label %dec_label_pc_159d, label %dec_label_pc_1598, !insn.addr !82
+
+dec_label_pc_1598:                                ; preds = %dec_label_pc_1519
+  %14 = call i32 @__stack_chk_fail_local(), !insn.addr !83
+  store i32 %14, i32* %eax.0.reg2mem, !insn.addr !83
+  br label %dec_label_pc_159d, !insn.addr !83
+
+dec_label_pc_159d:                                ; preds = %dec_label_pc_1598, %dec_label_pc_1519
+  %eax.0.reload = load i32, i32* %eax.0.reg2mem
+  ret i32 %eax.0.reload, !insn.addr !84
+
+; uselistorder directives
+  uselistorder i32 ()* @_ZN14LifecycleClass16getInstanceCountEv, { 1, 0 }
+}
+
+define i32 @_Z17call_virtual_funcP4Basei(i32* %arg1, i32 %arg2) local_unnamed_addr {
+dec_label_pc_159f:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !85
+  %3 = load i32, i32* %arg1, align 4, !insn.addr !86
+  %4 = inttoptr i32 %3 to i32*, !insn.addr !87
+  %5 = load i32, i32* %4, align 4, !insn.addr !87
+  ret i32 %5, !insn.addr !88
+}
+
+define i32 @_Z21test_cpp_virtual_funcv() local_unnamed_addr {
+dec_label_pc_15ca:
+  %0 = alloca i32
+  %eax.0.reg2mem = alloca i32, !insn.addr !89
+  %1 = load i32, i32* %0
+  %2 = load i32, i32* %0
+  %stack_var_-24 = alloca i32, align 4
+  %stack_var_-52 = alloca i32, align 4
+  %3 = call i32 @__x86.get_pc_thunk.si(i32 %2), !insn.addr !90
+  %4 = call i32 @__readgsdword(i32 20), !insn.addr !91
+  %5 = add i32 %1, 30669, !insn.addr !92
+  store i32 %5, i32* %stack_var_-52, align 4, !insn.addr !93
+  %6 = call i32 @_ZN7DerivedC1Ei(i32* nonnull %stack_var_-24, i32 3), !insn.addr !94
+  %7 = call i32 @_ZN4Base12virtual_funcEi(i32* nonnull %stack_var_-52, i32 5), !insn.addr !95
+  %8 = call i32 @_ZN7Derived12virtual_funcEi(i32* nonnull %stack_var_-24, i32 5), !insn.addr !96
+  %9 = call i32 @_Z17call_virtual_funcP4Basei(i32* nonnull %stack_var_-52, i32 5), !insn.addr !97
+  %10 = call i32 @_Z17call_virtual_funcP4Basei(i32* nonnull %stack_var_-24, i32 5), !insn.addr !98
+  %11 = add i32 %8, %7, !insn.addr !99
+  %12 = add i32 %11, %9, !insn.addr !100
+  %13 = add i32 %12, %10, !insn.addr !101
+  %14 = call i32 @_ZN7DerivedD1Ev(i32* nonnull %stack_var_-24), !insn.addr !102
+  %15 = call i32 @_ZN4BaseD1Ev(i32* nonnull %stack_var_-52), !insn.addr !103
+  %16 = call i32 @__readgsdword(i32 20), !insn.addr !104
+  %17 = icmp eq i32 %16, %4, !insn.addr !104
+  store i32 %13, i32* %eax.0.reg2mem, !insn.addr !105
+  br i1 %17, label %dec_label_pc_16d7, label %dec_label_pc_16d2, !insn.addr !105
+
+dec_label_pc_16d2:                                ; preds = %dec_label_pc_15ca
+  %18 = call i32 @__stack_chk_fail_local(), !insn.addr !106
+  store i32 %18, i32* %eax.0.reg2mem, !insn.addr !106
+  br label %dec_label_pc_16d7, !insn.addr !106
+
+dec_label_pc_16d7:                                ; preds = %dec_label_pc_16d2, %dec_label_pc_15ca
+  %eax.0.reload = load i32, i32* %eax.0.reg2mem
+  ret i32 %eax.0.reload, !insn.addr !107
+
+; uselistorder directives
+  uselistorder i32* %0, { 1, 0 }
+  uselistorder i32 (i32*, i32)* @_Z17call_virtual_funcP4Basei, { 1, 0 }
+}
+
+define i32 @_Z29test_cpp_multiple_inheritancev() local_unnamed_addr {
+dec_label_pc_16de:
+  %0 = alloca i32
+  %eax.0.reg2mem = alloca i32, !insn.addr !108
+  %1 = load i32, i32* %0
+  %2 = load i32, i32* %0
+  %stack_var_-32 = alloca i32, align 4
+  %3 = call i32 @__x86.get_pc_thunk.si(i32 %1), !insn.addr !109
+  %4 = call i32 @__readgsdword(i32 20), !insn.addr !110
+  %5 = call i32 @_ZN12MultiDerivedC1Ev(i32* nonnull %stack_var_-32), !insn.addr !111
+  %6 = load i32, i32* %stack_var_-32, align 4, !insn.addr !112
+  %7 = inttoptr i32 %6 to i32*, !insn.addr !113
+  %8 = load i32, i32* %7, align 4, !insn.addr !113
+  %9 = inttoptr i32 %2 to i32*, !insn.addr !114
+  %10 = load i32, i32* %9, align 4, !insn.addr !114
+  %11 = add i32 %8, 1, !insn.addr !115
+  %12 = add i32 %11, %10, !insn.addr !116
+  %13 = call i32 @_ZN12MultiDerivedD1Ev(i32* nonnull %stack_var_-32), !insn.addr !117
+  %14 = call i32 @__readgsdword(i32 20), !insn.addr !118
+  %15 = icmp eq i32 %14, %4, !insn.addr !118
+  store i32 %12, i32* %eax.0.reg2mem, !insn.addr !119
+  br i1 %15, label %dec_label_pc_17b9, label %dec_label_pc_17b4, !insn.addr !119
+
+dec_label_pc_17b4:                                ; preds = %dec_label_pc_16de
+  %16 = call i32 @__stack_chk_fail_local(), !insn.addr !120
+  store i32 %16, i32* %eax.0.reg2mem, !insn.addr !120
+  br label %dec_label_pc_17b9, !insn.addr !120
+
+dec_label_pc_17b9:                                ; preds = %dec_label_pc_17b4, %dec_label_pc_16de
+  %eax.0.reload = load i32, i32* %eax.0.reg2mem
+  ret i32 %eax.0.reload, !insn.addr !121
+
+; uselistorder directives
+  uselistorder i32* %stack_var_-32, { 0, 2, 1 }
+  uselistorder i32* %0, { 1, 0 }
+}
+
+define i32 @_Z28test_cpp_diamond_inheritancev() local_unnamed_addr {
+dec_label_pc_17c0:
+  %0 = alloca i32
+  %eax.0.reg2mem = alloca i32, !insn.addr !122
+  %1 = load i32, i32* %0
+  %2 = load i32, i32* %0
+  %stack_var_-40 = alloca i32, align 4
+  %3 = call i32 @__x86.get_pc_thunk.si(i32 %1), !insn.addr !123
+  %4 = call i32 @__readgsdword(i32 20), !insn.addr !124
+  %5 = call i32 @_ZN14DiamondDerivedC1Ev(i32* nonnull %stack_var_-40), !insn.addr !125
+  %6 = inttoptr i32 %2 to i32*, !insn.addr !126
+  %7 = load i32, i32* %6, align 4
+  %8 = mul i32 %7, 2, !insn.addr !127
+  %9 = call i32 @_ZN14DiamondDerivedD1Ev(i32* nonnull %stack_var_-40), !insn.addr !128
+  %10 = call i32 @__readgsdword(i32 20), !insn.addr !129
+  %11 = icmp eq i32 %10, %4, !insn.addr !129
+  store i32 %8, i32* %eax.0.reg2mem, !insn.addr !130
+  br i1 %11, label %dec_label_pc_1881, label %dec_label_pc_187c, !insn.addr !130
+
+dec_label_pc_187c:                                ; preds = %dec_label_pc_17c0
+  %12 = call i32 @__stack_chk_fail_local(), !insn.addr !131
+  store i32 %12, i32* %eax.0.reg2mem, !insn.addr !131
+  br label %dec_label_pc_1881, !insn.addr !131
+
+dec_label_pc_1881:                                ; preds = %dec_label_pc_187c, %dec_label_pc_17c0
+  %eax.0.reload = load i32, i32* %eax.0.reg2mem
+  ret i32 %eax.0.reload, !insn.addr !132
+
+; uselistorder directives
+  uselistorder i32* %0, { 1, 0 }
+}
+
+define i32 @_Z26test_cpp_operator_overloadv() local_unnamed_addr {
+dec_label_pc_1888:
+  %0 = alloca i32
+  %eax.0.reg2mem = alloca i32, !insn.addr !133
+  %1 = load i32, i32* %0
+  %2 = load i32, i32* %0
+  %stack_var_-24 = alloca i32, align 4
+  %stack_var_-32 = alloca i32, align 4
+  %stack_var_-40 = alloca i32, align 4
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !134
+  %4 = call i32 @__readgsdword(i32 20), !insn.addr !135
+  %5 = call i32 @_ZN5PointC1Eii(i32* nonnull %stack_var_-40, i32 1, i32 2), !insn.addr !136
+  %6 = call i32 @_ZN5PointC1Eii(i32* nonnull %stack_var_-32, i32 3, i32 4), !insn.addr !137
+  %7 = call i32 @_ZNK5PointplERKS_(i32* nonnull %stack_var_-24, i32* nonnull %stack_var_-40, i32* nonnull %stack_var_-32), !insn.addr !138
+  %8 = call i32 @_ZNK5PointeqERKS_(i32* nonnull %stack_var_-40, i32* nonnull %stack_var_-32), !insn.addr !139
+  %9 = trunc i32 %8 to i8, !insn.addr !140
+  %10 = call i32 @_ZN5PointppEv(i32* nonnull %stack_var_-24), !insn.addr !141
+  %11 = load i32, i32* %stack_var_-24, align 4, !insn.addr !142
+  %12 = add i32 %11, %2, !insn.addr !143
+  %13 = icmp eq i8 %9, 0, !insn.addr !144
+  %. = select i1 %13, i32 10, i32 0
+  %14 = add i32 %12, %., !insn.addr !145
+  %15 = call i32 @__readgsdword(i32 20), !insn.addr !146
+  %16 = icmp eq i32 %4, %15, !insn.addr !146
+  store i32 %14, i32* %eax.0.reg2mem, !insn.addr !147
+  br i1 %16, label %dec_label_pc_1936, label %dec_label_pc_1931, !insn.addr !147
+
+dec_label_pc_1931:                                ; preds = %dec_label_pc_1888
+  %17 = call i32 @__stack_chk_fail_local(), !insn.addr !148
+  store i32 %17, i32* %eax.0.reg2mem, !insn.addr !148
+  br label %dec_label_pc_1936, !insn.addr !148
+
+dec_label_pc_1936:                                ; preds = %dec_label_pc_1931, %dec_label_pc_1888
+  %eax.0.reload = load i32, i32* %eax.0.reg2mem
+  ret i32 %eax.0.reload, !insn.addr !149
+
+; uselistorder directives
+  uselistorder i32* %stack_var_-24, { 2, 0, 1 }
+  uselistorder i32* %0, { 1, 0 }
+}
+
+define i32 @_Z22test_cpp_template_funcv() local_unnamed_addr {
+dec_label_pc_1938:
+  %0 = alloca i32
+  %1 = alloca x86_fp80
+  %eax.0.reg2mem = alloca i32, !insn.addr !150
+  %2 = load i32, i32* %0
+  %3 = load x86_fp80, x86_fp80* %1
+  %stack_var_-36 = alloca i32, align 4
+  %stack_var_-40 = alloca i32, align 4
+  %4 = call i32 @__x86.get_pc_thunk.bx(i32 %2), !insn.addr !151
+  %5 = call i32 @__readgsdword(i32 20), !insn.addr !152
+  %6 = call i32 @_Z12template_maxIiET_S0_S0_(i32 3, i32 7), !insn.addr !153
+  %7 = add i32 %2, 14568, !insn.addr !154
+  %8 = inttoptr i32 %7 to double*, !insn.addr !154
+  %9 = load double, double* %8, align 4, !insn.addr !154
+  %10 = fptrunc double %9 to float, !insn.addr !155
+  %11 = bitcast float %10 to i32, !insn.addr !155
+  %12 = add i32 %2, 14576, !insn.addr !156
+  %13 = inttoptr i32 %12 to double*, !insn.addr !156
+  %14 = load double, double* %13, align 4, !insn.addr !156
+  %15 = fptrunc double %14 to float, !insn.addr !157
+  %16 = bitcast float %15 to i32, !insn.addr !157
+  %17 = inttoptr i32 %16 to i32*, !insn.addr !158
+  %18 = inttoptr i32 %11 to i32*, !insn.addr !158
+  %19 = call double @_Z12template_maxIdET_S0_S0_(i32* %17, i32* %18, double bitcast (i64 ptrtoint (i32* @0 to i64) to double), double bitcast (i64 ptrtoint (i32* @0 to i64) to double)), !insn.addr !158
+  store i32 10, i32* %stack_var_-40, align 4, !insn.addr !159
+  store i32 20, i32* %stack_var_-36, align 4, !insn.addr !160
+  call void @_Z13template_swapIiEvRT_S1_(i32* nonnull %stack_var_-40, i32* nonnull %stack_var_-36), !insn.addr !161
+  %20 = fptosi x86_fp80 %3 to i32, !insn.addr !162
+  %21 = add i32 %6, %20, !insn.addr !163
+  %22 = load i32, i32* %stack_var_-40, align 4, !insn.addr !164
+  %23 = add i32 %21, %22, !insn.addr !165
+  %24 = load i32, i32* %stack_var_-36, align 4, !insn.addr !166
+  %25 = add i32 %23, %24, !insn.addr !167
+  %26 = call i32 @__readgsdword(i32 20), !insn.addr !168
+  %27 = icmp eq i32 %5, %26, !insn.addr !168
+  store i32 %25, i32* %eax.0.reg2mem, !insn.addr !169
+  br i1 %27, label %dec_label_pc_19ee, label %dec_label_pc_19e9, !insn.addr !169
+
+dec_label_pc_19e9:                                ; preds = %dec_label_pc_1938
+  %28 = call i32 @__stack_chk_fail_local(), !insn.addr !170
+  store i32 %28, i32* %eax.0.reg2mem, !insn.addr !170
+  br label %dec_label_pc_19ee, !insn.addr !170
+
+dec_label_pc_19ee:                                ; preds = %dec_label_pc_19e9, %dec_label_pc_1938
+  %eax.0.reload = load i32, i32* %eax.0.reg2mem
+  ret i32 %eax.0.reload, !insn.addr !171
+
+; uselistorder directives
+  uselistorder i32* %stack_var_-40, { 1, 0, 2 }
+  uselistorder i32* %stack_var_-36, { 1, 0, 2 }
+  uselistorder i32 %2, { 1, 0, 2 }
+}
+
+define i32 @_Z23test_cpp_template_classv() local_unnamed_addr {
+dec_label_pc_19f3:
+  %0 = alloca i32
+  %1 = alloca x86_fp80
+  %eax.0.reg2mem = alloca i32, !insn.addr !172
+  %2 = load i32, i32* %0
+  %3 = load x86_fp80, x86_fp80* %1
+  %stack_var_-100 = alloca i32, align 4
+  %stack_var_-144 = alloca i32, align 4
+  %4 = call i32 @__x86.get_pc_thunk.bx(i32 %2), !insn.addr !173
+  %5 = call i32 @__readgsdword(i32 20), !insn.addr !174
+  %6 = call i32 @_ZN9ContainerIiEC1Ev(i32* nonnull %stack_var_-144), !insn.addr !175
+  %7 = call i32 @_ZN9ContainerIiE4pushEi(i32* nonnull %stack_var_-144, i32 10), !insn.addr !176
+  %8 = call i32 @_ZN9ContainerIiE4pushEi(i32* nonnull %stack_var_-144, i32 20), !insn.addr !177
+  %9 = call i32 @_ZN9ContainerIiE4pushEi(i32* nonnull %stack_var_-144, i32 30), !insn.addr !178
+  %10 = call i32 @_ZNK9ContainerIiE3getEi(i32* nonnull %stack_var_-144, i32 0), !insn.addr !179
+  %11 = call i32 @_ZNK9ContainerIiE7getSizeEv(i32* nonnull %stack_var_-144), !insn.addr !180
+  %12 = call i32 @_ZN9ContainerIdEC1Ev(i32* nonnull %stack_var_-100), !insn.addr !181
+  %13 = add i32 %2, 14394, !insn.addr !182
+  %14 = inttoptr i32 %13 to double*, !insn.addr !182
+  %15 = load double, double* %14, align 4, !insn.addr !182
+  %16 = fptrunc double %15 to float, !insn.addr !183
+  %17 = bitcast float %16 to i32, !insn.addr !183
+  %18 = inttoptr i32 %17 to i32*, !insn.addr !184
+  %19 = call i32 @_ZN9ContainerIdE4pushEd(i32* nonnull %stack_var_-100, i32* %18, double bitcast (i64 ptrtoint (i32* @0 to i64) to double)), !insn.addr !184
+  %20 = call i32 @_ZNK9ContainerIdE3getEi(i32* nonnull %stack_var_-100, i32 0), !insn.addr !185
+  %21 = fptosi x86_fp80 %3 to i32, !insn.addr !186
+  %22 = add i32 %10, %21, !insn.addr !187
+  %23 = add i32 %22, %11, !insn.addr !188
+  %24 = call i32 @__readgsdword(i32 20), !insn.addr !189
+  %25 = icmp eq i32 %5, %24, !insn.addr !189
+  store i32 %23, i32* %eax.0.reg2mem, !insn.addr !190
+  br i1 %25, label %dec_label_pc_1b2f, label %dec_label_pc_1b2a, !insn.addr !190
+
+dec_label_pc_1b2a:                                ; preds = %dec_label_pc_19f3
+  %26 = call i32 @__stack_chk_fail_local(), !insn.addr !191
+  store i32 %26, i32* %eax.0.reg2mem, !insn.addr !191
+  br label %dec_label_pc_1b2f, !insn.addr !191
+
+dec_label_pc_1b2f:                                ; preds = %dec_label_pc_1b2a, %dec_label_pc_19f3
+  %eax.0.reload = load i32, i32* %eax.0.reg2mem
+  ret i32 %eax.0.reload, !insn.addr !192
+
+; uselistorder directives
+  uselistorder i32 (i32*, i32)* @_ZN9ContainerIiE4pushEi, { 2, 1, 0 }
+}
+
+define i32 @_ZZ15test_cpp_lambdavENKUliE_clEi(i32* %this, i32* %result, i32 %arg3) local_unnamed_addr {
+dec_label_pc_1b34:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = ptrtoint i32* %this to i32
+  %4 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !193
+  %5 = add i32 %3, 4, !insn.addr !194
+  %6 = inttoptr i32 %5 to i32*, !insn.addr !194
+  %7 = load i32, i32* %6, align 4, !insn.addr !194
+  %8 = inttoptr i32 %7 to i32*, !insn.addr !195
+  %9 = load i32, i32* %8, align 4, !insn.addr !195
+  %10 = add i32 %9, 5, !insn.addr !196
+  store i32 %10, i32* %8, align 4, !insn.addr !197
+  %11 = load i32, i32* %this, align 4, !insn.addr !198
+  %12 = mul i32 %11, %2, !insn.addr !199
+  %13 = load i32, i32* %6, align 4, !insn.addr !200
+  %14 = inttoptr i32 %13 to i32*, !insn.addr !201
+  %15 = load i32, i32* %14, align 4, !insn.addr !201
+  %16 = add i32 %15, %12, !insn.addr !202
+  ret i32 %16, !insn.addr !203
+}
+
+define i32 @_Z15test_cpp_lambdav() local_unnamed_addr {
+dec_label_pc_1b6b:
+  %0 = alloca i32
+  %eax.0.reg2mem = alloca i32, !insn.addr !204
+  %1 = load i32, i32* %0
+  %stack_var_-24 = alloca i32, align 4
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !205
+  %3 = call i32 @__readgsdword(i32 20), !insn.addr !206
+  store i32 10, i32* %stack_var_-24, align 4, !insn.addr !207
+  %4 = call i32 @_ZZ15test_cpp_lambdavENKUliE_clEi(i32* nonnull %stack_var_-24, i32* inttoptr (i32 3 to i32*), i32 20), !insn.addr !208
+  %5 = add i32 %4, 30, !insn.addr !209
+  %6 = call i32 @__readgsdword(i32 20), !insn.addr !210
+  %7 = icmp eq i32 %3, %6, !insn.addr !210
+  store i32 %5, i32* %eax.0.reg2mem, !insn.addr !211
+  br i1 %7, label %dec_label_pc_1bd5, label %dec_label_pc_1bd0, !insn.addr !211
+
+dec_label_pc_1bd0:                                ; preds = %dec_label_pc_1b6b
+  %8 = call i32 @__stack_chk_fail_local(), !insn.addr !212
+  store i32 %8, i32* %eax.0.reg2mem, !insn.addr !212
+  br label %dec_label_pc_1bd5, !insn.addr !212
+
+dec_label_pc_1bd5:                                ; preds = %dec_label_pc_1bd0, %dec_label_pc_1b6b
+  %eax.0.reload = load i32, i32* %eax.0.reg2mem
+  ret i32 %eax.0.reload, !insn.addr !213
+}
+
+define i32 @_Z18test_cpp_exceptionv() local_unnamed_addr {
+dec_label_pc_1bd7:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = load i32, i32* %0
+  %3 = call i32 @__x86.get_pc_thunk.si(i32 %2), !insn.addr !214
+  %4 = call i32 @__cxa_allocate_exception(i32 4), !insn.addr !215
+  %5 = inttoptr i32 %4 to i32*, !insn.addr !216
+  store i32 42, i32* %5, align 4, !insn.addr !216
+  %6 = add i32 %1, add (i32 ptrtoint (i32* @global_var_7397 to i32), i32 100), !insn.addr !217
+  %7 = inttoptr i32 %6 to i32*, !insn.addr !217
+  %8 = load i32, i32* %7, align 4, !insn.addr !217
+  %9 = call i32 @__cxa_throw(i32 %4, i32 %8, i32 0), !insn.addr !218
+  ret i32 0, !insn.addr !219
+
+; uselistorder directives
+  uselistorder i32* %0, { 1, 0 }
+}
+
+define i32 @_ZZ18test_cpp_smart_ptrvENKUlPiE_clES_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_1d26:
+  %0 = alloca i32
+  %eax.0.reg2mem = alloca i32, !insn.addr !220
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %arg1 to i32
+  %3 = call i32 @__x86.get_pc_thunk.dx(i32 %1), !insn.addr !221
+  store i32 -1, i32* %arg1, align 4, !insn.addr !222
+  %4 = icmp eq i32* %arg1, null, !insn.addr !223
+  store i32 %2, i32* %eax.0.reg2mem, !insn.addr !224
+  br i1 %4, label %dec_label_pc_1d58, label %dec_label_pc_1d48, !insn.addr !224
+
+dec_label_pc_1d48:                                ; preds = %dec_label_pc_1d26
+  %5 = call i32 @_ZdlPvj(i32* nonnull %arg1, i32 4), !insn.addr !225
+  store i32 %5, i32* %eax.0.reg2mem, !insn.addr !226
+  br label %dec_label_pc_1d58, !insn.addr !226
+
+dec_label_pc_1d58:                                ; preds = %dec_label_pc_1d48, %dec_label_pc_1d26
+  %eax.0.reload = load i32, i32* %eax.0.reg2mem
+  ret i32 %eax.0.reload, !insn.addr !227
+}
+
+define i32 @_Z18test_cpp_smart_ptrv() local_unnamed_addr {
+dec_label_pc_1d5e:
+  %0 = alloca i32
+  %eax.0.reg2mem = alloca i32, !insn.addr !228
+  %1 = load i32, i32* %0
+  %stack_var_-32 = alloca i32, align 4
+  %stack_var_-45 = alloca i32, align 4
+  %stack_var_-36 = alloca i32, align 4
+  %stack_var_-40 = alloca i32, align 4
+  %stack_var_-44 = alloca i32, align 4
+  %2 = call i32 @__x86.get_pc_thunk.si(i32 %1), !insn.addr !229
+  %3 = call i32 @__readgsdword(i32 20), !insn.addr !230
+  %4 = call i32* @_Znwj(i32 4), !insn.addr !231
+  store i32 100, i32* %4, align 4, !insn.addr !232
+  %5 = call i32 @_ZNSt10unique_ptrIiSt14default_deleteIiEEC1IS1_vEEPi(i32* nonnull %stack_var_-44, i32* %4), !insn.addr !233
+  %6 = call i32 @_ZNKSt10unique_ptrIiSt14default_deleteIiEEdeEv(i32* nonnull %stack_var_-44), !insn.addr !234
+  %7 = inttoptr i32 %6 to i32*, !insn.addr !235
+  store i32 200, i32* %7, align 4, !insn.addr !235
+  %8 = bitcast i32* %stack_var_-44 to i32**, !insn.addr !236
+  %9 = call i32* @_ZSt4moveIRSt10unique_ptrIiSt14default_deleteIiEEEONSt16remove_referenceIT_E4typeEOS6_(i32** nonnull %8), !insn.addr !236
+  %10 = call i32 @_ZNSt10unique_ptrIiSt14default_deleteIiEEC1EOS2_(i32* nonnull %stack_var_-40, i32* %9), !insn.addr !237
+  %11 = call i32 @_ZNKSt10unique_ptrIiSt14default_deleteIiEEdeEv(i32* nonnull %stack_var_-40), !insn.addr !238
+  %12 = inttoptr i32 %11 to i32*, !insn.addr !239
+  %13 = load i32, i32* %12, align 4, !insn.addr !239
+  %14 = call i32* @_Znaj(i32 20), !insn.addr !240
+  %15 = ptrtoint i32* %14 to i32, !insn.addr !240
+  store i32 1, i32* %14, align 4, !insn.addr !241
+  %16 = add i32 %15, 4, !insn.addr !242
+  %17 = inttoptr i32 %16 to i32*, !insn.addr !243
+  store i32 2, i32* %17, align 4, !insn.addr !243
+  %18 = add i32 %15, 8, !insn.addr !244
+  %19 = inttoptr i32 %18 to i32*, !insn.addr !245
+  store i32 3, i32* %19, align 4, !insn.addr !245
+  %20 = add i32 %15, 12, !insn.addr !246
+  %21 = inttoptr i32 %20 to i32*, !insn.addr !247
+  store i32 4, i32* %21, align 4, !insn.addr !247
+  %22 = add i32 %15, 16, !insn.addr !248
+  %23 = inttoptr i32 %22 to i32*, !insn.addr !249
+  store i32 5, i32* %23, align 4, !insn.addr !249
+  %24 = call i32 @_ZNSt10unique_ptrIA_iSt14default_deleteIS0_EEC1IPiS2_vbEET_(i32* nonnull %stack_var_-36, i32* %14), !insn.addr !250
+  %25 = call i32 @_ZNKSt10unique_ptrIA_iSt14default_deleteIS0_EEixEj(i32* nonnull %stack_var_-36, i32 2), !insn.addr !251
+  %26 = inttoptr i32 %25 to i32*, !insn.addr !252
+  %27 = load i32, i32* %26, align 4, !insn.addr !252
+  %28 = call i32* @_Znwj(i32 4), !insn.addr !253
+  store i32 ptrtoint (i32* @global_var_1f4 to i32), i32* %28, align 4, !insn.addr !254
+  %29 = call i32 @_ZNSt10unique_ptrIiZ18test_cpp_smart_ptrvEUlPiE_EC1IS1_vEES0_RKS1_(i32* nonnull %stack_var_-32, i32* %28, i32* nonnull %stack_var_-45), !insn.addr !255
+  %30 = call i32 @_ZNKSt10unique_ptrIiZ18test_cpp_smart_ptrvEUlPiE_EdeEv(i32* nonnull %stack_var_-32), !insn.addr !256
+  %31 = inttoptr i32 %30 to i32*, !insn.addr !257
+  %32 = load i32, i32* %31, align 4, !insn.addr !257
+  %33 = add i32 %27, %13, !insn.addr !258
+  %34 = add i32 %33, %32, !insn.addr !259
+  %35 = call i32 @_ZNSt10unique_ptrIiZ18test_cpp_smart_ptrvEUlPiE_ED1Ev(i32* nonnull %stack_var_-32), !insn.addr !260
+  %36 = call i32 @_ZNSt10unique_ptrIA_iSt14default_deleteIS0_EED1Ev(i32* nonnull %stack_var_-36), !insn.addr !261
+  %37 = call i32 @_ZNSt10unique_ptrIiSt14default_deleteIiEED1Ev(i32* nonnull %stack_var_-40), !insn.addr !262
+  %38 = call i32 @_ZNSt10unique_ptrIiSt14default_deleteIiEED1Ev(i32* nonnull %stack_var_-44), !insn.addr !263
+  %39 = call i32 @__readgsdword(i32 20), !insn.addr !264
+  %40 = icmp eq i32 %39, %3, !insn.addr !264
+  store i32 %34, i32* %eax.0.reg2mem, !insn.addr !265
+  br i1 %40, label %dec_label_pc_1f34, label %dec_label_pc_1f2f, !insn.addr !265
+
+dec_label_pc_1f2f:                                ; preds = %dec_label_pc_1d5e
+  %41 = call i32 @__stack_chk_fail_local(), !insn.addr !266
+  store i32 %41, i32* %eax.0.reg2mem, !insn.addr !266
+  br label %dec_label_pc_1f34, !insn.addr !266
+
+dec_label_pc_1f34:                                ; preds = %dec_label_pc_1f2f, %dec_label_pc_1d5e
+  %eax.0.reload = load i32, i32* %eax.0.reg2mem
+  ret i32 %eax.0.reload, !insn.addr !267
+
+; uselistorder directives
+  uselistorder i32 ()* @__stack_chk_fail_local, { 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 }
+  uselistorder i32 (i32*)* @_ZNSt10unique_ptrIiSt14default_deleteIiEED1Ev, { 1, 0 }
+  uselistorder i32 5, { 7, 8, 0, 1, 2, 3, 4, 5, 6 }
+  uselistorder i32 3, { 5, 0, 1, 2, 3, 4 }
+  uselistorder i32 (i32*)* @_ZNKSt10unique_ptrIiSt14default_deleteIiEEdeEv, { 1, 0 }
+  uselistorder i32 (i32)* @__x86.get_pc_thunk.si, { 4, 3, 2, 1, 0 }
+}
+
+define i32 @_Z13test_cpp_rttiv() local_unnamed_addr {
+dec_label_pc_1f3b:
+  %0 = alloca i32
+  %eax.2.reg2mem = alloca i32, !insn.addr !268
+  %stack_var_-32.4.reg2mem = alloca i32, !insn.addr !268
+  %.pre-phi2.reg2mem = alloca i32*, !insn.addr !268
+  %stack_var_-32.3.reg2mem = alloca i32, !insn.addr !268
+  %stack_var_-32.2.reg2mem = alloca i32, !insn.addr !268
+  %stack_var_-32.1.reg2mem = alloca i32, !insn.addr !268
+  %stack_var_-32.0.reg2mem = alloca i32, !insn.addr !268
+  %1 = load i32, i32* %0
+  %stack_var_-44 = alloca i32, align 4
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !269
+  %3 = call i32* @_Znwj(i32 4), !insn.addr !270
+  store i32 0, i32* %3, align 4, !insn.addr !271
+  %4 = call i32 @_ZN12RTTIDerivedAC1Ev(i32* %3), !insn.addr !272
+  %5 = call i32* @_Znwj(i32 4), !insn.addr !273
+  store i32 0, i32* %5, align 4, !insn.addr !274
+  %6 = call i32 @_ZN12RTTIDerivedBC1Ev(i32* %5), !insn.addr !275
+  %7 = icmp eq i32* %3, null, !insn.addr !276
+  br i1 %7, label %dec_label_pc_1fc6, label %dec_label_pc_1fa8, !insn.addr !277
+
+dec_label_pc_1fa8:                                ; preds = %dec_label_pc_1f3b
+  %8 = load i32, i32* %3, align 4, !insn.addr !278
+  %9 = add i32 %8, -4, !insn.addr !279
+  %10 = inttoptr i32 %9 to i32*, !insn.addr !279
+  %11 = load i32, i32* %10, align 4, !insn.addr !279
+  %12 = add i32 %1, add (i32 ptrtoint (i32* @global_var_7034 to i32), i32 -444), !insn.addr !280
+  %13 = inttoptr i32 %11 to i32*, !insn.addr !281
+  %14 = inttoptr i32 %12 to i32*, !insn.addr !281
+  %15 = call i32 @_ZNKSt9type_infoeqERKS_(i32* %13, i32* %14), !insn.addr !281
+  %16 = trunc i32 %15 to i8, !insn.addr !282
+  %17 = icmp eq i8 %16, 0, !insn.addr !282
+  store i32 0, i32* %stack_var_-32.0.reg2mem, !insn.addr !283
+  br i1 %17, label %dec_label_pc_1fcf, label %dec_label_pc_1fcb, !insn.addr !283
+
+dec_label_pc_1fc6:                                ; preds = %dec_label_pc_1f3b
+  %18 = call i32 @__cxa_bad_typeid(), !insn.addr !284
+  br label %dec_label_pc_1fcb, !insn.addr !284
+
+dec_label_pc_1fcb:                                ; preds = %dec_label_pc_1fa8, %dec_label_pc_1fc6
+  store i32 10, i32* %stack_var_-32.0.reg2mem, !insn.addr !285
+  br label %dec_label_pc_1fcf, !insn.addr !285
+
+dec_label_pc_1fcf:                                ; preds = %dec_label_pc_1fcb, %dec_label_pc_1fa8
+  %stack_var_-32.0.reload = load i32, i32* %stack_var_-32.0.reg2mem
+  %19 = icmp eq i32* %5, null, !insn.addr !286
+  br i1 %19, label %dec_label_pc_1ff4, label %dec_label_pc_1fd6, !insn.addr !287
+
+dec_label_pc_1fd6:                                ; preds = %dec_label_pc_1fcf
+  %20 = load i32, i32* %5, align 4, !insn.addr !288
+  %21 = add i32 %20, -4, !insn.addr !289
+  %22 = inttoptr i32 %21 to i32*, !insn.addr !289
+  %23 = load i32, i32* %22, align 4, !insn.addr !289
+  %24 = add i32 %1, add (i32 ptrtoint (i32* @global_var_7034 to i32), i32 -456), !insn.addr !290
+  %25 = inttoptr i32 %23 to i32*, !insn.addr !291
+  %26 = inttoptr i32 %24 to i32*, !insn.addr !291
+  %27 = call i32 @_ZNKSt9type_infoeqERKS_(i32* %25, i32* %26), !insn.addr !291
+  %28 = trunc i32 %27 to i8, !insn.addr !292
+  %29 = icmp eq i8 %28, 0, !insn.addr !292
+  store i32 %stack_var_-32.0.reload, i32* %stack_var_-32.1.reg2mem, !insn.addr !293
+  br i1 %29, label %dec_label_pc_1ffd, label %dec_label_pc_1ff9, !insn.addr !293
+
+dec_label_pc_1ff4:                                ; preds = %dec_label_pc_1fcf
+  %30 = call i32 @__cxa_bad_typeid(), !insn.addr !294
+  br label %dec_label_pc_1ff9, !insn.addr !294
+
+dec_label_pc_1ff9:                                ; preds = %dec_label_pc_1fd6, %dec_label_pc_1ff4
+  %31 = or i32 %stack_var_-32.0.reload, 20, !insn.addr !295
+  store i32 %31, i32* %stack_var_-32.1.reg2mem, !insn.addr !295
+  br label %dec_label_pc_1ffd, !insn.addr !295
+
+dec_label_pc_1ffd:                                ; preds = %dec_label_pc_1ff9, %dec_label_pc_1fd6
+  %32 = ptrtoint i32* %stack_var_-44 to i32, !insn.addr !296
+  %stack_var_-32.1.reload = load i32, i32* %stack_var_-32.1.reg2mem
+  store i32 %stack_var_-32.1.reload, i32* %stack_var_-32.2.reg2mem, !insn.addr !297
+  br i1 %7, label %dec_label_pc_203e, label %dec_label_pc_2024, !insn.addr !297
+
+dec_label_pc_2024:                                ; preds = %dec_label_pc_1ffd
+  %33 = call i32 @__dynamic_cast(), !insn.addr !298
+  %34 = icmp eq i32 %33, 0, !insn.addr !299
+  store i32 %stack_var_-32.1.reload, i32* %stack_var_-32.2.reg2mem, !insn.addr !300
+  br i1 %34, label %dec_label_pc_203e, label %dec_label_pc_202d, !insn.addr !300
+
+dec_label_pc_202d:                                ; preds = %dec_label_pc_2024
+  %35 = add i32 %32, -16, !insn.addr !301
+  %36 = inttoptr i32 %35 to i32*, !insn.addr !301
+  store i32 %33, i32* %36, align 4, !insn.addr !301
+  %37 = inttoptr i32 %33 to i32*, !insn.addr !302
+  %38 = call i32 @_ZNK12RTTIDerivedA13derivedA_dataEv(i32* %37), !insn.addr !302
+  %39 = add i32 %38, %stack_var_-32.1.reload, !insn.addr !303
+  store i32 %39, i32* %stack_var_-32.2.reg2mem, !insn.addr !303
+  br label %dec_label_pc_203e, !insn.addr !303
+
+dec_label_pc_203e:                                ; preds = %dec_label_pc_1ffd, %dec_label_pc_202d, %dec_label_pc_2024
+  %40 = ptrtoint i32* %5 to i32, !insn.addr !273
+  %stack_var_-32.2.reload = load i32, i32* %stack_var_-32.2.reg2mem
+  store i32 %stack_var_-32.2.reload, i32* %stack_var_-32.3.reg2mem, !insn.addr !304
+  br i1 %19, label %dec_label_pc_207f, label %dec_label_pc_2065, !insn.addr !304
+
+dec_label_pc_2065:                                ; preds = %dec_label_pc_203e
+  %41 = add i32 %32, -4, !insn.addr !305
+  %42 = inttoptr i32 %41 to i32*, !insn.addr !305
+  store i32 0, i32* %42, align 4, !insn.addr !305
+  %43 = add i32 %1, add (i32 ptrtoint (i32* @global_var_7034 to i32), i32 -456), !insn.addr !306
+  %44 = add i32 %32, -8, !insn.addr !307
+  %45 = inttoptr i32 %44 to i32*, !insn.addr !307
+  store i32 %43, i32* %45, align 4, !insn.addr !307
+  %46 = add i32 %1, add (i32 ptrtoint (i32* @global_var_7034 to i32), i32 -432), !insn.addr !308
+  %47 = add i32 %32, -12, !insn.addr !309
+  %48 = inttoptr i32 %47 to i32*, !insn.addr !309
+  store i32 %46, i32* %48, align 4, !insn.addr !309
+  %49 = add i32 %32, -16, !insn.addr !310
+  %50 = inttoptr i32 %49 to i32*
+  store i32 %40, i32* %50, align 4, !insn.addr !310
+  %51 = call i32 @__dynamic_cast(), !insn.addr !311
+  %52 = icmp eq i32 %51, 0, !insn.addr !312
+  store i32 %stack_var_-32.2.reload, i32* %stack_var_-32.3.reg2mem, !insn.addr !313
+  br i1 %52, label %dec_label_pc_207f, label %dec_label_pc_206e, !insn.addr !313
+
+dec_label_pc_206e:                                ; preds = %dec_label_pc_2065
+  store i32 %51, i32* %50, align 4, !insn.addr !314
+  %53 = inttoptr i32 %51 to i32*, !insn.addr !315
+  %54 = call i32 @_ZNK12RTTIDerivedB13derivedB_dataEv(i32* %53), !insn.addr !315
+  %55 = add i32 %54, %stack_var_-32.2.reload, !insn.addr !316
+  store i32 %55, i32* %stack_var_-32.3.reg2mem, !insn.addr !316
+  br label %dec_label_pc_207f, !insn.addr !316
+
+dec_label_pc_207f:                                ; preds = %dec_label_pc_203e, %dec_label_pc_206e, %dec_label_pc_2065
+  %stack_var_-32.3.reload = load i32, i32* %stack_var_-32.3.reg2mem
+  br i1 %7, label %dec_label_pc_20b4, label %dec_label_pc_2086, !insn.addr !317
+
+dec_label_pc_2086:                                ; preds = %dec_label_pc_207f
+  %56 = ptrtoint i32* %3 to i32, !insn.addr !270
+  %57 = load i32, i32* %3, align 4, !insn.addr !318
+  %58 = add i32 %57, -4, !insn.addr !319
+  %59 = inttoptr i32 %58 to i32*, !insn.addr !319
+  %60 = load i32, i32* %59, align 4, !insn.addr !319
+  %61 = add i32 %32, -16
+  %62 = inttoptr i32 %61 to i32*
+  store i32 %60, i32* %62, align 4, !insn.addr !320
+  %63 = call i32 @_ZNKSt9type_info4nameEv(i32* nonnull @0), !insn.addr !321
+  store i32 %63, i32* %62, align 4, !insn.addr !322
+  %64 = call i32 @strlen(i8* bitcast (i32* @0 to i8*)), !insn.addr !323
+  %65 = add i32 %64, %stack_var_-32.3.reload, !insn.addr !324
+  store i32* %62, i32** %.pre-phi2.reg2mem
+  store i32 %65, i32* %stack_var_-32.4.reg2mem
+  store i32 %56, i32* %eax.2.reg2mem
+  br label %dec_label_pc_20b9
+
+dec_label_pc_20b4:                                ; preds = %dec_label_pc_207f
+  %66 = call i32 @__cxa_bad_typeid(), !insn.addr !325
+  %.pre = add i32 %32, -16, !insn.addr !326
+  %.pre1 = inttoptr i32 %.pre to i32*, !insn.addr !326
+  store i32* %.pre1, i32** %.pre-phi2.reg2mem, !insn.addr !325
+  store i32 %stack_var_-32.3.reload, i32* %stack_var_-32.4.reg2mem, !insn.addr !325
+  store i32 %66, i32* %eax.2.reg2mem, !insn.addr !325
+  br label %dec_label_pc_20b9, !insn.addr !325
+
+dec_label_pc_20b9:                                ; preds = %dec_label_pc_2086, %dec_label_pc_20b4
+  %eax.2.reload = load i32, i32* %eax.2.reg2mem
+  %stack_var_-32.4.reload = load i32, i32* %stack_var_-32.4.reg2mem
+  %.pre-phi2.reload = load i32*, i32** %.pre-phi2.reg2mem
+  %spec.store.select = select i1 %19, i32 %eax.2.reload, i32 %40
+  store i32 %spec.store.select, i32* %.pre-phi2.reload, align 4
+  ret i32 %stack_var_-32.4.reload, !insn.addr !327
+
+; uselistorder directives
+  uselistorder i32 %51, { 2, 1, 0 }
+  uselistorder i32 %stack_var_-32.2.reload, { 2, 1, 0 }
+  uselistorder i32 %33, { 2, 1, 0 }
+  uselistorder i32 %stack_var_-32.1.reload, { 2, 1, 0 }
+  uselistorder i32 %32, { 0, 6, 5, 4, 3, 2, 1 }
+  uselistorder i32 %stack_var_-32.0.reload, { 1, 0 }
+  uselistorder i32* %5, { 4, 0, 1, 2, 3 }
+  uselistorder i32* %3, { 0, 5, 1, 2, 3, 4 }
+  uselistorder i32 %1, { 4, 3, 2, 1, 0 }
+  uselistorder i32* %stack_var_-32.0.reg2mem, { 0, 2, 1 }
+  uselistorder i32* %stack_var_-32.1.reg2mem, { 0, 2, 1 }
+  uselistorder i32* %stack_var_-32.2.reg2mem, { 0, 2, 3, 1 }
+  uselistorder i32* %stack_var_-32.3.reg2mem, { 0, 2, 3, 1 }
+  uselistorder i32 ()* @__dynamic_cast, { 1, 0, 2 }
+  uselistorder i32 ()* @__cxa_bad_typeid, { 2, 1, 0, 3 }
+  uselistorder i32 (i32*, i32*)* @_ZNKSt9type_infoeqERKS_, { 1, 0 }
+  uselistorder i32* (i32)* @_Znwj, { 3, 2, 1, 0, 4 }
+  uselistorder label %dec_label_pc_20b9, { 1, 0 }
+  uselistorder label %dec_label_pc_207f, { 1, 2, 0 }
+  uselistorder label %dec_label_pc_203e, { 1, 2, 0 }
+  uselistorder label %dec_label_pc_1ff9, { 1, 0 }
+  uselistorder label %dec_label_pc_1fcb, { 1, 0 }
+}
+
+define i32 @_Z20test_cpp_oo_featuresv() local_unnamed_addr {
+dec_label_pc_20ea:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !328
+  %3 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6e86 to i32), i32 -16196), !insn.addr !329
+  %4 = inttoptr i32 %3 to i8*, !insn.addr !330
+  %5 = call i32 @puts(i8* %4), !insn.addr !331
+  %6 = call i32 @_Z20test_cpp_member_funcv(), !insn.addr !332
+  %7 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6e86 to i32), i32 -16160), !insn.addr !333
+  %8 = inttoptr i32 %7 to i8*, !insn.addr !334
+  %9 = call i32 (i8*, ...) @printf(i8* %8), !insn.addr !335
+  %10 = call i32 @_Z20test_cpp_constructorv(), !insn.addr !336
+  %11 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6e86 to i32), i32 -16130), !insn.addr !337
+  %12 = inttoptr i32 %11 to i8*, !insn.addr !338
+  %13 = call i32 (i8*, ...) @printf(i8* %12), !insn.addr !339
+  %14 = call i32 @_Z21test_cpp_virtual_funcv(), !insn.addr !340
+  %15 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6e86 to i32), i32 -16102), !insn.addr !341
+  %16 = inttoptr i32 %15 to i8*, !insn.addr !342
+  %17 = call i32 (i8*, ...) @printf(i8* %16), !insn.addr !343
+  %18 = call i32 @_Z29test_cpp_multiple_inheritancev(), !insn.addr !344
+  %19 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6e86 to i32), i32 -16074), !insn.addr !345
+  %20 = inttoptr i32 %19 to i8*, !insn.addr !346
+  %21 = call i32 (i8*, ...) @printf(i8* %20), !insn.addr !347
+  %22 = call i32 @_Z28test_cpp_diamond_inheritancev(), !insn.addr !348
+  %23 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6e86 to i32), i32 -16046), !insn.addr !349
+  %24 = inttoptr i32 %23 to i8*, !insn.addr !350
+  %25 = call i32 (i8*, ...) @printf(i8* %24), !insn.addr !351
+  %26 = call i32 @_Z26test_cpp_operator_overloadv(), !insn.addr !352
+  %27 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6e86 to i32), i32 -16017), !insn.addr !353
+  %28 = inttoptr i32 %27 to i8*, !insn.addr !354
+  %29 = call i32 (i8*, ...) @printf(i8* %28), !insn.addr !355
+  %30 = call i32 @_Z22test_cpp_template_funcv(), !insn.addr !356
+  %31 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6e86 to i32), i32 -15989), !insn.addr !357
+  %32 = inttoptr i32 %31 to i8*, !insn.addr !358
+  %33 = call i32 (i8*, ...) @printf(i8* %32), !insn.addr !359
+  %34 = call i32 @_Z23test_cpp_template_classv(), !insn.addr !360
+  %35 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6e86 to i32), i32 -15961), !insn.addr !361
+  %36 = inttoptr i32 %35 to i8*, !insn.addr !362
+  %37 = call i32 (i8*, ...) @printf(i8* %36), !insn.addr !363
+  %38 = call i32 @_Z15test_cpp_lambdav(), !insn.addr !364
+  %39 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6e86 to i32), i32 -15933), !insn.addr !365
+  %40 = inttoptr i32 %39 to i8*, !insn.addr !366
+  %41 = call i32 (i8*, ...) @printf(i8* %40), !insn.addr !367
+  %42 = call i32 @_Z18test_cpp_exceptionv(), !insn.addr !368
+  %43 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6e86 to i32), i32 -15905), !insn.addr !369
+  %44 = inttoptr i32 %43 to i8*, !insn.addr !370
+  %45 = call i32 (i8*, ...) @printf(i8* %44), !insn.addr !371
+  %46 = call i32 @_Z18test_cpp_smart_ptrv(), !insn.addr !372
+  %47 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6e86 to i32), i32 -15876), !insn.addr !373
+  %48 = inttoptr i32 %47 to i8*, !insn.addr !374
+  %49 = call i32 (i8*, ...) @printf(i8* %48), !insn.addr !375
+  %50 = call i32 @_Z13test_cpp_rttiv(), !insn.addr !376
+  %51 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6e86 to i32), i32 -15847), !insn.addr !377
+  %52 = inttoptr i32 %51 to i8*, !insn.addr !378
+  %53 = call i32 (i8*, ...) @printf(i8* %52), !insn.addr !379
+  ret i32 %53, !insn.addr !380
+
+; uselistorder directives
+  uselistorder i32 (i8*, ...)* @printf, { 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 12 }
+}
+
+define i32 @main(i32 %argc, i8** %argv) local_unnamed_addr {
+dec_label_pc_2238:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !381
+  %3 = call i32 @_Z20test_cpp_oo_featuresv(), !insn.addr !382
+  ret i32 0, !insn.addr !383
+}
+
+define i32 @_ZNSt15__uniq_ptr_dataIiZ18test_cpp_smart_ptrvEUlPiE_Lb1ELb0EECI1St15__uniq_ptr_implIiS1_EIRKS1_EES0_OT_(i32* %result, i32* %arg2, i32** %arg3) local_unnamed_addr {
+dec_label_pc_2258:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !384
+  %3 = bitcast i32* %arg2 to i32**, !insn.addr !385
+  %4 = call i32 @_ZNSt15__uniq_ptr_implIiZ18test_cpp_smart_ptrvEUlPiE_EC2IRKS1_EES0_OT_(i32* %result, i32** %3), !insn.addr !385
+  ret i32 %4, !insn.addr !386
+}
+
+define i32 @_ZNSt10unique_ptrIiZ18test_cpp_smart_ptrvEUlPiE_EC1IS1_vEES0_RKS1_(i32* %result, i32* %arg2, i32* %arg3) local_unnamed_addr {
+dec_label_pc_2282:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !387
+  %3 = bitcast i32* %arg3 to i32**, !insn.addr !388
+  %4 = call i32 @_ZNSt15__uniq_ptr_dataIiZ18test_cpp_smart_ptrvEUlPiE_Lb1ELb0EECI1St15__uniq_ptr_implIiS1_EIRKS1_EES0_OT_(i32* %result, i32* %arg2, i32** %3), !insn.addr !388
+  ret i32 %4, !insn.addr !389
+}
+
+define i32 @_ZNSt10unique_ptrIiZ18test_cpp_smart_ptrvEUlPiE_ED1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_22aa:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !390
+  %3 = call i32 @_ZNSt15__uniq_ptr_implIiZ18test_cpp_smart_ptrvEUlPiE_E6_M_ptrEv(i32* %result), !insn.addr !391
+  %4 = inttoptr i32 %3 to i32*, !insn.addr !392
+  %5 = load i32, i32* %4, align 4, !insn.addr !392
+  %6 = icmp eq i32 %5, 0, !insn.addr !393
+  br i1 %6, label %dec_label_pc_2303, label %dec_label_pc_22d6, !insn.addr !394
+
+dec_label_pc_22d6:                                ; preds = %dec_label_pc_22aa
+  %7 = call i32 @_ZNSt10unique_ptrIiZ18test_cpp_smart_ptrvEUlPiE_E11get_deleterEv(i32* %result), !insn.addr !395
+  %8 = inttoptr i32 %3 to i32***, !insn.addr !396
+  %9 = call i32* @_ZSt4moveIRPiEONSt16remove_referenceIT_E4typeEOS3_(i32*** %8), !insn.addr !396
+  %10 = inttoptr i32 %7 to i32*, !insn.addr !397
+  %11 = call i32 @_ZZ18test_cpp_smart_ptrvENKUlPiE_clES_(i32* %10), !insn.addr !397
+  br label %dec_label_pc_2303, !insn.addr !398
+
+dec_label_pc_2303:                                ; preds = %dec_label_pc_22d6, %dec_label_pc_22aa
+  store i32 0, i32* %4, align 4, !insn.addr !399
+  ret i32 %3, !insn.addr !400
+
+; uselistorder directives
+  uselistorder i32 %3, { 1, 0, 2 }
+}
+
+define i32 @_ZNKSt10unique_ptrIiZ18test_cpp_smart_ptrvEUlPiE_EdeEv(i32* %result) local_unnamed_addr {
+dec_label_pc_2312:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !401
+  %3 = call i32 @_ZNKSt10unique_ptrIiZ18test_cpp_smart_ptrvEUlPiE_E3getEv(i32* %result), !insn.addr !402
+  ret i32 %3, !insn.addr !403
+}
+
+define i32 @_ZNSt15__uniq_ptr_implIiZ18test_cpp_smart_ptrvEUlPiE_EC2IRKS1_EES0_OT_(i32* %arg1, i32** %arg2) local_unnamed_addr {
+dec_label_pc_233a:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %stack_var_8 = alloca i32, align 4
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !404
+  %3 = bitcast i32** %arg2 to i32*, !insn.addr !405
+  %4 = call i32** @_ZSt7forwardIRKZ18test_cpp_smart_ptrvEUlPiE_EOT_RNSt16remove_referenceIS4_E4typeE(i32* %3), !insn.addr !405
+  %5 = bitcast i32* %stack_var_8 to i32***
+  %6 = call i32 @_ZNSt5tupleIJPiZ18test_cpp_smart_ptrvEUlS0_E_EEC1IRS0_RKS1_Lb1EEEOT_OT0_(i32* %arg1, i32*** nonnull %5, i32** %4), !insn.addr !406
+  ret i32 %6, !insn.addr !407
+}
+
+define i32 @_ZNSt15__uniq_ptr_implIiZ18test_cpp_smart_ptrvEUlPiE_E6_M_ptrEv(i32* %result) local_unnamed_addr {
+dec_label_pc_2374:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !408
+  %3 = call i32* @_ZSt3getILj0EJPiZ18test_cpp_smart_ptrvEUlS0_E_EERNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERS6_(i32* %result), !insn.addr !409
+  %4 = ptrtoint i32* %3 to i32, !insn.addr !409
+  ret i32 %4, !insn.addr !410
+}
+
+define i32 @_ZNSt10unique_ptrIiZ18test_cpp_smart_ptrvEUlPiE_E11get_deleterEv(i32* %result) local_unnamed_addr {
+dec_label_pc_2396:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !411
+  %3 = call i32 @_ZNSt15__uniq_ptr_implIiZ18test_cpp_smart_ptrvEUlPiE_E10_M_deleterEv(i32* %result), !insn.addr !412
+  ret i32 %3, !insn.addr !413
+}
+
+define i32 @_ZNKSt10unique_ptrIiZ18test_cpp_smart_ptrvEUlPiE_E3getEv(i32* %result) local_unnamed_addr {
+dec_label_pc_23b8:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !414
+  %3 = call i32 @_ZNKSt15__uniq_ptr_implIiZ18test_cpp_smart_ptrvEUlPiE_E6_M_ptrEv(i32* %result), !insn.addr !415
+  ret i32 %3, !insn.addr !416
+}
+
+define i32** @_ZSt7forwardIRKZ18test_cpp_smart_ptrvEUlPiE_EOT_RNSt16remove_referenceIS4_E4typeE(i32* %arg1) local_unnamed_addr {
+dec_label_pc_23d9:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !417
+  %3 = bitcast i32* %arg1 to i32**, !insn.addr !418
+  ret i32** %3, !insn.addr !418
+}
+
+define i32 @_ZNSt5tupleIJPiZ18test_cpp_smart_ptrvEUlS0_E_EEC1IRS0_RKS1_Lb1EEEOT_OT0_(i32* %result, i32*** %arg2, i32** %arg3) local_unnamed_addr {
+dec_label_pc_23ec:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !419
+  %3 = bitcast i32** %arg3 to i32*
+  %4 = call i32** @_ZSt7forwardIRKZ18test_cpp_smart_ptrvEUlPiE_EOT_RNSt16remove_referenceIS4_E4typeE(i32* %3), !insn.addr !420
+  %5 = ptrtoint i32** %4 to i32, !insn.addr !420
+  %6 = bitcast i32*** %arg2 to i32*, !insn.addr !421
+  %7 = call i32*** @_ZSt7forwardIRPiEOT_RNSt16remove_referenceIS2_E4typeE(i32* %6), !insn.addr !421
+  %8 = call i32 @_ZNSt11_Tuple_implILj0EJPiZ18test_cpp_smart_ptrvEUlS0_E_EEC2IRS0_JRKS1_EvEEOT_DpOT0_(i32* %result, i32*** %7, i32 %5), !insn.addr !422
+  ret i32 %8, !insn.addr !423
+}
+
+define i32* @_ZSt3getILj0EJPiZ18test_cpp_smart_ptrvEUlS0_E_EERNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERS6_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_242f:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !424
+  %3 = call i32** @_ZSt12__get_helperILj0EPiJZ18test_cpp_smart_ptrvEUlS0_E_EERT0_RSt11_Tuple_implIXT_EJS2_DpT1_EE(i32* %arg1), !insn.addr !425
+  %4 = bitcast i32** %3 to i32*, !insn.addr !426
+  ret i32* %4, !insn.addr !426
+}
+
+define i32 @_ZNSt15__uniq_ptr_implIiZ18test_cpp_smart_ptrvEUlPiE_E10_M_deleterEv(i32* %result) local_unnamed_addr {
+dec_label_pc_2450:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !427
+  %3 = call i32* @_ZSt3getILj1EJPiZ18test_cpp_smart_ptrvEUlS0_E_EERNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERS6_(i32* %result), !insn.addr !428
+  %4 = ptrtoint i32* %3 to i32, !insn.addr !428
+  ret i32 %4, !insn.addr !429
+}
+
+define i32 @_ZNKSt15__uniq_ptr_implIiZ18test_cpp_smart_ptrvEUlPiE_E6_M_ptrEv(i32* %result) local_unnamed_addr {
+dec_label_pc_2472:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !430
+  %3 = call i32* @_ZSt3getILj0EJPiZ18test_cpp_smart_ptrvEUlS0_E_EERKNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERKS6_(i32* %result), !insn.addr !431
+  %4 = load i32, i32* %3, align 4, !insn.addr !432
+  ret i32 %4, !insn.addr !433
+}
+
+define i32 @_ZNSt11_Tuple_implILj0EJPiZ18test_cpp_smart_ptrvEUlS0_E_EEC2IRS0_JRKS1_EvEEOT_DpOT0_(i32* %result, i32*** %arg2, i32 %arg3) local_unnamed_addr {
+dec_label_pc_2496:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !434
+  %3 = inttoptr i32 %arg3 to i32*, !insn.addr !435
+  %4 = call i32** @_ZSt7forwardIRKZ18test_cpp_smart_ptrvEUlPiE_EOT_RNSt16remove_referenceIS4_E4typeE(i32* %3), !insn.addr !435
+  %5 = bitcast i32** %4 to i32*
+  %6 = call i32 @_ZNSt11_Tuple_implILj1EJZ18test_cpp_smart_ptrvEUlPiE_EEC2ERKS1_(i32* %result, i32* %5), !insn.addr !436
+  %7 = bitcast i32*** %arg2 to i32*, !insn.addr !437
+  %8 = call i32*** @_ZSt7forwardIRPiEOT_RNSt16remove_referenceIS2_E4typeE(i32* %7), !insn.addr !437
+  %9 = call i32 @_ZNSt10_Head_baseILj0EPiLb0EEC1IRS0_EEOT_(i32* %result, i32*** %8), !insn.addr !438
+  ret i32 %9, !insn.addr !439
+
+; uselistorder directives
+  uselistorder i32** (i32*)* @_ZSt7forwardIRKZ18test_cpp_smart_ptrvEUlPiE_EOT_RNSt16remove_referenceIS4_E4typeE, { 2, 1, 0 }
+}
+
+define i32** @_ZSt12__get_helperILj0EPiJZ18test_cpp_smart_ptrvEUlS0_E_EERT0_RSt11_Tuple_implIXT_EJS2_DpT1_EE(i32* %arg1) local_unnamed_addr {
+dec_label_pc_24e5:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !440
+  %3 = call i32 @_ZNSt11_Tuple_implILj0EJPiZ18test_cpp_smart_ptrvEUlS0_E_EE7_M_headERS2_(i32* %arg1), !insn.addr !441
+  %4 = inttoptr i32 %3 to i32**, !insn.addr !442
+  ret i32** %4, !insn.addr !442
+}
+
+define i32* @_ZSt3getILj1EJPiZ18test_cpp_smart_ptrvEUlS0_E_EERNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERS6_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_2505:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !443
+  %3 = call i32* @_ZSt12__get_helperILj1EZ18test_cpp_smart_ptrvEUlPiE_JEERT0_RSt11_Tuple_implIXT_EJS2_DpT1_EE(i32* %arg1), !insn.addr !444
+  ret i32* %3, !insn.addr !445
+}
+
+define i32* @_ZSt3getILj0EJPiZ18test_cpp_smart_ptrvEUlS0_E_EERKNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERKS6_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_2525:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !446
+  %3 = call i32** @_ZSt12__get_helperILj0EPiJZ18test_cpp_smart_ptrvEUlS0_E_EERKT0_RKSt11_Tuple_implIXT_EJS2_DpT1_EE(i32* %arg1), !insn.addr !447
+  %4 = bitcast i32** %3 to i32*, !insn.addr !448
+  ret i32* %4, !insn.addr !448
+}
+
+define i32 @_ZNSt11_Tuple_implILj1EJZ18test_cpp_smart_ptrvEUlPiE_EEC2ERKS1_(i32* %result, i32* %arg2) local_unnamed_addr {
+dec_label_pc_2546:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !449
+  %3 = call i32 @_ZNSt10_Head_baseILj1EZ18test_cpp_smart_ptrvEUlPiE_Lb1EEC2ERKS1_(i32* %result, i32* %arg2), !insn.addr !450
+  ret i32 %3, !insn.addr !451
+}
+
+define i32 @_ZNSt11_Tuple_implILj0EJPiZ18test_cpp_smart_ptrvEUlS0_E_EE7_M_headERS2_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_256a:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !452
+  %3 = call i32 @_ZNSt10_Head_baseILj0EPiLb0EE7_M_headERS1_(i32* %arg1), !insn.addr !453
+  ret i32 %3, !insn.addr !454
+}
+
+define i32* @_ZSt12__get_helperILj1EZ18test_cpp_smart_ptrvEUlPiE_JEERT0_RSt11_Tuple_implIXT_EJS2_DpT1_EE(i32* %arg1) local_unnamed_addr {
+dec_label_pc_258b:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !455
+  %3 = call i32 @_ZNSt11_Tuple_implILj1EJZ18test_cpp_smart_ptrvEUlPiE_EE7_M_headERS2_(i32* %arg1), !insn.addr !456
+  %4 = inttoptr i32 %3 to i32*, !insn.addr !457
+  ret i32* %4, !insn.addr !457
+}
+
+define i32** @_ZSt12__get_helperILj0EPiJZ18test_cpp_smart_ptrvEUlS0_E_EERKT0_RKSt11_Tuple_implIXT_EJS2_DpT1_EE(i32* %arg1) local_unnamed_addr {
+dec_label_pc_25ab:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !458
+  %3 = call i32 @_ZNSt11_Tuple_implILj0EJPiZ18test_cpp_smart_ptrvEUlS0_E_EE7_M_headERKS2_(i32* %arg1), !insn.addr !459
+  %4 = inttoptr i32 %3 to i32**, !insn.addr !460
+  ret i32** %4, !insn.addr !460
+}
+
+define i32 @_ZNSt10_Head_baseILj1EZ18test_cpp_smart_ptrvEUlPiE_Lb1EEC2ERKS1_(i32* %result, i32* %arg2) local_unnamed_addr {
+dec_label_pc_25cc:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !461
+  %3 = add i32 %2, ptrtoint (i32** @global_var_69ac to i32), !insn.addr !462
+  ret i32 %3, !insn.addr !463
+}
+
+define i32 @_ZNSt11_Tuple_implILj1EJZ18test_cpp_smart_ptrvEUlPiE_EE7_M_headERS2_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_25dc:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !464
+  %3 = call i32 @_ZNSt10_Head_baseILj1EZ18test_cpp_smart_ptrvEUlPiE_Lb1EE7_M_headERS2_(i32* %arg1), !insn.addr !465
+  ret i32 %3, !insn.addr !466
+}
+
+define i32 @_ZNSt11_Tuple_implILj0EJPiZ18test_cpp_smart_ptrvEUlS0_E_EE7_M_headERKS2_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_25fc:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !467
+  %3 = call i32 @_ZNSt10_Head_baseILj0EPiLb0EE7_M_headERKS1_(i32* %arg1), !insn.addr !468
+  ret i32 %3, !insn.addr !469
+}
+
+define i32 @_ZNSt10_Head_baseILj1EZ18test_cpp_smart_ptrvEUlPiE_Lb1EE7_M_headERS2_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_261d:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %arg1 to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !470
+  ret i32 %2, !insn.addr !471
+}
+
+define i32 @_Z41__static_initialization_and_destruction_0ii(i32 %arg1, i32 %arg2) local_unnamed_addr {
+dec_label_pc_262f:
+  %0 = alloca i32
+  %eax.0.reg2mem = alloca i32, !insn.addr !472
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !473
+  %3 = icmp eq i32 %arg1, 1, !insn.addr !474
+  %4 = icmp eq i32 %arg2, 65535, !insn.addr !475
+  %5 = icmp eq i1 %3, %4
+  store i32 %2, i32* %eax.0.reg2mem, !insn.addr !476
+  br i1 %5, label %dec_label_pc_2654, label %dec_label_pc_2686, !insn.addr !476
+
+dec_label_pc_2654:                                ; preds = %dec_label_pc_262f
+  %6 = call i32 @_ZNSt8ios_base4InitC1Ev(), !insn.addr !477
+  %7 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6941 to i32), i32 132), !insn.addr !478
+  %8 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6941 to i32), i32 164), !insn.addr !479
+  %9 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6941 to i32), i32 124), !insn.addr !480
+  %10 = inttoptr i32 %9 to i32*, !insn.addr !480
+  %11 = load i32, i32* %10, align 4, !insn.addr !480
+  %12 = inttoptr i32 %11 to void (i32*)*, !insn.addr !481
+  %13 = inttoptr i32 %8 to i32*, !insn.addr !482
+  %14 = inttoptr i32 %7 to i32*, !insn.addr !482
+  %15 = call i32 @__cxa_atexit(void (i32*)* %12, i32* %13, i32* %14), !insn.addr !482
+  store i32 %15, i32* %eax.0.reg2mem, !insn.addr !483
+  br label %dec_label_pc_2686, !insn.addr !483
+
+dec_label_pc_2686:                                ; preds = %dec_label_pc_262f, %dec_label_pc_2654
+  %eax.0.reload = load i32, i32* %eax.0.reg2mem
+  ret i32 %eax.0.reload, !insn.addr !484
+
+; uselistorder directives
+  uselistorder i32 %1, { 3, 2, 1, 0 }
+  uselistorder label %dec_label_pc_2686, { 1, 0 }
+}
+
+define i32 @_GLOBAL__sub_I__Z20test_cpp_member_funcv() local_unnamed_addr {
+dec_label_pc_268c:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !485
+  %3 = call i32 @_Z41__static_initialization_and_destruction_0ii(i32 1, i32 65535), !insn.addr !486
+  ret i32 %3, !insn.addr !487
+
+; uselistorder directives
+  uselistorder i32 65535, { 1, 0 }
+}
+
+define i32 @_ZNKSt9type_info4nameEv(i32* %result) local_unnamed_addr {
+dec_label_pc_26b4:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !488
+  %4 = add i32 %2, 4, !insn.addr !489
+  %5 = inttoptr i32 %4 to i32*, !insn.addr !489
+  %6 = load i32, i32* %5, align 4, !insn.addr !489
+  %7 = inttoptr i32 %6 to i8*, !insn.addr !490
+  %8 = load i8, i8* %7, align 1, !insn.addr !490
+  %9 = icmp eq i8 %8, 42, !insn.addr !491
+  %10 = zext i1 %9 to i32
+  %storemerge = add i32 %6, %10
+  ret i32 %storemerge, !insn.addr !492
+}
+
+define i32 @_ZNKSt9type_infoeqERKS_(i32* %result, i32* %arg2) local_unnamed_addr {
+dec_label_pc_26e6:
+  %0 = alloca i32
+  %storemerge.reg2mem = alloca i32, !insn.addr !493
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %arg2 to i32
+  %3 = ptrtoint i32* %result to i32
+  %4 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !494
+  %5 = add i32 %3, 4, !insn.addr !495
+  %6 = inttoptr i32 %5 to i32*, !insn.addr !495
+  %7 = load i32, i32* %6, align 4, !insn.addr !495
+  %8 = add i32 %2, 4, !insn.addr !496
+  %9 = inttoptr i32 %8 to i32*, !insn.addr !496
+  %10 = load i32, i32* %9, align 4, !insn.addr !496
+  %11 = icmp eq i32 %7, %10, !insn.addr !497
+  store i32 1, i32* %storemerge.reg2mem, !insn.addr !498
+  br i1 %11, label %dec_label_pc_2744, label %dec_label_pc_270b, !insn.addr !498
+
+dec_label_pc_270b:                                ; preds = %dec_label_pc_26e6
+  %12 = inttoptr i32 %7 to i8*, !insn.addr !499
+  %13 = load i8, i8* %12, align 1, !insn.addr !499
+  %14 = icmp eq i8 %13, 42, !insn.addr !500
+  br i1 %14, label %dec_label_pc_273f, label %dec_label_pc_2719, !insn.addr !501
+
+dec_label_pc_2719:                                ; preds = %dec_label_pc_270b
+  %15 = inttoptr i32 %10 to i8*, !insn.addr !502
+  %16 = call i32 @strcmp(i8* %12, i8* %15), !insn.addr !503
+  %17 = icmp eq i32 %16, 0, !insn.addr !504
+  %18 = icmp eq i1 %17, false, !insn.addr !505
+  store i32 1, i32* %storemerge.reg2mem, !insn.addr !505
+  br i1 %18, label %dec_label_pc_273f, label %dec_label_pc_2744, !insn.addr !505
+
+dec_label_pc_273f:                                ; preds = %dec_label_pc_2719, %dec_label_pc_270b
+  store i32 0, i32* %storemerge.reg2mem, !insn.addr !506
+  br label %dec_label_pc_2744, !insn.addr !506
+
+dec_label_pc_2744:                                ; preds = %dec_label_pc_26e6, %dec_label_pc_2719, %dec_label_pc_273f
+  %storemerge.reload = load i32, i32* %storemerge.reg2mem
+  ret i32 %storemerge.reload, !insn.addr !507
+
+; uselistorder directives
+  uselistorder i32* %storemerge.reg2mem, { 0, 3, 2, 1 }
+  uselistorder label %dec_label_pc_2744, { 2, 1, 0 }
+}
+
+define i32 @_ZN11SimpleClassC1EiPKc(i32* %result, i32 %arg2, i8* %arg3) local_unnamed_addr {
+dec_label_pc_274a:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !508
+  store i32 %arg2, i32* %result, align 4, !insn.addr !509
+  %4 = add i32 %2, 4, !insn.addr !510
+  %5 = inttoptr i32 %4 to i8*, !insn.addr !511
+  %6 = call i8* @strncpy(i8* %5, i8* %arg3, i32 31), !insn.addr !512
+  %7 = add i32 %2, 35, !insn.addr !513
+  %8 = inttoptr i32 %7 to i8*, !insn.addr !513
+  store i8 0, i8* %8, align 1, !insn.addr !513
+  ret i32 %2, !insn.addr !514
+
+; uselistorder directives
+  uselistorder i32 %2, { 1, 0, 2 }
+  uselistorder i8 0, { 3, 0, 1, 2, 4 }
+}
+
+define i32 @_ZNK11SimpleClass8getValueEv(i32* %result) local_unnamed_addr {
+dec_label_pc_278e:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !515
+  %3 = load i32, i32* %result, align 4, !insn.addr !516
+  ret i32 %3, !insn.addr !517
+}
+
+define i32 @_ZN11SimpleClass8setValueEi(i32* %result, i32 %arg2) local_unnamed_addr {
+dec_label_pc_27a6:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !518
+  store i32 %arg2, i32* %result, align 4, !insn.addr !519
+  ret i32 %2, !insn.addr !520
+}
+
+define i32 @_ZNK11SimpleClass7computeEi(i32* %result, i32 %arg2) local_unnamed_addr {
+dec_label_pc_27c2:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !521
+  %4 = load i32, i32* %result, align 4, !insn.addr !522
+  %5 = mul i32 %4, %arg2, !insn.addr !523
+  %6 = add i32 %2, 4, !insn.addr !524
+  %7 = inttoptr i32 %6 to i8*, !insn.addr !525
+  %8 = call i32 @strlen(i8* %7), !insn.addr !526
+  %9 = add i32 %8, %5, !insn.addr !527
+  ret i32 %9, !insn.addr !528
+}
+
+define i32 @_ZN11SimpleClass10getClassIDEv(i32* %result) local_unnamed_addr {
+dec_label_pc_27fd:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !529
+  ret i32 4660, !insn.addr !530
+}
+
+define i32 @_ZN14LifecycleClassC1Ej(i32* %result, i32 %arg2) local_unnamed_addr {
+dec_label_pc_2816:
+  %0 = alloca i32
+  %storemerge.reg2mem = alloca i32, !insn.addr !531
+  %stack_var_-16.0.reg2mem = alloca i32, !insn.addr !531
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !532
+  %4 = add i32 %2, 4, !insn.addr !533
+  %5 = inttoptr i32 %4 to i32*, !insn.addr !533
+  store i32 %arg2, i32* %5, align 4, !insn.addr !533
+  %6 = icmp ult i32 %arg2, 536870912
+  br i1 %6, label %dec_label_pc_283f, label %dec_label_pc_285e, !insn.addr !534
+
+dec_label_pc_283f:                                ; preds = %dec_label_pc_2816
+  %7 = mul i32 %arg2, 4, !insn.addr !535
+  %8 = call i32* @_Znaj(i32 %7), !insn.addr !536
+  %9 = ptrtoint i32* %8 to i32, !insn.addr !536
+  store i32 %9, i32* %result, align 4, !insn.addr !537
+  store i32 0, i32* %storemerge.reg2mem, !insn.addr !538
+  br label %dec_label_pc_2886, !insn.addr !538
+
+dec_label_pc_285e:                                ; preds = %dec_label_pc_2816
+  %10 = call i32 @__cxa_throw_bad_array_new_length(), !insn.addr !539
+  br label %dec_label_pc_2863, !insn.addr !539
+
+dec_label_pc_2863:                                ; preds = %dec_label_pc_2886, %dec_label_pc_285e
+  %stack_var_-16.0.reload = load i32, i32* %stack_var_-16.0.reg2mem
+  %11 = mul i32 %stack_var_-16.0.reload, 10, !insn.addr !540
+  %12 = load i32, i32* %result, align 4, !insn.addr !541
+  %13 = mul i32 %stack_var_-16.0.reload, 4, !insn.addr !542
+  %14 = add i32 %13, %12, !insn.addr !543
+  %15 = inttoptr i32 %14 to i32*, !insn.addr !544
+  store i32 %11, i32* %15, align 4, !insn.addr !544
+  %16 = add i32 %stack_var_-16.0.reload, 1, !insn.addr !545
+  store i32 %16, i32* %storemerge.reg2mem, !insn.addr !545
+  br label %dec_label_pc_2886, !insn.addr !545
+
+dec_label_pc_2886:                                ; preds = %dec_label_pc_2863, %dec_label_pc_283f
+  %storemerge.reload = load i32, i32* %storemerge.reg2mem
+  %17 = icmp ult i32 %storemerge.reload, %arg2, !insn.addr !546
+  store i32 %storemerge.reload, i32* %stack_var_-16.0.reg2mem, !insn.addr !547
+  br i1 %17, label %dec_label_pc_2863, label %dec_label_pc_288e, !insn.addr !547
+
+dec_label_pc_288e:                                ; preds = %dec_label_pc_2886
+  %18 = add i32 %1, add (i32 ptrtoint (i32* @global_var_675a to i32), i32 160), !insn.addr !548
+  %19 = inttoptr i32 %18 to i32*, !insn.addr !548
+  %20 = load i32, i32* %19, align 4, !insn.addr !548
+  %21 = add i32 %20, 1, !insn.addr !549
+  store i32 %21, i32* %19, align 4, !insn.addr !550
+  ret i32 %21, !insn.addr !551
+
+; uselistorder directives
+  uselistorder i32 %21, { 1, 0 }
+  uselistorder i32 %storemerge.reload, { 1, 0 }
+  uselistorder i32 %stack_var_-16.0.reload, { 1, 2, 0 }
+  uselistorder i32 %1, { 1, 0 }
+  uselistorder i32* %stack_var_-16.0.reg2mem, { 1, 0 }
+  uselistorder i32* %storemerge.reg2mem, { 0, 2, 1 }
+  uselistorder i32 %arg2, { 1, 0, 2, 3 }
+  uselistorder i32* %result, { 1, 0, 2 }
+}
+
+define i32 @_ZN14LifecycleClassD1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_28a4:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !552
+  %3 = load i32, i32* %result, align 4, !insn.addr !553
+  %4 = icmp eq i32 %3, 0, !insn.addr !554
+  br i1 %4, label %dec_label_pc_28d4, label %dec_label_pc_28c3, !insn.addr !555
+
+dec_label_pc_28c3:                                ; preds = %dec_label_pc_28a4
+  %5 = inttoptr i32 %3 to i32*, !insn.addr !556
+  call void @_ZdaPv(i32* %5, i32* nonnull @0), !insn.addr !556
+  br label %dec_label_pc_28d4, !insn.addr !557
+
+dec_label_pc_28d4:                                ; preds = %dec_label_pc_28c3, %dec_label_pc_28a4
+  %6 = add i32 %1, add (i32 ptrtoint (i32* @global_var_66cc to i32), i32 160), !insn.addr !558
+  %7 = inttoptr i32 %6 to i32*, !insn.addr !558
+  %8 = load i32, i32* %7, align 4, !insn.addr !558
+  %9 = add i32 %8, -1, !insn.addr !559
+  store i32 %9, i32* %7, align 4, !insn.addr !560
+  ret i32 %9, !insn.addr !561
+
+; uselistorder directives
+  uselistorder i32 %1, { 1, 0 }
+}
+
+define i32 @_ZNK14LifecycleClass7getDataEj(i32* %result, i32 %arg2) local_unnamed_addr {
+dec_label_pc_28ea:
+  %0 = alloca i32
+  %storemerge.reg2mem = alloca i32, !insn.addr !562
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !563
+  %4 = add i32 %2, 4, !insn.addr !564
+  %5 = inttoptr i32 %4 to i32*, !insn.addr !564
+  %6 = load i32, i32* %5, align 4, !insn.addr !564
+  %7 = icmp ugt i32 %6, %arg2, !insn.addr !565
+  %8 = icmp eq i1 %7, false, !insn.addr !566
+  store i32 -1, i32* %storemerge.reg2mem, !insn.addr !566
+  br i1 %8, label %dec_label_pc_291c, label %dec_label_pc_2906, !insn.addr !566
+
+dec_label_pc_2906:                                ; preds = %dec_label_pc_28ea
+  %9 = load i32, i32* %result, align 4, !insn.addr !567
+  %10 = mul i32 %arg2, 4, !insn.addr !568
+  %11 = add i32 %9, %10, !insn.addr !569
+  %12 = inttoptr i32 %11 to i32*, !insn.addr !570
+  %13 = load i32, i32* %12, align 4, !insn.addr !570
+  store i32 %13, i32* %storemerge.reg2mem, !insn.addr !571
+  br label %dec_label_pc_291c, !insn.addr !571
+
+dec_label_pc_291c:                                ; preds = %dec_label_pc_28ea, %dec_label_pc_2906
+  %storemerge.reload = load i32, i32* %storemerge.reg2mem
+  ret i32 %storemerge.reload, !insn.addr !572
+
+; uselistorder directives
+  uselistorder i32* %storemerge.reg2mem, { 0, 2, 1 }
+  uselistorder label %dec_label_pc_291c, { 1, 0 }
+}
+
+define i32 @_ZN14LifecycleClass16getInstanceCountEv() local_unnamed_addr {
+dec_label_pc_291e:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !573
+  %3 = add i32 %2, add (i32 ptrtoint (i32* @global_var_6656 to i32), i32 160), !insn.addr !574
+  %4 = inttoptr i32 %3 to i32*, !insn.addr !574
+  %5 = load i32, i32* %4, align 4, !insn.addr !574
+  ret i32 %5, !insn.addr !575
+
+; uselistorder directives
+  uselistorder i32 160, { 2, 0, 1 }
+}
+
+define i32 @_ZN4Base12virtual_funcEi(i32* %result, i32 %arg2) local_unnamed_addr {
+dec_label_pc_2938:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !576
+  %4 = add i32 %2, 1, !insn.addr !577
+  ret i32 %4, !insn.addr !578
+}
+
+define i32 @_ZNK4Base7getNameEv() local_unnamed_addr {
+dec_label_pc_2952:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !579
+  %3 = add i32 %2, add (i32 ptrtoint (i32* @global_var_6622 to i32), i32 -16211), !insn.addr !580
+  ret i32 %3, !insn.addr !581
+}
+
+define i32 @_ZN4BaseD1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_296c:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !582
+  %4 = add i32 %3, add (i32 ptrtoint (i32* @global_var_6608 to i32), i32 -472), !insn.addr !583
+  store i32 %4, i32* %result, align 4, !insn.addr !584
+  ret i32 %2, !insn.addr !585
+}
+
+define i32 @_ZN4BaseD0Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_298c:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !586
+  %3 = call i32 @_ZN4BaseD1Ev(i32* %result), !insn.addr !587
+  %4 = call i32 @_ZdlPvj(i32* %result, i32 4), !insn.addr !588
+  ret i32 %4, !insn.addr !589
+}
+
+define i32 @_ZN4BaseC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_29c6:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !590
+  %4 = add i32 %3, add (i32 ptrtoint (i32* @global_var_65ae to i32), i32 -472), !insn.addr !591
+  store i32 %4, i32* %result, align 4, !insn.addr !592
+  ret i32 %2, !insn.addr !593
+}
+
+define i32 @_ZN7DerivedC1Ei(i32* %result, i32 %arg2) local_unnamed_addr {
+dec_label_pc_29e6:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !594
+  %4 = call i32 @_ZN4BaseC1Ev(i32* %result), !insn.addr !595
+  %5 = add i32 %1, add (i32 ptrtoint (i32* @global_var_658a to i32), i32 -496), !insn.addr !596
+  store i32 %5, i32* %result, align 4, !insn.addr !597
+  %6 = add i32 %2, 4, !insn.addr !598
+  %7 = inttoptr i32 %6 to i32*, !insn.addr !598
+  store i32 %arg2, i32* %7, align 4, !insn.addr !598
+  ret i32 %2, !insn.addr !599
+
+; uselistorder directives
+  uselistorder i32 %2, { 1, 0 }
+  uselistorder i32* %result, { 1, 0, 2 }
+}
+
+define i32 @_ZN7Derived12virtual_funcEi(i32* %result, i32 %arg2) local_unnamed_addr {
+dec_label_pc_2a26:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !600
+  %4 = add i32 %2, 4, !insn.addr !601
+  %5 = inttoptr i32 %4 to i32*, !insn.addr !601
+  %6 = load i32, i32* %5, align 4, !insn.addr !601
+  %7 = mul i32 %6, %arg2, !insn.addr !602
+  ret i32 %7, !insn.addr !603
+}
+
+define i32 @_ZNK7Derived7getNameEv() local_unnamed_addr {
+dec_label_pc_2a44:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !604
+  %3 = add i32 %2, add (i32 ptrtoint (i32* @global_var_6530 to i32), i32 -16206), !insn.addr !605
+  ret i32 %3, !insn.addr !606
+}
+
+define i32 @_ZN5BaseA5funcAEv() local_unnamed_addr {
+dec_label_pc_2a5e:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !607
+  ret i32 10, !insn.addr !608
+
+; uselistorder directives
+  uselistorder i32 10, { 1, 3, 0, 6, 4, 7, 2, 5 }
+}
+
+define i32 @_ZN5BaseAD1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_2a76:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !609
+  %4 = add i32 %3, add (i32 ptrtoint (i32* @global_var_64fe to i32), i32 -516), !insn.addr !610
+  store i32 %4, i32* %result, align 4, !insn.addr !611
+  ret i32 %2, !insn.addr !612
+}
+
+define i32 @_ZN5BaseAD0Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_2a96:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !613
+  %3 = call i32 @_ZN5BaseAD1Ev(i32* %result), !insn.addr !614
+  %4 = call i32 @_ZdlPvj(i32* %result, i32 8), !insn.addr !615
+  ret i32 %4, !insn.addr !616
+}
+
+define i32 @_ZN5BaseB5funcBEv() local_unnamed_addr {
+dec_label_pc_2ad0:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !617
+  ret i32 20, !insn.addr !618
+
+; uselistorder directives
+  uselistorder i32 20, { 0, 1, 6, 2, 7, 8, 3, 9, 10, 4, 11, 12, 5, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25 }
+}
+
+define i32 @_ZN5BaseBD1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_2ae8:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !619
+  %4 = add i32 %3, add (i32 ptrtoint (i32*** @global_var_648c to i32), i32 -536), !insn.addr !620
+  store i32 %4, i32* %result, align 4, !insn.addr !621
+  ret i32 %2, !insn.addr !622
+}
+
+define i32 @_ZN5BaseBD0Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_2b08:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !623
+  %3 = call i32 @_ZN5BaseBD1Ev(i32* %result), !insn.addr !624
+  %4 = call i32 @_ZdlPvj(i32* %result, i32 8), !insn.addr !625
+  ret i32 %4, !insn.addr !626
+}
+
+define i32 @_ZN12MultiDerived5funcAEv() local_unnamed_addr {
+dec_label_pc_2b42:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !627
+  ret i32 30, !insn.addr !628
+}
+
+define i32 @_ZN12MultiDerived5funcBEv(i32* %result) local_unnamed_addr {
+dec_label_pc_2b5a:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !629
+  ret i32 40, !insn.addr !630
+}
+
+define i32 @_ZThn8_N12MultiDerived5funcBEv(i32 %arg1) local_unnamed_addr {
+dec_label_pc_2b72:
+  %0 = add i32 %arg1, -8, !insn.addr !631
+  %1 = inttoptr i32 %0 to i32*, !insn.addr !632
+  %2 = call i32 @_ZN12MultiDerived5funcBEv(i32* %1), !insn.addr !632
+  ret i32 %2, !insn.addr !632
+}
+
+define i32 @_ZN5BaseAC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_2b7e:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !633
+  %4 = add i32 %3, add (i32 ptrtoint (i32* @global_var_63f6 to i32), i32 -516), !insn.addr !634
+  store i32 %4, i32* %result, align 4, !insn.addr !635
+  ret i32 %2, !insn.addr !636
+}
+
+define i32 @_ZN5BaseBC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_2b9e:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !637
+  %4 = add i32 %3, add (i32 ptrtoint (i32* @global_var_63d6 to i32), i32 -536), !insn.addr !638
+  store i32 %4, i32* %result, align 4, !insn.addr !639
+  ret i32 %2, !insn.addr !640
+}
+
+define i32 @_ZN12MultiDerivedC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_2bbe:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !641
+  %4 = call i32 @_ZN5BaseAC1Ev(i32* %result), !insn.addr !642
+  %5 = add i32 %2, 8, !insn.addr !643
+  %6 = inttoptr i32 %5 to i32*, !insn.addr !644
+  %7 = call i32 @_ZN5BaseBC1Ev(i32* %6), !insn.addr !644
+  %8 = add i32 %1, add (i32 ptrtoint (i32* @global_var_63b2 to i32), i32 -580), !insn.addr !645
+  store i32 %8, i32* %result, align 4, !insn.addr !646
+  %9 = add i32 %1, add (i32 ptrtoint (i32* @global_var_63b2 to i32), i32 -556), !insn.addr !647
+  store i32 %9, i32* %6, align 4, !insn.addr !648
+  ret i32 %2, !insn.addr !649
+
+; uselistorder directives
+  uselistorder i32* %result, { 1, 0, 2 }
+}
+
+define i32 @_ZN11VirtualBase4funcEv() local_unnamed_addr {
+dec_label_pc_2c12:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !650
+  ret i32 100, !insn.addr !651
+}
+
+define i32 @_ZN11VirtualBaseD1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_2c2a:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !652
+  %4 = add i32 %3, add (i32 ptrtoint (i32* @global_var_634a to i32), i32 -600), !insn.addr !653
+  store i32 %4, i32* %result, align 4, !insn.addr !654
+  ret i32 %2, !insn.addr !655
+}
+
+define i32 @_ZN11VirtualBaseD0Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_2c4a:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !656
+  %3 = call i32 @_ZN11VirtualBaseD1Ev(i32* %result), !insn.addr !657
+  %4 = call i32 @_ZdlPvj(i32* %result, i32 8), !insn.addr !658
+  ret i32 %4, !insn.addr !659
+}
+
+define i32 @_ZN7MiddleA4funcEv(i32* %result) local_unnamed_addr {
+dec_label_pc_2c84:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !660
+  %4 = load i32, i32* %result, align 4, !insn.addr !661
+  %5 = add i32 %4, -12, !insn.addr !662
+  %6 = inttoptr i32 %5 to i32*, !insn.addr !663
+  %7 = load i32, i32* %6, align 4, !insn.addr !663
+  %8 = add i32 %2, 4, !insn.addr !664
+  %9 = add i32 %8, %7, !insn.addr !665
+  %10 = inttoptr i32 %9 to i32*, !insn.addr !665
+  %11 = load i32, i32* %10, align 4, !insn.addr !665
+  %12 = add i32 %11, 150, !insn.addr !666
+  ret i32 %12, !insn.addr !667
+}
+
+define i32 @_ZTv0_n12_N7MiddleA4funcEv(i32 %arg1) local_unnamed_addr {
+dec_label_pc_2cb0:
+  %0 = inttoptr i32 %arg1 to i32*, !insn.addr !668
+  %1 = load i32, i32* %0, align 4, !insn.addr !668
+  %2 = add i32 %1, -12, !insn.addr !669
+  %3 = inttoptr i32 %2 to i32*, !insn.addr !669
+  %4 = load i32, i32* %3, align 4, !insn.addr !669
+  %5 = add i32 %4, %arg1, !insn.addr !669
+  %6 = inttoptr i32 %5 to i32*, !insn.addr !670
+  %7 = call i32 @_ZN7MiddleA4funcEv(i32* %6), !insn.addr !670
+  ret i32 %7, !insn.addr !670
+}
+
+define i32 @_ZN7MiddleB4funcEv(i32* %result) local_unnamed_addr {
+dec_label_pc_2cc4:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !671
+  %4 = load i32, i32* %result, align 4, !insn.addr !672
+  %5 = add i32 %4, -12, !insn.addr !673
+  %6 = inttoptr i32 %5 to i32*, !insn.addr !674
+  %7 = load i32, i32* %6, align 4, !insn.addr !674
+  %8 = add i32 %2, 4, !insn.addr !675
+  %9 = add i32 %8, %7, !insn.addr !676
+  %10 = inttoptr i32 %9 to i32*, !insn.addr !676
+  %11 = load i32, i32* %10, align 4, !insn.addr !676
+  %12 = add i32 %11, 200, !insn.addr !677
+  ret i32 %12, !insn.addr !678
+}
+
+define i32 @_ZTv0_n12_N7MiddleB4funcEv(i32 %arg1) local_unnamed_addr {
+dec_label_pc_2cf0:
+  %0 = inttoptr i32 %arg1 to i32*, !insn.addr !679
+  %1 = load i32, i32* %0, align 4, !insn.addr !679
+  %2 = add i32 %1, -12, !insn.addr !680
+  %3 = inttoptr i32 %2 to i32*, !insn.addr !680
+  %4 = load i32, i32* %3, align 4, !insn.addr !680
+  %5 = add i32 %4, %arg1, !insn.addr !680
+  %6 = inttoptr i32 %5 to i32*, !insn.addr !681
+  %7 = call i32 @_ZN7MiddleB4funcEv(i32* %6), !insn.addr !681
+  ret i32 %7, !insn.addr !681
+}
+
+define i32 @_ZN14DiamondDerived4funcEv(i32* %result) local_unnamed_addr {
+dec_label_pc_2d04:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !682
+  %4 = load i32, i32* %result, align 4, !insn.addr !683
+  %5 = add i32 %4, -12, !insn.addr !684
+  %6 = inttoptr i32 %5 to i32*, !insn.addr !685
+  %7 = load i32, i32* %6, align 4, !insn.addr !685
+  %8 = add i32 %2, 4, !insn.addr !686
+  %9 = add i32 %8, %7, !insn.addr !687
+  %10 = inttoptr i32 %9 to i32*, !insn.addr !687
+  %11 = load i32, i32* %10, align 4, !insn.addr !687
+  %12 = add i32 %11, 250, !insn.addr !688
+  ret i32 %12, !insn.addr !689
+}
+
+define i32 @_ZTv0_n12_N14DiamondDerived4funcEv(i32 %arg1) local_unnamed_addr {
+dec_label_pc_2d30:
+  %0 = inttoptr i32 %arg1 to i32*, !insn.addr !690
+  %1 = load i32, i32* %0, align 4, !insn.addr !690
+  %2 = add i32 %1, -12, !insn.addr !691
+  %3 = inttoptr i32 %2 to i32*, !insn.addr !691
+  %4 = load i32, i32* %3, align 4, !insn.addr !691
+  %5 = add i32 %4, %arg1, !insn.addr !691
+  %6 = inttoptr i32 %5 to i32*, !insn.addr !692
+  %7 = call i32 @_ZN14DiamondDerived4funcEv(i32* %6), !insn.addr !692
+  ret i32 %7, !insn.addr !692
+}
+
+define i32 @_ZThn8_N14DiamondDerived4funcEv(i32 %arg1) local_unnamed_addr {
+dec_label_pc_2d43:
+  %0 = add i32 %arg1, -8, !insn.addr !693
+  %1 = inttoptr i32 %0 to i32*, !insn.addr !694
+  %2 = call i32 @_ZN14DiamondDerived4funcEv(i32* %1), !insn.addr !694
+  ret i32 %2, !insn.addr !694
+
+; uselistorder directives
+  uselistorder i32 (i32*)* @_ZN14DiamondDerived4funcEv, { 1, 0 }
+}
+
+define i32 @_ZN11VirtualBaseC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_2d4e:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !695
+  %4 = add i32 %3, add (i32 ptrtoint (i32* @global_var_6226 to i32), i32 -600), !insn.addr !696
+  store i32 %4, i32* %result, align 4, !insn.addr !697
+  ret i32 %2, !insn.addr !698
+}
+
+define i32 @_ZN7MiddleAC2Ev(i32* %this, i32* %result) local_unnamed_addr {
+dec_label_pc_2d6e:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = ptrtoint i32* %this to i32
+  %4 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !699
+  %5 = load i32, i32* %result, align 4, !insn.addr !700
+  store i32 %5, i32* %this, align 4, !insn.addr !701
+  %6 = add i32 %5, -12, !insn.addr !702
+  %7 = inttoptr i32 %6 to i32*, !insn.addr !703
+  %8 = load i32, i32* %7, align 4, !insn.addr !703
+  %9 = add i32 %8, %3, !insn.addr !704
+  %10 = add i32 %2, 4, !insn.addr !705
+  %11 = inttoptr i32 %10 to i32*, !insn.addr !705
+  %12 = load i32, i32* %11, align 4, !insn.addr !705
+  %13 = inttoptr i32 %9 to i32*, !insn.addr !706
+  store i32 %12, i32* %13, align 4, !insn.addr !706
+  ret i32 %12, !insn.addr !707
+
+; uselistorder directives
+  uselistorder i32 %12, { 1, 0 }
+}
+
+define i32 @_ZN7MiddleAD2Ev(i32* %this, i32* %result) local_unnamed_addr {
+dec_label_pc_2da6:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = ptrtoint i32* %this to i32
+  %4 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !708
+  %5 = load i32, i32* %result, align 4, !insn.addr !709
+  store i32 %5, i32* %this, align 4, !insn.addr !710
+  %6 = add i32 %5, -12, !insn.addr !711
+  %7 = inttoptr i32 %6 to i32*, !insn.addr !712
+  %8 = load i32, i32* %7, align 4, !insn.addr !712
+  %9 = add i32 %8, %3, !insn.addr !713
+  %10 = add i32 %2, 4, !insn.addr !714
+  %11 = inttoptr i32 %10 to i32*, !insn.addr !714
+  %12 = load i32, i32* %11, align 4, !insn.addr !714
+  %13 = inttoptr i32 %9 to i32*, !insn.addr !715
+  store i32 %12, i32* %13, align 4, !insn.addr !715
+  ret i32 %12, !insn.addr !716
+
+; uselistorder directives
+  uselistorder i32 %12, { 1, 0 }
+}
+
+define i32 @_ZN7MiddleBC2Ev(i32* %this, i32* %result) local_unnamed_addr {
+dec_label_pc_2dde:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = ptrtoint i32* %this to i32
+  %4 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !717
+  %5 = load i32, i32* %result, align 4, !insn.addr !718
+  store i32 %5, i32* %this, align 4, !insn.addr !719
+  %6 = add i32 %5, -12, !insn.addr !720
+  %7 = inttoptr i32 %6 to i32*, !insn.addr !721
+  %8 = load i32, i32* %7, align 4, !insn.addr !721
+  %9 = add i32 %8, %3, !insn.addr !722
+  %10 = add i32 %2, 4, !insn.addr !723
+  %11 = inttoptr i32 %10 to i32*, !insn.addr !723
+  %12 = load i32, i32* %11, align 4, !insn.addr !723
+  %13 = inttoptr i32 %9 to i32*, !insn.addr !724
+  store i32 %12, i32* %13, align 4, !insn.addr !724
+  ret i32 %12, !insn.addr !725
+
+; uselistorder directives
+  uselistorder i32 %12, { 1, 0 }
+}
+
+define i32 @_ZN7MiddleBD2Ev(i32* %this, i32* %result) local_unnamed_addr {
+dec_label_pc_2e16:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = ptrtoint i32* %this to i32
+  %4 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !726
+  %5 = load i32, i32* %result, align 4, !insn.addr !727
+  store i32 %5, i32* %this, align 4, !insn.addr !728
+  %6 = add i32 %5, -12, !insn.addr !729
+  %7 = inttoptr i32 %6 to i32*, !insn.addr !730
+  %8 = load i32, i32* %7, align 4, !insn.addr !730
+  %9 = add i32 %8, %3, !insn.addr !731
+  %10 = add i32 %2, 4, !insn.addr !732
+  %11 = inttoptr i32 %10 to i32*, !insn.addr !732
+  %12 = load i32, i32* %11, align 4, !insn.addr !732
+  %13 = inttoptr i32 %9 to i32*, !insn.addr !733
+  store i32 %12, i32* %13, align 4, !insn.addr !733
+  ret i32 %12, !insn.addr !734
+
+; uselistorder directives
+  uselistorder i32 %12, { 1, 0 }
+  uselistorder i32 -12, { 0, 1, 2, 3, 8, 4, 9, 5, 10, 6, 7 }
+}
+
+define i32 @_ZN14DiamondDerivedC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_2e4e:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !735
+  %4 = add i32 %2, 16, !insn.addr !736
+  %5 = inttoptr i32 %4 to i32*, !insn.addr !737
+  %6 = call i32 @_ZN11VirtualBaseC1Ev(i32* %5), !insn.addr !737
+  %7 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6122 to i32), i32 -736), !insn.addr !738
+  %8 = inttoptr i32 %7 to i32*, !insn.addr !739
+  %9 = call i32 @_ZN7MiddleAC2Ev(i32* %result, i32* %8), !insn.addr !739
+  %10 = add i32 %2, 8, !insn.addr !740
+  %11 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6122 to i32), i32 -728), !insn.addr !741
+  %12 = inttoptr i32 %10 to i32*, !insn.addr !742
+  %13 = inttoptr i32 %11 to i32*, !insn.addr !742
+  %14 = call i32 @_ZN7MiddleBC2Ev(i32* %12, i32* %13), !insn.addr !742
+  %15 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6122 to i32), i32 -804), !insn.addr !743
+  store i32 %15, i32* %result, align 4, !insn.addr !744
+  %16 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6122 to i32), i32 -752), !insn.addr !745
+  store i32 %16, i32* %5, align 4, !insn.addr !746
+  %17 = add i32 %1, add (i32 ptrtoint (i32* @global_var_6122 to i32), i32 -780), !insn.addr !747
+  store i32 %17, i32* %12, align 4, !insn.addr !748
+  ret i32 %2, !insn.addr !749
+
+; uselistorder directives
+  uselistorder i32* %result, { 1, 0, 2 }
+}
+
+define i32 @_ZN5PointC1Eii(i32* %result, i32 %arg2, i32 %arg3) local_unnamed_addr {
+dec_label_pc_2ed0:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !750
+  store i32 %arg2, i32* %result, align 4, !insn.addr !751
+  %4 = add i32 %2, 4, !insn.addr !752
+  %5 = inttoptr i32 %4 to i32*, !insn.addr !752
+  store i32 %arg3, i32* %5, align 4, !insn.addr !752
+  ret i32 %2, !insn.addr !753
+
+; uselistorder directives
+  uselistorder i32 %2, { 1, 0 }
+}
+
+define i32 @_ZNK5PointplERKS_(i32* %this, i32* %result, i32* %arg3) local_unnamed_addr {
+dec_label_pc_2ef6:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %arg3 to i32
+  %3 = ptrtoint i32* %result to i32
+  %4 = ptrtoint i32* %this to i32
+  %5 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !754
+  %6 = add i32 %3, 4, !insn.addr !755
+  %7 = inttoptr i32 %6 to i32*, !insn.addr !755
+  %8 = load i32, i32* %7, align 4, !insn.addr !755
+  %9 = add i32 %2, 4, !insn.addr !756
+  %10 = inttoptr i32 %9 to i32*, !insn.addr !756
+  %11 = load i32, i32* %10, align 4, !insn.addr !756
+  %12 = add i32 %11, %8, !insn.addr !757
+  %13 = load i32, i32* %result, align 4, !insn.addr !758
+  %14 = load i32, i32* %arg3, align 4, !insn.addr !759
+  %15 = add i32 %14, %13, !insn.addr !760
+  %16 = call i32 @_ZN5PointC1Eii(i32* %this, i32 %15, i32 %12), !insn.addr !761
+  ret i32 %4, !insn.addr !762
+
+; uselistorder directives
+  uselistorder i32 (i32*, i32, i32)* @_ZN5PointC1Eii, { 2, 1, 0 }
+}
+
+define i32 @_ZNK5PointeqERKS_(i32* %result, i32* %arg2) local_unnamed_addr {
+dec_label_pc_2f3c:
+  %0 = alloca i32
+  %storemerge.reg2mem = alloca i32, !insn.addr !763
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !764
+  %3 = load i32, i32* %result, align 4, !insn.addr !765
+  %4 = load i32, i32* %arg2, align 4, !insn.addr !766
+  %5 = icmp eq i32 %3, %4, !insn.addr !767
+  %6 = icmp eq i1 %5, false, !insn.addr !768
+  br i1 %6, label %dec_label_pc_2f72, label %dec_label_pc_2f5b, !insn.addr !768
+
+dec_label_pc_2f5b:                                ; preds = %dec_label_pc_2f3c
+  %7 = ptrtoint i32* %result to i32
+  %8 = ptrtoint i32* %arg2 to i32
+  %9 = add i32 %7, 4, !insn.addr !769
+  %10 = inttoptr i32 %9 to i32*, !insn.addr !769
+  %11 = load i32, i32* %10, align 4, !insn.addr !769
+  %12 = add i32 %8, 4, !insn.addr !770
+  %13 = inttoptr i32 %12 to i32*, !insn.addr !770
+  %14 = load i32, i32* %13, align 4, !insn.addr !770
+  %15 = icmp eq i32 %11, %14, !insn.addr !771
+  %16 = icmp eq i1 %15, false, !insn.addr !772
+  store i32 1, i32* %storemerge.reg2mem, !insn.addr !772
+  br i1 %16, label %dec_label_pc_2f72, label %dec_label_pc_2f77, !insn.addr !772
+
+dec_label_pc_2f72:                                ; preds = %dec_label_pc_2f5b, %dec_label_pc_2f3c
+  store i32 0, i32* %storemerge.reg2mem, !insn.addr !773
+  br label %dec_label_pc_2f77, !insn.addr !773
+
+dec_label_pc_2f77:                                ; preds = %dec_label_pc_2f5b, %dec_label_pc_2f72
+  %storemerge.reload = load i32, i32* %storemerge.reg2mem
+  ret i32 %storemerge.reload, !insn.addr !774
+
+; uselistorder directives
+  uselistorder i32* %storemerge.reg2mem, { 0, 2, 1 }
+  uselistorder i32* %arg2, { 1, 0 }
+  uselistorder i32* %result, { 1, 0 }
+  uselistorder label %dec_label_pc_2f77, { 1, 0 }
+}
+
+define i32 @_ZN5PointppEv(i32* %result) local_unnamed_addr {
+dec_label_pc_2f7a:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !775
+  %4 = load i32, i32* %result, align 4, !insn.addr !776
+  %5 = add i32 %4, 1, !insn.addr !777
+  store i32 %5, i32* %result, align 4, !insn.addr !778
+  %6 = add i32 %2, 4, !insn.addr !779
+  %7 = inttoptr i32 %6 to i32*, !insn.addr !779
+  %8 = load i32, i32* %7, align 4, !insn.addr !779
+  %9 = add i32 %8, 1, !insn.addr !780
+  store i32 %9, i32* %7, align 4, !insn.addr !781
+  ret i32 %2, !insn.addr !782
+}
+
+define i32 @_Z12template_maxIiET_S0_S0_(i32 %arg1, i32 %arg2) local_unnamed_addr {
+dec_label_pc_2fac:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !783
+  %3 = icmp sgt i32 %arg1, %arg2, !insn.addr !784
+  %storemerge = select i1 %3, i32 %arg1, i32 %arg2
+  ret i32 %storemerge, !insn.addr !785
+}
+
+define double @_Z12template_maxIdET_S0_S0_(i32* %this, i32* %result, double %arg3, double %arg4) local_unnamed_addr {
+dec_label_pc_2fcf:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !786
+  ret double %arg3, !insn.addr !787
+}
+
+define void @_Z13template_swapIiEvRT_S1_(i32* %arg1, i32* %arg2) local_unnamed_addr {
+dec_label_pc_3011:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !788
+  %3 = load i32, i32* %arg1, align 4, !insn.addr !789
+  %4 = load i32, i32* %arg2, align 4, !insn.addr !790
+  store i32 %4, i32* %arg1, align 4, !insn.addr !791
+  store i32 %3, i32* %arg2, align 4, !insn.addr !792
+  ret void, !insn.addr !793
+}
+
+define i32 @_ZN9ContainerIiEC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3042:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !794
+  %4 = add i32 %2, 40, !insn.addr !795
+  %5 = inttoptr i32 %4 to i32*, !insn.addr !795
+  store i32 0, i32* %5, align 4, !insn.addr !795
+  ret i32 %2, !insn.addr !796
+
+; uselistorder directives
+  uselistorder i32 %2, { 1, 0 }
+}
+
+define i32 @_ZN9ContainerIiE4pushEi(i32* %result, i32 %arg2) local_unnamed_addr {
+dec_label_pc_3060:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !797
+  %4 = add i32 %2, 40, !insn.addr !798
+  %5 = inttoptr i32 %4 to i32*, !insn.addr !798
+  %6 = load i32, i32* %5, align 4, !insn.addr !798
+  %7 = icmp sgt i32 %6, 9, !insn.addr !799
+  br i1 %7, label %dec_label_pc_3095, label %dec_label_pc_307d, !insn.addr !799
+
+dec_label_pc_307d:                                ; preds = %dec_label_pc_3060
+  %8 = add i32 %6, 1, !insn.addr !800
+  store i32 %8, i32* %5, align 4, !insn.addr !801
+  %9 = mul i32 %6, 4, !insn.addr !802
+  %10 = add i32 %9, %2, !insn.addr !802
+  %11 = inttoptr i32 %10 to i32*, !insn.addr !802
+  store i32 %arg2, i32* %11, align 4, !insn.addr !802
+  br label %dec_label_pc_3095, !insn.addr !802
+
+dec_label_pc_3095:                                ; preds = %dec_label_pc_307d, %dec_label_pc_3060
+  ret i32 %6, !insn.addr !803
+
+; uselistorder directives
+  uselistorder i32 %6, { 1, 0, 2, 3 }
+}
+
+define i32 @_ZNK9ContainerIiE3getEi(i32* %result, i32 %arg2) local_unnamed_addr {
+dec_label_pc_309c:
+  %0 = alloca i32
+  %storemerge.reg2mem = alloca i32, !insn.addr !804
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !805
+  %3 = icmp slt i32 %arg2, 0, !insn.addr !806
+  store i32 0, i32* %storemerge.reg2mem, !insn.addr !807
+  br i1 %3, label %dec_label_pc_30ce, label %dec_label_pc_30b3, !insn.addr !807
+
+dec_label_pc_30b3:                                ; preds = %dec_label_pc_309c
+  %4 = ptrtoint i32* %result to i32
+  %5 = add i32 %4, 40, !insn.addr !808
+  %6 = inttoptr i32 %5 to i32*, !insn.addr !808
+  %7 = load i32, i32* %6, align 4, !insn.addr !808
+  %8 = icmp sgt i32 %7, %arg2, !insn.addr !809
+  store i32 0, i32* %storemerge.reg2mem, !insn.addr !809
+  br i1 %8, label %dec_label_pc_30be, label %dec_label_pc_30ce, !insn.addr !809
+
+dec_label_pc_30be:                                ; preds = %dec_label_pc_30b3
+  %9 = mul i32 %arg2, 4, !insn.addr !810
+  %10 = add i32 %9, %4, !insn.addr !810
+  %11 = inttoptr i32 %10 to i32*, !insn.addr !810
+  %12 = load i32, i32* %11, align 4, !insn.addr !810
+  store i32 %12, i32* %storemerge.reg2mem, !insn.addr !811
+  br label %dec_label_pc_30ce, !insn.addr !811
+
+dec_label_pc_30ce:                                ; preds = %dec_label_pc_309c, %dec_label_pc_30b3, %dec_label_pc_30be
+  %storemerge.reload = load i32, i32* %storemerge.reg2mem
+  ret i32 %storemerge.reload, !insn.addr !812
+
+; uselistorder directives
+  uselistorder i32* %storemerge.reg2mem, { 0, 3, 2, 1 }
+  uselistorder label %dec_label_pc_30ce, { 2, 1, 0 }
+}
+
+define i32 @_ZNK9ContainerIiE7getSizeEv(i32* %result) local_unnamed_addr {
+dec_label_pc_30d0:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !813
+  %4 = add i32 %2, 40, !insn.addr !814
+  %5 = inttoptr i32 %4 to i32*, !insn.addr !814
+  %6 = load i32, i32* %5, align 4, !insn.addr !814
+  ret i32 %6, !insn.addr !815
+
+; uselistorder directives
+  uselistorder i32 40, { 1, 2, 3, 4, 0 }
+}
+
+define i32 @_ZN9ContainerIdEC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_30ea:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !816
+  %4 = add i32 %2, 80, !insn.addr !817
+  %5 = inttoptr i32 %4 to i32*, !insn.addr !817
+  store i32 0, i32* %5, align 4, !insn.addr !817
+  ret i32 %2, !insn.addr !818
+
+; uselistorder directives
+  uselistorder i32 %2, { 1, 0 }
+}
+
+define i32 @_ZN9ContainerIdE4pushEd(i32* %this, i32* %result, double %arg3) local_unnamed_addr {
+dec_label_pc_3108:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %this to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !819
+  %4 = add i32 %2, 80, !insn.addr !820
+  %5 = inttoptr i32 %4 to i32*, !insn.addr !820
+  %6 = load i32, i32* %5, align 4, !insn.addr !820
+  %7 = icmp sgt i32 %6, 9, !insn.addr !821
+  br i1 %7, label %dec_label_pc_314b, label %dec_label_pc_3133, !insn.addr !821
+
+dec_label_pc_3133:                                ; preds = %dec_label_pc_3108
+  %8 = ptrtoint i32* %result to i32
+  %9 = sext i32 %8 to i64, !insn.addr !822
+  %10 = bitcast i64 %9 to double, !insn.addr !822
+  %11 = add i32 %6, 1, !insn.addr !823
+  store i32 %11, i32* %5, align 4, !insn.addr !824
+  %12 = mul i32 %6, 8, !insn.addr !825
+  %13 = add i32 %12, %2, !insn.addr !825
+  %14 = inttoptr i32 %13 to double*, !insn.addr !825
+  store double %10, double* %14, align 4, !insn.addr !825
+  br label %dec_label_pc_314b, !insn.addr !825
+
+dec_label_pc_314b:                                ; preds = %dec_label_pc_3133, %dec_label_pc_3108
+  ret i32 %6, !insn.addr !826
+
+; uselistorder directives
+  uselistorder i32 %6, { 1, 0, 2, 3 }
+}
+
+define i32 @_ZNK9ContainerIdE3getEi(i32* %result, i32 %arg2) local_unnamed_addr {
+dec_label_pc_314e:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !827
+  %3 = add i32 %2, ptrtoint (i32* @global_var_5e26 to i32), !insn.addr !828
+  %4 = icmp slt i32 %arg2, 0, !insn.addr !829
+  br i1 %4, label %dec_label_pc_317d, label %dec_label_pc_3165, !insn.addr !830
+
+dec_label_pc_3165:                                ; preds = %dec_label_pc_314e
+  %5 = ptrtoint i32* %result to i32
+  %6 = add i32 %5, 80, !insn.addr !831
+  %7 = inttoptr i32 %6 to i32*, !insn.addr !831
+  %8 = load i32, i32* %7, align 4, !insn.addr !831
+  %9 = icmp sgt i32 %8, %arg2, !insn.addr !832
+  %spec.select = select i1 %9, i32 %5, i32 %3
+  ret i32 %spec.select
+
+dec_label_pc_317d:                                ; preds = %dec_label_pc_314e
+  ret i32 %3, !insn.addr !833
+}
+
+define i32 @_ZNK9ContainerIdE7getSizeEv(i32* %result) local_unnamed_addr {
+dec_label_pc_3180:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !834
+  %4 = add i32 %2, 80, !insn.addr !835
+  %5 = inttoptr i32 %4 to i32*, !insn.addr !835
+  %6 = load i32, i32* %5, align 4, !insn.addr !835
+  ret i32 %6, !insn.addr !836
+}
+
+define i32 @_ZNSt15__uniq_ptr_dataIiSt14default_deleteIiELb1ELb1EEC1EOS2_(i32* %result, i32* %arg2) local_unnamed_addr {
+dec_label_pc_319a:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !837
+  %3 = call i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIiEEC1EOS2_(i32* %result, i32* %arg2), !insn.addr !838
+  ret i32 %3, !insn.addr !839
+}
+
+define i32 @_ZNSt10unique_ptrIiSt14default_deleteIiEEC1EOS2_(i32* %result, i32* %arg2) local_unnamed_addr {
+dec_label_pc_31c4:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !840
+  %3 = call i32 @_ZNSt15__uniq_ptr_dataIiSt14default_deleteIiELb1ELb1EEC1EOS2_(i32* %result, i32* %arg2), !insn.addr !841
+  ret i32 %3, !insn.addr !842
+}
+
+define i32 @_ZNK8RTTIBase7getTypeEv() local_unnamed_addr {
+dec_label_pc_31ee:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !843
+  ret i32 0, !insn.addr !844
+}
+
+define i32 @_ZNK12RTTIDerivedA7getTypeEv() local_unnamed_addr {
+dec_label_pc_3206:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !845
+  ret i32 1, !insn.addr !846
+}
+
+define i32 @_ZNK12RTTIDerivedA13derivedA_dataEv(i32* %result) local_unnamed_addr {
+dec_label_pc_321e:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !847
+  ret i32 100, !insn.addr !848
+
+; uselistorder directives
+  uselistorder i32 100, { 0, 1, 3, 2 }
+}
+
+define i32 @_ZNK12RTTIDerivedB7getTypeEv() local_unnamed_addr {
+dec_label_pc_3236:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !849
+  ret i32 2, !insn.addr !850
+
+; uselistorder directives
+  uselistorder i32 2, { 1, 2, 5, 3, 0, 4 }
+}
+
+define i32 @_ZNK12RTTIDerivedB13derivedB_dataEv(i32* %result) local_unnamed_addr {
+dec_label_pc_324e:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !851
+  ret i32 200, !insn.addr !852
+}
+
+define i32 @_ZN8RTTIBaseC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3266:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !853
+  %4 = add i32 %3, add (i32 ptrtoint (i32* @global_var_5d0e to i32), i32 -828), !insn.addr !854
+  store i32 %4, i32* %result, align 4, !insn.addr !855
+  ret i32 %2, !insn.addr !856
+}
+
+define i32 @_ZN8RTTIBaseD1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3286:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !857
+  %4 = add i32 %3, add (i32 ptrtoint (i32* @global_var_5cee to i32), i32 -828), !insn.addr !858
+  store i32 %4, i32* %result, align 4, !insn.addr !859
+  ret i32 %2, !insn.addr !860
+}
+
+define i32 @_ZN8RTTIBaseD0Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_32a6:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !861
+  %3 = call i32 @_ZN8RTTIBaseD1Ev(i32* %result), !insn.addr !862
+  %4 = call i32 @_ZdlPvj(i32* %result, i32 4), !insn.addr !863
+  ret i32 %4, !insn.addr !864
+}
+
+define i32 @_ZN12RTTIDerivedAC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_32e0:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !865
+  %4 = call i32 @_ZN8RTTIBaseC1Ev(i32* %result), !insn.addr !866
+  %5 = add i32 %1, add (i32 ptrtoint (i32* @global_var_5c90 to i32), i32 -848), !insn.addr !867
+  store i32 %5, i32* %result, align 4, !insn.addr !868
+  ret i32 %2, !insn.addr !869
+
+; uselistorder directives
+  uselistorder i32* %result, { 1, 0, 2 }
+}
+
+define i32 @_ZN12RTTIDerivedBC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3316:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !870
+  %4 = call i32 @_ZN8RTTIBaseC1Ev(i32* %result), !insn.addr !871
+  %5 = add i32 %1, add (i32 ptrtoint (i32* @global_var_5c5a to i32), i32 -868), !insn.addr !872
+  store i32 %5, i32* %result, align 4, !insn.addr !873
+  ret i32 %2, !insn.addr !874
+
+; uselistorder directives
+  uselistorder i32 (i32*)* @_ZN8RTTIBaseC1Ev, { 1, 0 }
+  uselistorder i32* %result, { 1, 0, 2 }
+}
+
+define i32 @_ZNSt15__uniq_ptr_dataIiSt14default_deleteIiELb1ELb1EECI1St15__uniq_ptr_implIiS1_EEPi(i32* %result, i32* %arg2) local_unnamed_addr {
+dec_label_pc_334c:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !875
+  %3 = call i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIiEEC1EPi(i32* %result, i32* %arg2), !insn.addr !876
+  ret i32 %3, !insn.addr !877
+}
+
+define i32 @_ZNSt10unique_ptrIiSt14default_deleteIiEEC1IS1_vEEPi(i32* %result, i32* %arg2) local_unnamed_addr {
+dec_label_pc_3376:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !878
+  %3 = call i32 @_ZNSt15__uniq_ptr_dataIiSt14default_deleteIiELb1ELb1EECI1St15__uniq_ptr_implIiS1_EEPi(i32* %result, i32* %arg2), !insn.addr !879
+  ret i32 %3, !insn.addr !880
+}
+
+define i32 @_ZNSt10unique_ptrIiSt14default_deleteIiEED1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_33a0:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !881
+  %3 = call i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIiEE6_M_ptrEv(i32* %result), !insn.addr !882
+  %4 = inttoptr i32 %3 to i32*, !insn.addr !883
+  %5 = load i32, i32* %4, align 4, !insn.addr !883
+  %6 = icmp eq i32 %5, 0, !insn.addr !884
+  br i1 %6, label %dec_label_pc_33fd, label %dec_label_pc_33d0, !insn.addr !885
+
+dec_label_pc_33d0:                                ; preds = %dec_label_pc_33a0
+  %7 = call i32 @_ZNSt10unique_ptrIiSt14default_deleteIiEE11get_deleterEv(i32* %result), !insn.addr !886
+  %8 = inttoptr i32 %3 to i32***, !insn.addr !887
+  %9 = call i32* @_ZSt4moveIRPiEONSt16remove_referenceIT_E4typeEOS3_(i32*** %8), !insn.addr !887
+  %10 = inttoptr i32 %7 to i32*, !insn.addr !888
+  %11 = call i32 @_ZNKSt14default_deleteIiEclEPi(i32* %10), !insn.addr !888
+  br label %dec_label_pc_33fd, !insn.addr !889
+
+dec_label_pc_33fd:                                ; preds = %dec_label_pc_33d0, %dec_label_pc_33a0
+  store i32 0, i32* %4, align 4, !insn.addr !890
+  ret i32 %3, !insn.addr !891
+
+; uselistorder directives
+  uselistorder i32 %3, { 1, 0, 2 }
+  uselistorder i32* (i32***)* @_ZSt4moveIRPiEONSt16remove_referenceIT_E4typeEOS3_, { 1, 0 }
+}
+
+define i32 @_ZNKSt10unique_ptrIiSt14default_deleteIiEEdeEv(i32* %result) local_unnamed_addr {
+dec_label_pc_340c:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !892
+  %3 = call i32 @_ZNKSt10unique_ptrIiSt14default_deleteIiEE3getEv(i32* %result), !insn.addr !893
+  ret i32 %3, !insn.addr !894
+}
+
+define i32* @_ZSt4moveIRSt10unique_ptrIiSt14default_deleteIiEEEONSt16remove_referenceIT_E4typeEOS6_(i32** %arg1) local_unnamed_addr {
+dec_label_pc_3437:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !895
+  %3 = bitcast i32** %arg1 to i32*, !insn.addr !896
+  ret i32* %3, !insn.addr !896
+}
+
+define i32 @_ZNSt11_Tuple_implILj0EJPiSt14default_deleteIiEEEC1EOS3_(i32* %result, i32* %arg2) local_unnamed_addr {
+dec_label_pc_344e:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !897
+  %4 = call i32 @_ZNSt11_Tuple_implILj1EJSt14default_deleteIiEEEC1EOS2_(i32* %result, i32* %arg2), !insn.addr !898
+  %5 = load i32, i32* %arg2, align 4, !insn.addr !899
+  store i32 %5, i32* %result, align 4, !insn.addr !900
+  ret i32 %2, !insn.addr !901
+
+; uselistorder directives
+  uselistorder i32* %arg2, { 1, 0 }
+  uselistorder i32* %result, { 1, 0, 2 }
+}
+
+define i32 @_ZNSt5tupleIJPiSt14default_deleteIiEEEC1EOS3_(i32* %result, i32* %arg2) local_unnamed_addr {
+dec_label_pc_3480:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !902
+  %3 = call i32 @_ZNSt11_Tuple_implILj0EJPiSt14default_deleteIiEEEC1EOS3_(i32* %result, i32* %arg2), !insn.addr !903
+  ret i32 %3, !insn.addr !904
+}
+
+define i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIiEEC1EOS2_(i32* %result, i32* %arg2) local_unnamed_addr {
+dec_label_pc_34aa:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !905
+  %3 = bitcast i32* %arg2 to i32**, !insn.addr !906
+  %4 = call i32* @_ZSt4moveIRSt5tupleIJPiSt14default_deleteIiEEEEONSt16remove_referenceIT_E4typeEOS7_(i32** %3), !insn.addr !906
+  %5 = call i32 @_ZNSt5tupleIJPiSt14default_deleteIiEEEC1EOS3_(i32* %result, i32* %4), !insn.addr !907
+  %6 = call i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIiEE6_M_ptrEv(i32* %arg2), !insn.addr !908
+  %7 = inttoptr i32 %6 to i32*, !insn.addr !909
+  store i32 0, i32* %7, align 4, !insn.addr !909
+  ret i32 %6, !insn.addr !910
+
+; uselistorder directives
+  uselistorder i32 %6, { 1, 0 }
+}
+
+define i32 @_ZNSt15__uniq_ptr_dataIiSt14default_deleteIA_iELb1ELb1EECI1St15__uniq_ptr_implIiS2_EEPi(i32* %result, i32* %arg2) local_unnamed_addr {
+dec_label_pc_34f8:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !911
+  %3 = call i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIA_iEEC1EPi(i32* %result, i32* %arg2), !insn.addr !912
+  ret i32 %3, !insn.addr !913
+}
+
+define i32 @_ZNSt10unique_ptrIA_iSt14default_deleteIS0_EEC1IPiS2_vbEET_(i32* %result, i32* %arg2) local_unnamed_addr {
+dec_label_pc_3522:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !914
+  %3 = call i32 @_ZNSt15__uniq_ptr_dataIiSt14default_deleteIA_iELb1ELb1EECI1St15__uniq_ptr_implIiS2_EEPi(i32* %result, i32* %arg2), !insn.addr !915
+  ret i32 %3, !insn.addr !916
+}
+
+define i32 @_ZNSt10unique_ptrIA_iSt14default_deleteIS0_EED1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_354c:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !917
+  %3 = call i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIA_iEE6_M_ptrEv(i32* %result), !insn.addr !918
+  %4 = inttoptr i32 %3 to i32*, !insn.addr !919
+  %5 = load i32, i32* %4, align 4, !insn.addr !919
+  %6 = icmp eq i32 %5, 0, !insn.addr !920
+  br i1 %6, label %dec_label_pc_359b, label %dec_label_pc_357b, !insn.addr !921
+
+dec_label_pc_357b:                                ; preds = %dec_label_pc_354c
+  %7 = call i32 @_ZNSt10unique_ptrIA_iSt14default_deleteIS0_EE11get_deleterEv(i32* %result), !insn.addr !922
+  %8 = call i32 @_ZNKSt14default_deleteIA_iEclIiEENSt9enable_ifIXsrSt14is_convertibleIPA_T_PS0_E5valueEvE4typeEPS5_(i32 %7), !insn.addr !923
+  br label %dec_label_pc_359b, !insn.addr !924
+
+dec_label_pc_359b:                                ; preds = %dec_label_pc_357b, %dec_label_pc_354c
+  store i32 0, i32* %4, align 4, !insn.addr !925
+  ret i32 %3, !insn.addr !926
+}
+
+define i32 @_ZNKSt10unique_ptrIA_iSt14default_deleteIS0_EEixEj(i32* %result, i32 %arg2) local_unnamed_addr {
+dec_label_pc_35a8:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !927
+  %3 = call i32 @_ZNKSt10unique_ptrIA_iSt14default_deleteIS0_EE3getEv(i32* %result), !insn.addr !928
+  %4 = mul i32 %arg2, 4, !insn.addr !929
+  %5 = add i32 %3, %4, !insn.addr !930
+  ret i32 %5, !insn.addr !931
+}
+
+define i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIiEEC1EPi(i32* %result, i32* %arg2) local_unnamed_addr {
+dec_label_pc_35de:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %arg2 to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !932
+  %4 = call i32 @_ZNSt5tupleIJPiSt14default_deleteIiEEEC1ILb1ELb1EEEv(i32* %result), !insn.addr !933
+  %5 = call i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIiEE6_M_ptrEv(i32* %result), !insn.addr !934
+  %6 = inttoptr i32 %5 to i32*, !insn.addr !935
+  store i32 %2, i32* %6, align 4, !insn.addr !935
+  ret i32 %5, !insn.addr !936
+
+; uselistorder directives
+  uselistorder i32 %5, { 1, 0 }
+  uselistorder i32 (i32*)* @_ZNSt15__uniq_ptr_implIiSt14default_deleteIiEE6_M_ptrEv, { 2, 1, 0 }
+}
+
+define i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIiEE6_M_ptrEv(i32* %result) local_unnamed_addr {
+dec_label_pc_361c:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !937
+  %3 = call i32* @_ZSt3getILj0EJPiSt14default_deleteIiEEERNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERS7_(i32* %result), !insn.addr !938
+  %4 = ptrtoint i32* %3 to i32, !insn.addr !938
+  ret i32 %4, !insn.addr !939
+}
+
+define i32 @_ZNSt10unique_ptrIiSt14default_deleteIiEE11get_deleterEv(i32* %result) local_unnamed_addr {
+dec_label_pc_3642:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !940
+  %3 = call i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIiEE10_M_deleterEv(i32* %result), !insn.addr !941
+  ret i32 %3, !insn.addr !942
+}
+
+define i32* @_ZSt4moveIRPiEONSt16remove_referenceIT_E4typeEOS3_(i32*** %arg1) local_unnamed_addr {
+dec_label_pc_3667:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !943
+  %3 = bitcast i32*** %arg1 to i32*, !insn.addr !944
+  ret i32* %3, !insn.addr !944
+}
+
+define i32 @_ZNKSt14default_deleteIiEclEPi(i32* %arg1) local_unnamed_addr {
+dec_label_pc_367e:
+  %0 = alloca i32
+  %eax.0.reg2mem = alloca i32, !insn.addr !945
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %arg1 to i32
+  %3 = call i32 @__x86.get_pc_thunk.dx(i32 %1), !insn.addr !946
+  %4 = icmp eq i32* %arg1, null, !insn.addr !947
+  store i32 %2, i32* %eax.0.reg2mem, !insn.addr !948
+  br i1 %4, label %dec_label_pc_36ab, label %dec_label_pc_369b, !insn.addr !948
+
+dec_label_pc_369b:                                ; preds = %dec_label_pc_367e
+  %5 = call i32 @_ZdlPvj(i32* nonnull %arg1, i32 4), !insn.addr !949
+  store i32 %5, i32* %eax.0.reg2mem, !insn.addr !950
+  br label %dec_label_pc_36ab, !insn.addr !950
+
+dec_label_pc_36ab:                                ; preds = %dec_label_pc_369b, %dec_label_pc_367e
+  %eax.0.reload = load i32, i32* %eax.0.reg2mem
+  ret i32 %eax.0.reload, !insn.addr !951
+
+; uselistorder directives
+  uselistorder i32* null, { 1, 0, 2, 3 }
+}
+
+define i32 @_ZNKSt10unique_ptrIiSt14default_deleteIiEE3getEv(i32* %result) local_unnamed_addr {
+dec_label_pc_36b2:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !952
+  %3 = call i32 @_ZNKSt15__uniq_ptr_implIiSt14default_deleteIiEE6_M_ptrEv(i32* %result), !insn.addr !953
+  ret i32 %3, !insn.addr !954
+}
+
+define i32* @_ZSt4moveIRSt5tupleIJPiSt14default_deleteIiEEEEONSt16remove_referenceIT_E4typeEOS7_(i32** %arg1) local_unnamed_addr {
+dec_label_pc_36d7:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !955
+  %3 = bitcast i32** %arg1 to i32*, !insn.addr !956
+  ret i32* %3, !insn.addr !956
+}
+
+define i32 @_ZNSt11_Tuple_implILj1EJSt14default_deleteIiEEEC1EOS2_(i32* %result, i32* %arg2) local_unnamed_addr {
+dec_label_pc_36ee:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !957
+  %3 = add i32 %2, ptrtoint (i32* @global_var_5886 to i32), !insn.addr !958
+  ret i32 %3, !insn.addr !959
+}
+
+define i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIA_iEEC1EPi(i32* %result, i32* %arg2) local_unnamed_addr {
+dec_label_pc_3702:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %arg2 to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !960
+  %4 = call i32 @_ZNSt5tupleIJPiSt14default_deleteIA_iEEEC1ILb1ELb1EEEv(i32* %result), !insn.addr !961
+  %5 = call i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIA_iEE6_M_ptrEv(i32* %result), !insn.addr !962
+  %6 = inttoptr i32 %5 to i32*, !insn.addr !963
+  store i32 %2, i32* %6, align 4, !insn.addr !963
+  ret i32 %5, !insn.addr !964
+
+; uselistorder directives
+  uselistorder i32 %5, { 1, 0 }
+  uselistorder i32 (i32*)* @_ZNSt15__uniq_ptr_implIiSt14default_deleteIA_iEE6_M_ptrEv, { 1, 0 }
+}
+
+define i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIA_iEE6_M_ptrEv(i32* %result) local_unnamed_addr {
+dec_label_pc_3740:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !965
+  %3 = call i32* @_ZSt3getILj0EJPiSt14default_deleteIA_iEEERNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERS8_(i32* %result), !insn.addr !966
+  %4 = ptrtoint i32* %3 to i32, !insn.addr !966
+  ret i32 %4, !insn.addr !967
+}
+
+define i32 @_ZNSt10unique_ptrIA_iSt14default_deleteIS0_EE11get_deleterEv(i32* %result) local_unnamed_addr {
+dec_label_pc_3766:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !968
+  %3 = call i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIA_iEE10_M_deleterEv(i32* %result), !insn.addr !969
+  ret i32 %3, !insn.addr !970
+}
+
+define i32 @_ZNKSt14default_deleteIA_iEclIiEENSt9enable_ifIXsrSt14is_convertibleIPA_T_PS0_E5valueEvE4typeEPS5_(i32 %arg1) local_unnamed_addr {
+dec_label_pc_378c:
+  %0 = alloca i32
+  %eax.0.reg2mem = alloca i32, !insn.addr !971
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !972
+  %3 = add i32 %2, ptrtoint (i32* @global_var_57e4 to i32), !insn.addr !973
+  %4 = icmp eq i32 %arg1, 0, !insn.addr !974
+  store i32 %3, i32* %eax.0.reg2mem, !insn.addr !975
+  br i1 %4, label %dec_label_pc_37b7, label %dec_label_pc_37a7, !insn.addr !975
+
+dec_label_pc_37a7:                                ; preds = %dec_label_pc_378c
+  %5 = inttoptr i32 %arg1 to i32*, !insn.addr !976
+  call void @_ZdaPv(i32* %5, i32* nonnull @0), !insn.addr !976
+  store i32 ptrtoint (i32* @0 to i32), i32* %eax.0.reg2mem, !insn.addr !977
+  br label %dec_label_pc_37b7, !insn.addr !977
+
+dec_label_pc_37b7:                                ; preds = %dec_label_pc_37a7, %dec_label_pc_378c
+  %eax.0.reload = load i32, i32* %eax.0.reg2mem
+  ret i32 %eax.0.reload, !insn.addr !978
+
+; uselistorder directives
+  uselistorder void (i32*, i32*)* @_ZdaPv, { 1, 0, 2 }
+}
+
+define i32 @_ZNKSt10unique_ptrIA_iSt14default_deleteIS0_EE3getEv(i32* %result) local_unnamed_addr {
+dec_label_pc_37be:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !979
+  %3 = call i32 @_ZNKSt15__uniq_ptr_implIiSt14default_deleteIA_iEE6_M_ptrEv(i32* %result), !insn.addr !980
+  ret i32 %3, !insn.addr !981
+}
+
+define i32 @_ZNSt5tupleIJPiSt14default_deleteIiEEEC1ILb1ELb1EEEv(i32* %result) local_unnamed_addr {
+dec_label_pc_37e4:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !982
+  %3 = call i32 @_ZNSt11_Tuple_implILj0EJPiSt14default_deleteIiEEEC1Ev(i32* %result), !insn.addr !983
+  ret i32 %3, !insn.addr !984
+}
+
+define i32* @_ZSt3getILj0EJPiSt14default_deleteIiEEERNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERS7_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_380a:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !985
+  %3 = call i32** @_ZSt12__get_helperILj0EPiJSt14default_deleteIiEEERT0_RSt11_Tuple_implIXT_EJS3_DpT1_EE(i32* %arg1), !insn.addr !986
+  %4 = bitcast i32** %3 to i32*, !insn.addr !987
+  ret i32* %4, !insn.addr !987
+}
+
+define i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIiEE10_M_deleterEv(i32* %result) local_unnamed_addr {
+dec_label_pc_3830:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !988
+  %3 = call i32* @_ZSt3getILj1EJPiSt14default_deleteIiEEERNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERS7_(i32* %result), !insn.addr !989
+  %4 = ptrtoint i32* %3 to i32, !insn.addr !989
+  ret i32 %4, !insn.addr !990
+}
+
+define i32 @_ZNKSt15__uniq_ptr_implIiSt14default_deleteIiEE6_M_ptrEv(i32* %result) local_unnamed_addr {
+dec_label_pc_3856:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !991
+  %3 = call i32* @_ZSt3getILj0EJPiSt14default_deleteIiEEERKNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERKS7_(i32* %result), !insn.addr !992
+  %4 = load i32, i32* %3, align 4, !insn.addr !993
+  ret i32 %4, !insn.addr !994
+}
+
+define i32 @_ZNSt5tupleIJPiSt14default_deleteIA_iEEEC1ILb1ELb1EEEv(i32* %result) local_unnamed_addr {
+dec_label_pc_387e:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !995
+  %3 = call i32 @_ZNSt11_Tuple_implILj0EJPiSt14default_deleteIA_iEEEC1Ev(i32* %result), !insn.addr !996
+  ret i32 %3, !insn.addr !997
+}
+
+define i32* @_ZSt3getILj0EJPiSt14default_deleteIA_iEEERNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERS8_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_38a4:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !998
+  %3 = call i32** @_ZSt12__get_helperILj0EPiJSt14default_deleteIA_iEEERT0_RSt11_Tuple_implIXT_EJS4_DpT1_EE(i32* %arg1), !insn.addr !999
+  %4 = bitcast i32** %3 to i32*, !insn.addr !1000
+  ret i32* %4, !insn.addr !1000
+}
+
+define i32 @_ZNSt15__uniq_ptr_implIiSt14default_deleteIA_iEE10_M_deleterEv(i32* %result) local_unnamed_addr {
+dec_label_pc_38ca:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1001
+  %3 = call i32* @_ZSt3getILj1EJPiSt14default_deleteIA_iEEERNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERS8_(i32* %result), !insn.addr !1002
+  %4 = ptrtoint i32* %3 to i32, !insn.addr !1002
+  ret i32 %4, !insn.addr !1003
+}
+
+define i32 @_ZNKSt15__uniq_ptr_implIiSt14default_deleteIA_iEE6_M_ptrEv(i32* %result) local_unnamed_addr {
+dec_label_pc_38f0:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1004
+  %3 = call i32* @_ZSt3getILj0EJPiSt14default_deleteIA_iEEERKNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERKS8_(i32* %result), !insn.addr !1005
+  %4 = load i32, i32* %3, align 4, !insn.addr !1006
+  ret i32 %4, !insn.addr !1007
+}
+
+define i32 @_ZNSt11_Tuple_implILj0EJPiSt14default_deleteIiEEEC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3918:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1008
+  %3 = call i32 @_ZNSt11_Tuple_implILj1EJSt14default_deleteIiEEEC1Ev(i32* %result), !insn.addr !1009
+  %4 = call i32 @_ZNSt10_Head_baseILj0EPiLb0EEC1Ev(i32* %result), !insn.addr !1010
+  ret i32 %4, !insn.addr !1011
+}
+
+define i32** @_ZSt12__get_helperILj0EPiJSt14default_deleteIiEEERT0_RSt11_Tuple_implIXT_EJS3_DpT1_EE(i32* %arg1) local_unnamed_addr {
+dec_label_pc_394c:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1012
+  %3 = call i32 @_ZNSt11_Tuple_implILj0EJPiSt14default_deleteIiEEE7_M_headERS3_(i32* %arg1), !insn.addr !1013
+  %4 = inttoptr i32 %3 to i32**, !insn.addr !1014
+  ret i32** %4, !insn.addr !1014
+}
+
+define i32* @_ZSt3getILj1EJPiSt14default_deleteIiEEERNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERS7_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3970:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1015
+  %3 = call i32* @_ZSt12__get_helperILj1ESt14default_deleteIiEJEERT0_RSt11_Tuple_implIXT_EJS2_DpT1_EE(i32* %arg1), !insn.addr !1016
+  ret i32* %3, !insn.addr !1017
+}
+
+define i32* @_ZSt3getILj0EJPiSt14default_deleteIiEEERKNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERKS7_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3994:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1018
+  %3 = call i32** @_ZSt12__get_helperILj0EPiJSt14default_deleteIiEEERKT0_RKSt11_Tuple_implIXT_EJS3_DpT1_EE(i32* %arg1), !insn.addr !1019
+  %4 = bitcast i32** %3 to i32*, !insn.addr !1020
+  ret i32* %4, !insn.addr !1020
+}
+
+define i32 @_ZNSt11_Tuple_implILj0EJPiSt14default_deleteIA_iEEEC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_39ba:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1021
+  %3 = call i32 @_ZNSt11_Tuple_implILj1EJSt14default_deleteIA_iEEEC1Ev(i32* %result), !insn.addr !1022
+  %4 = call i32 @_ZNSt10_Head_baseILj0EPiLb0EEC1Ev(i32* %result), !insn.addr !1023
+  ret i32 %4, !insn.addr !1024
+
+; uselistorder directives
+  uselistorder i32 (i32*)* @_ZNSt10_Head_baseILj0EPiLb0EEC1Ev, { 1, 0 }
+}
+
+define i32** @_ZSt12__get_helperILj0EPiJSt14default_deleteIA_iEEERT0_RSt11_Tuple_implIXT_EJS4_DpT1_EE(i32* %arg1) local_unnamed_addr {
+dec_label_pc_39ee:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1025
+  %3 = call i32 @_ZNSt11_Tuple_implILj0EJPiSt14default_deleteIA_iEEE7_M_headERS4_(i32* %arg1), !insn.addr !1026
+  %4 = inttoptr i32 %3 to i32**, !insn.addr !1027
+  ret i32** %4, !insn.addr !1027
+}
+
+define i32* @_ZSt3getILj1EJPiSt14default_deleteIA_iEEERNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERS8_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3a12:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1028
+  %3 = call i32* @_ZSt12__get_helperILj1ESt14default_deleteIA_iEJEERT0_RSt11_Tuple_implIXT_EJS3_DpT1_EE(i32* %arg1), !insn.addr !1029
+  ret i32* %3, !insn.addr !1030
+}
+
+define i32* @_ZSt3getILj0EJPiSt14default_deleteIA_iEEERKNSt13tuple_elementIXT_ESt5tupleIJDpT0_EEE4typeERKS8_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3a36:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1031
+  %3 = call i32** @_ZSt12__get_helperILj0EPiJSt14default_deleteIA_iEEERKT0_RKSt11_Tuple_implIXT_EJS4_DpT1_EE(i32* %arg1), !insn.addr !1032
+  %4 = bitcast i32** %3 to i32*, !insn.addr !1033
+  ret i32* %4, !insn.addr !1033
+}
+
+define i32*** @_ZSt7forwardIRPiEOT_RNSt16remove_referenceIS2_E4typeE(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3a5b:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1034
+  %3 = bitcast i32* %arg1 to i32***, !insn.addr !1035
+  ret i32*** %3, !insn.addr !1035
+}
+
+define i32 @_ZNSt11_Tuple_implILj1EJSt14default_deleteIiEEEC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3a72:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1036
+  %3 = call i32 @_ZNSt10_Head_baseILj1ESt14default_deleteIiELb1EEC1Ev(i32* %result), !insn.addr !1037
+  ret i32 %3, !insn.addr !1038
+}
+
+define i32 @_ZNSt10_Head_baseILj0EPiLb0EEC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3a98:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1039
+  store i32 0, i32* %result, align 4, !insn.addr !1040
+  ret i32 %2, !insn.addr !1041
+}
+
+define i32 @_ZNSt11_Tuple_implILj0EJPiSt14default_deleteIiEEE7_M_headERS3_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3ab5:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1042
+  %3 = call i32 @_ZNSt10_Head_baseILj0EPiLb0EE7_M_headERS1_(i32* %arg1), !insn.addr !1043
+  ret i32 %3, !insn.addr !1044
+}
+
+define i32* @_ZSt12__get_helperILj1ESt14default_deleteIiEJEERT0_RSt11_Tuple_implIXT_EJS2_DpT1_EE(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3ada:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1045
+  %3 = call i32 @_ZNSt11_Tuple_implILj1EJSt14default_deleteIiEEE7_M_headERS2_(i32* %arg1), !insn.addr !1046
+  %4 = inttoptr i32 %3 to i32*, !insn.addr !1047
+  ret i32* %4, !insn.addr !1047
+}
+
+define i32** @_ZSt12__get_helperILj0EPiJSt14default_deleteIiEEERKT0_RKSt11_Tuple_implIXT_EJS3_DpT1_EE(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3afe:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1048
+  %3 = call i32 @_ZNSt11_Tuple_implILj0EJPiSt14default_deleteIiEEE7_M_headERKS3_(i32* %arg1), !insn.addr !1049
+  %4 = inttoptr i32 %3 to i32**, !insn.addr !1050
+  ret i32** %4, !insn.addr !1050
+}
+
+define i32 @_ZNSt11_Tuple_implILj1EJSt14default_deleteIA_iEEEC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3b22:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1051
+  %3 = call i32 @_ZNSt10_Head_baseILj1ESt14default_deleteIA_iELb1EEC1Ev(i32* %result), !insn.addr !1052
+  ret i32 %3, !insn.addr !1053
+}
+
+define i32 @_ZNSt11_Tuple_implILj0EJPiSt14default_deleteIA_iEEE7_M_headERS4_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3b47:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1054
+  %3 = call i32 @_ZNSt10_Head_baseILj0EPiLb0EE7_M_headERS1_(i32* %arg1), !insn.addr !1055
+  ret i32 %3, !insn.addr !1056
+
+; uselistorder directives
+  uselistorder i32 (i32*)* @_ZNSt10_Head_baseILj0EPiLb0EE7_M_headERS1_, { 2, 1, 0 }
+}
+
+define i32* @_ZSt12__get_helperILj1ESt14default_deleteIA_iEJEERT0_RSt11_Tuple_implIXT_EJS3_DpT1_EE(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3b6c:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1057
+  %3 = call i32 @_ZNSt11_Tuple_implILj1EJSt14default_deleteIA_iEEE7_M_headERS3_(i32* %arg1), !insn.addr !1058
+  %4 = inttoptr i32 %3 to i32*, !insn.addr !1059
+  ret i32* %4, !insn.addr !1059
+}
+
+define i32** @_ZSt12__get_helperILj0EPiJSt14default_deleteIA_iEEERKT0_RKSt11_Tuple_implIXT_EJS4_DpT1_EE(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3b90:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1060
+  %3 = call i32 @_ZNSt11_Tuple_implILj0EJPiSt14default_deleteIA_iEEE7_M_headERKS4_(i32* %arg1), !insn.addr !1061
+  %4 = inttoptr i32 %3 to i32**, !insn.addr !1062
+  ret i32** %4, !insn.addr !1062
+}
+
+define i32 @_ZNSt10_Head_baseILj0EPiLb0EEC1IRS0_EEOT_(i32* %result, i32*** %arg2) local_unnamed_addr {
+dec_label_pc_3bb4:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1063
+  %4 = bitcast i32*** %arg2 to i32*
+  %5 = call i32*** @_ZSt7forwardIRPiEOT_RNSt16remove_referenceIS2_E4typeE(i32* %4), !insn.addr !1064
+  %6 = load i32**, i32*** %5, align 4, !insn.addr !1065
+  %7 = ptrtoint i32** %6 to i32, !insn.addr !1065
+  store i32 %7, i32* %result, align 4, !insn.addr !1066
+  ret i32 %2, !insn.addr !1067
+
+; uselistorder directives
+  uselistorder i32*** (i32*)* @_ZSt7forwardIRPiEOT_RNSt16remove_referenceIS2_E4typeE, { 2, 1, 0 }
+}
+
+define i32 @_ZNSt10_Head_baseILj1ESt14default_deleteIiELb1EEC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3be0:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1068
+  %3 = add i32 %2, ptrtoint (i32* @global_var_5394 to i32), !insn.addr !1069
+  ret i32 %3, !insn.addr !1070
+}
+
+define i32 @_ZNSt10_Head_baseILj0EPiLb0EE7_M_headERS1_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3bf4:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %arg1 to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1071
+  ret i32 %2, !insn.addr !1072
+}
+
+define i32 @_ZNSt11_Tuple_implILj1EJSt14default_deleteIiEEE7_M_headERS2_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3c0a:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1073
+  %3 = call i32 @_ZNSt10_Head_baseILj1ESt14default_deleteIiELb1EE7_M_headERS2_(i32* %arg1), !insn.addr !1074
+  ret i32 %3, !insn.addr !1075
+}
+
+define i32 @_ZNSt11_Tuple_implILj0EJPiSt14default_deleteIiEEE7_M_headERKS3_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3c2e:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1076
+  %3 = call i32 @_ZNSt10_Head_baseILj0EPiLb0EE7_M_headERKS1_(i32* %arg1), !insn.addr !1077
+  ret i32 %3, !insn.addr !1078
+}
+
+define i32 @_ZNSt10_Head_baseILj1ESt14default_deleteIA_iELb1EEC1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3c54:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1079
+  %3 = add i32 %2, ptrtoint (i32* @global_var_5320 to i32), !insn.addr !1080
+  ret i32 %3, !insn.addr !1081
+}
+
+define i32 @_ZNSt11_Tuple_implILj1EJSt14default_deleteIA_iEEE7_M_headERS3_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3c68:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1082
+  %3 = call i32 @_ZNSt10_Head_baseILj1ESt14default_deleteIA_iELb1EE7_M_headERS3_(i32* %arg1), !insn.addr !1083
+  ret i32 %3, !insn.addr !1084
+}
+
+define i32 @_ZNSt11_Tuple_implILj0EJPiSt14default_deleteIA_iEEE7_M_headERKS4_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3c8c:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1085
+  %3 = call i32 @_ZNSt10_Head_baseILj0EPiLb0EE7_M_headERKS1_(i32* %arg1), !insn.addr !1086
+  ret i32 %3, !insn.addr !1087
+
+; uselistorder directives
+  uselistorder i32 (i32*)* @_ZNSt10_Head_baseILj0EPiLb0EE7_M_headERKS1_, { 2, 1, 0 }
+}
+
+define i32 @_ZNSt10_Head_baseILj1ESt14default_deleteIiELb1EE7_M_headERS2_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3cb1:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %arg1 to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1088
+  ret i32 %2, !insn.addr !1089
+}
+
+define i32 @_ZNSt10_Head_baseILj0EPiLb0EE7_M_headERKS1_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3cc7:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %arg1 to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1090
+  ret i32 %2, !insn.addr !1091
+}
+
+define i32 @_ZNSt10_Head_baseILj1ESt14default_deleteIA_iELb1EE7_M_headERS3_(i32* %arg1) local_unnamed_addr {
+dec_label_pc_3cdd:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %arg1 to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1092
+  ret i32 %2, !insn.addr !1093
+}
+
+define i32 @_ZN12RTTIDerivedBD1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3cf4:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1094
+  %3 = add i32 %2, add (i32 ptrtoint ([8 x i8]* @global_var_527d to i32), i32 -868), !insn.addr !1095
+  store i32 %3, i32* %result, align 4, !insn.addr !1096
+  %4 = call i32 @_ZN8RTTIBaseD1Ev(i32* %result), !insn.addr !1097
+  ret i32 %4, !insn.addr !1098
+}
+
+define i32 @_ZN12RTTIDerivedBD0Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3d26:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !1099
+  %3 = call i32 @_ZN12RTTIDerivedBD1Ev(i32* %result), !insn.addr !1100
+  %4 = call i32 @_ZdlPvj(i32* %result, i32 4), !insn.addr !1101
+  ret i32 %4, !insn.addr !1102
+}
+
+define i32 @_ZN12RTTIDerivedAD1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3d60:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1103
+  %3 = add i32 %2, add (i32 ptrtoint ([26 x i8]* @global_var_5211 to i32), i32 -848), !insn.addr !1104
+  store i32 %3, i32* %result, align 4, !insn.addr !1105
+  %4 = call i32 @_ZN8RTTIBaseD1Ev(i32* %result), !insn.addr !1106
+  ret i32 %4, !insn.addr !1107
+
+; uselistorder directives
+  uselistorder i32 (i32*)* @_ZN8RTTIBaseD1Ev, { 2, 1, 0 }
+}
+
+define i32 @_ZN12RTTIDerivedAD0Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3d92:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !1108
+  %3 = call i32 @_ZN12RTTIDerivedAD1Ev(i32* %result), !insn.addr !1109
+  %4 = call i32 @_ZdlPvj(i32* %result, i32 4), !insn.addr !1110
+  ret i32 %4, !insn.addr !1111
+
+; uselistorder directives
+  uselistorder i32 4, { 9, 10, 11, 0, 12, 1, 2, 27, 28, 29, 30, 31, 32, 33, 35, 34, 36, 6, 7, 8, 37, 38, 13, 3, 39, 4, 5, 40, 41, 42, 21, 22, 23, 14, 15, 16, 24, 25, 17, 18, 19, 26, 20 }
+}
+
+define i32 @_ZN14DiamondDerivedD1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3dcc:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !1112
+  %4 = add i32 %1, add (i32 ptrtoint (i32* @global_var_51a4 to i32), i32 -804), !insn.addr !1113
+  store i32 %4, i32* %result, align 4, !insn.addr !1114
+  %5 = add i32 %2, 16, !insn.addr !1115
+  %6 = add i32 %1, add (i32 ptrtoint (i32* @global_var_51a4 to i32), i32 -752), !insn.addr !1116
+  %7 = inttoptr i32 %5 to i32*, !insn.addr !1117
+  store i32 %6, i32* %7, align 4, !insn.addr !1117
+  %8 = add i32 %1, add (i32 ptrtoint (i32* @global_var_51a4 to i32), i32 -780), !insn.addr !1118
+  %9 = add i32 %2, 8, !insn.addr !1119
+  %10 = inttoptr i32 %9 to i32*, !insn.addr !1119
+  store i32 %8, i32* %10, align 4, !insn.addr !1119
+  %11 = add i32 %1, add (i32 ptrtoint (i32* @global_var_51a4 to i32), i32 -728), !insn.addr !1120
+  %12 = inttoptr i32 %11 to i32*, !insn.addr !1121
+  %13 = call i32 @_ZN7MiddleBD2Ev(i32* %10, i32* %12), !insn.addr !1121
+  %14 = add i32 %1, add (i32 ptrtoint (i32* @global_var_51a4 to i32), i32 -736), !insn.addr !1122
+  %15 = inttoptr i32 %14 to i32*, !insn.addr !1123
+  %16 = call i32 @_ZN7MiddleAD2Ev(i32* %result, i32* %15), !insn.addr !1123
+  %17 = call i32 @_ZN11VirtualBaseD1Ev(i32* %7), !insn.addr !1124
+  ret i32 %17, !insn.addr !1125
+}
+
+define i32 @_ZThn8_N14DiamondDerivedD1Ev(i32 %arg1) local_unnamed_addr {
+dec_label_pc_3e4e:
+  %0 = add i32 %arg1, -8, !insn.addr !1126
+  %1 = inttoptr i32 %0 to i32*, !insn.addr !1127
+  %2 = call i32 @_ZN14DiamondDerivedD1Ev(i32* %1), !insn.addr !1127
+  ret i32 %2, !insn.addr !1127
+}
+
+define i32 @_ZTv0_n16_N14DiamondDerivedD1Ev(i32 %arg1) local_unnamed_addr {
+dec_label_pc_3e5c:
+  %0 = inttoptr i32 %arg1 to i32*, !insn.addr !1128
+  %1 = load i32, i32* %0, align 4, !insn.addr !1128
+  %2 = add i32 %1, -16, !insn.addr !1129
+  %3 = inttoptr i32 %2 to i32*, !insn.addr !1129
+  %4 = load i32, i32* %3, align 4, !insn.addr !1129
+  %5 = add i32 %4, %arg1, !insn.addr !1129
+  %6 = inttoptr i32 %5 to i32*, !insn.addr !1130
+  %7 = call i32 @_ZN14DiamondDerivedD1Ev(i32* %6), !insn.addr !1130
+  ret i32 %7, !insn.addr !1130
+}
+
+define i32 @_ZN14DiamondDerivedD0Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3e72:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !1131
+  %3 = call i32 @_ZN14DiamondDerivedD1Ev(i32* %result), !insn.addr !1132
+  %4 = call i32 @_ZdlPvj(i32* %result, i32 24), !insn.addr !1133
+  ret i32 %4, !insn.addr !1134
+
+; uselistorder directives
+  uselistorder i32 (i32*)* @_ZN14DiamondDerivedD1Ev, { 3, 2, 1, 0 }
+}
+
+define i32 @_ZThn8_N14DiamondDerivedD0Ev(i32 %arg1) local_unnamed_addr {
+dec_label_pc_3eab:
+  %0 = add i32 %arg1, -8, !insn.addr !1135
+  %1 = inttoptr i32 %0 to i32*, !insn.addr !1136
+  %2 = call i32 @_ZN14DiamondDerivedD0Ev(i32* %1), !insn.addr !1136
+  ret i32 %2, !insn.addr !1136
+}
+
+define i32 @_ZTv0_n16_N14DiamondDerivedD0Ev(i32 %arg1) local_unnamed_addr {
+dec_label_pc_3eb6:
+  %0 = inttoptr i32 %arg1 to i32*, !insn.addr !1137
+  %1 = load i32, i32* %0, align 4, !insn.addr !1137
+  %2 = add i32 %1, -16, !insn.addr !1138
+  %3 = inttoptr i32 %2 to i32*, !insn.addr !1138
+  %4 = load i32, i32* %3, align 4, !insn.addr !1138
+  %5 = add i32 %4, %arg1, !insn.addr !1138
+  %6 = inttoptr i32 %5 to i32*, !insn.addr !1139
+  %7 = call i32 @_ZN14DiamondDerivedD0Ev(i32* %6), !insn.addr !1139
+  ret i32 %7, !insn.addr !1139
+
+; uselistorder directives
+  uselistorder i32 (i32*)* @_ZN14DiamondDerivedD0Ev, { 1, 0 }
+  uselistorder i32 -16, { 4, 5, 0, 1, 2, 3 }
+}
+
+define i32 @_ZN12MultiDerivedD1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3eca:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = ptrtoint i32* %result to i32
+  %3 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1140
+  %4 = add i32 %3, add (i32 ptrtoint (i32* @global_var_50a7 to i32), i32 -580), !insn.addr !1141
+  store i32 %4, i32* %result, align 4, !insn.addr !1142
+  %5 = add i32 %3, add (i32 ptrtoint (i32* @global_var_50a7 to i32), i32 -556), !insn.addr !1143
+  %6 = add i32 %2, 8, !insn.addr !1144
+  %7 = inttoptr i32 %6 to i32*, !insn.addr !1144
+  store i32 %5, i32* %7, align 4, !insn.addr !1144
+  %8 = call i32 @_ZN5BaseBD1Ev(i32* %7), !insn.addr !1145
+  %9 = call i32 @_ZN5BaseAD1Ev(i32* %result), !insn.addr !1146
+  ret i32 %9, !insn.addr !1147
+}
+
+define i32 @_ZThn8_N12MultiDerivedD1Ev(i32 %arg1) local_unnamed_addr {
+dec_label_pc_3f19:
+  %0 = add i32 %arg1, -8, !insn.addr !1148
+  %1 = inttoptr i32 %0 to i32*, !insn.addr !1149
+  %2 = call i32 @_ZN12MultiDerivedD1Ev(i32* %1), !insn.addr !1149
+  ret i32 %2, !insn.addr !1149
+}
+
+define i32 @_ZN12MultiDerivedD0Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3f24:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !1150
+  %3 = call i32 @_ZN12MultiDerivedD1Ev(i32* %result), !insn.addr !1151
+  %4 = call i32 @_ZdlPvj(i32* %result, i32 16), !insn.addr !1152
+  ret i32 %4, !insn.addr !1153
+
+; uselistorder directives
+  uselistorder i32 16, { 0, 2, 3, 1 }
+  uselistorder i32 (i32*)* @_ZN12MultiDerivedD1Ev, { 2, 1, 0 }
+}
+
+define i32 @_ZThn8_N12MultiDerivedD0Ev(i32 %arg1) local_unnamed_addr {
+dec_label_pc_3f5d:
+  %0 = add i32 %arg1, -8, !insn.addr !1154
+  %1 = inttoptr i32 %0 to i32*, !insn.addr !1155
+  %2 = call i32 @_ZN12MultiDerivedD0Ev(i32* %1), !insn.addr !1155
+  ret i32 %2, !insn.addr !1155
+}
+
+define i32 @_ZN7DerivedD1Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3f68:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.ax(i32 %1), !insn.addr !1156
+  %3 = add i32 %2, add (i32 ptrtoint (i32* @global_var_5009 to i32), i32 -496), !insn.addr !1157
+  store i32 %3, i32* %result, align 4, !insn.addr !1158
+  %4 = call i32 @_ZN4BaseD1Ev(i32* %result), !insn.addr !1159
+  ret i32 %4, !insn.addr !1160
+
+; uselistorder directives
+  uselistorder i32 (i32*)* @_ZN4BaseD1Ev, { 1, 2, 0 }
+  uselistorder i32 0, { 26, 27, 28, 29, 30, 31, 32, 6, 35, 36, 1, 0, 37, 38, 2, 39, 3, 4, 20, 33, 34, 7, 21, 22, 23, 5, 24, 25, 8, 11, 12, 13, 10, 40, 9, 14, 15, 16, 17, 18, 19 }
+  uselistorder i32 (i32)* @__x86.get_pc_thunk.ax, { 14, 17, 154, 153, 130, 129, 128, 127, 126, 125, 124, 123, 122, 121, 120, 119, 118, 117, 116, 115, 114, 113, 112, 111, 110, 109, 108, 107, 106, 105, 104, 103, 102, 101, 100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 78, 79, 75, 76, 77, 74, 73, 72, 70, 71, 152, 135, 134, 151, 133, 150, 149, 68, 69, 148, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 25, 22, 24, 21, 20, 147, 146, 145, 23, 144, 16, 15, 143, 142, 19, 141, 18, 140, 139, 13, 12, 11, 138, 10, 8, 7, 5, 4, 3, 2, 1, 132, 131, 137, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 43, 44, 136, 42, 41, 26, 9, 6, 0 }
+}
+
+define i32 @_ZN7DerivedD0Ev(i32* %result) local_unnamed_addr {
+dec_label_pc_3f9a:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !1161
+  %3 = call i32 @_ZN7DerivedD1Ev(i32* %result), !insn.addr !1162
+  %4 = call i32 @_ZdlPvj(i32* %result, i32 8), !insn.addr !1163
+  ret i32 %4, !insn.addr !1164
+
+; uselistorder directives
+  uselistorder i32 (i32*, i32)* @_ZdlPvj, { 11, 10, 9, 8, 7, 1, 6, 5, 4, 3, 2, 0, 12 }
+  uselistorder i32 8, { 1, 8, 6, 0, 7, 2, 9, 3, 4, 5 }
+  uselistorder i32 (i32*)* @_ZN7DerivedD1Ev, { 1, 0 }
+}
+
+define i32 @__x86.get_pc_thunk.ax(i32 %arg1) local_unnamed_addr {
+dec_label_pc_3fd3:
+  ret i32 %arg1, !insn.addr !1165
+}
+
+define i32 @__x86.get_pc_thunk.si(i32 %arg1) local_unnamed_addr {
+dec_label_pc_3fd7:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  ret i32 %1, !insn.addr !1166
+}
+
+define i32 @__stack_chk_fail_local() local_unnamed_addr {
+dec_label_pc_3fe0:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !1167
+  call void @__stack_chk_fail(), !insn.addr !1168
+  ret i32 ptrtoint (i32* @0 to i32), !insn.addr !1169
+}
+
+define i32 @__do_global_ctors_aux() local_unnamed_addr {
+dec_label_pc_4000:
+  %0 = alloca i32
+  %merge.reg2mem = alloca i32, !insn.addr !1170
+  %ebx.0.reg2mem = alloca i32, !insn.addr !1170
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.dx(i32 ptrtoint (i32* @0 to i32)), !insn.addr !1171
+  %3 = add i32 %1, 19451, !insn.addr !1172
+  %4 = inttoptr i32 %3 to i32*, !insn.addr !1172
+  %5 = load i32, i32* %4, align 4, !insn.addr !1172
+  %6 = icmp eq i32 %5, -1, !insn.addr !1173
+  store i32 %3, i32* %ebx.0.reg2mem, !insn.addr !1174
+  store i32 -1, i32* %merge.reg2mem, !insn.addr !1174
+  br i1 %6, label %dec_label_pc_403d, label %dec_label_pc_4030, !insn.addr !1174
+
+dec_label_pc_4030:                                ; preds = %dec_label_pc_4000, %dec_label_pc_4030
+  %ebx.0.reload = load i32, i32* %ebx.0.reg2mem
+  %7 = add i32 %ebx.0.reload, -4, !insn.addr !1175
+  %8 = inttoptr i32 %7 to i32*, !insn.addr !1175
+  %9 = load i32, i32* %8, align 4, !insn.addr !1175
+  %10 = icmp eq i32 %9, -1, !insn.addr !1176
+  %11 = icmp eq i1 %10, false, !insn.addr !1177
+  store i32 %7, i32* %ebx.0.reg2mem, !insn.addr !1177
+  store i32 %9, i32* %merge.reg2mem, !insn.addr !1177
+  br i1 %11, label %dec_label_pc_4030, label %dec_label_pc_403d, !insn.addr !1177
+
+dec_label_pc_403d:                                ; preds = %dec_label_pc_4030, %dec_label_pc_4000
+  %merge.reload = load i32, i32* %merge.reg2mem
+  ret i32 %merge.reload, !insn.addr !1178
+
+; uselistorder directives
+  uselistorder i32* %ebx.0.reg2mem, { 2, 0, 1 }
+  uselistorder i1 false, { 5, 1, 2, 3, 0, 4 }
+  uselistorder i32 -4, { 4, 1, 0, 2, 3 }
+  uselistorder i32 -1, { 2, 0, 3, 1, 4, 5 }
+  uselistorder i32 (i32)* @__x86.get_pc_thunk.dx, { 1, 4, 3, 0, 2 }
+  uselistorder i32* @0, { 4, 5, 0, 6, 1, 2, 3 }
+  uselistorder i32 ptrtoint (i32* @0 to i32), { 1, 2, 0, 3, 4 }
+  uselistorder label %dec_label_pc_4030, { 1, 0 }
+}
+
+define i32 @_fini() local_unnamed_addr {
+dec_label_pc_404c:
+  %0 = alloca i32
+  %1 = load i32, i32* %0
+  %2 = call i32 @__x86.get_pc_thunk.bx(i32 %1), !insn.addr !1179
+  %3 = call i32 @__do_global_dtors_aux(), !insn.addr !1180
+  ret i32 %3, !insn.addr !1181
+
+; uselistorder directives
+  uselistorder i32 (i32)* @__x86.get_pc_thunk.bx, { 25, 1, 24, 23, 22, 7, 21, 20, 12, 11, 19, 6, 18, 5, 17, 16, 4, 15, 3, 2, 14, 13, 10, 9, 8, 0 }
+  uselistorder i32 1, { 196, 200, 199, 195, 194, 193, 192, 191, 190, 189, 188, 187, 186, 185, 184, 183, 182, 181, 180, 179, 178, 177, 176, 175, 174, 173, 172, 171, 170, 169, 168, 167, 166, 165, 164, 163, 162, 161, 160, 159, 158, 157, 156, 155, 154, 153, 152, 151, 150, 149, 148, 147, 146, 145, 201, 144, 143, 142, 141, 140, 139, 138, 202, 137, 136, 135, 134, 133, 132, 131, 130, 129, 128, 127, 126, 125, 124, 123, 122, 121, 120, 119, 118, 117, 116, 115, 114, 113, 232, 112, 111, 110, 109, 108, 107, 260, 106, 105, 104, 203, 103, 261, 102, 101, 100, 99, 98, 262, 263, 97, 204, 205, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 264, 63, 62, 206, 61, 60, 265, 266, 208, 207, 59, 58, 57, 56, 55, 54, 210, 209, 211, 53, 52, 234, 51, 235, 212, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 237, 29, 28, 27, 26, 25, 24, 23, 238, 219, 218, 217, 216, 215, 214, 213, 22, 259, 243, 242, 241, 240, 239, 220, 21, 221, 20, 19, 244, 222, 18, 17, 246, 245, 223, 198, 16, 248, 247, 224, 197, 15, 236, 251, 250, 249, 225, 14, 252, 226, 13, 233, 253, 227, 12, 255, 254, 228, 11, 10, 256, 229, 9, 257, 230, 8, 7, 6, 231, 5, 4, 3, 2, 258, 1, 0 }
+}
+
+declare i32* @_Znwj(i32) local_unnamed_addr
+
+declare i32 @__cxa_begin_catch(i32) local_unnamed_addr
+
+declare i32 @__cxa_allocate_exception(i32) local_unnamed_addr
+
+declare i32 @strlen(i8*) local_unnamed_addr
+
+declare i32 @__cxa_atexit(void (i32*)*, i32*, i32*) local_unnamed_addr
+
+declare i32 @_ZdlPvj(i32*, i32) local_unnamed_addr
+
+declare i32 @strcmp(i8*, i8*) local_unnamed_addr
+
+declare i32 @__libc_start_main(i32, i32, i8**, void ()*, void ()*, void ()*) local_unnamed_addr
+
+declare i32* @_Znaj(i32) local_unnamed_addr
+
+declare i8* @strncpy(i8*, i8*, i32) local_unnamed_addr
+
+declare i32 @__cxa_bad_typeid() local_unnamed_addr
+
+declare void @__stack_chk_fail() local_unnamed_addr
+
+declare i32 @__dynamic_cast() local_unnamed_addr
+
+declare void @_ZdaPv(i32*, i32*) local_unnamed_addr
+
+declare i32 @__cxa_throw_bad_array_new_length() local_unnamed_addr
+
+declare i32 @printf(i8*, ...) local_unnamed_addr
+
+declare i32 @__cxa_rethrow() local_unnamed_addr
+
+declare i32 @puts(i8*) local_unnamed_addr
+
+declare i32 @_ZNSt8ios_base4InitC1Ev() local_unnamed_addr
+
+declare i32 @__cxa_end_catch() local_unnamed_addr
+
+declare i32 @__cxa_throw(i32, i32, i32) local_unnamed_addr
+
+declare void @_Unwind_Resume(%_Unwind_Exception*) local_unnamed_addr
+
+declare void @__cxa_finalize(i32*) local_unnamed_addr
+
+declare i32 @__asm_hlt() local_unnamed_addr
+
+declare i32 @__readgsdword(i32) local_unnamed_addr
+
+!0 = !{i64 4104}
+!1 = !{i64 4127}
+!2 = !{i64 4132}
+!3 = !{i64 4141}
+!4 = !{i64 4516}
+!5 = !{i64 4532}
+!6 = !{i64 4548}
+!7 = !{i64 4564}
+!8 = !{i64 4580}
+!9 = !{i64 4596}
+!10 = !{i64 4612}
+!11 = !{i64 4628}
+!12 = !{i64 4644}
+!13 = !{i64 4660}
+!14 = !{i64 4676}
+!15 = !{i64 4692}
+!16 = !{i64 4708}
+!17 = !{i64 4724}
+!18 = !{i64 4740}
+!19 = !{i64 4756}
+!20 = !{i64 4772}
+!21 = !{i64 4788}
+!22 = !{i64 4804}
+!23 = !{i64 4820}
+!24 = !{i64 4836}
+!25 = !{i64 4852}
+!26 = !{i64 4868}
+!27 = !{i64 4895}
+!28 = !{i64 4912}
+!29 = !{i64 4918}
+!30 = !{i64 4923}
+!31 = !{i64 4927}
+!32 = !{i64 4931}
+!33 = !{i64 4944}
+!34 = !{i64 4961}
+!35 = !{i64 5000}
+!36 = !{i64 5008}
+!37 = !{i64 5078}
+!38 = !{i64 5088}
+!39 = !{i64 5096}
+!40 = !{i64 5112}
+!41 = !{i64 5119}
+!42 = !{i64 5121}
+!43 = !{i64 5127}
+!44 = !{i64 5129}
+!45 = !{i64 5134}
+!46 = !{i64 5142}
+!47 = !{i64 5147}
+!48 = !{i64 5206}
+!49 = !{i64 5211}
+!50 = !{i64 5225}
+!51 = !{i64 5236}
+!52 = !{i64 5244}
+!53 = !{i64 5248}
+!54 = !{i64 5250}
+!55 = !{i64 5260}
+!56 = !{i64 5270}
+!57 = !{i64 5285}
+!58 = !{i64 5291}
+!59 = !{i64 5298}
+!60 = !{i64 5315}
+!61 = !{i64 5330}
+!62 = !{i64 5350}
+!63 = !{i64 5361}
+!64 = !{i64 5375}
+!65 = !{i64 5380}
+!66 = !{i64 5385}
+!67 = !{i64 5392}
+!68 = !{i64 5394}
+!69 = !{i64 5400}
+!70 = !{i64 5401}
+!71 = !{i64 5411}
+!72 = !{i64 5421}
+!73 = !{i64 5448}
+!74 = !{i64 5465}
+!75 = !{i64 5476}
+!76 = !{i64 5481}
+!77 = !{i64 5491}
+!78 = !{i64 5499}
+!79 = !{i64 5504}
+!80 = !{i64 5510}
+!81 = !{i64 5519}
+!82 = !{i64 5526}
+!83 = !{i64 5528}
+!84 = !{i64 5534}
+!85 = !{i64 5545}
+!86 = !{i64 5558}
+!87 = !{i64 5560}
+!88 = !{i64 5577}
+!89 = !{i64 5578}
+!90 = !{i64 5590}
+!91 = !{i64 5601}
+!92 = !{i64 5612}
+!93 = !{i64 5618}
+!94 = !{i64 5630}
+!95 = !{i64 5647}
+!96 = !{i64 5667}
+!97 = !{i64 5698}
+!98 = !{i64 5717}
+!99 = !{i64 5734}
+!100 = !{i64 5739}
+!101 = !{i64 5744}
+!102 = !{i64 5754}
+!103 = !{i64 5769}
+!104 = !{i64 5782}
+!105 = !{i64 5789}
+!106 = !{i64 5842}
+!107 = !{i64 5853}
+!108 = !{i64 5854}
+!109 = !{i64 5866}
+!110 = !{i64 5877}
+!111 = !{i64 5895}
+!112 = !{i64 5935}
+!113 = !{i64 5937}
+!114 = !{i64 5958}
+!115 = !{i64 5995}
+!116 = !{i64 6000}
+!117 = !{i64 6010}
+!118 = !{i64 6023}
+!119 = !{i64 6030}
+!120 = !{i64 6068}
+!121 = !{i64 6079}
+!122 = !{i64 6080}
+!123 = !{i64 6092}
+!124 = !{i64 6103}
+!125 = !{i64 6121}
+!126 = !{i64 6150}
+!127 = !{i64 6200}
+!128 = !{i64 6210}
+!129 = !{i64 6223}
+!130 = !{i64 6230}
+!131 = !{i64 6268}
+!132 = !{i64 6279}
+!133 = !{i64 6280}
+!134 = !{i64 6290}
+!135 = !{i64 6300}
+!136 = !{i64 6322}
+!137 = !{i64 6341}
+!138 = !{i64 6364}
+!139 = !{i64 6383}
+!140 = !{i64 6391}
+!141 = !{i64 6401}
+!142 = !{i64 6409}
+!143 = !{i64 6415}
+!144 = !{i64 6417}
+!145 = !{i64 6435}
+!146 = !{i64 6440}
+!147 = !{i64 6447}
+!148 = !{i64 6449}
+!149 = !{i64 6455}
+!150 = !{i64 6456}
+!151 = !{i64 6467}
+!152 = !{i64 6478}
+!153 = !{i64 6496}
+!154 = !{i64 6507}
+!155 = !{i64 6517}
+!156 = !{i64 6520}
+!157 = !{i64 6530}
+!158 = !{i64 6533}
+!159 = !{i64 6544}
+!160 = !{i64 6551}
+!161 = !{i64 6569}
+!162 = !{i64 6597}
+!163 = !{i64 6609}
+!164 = !{i64 6611}
+!165 = !{i64 6614}
+!166 = !{i64 6616}
+!167 = !{i64 6619}
+!168 = !{i64 6624}
+!169 = !{i64 6631}
+!170 = !{i64 6633}
+!171 = !{i64 6642}
+!172 = !{i64 6643}
+!173 = !{i64 6657}
+!174 = !{i64 6668}
+!175 = !{i64 6689}
+!176 = !{i64 6709}
+!177 = !{i64 6729}
+!178 = !{i64 6749}
+!179 = !{i64 6769}
+!180 = !{i64 6793}
+!181 = !{i64 6814}
+!182 = !{i64 6825}
+!183 = !{i64 6835}
+!184 = !{i64 6842}
+!185 = !{i64 6859}
+!186 = !{i64 6922}
+!187 = !{i64 6885}
+!188 = !{i64 6940}
+!189 = !{i64 6945}
+!190 = !{i64 6952}
+!191 = !{i64 6954}
+!192 = !{i64 6963}
+!193 = !{i64 6967}
+!194 = !{i64 6980}
+!195 = !{i64 6983}
+!196 = !{i64 6991}
+!197 = !{i64 6994}
+!198 = !{i64 6999}
+!199 = !{i64 7001}
+!200 = !{i64 7010}
+!201 = !{i64 7013}
+!202 = !{i64 7015}
+!203 = !{i64 7018}
+!204 = !{i64 7019}
+!205 = !{i64 7029}
+!206 = !{i64 7039}
+!207 = !{i64 7067}
+!208 = !{i64 7082}
+!209 = !{i64 7106}
+!210 = !{i64 7111}
+!211 = !{i64 7118}
+!212 = !{i64 7120}
+!213 = !{i64 7126}
+!214 = !{i64 7140}
+!215 = !{i64 7165}
+!216 = !{i64 7173}
+!217 = !{i64 7184}
+!218 = !{i64 7194}
+!219 = !{i64 7461}
+!220 = !{i64 7462}
+!221 = !{i64 7469}
+!222 = !{i64 7483}
+!223 = !{i64 7492}
+!224 = !{i64 7494}
+!225 = !{i64 7504}
+!226 = !{i64 7509}
+!227 = !{i64 7517}
+!228 = !{i64 7518}
+!229 = !{i64 7530}
+!230 = !{i64 7541}
+!231 = !{i64 7559}
+!232 = !{i64 7567}
+!233 = !{i64 7581}
+!234 = !{i64 7596}
+!235 = !{i64 7604}
+!236 = !{i64 7617}
+!237 = !{i64 7633}
+!238 = !{i64 7648}
+!239 = !{i64 7656}
+!240 = !{i64 7668}
+!241 = !{i64 7680}
+!242 = !{i64 7686}
+!243 = !{i64 7689}
+!244 = !{i64 7695}
+!245 = !{i64 7698}
+!246 = !{i64 7704}
+!247 = !{i64 7707}
+!248 = !{i64 7713}
+!249 = !{i64 7716}
+!250 = !{i64 7730}
+!251 = !{i64 7747}
+!252 = !{i64 7755}
+!253 = !{i64 7767}
+!254 = !{i64 7775}
+!255 = !{i64 7793}
+!256 = !{i64 7808}
+!257 = !{i64 7816}
+!258 = !{i64 7827}
+!259 = !{i64 7832}
+!260 = !{i64 7842}
+!261 = !{i64 7857}
+!262 = !{i64 7872}
+!263 = !{i64 7887}
+!264 = !{i64 7900}
+!265 = !{i64 7907}
+!266 = !{i64 7983}
+!267 = !{i64 7994}
+!268 = !{i64 7995}
+!269 = !{i64 8007}
+!270 = !{i64 8023}
+!271 = !{i64 8033}
+!272 = !{i64 8043}
+!273 = !{i64 8059}
+!274 = !{i64 8069}
+!275 = !{i64 8079}
+!276 = !{i64 8100}
+!277 = !{i64 8102}
+!278 = !{i64 8104}
+!279 = !{i64 8106}
+!280 = !{i64 8112}
+!281 = !{i64 8120}
+!282 = !{i64 8128}
+!283 = !{i64 8130}
+!284 = !{i64 8134}
+!285 = !{i64 8139}
+!286 = !{i64 8146}
+!287 = !{i64 8148}
+!288 = !{i64 8150}
+!289 = !{i64 8152}
+!290 = !{i64 8158}
+!291 = !{i64 8166}
+!292 = !{i64 8174}
+!293 = !{i64 8176}
+!294 = !{i64 8180}
+!295 = !{i64 8185}
+!296 = !{i64 8084}
+!297 = !{i64 8194}
+!298 = !{i64 8213}
+!299 = !{i64 8231}
+!300 = !{i64 8235}
+!301 = !{i64 8240}
+!302 = !{i64 8243}
+!303 = !{i64 8251}
+!304 = !{i64 8259}
+!305 = !{i64 8261}
+!306 = !{i64 8263}
+!307 = !{i64 8269}
+!308 = !{i64 8270}
+!309 = !{i64 8276}
+!310 = !{i64 8277}
+!311 = !{i64 8278}
+!312 = !{i64 8296}
+!313 = !{i64 8300}
+!314 = !{i64 8305}
+!315 = !{i64 8308}
+!316 = !{i64 8316}
+!317 = !{i64 8324}
+!318 = !{i64 8326}
+!319 = !{i64 8328}
+!320 = !{i64 8334}
+!321 = !{i64 8335}
+!322 = !{i64 8346}
+!323 = !{i64 8347}
+!324 = !{i64 8358}
+!325 = !{i64 8372}
+!326 = !{i64 8387}
+!327 = !{i64 8425}
+!328 = !{i64 8437}
+!329 = !{i64 8451}
+!330 = !{i64 8457}
+!331 = !{i64 8458}
+!332 = !{i64 8466}
+!333 = !{i64 8475}
+!334 = !{i64 8481}
+!335 = !{i64 8482}
+!336 = !{i64 8490}
+!337 = !{i64 8499}
+!338 = !{i64 8505}
+!339 = !{i64 8506}
+!340 = !{i64 8514}
+!341 = !{i64 8523}
+!342 = !{i64 8529}
+!343 = !{i64 8530}
+!344 = !{i64 8538}
+!345 = !{i64 8547}
+!346 = !{i64 8553}
+!347 = !{i64 8554}
+!348 = !{i64 8562}
+!349 = !{i64 8571}
+!350 = !{i64 8577}
+!351 = !{i64 8578}
+!352 = !{i64 8586}
+!353 = !{i64 8595}
+!354 = !{i64 8601}
+!355 = !{i64 8602}
+!356 = !{i64 8610}
+!357 = !{i64 8619}
+!358 = !{i64 8625}
+!359 = !{i64 8626}
+!360 = !{i64 8634}
+!361 = !{i64 8643}
+!362 = !{i64 8649}
+!363 = !{i64 8650}
+!364 = !{i64 8658}
+!365 = !{i64 8667}
+!366 = !{i64 8673}
+!367 = !{i64 8674}
+!368 = !{i64 8682}
+!369 = !{i64 8691}
+!370 = !{i64 8697}
+!371 = !{i64 8698}
+!372 = !{i64 8706}
+!373 = !{i64 8715}
+!374 = !{i64 8721}
+!375 = !{i64 8722}
+!376 = !{i64 8730}
+!377 = !{i64 8739}
+!378 = !{i64 8745}
+!379 = !{i64 8746}
+!380 = !{i64 8759}
+!381 = !{i64 8770}
+!382 = !{i64 8780}
+!383 = !{i64 8791}
+!384 = !{i64 8798}
+!385 = !{i64 8822}
+!386 = !{i64 8832}
+!387 = !{i64 8840}
+!388 = !{i64 8863}
+!389 = !{i64 8873}
+!390 = !{i64 8881}
+!391 = !{i64 8898}
+!392 = !{i64 8912}
+!393 = !{i64 8914}
+!394 = !{i64 8916}
+!395 = !{i64 8924}
+!396 = !{i64 8940}
+!397 = !{i64 8955}
+!398 = !{i64 8960}
+!399 = !{i64 8966}
+!400 = !{i64 8977}
+!401 = !{i64 8984}
+!402 = !{i64 9007}
+!403 = !{i64 9016}
+!404 = !{i64 9025}
+!405 = !{i64 9044}
+!406 = !{i64 9061}
+!407 = !{i64 9074}
+!408 = !{i64 9082}
+!409 = !{i64 9099}
+!410 = !{i64 9108}
+!411 = !{i64 9116}
+!412 = !{i64 9133}
+!413 = !{i64 9142}
+!414 = !{i64 9150}
+!415 = !{i64 9167}
+!416 = !{i64 9176}
+!417 = !{i64 9180}
+!418 = !{i64 9194}
+!419 = !{i64 9201}
+!420 = !{i64 9217}
+!421 = !{i64 9233}
+!422 = !{i64 9247}
+!423 = !{i64 9262}
+!424 = !{i64 9269}
+!425 = !{i64 9286}
+!426 = !{i64 9295}
+!427 = !{i64 9302}
+!428 = !{i64 9319}
+!429 = !{i64 9328}
+!430 = !{i64 9336}
+!431 = !{i64 9353}
+!432 = !{i64 9361}
+!433 = !{i64 9364}
+!434 = !{i64 9373}
+!435 = !{i64 9386}
+!436 = !{i64 9401}
+!437 = !{i64 9418}
+!438 = !{i64 9431}
+!439 = !{i64 9444}
+!440 = !{i64 9451}
+!441 = !{i64 9467}
+!442 = !{i64 9476}
+!443 = !{i64 9483}
+!444 = !{i64 9499}
+!445 = !{i64 9508}
+!446 = !{i64 9515}
+!447 = !{i64 9532}
+!448 = !{i64 9541}
+!449 = !{i64 9548}
+!450 = !{i64 9567}
+!451 = !{i64 9577}
+!452 = !{i64 9584}
+!453 = !{i64 9601}
+!454 = !{i64 9610}
+!455 = !{i64 9617}
+!456 = !{i64 9633}
+!457 = !{i64 9642}
+!458 = !{i64 9649}
+!459 = !{i64 9665}
+!460 = !{i64 9674}
+!461 = !{i64 9679}
+!462 = !{i64 9684}
+!463 = !{i64 9691}
+!464 = !{i64 9698}
+!465 = !{i64 9714}
+!466 = !{i64 9723}
+!467 = !{i64 9730}
+!468 = !{i64 9747}
+!469 = !{i64 9756}
+!470 = !{i64 9760}
+!471 = !{i64 9774}
+!472 = !{i64 9775}
+!473 = !{i64 9786}
+!474 = !{i64 9797}
+!475 = !{i64 9803}
+!476 = !{i64 9801}
+!477 = !{i64 9822}
+!478 = !{i64 9833}
+!479 = !{i64 9840}
+!480 = !{i64 9847}
+!481 = !{i64 9853}
+!482 = !{i64 9854}
+!483 = !{i64 9859}
+!484 = !{i64 9867}
+!485 = !{i64 9878}
+!486 = !{i64 9898}
+!487 = !{i64 9907}
+!488 = !{i64 9915}
+!489 = !{i64 9928}
+!490 = !{i64 9931}
+!491 = !{i64 9934}
+!492 = !{i64 9956}
+!493 = !{i64 9958}
+!494 = !{i64 9969}
+!495 = !{i64 9982}
+!496 = !{i64 9988}
+!497 = !{i64 9991}
+!498 = !{i64 9993}
+!499 = !{i64 10001}
+!500 = !{i64 10004}
+!501 = !{i64 10007}
+!502 = !{i64 10024}
+!503 = !{i64 10028}
+!504 = !{i64 10036}
+!505 = !{i64 10038}
+!506 = !{i64 10047}
+!507 = !{i64 10056}
+!508 = !{i64 10069}
+!509 = !{i64 10085}
+!510 = !{i64 10090}
+!511 = !{i64 10101}
+!512 = !{i64 10104}
+!513 = !{i64 10115}
+!514 = !{i64 10124}
+!515 = !{i64 10133}
+!516 = !{i64 10146}
+!517 = !{i64 10149}
+!518 = !{i64 10157}
+!519 = !{i64 10173}
+!520 = !{i64 10177}
+!521 = !{i64 10187}
+!522 = !{i64 10200}
+!523 = !{i64 10202}
+!524 = !{i64 10211}
+!525 = !{i64 10217}
+!526 = !{i64 10220}
+!527 = !{i64 10228}
+!528 = !{i64 10236}
+!529 = !{i64 10244}
+!530 = !{i64 10260}
+!531 = !{i64 10262}
+!532 = !{i64 10273}
+!533 = !{i64 10290}
+!534 = !{i64 10301}
+!535 = !{i64 10303}
+!536 = !{i64 10310}
+!537 = !{i64 10323}
+!538 = !{i64 10332}
+!539 = !{i64 10334}
+!540 = !{i64 10349}
+!541 = !{i64 10356}
+!542 = !{i64 10361}
+!543 = !{i64 10364}
+!544 = !{i64 10368}
+!545 = !{i64 10370}
+!546 = !{i64 10377}
+!547 = !{i64 10380}
+!548 = !{i64 10382}
+!549 = !{i64 10388}
+!550 = !{i64 10391}
+!551 = !{i64 10402}
+!552 = !{i64 10415}
+!553 = !{i64 10429}
+!554 = !{i64 10431}
+!555 = !{i64 10433}
+!556 = !{i64 10444}
+!557 = !{i64 10449}
+!558 = !{i64 10452}
+!559 = !{i64 10458}
+!560 = !{i64 10461}
+!561 = !{i64 10472}
+!562 = !{i64 10474}
+!563 = !{i64 10481}
+!564 = !{i64 10494}
+!565 = !{i64 10497}
+!566 = !{i64 10500}
+!567 = !{i64 10505}
+!568 = !{i64 10510}
+!569 = !{i64 10513}
+!570 = !{i64 10515}
+!571 = !{i64 10517}
+!572 = !{i64 10525}
+!573 = !{i64 10533}
+!574 = !{i64 10543}
+!575 = !{i64 10550}
+!576 = !{i64 10559}
+!577 = !{i64 10572}
+!578 = !{i64 10576}
+!579 = !{i64 10585}
+!580 = !{i64 10595}
+!581 = !{i64 10602}
+!582 = !{i64 10611}
+!583 = !{i64 10621}
+!584 = !{i64 10630}
+!585 = !{i64 10634}
+!586 = !{i64 10647}
+!587 = !{i64 10664}
+!588 = !{i64 10680}
+!589 = !{i64 10692}
+!590 = !{i64 10701}
+!591 = !{i64 10711}
+!592 = !{i64 10720}
+!593 = !{i64 10724}
+!594 = !{i64 10737}
+!595 = !{i64 10755}
+!596 = !{i64 10763}
+!597 = !{i64 10772}
+!598 = !{i64 10780}
+!599 = !{i64 10788}
+!600 = !{i64 10797}
+!601 = !{i64 10810}
+!602 = !{i64 10813}
+!603 = !{i64 10818}
+!604 = !{i64 10827}
+!605 = !{i64 10837}
+!606 = !{i64 10844}
+!607 = !{i64 10853}
+!608 = !{i64 10869}
+!609 = !{i64 10877}
+!610 = !{i64 10887}
+!611 = !{i64 10896}
+!612 = !{i64 10900}
+!613 = !{i64 10913}
+!614 = !{i64 10930}
+!615 = !{i64 10946}
+!616 = !{i64 10958}
+!617 = !{i64 10967}
+!618 = !{i64 10983}
+!619 = !{i64 10991}
+!620 = !{i64 11001}
+!621 = !{i64 11010}
+!622 = !{i64 11014}
+!623 = !{i64 11027}
+!624 = !{i64 11044}
+!625 = !{i64 11060}
+!626 = !{i64 11072}
+!627 = !{i64 11081}
+!628 = !{i64 11097}
+!629 = !{i64 11105}
+!630 = !{i64 11121}
+!631 = !{i64 11126}
+!632 = !{i64 11131}
+!633 = !{i64 11141}
+!634 = !{i64 11151}
+!635 = !{i64 11160}
+!636 = !{i64 11164}
+!637 = !{i64 11173}
+!638 = !{i64 11183}
+!639 = !{i64 11192}
+!640 = !{i64 11196}
+!641 = !{i64 11209}
+!642 = !{i64 11227}
+!643 = !{i64 11238}
+!644 = !{i64 11245}
+!645 = !{i64 11253}
+!646 = !{i64 11262}
+!647 = !{i64 11264}
+!648 = !{i64 11273}
+!649 = !{i64 11281}
+!650 = !{i64 11289}
+!651 = !{i64 11305}
+!652 = !{i64 11313}
+!653 = !{i64 11323}
+!654 = !{i64 11332}
+!655 = !{i64 11336}
+!656 = !{i64 11349}
+!657 = !{i64 11366}
+!658 = !{i64 11382}
+!659 = !{i64 11394}
+!660 = !{i64 11403}
+!661 = !{i64 11416}
+!662 = !{i64 11418}
+!663 = !{i64 11421}
+!664 = !{i64 11428}
+!665 = !{i64 11430}
+!666 = !{i64 11433}
+!667 = !{i64 11439}
+!668 = !{i64 11448}
+!669 = !{i64 11450}
+!670 = !{i64 11457}
+!671 = !{i64 11467}
+!672 = !{i64 11480}
+!673 = !{i64 11482}
+!674 = !{i64 11485}
+!675 = !{i64 11492}
+!676 = !{i64 11494}
+!677 = !{i64 11497}
+!678 = !{i64 11503}
+!679 = !{i64 11512}
+!680 = !{i64 11514}
+!681 = !{i64 11521}
+!682 = !{i64 11531}
+!683 = !{i64 11544}
+!684 = !{i64 11546}
+!685 = !{i64 11549}
+!686 = !{i64 11556}
+!687 = !{i64 11558}
+!688 = !{i64 11561}
+!689 = !{i64 11567}
+!690 = !{i64 11576}
+!691 = !{i64 11578}
+!692 = !{i64 11585}
+!693 = !{i64 11591}
+!694 = !{i64 11596}
+!695 = !{i64 11605}
+!696 = !{i64 11615}
+!697 = !{i64 11624}
+!698 = !{i64 11628}
+!699 = !{i64 11637}
+!700 = !{i64 11650}
+!701 = !{i64 11655}
+!702 = !{i64 11662}
+!703 = !{i64 11665}
+!704 = !{i64 11672}
+!705 = !{i64 11677}
+!706 = !{i64 11680}
+!707 = !{i64 11684}
+!708 = !{i64 11693}
+!709 = !{i64 11706}
+!710 = !{i64 11711}
+!711 = !{i64 11718}
+!712 = !{i64 11721}
+!713 = !{i64 11728}
+!714 = !{i64 11733}
+!715 = !{i64 11736}
+!716 = !{i64 11740}
+!717 = !{i64 11749}
+!718 = !{i64 11762}
+!719 = !{i64 11767}
+!720 = !{i64 11774}
+!721 = !{i64 11777}
+!722 = !{i64 11784}
+!723 = !{i64 11789}
+!724 = !{i64 11792}
+!725 = !{i64 11796}
+!726 = !{i64 11805}
+!727 = !{i64 11818}
+!728 = !{i64 11823}
+!729 = !{i64 11830}
+!730 = !{i64 11833}
+!731 = !{i64 11840}
+!732 = !{i64 11845}
+!733 = !{i64 11848}
+!734 = !{i64 11852}
+!735 = !{i64 11865}
+!736 = !{i64 11879}
+!737 = !{i64 11886}
+!738 = !{i64 11897}
+!739 = !{i64 11908}
+!740 = !{i64 11919}
+!741 = !{i64 11922}
+!742 = !{i64 11933}
+!743 = !{i64 11941}
+!744 = !{i64 11950}
+!745 = !{i64 11958}
+!746 = !{i64 11964}
+!747 = !{i64 11966}
+!748 = !{i64 11975}
+!749 = !{i64 11983}
+!750 = !{i64 11991}
+!751 = !{i64 12007}
+!752 = !{i64 12015}
+!753 = !{i64 12020}
+!754 = !{i64 12032}
+!755 = !{i64 12045}
+!756 = !{i64 12051}
+!757 = !{i64 12054}
+!758 = !{i64 12059}
+!759 = !{i64 12064}
+!760 = !{i64 12066}
+!761 = !{i64 12076}
+!762 = !{i64 12088}
+!763 = !{i64 12092}
+!764 = !{i64 12099}
+!765 = !{i64 12112}
+!766 = !{i64 12117}
+!767 = !{i64 12119}
+!768 = !{i64 12121}
+!769 = !{i64 12126}
+!770 = !{i64 12132}
+!771 = !{i64 12135}
+!772 = !{i64 12137}
+!773 = !{i64 12146}
+!774 = !{i64 12152}
+!775 = !{i64 12161}
+!776 = !{i64 12174}
+!777 = !{i64 12176}
+!778 = !{i64 12182}
+!779 = !{i64 12187}
+!780 = !{i64 12190}
+!781 = !{i64 12196}
+!782 = !{i64 12203}
+!783 = !{i64 12211}
+!784 = !{i64 12227}
+!785 = !{i64 12238}
+!786 = !{i64 12249}
+!787 = !{i64 12304}
+!788 = !{i64 12315}
+!789 = !{i64 12328}
+!790 = !{i64 12336}
+!791 = !{i64 12341}
+!792 = !{i64 12349}
+!793 = !{i64 12353}
+!794 = !{i64 12361}
+!795 = !{i64 12374}
+!796 = !{i64 12383}
+!797 = !{i64 12392}
+!798 = !{i64 12405}
+!799 = !{i64 12411}
+!800 = !{i64 12422}
+!801 = !{i64 12428}
+!802 = !{i64 12434}
+!803 = !{i64 12442}
+!804 = !{i64 12444}
+!805 = !{i64 12451}
+!806 = !{i64 12461}
+!807 = !{i64 12465}
+!808 = !{i64 12470}
+!809 = !{i64 12476}
+!810 = !{i64 12484}
+!811 = !{i64 12487}
+!812 = !{i64 12495}
+!813 = !{i64 12503}
+!814 = !{i64 12516}
+!815 = !{i64 12520}
+!816 = !{i64 12529}
+!817 = !{i64 12542}
+!818 = !{i64 12551}
+!819 = !{i64 12562}
+!820 = !{i64 12587}
+!821 = !{i64 12593}
+!822 = !{i64 12595}
+!823 = !{i64 12604}
+!824 = !{i64 12610}
+!825 = !{i64 12616}
+!826 = !{i64 12621}
+!827 = !{i64 12629}
+!828 = !{i64 12634}
+!829 = !{i64 12639}
+!830 = !{i64 12643}
+!831 = !{i64 12648}
+!832 = !{i64 12654}
+!833 = !{i64 12670}
+!834 = !{i64 12679}
+!835 = !{i64 12692}
+!836 = !{i64 12696}
+!837 = !{i64 12708}
+!838 = !{i64 12729}
+!839 = !{i64 12739}
+!840 = !{i64 12750}
+!841 = !{i64 12771}
+!842 = !{i64 12781}
+!843 = !{i64 12789}
+!844 = !{i64 12805}
+!845 = !{i64 12813}
+!846 = !{i64 12829}
+!847 = !{i64 12837}
+!848 = !{i64 12853}
+!849 = !{i64 12861}
+!850 = !{i64 12877}
+!851 = !{i64 12885}
+!852 = !{i64 12901}
+!853 = !{i64 12909}
+!854 = !{i64 12919}
+!855 = !{i64 12928}
+!856 = !{i64 12932}
+!857 = !{i64 12941}
+!858 = !{i64 12951}
+!859 = !{i64 12960}
+!860 = !{i64 12964}
+!861 = !{i64 12977}
+!862 = !{i64 12994}
+!863 = !{i64 13010}
+!864 = !{i64 13022}
+!865 = !{i64 13035}
+!866 = !{i64 13053}
+!867 = !{i64 13061}
+!868 = !{i64 13070}
+!869 = !{i64 13077}
+!870 = !{i64 13089}
+!871 = !{i64 13107}
+!872 = !{i64 13115}
+!873 = !{i64 13124}
+!874 = !{i64 13131}
+!875 = !{i64 13142}
+!876 = !{i64 13163}
+!877 = !{i64 13173}
+!878 = !{i64 13184}
+!879 = !{i64 13204}
+!880 = !{i64 13214}
+!881 = !{i64 13227}
+!882 = !{i64 13244}
+!883 = !{i64 13258}
+!884 = !{i64 13260}
+!885 = !{i64 13262}
+!886 = !{i64 13270}
+!887 = !{i64 13286}
+!888 = !{i64 13301}
+!889 = !{i64 13306}
+!890 = !{i64 13312}
+!891 = !{i64 13323}
+!892 = !{i64 13334}
+!893 = !{i64 13357}
+!894 = !{i64 13366}
+!895 = !{i64 13374}
+!896 = !{i64 13388}
+!897 = !{i64 13400}
+!898 = !{i64 13419}
+!899 = !{i64 13433}
+!900 = !{i64 13435}
+!901 = !{i64 13439}
+!902 = !{i64 13450}
+!903 = !{i64 13471}
+!904 = !{i64 13481}
+!905 = !{i64 13493}
+!906 = !{i64 13513}
+!907 = !{i64 13526}
+!908 = !{i64 13540}
+!909 = !{i64 13548}
+!910 = !{i64 13559}
+!911 = !{i64 13570}
+!912 = !{i64 13591}
+!913 = !{i64 13601}
+!914 = !{i64 13612}
+!915 = !{i64 13632}
+!916 = !{i64 13642}
+!917 = !{i64 13654}
+!918 = !{i64 13671}
+!919 = !{i64 13685}
+!920 = !{i64 13687}
+!921 = !{i64 13689}
+!922 = !{i64 13697}
+!923 = !{i64 13715}
+!924 = !{i64 13720}
+!925 = !{i64 13726}
+!926 = !{i64 13734}
+!927 = !{i64 13746}
+!928 = !{i64 13769}
+!929 = !{i64 13782}
+!930 = !{i64 13785}
+!931 = !{i64 13788}
+!932 = !{i64 13801}
+!933 = !{i64 13818}
+!934 = !{i64 13835}
+!935 = !{i64 13843}
+!936 = !{i64 13850}
+!937 = !{i64 13862}
+!938 = !{i64 13879}
+!939 = !{i64 13888}
+!940 = !{i64 13900}
+!941 = !{i64 13917}
+!942 = !{i64 13926}
+!943 = !{i64 13934}
+!944 = !{i64 13948}
+!945 = !{i64 13950}
+!946 = !{i64 13961}
+!947 = !{i64 13975}
+!948 = !{i64 13977}
+!949 = !{i64 13987}
+!950 = !{i64 13992}
+!951 = !{i64 14000}
+!952 = !{i64 14012}
+!953 = !{i64 14029}
+!954 = !{i64 14038}
+!955 = !{i64 14046}
+!956 = !{i64 14060}
+!957 = !{i64 14069}
+!958 = !{i64 14074}
+!959 = !{i64 14081}
+!960 = !{i64 14093}
+!961 = !{i64 14110}
+!962 = !{i64 14127}
+!963 = !{i64 14135}
+!964 = !{i64 14142}
+!965 = !{i64 14154}
+!966 = !{i64 14171}
+!967 = !{i64 14180}
+!968 = !{i64 14192}
+!969 = !{i64 14209}
+!970 = !{i64 14218}
+!971 = !{i64 14220}
+!972 = !{i64 14231}
+!973 = !{i64 14236}
+!974 = !{i64 14241}
+!975 = !{i64 14245}
+!976 = !{i64 14255}
+!977 = !{i64 14260}
+!978 = !{i64 14268}
+!979 = !{i64 14280}
+!980 = !{i64 14297}
+!981 = !{i64 14306}
+!982 = !{i64 14318}
+!983 = !{i64 14335}
+!984 = !{i64 14345}
+!985 = !{i64 14356}
+!986 = !{i64 14373}
+!987 = !{i64 14382}
+!988 = !{i64 14394}
+!989 = !{i64 14411}
+!990 = !{i64 14420}
+!991 = !{i64 14432}
+!992 = !{i64 14449}
+!993 = !{i64 14457}
+!994 = !{i64 14460}
+!995 = !{i64 14472}
+!996 = !{i64 14489}
+!997 = !{i64 14499}
+!998 = !{i64 14510}
+!999 = !{i64 14527}
+!1000 = !{i64 14536}
+!1001 = !{i64 14548}
+!1002 = !{i64 14565}
+!1003 = !{i64 14574}
+!1004 = !{i64 14586}
+!1005 = !{i64 14603}
+!1006 = !{i64 14611}
+!1007 = !{i64 14614}
+!1008 = !{i64 14626}
+!1009 = !{i64 14642}
+!1010 = !{i64 14657}
+!1011 = !{i64 14667}
+!1012 = !{i64 14678}
+!1013 = !{i64 14694}
+!1014 = !{i64 14703}
+!1015 = !{i64 14714}
+!1016 = !{i64 14730}
+!1017 = !{i64 14739}
+!1018 = !{i64 14750}
+!1019 = !{i64 14767}
+!1020 = !{i64 14776}
+!1021 = !{i64 14788}
+!1022 = !{i64 14804}
+!1023 = !{i64 14819}
+!1024 = !{i64 14829}
+!1025 = !{i64 14840}
+!1026 = !{i64 14856}
+!1027 = !{i64 14865}
+!1028 = !{i64 14876}
+!1029 = !{i64 14892}
+!1030 = !{i64 14901}
+!1031 = !{i64 14912}
+!1032 = !{i64 14929}
+!1033 = !{i64 14938}
+!1034 = !{i64 14946}
+!1035 = !{i64 14960}
+!1036 = !{i64 14972}
+!1037 = !{i64 14988}
+!1038 = !{i64 14998}
+!1039 = !{i64 15007}
+!1040 = !{i64 15020}
+!1041 = !{i64 15028}
+!1042 = !{i64 15039}
+!1043 = !{i64 15056}
+!1044 = !{i64 15065}
+!1045 = !{i64 15076}
+!1046 = !{i64 15092}
+!1047 = !{i64 15101}
+!1048 = !{i64 15112}
+!1049 = !{i64 15128}
+!1050 = !{i64 15137}
+!1051 = !{i64 15148}
+!1052 = !{i64 15164}
+!1053 = !{i64 15174}
+!1054 = !{i64 15185}
+!1055 = !{i64 15202}
+!1056 = !{i64 15211}
+!1057 = !{i64 15222}
+!1058 = !{i64 15238}
+!1059 = !{i64 15247}
+!1060 = !{i64 15258}
+!1061 = !{i64 15274}
+!1062 = !{i64 15283}
+!1063 = !{i64 15294}
+!1064 = !{i64 15310}
+!1065 = !{i64 15318}
+!1066 = !{i64 15323}
+!1067 = !{i64 15327}
+!1068 = !{i64 15335}
+!1069 = !{i64 15340}
+!1070 = !{i64 15347}
+!1071 = !{i64 15355}
+!1072 = !{i64 15369}
+!1073 = !{i64 15380}
+!1074 = !{i64 15396}
+!1075 = !{i64 15405}
+!1076 = !{i64 15416}
+!1077 = !{i64 15433}
+!1078 = !{i64 15442}
+!1079 = !{i64 15451}
+!1080 = !{i64 15456}
+!1081 = !{i64 15463}
+!1082 = !{i64 15474}
+!1083 = !{i64 15490}
+!1084 = !{i64 15499}
+!1085 = !{i64 15510}
+!1086 = !{i64 15527}
+!1087 = !{i64 15536}
+!1088 = !{i64 15544}
+!1089 = !{i64 15558}
+!1090 = !{i64 15566}
+!1091 = !{i64 15580}
+!1092 = !{i64 15588}
+!1093 = !{i64 15602}
+!1094 = !{i64 15614}
+!1095 = !{i64 15624}
+!1096 = !{i64 15633}
+!1097 = !{i64 15642}
+!1098 = !{i64 15652}
+!1099 = !{i64 15665}
+!1100 = !{i64 15682}
+!1101 = !{i64 15698}
+!1102 = !{i64 15710}
+!1103 = !{i64 15722}
+!1104 = !{i64 15732}
+!1105 = !{i64 15741}
+!1106 = !{i64 15750}
+!1107 = !{i64 15760}
+!1108 = !{i64 15773}
+!1109 = !{i64 15790}
+!1110 = !{i64 15806}
+!1111 = !{i64 15818}
+!1112 = !{i64 15831}
+!1113 = !{i64 15842}
+!1114 = !{i64 15851}
+!1115 = !{i64 15856}
+!1116 = !{i64 15859}
+!1117 = !{i64 15865}
+!1118 = !{i64 15867}
+!1119 = !{i64 15876}
+!1120 = !{i64 15885}
+!1121 = !{i64 15896}
+!1122 = !{i64 15907}
+!1123 = !{i64 15918}
+!1124 = !{i64 15936}
+!1125 = !{i64 15949}
+!1126 = !{i64 15954}
+!1127 = !{i64 15959}
+!1128 = !{i64 15972}
+!1129 = !{i64 15974}
+!1130 = !{i64 15981}
+!1131 = !{i64 15997}
+!1132 = !{i64 16014}
+!1133 = !{i64 16030}
+!1134 = !{i64 16042}
+!1135 = !{i64 16047}
+!1136 = !{i64 16052}
+!1137 = !{i64 16062}
+!1138 = !{i64 16064}
+!1139 = !{i64 16071}
+!1140 = !{i64 16084}
+!1141 = !{i64 16094}
+!1142 = !{i64 16103}
+!1143 = !{i64 16105}
+!1144 = !{i64 16114}
+!1145 = !{i64 16127}
+!1146 = !{i64 16142}
+!1147 = !{i64 16152}
+!1148 = !{i64 16157}
+!1149 = !{i64 16162}
+!1150 = !{i64 16175}
+!1151 = !{i64 16192}
+!1152 = !{i64 16208}
+!1153 = !{i64 16220}
+!1154 = !{i64 16225}
+!1155 = !{i64 16230}
+!1156 = !{i64 16242}
+!1157 = !{i64 16252}
+!1158 = !{i64 16261}
+!1159 = !{i64 16270}
+!1160 = !{i64 16280}
+!1161 = !{i64 16293}
+!1162 = !{i64 16310}
+!1163 = !{i64 16326}
+!1164 = !{i64 16338}
+!1165 = !{i64 16342}
+!1166 = !{i64 16346}
+!1167 = !{i64 16357}
+!1168 = !{i64 16371}
+!1169 = !{i64 16382}
+!1170 = !{i64 16384}
+!1171 = !{i64 16388}
+!1172 = !{i64 16399}
+!1173 = !{i64 16405}
+!1174 = !{i64 16408}
+!1175 = !{i64 16434}
+!1176 = !{i64 16440}
+!1177 = !{i64 16443}
+!1178 = !{i64 16449}
+!1179 = !{i64 16468}
+!1180 = !{i64 16479}
+!1181 = !{i64 16488}

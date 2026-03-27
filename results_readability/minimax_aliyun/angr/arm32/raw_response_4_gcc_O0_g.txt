@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Nearly all variables use generic names (v0, v1, v2, a0, a1, v3, v4, etc.). For example, in `cdecl_func`, parameters are named `a0` and `a1` instead of the original `a` and `b`. The decompiler makes no attempt to infer semantic meaning from usage patterns.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Some functions retain original names (cdecl_func, stdcall_func, fastcall_func, varargs_func), but many use mechanical patterns like `sub_10408`, `call_weak_fn`, `param_by_value_int`. The naming is inconsistent - some test functions are recovered correctly while others are not.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals like "Hello", "test", "abc", "def" are preserved correctly. However, magic numbers like `4294967295` (0xFFFFFFFF) for -1 are unexplained. The value `1374389535` (0x50000000) and `1074339512` (0x40000008) representing double 3.14 are completely opaque.
+
+**4. Noise Reduction:** Score: 2/10  
+Justification: Severe noise pollution includes: (1) redundant function calls - `call_cdecl()` calls `cdecl_func(5, 10)` twice, (2) stack canary checks (`__stack_chk_guard`) add 10+ lines per function, (3) complex flag calculation functions like `armg_calculate_condition` and `armg_calculate_flag_c` pollute the code, (4) unused variable assignments throughout.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple functions like `cdecl_func` have natural control flow. However, functions like `param_double_ptr` use goto-based conditional logic that obscures the original if-else structure. The `call_order_dep` function shows awkward increment sequencing instead of the original `++i, ++i` expression.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions are appropriately sized and separated. The decompiler correctly separates test functions (test_calling_conventions, test_parameter_passing, test_return_values). However, some library functions like `__aeabi_dadd` are massive 200+ line functions that could be better handled.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but there are forward jumps (LABEL_104e4, LABEL_10500) that disrupt flow. The `call_order_dep` function has awkward sequencing where `v0 += 1; v0 += 1;` replaces the original single expression.
+
+**8. Redundancy Elimination:** Score: 2/10  
+Justification: Critical defect: nearly every "call_*" wrapper function calls the target function twice redundantly. For example, `call_cdecl()` computes `v0 = cdecl_func(5, 10); return cdecl_func(5, 10);` - the function is called twice with identical arguments. This is a major readability issue.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Parameters are almost universally typed as `unsigned int` when the original uses `int`. Function `param_string` correctly uses `char *a0`, but most others use generic types. The original `int (*callback)(int)` became `unsigned int *a0` losing both the function pointer type and const correctness.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Partial struct recovery exists - `struct_0` is defined for `param_double_ptr` but with generic field names. The original `SmallStruct` with fields `x, y` became `unsigned int *a0` with pointer arithmetic. LargeStruct was partially recovered but field names are lost.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Several unsafe patterns exist: (1) `param_ptr_array` uses `*((char *)*((int *)(a0 + i * 4)))` - unsafe cast chain, (2) `ret_opaque_handle` returns `(a0 ? 143432 : "d")` mixing int and string return types, (3) pointer arithmetic without bounds checking in array access.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: No meaningful comments exist in the decompiled output. The original source has extensive comments explaining each test case (CALL-L1-01, PARAM-L1-01, etc.) but none are recovered. Auto-generated annotations like `/* do not return */` are present but minimal.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Basic patterns like function calls and loops are recognized. However, the original's test framework structure (calling conventions tests, parameter passing tests, return value tests) is not identified. The varargs pattern is partially recognized but poorly reconstructed.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No flagging of suspicious code. The redundant double function calls are not flagged as anomalies. The unusual `call_order_dep` behavior (undefined behavior in original) is presented as normal code without warning.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original's null checks (e.g., `if (!p) return -1` in func_struct_byptr) are partially preserved in logic but not explicitly documented as contracts.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships are visible in the code (e.g., test_calling_conventions calls call_cdecl, call_stdcall, etc.). However, the purpose of each test function and its relationship to source test cases (CALL-L1-01, etc.) is not documented.
+
+**17. Module Organization:** Score: 3/10  
+Justification: All functions are in a single monolithic output. The original's logical grouping (calling conventions section, parameter passing section, return values section) is not reflected in the decompiled output organization.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Many functions have proper signatures but some are incorrect (e.g., `ret_opaque_handle` returns `int` instead of `void*`). External dependencies like `GLIBC_2.4::__stack_chk_guard` are declared but the code would require significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 3.6/10
+
+**Critical Defects:**
+- Variable naming is universally generic (v0, v1, a0, a1) with no semantic inference
+- Redundant function calls - every wrapper function calls its target twice
+- No comments or documentation recovered from the extensively commented source
+- Type precision severely degraded - all parameters become unsigned int
+- Stack canary and flag calculation noise dominates library functions
+
+**Best Quality Aspect:** Function Decomposition (7/10)  
+Functions are appropriately separated and sized. The test framework functions (test_calling_conventions, test_parameter_passing, test_return_values) are correctly identified and separated from the functions they test.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The decompiler makes no attempt to infer meaningful variable names from usage patterns. Parameters like `a0`, `a1` should be named based on their role (e.g., `count`, `sum`, `ptr`) based on how they're used in the function body.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage**: Analyze how parameters are used (e.g., `*p` dereferenced → `ptr`, `a0 * 2` → `multiplier`) to generate semantic names instead of generic `a0`, `a1`
+2. **Eliminate redundant function calls**: The pattern `v0 = func(x); return func(x);` should be recognized as redundant and simplified to single call
+3. **Recover comments from debug symbols**: Since the original was compiled with `-g`, recover the extensive source comments (CALL-L1-01, PARAM-L2-06, etc.) that document each test case's purpose

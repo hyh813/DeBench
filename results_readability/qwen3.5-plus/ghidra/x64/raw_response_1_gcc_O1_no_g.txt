@@ -1,0 +1,123 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names (`param_1`, `iVar1`, `uVar2`, `local_28`) with no semantic meaning. Original source had meaningful names like `temp1`, `sum`, `count`, `result` that indicated purpose.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`sequential_ops`, `nested_if_2`, `loop_for_fixed`). Helper functions like `op_add`, `double_value` also retained. Only startup functions (`_init`, `FUN_00101020`) are generic.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers appear as hex (`0x14`, `0x1e`, `0xffffffff`) without explanation. Original source used decimal with comments. Some values like `100`, `200`, `300` are clear but many require reverse engineering.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__stack_chk_fail()`, `in_FS_OFFSET`, `local_10`) add boilerplate to most functions. Warnings about unreachable blocks present. At `-O0` this noise is unexpected and reduces clarity.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most loops recovered as `do-while` structures. However, `switch_small` became nested if-else instead of switch. `switch_fallthrough` retains goto labels (`LAB_0010146c`). At `-O0`, control flow should match source more closely.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions maintain appropriate granularity matching source. Helper functions (`op_add`, `state_idle`) preserved as separate entities. No problematic inlining or fragmentation observed.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most code reads top-to-bottom but goto labels disrupt flow (`LAB_00101583` in `loop_break`, `LAB_001019d1` in `loop_multi_exit`). Early returns help but some forward jumps remain.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant variable initialization common (`iVar1 = 0; iVar2 = 0;`). Stack protection code duplicated across functions. Some condition checks appear multiple times in nested structures.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Return types degraded to `undefined8`, `undefined4`, `ulong` instead of `int`. `if_else` returns `bool` instead of `int`. Shift operations use `byte` for second parameter. Function pointers typed as generic `code *`.
+
+**10. Composite Type Recovery:** Score: 7/10  
+Justification: Arrays recovered as local variables (`local_28[6]`, `local_68[11]`). Function pointer arrays preserved. However, all fields use generic names (`local_10`, `local_28`) with no semantic meaning.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Unsafe casts present (`(int)param_1`, `(ulong)param_2`, `(uint)(param_1 >> 0x1f)`). Function pointer calls use generic types. Stack canary provides some safety but casts introduce potential issues.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Zero meaningful comments. Only auto-generated warnings ("WARNING: Subroutine does not return", "WARNING: Could not recover jumptable"). Original source had extensive Chinese documentation explaining each function's purpose and test cases.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Basic patterns recognized (switch, loops) but not named. `switch_fallthrough` pattern partially recovered with goto. No algorithm identification (factorial, digit counting) or design pattern documentation.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings present for unreachable blocks and jumptable recovery failures. However, warnings are generic ("Too many branches") without specific guidance. Stack check warnings don't explain why subroutine "does not return."
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `n > 0` for factorial). No postconditions or invariants. Error conditions not explained. Original source had test validation comments for each function.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but no call graph documentation. Global variable `jump_buffer` used without context. Callback relationships visible (`process_with_callback`) but not documented as such.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All 72 functions in single output file. No header separation. Test functions (`test_control_flow_l1/2/3`) grouped but not marked as test code. Static functions not clearly distinguished.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates successful compilation. External dependencies visible (`__printf_chk`, `puts`, `__stack_chk_fail`). Some GCC-specific constructs present but code appears compilable with appropriate headers.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50  × 0.30 = 1.65
+Level 2 (Structural):  (7+8+6+6)/4 = 6.75  × 0.25 = 1.69
+Level 3 (Type):        (6+7+6)/3   = 6.33  × 0.20 = 1.27
+Level 4 (Semantic):    (2+5+6+3)/4 = 4.00  × 0.15 = 0.60
+Level 5 (Contextual):  (5+6+7)/3   = 6.00  × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                                  5.81/10
+```
+
+**Overall Readability Score: 5.8/10**
+
+---
+
+### Critical Defects
+
+- **Variable names completely generic**: `param_1`, `iVar1`, `uVar2` provide zero semantic information compared to original `temp1`, `sum`, `count`
+- **Zero meaningful comments**: All original documentation lost; only auto-generated warnings remain
+- **Type degradation**: Return types changed to `undefined8`, `undefined4` instead of preserving `int`
+- **Switch statements converted to if-else**: `switch_small` became nested conditionals instead of switch-case
+- **Stack protection noise**: Every function has `in_FS_OFFSET`, `local_10`, `__stack_chk_fail()` boilerplate
+
+---
+
+### Best Quality Aspect
+
+- **Function Naming Quality (8/10)** - Most function names preserved accurately from source (`sequential_ops`, `nested_if_deep`, `loop_for_fixed`), making function identification straightforward.
+
+---
+
+### Most Needs Improvement
+
+- **Comment Quality & Presence (2/10)** - Complete absence of semantic documentation; decompiler provides zero insight into algorithm purpose, test cases, or expected behavior that was extensively documented in source.
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Implement variable name inference from usage patterns** - Analyze how variables are used (e.g., `iVar2 = iVar2 + iVar1` in loop suggests `sum` and `counter`) and suggest semantic names.
+
+2. **Recover and preserve source comments where debug symbols exist** - At `-O0 -g`, debug information should enable comment recovery or at least function purpose documentation from symbol metadata.
+
+3. **Improve switch statement recognition** - Detect jump table patterns and consecutive comparison chains to recover switch-case structures instead of nested if-else (especially for `switch_small`, `switch_default`).

@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables are overwhelmingly generic (`param_1`, `local_10`, `uVar1`, `iVar1`, `puVar4`) instead of semantic names like `arr`, `head`, `sum`, `counter` from the original source.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`), but some lost (`FUN_00011030`) and helper functions like `__x86_get_pc_thunk_*` add noise.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `0x2a` (42), `0x14` (20), `0x6c6c6548` ("Hell" as hex). Original used readable constants and expressions.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Stack canary checks (`in_GS_OFFSET`, `__stack_chk_fail_local`) and compiler thunk functions (`__x86.get_pc_thunk.*`) add significant boilerplate not in original source.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Loop structures mostly preserved (for loops recognizable), but `stack_alias` function is broken with nonsensical comparison `&stack0x00000000 == (undefined1 *)0x14`.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries well-preserved; each original function maps to a decompiled function without inappropriate inlining or fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with early returns preserved; stack canary checks at function ends slightly disrupt flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No loop unrolling (O0 compilation), but redundant stack canary code and type casts from decompilation process add noise.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Significant type degradation: `undefined4`, `void*`, generic `int` replace specific types like `Point*`, `Node*`, `TreeNode*`, `size_t`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct definitions completely lost; `Point` accessed as `__ptr[0]`, `__ptr[1]`; `Node` linked list uses `local_2c[1]` for next pointer with no field names.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts (`(int)`, `(undefined4*)`); critical bug in `access_bss_buffer` returns `(int)bss_buffer` (address) instead of `bss_buffer[0]` (value).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No meaningful comments recovered; only decompiler warnings present ("WARNING: Function... replaced"). Original had extensive documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns (linked list traversal, tree creation, memory allocation) not identified or named; no algorithm hints provided.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings about function replacements and unreachable blocks, but critical issues (dangling pointer, double free risks) not flagged.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: NULL checks preserved in most functions, but no precondition/postcondition documentation; error return values unexplained.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls preserved; global variable references present but some names generic (`DAT_0001604c`); callback relationships visible.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single flat output; no file organization matching source sections; static functions preserved but no scoping information.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Missing type definitions (`Point`, `Node`, `TreeNode`); external dependencies not properly declared; requires significant patching to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (6+7+7+6)/4 = 6.50 × 0.25 = 1.625
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.800
+Level 4 (Semantic):    (2+3+5+4)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+5+4)/3   = 5.00 × 0.10 = 0.500
+─────────────────────────────────────────────────────────
+Overall Score:                                  = 5.025 ≈ 5.0/10
+```
+
+**Overall Readability Score: 5.0/10**
+
+### Critical Defects
+- **Variable `param_1`, `local_10`, `uVar1`** should be named based on usage (e.g., `input_value`, `loop_counter`, `result`)
+- **Struct types completely lost** - `Point`, `Node`, `TreeNode` accessed via raw pointer arithmetic (`__ptr[0]`, `__ptr[1]`)
+- **`access_bss_buffer` returns wrong value** - returns `(int)bss_buffer` (address) instead of `bss_buffer[0]` (first element)
+- **`stack_alias` function broken** - comparison `&stack0x00000000 == (undefined1 *)0x14` is nonsensical
+- **No comments recovered** - original had extensive documentation explaining each test case purpose
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Most original function names preserved accurately (`double_value`, `local_vars`, `heap_basic`, `linked_list_heap`), making function identification straightforward.
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Zero meaningful comments recovered despite original source having extensive documentation; decompiler provides only warning messages, not semantic explanations.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Recover struct/union type definitions** from memory access patterns - detect consistent field offsets and suggest named struct types instead of raw pointer arithmetic.
+2. **Infer variable names from usage context** - variables used in loops should be named `i`, `counter`; malloc results should be `ptr`, `buffer`; accumulators should be `sum`, `total`.
+3. **Preserve and enhance source comments** - when debug symbols (-g) are available, extract and embed original comments; when unavailable, generate semantic hints based on detected patterns.

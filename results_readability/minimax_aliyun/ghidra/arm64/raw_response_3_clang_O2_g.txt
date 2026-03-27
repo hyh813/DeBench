@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Extensive "Unresolved local var" comments throughout (e.g., "int a@[DW_OP_reg0(x0)]", "int i@[???]", "int * arr@[???]"). No meaningful variable names recovered - all are either unresolved or use cryptic DWARF expressions. This is a critical failure that severely impedes readability.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match source exactly (local_vars, heap_basic, global_var_access, memop_memset). Minor issues: some internal functions like FUN_001008e0 and some test functions have hardcoded literal values instead of computed results.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Mixed results - some literals clear (0x2a=42, 0x14=20 shown in hex), but magic numbers like 0xfffffffc00000000 in malloc calculations are unexplained. The hex notation obscures meaning compared to source constants.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant noise from "Unresolved local var" comments, DWARF debug expressions (DW_OP_reg0, DW_OP_piece), and CONCAT operations. Heavy loop unrolling in large_stack_frame creates massive code bloat (60+ lines for a simple loop).
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic control flow preserved but heavily transformed. The large_stack_frame function shows extreme loop unrolling (32 iterations expanded to 60+ lines of CONCAT operations). At -O0 this is unexpected; the binary path suggests clang -O2 was used instead.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Functions maintain reasonable granularity matching source. No monolithic functions observed. Parameter lists generally appropriate. Minor issues with some test functions inlining literal computations.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most code reads top-to-bottom. Early returns used appropriately in error-checking functions (heap_basic, alloca_usage). Some forward jumps in complex loops but manageable.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy from loop unrolling in large_stack_frame, vla_stack, alloca_usage, heap_basic, heap_array, memory_leak. Each has nearly identical unrolled loop patterns with CONCAT operations that obscure the simple original logic.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation - extensive use of undefined8, undefined4, void*. Integer types lost (int vs long vs size_t). Function pointers use generic _func_int_int type. The source used precise types like size_t, but these are lost.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Some struct recovery (Node, TreeNode, Point) with proper field access (node->data, node->next). However, field names sometimes generic. The linked_list_heap shows proper Node* usage but with some undefined4 casts.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Generally safe pointer usage but some concerning patterns. The dangling_pointer function correctly shows the dangerous access after free. Some unsafe casts in complex functions but no severe violations that would cause immediate undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Mostly useless auto-generated comments ("Unresolved local var", DWARF expressions). No algorithm explanations. The "WARNING: Unknown calling convention" appears frequently but provides no remediation guidance. No recovered source comments.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Some patterns recognizable (linked list traversal, tree traversal) but not explicitly named or documented. The source's clear patterns (malloc/free pairs, VLA, alloca) are present but not highlighted as idioms.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Some warnings present ("WARNING: Unknown calling convention", "WARNING: Removing unreachable block"). However, critical issues like the dangling_pointer vulnerability are not flagged as anomalies - the code is presented as normal.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No pre/postcondition recovery. No contract documentation. Null checks are present in code but not explained as preconditions. The source's explicit if (arr == NULL) checks are preserved but not documented as contracts.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (malloc, free, printf). Global variable usage visible (global_counter, global_array). But callback relationships (set_global_callback, call_global_callback) not well documented. No call graph information.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions logically grouped matching source: stack memory functions, heap functions, static/global functions, memory operation functions. Static vs extern distinction preserved. Minor arbitrary ordering within groups.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code would compile with stubs needed for external functions (extern_function, extern_global_var). No dependency documentation. Some type mismatches would require fixes. The test functions have hardcoded values that would need adjustment.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.8/10
+
+**Critical Defects:**
+- Variable naming completely failed - all locals show "Unresolved local var" with DWARF expressions instead of meaningful names
+- Extreme loop unrolling in 6+ functions (large_stack_frame, vla_stack, alloca_usage, heap_basic, heap_array, memory_leak) creating massive code bloat
+- Type precision severely degraded - extensive use of undefined8, undefined4, void* instead of concrete types
+- No useful comments - only auto-generated DWARF noise and generic warnings
+- Literal values shown in hex (0x2a, 0x14) instead of decimal, obscuring meaning
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Function names largely match the original source exactly, making it easy to identify which function is being analyzed.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The complete failure to recover any meaningful variable names is the single biggest impediment to readability. Every local variable shows as "Unresolved" with cryptic DWARF debug info.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., loop counter i, array arr[], result variable) to generate meaningful names instead of showing unresolved
+2. **Recognize and abstract loop unrolling**: The CONCAT44 patterns in vla_stack, alloca_usage, heap_basic clearly represent unrolled loops - recover as for loops with comments
+3. **Recover integer types from DWARF**: The debug info contains type information (int, unsigned long) - use it to replace undefined8/undefined4 with proper types

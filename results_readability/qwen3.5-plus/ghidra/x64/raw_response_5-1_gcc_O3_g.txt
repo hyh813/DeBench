@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most variables use generic names like `lVar1`, `sVar2`, `iVar1`, `puVar1` that obscure semantic meaning. Only a few variables like `obj`, `a`, `b`, `this` are meaningful, but critical variables like `capture_by_value` in lambda tests are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names are preserved well (`test_cpp_member_func`, `test_cpp_virtual_func`), but helper functions use cryptic names like `FUN_00101020`. Class method names are recovered with DWARF info (`Base::virtual_func`, `Container<int>::push`).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Heavy use of magic numbers without explanation (`0x125c`, `0x3e9`, `0x2a`, `0x47`, `0x28a`). These are optimized constants from the original calculations but provide no semantic context about what they represent.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant compiler artifacts present: stack canary checks (`__stack_chk_fail()`), frame pointer manipulation (`in_FS_OFFSET`), and explicit null-byte initialization loops (26 lines setting `obj.name[X] = '\0'`). These obscure the actual logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most functions have natural flow, but many test functions are completely optimized to constant returns losing all control structure. Stack canary checks create artificial conditional branches that don't exist in source.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function granularity is appropriate - each test function is separate. However, many functions are over-optimized (single return statements) losing the original decomposition intent. Class methods are properly separated.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom, but stack canary checks create forward jumps to `__stack_chk_fail()`. The explicit name initialization (26 sequential assignments) disrupts natural reading flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Severe redundancy in `test_cpp_member_func` and `test_cpp_oo_features` where `obj.name[0x1e] = '\0'` through `obj.name[0x1f] = '\0'` are written as 26 separate statements instead of a single `memset` or loop.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types are preserved (`int`, `double`, `long`, `size_t`), but many variables use generic `undefined4`, `undefined8`, `undefined1`. Pointer types are often `void*` or `long*` instead of specific class pointers.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `SimpleClass obj` is recognized but struct definition not shown. `Container<int>` and `Container<double>` methods recovered with DWARF info. Virtual inheritance structures show warnings about "ignoring overlapping field" indicating incomplete recovery.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present: `(undefined4 *)`, `(long *)`, `(char **)`. Virtual function calls show `(**obj->_vptr_Base)()` with warning "Could not recover jumptable". RTTI code has unresolved local variables marked with `[???]`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 6/10  
+Justification: Ghidra adds useful warnings ("WARNING: Unknown calling convention", "WARNING: Struct ignoring overlapping field"). DWARF prototype comments help (`/* DWARF original prototype: int virtual_func(Base * this, int x) */`). However, no semantic comments explaining what code does.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns or algorithm patterns identified. C++ idioms like RAII (smart pointers), virtual dispatch, and template instantiation are not explicitly recognized or documented. Lambda expressions completely lost.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good anomaly flagging: "WARNING: Could not recover jumptable", "Unresolved local var: RTTIDerivedA * derivedA@[???]", "WARNING: Subroutine does not return". These help identify decompilation uncertainty.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts lost (test_cpp_exception shows only throw, no catch recovery). No documentation of expected return values or error conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but virtual dispatch unclear. `test_cpp_oo_features` calls other test functions but intermediate variables marked "Unresolved local var". Global variables like `LifecycleClass::instance_count` referenced but not defined in output.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order (test functions, class methods, template instantiations). However, no header file structure, no namespace organization, and initialization functions (`_GLOBAL__sub_I_*`) mixed with application code.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code references external symbols (`__cxa_allocate_exception`, `operator_new`, `__printf_chk`) without declarations. Multiple undefined types (`EVP_PKEY_CTX`, `_func_int_varargs`). Would require significant stubbing to compile.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+3+5)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (6+7+6+4)/4 = 5.75 × 0.25 = 1.438
+Level 3 (Type):        (6+5+5)/3   = 5.33 × 0.20 = 1.067
+Level 4 (Semantic):    (6+3+7+2)/4 = 4.50 × 0.15 = 0.675
+Level 5 (Contextual):  (5+6+4)/3   = 5.00 × 0.10 = 0.500
+
+Overall Score: 5.105/10 ≈ 5.1/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **26 redundant null-byte assignments** in `test_cpp_member_func` instead of single `memset` or loop
+- **Magic numbers everywhere** (`0x125c`, `0x3e9`, `0x2a`, `0x47`) with no semantic meaning
+- **Generic variable names** (`lVar1`, `sVar2`, `iVar1`, `puVar1`) obscuring data purpose
+- **Optimization artifacts** - many test functions reduced to constant returns losing all original logic
+- **Unresolved variables** marked `[???]` in RTTI and exception handling code
+
+### Best Quality Aspect: **Anomaly Indication (7/10)**
+- Ghidra consistently flags uncertain decompilation with clear warnings about unresolved variables, unrecoverable jumptables, and struct field conflicts.
+
+### Most Needs Improvement: **Assertion & Contract Recovery (2/10)**
+- No documentation of function preconditions, postconditions, or expected behavior. Exception handling contracts completely lost, making it impossible to understand error handling semantics.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Detect and collapse redundant initialization patterns** - Recognize sequential same-value assignments as `memset()` or loop constructs
+2. **Recover semantic variable names from usage context** - Analyze how variables are used (e.g., `lVar1` used in size comparison should be `name_length`)
+3. **Document optimization-induced constant folding** - When functions return constants, add comments showing original computation (e.g., `// Optimized: 10 + 34 + 4660 = 4704`)

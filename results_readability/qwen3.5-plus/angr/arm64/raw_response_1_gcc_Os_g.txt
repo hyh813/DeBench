@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v0`, `v1`, `a0`, `a1`, `temp`) with no semantic meaning. For example, `sequential_ops` uses `a0`, `a1`, `a2` instead of `a`, `b`, `c`, and `loop_break` uses `v6` for what should be `index`.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core test function names are preserved (`sequential_ops`, `single_if`, `nested_if_2`), but runtime helpers use generic names (`sub_400954`, `sub_400a20`). Original intent is recoverable for main functions.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `4294967295` (UINT_MAX/-1), `4294967294`, `0x8000000000000000`. No constants defined. Expression `(a0 * 2 | a0 >> 31) & 4294967294` obscures simple signed arithmetic.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Stack canary checks (`__stack_chk_guard`) appear in nearly every function. Redundant operations like `sub_400954` calling `_setjmp()` twice. Compiler artifacts (`__ROL__`, `arm64g_calculate_condition`) pollute logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Basic structures recovered (if-else, for loops) but `call_func_ptr` uses `goto a0` instead of function call. `nested_if_2` lost the else branch logic entirely. `switch_fallthrough` uses goto labels instead of fall-through semantics.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized but `duffs_device` is incomplete (no return statement). Helper functions like `frame_dummy` and `register_tm_clones` are properly separated but add noise.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Stack check failures create non-linear exit paths. `switch_fallthrough` uses `LABEL_400d78` goto disrupting flow. Most functions read top-to-bottom but with frequent interruptions.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Stack canary checks repeated identically across functions. `sub_400954` and `sub_400b48` call same function twice unnecessarily. No dead code removal evident.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Original `int` parameters become `unsigned int` or `unsigned long long` inconsistently. `sequential_ops` takes `unsigned int` but original was `int`. Function pointers degraded to `unsigned long` (`call_func_ptr`).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Arrays represented as raw pointer arithmetic (`loop_break` uses `*((int *)((char *)&v1 + 4 * v6))`). Matrix in `loop_multi_exit` becomes `uint128_t` magic values. No struct recovery visible.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Function pointers treated as integers for `goto v2` in `conditional_func_ptr`. Implicit signed/unsigned casts throughout. `loop_dowhile` returns `v2 + 1` but `v2` is never initialized (bug).
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. No algorithm explanations, no decompilation confidence indicators. Only `/* do not return */` annotations on some functions.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Loop patterns recovered but not named. State machine functions (`state_machine`, `fsm_func_table`) not identified as such. No design pattern recognition visible.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. `goto` statements not flagged as unusual. `loop_dowhile` bug (uninitialized `v2`) not indicated. Silent failures throughout.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `duffs_device` requires `n > 0`). No postconditions inferred. Error conditions not documented despite visible return values.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (`g_412f78`, `jump_buffer`) referenced without explanation. No call graph information provided.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All functions in single flat output. No logical grouping by feature (L1/L2/L3 tests mixed). No header file structure or API declarations.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: External dependencies (`__stack_chk_guard`, `__printf_chk`) require stubs. Some functions marked `/* do not return */`. Would need moderate patching to compile standalone.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+3+4)/4 = 4.25  × 0.30 = 1.275
+Level 2 (Structural):  (5+6+5+5)/4 = 5.25  × 0.25 = 1.313
+Level 3 (Type):        (4+3+3)/3   = 3.33  × 0.20 = 0.666
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25  × 0.15 = 0.338
+Level 5 (Contextual):  (4+4+5)/3   = 4.33  × 0.10 = 0.433
+---------------------------------------------------------
+Overall Score:                                  = 4.02 ≈ 4.0/10
+```
+
+**Overall Readability Score:** 4.0/10
+
+### Critical Defects
+- **Variable names are entirely generic** (`v0`, `v1`, `a0`) losing all semantic meaning from original (`a`, `b`, `c`, `temp1`, `sum`)
+- **Type precision degraded** - original `int` becomes `unsigned int`/`unsigned long long` inconsistently, breaking signed arithmetic semantics
+- **Magic numbers everywhere** - `4294967295`, `4294967294` instead of `-1`, with no constant definitions
+- **Control flow corruption** - `call_func_ptr` uses `goto a0` instead of function call; `nested_if_2` lost else branch logic
+- **Zero semantic documentation** - no comments explaining algorithm intent, no anomaly warnings, no contract recovery
+
+### Best Quality Aspect
+- **Function Naming Quality (7/10)** - Core test function names preserved from source (`sequential_ops`, `single_if`, `loop_for_fixed`), making basic identification possible
+
+### Most Needs Improvement
+- **Comment Quality & Presence (2/10)** - Virtually no comments explaining logic, algorithms, or decompilation uncertainty; makes understanding intent nearly impossible
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Implement variable name inference** from usage patterns and debug symbols (e.g., `a0` → `a` when used in arithmetic matching source)
+2. **Recover type signatures from debug info** - preserve signed/unsigned distinction and original parameter types from `-g` symbols
+3. **Add decompilation confidence annotations** - flag uncertain reconstructions (goto-based calls, uninitialized variables) with warnings for manual review

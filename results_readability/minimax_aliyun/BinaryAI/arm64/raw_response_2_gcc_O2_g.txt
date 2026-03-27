@@ -1,0 +1,146 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+The decompiled code uses entirely generic variable names: `param_1`, `param_2`, `iVar1`, `lVar1`, `uVar1`, `piVar2`, `pcVar1`, `puVar5`. These provide no semantic meaning - for example, `param_1` in `process_char` should be `c` (the character being processed), and `iVar2` in `array_1d_stack` should be `sum`. The naming is completely non-descriptive and makes tracking variable purpose extremely difficult.
+
+### 2. Function Naming Quality
+**Score: 7/10**
+
+Most test function names are correctly preserved: `process_char`, `process_short`, `process_int`, `array_1d_stack`, `ptr_single`, `struct_simple`, etc. However, some internal functions have generic names like `FUN_001006d0`, `FUN_0010190c` (which is actually `__addtf3` for long double addition). The library functions are properly marked as `<EXTERNAL>`. The main issue is the few unrecovered function names.
+
+### 3. Literal Clarity
+**Score: 4/10**
+
+Test functions contain hardcoded literal values without explanation: `0x61` (should be 'a'), `0xb` (should be 11), `0x14` (should be 20). Magic numbers like `0xbfU` and `0x1a` in `process_char` are unexplained. The string format strings reference `DAT_` labels but aren't decoded. The decompiler shows raw values instead of meaningful constants, making it unclear what the test is verifying.
+
+### 4. Noise Reduction
+**Score: 3/10**
+
+Significant noise present: stack canary checks (`___stack_chk_guard`, `__stack_chk_fail`), external library stubs (`__libc_start_main`, `__printf_chk`), and jump table references (`CSWTCH_62`). The `binary_tree_sum` function contains massive amounts of unrolled code that appears as spaghetti. Many `undefined4`, `undefined8` types add noise. This makes it difficult to distinguish actual logic from compiler artifacts.
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 5/10**
+
+Basic control flow is recovered: loops use `do-while` constructs, conditionals are clear. However, the `binary_tree_sum` function has extremely convoluted flow with nested loops that are nearly impossible to follow. The `enum_switch` uses a jump table (`CSWTCH_62`) which is appropriate but not explained. Some goto-like patterns exist in complex functions. At -O0, the control flow should be nearly identical to source, but the decompiler introduces complexity.
+
+### 6. Function Decomposition
+**Score: 4/10**
+
+Test functions are inlined with hardcoded values, losing the call structure. The `binary_tree_sum` function is 200+ lines of unrolled code - this is a major decomposition failure. Functions like `test_array_types` contain all the test setup inline rather than calling helper functions. The original source had clean separation between test functions and tested functions, but this is lost.
+
+### 7. Code Linearization
+**Score: 5/10**
+
+Most functions read reasonably top-to-bottom, but the `binary_tree_sum` and `FUN_0010190c` (long double math) functions have extreme non-linearity with hundreds of labeled jumps. Forward jumps interrupt flow in several places. The test functions are reasonably linear but contain embedded data setup that disrupts readability.
+
+### 8. Redundancy Elimination
+**Score: 6/10**
+
+No significant dead code, but loop unrolling in `binary_tree_sum` is not commented or abstracted - it appears as repeated code blocks. At -O0, we wouldn't expect much optimization, so this is acceptable. The test functions have repeated patterns but that's expected from the source.
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 5/10**
+
+Basic types are correct: `int`, `long`, `char` are properly identified. However, the decompiler uses generic types like `undefined4`, `undefined8` for many values. Pointer types are mostly correct. The `process_bool` returns `uint` instead of `_Bool`. Const correctness is not preserved - `const_param` shows `int *param_1` without the const qualifier. Platform-specific types like `size_t` are not used.
+
+### 10. Composite Type Recovery
+**Score: 2/10**
+
+This is a critical failure. All structs are flattened to raw pointer arithmetic. For example, `struct_simple` accesses `*param_1`, `param_1[1]`, `param_1[2]` instead of `p->x`, `p->y`, `p->z`. The `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode` structures are completely lost - they're all just `int*` with manual offset calculations. Unions are not identified as such. This is the worst aspect of the decompilation.
+
+### 11. Type Safety
+**Score: 5/10**
+
+Some unsafe patterns present: extensive pointer arithmetic (e.g., `param_1 + lVar1` where `lVar1` is an index), no bounds checking in array access. The `ptr_void` function correctly handles type casting but the decompiler shows it as `uint *param_1` instead of `void *`. Function pointers use `code *` type which is generic. No `restrict` or alignment annotations.
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 1/10**
+
+No comments whatsoever in the decompiled output. The original source had extensive comments explaining each test case (e.g., "DT-L1-01: 字符类型", "测试: 大小写转换"). None of this is recovered. The decompiler provides no guidance on what the code does or any uncertainty indicators.
+
+### 13. Idiom Recognition
+**Score: 4/10**
+
+Basic patterns like loops and conditionals are recognized. The jump table for enum_switch is detected but not named as such. Linked list traversal in `linked_list` is recognizable but not identified as a pattern. No design patterns (state machine, strategy, etc.) are identified or named. The original source's data structure patterns (linked list, binary tree, graph) are not explicitly recognized.
+
+### 14. Anomaly Indication
+**Score: 2/10**
+
+No indication of uncertain or unresolvable code. The `<EXTERNAL>` marker for library functions is helpful but doesn't explain what those functions do. The `UNRECOVERED_JUMPTABLE` in `ptr_func_simple` is noted but not explained. No flags for potential undefined behavior (like the intentional out-of-bounds access in `array_oob`). No warnings about hand-written assembly patterns.
+
+### 15. Assertion & Contract Recovery
+**Score: 1/10**
+
+No preconditions, postconditions, or invariants are documented. The original source had clear semantics (e.g., "返回数组元素和", "返回对角线元素") that are completely lost. No error condition documentation. The decompiler provides zero contract information.
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Function calls are clear but relationships are not documented. The test functions call the tested functions but this relationship isn't explained. No documentation of which functions call which, or callback relationships. The `complex_callback` function used in `ptr_func_complex` test is not shown in the decompiled output (inlined).
+
+### 17. Module Organization
+**Score: 6/10**
+
+Functions are grouped reasonably: data types, arrays, pointers, composite types, then test functions. External library functions are at the top. However, the organization is flat - no logical grouping into sections or headers. The original source's clear section comments ("// ============================================================================") are not recovered.
+
+### 18. Build System Compatibility
+**Score: 4/10**
+
+The code uses external declarations for library functions but these would need stubs to compile. The `undefined` types would need concrete types. The stack canary checks reference `___stack_chk_guard` which is compiler-specific. Not standalone-compilatable without significant work.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 7 + 4 + 3) / 4 = 4.0
+L2_avg = (5 + 4 + 5 + 6) / 4 = 5.0
+L3_avg = (5 + 2 + 5) / 3 = 4.0
+L4_avg = (1 + 4 + 2 + 1) / 4 = 2.0
+L5_avg = (4 + 6 + 4) / 3 = 4.67
+
+Overall = (4.0 × 0.30) + (5.0 × 0.25) + (4.0 × 0.20) + (2.0 × 0.15) + (4.67 × 0.10)
+        = 1.20 + 1.25 + 0.80 + 0.30 + 0.467 = 4.017 ≈ 4.0/10
+```
+
+### Overall Readability Score: 4.0/10
+
+### Critical Defects
+
+1. **Struct/Union Recovery Complete Failure**: All composite types are flattened to raw pointer arithmetic - `Point3D`, `Rect`, `Widget`, `Node`, `TreeNode`, `Graph` all lost. Should access via `p->x`, `p->next`, etc.
+
+2. **No Variable Name Recovery**: All variables use generic names (`param_1`, `iVar1`, `lVar1`) with zero semantic meaning. Should infer names from usage like `c` for char parameter, `sum` for accumulator.
+
+3. **No Comments or Documentation**: Zero comments explaining what functions do, their contracts, or test expectations. Original source had extensive documentation completely lost.
+
+4. **Massive Unrolled Code**: `binary_tree_sum` is 200+ lines of unrolled spaghetti code that is nearly impossible to follow. Should be a simple recursive function.
+
+5. **Type Precision Loss**: Uses `undefined4`, `undefined8` instead of proper types. Const correctness lost (`const_param` should have `const int *`). No `_Bool` type recovered.
+
+### Best Quality Aspect: Function Naming (7/10)
+Most function names match the original source (`process_char`, `array_1d_stack`, `ptr_single`). This is the one area where the decompiler performs reasonably well.
+
+### Most Needs Improvement: Comment Quality & Type Recovery
+The decompiler provides zero comments and completely fails to recover composite types. These are fundamental to code readability.
+
+### Top 3 Recommendations
+
+1. **Recover Struct Field Names**: Use layout analysis and cross-reference to reconstruct struct definitions with meaningful field names (`Point3D { x, y, z }` instead of `int*` with manual offsets)
+
+2. **Infer Variable Names from Usage**: Analyze how variables are used (e.g., `param_1 + 32` in character processing → `c`; accumulator in loop → `sum`) to assign semantic names
+
+3. **Add Documentation Comments**: Recover function contracts from debug symbols, add test expectations, explain jump tables and complex patterns. At minimum, document what each test function validates.

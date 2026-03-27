@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`v1`, `v2`, `a1`, `a2`, `result`) with no semantic meaning. Original source used meaningful names like `size`, `counter`, `exec_mem`, `page_size` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`). However, helper functions use generic names (`function_1040`, `function_1050`) losing their purpose (e.g., `mprotect`, `printf` wrappers).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers pervasive without explanation (`0xdef0`, `3457`, `3402`, `282`, `382`). Original constants like `MAX_SIZE`, `BUFFER_COUNT` completely lost. Some values constant-folded (e.g., `call_macro_constants` returns 64 directly).
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: `__x86_get_pc_thunk_bx`, `deregister_tm_clones`, `register_tm_clones`. Assembly intrinsics (`__asm_movaps`, `__asm_paddd`, `__asm_xorps`) clutter the code unnecessarily.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but complex functions use manual while loops with increment instead of for loops (e.g., `param_asm_clobber`). Some functions completely constant-folded losing original structure.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function granularity mostly preserved from source. However, some functions over-simplified (`call_macro_constants` is just `return 64;`). Wrapper functions like `function_1040` add no value.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Generally reads top-to-bottom with reasonable structure. Some while loops with manual counters disrupt natural reading flow but not severely.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Assembly intrinsics create redundant-looking operations. Constant folding eliminates code but loses semantic meaning about original macro expansions.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t`, `uint32_t` consistently but introduces questionable `int128_t` typedef for SIMD. Pointer types often generic (`int32_t *` instead of `void *` for mmap). Original type semantics partially lost.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Limited structs in original source. Global variables named generically (`g1`, `g2`...`g11`) with hex addresses as comments. No struct recovery opportunity but globals poorly named.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(int32_t *)&g11`, `(char *)v1`). Assembly intrinsics bypass type checking. Function signatures sometimes mismatch source (e.g., `param_variadic_macro` has 4 parameters instead of 3).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. Original source had extensive documentation explaining preprocessing behavior, macro semantics, and expected values. Complete loss of semantic documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition. SIMD operations shown as raw assembly intrinsics rather than identified as vector operations. Macro expansion patterns not documented.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No anomaly flags for suspicious code. Architecture mismatch (source says arm64, decompiled shows x86 intrinsics) not indicated. Assembly intrinsics not marked as potentially platform-specific.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Original comments about expected return values (e.g., "期望: 64") completely lost.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships visible through code. Global variable usage not documented (what does `g11` represent?). No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions appear in address order rather than logical grouping. Related functions (`param_*` and `call_*` pairs) not grouped together. No header file structure.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Includes present but assembly intrinsics (`__asm_movaps`, `__asm_paddd`) are non-standard and may not compile. Some function signatures mismatch expected library calls.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (3+7+4+4)/4 = 4.50
+L2 Average: (6+6+7+5)/4 = 6.00
+L3 Average: (5+5+5)/3 = 5.00
+L4 Average: (1+3+3+2)/4 = 2.25
+L5 Average: (5+5+4)/3 = 4.67
+
+Overall = (4.50 × 0.30) + (6.00 × 0.25) + (5.00 × 0.20) + (2.25 × 0.15) + (4.67 × 0.10)
+        = 1.35 + 1.50 + 1.00 + 0.3375 + 0.467
+        = 4.65/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **Variable `v1`, `v2`, `a1`, `a2`** should be named based on semantic usage (e.g., `size`, `counter`, `increment`)
+- **Zero comments** despite original source having extensive documentation about macro behavior and expected values
+- **Magic numbers** like `3457`, `3402`, `282` without explanation (likely string offsets or computed constants)
+- **Architecture mismatch**: Source compiled for arm64 but decompiled code contains x86 assembly intrinsics
+- **Function signature errors**: `param_variadic_macro` shows 4 parameters instead of original 3
+
+### Best Quality Aspect:
+- **Function Naming Quality (7/10)** - Core function names preserved accurately from source (`param_macro_constants`, `call_asm_basic`, `test_preprocessing_features`), making basic navigation possible.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of comments loses all semantic documentation about preprocessing behavior, macro expansions, and expected test values that were extensively documented in source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover variable names from usage patterns** - Analyze how variables are used (e.g., compared to constants, used in memory operations) to suggest semantic names like `page_size`, `counter`, `buffer_ptr`
+2. **Add decompilation confidence annotations** - Flag architecture mismatches, constant-folded regions, and assembly intrinsics with comments explaining uncertainty
+3. **Recover macro semantics from constant patterns** - When seeing `return 64` where source had `BUFFER_COUNT * 4`, annotate with recovered macro relationship for semantic clarity

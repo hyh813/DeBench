@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Most local variables use generic names like `v2`, `v3`, `i`, `result`. Function parameters like `size`, `x`, `y`, `arr`, `n` are well-preserved, but internal variables lack semantic meaning (e.g., `v2` used for intermediate calculations in `param_macro_functions`).
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: All function names perfectly match the original source: `param_macro_constants`, `call_macro_constants`, `param_conditional_compile`, `param_asm_basic`, etc. The decompiler correctly recovered all 18+ function names from the binary.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Macro constants are correctly computed (512 for MAX_SIZE/2, 64 for BUFFER_COUNT*4). However, `sysconf(30)` remains unexplained (should be `_SC_PAGESIZE`), and bit manipulation like `0x48 ^ 0x6F` for string comparison is cryptic.
+
+**4. Noise Reduction:** Score: 9/10  
+Justification: Clean decompilation with minimal compiler artifacts. No redundant casts, dead code, or debug instrumentation. The output is readable without unnecessary scaffolding.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Control flow closely matches source - if/else statements, for loops, and function calls are natural. At -O0, the decompiler correctly avoided transforming loops into gotos. Minor issue: ternary operator in `param_macro_functions` expanded to if-else.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function maintains appropriate granularity (10-50 lines). Functions like `param_asm_clobber` correctly show the loop structure rather than being inlined. Good separation between wrapper functions (`call_*`) and implementation functions (`param_*`).
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom with minimal forward jumps. Early returns in `param_memory_protection` are appropriately placed. No excessive nesting observed.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No dead code or obvious redundancy. The `call_*` wrapper functions calling `param_*` functions are intentional design, not redundancy.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct - `int` for integers, `int*` for pointers, `void*` for generic pointers. However, `size_t` is used as `int` in some places (e.g., `param_asm_multi_insn` size parameter). The `sysconf` return type should be `long`, not `size_t`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Arrays are correctly recognized (e.g., `int arr[]` in `param_asm_clobber`). The SIMD code properly identifies `__m128i` types. No struct recovery needed for this code as it primarily uses primitives.
+
+**11. Type Safety:** Score: 8/10  
+Justification: Generally type-safe code. Minor issues: `qmemcpy` cast in `param_asm_multi_insn` uses void* freely, but this is acceptable for low-level memory operations. No dangerous pointer arithmetic observed.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: No comments present in decompiled output. The original source had extensive comments explaining macro behavior, inline assembly, and test expectations. This is a significant loss - especially for understanding why `param_stringize` returns 19.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Some patterns recognized - the atomic operations use `_InterlockedExchangeAdd`, SIMD uses intrinsics. However, macro expansions are not identified as such (e.g., `SQUARE(x)` becomes `x * x` without indicating it was a macro).
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: The decompiler marks 8 functions as "FAILED to decompile" (libc functions like `__libc_start_main`, `mprotect`, `printf`). However, no warnings for potentially suspicious code like the self-modifying code in `param_dynamic_code`.
+
+**15. Assertion & Contract Recovery:** Score: 4/10  
+Justification: No pre/postcondition recovery. For example, `param_asm_atomic` should document that it requires a valid pointer and proper alignment, but this is not indicated.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships are clear (e.g., `main` calls `test_preprocessing_features` and `test_asm_features`). However, no documentation of which functions are internal vs. external, or callback relationships.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions first, then asm functions, then test wrappers. However, the binary includes startup code (`init_proc`, `_start`, `frame_dummy`) mixed with user code.
+
+**18. Build System Compatibility:** Score: 8/10  
+Justification: The decompiled code should compile with standard libc headers. External functions (`printf`, `mmap`, `sysconf`) are properly declared. Minor issue: some constants like `DWORD1(xmmword_2010)` are IDA-specific and need replacement.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 6.7/10
+
+**Critical Defects:**
+- Variable naming is generic (`v2`, `v3`, `i`) losing semantic meaning of intermediate calculations
+- No comments explaining macro behavior, inline assembly, or test expectations
+- `sysconf(30)` unexplained - should be `sysconf(_SC_PAGESIZE)` with constant name
+- No indication that code was compiled with preprocessor macros (e.g., `#ifdef` branches)
+- Anomalies like self-modifying code not flagged
+
+**Best Quality Aspect:** Function Naming Quality (10/10)  
+All function names perfectly match the original source, making it easy to locate specific functionality.
+
+**Most Needs Improvement:** Comment Quality (3/10)  
+The decompilation lacks any explanatory comments. The original source had extensive documentation about macro semantics, inline assembly constraints, and test expectations that are completely lost.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Recover macro semantics**: When decompiling, detect that `3 * x + 2` came from a conditional compilation branch and add a comment like `// #ifdef DEBUG_MODE branch (compiled out)`
+2. **Name inference from usage**: Analyze variable usage patterns to infer names (e.g., `v2` used in comparison with `y` should suggest `max_val` or similar)
+3. **Magic number recognition**: Detect constants like `30` in `sysconf(30)` and replace with named constants like `_SC_PAGESIZE` where the value is well-defined

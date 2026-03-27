@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: The decompiled code uses extremely generic variable names like `iVar1`, `param_1`, `param_2`, `local_c`, `local_18`. Most critically, many variables are marked as "Unresolved local var" with no names at all (e.g., `int result@[???]`, `int sum@[???]`). The original source had meaningful names like `size`, `x`, `y`, `result`, `arr`, `n` that are completely lost.
+
+**2. Function Naming Quality:** Score: 9/10  
+Justification: Function names are excellently preserved - `param_macro_constants`, `call_macro_functions`, `param_asm_basic`, `param_dynamic_code` all match the original source exactly. The decompiler correctly recovered the semantic intent through function names.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `0x200` (512), `0x40` (64), `0x400` (1024) appear without explanation. The original had named constants `MAX_SIZE = 1024` and `BUFFER_COUNT = 16` that provided semantic meaning - these are lost in the decompiled version, leaving only computed values.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant decompiler artifacts pollute the code: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "Unresolved local var" annotations. These appear throughout and create visual noise that impedes reading, though they do provide useful diagnostic information.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is generally natural with if-else and while-do structures. For example, `param_asm_clobber` correctly uses a do-while loop. At -O0, the control flow should be nearly identical to source, and the decompiler largely achieves this.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. Each function like `param_macro_constants`, `param_asm_basic` handles one specific task. The decomposition matches the original source well, with no monolithic functions or over-fragmentation.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Early returns are used appropriately (e.g., in `param_asm_clobber`). Some nested conditions exist but are manageable. The flow is not disrupted by excessive jumps.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant redundancy observed. Dead code from compilation is minimal. Loop unrolling is not excessive. The decompiled code is clean without duplicate expressions.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: The decompiler uses generic `int` for most variables. Original had `size_t` (for page sizes), `int *` (for arrays), `void *` (for memory addresses). These specific types are lost - everything becomes `int` or generic pointers. The `size_t` in `param_dynamic_code` is correctly recovered, but most others are generic.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct or union recovery is visible. The original had no complex structs, but the decompiler shows raw pointer arithmetic everywhere (e.g., `arr + 1` instead of array indexing semantics). Arrays like `int arr[5]` are not recovered.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. No obvious unsafe casts. Pointer arithmetic is used correctly. Minor issues include some generic pointer usage but no severe type safety violations that would cause undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are almost entirely decompiler-generated warnings ("WARNING: Unknown calling convention", "Unresolved local var"). There are no explanatory comments about what the code does, the macro semantics, or the assembly patterns. The original had extensive comments explaining each test case - completely lost.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: No design patterns or algorithms are identified or named. The inline assembly patterns (SSE, atomic operations, memory protection) are reduced to generic C code without recognition of the underlying idioms. The decompiler could note "atomic fetch-add pattern" or "memory protection API pattern" but doesn't.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: The decompiler does flag some anomalies with WARNING messages - "Unresolved local var", "Unknown calling convention". However, it silently produces incorrect or suboptimal code in some cases without flagging (e.g., the stringize function returns hardcoded value).
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants are documented. The original had clear expectations (e.g., "期望: 64", "期望: 30") that are completely lost. No contract information is recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function call relationships are visible (e.g., `main` calls `test_preprocessing_features`). However, there's no documentation of which functions call which, global variable usage, or callback relationships. The original had clear call relationships in comments.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions are grouped logically - preprocessing functions together, asm functions together, test functions together. This matches the source organization reasonably well. Static functions are properly scoped.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: The code would not compile as-is. It references undefined identifiers like `EVP_PKEY_CTX`, `call_weak_fn`, `__gmon_start__`, `__libc_start_main`. The `puts` and `printf` calls use `&DAT_...` string references that wouldn't compile. Significant patching would be needed.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming is severely degraded: most variables are "Unresolved" or use generic names like `iVar1`, losing all semantic meaning from the original (`size`, `x`, `y`, `result`, `arr`, `n`)
+- Literal constants lost their symbolic names: `0x200` should be `MAX_SIZE/2`, `0x40` should be `BUFFER_COUNT * 4`
+- No comments explaining macro semantics, assembly patterns, or test expectations - the original's extensive documentation is completely lost
+- Type precision severely degraded: specific types like `size_t`, `int *` become generic `int`
+- Build system compatibility broken: uses `&DAT_...` string references and undefined identifiers that won't compile
+
+**Best Quality Aspect:** Function Naming Quality (9/10)  
+The decompiler excellently preserved function names from the original source - `param_macro_constants`, `call_macro_functions`, `param_asm_basic`, `param_dynamic_code` all match exactly.
+
+**Most Needs Improvement:** Variable Naming Quality (2/10)  
+The loss of variable names is catastrophic - "Unresolved local var" appears dozens of times, and generic names like `iVar1`, `param_1`, `local_c` provide no semantic information about what the variables represent.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Analyze how variables are used (e.g., `if (0x400 < size)` suggests `size`; `arr[iVar1]` suggests array index; `*arr` suggests array element)
+2. **Recover macro constants**: Detect magic numbers that appear multiple times and suggest they might be named constants; recognize computed values (0x40 = 16*4) and map back to source macros
+3. **Add semantic comments for assembly patterns**: When decompiling inline assembly, add comments explaining what the pattern does (e.g., "// Atomic fetch-add operation", "// Memory protection change") to preserve the semantic intent

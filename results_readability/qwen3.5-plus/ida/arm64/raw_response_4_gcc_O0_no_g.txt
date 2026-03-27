@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a1`, `a2`, `v1`, `v2`, `v17`, `v23`) with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `i`, `large`, `s` which are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`cdecl_func`, `varargs_func`, `func_struct_byval`). Some initialization functions use generic names (`sub_750`, `init_proc`) but core test functions are well-named.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: String literals referenced as opaque identifiers (`asc_1FB0`, `aCallL206`) instead of actual strings. Numeric literals like `5`, `10`, `15` are clear but magic numbers like `-56`, `11` in varargs handling are unexplained.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary references (`&_stack_chk_guard`) appear in return statements unnecessarily. Excessive type casts (`(unsigned int)`, `(__int64)`, `(_DWORD *)`) clutter the code without adding clarity.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loops recovered as `for` constructs correctly. Switch statements degraded to if-else chains (`ret_multi_branch`). Generally natural flow appropriate for -O0 compilation.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. No inappropriate inlining or fragmentation. Each function maintains single responsibility matching source.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads mostly top-to-bottom with minimal forward jumps. Some functions have scattered local variable declarations but overall flow is traceable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Redundant type casts throughout (e.g., `(unsigned int)(a1 + a2)`). Some variable assignments could be eliminated (`v17 = v24; v18 = v23;` in varargs).
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Severe type degradation - `int` becomes `__int64`, pointers become `_DWORD *` or `__int64`. Varargs functions show 17+ parameters instead of proper `va_list` handling. Original `const char *` becomes `unsigned __int8 *`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - Struct types completely lost. `LargeStruct` becomes `__int64 a1`, `SmallStruct *` becomes `_DWORD *a1`. Field access via pointer arithmetic (`a1[1]`, `*(_QWORD *)(a1 + 8LL * i)`) instead of named fields.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts throughout (`(_DWORD *)`, `(_QWORD *)`, `(__int64)`). Pointer arithmetic on raw memory without bounds checking. Function pointer types degraded (`unsigned int (__fastcall *)(_QWORD)`).
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal comments present. Only function headers with parameter types. No algorithm explanations, no documentation of varargs handling complexity, no confidence indicators.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: **Critical failure** - Varargs pattern completely unrecognized (shows 17 explicit parameters instead of `va_list`). Struct passing patterns not identified. No design pattern recognition.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Library functions marked as "FAILED to decompile" (8 functions). However, no warnings about varargs degradation or struct type loss. Silent failures on critical type recovery.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: NULL checks present (`if (a1)`) but not documented as preconditions. No postcondition documentation. Return value contracts not specified.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are clear and traceable. No call graph documentation. Global variable references opaque (`_gmon_start__`, `_bss_start`).
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. No clear module grouping or namespace structure. Initialization/cleanup functions mixed with test functions.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 8 external functions marked "FAILED to decompile" requiring stubs. Would need significant patching to compile standalone. Dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+6)/4 = 5.50 × 0.30 = 1.65
+Level 2 (Structural):  (7+8+7+6)/4 = 7.00 × 0.25 = 1.75
+Level 3 (Type):        (4+2+4)/3   = 3.33 × 0.20 = 0.67
+Level 4 (Semantic):    (3+2+5+3)/4 = 3.25 × 0.15 = 0.49
+Level 5 (Contextual):  (6+6+5)/3   = 5.67 × 0.10 = 0.57
+─────────────────────────────────────────────────────────
+Overall Score:                              5.13/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Struct types completely lost** - `LargeStruct`, `SmallStruct` become raw pointers (`__int64`, `_DWORD *`) with field access via arithmetic
+- **Varargs pattern unrecognized** - Functions show 17+ explicit parameters instead of `va_list` abstraction, making logic incomprehensible
+- **Variable names entirely generic** - `a1`, `a2`, `v1`, `v2` provide no semantic information about purpose
+- **String literals opaque** - Referenced as `asc_1FB0`, `aCallL206` instead of actual string content
+- **Excessive type casting noise** - Every arithmetic operation wrapped in `(unsigned int)`, `(__int64)` casts
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved from source (`cdecl_func`, `varargs_func`, `func_struct_byval`), maintaining semantic identity
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover struct/union types, forcing readers to reverse-engineer field layouts from pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement struct type inference** - Analyze consistent field access patterns (`a1 + 0`, `a1 + 8`, `a1 + 16`) to reconstruct struct definitions with field names
+2. **Recognize varargs calling conventions** - Detect `va_start`/`va_arg`/`va_end` patterns and recover proper `va_list` abstraction instead of expanding to explicit parameters
+3. **Preserve string literal content** - Display actual string values inline rather than opaque references (`asc_XXXX`), especially for printf format strings

@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled C++ Object-Oriented Code
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generically named (`local_28`, `uStack_10`, `iVar1`, `puVar1`) with no semantic meaning. Original source had meaningful names like `capture_by_value`, `obj`, `result` that are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test function names preserved well (`test_cpp_member_func`, `test_cpp_virtual_func`), but template functions awkwardly renamed (`template_max_int_`) and some functions are generic (`FUN_00011030`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Heavy magic numbers throughout (`0x125c`, `0x3e9`, `0x28a`, `0x2bf`) that are constant-folded return values. String literals referenced as `&DAT_000121d8` instead of showing actual content.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: External function stubs show infinite recursion (`operator_new` calls `operator_new`). Stack frame variables (`local_28`, `uStack_c`) and initialization code clutter the output without semantic value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Most test functions reduced to constant returns losing actual logic. Template functions show natural if-then patterns, but exception handling uses low-level `__cxa_*` calls instead of try-catch.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions appropriately sized but many that should contain logic are constant-folded. External stubs are problematic (self-recursive). Container methods properly separated but class structure lost.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads relatively linearly with minimal gotos. Early returns used appropriately in template functions. No severe non-linearity issues in main test functions.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Constant folding eliminates computation redundancy but loses semantic meaning. No obvious dead code, but external stubs create redundant noise throughout the file.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `double`, `size_t`) but many degraded to `undefined4`. Const-correctness completely lost. Some incorrect types (`longdouble` for double return).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - No class/struct definitions recovered. Object access through pointer arithmetic (`*(int *)(this + 0x28)`). Virtual calls shown as `(***(code ***)param_1)` - complete loss of OOP structure.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts (`(undefined4 *)`, `(int *)`). Pointer arithmetic on class objects. Virtual dispatch through raw pointer dereferencing. No type safety guarantees preserved.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no comments except SHA256 header. No explanation of magic numbers, no decompilation uncertainty indicators, no algorithm documentation. Original source had extensive comments.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: C++ OOP patterns not recognized (no class recovery). Template instantiation not clearly indicated. Virtual dispatch shown but not explained as polymorphism. Exception handling at ABI level.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomalies flagged. Self-recursive external stubs not identified as problematic. No indication that constant folding occurred or that logic was lost.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception behavior not documented. Original source had clear expected return values that are now magic numbers.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Inheritance relationships completely lost. Virtual dispatch relationships unclear. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All code in one file with no logical grouping. External runtime functions mixed with application code. No namespace structure recovered from C++ source.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: References undefined external symbols. Class type definitions missing. Would require extensive stubs and type definitions to compile. Not standalone compilable.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+4+4)/4 = 4.50 × 0.30 = 1.35
+Level 2 (Structural):  (6+5+7+6)/4 = 6.00 × 0.25 = 1.50
+Level 3 (Type):        (5+2+4)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (2+3+2+2)/4 = 2.25 × 0.15 = 0.34
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                              = 4.32/10
+```
+
+**Overall Readability Score:** 4.3/10
+
+### Critical Defects:
+- **Class structures completely lost** - All C++ classes reduced to pointer arithmetic with no struct definitions
+- **Magic numbers replace computed values** - Return values like `0x125c` (4700) instead of showing `r1 + r2 + r3` computation
+- **External function stubs are broken** - Functions like `operator_new` call themselves creating infinite recursion in decompilation
+- **No semantic comments** - Original source had extensive documentation; decompiled code has none
+- **Variable names meaningless** - `local_28`, `iVar1`, `puVar1` provide no insight into purpose
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Test function names were preserved from debug symbols (`test_cpp_member_func`, `test_cpp_virtual_func`), maintaining some traceability to original source.
+
+### Most Needs Improvement: **Composite Type Recovery (2/10)**
+- Complete failure to recover C++ class structures - the core OOP features being tested are entirely lost, reducing classes to raw pointer arithmetic.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class/struct definitions** from vtable layouts and member access patterns instead of showing `*(int *)(this + 0x28)`
+2. **Detect and flag constant-folded expressions** with comments showing original computation (e.g., `// 0x125c = 10 + 34 + 4660`)
+3. **Fix external function stub detection** to avoid self-recursive decompilation of library functions that should be marked as external imports

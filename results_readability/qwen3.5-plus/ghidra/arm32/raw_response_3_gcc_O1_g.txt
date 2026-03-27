@@ -1,0 +1,101 @@
+## Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `iVar1`, `piVar1`, `__ptr` throughout; 40+ "Unresolved local var" comments indicate the decompiler couldn't recover semantic names (e.g., `local` in `address_of_local`, `vla` in `vla_stack`).
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved from source (`double_value`, `local_vars`, `heap_basic`, `test_stack_memory`); only runtime helpers have generic names (`call_weak_fn`, `deregister_tm_clones`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic hex numbers obscure meaning: `0x2a` (should be 42), `0x14` (should be 20), `0xf` (should be 15); string literals referenced as `&DAT_000128a0` instead of showing actual content.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Multiple "WARNING: Removing unreachable block" and "Unresolved local var" comments clutter output; stack canary checks (`__stack_chk_fail()`) appear in most functions adding noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: For-loops converted to do-while constructs (e.g., `local_array`); `local_struct` optimized to `return x * 3` hiding struct operations; `stack_alias` returns constant `0x14` instead of showing aliasing logic.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries preserved correctly; each source function appears separately; no inappropriate inlining; sizes are reasonable (no 500+ line monoliths).
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom; stack canary checks at function ends create minor non-linearity; some functions have early returns that are clear.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: No obvious dead code; stack canary redundancy in every function; loop structures not excessively unrolled; compiler artifacts manageable.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (int, char, void*); `undefined4` appears in some places; array types sometimes correct (`char large_buf[2048]`); function pointer type `_func_int_int` recovered.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: `Node` and `TreeNode` structs well-recovered with field names; `Point` struct operations optimized away (`local_struct` returns `x*3`); stack arrays declared correctly but VLA lost.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Numerous unsafe casts: `(int *)((int)__ptr + -4)`, `(int *)((int)aiStack_14 + iVar1)`; pointer arithmetic uses int casts throughout; void* to int* conversions without justification.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are auto-generated warnings ("Unresolved local var", "WARNING"); no semantic documentation explaining algorithm purpose; no API contracts recovered.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No design patterns identified; linked list traversal, malloc/free patterns not labeled; memory operation idioms (memset, memcpy) not explicitly recognized.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: "Unresolved local var" indicates uncertainty; `__stack_chk_fail` marked as "does not return"; dangling pointer undefined behavior not flagged; anomalies inconsistently reported.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `n > 0` requirements); NULL checks present in code but not as contracts; error return values (-1, -2, -3) not explained.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls clear; global variables referenced by name (`global_counter`, `file_scope_static`); no call graph documentation; callback relationships not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output file; static functions preserved with `static` keyword; no header file recovery; no source file organization matching original.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`malloc`, `free`, `printf`) not documented; would need significant stubbing to compile standalone; some `undefined4` types need resolution.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+8+4+5)/4 = 5.25  × 0.30 = 1.575
+Level 2 (Structural):  (5+7+6+6)/4 = 6.00  × 0.25 = 1.500
+Level 3 (Type):        (5+5+4)/3   = 4.67  × 0.20 = 0.934
+Level 4 (Semantic):    (4+3+5+3)/4 = 3.75  × 0.15 = 0.563
+Level 5 (Contextual):  (6+5+4)/3   = 5.00  × 0.10 = 0.500
+─────────────────────────────────────────────────────
+Overall Score:                                  5.07/10
+```
+
+**Overall Readability Score:** 5.1/10
+
+### Critical Defects:
+- **Variable `iVar1`, `iVar2`, `piVar1`** should be named based on usage (e.g., `result`, `index`, `array_ptr`)
+- **`stack_alias` function** returns constant `0x14` instead of showing pointer aliasing logic - semantic information lost
+- **Hex literals** (`0x2a`, `0x14`, `0xf`) should be decimal or named constants for readability
+- **Struct operations optimized away** - `local_struct` shows `x * 3` instead of `p.x + p.y` hiding the struct pattern
+- **40+ "Unresolved local var" comments** indicate decompiler failed to recover variable semantics
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Most original function names preserved accurately (`double_value`, `heap_basic`, `test_stack_memory`), making navigation intuitive.
+
+### Most Needs Improvement:
+- **Idiom Recognition (3/10)** - No common patterns identified (linked list traversal, malloc/free pairs, memory operations); decompiler treats all code as generic logic.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement usage-based variable naming** - Analyze how variables are used (loop counters, accumulators, pointers) to infer semantic names like `index`, `sum`, `buffer_ptr`
+2. **Recover struct field access patterns** - Detect consecutive memory accesses at fixed offsets and reconstruct struct operations instead of optimizing to arithmetic
+3. **Add idiom detection for common patterns** - Recognize malloc/free pairs, linked list traversal, array initialization loops and add explanatory comments

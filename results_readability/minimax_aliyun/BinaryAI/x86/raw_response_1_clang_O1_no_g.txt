@@ -1,0 +1,95 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Variables use cryptic generic names like `param_1`, `param_2`, `iVar1`, `uVar2`, `bVar3`, `local_14`. The original source used meaningful names like `a`, `b`, `c`, `temp1`, `temp2`, `sum`, `count` - all completely lost. This is the worst aspect of this decompilation.
+
+**2. Function Naming Quality:** Score: 10/10  
+Justification: Nearly all function names match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `loop_while`, `duffs_device`, `recursion_factorial`, etc. Excellent recovery.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Test functions are completely inlined with hardcoded values (e.g., `printf("CF-L1-01 (sequential_ops): %d\n",0x15);` instead of calling the function). Magic numbers like `0x3e9` (1001), `0x65` (101), `0x12` (18) appear without explanation. The decompiler should not have inlined test functions.
+
+**4. Noise Reduction:** Score: 8/10  
+Justification: Minimal compiler artifacts observed. No redundant casts, debug instrumentation, or frame pointer manipulation. Clean output overall.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: At -O0, loops should be preserved but `loop_for_fixed` uses a complex mathematical formula instead of a for-loop, and `loop_nested` uses multiplication instead of nested loops. The `single_if` uses bit-shift trick `param_1 << (0 < param_1)` instead of if-else. Many control flow structures are transformed into expressions.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibilities. No 500-line monoliths. Test functions properly separated. Minor issue: some small helper functions could be inlined.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Early returns used appropriately. Some forward jumps in complex functions like `loop_multi_exit` but manageable.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No dead code observed. Some loop unrolling present in `duffs_device` but it's appropriate for that idiom. Overall clean.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Mixed precision - uses `int`, `uint`, `bool`, `byte`, `longlong`, but also `undefined4`, `undefined`. Some type differentiation exists but many integers are generic `int`. The original used `int` consistently which is partially recovered.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union recovery visible. Arrays like `matrix[3][4]` in `loop_multi_exit` are accessed via pointer arithmetic with raw addresses (`&DAT_00013050`). No struct definitions for the original code's simple arrays.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some pointer arithmetic typical for decompiled code. No severe type safety violations like incorrect function pointer casts. Acceptable for decompilation.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments in any decompiled functions. Only the BinaryAI header comment at the top. No explanation of algorithms, non-obvious logic, or decompilation confidence. The original had extensive comments explaining each function's purpose.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized: Duff's device has switch with goto labels, state machine functions are identified. But patterns are not explicitly named or documented with explanations. The original source explicitly labeled each pattern.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: No indication of suspicious code, indirect calls that couldn't be resolved, or potential undefined behavior. Silent on all anomalies. The test function `loop_multi_exit` has complex control flow that should be flagged.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition, postcondition, or invariant documentation. No error condition explanation. The original source had extensive comments about test scenarios and expected outputs.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are clear (e.g., `recursion_factorial(param_1 + -1)`). But no documentation of who calls whom, global variable usage, or callback relationships. The test functions call the target functions but this isn't documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear roughly in order matching the source file structure (test_control_flow_l1, test_control_flow_l2, test_control_flow_l3, then main). Related functions like state machine handlers are grouped. But no clear module boundaries.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Uses non-standard types like `code *`, `undefined4`, `undefined`. The test functions have hardcoded values instead of function calls, making them useless. Would require significant patching to compile (replace `code *` with function pointer types, fix test functions).
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.9/10
+
+**Critical Defects:**
+- Variable names are completely generic (`param_1`, `iVar1`, `bVar3`) - original names like `temp1`, `sum`, `count` completely lost
+- Test functions are inlined with hardcoded values instead of calling actual functions - destroys semantic connection
+- Loop structures transformed into mathematical expressions at -O0 where they should be preserved
+- No comments explaining algorithms, patterns, or decompilation confidence
+- No struct/array recovery - everything is pointer arithmetic
+
+**Best Quality Aspect:** Function Naming (scored 10/10)  
+- Nearly every function name matches the original source exactly, making it easy to locate specific functions
+
+**Most Needs Improvement:** Variable Naming (scored 2/10)  
+- Cryptic generic names make it extremely difficult to track variable purposes and understand data flow
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: `param_1` used in arithmetic with `param_2` should be named `a` and `b` based on the function signature and usage context
+2. **Preserve loop structures at -O0**: Don't convert `for (int i=0; i<n; i++)` into mathematical formulas; the optimization level indicates these should be recognizable loops
+3. **Add semantic comments**: Include brief explanations of what each function does, especially for complex patterns like Duff's device or state machines

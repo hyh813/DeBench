@@ -1,0 +1,87 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic `param_1`, `param_2`, `param_3` format, and local variables are `iVar1`, `iVar2`, `iVar3`. The original source used meaningful names like `a`, `b`, `c`, `temp1`, `temp2`, `sum`, `count`. Only array literals like `local_24[0] = 10` in `loop_break` partially recover the original `arr[]` values.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names match the original source exactly: `sequential_ops`, `single_if`, `if_else`, `nested_if_2`, `loop_for_fixed`, `recursion_factorial`, `duffs_device`. Helper functions like `double_value`, `op_add`, `op_sub` are also correctly named. Minor deduction for some internal Ghidra functions with cryptic addresses.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Test functions use hardcoded values like `0x15` (21), `0x14` (20), `0xfffffffb` (-5) instead of computed results. Magic numbers like `0x3e9` (1001), `0x65` (101), `0xe` (14) appear without explanation. The original source had clear arithmetic: `(5+7)*2-3=21`.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Significant Ghidra warnings clutter output: "Function: __x86.get_pc_thunk.bx replaced with injection", "WARNING: Removing unreachable block", "WARNING: Subroutine does not return". Stack canary checks (`__stack_chk_fail_local`) add noise. However, core logic is relatively clean.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Most control structures are natural - loops use do-while, conditionals use if-else, switches are properly identified. The ternary operator `ternary_op` was correctly recovered as if-else. At -O0, control flow should be nearly identical to source, and Ghidra largely achieves this.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Each function is separate with appropriate granularity. Parameter counts match original (e.g., `sequential_ops(int param_1, int param_2, int param_3)`). No over-fragmentation or monoliths. Functions like `duffs_device` correctly show the complex switch-do pattern.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some forward jumps in switch statements and computed goto, but these are manageable. The `goto_forward` function correctly linearizes to simple conditional + return.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No obvious dead code from decompilation. Loop unrolling in `duffs_device` is part of the original algorithm, not redundancy. Common subexpression elimination is minimal at -O0.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Most types are correct - `int` for parameters, `uint` for unsigned operations, `bool` for boolean returns. Some loss: `undefined4` used where `int` would be clearer, `byte` for shift amounts. The original `volatile int *flag` became `int *param_1` losing volatility.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Arrays are partially recovered - `local_24[5]` in `loop_break` contains the original array values {10,20,30,40,50}. However, no struct recovery is evident. The original `int matrix[3][4]` in `loop_multi_exit` became separate local variables.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Function pointers use `code *` type which is non-standard. Some unsafe patterns: casts to `undefined4`, pointer arithmetic in `duffs_device`. Minor type safety issues but nothing critical. The original `int (*f)(int)` callback became `code *param_1`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: File header shows decompiler info and binary path. Some useful comments like "WARNING: Could not recover jumptable at 0x00012310. Too many branches" for computed_goto. However, most comments are auto-generated Ghidra warnings rather than semantic explanations of the code logic.
+
+**13. Idiom Recognition:** Score: 6/10  
+Justification: Switch statements are identified, recursion patterns recognized (`recursion_factorial`). Duff's device is partially recognized with labels. However, no explicit naming of patterns like "state machine", "callback pattern", or "tail recursion optimization" beyond basic structure recognition.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Some anomalies are flagged: "WARNING: Could not recover jumptable", "WARNING: Subroutine does not return". However, many issues are silent - the computed_goto warning is good, but indirect calls in `call_func_ptr_array` aren't flagged as potentially unresolved.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No explicit preconditions, postconditions, or invariants are documented. The original source had no formal contracts either, but decompiler could infer: "requires: n >= 0" for factorial, "requires: param_1 != NULL" for pointer parameters.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are visible but relationships aren't documented. No indication that `double_value`, `triple_value` are used as callbacks. The test functions call the target functions but there's no comment explaining the call graph.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions are roughly grouped - control flow L1 functions first, then L2, then L3, then test functions. Static functions like `state_idle`, `state_processing` are properly scoped. However, the order doesn't match the original source file structure exactly.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: Code uses standard library functions (`puts`, `__printf_chk`, `__stack_chk_fail`) but external dependencies aren't documented. The `jump_buffer` global for setjmp/longjmp is used but not declared. No header information or compilation instructions.
+
+---
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.6/10
+
+**Critical Defects:**
+- Variable naming uses generic `param_N` and `iVarN` format instead of original names like `a`, `b`, `temp1`, `sum`
+- Test functions use hardcoded literal values (`0x15`, `0x14`) instead of computed results, losing the connection to the functions being tested
+- Type information lost: `volatile int *` became `int *`, function pointer `int (*)(int)` became `code *`
+- No struct/array recovery - original `int arr[] = {10,20,30,40,50}` became `local_24[0] = 10; local_24[1] = 20; ...`
+- Excessive Ghidra warnings and auto-generated comments clutter the output
+
+**Best Quality Aspect:** Function Naming Quality (8/10)  
+Most function names match the original source exactly, making it easy to locate specific functions. Control flow structures are also well-preserved.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+The generic `param_N` and `iVarN` naming makes it difficult to track variable purposes, especially in functions with multiple variables like `loop_complex_cond` where `iVar1`, `iVar2`, `iVar3`, `iVar4` are hard to distinguish.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `param_1` used in `param_1 * param_1` should suggest `square` or `x_squared`
+2. Recover array/struct initializations from sequential local variable assignments (`local_24[0]=10; local_24[1]=20` → `int arr[] = {10, 20, 30, 40, 50}`)
+3. Replace hardcoded test values with function calls in test functions to maintain semantic connection (`0x15` → `sequential_ops(5,7,3)`)

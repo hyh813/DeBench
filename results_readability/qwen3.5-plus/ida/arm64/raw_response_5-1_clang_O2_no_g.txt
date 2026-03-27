@@ -1,0 +1,101 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are generic (`v1`, `v2`, `result`, `a1`, `a2`) with no semantic meaning. For example, `v1[31]` in `test_cpp_member_func` should be `name` based on the `"Test"` string initialization pattern.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions retain readable names (`test_cpp_member_func`, `test_cpp_virtual_func`), but template functions use mangled names (`_Z12template_maxIiET_S0_S0_`). Class methods are partially demangled in comments.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers like `4700`, `1001`, `14` appear without explanation. These are optimized constants (e.g., `4700` = `4660 + 40` from original calculations) but lack context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Relatively clean with minimal compiler artifacts. Some unnecessary casts like `(unsigned int)` and `(unsigned __int8)` present but don't significantly impede reading.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Most test functions collapsed to single return statements due to constant folding optimization. Where logic exists (`test_cpp_rtti`), control flow is natural but exception handling (`test_cpp_exception`) is incomplete.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Functions are appropriately sized, but many are over-optimized (single return). Container class methods are well-separated, but class structure relationships are lost.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code reads top-to-bottom where logic exists. No excessive goto usage. The `test_cpp_rtti` function has clear sequential flow with if-else branches.
+
+**8. Redundancy Elimination:** Score: 8/10  
+Justification: No significant dead code or duplicate expressions observed. Compiler optimization removed most redundancy before decompilation.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Basic types preserved (int, double), but class types degraded to pointers (`__int64`, `_QWORD*`). `Container<int>` becomes `__int64 result` with pointer arithmetic instead of member access.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: **Critical failure** - No class/struct definitions recovered. `SimpleClass`, `LifecycleClass`, `Base`, `Derived` all lost. Access via `*(result + 40)` instead of `obj.size`.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Multiple unsafe casts present (`(__int64)`, `(_QWORD *)`). Pointer arithmetic on class objects without type safety. No const-correctness preserved.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Minimal auto-generated comments (e.g., `// attributes: thunk`). No algorithm explanations or decompilation confidence indicators. Failed functions listed but not explained.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ patterns partially recognized (vtable calls via `(**a1)(a1)`), but not identified as such. Template instantiation visible but not labeled as template patterns.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed decompilations listed at end (20 functions), but no inline warnings for problematic code. `test_cpp_exception` marked `__noreturn` but logic incomplete without explanation.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. Exception handling contracts completely lost. No null checks or bounds validation comments.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function call relationships unclear due to name mangling. Virtual dispatch visible (`__dynamic_cast`) but vtable relationships not documented. Global `LifecycleClass::instance_count` referenced without context.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions listed sequentially but no logical grouping. Related class methods scattered. No namespace or module structure recovered from C++ source.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: **Will not compile standalone** - 20 external functions failed, no header includes, missing class definitions, mangled names need demangling. Requires extensive manual reconstruction.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+6+4+7)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (5+5+7+8)/4 = 6.25 × 0.25 = 1.56
+Level 3 (Type):        (4+2+5)/3   = 3.67 × 0.20 = 0.73
+Level 4 (Semantic):    (3+4+5+2)/4 = 3.50 × 0.15 = 0.53
+Level 5 (Contextual):  (4+5+3)/3   = 4.00 × 0.10 = 0.40
+─────────────────────────────────────────────────────────
+Overall Score:                              = 4.72/10
+```
+
+**Overall Readability Score:** 4.7/10
+
+### Critical Defects:
+- **No class/struct definitions recovered** - All C++ classes (`SimpleClass`, `Container`, `Base`, `Derived`) lost, replaced with pointer arithmetic
+- **Variable names completely generic** - `v1`, `v2`, `result`, `a1`, `a2` provide no semantic information
+- **Exception handling incomplete** - `test_cpp_exception` shows throw but no catch blocks recovered
+- **Magic numbers unexplained** - Constants like `4700`, `1001`, `14` are optimized values without source context
+- **20 external functions failed** - Standard library and runtime functions not decompiled, blocking standalone compilation
+
+### Best Quality Aspect:
+- **Redundancy Elimination (8/10)** - Code is clean without dead code or duplicate expressions due to compiler optimization removing redundancy before decompilation
+
+### Most Needs Improvement:
+- **Composite Type Recovery (2/10)** - Complete failure to recover any C++ class structures, forcing all member access through opaque pointer arithmetic
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ class layouts from vtable structures** - Analyze vtable pointers to reconstruct class definitions with field names and offsets
+2. **Infer variable names from string literals and usage patterns** - `v1` initialized with `"Test"` should be named `name` based on the `strncpy` pattern in source
+3. **Add decompilation confidence annotations** - Mark optimized-away code regions with comments explaining constant folding (e.g., "// OPTIMIZED: compile-time constant evaluation")

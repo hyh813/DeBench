@@ -1,0 +1,125 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `local_d8`, `local_d0`, `iVar1`, `uVar2` with no semantic meaning. Original names like `sum`, `args`, `count` are lost and marked as "Unresolved local var".
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Core function names preserved well (`cdecl_func`, `varargs_func`, `func_struct_byval`), but caller functions lose parameter info showing as `call_cdecl(void)` instead of proper signatures.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Hex constants dominate (`0xf`, `0x32`, `0x2a`, `0x12345678`) instead of decimal values, making expected results harder to verify against source comments.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Excessive warning comments ("WARNING: Unknown calling convention", "Unresolved local var", "Removing unreachable block") clutter the code without adding value.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: `varargs_func` uses complex nested loops with goto labels (`LAB_00101340`, `LAB_00101396`) instead of clean for/while constructs, making logic hard to follow.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved, but caller functions collapsed to constant returns (e.g., `call_cdecl` returns `0xf` directly) losing call semantics.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Simple functions read linearly, but varargs functions have forward jumps and complex branching that disrupts top-to-bottom reading flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Aggressive constant folding eliminated computation logic entirely in caller functions, making it impossible to understand original call patterns.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (`int`, `char*`, `double`, `longlong`), but function pointers degraded to `code*` and some types show as `undefined8`.
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Struct types well-recovered (`LargeStruct`, `SmallStruct`, `BigStruct`) with field access preserved (`s.data[0]`, `p->x`, `p->y`).
+
+**11. Type Safety:** Score: 7/10  
+Justification: Casts present but generally safe (`(int)sVar2`, `(char *)0x0`), no dangerous pointer arithmetic observed in recovered code.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Only auto-generated warning comments present; no algorithm explanations, no documentation of function purpose or behavior.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Varargs pattern not recognized or documented; standard library calls (`strlen`, `printf`, `va_start`) not identified as idioms.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings flag issues ("Unknown calling convention", "Unresolved local var") but don't explain impact or suggest manual review.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `p != NULL` checks not explained), no postconditions or error condition documentation recovered.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls visible but relationships not documented; no call graph or dependency information provided.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in binary order roughly matching source, but no logical grouping or namespace structure recovered.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: External dependencies (`printf`, `puts`, `strlen`, `__libc_start_main`) undeclared; code won't compile standalone without stubs.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (4+7+5+5)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (5+6+6+5)/4 = 5.50 × 0.25 = 1.375
+Level 3 (Type):        (7+8+7)/3   = 7.33 × 0.20 = 1.466
+Level 4 (Semantic):    (3+4+6+2)/4 = 3.75 × 0.15 = 0.563
+Level 5 (Contextual):  (6+6+4)/3   = 5.33 × 0.10 = 0.533
+---------------------------------------------------------
+Overall Score:                                  5.51/10
+```
+
+**Overall Readability Score: 5.5/10**
+
+---
+
+### Critical Defects
+
+- **Constant folding eliminated computation logic**: Caller functions like `call_cdecl()` return `0xf` directly instead of showing `cdecl_func(5, 10)` call, losing semantic meaning
+- **Generic variable names obscure purpose**: `local_d8`, `local_d0`, `iVar1` should be `stack_offset`, `arg_ptr`, `sum` based on usage patterns
+- **Varargs handling overly complex**: The `varargs_func` decompilation uses goto-based loops instead of recognizable for-loop with `va_arg` pattern
+- **No semantic comments**: Zero documentation of function purpose, expected values, or test case intentions despite source having extensive comments
+- **Missing external declarations**: `printf`, `puts`, `strlen` used without declarations, preventing standalone compilation
+
+---
+
+### Best Quality Aspect
+
+- **Composite Type Recovery (8/10)**
+- Struct definitions (`LargeStruct`, `SmallStruct`, `BigStruct`) preserved accurately with correct field access patterns (`s.data[i]`, `p->x`, `p->y`)
+
+---
+
+### Most Needs Improvement
+
+- **Assertion & Contract Recovery (2/10)**
+- No preconditions, postconditions, or error handling contracts documented despite source having explicit null checks and validation logic
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Preserve call semantics over constant folding**: Even at -O0, avoid collapsing function calls to constants; show actual call sites to maintain traceability to source
+
+2. **Infer variable names from usage patterns**: Variables used in accumulation (`iVar2 += *local_d0`) should be named `sum`; loop counters should be named `i`; stack offsets should indicate purpose
+
+3. **Recover high-level control structures from patterns**: Detect varargs patterns (`va_start`/`va_arg`/`va_end` sequences) and emit clean for-loops instead of goto-based assembly-like constructs

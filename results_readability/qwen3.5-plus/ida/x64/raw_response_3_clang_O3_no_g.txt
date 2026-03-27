@@ -1,0 +1,109 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Nearly all variables use generic names (`a1`, `a2`, `v0`, `v1`, `v2`) with no semantic meaning. For example, `local_vars` parameter `a1` should be `x`, and `heap_basic`'s `v2` should be `arr`. No variable names reflect their purpose (buffer, counter, pointer, etc.).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most user functions preserved original names (`local_vars`, `heap_basic`, `global_var_access`), which is excellent. However, some are generic (`sub_1020`, `deregister_tm_clones`), and the metadata mismatch (claims Ghidra but header says IDA Pro) is concerning.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation (`0xFFFFFFFFLL`, `0x10u`, `0x28u`). Some constants are recoverable (42 in `address_of_local`), but SIMD constants (`xmmword_3010`, `xmmword_30A0`) are opaque. No named constants recovered.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts present: SIMD intrinsics (`_mm_load_si128`, `_mm_add_epi32`), vector register variables (`si128`, `v2`-`v15`), and alignment calculations (`& 0xFFFFFFFFFFFFFFF0LL`). These obscure the original simple logic considerably.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Simple loops transformed into complex SIMD vectorized code with multiple branches. `vla_stack` and `alloca_usage` have 50+ lines of optimized loop unrolling instead of simple `for` loops. Some functions like `stack_alias` collapsed to single return statements.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries preserved correctly, but internal structure heavily transformed. `test_stack_memory` and `test_heap_memory` have constant-folded printf calls. Helper functions like `create_tree_node` preserved but `tree_heap_traversal` collapsed to `return 60`.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but complex functions have multiple early returns and nested conditionals from optimization. `heap_calloc` has 15+ labels (LABEL_10, LABEL_12, LABEL_14, LABEL_15) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Aggressive loop unrolling creates massive redundancy. `large_stack_frame` has 8 SIMD load operations and 8 vector additions per iteration instead of simple byte assignment. No decompiler comments explaining this is optimization artifact.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Types degraded to generic forms (`__int64`, `_DWORD`, `_QWORD`, `_OWORD`). Original `int`, `char*`, `Point*` lost. Function pointers become `__int64`. Some unsigned/unsigned confusion (`unsigned int` returns for signed operations).
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Struct types completely lost. `Point` struct accessed as raw offsets (`v2[1]`, `result + 8`). `Node` linked list becomes `_QWORD*` with manual offset arithmetic. No struct definitions recovered in output.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present (`(__int64)a1`, `(char *)&v17`). Pointer arithmetic on void pointers. However, no obvious buffer overflow patterns introduced by decompiler. Function pointer calls lack type signatures.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Almost no meaningful comments. Only auto-generated type annotations (`// rax`, `// [rsp+0h]`). No algorithm explanations, no decompiler confidence indicators. The single comment "positive sp value has been detected, the output may be wrong!" is a warning, not documentation.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Common patterns not recognized. `malloc`/`free` pairs not identified as heap allocation patterns. Linked list traversal in `linked_list_heap` not labeled. Loop unrolling not commented as optimization artifact.
+
+**14. Anomaly Indication:** Score: 4/10  
+Justification: 17 functions marked "FAILED to decompile" which is good transparency. However, silent semantic losses (constant folding in `tree_heap_traversal`) not flagged. No warnings about potential undefined behavior in `dangling_pointer`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `a1 > 0` requirements). Null checks present in code but not as contracts. No postcondition inference. Error return values (`0xFFFFFFFFLL`) not explained as -1.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls preserved but relationships not documented. Global variables (`global_counter`, `static_local_counter`) referenced but no usage map. Callback mechanism in `set_global_callback`/`call_global_callback` not explained.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in single output, matching source structure. Static functions preserved with `static` semantics. However, no file/section organization comments to match original's section headers (3.1, 3.2, 3.3, 3.4).
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: 17 external functions failed to decompile (malloc, free, printf, etc.). Would require significant stubbing to compile. Type mismatches (`_OWORD`, `__m128i`) need headers. Not standalone compilable.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+4)/4 = 4.75 × 0.30 = 1.425
+Level 2 (Structural):  (5+6+6+4)/4 = 5.25 × 0.25 = 1.313
+Level 3 (Type):        (5+3+6)/3   = 4.67 × 0.20 = 0.934
+Level 4 (Semantic):    (2+3+4+2)/4 = 2.75 × 0.15 = 0.413
+Level 5 (Contextual):  (5+6+3)/3   = 4.67 × 0.10 = 0.467
+
+Overall = 1.425 + 1.313 + 0.934 + 0.413 + 0.467 = 4.55/10
+```
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Variable names completely generic** (`a1`, `v0`, `v1`) with zero semantic recovery despite clear usage patterns
+- **Struct types lost entirely** - `Point`, `Node`, `TreeNode` accessed via raw pointer arithmetic
+- **Aggressive optimization artifacts** (SIMD, loop unrolling) not identified or commented as compiler transformations
+- **17 library functions failed to decompile** without stubs or documentation
+- **Metadata inconsistency** - claims `-O0` compilation but decompiled code shows `-O3` optimization patterns
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most user-defined function names preserved accurately from source (`local_vars`, `heap_basic`, `global_var_access`), maintaining semantic identity.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Virtually no explanatory comments; auto-generated type annotations don't help understand logic or intent.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in malloc size calculations should be named `size` or `count`)
+2. **Add optimization artifact detection** - Identify and comment SIMD vectorization, loop unrolling, and constant folding as compiler transformations, not original source
+3. **Recover composite type definitions** - Reconstruct struct/union definitions from access patterns and provide field name suggestions based on usage context

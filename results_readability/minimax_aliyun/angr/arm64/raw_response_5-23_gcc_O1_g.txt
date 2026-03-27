@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`a0`, `a1`, `v0`, `v1`, `v2`, `ptr`, `i`). The parameter `a0` should be `size` based on `param_macro_constants` usage. No semantic meaning recovered.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions like `param_macro_constants`, `call_macro_constants`, `param_asm_basic` match source names well. However, many utility functions use address-based names (`sub_400824`, `sub_400924`). Mixed result - main API functions good, infrastructure functions poor.
+
+**3. Literal Clarity:** Score: 7/10  
+Justification: Magic numbers like `0x400` (1024=MAX_SIZE), `64` (16*4), `0x200` (512) are correctly expanded from macros. The value `30` for `sysconf(_SC_PAGESIZE)` is accurate. Some constants like `7` for mmap PROT flags are unexplained but functionally correct.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Redundant patterns present - `memcpy` called twice in `param_asm_multi_insn`. Stack frame setup noise (`v0 = &v1;`) appears frequently. Stack_chk_guard instrumentation adds clutter. Some dead code from register spilling.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow is mostly natural with if-else and while-do loops. The `param_asm_clobber` correctly uses a do-while loop. At `-O0`, control flow should closely match source, and it does for most functions.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized (20-50 lines typical). The test wrapper functions properly call the param functions. Good separation between `param_*` and `call_*` functions matching source design.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom. Early returns used appropriately in error handling (e.g., `param_dynamic_code`). One complex forward jump in `call_asm_privileged` but manageable.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Duplicate `memcpy` calls in `param_asm_multi_insn` create redundancy. Loop unrolling minimal at `-O0`. Some redundant stack frame setup but not severe.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `unsigned int`, `unsigned long`, `unsigned long long` appropriately for ARM64. However, loses sign information - source uses `int` but decompilation uses `unsigned`. Some `void*` vs specific pointer type confusion.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: No struct recovery visible. Arrays accessed via pointer arithmetic (`ptr + v0 * 4`). The `arr` parameter in `param_asm_clobber` should be `int*` but is `unsigned long`. No composite types reconstructed.
+
+**11. Type Safety:** Score: 5/10  
+Justification: Pointer arithmetic used directly without bounds checking. Some unsafe conversions between pointer types. The `param_asm_simd` uses raw pointer arithmetic without type safety. Moderate risk of undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No comments explaining macro origins, assembly semantics, or algorithm intent. The decompiler provides no guidance on why certain values are used. Only auto-generated function signatures present.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized - `__printf_chk` for printf, `__aarch64_ldadd4_acq_rel` for atomic operations. But no explicit naming of patterns like "atomic fetch-add" or "variadic macro expansion".
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Good that it reports "Failed to decompile function __aarch64_ldadd4_acq_rel" - shows awareness of issues. However, silent about other potential problems like the complex conditional in `call_asm_privileged` using `arm64g_calculate_condition`.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. No indication that `param_asm_atomic` requires aligned memory or that `mmap` can fail. Zero contract information recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: External references documented with `extern` declarations (e.g., `extern char g_411f60`). Function call relationships partially visible but not explicitly documented. Global variable usage not clearly mapped.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically - preprocessing test functions together, asm test functions together. Static functions properly scoped. Matches source file organization reasonably well.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has `extern` declarations for external symbols. Should compile with libc/posix headers. Some stubs needed for undefined symbols like `g_411f60`. Generally compilable with moderate patching.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.3/10
+
+**Critical Defects:**
+- Variable naming is entirely generic (`a0`, `a1`, `v0`, `v1`) - should infer semantic names from usage like `size`, `x`, `y`, `result`
+- No comments explaining macro origins (e.g., `0x400` = MAX_SIZE = 1024)
+- No struct recovery - all composite types lost to raw pointer arithmetic
+- Zero contract/precondition documentation despite clear requirements (e.g., aligned memory for atomic ops)
+- Redundant code (duplicate memcpy calls) not eliminated
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions maintain appropriate granularity matching source design. The param/call function pairs are properly separated, and function sizes are reasonable.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+The decompiled code has zero explanatory comments. At `-O0`, the code should closely match source, so comments explaining macro expansions, assembly semantics, and algorithm intent are critical for readability.
+
+**Top 3 Recommendations:**
+1. Infer variable names from usage patterns - `a0` in `param_macro_constants` should be `size` based on comparison with MAX_SIZE
+2. Add comments for macro-expanded literals - explain that `0x400` is MAX_SIZE (1024) and `64` is BUFFER_COUNT*4
+3. Recover struct types from pointer arithmetic patterns - the array parameter in `param_asm_clobber` should be reconstructed as `int*` with proper type

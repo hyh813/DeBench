@@ -1,0 +1,102 @@
+## EVALUATION RESULTS
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names like `local_28`, `iVar1`, `sVar1`, `uStack_c` with zero semantic meaning. Original source had meaningful names like `value`, `name`, `data`, `capture_by_value` that are completely lost.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Test function names preserved (`test_cpp_member_func`, `test_cpp_constructor`), but many functions labeled `FUN_00011030`, `FUN_00011160`. External function wrappers incorrectly call themselves recursively (`operator_new` calls `operator_new`).
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere without explanation: `0x125c`, `0x15`, `0x2bf`, `0x96`, `0xfa`. String literals referenced as `DAT_000131e5` instead of actual content. Original constants like `0x1234` for class ID lost.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Compiler initialization artifacts present (`_init`, `__do_global_dtors_aux`, `register_tm_clones`). Multiple destructor versions for same class. Recursive external function wrappers add confusion without value.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Exception handling completely lost (`test_cpp_exception` has no try-catch structure, just throws). Many test functions reduced to constant returns (`test_cpp_operator_overload` returns `0x16`). Virtual calls use raw pointer dereferencing.
+
+**6. Function Decomposition:** Score: 5/10  
+Justification: Template instantiations properly separated (`template_max_int_`, `template_max_double_`). However, multiple destructor versions for same class (Base::~Base appears 3+ times) creates fragmentation.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Most functions read top-to-bottom, but complex pointer arithmetic obscures flow (`*(int *)(this + *(int *)(*(int *)this + -0xc) + 4)`). Virtual dispatch through `(**local_14)(&local_14,5)` is hard to follow.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: Duplicate function entries (`MultiDerived::funcB` at 0x11d10 and 0x11d20 with different signatures). Multiple destructor variants for same class. External function wrappers that call themselves add no value.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Heavy use of `undefined4`, `undefined` types instead of precise types. Some class types recovered (`Base*`, `Container_int_*`) but const-correctness lost. Function pointers often `code**` instead of proper signatures.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/class definitions recovered. Field access through pointer arithmetic (`this + 0x28`, `this + 0x50`). Vtable layout implicit through `PTR_virtual_func_00015ce4` pointers. Original class structures completely lost.
+
+**11. Type Safety:** Score: 3/10  
+Justification: Numerous unsafe casts: `(undefined4*)`, `(code**)`, `(int *)`. Pointer arithmetic on class objects without type safety (`piVar2 = piVar2 + 1`). Function pointer calls through void-like types.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Only decompiler header comment present. Zero comments explaining complex operations like virtual dispatch, exception handling, or pointer arithmetic. Original source had extensive documentation completely lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: C++ patterns not identified: RAII (smart pointers), virtual dispatch, exception handling, template instantiation all appear as raw code. Lambda expressions completely lost (reduced to constant return `0x55`).
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. Recursive external function calls not flagged as errors. Broken exception handling structure not indicated. Confident presentation of incorrect code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., null checks). No postconditions inferred. Exception contracts completely lost. Original try-catch semantics not recovered.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but inheritance relationships lost in pointer arithmetic. Virtual dispatch not clearly indicated. Static member access (`LifecycleClass::instance_count`) preserved but class hierarchy unclear.
+
+**17. Module Organization:** Score: 4/10  
+Justification: All code in single output file. No logical grouping by class or feature. External functions mixed with application code. Original source organization (sections, classes) not preserved.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Would not compile: recursive external function definitions, missing type definitions, incorrect function signatures. External dependencies not properly declared. Requires extensive manual fixes.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (2+5+4+4)/4 = 3.75
+L2 Average: (4+5+5+4)/4 = 4.50
+L3 Average: (4+3+3)/3 = 3.33
+L4 Average: (2+2+2+2)/4 = 2.00
+L5 Average: (4+4+3)/3 = 3.67
+
+Overall = (3.75 × 0.30) + (4.50 × 0.25) + (3.33 × 0.20) + (2.00 × 0.15) + (3.67 × 0.10)
+Overall = 1.125 + 1.125 + 0.666 + 0.300 + 0.367 = 3.583
+```
+
+**Overall Readability Score: 3.6/10**
+
+### Critical Defects:
+- **Variable names completely generic** (`local_28`, `iVar1`) - should recover semantic names from usage patterns
+- **Exception handling structure lost** - `test_cpp_exception` has no try-catch, just raw throw calls
+- **Recursive external function wrappers** - `operator_new` calls itself, indicating decompilation error
+- **No class/struct definitions recovered** - all composite types accessed via pointer arithmetic
+- **Lambda expressions reduced to constants** - `test_cpp_lambda` returns `0x55` instead of showing closure logic
+
+### Best Quality Aspect:
+- **Function Naming Quality (5/10)** - Test function names preserved from source, providing some anchor points for understanding
+
+### Most Needs Improvement:
+- **Semantic Transparency (2.0/10 average)** - Zero comments, no idiom recognition, no anomaly indication, no contract recovery - decompiler presents broken code with false confidence
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover C++ exception handling structure** - Detect `__cxa_*` calls and reconstruct try-catch blocks with proper scoping
+2. **Infer variable names from usage context** - Analyze how variables are used (size checks, array indexing) to suggest semantic names
+3. **Flag uncertain decompilations** - Add confidence annotations for indirect calls, complex pointer arithmetic, and unrecovered C++ features

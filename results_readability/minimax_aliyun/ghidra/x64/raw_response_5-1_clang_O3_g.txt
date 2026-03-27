@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: Every local variable is marked as "Unresolved local var" with `@[???]` suffix. The code uses only generic buffer names like `local_24`, `puVar1`, `plVar2`, `iVar1`, `sVar1` - completely losing semantic meaning. Compare to source where variables like `obj`, `r1`, `r2`, `r3` are clearly named.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Test functions are perfectly named matching source (`test_cpp_member_func`, `test_cpp_constructor`, etc.). Template functions show type parameters (`template_max<int>`). However, internal functions like `FUN_00101020` remain cryptic, and class member functions lack proper naming (e.g., `Container<int>::Container` vs constructor name).
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: The code is saturated with magic numbers: `0x125c` (4704), `0x3e9` (1001), `0x2a` (42), `0x47` (71), `0x28a` (650), etc. No constants or explanatory comments. The literal `0x3e9` in `LifecycleClass::instance_count * 0x3e9 + 0x15` should clearly be `* 1000 + 21` with explanation.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution from 15+ "WARNING" comments ("Unknown calling convention", "Removing unreachable block", "Could not recover jumptable"). "Unresolved local var" comments appear repeatedly. Explicit null-initialization loops like `local_24[0x10] = '\0'` through `local_24[0x1e] = '\0'` are compiler artifacts that clutter readability.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic control flow (if/else, returns, loops) is preserved and readable. However, `call_virtual_func` has a warning about unrecovered jumptable, and `test_cpp_exception` shows incomplete exception flow with "WARNING: Subroutine does not return" on `__cxa_throw`. At -O0, this level of control flow degradation is unexpected.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are well-decomposed matching source granularity. Each test function is separate. Template instantiations are properly separated (`template_max<int>`, `template_max<double>`). Class methods extracted as individual functions. Good cohesion overall.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom without excessive jumps. Early returns used appropriately. No deep nesting (>4 levels) observed. Minor forward jumps exist but don't severely disrupt readability.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: No obvious dead code or duplicate expressions. Loop unrolling is minimal (the null-initialization loop is compiler artifact, not optimization). Common subexpression elimination not problematic. Code is reasonably clean.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Basic types preserved (`int`, `double`, `char`). However, extensive use of `undefined4`, `undefined8`, `undefined*` for unresolved types. Pointers use `undefined8*` instead of proper types. `ulong` used for printf arguments. At -O0, we should see precise types like `int32_t`, `size_t`.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Zero struct recovery. The original `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `Container<T>` are completely lost. Instead we see raw buffers: `local_24 [36]` for SimpleClass, `undefined8 *puVar1` for RTTIBase*. DWARF prototypes show "Container" but no struct definition with fields like `data[10]`, `size`.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe patterns: casting through `undefined8*` for object pointers, arithmetic on void pointers (`*plVar2 + 8`), treating `undefined4*` as exception objects. No const correctness. Function pointer calls use raw `code*` type. These patterns risk undefined behavior.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Mixed quality. DWARF prototypes are valuable (e.g., "DWARF original prototype: void Container(Container<int> * this)"). Warnings provide some context. But most comments are auto-generated noise ("WARNING: Unknown calling convention") rather than explaining algorithm or intent. No explanation of what the functions actually do.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: C++ idioms present but not named or explained. Virtual function calls show vtable pattern but not documented. Exception handling shows try/catch but not labeled. Template instantiation pattern visible but not recognized as such. No "This implements X pattern" comments.
+
+**14. Anomaly Indication:** Score: 6/10  
+Justification: Warnings appropriately flag issues: "Could not recover jumptable", "Treating indirect jump as call", "Subroutine does not return". However, these are generic warnings without specific guidance. The warning about `call_virtual_func` doesn't explain it's a vtable dispatch that needs manual analysis.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: Zero contract information. No preconditions (e.g., "requires: obj != nullptr"), no postconditions, no invariants documented. The code provides no guidance on expected input/output relationships or error conditions.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function names hint at relationships (test_cpp_* functions called from test_cpp_oo_features). But no explicit "Called by:" or "Calls:" comments. Virtual dispatch relationships not documented. Global variable `LifecycleClass::instance_count` is correctly identified but relationships to other code unclear.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions grouped in single file. Test functions logically grouped. Template functions together. But no namespace recovery, no header file structure, no logical grouping beyond alphabetical. All 39 functions in one flat namespace.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code uses standard functions (`puts`, `printf`, `strlen`) but doesn't declare them. Runtime functions (`__cxa_throw`, `operator_new`, `operator_delete`, `__dynamic_cast`) not declared. Would require adding includes and extern declarations. No dependency documentation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.4/10
+
+**Critical Defects:**
+- Every local variable is "Unresolved" - complete loss of variable naming (e.g., `r1`, `r2`, `r3` should be recovered from usage)
+- Zero struct/class recovery - `SimpleClass`, `LifecycleClass`, `Base`, `Derived`, `Container<T>` all lost, replaced with raw buffers
+- Magic numbers everywhere without explanation (e.g., `0x125c`, `0x3e9`, `0x2a`)
+- Extensive "WARNING" noise comments cluttering code (15+ warnings)
+- No type precision - uses `undefined4`, `undefined8`, `undefined*` instead of proper types
+
+**Best Quality Aspect:** Function Decomposition (scored 8/10)  
+Functions are well-granular and match source structure. Test functions properly separated, template instantiations correctly split, class methods extracted as individual functions with DWARF prototypes.
+
+**Most Needs Improvement:** Variable Naming Quality (scored 2/10)  
+Every local variable is marked unresolved with `@[???]`. The decompiler made no attempt to infer names from usage patterns. At -O0 with debug symbols, this should be near-perfect.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Infer variable names from usage patterns**: Variables like `local_24` used with `strncpy(local_24,"Test",5)` and `strlen(local_24)` should be named `name` or `name_buffer` based on string operations.
+2. **Recover class/struct definitions**: Use vtable pointers, constructor patterns, and field access patterns to reconstruct `SimpleClass` with fields `value` (int) and `name` (char[32]).
+3. **Replace magic numbers with constants**: Detect computed constants (e.g., `0x3e9 = 1000`) and add comments explaining the computation, or recognize them as expected output values from the test functions.

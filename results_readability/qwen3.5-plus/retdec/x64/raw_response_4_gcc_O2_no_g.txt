@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All variables use generic names (a1, a2, v1, v2, temp) with zero semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `len`, `large`, `s` which are completely lost.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (cdecl_func, call_cdecl, varargs_func), but helper functions use mechanical names (function_1070, function_1080) and some calling convention functions lost their semantic distinction.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere (0xffffffff, 0x100000000, 0x40091eb851eb851f) with no explanation. String literals stored in opaque globals (g1-g18) with UTF-8 encoded Chinese text that's unreadable in decompiled form.
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Significant compiler artifacts: stack canary checks (__readfsqword, __stack_chk_fail) in every function, unnecessary bit masking (& 0xffffffff), and assembly intrinsics (__asm_movdqa, __asm_movaps, __asm_cvtsi2sd) polluting the code.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Uses goto labels (lab_0x13c0, lab_0x18d0) instead of natural loop constructs. Varargs functions have extremely convoluted control flow with nested while loops that should be simple for loops. Some functions constant-folded (call_cdecl returns 15 directly).
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Function boundaries mostly preserved, but inconsistent quality: call_* functions over-simplified to constants, while varargs_func and func_mixed_args are overly complex. Original small cohesive functions not maintained.
+
+**7. Code Linearization:** Score: 5/10  
+Justification: Multiple forward jumps disrupt top-to-bottom reading. Goto labels break natural flow. Some functions have reasonable linearity but varargs and test functions have significant non-linear patterns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Repeated bit masking operations throughout. Stack canary checks duplicated in nearly every function. Loop patterns in varargs_func show redundant variable initialization and checking.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 3/10  
+Justification: Severe type erosion - everything is int64_t or int32_t. Original types lost: char*, double, struct pointers, va_list. func_mixed_args lost the double parameter (a3 instead of double d). No const-correctness preserved.
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Complete failure - LargeStruct and SmallStruct definitions entirely lost. func_struct_byval has no struct parameter in signature. func_struct_byptr takes int64_t instead of SmallStruct*. No field names recovered.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Implicit unsafe casts throughout via int64_t usage. Pointer arithmetic on generic integers. func_struct_byptr does *(int32_t *)(a1 + 4) which loses type safety. No null check annotations recovered.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments recovered from original source. No documentation of any kind. Original had extensive comments explaining each test case (CALL-L1-01, PARAM-L1-01, etc.) - all lost.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No pattern recognition visible. Varargs pattern not identified as stdarg usage. Function pointer callback pattern not recognized. Structure passing patterns completely obscured.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings about uncertain decompilation. No flags for potential issues with varargs handling or struct passing. Assembly intrinsics appear without explanation of why they're needed.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., ptr != NULL checks not annotated). No postconditions inferred. Original null checks in func_struct_byptr preserved but not documented as contracts.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships not documented. Global variables (g1-g22) have no semantic meaning - should be named for their string content. No call graph documentation.
+
+**17. Module Organization:** Score: 6/10  
+Justification: All functions in one file matching original structure. Function prototypes section at top helps navigation. However, no logical grouping beyond original flat structure.
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Includes standard headers (stdio.h, stdlib.h, string.h). Has function prototypes. Would likely compile with modifications but has undefined references (__asm_hlt, __readfsqword) and architecture-specific intrinsics.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1 Average: (2+7+3+4)/4 = 4.0
+L2 Average: (4+6+5+5)/4 = 5.0
+L3 Average: (3+2+4)/3 = 3.0
+L4 Average: (1+2+2+2)/4 = 1.75
+L5 Average: (4+6+6)/3 = 5.33
+
+Overall = (4.0 × 0.30) + (5.0 × 0.25) + (3.0 × 0.20) + (1.75 × 0.15) + (5.33 × 0.10)
+        = 1.20 + 1.25 + 0.60 + 0.26 + 0.53
+        = 3.84/10
+```
+
+**Overall Readability Score: 3.8/10**
+
+### Critical Defects:
+- **Variable `a1`, `a2`, `v1` should be named semantically** (e.g., `count`, `sum`, `stack_canary`) based on usage patterns
+- **Struct types completely lost** - LargeStruct and SmallStruct definitions not recovered, replaced with int64_t
+- **Zero comments recovered** from original 665 LOC of well-documented source code
+- **Assembly intrinsics pollute code** (__asm_movdqa, __asm_cvtsi2sd) without explanation
+- **Varargs handling severely degraded** - original simple va_list loop became 70+ lines of convoluted logic
+
+### Best Quality Aspect: **Function Naming Quality (7/10)**
+- Most original function names preserved (cdecl_func, varargs_func, test_calling_conventions), maintaining semantic connection to source.
+
+### Most Needs Improvement: **Comment Quality & Presence (1/10)**
+- Complete loss of all original documentation, making it impossible to understand test purposes without referring back to source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover and preserve source comments** - Even at -O0 with debug symbols, comments should be extractable from DWARF debug info
+2. **Infer variable names from usage patterns** - Variables used in loop counters should be named `i`, `count`; accumulators should be `sum`, `total`
+3. **Recover struct definitions from memory access patterns** - Regular offset patterns (a1+0, a1+4) indicate struct fields that should be reconstructed with field names

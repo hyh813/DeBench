@@ -1,0 +1,138 @@
+# Decompilation Readability Assessment
+
+## LEVEL 1: LEXICAL CLARITY
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+Justification: Almost all variables use generic auto-generated names like `param_1`, `param_2`, `iVar1`, `piVar1`, `uVar1`, `local_20`, `local_34`. The original source uses meaningful names like `x`, `c`, `arr`, `n`, `str`, `p` which are completely lost. This makes tracking variable purpose extremely difficult.
+
+### 2. Function Naming Quality  
+**Score: 9/10**
+Justification: Nearly all function names perfectly match the original source: `double_value`, `process_int`, `process_char`, `process_short`, `process_long`, `process_ll`, `process_float`, `process_double`, `process_bool`, `array_1d_stack`, `array_string`, `ptr_single`, `ptr_double`, `linked_list`, etc. The decompiler correctly recovered the original function names.
+
+### 3. Literal Clarity
+**Score: 6/10**
+Justification: Magic numbers like `0x20` (32 for case conversion), `0xb` (11), `0x61` ('a'), `0x62` ('b'), `0xf` (15), `0x14` (20) are present without explanation. However, array offsets like `0xb` (11 for 10x10 matrix stride), `0x19` (25 for 5x5x5 stride) are mathematically correct. Named constants from source (STATE_IDLE, STATE_RUNNING) are lost.
+
+### 4. Noise Reduction
+**Score: 8/10**
+Justification: The code is relatively clean with minimal compiler artifacts. Some stack protection functions (`__stack_chk_fail_local`) and thunk functions are present but don't significantly impede readability. No redundant casts or debug instrumentation observed.
+
+---
+
+## LEVEL 2: STRUCTURAL INTELLIGIBILITY
+
+### 5. Control Flow Naturalness
+**Score: 8/10**
+Justification: Loops are properly recovered as while/do-while constructs. For example, `array_1d_stack` uses `do { ... } while (param_1 != piVar1)` which is natural. Conditionals are clear. At `-O0`, the control flow closely matches the original source without goto statements or confusing jumps.
+
+### 6. Function Decomposition
+**Score: 9/10**
+Justification: Function granularity matches the original source perfectly. Each small function (double_value, process_char, etc.) is preserved as a separate function. The test functions are also properly decomposed. No inlining or outlining artifacts since this is `-O0` compilation.
+
+### 7. Code Linearization
+**Score: 8/10**
+Justification: The code generally reads top-to-bottom with minimal disruption. Early returns are used appropriately (e.g., in `array_string` when string is empty). No forward jumps into loop bodies. The nesting depth is reasonable (typically 1-2 levels).
+
+### 8. Redundancy Elimination
+**Score: 8/10**
+Justification: No obvious dead code or significant redundancy. Loop unrolling is not present (as expected at -O0). Common subexpression elimination artifacts are minimal. The code is clean and straightforward.
+
+---
+
+## LEVEL 3: TYPE SYSTEM FIDELITY
+
+### 9. Type Precision
+**Score: 7/10**
+Justification: Most types are accurate: `int` for integers, `short` for process_short, `float`/`longdouble` for floating point. However, `process_bool` returns `uint` instead of `_Bool`, `process_ll` returns `undefined8` instead of `long long`, and `complex_callback` has parameter type issues. Function pointers use generic `code *` type.
+
+### 10. Composite Type Recovery
+**Score: 3/10**
+Justification: This is a critical weakness. All composite types are completely flattened to raw pointer arithmetic:
+- `Point3D` struct becomes `param_1[1] + *param_1 + param_1[2]` (x+y+z)
+- `Rect` nested struct becomes `param_1[3] + *param_1`
+- `Node` self-referential struct becomes `param_1[1]` for next pointer
+- `UnionData` union becomes `float *param_1` with casts
+- `State` enum values are hardcoded as 0, 2, 3 instead of STATE_IDLE, etc.
+- `Flags` bitfield works but loses field names
+- `Device` with function pointer becomes `param_1[1]` for function pointer
+
+### 11. Type Safety
+**Score: 6/10**
+Justification: Some unsafe operations present. Pointer arithmetic is explicit but correct. The `ptr_diff` function has `param_1 - param_2 >> 2` which loses parentheses - this is actually incorrect (should be `(param_1 - param_2) >> 2` or `/4`). Function pointer type `code *` is overly generic. Some implicit conversions between int and pointer types.
+
+---
+
+## LEVEL 4: SEMANTIC TRANSPARENCY
+
+### 12. Comment Quality & Presence
+**Score: 2/10**
+Justification: No useful comments in the decompiled code. The only comments are the standard "Decompiled by BinaryAI" header. No explanation of algorithms, no documentation of preconditions/postconditions, no indication of uncertainty. The original source has extensive comments explaining each test case which are completely lost.
+
+### 13. Idiom Recognition
+**Score: 5/10**
+Justification: Some common patterns are visible (linked list traversal, array iteration) but not explicitly named or documented. The decompiler doesn't identify the linked list pattern, tree traversal recursion, or graph adjacency list traversal. No bonus for recognizing these idioms.
+
+### 14. Anomaly Indication
+**Score: 3/10**
+Justification: No anomaly flags or warnings. The indirect function calls (e.g., `(*param_1)(param_2)` in ptr_func_simple) are not flagged as potentially unresolved. No indication of uncertain decompilation. The code presents everything with equal confidence even where analysis might be ambiguous.
+
+### 15. Assertion & Contract Recovery
+**Score: 3/10**
+Justification: No preconditions, postconditions, or invariants are documented. The original source has no explicit assertions, but implicit contracts (e.g., "array_1d_stack requires arr != NULL, n >= 0") are not recovered. No documentation of error conditions or return value meanings.
+
+---
+
+## LEVEL 5: CONTEXTUAL COHERENCE
+
+### 16. Cross-Reference Clarity
+**Score: 6/10**
+Justification: Function call relationships are visible in the code (e.g., main calls test functions, test functions call the various process functions). However, no explicit documentation of who calls whom, no callback relationships documented, no global variable usage indicated. The `complex_callback` usage in `ptr_func_complex` shows callback pattern but isn't labeled as such.
+
+### 17. Module Organization
+**Score: 7/10**
+Justification: Functions are logically grouped in the output: initialization functions first, then data type functions, array functions, pointer functions, composite type functions, test functions, and finally main. This roughly matches the original source organization. Static functions are not explicitly marked as static in the decompiled output.
+
+### 18. Build System Compatibility
+**Score: 5/10**
+Justification: The code uses non-standard types: `undefined4`, `undefined8`, `undefined`, `undefined2`, `byte`, `ushort`, `bool`. Function pointer type `code *` is not valid C. Stack variable declarations use complex syntax. Would require significant patching to compile. However, the logic is sound and could be made to compile with moderate effort.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 avg: (2 + 9 + 6 + 8) / 4 = 6.25
+Level 2 avg: (8 + 9 + 8 + 8) / 4 = 8.25
+Level 3 avg: (7 + 3 + 6) / 3 = 5.33
+Level 4 avg: (2 + 5 + 3 + 3) / 4 = 3.25
+Level 5 avg: (6 + 7 + 5) / 3 = 6.00
+
+Overall = (6.25 × 0.30) + (8.25 × 0.25) + (5.33 × 0.20) + (3.25 × 0.15) + (6.00 × 0.10)
+        = 1.875 + 2.0625 + 1.066 + 0.4875 + 0.60
+        = 6.09/10
+```
+
+**Overall Readability Score: 6.1/10**
+
+### Critical Defects
+- **Composite type recovery is severely degraded**: All structs (`Point3D`, `Rect`, `Node`, `TreeNode`, `Graph`, `Device`) are flattened to raw pointer arithmetic with indices like `param_1[1]`, `param_1[2]` instead of named field access (`p->x`, `node->next`)
+- **Variable naming is unusable**: Generic names like `param_1`, `iVar1`, `local_20` make it extremely difficult to track variable purpose across the 1000+ lines of code
+- **No comments or documentation**: Zero useful comments explaining algorithms, contracts, or anomalies
+- **Type precision issues**: `process_bool` returns `uint` instead of `_Bool`, `process_ll` returns `undefined8` instead of `long long`
+- **Enum values hardcoded**: `enum_switch` uses magic numbers 0, 2, 3 instead of named constants STATE_IDLE, STATE_RUNNING, etc.
+
+### Best Quality Aspect
+**Function Naming Quality (9/10)** - The decompiler almost perfectly recovered the original function names from the source. This is the strongest dimension and makes it easy to locate specific functions in the decompiled output.
+
+### Most Needs Improvement
+**Composite Type Recovery (3/10)** - The complete loss of struct/union semantics is the most severe readability issue. Converting `p->x + p->y + p->z` to `param_1[1] + *param_1 + param_1[2]` destroys all semantic meaning and makes the code much harder to understand than necessary.
+
+### Top 3 Recommendations
+1. **Recover struct field names**: Use type analysis and offset patterns to identify struct layouts and generate meaningful field access (e.g., `p->x` instead of `*param_1`)
+2. **Add variable name inference**: Analyze usage patterns to suggest contextual names (e.g., `param_1` used as array index → suggest `arr` or `index`)
+3. **Generate meaningful comments**: Add comments explaining recovered types, algorithm purpose, and any decompilation uncertainties
+4. **Recover enum constants**: Map numeric values back to named constants where possible based on usage patterns
+5. **Use standard C types**: Replace `undefined4`, `undefined8`, `code *` with standard types (`int`, `long long`, `int (*)(int)`)

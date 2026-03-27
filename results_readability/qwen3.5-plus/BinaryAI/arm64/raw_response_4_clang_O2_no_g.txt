@@ -1,0 +1,101 @@
+## EVALUATION: Decompiled Code Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: All variables use generic names like `param_1`, `iVar1`, `uVar2`, `local_8` with no semantic meaning. Original source had meaningful names like `count`, `sum`, `args`, `x`, `y` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names preserved accurately (`cdecl_func`, `varargs_func`, `test_calling_conventions`). Some helper functions use generic names (`FUN_00100640`) but core functions match source.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic numbers everywhere (`0xf`, `0x32`, `0x2a`) without explanation—these are constant-folded results (15, 50, 42). String literals referenced as `&DAT_001014d2` instead of showing actual content.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Varargs functions contain complex stack manipulation code that's hard to follow. External function stubs (`strlen`, `printf` wrappers) and compiler init functions (`_init`, `_fini`, `deregister_tm_clones`) add noise.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Simple functions have natural flow, but varargs uses awkward do-while loops with complex pointer arithmetic. Test functions are constant-folded, losing actual call structure entirely.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: Functions are appropriately sized, but test functions lost their call structure (constant-folded). Varargs handling is monolithic and complex without helper extraction.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Most functions read top-to-bottom clearly. Varargs functions have complex loop structures but still maintain reasonable linearity with early returns.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Constant folding creates redundancy in test functions (all calls replaced with constants). Varargs code has redundant pointer arithmetic patterns that could be simplified.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Basic types mostly correct but struct types lost (passed as `int*`). Return types sometimes wrong (`undefined8` instead of `int`). Varargs signature lost (only shows `int param_1` instead of `int count, ...`).
+
+**10. Composite Type Recovery:** Score: 2/10  
+Justification: Struct types completely lost—`LargeStruct`, `SmallStruct` become `int*` with no field names. `func_struct_byval` takes `int*` instead of proper struct, requiring manual index calculation (`param_1[0x1e]`, etc.).
+
+**11. Type Safety:** Score: 4/10  
+Justification: Many unsafe casts present (`(int *)`, `(byte **)`, `(undefined8 *)`). Pointer arithmetic on struct data without type safety. Varargs handling is completely type-unsafe with manual stack walking.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code. No explanation of complex varargs logic, no decompilation confidence indicators, no API contracts documented.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: Varargs pattern not recognized or documented. Calling convention differences not explained. No identification of test harness patterns or parameter passing idioms.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No indication of varargs handling uncertainty. No warning about type loss for structs. No flags for potential issues with constant-folded test functions.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition documentation (e.g., `param_1 != NULL` for pointer functions). No postcondition inference. No error condition documentation for functions like `func_struct_byptr`.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible but test functions constant-folded losing call relationships. Global variables referenced as `&DAT_001014d2`. No call graph documentation.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single output with no logical grouping comments. External functions mixed with application code. No separation between test harness and implementation.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code has external dependencies (`printf`, `strlen`). References undefined symbols (`completed_0`, `__dso_handle`, `register0x00000008`). Would require significant patching to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+4+5)/4 = 5.00  × 0.30 = 1.50
+Level 2 (Structural):  (6+6+7+5)/4 = 6.00  × 0.25 = 1.50
+Level 3 (Type):        (4+2+4)/3   = 3.33  × 0.20 = 0.67
+Level 4 (Semantic):    (1+3+2+2)/4 = 2.00  × 0.15 = 0.30
+Level 5 (Contextual):  (5+5+4)/3   = 4.67  × 0.10 = 0.47
+─────────────────────────────────────────────────────
+Overall Score:                                  4.44/10
+```
+
+**Overall Readability Score:** 4.4/10
+
+### Critical Defects:
+- **Struct types completely lost**: `LargeStruct` and `SmallStruct` passed as `int*`, requiring manual index calculations like `param_1[0x1e]` instead of `s.data[i]`
+- **Varargs signature destroyed**: `varargs_func(int count, ...)` becomes `varargs_func(int param_1)` with complex manual stack walking code
+- **Zero comments**: No documentation for any non-trivial logic, especially the complex varargs implementation
+- **Test functions constant-folded**: All `call_*` functions return constants instead of showing actual function call structure
+- **Magic number proliferation**: String literals and constants referenced as `&DAT_001014d2` instead of showing actual values
+
+### Best Quality Aspect:
+- **Function Naming Quality (8/10)** - Core function names preserved accurately from source, making it possible to identify test cases and their purposes despite other degradation.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding complex patterns (varargs, struct handling) extremely difficult without referring to original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover composite type structures** - Analyze memory access patterns to reconstruct struct definitions with field names (e.g., detect `param_1[0]` and `param_1[1]` access as `x` and `y` fields)
+2. **Add decompilation confidence annotations** - Flag uncertain recoveries (varargs, calling conventions) with comments like `// DECOMPILER: varargs handling inferred from stack access pattern`
+3. **Preserve string literal content** - Instead of `&DAT_001014d2`, show actual string content `"CALL-L1-01: %d\n"` to maintain test case readability

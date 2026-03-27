@@ -1,0 +1,89 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic patterns like `iVar1`, `iVar2`, `lVar1`, `piVar1` throughout. Loop variables show as "Unresolved local var: int i@[???]". Only a few arrays like `arr`, `matrix`, `funcs` have meaningful names. The original source had clear names like `temp1`, `temp2`, `sum`, `count` which are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Most function names accurately match the original source: `sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`, `recursion_factorial`, `double_value`, `op_add`. Helper functions are well-named. Minor issue: `FUN_00101020` is generic, but this is a startup stub, not part of the test functions.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Multiple unexplained magic numbers throughout: `0x14` (20), `0x1e` (30), `0x32` (50), `0x3e9` (1001), `0x65` (101), `0x2694`, `0x3039`. The decompilation uses hex literals without explaining their semantic meaning. No named constants recovered.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Contains multiple warning artifacts: "WARNING: Removing unreachable block", "WARNING: Unknown calling convention", "WARNING: Subroutine does not return", "Unresolved local var" markers. Stack protection checks (`__stack_chk_fail`) add noise. However, no debug instrumentation or register spilling artifacts in the core logic.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures (`do-while`, `for`) are correctly recovered. Switch statements use proper case labels. The `goto_forward` and `goto_backward` are correctly linearized. Minor issue: Duff's device has awkward labels like `switchD_00101aa1_caseD_7`. At -O0, control flow should be nearly identical to source.
+
+**6. Function Decomposition:** Score: 9/10  
+Justification: Each function is appropriately sized with clear single responsibility. Functions like `sequential_ops` (3 lines), `loop_for_fixed` (12 lines) match source granularity. No inlining or outlining artifacts since compiled at -O0.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Early returns used appropriately in functions like `single_if`, `multi_return`. One forward jump in `loop_break` with `goto LAB_00101583` but this is semantically correct.
+
+**8. Redundancy Elimination:** Score: 9/10  
+Justification: No dead code or common subexpression duplication observed. Loop unrolling is minimal (appropriate for -O0). Code is clean without redundant computations.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses generic `int` types throughout rather than specific widths. Function pointer types shown as `_func_int_int` and `_func_int_int_int` which are reasonable but not precise. No `const` correctness preserved. Signed/unsigned is sometimes unclear (e.g., comparison operators).
+
+**10. Composite Type Recovery:** Score: 8/10  
+Justification: Arrays properly reconstructed: `int matrix[3][4]`, `int arr[5]`, `funcs[3]`, `ops[10]`. The 2D matrix initialization is correctly shown. Function pointer arrays are properly typed as arrays of function pointers.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with correct pointer arithmetic in loops. One minor issue: `loop_break` uses `long lVar1` as array index which could overflow. No unsafe casts observed. Stack canary checks are compiler-added, not semantic issues.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 5/10  
+Justification: Auto-generated comments like "WARNING: Removing unreachable block" and "Unresolved local var" provide some guidance. However, no meaningful comments explaining algorithm intent, preconditions, or non-obvious logic. Test functions have hardcoded values instead of showing the actual test calls.
+
+**13. Idiom Recognition:** Score: 7/10  
+Justification: Patterns like Duff's device, state machines (switch-based and function pointer table), function pointer arrays are all recognizable. However, no explicit naming like "State Machine Pattern" or "Duff's Device" is provided. The structure makes the pattern obvious to a human reader.
+
+**14. Anomaly Indication:** Score: 8/10  
+Justification: Good warnings for: "Unresolved local var", "WARNING: Could not recover jumptable", "WARNING: Treating indirect jump as call", "WARNING: Subroutine does not return". These help identify decompilation limitations. However, some indirect calls could potentially be resolved with more analysis.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions, postconditions, or invariants documented. Functions like `op_div` with division-by-zero check don't have comments explaining the implicit contract. No recovery of assert statements or validation logic documentation.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function calls are visible and traceable. Test functions show which functions are being called. However, no explicit documentation of "called by" or "calls" relationships. Callback relationships in `process_with_callback` are implicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file, ordered by binary address rather than logical grouping. Related functions (like all `op_*` functions) are grouped together. Static functions properly scoped. No header file structure recovered.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code uses standard library functions (`puts`, `__printf_chk`, `__stack_chk_fail`). Would require linking against libc. External dependencies are minimal. Some type definitions (`_func_int_int`) would need stubs for standalone compilation.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.9/10
+
+**Critical Defects:**
+- Variable naming is almost entirely generic (`iVar1`, `iVar2`, `lVar1`) losing all semantic meaning from source
+- Magic numbers like `0x14`, `0x1e`, `0x3e9` appear without explanation or constant names
+- Loop variables show as "Unresolved local var: int i@[???]" - decompiler failed to recover induction variables
+- No contract/precondition documentation for functions with implicit requirements (e.g., `op_div` division-by-zero check)
+- Test functions have hardcoded literal values instead of showing actual function calls with parameters
+
+**Best Quality Aspect:** Function Decomposition (9/10)  
+- Functions are properly sized with clear single responsibility, matching source granularity exactly. No inlining or outlining artifacts since -O0 preserves original structure.
+
+**Most Needs Improvement:** Variable Naming Quality (3/10)  
+- Nearly all local variables use generic patterns (`iVar1`, `lVar1`, `piVar1`) making it extremely difficult to track data flow and understand computation. At -O0, the decompiler should be able to infer meaningful names from usage patterns.
+
+**Top 3 Recommendations:**
+1. **Infer variable names from usage**: Analyze how variables are used (arithmetic, indexing, comparison) to suggest names like `sum`, `count`, `index`, `result` instead of generic `iVar1`
+2. **Detect and name magic numbers**: Identify repeated constants and suggest named constants (e.g., `0x3e9` → `MAX_ITERATIONS`)
+3. **Recover loop induction variables**: Use SSA form and phi-node analysis to identify loop counters and label them as `i`, `j`, `n` based on context

@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 8/10
+Justification: Parameters and local variables generally retain source names (`a`, `b`, `sum`, `count`). However, in `varargs_func`, low-level implementation details leak through as generic names (`local_b8`, `in_RCX`, `in_AL`), and struct copies use temporary names like `s_00`.
+
+**2. Function Naming Quality:** Score: 10/10
+Justification: All function names (`cdecl_func`, `test_calling_conventions`, `param_by_value_int`) are perfectly recovered from the symbol table, matching the source exactly and clearly indicating purpose.
+
+**3. Literal Clarity:** Score: 6/10
+Justification: Simple decimal constants are often represented in hex (e.g., `0x2a` instead of `42`, `0xf` instead of `15`), and string literals are replaced with pointers to data segments (e.g., `&DAT_00103008`), obscuring the immediate semantic meaning.
+
+**4. Noise Reduction:** Score: 5/10
+Justification: The code is cluttered with stack canary checks (`in_FS_OFFSET`, `__stack_chk_fail`) in almost every function. Additionally, large struct passing results in verbose, explicit field-by-field copying sequences that obscure the high-level logic.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10
+Justification: Control flow is generally natural with proper `for` loops and `if-else` blocks. However, `switch` statements (e.g., in `ret_multi_branch`) are decompiled into chains of `if` statements, which is readable but less idiomatic than the original construct.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Function boundaries match the source perfectly. There is no inlining or outlining, which is expected for `-O0`, resulting in a clean 1-to-1 mapping of functions.
+
+**7. Code Linearization:** Score: 9/10
+Justification: The code reads linearly from top to bottom with minimal forward jumps or confusing control flow transfers, making it easy to follow the execution path.
+
+**8. Redundancy Elimination:** Score: 6/10
+Justification: Significant redundancy is present due to the lack of compiler optimization being abstracted away. For example, passing a large struct by value triggers a massive block of assignment statements (`s_00.data[0] = large.data[0]`...) instead of a single logical operation.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 9/10
+Justification: Types are recovered with high precision, including `int`, `char *`, `double`, and `longlong`. Function signatures accurately reflect the parameter counts and types found in the source.
+
+**10. Composite Type Recovery:** Score: 9/10
+Justification: Structs (`LargeStruct`, `SmallStruct`, `SmallPoint`) are recovered with correct field names (`x`, `y`, `data`) and proper layout. The decompiler successfully identifies the structure usage even in complex scenarios like passing by value.
+
+**11. Type Safety:** Score: 8/10
+Justification: The code is type-safe, with pointer arithmetic and casts generally matching the source intent. The `va_list` implementation exposes raw struct memory access, which is technically unsafe-looking but accurate to the ABI implementation at `-O0`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10
+Justification: There are no semantic comments explaining the logic. The only comments are auto-generated warnings (e.g., "WARNING: Unknown calling convention"), which provide no insight into the algorithm's purpose.
+
+**13. Idiom Recognition:** Score: 5/10
+Justification: High-level idioms like `va_start`/`va_arg` are not recognized; instead, the decompiler exposes the raw `va_list` struct manipulation (checking `gp_offset`, accessing `overflow_arg_area`), requiring the reader to understand the ABI to interpret the code.
+
+**14. Anomaly Indication:** Score: 6/10
+Justification: The decompiler consistently flags "Unknown calling convention" for standard functions, which acts as noise rather than useful anomaly detection. It does not flag the actual implementation details of `varargs` as anomalies, treating them as standard code.
+
+**15. Assertion & Contract Recovery:** Score: 2/10
+Justification: There is no recovery of preconditions, postconditions, or invariants. For example, the null check in `param_complex_cast` is present as code but not documented as a contract requirement.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: Function calls are direct and clear. The relationships between functions (e.g., `call_cdecl` calling `cdecl_func`) are obvious, and the use of standard library functions (`printf`, `strlen`) is correctly identified.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are ordered logically, generally matching the source file structure. Related test functions are grouped together (e.g., `test_calling_conventions` groups the calling convention tests).
+
+**18. Build System Compatibility:** Score: 4/10
+Justification: The code relies on undefined references to data segments (`DAT_00103008`) and specific compiler-generated types (`undefined8`), making it impossible to compile without significant manual patching or header generation.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 7.2/10
+
+**Critical Defects:**
+- Variable `varargs_func` exposes low-level `va_list` ABI implementation (struct offsets) instead of the standard `va_arg` idiom.
+- Large struct passing (e.g., `LargeStruct`) results in verbose field-by-field copying code, obscuring the simple "pass by value" intent.
+- String literals are replaced with opaque data segment references (e.g., `&DAT_00103008`), removing context from the code.
+- Hex literals used for simple decimal values (e.g., `0x2a` instead of `42`) reduce immediate readability.
+
+**Best Quality Aspect:** Function Naming Quality (scored 10/10)
+- Ghidra perfectly recovered all function names from the symbol table, making the high-level structure of the program immediately obvious.
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 3/10)
+- The lack of semantic comments forces the reader to reverse-engineer the intent of complex logic (like the varargs handling) from scratch.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Detect and abstract `va_list` struct manipulation patterns into standard `va_start`/`va_arg` macros or comments to improve semantic transparency.
+2. Collapse sequences of struct member assignments into a single struct assignment operation (e.g., `dest = src`) to reduce redundancy and noise.
+3. Inline string literals or provide a tooltip/sidebar view of the string content when hovering over data segment references.

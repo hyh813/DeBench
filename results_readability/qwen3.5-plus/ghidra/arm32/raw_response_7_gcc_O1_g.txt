@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are almost entirely generic (`iVar1`, `iVar2`, `uVar1`, `bVar1`) with no semantic meaning. Original source had meaningful names like `result`, `p1`, `p2`, `encrypted`, `decrypted` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: Function names are preserved from source (`param_fake_branch`, `call_opaque_predicate`, `decrypt_string`). This is the decompiler's strongest lexical feature.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x14`, `0xe1`, `0x2c` appear without explanation. Original source had comments explaining expected values (e.g., "期望: 20").
+
+**4. Noise Reduction:** Score: 4/10  
+Justification: Excessive "Unresolved local var" comments throughout, plus 35+ boolean variables in `__aeabi_idiv`. Multiple "WARNING: Removing unreachable block" messages clutter the output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10  
+Justification: Basic loops recovered (do-while in `param_opaque_predicate`), but `param_fake_branch` loses all conditional logic. At -O0 this is unexpected degradation.
+
+**6. Function Decomposition:** Score: 7/10  
+Justification: Function boundaries correctly identified; `decrypt_string` properly separated. However, `param_fake_branch` is oversimplified to a single return statement.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Most functions read top-to-bottom, but `__aeabi_idiv` has massive boolean chains that disrupt flow significantly.
+
+**8. Redundancy Elimination:** Score: 4/10  
+Justification: `__aeabi_idiv` and `_divsi3_skip_div0_test` are nearly identical (code duplication). 35 boolean variables in division routine is extreme redundancy.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Basic types preserved (int, char, size_t, uint), but many locals marked "Unresolved". Pointer types generally correct but lack const-correctness.
+
+**10. Composite Type Recovery:** Score: 4/10  
+Justification: Arrays recovered (`char decrypted[32]`), but bitfield struct shows as "Unresolved local var: anon_struct_4_3_4e909822 bitfield" - complete semantic loss.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Some unsafe casts visible (`(__sighandler_t)0x0`). Pointer arithmetic present but generally safe. No buffer overflow warnings despite original code having them intentionally.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Only technical warnings ("Unresolved local var", "WARNING") present. No semantic comments explaining algorithm purpose or obfuscation intent from original source.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: GCD algorithm in `param_opaque_predicate` not identified. String XOR decryption pattern unlabeled. No design pattern recognition whatsoever.
+
+**14. Anomaly Indication:** Score: 7/10  
+Justification: Good warning system for decompiler uncertainties ("Could not recover jumptable", "Unknown calling convention"). This is the decompiler's best semantic feature.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No precondition/postcondition documentation. Original source had clear expectations (e.g., "期望: 10") that are completely absent.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls visible in code but no call graph documentation. Global variable usage (`jmp_buffer`, `div_zero_caught`) not explicitly documented.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions appear in reasonable order matching source. No explicit module grouping or namespace structure recovered.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Metadata indicates "Compilation Result: Yes". External dependencies visible (signal, malloc, strlen) but would need stubs for compiler runtime functions.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+8+5+4)/4 = 5.00 × 0.30 = 1.50
+Level 2 (Structural):  (6+7+6+4)/4 = 5.75 × 0.25 = 1.44
+Level 3 (Type):        (6+4+6)/3   = 5.33 × 0.20 = 1.07
+Level 4 (Semantic):    (4+2+7+2)/4 = 3.75 × 0.15 = 0.56
+Level 5 (Contextual):  (5+6+7)/3   = 6.00 × 0.10 = 0.60
+─────────────────────────────────────────────────────────
+Overall Score:                              5.17/10
+```
+
+### Overall Readability Score: **5.2/10**
+
+### Critical Defects:
+- **`param_fake_branch` completely loses obfuscation logic** - returns just `x` with no indication the fake branches were optimized away
+- **35+ boolean variables in `__aeabi_idiv`** - extreme noise that obscures the division algorithm
+- **All local variables use generic names** (`iVar1`, `uVar2`) losing all semantic meaning from source
+- **Bitfield struct completely unrecovered** - shows as "anon_struct_4_3_4e909822" with no field names
+- **No idiom recognition** - GCD algorithm, XOR decryption, and instruction substitution patterns unlabeled
+
+### Best Quality Aspect: **Function Naming Quality (8/10)**
+- Function names preserved exactly from source code, maintaining semantic identity across decompilation.
+
+### Most Needs Improvement: **Idiom Recognition (2/10)**
+- Common algorithms (GCD, XOR decryption) and obfuscation patterns completely unrecognized despite being well-known patterns.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement pattern recognition for common algorithms** - Detect GCD loops, XOR decryption, and bit manipulation idioms, then add explanatory comments.
+2. **Recover variable names from debug symbols** - The binary was compiled with `-g` flag but variable names are still generic; leverage DWARF information more effectively.
+3. **Annotate optimized-away code** - When dead code is eliminated (like fake branches), add comments indicating what was removed and why, rather than silently dropping it.

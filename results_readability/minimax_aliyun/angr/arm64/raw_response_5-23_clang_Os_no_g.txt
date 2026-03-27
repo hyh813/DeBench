@@ -1,0 +1,85 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Parameters use generic names like `a0`, `a1`, `a2` and local variables are `v0`, `v1`, `v2`, `i`, `ptr` - completely obscuring semantic meaning. For example, in `param_macro_constants`, `a0` should be named `size` based on the original source.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Test functions like `param_macro_constants`, `call_asm_basic` match source names well, but many utility functions use auto-generated names like `sub_4007b4`, `sub_4008a4`. Mixed result - main API functions recovered correctly.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x400` (1024), `0x200` (512), `57072` (0xDEF0) appear without explanation. The decompiler correctly computed constant expressions (e.g., `64` for `BUFFER_COUNT * 4`) but lost symbolic names like `MAX_SIZE`, `BUFFER_COUNT`.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Minimal compiler artifacts - some stack frame setup (`v0 = &v1;`) but no excessive register spilling or debug instrumentation. Relatively clean output.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Loops properly recognized as do-while constructs, conditionals are clear. At -O0, control flow closely matches source. Example: `param_asm_clobber` uses proper loop structure.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are appropriately sized with clear single responsibility. Each test function is separate. No 500-line monoliths. Good granularity matching source organization.
+
+**7. Code Linearization:** Score: 7/10  
+Justification: Code generally reads top-to-bottom. Some early returns present but used appropriately. No excessive forward jumps disrupting flow.
+
+**8. Redundancy Elimination:** Score: 6/10  
+Justification: Minor redundancy in `param_asm_multi_insn` where `memcpy` is called twice with same arguments. Otherwise clean, but this pattern suggests incomplete dead code elimination.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 6/10  
+Justification: Uses `unsigned int`, `unsigned long`, `unsigned long long` - mostly accurate but generic. Original used `int` and `size_t`. Some type mixing between signed/unsigned. Parameters lose original `int` type.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct/union recovery visible. All composite types lost - code uses raw pointer arithmetic. For example, array operations in `param_asm_simd` use `*((int *)(a2 + i))` instead of proper array indexing.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe with explicit casts. Pointer arithmetic is explicit. Some unsafe patterns but no severe violations. Minor issues with unsigned/signed mixing.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: No useful comments in decompiled code. Only auto-generated function location comments. No explanation of macro semantics, assembly behavior, or algorithm intent. Critical for understanding preprocessor transformations.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized (printf, memcpy, mmap, atomic operations) but not explicitly named or documented. The inline assembly patterns are not identified as such.
+
+**14. Anomaly Indication:** Score: 3/10  
+Justification: Failed to decompile `__aarch64_ldadd4_acq_rel` but only states "Failed to decompile" without explanation. No flags for suspicious code patterns or indirect calls that couldn't be resolved.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. For example, `param_dynamic_code` requires `mmap` success but no contract indicates this.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Some external function declarations visible (`extern char __aarch64_have_lse_atomics;`), but no clear call graph or relationship documentation between functions.
+
+**17. Module Organization:** Score: 6/10  
+Justification: Functions grouped reasonably - preprocessing tests together, asm tests together. Matches source organization somewhat, but no logical grouping comments.
+
+**18. Build System Compatibility:** Score: 7/10  
+Justification: Code has `extern` declarations for external symbols. Should compile with appropriate libc headers. Some stubs needed but minimal patching required.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.2/10
+
+**Critical Defects:**
+- Variable naming uses generic `a0`, `a1`, `v0`, `v1` completely obscuring semantic purpose
+- No comments explaining macro semantics, preprocessor behavior, or inline assembly intent
+- No struct/union recovery - all composite types lost to raw pointer arithmetic
+- Magic numbers like `57072` (0xDEF0) appear without explanation of their origin
+- Failed atomic function decompilation (`__aarch64_ldadd4_acq_rel`) has no explanation
+
+**Best Quality Aspect:** Control Flow Naturalness (scored 8/10)  
+- At -O0, loops and conditionals are properly recognized and read naturally
+
+**Most Needs Improvement:** Comment Quality & Presence (scored 2/10)  
+- Zero useful comments for understanding preprocessor transformations, inline assembly, or algorithm intent
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. Infer variable names from usage patterns - `a0` used in size comparison should be named `size` or `max_size`
+2. Add comments explaining preprocessor expansions (e.g., "Expands MAX_SIZE to 1024")
+3. Recover struct types from allocation patterns and field access patterns rather than using raw pointer arithmetic

@@ -1,0 +1,84 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are overwhelmingly generic (e.g., `v1`, `v2`, `a1`, `a2`), providing no semantic hint about their purpose (e.g., `size`, `counter`, `buffer`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names like `param_variadic_macro` and `call_asm_clobber` are preserved accurately from the source symbols, clearly reflecting their purpose.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: String literals are extracted as global variables (`g1`...`g19`) rather than inline strings, harming readability. The stack string in `call_asm_multi_insn` is represented as a confusing hex integer `0x6c6c6548` instead of `"Hello ASM"`.
+
+**4. Noise Reduction:** Score: 6/10
+Justification: Standard library calls are replaced with fortified versions (e.g., `__printf_chk` instead of `printf`), and there are redundant casts like `(int32_t)a1` which add clutter without adding safety.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 6/10
+Justification: While loops are generally recovered as `while` constructs, logic errors exist; e.g., `param_asm_simd` loop condition `v4 != v1 + 8` suggests 2 iterations instead of the source's 4, and `call_asm_multi_insn` returns `-1` unconditionally, losing the ternary logic.
+
+**6. Function Decomposition:** Score: 8/10
+Justification: Functions are mapped 1:1 with the source, maintaining appropriate granularity and cohesion without artificial splitting or merging.
+
+**7. Code Linearization:** Score: 7/10
+Justification: The code generally reads top-to-bottom, but the reconstruction of `call_asm_multi_insn` is disjointed, placing a return statement before a stack check call that disrupts the flow.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: There is no obvious dead code or loop unrolling artifacts; the logic is presented concisely, even if the logic itself is sometimes incorrect.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 3/10
+Justification: Critical failure: pointers are cast to `int32_t` (e.g., `int32_t v1 = (int32_t)a1`), which is incorrect for the ARM64 architecture (64-bit pointers) and loses type information.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Stack-allocated arrays are completely lost; `int arr[] = {1, 2, 3, 4, 5}` in `call_asm_clobber` is reduced to a single integer `int32_t v1 = 1`, destroying the data structure.
+
+**11. Type Safety:** Score: 4/10
+Justification: The code contains unsafe casts, such as treating a stack string address as an integer `(char *)0x6c6c6548` and casting pointers to 32-bit integers on a 64-bit architecture.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or the purpose of the reconstructed code.
+
+**13. Idiom Recognition:** Score: 6/10
+Justification: Standard library idioms like `memcpy` and atomic operations (`__sync_fetch_and_add_4`) are recognized, but higher-level macro patterns (like `LOG` or `COUNT_ARGS`) are inlined without explanation.
+
+**14. Anomaly Indication:** Score: 1/10
+Justification: No anomalies are flagged; the decompiler confidently presents incorrect logic (like the truncated loop in `param_asm_simd`) and weird stack string representations without warning.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: There is no indication of preconditions (e.g., buffer sizes) or postconditions; the contract of functions like `param_dynamic_code` is opaque.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 7/10
+Justification: Function calls to other defined functions are clear, and global variable usage is explicit, making the call graph easy to follow.
+
+**17. Module Organization:** Score: 8/10
+Justification: Functions are grouped logically, and prototypes are provided at the top, maintaining a structure similar to the original source file.
+
+**18. Build System Compatibility:** Score: 5/10
+Justification: The code relies on an unresolved external function `unknown_ffff0fc0` (likely a runtime support or stub) and uses `__printf_chk` which requires specific macro definitions, preventing standalone compilation without fixes.
+
+### === FINAL SUMMARY ===
+
+**Overall Readability Score:** 5.1/10
+
+**Critical Defects:**
+- **Array Literal Loss**: Stack arrays (e.g., `{1, 2, 3, 4, 5}`) are reduced to single scalar variables (`v1 = 1`), destroying data context.
+- **Pointer Truncation**: Pointers are cast to `int32_t` on an ARM64 binary, causing type mismatch and potential logic errors.
+- **Stack String Obfuscation**: The string "Hello ASM" is represented as a magic integer `0x6c6c6548`, making it unreadable.
+- **Logic Reconstruction Failure**: The loop in `param_asm_simd` iterates only twice instead of four times, and `call_asm_multi_insn` loses its conditional return logic.
+
+**Best Quality Aspect:** Function Naming Quality (scored 9/10)
+- **Why?** The decompiler successfully preserved the original function symbols, making the high-level intent of each block immediately obvious.
+
+**Most Needs Improvement:** Composite Type Recovery (scored 2/10)
+- **Why?** The failure to recover basic stack arrays significantly hampers understanding of data flow and inputs to functions like `param_asm_clobber`.
+
+**Top 3 Recommendations for Decompiler Improvement:**
+1. **Improve Stack Array Analysis**: Aggregate consecutive stack store operations into array initializers rather than treating them as separate scalar variables.
+2. **Fix Pointer Width Handling**: Ensure pointer types match the target architecture width (64-bit for ARM64) instead of defaulting to `int32_t`.
+3. **Enhance String Recovery**: Detect and reconstruct stack-allocated strings from immediate values/moves rather than emitting them as hex integers or global references.

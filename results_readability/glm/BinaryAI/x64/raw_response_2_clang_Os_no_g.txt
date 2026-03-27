@@ -1,0 +1,111 @@
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10
+Justification: Variables are almost exclusively generic names like `param_1`, `local_514`, `iVar1`, and `uVar2`, completely losing semantic meaning (e.g., `sum`, `arr`, `n`).
+
+**2. Function Naming Quality:** Score: 9/10
+Justification: Function names match the original source exactly (e.g., `process_char`, `array_1d_stack`), likely due to symbol table preservation, which significantly aids high-level understanding.
+
+**3. Literal Clarity:** Score: 4/10
+Justification: Uses hexadecimal for ASCII values (`0x61` instead of `'a'`) and floating-point constants (`0x400c000000000000` instead of `3.5`), making the code harder to read than the original.
+
+**4. Noise Reduction:** Score: 4/10
+Justification: Contains significant noise including `undefined` types, `undefined4` variables, and Ghidra-specific artifacts like `SUB164` and `ZEXT816` macros which obscure the logic.
+
+---
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 7/10
+Justification: Simple functions use natural `do-while` loops, but complex test functions like `test_array_types` have convoluted control flow with `do-while(true)` and manual breaks that obscure the original logic.
+
+**6. Function Decomposition:** Score: 9/10
+Justification: Functions are recovered with correct granularity and boundaries matching the source, maintaining the separation between test harnesses and implementation logic.
+
+**7. Code Linearization:** Score: 5/10
+Justification: While implementation functions are linear, the test functions (e.g., `test_array_types`) are difficult to read linearly due to pointer arithmetic and stack variable manipulation mixed with logic.
+
+**8. Redundancy Elimination:** Score: 8/10
+Justification: The code is generally free of dead code or redundant assignments, though the decompiler's constant propagation in `test_data_types_l1` (replacing calls with results) removes structural context.
+
+---
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10
+Justification: Types are often imprecise; `char` becomes `uint`, `long double` is lost (function `process_ld` is empty), and structs are flattened into generic `int*` or `long` types.
+
+**10. Composite Type Recovery:** Score: 2/10
+Justification: Complete failure to recover structs (e.g., `Point3D`, `Node`) and unions; they are represented as raw pointer arithmetic (e.g., `param_1[1]` instead of `p->y`), destroying semantic context.
+
+**11. Type Safety:** Score: 6/10
+Justification: While the flattened pointer arithmetic is technically correct for the memory layout, the lack of defined struct types makes the code unsafe to modify or reason about at a high level.
+
+---
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10
+Justification: There are absolutely no comments explaining the logic, algorithms, or data structures, leaving the user to decipher raw operations.
+
+**13. Idiom Recognition:** Score: 3/10
+Justification: High-level patterns like linked lists or trees are reduced to pointer chasing (`*(int **)(param_1 + 2)`), and bitfields are exposed as raw shifts (`uVar1 >> 1 & 3`), failing to convey the original design intent.
+
+**14. Anomaly Indication:** Score: 3/10
+Justification: While `UNRECOVERED_JUMPTABLE` indicates an issue with function pointers, the empty body of `process_ld` and the presence of `SUB164` macros are presented without warning or explanation.
+
+**15. Assertion & Contract Recovery:** Score: 1/10
+Justification: No preconditions, postconditions, or invariants are documented; for example, the null check in `array_complex_index` is present but not explicitly highlighted as a boundary contract.
+
+---
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 8/10
+Justification: The preservation of original function names makes the call graph very clear and easy to navigate despite the poor variable naming.
+
+**17. Module Organization:** Score: 9/10
+Justification: The decompiled code maintains the exact order and grouping of functions found in the source file, preserving the logical organization of the test suite.
+
+**18. Build System Compatibility:** Score: 2/10
+Justification: The code will not compile due to `undefined` types, missing struct definitions, and Ghidra-specific macros (`SUB164`, `ZEXT816`).
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+L1_avg: (3 + 9 + 4 + 4) / 4 = 5.0
+L2_avg: (7 + 9 + 5 + 8) / 4 = 7.25
+L3_avg: (4 + 2 + 6) / 3 = 4.0
+L4_avg: (1 + 3 + 3 + 1) / 4 = 2.0
+L5_avg: (8 + 9 + 2) / 3 = 6.33
+
+Overall = (5.0 × 0.30) + (7.25 × 0.25) + (4.0 × 0.20) + (2.0 × 0.15) + (6.33 × 0.10)
+Overall = 1.5 + 1.8125 + 0.8 + 0.3 + 0.633
+Overall = 5.0455
+```
+
+**Overall Readability Score:** 5.0/10
+
+### Critical Defects (Bullet List)
+- **Struct/Union Loss**: Composite types like `Point3D` and `Node` are completely flattened into raw pointer arithmetic (e.g., `param_1[1]`), destroying data structure semantics.
+- **Variable Naming**: All local variables and parameters use generic names (`param_1`, `local_514`, `iVar1`) despite the presence of debug symbols (`-g`).
+- **Type Corruption**: `process_ld` is decompiled as an empty `void` function, losing the `long double` logic entirely.
+- **Literal Obfuscation**: Readable ASCII and float constants are replaced with opaque hex values (e.g., `0x61`, `0x400c000000000000`).
+- **Internal Artifacts**: Ghidra internal macros like `SUB164` and `ZEXT816` pollute the output, rendering it non-compilable and confusing.
+
+### Best Quality Aspect (Single Dimension)
+- **Which dimension scored highest? Function Naming Quality (9/10)**
+- **Why?** The decompiler successfully preserved all original function names from the symbol table, making the high-level purpose of each code block immediately obvious.
+
+### Most Needs Improvement (Single Dimension)
+- **Which dimension scored lowest? Composite Type Recovery (2/10)**
+- **Why?** The failure to reconstruct `struct` and `union` definitions reduces complex data manipulations to meaningless pointer offsets, which is the single biggest barrier to understanding the code's logic.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Leverage Debug Symbols for Types**: Aggressively use DWARF debug information (present in `-O0` builds) to reconstruct struct definitions and apply them to function parameters and variables instead of defaulting to `void*` or `int*`.
+2. **Symbolic Variable Naming**: Map debug symbol names to local variables automatically; if unavailable, infer names from usage context (e.g., `sum` for accumulators) rather than using `iVar1`.
+3. **Clean Up Internal Macros**: Filter out or expand internal decompiler macros (like `SUB164`) in the final output to ensure the code is syntactically valid C and readable by humans.

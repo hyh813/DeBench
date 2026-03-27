@@ -1,0 +1,111 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`a0`, `a1`, `a2`) and local variables use cryptic names (`v0`, `v1`, `v2`, `v3`). The original source used meaningful names like `temp1`, `temp2`, `sum`, `count` - all completely lost. Register hints like `// r0`, `// lr` add noise without semantic value.
+
+**2. Function Naming Quality:** Score: 6/10  
+Justification: Core test functions correctly recovered (`sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`). However, many helper functions have auto-generated names (`sub_4004dc`, `sub_400594`, `$a.14`, `$a.16`). The naming is inconsistent - some semantic names preserved while others are mechanical addresses.
+
+**3. Literal Clarity:** Score: 4/10  
+Justification: Magic number `4294967295` (unsigned representation of -1) appears extensively without explanation. The original source used explicit values like `-1`, `-2` but decompilation converts these to unsigned overflow values. Constants like `1001` in `infinite_loop` lack explanation. The literal clarity is poor.
+
+**4. Noise Reduction:** Score: 3/10  
+Justification: Severe noise pollution throughout. Register location comments (`// r0`, `// r1`, `// r2`, `// lr`) on every variable. Dead code paths with unreachable labels (`LABEL_4005e4`). Spurious `armg_calculate_condition` function calls inserted throughout. The code is cluttered with compiler artifacts that impede readability.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 4/10  
+Justification: Simple functions like `sequential_ops` and `ternary_op` have natural flow. However, complex functions like `nested_if_deep` use excessive goto statements with `LABEL_400720`, `LABEL_40072c` patterns. The `loop_for_fixed` function has convoluted control flow with `armg_calculate_condition` calls that obscure the simple for-loop structure. At -O0, this transformation is unnecessary.
+
+**6. Function Decomposition:** Score: 6/10  
+Justification: The decompilation maintains reasonable function granularity - most functions are under 50 lines. However, there are spurious helper functions (`sub_400d6c` through `sub_400d9c`) that appear to be decompilation artifacts from loop unrolling. The parameter lists are reasonable but expose implementation details through generic `a0`, `a1` naming.
+
+**7. Code Linearization:** Score: 4/10  
+Justification: Many functions have poor linearization with forward jumps. The `nested_if_deep` function has multiple labels disrupting top-to-bottom reading. The `loop_while` function has a complex do-while pattern with goto labels. Forward jumps into loop bodies and computed jumps interrupt natural flow significantly.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Test functions show some redundancy (computing values then printing hardcoded results). Loop unrolling in `duffs_device` is not recognized - appears as broken switch statement. Some common subexpression elimination artifacts present but not severe. The code is manageable but not clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: All parameters declared as `unsigned int` when original source used `int`. This is a significant type degradation - the original signed semantics are lost. For example, `single_if(-5)` should return `-5` but unsigned type changes the behavior. Function pointers use generic `unsigned int` instead of proper function signatures.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: The original source uses minimal composite types (mostly arrays like `int arr[]`). The decompilation correctly handles these as pointer arithmetic. No struct recovery needed since source didn't use structs. This dimension is partially not applicable.
+
+**11. Type Safety:** Score: 5/10  
+Justification: The unsigned type usage creates potential signed/unsigned comparison issues. Some pointer arithmetic in array access (`a0 + 1`, `ptr + 1`) is present but relatively safe. No major unsafe casts observed. The main issue is the systematic use of unsigned types where signed were intended.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 3/10  
+Justification: Comments are present but useless for understanding - they only indicate register locations (`// r0`, `// r1`). No algorithm explanations, no documentation of non-obvious logic, no decompilation confidence indicators. The comments are noise, not useful documentation.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns recognized - switch statements in `switch_small`, `switch_large` are partially recovered. The ternary operator in `ternary_op` is correctly identified. However, state machine patterns in `state_machine` and `fsm_func_table` are not explicitly named or documented. Duff's device is completely broken.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No anomaly indication whatsoever. The decompilation presents code confidently even when it's incorrect or unclear. No warnings about indirect calls that couldn't be resolved, no flags for unusual patterns. The `computed_goto` function is completely empty - an obvious decompilation failure with no indication.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions, postconditions, or invariants documented. The original source had no explicit contracts either, but the decompiler could have inferred some (e.g., "requires: n > 0" for factorial). No contract information recovered.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Test functions clearly call the tested functions (visible in `test_control_flow_l1`, etc.). However, callback relationships in `process_with_callback` are unclear - the function pointer parameter `a2` has no type information. Global variable usage is partially documented through `extern` declarations but relationships are not explicit.
+
+**17. Module Organization:** Score: 5/10  
+Justification: Functions are roughly grouped - initialization functions at start, test functions at end. However, the organization is arbitrary with mixed helper functions throughout. No logical grouping matching the original source's clear separation (CF-L1, CF-L2, CF-L3 sections).
+
+**18. Build System Compatibility:** Score: 6/10  
+Justification: Code has `extern` declarations for external references. Would require linking with standard C library (puts, printf, etc.). The `armg_calculate_condition` and other helper functions would need definitions. Moderate patching needed to compile standalone.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2 + 6 + 4 + 3) / 4 = 3.75
+L2_avg = (4 + 6 + 4 + 5) / 4 = 4.75
+L3_avg = (4 + 5 + 5) / 3 = 4.67
+L4_avg = (3 + 5 + 2 + 2) / 4 = 3.00
+L5_avg = (4 + 5 + 6) / 3 = 5.00
+
+Overall = (3.75 × 0.30) + (4.75 × 0.25) + (4.67 × 0.20) + 
+          (3.00 × 0.15) + (5.00 × 0.10)
+Overall = 1.125 + 1.1875 + 0.934 + 0.45 + 0.5 = 4.20/10
+```
+
+**Overall Readability Score:** 4.2/10
+
+### Critical Defects (Bullet List)
+- All variables use generic names (`a0`, `a1`, `v0`, `v1`) losing all semantic meaning from original source (`temp1`, `sum`, `count`, `result`)
+- Type precision severely degraded: all `int` parameters converted to `unsigned int`, breaking signed semantics (e.g., `single_if(-5)` returns wrong value)
+- Excessive noise: register location comments (`// r0`, `// lr`) on every variable, spurious `armg_calculate_condition` calls, dead code labels
+- Control flow unnatural at -O0: simple for-loops converted to goto-heavy code with condition calculation helpers
+- No anomaly indication: `computed_goto` decompiled to empty function with no warning; `duffs_device` broken with no indication of failure
+
+### Best Quality Aspect (Single Dimension)
+- **Module Organization (score 5/10)** - While not excellent, the functions are at least grouped somewhat logically with test functions separated, and the code structure is compilable with moderate effort.
+
+### Most Needs Improvement (Single Dimension)
+- **Variable Naming Quality (score 2/10)** - This is the most critical failure. The original source used meaningful names like `temp1`, `temp2`, `sum`, `count`, `i`, `j` that clearly indicated purpose. The decompilation replaced all of these with generic `a0`, `a1`, `v0`, `v1`, making it nearly impossible to understand what each variable does without analyzing its usage.
+
+### Top 3 Recommendations for Decompiler Improvement
+1. **Infer variable names from usage patterns**: When a variable is used as a loop counter (`i`, `j`), accumulated sum (`sum`), or holds a specific value range, infer appropriate names. The decompiler should analyze how variables are used before assigning names.
+2. **Preserve type semantics**: At -O0, the original types should be preserved. The systematic conversion of `int` to `unsigned int` loses critical semantic information and can change program behavior.
+3. **Add anomaly indicators**: When decompilation fails (like empty `computed_goto`), flag it clearly. When patterns are uncertain, add confidence indicators. Don't silently produce incorrect or empty code.

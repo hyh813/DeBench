@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables are overwhelmingly generic (`v1`, `v2`, `v3`, `v4`, `v5` in `param_asm_simd`); no semantic meaning recovered. Only `result`, `counter`, `increment` have any descriptive value.
+
+**2. Function Naming Quality:** Score: 5/10  
+Justification: Some function names preserved (`param_asm_clobber`, `param_dynamic_code`) but ~10 preprocessing functions completely missing from decompilation output.
+
+**3. Literal Clarity:** Score: 3/10  
+Justification: Magic numbers everywhere: `mmap(NULL, v1, 7, 34, -1, 0)` loses `PROT_*` and `MAP_*` semantics; return values like `x + 50`, `x + 282` are unexplained.
+
+**4. Noise Reduction:** Score: 5/10  
+Justification: Unnecessary casts like `(int32_t)arr - 4` and `(int32_t *)v2` clutter the code; pointer arithmetic obscures array access patterns.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 5/10  
+Justification: Loop structures recovered but awkward - `param_asm_clobber` uses `while (v2 != v1 + 4 * n)` instead of clean for-loop; original structure lost.
+
+**6. Function Decomposition:** Score: 4/10  
+Justification: Critical failure - ~10 functions completely missing (all macro-related functions); remaining functions don't match original granularity.
+
+**7. Code Linearization:** Score: 6/10  
+Justification: Generally reads top-to-bottom but `call_asm_multi_insn` has unreachable code (`__stack_chk_fail()` after return) disrupting flow.
+
+**8. Redundancy Elimination:** Score: 5/10  
+Justification: Redundant pointer arithmetic in loops (`v2 += 4; result += *(int32_t *)v2` repeated); no common subexpression optimization visible.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 5/10  
+Justification: Uses `int32_t` consistently but loses `void*` semantics (`param_asm_multi_insn` takes `int32_t* src` instead of `const void*`); signedness not always correct.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: Array initialization syntax is invalid C (`arr = {1, 0, 0, 0, 0};`); no struct recovery visible; loses original array semantics.
+
+**11. Type Safety:** Score: 4/10  
+Justification: Multiple unsafe casts (`(int32_t)arr - 4`); pointer arithmetic on casted pointers; `param_asm_simd` return logic uses uninitialized `v1`.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: Zero comments in decompiled code despite original having extensive documentation explaining each test section and expected behavior.
+
+**13. Idiom Recognition:** Score: 2/10  
+Justification: No recognition of assembly patterns, macro expansions, or atomic operations; `__sync_fetch_and_add_4` not identified as atomic intrinsic.
+
+**14. Anomaly Indication:** Score: 2/10  
+Justification: No warnings despite critical errors: `call_asm_multi_insn` returns -1 (should be 42), `call_asm_simd` has broken logic with uninitialized variable.
+
+**15. Assertion & Contract Recovery:** Score: 2/10  
+Justification: No preconditions documented (e.g., `arr != NULL`, `n > 0`); error conditions not explained; no return value semantics.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 4/10  
+Justification: Function calls visible but relationships unclear; `test_preprocessing_features` doesn't call most test functions it should; missing call graph.
+
+**17. Module Organization:** Score: 4/10  
+Justification: Functions grouped but organization doesn't match original sections (5.2 preprocessing vs 5.3 assembly); many sections completely absent.
+
+**18. Build System Compatibility:** Score: 3/10  
+Justification: Will not compile - invalid array initialization syntax (`arr = {1, 0, 0, 0, 0};`); type mismatches; `unknown_ffff0fc0` undefined.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+5+3+5)/4 = 4.00 × 0.30 = 1.20
+Level 2 (Structural):  (5+4+6+5)/4 = 5.00 × 0.25 = 1.25
+Level 3 (Type):        (5+3+4)/3   = 4.00 × 0.20 = 0.80
+Level 4 (Semantic):    (1+2+2+2)/4 = 1.75 × 0.15 = 0.26
+Level 5 (Contextual):  (4+4+3)/3   = 3.67 × 0.10 = 0.37
+
+Overall Score: 3.88/10
+```
+
+**Overall Readability Score:** 3.9/10
+
+### Critical Defects:
+- **~10 functions completely missing** from decompilation (all macro preprocessing functions: `param_macro_constants`, `param_macro_functions`, `param_conditional_compile`, etc.)
+- **Invalid C syntax** - array initialization `arr = {1, 0, 0, 0, 0};` will not compile
+- **Logic errors** - `call_asm_multi_insn` returns -1 instead of 42; `call_asm_simd` uses uninitialized variable `v1`
+- **Zero comments** despite original having extensive documentation explaining each test's purpose and expected output
+- **String literals stored as hex-encoded globals** (`g1`, `g2`, etc.) instead of readable strings
+
+### Best Quality Aspect:
+- **Control Flow Naturalness (5/10)** - Loop structures were at least recovered as while/for constructs rather than raw goto chains, though awkwardly expressed.
+
+### Most Needs Improvement:
+- **Comment Quality & Presence (1/10)** - Complete absence of any documentation makes understanding the decompiled code's purpose nearly impossible without the original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover all functions from binary** - Implement better function boundary detection to capture all 25+ functions, not just 19 (missing all preprocessing macro tests)
+2. **Generate valid C syntax** - Fix array initialization to use proper C (`memcpy` or individual assignments) instead of invalid `arr = {...}` syntax
+3. **Add semantic comments** - Include at minimum function purpose comments and flag logic that differs from expected patterns (e.g., "WARNING: return value may be incorrect")

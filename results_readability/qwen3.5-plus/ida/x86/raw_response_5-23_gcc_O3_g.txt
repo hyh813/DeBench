@@ -1,0 +1,101 @@
+## EVALUATION: Decompilation Readability Assessment
+
+### === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 3/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `result`, `i` throughout (e.g., `param_memory_protection` uses `v0`, `v1`, `v2`, `v3`). No semantic recovery from usage patterns despite clear contexts (e.g., `page_size`, `exec_mem` should be recovered).
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most original function names preserved (`param_macro_constants`, `call_asm_basic`), but helper functions use mechanical names (`sub_1030`, `sub_1040`). Action verbs absent from naming convention.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers abound without explanation: `57072` in `param_multi_branch_compile`, `282` in `param_builtin_macros`, `30` for `sysconf` argument. Original constants (`MAX_SIZE`, `BUFFER_COUNT`) completely lost.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Stack canary checks (`__readgsdword(0x14u)`) present in multiple functions. Frame pointer artifacts (`[ebp-4h] BYREF`) clutter variable declarations. Some cleanup achieved but compiler artifacts remain visible.
+
+### === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Control flow reads naturally with standard if/else and for loops. However, aggressive constant folding eliminates original branching logic (e.g., `param_conditional_compile` loses the #ifdef branch entirely).
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Excellent function granularity maintained. Each `param_*` and `call_*` pair preserved as separate functions. No monolithic functions or over-fragmentation observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom cleanly. No excessive gotos or forward jumps disrupting flow. Early returns used appropriately in error handling paths.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Some redundancy from optimization visible (e.g., `test_preprocessing_features` calls functions that return pre-computed constants). No dead code elimination issues observed.
+
+### === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types preserved (int, void*, size_t). Some precision lost with generic `__int64` instead of `int64_t`. Pointer types generally accurate but const-correctness not preserved.
+
+**10. Composite Type Recovery:** Score: 6/10  
+Justification: Arrays handled reasonably (`char src[10]`, `int arr[5]`). SIMD types recovered (`__m128i`). No complex struct recovery needed in this code but union handling not demonstrated.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Some unsafe casts present (`(__m128i *)`, `(_DWORD *)`). Pointer arithmetic visible but not egregious. No obvious buffer overflow patterns introduced by decompiler.
+
+### === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 2/10  
+Justification: Virtually no comments in decompiled output. Original source had extensive documentation explaining preprocessing behavior, macro semantics, and assembly intent. Complete loss of semantic context.
+
+**13. Idiom Recognition:** Score: 4/10  
+Justification: Assembly patterns converted to C without explanation (e.g., `param_asm_clobber` shows for loop instead of noting original inline assembly). No pattern identification for atomic operations or SIMD.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: External function failures noted ("FAILED to decompile: __libc_start_main"). However, no warnings about aggressive constant folding or lost macro semantics that fundamentally change code understanding.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No preconditions documented (e.g., `arr != NULL` for `param_asm_clobber`). No postconditions or error condition documentation. Original comments about expected values completely lost.
+
+### === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships clear through preserved names. Global variable usage not documented (`global_var`, `dtor_idx_0`). No call graph or dependency information provided.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions grouped logically (preprocessing tests together, assembly tests together). Static functions properly scoped. No apparent file organization issues.
+
+**18. Build System Compatibility:** Score: 5/10  
+Justification: 8 external functions failed to decompile (`mmap`, `mprotect`, `sysconf`, etc.). Would require stub implementations. SIMD intrinsics present but may need specific compiler flags.
+
+---
+
+## FINAL SUMMARY
+
+### Overall Readability Score Calculation
+
+```
+Level 1 (Lexical):     (3+7+5+6)/4 = 5.25 × 0.30 = 1.575
+Level 2 (Structural):  (7+8+8+7)/4 = 7.50 × 0.25 = 1.875
+Level 3 (Type):        (7+6+7)/3   = 6.67 × 0.20 = 1.334
+Level 4 (Semantic):    (2+4+5+3)/4 = 3.50 × 0.15 = 0.525
+Level 5 (Contextual):  (6+7+5)/3   = 6.00 × 0.10 = 0.600
+
+Overall Score: 5.91/10
+```
+
+### Overall Readability Score: **5.9/10**
+
+### Critical Defects:
+- **Complete comment loss**: Original 709 LOC with extensive documentation reduced to zero comments, losing all macro semantics and assembly intent explanations
+- **Magic numbers without context**: Values like `57072`, `282`, `30` (sysconf argument) appear without any explanation of their origin
+- **Constant folding obscures logic**: Functions like `call_macro_constants()` return `64` directly instead of showing the call to `param_macro_constants(2048)`, hiding the actual program flow
+- **Generic variable naming**: All local variables use `v0`, `v1`, `v2` pattern despite clear semantic roles (e.g., `page_size`, `exec_mem`, `counter`)
+- **8 external functions failed**: Critical system calls (`mmap`, `mprotect`, `sysconf`) marked as "FAILED to decompile" requiring manual stub creation
+
+### Best Quality Aspect: **Function Decomposition (8/10)**
+- Function boundaries and naming largely preserved, maintaining the logical separation between parameterized functions and their callers.
+
+### Most Needs Improvement: **Comment Quality & Presence (2/10)**
+- Complete absence of documentation eliminates all context about preprocessing behavior, macro semantics, and assembly intent that was explicit in the original source.
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Recover constant origins**: When constant folding occurs, add comments indicating the original expression (e.g., `// Original: BUFFER_COUNT * 4 = 64`)
+2. **Infer semantic variable names**: Use data flow analysis to name variables based on usage (e.g., variable passed to `sysconf(30)` should be `page_size`)
+3. **Preserve preprocessing metadata**: Add decompilation notes indicating where macros were expanded and which conditional compilation branches were taken

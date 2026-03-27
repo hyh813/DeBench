@@ -1,0 +1,97 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+**1. Variable Naming Quality:** Score: 2/10  
+Justification: All parameters use generic names (`param_1`, `param_2`, `param_3`) and local variables use cryptic names (`local_c`, `local_10`, `local_14`). At -O0, the decompiler should recover meaningful names like `a`, `b`, `c` for parameters and `sum`, `i` for loop variables. The complete loss of semantic naming is a critical defect.
+
+**2. Function Naming Quality:** Score: 7/10  
+Justification: Most function names correctly match the original source (`sequential_ops`, `single_if`, `if_else`, `loop_for_fixed`). However, some functions have incorrect return types that affect their "name" in the signature (e.g., `switch_small` returns `undefined [16]` instead of `int`), and external functions like `__cxa_finalize` are correctly identified.
+
+**3. Literal Clarity:** Score: 5/10  
+Justification: Magic numbers like `0x3e9` (1001) in `infinite_loop` and `0x65` (101) in `loop_external_state` appear without explanation. Some values like `0x14` (20) are used directly in hex. However, array initializations like `local_28[0] = 10; local_28[1] = 20;` are somewhat clear in context.
+
+**4. Noise Reduction:** Score: 7/10  
+Justification: Some compiler artifacts present: redundant stack canary checks (`if (*(long *)(in_FS_OFFSET + 0x28) == *(long *)(in_FS_OFFSET + 0x28))`), and `__stack_chk_fail` calls. These are typical for -O0 with stack protection enabled but add noise. Overall manageable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+**5. Control Flow Naturalness:** Score: 8/10  
+Justification: Most control flow is natural and matches source - for loops, while loops, if-else chains are correctly recovered. The `switch_large` function uses proper switch syntax. Minor issues: `switch_small` has awkward structure with goto labels instead of proper switch. At -O0, this is expected quality.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Functions are properly separated with reasonable granularity. No inlining artifacts (expected at -O0). Each function maintains single responsibility. The test functions (`test_control_flow_l1`, etc.) are correctly extracted. Parameter counts match original.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code generally reads top-to-bottom. Forward jumps in switch statements are handled appropriately. The `duffs_device` function has complex control flow but it's correctly recovered with goto labels. No excessive nesting disrupting readability.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Minimal dead code. Some redundant stack canary comparisons but these are compiler-generated. No obvious common subexpression elimination artifacts. Loop unrolling is not present (expected at -O0). Overall clean.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+**9. Type Precision:** Score: 4/10  
+Justification: Significant type degradation. Many parameters use `undefined4`, `undefined8` instead of `int`. The `switch_small` function incorrectly returns `undefined [16]` instead of `int`. Function pointers use `code *` which is generic. However, some functions like `sequential_ops` correctly use `int`.
+
+**10. Composite Type Recovery:** Score: 3/10  
+Justification: No struct recovery. Arrays are expanded into individual variables (e.g., in `loop_multi_exit`: `local_48[0] = 1; local_48[1] = 2; ... local_38 = 5; local_34 = 6;`). The original `int matrix[3][4]` is completely lost, replaced with 12 separate variables. This is a major semantic loss.
+
+**11. Type Safety:** Score: 7/10  
+Justification: Generally type-safe code. Some minor issues: unsigned/signed mixing (e.g., `uint param_1` in `multi_return`), but no dangerous pointer operations. Function pointer calls use proper invocation syntax. No buffer overflow-prone patterns obvious.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+**12. Comment Quality & Presence:** Score: 1/10  
+Justification: **No comments whatsoever** in the decompiled output. The original source has extensive comments explaining each function's purpose, test scenarios, and difficulty ratings. This complete absence of documentation severely impacts understandability of complex functions like `duffs_device` or `fsm_func_table`.
+
+**13. Idiom Recognition:** Score: 5/10  
+Justification: Some patterns are implicitly recognized (e.g., loops, switch statements) but not explicitly named or documented. The `duffs_device` is correctly structured but not identified as such. State machine patterns in `fsm_func_table` are present but not annotated.
+
+**14. Anomaly Indication:** Score: 1/10  
+Justification: No anomaly flags. The `computed_goto` function uses function pointers to simulate computed jumps, but there's no indication this is a complex pattern. Indirect calls in `call_func_ptr_array` are not flagged as potentially unresolved.
+
+**15. Assertion & Contract Recovery:** Score: 1/10  
+Justification: No precondition, postcondition, or invariant documentation. Functions like `duffs_device` that require `n > 0` have no contract indication. The `non_local_jump` function using `setjmp`/`longjmp` has no documentation of its unusual control flow.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+**16. Cross-Reference Clarity:** Score: 5/10  
+Justification: Function calls are syntactically clear (e.g., `recursion_factorial(param_1 + -1)`). However, there's no documentation of which functions call which, callback relationships, or global variable usage. The relationship between `indirect_recursion_a` and `indirect_recursion_b` is not explained.
+
+**17. Module Organization:** Score: 5/10  
+Justification: All functions in single file with no clear grouping. Related functions (state machine functions: `state_machine`, `state_idle`, `state_processing`, `state_done`, `state_error`) are scattered. No header file or API boundary indication.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Code would not compile as-is due to: `undefined` types, `code *` type (should be function pointer), missing includes. External dependencies (`puts`, `printf`, `__stack_chk_fail`) are declared but not properly prototyped. Significant patching required.
+
+---
+
+## === FINAL SUMMARY ===
+
+**Overall Readability Score:** 4.6/10
+
+### Critical Defects:
+- **Variable naming**: All parameters use `param_N` and locals use `local_X` - completely generic at -O0 where semantic names should be recoverable
+- **Type precision**: Functions like `switch_small` return `undefined [16]` instead of `int`; many parameters use `undefined4`/`undefined8`
+- **No comments**: Zero documentation for 1300+ lines of code, making complex patterns like Duff's device incomprehensible
+- **No struct recovery**: Original `int matrix[3][4]` becomes 12 separate variables (`local_48`, `local_38`, etc.)
+- **Anomaly indication**: No flags for indirect calls, computed jumps, or complex control flow patterns
+
+### Best Quality Aspect: Control Flow Naturalness (8/10)
+The decompiler correctly recovers loops (for, while, do-while), if-else chains, and switch statements. At -O0, the control flow structure closely matches the original source.
+
+### Most Needs Improvement: Comment Quality & Presence (1/10)
+The complete absence of comments is unacceptable for a 1300-line decompiled file. Complex idioms like Duff's device, state machines, and indirect recursion have no explanatory text.
+
+### Top 3 Recommendations:
+1. **Recover variable names from debug symbols**: At -O0 with -g, the decompiler should extract meaningful variable names (`a`, `b`, `sum`, `i`) from DWARF debugging information rather than generating generic `param_N`/`local_X` names.
+2. **Add comments for complex patterns**: Document identified patterns like Duff's device, state machines, and function pointer arrays with explanations of their purpose and structure.
+3. **Fix type precision**: Replace `undefined4`/`undefined8` with proper `int`/`long` types, and fix incorrect return types like `undefined [16]` for `switch_small`.

@@ -1,0 +1,103 @@
+# Decompilation Readability Assessment
+
+## === LEVEL 1: LEXICAL CLARITY (30% weight) ===
+
+**1. Variable Naming Quality:** Score: 4/10  
+Justification: Variables use generic names like `v0`, `v1`, `v2`, `v4` instead of semantic names (e.g., `p1`, `p2`, `p3` for predicates, `result` for return values). Original source had meaningful names like `result`, `temp`, `div2`, `mod16` that are completely lost.
+
+**2. Function Naming Quality:** Score: 8/10  
+Justification: User-defined function names are preserved accurately (`param_fake_branch`, `param_opaque_predicate`, `param_vectorized_loop`). However, helper functions use generic names (`sub_860`, `init_proc`) losing semantic meaning.
+
+**3. Literal Clarity:** Score: 6/10  
+Justification: Magic numbers like `90` (encryption key 0x5A), `0x20u` (buffer size), and signal numbers `8`/`11` lack explanation. Some literals are inferable (loop bounds) but cryptographic constants are opaque.
+
+**4. Noise Reduction:** Score: 6/10  
+Justification: Register annotations (`// w0`, `// x3`, `// t1`) and stack frame comments (`// [xsp+28h] [xbp+28h] BYREF`) clutter the code. Redundant casts like `(unsigned __int8)` add visual noise without semantic value.
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY (25% weight) ===
+
+**5. Control Flow Naturalness:** Score: 7/10  
+Justification: Loop structures recovered as do-while patterns in `param_vectorized_loop` and `param_opaque_predicate`. However, `param_integer_overflow` uses boolean flags (`v4`, `v5`, `v7`, `v8`) instead of direct comparisons, obscuring the overflow detection logic.
+
+**6. Function Decomposition:** Score: 8/10  
+Justification: Function boundaries preserved correctly with appropriate granularity. Call relationships maintained (`call_fake_branch` → `param_fake_branch`). No artificial splitting or merging observed.
+
+**7. Code Linearization:** Score: 8/10  
+Justification: Code reads top-to-bottom naturally with early returns where appropriate. No excessive goto usage or forward jumps disrupting flow. Loop structures use standard do-while patterns.
+
+**8. Redundancy Elimination:** Score: 7/10  
+Justification: Dead code successfully eliminated (`param_fake_branch` returns just `x` since branches are always false). However, `param_integer_overflow` introduces redundant boolean flag variables that could be simplified.
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY (20% weight) ===
+
+**9. Type Precision:** Score: 7/10  
+Justification: Basic types recovered correctly (`int`, `char*`, `size_t`, `unsigned int`). Function signatures match original. However, uses generic `int` instead of `int32_t` and loses some const-correctness from original source.
+
+**10. Composite Type Recovery:** Score: 5/10  
+Justification: Bitfield struct in `param_implementation_defined` completely optimized away (returns constant `48`). Array parameters preserved (`int *a, int *b, int *c`) but no complex struct layouts recovered due to optimization.
+
+**11. Type Safety:** Score: 6/10  
+Justification: Multiple unsafe casts present: `(__sighandler_t)` for signal handlers, `(unsigned __int8)` conversions, `(unsigned int)x` casts. Pointer arithmetic uses safe array indexing but cast frequency reduces type safety confidence.
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY (15% weight) ===
+
+**12. Comment Quality & Presence:** Score: 4/10  
+Justification: Comments are technical annotations (register types, stack layout) not semantic explanations. No algorithm documentation, no function purpose comments. "FAILED to decompile" notes for library functions are helpful but minimal.
+
+**13. Idiom Recognition:** Score: 3/10  
+Justification: No pattern recognition evident. GCD algorithm in `param_opaque_predicate`, tail recursion in `param_tail_call_optimized`, and XOR decryption in `decrypt_string` all unidentified. No design patterns or algorithm names documented.
+
+**14. Anomaly Indication:** Score: 5/10  
+Justification: Failed library function decompilations listed at end. However, no warnings about dead code elimination (`param_fake_branch`), constant folding (`param_implementation_defined`), or potential undefined behavior patterns.
+
+**15. Assertion & Contract Recovery:** Score: 3/10  
+Justification: No precondition/postcondition documentation. Signal handler setup in `param_division_by_zero` and `param_null_pointer_deref` lacks explanation of expected behavior or error conditions.
+
+## === LEVEL 5: CONTEXTUAL COHERENCE (10% weight) ===
+
+**16. Cross-Reference Clarity:** Score: 6/10  
+Justification: Function call relationships visible in code. `test_obf_opt_edge` shows which functions it calls. However, no call graph documentation, no callback relationship indication, and global variable usage (`encrypted_0`, `jmp_buffer`) not explained.
+
+**17. Module Organization:** Score: 7/10  
+Justification: Functions appear in logical order with `main` at end. Related functions grouped together. Static functions properly scoped. No header file structure or namespace organization present.
+
+**18. Build System Compatibility:** Score: 4/10  
+Justification: Will not compile standalone. Missing library function declarations, undefined globals (`encrypted_0`, `jmp_buffer`, `segv_buffer`), ARM64-specific types need abstraction. External dependencies not documented.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+Level 1 Average: (4 + 8 + 6 + 6) / 4 = 6.0
+Level 2 Average: (7 + 8 + 8 + 7) / 4 = 7.5
+Level 3 Average: (7 + 5 + 6) / 3 = 6.0
+Level 4 Average: (4 + 3 + 5 + 3) / 4 = 3.75
+Level 5 Average: (6 + 7 + 4) / 3 = 5.67
+
+Overall = (6.0 × 0.30) + (7.5 × 0.25) + (6.0 × 0.20) + (3.75 × 0.15) + (5.67 × 0.10)
+        = 1.80 + 1.875 + 1.20 + 0.5625 + 0.567
+        = 6.0/10
+```
+
+**Overall Readability Score:** 6.0/10
+
+### Critical Defects:
+- Variable names `v0`, `v1`, `v2`, `v4` should be semantic (e.g., `predicate_result`, `gcd_temp`, `loop_counter`)
+- No comments explaining the obfuscation patterns (dead branches, opaque predicates, instruction substitution)
+- Magic number `90` (encryption key) and `0x20u` (buffer size) lack symbolic names
+- Boolean flag variables `v4`, `v5`, `v7`, `v8` in `param_integer_overflow` obscure overflow detection logic
+- Missing documentation for signal handler relationships and exception handling flow
+
+### Best Quality Aspect:
+- **Function Decomposition (8/10)** - Function boundaries and call relationships preserved accurately with appropriate granularity
+
+### Most Needs Improvement:
+- **Idiom Recognition (3/10)** - Common algorithms (GCD, tail recursion, XOR decryption) completely unrecognized and undocumented
+
+### Top 3 Recommendations for Decompiler Improvement:
+1. **Implement semantic variable naming** - Analyze usage patterns to infer names (e.g., variables used in predicate comparisons should be named `predicate_1`, `predicate_2`)
+2. **Add algorithm pattern detection** - Recognize common patterns (GCD loops, XOR decryption, tail recursion) and add explanatory comments
+3. **Recover symbolic constants** - Detect repeated literals and suggest named constants (e.g., `ENCRYPTION_KEY = 0x5A`, `BUFFER_SIZE = 32`)

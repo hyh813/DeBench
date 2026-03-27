@@ -1,0 +1,175 @@
+# Decompilation Readability Assessment
+
+## Target Function Analysis
+
+**Focus Function:** `param_fake_branch` (lines 25-40 in source)
+
+The original function implements OBF-L4-02 (fake/always-false branches) - an obfuscation technique using conditions that are mathematically impossible:
+- `x * x < 0` (always false for real numbers)
+- `strlen(str) < 0` (string length cannot be negative)
+
+The function should return the input value `x` unchanged, with the fake branches having no effect.
+
+---
+
+## === LEVEL 1: LEXICAL CLARITY ===
+
+### 1. Variable Naming Quality
+**Score: 2/10**
+
+Justification: The decompiled `param_fake_branch` uses generic name `result` which partially matches source (`int result = x`), but the broader codebase uses meaningless names like `v1`, `v2`, `v3` throughout. The architecture mismatch (arm64 source producing x86 decompilation with `__x86_get_pc_thunk_bx`) indicates fundamental decompilation issues affecting all naming.
+
+### 2. Function Naming Quality  
+**Score: 3/10**
+
+Justification: The target function `param_fake_branch` is correctly named, matching the source. However, surrounding functions use mechanical names like `function_10f0`, `function_1100`, `function_1120` with addresses instead of semantic names. Many standard library functions also have generic names (e.g., `function_1160` for `puts`, `function_1170` for `strlen`).
+
+### 3. Literal Clarity
+**Score: 2/10**
+
+Justification: The code is littered with unexplained magic numbers and addresses. Examples include `0x2bff`, `0xe430283`, `0x180e4114` for global variables, and expressions like `v1 + 0x2dce` for memory accesses. The decompiled `param_fake_branch` itself has no literals to evaluate, but the fake branch logic (0xDEADBEEF, 1000) is completely eliminated.
+
+### 4. Noise Reduction
+**Score: 2/10**
+
+Justification: Severe noise pollution throughout. The code contains: `__x86_get_pc_thunk_bx` calls (x86-specific despite arm64 source), stack canary checks (`__readgsdword(20)`), address range comments ("// Address range: 0x1377 - 0x1380"), and module references ("// From module: /work/7.c"). This makes the code nearly unreadable.
+
+---
+
+## === LEVEL 2: STRUCTURAL INTELLIGIBILITY ===
+
+### 5. Control Flow Naturalness
+**Score: 4/10**
+
+Justification: The `param_fake_branch` function itself has trivial control flow (just return), but other functions show unnatural patterns. For example, `param_opaque_predicate` has complex nested conditionals with confusing operator precedence: `if ((v1 || 1) + x * x == v2 * v2 != (v3 == 1))`. The decompiler failed to recover the original if-else structure.
+
+### 6. Function Decomposition
+**Score: 5/10**
+
+Justification: The target function is appropriately small (1 line). However, the decompilation shows function inlining issues - `call_fake_branch()` returns constant 10 instead of calling `param_fake_branch(10)`. Some functions like `param_division_by_zero` are bloated with 50+ lines of signal handling setup that could be abstracted.
+
+### 7. Code Linearization
+**Score: 7/10**
+
+Justification: The target function reads linearly (top-to-bottom). However, other functions like `param_opaque_predicate` have backward jumps forming while loops that disrupt linear reading. The `param_vectorized_loop` has nested while loops that are harder to follow.
+
+### 8. Redundancy Elimination
+**Score: 3/10**
+
+Justification: The decompiler over-aggressively eliminated the fake branches, removing the obfuscation technique entirely. The original code's dead branches (which are the entire point of the function) are gone. This is a critical semantic loss - the decompiler correctly identified unreachable code but failed to preserve the obfuscation pattern.
+
+---
+
+## === LEVEL 3: TYPE SYSTEM FIDELITY ===
+
+### 9. Type Precision
+**Score: 4/10**
+
+Justification: Uses `int32_t` consistently which is good. However, there's a critical architecture mismatch - source is arm64 but decompiled code shows x86 (`__x86_get_pc_thunk_bx`, `__readgsdword`). Parameter types are inconsistent: `param_division_by_zero(uint32_t x)` vs source `int x`, and `param_instruction_substitution(uint32_t a1)` loses signedness from source.
+
+### 10. Composite Type Recovery
+**Score: 5/10**
+
+Justification: The decompiler reconstructed `struct __jmp_buf_tag` and `struct _TYPEDEF___sigset_t` for signal handling, which is helpful. However, field names are generic (`e0`, `e1`, `e2`). The target function doesn't use composite types, so this dimension doesn't apply directly to `param_fake_branch`.
+
+### 11. Type Safety
+**Score: 6/10**
+
+Justification: Generally safe code with few obvious unsafe casts. The target function is trivial. However, other functions have issues like `(void (*)(int32_t))(v3 + (int32_t)&g4 - 0x2c93)` which is an unsafe function pointer cast. The stack canary checks add noise but don't create type safety issues.
+
+---
+
+## === LEVEL 4: SEMANTIC TRANSPARENCY ===
+
+### 12. Comment Quality & Presence
+**Score: 3/10**
+
+Justification: Comments are primarily auto-generated noise: address ranges ("// Address range: 0x1377 - 0x1380"), line numbers ("// Line range: 238 - 240"), module references. No comments explain the fake branch obfuscation technique or flag that branches were eliminated. The decompiler provides no semantic context about what the function is supposed to do.
+
+### 13. Idiom Recognition
+**Score: 2/10**
+
+Justification: The decompiler failed to recognize the OBF-L4-02 fake branch pattern. The original uses mathematically impossible conditions (`x*x < 0`, `strlen(str) < 0`) as obfuscation - this is completely lost. No indication that this is intentional obfuscation vs. dead code that should be removed.
+
+### 14. Anomaly Indication
+**Score: 1/10**
+
+Justification: The decompiler silently accepts the architecture mismatch (arm64 source → x86 decompilation) without any warning. The elimination of the fake branches is not flagged as suspicious. No indication that the decompilation may be incorrect or that semantic information was lost.
+
+### 15. Assertion & Contract Recovery
+**Score: 2/10**
+
+Justification: No preconditions, postconditions, or invariants are documented. The original source has no explicit assertions, but the semantic intent (fake branches should be preserved as obfuscation) is completely lost with no contract indication.
+
+---
+
+## === LEVEL 5: CONTEXTUAL COHERENCE ===
+
+### 16. Cross-Reference Clarity
+**Score: 4/10**
+
+Justification: Function call relationships are partially visible - `call_fake_branch()` calls `param_fake_branch()`. However, the inlining of `call_fake_branch()` to return constant 10 breaks the call graph. Global variable usage (`g1`, `g2`, etc.) is not explained.
+
+### 17. Module Organization
+**Score: 5/10**
+
+Justification: Functions are grouped logically (obfuscation, optimization, edge cases) based on source structure. However, the file is a single monolithic 768-line output with no clear section headers. The target function is buried among 58 other functions.
+
+### 18. Build System Compatibility
+**Score: 6/10**
+
+Justification: The code includes all necessary headers (`<stdio.h>`, `<stdlib.h>`, `<string.h>`, `<setjmp.h>`, `<signal.h>`, `<stdint.h>`). It would likely compile with minimal fixes. However, the architecture mismatch and missing function definitions for thunk functions would cause compilation failures.
+
+---
+
+## === FINAL SUMMARY ===
+
+### Overall Readability Score Calculation
+
+```
+L1_avg = (2+3+2+2)/4 = 2.25
+L2_avg = (4+5+7+3)/4 = 4.75
+L3_avg = (4+5+6)/3 = 5.0
+L4_avg = (3+2+1+2)/4 = 2.0
+L5_avg = (4+5+6)/3 = 5.0
+
+Overall = (2.25 × 0.30) + (4.75 × 0.25) + (5.0 × 0.20) + 
+          (2.0 × 0.15) + (5.0 × 0.10)
+        = 0.675 + 1.1875 + 1.0 + 0.3 + 0.5
+        = 3.66/10
+```
+
+**Overall Readability Score:** 3.66/10
+
+---
+
+### Critical Defects (Bullet List)
+
+- **Architecture Mismatch**: Source compiled for arm64 but decompiled code shows x86 assembly patterns (`__x86_get_pc_thunk_bx`, `__readgsdword`), indicating fundamental decompilation error
+- **Obfuscation Loss**: The fake branch pattern (OBF-L4-02) is completely eliminated - the entire semantic purpose of `param_fake_branch` is lost
+- **No Semantic Comments**: No explanation that the function implements fake branch obfuscation; comments only show address ranges
+- **Generic Function Names**: 50+ functions use mechanical names like `function_10f0`, `function_1100` instead of semantic names
+- **Magic Numbers**: Global variables use unexplained hex values (`g1 = 0x2bff`, `g2 = 0xe430283`) without any documentation
+
+---
+
+### Best Quality Aspect: Type System Fidelity (5.0/10)
+- Uses `int32_t` consistently for integer types
+- Reconstructed `struct __jmp_buf_tag` for signal handling
+- Generally type-safe code without obvious unsafe casts
+
+### Most Needs Improvement: Semantic Transparency (2.0/10)
+- No recognition of the fake branch obfuscation pattern
+- No anomaly indication for architecture mismatch
+- Auto-generated comments only (address ranges, line numbers)
+- No contract or precondition documentation
+
+---
+
+### Top 3 Recommendations for Decompiler Improvement
+
+1. **Preserve Obfuscation Patterns**: Detect always-false conditions (like `x*x < 0`, `strlen(str) < 0`) and flag them as potential obfuscation rather than silently eliminating them. Add comments like "// OBFUSCATION: fake branch (always false)".
+
+2. **Fix Architecture Detection**: The decompiler must correctly identify the target architecture. The arm64 source producing x86 output is a critical failure that undermines all subsequent analysis.
+
+3. **Improve Function Naming**: Replace mechanical address-based names (`function_10f0`) with semantically inferred names based on string references, call patterns, and standard library usage patterns. `function_1160` should be named `puts` based on its usage.
